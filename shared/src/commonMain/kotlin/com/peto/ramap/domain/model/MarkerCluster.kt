@@ -1,5 +1,6 @@
 package com.peto.ramap.domain.model
 
+import com.peto.ramap.core.config.MarkerClusterConfig
 import kotlin.math.floor
 
 /**
@@ -44,8 +45,8 @@ class MarkerCluster {
         viewportHeight: Int,
     ): ClusterCellSize =
         ClusterCellSize(
-            latitude = bounds.latSpan * CLUSTER_CELL_SIZE_PX / viewportHeight,
-            longitude = bounds.lngSpan * CLUSTER_CELL_SIZE_PX / viewportWidth,
+            latitude = bounds.latSpan * MarkerClusterConfig.RELEASE_DISTANCE_PX / viewportHeight,
+            longitude = bounds.lngSpan * MarkerClusterConfig.RELEASE_DISTANCE_PX / viewportWidth,
         )
 
     /**
@@ -55,18 +56,21 @@ class MarkerCluster {
         shops: RamenShops,
         bounds: MapBounds,
         cellSize: ClusterCellSize,
-    ): Collection<List<RamenShop>> = shops.values.groupBy { shop -> createCellKey(shop, bounds, cellSize) }.values
+    ): Collection<List<RamenShop>> = shops.values.groupBy { shop -> createCellKey(shop, cellSize) }.values
 
     /**
-     * 매장의 위경도를 현재 bounds 기준 grid cell key로 변환한다.
+     * 매장의 위경도를 고정 grid cell key로 변환한다.
+     *
+     * 현재 지도 bounds의 시작점을 기준으로 삼으면 같은 줌에서도 지도를 이동할 때마다 cell 경계가
+     * 함께 움직여 클러스터 구성이 바뀐다. 전역 좌표 기준 grid를 사용해 줌 레벨에 따른 cell 크기가
+     * 바뀔 때만 클러스터 구성이 달라지도록 한다.
      */
     private fun createCellKey(
         shop: RamenShop,
-        bounds: MapBounds,
         cellSize: ClusterCellSize,
     ): Pair<Int, Int> {
-        val latIndex = floor((shop.location.lat - bounds.minLat) / cellSize.latitude).toInt()
-        val lngIndex = floor((shop.location.lng - bounds.minLng) / cellSize.longitude).toInt()
+        val latIndex = floor(shop.location.lat / cellSize.latitude).toInt()
+        val lngIndex = floor(shop.location.lng / cellSize.longitude).toInt()
         return latIndex to lngIndex
     }
 
@@ -74,7 +78,7 @@ class MarkerCluster {
      * 같은 cell에 있는 매장 그룹을 단일 마커 또는 클러스터 마커로 변환한다.
      */
     private fun createMarker(shops: List<RamenShop>): Marker {
-        if (shops.size == 1) return Marker.SingleMarker(shops.first())
+        if (shops.size < MarkerClusterConfig.MIN_SHOP_COUNT) return Marker.SingleMarker(shops.first())
         val sortedShops = shops.sortedBy { shop -> shop.id }
 
         return Marker.ClusterMaker(
@@ -87,7 +91,8 @@ class MarkerCluster {
     /**
      * 포함 매장 ID를 정렬해 입력 순서와 무관한 클러스터 ID를 만든다.
      */
-    private fun createClusterId(shops: List<RamenShop>): String = shops.joinToString(separator = CLUSTER_ID_SEPARATOR) { shop -> shop.id }
+    private fun createClusterId(shops: List<RamenShop>): String =
+        shops.joinToString(separator = MarkerClusterConfig.ID_SEPARATOR) { shop -> shop.id }
 
     /**
      * 클러스터에 포함된 매장 좌표의 평균 위치를 계산한다.
@@ -97,9 +102,4 @@ class MarkerCluster {
             lat = shops.sumOf { shop -> shop.location.lat } / shops.size,
             lng = shops.sumOf { shop -> shop.location.lng } / shops.size,
         )
-
-    companion object {
-        private const val CLUSTER_CELL_SIZE_PX = 180.0
-        private const val CLUSTER_ID_SEPARATOR = "-"
-    }
 }

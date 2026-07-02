@@ -93,6 +93,45 @@ class MapViewModelTest {
         }
 
     @Test
+    fun `지도 이동만으로는 클러스터 기준 영역을 변경하지 않는다`() =
+        coroutinesTest {
+            val viewModel = mapViewModel()
+            val pannedBounds =
+                DefaultMapConfig.bounds.copy(
+                    minLat = DefaultMapConfig.bounds.minLat + 0.01,
+                    maxLat = DefaultMapConfig.bounds.maxLat + 0.01,
+                    minLng = DefaultMapConfig.bounds.minLng + 0.01,
+                    maxLng = DefaultMapConfig.bounds.maxLng + 0.01,
+                )
+
+            viewModel.dispatch(MapIntent.OnBoundsChanged(pannedBounds))
+            runCurrent()
+
+            assertEquals(pannedBounds, viewModel.uiState.value.bounds)
+            assertEquals(DefaultMapConfig.bounds, viewModel.uiState.value.clusterBounds)
+            advanceTimeBy(350)
+            runCurrent()
+        }
+
+    @Test
+    fun `줌 변경시에는 클러스터 기준 영역을 변경한다`() =
+        coroutinesTest {
+            val viewModel = mapViewModel()
+            val zoomedBounds =
+                DefaultMapConfig.bounds.copy(
+                    maxLat = DefaultMapConfig.bounds.minLat + DefaultMapConfig.bounds.latSpan * 0.8,
+                    maxLng = DefaultMapConfig.bounds.minLng + DefaultMapConfig.bounds.lngSpan * 0.8,
+                )
+
+            viewModel.dispatch(MapIntent.OnBoundsChanged(zoomedBounds))
+            runCurrent()
+
+            assertEquals(zoomedBounds, viewModel.uiState.value.clusterBounds)
+            advanceTimeBy(350)
+            runCurrent()
+        }
+
+    @Test
     fun `조회 결과가 현재 가게 목록과 같으면 UI 상태를 다시 방출하지 않는다`() =
         coroutinesTest {
             val shops = RamenShops(listOf(ramenShopFixture()).associateBy { it.id })

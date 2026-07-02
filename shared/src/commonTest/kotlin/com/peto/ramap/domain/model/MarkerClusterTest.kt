@@ -1,5 +1,6 @@
 package com.peto.ramap.domain.model
 
+import com.peto.ramap.core.config.MarkerClusterConfig
 import com.peto.ramap.fixture.BOUNDS_FIXTURE
 import com.peto.ramap.fixture.ramenShopFixture
 import kotlin.test.Test
@@ -74,7 +75,8 @@ class MarkerClusterTest {
         // given
         val firstShop = shopAt(id = "1", lat = 37.501, lng = 126.901)
         val secondShop = shopAt(id = "2", lat = 37.502, lng = 126.902)
-        val shops = ramenShopsOf(firstShop, secondShop)
+        val thirdShop = shopAt(id = "3", lat = 37.503, lng = 126.903)
+        val shops = ramenShopsOf(firstShop, secondShop, thirdShop)
 
         // when
         val result =
@@ -87,8 +89,8 @@ class MarkerClusterTest {
 
         // then
         val marker = assertIs<Marker.ClusterMaker>(result.single())
-        assertEquals(2, marker.count)
-        assertEquals(listOf(firstShop, secondShop), marker.shops)
+        assertEquals(MarkerClusterConfig.MIN_SHOP_COUNT, marker.count)
+        assertEquals(listOf(firstShop, secondShop, thirdShop), marker.shops)
     }
 
     @Test
@@ -113,27 +115,63 @@ class MarkerClusterTest {
     }
 
     @Test
+    fun `같은 줌에서 지도 이동만으로는 클러스터 구성이 바뀌지 않는다`() {
+        // given
+        val firstShop = shopAt(id = "1", lat = 37.510, lng = 126.910)
+        val secondShop = shopAt(id = "2", lat = 37.511, lng = 126.911)
+        val thirdShop = shopAt(id = "3", lat = 37.540, lng = 126.940)
+        val shops = ramenShopsOf(firstShop, secondShop, thirdShop)
+        val pannedBounds =
+            BOUNDS_FIXTURE.copy(
+                minLat = BOUNDS_FIXTURE.minLat + 0.02,
+                maxLat = BOUNDS_FIXTURE.maxLat + 0.02,
+                minLng = BOUNDS_FIXTURE.minLng + 0.02,
+                maxLng = BOUNDS_FIXTURE.maxLng + 0.02,
+            )
+
+        // when
+        val initialMarkers =
+            markerCluster.clustering(
+                shops = shops,
+                bounds = BOUNDS_FIXTURE,
+                viewportWidth = VIEWPORT_SIZE,
+                viewportHeight = VIEWPORT_SIZE,
+            )
+        val pannedMarkers =
+            markerCluster.clustering(
+                shops = shops,
+                bounds = pannedBounds,
+                viewportWidth = VIEWPORT_SIZE,
+                viewportHeight = VIEWPORT_SIZE,
+            )
+
+        // then
+        assertEquals(
+            initialMarkers.map { marker -> marker.id }.toSet(),
+            pannedMarkers.map { marker -> marker.id }.toSet(),
+        )
+    }
+
+    @Test
     fun `클러스터 위치는 포함 가게 좌표의 평균이다`() {
         // given
         val firstShop = shopAt(id = "1", lat = 37.501, lng = 126.901)
-        val secondShop = shopAt(id = "2", lat = 37.503, lng = 126.903)
+        val secondShop = shopAt(id = "2", lat = 37.502, lng = 126.902)
+        val thirdShop = shopAt(id = "3", lat = 37.503, lng = 126.903)
 
         // when
-        val marker = clusterOf(firstShop, secondShop)
+        val marker = clusterOf(firstShop, secondShop, thirdShop)
 
         // then
         assertEquals(37.502, marker.location.lat, DOUBLE_TOLERANCE)
         assertEquals(126.902, marker.location.lng, DOUBLE_TOLERANCE)
     }
 
-    private fun clusterOf(
-        firstShop: RamenShop,
-        secondShop: RamenShop,
-    ): Marker.ClusterMaker =
+    private fun clusterOf(vararg shops: RamenShop): Marker.ClusterMaker =
         assertIs(
             markerCluster
                 .clustering(
-                    shops = ramenShopsOf(firstShop, secondShop),
+                    shops = ramenShopsOf(*shops),
                     bounds = BOUNDS_FIXTURE,
                     viewportWidth = VIEWPORT_SIZE,
                     viewportHeight = VIEWPORT_SIZE,

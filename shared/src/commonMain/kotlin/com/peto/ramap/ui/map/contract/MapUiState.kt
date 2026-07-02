@@ -19,6 +19,7 @@ data class MapUiState(
     val isSearchResultsDismissed: Boolean = false,
     val filters: RamenShopFilter = RamenShopFilter(),
     val bounds: MapBounds = DefaultMapConfig.bounds,
+    val clusterBounds: MapBounds = DefaultMapConfig.bounds,
 ) : State {
     /**
      * 검색 결과 리스트 바텀시트에 표시할 매장 목록.

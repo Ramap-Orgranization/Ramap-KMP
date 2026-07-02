@@ -3,6 +3,7 @@ package com.peto.ramap.ui.map
 import com.peto.ramap.core.base.BaseViewModel
 import com.peto.ramap.domain.model.Category
 import com.peto.ramap.domain.model.MapBounds
+import com.peto.ramap.core.config.MarkerClusterConfig
 import com.peto.ramap.domain.model.RamenShop
 import com.peto.ramap.domain.model.RamenShopFilter
 import com.peto.ramap.domain.model.RamenShops
@@ -14,6 +15,7 @@ import com.peto.ramap.ui.map.contract.MapSideEffect
 import com.peto.ramap.ui.map.contract.MapUiState
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlin.math.abs
 import kotlin.time.Duration.Companion.milliseconds
 
 class MapViewModel(
@@ -173,7 +175,17 @@ class MapViewModel(
      * 드래그 중간 지점마다 라멘 가게 목록을 다시 조회하지 않도록 한다.
      */
     private fun scheduleRamenShopsLoad(bounds: MapBounds) {
-        reduce { copy(bounds = bounds) }
+        reduce {
+            copy(
+                bounds = bounds,
+                clusterBounds =
+                    if (bounds.isZoomMeaningfullyDifferentFrom(clusterBounds)) {
+                        bounds
+                    } else {
+                        clusterBounds
+                    },
+            )
+        }
 
         boundsLoadJob?.cancel()
         val requestId = ++boundsLoadRequestId
@@ -216,6 +228,18 @@ class MapViewModel(
         RamenShops(
             currentState.shops + newShops,
         )
+
+    private fun MapBounds.isZoomMeaningfullyDifferentFrom(other: MapBounds): Boolean =
+        latSpan.isMeaningfullyDifferentFrom(other.latSpan, MarkerClusterConfig.ZOOM_SHIFT_RATIO) ||
+            lngSpan.isMeaningfullyDifferentFrom(other.lngSpan, MarkerClusterConfig.ZOOM_SHIFT_RATIO)
+
+    private fun Double.isMeaningfullyDifferentFrom(
+        other: Double,
+        ratio: Double,
+    ): Boolean {
+        if (other == 0.0) return this != 0.0
+        return abs(this - other) / abs(other) >= ratio
+    }
 
     companion object {
         private const val BOUNDS_LOAD_DEBOUNCE_MILLIS = 350L
