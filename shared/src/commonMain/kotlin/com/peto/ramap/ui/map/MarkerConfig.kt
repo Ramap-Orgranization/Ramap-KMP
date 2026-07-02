@@ -11,7 +11,7 @@ internal object MarkerConfig {
         const val STYLE_ID = "ramen-shop-marker-style"
         const val WIDTH = 24
         const val HEIGHT = 30
-        const val LABEL_TEXT_SIZE = 28
+        const val LABEL_TEXT_SIZE = 20
         const val LABEL_TEXT_COLOR = 0xFF333333.toInt()
         const val LABEL_STROKE_WIDTH = 4
     }
