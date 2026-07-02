@@ -30,7 +30,10 @@ import cocoapods.KakaoMapsSDK.TextStyle
 import cocoapods.KakaoMapsSDK.TransitionTypeNone
 import cocoapods.KakaoMapsSDK.create
 import com.peto.ramap.core.config.DefaultMapConfig
+import com.peto.ramap.core.config.MarkerClusterConfig
 import com.peto.ramap.domain.model.MapBounds
+import com.peto.ramap.domain.model.Marker
+import com.peto.ramap.domain.model.MarkerCluster
 import com.peto.ramap.domain.model.RamenShop
 import com.peto.ramap.domain.model.RamenShops
 import com.peto.ramap.ui.extension.alphaComponent
@@ -71,6 +74,8 @@ private const val MARKER_IMAGE_NAME = "marker_ramen"
 private const val MARKER_LAYER_Z_ORDER = 10L
 private const val MARKER_TAP_RADIUS_METERS = 80.0
 private const val EMPTY_FOCUS_KEY = ""
+private const val SINGLE_MARKER_KEY_PREFIX = "shop:"
+private const val CLUSTER_MARKER_KEY_PREFIX = "cluster:"
 
 /**
  * iOS Kakao Maps SDK의 생명주기, 마커 렌더링, 카메라 이동을 Compose 상태와 연결하는 컨트롤러
@@ -105,6 +110,8 @@ class IosKakaoMapController(
         )
 
     private val controller = KMController(viewContainer = mapViewContainer)
+    private val markerCluster = MarkerCluster()
+    private val clusterImageFactory = RamenShopClusterImageFactory()
     private val locationManager =
         CLLocationManager().apply {
             delegate = this@IosKakaoMapController
@@ -112,9 +119,13 @@ class IosKakaoMapController(
         }
     private val mapViewName = "ramap"
     private val markerLayerId = "ramen-shop-marker-layer"
-    private val renderedShopIds = mutableSetOf<String>()
-    private val shopsByPoiId = mutableMapOf<String, RamenShop>()
+    private val renderedMarkerKeys = mutableSetOf<String>()
+    private val markersByPoiId = mutableMapOf<String, Marker>()
     private var pendingShops: RamenShops? = null
+    private var pendingBounds: MapBounds? = null
+    private var pendingClusterBounds: MapBounds? = null
+    private var pendingViewportWidth: Int = 0
+    private var pendingViewportHeight: Int = 0
     private var pendingMyLocationCoordinate: IosMapCoordinate? = null
     private var isStarted = false
     private var isMapViewAdded = false
@@ -192,7 +203,15 @@ class IosKakaoMapController(
         isMapViewAdded = true
         kakaoMap.eventDelegate = this
         notifyCurrentBounds(kakaoMap)
-        pendingShops?.let(::renderRamenShopMarkers)
+        pendingShops?.let { shops ->
+            renderRamenShopMarkers(
+                shops = shops,
+                bounds = pendingBounds,
+                clusterBounds = pendingClusterBounds,
+                viewportWidth = pendingViewportWidth,
+                viewportHeight = pendingViewportHeight,
+            )
+        }
         pendingMyLocationCoordinate?.let(::moveToCoordinate)
         pendingMyLocationCoordinate = null
     }
@@ -266,9 +285,26 @@ class IosKakaoMapController(
      * 지도 뷰가 아직 추가되지 않은 경우에는 [pendingShops]에 보관했다가 [addViewSucceeded]
      * 이후 마커를 렌더링한다.
      */
-    fun updateShops(shops: RamenShops) {
+    fun updateShops(
+        shops: RamenShops,
+        bounds: MapBounds,
+        clusterBounds: MapBounds,
+        viewportWidth: Int,
+        viewportHeight: Int,
+    ) {
         pendingShops = shops
-        renderRamenShopMarkers(shops)
+        pendingBounds = bounds
+        pendingClusterBounds = clusterBounds
+        pendingViewportWidth = viewportWidth
+        pendingViewportHeight = viewportHeight
+
+        renderRamenShopMarkers(
+            shops = shops,
+            bounds = bounds,
+            clusterBounds = clusterBounds,
+            viewportWidth = viewportWidth,
+            viewportHeight = viewportHeight,
+        )
     }
 
     /**
@@ -277,19 +313,34 @@ class IosKakaoMapController(
      * 지도와 레이어가 준비되면 사라진 매장 마커를 먼저 제거하고
      * 아직 렌더링되지 않은 매장만 새 POI로 추가한다.
      */
-    private fun renderRamenShopMarkers(shops: RamenShops) {
+    private fun renderRamenShopMarkers(
+        shops: RamenShops,
+        bounds: MapBounds?,
+        clusterBounds: MapBounds?,
+        viewportWidth: Int,
+        viewportHeight: Int,
+    ) {
         if (!isMapViewAdded) return
 
         val kakaoMap = getKakaoMap() ?: return
         val layer = prepareMarkerLayer(kakaoMap) ?: return
+        val markers =
+            markerCluster.clustering(
+                shops = shops,
+                bounds = clusterBounds,
+                viewportWidth = viewportWidth,
+                viewportHeight = viewportHeight,
+                visibleBounds = bounds,
+            )
 
         removeStaleMarkers(
             layer = layer,
-            currentShopIds = shops.keys,
+            currentMarkerKeys = markers.map(::markerKey).toSet(),
         )
         renderNewMarkers(
             layer = layer,
-            shops = shops.values.toList(),
+            labelManager = kakaoMap.getLabelManager(),
+            markers = markers,
         )
     }
 
@@ -327,6 +378,38 @@ class IosKakaoMapController(
             )
 
         labelManager.addPoiStyle(poiStyle)
+    }
+
+    /**
+     * 포함 매장 수에 맞는 클러스터 마커 스타일을 Kakao Maps SDK label manager에 등록한다.
+     */
+    private fun ensureClusterStyle(
+        labelManager: LabelManager,
+        cluster: Marker.ClusterMaker,
+    ): String {
+        val styleId = clusterStyleId(cluster.count)
+        val poiStyle =
+            PoiStyle(
+                styleId,
+                listOf(
+                    PerLevelPoiStyle(
+                        PoiIconStyle(
+                            clusterImageFactory.create(cluster.count),
+                            CGPointMake(0.5, 0.5),
+                            poiTransition(),
+                            true,
+                            true,
+                            null,
+                        ),
+                        0.0f,
+                        0,
+                    ),
+                ),
+            )
+
+        labelManager.addPoiStyle(poiStyle)
+
+        return styleId
     }
 
     /**
@@ -408,24 +491,24 @@ class IosKakaoMapController(
         )
 
     /**
-     * 매장 id를 Kakao Maps SDK POI id 네임스페이스로 변환한다.
+     * 마커 key를 Kakao Maps SDK POI id 네임스페이스로 변환한다.
      */
-    private fun String.toMarkerPoiId(): String = "ramen-shop-$this"
+    private fun String.toMarkerPoiId(): String = "ramen-marker-$this"
 
     /**
      * 현재 매장 목록에 더 이상 포함되지 않는 기존 POI 마커를 제거한다.
      */
     private fun removeStaleMarkers(
         layer: LabelLayer,
-        currentShopIds: Set<String>,
+        currentMarkerKeys: Set<String>,
     ) {
-        val staleShopIds = renderedShopIds - currentShopIds
-        if (staleShopIds.isEmpty()) return
+        val staleMarkerKeys = renderedMarkerKeys - currentMarkerKeys
+        if (staleMarkerKeys.isEmpty()) return
 
-        val stalePoiIds = staleShopIds.map { shopId -> shopId.toMarkerPoiId() }
+        val stalePoiIds = staleMarkerKeys.map { markerKey -> markerKey.toMarkerPoiId() }
         layer.removePoisWithPoiIDs(stalePoiIds, callback = null)
-        stalePoiIds.forEach(shopsByPoiId::remove)
-        renderedShopIds.removeAll(staleShopIds)
+        stalePoiIds.forEach(markersByPoiId::remove)
+        renderedMarkerKeys.removeAll(staleMarkerKeys)
     }
 
     /**
@@ -433,12 +516,19 @@ class IosKakaoMapController(
      */
     private fun renderNewMarkers(
         layer: LabelLayer,
-        shops: List<RamenShop>,
+        labelManager: LabelManager,
+        markers: List<Marker>,
     ) {
-        val newShops = shops.filter { shop -> shop.id !in renderedShopIds }
-        if (newShops.isEmpty()) return
+        val newMarkers = markers.filter { marker -> markerKey(marker) !in renderedMarkerKeys }
+        if (newMarkers.isEmpty()) return
 
-        newShops.forEach { shop -> addMarkerPoi(layer, shop) }
+        newMarkers.forEach { marker ->
+            addMarkerPoi(
+                layer = layer,
+                labelManager = labelManager,
+                marker = marker,
+            )
+        }
     }
 
     /**
@@ -446,42 +536,59 @@ class IosKakaoMapController(
      */
     private fun addMarkerPoi(
         layer: LabelLayer,
-        shop: RamenShop,
+        labelManager: LabelManager,
+        marker: Marker,
     ) {
-        val poiId = shop.id.toMarkerPoiId()
+        val markerKey = markerKey(marker)
+        val poiId = markerKey.toMarkerPoiId()
         val poi =
             layer.addPoiWithOption(
-                option = createMarkerPoiOptions(shop, poiId),
-                at = shop.toMapPoint(),
+                option =
+                    createMarkerPoiOptions(
+                        labelManager = labelManager,
+                        marker = marker,
+                        poiId = poiId,
+                    ),
+                at = marker.toMapPoint(),
                 callback = null,
             )
 
         poi?.show()
         poi?.clickable = true
 
-        shopsByPoiId[poiId] = shop
-        renderedShopIds += shop.id
+        markersByPoiId[poiId] = marker
+        renderedMarkerKeys += markerKey
     }
 
     /**
      * 매장 마커 POI에 사용할 옵션과 라벨 텍스트를 만든다.
      */
     private fun createMarkerPoiOptions(
-        shop: RamenShop,
+        labelManager: LabelManager,
+        marker: Marker,
         poiId: String,
-    ): PoiOptions =
-        PoiOptions(
-            styleID = MarkerConfig.Single.STYLE_ID,
+    ): PoiOptions {
+        val styleId =
+            when (marker) {
+                is Marker.SingleMarker -> MarkerConfig.Single.STYLE_ID
+                is Marker.ClusterMaker -> ensureClusterStyle(labelManager, marker)
+            }
+
+        return PoiOptions(
+            styleID = styleId,
             poiID = poiId,
         ).apply {
             clickable = true
-            addText(
-                PoiText(
-                    text = shop.name,
-                    styleIndex = 0u,
-                ),
-            )
+            if (marker is Marker.SingleMarker) {
+                addText(
+                    PoiText(
+                        text = marker.shop.name,
+                        styleIndex = 0u,
+                    ),
+                )
+            }
         }
+    }
 
     /**
      * 검색 결과 또는 선택 매장을 지도 카메라의 포커스 대상으로 반영한다.
@@ -679,6 +786,15 @@ class IosKakaoMapController(
         )
 
     /**
+     * 도메인 마커 좌표를 Kakao Maps SDK의 [MapPoint]로 변환한다.
+     */
+    private fun Marker.toMapPoint(): MapPoint =
+        MapPoint(
+            longitude = location.lng,
+            latitude = location.lat,
+        )
+
+    /**
      * 여러 매장이 모두 보이도록 지도 카메라 영역을 맞춘다.
      */
     private fun fitShops(
@@ -717,7 +833,9 @@ class IosKakaoMapController(
         poiID: String,
         position: MapPoint,
     ) {
-        shopsByPoiId[poiID]?.let(onShopClick)
+        markersByPoiId[poiID]?.let { marker ->
+            handleMarkerClick(kakaoMap, marker)
+        }
     }
 
     /**
@@ -729,9 +847,22 @@ class IosKakaoMapController(
     private fun selectNearestShopAt(point: CValue<CGPoint>) {
         val kakaoMap = getKakaoMap() ?: return
         val tappedCoordinate = kakaoMap.coordinateAt(point)
-        val shop = findNearestShop(tappedCoordinate) ?: return
+        val marker = findNearestMarker(tappedCoordinate) ?: return
 
-        onShopClick(shop)
+        handleMarkerClick(kakaoMap, marker)
+    }
+
+    /**
+     * 마커 타입에 따라 단일 매장 선택 또는 클러스터 확대 이동을 실행한다.
+     */
+    private fun handleMarkerClick(
+        kakaoMap: KakaoMap,
+        marker: Marker,
+    ) {
+        when (marker) {
+            is Marker.SingleMarker -> onShopClick(marker.shop)
+            is Marker.ClusterMaker -> focusShops(kakaoMap, marker.shops)
+        }
     }
 
     /**
@@ -742,18 +873,31 @@ class IosKakaoMapController(
     /**
      * 탭 좌표에서 선택 가능한 거리 안에 있는 가장 가까운 매장을 찾는다.
      */
-    private fun findNearestShop(tappedCoordinate: IosMapCoordinate): RamenShop? =
-        shopsByPoiId
+    private fun findNearestMarker(tappedCoordinate: IosMapCoordinate): Marker? =
+        markersByPoiId
             .values
-            .map { shop ->
-                shop to
+            .map { marker ->
+                marker to
                     tappedCoordinate.distanceTo(
-                        shop.location.lat,
-                        shop.location.lng,
+                        marker.location.lat,
+                        marker.location.lng,
                     )
             }.minByOrNull { (_, distance) -> distance }
             ?.takeIf { (_, distance) -> distance <= MARKER_TAP_RADIUS_METERS }
             ?.first
+
+    /**
+     * 마커 타입이 달라도 충돌하지 않는 내부 식별 key를 만든다.
+     */
+    private fun markerKey(marker: Marker): String =
+        when (marker) {
+            is Marker.SingleMarker -> "$SINGLE_MARKER_KEY_PREFIX${marker.id}"
+            is Marker.ClusterMaker -> "$CLUSTER_MARKER_KEY_PREFIX${marker.id}"
+        }
+
+    private fun clusterStyleId(count: Int): String = "${MarkerConfig.Cluster.STYLE_ID}-${clusterCountBucket(count)}"
+
+    private fun clusterCountBucket(count: Int): String = MarkerClusterConfig.countStyleBucket(count)
 
     /**
      * 지도 엔진과 delegate 연결을 정리한다.

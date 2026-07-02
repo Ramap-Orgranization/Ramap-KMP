@@ -35,6 +35,7 @@ actual fun KakaoMapView(
     shops: RamenShops,
     focusShops: List<RamenShop>,
     bounds: MapBounds,
+    clusterBounds: MapBounds,
     myLocationRequestKey: Int,
     locationSettingsRequestKey: Int,
     onBoundsChanged: (MapBounds) -> Unit,
@@ -85,14 +86,15 @@ actual fun KakaoMapView(
         lifecycle = lifecycle,
     )
 
-    LaunchedEffect(kakaoMapState.value, markerBitmap, shops, bounds, viewportSize) {
+    LaunchedEffect(kakaoMapState.value, markerBitmap, shops, bounds, clusterBounds, viewportSize) {
         val kakaoMap = kakaoMapState.value ?: return@LaunchedEffect
         val markers =
             markerCluster.clustering(
                 shops = shops,
-                bounds = bounds,
+                bounds = clusterBounds,
                 viewportWidth = viewportSize.width,
                 viewportHeight = viewportSize.height,
+                visibleBounds = bounds,
             )
 
         markerRenderer.render(

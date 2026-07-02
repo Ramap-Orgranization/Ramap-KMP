@@ -202,6 +202,35 @@ class MarkerClusterTest {
     }
 
     @Test
+    fun `클러스터 기준 bounds와 현재 화면 bounds가 달라도 현재 화면의 가게를 표시한다`() {
+        // given
+        val previousVisibleShop = shopAt(id = "previous", lat = 37.501, lng = 126.901)
+        val currentVisibleShop = shopAt(id = "current", lat = 37.521, lng = 126.921)
+        val shops = ramenShopsOf(previousVisibleShop, currentVisibleShop)
+        val currentVisibleBounds =
+            BOUNDS_FIXTURE.copy(
+                minLat = BOUNDS_FIXTURE.minLat + 0.02,
+                maxLat = BOUNDS_FIXTURE.maxLat + 0.02,
+                minLng = BOUNDS_FIXTURE.minLng + 0.02,
+                maxLng = BOUNDS_FIXTURE.maxLng + 0.02,
+            )
+
+        // when
+        val result =
+            markerCluster.clustering(
+                shops = shops,
+                bounds = BOUNDS_FIXTURE,
+                viewportWidth = VIEWPORT_SIZE,
+                viewportHeight = VIEWPORT_SIZE,
+                visibleBounds = currentVisibleBounds,
+            )
+
+        // then
+        val marker = assertIs<Marker.SingleMarker>(result.single())
+        assertEquals(currentVisibleShop.id, marker.id)
+    }
+
+    @Test
     fun `같은 줌에서 지도 이동만으로는 클러스터 구성이 바뀌지 않는다`() {
         // given
         val firstShop = shopAt(id = "1", lat = 37.530, lng = 126.930)
