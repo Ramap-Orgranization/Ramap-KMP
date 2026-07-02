@@ -124,6 +124,7 @@ private fun MapScreen(
                 modifier = Modifier.fillMaxSize(),
                 shops = uiState.markerShops,
                 focusShops = uiState.focusShops,
+                bounds = uiState.clusterBounds,
                 myLocationRequestKey = myLocationRequestKey,
                 locationSettingsRequestKey = locationSettingsRequestKey,
                 onBoundsChanged = onBoundsChanged,

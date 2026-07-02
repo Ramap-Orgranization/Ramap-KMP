@@ -20,6 +20,10 @@ data class MapBounds(
     val lngSpan: Double
         get() = maxLng - minLng
 
+    fun contains(location: Location): Boolean =
+        location.lat in minLat..maxLat &&
+            location.lng in minLng..maxLng
+
     /**
      * 이전에 조회한 지도 영역과 비교해 새 API 호출이 필요한 수준의 변화인지 판단한다.
      *
