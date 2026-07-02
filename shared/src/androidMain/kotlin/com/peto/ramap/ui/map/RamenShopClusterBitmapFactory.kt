@@ -5,7 +5,7 @@ import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.RectF
 import android.graphics.Typeface
-import com.peto.ramap.core.config.RamenShopMarkerConfig
+import com.peto.ramap.core.config.MarkerClusterConfig
 
 /**
  * 클러스터 마커에 사용할 라운드 사각형 count 비트맵을 생성하고 재사용한다.
@@ -26,7 +26,7 @@ internal class RamenShopClusterBitmapFactory {
     /**
      * 너무 큰 숫자는 고정 문구로 줄여 마커 안에서 읽히게 한다.
      */
-    private fun countText(count: Int): String = if (count > MAX_CLUSTER_COUNT) MAX_CLUSTER_TEXT else count.toString()
+    private fun countText(count: Int): String = MarkerClusterConfig.countText(count)
 
     /**
      * 라운드 사각형 배경과 count 텍스트가 들어간 클러스터 비트맵을 그린다.
@@ -47,7 +47,7 @@ internal class RamenShopClusterBitmapFactory {
      * 그림자를 포함할 수 있는 전체 비트맵 영역을 만든다.
      */
     private fun createBitmap(): Bitmap {
-        val bitmapSize = RamenShopMarkerConfig.CLUSTER_SIZE + SHADOW_PADDING * 2
+        val bitmapSize = MarkerConfig.Cluster.SIZE + SHADOW_PADDING * 2
         return Bitmap.createBitmap(bitmapSize, bitmapSize, Bitmap.Config.ARGB_8888)
     }
 
@@ -55,7 +55,7 @@ internal class RamenShopClusterBitmapFactory {
      * 실제 빨간 마커가 그려질 라운드 사각형 영역을 만든다.
      */
     private fun createMarkerRect(): RectF {
-        val markerSize = RamenShopMarkerConfig.CLUSTER_SIZE.toFloat()
+        val markerSize = MarkerConfig.Cluster.SIZE.toFloat()
         return RectF(
             SHADOW_PADDING_FLOAT,
             SHADOW_PADDING_FLOAT,
@@ -119,9 +119,9 @@ internal class RamenShopClusterBitmapFactory {
      */
     private fun createTextPaint(): Paint =
         Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = RamenShopMarkerConfig.CLUSTER_TEXT_COLOR
+            color = MarkerConfig.Cluster.TEXT_COLOR
             textAlign = Paint.Align.CENTER
-            textSize = RamenShopMarkerConfig.CLUSTER_TEXT_SIZE.toFloat()
+            textSize = MarkerConfig.Cluster.TEXT_SIZE.toFloat()
             typeface = Typeface.DEFAULT_BOLD
         }
 
@@ -137,8 +137,6 @@ internal class RamenShopClusterBitmapFactory {
         )
 
     companion object {
-        private const val MAX_CLUSTER_COUNT = 99
-        private const val MAX_CLUSTER_TEXT = "99+"
         private const val SHADOW_PADDING = 3
         private const val SHADOW_PADDING_FLOAT = SHADOW_PADDING.toFloat()
         private const val SHADOW_OFFSET = 2f

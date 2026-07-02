@@ -22,7 +22,6 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.kakao.vectormap.KakaoMap
 import com.kakao.vectormap.MapView
-import com.peto.ramap.core.config.RamenShopMarkerConfig
 import com.peto.ramap.domain.model.MapBounds
 import com.peto.ramap.domain.model.MarkerCluster
 import com.peto.ramap.domain.model.RamenShop
@@ -178,8 +177,8 @@ private fun rememberRamenShopMarkerBitmap(): Bitmap {
         factory.create(
             painter = markerPainter,
             density = density,
-            width = RamenShopMarkerConfig.WIDTH,
-            height = RamenShopMarkerConfig.HEIGHT,
+            width = MarkerConfig.Single.WIDTH,
+            height = MarkerConfig.Single.HEIGHT,
         )
     }
 }

@@ -11,8 +11,8 @@ import com.kakao.vectormap.label.LabelStyle
 import com.kakao.vectormap.label.LabelStyles
 import com.kakao.vectormap.label.LabelTextBuilder
 import com.kakao.vectormap.label.LabelTextStyle
-import com.peto.ramap.core.config.RamenShopMarkerConfig
 import com.peto.ramap.domain.model.Marker
+import com.peto.ramap.core.config.MarkerClusterConfig
 import com.peto.ramap.domain.model.RamenShop
 
 /**
@@ -22,7 +22,7 @@ import com.peto.ramap.domain.model.RamenShop
  * 새로 등장한 마커 label만 추가한다.
  */
 internal class KakaoMarkerRenderer(
-    private val clusterBitmapFactory: RamenShopClusterBitmapFactory
+    private val clusterBitmapFactory: RamenShopClusterBitmapFactory,
 ) {
     private val renderedLabelIdsByKey = mutableMapOf<String, String>()
 
@@ -125,10 +125,10 @@ internal class KakaoMarkerRenderer(
         manager: LabelManager,
         markerBitmap: Bitmap,
     ): LabelStyles? =
-        manager.getLabelStyles(RamenShopMarkerConfig.STYLE_ID)
+        manager.getLabelStyles(MarkerConfig.Single.STYLE_ID)
             ?: manager.addLabelStyles(
                 LabelStyles.from(
-                    RamenShopMarkerConfig.STYLE_ID,
+                    MarkerConfig.Single.STYLE_ID,
                     baseLabelStyle(markerBitmap).setAnchorPoint(0.5f, 1.0f),
                 ),
             )
@@ -162,9 +162,9 @@ internal class KakaoMarkerRenderer(
             .from(markerBitmap)
             .setTextStyles(
                 LabelTextStyle.from(
-                    RamenShopMarkerConfig.LABEL_TEXT_SIZE,
-                    RamenShopMarkerConfig.LABEL_TEXT_COLOR,
-                    RamenShopMarkerConfig.LABEL_STROKE_WIDTH,
+                    MarkerConfig.Single.LABEL_TEXT_SIZE,
+                    MarkerConfig.Single.LABEL_TEXT_COLOR,
+                    MarkerConfig.Single.LABEL_STROKE_WIDTH,
                     Color.WHITE,
                 ),
             )
@@ -236,11 +236,9 @@ internal class KakaoMarkerRenderer(
             is Marker.ClusterMaker -> "$CLUSTER_MARKER_LABEL_PREFIX${marker.id}"
         }
 
-    private fun clusterStyleId(count: Int): String =
-        "${RamenShopMarkerConfig.CLUSTER_STYLE_ID}-${clusterCountBucket(count)}"
+    private fun clusterStyleId(count: Int): String = "${MarkerConfig.Cluster.STYLE_ID}-${clusterCountBucket(count)}"
 
-    private fun clusterCountBucket(count: Int): String =
-        if (count > 99) "99-plus" else count.toString()
+    private fun clusterCountBucket(count: Int): String = MarkerClusterConfig.countStyleBucket(count)
 
     companion object {
         private const val SINGLE_MARKER_KEY_PREFIX = "shop:"

@@ -1,7 +1,7 @@
 package com.peto.ramap.ui.map.contract
 
 import com.peto.ramap.core.base.State
-import com.peto.ramap.domain.model.DefaultMapConfig
+import com.peto.ramap.core.config.DefaultMapConfig
 import com.peto.ramap.domain.model.MapBounds
 import com.peto.ramap.domain.model.RamenShop
 import com.peto.ramap.domain.model.RamenShopFilter

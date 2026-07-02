@@ -29,11 +29,14 @@ import cocoapods.KakaoMapsSDK.PoiTransition
 import cocoapods.KakaoMapsSDK.TextStyle
 import cocoapods.KakaoMapsSDK.TransitionTypeNone
 import cocoapods.KakaoMapsSDK.create
-import com.peto.ramap.core.config.RamenShopMarkerConfig
-import com.peto.ramap.domain.model.DefaultMapConfig
+import com.peto.ramap.core.config.DefaultMapConfig
 import com.peto.ramap.domain.model.MapBounds
 import com.peto.ramap.domain.model.RamenShop
 import com.peto.ramap.domain.model.RamenShops
+import com.peto.ramap.ui.extension.alphaComponent
+import com.peto.ramap.ui.extension.blueComponent
+import com.peto.ramap.ui.extension.greenComponent
+import com.peto.ramap.ui.extension.redComponent
 import com.peto.ramap.ui.model.IosMapCoordinate
 import kotlinx.cinterop.BetaInteropApi
 import kotlinx.cinterop.CValue
@@ -66,9 +69,6 @@ private const val DEFAULT_APP_NAME = "openmap"
 private const val DEFAULT_VIEW_INFO_NAME = "map"
 private const val MARKER_IMAGE_NAME = "marker_ramen"
 private const val MARKER_LAYER_Z_ORDER = 10L
-private const val MARKER_TEXT_RED = 0x33 / 255.0
-private const val MARKER_TEXT_GREEN = 0x33 / 255.0
-private const val MARKER_TEXT_BLUE = 0x33 / 255.0
 private const val MARKER_TAP_RADIUS_METERS = 80.0
 private const val EMPTY_FOCUS_KEY = ""
 
@@ -315,7 +315,7 @@ class IosKakaoMapController(
     private fun ensureMarkerStyle(labelManager: LabelManager) {
         val poiStyle =
             PoiStyle(
-                RamenShopMarkerConfig.STYLE_ID,
+                MarkerConfig.Single.STYLE_ID,
                 listOf(
                     PerLevelPoiStyle(
                         createMarkerIconStyle() ?: return,
@@ -373,9 +373,9 @@ class IosKakaoMapController(
             .apply {
                 textStyle =
                     TextStyle(
-                        RamenShopMarkerConfig.LABEL_TEXT_SIZE.toULong(),
+                        MarkerConfig.Single.LABEL_TEXT_SIZE.toULong(),
                         markerTextColor(),
-                        RamenShopMarkerConfig.LABEL_STROKE_WIDTH.toULong(),
+                        MarkerConfig.Single.LABEL_STROKE_WIDTH.toULong(),
                         UIColor.whiteColor,
                         "",
                         0,
@@ -389,10 +389,10 @@ class IosKakaoMapController(
      */
     private fun markerTextColor(): UIColor =
         UIColor.colorWithRed(
-            red = MARKER_TEXT_RED,
-            green = MARKER_TEXT_GREEN,
-            blue = MARKER_TEXT_BLUE,
-            alpha = 1.0,
+            red = MarkerConfig.Single.LABEL_TEXT_COLOR.redComponent(),
+            green = MarkerConfig.Single.LABEL_TEXT_COLOR.greenComponent(),
+            blue = MarkerConfig.Single.LABEL_TEXT_COLOR.blueComponent(),
+            alpha = MarkerConfig.Single.LABEL_TEXT_COLOR.alphaComponent(),
         )
 
     /**
@@ -471,7 +471,7 @@ class IosKakaoMapController(
         poiId: String,
     ): PoiOptions =
         PoiOptions(
-            styleID = RamenShopMarkerConfig.STYLE_ID,
+            styleID = MarkerConfig.Single.STYLE_ID,
             poiID = poiId,
         ).apply {
             clickable = true

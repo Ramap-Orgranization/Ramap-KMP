@@ -1,4 +1,7 @@
-package com.peto.ramap.domain.model
+package com.peto.ramap.core.config
+
+import com.peto.ramap.domain.model.Location
+import com.peto.ramap.domain.model.MapBounds
 
 /**
  * 앱이 지도 최초 진입 시 사용할 기본 카메라 값
