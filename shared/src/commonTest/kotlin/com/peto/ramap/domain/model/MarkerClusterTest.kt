@@ -115,11 +115,54 @@ class MarkerClusterTest {
     }
 
     @Test
+    fun `같은 cell의 가게 수가 최소 클러스터 수보다 작으면 모든 가게를 단일 마커로 반환한다`() {
+        // given
+        val firstShop = shopAt(id = "1", lat = 37.501, lng = 126.901)
+        val secondShop = shopAt(id = "2", lat = 37.502, lng = 126.902)
+        val shops = ramenShopsOf(firstShop, secondShop)
+
+        // when
+        val result =
+            markerCluster.clustering(
+                shops = shops,
+                bounds = BOUNDS_FIXTURE,
+                viewportWidth = VIEWPORT_SIZE,
+                viewportHeight = VIEWPORT_SIZE,
+            )
+
+        // then
+        assertEquals(setOf("1", "2"), result.map { marker -> marker.id }.toSet())
+        result.forEach { marker -> assertIs<Marker.SingleMarker>(marker) }
+    }
+
+    @Test
+    fun `현재 bounds 밖의 가게는 클러스터 계산에서 제외한다`() {
+        // given
+        val visibleShop = shopAt(id = "visible", lat = 37.501, lng = 126.901)
+        val leftOutsideShop = shopAt(id = "left-outside", lat = 37.502, lng = 126.899)
+        val topOutsideShop = shopAt(id = "top-outside", lat = 37.601, lng = 126.902)
+        val shops = ramenShopsOf(visibleShop, leftOutsideShop, topOutsideShop)
+
+        // when
+        val result =
+            markerCluster.clustering(
+                shops = shops,
+                bounds = BOUNDS_FIXTURE,
+                viewportWidth = VIEWPORT_SIZE,
+                viewportHeight = VIEWPORT_SIZE,
+            )
+
+        // then
+        val marker = assertIs<Marker.SingleMarker>(result.single())
+        assertEquals(visibleShop.id, marker.id)
+    }
+
+    @Test
     fun `같은 줌에서 지도 이동만으로는 클러스터 구성이 바뀌지 않는다`() {
         // given
-        val firstShop = shopAt(id = "1", lat = 37.510, lng = 126.910)
-        val secondShop = shopAt(id = "2", lat = 37.511, lng = 126.911)
-        val thirdShop = shopAt(id = "3", lat = 37.540, lng = 126.940)
+        val firstShop = shopAt(id = "1", lat = 37.530, lng = 126.930)
+        val secondShop = shopAt(id = "2", lat = 37.531, lng = 126.931)
+        val thirdShop = shopAt(id = "3", lat = 37.560, lng = 126.960)
         val shops = ramenShopsOf(firstShop, secondShop, thirdShop)
         val pannedBounds =
             BOUNDS_FIXTURE.copy(

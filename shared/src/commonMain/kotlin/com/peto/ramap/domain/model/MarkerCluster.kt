@@ -18,9 +18,12 @@ class MarkerCluster {
             return createSingleMarkers(shops)
         }
 
+        val visibleShops = shops.filterVisibleIn(bounds)
+        if (visibleShops.isEmpty()) return emptyList()
+
         val cellSize = createCellSize(bounds, viewportWidth, viewportHeight)
-        val groups = groupShopsByCell(shops, bounds, cellSize)
-        return groups.map(::createMarker)
+        val groups = groupShopsByCell(visibleShops, cellSize)
+        return groups.flatMap(::createMarkers)
     }
 
     /**
@@ -35,6 +38,15 @@ class MarkerCluster {
      * 모든 매장을 단일 매장 마커로 변환한다.
      */
     private fun createSingleMarkers(shops: RamenShops): List<Marker> = shops.map { shop -> Marker.SingleMarker(shop.value) }
+
+    /**
+     * 누적 캐시에 남아 있는 화면 밖 매장이 현재 화면의 클러스터 위치를 밀어내지 않도록,
+     * bounds가 있는 정상 경로에서는 현재 보이는 영역의 매장만 마커 계산 대상으로 사용한다.
+     */
+    private fun RamenShops.filterVisibleIn(bounds: MapBounds): List<RamenShop> =
+        values.filter { shop ->
+            bounds.contains(shop.location)
+        }
 
     /**
      * 화면상 같은 크기로 보일 grid cell의 위경도 크기를 계산한다.
@@ -53,10 +65,9 @@ class MarkerCluster {
      * 각 매장이 들어갈 grid cell key를 기준으로 매장을 묶는다.
      */
     private fun groupShopsByCell(
-        shops: RamenShops,
-        bounds: MapBounds,
+        shops: List<RamenShop>,
         cellSize: ClusterCellSize,
-    ): Collection<List<RamenShop>> = shops.values.groupBy { shop -> createCellKey(shop, cellSize) }.values
+    ): Collection<List<RamenShop>> = shops.groupBy { shop -> createCellKey(shop, cellSize) }.values
 
     /**
      * 매장의 위경도를 고정 grid cell key로 변환한다.
@@ -75,16 +86,21 @@ class MarkerCluster {
     }
 
     /**
-     * 같은 cell에 있는 매장 그룹을 단일 마커 또는 클러스터 마커로 변환한다.
+     * 같은 cell에 있는 매장 그룹을 단일 마커 목록 또는 클러스터 마커로 변환한다.
      */
-    private fun createMarker(shops: List<RamenShop>): Marker {
-        if (shops.size < MarkerClusterConfig.MIN_SHOP_COUNT) return Marker.SingleMarker(shops.first())
+    private fun createMarkers(shops: List<RamenShop>): List<Marker> {
+        if (shops.size < MarkerClusterConfig.MIN_SHOP_COUNT) {
+            return shops.map(Marker::SingleMarker)
+        }
+
         val sortedShops = shops.sortedBy { shop -> shop.id }
 
-        return Marker.ClusterMaker(
-            id = createClusterId(sortedShops),
-            location = createClusterLocation(sortedShops),
-            shops = sortedShops,
+        return listOf(
+            Marker.ClusterMaker(
+                id = createClusterId(sortedShops),
+                location = createClusterLocation(sortedShops),
+                shops = sortedShops,
+            ),
         )
     }
 
