@@ -21,7 +21,15 @@ internal object MarkerClusterConfig {
      * 값이 클수록 더 멀리 떨어진 매장도 같은 cell에 들어가므로 클러스터가 늦게 해제되고,
      * 값이 작을수록 가까운 매장만 묶여 줌인할 때 클러스터가 더 빨리 단일 마커로 풀린다.
      */
-    const val RELEASE_DISTANCE_PX = 120.0
+    const val RELEASE_DISTANCE_PX = 160.0
+
+    /**
+     * 줌인 시 클러스터 cell 크기를 줄일 최소 비율.
+     *
+     * 기본 병합 거리는 넓히되 가까운 줌에서는 화면상 cell 크기를 줄여,
+     * 매장이 더 빨리 단일 마커로 풀리도록 한다.
+     */
+    const val MIN_RELEASE_DISTANCE_RATIO = 0.55
 
     /**
      * 클러스터를 다시 계산할 줌 변화 비율.

@@ -136,6 +136,50 @@ class MarkerClusterTest {
     }
 
     @Test
+    fun `줌인하면 기본 줌에서 묶였던 가게들이 단일 마커로 더 빨리 풀린다`() {
+        // given
+        val firstShop = shopAt(id = "1", lat = 37.5010, lng = 126.9010)
+        val secondShop = shopAt(id = "2", lat = 37.5024, lng = 126.9010)
+        val thirdShop = shopAt(id = "3", lat = 37.5038, lng = 126.9010)
+        val shops = ramenShopsOf(firstShop, secondShop, thirdShop)
+        val defaultZoomBounds =
+            MapBounds(
+                minLat = 37.4925,
+                maxLat = 37.5125,
+                minLng = 126.8925,
+                maxLng = 126.9125,
+            )
+        val zoomedInBounds =
+            MapBounds(
+                minLat = 37.4975,
+                maxLat = 37.5075,
+                minLng = 126.8975,
+                maxLng = 126.9075,
+            )
+
+        // when
+        val defaultZoomMarkers =
+            markerCluster.clustering(
+                shops = shops,
+                bounds = defaultZoomBounds,
+                viewportWidth = VIEWPORT_SIZE,
+                viewportHeight = VIEWPORT_SIZE,
+            )
+        val zoomedInMarkers =
+            markerCluster.clustering(
+                shops = shops,
+                bounds = zoomedInBounds,
+                viewportWidth = VIEWPORT_SIZE,
+                viewportHeight = VIEWPORT_SIZE,
+            )
+
+        // then
+        assertIs<Marker.ClusterMaker>(defaultZoomMarkers.single())
+        assertEquals(setOf("1", "2", "3"), zoomedInMarkers.map { marker -> marker.id }.toSet())
+        zoomedInMarkers.forEach { marker -> assertIs<Marker.SingleMarker>(marker) }
+    }
+
+    @Test
     fun `현재 bounds 밖의 가게는 클러스터 계산에서 제외한다`() {
         // given
         val visibleShop = shopAt(id = "visible", lat = 37.501, lng = 126.901)

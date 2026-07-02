@@ -1,7 +1,9 @@
 package com.peto.ramap.domain.model
 
+import com.peto.ramap.core.config.DefaultMapConfig
 import com.peto.ramap.core.config.MarkerClusterConfig
 import kotlin.math.floor
+import kotlin.math.max
 
 /**
  * 현재 지도 영역과 화면 크기를 기준으로 매장 마커와 클러스터 마커를 계산한다.
@@ -55,11 +57,33 @@ class MarkerCluster {
         bounds: MapBounds,
         viewportWidth: Int,
         viewportHeight: Int,
-    ): ClusterCellSize =
-        ClusterCellSize(
-            latitude = bounds.latSpan * MarkerClusterConfig.RELEASE_DISTANCE_PX / viewportHeight,
-            longitude = bounds.lngSpan * MarkerClusterConfig.RELEASE_DISTANCE_PX / viewportWidth,
+    ): ClusterCellSize {
+        val releaseDistancePx = adjustedReleaseDistancePx(bounds)
+
+        return ClusterCellSize(
+            latitude = bounds.latSpan * releaseDistancePx / viewportHeight,
+            longitude = bounds.lngSpan * releaseDistancePx / viewportWidth,
         )
+    }
+
+    /**
+     * 기본 줌에서는 넓어진 클러스터 기준을 사용하고, 줌인할수록 화면상 cell 크기를 줄인다.
+     *
+     * 같은 거리 값을 모든 줌에 고정하면 병합 범위를 넓힌 만큼 해제도 늦어지므로,
+     * 기본 지도 span과 현재 span의 비율을 이용해 가까운 줌에서만 기준 거리를 낮춘다.
+     */
+    private fun adjustedReleaseDistancePx(bounds: MapBounds): Double {
+        val zoomRatio =
+            max(
+                bounds.latSpan / DefaultMapConfig.bounds.latSpan,
+                bounds.lngSpan / DefaultMapConfig.bounds.lngSpan,
+            ).coerceIn(
+                minimumValue = MarkerClusterConfig.MIN_RELEASE_DISTANCE_RATIO,
+                maximumValue = 1.0,
+            )
+
+        return MarkerClusterConfig.RELEASE_DISTANCE_PX * zoomRatio
+    }
 
     /**
      * 각 매장이 들어갈 grid cell key를 기준으로 매장을 묶는다.
