@@ -79,12 +79,6 @@ private fun RamenShopSearchResultItem(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
-
-            shop.kakaoRating
-                ?.takeIf { rating -> rating > 0.0 }
-                ?.let { rating ->
-                    RatingChip(rating = rating)
-                }
         }
 
         AppText(
