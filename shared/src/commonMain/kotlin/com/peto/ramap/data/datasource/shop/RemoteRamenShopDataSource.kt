@@ -15,10 +15,12 @@ class RemoteRamenShopDataSource(
             .select {
                 filter {
                     eq(COLUMN_IS_VISIBLE, true)
-                    gte(COLUMN_LAT, bounds.minLat)
-                    lte(COLUMN_LAT, bounds.maxLat)
-                    gte(COLUMN_LNG, bounds.minLng)
-                    lte(COLUMN_LNG, bounds.maxLng)
+                    and {
+                        gte(COLUMN_LAT, bounds.minLat)
+                        lte(COLUMN_LAT, bounds.maxLat)
+                        gte(COLUMN_LNG, bounds.minLng)
+                        lte(COLUMN_LNG, bounds.maxLng)
+                    }
                 }
             }.decodeList()
 
