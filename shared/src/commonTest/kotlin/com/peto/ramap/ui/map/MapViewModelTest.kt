@@ -1,9 +1,9 @@
 package com.peto.ramap.ui.map
 
 import app.cash.turbine.test
+import com.peto.ramap.core.config.DefaultMapConfig
 import com.peto.ramap.coroutinesTest
 import com.peto.ramap.domain.model.Category
-import com.peto.ramap.core.config.DefaultMapConfig
 import com.peto.ramap.domain.model.RamenShops
 import com.peto.ramap.domain.model.SearchQuery
 import com.peto.ramap.domain.repository.RamenShopRepository

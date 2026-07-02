@@ -1,9 +1,9 @@
 package com.peto.ramap.ui.map
 
 import com.peto.ramap.core.base.BaseViewModel
+import com.peto.ramap.core.config.MarkerClusterConfig
 import com.peto.ramap.domain.model.Category
 import com.peto.ramap.domain.model.MapBounds
-import com.peto.ramap.core.config.MarkerClusterConfig
 import com.peto.ramap.domain.model.RamenShop
 import com.peto.ramap.domain.model.RamenShopFilter
 import com.peto.ramap.domain.model.RamenShops

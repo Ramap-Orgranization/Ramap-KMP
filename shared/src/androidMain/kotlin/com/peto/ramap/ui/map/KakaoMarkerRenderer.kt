@@ -11,8 +11,8 @@ import com.kakao.vectormap.label.LabelStyle
 import com.kakao.vectormap.label.LabelStyles
 import com.kakao.vectormap.label.LabelTextBuilder
 import com.kakao.vectormap.label.LabelTextStyle
-import com.peto.ramap.domain.model.Marker
 import com.peto.ramap.core.config.MarkerClusterConfig
+import com.peto.ramap.domain.model.Marker
 import com.peto.ramap.domain.model.RamenShop
 
 /**
