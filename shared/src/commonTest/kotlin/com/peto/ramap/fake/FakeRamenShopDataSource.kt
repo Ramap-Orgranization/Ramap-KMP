@@ -8,13 +8,19 @@ import com.peto.ramap.domain.model.SearchQuery
 class FakeRamenShopDataSource(
     private val responses: List<RamenShopResponse> = emptyList(),
     private val searchResponses: List<RamenShopResponse> = emptyList(),
+    private val fetchByIdsResponses: List<RamenShopResponse> = emptyList(),
     private val error: Throwable? = null,
 ) : RamenShopDataSource {
     var requestedBounds: MapBounds? = null
         private set
     val requestedBoundsHistory = mutableListOf<MapBounds>()
+
+    var requestedShopIds: Set<String>? = null
+        private set
+
     var requestedSearchQuery: SearchQuery? = null
         private set
+
     var requestedSearchLimit: Int? = null
         private set
 
@@ -23,6 +29,12 @@ class FakeRamenShopDataSource(
         requestedBoundsHistory += bounds
         error?.let { throw it }
         return responses
+    }
+
+    override suspend fun fetchRamenShopsByIds(shopIds: Set<String>): List<RamenShopResponse> {
+        requestedShopIds = shopIds
+        error?.let { throw it }
+        return fetchByIdsResponses
     }
 
     override suspend fun searchRamenShops(

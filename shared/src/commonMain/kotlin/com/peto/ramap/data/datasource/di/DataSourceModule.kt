@@ -1,5 +1,9 @@
 package com.peto.ramap.data.datasource.di
 
+import com.peto.ramap.data.datasource.personalization.BookmarkShopDataSource
+import com.peto.ramap.data.datasource.personalization.HiddenShopDataSource
+import com.peto.ramap.data.datasource.personalization.RemoteBookmarkShopDataSource
+import com.peto.ramap.data.datasource.personalization.RemoteHiddenShopDataSource
 import com.peto.ramap.data.datasource.shop.RamenShopDataSource
 import com.peto.ramap.data.datasource.shop.RemoteRamenShopDataSource
 import com.peto.ramap.data.datasource.waiting.RemoteShopWaitingSystemDataSource
@@ -14,5 +18,11 @@ val dataSourceModule =
         }
         single<ShopWaitingSystemDataSource> {
             RemoteShopWaitingSystemDataSource(get<SupabaseClient>())
+        }
+        single<BookmarkShopDataSource> {
+            RemoteBookmarkShopDataSource(get<SupabaseClient>())
+        }
+        single<HiddenShopDataSource> {
+            RemoteHiddenShopDataSource(get<SupabaseClient>())
         }
     }
