@@ -115,6 +115,10 @@ private fun MapScreen(
         wasImeVisible = isImeVisible
     }
 
+    LaunchedEffect(Unit) {
+        myLocationRequestKey += 1
+    }
+
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },

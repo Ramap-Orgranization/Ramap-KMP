@@ -36,8 +36,6 @@ internal class LocationProvider(
     ) {
         if (hasLocationPermission()) {
             onGranted()
-        } else if (isLocationPermissionBlocked()) {
-            onBlocked()
         } else {
             markLocationPermissionRequested()
             permissionLauncher.launch(LOCATION_PERMISSIONS)
