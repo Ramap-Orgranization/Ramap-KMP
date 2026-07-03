@@ -24,6 +24,19 @@ class RemoteRamenShopDataSource(
                 }
             }.decodeList()
 
+    override suspend fun fetchRamenShopsByIds(shopIds: Set<String>): List<RamenShopResponse> {
+        if (shopIds.isEmpty()) return emptyList()
+
+        return client
+            .from(TABLE_NAME)
+            .select {
+                filter {
+                    eq(COLUMN_IS_VISIBLE, true)
+                    isIn(COLUMN_ID, shopIds.toList())
+                }
+            }.decodeList()
+    }
+
     override suspend fun searchRamenShops(
         query: SearchQuery,
         limit: Int,
@@ -61,6 +74,7 @@ class RemoteRamenShopDataSource(
     companion object {
         private const val TABLE_NAME = "shops"
 
+        private const val COLUMN_ID = "id"
         private const val COLUMN_IS_VISIBLE = "is_visible"
         private const val COLUMN_LAT = "lat"
         private const val COLUMN_LNG = "lng"

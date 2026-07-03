@@ -17,6 +17,14 @@ class DefaultRamenShopRepository(
                 .associateBy { it.id },
         )
 
+    override suspend fun fetchRamenShopsByIds(shopIds: Set<String>): RamenShops =
+        RamenShops(
+            dataSource
+                .fetchRamenShopsByIds(shopIds)
+                .map { it.toDomain() }
+                .associateBy { it.id },
+        )
+
     override suspend fun searchRamenShops(
         query: SearchQuery,
         limit: Int,
