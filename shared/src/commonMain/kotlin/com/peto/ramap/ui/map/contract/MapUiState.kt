@@ -8,6 +8,7 @@ import com.peto.ramap.domain.model.RamenShopFilter
 import com.peto.ramap.domain.model.RamenShops
 import com.peto.ramap.domain.model.SearchQuery
 import com.peto.ramap.domain.model.ShopWaitingSystem
+import com.peto.ramap.ui.map.model.MapPersonalization
 
 data class MapUiState(
     val shops: RamenShops = RamenShops(emptyMap()),
@@ -20,6 +21,11 @@ data class MapUiState(
     val filters: RamenShopFilter = RamenShopFilter(),
     val bounds: MapBounds = DefaultMapConfig.bounds,
     val clusterBounds: MapBounds = DefaultMapConfig.bounds,
+    val bookmarkedShopIds: Set<String> = emptySet(),
+    val hiddenShopIds: Set<String> = emptySet(),
+    val personalizationView: MapPersonalization = MapPersonalization.ALL,
+    val isLoggedIn: Boolean = false,
+    val accountLabel: String? = null,
 ) : State {
     /**
      * 검색 결과 리스트 바텀시트에 표시할 매장 목록.
@@ -41,11 +47,14 @@ data class MapUiState(
         get() {
             val normalizedQuery = SearchQuery(query).normalizeShopSearchQuery()
 
-            return if (normalizedQuery.value.isNotBlank() && searchResultsQuery == normalizedQuery) {
-                filteredSearchResults
-            } else {
-                filteredShops
-            }
+            val visibleResults =
+                if (normalizedQuery.value.isNotBlank() && searchResultsQuery == normalizedQuery) {
+                    filteredSearchResults
+                } else {
+                    filteredShops
+                }
+
+            return visibleResults
         }
 
     /**
@@ -83,8 +92,18 @@ data class MapUiState(
             }
 
     private val filteredShops: RamenShops
-        get() = shops.filterByCategory(filters)
+        get() =
+            when (personalizationView) {
+                MapPersonalization.ALL -> shops.filterNotHidden(hiddenShopIds)
+                MapPersonalization.BOOKMARKED -> shops.filterByShopIds(bookmarkedShopIds)
+                MapPersonalization.HIDDEN -> shops.filterByShopIds(hiddenShopIds)
+            }.filterByCategory(filters)
 
     private val filteredSearchResults: RamenShops
-        get() = searchResults.filterByCategory(filters)
+        get() =
+            when (personalizationView) {
+                MapPersonalization.ALL -> searchResults.filterNotHidden(hiddenShopIds)
+                MapPersonalization.BOOKMARKED -> searchResults.filterByShopIds(bookmarkedShopIds)
+                MapPersonalization.HIDDEN -> searchResults.filterByShopIds(hiddenShopIds)
+            }.filterByCategory(filters)
 }

@@ -1,7 +1,9 @@
 package com.peto.ramap.ui.map.component
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -9,10 +11,14 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
@@ -23,6 +29,7 @@ import com.peto.ramap.domain.model.RamenShop
 import com.peto.ramap.domain.model.ShopWaitingSystem
 import com.peto.ramap.domain.model.WaitingProvider
 import com.peto.ramap.theme.AppTextStyle
+import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.ui.map.model.WaitingProviderLink
 import org.jetbrains.compose.resources.DrawableResource
@@ -30,6 +37,8 @@ import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.catchtable
+import ramap.shared.generated.resources.ic_kid_star
+import ramap.shared.generated.resources.ic_visibility_off
 import ramap.shared.generated.resources.instagram_icon
 import ramap.shared.generated.resources.kakao_map_icon
 import ramap.shared.generated.resources.shop_detail_label_address
@@ -50,6 +59,10 @@ fun RamenShopDetailContent(
     shop: RamenShop,
     modifier: Modifier = Modifier,
     waitingSystem: ShopWaitingSystem? = null,
+    isBookmarked: Boolean = false,
+    isHidden: Boolean = false,
+    onBookmarkClick: () -> Unit = {},
+    onHiddenClick: () -> Unit = {},
 ) {
     val uriHandler = LocalUriHandler.current
     val waitingProviderLink = waitingSystem?.toWaitingProviderLink()
@@ -74,6 +87,38 @@ fun RamenShopDetailContent(
                     style = AppTextStyle.H3,
                     color = GrayColor.C500,
                 )
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    ShopActionButton(
+                        isActive = isBookmarked,
+                        enabled = !isHidden,
+                        onClick = onBookmarkClick,
+                    ) {
+                        Image(
+                            painter = painterResource(Res.drawable.ic_kid_star),
+                            contentDescription = null,
+                            modifier = Modifier.size(24.dp),
+                            colorFilter =
+                                ColorFilter.tint(
+                                    if (isBookmarked) CommonColor.White else GrayColor.C500,
+                                ),
+                        )
+                    }
+                    ShopActionButton(
+                        isActive = isHidden,
+                        enabled = true,
+                        onClick = onHiddenClick,
+                    ) {
+                        Image(
+                            painter = painterResource(Res.drawable.ic_visibility_off),
+                            contentDescription = null,
+                            modifier = modifier.size(24.dp),
+                            colorFilter =
+                                ColorFilter.tint(
+                                    if (isHidden) CommonColor.White else GrayColor.C500,
+                                ),
+                        )
+                    }
+                }
             }
 
             if (shop.hasCategory) {
@@ -140,6 +185,41 @@ fun RamenShopDetailContent(
                     onClick = { uriHandler.openUri(kakaoPlaceUrl) },
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun ShopActionButton(
+    isActive: Boolean,
+    enabled: Boolean,
+    onClick: () -> Unit,
+    icon: @Composable () -> Unit,
+) {
+    Surface(
+        modifier =
+            Modifier
+                .size(36.dp)
+                .alpha(if (enabled) 1f else 0f),
+        color = if (isActive) GrayColor.C500 else CommonColor.White,
+        border =
+            if (isActive) {
+                null
+            } else {
+                BorderStroke(width = 1.dp, color = GrayColor.C500)
+            },
+        shape = CircleShape,
+        onClick = {
+            if (enabled) {
+                onClick()
+            }
+        },
+    ) {
+        Box(
+            modifier = Modifier.padding(8.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            icon()
         }
     }
 }
