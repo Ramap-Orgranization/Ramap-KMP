@@ -10,5 +10,9 @@ interface LoginRepository {
 
     fun hasSession(): Boolean
 
+    fun currentUserEmail(): String?
+
     suspend fun signInWithKakao()
+
+    suspend fun signOut()
 }

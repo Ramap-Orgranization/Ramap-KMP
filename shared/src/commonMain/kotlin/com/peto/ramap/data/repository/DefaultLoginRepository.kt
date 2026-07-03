@@ -33,6 +33,8 @@ class DefaultLoginRepository(
      */
     override fun hasSession(): Boolean = supabaseClient.auth.currentSessionOrNull() != null
 
+    override fun currentUserEmail(): String? = supabaseClient.auth.currentUserOrNull()?.email
+
     /**
      * Supabase의 카카오 OAuth 플로우를 시작합니다.
      *
@@ -40,5 +42,9 @@ class DefaultLoginRepository(
      */
     override suspend fun signInWithKakao() {
         supabaseClient.auth.signInWith(KakaoOAuthProvider)
+    }
+
+    override suspend fun signOut() {
+        supabaseClient.auth.signOut()
     }
 }
