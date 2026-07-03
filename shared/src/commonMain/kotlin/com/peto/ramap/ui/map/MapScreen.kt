@@ -49,20 +49,39 @@ import com.peto.ramap.ui.map.component.RamenShopDetailContent
 import com.peto.ramap.ui.map.component.RamenShopSearchBar
 import com.peto.ramap.ui.map.component.RamenShopSearchResultList
 import com.peto.ramap.ui.map.contract.MapIntent
+import com.peto.ramap.ui.map.contract.MapSideEffect
 import com.peto.ramap.ui.map.contract.MapUiState
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 import ramap.shared.generated.resources.Res
+import ramap.shared.generated.resources.filter_empty_visible_result_message
 import ramap.shared.generated.resources.location_permission_enable_message
 import ramap.shared.generated.resources.location_permission_settings_action
 
 @Composable
 fun MapRoute(viewModel: MapViewModel = koinInject()) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val snackbarHostState = remember { SnackbarHostState() }
+    val filterEmptyVisibleResultMessage =
+        stringResource(Res.string.filter_empty_visible_result_message)
+
+    LaunchedEffect(viewModel, filterEmptyVisibleResultMessage) {
+        viewModel.sideEffect.collect { sideEffect ->
+            when (sideEffect) {
+                MapSideEffect.ShowToast -> {
+                    snackbarHostState.showSnackbar(
+                        message = filterEmptyVisibleResultMessage,
+                        duration = SnackbarDuration.Short,
+                    )
+                }
+            }
+        }
+    }
 
     MapScreen(
         uiState = uiState,
+        snackbarHostState = snackbarHostState,
         onBoundsChanged = { bounds ->
             viewModel.dispatch(MapIntent.OnBoundsChanged(bounds))
         },
@@ -87,6 +106,7 @@ fun MapRoute(viewModel: MapViewModel = koinInject()) {
 @Composable
 private fun MapScreen(
     uiState: MapUiState,
+    snackbarHostState: SnackbarHostState,
     onBoundsChanged: (MapBounds) -> Unit,
     onShopSelected: (RamenShop) -> Unit,
     onShopDetailDismissed: () -> Unit,
@@ -101,7 +121,6 @@ private fun MapScreen(
     var wasImeVisible by remember { mutableStateOf(false) }
     var myLocationRequestKey by remember { mutableStateOf(0) }
     var locationSettingsRequestKey by remember { mutableStateOf(0) }
-    val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
     val locationPermissionEnableMessage =
         stringResource(Res.string.location_permission_enable_message)

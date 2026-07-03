@@ -26,6 +26,7 @@
 
     <string name="search_bar_placehodler">검색어를 입력해주세요</string>
     <string name="search_result_count">%1$d개의 검색 결과</string>
+    <string name="filter_empty_visible_result_message">현재 지도 영역에 해당 필터 결과가 없어요</string>
     <string name="location_permission_settings_action">설정</string>
     <string name="location_permission_enable_message">위치 권한을 활성화해주세요</string>
 </resources>

@@ -49,7 +49,9 @@ import kotlinx.cinterop.readValue
 import kotlinx.cinterop.useContents
 import platform.CoreGraphics.CGPoint
 import platform.CoreGraphics.CGPointMake
+import platform.CoreGraphics.CGRectMake
 import platform.CoreGraphics.CGRectZero
+import platform.CoreGraphics.CGSizeMake
 import platform.CoreLocation.CLAuthorizationStatus
 import platform.CoreLocation.CLLocation
 import platform.CoreLocation.CLLocationManager
@@ -64,7 +66,11 @@ import platform.Foundation.NSError
 import platform.Foundation.NSURL
 import platform.UIKit.UIApplication
 import platform.UIKit.UIApplicationOpenSettingsURLString
+import platform.UIKit.UIBezierPath
 import platform.UIKit.UIColor
+import platform.UIKit.UIGraphicsBeginImageContextWithOptions
+import platform.UIKit.UIGraphicsEndImageContext
+import platform.UIKit.UIGraphicsGetImageFromCurrentImageContext
 import platform.UIKit.UIImage
 import platform.darwin.NSObject
 
@@ -72,6 +78,14 @@ private const val DEFAULT_APP_NAME = "openmap"
 private const val DEFAULT_VIEW_INFO_NAME = "map"
 private const val MARKER_IMAGE_NAME = "marker_ramen"
 private const val MARKER_LAYER_Z_ORDER = 10L
+private const val MY_LOCATION_LAYER_Z_ORDER = 20L
+private const val MY_LOCATION_STYLE_ID = "my-location-marker-style"
+private const val MY_LOCATION_POI_ID = "my-location-marker"
+private const val MY_LOCATION_IMAGE_SIZE = 34.0
+private const val MY_LOCATION_OUTER_INSET = 2.0
+private const val MY_LOCATION_OUTER_SIZE = 30.0
+private const val MY_LOCATION_INNER_INSET = 7.0
+private const val MY_LOCATION_INNER_SIZE = 20.0
 private const val MARKER_TAP_RADIUS_METERS = 80.0
 private const val EMPTY_FOCUS_KEY = ""
 private const val SINGLE_MARKER_KEY_PREFIX = "shop:"
@@ -119,6 +133,7 @@ class IosKakaoMapController(
         }
     private val mapViewName = "ramap"
     private val markerLayerId = "ramen-shop-marker-layer"
+    private val myLocationLayerId = "my-location-marker-layer"
     private val renderedMarkerKeys = mutableSetOf<String>()
     private val markersByPoiId = mutableMapOf<String, Marker>()
     private var pendingShops: RamenShops? = null
@@ -715,6 +730,7 @@ class IosKakaoMapController(
             return
         }
 
+        renderMyLocationMarker(kakaoMap, coordinate)
         moveCamera(
             kakaoMap = kakaoMap,
             cameraUpdate =
@@ -728,6 +744,116 @@ class IosKakaoMapController(
                 ),
         )
     }
+
+    /**
+     * 현재 위치를 매장 마커와 분리된 POI로 표시한다.
+     */
+    private fun renderMyLocationMarker(
+        kakaoMap: KakaoMap,
+        coordinate: IosMapCoordinate,
+    ) {
+        val labelManager = kakaoMap.getLabelManager()
+        val layer = prepareMyLocationLayer(labelManager) ?: return
+
+        layer.removePoisWithPoiIDs(listOf(MY_LOCATION_POI_ID), callback = null)
+        layer
+            .addPoiWithOption(
+                option =
+                    PoiOptions(
+                        styleID = MY_LOCATION_STYLE_ID,
+                        poiID = MY_LOCATION_POI_ID,
+                    ).apply {
+                        clickable = false
+                    },
+                at =
+                    MapPoint(
+                        longitude = coordinate.longitude,
+                        latitude = coordinate.latitude,
+                    ),
+                callback = null,
+            )?.show()
+    }
+
+    private fun prepareMyLocationLayer(labelManager: LabelManager): LabelLayer? {
+        ensureMyLocationStyle(labelManager)
+
+        return (
+            labelManager.getLabelLayerWithLayerID(myLocationLayerId)
+                ?: labelManager.addLabelLayerWithOption(createMyLocationLayerOptions())
+        )?.apply {
+            visible = true
+            setClickable(false)
+        }
+    }
+
+    private fun ensureMyLocationStyle(labelManager: LabelManager) {
+        val poiStyle =
+            PoiStyle(
+                MY_LOCATION_STYLE_ID,
+                listOf(
+                    PerLevelPoiStyle(
+                        createMyLocationIconStyle() ?: return,
+                        0.0f,
+                        0,
+                    ),
+                ),
+            )
+
+        labelManager.addPoiStyle(poiStyle)
+    }
+
+    private fun createMyLocationIconStyle(): PoiIconStyle? =
+        createMyLocationImage()?.let { image ->
+            PoiIconStyle(
+                image,
+                CGPointMake(0.5, 0.5),
+                poiTransition(),
+                true,
+                true,
+                null,
+            )
+        }
+
+    private fun createMyLocationImage(): UIImage? {
+        UIGraphicsBeginImageContextWithOptions(
+            CGSizeMake(MY_LOCATION_IMAGE_SIZE, MY_LOCATION_IMAGE_SIZE),
+            false,
+            0.0,
+        )
+        UIColor.whiteColor.setFill()
+        UIBezierPath
+            .bezierPathWithOvalInRect(
+                CGRectMake(
+                    MY_LOCATION_OUTER_INSET,
+                    MY_LOCATION_OUTER_INSET,
+                    MY_LOCATION_OUTER_SIZE,
+                    MY_LOCATION_OUTER_SIZE,
+                ),
+            ).fill()
+        UIColor.colorWithRed(0.184, 0.502, 0.929, 1.0).setFill()
+        UIBezierPath
+            .bezierPathWithOvalInRect(
+                CGRectMake(
+                    MY_LOCATION_INNER_INSET,
+                    MY_LOCATION_INNER_INSET,
+                    MY_LOCATION_INNER_SIZE,
+                    MY_LOCATION_INNER_SIZE,
+                ),
+            ).fill()
+        val image = UIGraphicsGetImageFromCurrentImageContext()
+        UIGraphicsEndImageContext()
+
+        return image
+    }
+
+    private fun createMyLocationLayerOptions(): LabelLayerOptions =
+        LabelLayerOptions(
+            myLocationLayerId,
+            CompetitionTypeNone,
+            CompetitionUnitPoi,
+            OrderingTypeRank,
+            MY_LOCATION_LAYER_Z_ORDER,
+        )
 
     /**
      * 전달된 매장 목록이 새 카메라 포커스 요청인지 확인한다.
