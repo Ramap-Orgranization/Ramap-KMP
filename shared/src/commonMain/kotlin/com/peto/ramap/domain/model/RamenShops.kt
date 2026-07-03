@@ -16,4 +16,18 @@ data class RamenShops(
             },
         )
     }
+
+    fun filterByShopIds(shopIds: Set<String>): RamenShops =
+        RamenShops(
+            shops.filterKeys { shopId ->
+                shopId in shopIds
+            },
+        )
+
+    fun filterNotHidden(hiddenShopIds: Set<String>): RamenShops =
+        RamenShops(
+            shops.filterKeys { shopId ->
+                shopId !in hiddenShopIds
+            },
+        )
 }

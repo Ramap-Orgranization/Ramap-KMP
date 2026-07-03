@@ -4,6 +4,7 @@ import com.peto.ramap.core.base.Intent
 import com.peto.ramap.domain.model.Category
 import com.peto.ramap.domain.model.MapBounds
 import com.peto.ramap.domain.model.RamenShop
+import com.peto.ramap.ui.map.model.MapPersonalization
 
 sealed interface MapIntent : Intent {
     data class OnBoundsChanged(
@@ -27,4 +28,22 @@ sealed interface MapIntent : Intent {
     ) : MapIntent
 
     data object OnFilterCleared : MapIntent
+
+    data class OnBookmarkToggled(
+        val shop: RamenShop,
+    ) : MapIntent
+
+    data class OnHiddenToggled(
+        val shop: RamenShop,
+    ) : MapIntent
+
+    data class OnPersonalizationViewChanged(
+        val view: MapPersonalization,
+    ) : MapIntent
+
+    data object OnKakaoLoginClicked : MapIntent
+
+    data object OnLogoutClicked : MapIntent
+
+    data object OnAccountDeleteClicked : MapIntent
 }
