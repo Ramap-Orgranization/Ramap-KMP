@@ -3,9 +3,13 @@ package com.peto.ramap.ui.map
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.viewinterop.UIKitInteropInteractionMode
 import androidx.compose.ui.viewinterop.UIKitInteropProperties
 import androidx.compose.ui.viewinterop.UIKitView
@@ -36,14 +40,26 @@ actual fun KakaoMapView(
                 onLocationPermissionBlocked = onLocationPermissionBlocked,
             )
         }
+    var viewportWidth by remember { mutableStateOf(0) }
+    var viewportHeight by remember { mutableStateOf(0) }
 
     UIKitView(
-        modifier = modifier,
+        modifier =
+            modifier.onSizeChanged { size ->
+                viewportWidth = size.width
+                viewportHeight = size.height
+            },
         factory = {
             mapController.view
         },
         update = {
-            mapController.updateShops(shops)
+            mapController.updateShops(
+                shops = shops,
+                bounds = bounds,
+                clusterBounds = clusterBounds,
+                viewportWidth = viewportWidth,
+                viewportHeight = viewportHeight,
+            )
             mapController.updateFocusShops(focusShops)
         },
         properties =
