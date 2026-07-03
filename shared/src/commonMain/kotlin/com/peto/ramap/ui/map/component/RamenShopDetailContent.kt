@@ -74,12 +74,6 @@ fun RamenShopDetailContent(
                     style = AppTextStyle.H3,
                     color = GrayColor.C500,
                 )
-
-                shop.kakaoRating
-                    ?.takeIf { rating -> rating > 0.0 }
-                    ?.let { rating ->
-                        RatingChip(rating = rating)
-                    }
             }
 
             if (shop.hasCategory) {

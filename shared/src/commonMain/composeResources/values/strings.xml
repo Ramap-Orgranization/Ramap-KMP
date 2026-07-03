@@ -5,7 +5,6 @@
     <string name="shop_detail_label_waiting">대기</string>
     <string name="shop_detail_link_instagram">Instagram</string>
     <string name="shop_detail_link_kakao_map">카카오맵에서 보기</string>
-    <string name="shop_detail_kakao_rating_label">카카오</string>
     <string name="shop_detail_waiting_catchtable">캐치테이블</string>
     <string name="shop_detail_waiting_tabling">테이블링</string>
     <string name="shop_detail_waiting_syrup_friends">시럽 프렌즈</string>
@@ -29,4 +28,5 @@
     <string name="search_result_count">%1$d개의 검색 결과</string>
     <string name="location_permission_settings_action">설정</string>
     <string name="location_permission_enable_message">위치 권한을 활성화해주세요</string>
+    <string name="kakao_login_button_title">카카오로 시작하기</string>
 </resources>

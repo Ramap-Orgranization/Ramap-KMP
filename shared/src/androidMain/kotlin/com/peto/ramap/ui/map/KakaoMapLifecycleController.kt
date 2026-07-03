@@ -1,6 +1,5 @@
 package com.peto.ramap.ui.map
 
-import androidx.activity.result.ActivityResultLauncher
 import androidx.lifecycle.Lifecycle
 import com.kakao.vectormap.KakaoMap
 import com.kakao.vectormap.KakaoMapReadyCallback
@@ -12,26 +11,22 @@ import java.util.concurrent.atomic.AtomicBoolean
 /**
  * Android `MapView`와 KakaoMap SDK의 생명주기를 연결한다.
  *
- * 지도 시작, Compose 생명주기에 따른 resume/pause/finish, 지도 준비 이후 bounds 알림과
- * 초기 위치 권한 요청 흐름을 한곳에서 관리한다.
+ * 지도 시작, Compose 생명주기에 따른 resume/pause/finish, 지도 준비 이후 bounds 알림을 관리한다.
  */
 internal class KakaoMapLifecycleController(
     private val mapView: MapView,
-    private val locationProvider: LocationProvider,
     private val boundsCalculator: MapBoundsCalculator,
-    private val cameraController: KakaoCameraController,
 ) {
     private val isMapStarted = AtomicBoolean(false)
 
     fun startMap(
         lifecycle: Lifecycle,
-        locationPermissionLauncher: ActivityResultLauncher<Array<String>>,
         onMapReady: (KakaoMap) -> Unit,
         onBoundsChanged: (MapBounds) -> Unit,
     ) {
         if (!isMapStarted.compareAndSet(false, true)) return
 
-        startMap(onBoundsChanged, onMapReady, locationPermissionLauncher)
+        startMap(onBoundsChanged, onMapReady)
 
         if (lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) {
             mapView.resume()
@@ -41,7 +36,6 @@ internal class KakaoMapLifecycleController(
     private fun startMap(
         onBoundsChanged: (MapBounds) -> Unit,
         onMapReady: (KakaoMap) -> Unit,
-        locationPermissionLauncher: ActivityResultLauncher<Array<String>>,
     ) {
         mapView.start(
             object : MapLifeCycleCallback() {
@@ -57,13 +51,6 @@ internal class KakaoMapLifecycleController(
                     mapView.post {
                         notifyCurrentBounds(kakaoMap, onBoundsChanged)
                     }
-
-                    locationProvider.ensureLocationPermission(
-                        permissionLauncher = locationPermissionLauncher,
-                        onGranted = {
-                            locationProvider.moveToLastKnownLocation(kakaoMap, cameraController)
-                        },
-                    )
                 }
             },
         )

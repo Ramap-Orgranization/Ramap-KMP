@@ -19,6 +19,8 @@ import kotlinx.cinterop.ExperimentalForeignApi
 actual fun KakaoMapView(
     shops: RamenShops,
     focusShops: List<RamenShop>,
+    bounds: MapBounds,
+    clusterBounds: MapBounds,
     myLocationRequestKey: Int,
     locationSettingsRequestKey: Int,
     onBoundsChanged: (MapBounds) -> Unit,

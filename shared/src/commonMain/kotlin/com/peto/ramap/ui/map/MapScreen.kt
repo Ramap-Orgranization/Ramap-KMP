@@ -115,6 +115,10 @@ private fun MapScreen(
         wasImeVisible = isImeVisible
     }
 
+    LaunchedEffect(Unit) {
+        myLocationRequestKey += 1
+    }
+
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
@@ -124,6 +128,8 @@ private fun MapScreen(
                 modifier = Modifier.fillMaxSize(),
                 shops = uiState.markerShops,
                 focusShops = uiState.focusShops,
+                bounds = uiState.bounds,
+                clusterBounds = uiState.clusterBounds,
                 myLocationRequestKey = myLocationRequestKey,
                 locationSettingsRequestKey = locationSettingsRequestKey,
                 onBoundsChanged = onBoundsChanged,

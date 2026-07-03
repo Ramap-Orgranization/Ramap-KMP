@@ -14,7 +14,7 @@ import com.peto.ramap.extension.toPx
 /**
  * Compose resource로 제공되는 매장 마커 Painter를 KakaoMap label style에 사용할 Bitmap으로 변환한다.
  */
-internal object RamenShopMarkerBitmapFactory {
+internal class RamenShopMarkerBitmapFactory {
     fun create(
         painter: Painter,
         density: Density,
