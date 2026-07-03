@@ -19,7 +19,7 @@ internal object MarkerConfig {
     object Cluster {
         const val STYLE_ID = "ramen-shop-cluster-style"
         const val SIZE = 70
-        const val TEXT_SIZE = 22
+        const val TEXT_SIZE = 25
         const val TEXT_COLOR = 0xFFFFFFFF.toInt()
     }
 }

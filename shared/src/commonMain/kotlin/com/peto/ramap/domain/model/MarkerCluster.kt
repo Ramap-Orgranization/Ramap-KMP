@@ -14,13 +14,14 @@ class MarkerCluster {
         bounds: MapBounds?,
         viewportWidth: Int,
         viewportHeight: Int,
+        visibleBounds: MapBounds? = bounds,
     ): List<Marker> {
         if (shops.isEmpty()) return emptyList()
         if (bounds == null || checkViewportValidation(viewportWidth, viewportHeight)) {
             return createSingleMarkers(shops)
         }
 
-        val visibleShops = shops.filterVisibleIn(bounds)
+        val visibleShops = visibleBounds?.let { bounds -> shops.filterVisibleIn(bounds) } ?: shops.values.toList()
         if (visibleShops.isEmpty()) return emptyList()
 
         val cellSize = createCellSize(bounds, viewportWidth, viewportHeight)
