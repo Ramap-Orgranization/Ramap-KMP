@@ -6,14 +6,20 @@ import com.peto.ramap.coroutinesTest
 import com.peto.ramap.domain.model.Category
 import com.peto.ramap.domain.model.RamenShops
 import com.peto.ramap.domain.model.SearchQuery
+import com.peto.ramap.domain.repository.PersonalizationRepository
 import com.peto.ramap.domain.repository.RamenShopRepository
 import com.peto.ramap.domain.repository.ShopWaitingSystemRepository
+import com.peto.ramap.fake.FakeLoginRepository
+import com.peto.ramap.fake.FakePersonalizationRepository
 import com.peto.ramap.fake.FakeRamenShopRepository
 import com.peto.ramap.fake.FakeShopWaitingSystemRepository
 import com.peto.ramap.fixture.BOUNDS_FIXTURE
 import com.peto.ramap.fixture.ramenShopFixture
 import com.peto.ramap.fixture.waitingSystemFixture
 import com.peto.ramap.ui.map.contract.MapIntent
+import com.peto.ramap.ui.map.contract.MapSideEffect
+import com.peto.ramap.ui.map.contract.MapUiState
+import com.peto.ramap.ui.map.model.MapPersonalization
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
@@ -615,9 +621,53 @@ class MapViewModelTest {
             assertEquals(null, viewModel.uiState.value.selectedShop)
             assertEquals(emptyList(), viewModel.uiState.value.searchResultShops)
         }
+
+    @Test
+    fun `숨긴 매장 보기에서는 숨긴 매장만 마커로 보여준다`() {
+        val visibleShop = ramenShopFixture(id = "visible-shop")
+        val hiddenShop = ramenShopFixture(id = "hidden-shop")
+        val uiState =
+            MapUiState(
+                shops = RamenShops(listOf(visibleShop, hiddenShop).associateBy { it.id }),
+                hiddenShopIds = setOf(hiddenShop.id),
+                personalizationView = MapPersonalization.HIDDEN,
+            )
+
+        assertEquals(RamenShops(mapOf(hiddenShop.id to hiddenShop)), uiState.markerShops)
+    }
+
+    @Test
+    fun `비로그인 상태에서 북마크를 누르면 로그인 안내를 요청한다`() =
+        coroutinesTest {
+            val viewModel = mapViewModel()
+            val shop = ramenShopFixture()
+
+            viewModel.sideEffect.test {
+                viewModel.dispatch(MapIntent.OnBookmarkToggled(shop))
+                runCurrent()
+
+                assertEquals(MapSideEffect.ShowLoginGuide, awaitItem())
+            }
+        }
+
+    @Test
+    fun `비로그인 상태에서 숨기기를 누르면 로그인 안내를 요청한다`() =
+        coroutinesTest {
+            val viewModel = mapViewModel()
+            val shop = ramenShopFixture()
+
+            viewModel.sideEffect.test {
+                viewModel.dispatch(MapIntent.OnHiddenToggled(shop))
+                runCurrent()
+
+                assertEquals(MapSideEffect.ShowLoginGuide, awaitItem())
+            }
+        }
 }
 
 private fun mapViewModel(
     ramenShopRepository: RamenShopRepository = FakeRamenShopRepository(),
     shopWaitingSystemRepository: ShopWaitingSystemRepository = FakeShopWaitingSystemRepository(),
-): MapViewModel = MapViewModel(ramenShopRepository, shopWaitingSystemRepository)
+    personalizationRepository: PersonalizationRepository = FakePersonalizationRepository(),
+    loginRepository: FakeLoginRepository = FakeLoginRepository(),
+): MapViewModel = MapViewModel(ramenShopRepository, shopWaitingSystemRepository, personalizationRepository, loginRepository)

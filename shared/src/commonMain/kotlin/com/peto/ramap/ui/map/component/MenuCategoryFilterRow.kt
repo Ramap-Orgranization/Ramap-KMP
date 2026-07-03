@@ -56,7 +56,7 @@ private fun MenuCategoryFilterChip(
         border =
             BorderStroke(
                 width = 1.dp,
-                color = if (selected) GrayColor.C500 else GrayColor.C200,
+                color = if (selected) GrayColor.C500 else CommonColor.White,
             ),
         shape = RoundedCornerShape(999.dp),
         modifier = modifier,
