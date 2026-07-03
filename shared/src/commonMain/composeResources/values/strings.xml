@@ -26,6 +26,7 @@
 
     <string name="search_bar_placehodler">검색어를 입력해주세요</string>
     <string name="search_result_count">%1$d개의 검색 결과</string>
+    <string name="filter_empty_visible_result_message">현재 지도 영역에 해당 필터 결과가 없어요</string>
     <string name="personalization_bookmarked_empty">북마크한 매장이 없습니다</string>
     <string name="personalization_hidden_empty">숨긴 매장이 없습니다</string>
     <string name="settings_bookmarked_shops_menu">좋아요한 매장 보기</string>

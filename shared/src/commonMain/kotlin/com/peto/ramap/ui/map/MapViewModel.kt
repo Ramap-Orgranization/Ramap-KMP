@@ -306,6 +306,16 @@ class MapViewModel(
                 isSearchResultsDismissed = false,
             )
         }
+        showEmptyFilterResultMessageIfNeeded()
+    }
+
+    private fun showEmptyFilterResultMessageIfNeeded() {
+        val state = currentState
+        if (state.filters.isEmpty() || state.markerShops.hasVisibleShopIn(state.bounds)) return
+
+        runTask {
+            postSideEffect(MapSideEffect.ShowToast)
+        }
     }
 
     private fun scheduleSearch(query: SearchQuery) {

@@ -12,6 +12,7 @@ import com.kakao.vectormap.label.LabelStyles
 import com.kakao.vectormap.label.LabelTextBuilder
 import com.kakao.vectormap.label.LabelTextStyle
 import com.peto.ramap.core.config.MarkerClusterConfig
+import com.peto.ramap.domain.model.Location
 import com.peto.ramap.domain.model.Marker
 import com.peto.ramap.domain.model.RamenShop
 
@@ -23,6 +24,7 @@ import com.peto.ramap.domain.model.RamenShop
  */
 internal class KakaoMarkerRenderer(
     private val clusterBitmapFactory: RamenShopClusterBitmapFactory,
+    private val myLocationMarkerBitmapFactory: MyLocationMarkerBitmapFactory = MyLocationMarkerBitmapFactory(),
 ) {
     private val renderedLabelIdsByKey = mutableMapOf<String, String>()
 
@@ -46,6 +48,30 @@ internal class KakaoMarkerRenderer(
         if (markers.isEmpty()) return
 
         addNewMarkers(labelLayer, manager, markerBitmap, clusterBitmapFactory, markers)
+    }
+
+    /**
+     * 현재 위치 마커를 고정 label id로 추가하거나 최신 좌표로 갱신한다.
+     */
+    fun renderMyLocation(
+        kakaoMap: KakaoMap,
+        location: Location,
+    ) {
+        val manager = kakaoMap.labelManager ?: return
+        val labelLayer = manager.layer ?: return
+        val styles = createMyLocationStyles(manager) ?: return
+
+        labelLayer.getLabel(MY_LOCATION_LABEL_ID)?.remove()
+        labelLayer.addLabels(
+            listOf(
+                LabelOptions
+                    .from(
+                        MY_LOCATION_LABEL_ID,
+                        LatLng.from(location.lat, location.lng),
+                    ).setStyles(styles)
+                    .setClickable(false),
+            ),
+        )
     }
 
     /**
@@ -154,6 +180,17 @@ internal class KakaoMarkerRenderer(
             )
     }
 
+    private fun createMyLocationStyles(manager: LabelManager): LabelStyles? =
+        manager.getLabelStyles(MY_LOCATION_STYLE_ID)
+            ?: manager.addLabelStyles(
+                LabelStyles.from(
+                    MY_LOCATION_STYLE_ID,
+                    LabelStyle
+                        .from(myLocationMarkerBitmapFactory.create())
+                        .setAnchorPoint(0.5f, 0.5f),
+                ),
+            )
+
     /**
      * 매장/클러스터 마커가 공유하는 이미지와 텍스트 스타일을 만든다.
      */
@@ -245,5 +282,7 @@ internal class KakaoMarkerRenderer(
         private const val CLUSTER_MARKER_KEY_PREFIX = "cluster:"
         private const val SINGLE_MARKER_LABEL_PREFIX = "ramen-shop-"
         private const val CLUSTER_MARKER_LABEL_PREFIX = "ramen-cluster-"
+        private const val MY_LOCATION_STYLE_ID = "my-location-marker-style"
+        private const val MY_LOCATION_LABEL_ID = "my-location-marker"
     }
 }
