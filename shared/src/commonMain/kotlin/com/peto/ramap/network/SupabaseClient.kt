@@ -3,6 +3,7 @@ package com.peto.ramap.network
 import com.peto.ramap.shared.RamapConfig
 import io.github.jan.supabase.annotations.SupabaseInternal
 import io.github.jan.supabase.auth.Auth
+import io.github.jan.supabase.auth.FlowType
 import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.postgrest.Postgrest
 import io.github.jan.supabase.storage.Storage
@@ -22,7 +23,12 @@ val supabaseClient =
     ) {
         install(Postgrest)
         install(Storage)
-        install(Auth)
+        install(Auth) {
+            scheme = AUTH_DEEPLINK_SCHEME
+            host = AUTH_DEEPLINK_HOST
+            flowType = FlowType.PKCE
+            configurePlatformAuth()
+        }
 
         httpConfig {
             install(Logging) {
@@ -42,3 +48,5 @@ val supabaseClient =
     }
 
 private const val SUPABASE_API_KEY_HEADER = "apikey"
+const val AUTH_DEEPLINK_SCHEME = "ramap"
+const val AUTH_DEEPLINK_HOST = "auth"
