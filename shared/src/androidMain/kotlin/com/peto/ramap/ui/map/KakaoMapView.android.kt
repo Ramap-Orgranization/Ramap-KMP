@@ -59,12 +59,10 @@ actual fun KakaoMapView(
     val cameraController = remember { KakaoCameraController() }
     val markerRenderer = remember { KakaoMarkerRenderer(RamenShopClusterBitmapFactory()) }
     val lifecycleController =
-        remember(mapView, locationProvider, boundsCalculator, cameraController) {
+        remember(mapView, boundsCalculator) {
             KakaoMapLifecycleController(
                 mapView = mapView,
-                locationProvider = locationProvider,
                 boundsCalculator = boundsCalculator,
-                cameraController = cameraController,
             )
         }
 
@@ -158,7 +156,6 @@ actual fun KakaoMapView(
         factory = {
             lifecycleController.startMap(
                 lifecycle = lifecycle,
-                locationPermissionLauncher = locationPermissionLauncher,
                 onMapReady = { kakaoMap ->
                     kakaoMapState.value = kakaoMap
                 },
