@@ -24,7 +24,6 @@ import org.jetbrains.compose.resources.StringResource
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.account_delete_unavailable_message
 import ramap.shared.generated.resources.filter_empty_visible_result_message
-import ramap.shared.generated.resources.hidden_shop_bookmark_unavailable_message
 import ramap.shared.generated.resources.hidden_shop_search_result_message
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -172,10 +171,6 @@ class MapViewModel(
     private fun toggleBookmark(shop: RamenShop) {
         if (!currentState.isLoggedIn) {
             runTask { postSideEffect(MapSideEffect.ShowLoginGuide) }
-            return
-        }
-        if (shop.id in currentState.hiddenShopIds) {
-            showToast(Res.string.hidden_shop_bookmark_unavailable_message)
             return
         }
 
