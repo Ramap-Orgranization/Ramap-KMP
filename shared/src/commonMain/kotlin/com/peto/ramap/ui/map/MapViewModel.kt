@@ -3,6 +3,7 @@ package com.peto.ramap.ui.map
 import com.peto.ramap.core.base.BaseViewModel
 import com.peto.ramap.core.config.MarkerClusterConfig
 import com.peto.ramap.domain.model.Category
+import com.peto.ramap.domain.model.Location
 import com.peto.ramap.domain.model.MapBounds
 import com.peto.ramap.domain.model.RamenShop
 import com.peto.ramap.domain.model.RamenShopFilter
@@ -46,6 +47,7 @@ class MapViewModel(
     override suspend fun handleIntent(intent: MapIntent) {
         when (intent) {
             is MapIntent.OnBoundsChanged -> scheduleRamenShopsLoad(intent.bounds)
+            is MapIntent.OnMyLocationChanged -> updateMyLocation(intent.location)
             is MapIntent.OnShopSelected -> selectShop(intent.shop)
             is MapIntent.OnShopDetailDismissed -> dismissShopDetail()
             is MapIntent.OnSearchResultsDismissed -> dismissSearchResults()
@@ -100,6 +102,10 @@ class MapViewModel(
 
     private fun dismissShopDetail() {
         reduce { copy(selectedShop = null) }
+    }
+
+    private fun updateMyLocation(location: Location) {
+        reduce { copy(currentLocation = location) }
     }
 
     private fun dismissSearchResults() {

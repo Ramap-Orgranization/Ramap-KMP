@@ -2,11 +2,13 @@ package com.peto.ramap.ui.map.contract
 
 import com.peto.ramap.core.base.State
 import com.peto.ramap.core.config.DefaultMapConfig
+import com.peto.ramap.domain.model.Location
 import com.peto.ramap.domain.model.MapBounds
 import com.peto.ramap.domain.model.RamenShop
 import com.peto.ramap.domain.model.RamenShopFilter
 import com.peto.ramap.domain.model.RamenShops
 import com.peto.ramap.domain.model.ShopWaitingSystem
+import com.peto.ramap.domain.model.nearestTo
 import com.peto.ramap.ui.map.model.MapPersonalization
 import com.peto.ramap.ui.map.model.SearchUiState
 
@@ -40,6 +42,10 @@ data class MapUiState(
      */
     val clusterBounds: MapBounds = DefaultMapConfig.bounds,
     /**
+     * 마지막으로 확인된 사용자 위치.
+     */
+    val currentLocation: Location? = null,
+    /**
      * 사용자가 북마크한 매장 id 목록.
      */
     val bookmarkedShopIds: Set<String> = emptySet(),
@@ -67,7 +73,12 @@ data class MapUiState(
      * 리스트 UI에서는 순회하기 쉬운 [List] 형태로 변환해 사용한다.
      */
     val searchResultShops: List<RamenShop>
-        get() = displaySearchResults.values.toList()
+        get() {
+            val shops = displaySearchResults.values.toList()
+            val nearestShop = shops.nearestTo(currentLocation) ?: return shops
+
+            return listOf(nearestShop) + shops.filterNot { shop -> shop.id == nearestShop.id }
+        }
 
     /**
      * 검색 결과 대신 사용자에게 안내할 메시지 상태.

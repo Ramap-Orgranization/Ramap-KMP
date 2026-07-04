@@ -4,6 +4,7 @@ import app.cash.turbine.test
 import com.peto.ramap.core.config.DefaultMapConfig
 import com.peto.ramap.coroutinesTest
 import com.peto.ramap.domain.model.Category
+import com.peto.ramap.domain.model.Location
 import com.peto.ramap.domain.model.Personalization
 import com.peto.ramap.domain.model.RamenShopFilter
 import com.peto.ramap.domain.model.RamenShops
@@ -31,7 +32,6 @@ import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.filter_empty_visible_result_message
-import ramap.shared.generated.resources.hidden_shop_bookmark_unavailable_message
 import ramap.shared.generated.resources.hidden_shop_search_result_message
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -752,6 +752,32 @@ class MapViewModelTest {
     }
 
     @Test
+    fun `내 위치가 있으면 다중 검색 결과에서 가장 가까운 매장을 먼저 보여준다`() {
+        val farShop =
+            ramenShopFixture(
+                id = "far-shop",
+                location = Location(lat = 37.65, lng = 127.05),
+            )
+        val nearShop =
+            ramenShopFixture(
+                id = "near-shop",
+                location = Location(lat = 37.551, lng = 126.921),
+            )
+        val uiState =
+            MapUiState(
+                search =
+                    SearchUiState.loaded(
+                        input = "오레노",
+                        results = RamenShops(listOf(farShop, nearShop).associateBy { it.id }),
+                    ),
+                currentLocation = Location(lat = 37.55, lng = 126.92),
+            )
+
+        assertEquals(listOf(nearShop, farShop), uiState.searchResultShops)
+        assertEquals(listOf(nearShop, farShop), uiState.focusShops)
+    }
+
+    @Test
     fun `검색어가 비어 있으면 검색 결과를 비우고 현재 지도 영역 매장을 보여준다`() =
         coroutinesTest {
             val mapShops =
@@ -1134,7 +1160,7 @@ class MapViewModelTest {
         }
 
     @Test
-    fun `숨김 처리한 매장을 북마크하려고 하면 숨김 해제 안내를 요청한다`() =
+    fun `숨김 처리한 매장도 북마크할 수 있다`() =
         coroutinesTest {
             val shop = ramenShopFixture(id = "hidden-bookmark-shop")
             val personalizationRepository =
@@ -1148,13 +1174,10 @@ class MapViewModelTest {
                 )
             runCurrent()
 
-            viewModel.sideEffect.test {
-                viewModel.dispatch(MapIntent.OnBookmarkToggled(shop))
-                runCurrent()
+            viewModel.dispatch(MapIntent.OnBookmarkToggled(shop))
+            runCurrent()
 
-                assertEquals(MapSideEffect.ShowToast(Res.string.hidden_shop_bookmark_unavailable_message), awaitItem())
-                assertEquals(emptySet(), viewModel.uiState.value.bookmarkedShopIds)
-            }
+            assertEquals(setOf(shop.id), viewModel.uiState.value.bookmarkedShopIds)
         }
 
     @Test

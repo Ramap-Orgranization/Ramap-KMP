@@ -9,6 +9,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.viewinterop.UIKitInteropInteractionMode
 import androidx.compose.ui.viewinterop.UIKitInteropProperties
 import androidx.compose.ui.viewinterop.UIKitView
+import com.peto.ramap.domain.model.Location
 import com.peto.ramap.domain.model.MapBounds
 import com.peto.ramap.domain.model.RamenShop
 import com.peto.ramap.domain.model.RamenShops
@@ -26,6 +27,7 @@ actual fun KakaoMapView(
     myLocationRequestKey: Int,
     locationSettingsRequestKey: Int,
     onBoundsChanged: (MapBounds) -> Unit,
+    onMyLocationChanged: (Location) -> Unit,
     onShopClick: (RamenShop) -> Unit,
     onLocationPermissionBlocked: () -> Unit,
     modifier: Modifier,
@@ -35,6 +37,7 @@ actual fun KakaoMapView(
             IosKakaoMapController(
                 onBoundsChanged = onBoundsChanged,
                 onShopClick = onShopClick,
+                onMyLocationChanged = onMyLocationChanged,
                 onLocationPermissionBlocked = onLocationPermissionBlocked,
             )
         }

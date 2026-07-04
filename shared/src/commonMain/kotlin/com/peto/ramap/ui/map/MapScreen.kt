@@ -45,6 +45,7 @@ import com.peto.ramap.designsystem.popup.CommonPopupDivider
 import com.peto.ramap.designsystem.popup.CommonPopupItem
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.domain.model.Category
+import com.peto.ramap.domain.model.Location
 import com.peto.ramap.domain.model.MapBounds
 import com.peto.ramap.domain.model.RamenShop
 import com.peto.ramap.theme.AppTextStyle
@@ -110,6 +111,9 @@ fun MapRoute(viewModel: MapViewModel = koinInject()) {
         onBoundsChanged = { bounds ->
             viewModel.dispatch(MapIntent.OnBoundsChanged(bounds))
         },
+        onMyLocationChanged = { location ->
+            viewModel.dispatch(MapIntent.OnMyLocationChanged(location))
+        },
         onShopSelected = { shop ->
             viewModel.dispatch(MapIntent.OnShopSelected(shop))
         },
@@ -159,6 +163,7 @@ private fun MapScreen(
     snackbarHostState: SnackbarHostState,
     showLoginGuideDialog: Boolean,
     onBoundsChanged: (MapBounds) -> Unit,
+    onMyLocationChanged: (Location) -> Unit,
     onShopSelected: (RamenShop) -> Unit,
     onShopDetailDismissed: () -> Unit,
     onQueryChanged: (String) -> Unit,
@@ -222,6 +227,7 @@ private fun MapScreen(
                 myLocationRequestKey = myLocationRequestKey,
                 locationSettingsRequestKey = locationSettingsRequestKey,
                 onBoundsChanged = onBoundsChanged,
+                onMyLocationChanged = onMyLocationChanged,
                 onShopClick = onShopSelected,
                 onLocationPermissionBlocked = {
                     coroutineScope.launch {
