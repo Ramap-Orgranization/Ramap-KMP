@@ -68,6 +68,7 @@ import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.account_delete_menu
 import ramap.shared.generated.resources.account_delete_unavailable_message
 import ramap.shared.generated.resources.filter_empty_visible_result_message
+import ramap.shared.generated.resources.hidden_shop_search_result_message
 import ramap.shared.generated.resources.hide_shop_confirm_action
 import ramap.shared.generated.resources.hide_shop_confirm_description
 import ramap.shared.generated.resources.hide_shop_confirm_dismiss
@@ -91,9 +92,16 @@ fun MapRoute(viewModel: MapViewModel = koinInject()) {
         stringResource(Res.string.account_delete_unavailable_message)
     val filterEmptyVisibleResultMessage =
         stringResource(Res.string.filter_empty_visible_result_message)
+    val hiddenShopSearchResultMessage =
+        stringResource(Res.string.hidden_shop_search_result_message)
     var showLoginGuideDialog by remember { mutableStateOf(false) }
 
-    LaunchedEffect(viewModel, accountDeleteUnavailableMessage, filterEmptyVisibleResultMessage) {
+    LaunchedEffect(
+        viewModel,
+        accountDeleteUnavailableMessage,
+        filterEmptyVisibleResultMessage,
+        hiddenShopSearchResultMessage,
+    ) {
         viewModel.sideEffect.collect { sideEffect ->
             when (sideEffect) {
                 MapSideEffect.ShowLoginGuide -> showLoginGuideDialog = true
@@ -107,6 +115,12 @@ fun MapRoute(viewModel: MapViewModel = koinInject()) {
                 MapSideEffect.ShowToast ->
                     snackbarHostState.showSnackbar(
                         message = filterEmptyVisibleResultMessage,
+                        duration = SnackbarDuration.Short,
+                    )
+
+                MapSideEffect.ShowHiddenShopSearchResult ->
+                    snackbarHostState.showSnackbar(
+                        message = hiddenShopSearchResultMessage,
                         duration = SnackbarDuration.Short,
                     )
             }
@@ -225,6 +239,8 @@ private fun MapScreen(
                 modifier = Modifier.fillMaxSize(),
                 shops = uiState.markerShops,
                 focusShops = uiState.focusShops,
+                focusNearestToCurrentLocation = uiState.shouldFocusNearestSearchResult,
+                selectedShopId = uiState.selectedShop?.id,
                 bounds = uiState.bounds,
                 clusterBounds = uiState.clusterBounds,
                 myLocationRequestKey = myLocationRequestKey,

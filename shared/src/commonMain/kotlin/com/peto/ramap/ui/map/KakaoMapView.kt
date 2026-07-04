@@ -10,6 +10,8 @@ import com.peto.ramap.domain.model.RamenShops
 expect fun KakaoMapView(
     shops: RamenShops,
     focusShops: List<RamenShop>,
+    focusNearestToCurrentLocation: Boolean,
+    selectedShopId: String?,
     bounds: MapBounds,
     clusterBounds: MapBounds,
     myLocationRequestKey: Int,

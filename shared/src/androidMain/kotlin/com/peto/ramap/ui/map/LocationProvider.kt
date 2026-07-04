@@ -66,7 +66,7 @@ internal class LocationProvider(
         kakaoMap: KakaoMap,
         cameraController: KakaoCameraController,
     ): Location? {
-        val location = lastKnownLocation() ?: return null
+        val location = currentLocation() ?: return null
         cameraController.moveToLocation(kakaoMap, location)
         return location
     }
@@ -86,7 +86,7 @@ internal class LocationProvider(
             ) == PackageManager.PERMISSION_GRANTED
 
     @SuppressLint("MissingPermission")
-    fun lastKnownLocation(): Location? {
+    fun currentLocation(): Location? {
         if (!hasLocationPermission()) return null
 
         val locationManager =

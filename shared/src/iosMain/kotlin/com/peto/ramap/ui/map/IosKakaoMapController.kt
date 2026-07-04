@@ -30,9 +30,13 @@ import cocoapods.KakaoMapsSDK.TextStyle
 import cocoapods.KakaoMapsSDK.TransitionTypeNone
 import cocoapods.KakaoMapsSDK.create
 import com.peto.ramap.core.config.DefaultMapConfig
+import com.peto.ramap.core.config.MapInteractionConfig
+import com.peto.ramap.core.config.MarkerConfig
+import com.peto.ramap.domain.model.Location
 import com.peto.ramap.domain.model.MapBounds
 import com.peto.ramap.domain.model.RamenShop
 import com.peto.ramap.domain.model.RamenShops
+import com.peto.ramap.domain.model.nearestTo
 import com.peto.ramap.ui.extension.alphaComponent
 import com.peto.ramap.ui.extension.blueComponent
 import com.peto.ramap.ui.extension.greenComponent
@@ -44,6 +48,7 @@ import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.cValue
 import kotlinx.cinterop.readValue
 import kotlinx.cinterop.useContents
+import platform.CoreGraphics.CGBlendMode
 import platform.CoreGraphics.CGPoint
 import platform.CoreGraphics.CGPointMake
 import platform.CoreGraphics.CGRectMake
@@ -84,6 +89,7 @@ private const val MY_LOCATION_OUTER_SIZE = 30.0
 private const val MY_LOCATION_INNER_INSET = 7.0
 private const val MY_LOCATION_INNER_SIZE = 20.0
 private const val MARKER_TAP_RADIUS_METERS = 80.0
+private const val VISIBLE_MARKER_ALPHA = 1.0
 private const val EMPTY_FOCUS_KEY = ""
 
 /**
@@ -205,6 +211,7 @@ class IosKakaoMapController(
         val kakaoMap = getKakaoMap() ?: return
 
         isMapViewAdded = true
+        kakaoMap.cameraMinLevel = MapInteractionConfig.MAX_ZOOM_OUT_LEVEL.toLong()
         kakaoMap.eventDelegate = this
         notifyCurrentBounds(kakaoMap)
         pendingShops?.let(::renderRamenShopMarkers)
@@ -302,6 +309,10 @@ class IosKakaoMapController(
             layer = layer,
             currentShopIds = shops.keys,
         )
+        removeChangedMarkers(
+            layer = layer,
+            shops = shops.values.toList(),
+        )
         renderNewMarkers(
             layer = layer,
             shops = shops.values.toList(),
@@ -313,7 +324,7 @@ class IosKakaoMapController(
      */
     private fun prepareMarkerLayer(kakaoMap: KakaoMap): LabelLayer? {
         val labelManager = kakaoMap.getLabelManager()
-        ensureMarkerStyle(labelManager)
+        ensureMarkerStyles(labelManager)
 
         return (
             labelManager.getLabelLayerWithLayerID(markerLayerId)
@@ -327,14 +338,31 @@ class IosKakaoMapController(
     /**
      * 라멘 매장 마커 아이콘과 텍스트 스타일을 Kakao Maps SDK label manager에 등록한다.
      */
-    private fun ensureMarkerStyle(labelManager: LabelManager) {
+    private fun ensureMarkerStyles(labelManager: LabelManager) {
+        addMarkerStyle(
+            labelManager = labelManager,
+            styleId = MarkerConfig.Single.STYLE_ID,
+            alpha = VISIBLE_MARKER_ALPHA,
+        )
+        addMarkerStyle(
+            labelManager = labelManager,
+            styleId = MarkerConfig.Single.HIDDEN_STYLE_ID,
+            alpha = MapInteractionConfig.HIDDEN_SHOP_ALPHA.toDouble(),
+        )
+    }
+
+    private fun addMarkerStyle(
+        labelManager: LabelManager,
+        styleId: String,
+        alpha: Double,
+    ) {
         val poiStyle =
             PoiStyle(
-                MarkerConfig.Single.STYLE_ID,
+                styleId,
                 listOf(
                     PerLevelPoiStyle(
-                        createMarkerIconStyle() ?: return,
-                        createMarkerTextStyle(),
+                        createMarkerIconStyle(alpha) ?: return,
+                        createMarkerTextStyle(alpha),
                         0.0f,
                         0,
                     ),
@@ -347,11 +375,11 @@ class IosKakaoMapController(
     /**
      * 마커 이미지 리소스로 POI 아이콘 스타일을 만든다.
      */
-    private fun createMarkerIconStyle(): PoiIconStyle? {
+    private fun createMarkerIconStyle(alpha: Double): PoiIconStyle? {
         val image = UIImage.imageNamed(MARKER_IMAGE_NAME) ?: return null
 
         return PoiIconStyle(
-            image,
+            image.withAlpha(alpha),
             CGPointMake(0.5, 1.0),
             poiTransition(),
             true,
@@ -372,24 +400,24 @@ class IosKakaoMapController(
     /**
      * 마커 라벨 텍스트 스타일을 만든다.
      */
-    private fun createMarkerTextStyle(): PoiTextStyle =
+    private fun createMarkerTextStyle(alpha: Double): PoiTextStyle =
         PoiTextStyle(
             poiTransition(),
             true,
             true,
-            listOf(createMarkerTextLineStyle()),
+            listOf(createMarkerTextLineStyle(alpha)),
         )
 
     /**
      * 마커 라벨 한 줄에 적용할 글자 크기, 색상, 외곽선 스타일을 만든다.
      */
-    private fun createMarkerTextLineStyle(): PoiTextLineStyle =
+    private fun createMarkerTextLineStyle(alpha: Double): PoiTextLineStyle =
         PoiTextLineStyle()
             .apply {
                 textStyle =
                     TextStyle(
                         MarkerConfig.Single.LABEL_TEXT_SIZE.toULong(),
-                        markerTextColor(),
+                        markerTextColor(alpha),
                         MarkerConfig.Single.LABEL_STROKE_WIDTH.toULong(),
                         UIColor.whiteColor,
                         "",
@@ -402,12 +430,12 @@ class IosKakaoMapController(
     /**
      * 매장 마커 라벨에 사용할 텍스트 색상을 UIKit 색상으로 만든다.
      */
-    private fun markerTextColor(): UIColor =
+    private fun markerTextColor(alpha: Double): UIColor =
         UIColor.colorWithRed(
             red = MarkerConfig.Single.LABEL_TEXT_COLOR.redComponent(),
             green = MarkerConfig.Single.LABEL_TEXT_COLOR.greenComponent(),
             blue = MarkerConfig.Single.LABEL_TEXT_COLOR.blueComponent(),
-            alpha = MarkerConfig.Single.LABEL_TEXT_COLOR.alphaComponent(),
+            alpha = MarkerConfig.Single.LABEL_TEXT_COLOR.alphaComponent() * alpha,
         )
 
     /**
@@ -441,6 +469,25 @@ class IosKakaoMapController(
         layer.removePoisWithPoiIDs(stalePoiIds, callback = null)
         stalePoiIds.forEach(shopsByPoiId::remove)
         renderedShopIds.removeAll(staleShopIds)
+    }
+
+    private fun removeChangedMarkers(
+        layer: LabelLayer,
+        shops: List<RamenShop>,
+    ) {
+        val changedShopIds =
+            shops
+                .filter { shop ->
+                    val renderedShop = shopsByPoiId[shop.id.toMarkerPoiId()]
+                    renderedShop != null && renderedShop != shop
+                }.map { shop -> shop.id }
+
+        if (changedShopIds.isEmpty()) return
+
+        val changedPoiIds = changedShopIds.map { shopId -> shopId.toMarkerPoiId() }
+        layer.removePoisWithPoiIDs(changedPoiIds, callback = null)
+        changedPoiIds.forEach(shopsByPoiId::remove)
+        renderedShopIds.removeAll(changedShopIds)
     }
 
     /**
@@ -486,7 +533,7 @@ class IosKakaoMapController(
         poiId: String,
     ): PoiOptions =
         PoiOptions(
-            styleID = MarkerConfig.Single.STYLE_ID,
+            styleID = if (shop.isVisible) MarkerConfig.Single.STYLE_ID else MarkerConfig.Single.HIDDEN_STYLE_ID,
             poiID = poiId,
         ).apply {
             clickable = true
@@ -504,14 +551,21 @@ class IosKakaoMapController(
      * 빈 목록과 동일한 포커스 요청은 무시한다. 대상이 하나면 해당 매장 중심으로 이동하고,
      * 둘 이상이면 모든 대상이 보이도록 Kakao Maps SDK의 영역 맞춤 카메라 업데이트를 적용한다.
      */
-    fun updateFocusShops(shops: List<RamenShop>) {
+    fun updateFocusShops(
+        shops: List<RamenShop>,
+        focusNearestToCurrentLocation: Boolean,
+    ) {
         if (!isMapViewAdded) return
 
-        if (!shouldUpdateFocus(shops)) return
+        if (!shouldUpdateFocus(shops, focusNearestToCurrentLocation)) return
 
         val kakaoMap = getKakaoMap() ?: return
-        lastFocusKey = shops.focusKey()
-        focusShops(kakaoMap, shops)
+        lastFocusKey = shops.focusKey(focusNearestToCurrentLocation)
+        focusShops(
+            kakaoMap = kakaoMap,
+            shops = shops,
+            focusNearestToCurrentLocation = focusNearestToCurrentLocation,
+        )
     }
 
     /**
@@ -751,8 +805,11 @@ class IosKakaoMapController(
     /**
      * 전달된 매장 목록이 새 카메라 포커스 요청인지 확인한다.
      */
-    private fun shouldUpdateFocus(shops: List<RamenShop>): Boolean {
-        val focusKey = shops.focusKey()
+    private fun shouldUpdateFocus(
+        shops: List<RamenShop>,
+        focusNearestToCurrentLocation: Boolean,
+    ): Boolean {
+        val focusKey = shops.focusKey(focusNearestToCurrentLocation)
 
         return focusKey.isNotBlank() && lastFocusKey != focusKey
     }
@@ -760,10 +817,13 @@ class IosKakaoMapController(
     /**
      * 동일한 포커스 요청을 식별하기 위한 안정적인 key를 만든다.
      */
-    private fun List<RamenShop>.focusKey(): String =
-        joinToString(separator = "|") { shop ->
+    private fun List<RamenShop>.focusKey(focusNearestToCurrentLocation: Boolean): String {
+        if (isEmpty()) return EMPTY_FOCUS_KEY
+
+        return joinToString(separator = "|") { shop ->
             "${shop.id}:${shop.location.lat}:${shop.location.lng}"
-        }
+        } + ":$focusNearestToCurrentLocation"
+    }
 
     /**
      * 매장 수에 따라 단일 중심 이동 또는 다중 영역 맞춤 이동을 선택한다.
@@ -771,10 +831,24 @@ class IosKakaoMapController(
     private fun focusShops(
         kakaoMap: KakaoMap,
         shops: List<RamenShop>,
+        focusNearestToCurrentLocation: Boolean,
     ) {
         when (shops.size) {
             1 -> moveToShop(kakaoMap, shops.first())
-            else -> fitShops(kakaoMap, shops)
+            else -> {
+                val nearestShop =
+                    if (focusNearestToCurrentLocation) {
+                        shops.nearestTo(locationManager.location?.toDomainLocation())
+                    } else {
+                        null
+                    }
+
+                if (nearestShop != null) {
+                    moveToShop(kakaoMap, nearestShop)
+                } else {
+                    fitShops(kakaoMap, shops)
+                }
+            }
         }
     }
 
@@ -785,13 +859,22 @@ class IosKakaoMapController(
         kakaoMap: KakaoMap,
         shop: RamenShop,
     ) {
+        val target = shop.toMapPoint()
         moveCamera(
             kakaoMap = kakaoMap,
             cameraUpdate =
-                CameraUpdate.makeWithTarget(
-                    target = shop.toMapPoint(),
-                    mapView = kakaoMap,
-                ),
+                if (kakaoMap.zoomLevel < MapInteractionConfig.SELECTED_MARKER_ZOOM_LEVEL) {
+                    CameraUpdate.makeWithTarget(
+                        target = target,
+                        zoomLevel = MapInteractionConfig.SELECTED_MARKER_ZOOM_LEVEL.toLong(),
+                        mapView = kakaoMap,
+                    )
+                } else {
+                    CameraUpdate.makeWithTarget(
+                        target = target,
+                        mapView = kakaoMap,
+                    )
+                },
         )
     }
 
@@ -843,7 +926,11 @@ class IosKakaoMapController(
         poiID: String,
         position: MapPoint,
     ) {
-        shopsByPoiId[poiID]?.let(onShopClick)
+        val shop = shopsByPoiId[poiID]
+        shop?.let {
+            moveToShop(kakaoMap, it)
+            onShopClick(it)
+        }
     }
 
     /**
@@ -857,6 +944,7 @@ class IosKakaoMapController(
         val tappedCoordinate = kakaoMap.coordinateAt(point)
         val shop = findNearestShop(tappedCoordinate) ?: return
 
+        moveToShop(kakaoMap, shop)
         onShopClick(shop)
     }
 
@@ -864,6 +952,27 @@ class IosKakaoMapController(
      * 현재 컨트롤러에 등록된 Kakao 지도 뷰를 가져온다.
      */
     private fun getKakaoMap(): KakaoMap? = controller.getView(mapViewName) as? KakaoMap
+
+    private fun UIImage.withAlpha(alpha: Double): UIImage {
+        UIGraphicsBeginImageContextWithOptions(size, false, 0.0)
+        drawAtPoint(
+            point = CGPointMake(0.0, 0.0),
+            blendMode = CGBlendMode.kCGBlendModeNormal,
+            alpha = alpha,
+        )
+        val image = UIGraphicsGetImageFromCurrentImageContext()
+        UIGraphicsEndImageContext()
+
+        return image ?: this
+    }
+
+    private fun CLLocation.toDomainLocation(): Location =
+        coordinate.useContents {
+            Location(
+                lat = latitude,
+                lng = longitude,
+            )
+        }
 
     /**
      * 탭 좌표에서 선택 가능한 거리 안에 있는 가장 가까운 매장을 찾는다.

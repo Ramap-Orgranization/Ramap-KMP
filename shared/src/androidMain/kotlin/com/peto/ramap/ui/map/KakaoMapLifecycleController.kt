@@ -5,6 +5,7 @@ import com.kakao.vectormap.KakaoMap
 import com.kakao.vectormap.KakaoMapReadyCallback
 import com.kakao.vectormap.MapLifeCycleCallback
 import com.kakao.vectormap.MapView
+import com.peto.ramap.core.config.MapInteractionConfig
 import com.peto.ramap.domain.model.MapBounds
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -45,6 +46,7 @@ internal class KakaoMapLifecycleController(
             },
             object : KakaoMapReadyCallback() {
                 override fun onMapReady(kakaoMap: KakaoMap) {
+                    kakaoMap.setCameraMinLevel(MapInteractionConfig.MAX_ZOOM_OUT_LEVEL)
                     onMapReady(kakaoMap)
                     bindBoundsChangedListener(kakaoMap, onBoundsChanged)
 
