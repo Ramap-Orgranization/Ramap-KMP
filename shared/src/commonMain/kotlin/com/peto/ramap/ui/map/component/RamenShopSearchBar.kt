@@ -95,7 +95,7 @@ fun RamenShopSearchBar(
                 ) {
                     Text(
                         text = "×",
-                        fontSize = 22.sp,
+                        fontSize = 25.sp,
                         color = GrayColor.C400,
                     )
                 }
