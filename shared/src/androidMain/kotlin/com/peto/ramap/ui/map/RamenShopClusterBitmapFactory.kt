@@ -6,6 +6,7 @@ import android.graphics.Paint
 import android.graphics.RectF
 import android.graphics.Typeface
 import com.peto.ramap.core.config.MarkerClusterConfig
+import com.peto.ramap.core.config.MarkerConfig
 
 /**
  * 클러스터 마커에 사용할 라운드 사각형 count 비트맵을 생성하고 재사용한다.

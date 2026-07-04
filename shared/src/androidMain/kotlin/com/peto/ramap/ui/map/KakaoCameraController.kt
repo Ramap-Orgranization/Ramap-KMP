@@ -4,7 +4,10 @@ import android.location.Location
 import com.kakao.vectormap.KakaoMap
 import com.kakao.vectormap.LatLng
 import com.kakao.vectormap.camera.CameraUpdateFactory
+import com.peto.ramap.core.config.MapInteractionConfig
 import com.peto.ramap.domain.model.RamenShop
+import com.peto.ramap.domain.model.nearestTo
+import com.peto.ramap.domain.model.Location as DomainLocation
 
 /**
  * 카카오 지도 카메라 이동을 담당한다.
@@ -22,15 +25,25 @@ internal class KakaoCameraController {
     fun focusRamenShops(
         kakaoMap: KakaoMap,
         shops: List<RamenShop>,
+        currentLocation: Location? = null,
     ) {
-        val focusKey = focusKey(shops)
-        if (focusKey.isBlank() || lastFocusKey == focusKey) return
+        val focusKey = focusKey(shops, currentLocation != null)
+        if (focusKey.isBlank()) return
+        if (lastFocusKey == focusKey) return
 
         lastFocusKey = focusKey
 
         when (shops.size) {
             1 -> moveToShop(kakaoMap, shops.first())
-            else -> fitShops(kakaoMap, shops)
+            else -> {
+                val nearestShop = shops.nearestTo(currentLocation?.toDomainLocation())
+
+                if (nearestShop != null) {
+                    moveToShop(kakaoMap, nearestShop)
+                } else {
+                    fitShops(kakaoMap, shops)
+                }
+            }
         }
     }
 
@@ -48,12 +61,27 @@ internal class KakaoCameraController {
         )
     }
 
+    fun moveToSelectedShop(
+        kakaoMap: KakaoMap,
+        shop: RamenShop,
+    ) {
+        moveToShop(kakaoMap, shop)
+    }
+
     private fun moveToShop(
         kakaoMap: KakaoMap,
         shop: RamenShop,
     ) {
+        val shopLatLng = shopLatLng(shop)
         kakaoMap.moveCamera(
-            CameraUpdateFactory.newCenterPosition(shopLatLng(shop)),
+            if (kakaoMap.zoomLevel < MapInteractionConfig.SELECTED_MARKER_ZOOM_LEVEL) {
+                CameraUpdateFactory.newCenterPosition(
+                    shopLatLng,
+                    MapInteractionConfig.SELECTED_MARKER_ZOOM_LEVEL,
+                )
+            } else {
+                CameraUpdateFactory.newCenterPosition(shopLatLng)
+            },
         )
     }
 
@@ -75,10 +103,22 @@ internal class KakaoCameraController {
             shop.location.lng,
         )
 
-    private fun focusKey(shops: List<RamenShop>): String =
-        shops.joinToString(separator = "|") { shop ->
+    private fun focusKey(
+        shops: List<RamenShop>,
+        focusNearestToCurrentLocation: Boolean,
+    ): String {
+        if (shops.isEmpty()) return ""
+
+        return shops.joinToString(separator = "|") { shop ->
             "${shop.id}:${shop.location.lat}:${shop.location.lng}"
-        }
+        } + ":$focusNearestToCurrentLocation"
+    }
+
+    private fun Location.toDomainLocation(): DomainLocation =
+        DomainLocation(
+            lat = latitude,
+            lng = longitude,
+        )
 
     private companion object {
         private const val FOCUS_SHOPS_PADDING_PX = 120

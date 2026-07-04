@@ -239,6 +239,8 @@ private fun MapScreen(
                 modifier = Modifier.fillMaxSize(),
                 shops = uiState.markerShops,
                 focusShops = uiState.focusShops,
+                focusNearestToCurrentLocation = uiState.shouldFocusNearestSearchResult,
+                selectedShopId = uiState.selectedShop?.id,
                 bounds = uiState.bounds,
                 clusterBounds = uiState.clusterBounds,
                 myLocationRequestKey = myLocationRequestKey,

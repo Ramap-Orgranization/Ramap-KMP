@@ -19,6 +19,8 @@ import kotlinx.cinterop.ExperimentalForeignApi
 actual fun KakaoMapView(
     shops: RamenShops,
     focusShops: List<RamenShop>,
+    focusNearestToCurrentLocation: Boolean,
+    selectedShopId: String?,
     bounds: MapBounds,
     clusterBounds: MapBounds,
     myLocationRequestKey: Int,
@@ -44,7 +46,10 @@ actual fun KakaoMapView(
         },
         update = {
             mapController.updateShops(shops)
-            mapController.updateFocusShops(focusShops)
+            mapController.updateFocusShops(
+                shops = focusShops,
+                focusNearestToCurrentLocation = focusNearestToCurrentLocation,
+            )
         },
         properties =
             UIKitInteropProperties(
