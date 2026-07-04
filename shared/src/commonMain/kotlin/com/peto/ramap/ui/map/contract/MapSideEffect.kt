@@ -8,4 +8,6 @@ sealed interface MapSideEffect : SideEffect {
     data object ShowAccountDeleteUnavailable : MapSideEffect
 
     data object ShowToast : MapSideEffect
+
+    data object ShowHiddenShopSearchResult : MapSideEffect
 }

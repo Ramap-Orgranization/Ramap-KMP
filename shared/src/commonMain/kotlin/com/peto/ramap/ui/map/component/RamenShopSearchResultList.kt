@@ -11,8 +11,10 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.peto.ramap.core.config.MapInteractionConfig
 import com.peto.ramap.core.extension.noRippleClickable
 import com.peto.ramap.core.extension.stringResource
 import com.peto.ramap.designsystem.text.AppText
@@ -62,6 +64,7 @@ private fun RamenShopSearchResultItem(
         modifier =
             modifier
                 .fillMaxWidth()
+                .alpha(if (shop.isVisible) 1f else MapInteractionConfig.HIDDEN_SHOP_ALPHA)
                 .noRippleClickable(onClick = onClick)
                 .padding(horizontal = 24.dp, vertical = 16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),

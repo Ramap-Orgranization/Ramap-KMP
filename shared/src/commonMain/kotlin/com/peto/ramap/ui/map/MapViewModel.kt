@@ -84,7 +84,13 @@ class MapViewModel(
     }
 
     private fun selectShop(shop: RamenShop) {
-        reduce { copy(selectedShop = shop) }
+        val isCurrentSearchResult = shop.id in currentState.searchResults
+        reduce {
+            copy(
+                selectedShop = shop,
+                isSearchResultFocusConsumed = isSearchResultFocusConsumed || isCurrentSearchResult,
+            )
+        }
         runTask { loadShopWaitingSystem(shop.id) }
     }
 
@@ -97,13 +103,25 @@ class MapViewModel(
     }
 
     private fun updateQuery(query: String) {
+        val normalizedQuery = SearchQuery(query).normalizeShopSearchQuery()
+        val hasCurrentSearchResults = currentState.searchResultsQuery == normalizedQuery
+
         reduce {
             copy(
                 query = query,
                 isSearchResultsDismissed = false,
+                isSearchResultFocusConsumed = false,
+                selectedShop = null,
             )
         }
-        scheduleSearch(SearchQuery(query).normalizeShopSearchQuery())
+
+        if (normalizedQuery.value.isNotBlank() && hasCurrentSearchResults) {
+            searchJob?.cancel()
+            runTask { handleSingleSearchResult(currentState.searchResultShops.singleOrNull()) }
+            return
+        }
+
+        scheduleSearch(normalizedQuery)
     }
 
     private fun toggleCategoryFilter(category: Category) {
@@ -256,7 +274,16 @@ class MapViewModel(
                     } else {
                         bookmarkedShopIds
                     },
-                selectedShop = selectedShop?.takeUnless { !isHidden && it.id == shopId },
+                selectedShop =
+                    selectedShop
+                        ?.takeUnless { !isHidden && it.id == shopId }
+                        ?.let { selectedShop ->
+                            if (isHidden && selectedShop.id == shopId) {
+                                selectedShop.copy(isVisible = true)
+                            } else {
+                                selectedShop
+                            }
+                        },
             )
         }
     }
@@ -347,6 +374,7 @@ class MapViewModel(
                 searchResults = RamenShops(emptyMap()),
                 searchResultsQuery = null,
                 isSearchResultsDismissed = false,
+                isSearchResultFocusConsumed = false,
             )
         }
     }
@@ -364,11 +392,15 @@ class MapViewModel(
 
         reduceSearchResult(query, result)
 
-        currentState.searchResultShops
-            .singleOrNull()
-            ?.let { shop ->
-                selectShop(shop)
-            }
+        handleSingleSearchResult(currentState.searchResultShops.singleOrNull())
+    }
+
+    private suspend fun handleSingleSearchResult(shop: RamenShop?) {
+        when {
+            shop == null -> Unit
+            shop.isVisible -> selectShop(shop)
+            else -> postSideEffect(MapSideEffect.ShowHiddenShopSearchResult)
+        }
     }
 
     private fun reduceSearchResult(
@@ -379,6 +411,8 @@ class MapViewModel(
             copy(
                 searchResults = result,
                 searchResultsQuery = query,
+                selectedShop = null,
+                isSearchResultFocusConsumed = false,
             )
         }
     }

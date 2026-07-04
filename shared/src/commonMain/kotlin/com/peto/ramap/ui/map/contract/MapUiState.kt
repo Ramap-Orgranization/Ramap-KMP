@@ -18,6 +18,7 @@ data class MapUiState(
     val searchResults: RamenShops = RamenShops(emptyMap()),
     val searchResultsQuery: SearchQuery? = null,
     val isSearchResultsDismissed: Boolean = false,
+    val isSearchResultFocusConsumed: Boolean = false,
     val filters: RamenShopFilter = RamenShopFilter(),
     val bounds: MapBounds = DefaultMapConfig.bounds,
     val clusterBounds: MapBounds = DefaultMapConfig.bounds,
@@ -34,7 +35,7 @@ data class MapUiState(
      * 리스트 UI에서는 순회하기 쉬운 [List] 형태로 변환해 사용한다.
      */
     val searchResultShops: List<RamenShop>
-        get() = filteredSearchResults.values.toList()
+        get() = displaySearchResults.values.toList()
 
     /**
      * 지도 마커로 렌더링할 매장 목록.
@@ -47,14 +48,11 @@ data class MapUiState(
         get() {
             val normalizedQuery = SearchQuery(query).normalizeShopSearchQuery()
 
-            val visibleResults =
-                if (normalizedQuery.value.isNotBlank() && searchResultsQuery == normalizedQuery) {
-                    filteredSearchResults
-                } else {
-                    filteredShops
-                }
-
-            return visibleResults
+            return if (normalizedQuery.value.isNotBlank() && searchResultsQuery == normalizedQuery) {
+                displaySearchResults
+            } else {
+                filteredShops
+            }
         }
 
     /**
@@ -87,9 +85,19 @@ data class MapUiState(
         get() =
             when {
                 selectedShop != null -> listOf(selectedShop)
-                query.isNotBlank() && searchResultShops.isNotEmpty() -> searchResultShops
+                shouldFocusSearchResults -> searchResultShops
                 else -> emptyList()
             }
+
+    val shouldFocusNearestSearchResult: Boolean
+        get() = shouldFocusSearchResults && searchResultShops.size > 1
+
+    private val shouldFocusSearchResults: Boolean
+        get() =
+            selectedShop == null &&
+                query.isNotBlank() &&
+                searchResultShops.isNotEmpty() &&
+                !isSearchResultFocusConsumed
 
     private val filteredShops: RamenShops
         get() =
@@ -102,8 +110,24 @@ data class MapUiState(
     private val filteredSearchResults: RamenShops
         get() =
             when (personalizationView) {
-                MapPersonalization.ALL -> searchResults.filterNotHidden(hiddenShopIds)
+                MapPersonalization.ALL -> searchResults
                 MapPersonalization.BOOKMARKED -> searchResults.filterByShopIds(bookmarkedShopIds)
                 MapPersonalization.HIDDEN -> searchResults.filterByShopIds(hiddenShopIds)
             }.filterByCategory(filters)
+
+    private val displaySearchResults: RamenShops
+        get() = filteredSearchResults.markHidden(hiddenShopIds)
+
+    private fun RamenShops.markHidden(hiddenShopIds: Set<String>): RamenShops {
+        if (hiddenShopIds.isEmpty()) return this
+        return RamenShops(
+            mapValues { (shopId, shop) ->
+                if (shopId in hiddenShopIds) {
+                    shop.copy(isVisible = false)
+                } else {
+                    shop
+                }
+            },
+        )
+    }
 }

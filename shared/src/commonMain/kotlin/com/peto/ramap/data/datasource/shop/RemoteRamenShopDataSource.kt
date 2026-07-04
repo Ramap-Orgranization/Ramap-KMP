@@ -61,7 +61,6 @@ class RemoteRamenShopDataSource(
             .from(TABLE_NAME)
             .select {
                 filter {
-                    eq(COLUMN_IS_VISIBLE, true)
                     or {
                         SEARCH_COLUMNS.forEach { column ->
                             ilike(column, pattern)
