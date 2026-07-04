@@ -25,10 +25,10 @@ import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.ui.map.contract.SearchResultGuide
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
+import ramap.shared.generated.resources.search_result_count
 import ramap.shared.generated.resources.search_result_empty_message
 import ramap.shared.generated.resources.search_result_filter_empty_message
 import ramap.shared.generated.resources.search_result_hidden_only_message
-import ramap.shared.generated.resources.search_result_count
 import ramap.shared.generated.resources.search_result_query_filter_empty_message
 
 @Composable

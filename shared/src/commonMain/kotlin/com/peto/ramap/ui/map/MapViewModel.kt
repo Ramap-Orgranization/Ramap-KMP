@@ -269,11 +269,17 @@ class MapViewModel(
         reduce {
             copy(
                 hiddenShopIds =
-                    if (isHidden) hiddenShopIds - shopId
-                    else hiddenShopIds + shopId,
+                    if (isHidden) {
+                        hiddenShopIds - shopId
+                    } else {
+                        hiddenShopIds + shopId
+                    },
                 bookmarkedShopIds =
-                    if (!isHidden && shouldRemoveBookmark) bookmarkedShopIds - shopId
-                    else bookmarkedShopIds,
+                    if (!isHidden && shouldRemoveBookmark) {
+                        bookmarkedShopIds - shopId
+                    } else {
+                        bookmarkedShopIds
+                    },
                 selectedShop =
                     selectedShop
                         ?.takeUnless { !isHidden && it.id == shopId }
