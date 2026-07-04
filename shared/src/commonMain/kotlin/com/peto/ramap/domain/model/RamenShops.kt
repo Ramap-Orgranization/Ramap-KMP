@@ -24,12 +24,14 @@ data class RamenShops(
             },
         )
 
-    fun filterNotHidden(hiddenShopIds: Set<String>): RamenShops =
-        RamenShops(
+    fun filterNotHidden(hiddenShopIds: Set<String>): RamenShops {
+        if (hiddenShopIds.isEmpty()) return this
+        return RamenShops(
             shops.filterKeys { shopId ->
                 shopId !in hiddenShopIds
             },
         )
+    }
 
     fun hasVisibleShopIn(bounds: MapBounds): Boolean = values.any { shop -> bounds.contains(shop.location) }
 }

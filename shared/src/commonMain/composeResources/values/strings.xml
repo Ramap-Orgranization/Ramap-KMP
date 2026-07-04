@@ -42,6 +42,7 @@
     <string name="hide_shop_confirm_action">숨김 처리</string>
     <string name="hide_shop_confirm_dismiss">취소</string>
     <string name="account_delete_unavailable_message">계정 삭제는 준비 중입니다</string>
+    <string name="hidden_shop_search_result_message">숨김 처리된 매장이에요</string>
     <string name="location_permission_settings_action">설정</string>
     <string name="location_permission_enable_message">위치 권한을 활성화해주세요</string>
     <string name="kakao_login_button_title">카카오로 시작하기</string>
