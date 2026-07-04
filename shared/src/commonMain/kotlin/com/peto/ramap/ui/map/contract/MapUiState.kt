@@ -15,57 +15,46 @@ data class MapUiState(
      * 지도에서 조회 가능한 전체 라멘 매장 목록.
      */
     val shops: RamenShops = RamenShops(emptyMap()),
-
     /**
      * 상세 바텀시트에 표시할 현재 선택 매장.
      */
     val selectedShop: RamenShop? = null,
-
     /**
      * 검색창 입력값, 검색 결과, 검색 결과의 소비 상태.
      */
     val search: SearchUiState = SearchUiState(),
-
     /**
      * 매장 id별 웨이팅 시스템 정보.
      */
     val shopWaiting: Map<String, ShopWaitingSystem?> = emptyMap(),
-
     /**
      * 지도와 검색 결과에 적용 중인 매장 필터.
      */
     val filters: RamenShopFilter = RamenShopFilter(),
-
     /**
      * 현재 지도 카메라가 보고 있는 영역.
      */
     val bounds: MapBounds = DefaultMapConfig.bounds,
-
     /**
      * 클러스터링 또는 매장 조회에 사용할 지도 영역.
      */
     val clusterBounds: MapBounds = DefaultMapConfig.bounds,
-
     /**
      * 사용자가 북마크한 매장 id 목록.
      */
     val bookmarkedShopIds: Set<String> = emptySet(),
-
     /**
      * 사용자가 숨김 처리한 매장 id 목록.
      */
     val hiddenShopIds: Set<String> = emptySet(),
-
     /**
      * 전체, 북마크, 숨김 매장 중 현재 지도에 표시할 개인화 모드.
      */
     val personalizationView: MapPersonalization = MapPersonalization.ALL,
-
     /**
      * 현재 사용자의 로그인 여부.
      */
     val isLoggedIn: Boolean = false,
-
     /**
      * 계정 영역에 표시할 사용자 식별 라벨.
      */

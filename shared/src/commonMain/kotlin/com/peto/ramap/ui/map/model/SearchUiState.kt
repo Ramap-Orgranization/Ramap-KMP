@@ -8,22 +8,18 @@ data class SearchUiState(
      * 검색창에 입력된 원본 검색어.
      */
     val input: String = "",
-
     /**
      * 현재 검색 결과 매장 목록.
      */
     val results: RamenShops = RamenShops(emptyMap()),
-
     /**
      * [results]가 어떤 정규화된 검색어에 대한 결과인지 나타내는 값.
      */
     private val loadedQuery: SearchQuery? = null,
-
     /**
      * 사용자가 현재 검색 결과 바텀시트를 닫았는지 여부.
      */
     val isResultsDismissed: Boolean = false,
-
     /**
      * 현재 검색 결과에 대한 지도 카메라 포커스가 이미 처리되었는지 여부.
      */
@@ -35,8 +31,7 @@ data class SearchUiState(
             return normalizedInput.value.isNotBlank() && loadedQuery == normalizedInput
         }
 
-    fun hasLoadedResultsFor(query: SearchQuery): Boolean =
-        query.value.isNotBlank() && loadedQuery == query
+    fun hasLoadedResultsFor(query: SearchQuery): Boolean = query.value.isNotBlank() && loadedQuery == query
 
     fun updateInput(input: String): SearchUiState =
         copy(
@@ -45,14 +40,11 @@ data class SearchUiState(
             isResultFocusConsumed = false,
         )
 
-    fun dismissResults(): SearchUiState =
-        copy(isResultsDismissed = true)
+    fun dismissResults(): SearchUiState = copy(isResultsDismissed = true)
 
-    fun showResults(): SearchUiState =
-        copy(isResultsDismissed = false)
+    fun showResults(): SearchUiState = copy(isResultsDismissed = false)
 
-    fun consumeResultFocusIf(shouldConsume: Boolean): SearchUiState =
-        copy(isResultFocusConsumed = isResultFocusConsumed || shouldConsume)
+    fun consumeResultFocusIf(shouldConsume: Boolean): SearchUiState = copy(isResultFocusConsumed = isResultFocusConsumed || shouldConsume)
 
     fun clearResults(): SearchUiState =
         copy(
