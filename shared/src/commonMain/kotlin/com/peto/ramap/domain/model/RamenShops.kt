@@ -30,4 +30,6 @@ data class RamenShops(
                 shopId !in hiddenShopIds
             },
         )
+
+    fun hasVisibleShopIn(bounds: MapBounds): Boolean = values.any { shop -> bounds.contains(shop.location) }
 }
