@@ -113,8 +113,8 @@ data class MapUiState(
     /**
      * 검색 결과 리스트 바텀시트를 보여줄지 여부.
      *
-     * 매장 상세가 열려 있지 않고 검색어가 있으며, 검색 결과가 여러 개이거나
-     * 바텀시트에 표시할 안내 메시지가 있을 때 리스트를 노출한다.
+     * 매장 상세가 열려 있지 않고 검색어가 있으며, 선택 가능한 검색 결과가 여러 개일 때만
+     * 리스트를 노출한다.
      */
     val showSearchResults: Boolean
         get() =
@@ -122,7 +122,7 @@ data class MapUiState(
                 !search.isResultsDismissed &&
                 personalizationView == MapPersonalization.ALL &&
                 search.input.isNotBlank() &&
-                (searchResultShops.size > 1 || searchResultGuide?.showsBottomSheet == true)
+                searchResultShops.size > 1
 
     /**
      * 지도 화면의 바텀시트를 열지 여부.
@@ -163,12 +163,6 @@ data class MapUiState(
                 search.input.isNotBlank() &&
                 searchResultShops.isNotEmpty() &&
                 !search.isResultFocusConsumed
-
-    /**
-     * 검색 결과 안내 상태가 바텀시트 노출을 필요로 하는지 여부.
-     */
-    private val SearchResultGuide.showsBottomSheet: Boolean
-        get() = this != SearchResultGuide.HIDDEN_ONLY
 
     /**
      * 현재 입력된 검색어에 대한 검색 결과가 로드되어 있는지 여부.

@@ -932,7 +932,7 @@ class MapViewModelTest {
         }
 
     @Test
-    fun `검색 결과가 없으면 검색 결과 없음 안내를 보여준다`() {
+    fun `검색 결과가 없으면 바텀시트를 보여주지 않는다`() {
         val uiState =
             MapUiState(
                 search =
@@ -943,12 +943,12 @@ class MapViewModelTest {
             )
 
         assertEquals(SearchResultGuide.SEARCH_EMPTY, uiState.searchResultGuide)
-        assertEquals(true, uiState.showSearchResults)
-        assertEquals(true, uiState.showBottomSheet)
+        assertEquals(false, uiState.showSearchResults)
+        assertEquals(false, uiState.showBottomSheet)
     }
 
     @Test
-    fun `검색어와 선택한 필터에 맞는 매장이 없으면 검색 필터 없음 안내를 보여준다`() {
+    fun `검색어와 선택한 필터에 맞는 매장이 없으면 바텀시트를 보여주지 않는다`() {
         val shop =
             ramenShopFixture(
                 id = "jiro-shop",
@@ -965,8 +965,8 @@ class MapViewModelTest {
             )
 
         assertEquals(SearchResultGuide.QUERY_AND_FILTER_EMPTY, uiState.searchResultGuide)
-        assertEquals(true, uiState.showSearchResults)
-        assertEquals(true, uiState.showBottomSheet)
+        assertEquals(false, uiState.showSearchResults)
+        assertEquals(false, uiState.showBottomSheet)
     }
 
     @Test
