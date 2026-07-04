@@ -26,7 +26,11 @@
 
     <string name="search_bar_placehodler">검색어를 입력해주세요</string>
     <string name="search_result_count">%1$d개의 검색 결과</string>
-    <string name="filter_empty_visible_result_message">현재 지도 영역에 해당 필터 결과가 없어요</string>
+    <string name="search_result_empty_message">검색 결과가 없어요</string>
+    <string name="search_result_filter_empty_message">선택한 필터에 맞는 매장이 없어요</string>
+    <string name="search_result_query_filter_empty_message">검색어와 선택한 필터에 맞는 매장이 없어요</string>
+    <string name="search_result_hidden_only_message">숨김 처리한 매장이 검색되었어요</string>
+    <string name="filter_empty_visible_result_message">선택한 필터에 맞는 매장이 없어요</string>
     <string name="personalization_bookmarked_empty">북마크한 매장이 없습니다</string>
     <string name="personalization_hidden_empty">숨긴 매장이 없습니다</string>
     <string name="settings_bookmarked_shops_menu">좋아요한 매장 보기</string>
@@ -38,7 +42,7 @@
     <string name="login_required_action">로그인하기</string>
     <string name="login_required_dismiss">나중에</string>
     <string name="hide_shop_confirm_title">숨김 처리하시겠습니까?</string>
-    <string name="hide_shop_confirm_description">숨긴 매장은 로그인 후 설정 버튼의 숨긴 매장 보기에서 확인할 수 있어요.</string>
+    <string name="hide_shop_confirm_description">숨기면 지도와 좋아요 목록에서 보이지 않아요.</string>
     <string name="hide_shop_confirm_action">숨김 처리</string>
     <string name="hide_shop_confirm_dismiss">취소</string>
     <string name="account_delete_unavailable_message">계정 삭제는 준비 중입니다</string>

@@ -111,6 +111,7 @@ private const val EMPTY_FOCUS_KEY = ""
 class IosKakaoMapController(
     private val onBoundsChanged: (MapBounds) -> Unit,
     private val onShopClick: (RamenShop) -> Unit,
+    private val onMyLocationChanged: (Location) -> Unit,
     private val onLocationPermissionBlocked: () -> Unit,
 ) : NSObject(),
     MapControllerDelegateProtocol,
@@ -659,6 +660,7 @@ class IosKakaoMapController(
      * CoreLocation 좌표를 Kakao Maps SDK 좌표로 변환해 지도 카메라를 이동한다.
      */
     private fun moveToLocation(location: CLLocation) {
+        onMyLocationChanged(location.toDomainLocation())
         location.coordinate.useContents {
             moveToCoordinate(
                 IosMapCoordinate(

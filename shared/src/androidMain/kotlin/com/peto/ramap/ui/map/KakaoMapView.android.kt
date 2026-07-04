@@ -43,6 +43,7 @@ actual fun KakaoMapView(
     myLocationRequestKey: Int,
     locationSettingsRequestKey: Int,
     onBoundsChanged: (MapBounds) -> Unit,
+    onMyLocationChanged: (Location) -> Unit,
     onShopClick: (RamenShop) -> Unit,
     onLocationPermissionBlocked: () -> Unit,
     modifier: Modifier,
@@ -77,7 +78,9 @@ actual fun KakaoMapView(
             locationProvider = locationProvider,
             cameraController = cameraController,
             onLocationReceived = { location ->
-                myLocation = location.toDomainLocation()
+                val domainLocation = location.toDomainLocation()
+                myLocation = domainLocation
+                onMyLocationChanged(domainLocation)
             },
             onLocationPermissionBlocked = {
                 if (shouldShowBlockedSnackbarOnPermissionResult) {
@@ -97,6 +100,7 @@ actual fun KakaoMapView(
         val location = locationProvider.currentLocation()?.toDomainLocation() ?: return@LaunchedEffect
 
         myLocation = location
+        onMyLocationChanged(location)
         markerRenderer.renderMyLocation(kakaoMap, location)
     }
 
@@ -143,7 +147,9 @@ actual fun KakaoMapView(
             shops = focusShops,
             currentLocation =
                 if (focusNearestToCurrentLocation) {
-                    locationProvider.currentLocation()
+                    locationProvider.currentLocation()?.also { location ->
+                        onMyLocationChanged(location.toDomainLocation())
+                    }
                 } else {
                     null
                 },
@@ -165,6 +171,7 @@ actual fun KakaoMapView(
                             kakaoMap = kakaoMap,
                             cameraController = cameraController,
                         )?.toDomainLocation()
+                        ?.also(onMyLocationChanged)
             },
             onBlocked = {
                 currentOnLocationPermissionBlocked.value()
