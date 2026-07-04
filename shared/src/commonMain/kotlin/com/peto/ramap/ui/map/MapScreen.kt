@@ -67,6 +67,7 @@ import org.koin.compose.koinInject
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.account_delete_menu
 import ramap.shared.generated.resources.account_delete_unavailable_message
+import ramap.shared.generated.resources.filter_empty_visible_result_message
 import ramap.shared.generated.resources.hide_shop_confirm_action
 import ramap.shared.generated.resources.hide_shop_confirm_description
 import ramap.shared.generated.resources.hide_shop_confirm_dismiss
@@ -88,9 +89,11 @@ fun MapRoute(viewModel: MapViewModel = koinInject()) {
     val snackbarHostState = remember { SnackbarHostState() }
     val accountDeleteUnavailableMessage =
         stringResource(Res.string.account_delete_unavailable_message)
+    val filterEmptyVisibleResultMessage =
+        stringResource(Res.string.filter_empty_visible_result_message)
     var showLoginGuideDialog by remember { mutableStateOf(false) }
 
-    LaunchedEffect(viewModel) {
+    LaunchedEffect(viewModel, accountDeleteUnavailableMessage, filterEmptyVisibleResultMessage) {
         viewModel.sideEffect.collect { sideEffect ->
             when (sideEffect) {
                 MapSideEffect.ShowLoginGuide -> showLoginGuideDialog = true
@@ -98,6 +101,12 @@ fun MapRoute(viewModel: MapViewModel = koinInject()) {
                 MapSideEffect.ShowAccountDeleteUnavailable ->
                     snackbarHostState.showSnackbar(
                         message = accountDeleteUnavailableMessage,
+                        duration = SnackbarDuration.Short,
+                    )
+
+                MapSideEffect.ShowToast ->
+                    snackbarHostState.showSnackbar(
+                        message = filterEmptyVisibleResultMessage,
                         duration = SnackbarDuration.Short,
                     )
             }

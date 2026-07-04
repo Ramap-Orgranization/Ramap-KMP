@@ -11,6 +11,21 @@
 	<true/>
 
 	<!--
+		Supabase OAuth 로그인 후 ramap://auth 딥링크로 앱을 다시 열기 위한 URL scheme입니다.
+	-->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.peto.ramap.auth</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>ramap</string>
+			</array>
+		</dict>
+	</array>
+
+	<!--
 		CLLocationManager.requestWhenInUseAuthorization()을 호출하기 전에 필요한 키입니다.
 		아래 문구는 iOS 위치 권한 팝업에 표시되어 사용자 위치를 왜 사용하는지 명확하게 설명합니다.
 	-->
