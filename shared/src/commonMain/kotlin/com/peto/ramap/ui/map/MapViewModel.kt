@@ -438,7 +438,12 @@ class MapViewModel(
             copy(
                 bounds = bounds,
                 clusterBounds =
-                    if (bounds.isZoomMeaningfullyDifferentFrom(clusterBounds)) {
+                    if (
+                        bounds.hasMeaningfulZoomChangeFrom(
+                            other = clusterBounds,
+                            zoomShiftRatio = MarkerClusterConfig.ZOOM_SHIFT_RATIO,
+                        )
+                    ) {
                         bounds
                     } else {
                         clusterBounds
@@ -466,7 +471,7 @@ class MapViewModel(
         requestId: Long,
     ) {
         val previousBounds = lastLoadedBounds
-        if (previousBounds != null && !bounds.isMeaningfullyDifferentFrom(previousBounds)) return
+        if (previousBounds != null && !bounds.hasMeaningfulViewportChangeFrom(previousBounds)) return
 
         val result: RamenShops = ramenShopRepository.fetchRamenShops(bounds)
         if (requestId != boundsLoadRequestId) return
@@ -487,18 +492,6 @@ class MapViewModel(
         RamenShops(
             currentState.shops + newShops,
         )
-
-    private fun MapBounds.isZoomMeaningfullyDifferentFrom(other: MapBounds): Boolean =
-        latSpan.isMeaningfullyDifferentFrom(other.latSpan, MarkerClusterConfig.ZOOM_SHIFT_RATIO) ||
-            lngSpan.isMeaningfullyDifferentFrom(other.lngSpan, MarkerClusterConfig.ZOOM_SHIFT_RATIO)
-
-    private fun Double.isMeaningfullyDifferentFrom(
-        other: Double,
-        ratio: Double,
-    ): Boolean {
-        if (other == 0.0) return this != 0.0
-        return abs(this - other) / abs(other) >= ratio
-    }
 
     companion object {
         private const val BOUNDS_LOAD_DEBOUNCE_MILLIS = 350L
