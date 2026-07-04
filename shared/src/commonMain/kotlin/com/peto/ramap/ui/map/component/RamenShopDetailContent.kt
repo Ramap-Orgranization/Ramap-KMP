@@ -92,6 +92,7 @@ fun RamenShopDetailContent(
                         isActive = isBookmarked,
                         enabled = !isHidden,
                         onClick = onBookmarkClick,
+                        onDisabledClick = onBookmarkClick,
                     ) {
                         Image(
                             painter = painterResource(Res.drawable.ic_kid_star),
@@ -194,13 +195,14 @@ private fun ShopActionButton(
     isActive: Boolean,
     enabled: Boolean,
     onClick: () -> Unit,
+    onDisabledClick: () -> Unit = {},
     icon: @Composable () -> Unit,
 ) {
     Surface(
         modifier =
             Modifier
                 .size(36.dp)
-                .alpha(if (enabled) 1f else 0f),
+                .alpha(if (enabled) 1f else 0.35f),
         color = if (isActive) GrayColor.C500 else CommonColor.White,
         border =
             if (isActive) {
@@ -212,6 +214,8 @@ private fun ShopActionButton(
         onClick = {
             if (enabled) {
                 onClick()
+            } else {
+                onDisabledClick()
             }
         },
     ) {

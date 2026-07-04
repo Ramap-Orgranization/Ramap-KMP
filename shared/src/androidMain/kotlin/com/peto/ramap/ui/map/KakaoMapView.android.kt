@@ -22,6 +22,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.kakao.vectormap.KakaoMap
 import com.kakao.vectormap.MapView
+import com.peto.ramap.core.config.MarkerConfig
 import com.peto.ramap.domain.model.Location
 import com.peto.ramap.domain.model.MapBounds
 import com.peto.ramap.domain.model.MarkerCluster
@@ -35,11 +36,14 @@ import ramap.shared.generated.resources.marker_ramen
 actual fun KakaoMapView(
     shops: RamenShops,
     focusShops: List<RamenShop>,
+    focusNearestToCurrentLocation: Boolean,
+    selectedShopId: String?,
     bounds: MapBounds,
     clusterBounds: MapBounds,
     myLocationRequestKey: Int,
     locationSettingsRequestKey: Int,
     onBoundsChanged: (MapBounds) -> Unit,
+    onMyLocationChanged: (Location) -> Unit,
     onShopClick: (RamenShop) -> Unit,
     onLocationPermissionBlocked: () -> Unit,
     modifier: Modifier,
@@ -74,7 +78,9 @@ actual fun KakaoMapView(
             locationProvider = locationProvider,
             cameraController = cameraController,
             onLocationReceived = { location ->
-                myLocation = location.toDomainLocation()
+                val domainLocation = location.toDomainLocation()
+                myLocation = domainLocation
+                onMyLocationChanged(domainLocation)
             },
             onLocationPermissionBlocked = {
                 if (shouldShowBlockedSnackbarOnPermissionResult) {
@@ -91,13 +97,14 @@ actual fun KakaoMapView(
 
     LaunchedEffect(kakaoMapState.value) {
         val kakaoMap = kakaoMapState.value ?: return@LaunchedEffect
-        val location = locationProvider.lastKnownLocation()?.toDomainLocation() ?: return@LaunchedEffect
+        val location = locationProvider.currentLocation()?.toDomainLocation() ?: return@LaunchedEffect
 
         myLocation = location
+        onMyLocationChanged(location)
         markerRenderer.renderMyLocation(kakaoMap, location)
     }
 
-    LaunchedEffect(kakaoMapState.value, markerBitmap, shops, bounds, clusterBounds, viewportSize) {
+    LaunchedEffect(kakaoMapState.value, markerBitmap, shops, selectedShopId, bounds, clusterBounds, viewportSize) {
         val kakaoMap = kakaoMapState.value ?: return@LaunchedEffect
         val markers =
             markerCluster.clustering(
@@ -112,7 +119,11 @@ actual fun KakaoMapView(
             kakaoMap = kakaoMap,
             markerBitmap = markerBitmap,
             markers = markers,
-            onShopClick = { shop -> currentOnShopClick.value(shop) },
+            selectedShopId = selectedShopId,
+            onShopClick = { shop ->
+                cameraController.moveToSelectedShop(kakaoMap, shop)
+                currentOnShopClick.value(shop)
+            },
             onClusterClick = { cluster ->
                 cameraController.focusRamenShops(
                     kakaoMap = kakaoMap,
@@ -129,11 +140,19 @@ actual fun KakaoMapView(
         markerRenderer.renderMyLocation(kakaoMap, location)
     }
 
-    LaunchedEffect(kakaoMapState.value, focusShops) {
+    LaunchedEffect(kakaoMapState.value, focusShops, focusNearestToCurrentLocation) {
         val kakaoMap = kakaoMapState.value ?: return@LaunchedEffect
         cameraController.focusRamenShops(
             kakaoMap = kakaoMap,
             shops = focusShops,
+            currentLocation =
+                if (focusNearestToCurrentLocation) {
+                    locationProvider.currentLocation()?.also { location ->
+                        onMyLocationChanged(location.toDomainLocation())
+                    }
+                } else {
+                    null
+                },
         )
     }
 
@@ -152,6 +171,7 @@ actual fun KakaoMapView(
                             kakaoMap = kakaoMap,
                             cameraController = cameraController,
                         )?.toDomainLocation()
+                        ?.also(onMyLocationChanged)
             },
             onBlocked = {
                 currentOnLocationPermissionBlocked.value()

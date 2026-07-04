@@ -45,6 +45,7 @@ import com.peto.ramap.designsystem.popup.CommonPopupDivider
 import com.peto.ramap.designsystem.popup.CommonPopupItem
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.domain.model.Category
+import com.peto.ramap.domain.model.Location
 import com.peto.ramap.domain.model.MapBounds
 import com.peto.ramap.domain.model.RamenShop
 import com.peto.ramap.theme.AppTextStyle
@@ -55,19 +56,19 @@ import com.peto.ramap.ui.map.component.MenuCategoryFilterRow
 import com.peto.ramap.ui.map.component.MyLocationButton
 import com.peto.ramap.ui.map.component.RamenShopDetailContent
 import com.peto.ramap.ui.map.component.RamenShopSearchBar
+import com.peto.ramap.ui.map.component.RamenShopSearchResultGuide
 import com.peto.ramap.ui.map.component.RamenShopSearchResultList
 import com.peto.ramap.ui.map.contract.MapIntent
 import com.peto.ramap.ui.map.contract.MapSideEffect
 import com.peto.ramap.ui.map.contract.MapUiState
 import com.peto.ramap.ui.map.model.MapPersonalization
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.account_delete_menu
-import ramap.shared.generated.resources.account_delete_unavailable_message
-import ramap.shared.generated.resources.filter_empty_visible_result_message
 import ramap.shared.generated.resources.hide_shop_confirm_action
 import ramap.shared.generated.resources.hide_shop_confirm_description
 import ramap.shared.generated.resources.hide_shop_confirm_dismiss
@@ -87,26 +88,16 @@ import ramap.shared.generated.resources.settings_hidden_shops_menu
 fun MapRoute(viewModel: MapViewModel = koinInject()) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
-    val accountDeleteUnavailableMessage =
-        stringResource(Res.string.account_delete_unavailable_message)
-    val filterEmptyVisibleResultMessage =
-        stringResource(Res.string.filter_empty_visible_result_message)
     var showLoginGuideDialog by remember { mutableStateOf(false) }
 
-    LaunchedEffect(viewModel, accountDeleteUnavailableMessage, filterEmptyVisibleResultMessage) {
+    LaunchedEffect(viewModel) {
         viewModel.sideEffect.collect { sideEffect ->
             when (sideEffect) {
                 MapSideEffect.ShowLoginGuide -> showLoginGuideDialog = true
 
-                MapSideEffect.ShowAccountDeleteUnavailable ->
+                is MapSideEffect.ShowToast ->
                     snackbarHostState.showSnackbar(
-                        message = accountDeleteUnavailableMessage,
-                        duration = SnackbarDuration.Short,
-                    )
-
-                MapSideEffect.ShowToast ->
-                    snackbarHostState.showSnackbar(
-                        message = filterEmptyVisibleResultMessage,
+                        message = getString(sideEffect.messageResource),
                         duration = SnackbarDuration.Short,
                     )
             }
@@ -119,6 +110,9 @@ fun MapRoute(viewModel: MapViewModel = koinInject()) {
         showLoginGuideDialog = showLoginGuideDialog,
         onBoundsChanged = { bounds ->
             viewModel.dispatch(MapIntent.OnBoundsChanged(bounds))
+        },
+        onMyLocationChanged = { location ->
+            viewModel.dispatch(MapIntent.OnMyLocationChanged(location))
         },
         onShopSelected = { shop ->
             viewModel.dispatch(MapIntent.OnShopSelected(shop))
@@ -169,6 +163,7 @@ private fun MapScreen(
     snackbarHostState: SnackbarHostState,
     showLoginGuideDialog: Boolean,
     onBoundsChanged: (MapBounds) -> Unit,
+    onMyLocationChanged: (Location) -> Unit,
     onShopSelected: (RamenShop) -> Unit,
     onShopDetailDismissed: () -> Unit,
     onQueryChanged: (String) -> Unit,
@@ -225,11 +220,14 @@ private fun MapScreen(
                 modifier = Modifier.fillMaxSize(),
                 shops = uiState.markerShops,
                 focusShops = uiState.focusShops,
+                focusNearestToCurrentLocation = uiState.shouldFocusNearestSearchResult,
+                selectedShopId = uiState.selectedShop?.id,
                 bounds = uiState.bounds,
                 clusterBounds = uiState.clusterBounds,
                 myLocationRequestKey = myLocationRequestKey,
                 locationSettingsRequestKey = locationSettingsRequestKey,
                 onBoundsChanged = onBoundsChanged,
+                onMyLocationChanged = onMyLocationChanged,
                 onShopClick = onShopSelected,
                 onLocationPermissionBlocked = {
                     coroutineScope.launch {
@@ -258,7 +256,7 @@ private fun MapScreen(
                         ).padding(horizontal = 10.dp),
             ) {
                 RamenShopSearchBar(
-                    query = uiState.query,
+                    query = uiState.search.input,
                     onQueryChange = onQueryChanged,
                 )
 
@@ -332,6 +330,7 @@ private fun MapScreen(
                 },
                 config = CommonBottomSheetConfig(),
                 content = {
+                    val searchResultGuide = uiState.searchResultGuide
                     when {
                         selectedShop != null -> {
                             RamenShopDetailContent(
@@ -348,6 +347,10 @@ private fun MapScreen(
                                     }
                                 },
                             )
+                        }
+
+                        searchResultGuide != null -> {
+                            RamenShopSearchResultGuide(guide = searchResultGuide)
                         }
 
                         uiState.showSearchResults -> {

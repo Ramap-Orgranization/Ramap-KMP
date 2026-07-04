@@ -3,6 +3,7 @@ package com.peto.ramap.ui.map
 import com.peto.ramap.core.base.BaseViewModel
 import com.peto.ramap.core.config.MarkerClusterConfig
 import com.peto.ramap.domain.model.Category
+import com.peto.ramap.domain.model.Location
 import com.peto.ramap.domain.model.MapBounds
 import com.peto.ramap.domain.model.RamenShop
 import com.peto.ramap.domain.model.RamenShopFilter
@@ -20,7 +21,11 @@ import io.github.jan.supabase.auth.status.SessionStatus
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
-import kotlin.math.abs
+import org.jetbrains.compose.resources.StringResource
+import ramap.shared.generated.resources.Res
+import ramap.shared.generated.resources.account_delete_unavailable_message
+import ramap.shared.generated.resources.filter_empty_visible_result_message
+import ramap.shared.generated.resources.hidden_shop_search_result_message
 import kotlin.time.Duration.Companion.milliseconds
 
 class MapViewModel(
@@ -42,6 +47,7 @@ class MapViewModel(
     override suspend fun handleIntent(intent: MapIntent) {
         when (intent) {
             is MapIntent.OnBoundsChanged -> scheduleRamenShopsLoad(intent.bounds)
+            is MapIntent.OnMyLocationChanged -> updateMyLocation(intent.location)
             is MapIntent.OnShopSelected -> selectShop(intent.shop)
             is MapIntent.OnShopDetailDismissed -> dismissShopDetail()
             is MapIntent.OnSearchResultsDismissed -> dismissSearchResults()
@@ -53,7 +59,7 @@ class MapViewModel(
             is MapIntent.OnPersonalizationViewChanged -> changePersonalizationView(intent.view)
             MapIntent.OnKakaoLoginClicked -> signInWithKakao()
             MapIntent.OnLogoutClicked -> signOut()
-            MapIntent.OnAccountDeleteClicked -> postSideEffect(MapSideEffect.ShowAccountDeleteUnavailable)
+            MapIntent.OnAccountDeleteClicked -> showToast(Res.string.account_delete_unavailable_message)
         }
     }
 
@@ -84,7 +90,13 @@ class MapViewModel(
     }
 
     private fun selectShop(shop: RamenShop) {
-        reduce { copy(selectedShop = shop) }
+        val isCurrentSearchResult = shop.id in currentState.search.results
+        reduce {
+            copy(
+                selectedShop = shop,
+                search = search.consumeResultFocusIf(isCurrentSearchResult),
+            )
+        }
         runTask { loadShopWaitingSystem(shop.id) }
     }
 
@@ -92,18 +104,32 @@ class MapViewModel(
         reduce { copy(selectedShop = null) }
     }
 
+    private fun updateMyLocation(location: Location) {
+        reduce { copy(currentLocation = location) }
+    }
+
     private fun dismissSearchResults() {
-        reduce { copy(isSearchResultsDismissed = true) }
+        reduce { copy(search = search.dismissResults()) }
     }
 
     private fun updateQuery(query: String) {
+        val normalizedQuery = SearchQuery(query).normalizeShopSearchQuery()
+        val hasCurrentSearchResults = currentState.search.hasLoadedResultsFor(normalizedQuery)
+
         reduce {
             copy(
-                query = query,
-                isSearchResultsDismissed = false,
+                search = search.updateInput(query),
+                selectedShop = null,
             )
         }
-        scheduleSearch(SearchQuery(query).normalizeShopSearchQuery())
+
+        if (normalizedQuery.value.isNotBlank() && hasCurrentSearchResults) {
+            searchJob?.cancel()
+            runTask { handleSingleSearchResult(currentState.searchResultShops.singleOrNull()) }
+            return
+        }
+
+        scheduleSearch(normalizedQuery)
     }
 
     private fun toggleCategoryFilter(category: Category) {
@@ -153,7 +179,6 @@ class MapViewModel(
             runTask { postSideEffect(MapSideEffect.ShowLoginGuide) }
             return
         }
-        if (shop.id in currentState.hiddenShopIds) return
 
         runTask {
             val isBookmarked = shop.id in currentState.bookmarkedShopIds
@@ -256,7 +281,16 @@ class MapViewModel(
                     } else {
                         bookmarkedShopIds
                     },
-                selectedShop = selectedShop?.takeUnless { !isHidden && it.id == shopId },
+                selectedShop =
+                    selectedShop
+                        ?.takeUnless { !isHidden && it.id == shopId }
+                        ?.let { selectedShop ->
+                            if (isHidden && selectedShop.id == shopId) {
+                                selectedShop.copy(isVisible = true)
+                            } else {
+                                selectedShop
+                            }
+                        },
             )
         }
     }
@@ -278,7 +312,7 @@ class MapViewModel(
                             MapPersonalization.HIDDEN -> shop.id in hiddenShopIds
                         }
                     },
-                isSearchResultsDismissed = false,
+                search = search.showResults(),
             )
         }
     }
@@ -303,7 +337,7 @@ class MapViewModel(
                     selectedShop?.takeIf { shop ->
                         shop.menuCategories.matches(filter)
                     },
-                isSearchResultsDismissed = false,
+                search = search.showResults(),
             )
         }
         showEmptyFilterResultMessageIfNeeded()
@@ -313,9 +347,7 @@ class MapViewModel(
         val state = currentState
         if (state.filters.isEmpty() || state.markerShops.hasVisibleShopIn(state.bounds)) return
 
-        runTask {
-            postSideEffect(MapSideEffect.ShowToast)
-        }
+        showToast(Res.string.filter_empty_visible_result_message)
     }
 
     private fun scheduleSearch(query: SearchQuery) {
@@ -344,9 +376,7 @@ class MapViewModel(
     private fun clearSearchResults() {
         reduce {
             copy(
-                searchResults = RamenShops(emptyMap()),
-                searchResultsQuery = null,
-                isSearchResultsDismissed = false,
+                search = search.clearResults(),
             )
         }
     }
@@ -364,11 +394,19 @@ class MapViewModel(
 
         reduceSearchResult(query, result)
 
-        currentState.searchResultShops
-            .singleOrNull()
-            ?.let { shop ->
-                selectShop(shop)
-            }
+        handleSingleSearchResult(currentState.searchResultShops.singleOrNull())
+    }
+
+    private fun handleSingleSearchResult(shop: RamenShop?) {
+        when {
+            shop == null -> Unit
+            shop.isVisible -> selectShop(shop)
+            else -> showToast(Res.string.hidden_shop_search_result_message)
+        }
+    }
+
+    private fun showToast(messageResource: StringResource) {
+        runTask { postSideEffect(MapSideEffect.ShowToast(messageResource)) }
     }
 
     private fun reduceSearchResult(
@@ -377,8 +415,8 @@ class MapViewModel(
     ) {
         reduce {
             copy(
-                searchResults = result,
-                searchResultsQuery = query,
+                search = search.updateResults(query, result),
+                selectedShop = null,
             )
         }
     }
@@ -404,7 +442,12 @@ class MapViewModel(
             copy(
                 bounds = bounds,
                 clusterBounds =
-                    if (bounds.isZoomMeaningfullyDifferentFrom(clusterBounds)) {
+                    if (
+                        bounds.hasMeaningfulZoomChangeFrom(
+                            other = clusterBounds,
+                            zoomShiftRatio = MarkerClusterConfig.ZOOM_SHIFT_RATIO,
+                        )
+                    ) {
                         bounds
                     } else {
                         clusterBounds
@@ -432,7 +475,7 @@ class MapViewModel(
         requestId: Long,
     ) {
         val previousBounds = lastLoadedBounds
-        if (previousBounds != null && !bounds.isMeaningfullyDifferentFrom(previousBounds)) return
+        if (previousBounds != null && !bounds.hasMeaningfulViewportChangeFrom(previousBounds)) return
 
         val result: RamenShops = ramenShopRepository.fetchRamenShops(bounds)
         if (requestId != boundsLoadRequestId) return
@@ -453,18 +496,6 @@ class MapViewModel(
         RamenShops(
             currentState.shops + newShops,
         )
-
-    private fun MapBounds.isZoomMeaningfullyDifferentFrom(other: MapBounds): Boolean =
-        latSpan.isMeaningfullyDifferentFrom(other.latSpan, MarkerClusterConfig.ZOOM_SHIFT_RATIO) ||
-            lngSpan.isMeaningfullyDifferentFrom(other.lngSpan, MarkerClusterConfig.ZOOM_SHIFT_RATIO)
-
-    private fun Double.isMeaningfullyDifferentFrom(
-        other: Double,
-        ratio: Double,
-    ): Boolean {
-        if (other == 0.0) return this != 0.0
-        return abs(this - other) / abs(other) >= ratio
-    }
 
     companion object {
         private const val BOUNDS_LOAD_DEBOUNCE_MILLIS = 350L

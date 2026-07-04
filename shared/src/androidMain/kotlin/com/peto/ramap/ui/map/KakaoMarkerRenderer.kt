@@ -1,7 +1,9 @@
 package com.peto.ramap.ui.map
 
 import android.graphics.Bitmap
+import android.graphics.Canvas
 import android.graphics.Color
+import android.graphics.Paint
 import com.kakao.vectormap.KakaoMap
 import com.kakao.vectormap.LatLng
 import com.kakao.vectormap.label.LabelLayer
@@ -11,7 +13,9 @@ import com.kakao.vectormap.label.LabelStyle
 import com.kakao.vectormap.label.LabelStyles
 import com.kakao.vectormap.label.LabelTextBuilder
 import com.kakao.vectormap.label.LabelTextStyle
+import com.peto.ramap.core.config.MapInteractionConfig
 import com.peto.ramap.core.config.MarkerClusterConfig
+import com.peto.ramap.core.config.MarkerConfig
 import com.peto.ramap.domain.model.Location
 import com.peto.ramap.domain.model.Marker
 import com.peto.ramap.domain.model.RamenShop
@@ -35,10 +39,11 @@ internal class KakaoMarkerRenderer(
         kakaoMap: KakaoMap,
         markerBitmap: Bitmap,
         markers: List<Marker>,
+        selectedShopId: String?,
         onShopClick: (RamenShop) -> Unit,
         onClusterClick: (Marker.ClusterMaker) -> Unit,
     ) {
-        val markersByKey = markers.associateBy(::markerKey)
+        val markersByKey = markers.associateBy { marker -> markerKey(marker, selectedShopId) }
         setUpKaKaoMapListener(kakaoMap, markersByKey, onShopClick, onClusterClick)
 
         val manager = kakaoMap.labelManager ?: return
@@ -47,7 +52,7 @@ internal class KakaoMarkerRenderer(
         removeStaleMarkers(markersByKey.keys, labelLayer)
         if (markers.isEmpty()) return
 
-        addNewMarkers(labelLayer, manager, markerBitmap, clusterBitmapFactory, markers)
+        addNewMarkers(labelLayer, manager, markerBitmap, clusterBitmapFactory, markers, selectedShopId)
     }
 
     /**
@@ -84,8 +89,14 @@ internal class KakaoMarkerRenderer(
         onClusterClick: (Marker.ClusterMaker) -> Unit,
     ) {
         kakaoMap.setOnLabelClickListener { _, _, label ->
-            val markerKey = label.tag as? String ?: return@setOnLabelClickListener false
-            val marker = markersByKey[markerKey] ?: return@setOnLabelClickListener false
+            val markerKey =
+                label.tag as? String
+                    ?: return@setOnLabelClickListener false
+
+            val marker =
+                markersByKey[markerKey]
+                    ?: return@setOnLabelClickListener false
+
             handleMarkerClick(marker, onShopClick, onClusterClick)
         }
     }
@@ -130,18 +141,30 @@ internal class KakaoMarkerRenderer(
         markerBitmap: Bitmap,
         clusterBitmapFactory: RamenShopClusterBitmapFactory,
         markers: List<Marker>,
+        selectedShopId: String?,
     ) {
-        val newMarkers = markers.filterNot { marker -> markerKey(marker) in renderedLabelIdsByKey }
+        val newMarkers =
+            markers
+                .filterNot { marker -> markerKey(marker, selectedShopId) in renderedLabelIdsByKey }
+                .sortedWith(compareBy { marker -> marker is Marker.SingleMarker && marker.id == selectedShopId })
         if (newMarkers.isEmpty()) return
 
         val markerStyles = createMarkerStyles(manager, markerBitmap) ?: return
+        val hiddenMarkerStyles = createHiddenMarkerStyles(manager, markerBitmap) ?: return
         val labelOptions =
             newMarkers.mapNotNull { marker ->
-                labelOptions(marker, manager, markerStyles, clusterBitmapFactory)
+                labelOptions(
+                    marker = marker,
+                    manager = manager,
+                    markerStyles = markerStyles,
+                    hiddenMarkerStyles = hiddenMarkerStyles,
+                    clusterBitmapFactory = clusterBitmapFactory,
+                    selectedShopId = selectedShopId,
+                )
             }
 
         labelLayer.addLabels(labelOptions)
-        newMarkers.forEach(::rememberRenderedLabel)
+        newMarkers.forEach { marker -> rememberRenderedLabel(marker, selectedShopId) }
     }
 
     /**
@@ -156,6 +179,19 @@ internal class KakaoMarkerRenderer(
                 LabelStyles.from(
                     MarkerConfig.Single.STYLE_ID,
                     baseLabelStyle(markerBitmap).setAnchorPoint(0.5f, 1.0f),
+                ),
+            )
+
+    private fun createHiddenMarkerStyles(
+        manager: LabelManager,
+        markerBitmap: Bitmap,
+    ): LabelStyles? =
+        manager.getLabelStyles(MarkerConfig.Single.HIDDEN_STYLE_ID)
+            ?: manager.addLabelStyles(
+                LabelStyles.from(
+                    MarkerConfig.Single.HIDDEN_STYLE_ID,
+                    baseLabelStyle(markerBitmap.withAlpha(MapInteractionConfig.HIDDEN_SHOP_ALPHA))
+                        .setAnchorPoint(0.5f, 1.0f),
                 ),
             )
 
@@ -213,13 +249,20 @@ internal class KakaoMarkerRenderer(
         marker: Marker,
         manager: LabelManager,
         markerStyles: LabelStyles,
+        hiddenMarkerStyles: LabelStyles,
         clusterBitmapFactory: RamenShopClusterBitmapFactory,
+        selectedShopId: String?,
     ): LabelOptions? =
         when (marker) {
-            is Marker.SingleMarker -> singleMarkerLabelOptions(marker, markerStyles)
+            is Marker.SingleMarker ->
+                singleMarkerLabelOptions(
+                    marker = marker,
+                    markerStyles = if (marker.shop.isVisible) markerStyles else hiddenMarkerStyles,
+                    selectedShopId = selectedShopId,
+                )
             is Marker.ClusterMaker -> {
                 val clusterStyles = createClusterStyles(manager, clusterBitmapFactory, marker)
-                clusterStyles?.let { styles -> baseLabelOptions(marker, styles) }
+                clusterStyles?.let { styles -> baseLabelOptions(marker, styles, selectedShopId) }
             }
         }
 
@@ -229,8 +272,9 @@ internal class KakaoMarkerRenderer(
     private fun singleMarkerLabelOptions(
         marker: Marker.SingleMarker,
         markerStyles: LabelStyles,
+        selectedShopId: String?,
     ): LabelOptions =
-        baseLabelOptions(marker, markerStyles)
+        baseLabelOptions(marker, markerStyles, selectedShopId)
             .setTexts(LabelTextBuilder().setTexts(marker.shop.name))
 
     /**
@@ -239,6 +283,7 @@ internal class KakaoMarkerRenderer(
     private fun baseLabelOptions(
         marker: Marker,
         styles: LabelStyles,
+        selectedShopId: String?,
     ): LabelOptions =
         LabelOptions
             .from(
@@ -246,21 +291,27 @@ internal class KakaoMarkerRenderer(
                 LatLng.from(marker.location.lat, marker.location.lng),
             ).setStyles(styles)
             .setClickable(true)
-            .setTag(markerKey(marker))
+            .setTag(markerKey(marker, selectedShopId))
 
     /**
      * SDK label 제거를 위해 렌더링한 마커 key와 label ID를 저장한다.
      */
-    private fun rememberRenderedLabel(marker: Marker) {
-        renderedLabelIdsByKey[markerKey(marker)] = markerLabelId(marker)
+    private fun rememberRenderedLabel(
+        marker: Marker,
+        selectedShopId: String?,
+    ) {
+        renderedLabelIdsByKey[markerKey(marker, selectedShopId)] = markerLabelId(marker)
     }
 
     /**
      * 마커 타입이 달라도 충돌하지 않는 내부 식별 key를 만든다.
      */
-    private fun markerKey(marker: Marker): String =
+    private fun markerKey(
+        marker: Marker,
+        selectedShopId: String?,
+    ): String =
         when (marker) {
-            is Marker.SingleMarker -> "$SINGLE_MARKER_KEY_PREFIX${marker.id}"
+            is Marker.SingleMarker -> "$SINGLE_MARKER_KEY_PREFIX${marker.id}:${marker.shop.isVisible}:${marker.id == selectedShopId}"
             is Marker.ClusterMaker -> "$CLUSTER_MARKER_KEY_PREFIX${marker.id}"
         }
 
@@ -284,5 +335,19 @@ internal class KakaoMarkerRenderer(
         private const val CLUSTER_MARKER_LABEL_PREFIX = "ramen-cluster-"
         private const val MY_LOCATION_STYLE_ID = "my-location-marker-style"
         private const val MY_LOCATION_LABEL_ID = "my-location-marker"
+
+        private fun Bitmap.withAlpha(alpha: Float): Bitmap {
+            val bitmap = Bitmap.createBitmap(width, height, config ?: Bitmap.Config.ARGB_8888)
+            val paint =
+                Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                    this.alpha = (alpha * ALPHA_MAX).toInt()
+                }
+
+            Canvas(bitmap).drawBitmap(this, 0f, 0f, paint)
+
+            return bitmap
+        }
+
+        private const val ALPHA_MAX = 255
     }
 }

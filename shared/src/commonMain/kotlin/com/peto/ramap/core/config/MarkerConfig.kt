@@ -1,4 +1,4 @@
-package com.peto.ramap.ui.map
+package com.peto.ramap.core.config
 
 /**
  * 지도 마커 렌더링에 사용하는 공통 UI 설정값.
@@ -9,9 +9,10 @@ package com.peto.ramap.ui.map
 internal object MarkerConfig {
     object Single {
         const val STYLE_ID = "ramen-shop-marker-style"
+        const val HIDDEN_STYLE_ID = "hidden-ramen-shop-marker-style"
         const val WIDTH = 24
         const val HEIGHT = 30
-        const val LABEL_TEXT_SIZE = 20
+        const val LABEL_TEXT_SIZE = 25
         const val LABEL_TEXT_COLOR = 0xFF333333.toInt()
         const val LABEL_STROKE_WIDTH = 4
     }

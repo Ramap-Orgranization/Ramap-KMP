@@ -37,7 +37,7 @@ class MapBoundsTest {
                 maxLat = previous.maxLat + 0.01,
             )
 
-        assertFalse(current.isMeaningfullyDifferentFrom(previous))
+        assertFalse(current.hasMeaningfulViewportChangeFrom(previous))
     }
 
     @Test
@@ -55,7 +55,7 @@ class MapBoundsTest {
                 maxLat = previous.maxLat + 0.02,
             )
 
-        assertTrue(current.isMeaningfullyDifferentFrom(previous))
+        assertTrue(current.hasMeaningfulViewportChangeFrom(previous))
     }
 
     @Test
@@ -72,7 +72,25 @@ class MapBoundsTest {
                 maxLat = previous.maxLat + 0.015,
             )
 
-        assertTrue(current.isMeaningfullyDifferentFrom(previous))
+        assertTrue(current.hasMeaningfulViewportChangeFrom(previous))
+    }
+
+    @Test
+    fun `줌 변화 판단은 중심 이동을 무시하고 span 변화만 비교한다`() {
+        val previous =
+            MapBounds(
+                minLat = 37.50,
+                maxLat = 37.60,
+                minLng = 126.90,
+                maxLng = 127.00,
+            )
+        val current =
+            previous.copy(
+                minLat = previous.minLat + 0.02,
+                maxLat = previous.maxLat + 0.02,
+            )
+
+        assertFalse(current.hasMeaningfulZoomChangeFrom(previous))
     }
 
     companion object {

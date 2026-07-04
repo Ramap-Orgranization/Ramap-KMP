@@ -43,7 +43,7 @@ fun RamenShopSearchBar(
     fun commitIfChanged() {
         val trimmed = internalValue.trim()
 
-        if (trimmed.length in 2..15 && trimmed != lastCommitted) {
+        if (trimmed.length in 2..15) {
             lastCommitted = trimmed
             onQueryChange(trimmed)
         }
@@ -95,7 +95,7 @@ fun RamenShopSearchBar(
                 ) {
                     Text(
                         text = "×",
-                        fontSize = 22.sp,
+                        fontSize = 25.sp,
                         color = GrayColor.C400,
                     )
                 }

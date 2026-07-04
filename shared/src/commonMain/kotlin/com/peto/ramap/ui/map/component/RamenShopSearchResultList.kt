@@ -1,6 +1,7 @@
 package com.peto.ramap.ui.map.component
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -11,17 +12,24 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.peto.ramap.core.config.MapInteractionConfig
 import com.peto.ramap.core.extension.noRippleClickable
 import com.peto.ramap.core.extension.stringResource
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.domain.model.RamenShop
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.GrayColor
+import com.peto.ramap.ui.map.contract.SearchResultGuide
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.search_result_count
+import ramap.shared.generated.resources.search_result_empty_message
+import ramap.shared.generated.resources.search_result_filter_empty_message
+import ramap.shared.generated.resources.search_result_hidden_only_message
+import ramap.shared.generated.resources.search_result_query_filter_empty_message
 
 @Composable
 fun RamenShopSearchResultList(
@@ -51,6 +59,35 @@ fun RamenShopSearchResultList(
     }
 }
 
+@Composable
+fun RamenShopSearchResultGuide(
+    guide: SearchResultGuide,
+    modifier: Modifier = Modifier,
+) {
+    val message =
+        when (guide) {
+            SearchResultGuide.SEARCH_EMPTY -> stringResource(Res.string.search_result_empty_message)
+            SearchResultGuide.FILTER_EMPTY -> stringResource(Res.string.search_result_filter_empty_message)
+            SearchResultGuide.QUERY_AND_FILTER_EMPTY ->
+                stringResource(Res.string.search_result_query_filter_empty_message)
+            SearchResultGuide.HIDDEN_ONLY -> stringResource(Res.string.search_result_hidden_only_message)
+        }
+
+    Box(
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp, vertical = 28.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        AppText(
+            text = message,
+            style = AppTextStyle.B1,
+            color = GrayColor.C400,
+        )
+    }
+}
+
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun RamenShopSearchResultItem(
@@ -62,6 +99,7 @@ private fun RamenShopSearchResultItem(
         modifier =
             modifier
                 .fillMaxWidth()
+                .alpha(if (shop.isVisible) 1f else MapInteractionConfig.HIDDEN_SHOP_ALPHA)
                 .noRippleClickable(onClick = onClick)
                 .padding(horizontal = 24.dp, vertical = 16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
