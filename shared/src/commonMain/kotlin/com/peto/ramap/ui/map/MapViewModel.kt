@@ -20,7 +20,12 @@ import io.github.jan.supabase.auth.status.SessionStatus
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
-import kotlin.math.abs
+import org.jetbrains.compose.resources.StringResource
+import ramap.shared.generated.resources.Res
+import ramap.shared.generated.resources.account_delete_unavailable_message
+import ramap.shared.generated.resources.filter_empty_visible_result_message
+import ramap.shared.generated.resources.hidden_shop_bookmark_unavailable_message
+import ramap.shared.generated.resources.hidden_shop_search_result_message
 import kotlin.time.Duration.Companion.milliseconds
 
 class MapViewModel(
@@ -53,7 +58,7 @@ class MapViewModel(
             is MapIntent.OnPersonalizationViewChanged -> changePersonalizationView(intent.view)
             MapIntent.OnKakaoLoginClicked -> signInWithKakao()
             MapIntent.OnLogoutClicked -> signOut()
-            MapIntent.OnAccountDeleteClicked -> postSideEffect(MapSideEffect.ShowAccountDeleteUnavailable)
+            MapIntent.OnAccountDeleteClicked -> showToast(Res.string.account_delete_unavailable_message)
         }
     }
 
@@ -84,11 +89,11 @@ class MapViewModel(
     }
 
     private fun selectShop(shop: RamenShop) {
-        val isCurrentSearchResult = shop.id in currentState.searchResults
+        val isCurrentSearchResult = shop.id in currentState.search.results
         reduce {
             copy(
                 selectedShop = shop,
-                isSearchResultFocusConsumed = isSearchResultFocusConsumed || isCurrentSearchResult,
+                search = search.consumeResultFocusIf(isCurrentSearchResult),
             )
         }
         runTask { loadShopWaitingSystem(shop.id) }
@@ -99,18 +104,16 @@ class MapViewModel(
     }
 
     private fun dismissSearchResults() {
-        reduce { copy(isSearchResultsDismissed = true) }
+        reduce { copy(search = search.dismissResults()) }
     }
 
     private fun updateQuery(query: String) {
         val normalizedQuery = SearchQuery(query).normalizeShopSearchQuery()
-        val hasCurrentSearchResults = currentState.searchResultsQuery == normalizedQuery
+        val hasCurrentSearchResults = currentState.search.hasLoadedResultsFor(normalizedQuery)
 
         reduce {
             copy(
-                query = query,
-                isSearchResultsDismissed = false,
-                isSearchResultFocusConsumed = false,
+                search = search.updateInput(query),
                 selectedShop = null,
             )
         }
@@ -171,7 +174,10 @@ class MapViewModel(
             runTask { postSideEffect(MapSideEffect.ShowLoginGuide) }
             return
         }
-        if (shop.id in currentState.hiddenShopIds) return
+        if (shop.id in currentState.hiddenShopIds) {
+            showToast(Res.string.hidden_shop_bookmark_unavailable_message)
+            return
+        }
 
         runTask {
             val isBookmarked = shop.id in currentState.bookmarkedShopIds
@@ -263,17 +269,11 @@ class MapViewModel(
         reduce {
             copy(
                 hiddenShopIds =
-                    if (isHidden) {
-                        hiddenShopIds - shopId
-                    } else {
-                        hiddenShopIds + shopId
-                    },
+                    if (isHidden) hiddenShopIds - shopId
+                    else hiddenShopIds + shopId,
                 bookmarkedShopIds =
-                    if (!isHidden && shouldRemoveBookmark) {
-                        bookmarkedShopIds - shopId
-                    } else {
-                        bookmarkedShopIds
-                    },
+                    if (!isHidden && shouldRemoveBookmark) bookmarkedShopIds - shopId
+                    else bookmarkedShopIds,
                 selectedShop =
                     selectedShop
                         ?.takeUnless { !isHidden && it.id == shopId }
@@ -305,7 +305,7 @@ class MapViewModel(
                             MapPersonalization.HIDDEN -> shop.id in hiddenShopIds
                         }
                     },
-                isSearchResultsDismissed = false,
+                search = search.showResults(),
             )
         }
     }
@@ -330,7 +330,7 @@ class MapViewModel(
                     selectedShop?.takeIf { shop ->
                         shop.menuCategories.matches(filter)
                     },
-                isSearchResultsDismissed = false,
+                search = search.showResults(),
             )
         }
         showEmptyFilterResultMessageIfNeeded()
@@ -340,9 +340,7 @@ class MapViewModel(
         val state = currentState
         if (state.filters.isEmpty() || state.markerShops.hasVisibleShopIn(state.bounds)) return
 
-        runTask {
-            postSideEffect(MapSideEffect.ShowToast)
-        }
+        showToast(Res.string.filter_empty_visible_result_message)
     }
 
     private fun scheduleSearch(query: SearchQuery) {
@@ -371,10 +369,7 @@ class MapViewModel(
     private fun clearSearchResults() {
         reduce {
             copy(
-                searchResults = RamenShops(emptyMap()),
-                searchResultsQuery = null,
-                isSearchResultsDismissed = false,
-                isSearchResultFocusConsumed = false,
+                search = search.clearResults(),
             )
         }
     }
@@ -395,12 +390,16 @@ class MapViewModel(
         handleSingleSearchResult(currentState.searchResultShops.singleOrNull())
     }
 
-    private suspend fun handleSingleSearchResult(shop: RamenShop?) {
+    private fun handleSingleSearchResult(shop: RamenShop?) {
         when {
             shop == null -> Unit
             shop.isVisible -> selectShop(shop)
-            else -> postSideEffect(MapSideEffect.ShowHiddenShopSearchResult)
+            else -> showToast(Res.string.hidden_shop_search_result_message)
         }
+    }
+
+    private fun showToast(messageResource: StringResource) {
+        runTask { postSideEffect(MapSideEffect.ShowToast(messageResource)) }
     }
 
     private fun reduceSearchResult(
@@ -409,10 +408,8 @@ class MapViewModel(
     ) {
         reduce {
             copy(
-                searchResults = result,
-                searchResultsQuery = query,
+                search = search.updateResults(query, result),
                 selectedShop = null,
-                isSearchResultFocusConsumed = false,
             )
         }
     }

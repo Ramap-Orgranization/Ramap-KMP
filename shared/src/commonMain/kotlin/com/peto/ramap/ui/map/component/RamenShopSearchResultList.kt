@@ -1,6 +1,7 @@
 package com.peto.ramap.ui.map.component
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -21,9 +22,14 @@ import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.domain.model.RamenShop
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.GrayColor
+import com.peto.ramap.ui.map.contract.SearchResultGuide
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
+import ramap.shared.generated.resources.search_result_empty_message
+import ramap.shared.generated.resources.search_result_filter_empty_message
+import ramap.shared.generated.resources.search_result_hidden_only_message
 import ramap.shared.generated.resources.search_result_count
+import ramap.shared.generated.resources.search_result_query_filter_empty_message
 
 @Composable
 fun RamenShopSearchResultList(
@@ -50,6 +56,35 @@ fun RamenShopSearchResultList(
                 onClick = { onShopClick(shop) },
             )
         }
+    }
+}
+
+@Composable
+fun RamenShopSearchResultGuide(
+    guide: SearchResultGuide,
+    modifier: Modifier = Modifier,
+) {
+    val message =
+        when (guide) {
+            SearchResultGuide.SEARCH_EMPTY -> stringResource(Res.string.search_result_empty_message)
+            SearchResultGuide.FILTER_EMPTY -> stringResource(Res.string.search_result_filter_empty_message)
+            SearchResultGuide.QUERY_AND_FILTER_EMPTY ->
+                stringResource(Res.string.search_result_query_filter_empty_message)
+            SearchResultGuide.HIDDEN_ONLY -> stringResource(Res.string.search_result_hidden_only_message)
+        }
+
+    Box(
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp, vertical = 28.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        AppText(
+            text = message,
+            style = AppTextStyle.B1,
+            color = GrayColor.C400,
+        )
     }
 }
 
