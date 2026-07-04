@@ -33,4 +33,11 @@ class NearestRamenShopTest {
 
         assertNull(result)
     }
+
+    @Test
+    fun `매장 목록이 비어 있으면 null을 반환한다`() {
+        val result = emptyList<RamenShop>().nearestTo(Location(lat = 37.55, lng = 126.92))
+
+        assertNull(result)
+    }
 }
