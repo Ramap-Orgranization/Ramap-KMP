@@ -20,7 +20,6 @@ import io.github.jan.supabase.auth.status.SessionStatus
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
-import kotlin.math.abs
 import kotlin.time.Duration.Companion.milliseconds
 
 class MapViewModel(
