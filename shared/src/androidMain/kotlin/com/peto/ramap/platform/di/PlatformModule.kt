@@ -1,7 +1,7 @@
 package com.peto.ramap.platform.di
 
-import com.peto.ramap.platform.AppSettingsOpener
 import com.peto.ramap.platform.AndroidAppSettingsOpener
+import com.peto.ramap.platform.AppSettingsOpener
 import org.koin.android.ext.koin.androidContext
 import org.koin.dsl.module
 
