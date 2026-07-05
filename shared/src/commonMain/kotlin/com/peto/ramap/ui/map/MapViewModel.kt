@@ -61,6 +61,7 @@ class MapViewModel(
             MapIntent.OnKakaoLoginClicked -> signInWithKakao()
             MapIntent.OnLogoutClicked -> signOut()
             MapIntent.OnAccountDeleteClicked -> showToast(Res.string.account_delete_unavailable_message)
+            MapIntent.OnLocationPermissionBlocked -> showLocationPermissionBlockedToast()
         }
     }
 
@@ -442,6 +443,10 @@ class MapViewModel(
 
     private fun showToast(messageResource: StringResource) {
         runTask { postSideEffect(MapSideEffect.ShowToast(messageResource)) }
+    }
+
+    private fun showLocationPermissionBlockedToast() {
+        runTask { postSideEffect(MapSideEffect.ShowLocationPermissionBlockedToast) }
     }
 
     private fun reduceSearchResult(

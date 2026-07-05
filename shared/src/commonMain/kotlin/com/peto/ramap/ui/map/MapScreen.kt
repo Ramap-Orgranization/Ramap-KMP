@@ -15,18 +15,12 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarDuration
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -41,6 +35,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigationevent.NavigationEventInfo
 import androidx.navigationevent.compose.NavigationBackHandler
 import androidx.navigationevent.compose.rememberNavigationEventState
+import com.peto.ramap.core.base.ObserveAsEvents
 import com.peto.ramap.designsystem.bottomsheet.CommonBottomSheet
 import com.peto.ramap.designsystem.bottomsheet.CommonBottomSheetConfig
 import com.peto.ramap.designsystem.dialog.CommonDialog
@@ -48,6 +43,10 @@ import com.peto.ramap.designsystem.popup.CommonPopup
 import com.peto.ramap.designsystem.popup.CommonPopupDivider
 import com.peto.ramap.designsystem.popup.CommonPopupItem
 import com.peto.ramap.designsystem.text.AppText
+import com.peto.ramap.designsystem.toast.ToastManager
+import com.peto.ramap.designsystem.toast.model.ToastAction
+import com.peto.ramap.designsystem.toast.model.ToastData
+import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.Category
 import com.peto.ramap.domain.model.Location
 import com.peto.ramap.domain.model.MapBounds
@@ -66,7 +65,6 @@ import com.peto.ramap.ui.map.contract.MapIntent
 import com.peto.ramap.ui.map.contract.MapSideEffect
 import com.peto.ramap.ui.map.contract.MapUiState
 import com.peto.ramap.ui.map.model.MapPersonalization
-import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
@@ -89,34 +87,53 @@ import ramap.shared.generated.resources.settings_bookmarked_shops_menu
 import ramap.shared.generated.resources.settings_hidden_shops_menu
 
 @Composable
-fun MapRoute(viewModel: MapViewModel = koinInject()) {
+fun MapRoute(
+    toastManager: ToastManager = koinInject(),
+    viewModel: MapViewModel = koinInject(),
+) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val snackbarHostState = remember { SnackbarHostState() }
     var showLoginGuideDialog by remember { mutableStateOf(false) }
+    var locationSettingsRequestKey by remember { mutableStateOf(0) }
 
-    LaunchedEffect(viewModel) {
-        viewModel.sideEffect.collect { sideEffect ->
-            when (sideEffect) {
-                MapSideEffect.ShowLoginGuide -> showLoginGuideDialog = true
+    ObserveAsEvents(viewModel.sideEffect) { sideEffect ->
+        when (sideEffect) {
+            MapSideEffect.ShowLoginGuide -> showLoginGuideDialog = true
 
-                is MapSideEffect.ShowToast ->
-                    snackbarHostState.showSnackbar(
+            MapSideEffect.ShowLocationPermissionBlockedToast ->
+                toastManager.show(
+                    ToastData(
+                        message = getString(Res.string.location_permission_enable_message),
+                        type = ToastType.DEFAULT,
+                        action =
+                            ToastAction(
+                                label = getString(Res.string.location_permission_settings_action),
+                                onClick = { locationSettingsRequestKey += 1 },
+                            ),
+                    ),
+                )
+
+            is MapSideEffect.ShowToast ->
+                toastManager.show(
+                    ToastData(
                         message = getString(sideEffect.messageResource),
-                        duration = SnackbarDuration.Short,
-                    )
-            }
+                        type = ToastType.DEFAULT,
+                    ),
+                )
         }
     }
 
     MapScreen(
         uiState = uiState,
-        snackbarHostState = snackbarHostState,
+        locationSettingsRequestKey = locationSettingsRequestKey,
         showLoginGuideDialog = showLoginGuideDialog,
         onBoundsChanged = { bounds ->
             viewModel.dispatch(MapIntent.OnBoundsChanged(bounds))
         },
         onMyLocationChanged = { location ->
             viewModel.dispatch(MapIntent.OnMyLocationChanged(location))
+        },
+        onLocationPermissionBlocked = {
+            viewModel.dispatch(MapIntent.OnLocationPermissionBlocked)
         },
         onShopSelected = { shop ->
             viewModel.dispatch(MapIntent.OnShopSelected(shop))
@@ -164,10 +181,11 @@ fun MapRoute(viewModel: MapViewModel = koinInject()) {
 @Composable
 private fun MapScreen(
     uiState: MapUiState,
-    snackbarHostState: SnackbarHostState,
+    locationSettingsRequestKey: Int,
     showLoginGuideDialog: Boolean,
     onBoundsChanged: (MapBounds) -> Unit,
     onMyLocationChanged: (Location) -> Unit,
+    onLocationPermissionBlocked: () -> Unit,
     onShopSelected: (RamenShop) -> Unit,
     onShopDetailDismissed: () -> Unit,
     onQueryChanged: (String) -> Unit,
@@ -188,13 +206,7 @@ private fun MapScreen(
     val isImeVisible = WindowInsets.ime.getBottom(density) > 0
     var wasImeVisible by remember { mutableStateOf(false) }
     var myLocationRequestKey by remember { mutableStateOf(0) }
-    var locationSettingsRequestKey by remember { mutableStateOf(0) }
     var hideConfirmShop by remember { mutableStateOf<RamenShop?>(null) }
-    val coroutineScope = rememberCoroutineScope()
-    val locationPermissionEnableMessage =
-        stringResource(Res.string.location_permission_enable_message)
-    val locationPermissionSettingsAction =
-        stringResource(Res.string.location_permission_settings_action)
     val loginRequiredTitle = stringResource(Res.string.login_required_message)
     val loginRequiredDescription = stringResource(Res.string.login_required_description)
     val loginRequiredAction = stringResource(Res.string.login_required_action)
@@ -224,217 +236,199 @@ private fun MapScreen(
         myLocationRequestKey += 1
     }
 
-    Scaffold(
-        modifier = Modifier.fillMaxSize(),
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
-    ) {
-        BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
-            val detailBottomSheetMaxHeight = maxHeight - searchBarTopPadding - searchBarHeight
+    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+        val detailBottomSheetMaxHeight = maxHeight - searchBarTopPadding - searchBarHeight
 
-            NavigationBackHandler(
-                state = backEventState,
-                isBackEnabled = selectedShop != null,
-                onBackCompleted = onShopDetailDismissed,
+        NavigationBackHandler(
+            state = backEventState,
+            isBackEnabled = selectedShop != null,
+            onBackCompleted = onShopDetailDismissed,
+        )
+
+        KakaoMapView(
+            modifier = Modifier.fillMaxSize(),
+            shops = uiState.markerShops,
+            focusShops = uiState.focusShops,
+            focusNearestToCurrentLocation = uiState.shouldFocusNearestSearchResult,
+            selectedShopId = uiState.selectedShop?.id,
+            bounds = uiState.bounds,
+            clusterBounds = uiState.clusterBounds,
+            myLocationRequestKey = myLocationRequestKey,
+            locationSettingsRequestKey = locationSettingsRequestKey,
+            onBoundsChanged = onBoundsChanged,
+            onMyLocationChanged = onMyLocationChanged,
+            onShopClick = onShopSelected,
+            onLocationPermissionBlocked = onLocationPermissionBlocked,
+        )
+
+        Column(
+            modifier =
+                Modifier
+                    .padding(
+                        top = searchBarTopPadding,
+                    ).padding(horizontal = 10.dp),
+        ) {
+            RamenShopSearchBar(
+                query = uiState.search.input,
+                onQueryChange = onQueryChanged,
             )
 
-            KakaoMapView(
-                modifier = Modifier.fillMaxSize(),
-                shops = uiState.markerShops,
-                focusShops = uiState.focusShops,
-                focusNearestToCurrentLocation = uiState.shouldFocusNearestSearchResult,
-                selectedShopId = uiState.selectedShop?.id,
-                bounds = uiState.bounds,
-                clusterBounds = uiState.clusterBounds,
-                myLocationRequestKey = myLocationRequestKey,
-                locationSettingsRequestKey = locationSettingsRequestKey,
-                onBoundsChanged = onBoundsChanged,
-                onMyLocationChanged = onMyLocationChanged,
-                onShopClick = onShopSelected,
-                onLocationPermissionBlocked = {
-                    coroutineScope.launch {
-                        val result =
-                            snackbarHostState.showSnackbar(
-                                message = locationPermissionEnableMessage,
-                                actionLabel = locationPermissionSettingsAction,
-                                duration = SnackbarDuration.Short,
-                            )
-
-                        if (result == SnackbarResult.ActionPerformed) {
-                            locationSettingsRequestKey += 1
-                        }
-                    }
-                },
-            )
-
-            Column(
-                modifier =
-                    Modifier
-                        .padding(
-                            top = searchBarTopPadding,
-                        ).padding(horizontal = 10.dp),
-            ) {
-                RamenShopSearchBar(
-                    query = uiState.search.input,
-                    onQueryChange = onQueryChanged,
-                )
-
-                MenuCategoryFilterRow(
-                    selectedCategories = uiState.filters,
-                    onCategoryClick = onCategoryFilterToggled,
-                    modifier = Modifier.padding(top = 6.dp),
-                )
-            }
-
-            MyLocationButton(
-                onClick = { myLocationRequestKey += 1 },
-                modifier =
-                    Modifier
-                        .align(Alignment.BottomStart)
-                        .padding(
-                            start = 16.dp,
-                            bottom =
-                                WindowInsets.navigationBars
-                                    .asPaddingValues()
-                                    .calculateBottomPadding() + 24.dp,
-                        ),
-            )
-
-            SettingsFab(
-                isLoggedIn = uiState.isLoggedIn,
-                accountLabel = uiState.accountLabel,
-                isShowingBookmarkedShops = uiState.personalizationView == MapPersonalization.BOOKMARKED,
-                isShowingHiddenShops = uiState.personalizationView == MapPersonalization.HIDDEN,
-                onKakaoLoginClick = onKakaoLoginClick,
-                onShowBookmarkedShopsClick = {
-                    onPersonalizationViewChanged(
-                        if (uiState.personalizationView == MapPersonalization.BOOKMARKED) {
-                            MapPersonalization.ALL
-                        } else {
-                            MapPersonalization.BOOKMARKED
-                        },
-                    )
-                },
-                onShowHiddenShopsClick = {
-                    onPersonalizationViewChanged(
-                        if (uiState.personalizationView == MapPersonalization.HIDDEN) {
-                            MapPersonalization.ALL
-                        } else {
-                            MapPersonalization.HIDDEN
-                        },
-                    )
-                },
-                onLogoutClick = onLogoutClick,
-                onAccountDeleteClick = onAccountDeleteClick,
-                modifier =
-                    Modifier
-                        .align(Alignment.BottomEnd)
-                        .padding(
-                            end = 16.dp,
-                            bottom =
-                                WindowInsets.navigationBars
-                                    .asPaddingValues()
-                                    .calculateBottomPadding() + 24.dp,
-                        ),
-            )
-
-            CommonBottomSheet(
-                visible = uiState.showSearchResults,
-                onDismissRequest = onSearchResultsDismissed,
-                config = CommonBottomSheetConfig(),
-                content = {
-                    val searchResultGuide = uiState.searchResultGuide
-                    when {
-                        searchResultGuide != null -> {
-                            RamenShopSearchResultGuide(guide = searchResultGuide)
-                        }
-
-                        uiState.showSearchResults -> {
-                            RamenShopSearchResultList(
-                                shops = uiState.searchResultShops,
-                                onShopClick = onShopSelected,
-                            )
-                        }
-                    }
-                },
-            )
-
-            selectedShop?.let { shop ->
-                CommonBottomSheet(
-                    visible = true,
-                    onDismissRequest = onShopDetailDismissed,
-                    config = CommonBottomSheetConfig(maxHeight = detailBottomSheetMaxHeight),
-                    content = {
-                        RamenShopDetailContent(
-                            shop = shop,
-                            waitingSystem = uiState.shopWaiting[shop.id],
-                            isBookmarked = shop.id in uiState.bookmarkedShopIds,
-                            isHidden = shop.id in uiState.hiddenShopIds,
-                            onBookmarkClick = { onBookmarkToggled(shop) },
-                            onHiddenClick = {
-                                if (uiState.isLoggedIn && shop.id !in uiState.hiddenShopIds) {
-                                    hideConfirmShop = shop
-                                } else {
-                                    onHiddenToggled(shop)
-                                }
-                            },
-                        )
-                    },
-                )
-            }
-
-            CommonDialog(
-                visible = showLoginGuideDialog,
-                confirmText = loginRequiredAction,
-                dismissText = loginRequiredDismiss,
-                onDismissRequest = onLoginGuideDismiss,
-                content = {
-                    AppText(
-                        text = loginRequiredTitle,
-                        style = AppTextStyle.T1,
-                        color = GrayColor.C500,
-                        textAlign = TextAlign.Center,
-                    )
-
-                    AppText(
-                        text = loginRequiredDescription,
-                        modifier = Modifier.padding(top = 8.dp),
-                        style = AppTextStyle.B2,
-                        color = GrayColor.C400,
-                        textAlign = TextAlign.Center,
-                    )
-                },
-                onConfirm = onLoginGuideConfirm,
-                onDismiss = onLoginGuideDismiss,
-            )
-
-            CommonDialog(
-                visible = hideConfirmShop != null,
-                confirmText = hideShopConfirmAction,
-                dismissText = hideShopConfirmDismiss,
-                onDismissRequest = { hideConfirmShop = null },
-                content = {
-                    AppText(
-                        text = hideShopConfirmTitle,
-                        style = AppTextStyle.T1,
-                        color = GrayColor.C500,
-                        textAlign = TextAlign.Center,
-                    )
-
-                    AppText(
-                        text = hideShopConfirmDescription,
-                        modifier = Modifier.padding(top = 8.dp),
-                        style = AppTextStyle.B2,
-                        color = GrayColor.C400,
-                        textAlign = TextAlign.Center,
-                    )
-                },
-                onConfirm = {
-                    hideConfirmShop?.let(onHiddenToggled)
-                    hideConfirmShop = null
-                },
-                onDismiss = { hideConfirmShop = null },
+            MenuCategoryFilterRow(
+                selectedCategories = uiState.filters,
+                onCategoryClick = onCategoryFilterToggled,
+                modifier = Modifier.padding(top = 6.dp),
             )
         }
+
+        MyLocationButton(
+            onClick = { myLocationRequestKey += 1 },
+            modifier =
+                Modifier
+                    .align(Alignment.BottomStart)
+                    .padding(
+                        start = 16.dp,
+                        bottom =
+                            WindowInsets.navigationBars
+                                .asPaddingValues()
+                                .calculateBottomPadding() + 24.dp,
+                    ),
+        )
+
+        SettingsFab(
+            isLoggedIn = uiState.isLoggedIn,
+            accountLabel = uiState.accountLabel,
+            isShowingBookmarkedShops = uiState.personalizationView == MapPersonalization.BOOKMARKED,
+            isShowingHiddenShops = uiState.personalizationView == MapPersonalization.HIDDEN,
+            onKakaoLoginClick = onKakaoLoginClick,
+            onShowBookmarkedShopsClick = {
+                onPersonalizationViewChanged(
+                    if (uiState.personalizationView == MapPersonalization.BOOKMARKED) {
+                        MapPersonalization.ALL
+                    } else {
+                        MapPersonalization.BOOKMARKED
+                    },
+                )
+            },
+            onShowHiddenShopsClick = {
+                onPersonalizationViewChanged(
+                    if (uiState.personalizationView == MapPersonalization.HIDDEN) {
+                        MapPersonalization.ALL
+                    } else {
+                        MapPersonalization.HIDDEN
+                    },
+                )
+            },
+            onLogoutClick = onLogoutClick,
+            onAccountDeleteClick = onAccountDeleteClick,
+            modifier =
+                Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(
+                        end = 16.dp,
+                        bottom =
+                            WindowInsets.navigationBars
+                                .asPaddingValues()
+                                .calculateBottomPadding() + 24.dp,
+                    ),
+        )
+
+        CommonBottomSheet(
+            visible = uiState.showSearchResults,
+            onDismissRequest = onSearchResultsDismissed,
+            config = CommonBottomSheetConfig(),
+            content = {
+                val searchResultGuide = uiState.searchResultGuide
+                when {
+                    searchResultGuide != null -> {
+                        RamenShopSearchResultGuide(guide = searchResultGuide)
+                    }
+
+                    uiState.showSearchResults -> {
+                        RamenShopSearchResultList(
+                            shops = uiState.searchResultShops,
+                            onShopClick = onShopSelected,
+                        )
+                    }
+                }
+            },
+        )
+
+        selectedShop?.let { shop ->
+            CommonBottomSheet(
+                visible = true,
+                onDismissRequest = onShopDetailDismissed,
+                config = CommonBottomSheetConfig(maxHeight = detailBottomSheetMaxHeight),
+                content = {
+                    RamenShopDetailContent(
+                        shop = shop,
+                        waitingSystem = uiState.shopWaiting[shop.id],
+                        isBookmarked = shop.id in uiState.bookmarkedShopIds,
+                        isHidden = shop.id in uiState.hiddenShopIds,
+                        onBookmarkClick = { onBookmarkToggled(shop) },
+                        onHiddenClick = {
+                            if (uiState.isLoggedIn && shop.id !in uiState.hiddenShopIds) {
+                                hideConfirmShop = shop
+                            } else {
+                                onHiddenToggled(shop)
+                            }
+                        },
+                    )
+                },
+            )
+        }
+
+        CommonDialog(
+            visible = showLoginGuideDialog,
+            confirmText = loginRequiredAction,
+            dismissText = loginRequiredDismiss,
+            onDismissRequest = onLoginGuideDismiss,
+            content = {
+                AppText(
+                    text = loginRequiredTitle,
+                    style = AppTextStyle.T1,
+                    color = GrayColor.C500,
+                    textAlign = TextAlign.Center,
+                )
+
+                AppText(
+                    text = loginRequiredDescription,
+                    modifier = Modifier.padding(top = 8.dp),
+                    style = AppTextStyle.B2,
+                    color = GrayColor.C400,
+                    textAlign = TextAlign.Center,
+                )
+            },
+            onConfirm = onLoginGuideConfirm,
+            onDismiss = onLoginGuideDismiss,
+        )
+
+        CommonDialog(
+            visible = hideConfirmShop != null,
+            confirmText = hideShopConfirmAction,
+            dismissText = hideShopConfirmDismiss,
+            onDismissRequest = { hideConfirmShop = null },
+            content = {
+                AppText(
+                    text = hideShopConfirmTitle,
+                    style = AppTextStyle.T1,
+                    color = GrayColor.C500,
+                    textAlign = TextAlign.Center,
+                )
+
+                AppText(
+                    text = hideShopConfirmDescription,
+                    modifier = Modifier.padding(top = 8.dp),
+                    style = AppTextStyle.B2,
+                    color = GrayColor.C400,
+                    textAlign = TextAlign.Center,
+                )
+            },
+            onConfirm = {
+                hideConfirmShop?.let(onHiddenToggled)
+                hideConfirmShop = null
+            },
+            onDismiss = { hideConfirmShop = null },
+        )
     }
 }
 
