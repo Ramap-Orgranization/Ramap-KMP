@@ -3,14 +3,19 @@ package com.peto.ramap.ui.map
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.viewinterop.UIKitInteropInteractionMode
 import androidx.compose.ui.viewinterop.UIKitInteropProperties
 import androidx.compose.ui.viewinterop.UIKitView
 import com.peto.ramap.domain.model.Location
 import com.peto.ramap.domain.model.MapBounds
+import com.peto.ramap.domain.model.MarkerCluster
 import com.peto.ramap.domain.model.RamenShop
 import com.peto.ramap.domain.model.RamenShops
 import kotlinx.cinterop.ExperimentalForeignApi
@@ -40,14 +45,33 @@ actual fun KakaoMapView(
                 onLocationPermissionBlocked = onLocationPermissionBlocked,
             )
         }
+    val markerCluster = remember { MarkerCluster() }
+    var viewportSize by remember { mutableStateOf(MapViewportSize()) }
 
     UIKitView(
-        modifier = modifier,
+        modifier =
+            modifier.onSizeChanged { size ->
+                viewportSize =
+                    MapViewportSize(
+                        width = size.width,
+                        height = size.height,
+                    )
+            },
         factory = {
             mapController.view
         },
         update = {
-            mapController.updateShops(shops)
+            val markers =
+                markerCluster.clustering(
+                    shops = shops,
+                    bounds = clusterBounds,
+                    viewportWidth = viewportSize.width,
+                    viewportHeight = viewportSize.height,
+                    visibleBounds = bounds,
+                )
+            mapController.updateMarkers(
+                markers = markers,
+            )
             mapController.updateFocusShops(
                 shops = focusShops,
                 focusNearestToCurrentLocation = focusNearestToCurrentLocation,
