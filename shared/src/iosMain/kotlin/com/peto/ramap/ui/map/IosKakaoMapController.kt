@@ -914,7 +914,6 @@ class IosKakaoMapController(
     ) {
         val shop = shopsByPoiId[poiID]
         shop?.let {
-            moveToShop(kakaoMap, it)
             onShopClick(it)
         }
     }
@@ -930,7 +929,6 @@ class IosKakaoMapController(
         val tappedCoordinate = kakaoMap.coordinateAt(point)
         val shop = findNearestShop(tappedCoordinate) ?: return
 
-        moveToShop(kakaoMap, shop)
         onShopClick(shop)
     }
 

@@ -3,6 +3,7 @@ package com.peto.ramap.ui.map
 import android.location.Location
 import com.kakao.vectormap.KakaoMap
 import com.kakao.vectormap.LatLng
+import com.kakao.vectormap.camera.CameraUpdate
 import com.kakao.vectormap.camera.CameraUpdateFactory
 import com.peto.ramap.core.config.MapInteractionConfig
 import com.peto.ramap.domain.model.RamenShop
@@ -61,28 +62,27 @@ internal class KakaoCameraController {
         )
     }
 
-    fun moveToSelectedShop(
+    fun moveToShop(
         kakaoMap: KakaoMap,
         shop: RamenShop,
     ) {
-        moveToShop(kakaoMap, shop)
+        val position: LatLng = shopLatLng(shop)
+        val shouldZoomIn = kakaoMap.zoomLevel < MapInteractionConfig.SELECTED_MARKER_ZOOM_LEVEL
+        val cameraUpdate = buildCameraMovement(shouldZoomIn, position)
+        kakaoMap.moveCamera(cameraUpdate)
     }
 
-    private fun moveToShop(
-        kakaoMap: KakaoMap,
-        shop: RamenShop,
-    ) {
-        val shopLatLng = shopLatLng(shop)
-        kakaoMap.moveCamera(
-            if (kakaoMap.zoomLevel < MapInteractionConfig.SELECTED_MARKER_ZOOM_LEVEL) {
-                CameraUpdateFactory.newCenterPosition(
-                    shopLatLng,
-                    MapInteractionConfig.SELECTED_MARKER_ZOOM_LEVEL,
-                )
-            } else {
-                CameraUpdateFactory.newCenterPosition(shopLatLng)
-            },
-        )
+    private fun buildCameraMovement(
+        shouldZoomIn: Boolean,
+        position: LatLng,
+    ): CameraUpdate {
+        if (shouldZoomIn) {
+            return CameraUpdateFactory.newCenterPosition(
+                position,
+                MapInteractionConfig.SELECTED_MARKER_ZOOM_LEVEL,
+            )
+        }
+        return CameraUpdateFactory.newCenterPosition(position)
     }
 
     private fun fitShops(

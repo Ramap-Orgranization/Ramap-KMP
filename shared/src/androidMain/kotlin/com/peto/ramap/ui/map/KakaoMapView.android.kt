@@ -120,7 +120,6 @@ actual fun KakaoMapView(
             markers = markers,
             selectedShopId = selectedShopId,
             onShopClick = { shop ->
-                cameraController.moveToSelectedShop(kakaoMap, shop)
                 currentOnShopClick.value(shop)
             },
             onClusterClick = { cluster ->
