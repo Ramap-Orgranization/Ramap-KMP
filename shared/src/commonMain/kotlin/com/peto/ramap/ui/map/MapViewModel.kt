@@ -1,7 +1,11 @@
 package com.peto.ramap.ui.map
 
+import androidx.lifecycle.viewModelScope
 import com.peto.ramap.core.base.BaseViewModel
 import com.peto.ramap.core.config.MarkerClusterConfig
+import com.peto.ramap.designsystem.toast.model.ToastAction
+import com.peto.ramap.designsystem.toast.model.ToastData
+import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.Category
 import com.peto.ramap.domain.model.Location
 import com.peto.ramap.domain.model.MapBounds
@@ -13,9 +17,6 @@ import com.peto.ramap.domain.repository.LoginRepository
 import com.peto.ramap.domain.repository.PersonalizationRepository
 import com.peto.ramap.domain.repository.RamenShopRepository
 import com.peto.ramap.domain.repository.ShopWaitingSystemRepository
-import com.peto.ramap.designsystem.toast.model.ToastAction
-import com.peto.ramap.designsystem.toast.model.ToastData
-import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.ui.map.contract.MapIntent
 import com.peto.ramap.ui.map.contract.MapSideEffect
 import com.peto.ramap.ui.map.contract.MapUiState
@@ -25,6 +26,7 @@ import io.github.jan.supabase.auth.status.SessionStatus
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.StringResource
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.account_delete_unavailable_message
@@ -446,13 +448,16 @@ class MapViewModel(
         }
     }
 
-    private fun showToast(messageResource: StringResource) {
-        runTask {
+    private fun showToast(
+        messageResource: StringResource,
+        type: ToastType = ToastType.DEFAULT,
+    ) {
+        viewModelScope.launch {
             postSideEffect(
                 MapSideEffect.ShowToast(
                     ToastData(
                         message = messageResource,
-                        type = ToastType.DEFAULT,
+                        type = type,
                     ),
                 ),
             )
