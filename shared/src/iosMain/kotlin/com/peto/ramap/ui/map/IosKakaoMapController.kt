@@ -65,9 +65,6 @@ import platform.CoreLocation.kCLAuthorizationStatusNotDetermined
 import platform.CoreLocation.kCLAuthorizationStatusRestricted
 import platform.CoreLocation.kCLLocationAccuracyHundredMeters
 import platform.Foundation.NSError
-import platform.Foundation.NSURL
-import platform.UIKit.UIApplication
-import platform.UIKit.UIApplicationOpenSettingsURLString
 import platform.UIKit.UIBezierPath
 import platform.UIKit.UIColor
 import platform.UIKit.UIGraphicsBeginImageContextWithOptions
@@ -586,19 +583,6 @@ class IosKakaoMapController(
 
             else -> locationManager.requestWhenInUseAuthorization()
         }
-    }
-
-    /**
-     * iOS 앱 설정 화면을 열어 사용자가 위치 권한을 직접 변경할 수 있게 한다.
-     */
-    fun openAppSettings() {
-        val settingsUrl = NSURL.URLWithString(UIApplicationOpenSettingsURLString) ?: return
-
-        UIApplication.sharedApplication.openURL(
-            url = settingsUrl,
-            options = emptyMap<Any?, Any>(),
-            completionHandler = null,
-        )
     }
 
     /**
