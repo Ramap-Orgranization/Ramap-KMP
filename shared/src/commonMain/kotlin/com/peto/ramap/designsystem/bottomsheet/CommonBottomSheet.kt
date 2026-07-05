@@ -3,6 +3,8 @@ package com.peto.ramap.designsystem.bottomsheet
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.BottomSheetDefaults
@@ -42,6 +44,11 @@ fun CommonBottomSheet(
         dragHandle = {
             if (config.showHandle) {
                 BottomSheetDefaults.DragHandle(
+                    modifier =
+                        Modifier.padding(
+                            top = config.handleTopPadding,
+                            bottom = config.handleBottomPadding,
+                        ),
                     color = GrayColor.C100,
                 )
             }
@@ -51,6 +58,11 @@ fun CommonBottomSheet(
             modifier =
                 Modifier
                     .fillMaxWidth()
+                    .then(
+                        config.maxHeight?.let { maxHeight ->
+                            Modifier.heightIn(max = maxHeight)
+                        } ?: Modifier,
+                    )
                     .verticalScroll(rememberScrollState()),
             content = content,
         )

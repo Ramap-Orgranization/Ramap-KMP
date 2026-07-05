@@ -2,6 +2,7 @@ package com.peto.ramap.ui.map
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
@@ -20,6 +21,9 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Surface
+import androidx.navigationevent.NavigationEventInfo
+import androidx.navigationevent.compose.NavigationBackHandler
+import androidx.navigationevent.compose.rememberNavigationEventState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -199,6 +203,15 @@ private fun MapScreen(
     val hideShopConfirmDescription = stringResource(Res.string.hide_shop_confirm_description)
     val hideShopConfirmAction = stringResource(Res.string.hide_shop_confirm_action)
     val hideShopConfirmDismiss = stringResource(Res.string.hide_shop_confirm_dismiss)
+    val backEventState =
+        rememberNavigationEventState<NavigationEventInfo>(
+            currentInfo = NavigationEventInfo.None,
+        )
+    val searchBarTopPadding =
+        WindowInsets.statusBars
+            .asPaddingValues()
+            .calculateTopPadding() + 16.dp
+    val searchBarHeight = 52.dp
 
     LaunchedEffect(isImeVisible) {
         if (wasImeVisible && !isImeVisible) {
@@ -215,7 +228,15 @@ private fun MapScreen(
         modifier = Modifier.fillMaxSize(),
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
     ) {
-        Box(modifier = Modifier.fillMaxSize()) {
+        BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+            val detailBottomSheetMaxHeight = maxHeight - searchBarTopPadding - searchBarHeight
+
+            NavigationBackHandler(
+                state = backEventState,
+                isBackEnabled = selectedShop != null,
+                onBackCompleted = onShopDetailDismissed,
+            )
+
             KakaoMapView(
                 modifier = Modifier.fillMaxSize(),
                 shops = uiState.markerShops,
@@ -249,10 +270,7 @@ private fun MapScreen(
                 modifier =
                     Modifier
                         .padding(
-                            top =
-                                WindowInsets.statusBars
-                                    .asPaddingValues()
-                                    .calculateTopPadding() + 16.dp,
+                            top = searchBarTopPadding,
                         ).padding(horizontal = 10.dp),
             ) {
                 RamenShopSearchBar(
@@ -320,35 +338,12 @@ private fun MapScreen(
             )
 
             CommonBottomSheet(
-                visible = uiState.showBottomSheet,
-                onDismissRequest = {
-                    if (selectedShop != null) {
-                        onShopDetailDismissed()
-                    } else {
-                        onSearchResultsDismissed()
-                    }
-                },
+                visible = uiState.showSearchResults,
+                onDismissRequest = onSearchResultsDismissed,
                 config = CommonBottomSheetConfig(),
                 content = {
                     val searchResultGuide = uiState.searchResultGuide
                     when {
-                        selectedShop != null -> {
-                            RamenShopDetailContent(
-                                shop = selectedShop,
-                                waitingSystem = uiState.shopWaiting[selectedShop.id],
-                                isBookmarked = selectedShop.id in uiState.bookmarkedShopIds,
-                                isHidden = selectedShop.id in uiState.hiddenShopIds,
-                                onBookmarkClick = { onBookmarkToggled(selectedShop) },
-                                onHiddenClick = {
-                                    if (uiState.isLoggedIn && selectedShop.id !in uiState.hiddenShopIds) {
-                                        hideConfirmShop = selectedShop
-                                    } else {
-                                        onHiddenToggled(selectedShop)
-                                    }
-                                },
-                            )
-                        }
-
                         searchResultGuide != null -> {
                             RamenShopSearchResultGuide(guide = searchResultGuide)
                         }
@@ -362,6 +357,30 @@ private fun MapScreen(
                     }
                 },
             )
+
+            selectedShop?.let { shop ->
+                CommonBottomSheet(
+                    visible = true,
+                    onDismissRequest = onShopDetailDismissed,
+                    config = CommonBottomSheetConfig(maxHeight = detailBottomSheetMaxHeight),
+                    content = {
+                        RamenShopDetailContent(
+                            shop = shop,
+                            waitingSystem = uiState.shopWaiting[shop.id],
+                            isBookmarked = shop.id in uiState.bookmarkedShopIds,
+                            isHidden = shop.id in uiState.hiddenShopIds,
+                            onBookmarkClick = { onBookmarkToggled(shop) },
+                            onHiddenClick = {
+                                if (uiState.isLoggedIn && shop.id !in uiState.hiddenShopIds) {
+                                    hideConfirmShop = shop
+                                } else {
+                                    onHiddenToggled(shop)
+                                }
+                            },
+                        )
+                    },
+                )
+            }
 
             CommonDialog(
                 visible = showLoginGuideDialog,
