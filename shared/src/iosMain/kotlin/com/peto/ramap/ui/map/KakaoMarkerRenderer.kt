@@ -1,5 +1,4 @@
 @file:OptIn(ExperimentalForeignApi::class, BetaInteropApi::class)
-@file:Suppress("EXPECT_ACTUAL_CLASSIFIERS_ARE_IN_BETA_WARNING")
 
 package com.peto.ramap.ui.map
 
@@ -45,7 +44,7 @@ import platform.UIKit.UIGraphicsEndImageContext
 import platform.UIKit.UIGraphicsGetImageFromCurrentImageContext
 import platform.UIKit.UIImage
 
-internal actual class KakaoMarkerRenderer actual constructor() {
+internal actual class KakaoMarkerRenderer {
     private val renderedShopIds = mutableSetOf<String>()
     private val shopsByPoiId = mutableMapOf<String, RamenShop>()
 

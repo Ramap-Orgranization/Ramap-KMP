@@ -16,7 +16,7 @@ import kotlinx.cinterop.useContents
 import platform.CoreLocation.CLLocation
 
 @OptIn(ExperimentalForeignApi::class)
-internal actual class KakaoCameraController actual constructor() {
+internal actual class KakaoCameraController {
     private var lastFocusKey = EMPTY_FOCUS_KEY
 
     fun focusRamenShops(

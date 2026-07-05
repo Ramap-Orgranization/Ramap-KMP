@@ -1,5 +1,3 @@
-@file:Suppress("EXPECT_ACTUAL_CLASSIFIERS_ARE_IN_BETA_WARNING")
-
 package com.peto.ramap.ui.map
 
 import android.graphics.Bitmap
@@ -28,7 +26,7 @@ import com.peto.ramap.domain.model.RamenShop
  * 렌더링된 label ID를 마커 key 기준으로 기억해 현재 마커 목록에 없는 label만 제거하고
  * 새로 등장한 마커 label만 추가한다.
  */
-internal actual class KakaoMarkerRenderer actual constructor() {
+internal actual class KakaoMarkerRenderer {
     private val clusterBitmapFactory: RamenShopClusterBitmapFactory = RamenShopClusterBitmapFactory()
     private val renderedLabelIdsByKey = mutableMapOf<String, String>()
 

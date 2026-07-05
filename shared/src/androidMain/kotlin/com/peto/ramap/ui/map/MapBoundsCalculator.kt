@@ -1,5 +1,3 @@
-@file:Suppress("EXPECT_ACTUAL_CLASSIFIERS_ARE_IN_BETA_WARNING")
-
 package com.peto.ramap.ui.map
 
 import com.kakao.vectormap.KakaoMap
@@ -10,7 +8,7 @@ import com.peto.ramap.domain.model.MapBounds
  *
  * 지도 이동이 끝났을 때 현재 화면 영역 기준으로 매장 목록을 다시 조회하기 위해 사용한다.
  */
-internal actual class MapBoundsCalculator actual constructor() {
+internal actual class MapBoundsCalculator {
     /**
      * KakaoMap은 화면 좌표를 통해 노출 좌표를 제공하므로,
      * 측정된 map view의 네 꼭짓점 좌표로 API 조회용 bounds를 계산한다.

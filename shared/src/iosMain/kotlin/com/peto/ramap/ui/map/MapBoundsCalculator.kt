@@ -12,7 +12,7 @@ import platform.CoreGraphics.CGPoint
 import platform.CoreGraphics.CGPointMake
 
 @OptIn(ExperimentalForeignApi::class)
-internal actual class MapBoundsCalculator actual constructor() {
+internal actual class MapBoundsCalculator {
     fun currentBounds(
         kakaoMap: KakaoMap,
         width: Double,
