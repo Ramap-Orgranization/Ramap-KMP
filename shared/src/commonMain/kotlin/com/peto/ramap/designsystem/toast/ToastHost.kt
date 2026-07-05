@@ -141,8 +141,8 @@ private fun ToastItem(
                 .padding(bottom = bottomPadding)
                 .fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
-        border = BorderStroke(1.dp, GrayColor.C500),
-        color = GrayColor.C400,
+        border = BorderStroke(1.dp, GrayColor.C300),
+        color = GrayColor.C100,
     ) {
         Row(
             modifier =
@@ -164,7 +164,7 @@ private fun ToastItem(
             AppText(
                 text = stringResource(data.message),
                 style = AppTextStyle.B1,
-                color = CommonColor.White,
+                color = GrayColor.C500,
                 modifier = Modifier.weight(1f),
                 textAlign = TextAlign.Start,
             )
