@@ -25,7 +25,6 @@ actual fun KakaoMapView(
     bounds: MapBounds,
     clusterBounds: MapBounds,
     myLocationRequestKey: Int,
-    locationSettingsRequestKey: Int,
     onBoundsChanged: (MapBounds) -> Unit,
     onMyLocationChanged: (Location) -> Unit,
     onShopClick: (RamenShop) -> Unit,
@@ -64,12 +63,6 @@ actual fun KakaoMapView(
     LaunchedEffect(myLocationRequestKey) {
         if (myLocationRequestKey > 0) {
             mapController.moveToMyLocation()
-        }
-    }
-
-    LaunchedEffect(locationSettingsRequestKey) {
-        if (locationSettingsRequestKey > 0) {
-            mapController.openAppSettings()
         }
     }
 

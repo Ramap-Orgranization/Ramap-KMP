@@ -48,6 +48,7 @@ import com.peto.ramap.domain.model.Category
 import com.peto.ramap.domain.model.Location
 import com.peto.ramap.domain.model.MapBounds
 import com.peto.ramap.domain.model.RamenShop
+import com.peto.ramap.platform.AppSettingsOpener
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
@@ -83,11 +84,11 @@ import ramap.shared.generated.resources.settings_hidden_shops_menu
 @Composable
 fun MapRoute(
     toastManager: ToastManager = koinInject(),
+    appSettingsOpener: AppSettingsOpener = koinInject(),
     viewModel: MapViewModel = koinInject(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var showLoginGuideDialog by remember { mutableStateOf(false) }
-    var locationSettingsRequestKey by remember { mutableStateOf(0) }
 
     ObserveAsEvents(viewModel.sideEffect) { sideEffect ->
         when (sideEffect) {
@@ -98,7 +99,7 @@ fun MapRoute(
                     sideEffect.data.copy(
                         action =
                             sideEffect.data.action?.copy(
-                                onClick = { locationSettingsRequestKey += 1 },
+                                onClick = appSettingsOpener::open,
                             ),
                     ),
                 )
@@ -107,7 +108,6 @@ fun MapRoute(
 
     MapScreen(
         uiState = uiState,
-        locationSettingsRequestKey = locationSettingsRequestKey,
         showLoginGuideDialog = showLoginGuideDialog,
         onBoundsChanged = { bounds ->
             viewModel.dispatch(MapIntent.OnBoundsChanged(bounds))
@@ -164,7 +164,6 @@ fun MapRoute(
 @Composable
 private fun MapScreen(
     uiState: MapUiState,
-    locationSettingsRequestKey: Int,
     showLoginGuideDialog: Boolean,
     onBoundsChanged: (MapBounds) -> Unit,
     onMyLocationChanged: (Location) -> Unit,
@@ -230,7 +229,6 @@ private fun MapScreen(
             bounds = uiState.bounds,
             clusterBounds = uiState.clusterBounds,
             myLocationRequestKey = myLocationRequestKey,
-            locationSettingsRequestKey = locationSettingsRequestKey,
             onBoundsChanged = onBoundsChanged,
             onMyLocationChanged = onMyLocationChanged,
             onShopClick = onShopSelected,

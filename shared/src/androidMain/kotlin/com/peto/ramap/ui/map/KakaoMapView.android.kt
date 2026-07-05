@@ -41,7 +41,6 @@ actual fun KakaoMapView(
     bounds: MapBounds,
     clusterBounds: MapBounds,
     myLocationRequestKey: Int,
-    locationSettingsRequestKey: Int,
     onBoundsChanged: (MapBounds) -> Unit,
     onMyLocationChanged: (Location) -> Unit,
     onShopClick: (RamenShop) -> Unit,
@@ -178,12 +177,6 @@ actual fun KakaoMapView(
                 shouldShowBlockedSnackbarOnPermissionResult = false
             },
         )
-    }
-
-    LaunchedEffect(locationSettingsRequestKey) {
-        if (locationSettingsRequestKey == 0) return@LaunchedEffect
-
-        locationProvider.openAppSettings()
     }
 
     AndroidView(

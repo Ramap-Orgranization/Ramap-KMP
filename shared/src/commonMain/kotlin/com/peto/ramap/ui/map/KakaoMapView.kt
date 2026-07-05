@@ -16,7 +16,6 @@ expect fun KakaoMapView(
     bounds: MapBounds,
     clusterBounds: MapBounds,
     myLocationRequestKey: Int,
-    locationSettingsRequestKey: Int,
     onBoundsChanged: (MapBounds) -> Unit,
     onMyLocationChanged: (Location) -> Unit,
     onShopClick: (RamenShop) -> Unit,
