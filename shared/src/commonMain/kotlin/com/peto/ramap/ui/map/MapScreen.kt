@@ -190,14 +190,7 @@ private fun MapScreen(
     var wasImeVisible by remember { mutableStateOf(false) }
     var myLocationRequestKey by remember { mutableStateOf(0) }
     var hideConfirmShop by remember { mutableStateOf<RamenShop?>(null) }
-    val loginRequiredTitle = stringResource(Res.string.login_required_message)
-    val loginRequiredDescription = stringResource(Res.string.login_required_description)
-    val loginRequiredAction = stringResource(Res.string.login_required_action)
-    val loginRequiredDismiss = stringResource(Res.string.login_required_dismiss)
-    val hideShopConfirmTitle = stringResource(Res.string.hide_shop_confirm_title)
-    val hideShopConfirmDescription = stringResource(Res.string.hide_shop_confirm_description)
-    val hideShopConfirmAction = stringResource(Res.string.hide_shop_confirm_action)
-    val hideShopConfirmDismiss = stringResource(Res.string.hide_shop_confirm_dismiss)
+
     val backEventState =
         rememberNavigationEventState<NavigationEventInfo>(
             currentInfo = NavigationEventInfo.None,
@@ -362,19 +355,19 @@ private fun MapScreen(
 
         CommonDialog(
             visible = showLoginGuideDialog,
-            confirmText = loginRequiredAction,
-            dismissText = loginRequiredDismiss,
+            confirmText = stringResource(Res.string.login_required_action),
+            dismissText = stringResource(Res.string.login_required_dismiss),
             onDismissRequest = onLoginGuideDismiss,
             content = {
                 AppText(
-                    text = loginRequiredTitle,
+                    text = stringResource(Res.string.login_required_message),
                     style = AppTextStyle.T1,
                     color = GrayColor.C500,
                     textAlign = TextAlign.Center,
                 )
 
                 AppText(
-                    text = loginRequiredDescription,
+                    text = stringResource(Res.string.login_required_description),
                     modifier = Modifier.padding(top = 8.dp),
                     style = AppTextStyle.B2,
                     color = GrayColor.C400,
@@ -387,19 +380,19 @@ private fun MapScreen(
 
         CommonDialog(
             visible = hideConfirmShop != null,
-            confirmText = hideShopConfirmAction,
-            dismissText = hideShopConfirmDismiss,
+            confirmText = stringResource(Res.string.hide_shop_confirm_action),
+            dismissText = stringResource(Res.string.hide_shop_confirm_dismiss),
             onDismissRequest = { hideConfirmShop = null },
             content = {
                 AppText(
-                    text = hideShopConfirmTitle,
+                    text = stringResource(Res.string.hide_shop_confirm_title),
                     style = AppTextStyle.T1,
                     color = GrayColor.C500,
                     textAlign = TextAlign.Center,
                 )
 
                 AppText(
-                    text = hideShopConfirmDescription,
+                    text = stringResource(Res.string.hide_shop_confirm_description),
                     modifier = Modifier.padding(top = 8.dp),
                     style = AppTextStyle.B2,
                     color = GrayColor.C400,
