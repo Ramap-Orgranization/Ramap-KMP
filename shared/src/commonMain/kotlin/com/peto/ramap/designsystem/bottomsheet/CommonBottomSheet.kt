@@ -62,8 +62,7 @@ fun CommonBottomSheet(
                         config.maxHeight?.let { maxHeight ->
                             Modifier.heightIn(max = maxHeight)
                         } ?: Modifier,
-                    )
-                    .verticalScroll(rememberScrollState()),
+                    ).verticalScroll(rememberScrollState()),
             content = content,
         )
     }
