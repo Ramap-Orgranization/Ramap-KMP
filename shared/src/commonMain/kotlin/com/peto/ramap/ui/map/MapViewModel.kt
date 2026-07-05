@@ -13,6 +13,9 @@ import com.peto.ramap.domain.repository.LoginRepository
 import com.peto.ramap.domain.repository.PersonalizationRepository
 import com.peto.ramap.domain.repository.RamenShopRepository
 import com.peto.ramap.domain.repository.ShopWaitingSystemRepository
+import com.peto.ramap.designsystem.toast.model.ToastAction
+import com.peto.ramap.designsystem.toast.model.ToastData
+import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.ui.map.contract.MapIntent
 import com.peto.ramap.ui.map.contract.MapSideEffect
 import com.peto.ramap.ui.map.contract.MapUiState
@@ -27,6 +30,8 @@ import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.account_delete_unavailable_message
 import ramap.shared.generated.resources.filter_empty_visible_result_message
 import ramap.shared.generated.resources.hidden_shop_search_result_message
+import ramap.shared.generated.resources.location_permission_enable_message
+import ramap.shared.generated.resources.location_permission_settings_action
 import kotlin.time.Duration.Companion.milliseconds
 
 class MapViewModel(
@@ -442,11 +447,33 @@ class MapViewModel(
     }
 
     private fun showToast(messageResource: StringResource) {
-        runTask { postSideEffect(MapSideEffect.ShowToast(messageResource)) }
+        runTask {
+            postSideEffect(
+                MapSideEffect.ShowToast(
+                    ToastData(
+                        message = messageResource,
+                        type = ToastType.DEFAULT,
+                    ),
+                ),
+            )
+        }
     }
 
     private fun showLocationPermissionBlockedToast() {
-        runTask { postSideEffect(MapSideEffect.ShowLocationPermissionBlockedToast) }
+        runTask {
+            postSideEffect(
+                MapSideEffect.ShowToast(
+                    ToastData(
+                        message = Res.string.location_permission_enable_message,
+                        type = ToastType.DEFAULT,
+                        action =
+                            ToastAction(
+                                label = Res.string.location_permission_settings_action,
+                            ),
+                    ),
+                ),
+            )
+        }
     }
 
     private fun reduceSearchResult(

@@ -46,6 +46,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
+import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.ic_toast_default
 import ramap.shared.generated.resources.ic_toast_error
@@ -161,7 +162,7 @@ private fun ToastItem(
             Spacer(Modifier.width(3.5.dp))
 
             AppText(
-                text = data.message,
+                text = stringResource(data.message),
                 style = AppTextStyle.B1,
                 color = CommonColor.White,
                 modifier = Modifier.weight(1f),
@@ -169,7 +170,10 @@ private fun ToastItem(
             )
 
             data.action?.let {
-                ActionButton(it, onDismiss)
+                ActionButton(
+                    action = it,
+                    onDismiss = onDismiss,
+                )
             }
         }
     }
@@ -181,7 +185,7 @@ private fun ActionButton(
     onDismiss: () -> Unit,
 ) {
     AppText(
-        text = action.label,
+        text = stringResource(action.label),
         style = AppTextStyle.B1,
         color = CommonColor.White,
         modifier =

@@ -44,9 +44,6 @@ import com.peto.ramap.designsystem.popup.CommonPopupDivider
 import com.peto.ramap.designsystem.popup.CommonPopupItem
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.designsystem.toast.ToastManager
-import com.peto.ramap.designsystem.toast.model.ToastAction
-import com.peto.ramap.designsystem.toast.model.ToastData
-import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.Category
 import com.peto.ramap.domain.model.Location
 import com.peto.ramap.domain.model.MapBounds
@@ -65,7 +62,6 @@ import com.peto.ramap.ui.map.contract.MapIntent
 import com.peto.ramap.ui.map.contract.MapSideEffect
 import com.peto.ramap.ui.map.contract.MapUiState
 import com.peto.ramap.ui.map.model.MapPersonalization
-import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
@@ -76,8 +72,6 @@ import ramap.shared.generated.resources.hide_shop_confirm_description
 import ramap.shared.generated.resources.hide_shop_confirm_dismiss
 import ramap.shared.generated.resources.hide_shop_confirm_title
 import ramap.shared.generated.resources.ic_setting
-import ramap.shared.generated.resources.location_permission_enable_message
-import ramap.shared.generated.resources.location_permission_settings_action
 import ramap.shared.generated.resources.login_required_action
 import ramap.shared.generated.resources.login_required_description
 import ramap.shared.generated.resources.login_required_dismiss
@@ -99,24 +93,13 @@ fun MapRoute(
         when (sideEffect) {
             MapSideEffect.ShowLoginGuide -> showLoginGuideDialog = true
 
-            MapSideEffect.ShowLocationPermissionBlockedToast ->
-                toastManager.show(
-                    ToastData(
-                        message = getString(Res.string.location_permission_enable_message),
-                        type = ToastType.DEFAULT,
-                        action =
-                            ToastAction(
-                                label = getString(Res.string.location_permission_settings_action),
-                                onClick = { locationSettingsRequestKey += 1 },
-                            ),
-                    ),
-                )
-
             is MapSideEffect.ShowToast ->
                 toastManager.show(
-                    ToastData(
-                        message = getString(sideEffect.messageResource),
-                        type = ToastType.DEFAULT,
+                    sideEffect.data.copy(
+                        action =
+                            sideEffect.data.action?.copy(
+                                onClick = { locationSettingsRequestKey += 1 },
+                            ),
                     ),
                 )
         }
