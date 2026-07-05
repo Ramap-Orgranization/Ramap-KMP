@@ -358,7 +358,7 @@ internal actual class KakaoMarkerRenderer {
         private const val CLUSTER_MARKER_KEY_PREFIX = "cluster:"
         private const val SINGLE_MARKER_LABEL_PREFIX = "ramen-shop-"
         private const val CLUSTER_MARKER_LABEL_PREFIX = "ramen-cluster-"
-        private const val MY_LOCATION_STYLE_ID = "my-location-marker-style"
+        private const val MY_LOCATION_STYLE_ID = "my-location-marker-style-v3"
         private const val MY_LOCATION_LABEL_ID = "my-location-marker"
 
         private fun Bitmap.withAlpha(alpha: Float): Bitmap {

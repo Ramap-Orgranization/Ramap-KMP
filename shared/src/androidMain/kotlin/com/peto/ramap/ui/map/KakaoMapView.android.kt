@@ -410,7 +410,7 @@ private fun rememberMyLocationMarkerBitmap(): Bitmap {
     }
 }
 
-private const val MY_LOCATION_MARKER_SIZE = 34
+private const val MY_LOCATION_MARKER_SIZE = 16
 private const val CLUSTER_MARKER_SIZE = 28
 
 @Composable
