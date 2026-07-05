@@ -191,7 +191,6 @@ private fun ActionButton(
         modifier =
             Modifier
                 .background(GrayColor.C300, RoundedCornerShape(8.dp))
-                .border(1.dp, GrayColor.C500, RoundedCornerShape(8.dp))
                 .padding(vertical = 5.5.dp, horizontal = 12.dp)
                 .noRippleClickable(
                     onClick = {
