@@ -312,7 +312,7 @@ class IosKakaoMapController(
                 latitude = latitude,
                 longitude = longitude,
             )
-    }
+        }
 
     fun dispose() {
         markerRenderer.clear()
