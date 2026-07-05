@@ -1,7 +1,11 @@
 package com.peto.ramap.ui.map
 
+import androidx.lifecycle.viewModelScope
 import com.peto.ramap.core.base.BaseViewModel
 import com.peto.ramap.core.config.MarkerClusterConfig
+import com.peto.ramap.designsystem.toast.model.ToastAction
+import com.peto.ramap.designsystem.toast.model.ToastData
+import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.Category
 import com.peto.ramap.domain.model.Location
 import com.peto.ramap.domain.model.MapBounds
@@ -22,11 +26,14 @@ import io.github.jan.supabase.auth.status.SessionStatus
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.StringResource
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.account_delete_unavailable_message
 import ramap.shared.generated.resources.filter_empty_visible_result_message
 import ramap.shared.generated.resources.hidden_shop_search_result_message
+import ramap.shared.generated.resources.location_permission_enable_message
+import ramap.shared.generated.resources.location_permission_settings_action
 import kotlin.time.Duration.Companion.milliseconds
 
 class MapViewModel(
@@ -61,6 +68,7 @@ class MapViewModel(
             MapIntent.OnKakaoLoginClicked -> signInWithKakao()
             MapIntent.OnLogoutClicked -> signOut()
             MapIntent.OnAccountDeleteClicked -> showToast(Res.string.account_delete_unavailable_message)
+            MapIntent.OnLocationPermissionBlocked -> showLocationPermissionBlockedToast()
         }
     }
 
@@ -440,8 +448,37 @@ class MapViewModel(
         }
     }
 
-    private fun showToast(messageResource: StringResource) {
-        runTask { postSideEffect(MapSideEffect.ShowToast(messageResource)) }
+    private fun showToast(
+        messageResource: StringResource,
+        type: ToastType = ToastType.DEFAULT,
+    ) {
+        viewModelScope.launch {
+            postSideEffect(
+                MapSideEffect.ShowToast(
+                    ToastData(
+                        message = messageResource,
+                        type = type,
+                    ),
+                ),
+            )
+        }
+    }
+
+    private fun showLocationPermissionBlockedToast() {
+        runTask {
+            postSideEffect(
+                MapSideEffect.ShowToast(
+                    ToastData(
+                        message = Res.string.location_permission_enable_message,
+                        type = ToastType.DEFAULT,
+                        action =
+                            ToastAction(
+                                label = Res.string.location_permission_settings_action,
+                            ),
+                    ),
+                ),
+            )
+        }
     }
 
     private fun reduceSearchResult(
