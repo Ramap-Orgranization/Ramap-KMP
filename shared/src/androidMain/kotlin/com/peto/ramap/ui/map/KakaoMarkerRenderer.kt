@@ -26,10 +26,8 @@ import com.peto.ramap.domain.model.RamenShop
  * 렌더링된 label ID를 마커 key 기준으로 기억해 현재 마커 목록에 없는 label만 제거하고
  * 새로 등장한 마커 label만 추가한다.
  */
-internal class KakaoMarkerRenderer(
-    private val clusterBitmapFactory: RamenShopClusterBitmapFactory,
-    private val myLocationMarkerBitmapFactory: MyLocationMarkerBitmapFactory = MyLocationMarkerBitmapFactory(),
-) {
+internal actual class KakaoMarkerRenderer {
+    private val clusterBitmapFactory: RamenShopClusterBitmapFactory = RamenShopClusterBitmapFactory()
     private val renderedLabelIdsByKey = mutableMapOf<String, String>()
 
     /**
@@ -38,6 +36,7 @@ internal class KakaoMarkerRenderer(
     fun render(
         kakaoMap: KakaoMap,
         markerBitmap: Bitmap,
+        clusterMarkerBitmap: Bitmap,
         markers: List<Marker>,
         selectedShopId: String?,
         onShopClick: (RamenShop) -> Unit,
@@ -52,7 +51,15 @@ internal class KakaoMarkerRenderer(
         removeStaleMarkers(markersByKey.keys, labelLayer)
         if (markers.isEmpty()) return
 
-        addNewMarkers(labelLayer, manager, markerBitmap, clusterBitmapFactory, markers, selectedShopId)
+        addNewMarkers(
+            labelLayer = labelLayer,
+            manager = manager,
+            markerBitmap = markerBitmap,
+            clusterMarkerBitmap = clusterMarkerBitmap,
+            clusterBitmapFactory = clusterBitmapFactory,
+            markers = markers,
+            selectedShopId = selectedShopId,
+        )
     }
 
     /**
@@ -60,11 +67,12 @@ internal class KakaoMarkerRenderer(
      */
     fun renderMyLocation(
         kakaoMap: KakaoMap,
+        markerBitmap: Bitmap,
         location: Location,
     ) {
         val manager = kakaoMap.labelManager ?: return
         val labelLayer = manager.layer ?: return
-        val styles = createMyLocationStyles(manager) ?: return
+        val styles = createMyLocationStyles(manager, markerBitmap) ?: return
 
         labelLayer.getLabel(MY_LOCATION_LABEL_ID)?.remove()
         labelLayer.addLabels(
@@ -139,6 +147,7 @@ internal class KakaoMarkerRenderer(
         labelLayer: LabelLayer,
         manager: LabelManager,
         markerBitmap: Bitmap,
+        clusterMarkerBitmap: Bitmap,
         clusterBitmapFactory: RamenShopClusterBitmapFactory,
         markers: List<Marker>,
         selectedShopId: String?,
@@ -158,6 +167,7 @@ internal class KakaoMarkerRenderer(
                     manager = manager,
                     markerStyles = markerStyles,
                     hiddenMarkerStyles = hiddenMarkerStyles,
+                    clusterMarkerBitmap = clusterMarkerBitmap,
                     clusterBitmapFactory = clusterBitmapFactory,
                     selectedShopId = selectedShopId,
                 )
@@ -201,6 +211,7 @@ internal class KakaoMarkerRenderer(
     private fun createClusterStyles(
         manager: LabelManager,
         clusterBitmapFactory: RamenShopClusterBitmapFactory,
+        clusterMarkerBitmap: Bitmap,
         cluster: Marker.ClusterMaker,
     ): LabelStyles? {
         val styleId = clusterStyleId(cluster.count)
@@ -210,19 +221,26 @@ internal class KakaoMarkerRenderer(
                 LabelStyles.from(
                     styleId,
                     LabelStyle
-                        .from(clusterBitmapFactory.create(cluster.count))
-                        .setAnchorPoint(0.5f, 0.5f),
+                        .from(
+                            clusterBitmapFactory.create(
+                                count = cluster.count,
+                                markerBitmap = clusterMarkerBitmap,
+                            ),
+                        ).setAnchorPoint(0.5f, 0.5f),
                 ),
             )
     }
 
-    private fun createMyLocationStyles(manager: LabelManager): LabelStyles? =
+    private fun createMyLocationStyles(
+        manager: LabelManager,
+        markerBitmap: Bitmap,
+    ): LabelStyles? =
         manager.getLabelStyles(MY_LOCATION_STYLE_ID)
             ?: manager.addLabelStyles(
                 LabelStyles.from(
                     MY_LOCATION_STYLE_ID,
                     LabelStyle
-                        .from(myLocationMarkerBitmapFactory.create())
+                        .from(markerBitmap)
                         .setAnchorPoint(0.5f, 0.5f),
                 ),
             )
@@ -250,6 +268,7 @@ internal class KakaoMarkerRenderer(
         manager: LabelManager,
         markerStyles: LabelStyles,
         hiddenMarkerStyles: LabelStyles,
+        clusterMarkerBitmap: Bitmap,
         clusterBitmapFactory: RamenShopClusterBitmapFactory,
         selectedShopId: String?,
     ): LabelOptions? =
@@ -261,7 +280,13 @@ internal class KakaoMarkerRenderer(
                     selectedShopId = selectedShopId,
                 )
             is Marker.ClusterMaker -> {
-                val clusterStyles = createClusterStyles(manager, clusterBitmapFactory, marker)
+                val clusterStyles =
+                    createClusterStyles(
+                        manager = manager,
+                        clusterBitmapFactory = clusterBitmapFactory,
+                        clusterMarkerBitmap = clusterMarkerBitmap,
+                        cluster = marker,
+                    )
                 clusterStyles?.let { styles -> baseLabelOptions(marker, styles, selectedShopId) }
             }
         }

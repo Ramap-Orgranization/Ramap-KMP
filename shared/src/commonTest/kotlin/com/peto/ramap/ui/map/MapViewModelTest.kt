@@ -3,6 +3,8 @@ package com.peto.ramap.ui.map
 import app.cash.turbine.test
 import com.peto.ramap.core.config.DefaultMapConfig
 import com.peto.ramap.coroutinesTest
+import com.peto.ramap.designsystem.toast.model.ToastData
+import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.Category
 import com.peto.ramap.domain.model.Location
 import com.peto.ramap.domain.model.Personalization
@@ -30,6 +32,7 @@ import io.github.jan.supabase.auth.user.UserSession
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
+import org.jetbrains.compose.resources.StringResource
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.filter_empty_visible_result_message
 import ramap.shared.generated.resources.hidden_shop_search_result_message
@@ -390,7 +393,7 @@ class MapViewModelTest {
                 assertEquals(searchShops, viewModel.uiState.value.markerShops)
                 assertEquals(listOf(hiddenShop), viewModel.uiState.value.focusShops)
                 assertEquals(emptyList(), waitingSystemRepository.requestedShopIds)
-                assertEquals(MapSideEffect.ShowToast(Res.string.hidden_shop_search_result_message), awaitItem())
+                assertEquals(showToastSideEffect(Res.string.hidden_shop_search_result_message), awaitItem())
             }
         }
 
@@ -673,7 +676,7 @@ class MapViewModelTest {
                 assertEquals(null, viewModel.uiState.value.selectedShop)
                 assertEquals(setOf(shop.id), viewModel.uiState.value.hiddenShopIds)
                 assertEquals(listOf(shop.id), waitingSystemRepository.requestedShopIds)
-                assertEquals(MapSideEffect.ShowToast(Res.string.hidden_shop_search_result_message), awaitItem())
+                assertEquals(showToastSideEffect(Res.string.hidden_shop_search_result_message), awaitItem())
             }
         }
 
@@ -717,6 +720,7 @@ class MapViewModelTest {
             viewModel.dispatch(MapIntent.OnShopSelected(selectedShop))
             runCurrent()
 
+            assertEquals(true, viewModel.uiState.value.search.isResultFocusConsumed)
             assertEquals(listOf(selectedShop), viewModel.uiState.value.focusShops)
             assertEquals(false, viewModel.uiState.value.shouldFocusNearestSearchResult)
 
@@ -1230,11 +1234,19 @@ class MapViewModelTest {
                 assertEquals(listOf(hiddenShop), viewModel.uiState.value.searchResultShops)
                 assertEquals(listOf(hiddenShop), viewModel.uiState.value.focusShops)
                 assertEquals(emptyList(), waitingSystemRepository.requestedShopIds)
-                assertEquals(MapSideEffect.ShowToast(Res.string.filter_empty_visible_result_message), awaitItem())
-                assertEquals(MapSideEffect.ShowToast(Res.string.hidden_shop_search_result_message), awaitItem())
+                assertEquals(showToastSideEffect(Res.string.filter_empty_visible_result_message), awaitItem())
+                assertEquals(showToastSideEffect(Res.string.hidden_shop_search_result_message), awaitItem())
             }
         }
 }
+
+private fun showToastSideEffect(message: StringResource): MapSideEffect.ShowToast =
+    MapSideEffect.ShowToast(
+        ToastData(
+            message = message,
+            type = ToastType.DEFAULT,
+        ),
+    )
 
 private fun mapViewModel(
     ramenShopRepository: RamenShopRepository = FakeRamenShopRepository(),
