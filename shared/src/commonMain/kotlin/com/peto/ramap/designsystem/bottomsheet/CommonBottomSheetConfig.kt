@@ -15,5 +15,6 @@ data class CommonBottomSheetConfig(
     val handleTopPadding: Dp = 11.dp,
     val handleBottomPadding: Dp = 11.dp,
     val maxHeightFraction: Float = 0.8f,
+    val maxHeight: Dp? = null,
     val dismissOnScrimClick: Boolean = true,
 )

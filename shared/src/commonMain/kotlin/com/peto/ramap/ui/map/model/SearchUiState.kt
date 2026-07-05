@@ -44,7 +44,7 @@ data class SearchUiState(
 
     fun showResults(): SearchUiState = copy(isResultsDismissed = false)
 
-    fun consumeResultFocusIf(shouldConsume: Boolean): SearchUiState = copy(isResultFocusConsumed = isResultFocusConsumed || shouldConsume)
+    fun consumeResultFocus(shouldConsume: Boolean): SearchUiState = copy(isResultFocusConsumed = isResultFocusConsumed || shouldConsume)
 
     fun clearResults(): SearchUiState =
         copy(

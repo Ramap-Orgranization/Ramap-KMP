@@ -17,6 +17,7 @@ import com.peto.ramap.ui.map.contract.MapIntent
 import com.peto.ramap.ui.map.contract.MapSideEffect
 import com.peto.ramap.ui.map.contract.MapUiState
 import com.peto.ramap.ui.map.model.MapPersonalization
+import com.peto.ramap.ui.map.model.SearchUiState
 import io.github.jan.supabase.auth.status.SessionStatus
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -94,7 +95,7 @@ class MapViewModel(
         reduce {
             copy(
                 selectedShop = shop,
-                search = search.consumeResultFocusIf(isCurrentSearchResult),
+                search = search.consumeResultFocus(isCurrentSearchResult),
             )
         }
         runTask { loadShopWaitingSystem(shop.id) }
@@ -268,6 +269,8 @@ class MapViewModel(
         shouldRemoveBookmark: Boolean,
     ) {
         reduce {
+            val shouldCloseSelectedShop = shouldCloseSelectedShop(shopId, isHidden)
+
             copy(
                 hiddenShopIds =
                     if (isHidden) {
@@ -282,18 +285,50 @@ class MapViewModel(
                         bookmarkedShopIds
                     },
                 selectedShop =
-                    selectedShop
-                        ?.takeUnless { !isHidden && it.id == shopId }
-                        ?.let { selectedShop ->
-                            if (isHidden && selectedShop.id == shopId) {
-                                selectedShop.copy(isVisible = true)
-                            } else {
-                                selectedShop
-                            }
-                        },
+                    updateSelectedShop(
+                        selectedShop = selectedShop,
+                        shopId = shopId,
+                        isHidden = isHidden,
+                        shouldCloseSelectedShop = shouldCloseSelectedShop,
+                    ),
+                search =
+                    updateSearchState(
+                        search = search,
+                        shouldCloseSelectedShop = shouldCloseSelectedShop,
+                    ),
             )
         }
     }
+
+    private fun shouldCloseSelectedShop(
+        shopId: String,
+        isHidden: Boolean,
+    ): Boolean = !isHidden && currentState.selectedShop?.id == shopId
+
+    private fun updateSelectedShop(
+        selectedShop: RamenShop?,
+        shopId: String,
+        isHidden: Boolean,
+        shouldCloseSelectedShop: Boolean,
+    ): RamenShop? {
+        if (selectedShop == null || shouldCloseSelectedShop) return null
+
+        return if (isHidden && selectedShop.id == shopId) {
+            selectedShop.copy(isVisible = true)
+        } else {
+            selectedShop
+        }
+    }
+
+    private fun updateSearchState(
+        search: SearchUiState,
+        shouldCloseSelectedShop: Boolean,
+    ): SearchUiState =
+        if (shouldCloseSelectedShop) {
+            search.dismissResults()
+        } else {
+            search
+        }
 
     private fun changePersonalizationView(view: MapPersonalization) {
         if (!currentState.isLoggedIn && view != MapPersonalization.ALL) {

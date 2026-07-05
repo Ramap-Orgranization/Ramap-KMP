@@ -88,21 +88,22 @@ fun RamenShopDetailContent(
                     color = GrayColor.C500,
                 )
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    ShopActionButton(
-                        isActive = isBookmarked,
-                        enabled = !isHidden,
-                        onClick = onBookmarkClick,
-                        onDisabledClick = onBookmarkClick,
-                    ) {
-                        Image(
-                            painter = painterResource(Res.drawable.ic_kid_star),
-                            contentDescription = null,
-                            modifier = Modifier.size(24.dp),
-                            colorFilter =
-                                ColorFilter.tint(
-                                    if (isBookmarked) CommonColor.White else GrayColor.C500,
-                                ),
-                        )
+                    if (!isHidden) {
+                        ShopActionButton(
+                            isActive = isBookmarked,
+                            enabled = true,
+                            onClick = onBookmarkClick,
+                        ) {
+                            Image(
+                                painter = painterResource(Res.drawable.ic_kid_star),
+                                contentDescription = null,
+                                modifier = Modifier.size(24.dp),
+                                colorFilter =
+                                    ColorFilter.tint(
+                                        if (isBookmarked) CommonColor.White else GrayColor.C500,
+                                    ),
+                            )
+                        }
                     }
                     ShopActionButton(
                         isActive = isHidden,
