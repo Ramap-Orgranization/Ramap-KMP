@@ -30,7 +30,9 @@ import com.peto.ramap.domain.model.RamenShop
 import com.peto.ramap.domain.model.RamenShops
 import org.jetbrains.compose.resources.painterResource
 import ramap.shared.generated.resources.Res
+import ramap.shared.generated.resources.cluster_marker
 import ramap.shared.generated.resources.marker_ramen
+import ramap.shared.generated.resources.my_location_marker
 
 @Composable
 actual fun KakaoMapView(
@@ -55,12 +57,14 @@ actual fun KakaoMapView(
     var viewportSize by remember { mutableStateOf(MapViewportSize()) }
     var myLocation by remember { mutableStateOf<Location?>(null) }
     val markerBitmap = rememberRamenShopMarkerBitmap()
+    val clusterMarkerBitmap = rememberClusterMarkerBitmap()
+    val myLocationMarkerBitmap = rememberMyLocationMarkerBitmap()
 
     val markerCluster = remember { MarkerCluster() }
     val locationProvider = remember(context) { LocationProvider(context) }
     val boundsCalculator = remember { MapBoundsCalculator() }
     val cameraController = remember { KakaoCameraController() }
-    val markerRenderer = remember { KakaoMarkerRenderer(RamenShopClusterBitmapFactory()) }
+    val markerRenderer = remember { KakaoMarkerRenderer() }
     val lifecycleController =
         remember(mapView, boundsCalculator) {
             KakaoMapLifecycleController(
@@ -100,6 +104,7 @@ actual fun KakaoMapView(
         kakaoMap = kakaoMapState.value,
         locationProvider = locationProvider,
         markerRenderer = markerRenderer,
+        myLocationMarkerBitmap = myLocationMarkerBitmap,
         onLocationChanged = { location ->
             myLocation = location
             onMyLocationChanged(location)
@@ -109,6 +114,7 @@ actual fun KakaoMapView(
     RenderMarkersEffect(
         kakaoMap = kakaoMapState.value,
         markerBitmap = markerBitmap,
+        clusterMarkerBitmap = clusterMarkerBitmap,
         markerCluster = markerCluster,
         markerRenderer = markerRenderer,
         cameraController = cameraController,
@@ -123,6 +129,7 @@ actual fun KakaoMapView(
     RenderMyLocationEffect(
         kakaoMap = kakaoMapState.value,
         markerRenderer = markerRenderer,
+        myLocationMarkerBitmap = myLocationMarkerBitmap,
         myLocation = myLocation,
     )
 
@@ -175,9 +182,10 @@ private fun RenderInitialLocationEffect(
     kakaoMap: KakaoMap?,
     locationProvider: LocationProvider,
     markerRenderer: KakaoMarkerRenderer,
+    myLocationMarkerBitmap: Bitmap,
     onLocationChanged: (Location) -> Unit,
 ) {
-    LaunchedEffect(kakaoMap) {
+    LaunchedEffect(kakaoMap, myLocationMarkerBitmap) {
         if (kakaoMap == null) return@LaunchedEffect
 
         val location = locationProvider.currentLocation() ?: return@LaunchedEffect
@@ -188,7 +196,11 @@ private fun RenderInitialLocationEffect(
             )
 
         onLocationChanged(domainLocation)
-        markerRenderer.renderMyLocation(kakaoMap, domainLocation)
+        markerRenderer.renderMyLocation(
+            kakaoMap = kakaoMap,
+            markerBitmap = myLocationMarkerBitmap,
+            location = domainLocation,
+        )
     }
 }
 
@@ -196,6 +208,7 @@ private fun RenderInitialLocationEffect(
 private fun RenderMarkersEffect(
     kakaoMap: KakaoMap?,
     markerBitmap: Bitmap,
+    clusterMarkerBitmap: Bitmap,
     markerCluster: MarkerCluster,
     markerRenderer: KakaoMarkerRenderer,
     cameraController: KakaoCameraController,
@@ -206,7 +219,7 @@ private fun RenderMarkersEffect(
     viewportSize: MapViewportSize,
     onShopClick: (RamenShop) -> Unit,
 ) {
-    LaunchedEffect(kakaoMap, markerBitmap, shops, selectedShopId, bounds, clusterBounds, viewportSize, onShopClick) {
+    LaunchedEffect(kakaoMap, markerBitmap, clusterMarkerBitmap, shops, selectedShopId, bounds, clusterBounds, viewportSize, onShopClick) {
         if (kakaoMap == null) return@LaunchedEffect
 
         val markers =
@@ -221,6 +234,7 @@ private fun RenderMarkersEffect(
         markerRenderer.render(
             kakaoMap = kakaoMap,
             markerBitmap = markerBitmap,
+            clusterMarkerBitmap = clusterMarkerBitmap,
             markers = markers,
             selectedShopId = selectedShopId,
             onShopClick = onShopClick,
@@ -238,12 +252,17 @@ private fun RenderMarkersEffect(
 private fun RenderMyLocationEffect(
     kakaoMap: KakaoMap?,
     markerRenderer: KakaoMarkerRenderer,
+    myLocationMarkerBitmap: Bitmap,
     myLocation: Location?,
 ) {
-    LaunchedEffect(kakaoMap, myLocation) {
+    LaunchedEffect(kakaoMap, myLocationMarkerBitmap, myLocation) {
         if (kakaoMap == null || myLocation == null) return@LaunchedEffect
 
-        markerRenderer.renderMyLocation(kakaoMap, myLocation)
+        markerRenderer.renderMyLocation(
+            kakaoMap = kakaoMap,
+            markerBitmap = myLocationMarkerBitmap,
+            location = myLocation,
+        )
     }
 }
 
@@ -358,6 +377,41 @@ private fun rememberRamenShopMarkerBitmap(): Bitmap {
         )
     }
 }
+
+@Composable
+private fun rememberClusterMarkerBitmap(): Bitmap {
+    val density = LocalDensity.current
+    val markerPainter = painterResource(Res.drawable.cluster_marker)
+    val factory = RamenShopMarkerBitmapFactory()
+
+    return remember(markerPainter, density) {
+        factory.create(
+            painter = markerPainter,
+            density = density,
+            width = CLUSTER_MARKER_SIZE,
+            height = CLUSTER_MARKER_SIZE,
+        )
+    }
+}
+
+@Composable
+private fun rememberMyLocationMarkerBitmap(): Bitmap {
+    val density = LocalDensity.current
+    val markerPainter = painterResource(Res.drawable.my_location_marker)
+    val factory = RamenShopMarkerBitmapFactory()
+
+    return remember(markerPainter, density) {
+        factory.create(
+            painter = markerPainter,
+            density = density,
+            width = MY_LOCATION_MARKER_SIZE,
+            height = MY_LOCATION_MARKER_SIZE,
+        )
+    }
+}
+
+private const val MY_LOCATION_MARKER_SIZE = 34
+private const val CLUSTER_MARKER_SIZE = 28
 
 @Composable
 private fun rememberKakaoMapLocationPermissionLauncher(

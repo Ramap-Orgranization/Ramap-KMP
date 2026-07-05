@@ -1,3 +1,5 @@
+@file:Suppress("EXPECT_ACTUAL_CLASSIFIERS_ARE_IN_BETA_WARNING")
+
 package com.peto.ramap.ui.map
 
 import android.location.Location
@@ -16,7 +18,7 @@ import com.peto.ramap.domain.model.Location as DomainLocation
  * 선택된 매장이 하나일 때는 중심 이동을, 여러 매장을 포커스할 때는 모든 매장이 보이도록
  * 카메라 영역을 맞춘다.
  */
-internal class KakaoCameraController {
+internal actual class KakaoCameraController actual constructor() {
     private var lastFocusKey = ""
 
     /**
