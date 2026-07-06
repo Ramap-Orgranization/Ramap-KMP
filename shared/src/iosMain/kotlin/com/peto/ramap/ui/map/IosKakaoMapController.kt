@@ -227,6 +227,8 @@ class IosKakaoMapController(
         controller.delegate = null
         isStarted = false
         isMapViewAdded = false
+        pendingMarkers = null
+        pendingMyLocationCoordinate = null
     }
 }
 
