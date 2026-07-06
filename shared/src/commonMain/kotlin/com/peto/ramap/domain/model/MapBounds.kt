@@ -91,5 +91,16 @@ data class MapBounds(
     companion object {
         private const val DEFAULT_CENTER_SHIFT_RATIO = 0.2
         private const val DEFAULT_ZOOM_SHIFT_RATIO = 0.15
+
+        fun fromLocations(locations: List<Location>): MapBounds? {
+            if (locations.isEmpty()) return null
+
+            return MapBounds(
+                minLat = locations.minOf { it.lat },
+                maxLat = locations.maxOf { it.lat },
+                minLng = locations.minOf { it.lng },
+                maxLng = locations.maxOf { it.lng },
+            )
+        }
     }
 }

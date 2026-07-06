@@ -64,14 +64,12 @@ actual fun KakaoMapView(
 
     val markerCluster = remember { MarkerCluster() }
     val locationProvider = remember(context) { LocationProvider(context) }
-    val boundsCalculator = remember { MapBoundsCalculator() }
     val cameraController = remember { KakaoCameraController() }
     val markerRenderer = remember { KakaoMarkerRenderer() }
     val lifecycleController =
-        remember(mapView, boundsCalculator) {
+        remember(mapView) {
             KakaoMapLifecycleController(
                 mapView = mapView,
-                boundsCalculator = boundsCalculator,
             )
         }
 
