@@ -26,7 +26,7 @@ import com.peto.ramap.domain.model.RamenShop
  * 렌더링된 label ID를 마커 key 기준으로 기억해 현재 마커 목록에 없는 label만 제거하고
  * 새로 등장한 마커 label만 추가한다.
  */
-internal actual class KakaoMarkerRenderer {
+internal class KakaoMarkerRenderer {
     private val clusterBitmapFactory: RamenShopClusterBitmapFactory = RamenShopClusterBitmapFactory()
     private val renderedLabelIdsByKey = mutableMapOf<String, String>()
 
@@ -38,11 +38,10 @@ internal actual class KakaoMarkerRenderer {
         markerBitmap: Bitmap,
         clusterMarkerBitmap: Bitmap,
         markers: List<Marker>,
-        selectedShopId: String?,
         onShopClick: (RamenShop) -> Unit,
         onClusterClick: (Marker.ClusterMaker) -> Unit,
     ) {
-        val markersByKey = markers.associateBy { marker -> markerKey(marker, selectedShopId) }
+        val markersByKey = markers.associateBy(::markerKey)
         setUpKaKaoMapListener(kakaoMap, markersByKey, onShopClick, onClusterClick)
 
         val manager = kakaoMap.labelManager ?: return
@@ -58,7 +57,6 @@ internal actual class KakaoMarkerRenderer {
             clusterMarkerBitmap = clusterMarkerBitmap,
             clusterBitmapFactory = clusterBitmapFactory,
             markers = markers,
-            selectedShopId = selectedShopId,
         )
     }
 
@@ -150,12 +148,10 @@ internal actual class KakaoMarkerRenderer {
         clusterMarkerBitmap: Bitmap,
         clusterBitmapFactory: RamenShopClusterBitmapFactory,
         markers: List<Marker>,
-        selectedShopId: String?,
     ) {
         val newMarkers =
             markers
-                .filterNot { marker -> markerKey(marker, selectedShopId) in renderedLabelIdsByKey }
-                .sortedWith(compareBy { marker -> marker is Marker.SingleMarker && marker.id == selectedShopId })
+                .filterNot { marker -> markerKey(marker) in renderedLabelIdsByKey }
         if (newMarkers.isEmpty()) return
 
         val markerStyles = createMarkerStyles(manager, markerBitmap) ?: return
@@ -169,12 +165,11 @@ internal actual class KakaoMarkerRenderer {
                     hiddenMarkerStyles = hiddenMarkerStyles,
                     clusterMarkerBitmap = clusterMarkerBitmap,
                     clusterBitmapFactory = clusterBitmapFactory,
-                    selectedShopId = selectedShopId,
                 )
             }
 
         labelLayer.addLabels(labelOptions)
-        newMarkers.forEach { marker -> rememberRenderedLabel(marker, selectedShopId) }
+        newMarkers.forEach(::rememberRenderedLabel)
     }
 
     /**
@@ -270,14 +265,12 @@ internal actual class KakaoMarkerRenderer {
         hiddenMarkerStyles: LabelStyles,
         clusterMarkerBitmap: Bitmap,
         clusterBitmapFactory: RamenShopClusterBitmapFactory,
-        selectedShopId: String?,
     ): LabelOptions? =
         when (marker) {
             is Marker.SingleMarker ->
                 singleMarkerLabelOptions(
                     marker = marker,
                     markerStyles = if (marker.shop.isVisible) markerStyles else hiddenMarkerStyles,
-                    selectedShopId = selectedShopId,
                 )
             is Marker.ClusterMaker -> {
                 val clusterStyles =
@@ -287,7 +280,7 @@ internal actual class KakaoMarkerRenderer {
                         clusterMarkerBitmap = clusterMarkerBitmap,
                         cluster = marker,
                     )
-                clusterStyles?.let { styles -> baseLabelOptions(marker, styles, selectedShopId) }
+                clusterStyles?.let { styles -> baseLabelOptions(marker, styles) }
             }
         }
 
@@ -297,9 +290,8 @@ internal actual class KakaoMarkerRenderer {
     private fun singleMarkerLabelOptions(
         marker: Marker.SingleMarker,
         markerStyles: LabelStyles,
-        selectedShopId: String?,
     ): LabelOptions =
-        baseLabelOptions(marker, markerStyles, selectedShopId)
+        baseLabelOptions(marker, markerStyles)
             .setTexts(LabelTextBuilder().setTexts(marker.shop.name))
 
     /**
@@ -308,7 +300,6 @@ internal actual class KakaoMarkerRenderer {
     private fun baseLabelOptions(
         marker: Marker,
         styles: LabelStyles,
-        selectedShopId: String?,
     ): LabelOptions =
         LabelOptions
             .from(
@@ -316,27 +307,21 @@ internal actual class KakaoMarkerRenderer {
                 LatLng.from(marker.location.lat, marker.location.lng),
             ).setStyles(styles)
             .setClickable(true)
-            .setTag(markerKey(marker, selectedShopId))
+            .setTag(markerKey(marker))
 
     /**
      * SDK label 제거를 위해 렌더링한 마커 key와 label ID를 저장한다.
      */
-    private fun rememberRenderedLabel(
-        marker: Marker,
-        selectedShopId: String?,
-    ) {
-        renderedLabelIdsByKey[markerKey(marker, selectedShopId)] = markerLabelId(marker)
+    private fun rememberRenderedLabel(marker: Marker) {
+        renderedLabelIdsByKey[markerKey(marker)] = markerLabelId(marker)
     }
 
     /**
      * 마커 타입이 달라도 충돌하지 않는 내부 식별 key를 만든다.
      */
-    private fun markerKey(
-        marker: Marker,
-        selectedShopId: String?,
-    ): String =
+    private fun markerKey(marker: Marker): String =
         when (marker) {
-            is Marker.SingleMarker -> "$SINGLE_MARKER_KEY_PREFIX${marker.id}:${marker.shop.isVisible}:${marker.id == selectedShopId}"
+            is Marker.SingleMarker -> "$SINGLE_MARKER_KEY_PREFIX${marker.id}:${marker.shop.isVisible}"
             is Marker.ClusterMaker -> "$CLUSTER_MARKER_KEY_PREFIX${marker.id}"
         }
 

@@ -120,7 +120,6 @@ actual fun KakaoMapView(
         markerRenderer = markerRenderer,
         cameraController = cameraController,
         shops = shops,
-        selectedShopId = selectedShopId,
         bounds = bounds,
         clusterBounds = clusterBounds,
         viewportSize = viewportSize,
@@ -202,13 +201,12 @@ private fun RenderMarkersEffect(
     markerRenderer: KakaoMarkerRenderer,
     cameraController: KakaoCameraController,
     shops: RamenShops,
-    selectedShopId: String?,
     bounds: MapBounds,
     clusterBounds: MapBounds,
     viewportSize: MapViewportSize,
     onShopClick: (RamenShop) -> Unit,
 ) {
-    LaunchedEffect(kakaoMap, markerBitmap, clusterMarkerBitmap, shops, selectedShopId, bounds, clusterBounds, viewportSize, onShopClick) {
+    LaunchedEffect(kakaoMap, markerBitmap, clusterMarkerBitmap, shops, bounds, clusterBounds, viewportSize, onShopClick) {
         if (kakaoMap == null) return@LaunchedEffect
 
         val markers =
@@ -225,7 +223,6 @@ private fun RenderMarkersEffect(
             markerBitmap = markerBitmap,
             clusterMarkerBitmap = clusterMarkerBitmap,
             markers = markers,
-            selectedShopId = selectedShopId,
             onShopClick = onShopClick,
             onClusterClick = { cluster ->
                 cameraController.focusRamenShops(
