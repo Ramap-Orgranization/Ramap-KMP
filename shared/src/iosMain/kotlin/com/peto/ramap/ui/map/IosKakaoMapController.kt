@@ -15,8 +15,8 @@ import com.peto.ramap.core.config.DefaultMapConfig
 import com.peto.ramap.core.config.MapInteractionConfig
 import com.peto.ramap.domain.model.Location
 import com.peto.ramap.domain.model.MapBounds
+import com.peto.ramap.domain.model.Marker
 import com.peto.ramap.domain.model.RamenShop
-import com.peto.ramap.domain.model.RamenShops
 import com.peto.ramap.ui.model.IosMapCoordinate
 import kotlinx.cinterop.BetaInteropApi
 import kotlinx.cinterop.CValue
@@ -73,7 +73,7 @@ class IosKakaoMapController(
     private val cameraController = KakaoCameraController()
     private val markerRenderer = KakaoMarkerRenderer()
     private val mapViewName = "ramap"
-    private var pendingShops: RamenShops? = null
+    private var pendingMarkers: List<Marker>? = null
     private var pendingMyLocationCoordinate: IosMapCoordinate? = null
     private var isStarted = false
     private var isMapViewAdded = false
@@ -120,7 +120,7 @@ class IosKakaoMapController(
         kakaoMap.cameraMinLevel = MapInteractionConfig.MAX_ZOOM_OUT_LEVEL.toLong()
         kakaoMap.eventDelegate = this
         notifyCurrentBounds(kakaoMap)
-        pendingShops?.let(::renderRamenShopMarkers)
+        pendingMarkers?.let(::renderMarkers)
         pendingMyLocationCoordinate?.let(::moveToCoordinate)
         pendingMyLocationCoordinate = null
     }
@@ -144,19 +144,25 @@ class IosKakaoMapController(
             )?.let(onBoundsChanged)
     }
 
-    fun updateShops(shops: RamenShops) {
-        pendingShops = shops
-        renderRamenShopMarkers(shops)
+    fun updateMarkers(markers: List<Marker>) {
+        pendingMarkers = markers
+        renderMarkers(markers)
     }
 
-    private fun renderRamenShopMarkers(shops: RamenShops) {
+    private fun renderMarkers(markers: List<Marker>) {
         if (!isMapViewAdded) return
 
         val kakaoMap = getKakaoMap() ?: return
         markerRenderer.render(
             kakaoMap = kakaoMap,
-            shops = shops,
+            markers = markers,
             onShopClick = onShopClick,
+            onClusterClick = { cluster ->
+                cameraController.focusRamenShops(
+                    kakaoMap = kakaoMap,
+                    shops = cluster.shops,
+                )
+            },
         )
     }
 
@@ -262,6 +268,12 @@ class IosKakaoMapController(
         markerRenderer.handlePoiTap(
             poiId = poiID,
             onShopClick = onShopClick,
+            onClusterClick = { cluster ->
+                cameraController.focusRamenShops(
+                    kakaoMap = kakaoMap,
+                    shops = cluster.shops,
+                )
+            },
         )
     }
 
@@ -271,6 +283,12 @@ class IosKakaoMapController(
             kakaoMap = kakaoMap,
             point = point,
             onShopClick = onShopClick,
+            onClusterClick = { cluster ->
+                cameraController.focusRamenShops(
+                    kakaoMap = kakaoMap,
+                    shops = cluster.shops,
+                )
+            },
         )
     }
 
