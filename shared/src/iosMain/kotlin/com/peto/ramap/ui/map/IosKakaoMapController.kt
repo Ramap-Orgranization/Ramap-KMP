@@ -25,15 +25,9 @@ import kotlinx.cinterop.readValue
 import kotlinx.cinterop.useContents
 import platform.CoreGraphics.CGPoint
 import platform.CoreGraphics.CGRectZero
-import platform.CoreLocation.CLAuthorizationStatus
 import platform.CoreLocation.CLLocation
 import platform.CoreLocation.CLLocationManager
 import platform.CoreLocation.CLLocationManagerDelegateProtocol
-import platform.CoreLocation.kCLAuthorizationStatusAuthorizedAlways
-import platform.CoreLocation.kCLAuthorizationStatusAuthorizedWhenInUse
-import platform.CoreLocation.kCLAuthorizationStatusDenied
-import platform.CoreLocation.kCLAuthorizationStatusNotDetermined
-import platform.CoreLocation.kCLAuthorizationStatusRestricted
 import platform.CoreLocation.kCLLocationAccuracyHundredMeters
 import platform.Foundation.NSError
 import platform.darwin.NSObject
@@ -50,7 +44,6 @@ class IosKakaoMapController(
     private val onBoundsChanged: (MapBounds) -> Unit,
     private val onShopClick: (RamenShop) -> Unit,
     private val onMyLocationChanged: (Location) -> Unit,
-    private val onLocationPermissionBlocked: () -> Unit,
 ) : NSObject(),
     MapControllerDelegateProtocol,
     KakaoMapEventDelegateProtocol,
@@ -181,45 +174,12 @@ class IosKakaoMapController(
     }
 
     fun moveToMyLocation() {
-        when (locationManager.authorizationStatus) {
-            kCLAuthorizationStatusAuthorizedWhenInUse,
-            kCLAuthorizationStatusAuthorizedAlways,
-            -> moveToKnownOrRequestedLocation()
-
-            kCLAuthorizationStatusNotDetermined -> locationManager.requestWhenInUseAuthorization()
-
-            kCLAuthorizationStatusDenied,
-            kCLAuthorizationStatusRestricted,
-            -> onLocationPermissionBlocked()
-
-            else -> locationManager.requestWhenInUseAuthorization()
-        }
-    }
-
-    private fun moveToKnownOrRequestedLocation() {
         val location = locationManager.location
 
         if (location != null) {
             moveToLocation(location)
         } else {
             locationManager.requestLocation()
-        }
-    }
-
-    override fun locationManagerDidChangeAuthorization(manager: CLLocationManager) {
-        when {
-            manager.isAuthorized() -> moveToKnownOrRequestedLocation()
-            manager.isBlocked() -> onLocationPermissionBlocked()
-        }
-    }
-
-    override fun locationManager(
-        manager: CLLocationManager,
-        didChangeAuthorizationStatus: CLAuthorizationStatus,
-    ) {
-        when {
-            didChangeAuthorizationStatus.isAuthorized() -> moveToKnownOrRequestedLocation()
-            didChangeAuthorizationStatus.isBlocked() -> onLocationPermissionBlocked()
         }
     }
 
@@ -293,18 +253,6 @@ class IosKakaoMapController(
     }
 
     private fun getKakaoMap(): KakaoMap? = controller.getView(mapViewName) as? KakaoMap
-
-    private fun CLLocationManager.isAuthorized(): Boolean = authorizationStatus.isAuthorized()
-
-    private fun CLLocationManager.isBlocked(): Boolean = authorizationStatus.isBlocked()
-
-    private fun CLAuthorizationStatus.isAuthorized(): Boolean =
-        this == kCLAuthorizationStatusAuthorizedWhenInUse ||
-            this == kCLAuthorizationStatusAuthorizedAlways
-
-    private fun CLAuthorizationStatus.isBlocked(): Boolean =
-        this == kCLAuthorizationStatusDenied ||
-            this == kCLAuthorizationStatusRestricted
 
     private fun CLLocation.toCoordinate(): IosMapCoordinate =
         coordinate.useContents {
