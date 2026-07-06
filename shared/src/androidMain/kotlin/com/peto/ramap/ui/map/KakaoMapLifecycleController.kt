@@ -6,6 +6,7 @@ import com.kakao.vectormap.KakaoMapReadyCallback
 import com.kakao.vectormap.MapLifeCycleCallback
 import com.kakao.vectormap.MapView
 import com.peto.ramap.core.config.MapInteractionConfig
+import com.peto.ramap.domain.model.Location
 import com.peto.ramap.domain.model.MapBounds
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -16,7 +17,6 @@ import java.util.concurrent.atomic.AtomicBoolean
  */
 internal class KakaoMapLifecycleController(
     private val mapView: MapView,
-    private val boundsCalculator: MapBoundsCalculator,
 ) {
     private val isMapStarted = AtomicBoolean(false)
 
@@ -46,7 +46,7 @@ internal class KakaoMapLifecycleController(
             },
             object : KakaoMapReadyCallback() {
                 override fun onMapReady(kakaoMap: KakaoMap) {
-                    kakaoMap.setCameraMinLevel(MapInteractionConfig.MAX_ZOOM_OUT_LEVEL)
+                    kakaoMap.cameraMinLevel = MapInteractionConfig.MAX_ZOOM_OUT_LEVEL
                     onMapReady(kakaoMap)
                     bindBoundsChangedListener(kakaoMap, onBoundsChanged)
 
@@ -88,11 +88,42 @@ internal class KakaoMapLifecycleController(
         kakaoMap: KakaoMap,
         onBoundsChanged: (MapBounds) -> Unit,
     ) {
-        boundsCalculator
-            .currentBounds(
-                kakaoMap = kakaoMap,
+        val cornerLocations =
+            visibleCornerLocations(
+                kakaoMap,
                 width = mapView.width,
                 height = mapView.height,
-            )?.let(onBoundsChanged)
+            ) ?: return
+
+        val bounds = MapBounds.fromLocations(cornerLocations) ?: return
+
+        onBoundsChanged(bounds)
+    }
+
+    private fun visibleCornerLocations(
+        map: KakaoMap,
+        width: Int,
+        height: Int,
+    ): List<Location>? {
+        if (width <= 0 || height <= 0) return null
+
+        val locations =
+            listOfNotNull(
+                map.fromScreenPoint(0, 0),
+                map.fromScreenPoint(width, 0),
+                map.fromScreenPoint(0, height),
+                map.fromScreenPoint(width, height),
+            ).map { point ->
+                Location(
+                    lat = point.latitude,
+                    lng = point.longitude,
+                )
+            }
+
+        return locations.takeIf { it.size == CORNER_COUNT }
+    }
+
+    companion object {
+        private const val CORNER_COUNT = 4
     }
 }

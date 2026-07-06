@@ -7,6 +7,29 @@ import kotlin.test.assertTrue
 
 class MapBoundsTest {
     @Test
+    fun `위치 목록으로 경계 영역을 만든다`() {
+        val bounds =
+            MapBounds.fromLocations(
+                listOf(
+                    Location(lat = 37.60, lng = 127.10),
+                    Location(lat = 37.50, lng = 126.90),
+                    Location(lat = 37.55, lng = 127.20),
+                    Location(lat = 37.45, lng = 127.00),
+                ),
+            )
+
+        assertEquals(
+            MapBounds(
+                minLat = 37.45,
+                maxLat = 37.60,
+                minLng = 126.90,
+                maxLng = 127.20,
+            ),
+            bounds,
+        )
+    }
+
+    @Test
     fun `지도 영역의 중심과 span을 계산한다`() {
         val bounds =
             MapBounds(

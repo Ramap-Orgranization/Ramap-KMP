@@ -24,6 +24,7 @@ import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.readValue
 import kotlinx.cinterop.useContents
 import platform.CoreGraphics.CGPoint
+import platform.CoreGraphics.CGPointMake
 import platform.CoreGraphics.CGRectZero
 import platform.darwin.NSObject
 
@@ -32,8 +33,6 @@ private const val DEFAULT_VIEW_INFO_NAME = "map"
 
 /**
  * iOS Kakao Maps SDK 생명주기와 delegate를 Compose 상태에 연결한다.
- *
- * 실제 카메라 이동, 마커 렌더링, 화면 영역 계산은 Android와 같은 이름의 actual 객체에 위임한다.
  */
 class IosKakaoMapController(
     private val onBoundsChanged: (MapBounds) -> Unit,
@@ -51,7 +50,6 @@ class IosKakaoMapController(
         )
 
     private val controller = KMController(viewContainer = mapViewContainer)
-    private val boundsCalculator = MapBoundsCalculator()
     private val cameraController = KakaoCameraController()
     private val markerRenderer = KakaoMarkerRenderer()
     private val mapViewName = "ramap"
@@ -118,12 +116,15 @@ class IosKakaoMapController(
         val width = mapViewContainer.bounds.useContents { size.width }
         val height = mapViewContainer.bounds.useContents { size.height }
 
-        boundsCalculator
-            .currentBounds(
-                kakaoMap = kakaoMap,
+        val cornerLocations =
+            kakaoMap.visibleCornerLocations(
                 width = width,
                 height = height,
-            )?.let(onBoundsChanged)
+            ) ?: return
+
+        val bounds = MapBounds.fromLocations(cornerLocations) ?: return
+
+        onBoundsChanged(bounds)
     }
 
     fun updateMarkers(markers: List<Marker>) {
@@ -226,5 +227,31 @@ class IosKakaoMapController(
         controller.delegate = null
         isStarted = false
         isMapViewAdded = false
+        pendingMarkers = null
+        pendingMyLocationCoordinate = null
     }
 }
+
+private fun KakaoMap.visibleCornerLocations(
+    width: Double,
+    height: Double,
+): List<Location>? {
+    if (width <= 0.0 || height <= 0.0) return null
+
+    return listOf(
+        coordinateAt(CGPointMake(0.0, 0.0)),
+        coordinateAt(CGPointMake(width, 0.0)),
+        coordinateAt(CGPointMake(0.0, height)),
+        coordinateAt(CGPointMake(width, height)),
+    )
+}
+
+private fun KakaoMap.coordinateAt(point: CValue<CGPoint>): Location =
+    getPosition(point)
+        .wgsCoord
+        .useContents {
+            Location(
+                lat = latitude,
+                lng = longitude,
+            )
+        }

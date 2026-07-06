@@ -1,5 +1,4 @@
 @file:OptIn(ExperimentalForeignApi::class, BetaInteropApi::class)
-@file:Suppress("EXPECT_ACTUAL_CLASSIFIERS_ARE_IN_BETA_WARNING")
 
 package com.peto.ramap.ui.map
 
@@ -53,7 +52,7 @@ import platform.UIKit.UIGraphicsGetImageFromCurrentImageContext
 import platform.UIKit.UIImage
 import platform.UIKit.UILabel
 
-internal actual class KakaoMarkerRenderer actual constructor() {
+internal class KakaoMarkerRenderer {
     private val renderedMarkerKeys = mutableSetOf<String>()
     private val markersByPoiId = mutableMapOf<String, Marker>()
     private val clusterMarkerImages = mutableMapOf<String, UIImage>()
@@ -351,10 +350,22 @@ internal actual class KakaoMarkerRenderer actual constructor() {
         layer: LabelLayer,
         markers: List<Marker>,
     ) {
-        val newMarkers = markers.filter { marker -> markerKey(marker) !in renderedMarkerKeys }
+        val newMarkers = mutableListOf<Marker>()
+        for (marker in markers) {
+            val markerKey = markerKey(marker)
+            if (markerKey !in renderedMarkerKeys) {
+                newMarkers += marker
+            }
+        }
         if (newMarkers.isEmpty()) return
 
-        newMarkers.forEach { marker -> addMarkerPoi(labelManager, layer, marker) }
+        newMarkers.forEach { marker ->
+            addMarkerPoi(
+                labelManager = labelManager,
+                layer = layer,
+                marker = marker,
+            )
+        }
     }
 
     private fun addMarkerPoi(
