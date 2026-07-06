@@ -7,6 +7,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.onSizeChanged
@@ -24,9 +25,11 @@ import com.peto.ramap.domain.model.MapBounds
 import com.peto.ramap.domain.model.MarkerCluster
 import com.peto.ramap.domain.model.RamenShop
 import com.peto.ramap.domain.model.RamenShops
+import com.peto.ramap.platform.AndroidLocationProvider
 import com.peto.ramap.platform.permission.LocationPermissionGenerator
 import com.peto.ramap.platform.permission.PermissionStatus
 import com.peto.ramap.platform.permission.rememberLocationPermissionGenerator
+import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.cluster_marker
@@ -50,6 +53,7 @@ actual fun KakaoMapView(
 ) {
     val context = LocalContext.current
     val lifecycle = LocalLifecycleOwner.current.lifecycle
+    val coroutineScope = rememberCoroutineScope()
     val mapView = remember { MapView(context) }
     val kakaoMapState = remember { mutableStateOf<KakaoMap?>(null) }
     var viewportSize by remember { mutableStateOf(MapViewportSize()) }
@@ -59,7 +63,7 @@ actual fun KakaoMapView(
     val myLocationMarkerBitmap = rememberMyLocationMarkerBitmap()
 
     val markerCluster = remember { MarkerCluster() }
-    val locationProvider = remember(context) { LocationProvider(context) }
+    val androidLocationProvider = remember(context) { AndroidLocationProvider(context) }
     val boundsCalculator = remember { MapBoundsCalculator() }
     val cameraController = remember { KakaoCameraController() }
     val markerRenderer = remember { KakaoMarkerRenderer() }
@@ -76,19 +80,16 @@ actual fun KakaoMapView(
             when (result) {
                 PermissionStatus.Granted -> {
                     val kakaoMap = kakaoMapState.value ?: return@rememberLocationPermissionGenerator
-                    locationProvider
-                        .moveToLastKnownLocation(
-                            kakaoMap = kakaoMap,
-                            cameraController = cameraController,
-                        )?.let { location ->
-                            val domainLocation =
-                                Location(
-                                    lat = location.latitude,
-                                    lng = location.longitude,
-                                )
-                            myLocation = domainLocation
-                            onMyLocationChanged(domainLocation)
+                    coroutineScope.launch {
+                        androidLocationProvider.position()?.let { location ->
+                            myLocation = location
+                            onMyLocationChanged(location)
+                            cameraController.moveToLocation(
+                                kakaoMap = kakaoMap,
+                                location = location,
+                            )
                         }
+                    }
                 }
 
                 PermissionStatus.Blocked -> onLocationPermissionBlocked()
@@ -103,7 +104,8 @@ actual fun KakaoMapView(
 
     RenderInitialLocationEffect(
         kakaoMap = kakaoMapState.value,
-        locationProvider = locationProvider,
+        androidLocationProvider = androidLocationProvider,
+        locationPermissionGenerator = locationPermissionGenerator,
         markerRenderer = markerRenderer,
         myLocationMarkerBitmap = myLocationMarkerBitmap,
         onLocationChanged = { location ->
@@ -136,7 +138,8 @@ actual fun KakaoMapView(
 
     FocusShopsEffect(
         kakaoMap = kakaoMapState.value,
-        locationProvider = locationProvider,
+        androidLocationProvider = androidLocationProvider,
+        locationPermissionGenerator = locationPermissionGenerator,
         cameraController = cameraController,
         focusShops = focusShops,
         focusNearestToCurrentLocation = focusNearestToCurrentLocation,
@@ -171,26 +174,23 @@ actual fun KakaoMapView(
 @Composable
 private fun RenderInitialLocationEffect(
     kakaoMap: KakaoMap?,
-    locationProvider: LocationProvider,
+    androidLocationProvider: AndroidLocationProvider,
+    locationPermissionGenerator: LocationPermissionGenerator,
     markerRenderer: KakaoMarkerRenderer,
     myLocationMarkerBitmap: Bitmap,
     onLocationChanged: (Location) -> Unit,
 ) {
-    LaunchedEffect(kakaoMap, myLocationMarkerBitmap) {
+    LaunchedEffect(kakaoMap, myLocationMarkerBitmap, locationPermissionGenerator) {
         if (kakaoMap == null) return@LaunchedEffect
+        if (!locationPermissionGenerator.hasPermission()) return@LaunchedEffect
 
-        val location = locationProvider.currentLocation() ?: return@LaunchedEffect
-        val domainLocation =
-            Location(
-                lat = location.latitude,
-                lng = location.longitude,
-            )
+        val location = androidLocationProvider.position() ?: return@LaunchedEffect
 
-        onLocationChanged(domainLocation)
+        onLocationChanged(location)
         markerRenderer.renderMyLocation(
             kakaoMap = kakaoMap,
             markerBitmap = myLocationMarkerBitmap,
-            location = domainLocation,
+            location = location,
         )
     }
 }
@@ -260,7 +260,8 @@ private fun RenderMyLocationEffect(
 @Composable
 private fun FocusShopsEffect(
     kakaoMap: KakaoMap?,
-    locationProvider: LocationProvider,
+    androidLocationProvider: AndroidLocationProvider,
+    locationPermissionGenerator: LocationPermissionGenerator,
     cameraController: KakaoCameraController,
     focusShops: List<RamenShop>,
     focusNearestToCurrentLocation: Boolean,
@@ -270,15 +271,8 @@ private fun FocusShopsEffect(
         if (kakaoMap == null) return@LaunchedEffect
 
         val currentLocation =
-            if (focusNearestToCurrentLocation) {
-                locationProvider.currentLocation()?.also { location ->
-                    onMyLocationChanged(
-                        Location(
-                            lat = location.latitude,
-                            lng = location.longitude,
-                        ),
-                    )
-                }
+            if (focusNearestToCurrentLocation && locationPermissionGenerator.hasPermission()) {
+                androidLocationProvider.position()?.also(onMyLocationChanged)
             } else {
                 null
             }

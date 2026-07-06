@@ -1,14 +1,13 @@
 package com.peto.ramap.ui.map
 
-import android.location.Location
 import com.kakao.vectormap.KakaoMap
 import com.kakao.vectormap.LatLng
 import com.kakao.vectormap.camera.CameraUpdate
 import com.kakao.vectormap.camera.CameraUpdateFactory
 import com.peto.ramap.core.config.MapInteractionConfig
+import com.peto.ramap.domain.model.Location
 import com.peto.ramap.domain.model.RamenShop
 import com.peto.ramap.domain.model.nearestTo
-import com.peto.ramap.domain.model.Location as DomainLocation
 
 /**
  * 카카오 지도 카메라 이동을 담당한다.
@@ -37,7 +36,7 @@ internal actual class KakaoCameraController {
         when (shops.size) {
             1 -> moveToShop(kakaoMap, shops.first())
             else -> {
-                val nearestShop = shops.nearestTo(currentLocation?.toDomainLocation())
+                val nearestShop = shops.nearestTo(currentLocation)
 
                 if (nearestShop != null) {
                     moveToShop(kakaoMap, nearestShop)
@@ -55,8 +54,8 @@ internal actual class KakaoCameraController {
         kakaoMap.moveCamera(
             CameraUpdateFactory.newCenterPosition(
                 LatLng.from(
-                    location.latitude,
-                    location.longitude,
+                    location.lat,
+                    location.lng,
                 ),
             ),
         )
@@ -113,12 +112,6 @@ internal actual class KakaoCameraController {
             "${shop.id}:${shop.location.lat}:${shop.location.lng}"
         } + ":$focusNearestToCurrentLocation"
     }
-
-    private fun Location.toDomainLocation(): DomainLocation =
-        DomainLocation(
-            lat = latitude,
-            lng = longitude,
-        )
 
     private companion object {
         private const val FOCUS_SHOPS_PADDING_PX = 120
