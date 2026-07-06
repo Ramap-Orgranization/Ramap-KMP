@@ -12,8 +12,6 @@ import com.peto.ramap.domain.model.RamenShop
 import com.peto.ramap.domain.model.nearestTo
 import com.peto.ramap.ui.model.IosMapCoordinate
 import kotlinx.cinterop.ExperimentalForeignApi
-import kotlinx.cinterop.useContents
-import platform.CoreLocation.CLLocation
 
 @OptIn(ExperimentalForeignApi::class)
 internal actual class KakaoCameraController {
@@ -22,7 +20,7 @@ internal actual class KakaoCameraController {
     fun focusRamenShops(
         kakaoMap: KakaoMap,
         shops: List<RamenShop>,
-        currentLocation: CLLocation? = null,
+        currentLocation: Location? = null,
     ) {
         val focusKey = shops.focusKey(currentLocation != null)
         if (focusKey.isBlank()) return
@@ -33,7 +31,7 @@ internal actual class KakaoCameraController {
         when (shops.size) {
             1 -> moveToShop(kakaoMap, shops.first())
             else -> {
-                val nearestShop = shops.nearestTo(currentLocation?.toDomainLocation())
+                val nearestShop = shops.nearestTo(currentLocation)
 
                 if (nearestShop != null) {
                     moveToShop(kakaoMap, nearestShop)
@@ -60,18 +58,16 @@ internal actual class KakaoCameraController {
 
     fun moveToLocation(
         kakaoMap: KakaoMap,
-        location: CLLocation,
-    ): Location {
-        val domainLocation = location.toDomainLocation()
+        location: Location,
+    ) {
         moveToCoordinate(
             kakaoMap = kakaoMap,
             coordinate =
                 IosMapCoordinate(
-                    latitude = domainLocation.lat,
-                    longitude = domainLocation.lng,
+                    latitude = location.lat,
+                    longitude = location.lng,
                 ),
         )
-        return domainLocation
     }
 
     private fun moveToShop(
@@ -140,14 +136,6 @@ internal actual class KakaoCameraController {
             "${shop.id}:${shop.location.lat}:${shop.location.lng}"
         } + ":$focusNearestToCurrentLocation"
     }
-
-    private fun CLLocation.toDomainLocation(): Location =
-        coordinate.useContents {
-            Location(
-                lat = latitude,
-                lng = longitude,
-            )
-        }
 
     private companion object {
         private const val EMPTY_FOCUS_KEY = ""

@@ -25,11 +25,6 @@ import kotlinx.cinterop.readValue
 import kotlinx.cinterop.useContents
 import platform.CoreGraphics.CGPoint
 import platform.CoreGraphics.CGRectZero
-import platform.CoreLocation.CLLocation
-import platform.CoreLocation.CLLocationManager
-import platform.CoreLocation.CLLocationManagerDelegateProtocol
-import platform.CoreLocation.kCLLocationAccuracyHundredMeters
-import platform.Foundation.NSError
 import platform.darwin.NSObject
 
 private const val DEFAULT_APP_NAME = "openmap"
@@ -46,8 +41,7 @@ class IosKakaoMapController(
     private val onMyLocationChanged: (Location) -> Unit,
 ) : NSObject(),
     MapControllerDelegateProtocol,
-    KakaoMapEventDelegateProtocol,
-    CLLocationManagerDelegateProtocol {
+    KakaoMapEventDelegateProtocol {
     private val mapViewContainer = KMViewContainer(frame = CGRectZero.readValue())
     val view =
         IosKakaoMapContainer(
@@ -57,11 +51,6 @@ class IosKakaoMapController(
         )
 
     private val controller = KMController(viewContainer = mapViewContainer)
-    private val locationManager =
-        CLLocationManager().apply {
-            delegate = this@IosKakaoMapController
-            desiredAccuracy = kCLLocationAccuracyHundredMeters
-        }
     private val boundsCalculator = MapBoundsCalculator()
     private val cameraController = KakaoCameraController()
     private val markerRenderer = KakaoMarkerRenderer()
@@ -161,7 +150,7 @@ class IosKakaoMapController(
 
     fun updateFocusShops(
         shops: List<RamenShop>,
-        focusNearestToCurrentLocation: Boolean,
+        currentLocation: Location?,
     ) {
         if (!isMapViewAdded) return
 
@@ -169,42 +158,18 @@ class IosKakaoMapController(
         cameraController.focusRamenShops(
             kakaoMap = kakaoMap,
             shops = shops,
-            currentLocation = locationManager.location.takeIf { focusNearestToCurrentLocation },
+            currentLocation = currentLocation,
         )
     }
 
-    fun moveToMyLocation() {
-        val location = locationManager.location
-
-        if (location != null) {
-            moveToLocation(location)
-        } else {
-            locationManager.requestLocation()
-        }
-    }
-
-    override fun locationManager(
-        manager: CLLocationManager,
-        didUpdateLocations: List<*>,
-    ) {
-        val location = didUpdateLocations.lastOrNull() as? CLLocation ?: return
-        moveToLocation(location)
-    }
-
-    override fun locationManager(
-        manager: CLLocationManager,
-        didFailWithError: NSError,
-    ) = Unit
-
-    private fun moveToLocation(location: CLLocation) {
-        val coordinate = location.toCoordinate()
-        onMyLocationChanged(
-            Location(
-                lat = coordinate.latitude,
-                lng = coordinate.longitude,
+    fun moveToLocation(location: Location) {
+        onMyLocationChanged(location)
+        moveToCoordinate(
+            IosMapCoordinate(
+                latitude = location.lat,
+                longitude = location.lng,
             ),
         )
-        moveToCoordinate(coordinate)
     }
 
     private fun moveToCoordinate(coordinate: IosMapCoordinate) {
@@ -253,14 +218,6 @@ class IosKakaoMapController(
     }
 
     private fun getKakaoMap(): KakaoMap? = controller.getView(mapViewName) as? KakaoMap
-
-    private fun CLLocation.toCoordinate(): IosMapCoordinate =
-        coordinate.useContents {
-            IosMapCoordinate(
-                latitude = latitude,
-                longitude = longitude,
-            )
-        }
 
     fun dispose() {
         markerRenderer.clear()

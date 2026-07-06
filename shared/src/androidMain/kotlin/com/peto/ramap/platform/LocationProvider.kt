@@ -1,15 +1,23 @@
 package com.peto.ramap.platform
 
-import android.annotation.SuppressLint
 import android.content.Context
 import android.location.Location as AndroidLocation
 import android.location.LocationManager
 import com.peto.ramap.domain.model.Location
 
-internal class AndroidLocationProvider(
+/**
+ * Android 시스템 위치 서비스에서 마지막으로 알려진 위치를 조회한다.
+ *
+ * 이 클래스는 권한을 요청하거나 확인하지 않는다. 호출자는 `LocationPermissionGenerator` 등을 통해
+ * 위치 권한이 허용된 뒤 [position]을 호출해야 한다.
+ */
+internal actual class LocationProvider(
     private val context: Context,
 ) {
-    suspend fun position(): Location? {
+    /**
+     * GPS와 네트워크 provider의 last known location 중 가장 최신 위치를 반환한다.
+     */
+    actual suspend fun position(): Location? {
         val locationManager = locationManager() ?: return null
         val latestLocation = findLatestKnownLocation(locationManager) ?: return null
         return latestLocation.toDomainLocation()
@@ -18,7 +26,6 @@ internal class AndroidLocationProvider(
     private fun locationManager(): LocationManager? =
         context.getSystemService(Context.LOCATION_SERVICE) as? LocationManager
 
-    @SuppressLint("MissingPermission")
     private fun findLatestKnownLocation(locationManager: LocationManager): AndroidLocation? {
         var latestLocation: AndroidLocation? = null
 

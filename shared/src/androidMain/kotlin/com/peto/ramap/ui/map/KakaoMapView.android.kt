@@ -25,7 +25,7 @@ import com.peto.ramap.domain.model.MapBounds
 import com.peto.ramap.domain.model.MarkerCluster
 import com.peto.ramap.domain.model.RamenShop
 import com.peto.ramap.domain.model.RamenShops
-import com.peto.ramap.platform.AndroidLocationProvider
+import com.peto.ramap.platform.LocationProvider
 import com.peto.ramap.platform.permission.LocationPermissionGenerator
 import com.peto.ramap.platform.permission.PermissionStatus
 import com.peto.ramap.platform.permission.rememberLocationPermissionGenerator
@@ -63,7 +63,7 @@ actual fun KakaoMapView(
     val myLocationMarkerBitmap = rememberMyLocationMarkerBitmap()
 
     val markerCluster = remember { MarkerCluster() }
-    val androidLocationProvider = remember(context) { AndroidLocationProvider(context) }
+    val locationProvider = remember(context) { LocationProvider(context) }
     val boundsCalculator = remember { MapBoundsCalculator() }
     val cameraController = remember { KakaoCameraController() }
     val markerRenderer = remember { KakaoMarkerRenderer() }
@@ -81,7 +81,7 @@ actual fun KakaoMapView(
                 PermissionStatus.Granted -> {
                     val kakaoMap = kakaoMapState.value ?: return@rememberLocationPermissionGenerator
                     coroutineScope.launch {
-                        androidLocationProvider.position()?.let { location ->
+                        locationProvider.position()?.let { location ->
                             myLocation = location
                             onMyLocationChanged(location)
                             cameraController.moveToLocation(
@@ -104,7 +104,7 @@ actual fun KakaoMapView(
 
     RenderInitialLocationEffect(
         kakaoMap = kakaoMapState.value,
-        androidLocationProvider = androidLocationProvider,
+        locationProvider = locationProvider,
         locationPermissionGenerator = locationPermissionGenerator,
         markerRenderer = markerRenderer,
         myLocationMarkerBitmap = myLocationMarkerBitmap,
@@ -138,7 +138,7 @@ actual fun KakaoMapView(
 
     FocusShopsEffect(
         kakaoMap = kakaoMapState.value,
-        androidLocationProvider = androidLocationProvider,
+        locationProvider = locationProvider,
         locationPermissionGenerator = locationPermissionGenerator,
         cameraController = cameraController,
         focusShops = focusShops,
@@ -174,7 +174,7 @@ actual fun KakaoMapView(
 @Composable
 private fun RenderInitialLocationEffect(
     kakaoMap: KakaoMap?,
-    androidLocationProvider: AndroidLocationProvider,
+    locationProvider: LocationProvider,
     locationPermissionGenerator: LocationPermissionGenerator,
     markerRenderer: KakaoMarkerRenderer,
     myLocationMarkerBitmap: Bitmap,
@@ -184,7 +184,7 @@ private fun RenderInitialLocationEffect(
         if (kakaoMap == null) return@LaunchedEffect
         if (!locationPermissionGenerator.hasPermission()) return@LaunchedEffect
 
-        val location = androidLocationProvider.position() ?: return@LaunchedEffect
+        val location = locationProvider.position() ?: return@LaunchedEffect
 
         onLocationChanged(location)
         markerRenderer.renderMyLocation(
@@ -260,7 +260,7 @@ private fun RenderMyLocationEffect(
 @Composable
 private fun FocusShopsEffect(
     kakaoMap: KakaoMap?,
-    androidLocationProvider: AndroidLocationProvider,
+    locationProvider: LocationProvider,
     locationPermissionGenerator: LocationPermissionGenerator,
     cameraController: KakaoCameraController,
     focusShops: List<RamenShop>,
@@ -272,7 +272,7 @@ private fun FocusShopsEffect(
 
         val currentLocation =
             if (focusNearestToCurrentLocation && locationPermissionGenerator.hasPermission()) {
-                androidLocationProvider.position()?.also(onMyLocationChanged)
+                locationProvider.position()?.also(onMyLocationChanged)
             } else {
                 null
             }

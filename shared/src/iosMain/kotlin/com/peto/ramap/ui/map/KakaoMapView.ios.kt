@@ -6,6 +6,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
@@ -18,9 +19,11 @@ import com.peto.ramap.domain.model.MapBounds
 import com.peto.ramap.domain.model.MarkerCluster
 import com.peto.ramap.domain.model.RamenShop
 import com.peto.ramap.domain.model.RamenShops
+import com.peto.ramap.platform.LocationProvider
 import com.peto.ramap.platform.permission.PermissionStatus
 import com.peto.ramap.platform.permission.rememberLocationPermissionGenerator
 import kotlinx.cinterop.ExperimentalForeignApi
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalComposeUiApi::class, ExperimentalForeignApi::class)
 @Composable
@@ -38,6 +41,9 @@ actual fun KakaoMapView(
     onLocationPermissionBlocked: () -> Unit,
     modifier: Modifier,
 ) {
+    val coroutineScope = rememberCoroutineScope()
+    val locationProvider = remember { LocationProvider() }
+    var myLocation by remember { mutableStateOf<Location?>(null) }
     val mapController =
         remember {
             IosKakaoMapController(
@@ -49,7 +55,15 @@ actual fun KakaoMapView(
     val locationPermissionGenerator =
         rememberLocationPermissionGenerator { result ->
             when (result) {
-                PermissionStatus.Granted -> mapController.moveToMyLocation()
+                PermissionStatus.Granted -> {
+                    coroutineScope.launch {
+                        locationProvider.position()?.let { location ->
+                            myLocation = location
+                            mapController.moveToLocation(location)
+                        }
+                    }
+                }
+
                 PermissionStatus.Blocked -> onLocationPermissionBlocked()
                 PermissionStatus.Denied -> Unit
             }
@@ -83,7 +97,7 @@ actual fun KakaoMapView(
             )
             mapController.updateFocusShops(
                 shops = focusShops,
-                focusNearestToCurrentLocation = focusNearestToCurrentLocation,
+                currentLocation = myLocation.takeIf { focusNearestToCurrentLocation },
             )
         },
         properties =
