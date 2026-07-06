@@ -1,13 +1,9 @@
 package com.peto.ramap.ui.map
 
 import android.graphics.Bitmap
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.ActivityResultLauncher
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -28,6 +24,9 @@ import com.peto.ramap.domain.model.MapBounds
 import com.peto.ramap.domain.model.MarkerCluster
 import com.peto.ramap.domain.model.RamenShop
 import com.peto.ramap.domain.model.RamenShops
+import com.peto.ramap.platform.permission.LocationPermissionGenerator
+import com.peto.ramap.platform.permission.PermissionStatus
+import com.peto.ramap.platform.permission.rememberLocationPermissionGenerator
 import org.jetbrains.compose.resources.painterResource
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.cluster_marker
@@ -53,7 +52,6 @@ actual fun KakaoMapView(
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     val mapView = remember { MapView(context) }
     val kakaoMapState = remember { mutableStateOf<KakaoMap?>(null) }
-    var isRequestingLocationPermission by remember { mutableStateOf(false) }
     var viewportSize by remember { mutableStateOf(MapViewportSize()) }
     var myLocation by remember { mutableStateOf<Location?>(null) }
     val markerBitmap = rememberRamenShopMarkerBitmap()
@@ -73,27 +71,30 @@ actual fun KakaoMapView(
             )
         }
 
-    val locationPermissionLauncher =
-        rememberKakaoMapLocationPermissionLauncher(
-            kakaoMapState = kakaoMapState,
-            locationProvider = locationProvider,
-            cameraController = cameraController,
-            onLocationReceived = { location ->
-                val domainLocation =
-                    Location(
-                        lat = location.latitude,
-                        lng = location.longitude,
-                    )
-                myLocation = domainLocation
-                onMyLocationChanged(domainLocation)
-            },
-            onLocationPermissionBlocked = {
-                if (isRequestingLocationPermission) {
-                    onLocationPermissionBlocked()
-                    isRequestingLocationPermission = false
+    val locationPermissionGenerator =
+        rememberLocationPermissionGenerator { result ->
+            when (result) {
+                PermissionStatus.Granted -> {
+                    val kakaoMap = kakaoMapState.value ?: return@rememberLocationPermissionGenerator
+                    locationProvider
+                        .moveToLastKnownLocation(
+                            kakaoMap = kakaoMap,
+                            cameraController = cameraController,
+                        )?.let { location ->
+                            val domainLocation =
+                                Location(
+                                    lat = location.latitude,
+                                    lng = location.longitude,
+                                )
+                            myLocation = domainLocation
+                            onMyLocationChanged(domainLocation)
+                        }
                 }
-            },
-        )
+
+                PermissionStatus.Blocked -> onLocationPermissionBlocked()
+                PermissionStatus.Denied -> Unit
+            }
+        }
 
     BindMapViewLifecycle(
         controller = lifecycleController,
@@ -145,17 +146,7 @@ actual fun KakaoMapView(
     RequestMyLocationEffect(
         kakaoMap = kakaoMapState.value,
         myLocationRequestKey = myLocationRequestKey,
-        locationProvider = locationProvider,
-        cameraController = cameraController,
-        locationPermissionLauncher = locationPermissionLauncher,
-        onLocationReceived = { location ->
-            myLocation = location
-            onMyLocationChanged(location)
-        },
-        onLocationPermissionBlocked = onLocationPermissionBlocked,
-        onPermissionResultSnackbarVisibilityChanged = { shouldShow ->
-            isRequestingLocationPermission = shouldShow
-        },
+        locationPermissionGenerator = locationPermissionGenerator,
     )
 
     KakaoMapAndroidView(
@@ -304,39 +295,12 @@ private fun FocusShopsEffect(
 private fun RequestMyLocationEffect(
     kakaoMap: KakaoMap?,
     myLocationRequestKey: Int,
-    locationProvider: LocationProvider,
-    cameraController: KakaoCameraController,
-    locationPermissionLauncher: ActivityResultLauncher<Array<String>>,
-    onLocationReceived: (Location) -> Unit,
-    onLocationPermissionBlocked: () -> Unit,
-    onPermissionResultSnackbarVisibilityChanged: (Boolean) -> Unit,
+    locationPermissionGenerator: LocationPermissionGenerator,
 ) {
-    LaunchedEffect(kakaoMap, myLocationRequestKey) {
+    LaunchedEffect(kakaoMap, myLocationRequestKey, locationPermissionGenerator) {
         if (myLocationRequestKey == 0 || kakaoMap == null) return@LaunchedEffect
 
-        onPermissionResultSnackbarVisibilityChanged(true)
-        locationProvider.ensureLocationPermission(
-            permissionLauncher = locationPermissionLauncher,
-            onGranted = {
-                onPermissionResultSnackbarVisibilityChanged(false)
-                locationProvider
-                    .moveToLastKnownLocation(
-                        kakaoMap = kakaoMap,
-                        cameraController = cameraController,
-                    )?.let { location ->
-                        onLocationReceived(
-                            Location(
-                                lat = location.latitude,
-                                lng = location.longitude,
-                            ),
-                        )
-                    }
-            },
-            onBlocked = {
-                onLocationPermissionBlocked()
-                onPermissionResultSnackbarVisibilityChanged(false)
-            },
-        )
+        locationPermissionGenerator.requestPermission()
     }
 }
 
@@ -412,28 +376,6 @@ private fun rememberMyLocationMarkerBitmap(): Bitmap {
 
 private const val MY_LOCATION_MARKER_SIZE = 16
 private const val CLUSTER_MARKER_SIZE = 28
-
-@Composable
-private fun rememberKakaoMapLocationPermissionLauncher(
-    kakaoMapState: MutableState<KakaoMap?>,
-    locationProvider: LocationProvider,
-    cameraController: KakaoCameraController,
-    onLocationReceived: (android.location.Location) -> Unit,
-    onLocationPermissionBlocked: () -> Unit,
-) = rememberLauncherForActivityResult(
-    contract = ActivityResultContracts.RequestMultiplePermissions(),
-) { permissions ->
-    if (locationProvider.isLocationGranted(permissions)) {
-        val kakaoMap = kakaoMapState.value ?: return@rememberLauncherForActivityResult
-        locationProvider
-            .moveToLastKnownLocation(
-                kakaoMap = kakaoMap,
-                cameraController = cameraController,
-            )?.let(onLocationReceived)
-    } else if (locationProvider.isLocationPermissionBlocked()) {
-        onLocationPermissionBlocked()
-    }
-}
 
 @Composable
 private fun BindMapViewLifecycle(

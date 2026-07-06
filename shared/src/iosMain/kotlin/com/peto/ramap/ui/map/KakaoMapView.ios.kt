@@ -18,6 +18,8 @@ import com.peto.ramap.domain.model.MapBounds
 import com.peto.ramap.domain.model.MarkerCluster
 import com.peto.ramap.domain.model.RamenShop
 import com.peto.ramap.domain.model.RamenShops
+import com.peto.ramap.platform.permission.PermissionStatus
+import com.peto.ramap.platform.permission.rememberLocationPermissionGenerator
 import kotlinx.cinterop.ExperimentalForeignApi
 
 @OptIn(ExperimentalComposeUiApi::class, ExperimentalForeignApi::class)
@@ -42,8 +44,15 @@ actual fun KakaoMapView(
                 onBoundsChanged = onBoundsChanged,
                 onShopClick = onShopClick,
                 onMyLocationChanged = onMyLocationChanged,
-                onLocationPermissionBlocked = onLocationPermissionBlocked,
             )
+        }
+    val locationPermissionGenerator =
+        rememberLocationPermissionGenerator { result ->
+            when (result) {
+                PermissionStatus.Granted -> mapController.moveToMyLocation()
+                PermissionStatus.Blocked -> onLocationPermissionBlocked()
+                PermissionStatus.Denied -> Unit
+            }
         }
     val markerCluster = remember { MarkerCluster() }
     var viewportSize by remember { mutableStateOf(MapViewportSize()) }
@@ -86,7 +95,7 @@ actual fun KakaoMapView(
 
     LaunchedEffect(myLocationRequestKey) {
         if (myLocationRequestKey > 0) {
-            mapController.moveToMyLocation()
+            locationPermissionGenerator.requestPermission()
         }
     }
 
