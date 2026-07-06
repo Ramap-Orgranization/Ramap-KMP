@@ -41,12 +41,14 @@ import ramap.shared.generated.resources.ic_kid_star
 import ramap.shared.generated.resources.ic_visibility_off
 import ramap.shared.generated.resources.instagram_icon
 import ramap.shared.generated.resources.kakao_map_icon
+import ramap.shared.generated.resources.naver_map_icon
 import ramap.shared.generated.resources.shop_detail_label_address
 import ramap.shared.generated.resources.shop_detail_label_business_hours
 import ramap.shared.generated.resources.shop_detail_label_phone
 import ramap.shared.generated.resources.shop_detail_label_waiting
 import ramap.shared.generated.resources.shop_detail_link_instagram
 import ramap.shared.generated.resources.shop_detail_link_kakao_map
+import ramap.shared.generated.resources.shop_detail_link_naver_map
 import ramap.shared.generated.resources.shop_detail_waiting_catchtable
 import ramap.shared.generated.resources.shop_detail_waiting_syrup_friends
 import ramap.shared.generated.resources.shop_detail_waiting_tabling
@@ -185,6 +187,14 @@ fun RamenShopDetailContent(
                     icon = Res.drawable.kakao_map_icon,
                     label = stringResource(Res.string.shop_detail_link_kakao_map),
                     onClick = { uriHandler.openUri(kakaoPlaceUrl) },
+                )
+            }
+
+            shop.naverPlaceUrl?.let { naverPlaceUrl ->
+                ShopLinkRow(
+                    icon = Res.drawable.naver_map_icon,
+                    label = stringResource(Res.string.shop_detail_link_naver_map),
+                    onClick = { uriHandler.openUri(naverPlaceUrl) },
                 )
             }
         }
