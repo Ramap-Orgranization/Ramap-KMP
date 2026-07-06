@@ -46,7 +46,7 @@ internal class KakaoMapLifecycleController(
             },
             object : KakaoMapReadyCallback() {
                 override fun onMapReady(kakaoMap: KakaoMap) {
-                    kakaoMap.setCameraMinLevel(MapInteractionConfig.MAX_ZOOM_OUT_LEVEL)
+                    kakaoMap.cameraMinLevel = MapInteractionConfig.MAX_ZOOM_OUT_LEVEL
                     onMapReady(kakaoMap)
                     bindBoundsChangedListener(kakaoMap, onBoundsChanged)
 
