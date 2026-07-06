@@ -71,7 +71,7 @@ actual fun KakaoMapView(
             )
         }
 
-    val locationPermissionController =
+    val locationPermissionGenerator =
         rememberLocationPermissionGenerator { result ->
             when (result) {
                 PermissionStatus.Granted -> {
@@ -146,7 +146,7 @@ actual fun KakaoMapView(
     RequestMyLocationEffect(
         kakaoMap = kakaoMapState.value,
         myLocationRequestKey = myLocationRequestKey,
-        locationPermissionController = locationPermissionController,
+        locationPermissionGenerator = locationPermissionGenerator,
     )
 
     KakaoMapAndroidView(
@@ -295,12 +295,12 @@ private fun FocusShopsEffect(
 private fun RequestMyLocationEffect(
     kakaoMap: KakaoMap?,
     myLocationRequestKey: Int,
-    locationPermissionController: LocationPermissionGenerator,
+    locationPermissionGenerator: LocationPermissionGenerator,
 ) {
-    LaunchedEffect(kakaoMap, myLocationRequestKey, locationPermissionController) {
+    LaunchedEffect(kakaoMap, myLocationRequestKey, locationPermissionGenerator) {
         if (myLocationRequestKey == 0 || kakaoMap == null) return@LaunchedEffect
 
-        locationPermissionController.requestPermission()
+        locationPermissionGenerator.requestPermission()
     }
 }
 

@@ -46,7 +46,7 @@ actual fun KakaoMapView(
                 onMyLocationChanged = onMyLocationChanged,
             )
         }
-    val locationPermissionController =
+    val locationPermissionGenerator =
         rememberLocationPermissionGenerator { result ->
             when (result) {
                 PermissionStatus.Granted -> mapController.moveToMyLocation()
@@ -95,7 +95,7 @@ actual fun KakaoMapView(
 
     LaunchedEffect(myLocationRequestKey) {
         if (myLocationRequestKey > 0) {
-            locationPermissionController.requestPermission()
+            locationPermissionGenerator.requestPermission()
         }
     }
 
