@@ -1,4 +1,4 @@
-package com.peto.ramap.ui.map
+package com.peto.ramap.ui.map.model
 
 data class MapViewportSize(
     val width: Int = 0,
