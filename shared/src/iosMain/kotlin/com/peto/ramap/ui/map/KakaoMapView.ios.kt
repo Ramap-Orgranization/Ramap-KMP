@@ -18,8 +18,8 @@ import com.peto.ramap.domain.model.MapBounds
 import com.peto.ramap.domain.model.MarkerCluster
 import com.peto.ramap.domain.model.RamenShop
 import com.peto.ramap.domain.model.RamenShops
-import com.peto.ramap.platform.permission.rememberLocationPermissionGenerator
 import com.peto.ramap.platform.permission.PermissionStatus
+import com.peto.ramap.platform.permission.rememberLocationPermissionGenerator
 import kotlinx.cinterop.ExperimentalForeignApi
 
 @OptIn(ExperimentalComposeUiApi::class, ExperimentalForeignApi::class)
