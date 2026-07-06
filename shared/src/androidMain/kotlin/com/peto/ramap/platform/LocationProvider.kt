@@ -1,9 +1,9 @@
 package com.peto.ramap.platform
 
 import android.content.Context
-import android.location.Location as AndroidLocation
 import android.location.LocationManager
 import com.peto.ramap.domain.model.Location
+import android.location.Location as AndroidLocation
 
 /**
  * Android 시스템 위치 서비스에서 마지막으로 알려진 위치를 조회한다.
@@ -23,8 +23,7 @@ internal actual class LocationProvider(
         return latestLocation.toDomainLocation()
     }
 
-    private fun locationManager(): LocationManager? =
-        context.getSystemService(Context.LOCATION_SERVICE) as? LocationManager
+    private fun locationManager(): LocationManager? = context.getSystemService(Context.LOCATION_SERVICE) as? LocationManager
 
     private fun findLatestKnownLocation(locationManager: LocationManager): AndroidLocation? {
         var latestLocation: AndroidLocation? = null

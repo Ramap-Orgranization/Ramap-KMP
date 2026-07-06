@@ -28,7 +28,9 @@ import kotlin.coroutines.resume
  * 권한 요청과 권한 상태 판단은 호출자가 담당한다. 이 provider는 권한이 허용된 뒤 위치 값을
  * 가져오는 책임만 가진다.
  */
-internal actual class LocationProvider : NSObject(), CLLocationManagerDelegateProtocol {
+internal actual class LocationProvider :
+    NSObject(),
+    CLLocationManagerDelegateProtocol {
     private val locationManager = CLLocationManager()
     private var continuation: CancellableContinuation<Location?>? = null
 
