@@ -14,8 +14,6 @@ internal class IosMarkerRenderAction(
     private val optionFactory: IosMarkerOptionFactory,
     private val markersByPoiId: MutableMap<String, Marker>,
 ) : MarkerRenderAction {
-    override fun bindMarkers(markers: Map<String, Marker>) = Unit
-
     override fun removeMarkers(keys: Set<String>) {
         val poiIds = keys.map(optionFactory::poiId)
         layer.removePoisWithPoiIDs(poiIds, callback = null)

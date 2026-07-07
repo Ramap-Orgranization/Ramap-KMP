@@ -16,7 +16,7 @@ internal class MarkerRenderCoordinator(
     /**
      * 현재 마커 목록을 이전 렌더링 상태와 비교해 플랫폼 렌더러에 반영한다.
      *
-     * 실행 순서는 마커 바인딩, stale/changed 마커 제거, 신규/변경 마커 추가 순서로 고정된다.
+     * 실행 순서는 stale/changed 마커 제거, 신규/변경 마커 추가 순서로 고정된다.
      */
     fun render(
         markers: List<Marker>,
@@ -90,7 +90,6 @@ internal class MarkerRenderCoordinator(
         plan: MarkerRenderPlan,
         action: MarkerRenderAction,
     ) {
-        action.bindMarkers(plan.currentMarkers)
         action.removeMarkers(plan.removeKeys)
         action.addMarkers(plan.addEntries)
     }
