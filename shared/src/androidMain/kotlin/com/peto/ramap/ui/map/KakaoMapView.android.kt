@@ -31,7 +31,6 @@ import com.peto.ramap.platform.permission.PermissionStatus
 import com.peto.ramap.platform.permission.rememberLocationPermissionGenerator
 import com.peto.ramap.ui.map.marker.MyLocationRenderer
 import com.peto.ramap.ui.map.marker.ShopMarkerRenderer
-import com.peto.ramap.ui.map.model.MapViewportSize
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
 import ramap.shared.generated.resources.Res
