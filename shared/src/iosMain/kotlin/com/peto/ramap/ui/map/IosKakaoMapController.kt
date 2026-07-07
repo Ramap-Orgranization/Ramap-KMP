@@ -17,6 +17,8 @@ import com.peto.ramap.domain.model.Location
 import com.peto.ramap.domain.model.MapBounds
 import com.peto.ramap.domain.model.Marker
 import com.peto.ramap.domain.model.RamenShop
+import com.peto.ramap.ui.map.marker.MyLocationRenderer
+import com.peto.ramap.ui.map.marker.ShopMarkerRenderer
 import com.peto.ramap.ui.model.IosMapCoordinate
 import kotlinx.cinterop.BetaInteropApi
 import kotlinx.cinterop.CValue
@@ -51,7 +53,8 @@ class IosKakaoMapController(
 
     private val controller = KMController(viewContainer = mapViewContainer)
     private val cameraController = KakaoCameraController()
-    private val markerRenderer = KakaoMarkerRenderer()
+    private val shopMarkerRenderer = ShopMarkerRenderer()
+    private val myLocationRenderer = MyLocationRenderer()
     private val mapViewName = "ramap"
     private var pendingMarkers: List<Marker>? = null
     private var pendingMyLocationCoordinate: IosMapCoordinate? = null
@@ -136,7 +139,7 @@ class IosKakaoMapController(
         if (!isMapViewAdded) return
 
         val kakaoMap = getKakaoMap() ?: return
-        markerRenderer.render(
+        shopMarkerRenderer.render(
             kakaoMap = kakaoMap,
             markers = markers,
             onShopClick = onShopClick,
@@ -181,7 +184,10 @@ class IosKakaoMapController(
             return
         }
 
-        markerRenderer.renderMyLocation(kakaoMap, coordinate)
+        myLocationRenderer.render(
+            labelManager = kakaoMap.getLabelManager(),
+            coordinate = coordinate,
+        )
         cameraController.moveToCoordinate(kakaoMap, coordinate)
     }
 
@@ -191,7 +197,7 @@ class IosKakaoMapController(
         poiID: String,
         position: MapPoint,
     ) {
-        markerRenderer.handlePoiTap(
+        shopMarkerRenderer.handlePoiTap(
             poiId = poiID,
             onShopClick = onShopClick,
             onClusterClick = { cluster ->
@@ -205,7 +211,7 @@ class IosKakaoMapController(
 
     private fun selectNearestShopAt(point: CValue<CGPoint>) {
         val kakaoMap = getKakaoMap() ?: return
-        markerRenderer.selectNearestShopAt(
+        shopMarkerRenderer.selectNearestShopAt(
             kakaoMap = kakaoMap,
             point = point,
             onShopClick = onShopClick,
@@ -221,7 +227,7 @@ class IosKakaoMapController(
     private fun getKakaoMap(): KakaoMap? = controller.getView(mapViewName) as? KakaoMap
 
     fun dispose() {
-        markerRenderer.clear()
+        shopMarkerRenderer.clear()
         controller.pauseEngine()
         controller.resetEngine()
         controller.delegate = null
