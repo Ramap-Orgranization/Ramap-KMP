@@ -13,10 +13,15 @@ internal class AndroidMarkerRenderAction(
     private val labelLayer: LabelLayer,
     private val optionFactory: AndroidMarkerOptionFactory,
     private val renderedLabels: MutableMap<String, String>,
+    private val markers: MutableMap<String, Marker>,
     private val onShopClick: (RamenShop) -> Unit,
     private val onClusterClick: (Marker.ClusterMaker) -> Unit,
 ) : MarkerRenderAction {
-    override fun bindMarkers(markers: Map<String, Marker>) {
+    init {
+        bindMarkers()
+    }
+
+    private fun bindMarkers() {
         kakaoMap.setOnLabelClickListener { _, _, label ->
             val markerKey =
                 label.tag as? String
@@ -30,11 +35,20 @@ internal class AndroidMarkerRenderAction(
         }
     }
 
+    private fun handleMarkerClick(marker: Marker): Boolean {
+        when (marker) {
+            is Marker.SingleMarker -> onShopClick(marker.shop)
+            is Marker.ClusterMaker -> onClusterClick(marker)
+        }
+        return true
+    }
+
     override fun removeMarkers(keys: Set<String>) {
         keys.forEach { markerKey ->
             val labelId = renderedLabels[markerKey] ?: return@forEach
             labelLayer.getLabel(labelId)?.remove()
             renderedLabels.remove(markerKey)
+            markers.remove(markerKey)
         }
     }
 
@@ -44,14 +58,7 @@ internal class AndroidMarkerRenderAction(
         val labelOptions = entries.mapNotNull(optionFactory::labelOptions)
         labelLayer.addLabels(labelOptions)
         entries.forEach(::rememberRenderedLabel)
-    }
-
-    private fun handleMarkerClick(marker: Marker): Boolean {
-        when (marker) {
-            is Marker.SingleMarker -> onShopClick(marker.shop)
-            is Marker.ClusterMaker -> onClusterClick(marker)
-        }
-        return true
+        entries.forEach { entry -> markers[entry.key] = entry.marker }
     }
 
     private fun rememberRenderedLabel(entry: MarkerRenderEntry) {

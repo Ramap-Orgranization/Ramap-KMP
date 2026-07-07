@@ -14,6 +14,7 @@ import com.peto.ramap.domain.model.RamenShop
 internal class ShopMarkerRenderer {
     private val renderCoordinator = MarkerRenderCoordinator(MarkerRenderKeyPolicy())
     private val renderedLabelIds = mutableMapOf<String, String>()
+    private val markers = mutableMapOf<String, Marker>()
 
     /**
      * 현재 지도 상태에서 계산된 마커 목록을 KakaoMap label layer에 반영한다.
@@ -42,6 +43,7 @@ internal class ShopMarkerRenderer {
                             clusterMarkerBitmap = clusterMarkerBitmap,
                         ),
                     renderedLabels = renderedLabelIds,
+                    markers = this@ShopMarkerRenderer.markers,
                     onShopClick = onShopClick,
                     onClusterClick = onClusterClick,
                 ),
