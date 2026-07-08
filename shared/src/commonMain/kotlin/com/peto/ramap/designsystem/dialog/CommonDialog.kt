@@ -36,6 +36,7 @@ fun CommonDialog(
     visible: Boolean,
     confirmText: String,
     dismissText: String? = null,
+    confirmEnabled: Boolean = true,
     onDismissRequest: () -> Unit,
     content: @Composable ColumnScope.() -> Unit,
     onConfirm: () -> Unit,
@@ -64,6 +65,7 @@ fun CommonDialog(
                 visible = true,
                 confirmText = confirmText,
                 dismissText = dismissText,
+                confirmEnabled = confirmEnabled,
                 content = content,
                 onConfirm = onConfirm,
                 onDismiss = onDismiss,
@@ -101,6 +103,7 @@ private fun DialogContent(
     visible: Boolean,
     confirmText: String,
     dismissText: String? = null,
+    confirmEnabled: Boolean = true,
     content: @Composable ColumnScope.() -> Unit,
     onConfirm: () -> Unit,
     onDismiss: (() -> Unit)? = null,
@@ -150,6 +153,7 @@ private fun DialogContent(
                     AppButton(
                         modifier = Modifier.weight(1f),
                         text = confirmText,
+                        enabled = confirmEnabled,
                         onClick = onConfirm,
                     )
                 }
