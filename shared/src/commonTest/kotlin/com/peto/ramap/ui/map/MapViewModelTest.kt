@@ -11,12 +11,16 @@ import com.peto.ramap.domain.model.Personalization
 import com.peto.ramap.domain.model.RamenShopFilter
 import com.peto.ramap.domain.model.RamenShops
 import com.peto.ramap.domain.model.SearchQuery
+import com.peto.ramap.domain.model.ShopInformationField
+import com.peto.ramap.domain.model.ShopInformationReport
 import com.peto.ramap.domain.repository.PersonalizationRepository
 import com.peto.ramap.domain.repository.RamenShopRepository
+import com.peto.ramap.domain.repository.ShopReportRepository
 import com.peto.ramap.domain.repository.ShopWaitingSystemRepository
 import com.peto.ramap.fake.FakeLoginRepository
 import com.peto.ramap.fake.FakePersonalizationRepository
 import com.peto.ramap.fake.FakeRamenShopRepository
+import com.peto.ramap.fake.FakeShopReportRepository
 import com.peto.ramap.fake.FakeShopWaitingSystemRepository
 import com.peto.ramap.fixture.BOUNDS_FIXTURE
 import com.peto.ramap.fixture.ramenShopFixture
@@ -36,6 +40,8 @@ import org.jetbrains.compose.resources.StringResource
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.filter_empty_visible_result_message
 import ramap.shared.generated.resources.hidden_shop_search_result_message
+import ramap.shared.generated.resources.shop_information_report_failure_message
+import ramap.shared.generated.resources.shop_information_report_success_message
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -260,6 +266,73 @@ class MapViewModelTest {
 
             assertEquals(listOf(BOUNDS_FIXTURE), ramenShopRepository.requestedBoundsHistory)
             assertEquals(emptyList(), waitingSystemRepository.requestedShopIds)
+        }
+
+    @Test
+    fun `비로그인 상태에서도 매장 정보 제보를 제출한다`() =
+        coroutinesTest {
+            val shop = ramenShopFixture(id = "shop-1", name = "라멘집")
+            val reportRepository = FakeShopReportRepository()
+            val viewModel = mapViewModel(shopReportRepository = reportRepository)
+
+            viewModel.sideEffect.test {
+                viewModel.dispatch(
+                    MapIntent.OnShopReportSubmitted(
+                        shop = shop,
+                        wrongFields = setOf(ShopInformationField.ADDRESS, ShopInformationField.OTHER),
+                        description = " 주소가 달라요 ",
+                    ),
+                )
+                runCurrent()
+
+                assertEquals(
+                    listOf(
+                        ShopInformationReport(
+                            shopId = "shop-1",
+                            shopName = "라멘집",
+                            wrongFields = setOf(ShopInformationField.ADDRESS, ShopInformationField.OTHER),
+                            description = "주소가 달라요",
+                        ),
+                    ),
+                    reportRepository.reports,
+                )
+                assertEquals(MapSideEffect.ShopReportSubmitted, awaitItem())
+                assertEquals(showToastSideEffect(Res.string.shop_information_report_success_message), awaitItem())
+            }
+        }
+
+    @Test
+    fun `매장 정보 제보 실패시 실패 토스트를 표시한다`() =
+        coroutinesTest {
+            val shop = ramenShopFixture()
+            val viewModel =
+                mapViewModel(
+                    shopReportRepository =
+                        FakeShopReportRepository(
+                            error = IllegalStateException("failed"),
+                        ),
+                )
+
+            viewModel.sideEffect.test {
+                viewModel.dispatch(
+                    MapIntent.OnShopReportSubmitted(
+                        shop = shop,
+                        wrongFields = setOf(ShopInformationField.PHONE),
+                        description = "",
+                    ),
+                )
+                runCurrent()
+
+                assertEquals(
+                    MapSideEffect.ShowToast(
+                        ToastData(
+                            message = Res.string.shop_information_report_failure_message,
+                            type = ToastType.ERROR,
+                        ),
+                    ),
+                    awaitItem(),
+                )
+            }
         }
 
     @Test
@@ -1253,7 +1326,15 @@ private fun mapViewModel(
     shopWaitingSystemRepository: ShopWaitingSystemRepository = FakeShopWaitingSystemRepository(),
     personalizationRepository: PersonalizationRepository = FakePersonalizationRepository(),
     loginRepository: FakeLoginRepository = FakeLoginRepository(),
-): MapViewModel = MapViewModel(ramenShopRepository, shopWaitingSystemRepository, personalizationRepository, loginRepository)
+    shopReportRepository: ShopReportRepository = FakeShopReportRepository(),
+): MapViewModel =
+    MapViewModel(
+        ramenShopRepository,
+        shopWaitingSystemRepository,
+        personalizationRepository,
+        shopReportRepository,
+        loginRepository,
+    )
 
 private fun loggedInRepository(): FakeLoginRepository =
     FakeLoginRepository(
