@@ -5,6 +5,7 @@ import com.peto.ramap.domain.model.Category
 import com.peto.ramap.domain.model.Location
 import com.peto.ramap.domain.model.MapBounds
 import com.peto.ramap.domain.model.RamenShop
+import com.peto.ramap.domain.model.ShopInformationField
 import com.peto.ramap.ui.map.model.MapPersonalization
 
 sealed interface MapIntent : Intent {
@@ -40,6 +41,12 @@ sealed interface MapIntent : Intent {
 
     data class OnHiddenToggled(
         val shop: RamenShop,
+    ) : MapIntent
+
+    data class OnShopReportSubmitted(
+        val shop: RamenShop,
+        val wrongFields: Set<ShopInformationField>,
+        val description: String,
     ) : MapIntent
 
     data class OnPersonalizationViewChanged(

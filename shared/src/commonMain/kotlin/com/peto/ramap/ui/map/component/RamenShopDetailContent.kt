@@ -38,6 +38,7 @@ import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.catchtable
 import ramap.shared.generated.resources.ic_kid_star
+import ramap.shared.generated.resources.ic_report
 import ramap.shared.generated.resources.ic_visibility_off
 import ramap.shared.generated.resources.instagram_icon
 import ramap.shared.generated.resources.kakao_map_icon
@@ -49,6 +50,7 @@ import ramap.shared.generated.resources.shop_detail_label_waiting
 import ramap.shared.generated.resources.shop_detail_link_instagram
 import ramap.shared.generated.resources.shop_detail_link_kakao_map
 import ramap.shared.generated.resources.shop_detail_link_naver_map
+import ramap.shared.generated.resources.shop_detail_link_report
 import ramap.shared.generated.resources.shop_detail_waiting_catchtable
 import ramap.shared.generated.resources.shop_detail_waiting_syrup_friends
 import ramap.shared.generated.resources.shop_detail_waiting_tabling
@@ -65,6 +67,7 @@ fun RamenShopDetailContent(
     isHidden: Boolean = false,
     onBookmarkClick: () -> Unit = {},
     onHiddenClick: () -> Unit = {},
+    onReportClick: () -> Unit = {},
 ) {
     val uriHandler = LocalUriHandler.current
     val waitingProviderLink = waitingSystem?.toWaitingProviderLink()
@@ -197,6 +200,12 @@ fun RamenShopDetailContent(
                     onClick = { uriHandler.openUri(naverPlaceUrl) },
                 )
             }
+
+            ShopLinkRow(
+                icon = Res.drawable.ic_report,
+                label = stringResource(Res.string.shop_detail_link_report),
+                onClick = onReportClick,
+            )
         }
     }
 }
