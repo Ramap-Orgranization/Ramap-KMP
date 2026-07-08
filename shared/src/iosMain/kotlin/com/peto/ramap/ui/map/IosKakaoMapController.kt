@@ -155,6 +155,7 @@ class IosKakaoMapController(
     fun updateFocusShops(
         shops: List<RamenShop>,
         currentLocation: Location?,
+        focusRequestKey: Long,
     ) {
         if (!isMapViewAdded) return
 
@@ -163,6 +164,7 @@ class IosKakaoMapController(
             kakaoMap = kakaoMap,
             shops = shops,
             currentLocation = currentLocation,
+            focusRequestKey = focusRequestKey,
         )
     }
 

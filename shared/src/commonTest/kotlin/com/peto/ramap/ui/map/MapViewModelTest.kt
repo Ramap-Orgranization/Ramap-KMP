@@ -366,7 +366,7 @@ class MapViewModelTest {
         }
 
     @Test
-    fun `검색 중에는 지도 영역 매장이 아닌 검색 결과만 마커로 보여준다`() =
+    fun `검색 중에는 지도 영역 매장과 검색 결과를 함께 마커로 보여준다`() =
         coroutinesTest {
             val mapShops =
                 RamenShops(
@@ -402,7 +402,7 @@ class MapViewModelTest {
 
             assertEquals(mapShops, viewModel.uiState.value.shops)
             assertEquals(searchShops, viewModel.uiState.value.search.results)
-            assertEquals(searchShops, viewModel.uiState.value.markerShops)
+            assertEquals(RamenShops(mapShops + searchShops), viewModel.uiState.value.markerShops)
         }
 
     @Test
@@ -593,7 +593,7 @@ class MapViewModelTest {
             advanceTimeBy(1)
             runCurrent()
 
-            assertEquals(searchShops, viewModel.uiState.value.markerShops)
+            assertEquals(RamenShops(mapShops + searchShops), viewModel.uiState.value.markerShops)
         }
 
     @Test
@@ -665,12 +665,15 @@ class MapViewModelTest {
             viewModel.dispatch(MapIntent.OnSearchResultsDismissed)
             runCurrent()
             ramenShopRepository.requestedSearchQueries.clear()
+            val previousFocusRequestKey = viewModel.uiState.value.focusRequestKey
 
             viewModel.dispatch(MapIntent.OnQueryChanged("라멘"))
             runCurrent()
 
             assertEquals(emptyList(), ramenShopRepository.requestedSearchQueries)
             assertEquals(searchShops, viewModel.uiState.value.search.results)
+            assertEquals(previousFocusRequestKey + 1, viewModel.uiState.value.focusRequestKey)
+            assertEquals(searchShops.values.toList(), viewModel.uiState.value.focusShops)
             assertEquals(true, viewModel.uiState.value.showSearchResults)
             assertEquals(true, viewModel.uiState.value.showBottomSheet)
         }

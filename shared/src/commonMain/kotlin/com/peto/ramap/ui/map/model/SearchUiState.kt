@@ -24,6 +24,7 @@ data class SearchUiState(
      * 현재 검색 결과에 대한 지도 카메라 포커스가 이미 처리되었는지 여부.
      */
     val isResultFocusConsumed: Boolean = false,
+    val focusRequestKey: Long = 0,
 ) {
     val hasLoadedResultsForInput: Boolean
         get() {
@@ -38,6 +39,7 @@ data class SearchUiState(
             input = input,
             isResultsDismissed = false,
             isResultFocusConsumed = false,
+            focusRequestKey = focusRequestKey + 1,
         )
 
     fun dismissResults(): SearchUiState = copy(isResultsDismissed = true)
@@ -69,6 +71,7 @@ data class SearchUiState(
             input: String,
             results: RamenShops,
             isResultFocusConsumed: Boolean = false,
+            focusRequestKey: Long = 0,
         ): SearchUiState {
             val loadedQuery = SearchQuery(input).normalizeShopSearchQuery()
             return SearchUiState(
@@ -76,6 +79,7 @@ data class SearchUiState(
                 results = results,
                 loadedQuery = loadedQuery,
                 isResultFocusConsumed = isResultFocusConsumed,
+                focusRequestKey = focusRequestKey,
             )
         }
     }

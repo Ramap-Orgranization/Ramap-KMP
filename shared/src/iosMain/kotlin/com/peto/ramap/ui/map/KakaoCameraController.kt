@@ -21,8 +21,9 @@ internal actual class KakaoCameraController {
         kakaoMap: KakaoMap,
         shops: List<RamenShop>,
         currentLocation: Location? = null,
+        focusRequestKey: Long = 0,
     ) {
-        val focusKey = shops.focusKey(currentLocation != null)
+        val focusKey = shops.focusKey(currentLocation != null, focusRequestKey)
         if (focusKey.isBlank()) return
         if (lastFocusKey == focusKey) return
 
@@ -78,18 +79,11 @@ internal actual class KakaoCameraController {
         moveCamera(
             kakaoMap = kakaoMap,
             cameraUpdate =
-                if (kakaoMap.zoomLevel < MapInteractionConfig.SELECTED_MARKER_ZOOM_LEVEL) {
-                    CameraUpdate.makeWithTarget(
-                        target = target,
-                        zoomLevel = MapInteractionConfig.SELECTED_MARKER_ZOOM_LEVEL.toLong(),
-                        mapView = kakaoMap,
-                    )
-                } else {
-                    CameraUpdate.makeWithTarget(
-                        target = target,
-                        mapView = kakaoMap,
-                    )
-                },
+                CameraUpdate.makeWithTarget(
+                    target = target,
+                    zoomLevel = MapInteractionConfig.SELECTED_MARKER_ZOOM_LEVEL.toLong(),
+                    mapView = kakaoMap,
+                ),
         )
     }
 
@@ -129,12 +123,15 @@ internal actual class KakaoCameraController {
             latitude = latitude,
         )
 
-    private fun List<RamenShop>.focusKey(focusNearestToCurrentLocation: Boolean): String {
+    private fun List<RamenShop>.focusKey(
+        focusNearestToCurrentLocation: Boolean,
+        focusRequestKey: Long,
+    ): String {
         if (isEmpty()) return EMPTY_FOCUS_KEY
 
         return joinToString(separator = "|") { shop ->
             "${shop.id}:${shop.location.lat}:${shop.location.lng}"
-        } + ":$focusNearestToCurrentLocation"
+        } + ":$focusNearestToCurrentLocation:$focusRequestKey"
     }
 
     private companion object {

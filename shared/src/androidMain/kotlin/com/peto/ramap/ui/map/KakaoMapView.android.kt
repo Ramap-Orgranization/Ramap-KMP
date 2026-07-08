@@ -19,6 +19,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.kakao.vectormap.KakaoMap
 import com.kakao.vectormap.MapView
+import com.peto.ramap.core.config.MapInteractionConfig
 import com.peto.ramap.core.config.MarkerConfig
 import com.peto.ramap.domain.model.Location
 import com.peto.ramap.domain.model.MapBounds
@@ -43,6 +44,7 @@ actual fun KakaoMapView(
     shops: RamenShops,
     focusShops: List<RamenShop>,
     focusNearestToCurrentLocation: Boolean,
+    focusRequestKey: Long,
     selectedShopId: String?,
     bounds: MapBounds,
     clusterBounds: MapBounds,
@@ -143,6 +145,13 @@ actual fun KakaoMapView(
         cameraController = cameraController,
         focusShops = focusShops,
         focusNearestToCurrentLocation = focusNearestToCurrentLocation,
+        focusRequestKey = focusRequestKey,
+        bottomPaddingPx =
+            if (selectedShopId != null && focusShops.size == 1) {
+                (viewportSize.height * MapInteractionConfig.SELECTED_MARKER_BOTTOM_PADDING_RATIO).toInt()
+            } else {
+                0
+            },
         onMyLocationChanged = onMyLocationChanged,
     )
 
@@ -263,10 +272,14 @@ private fun FocusShopsEffect(
     cameraController: KakaoCameraController,
     focusShops: List<RamenShop>,
     focusNearestToCurrentLocation: Boolean,
+    focusRequestKey: Long,
+    bottomPaddingPx: Int,
     onMyLocationChanged: (Location) -> Unit,
 ) {
-    LaunchedEffect(kakaoMap, focusShops, focusNearestToCurrentLocation) {
+    LaunchedEffect(kakaoMap, focusShops, focusNearestToCurrentLocation, focusRequestKey, bottomPaddingPx) {
         if (kakaoMap == null) return@LaunchedEffect
+
+        kakaoMap.setPadding(0, 0, 0, bottomPaddingPx)
 
         val currentLocation =
             if (focusNearestToCurrentLocation && locationPermissionGenerator.hasPermission()) {
@@ -279,6 +292,7 @@ private fun FocusShopsEffect(
             kakaoMap = kakaoMap,
             shops = focusShops,
             currentLocation = currentLocation,
+            focusRequestKey = focusRequestKey,
         )
     }
 }

@@ -252,6 +252,7 @@ private fun MapScreen(
             shops = uiState.markerShops,
             focusShops = uiState.focusShops,
             focusNearestToCurrentLocation = uiState.shouldFocusNearestSearchResult,
+            focusRequestKey = uiState.focusRequestKey,
             selectedShopId = uiState.selectedShop?.id,
             bounds = uiState.bounds,
             clusterBounds = uiState.clusterBounds,

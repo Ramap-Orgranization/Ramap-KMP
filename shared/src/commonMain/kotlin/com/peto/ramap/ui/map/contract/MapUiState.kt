@@ -109,13 +109,12 @@ data class MapUiState(
      * 지도 마커로 렌더링할 매장 목록.
      *
      * 검색어가 없거나 현재 입력값에 대한 검색 결과가 아직 도착하지 않았으면 [shops]를 유지한다.
-     * 현재 입력값에 대응하는 검색 결과가 도착한 뒤에만 [SearchUiState.results]로 전환해
-     * 검색 debounce 구간에서 기존 마커가 사라졌다가 다시 추가되는 현상을 막는다.
+     * 현재 입력값에 대응하는 검색 결과가 도착한 뒤에는 지도 영역 매장과 검색 결과를 함께 보여준다.
      */
     val markerShops: RamenShops
         get() {
             return if (hasLoadedSearchResultsForCurrentQuery) {
-                displaySearchResults
+                RamenShops(displayFilteredShops + displaySearchResults)
             } else {
                 displayFilteredShops
             }
@@ -164,6 +163,9 @@ data class MapUiState(
      */
     val shouldFocusNearestSearchResult: Boolean
         get() = shouldFocusSearchResults && searchResultShops.size > 1
+
+    val focusRequestKey: Long
+        get() = search.focusRequestKey
 
     /**
      * 검색 결과에 맞춰 지도 카메라 포커스를 수행할 수 있는 상태인지 여부.

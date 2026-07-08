@@ -26,8 +26,9 @@ internal actual class KakaoCameraController {
         kakaoMap: KakaoMap,
         shops: List<RamenShop>,
         currentLocation: Location? = null,
+        focusRequestKey: Long = 0,
     ) {
-        val focusKey = focusKey(shops, currentLocation != null)
+        val focusKey = focusKey(shops, currentLocation != null, focusRequestKey)
         if (focusKey.isBlank()) return
         if (lastFocusKey == focusKey) return
 
@@ -66,23 +67,15 @@ internal actual class KakaoCameraController {
         shop: RamenShop,
     ) {
         val position: LatLng = shopLatLng(shop)
-        val shouldZoomIn = kakaoMap.zoomLevel < MapInteractionConfig.SELECTED_MARKER_ZOOM_LEVEL
-        val cameraUpdate = buildCameraMovement(shouldZoomIn, position)
+        val cameraUpdate = buildCameraMovement(position)
         kakaoMap.moveCamera(cameraUpdate)
     }
 
-    private fun buildCameraMovement(
-        shouldZoomIn: Boolean,
-        position: LatLng,
-    ): CameraUpdate {
-        if (shouldZoomIn) {
-            return CameraUpdateFactory.newCenterPosition(
-                position,
-                MapInteractionConfig.SELECTED_MARKER_ZOOM_LEVEL,
-            )
-        }
-        return CameraUpdateFactory.newCenterPosition(position)
-    }
+    private fun buildCameraMovement(position: LatLng): CameraUpdate =
+        CameraUpdateFactory.newCenterPosition(
+            position,
+            MapInteractionConfig.SELECTED_MARKER_ZOOM_LEVEL,
+        )
 
     private fun fitShops(
         kakaoMap: KakaoMap,
@@ -105,12 +98,13 @@ internal actual class KakaoCameraController {
     private fun focusKey(
         shops: List<RamenShop>,
         focusNearestToCurrentLocation: Boolean,
+        focusRequestKey: Long,
     ): String {
         if (shops.isEmpty()) return ""
 
         return shops.joinToString(separator = "|") { shop ->
             "${shop.id}:${shop.location.lat}:${shop.location.lng}"
-        } + ":$focusNearestToCurrentLocation"
+        } + ":$focusNearestToCurrentLocation:$focusRequestKey"
     }
 
     private companion object {
