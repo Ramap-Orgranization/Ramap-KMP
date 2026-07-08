@@ -44,7 +44,6 @@ sealed interface MapIntent : Intent {
     ) : MapIntent
 
     data class OnShopReportSubmitted(
-        val shop: RamenShop,
         val wrongFields: Set<ShopInformationField>,
         val description: String,
     ) : MapIntent

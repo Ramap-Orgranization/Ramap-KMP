@@ -72,10 +72,10 @@ class MapViewModel(
             is MapIntent.OnHiddenToggled -> toggleHidden(intent.shop)
             is MapIntent.OnShopReportSubmitted ->
                 submitShopInformationReport(
-                    shop = intent.shop,
                     wrongFields = intent.wrongFields,
                     description = intent.description,
                 )
+
             is MapIntent.OnPersonalizationViewChanged -> changePersonalizationView(intent.view)
             MapIntent.OnKakaoLoginClicked -> signInWithKakao()
             MapIntent.OnLogoutClicked -> signOut()
@@ -373,10 +373,10 @@ class MapViewModel(
     }
 
     private fun submitShopInformationReport(
-        shop: RamenShop,
         wrongFields: Set<ShopInformationField>,
         description: String,
     ) {
+        val shop = currentState.selectedShop ?: return
         if (wrongFields.isEmpty() && description.isBlank()) return
 
         runTask {
@@ -390,8 +390,14 @@ class MapViewModel(
                     ),
                 )
             }.onSuccess {
-                postSideEffect(MapSideEffect.ShopReportSubmitted)
-                showToast(Res.string.shop_information_report_success_message)
+                postSideEffect(
+                    MapSideEffect.ShowToast(
+                        ToastData(
+                            message = Res.string.shop_information_report_success_message,
+                            type = ToastType.DEFAULT,
+                        ),
+                    ),
+                )
             }.onFailure {
                 showToast(Res.string.shop_information_report_failure_message, ToastType.ERROR)
             }

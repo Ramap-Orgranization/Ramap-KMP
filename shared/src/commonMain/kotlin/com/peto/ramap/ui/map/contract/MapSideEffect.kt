@@ -6,8 +6,6 @@ import com.peto.ramap.designsystem.toast.model.ToastData
 sealed interface MapSideEffect : SideEffect {
     data object ShowLoginGuide : MapSideEffect
 
-    data object ShopReportSubmitted : MapSideEffect
-
     data class ShowToast(
         val data: ToastData,
     ) : MapSideEffect

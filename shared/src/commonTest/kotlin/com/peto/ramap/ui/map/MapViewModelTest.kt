@@ -275,10 +275,12 @@ class MapViewModelTest {
             val reportRepository = FakeShopReportRepository()
             val viewModel = mapViewModel(shopReportRepository = reportRepository)
 
+            viewModel.dispatch(MapIntent.OnShopSelected(shop))
+            runCurrent()
+
             viewModel.sideEffect.test {
                 viewModel.dispatch(
                     MapIntent.OnShopReportSubmitted(
-                        shop = shop,
                         wrongFields = setOf(ShopInformationField.ADDRESS, ShopInformationField.OTHER),
                         description = " 주소가 달라요 ",
                     ),
@@ -296,7 +298,6 @@ class MapViewModelTest {
                     ),
                     reportRepository.reports,
                 )
-                assertEquals(MapSideEffect.ShopReportSubmitted, awaitItem())
                 assertEquals(showToastSideEffect(Res.string.shop_information_report_success_message), awaitItem())
             }
         }
@@ -313,10 +314,12 @@ class MapViewModelTest {
                         ),
                 )
 
+            viewModel.dispatch(MapIntent.OnShopSelected(shop))
+            runCurrent()
+
             viewModel.sideEffect.test {
                 viewModel.dispatch(
                     MapIntent.OnShopReportSubmitted(
-                        shop = shop,
                         wrongFields = setOf(ShopInformationField.PHONE),
                         description = "",
                     ),

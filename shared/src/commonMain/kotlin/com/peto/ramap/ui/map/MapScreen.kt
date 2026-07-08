@@ -106,12 +106,10 @@ fun MapRoute(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var showLoginGuideDialog by remember { mutableStateOf(false) }
-    var reportShop by remember { mutableStateOf<RamenShop?>(null) }
 
     ObserveAsEvents(viewModel.sideEffect) { sideEffect ->
         when (sideEffect) {
             MapSideEffect.ShowLoginGuide -> showLoginGuideDialog = true
-            MapSideEffect.ShopReportSubmitted -> reportShop = null
 
             is MapSideEffect.ShowToast ->
                 toastManager.show(
@@ -128,7 +126,6 @@ fun MapRoute(
     MapScreen(
         uiState = uiState,
         showLoginGuideDialog = showLoginGuideDialog,
-        reportShop = reportShop,
         onBoundsChanged = { bounds ->
             viewModel.dispatch(MapIntent.OnBoundsChanged(bounds))
         },
@@ -159,16 +156,9 @@ fun MapRoute(
         onHiddenToggled = { shop ->
             viewModel.dispatch(MapIntent.OnHiddenToggled(shop))
         },
-        onReportClick = { shop ->
-            reportShop = shop
-        },
-        onReportDismiss = {
-            reportShop = null
-        },
-        onReportSubmit = { shop, wrongFields, description ->
+        onReportSubmit = { wrongFields, description ->
             viewModel.dispatch(
                 MapIntent.OnShopReportSubmitted(
-                    shop = shop,
                     wrongFields = wrongFields,
                     description = description,
                 ),
@@ -200,7 +190,6 @@ fun MapRoute(
 private fun MapScreen(
     uiState: MapUiState,
     showLoginGuideDialog: Boolean,
-    reportShop: RamenShop?,
     onBoundsChanged: (MapBounds) -> Unit,
     onMyLocationChanged: (Location) -> Unit,
     onLocationPermissionBlocked: () -> Unit,
@@ -211,9 +200,7 @@ private fun MapScreen(
     onCategoryFilterToggled: (Category) -> Unit,
     onBookmarkToggled: (RamenShop) -> Unit,
     onHiddenToggled: (RamenShop) -> Unit,
-    onReportClick: (RamenShop) -> Unit,
-    onReportDismiss: () -> Unit,
-    onReportSubmit: (RamenShop, Set<ShopInformationField>, String) -> Unit,
+    onReportSubmit: (Set<ShopInformationField>, String) -> Unit,
     onPersonalizationViewChanged: (MapPersonalization) -> Unit,
     onKakaoLoginClick: () -> Unit,
     onLoginGuideDismiss: () -> Unit,
@@ -228,6 +215,7 @@ private fun MapScreen(
     var wasImeVisible by remember { mutableStateOf(false) }
     var myLocationRequestKey by remember { mutableStateOf(0) }
     var hideConfirmShop by remember { mutableStateOf<RamenShop?>(null) }
+    var showReportDialog by remember(selectedShop?.id) { mutableStateOf(false) }
 
     val backEventState =
         rememberNavigationEventState<NavigationEventInfo>(
@@ -385,7 +373,7 @@ private fun MapScreen(
                                 onHiddenToggled(shop)
                             }
                         },
-                        onReportClick = { onReportClick(shop) },
+                        onReportClick = { showReportDialog = true },
                     )
                 },
             )
@@ -444,16 +432,17 @@ private fun MapScreen(
             onDismiss = { hideConfirmShop = null },
         )
 
-        reportShop?.let { shop ->
+        selectedShop?.takeIf { showReportDialog }?.let { shop ->
             ShopInformationReportDialog(
                 shopUiModel =
                     RamenShopUiModel(
                         shop = shop,
                         waitingVisible = uiState.shopWaiting[shop.id]?.providerUrl != null,
                     ),
-                onDismissRequest = onReportDismiss,
+                onDismissRequest = { showReportDialog = false },
                 onSubmit = { wrongFields, description ->
-                    onReportSubmit(shop, wrongFields, description)
+                    showReportDialog = false
+                    onReportSubmit(wrongFields, description)
                 },
             )
         }
