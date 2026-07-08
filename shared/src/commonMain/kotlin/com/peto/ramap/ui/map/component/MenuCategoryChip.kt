@@ -1,5 +1,6 @@
 package com.peto.ramap.ui.map.component
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Surface
@@ -16,7 +17,8 @@ fun MenuCategoryChip(
     modifier: Modifier = Modifier,
 ) {
     Surface(
-        color = GrayColor.C050,
+        color = GrayColor.C100,
+        border = BorderStroke(1.dp, GrayColor.C200),
         shape = RoundedCornerShape(999.dp),
         modifier = modifier,
     ) {
