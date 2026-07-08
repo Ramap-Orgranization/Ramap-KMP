@@ -31,6 +31,7 @@ actual fun KakaoMapView(
     shops: RamenShops,
     focusShops: List<RamenShop>,
     focusNearestToCurrentLocation: Boolean,
+    focusRequestKey: Long,
     selectedShopId: String?,
     bounds: MapBounds,
     clusterBounds: MapBounds,
@@ -98,6 +99,7 @@ actual fun KakaoMapView(
             mapController.updateFocusShops(
                 shops = focusShops,
                 currentLocation = myLocation.takeIf { focusNearestToCurrentLocation },
+                focusRequestKey = focusRequestKey,
             )
         },
         properties =

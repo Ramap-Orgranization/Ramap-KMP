@@ -12,6 +12,7 @@ expect fun KakaoMapView(
     shops: RamenShops,
     focusShops: List<RamenShop>,
     focusNearestToCurrentLocation: Boolean,
+    focusRequestKey: Long,
     selectedShopId: String?,
     bounds: MapBounds,
     clusterBounds: MapBounds,
