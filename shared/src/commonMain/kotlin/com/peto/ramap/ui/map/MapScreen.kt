@@ -1,21 +1,30 @@
 package com.peto.ramap.ui.map
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.Surface
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -25,6 +34,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
@@ -48,6 +58,7 @@ import com.peto.ramap.domain.model.Category
 import com.peto.ramap.domain.model.Location
 import com.peto.ramap.domain.model.MapBounds
 import com.peto.ramap.domain.model.RamenShop
+import com.peto.ramap.domain.model.ShopInformationField
 import com.peto.ramap.platform.AppSettingsOpener
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.CommonColor
@@ -63,6 +74,7 @@ import com.peto.ramap.ui.map.contract.MapIntent
 import com.peto.ramap.ui.map.contract.MapSideEffect
 import com.peto.ramap.ui.map.contract.MapUiState
 import com.peto.ramap.ui.map.model.MapPersonalization
+import com.peto.ramap.ui.map.model.RamenShopUiModel
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
@@ -80,6 +92,11 @@ import ramap.shared.generated.resources.login_required_message
 import ramap.shared.generated.resources.logout_menu
 import ramap.shared.generated.resources.settings_bookmarked_shops_menu
 import ramap.shared.generated.resources.settings_hidden_shops_menu
+import ramap.shared.generated.resources.shop_detail_link_report
+import ramap.shared.generated.resources.shop_information_report_action
+import ramap.shared.generated.resources.shop_information_report_description
+import ramap.shared.generated.resources.shop_information_report_dismiss
+import ramap.shared.generated.resources.shop_information_report_placeholder
 
 @Composable
 fun MapRoute(
@@ -139,6 +156,14 @@ fun MapRoute(
         onHiddenToggled = { shop ->
             viewModel.dispatch(MapIntent.OnHiddenToggled(shop))
         },
+        onReportSubmit = { wrongFields, description ->
+            viewModel.dispatch(
+                MapIntent.OnShopReportSubmitted(
+                    wrongFields = wrongFields,
+                    description = description,
+                ),
+            )
+        },
         onPersonalizationViewChanged = { view ->
             viewModel.dispatch(MapIntent.OnPersonalizationViewChanged(view))
         },
@@ -175,6 +200,7 @@ private fun MapScreen(
     onCategoryFilterToggled: (Category) -> Unit,
     onBookmarkToggled: (RamenShop) -> Unit,
     onHiddenToggled: (RamenShop) -> Unit,
+    onReportSubmit: (Set<ShopInformationField>, String) -> Unit,
     onPersonalizationViewChanged: (MapPersonalization) -> Unit,
     onKakaoLoginClick: () -> Unit,
     onLoginGuideDismiss: () -> Unit,
@@ -189,6 +215,7 @@ private fun MapScreen(
     var wasImeVisible by remember { mutableStateOf(false) }
     var myLocationRequestKey by remember { mutableStateOf(0) }
     var hideConfirmShop by remember { mutableStateOf<RamenShop?>(null) }
+    var showReportDialog by remember(selectedShop?.id) { mutableStateOf(false) }
 
     val backEventState =
         rememberNavigationEventState<NavigationEventInfo>(
@@ -346,6 +373,7 @@ private fun MapScreen(
                                 onHiddenToggled(shop)
                             }
                         },
+                        onReportClick = { showReportDialog = true },
                     )
                 },
             )
@@ -402,6 +430,145 @@ private fun MapScreen(
                 hideConfirmShop = null
             },
             onDismiss = { hideConfirmShop = null },
+        )
+
+        selectedShop?.takeIf { showReportDialog }?.let { shop ->
+            ShopInformationReportDialog(
+                shopUiModel =
+                    RamenShopUiModel(
+                        shop = shop,
+                        waitingVisible = uiState.shopWaiting[shop.id]?.providerUrl != null,
+                    ),
+                onDismissRequest = { showReportDialog = false },
+                onSubmit = { wrongFields, description ->
+                    showReportDialog = false
+                    onReportSubmit(wrongFields, description)
+                },
+            )
+        }
+    }
+}
+
+@Composable
+private fun ShopInformationReportDialog(
+    shopUiModel: RamenShopUiModel,
+    onDismissRequest: () -> Unit,
+    onSubmit: (Set<ShopInformationField>, String) -> Unit,
+) {
+    val shop = shopUiModel.shop
+    var selectedFields by remember(shop.id) { mutableStateOf(emptySet<ShopInformationField>()) }
+    var description by remember(shop.id) { mutableStateOf("") }
+    val fieldOptions = shopUiModel.reportFieldOptions
+    val canSubmit = selectedFields.isNotEmpty() || description.isNotBlank()
+
+    CommonDialog(
+        visible = true,
+        confirmText = stringResource(Res.string.shop_information_report_action),
+        dismissText = stringResource(Res.string.shop_information_report_dismiss),
+        confirmEnabled = canSubmit,
+        onDismissRequest = onDismissRequest,
+        content = {
+            AppText(
+                text = stringResource(Res.string.shop_detail_link_report),
+                style = AppTextStyle.T1,
+                color = GrayColor.C500,
+                textAlign = TextAlign.Center,
+            )
+
+            AppText(
+                text = stringResource(Res.string.shop_information_report_description, shop.name),
+                modifier = Modifier.padding(top = 8.dp),
+                style = AppTextStyle.B2,
+                color = GrayColor.C400,
+                textAlign = TextAlign.Center,
+            )
+
+            Column(
+                modifier =
+                    Modifier
+                        .padding(top = 16.dp)
+                        .heightIn(max = 280.dp)
+                        .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                fieldOptions.forEach { option ->
+                    ReportFieldCheckbox(
+                        label = stringResource(option.label),
+                        checked = option.field in selectedFields,
+                        onCheckedChange = { checked ->
+                            selectedFields =
+                                if (checked) {
+                                    selectedFields + option.field
+                                } else {
+                                    selectedFields - option.field
+                                }
+                        },
+                    )
+                }
+            }
+
+            TextField(
+                value = description,
+                onValueChange = { description = it },
+                modifier =
+                    Modifier
+                        .padding(top = 12.dp)
+                        .fillMaxWidth()
+                        .heightIn(min = 96.dp),
+                placeholder = {
+                    AppText(
+                        text = stringResource(Res.string.shop_information_report_placeholder),
+                        style = AppTextStyle.B2,
+                        color = GrayColor.C300,
+                    )
+                },
+                minLines = 3,
+                maxLines = 5,
+                colors =
+                    TextFieldDefaults.colors(
+                        focusedContainerColor = GrayColor.C050,
+                        unfocusedContainerColor = GrayColor.C050,
+                        disabledContainerColor = GrayColor.C050,
+                        focusedIndicatorColor = Color.Transparent,
+                        unfocusedIndicatorColor = Color.Transparent,
+                        cursorColor = GrayColor.C400,
+                    ),
+            )
+        },
+        onConfirm = {
+            if (canSubmit) {
+                onSubmit(selectedFields, description)
+            }
+        },
+        onDismiss = onDismissRequest,
+    )
+}
+
+@Composable
+private fun ReportFieldCheckbox(
+    label: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Checkbox(
+            checked = checked,
+            onCheckedChange = onCheckedChange,
+            colors =
+                CheckboxDefaults.colors(
+                    checkedColor = GrayColor.C500,
+                    uncheckedColor = GrayColor.C300,
+                    checkmarkColor = CommonColor.White,
+                ),
+        )
+        AppText(
+            text = label,
+            style = AppTextStyle.B2,
+            color = GrayColor.C500,
         )
     }
 }

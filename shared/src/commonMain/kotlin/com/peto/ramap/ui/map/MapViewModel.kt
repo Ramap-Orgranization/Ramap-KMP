@@ -13,9 +13,12 @@ import com.peto.ramap.domain.model.RamenShop
 import com.peto.ramap.domain.model.RamenShopFilter
 import com.peto.ramap.domain.model.RamenShops
 import com.peto.ramap.domain.model.SearchQuery
+import com.peto.ramap.domain.model.ShopInformationField
+import com.peto.ramap.domain.model.ShopInformationReport
 import com.peto.ramap.domain.repository.LoginRepository
 import com.peto.ramap.domain.repository.PersonalizationRepository
 import com.peto.ramap.domain.repository.RamenShopRepository
+import com.peto.ramap.domain.repository.ShopReportRepository
 import com.peto.ramap.domain.repository.ShopWaitingSystemRepository
 import com.peto.ramap.ui.map.contract.MapIntent
 import com.peto.ramap.ui.map.contract.MapSideEffect
@@ -34,12 +37,15 @@ import ramap.shared.generated.resources.filter_empty_visible_result_message
 import ramap.shared.generated.resources.hidden_shop_search_result_message
 import ramap.shared.generated.resources.location_permission_enable_message
 import ramap.shared.generated.resources.location_permission_settings_action
+import ramap.shared.generated.resources.shop_information_report_failure_message
+import ramap.shared.generated.resources.shop_information_report_success_message
 import kotlin.time.Duration.Companion.milliseconds
 
 class MapViewModel(
     private val ramenShopRepository: RamenShopRepository,
     private val shopWaitingSystemRepository: ShopWaitingSystemRepository,
     private val personalizationRepository: PersonalizationRepository,
+    private val reportRepository: ShopReportRepository,
     private val loginRepository: LoginRepository,
 ) : BaseViewModel<MapUiState, MapIntent, MapSideEffect>(initialState = MapUiState()) {
     private var boundsLoadJob: Job? = null
@@ -64,6 +70,12 @@ class MapViewModel(
             is MapIntent.OnFilterCleared -> clearFilter()
             is MapIntent.OnBookmarkToggled -> toggleBookmark(intent.shop)
             is MapIntent.OnHiddenToggled -> toggleHidden(intent.shop)
+            is MapIntent.OnShopReportSubmitted ->
+                submitShopInformationReport(
+                    wrongFields = intent.wrongFields,
+                    description = intent.description,
+                )
+
             is MapIntent.OnPersonalizationViewChanged -> changePersonalizationView(intent.view)
             MapIntent.OnKakaoLoginClicked -> signInWithKakao()
             MapIntent.OnLogoutClicked -> signOut()
@@ -357,6 +369,38 @@ class MapViewModel(
                     },
                 search = search.showResults(),
             )
+        }
+    }
+
+    private fun submitShopInformationReport(
+        wrongFields: Set<ShopInformationField>,
+        description: String,
+    ) {
+        val shop = currentState.selectedShop ?: return
+        if (wrongFields.isEmpty() && description.isBlank()) return
+
+        runTask {
+            runCatching {
+                reportRepository.submit(
+                    ShopInformationReport(
+                        shopId = shop.id,
+                        shopName = shop.name,
+                        wrongFields = wrongFields,
+                        description = description.trim(),
+                    ),
+                )
+            }.onSuccess {
+                postSideEffect(
+                    MapSideEffect.ShowToast(
+                        ToastData(
+                            message = Res.string.shop_information_report_success_message,
+                            type = ToastType.DEFAULT,
+                        ),
+                    ),
+                )
+            }.onFailure {
+                showToast(Res.string.shop_information_report_failure_message, ToastType.ERROR)
+            }
         }
     }
 
