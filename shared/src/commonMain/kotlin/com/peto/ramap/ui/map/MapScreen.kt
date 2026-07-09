@@ -78,6 +78,7 @@ import com.peto.ramap.ui.map.model.RamenShopUiModel
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
+import org.koin.compose.viewmodel.koinViewModel
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.account_delete_menu
 import ramap.shared.generated.resources.hide_shop_confirm_action
@@ -102,7 +103,7 @@ import ramap.shared.generated.resources.shop_information_report_placeholder
 fun MapRoute(
     toastManager: ToastManager = koinInject(),
     appSettingsOpener: AppSettingsOpener = koinInject(),
-    viewModel: MapViewModel = koinInject(),
+    viewModel: MapViewModel = koinViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var showLoginGuideDialog by remember { mutableStateOf(false) }
