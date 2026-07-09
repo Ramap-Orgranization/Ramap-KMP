@@ -14,6 +14,7 @@ kotlin {
 dependencies {
     implementation(projects.shared)
     implementation(libs.kakao.map)
+    implementation(platform(libs.koin.bom))
     implementation(libs.koin.android)
 
     implementation(libs.androidx.activity.compose)
