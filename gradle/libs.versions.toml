@@ -1,6 +1,7 @@
 [versions]
 agp = "9.0.1"
-android = "2.13.5"
+naver-map = "3.23.2"
+play-services-location = "21.4.0"
 android-compileSdk = "37"
 android-minSdk = "24"
 android-targetSdk = "36"
@@ -39,7 +40,8 @@ compose-ui = { module = "org.jetbrains.compose.ui:ui", version.ref = "composeMul
 compose-components-resources = { module = "org.jetbrains.compose.components:components-resources", version.ref = "composeMultiplatform" }
 compose-uiToolingPreview = { module = "org.jetbrains.compose.ui:ui-tooling-preview", version.ref = "composeMultiplatform" }
 navigationevent-compose = { module = "org.jetbrains.androidx.navigationevent:navigationevent-compose", version.ref = "navigationevent" }
-kakao-map = { module = "com.kakao.maps.open:android", version.ref = "android" }
+naver-map = { module = "com.naver.maps:map-sdk", version.ref = "naver-map" }
+play-services-location = { module = "com.google.android.gms:play-services-location", version.ref = "play-services-location" }
 
 # Supabase
 supabase-postgrest = { module = "io.github.jan-tennert.supabase:postgrest-kt", version.ref = "supabase" }

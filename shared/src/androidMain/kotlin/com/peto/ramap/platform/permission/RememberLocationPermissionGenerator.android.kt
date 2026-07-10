@@ -69,7 +69,7 @@ internal fun hasLocationPermission(context: Context): Boolean =
             Manifest.permission.ACCESS_COARSE_LOCATION,
         ) == PackageManager.PERMISSION_GRANTED
 
-private fun findActivity(context: Context): Activity? =
+internal fun findActivity(context: Context): Activity? =
     when (context) {
         is Activity -> context
         is ContextWrapper -> findActivity(context.baseContext)

@@ -2,7 +2,6 @@ package com.peto.ramap.ui.map
 
 import androidx.lifecycle.viewModelScope
 import com.peto.ramap.core.base.BaseViewModel
-import com.peto.ramap.core.config.MarkerClusterConfig
 import com.peto.ramap.designsystem.toast.model.ToastAction
 import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
@@ -20,8 +19,7 @@ import com.peto.ramap.domain.repository.PersonalizationRepository
 import com.peto.ramap.domain.repository.RamenShopRepository
 import com.peto.ramap.domain.repository.ShopReportRepository
 import com.peto.ramap.domain.repository.ShopWaitingSystemRepository
-import com.peto.ramap.ui.map.contract.MapIntent
-import com.peto.ramap.ui.map.contract.MapSideEffect
+import com.peto.ramap.ui.map.contract.*
 import com.peto.ramap.ui.map.contract.MapUiState
 import com.peto.ramap.ui.map.model.MapPersonalization
 import com.peto.ramap.ui.map.model.SearchUiState
@@ -60,27 +58,27 @@ class MapViewModel(
 
     override suspend fun handleIntent(intent: MapIntent) {
         when (intent) {
-            is MapIntent.OnBoundsChanged -> scheduleRamenShopsLoad(intent.bounds)
-            is MapIntent.OnMyLocationChanged -> updateMyLocation(intent.location)
-            is MapIntent.OnShopSelected -> selectShop(intent.shop)
-            is MapIntent.OnShopDetailDismissed -> dismissShopDetail()
-            is MapIntent.OnSearchResultsDismissed -> dismissSearchResults()
-            is MapIntent.OnQueryChanged -> updateQuery(intent.query)
-            is MapIntent.OnCategoryFilterToggled -> toggleCategoryFilter(intent.category)
-            is MapIntent.OnFilterCleared -> clearFilter()
-            is MapIntent.OnBookmarkToggled -> toggleBookmark(intent.shop)
-            is MapIntent.OnHiddenToggled -> toggleHidden(intent.shop)
-            is MapIntent.OnShopReportSubmitted ->
+            is OnBoundsChanged -> scheduleRamenShopsLoad(intent.bounds)
+            is OnMyLocationChanged -> updateMyLocation(intent.location)
+            is OnShopSelected -> selectShop(intent.shop)
+            is OnShopDetailDismissed -> dismissShopDetail()
+            is OnSearchResultsDismissed -> dismissSearchResults()
+            is OnQueryChanged -> updateQuery(intent.query)
+            is OnCategoryFilterToggled -> toggleCategoryFilter(intent.category)
+            is OnFilterCleared -> clearFilter()
+            is OnBookmarkToggled -> toggleBookmark(intent.shop)
+            is OnHiddenToggled -> toggleHidden(intent.shop)
+            is OnShopReportSubmitted ->
                 submitShopInformationReport(
                     wrongFields = intent.wrongFields,
                     description = intent.description,
                 )
 
-            is MapIntent.OnPersonalizationViewChanged -> changePersonalizationView(intent.view)
-            MapIntent.OnKakaoLoginClicked -> signInWithKakao()
-            MapIntent.OnLogoutClicked -> signOut()
-            MapIntent.OnAccountDeleteClicked -> showToast(Res.string.account_delete_unavailable_message)
-            MapIntent.OnLocationPermissionBlocked -> showLocationPermissionBlockedToast()
+            is OnPersonalizationViewChanged -> changePersonalizationView(intent.view)
+            OnKakaoLoginClicked -> signInWithKakao()
+            OnLogoutClicked -> signOut()
+            OnAccountDeleteClicked -> showToast(Res.string.account_delete_unavailable_message)
+            OnLocationPermissionBlocked -> showLocationPermissionBlockedToast()
         }
     }
 
@@ -197,7 +195,7 @@ class MapViewModel(
 
     private fun toggleBookmark(shop: RamenShop) {
         if (!currentState.isLoggedIn) {
-            runTask { postSideEffect(MapSideEffect.ShowLoginGuide) }
+            runTask { postSideEffect(ShowLoginGuide) }
             return
         }
 
@@ -246,7 +244,7 @@ class MapViewModel(
 
     private fun toggleHidden(shop: RamenShop) {
         if (!currentState.isLoggedIn) {
-            runTask { postSideEffect(MapSideEffect.ShowLoginGuide) }
+            runTask { postSideEffect(ShowLoginGuide) }
             return
         }
 
@@ -352,7 +350,7 @@ class MapViewModel(
 
     private fun changePersonalizationView(view: MapPersonalization) {
         if (!currentState.isLoggedIn && view != MapPersonalization.ALL) {
-            runTask { postSideEffect(MapSideEffect.ShowLoginGuide) }
+            runTask { postSideEffect(ShowLoginGuide) }
             return
         }
 
@@ -391,7 +389,7 @@ class MapViewModel(
                 )
             }.onSuccess {
                 postSideEffect(
-                    MapSideEffect.ShowToast(
+                    ShowToast(
                         ToastData(
                             message = Res.string.shop_information_report_success_message,
                             type = ToastType.DEFAULT,
@@ -498,7 +496,7 @@ class MapViewModel(
     ) {
         viewModelScope.launch {
             postSideEffect(
-                MapSideEffect.ShowToast(
+                ShowToast(
                     ToastData(
                         message = messageResource,
                         type = type,
@@ -511,7 +509,7 @@ class MapViewModel(
     private fun showLocationPermissionBlockedToast() {
         runTask {
             postSideEffect(
-                MapSideEffect.ShowToast(
+                ShowToast(
                     ToastData(
                         message = Res.string.location_permission_enable_message,
                         type = ToastType.DEFAULT,
@@ -555,20 +553,7 @@ class MapViewModel(
      */
     private fun scheduleRamenShopsLoad(bounds: MapBounds) {
         reduce {
-            copy(
-                bounds = bounds,
-                clusterBounds =
-                    if (
-                        bounds.hasMeaningfulZoomChangeFrom(
-                            other = clusterBounds,
-                            zoomShiftRatio = MarkerClusterConfig.ZOOM_SHIFT_RATIO,
-                        )
-                    ) {
-                        bounds
-                    } else {
-                        clusterBounds
-                    },
-            )
+            copy(bounds = bounds)
         }
 
         boundsLoadJob?.cancel()

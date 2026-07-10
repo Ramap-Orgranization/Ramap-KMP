@@ -59,6 +59,14 @@ buildkonfig {
                 envName = "KAKAO_NATIVE_APP_KEY",
             ),
         )
+        buildConfigField(
+            STRING,
+            "NAVER_MAP_NCP_KEY_ID",
+            secretProperty(
+                localName = "naver_map_ncp_key_id",
+                envName = "NAVER_MAP_NCP_KEY_ID",
+            ),
+        )
     }
 }
 
@@ -117,7 +125,8 @@ kotlin {
             implementation(libs.androidx.core)
             implementation(libs.compose.uiToolingPreview)
             implementation(libs.ktor.client.okhttp)
-            implementation(libs.kakao.map)
+            implementation(libs.naver.map)
+            implementation(libs.play.services.location)
             implementation(libs.kotlinx.coroutines.android)
         }
         iosMain.dependencies {

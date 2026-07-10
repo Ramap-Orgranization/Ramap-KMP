@@ -8,15 +8,12 @@ import com.peto.ramap.domain.model.RamenShop
 import com.peto.ramap.domain.model.RamenShops
 
 @Composable
-expect fun KakaoMapView(
+expect fun RamapMapView(
     shops: RamenShops,
     focusShops: List<RamenShop>,
     focusNearestToCurrentLocation: Boolean,
     focusRequestKey: Long,
     selectedShopId: String?,
-    bounds: MapBounds,
-    clusterBounds: MapBounds,
-    myLocationRequestKey: Int,
     onBoundsChanged: (MapBounds) -> Unit,
     onMyLocationChanged: (Location) -> Unit,
     onShopClick: (RamenShop) -> Unit,
