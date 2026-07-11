@@ -48,6 +48,12 @@ sealed interface MapIntent : Intent {
         val description: String,
     ) : MapIntent
 
+    data class OnUnregisteredPlaceReportSubmitted(
+        val placeUrl: String,
+    ) : MapIntent
+
+    data object OnCurrentLocationReportSubmitted : MapIntent
+
     data class OnPersonalizationViewChanged(
         val view: MapPersonalization,
     ) : MapIntent

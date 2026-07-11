@@ -45,6 +45,7 @@ data class MapUiState(
      * 마지막으로 확인된 사용자 위치.
      */
     val currentLocation: Location? = null,
+    val currentAddress: String? = null,
     /**
      * 사용자가 북마크한 매장 id 목록.
      */
