@@ -16,20 +16,18 @@ import com.peto.ramap.domain.model.SearchQuery
 import com.peto.ramap.domain.model.ShopInformationField
 import com.peto.ramap.domain.model.ShopInformationReport
 import com.peto.ramap.domain.model.UnregisteredPlaceReport
-import com.peto.ramap.domain.model.extractSupportedPlaceReportUrl
-import com.peto.ramap.domain.model.extractSharedPlaceName
-import com.peto.ramap.domain.model.matchesSharedPlace
+import com.peto.ramap.domain.model.PlaceReportTextParser
 import com.peto.ramap.domain.repository.LoginRepository
 import com.peto.ramap.domain.repository.PersonalizationRepository
 import com.peto.ramap.domain.repository.RamenShopRepository
 import com.peto.ramap.domain.repository.ShopReportRepository
 import com.peto.ramap.domain.repository.ShopWaitingSystemRepository
+import com.peto.ramap.network.NaverReverseGeocoder
 import com.peto.ramap.ui.map.contract.MapIntent
 import com.peto.ramap.ui.map.contract.MapSideEffect
 import com.peto.ramap.ui.map.contract.MapUiState
 import com.peto.ramap.ui.map.model.MapPersonalization
 import com.peto.ramap.ui.map.model.SearchUiState
-import com.peto.ramap.network.NaverReverseGeocoder
 import io.github.jan.supabase.auth.status.SessionStatus
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -42,8 +40,8 @@ import ramap.shared.generated.resources.filter_empty_visible_result_message
 import ramap.shared.generated.resources.hidden_shop_search_result_message
 import ramap.shared.generated.resources.location_permission_enable_message
 import ramap.shared.generated.resources.location_permission_settings_action
-import ramap.shared.generated.resources.place_report_failure_message
 import ramap.shared.generated.resources.place_report_existing_shop_message
+import ramap.shared.generated.resources.place_report_failure_message
 import ramap.shared.generated.resources.place_report_invalid_url_message
 import ramap.shared.generated.resources.place_report_location_unavailable_message
 import ramap.shared.generated.resources.place_report_success_message
@@ -434,20 +432,20 @@ class MapViewModel(
     }
 
     private fun submitUnregisteredPlaceReport(placeUrl: String) {
-        val extractedPlaceUrl = placeUrl.extractSupportedPlaceReportUrl()
+        val extractedPlaceUrl = PlaceReportTextParser.extractSupportedUrl(placeUrl)
         if (extractedPlaceUrl == null) {
             showToast(Res.string.place_report_invalid_url_message, ToastType.ERROR)
             return
         }
 
         runTask {
-            val loadedShop = currentState.shops.values.firstOrNull { placeUrl.matchesSharedPlace(it) }
+            val loadedShop = currentState.shops.values.firstOrNull { PlaceReportTextParser.matchesSharedPlace(placeUrl, it) }
             val existingShop =
-                loadedShop ?: placeUrl.extractSharedPlaceName()?.let { placeName ->
+                loadedShop ?: PlaceReportTextParser.extractSharedPlaceName(placeUrl)?.let { placeName ->
                     ramenShopRepository
                         .searchRamenShops(SearchQuery(placeName), SEARCH_RESULT_LIMIT)
                         .values
-                        .firstOrNull { placeUrl.matchesSharedPlace(it) }
+                        .firstOrNull { PlaceReportTextParser.matchesSharedPlace(placeUrl, it) }
                 }
 
             if (existingShop != null) {

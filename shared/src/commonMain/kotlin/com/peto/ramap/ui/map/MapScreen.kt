@@ -61,7 +61,8 @@ import com.peto.ramap.domain.model.Location
 import com.peto.ramap.domain.model.MapBounds
 import com.peto.ramap.domain.model.RamenShop
 import com.peto.ramap.domain.model.ShopInformationField
-import com.peto.ramap.domain.model.extractSupportedPlaceReportUrl
+import com.peto.ramap.domain.model.UnregisteredPlaceReport
+import com.peto.ramap.domain.model.PlaceReportTextParser
 import com.peto.ramap.platform.AppSettingsOpener
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.CommonColor
@@ -96,9 +97,9 @@ import ramap.shared.generated.resources.login_required_message
 import ramap.shared.generated.resources.logout_menu
 import ramap.shared.generated.resources.place_report_action
 import ramap.shared.generated.resources.place_report_description
-import ramap.shared.generated.resources.place_report_location_confirm_title
 import ramap.shared.generated.resources.place_report_location_address
 import ramap.shared.generated.resources.place_report_location_address_failure
+import ramap.shared.generated.resources.place_report_location_confirm_title
 import ramap.shared.generated.resources.place_report_location_menu
 import ramap.shared.generated.resources.place_report_placeholder
 import ramap.shared.generated.resources.place_report_title
@@ -509,11 +510,12 @@ private fun MapScreen(
                 )
 
                 AppText(
-                    text = when {
-                        uiState.currentAddress != null ->
-                            stringResource(Res.string.place_report_location_address, uiState.currentAddress)
-                        else -> stringResource(Res.string.place_report_location_address_failure)
-                    },
+                    text =
+                        when {
+                            uiState.currentAddress != null ->
+                                stringResource(Res.string.place_report_location_address, uiState.currentAddress)
+                            else -> stringResource(Res.string.place_report_location_address_failure)
+                        },
                     modifier = Modifier.padding(top = 12.dp),
                     style = AppTextStyle.B2,
                     color = GrayColor.C500,
@@ -536,7 +538,7 @@ private fun UnregisteredPlaceReportDialog(
     onSubmit: (String) -> Unit,
 ) {
     var placeUrl by remember { mutableStateOf("") }
-    val canSubmit = placeUrl.extractSupportedPlaceReportUrl() != null
+    val canSubmit = PlaceReportTextParser.extractSupportedUrl(placeUrl) != null
 
     CommonDialog(
         visible = visible,
