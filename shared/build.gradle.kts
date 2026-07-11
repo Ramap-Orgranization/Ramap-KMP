@@ -120,6 +120,7 @@ kotlin {
             implementation(libs.compose.uiToolingPreview)
             implementation(libs.ktor.client.okhttp)
             implementation(libs.kakao.map)
+            implementation(libs.kakao.user)
             implementation(libs.kotlinx.coroutines.android)
         }
         iosMain.dependencies {
