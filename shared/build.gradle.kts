@@ -59,6 +59,8 @@ buildkonfig {
                 envName = "KAKAO_NATIVE_APP_KEY",
             ),
         )
+        buildConfigField(STRING, "NAVER_CLIENT_SECRET", secretProperty("naver_client_secret", "NAVER_CLIENT_SECRET"))
+        buildConfigField(STRING, "NAVER_MAP_NCP_KEY_ID", secretProperty("naver_map_ncp_key_id", "NAVER_MAP_NCP_KEY_ID"))
     }
 }
 

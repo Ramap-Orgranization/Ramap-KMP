@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
@@ -38,6 +39,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -57,6 +59,7 @@ import com.peto.ramap.designsystem.toast.ToastManager
 import com.peto.ramap.domain.model.Category
 import com.peto.ramap.domain.model.Location
 import com.peto.ramap.domain.model.MapBounds
+import com.peto.ramap.domain.model.PlaceReportTextParser
 import com.peto.ramap.domain.model.RamenShop
 import com.peto.ramap.domain.model.ShopInformationField
 import com.peto.ramap.platform.AppSettingsOpener
@@ -91,6 +94,15 @@ import ramap.shared.generated.resources.login_required_description
 import ramap.shared.generated.resources.login_required_dismiss
 import ramap.shared.generated.resources.login_required_message
 import ramap.shared.generated.resources.logout_menu
+import ramap.shared.generated.resources.place_report_action
+import ramap.shared.generated.resources.place_report_description
+import ramap.shared.generated.resources.place_report_location_address
+import ramap.shared.generated.resources.place_report_location_address_failure
+import ramap.shared.generated.resources.place_report_location_confirm_title
+import ramap.shared.generated.resources.place_report_location_menu
+import ramap.shared.generated.resources.place_report_placeholder
+import ramap.shared.generated.resources.place_report_title
+import ramap.shared.generated.resources.place_report_url_menu
 import ramap.shared.generated.resources.settings_bookmarked_shops_menu
 import ramap.shared.generated.resources.settings_hidden_shops_menu
 import ramap.shared.generated.resources.shop_detail_link_report
@@ -165,6 +177,12 @@ fun MapRoute(
                 ),
             )
         },
+        onPlaceReportSubmit = { placeUrl ->
+            viewModel.dispatch(MapIntent.OnUnregisteredPlaceReportSubmitted(placeUrl))
+        },
+        onLocationReportSubmit = {
+            viewModel.dispatch(MapIntent.OnCurrentLocationReportSubmitted)
+        },
         onPersonalizationViewChanged = { view ->
             viewModel.dispatch(MapIntent.OnPersonalizationViewChanged(view))
         },
@@ -202,6 +220,8 @@ private fun MapScreen(
     onBookmarkToggled: (RamenShop) -> Unit,
     onHiddenToggled: (RamenShop) -> Unit,
     onReportSubmit: (Set<ShopInformationField>, String) -> Unit,
+    onPlaceReportSubmit: (String) -> Unit,
+    onLocationReportSubmit: () -> Unit,
     onPersonalizationViewChanged: (MapPersonalization) -> Unit,
     onKakaoLoginClick: () -> Unit,
     onLoginGuideDismiss: () -> Unit,
@@ -217,6 +237,9 @@ private fun MapScreen(
     var myLocationRequestKey by remember { mutableStateOf(0) }
     var hideConfirmShop by remember { mutableStateOf<RamenShop?>(null) }
     var showReportDialog by remember(selectedShop?.id) { mutableStateOf(false) }
+    var showPlaceReportDialog by remember { mutableStateOf(false) }
+    var showLocationReportConfirmDialog by remember { mutableStateOf(false) }
+    var isLocationReportPending by remember { mutableStateOf(false) }
 
     val backEventState =
         rememberNavigationEventState<NavigationEventInfo>(
@@ -259,9 +282,18 @@ private fun MapScreen(
             clusterBounds = uiState.clusterBounds,
             myLocationRequestKey = myLocationRequestKey,
             onBoundsChanged = onBoundsChanged,
-            onMyLocationChanged = onMyLocationChanged,
+            onMyLocationChanged = { location ->
+                onMyLocationChanged(location)
+                if (isLocationReportPending) {
+                    isLocationReportPending = false
+                    showLocationReportConfirmDialog = true
+                }
+            },
             onShopClick = onShopSelected,
-            onLocationPermissionBlocked = onLocationPermissionBlocked,
+            onLocationPermissionBlocked = {
+                isLocationReportPending = false
+                onLocationPermissionBlocked()
+            },
         )
 
         Column(
@@ -323,6 +355,11 @@ private fun MapScreen(
             },
             onLogoutClick = onLogoutClick,
             onAccountDeleteClick = onAccountDeleteClick,
+            onPlaceReportClick = { showPlaceReportDialog = true },
+            onLocationReportClick = {
+                isLocationReportPending = true
+                myLocationRequestKey += 1
+            },
             modifier =
                 Modifier
                     .align(Alignment.BottomEnd)
@@ -448,7 +485,120 @@ private fun MapScreen(
                 },
             )
         }
+
+        UnregisteredPlaceReportDialog(
+            visible = showPlaceReportDialog,
+            onDismissRequest = { showPlaceReportDialog = false },
+            onSubmit = { placeUrl ->
+                showPlaceReportDialog = false
+                onPlaceReportSubmit(placeUrl)
+            },
+        )
+
+        CommonDialog(
+            visible = showLocationReportConfirmDialog,
+            confirmText = stringResource(Res.string.place_report_action),
+            dismissText = stringResource(Res.string.shop_information_report_dismiss),
+            onDismissRequest = { showLocationReportConfirmDialog = false },
+            content = {
+                AppText(
+                    text = stringResource(Res.string.place_report_location_confirm_title),
+                    style = AppTextStyle.T1,
+                    color = GrayColor.C500,
+                    textAlign = TextAlign.Center,
+                )
+
+                AppText(
+                    text =
+                        when {
+                            uiState.currentAddress != null ->
+                                stringResource(Res.string.place_report_location_address, uiState.currentAddress)
+                            else -> stringResource(Res.string.place_report_location_address_failure)
+                        },
+                    modifier = Modifier.padding(top = 12.dp),
+                    style = AppTextStyle.B2,
+                    color = GrayColor.C500,
+                    textAlign = TextAlign.Center,
+                )
+            },
+            onConfirm = {
+                showLocationReportConfirmDialog = false
+                onLocationReportSubmit()
+            },
+            onDismiss = { showLocationReportConfirmDialog = false },
+        )
     }
+}
+
+@Composable
+private fun UnregisteredPlaceReportDialog(
+    visible: Boolean,
+    onDismissRequest: () -> Unit,
+    onSubmit: (String) -> Unit,
+) {
+    var placeUrl by remember { mutableStateOf("") }
+    val canSubmit = PlaceReportTextParser.extractSupportedUrl(placeUrl) != null
+
+    CommonDialog(
+        visible = visible,
+        confirmText = stringResource(Res.string.place_report_action),
+        dismissText = stringResource(Res.string.shop_information_report_dismiss),
+        confirmEnabled = canSubmit,
+        onDismissRequest = onDismissRequest,
+        content = {
+            AppText(
+                text = stringResource(Res.string.place_report_title),
+                style = AppTextStyle.T1,
+                color = GrayColor.C500,
+                textAlign = TextAlign.Center,
+            )
+
+            AppText(
+                text = stringResource(Res.string.place_report_description),
+                modifier = Modifier.padding(top = 8.dp),
+                style = AppTextStyle.B2,
+                color = GrayColor.C400,
+                textAlign = TextAlign.Center,
+            )
+
+            TextField(
+                value = placeUrl,
+                onValueChange = { placeUrl = it },
+                modifier =
+                    Modifier
+                        .padding(top = 16.dp)
+                        .fillMaxWidth(),
+                placeholder = {
+                    AppText(
+                        text = stringResource(Res.string.place_report_placeholder),
+                        style = AppTextStyle.B2,
+                        color = GrayColor.C300,
+                    )
+                },
+                minLines = 3,
+                maxLines = 5,
+                keyboardOptions =
+                    KeyboardOptions(
+                        keyboardType = KeyboardType.Uri,
+                    ),
+                colors =
+                    TextFieldDefaults.colors(
+                        focusedContainerColor = GrayColor.C050,
+                        unfocusedContainerColor = GrayColor.C050,
+                        disabledContainerColor = GrayColor.C050,
+                        focusedIndicatorColor = Color.Transparent,
+                        unfocusedIndicatorColor = Color.Transparent,
+                        cursorColor = GrayColor.C400,
+                    ),
+            )
+        },
+        onConfirm = {
+            if (canSubmit) {
+                onSubmit(placeUrl)
+            }
+        },
+        onDismiss = onDismissRequest,
+    )
 }
 
 @Composable
@@ -586,6 +736,8 @@ private fun SettingsFab(
     onShowHiddenShopsClick: () -> Unit,
     onLogoutClick: () -> Unit,
     onAccountDeleteClick: () -> Unit,
+    onPlaceReportClick: () -> Unit,
+    onLocationReportClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var expanded by remember { mutableStateOf(false) }
@@ -597,9 +749,9 @@ private fun SettingsFab(
                     x = (-145).dp.roundToPx(),
                     y =
                         if (isLoggedIn) {
-                            (-208).dp.roundToPx()
+                            (-296).dp.roundToPx()
                         } else {
-                            (-20).dp.roundToPx()
+                            (-108).dp.roundToPx()
                         },
                 )
             }
@@ -648,6 +800,26 @@ private fun SettingsFab(
                             color = GrayColor.C300,
                         )
                     }
+
+                    CommonPopupDivider()
+
+                    CommonPopupItem(
+                        text = stringResource(Res.string.place_report_url_menu),
+                        onClick = {
+                            expanded = false
+                            onPlaceReportClick()
+                        },
+                    )
+
+                    CommonPopupDivider()
+
+                    CommonPopupItem(
+                        text = stringResource(Res.string.place_report_location_menu),
+                        onClick = {
+                            expanded = false
+                            onLocationReportClick()
+                        },
+                    )
 
                     CommonPopupDivider()
 
