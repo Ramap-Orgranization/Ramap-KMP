@@ -81,4 +81,5 @@
     <string name="location_permission_settings_action">설정</string>
     <string name="location_permission_enable_message">위치 권한을 활성화해주세요</string>
     <string name="kakao_login_button_title">카카오로 시작하기</string>
+    <string name="kakao_login_failure_message">카카오 로그인에 실패했습니다. 잠시 후 다시 시도해 주세요.</string>
 </resources>

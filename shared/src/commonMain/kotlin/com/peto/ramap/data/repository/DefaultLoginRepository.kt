@@ -1,6 +1,6 @@
 package com.peto.ramap.data.repository
 
-import com.peto.ramap.data.auth.KakaoOAuthProvider
+import com.peto.ramap.data.auth.KakaoLoginProvider
 import com.peto.ramap.domain.repository.LoginRepository
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.StateFlow
  */
 class DefaultLoginRepository(
     private val supabaseClient: SupabaseClient,
+    private val kakaoLoginProvider: KakaoLoginProvider,
 ) : LoginRepository {
     /**
      * 앱 내비게이션이 저장/갱신/신규 생성된 세션 상태에 반응할 수 있도록
@@ -41,7 +42,7 @@ class DefaultLoginRepository(
      * OAuth 콜백은 앱 redirect URI에 연결된 Android 딥링크 핸들러에서 완료됩니다.
      */
     override suspend fun signInWithKakao() {
-        supabaseClient.auth.signInWith(KakaoOAuthProvider)
+        kakaoLoginProvider.signIn(supabaseClient)
     }
 
     override suspend fun signOut() {

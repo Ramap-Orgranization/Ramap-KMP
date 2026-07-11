@@ -38,6 +38,7 @@ import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.account_delete_unavailable_message
 import ramap.shared.generated.resources.filter_empty_visible_result_message
 import ramap.shared.generated.resources.hidden_shop_search_result_message
+import ramap.shared.generated.resources.kakao_login_failure_message
 import ramap.shared.generated.resources.location_permission_enable_message
 import ramap.shared.generated.resources.location_permission_settings_action
 import ramap.shared.generated.resources.place_report_existing_shop_message
@@ -487,7 +488,10 @@ class MapViewModel(
 
     private fun signInWithKakao() {
         runTask {
-            loginRepository.signInWithKakao()
+            runCatching { loginRepository.signInWithKakao() }
+                .onFailure {
+                    showToast(Res.string.kakao_login_failure_message, ToastType.ERROR)
+                }
         }
     }
 
