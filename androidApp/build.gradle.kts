@@ -46,7 +46,7 @@ kotlin {
 }
 dependencies {
     implementation(projects.shared)
-    implementation(libs.kakao.map)
+    implementation(libs.naver.map)
     implementation(libs.kakao.user)
     implementation(platform(libs.koin.bom))
     implementation(libs.koin.android)

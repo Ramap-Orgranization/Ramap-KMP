@@ -68,14 +68,30 @@ import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.ui.map.component.MapCircleIconButton
 import com.peto.ramap.ui.map.component.MenuCategoryFilterRow
-import com.peto.ramap.ui.map.component.MyLocationButton
 import com.peto.ramap.ui.map.component.RamenShopDetailContent
 import com.peto.ramap.ui.map.component.RamenShopSearchBar
 import com.peto.ramap.ui.map.component.RamenShopSearchResultGuide
 import com.peto.ramap.ui.map.component.RamenShopSearchResultList
-import com.peto.ramap.ui.map.contract.MapIntent
-import com.peto.ramap.ui.map.contract.MapSideEffect
 import com.peto.ramap.ui.map.contract.MapUiState
+import com.peto.ramap.ui.map.contract.OnAccountDeleteConfirmed
+import com.peto.ramap.ui.map.contract.OnBookmarkToggled
+import com.peto.ramap.ui.map.contract.OnBoundsChanged
+import com.peto.ramap.ui.map.contract.OnCategoryFilterToggled
+import com.peto.ramap.ui.map.contract.OnCurrentLocationReportSubmitted
+import com.peto.ramap.ui.map.contract.OnHiddenToggled
+import com.peto.ramap.ui.map.contract.OnKakaoLoginClicked
+import com.peto.ramap.ui.map.contract.OnLocationPermissionBlocked
+import com.peto.ramap.ui.map.contract.OnLogoutClicked
+import com.peto.ramap.ui.map.contract.OnMyLocationChanged
+import com.peto.ramap.ui.map.contract.OnPersonalizationViewChanged
+import com.peto.ramap.ui.map.contract.OnQueryChanged
+import com.peto.ramap.ui.map.contract.OnSearchResultsDismissed
+import com.peto.ramap.ui.map.contract.OnShopDetailDismissed
+import com.peto.ramap.ui.map.contract.OnShopReportSubmitted
+import com.peto.ramap.ui.map.contract.OnShopSelected
+import com.peto.ramap.ui.map.contract.OnUnregisteredPlaceReportSubmitted
+import com.peto.ramap.ui.map.contract.ShowLoginGuide
+import com.peto.ramap.ui.map.contract.ShowToast
 import com.peto.ramap.ui.map.model.MapPersonalization
 import com.peto.ramap.ui.map.model.RamenShopUiModel
 import org.jetbrains.compose.resources.painterResource
@@ -126,9 +142,9 @@ fun MapRoute(
 
     ObserveAsEvents(viewModel.sideEffect) { sideEffect ->
         when (sideEffect) {
-            MapSideEffect.ShowLoginGuide -> showLoginGuideDialog = true
+            ShowLoginGuide -> showLoginGuideDialog = true
 
-            is MapSideEffect.ShowToast ->
+            is ShowToast ->
                 toastManager.show(
                     sideEffect.data.copy(
                         action =
@@ -144,67 +160,67 @@ fun MapRoute(
         uiState = uiState,
         showLoginGuideDialog = showLoginGuideDialog,
         onBoundsChanged = { bounds ->
-            viewModel.dispatch(MapIntent.OnBoundsChanged(bounds))
+            viewModel.dispatch(OnBoundsChanged(bounds))
         },
         onMyLocationChanged = { location ->
-            viewModel.dispatch(MapIntent.OnMyLocationChanged(location))
+            viewModel.dispatch(OnMyLocationChanged(location))
         },
         onLocationPermissionBlocked = {
-            viewModel.dispatch(MapIntent.OnLocationPermissionBlocked)
+            viewModel.dispatch(OnLocationPermissionBlocked)
         },
         onShopSelected = { shop ->
-            viewModel.dispatch(MapIntent.OnShopSelected(shop))
+            viewModel.dispatch(OnShopSelected(shop))
         },
         onShopDetailDismissed = {
-            viewModel.dispatch(MapIntent.OnShopDetailDismissed)
+            viewModel.dispatch(OnShopDetailDismissed)
         },
         onQueryChanged = { query ->
-            viewModel.dispatch(MapIntent.OnQueryChanged(query))
+            viewModel.dispatch(OnQueryChanged(query))
         },
         onSearchResultsDismissed = {
-            viewModel.dispatch(MapIntent.OnSearchResultsDismissed)
+            viewModel.dispatch(OnSearchResultsDismissed)
         },
         onCategoryFilterToggled = { category ->
-            viewModel.dispatch(MapIntent.OnCategoryFilterToggled(category))
+            viewModel.dispatch(OnCategoryFilterToggled(category))
         },
         onBookmarkToggled = { shop ->
-            viewModel.dispatch(MapIntent.OnBookmarkToggled(shop))
+            viewModel.dispatch(OnBookmarkToggled(shop))
         },
         onHiddenToggled = { shop ->
-            viewModel.dispatch(MapIntent.OnHiddenToggled(shop))
+            viewModel.dispatch(OnHiddenToggled(shop))
         },
         onReportSubmit = { wrongFields, description ->
             viewModel.dispatch(
-                MapIntent.OnShopReportSubmitted(
+                OnShopReportSubmitted(
                     wrongFields = wrongFields,
                     description = description,
                 ),
             )
         },
         onPlaceReportSubmit = { placeUrl ->
-            viewModel.dispatch(MapIntent.OnUnregisteredPlaceReportSubmitted(placeUrl))
+            viewModel.dispatch(OnUnregisteredPlaceReportSubmitted(placeUrl))
         },
         onLocationReportSubmit = {
-            viewModel.dispatch(MapIntent.OnCurrentLocationReportSubmitted)
+            viewModel.dispatch(OnCurrentLocationReportSubmitted)
         },
         onPersonalizationViewChanged = { view ->
-            viewModel.dispatch(MapIntent.OnPersonalizationViewChanged(view))
+            viewModel.dispatch(OnPersonalizationViewChanged(view))
         },
         onKakaoLoginClick = {
-            viewModel.dispatch(MapIntent.OnKakaoLoginClicked)
+            viewModel.dispatch(OnKakaoLoginClicked)
         },
         onLoginGuideDismiss = {
             showLoginGuideDialog = false
         },
         onLoginGuideConfirm = {
             showLoginGuideDialog = false
-            viewModel.dispatch(MapIntent.OnKakaoLoginClicked)
+            viewModel.dispatch(OnKakaoLoginClicked)
         },
         onLogoutClick = {
-            viewModel.dispatch(MapIntent.OnLogoutClicked)
+            viewModel.dispatch(OnLogoutClicked)
         },
         onAccountDeleteClick = {
-            viewModel.dispatch(MapIntent.OnAccountDeleteConfirmed)
+            viewModel.dispatch(OnAccountDeleteConfirmed)
         },
     )
 }
@@ -238,7 +254,6 @@ private fun MapScreen(
     val density = LocalDensity.current
     val isImeVisible = WindowInsets.ime.getBottom(density) > 0
     var wasImeVisible by remember { mutableStateOf(false) }
-    var myLocationRequestKey by remember { mutableStateOf(0) }
     var hideConfirmShop by remember { mutableStateOf<RamenShop?>(null) }
     var showAccountDeleteConfirmDialog by remember { mutableStateOf(false) }
     var showReportDialog by remember(selectedShop?.id) { mutableStateOf(false) }
@@ -263,10 +278,6 @@ private fun MapScreen(
         wasImeVisible = isImeVisible
     }
 
-    LaunchedEffect(Unit) {
-        myLocationRequestKey += 1
-    }
-
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         val detailBottomSheetMaxHeight = maxHeight - searchBarTopPadding - searchBarHeight
 
@@ -276,16 +287,13 @@ private fun MapScreen(
             onBackCompleted = onShopDetailDismissed,
         )
 
-        KakaoMapView(
+        RamapMapView(
             modifier = Modifier.fillMaxSize(),
             shops = uiState.markerShops,
             focusShops = uiState.focusShops,
             focusNearestToCurrentLocation = uiState.shouldFocusNearestSearchResult,
             focusRequestKey = uiState.focusRequestKey,
             selectedShopId = uiState.selectedShop?.id,
-            bounds = uiState.bounds,
-            clusterBounds = uiState.clusterBounds,
-            myLocationRequestKey = myLocationRequestKey,
             onBoundsChanged = onBoundsChanged,
             onMyLocationChanged = { location ->
                 onMyLocationChanged(location)
@@ -320,20 +328,6 @@ private fun MapScreen(
             )
         }
 
-        MyLocationButton(
-            onClick = { myLocationRequestKey += 1 },
-            modifier =
-                Modifier
-                    .align(Alignment.BottomStart)
-                    .padding(
-                        start = 16.dp,
-                        bottom =
-                            WindowInsets.navigationBars
-                                .asPaddingValues()
-                                .calculateBottomPadding() + 24.dp,
-                    ),
-        )
-
         SettingsFab(
             isLoggedIn = uiState.isLoggedIn,
             accountLabel = uiState.accountLabel,
@@ -362,8 +356,8 @@ private fun MapScreen(
             onAccountDeleteClick = { showAccountDeleteConfirmDialog = true },
             onPlaceReportClick = { showPlaceReportDialog = true },
             onLocationReportClick = {
-                isLocationReportPending = true
-                myLocationRequestKey += 1
+                isLocationReportPending = uiState.currentLocation == null
+                showLocationReportConfirmDialog = uiState.currentLocation != null
             },
             modifier =
                 Modifier

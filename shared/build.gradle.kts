@@ -59,8 +59,15 @@ buildkonfig {
                 envName = "KAKAO_NATIVE_APP_KEY",
             ),
         )
+        buildConfigField(
+            STRING,
+            "NAVER_MAP_NCP_KEY_ID",
+            secretProperty(
+                localName = "naver_map_ncp_key_id",
+                envName = "NAVER_MAP_NCP_KEY_ID",
+            ),
+        )
         buildConfigField(STRING, "NAVER_CLIENT_SECRET", secretProperty("naver_client_secret", "NAVER_CLIENT_SECRET"))
-        buildConfigField(STRING, "NAVER_MAP_NCP_KEY_ID", secretProperty("naver_map_ncp_key_id", "NAVER_MAP_NCP_KEY_ID"))
     }
 }
 
@@ -76,9 +83,7 @@ kotlin {
             isStatic = true
         }
 
-        pod("KakaoMapsSDK") {
-            version = "2.12.14"
-        }
+        pod("NMapsMap")
     }
 
     listOf(
@@ -119,7 +124,8 @@ kotlin {
             implementation(libs.androidx.core)
             implementation(libs.compose.uiToolingPreview)
             implementation(libs.ktor.client.okhttp)
-            implementation(libs.kakao.map)
+            implementation(libs.naver.map)
+            implementation(libs.play.services.location)
             implementation(libs.kakao.user)
             implementation(libs.kotlinx.coroutines.android)
         }

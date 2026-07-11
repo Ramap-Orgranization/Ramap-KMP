@@ -26,9 +26,10 @@ import com.peto.ramap.fake.FakeShopWaitingSystemRepository
 import com.peto.ramap.fixture.BOUNDS_FIXTURE
 import com.peto.ramap.fixture.ramenShopFixture
 import com.peto.ramap.fixture.waitingSystemFixture
-import com.peto.ramap.ui.map.contract.MapIntent
-import com.peto.ramap.ui.map.contract.MapSideEffect
 import com.peto.ramap.ui.map.contract.MapUiState
+import com.peto.ramap.ui.map.contract.OnCurrentLocationReportSubmitted
+import com.peto.ramap.ui.map.contract.OnMyLocationChanged
+import com.peto.ramap.ui.map.contract.OnUnregisteredPlaceReportSubmitted
 import com.peto.ramap.ui.map.contract.SearchResultGuide
 import com.peto.ramap.ui.map.model.MapPersonalization
 import com.peto.ramap.ui.map.model.SearchUiState
@@ -63,9 +64,9 @@ class MapViewModelTest {
                     maxLat = BOUNDS_FIXTURE.maxLat + 0.03,
                 )
 
-            viewModel.dispatch(MapIntent.OnBoundsChanged(BOUNDS_FIXTURE))
+            viewModel.dispatch(OnBoundsChanged(BOUNDS_FIXTURE))
             advanceTimeBy(200)
-            viewModel.dispatch(MapIntent.OnBoundsChanged(lastBounds))
+            viewModel.dispatch(OnBoundsChanged(lastBounds))
             advanceTimeBy(349)
             runCurrent()
 
@@ -88,10 +89,10 @@ class MapViewModelTest {
                     maxLat = BOUNDS_FIXTURE.maxLat + 0.01,
                 )
 
-            viewModel.dispatch(MapIntent.OnBoundsChanged(BOUNDS_FIXTURE))
+            viewModel.dispatch(OnBoundsChanged(BOUNDS_FIXTURE))
             advanceTimeBy(350)
             runCurrent()
-            viewModel.dispatch(MapIntent.OnBoundsChanged(nearbyBounds))
+            viewModel.dispatch(OnBoundsChanged(nearbyBounds))
             advanceTimeBy(350)
             runCurrent()
 
@@ -109,10 +110,10 @@ class MapViewModelTest {
                     maxLat = BOUNDS_FIXTURE.maxLat + 0.03,
                 )
 
-            viewModel.dispatch(MapIntent.OnBoundsChanged(BOUNDS_FIXTURE))
+            viewModel.dispatch(OnBoundsChanged(BOUNDS_FIXTURE))
             advanceTimeBy(350)
             runCurrent()
-            viewModel.dispatch(MapIntent.OnBoundsChanged(changedBounds))
+            viewModel.dispatch(OnBoundsChanged(changedBounds))
             advanceTimeBy(350)
             runCurrent()
 
@@ -120,45 +121,6 @@ class MapViewModelTest {
                 listOf(BOUNDS_FIXTURE, changedBounds),
                 ramenShopRepository.requestedBoundsHistory,
             )
-        }
-
-    @Test
-    fun `지도 이동만으로는 클러스터 기준 영역을 변경하지 않는다`() =
-        coroutinesTest {
-            val viewModel = mapViewModel()
-            val pannedBounds =
-                DefaultMapConfig.bounds.copy(
-                    minLat = DefaultMapConfig.bounds.minLat + 0.01,
-                    maxLat = DefaultMapConfig.bounds.maxLat + 0.01,
-                    minLng = DefaultMapConfig.bounds.minLng + 0.01,
-                    maxLng = DefaultMapConfig.bounds.maxLng + 0.01,
-                )
-
-            viewModel.dispatch(MapIntent.OnBoundsChanged(pannedBounds))
-            runCurrent()
-
-            assertEquals(pannedBounds, viewModel.uiState.value.bounds)
-            assertEquals(DefaultMapConfig.bounds, viewModel.uiState.value.clusterBounds)
-            advanceTimeBy(350)
-            runCurrent()
-        }
-
-    @Test
-    fun `줌 변경시에는 클러스터 기준 영역을 변경한다`() =
-        coroutinesTest {
-            val viewModel = mapViewModel()
-            val zoomedBounds =
-                DefaultMapConfig.bounds.copy(
-                    maxLat = DefaultMapConfig.bounds.minLat + DefaultMapConfig.bounds.latSpan * 0.8,
-                    maxLng = DefaultMapConfig.bounds.minLng + DefaultMapConfig.bounds.lngSpan * 0.8,
-                )
-
-            viewModel.dispatch(MapIntent.OnBoundsChanged(zoomedBounds))
-            runCurrent()
-
-            assertEquals(zoomedBounds, viewModel.uiState.value.clusterBounds)
-            advanceTimeBy(350)
-            runCurrent()
         }
 
     @Test
@@ -178,13 +140,13 @@ class MapViewModelTest {
                 assertEquals(RamenShops(emptyMap()), initialState.shops)
                 assertEquals(DefaultMapConfig.bounds, initialState.bounds)
 
-                viewModel.dispatch(MapIntent.OnBoundsChanged(BOUNDS_FIXTURE))
+                viewModel.dispatch(OnBoundsChanged(BOUNDS_FIXTURE))
                 assertEquals(BOUNDS_FIXTURE, awaitItem().bounds)
                 advanceTimeBy(350)
                 runCurrent()
                 assertEquals(shops, awaitItem().shops)
 
-                viewModel.dispatch(MapIntent.OnBoundsChanged(changedBounds))
+                viewModel.dispatch(OnBoundsChanged(changedBounds))
                 assertEquals(changedBounds, awaitItem().bounds)
                 advanceTimeBy(350)
                 runCurrent()
@@ -201,7 +163,7 @@ class MapViewModelTest {
                 FakeShopWaitingSystemRepository(result = waitingSystem)
             val viewModel = mapViewModel(shopWaitingSystemRepository = waitingSystemRepository)
 
-            viewModel.dispatch(MapIntent.OnShopSelected(shop))
+            viewModel.dispatch(OnShopSelected(shop))
             runCurrent()
 
             assertEquals(shop, viewModel.uiState.value.selectedShop)
@@ -216,7 +178,7 @@ class MapViewModelTest {
             val waitingSystemRepository = FakeShopWaitingSystemRepository(result = null)
             val viewModel = mapViewModel(shopWaitingSystemRepository = waitingSystemRepository)
 
-            viewModel.dispatch(MapIntent.OnShopSelected(shop))
+            viewModel.dispatch(OnShopSelected(shop))
             runCurrent()
 
             val containsWaitingSystem =
@@ -240,9 +202,9 @@ class MapViewModelTest {
                 FakeShopWaitingSystemRepository(result = waitingSystemFixture(shop.id))
             val viewModel = mapViewModel(shopWaitingSystemRepository = waitingSystemRepository)
 
-            viewModel.dispatch(MapIntent.OnShopSelected(shop))
+            viewModel.dispatch(OnShopSelected(shop))
             runCurrent()
-            viewModel.dispatch(MapIntent.OnShopSelected(shop))
+            viewModel.dispatch(OnShopSelected(shop))
             runCurrent()
 
             assertEquals(listOf(shop.id), waitingSystemRepository.requestedShopIds)
@@ -261,11 +223,11 @@ class MapViewModelTest {
                     shopWaitingSystemRepository = waitingSystemRepository,
                 )
 
-            viewModel.dispatch(MapIntent.OnShopSelected(shop))
+            viewModel.dispatch(OnShopSelected(shop))
             runCurrent()
             waitingSystemRepository.requestedShopIds.clear()
 
-            viewModel.dispatch(MapIntent.OnBoundsChanged(BOUNDS_FIXTURE))
+            viewModel.dispatch(OnBoundsChanged(BOUNDS_FIXTURE))
             advanceTimeBy(350)
             runCurrent()
 
@@ -280,12 +242,12 @@ class MapViewModelTest {
             val reportRepository = FakeShopReportRepository()
             val viewModel = mapViewModel(shopReportRepository = reportRepository)
 
-            viewModel.dispatch(MapIntent.OnShopSelected(shop))
+            viewModel.dispatch(OnShopSelected(shop))
             runCurrent()
 
             viewModel.sideEffect.test {
                 viewModel.dispatch(
-                    MapIntent.OnShopReportSubmitted(
+                    OnShopReportSubmitted(
                         wrongFields = setOf(ShopInformationField.ADDRESS, ShopInformationField.OTHER),
                         description = " 주소가 달라요 ",
                     ),
@@ -319,12 +281,12 @@ class MapViewModelTest {
                         ),
                 )
 
-            viewModel.dispatch(MapIntent.OnShopSelected(shop))
+            viewModel.dispatch(OnShopSelected(shop))
             runCurrent()
 
             viewModel.sideEffect.test {
                 viewModel.dispatch(
-                    MapIntent.OnShopReportSubmitted(
+                    OnShopReportSubmitted(
                         wrongFields = setOf(ShopInformationField.PHONE),
                         description = "",
                     ),
@@ -332,7 +294,7 @@ class MapViewModelTest {
                 runCurrent()
 
                 assertEquals(
-                    MapSideEffect.ShowToast(
+                    ShowToast(
                         ToastData(
                             message = Res.string.shop_information_report_failure_message,
                             type = ToastType.ERROR,
@@ -351,7 +313,7 @@ class MapViewModelTest {
 
             viewModel.sideEffect.test {
                 viewModel.dispatch(
-                    MapIntent.OnUnregisteredPlaceReportSubmitted(
+                    OnUnregisteredPlaceReportSubmitted(
                         placeUrl = " https://map.kakao.com/link/map/123 ",
                     ),
                 )
@@ -373,7 +335,7 @@ class MapViewModelTest {
 
             viewModel.sideEffect.test {
                 viewModel.dispatch(
-                    MapIntent.OnUnregisteredPlaceReportSubmitted(
+                    OnUnregisteredPlaceReportSubmitted(
                         placeUrl = "https://example.com/place/123",
                     ),
                 )
@@ -407,7 +369,7 @@ class MapViewModelTest {
                 """.trimMargin()
 
             viewModel.sideEffect.test {
-                viewModel.dispatch(MapIntent.OnUnregisteredPlaceReportSubmitted(content))
+                viewModel.dispatch(OnUnregisteredPlaceReportSubmitted(content))
                 runCurrent()
 
                 assertEquals(emptyList(), reportRepository.placeReports)
@@ -424,10 +386,10 @@ class MapViewModelTest {
             val viewModel = mapViewModel(shopReportRepository = reportRepository)
             val location = Location(lat = 37.275, lng = 127.009)
 
-            viewModel.dispatch(MapIntent.OnMyLocationChanged(location))
+            viewModel.dispatch(OnMyLocationChanged(location))
 
             viewModel.sideEffect.test {
-                viewModel.dispatch(MapIntent.OnCurrentLocationReportSubmitted)
+                viewModel.dispatch(OnCurrentLocationReportSubmitted)
                 runCurrent()
 
                 assertEquals(
@@ -445,7 +407,7 @@ class MapViewModelTest {
             val viewModel = mapViewModel(shopReportRepository = reportRepository)
 
             viewModel.sideEffect.test {
-                viewModel.dispatch(MapIntent.OnCurrentLocationReportSubmitted)
+                viewModel.dispatch(OnCurrentLocationReportSubmitted)
                 runCurrent()
 
                 assertEquals(emptyList(), reportRepository.placeReports)
@@ -468,7 +430,7 @@ class MapViewModelTest {
             val ramenShopRepository = FakeRamenShopRepository(searchResult = shops)
             val viewModel = mapViewModel(ramenShopRepository)
 
-            viewModel.dispatch(MapIntent.OnQueryChanged("  RAMEN   SHOP  "))
+            viewModel.dispatch(OnQueryChanged("  RAMEN   SHOP  "))
             advanceTimeBy(299)
             runCurrent()
 
@@ -516,10 +478,10 @@ class MapViewModelTest {
                 )
             val viewModel = mapViewModel(ramenShopRepository)
 
-            viewModel.dispatch(MapIntent.OnBoundsChanged(BOUNDS_FIXTURE))
+            viewModel.dispatch(OnBoundsChanged(BOUNDS_FIXTURE))
             advanceTimeBy(350)
             runCurrent()
-            viewModel.dispatch(MapIntent.OnQueryChanged("라멘"))
+            viewModel.dispatch(OnQueryChanged("라멘"))
             advanceTimeBy(300)
             runCurrent()
 
@@ -547,7 +509,7 @@ class MapViewModelTest {
                     shopWaitingSystemRepository = waitingSystemRepository,
                 )
 
-            viewModel.dispatch(MapIntent.OnQueryChanged("라멘"))
+            viewModel.dispatch(OnQueryChanged("라멘"))
             advanceTimeBy(300)
             runCurrent()
 
@@ -580,7 +542,7 @@ class MapViewModelTest {
                 )
 
             viewModel.sideEffect.test {
-                viewModel.dispatch(MapIntent.OnQueryChanged("숨김"))
+                viewModel.dispatch(OnQueryChanged("숨김"))
                 advanceTimeBy(300)
                 runCurrent()
 
@@ -616,7 +578,7 @@ class MapViewModelTest {
             val viewModel = mapViewModel(ramenShopRepository)
 
             viewModel.sideEffect.test {
-                viewModel.dispatch(MapIntent.OnQueryChanged("라멘"))
+                viewModel.dispatch(OnQueryChanged("라멘"))
                 advanceTimeBy(300)
                 runCurrent()
 
@@ -704,10 +666,10 @@ class MapViewModelTest {
                 )
             val viewModel = mapViewModel(ramenShopRepository)
 
-            viewModel.dispatch(MapIntent.OnBoundsChanged(BOUNDS_FIXTURE))
+            viewModel.dispatch(OnBoundsChanged(BOUNDS_FIXTURE))
             advanceTimeBy(350)
             runCurrent()
-            viewModel.dispatch(MapIntent.OnQueryChanged("라멘"))
+            viewModel.dispatch(OnQueryChanged("라멘"))
             advanceTimeBy(299)
             runCurrent()
 
@@ -725,9 +687,9 @@ class MapViewModelTest {
             val ramenShopRepository = FakeRamenShopRepository()
             val viewModel = mapViewModel(ramenShopRepository)
 
-            viewModel.dispatch(MapIntent.OnQueryChanged("라멘"))
+            viewModel.dispatch(OnQueryChanged("라멘"))
             advanceTimeBy(150)
-            viewModel.dispatch(MapIntent.OnQueryChanged("라멘집"))
+            viewModel.dispatch(OnQueryChanged("라멘집"))
             advanceTimeBy(299)
             runCurrent()
 
@@ -752,14 +714,14 @@ class MapViewModelTest {
             val ramenShopRepository = FakeRamenShopRepository(searchResult = searchShops)
             val viewModel = mapViewModel(ramenShopRepository)
 
-            viewModel.dispatch(MapIntent.OnQueryChanged("라멘"))
+            viewModel.dispatch(OnQueryChanged("라멘"))
             advanceTimeBy(300)
             runCurrent()
 
             assertEquals(true, viewModel.uiState.value.showSearchResults)
             assertEquals(true, viewModel.uiState.value.showBottomSheet)
 
-            viewModel.dispatch(MapIntent.OnSearchResultsDismissed)
+            viewModel.dispatch(OnSearchResultsDismissed)
             runCurrent()
 
             assertEquals("라멘", viewModel.uiState.value.search.input)
@@ -782,15 +744,15 @@ class MapViewModelTest {
             val ramenShopRepository = FakeRamenShopRepository(searchResult = searchShops)
             val viewModel = mapViewModel(ramenShopRepository)
 
-            viewModel.dispatch(MapIntent.OnQueryChanged("라멘"))
+            viewModel.dispatch(OnQueryChanged("라멘"))
             advanceTimeBy(300)
             runCurrent()
-            viewModel.dispatch(MapIntent.OnSearchResultsDismissed)
+            viewModel.dispatch(OnSearchResultsDismissed)
             runCurrent()
             ramenShopRepository.requestedSearchQueries.clear()
             val previousFocusRequestKey = viewModel.uiState.value.focusRequestKey
 
-            viewModel.dispatch(MapIntent.OnQueryChanged("라멘"))
+            viewModel.dispatch(OnQueryChanged("라멘"))
             runCurrent()
 
             assertEquals(emptyList(), ramenShopRepository.requestedSearchQueries)
@@ -819,13 +781,13 @@ class MapViewModelTest {
                 )
             runCurrent()
 
-            viewModel.dispatch(MapIntent.OnQueryChanged("라멘"))
+            viewModel.dispatch(OnQueryChanged("라멘"))
             advanceTimeBy(300)
             runCurrent()
 
             assertEquals(shop, viewModel.uiState.value.selectedShop)
 
-            viewModel.dispatch(MapIntent.OnHiddenToggled(shop))
+            viewModel.dispatch(OnHiddenToggled(shop))
             runCurrent()
 
             val hiddenDisplayShop = shop.copy(isVisible = false)
@@ -863,15 +825,15 @@ class MapViewModelTest {
             runCurrent()
 
             viewModel.sideEffect.test {
-                viewModel.dispatch(MapIntent.OnQueryChanged("라멘"))
+                viewModel.dispatch(OnQueryChanged("라멘"))
                 advanceTimeBy(300)
                 runCurrent()
 
-                viewModel.dispatch(MapIntent.OnHiddenToggled(shop))
+                viewModel.dispatch(OnHiddenToggled(shop))
                 runCurrent()
                 ramenShopRepository.requestedSearchQueries.clear()
 
-                viewModel.dispatch(MapIntent.OnQueryChanged("  라멘  "))
+                viewModel.dispatch(OnQueryChanged("  라멘  "))
                 runCurrent()
 
                 assertEquals(emptyList(), ramenShopRepository.requestedSearchQueries)
@@ -912,21 +874,21 @@ class MapViewModelTest {
             val ramenShopRepository = FakeRamenShopRepository(searchResult = searchShops)
             val viewModel = mapViewModel(ramenShopRepository)
 
-            viewModel.dispatch(MapIntent.OnQueryChanged("오레노"))
+            viewModel.dispatch(OnQueryChanged("오레노"))
             advanceTimeBy(300)
             runCurrent()
 
             assertEquals(searchShops.values.toList(), viewModel.uiState.value.focusShops)
             assertEquals(true, viewModel.uiState.value.shouldFocusNearestSearchResult)
 
-            viewModel.dispatch(MapIntent.OnShopSelected(selectedShop))
+            viewModel.dispatch(OnShopSelected(selectedShop))
             runCurrent()
 
             assertEquals(true, viewModel.uiState.value.search.isResultFocusConsumed)
             assertEquals(listOf(selectedShop), viewModel.uiState.value.focusShops)
             assertEquals(false, viewModel.uiState.value.shouldFocusNearestSearchResult)
 
-            viewModel.dispatch(MapIntent.OnShopDetailDismissed)
+            viewModel.dispatch(OnShopDetailDismissed)
             runCurrent()
 
             assertEquals(null, viewModel.uiState.value.selectedShop)
@@ -1011,13 +973,13 @@ class MapViewModelTest {
                 )
             val viewModel = mapViewModel(ramenShopRepository)
 
-            viewModel.dispatch(MapIntent.OnBoundsChanged(BOUNDS_FIXTURE))
+            viewModel.dispatch(OnBoundsChanged(BOUNDS_FIXTURE))
             advanceTimeBy(350)
             runCurrent()
-            viewModel.dispatch(MapIntent.OnQueryChanged("라멘"))
+            viewModel.dispatch(OnQueryChanged("라멘"))
             advanceTimeBy(300)
             runCurrent()
-            viewModel.dispatch(MapIntent.OnQueryChanged("   "))
+            viewModel.dispatch(OnQueryChanged("   "))
             runCurrent()
 
             assertEquals(RamenShops(emptyMap()), viewModel.uiState.value.search.results)
@@ -1043,10 +1005,10 @@ class MapViewModelTest {
             val ramenShopRepository = FakeRamenShopRepository(result = shops)
             val viewModel = mapViewModel(ramenShopRepository)
 
-            viewModel.dispatch(MapIntent.OnBoundsChanged(BOUNDS_FIXTURE))
+            viewModel.dispatch(OnBoundsChanged(BOUNDS_FIXTURE))
             advanceTimeBy(350)
             runCurrent()
-            viewModel.dispatch(MapIntent.OnCategoryFilterToggled(Category.MAZESOBA))
+            viewModel.dispatch(OnCategoryFilterToggled(Category.MAZESOBA))
             runCurrent()
 
             assertEquals(
@@ -1065,9 +1027,9 @@ class MapViewModelTest {
         coroutinesTest {
             val viewModel = mapViewModel()
 
-            viewModel.dispatch(MapIntent.OnCategoryFilterToggled(Category.MAZESOBA))
+            viewModel.dispatch(OnCategoryFilterToggled(Category.MAZESOBA))
             runCurrent()
-            viewModel.dispatch(MapIntent.OnCategoryFilterToggled(Category.MAZESOBA))
+            viewModel.dispatch(OnCategoryFilterToggled(Category.MAZESOBA))
             runCurrent()
 
             assertEquals(
@@ -1082,10 +1044,10 @@ class MapViewModelTest {
         coroutinesTest {
             val viewModel = mapViewModel()
 
-            viewModel.dispatch(MapIntent.OnCategoryFilterToggled(Category.MAZESOBA))
-            viewModel.dispatch(MapIntent.OnCategoryFilterToggled(Category.JIRO))
+            viewModel.dispatch(OnCategoryFilterToggled(Category.MAZESOBA))
+            viewModel.dispatch(OnCategoryFilterToggled(Category.JIRO))
             runCurrent()
-            viewModel.dispatch(MapIntent.OnFilterCleared)
+            viewModel.dispatch(OnFilterCleared)
             runCurrent()
 
             assertEquals(
@@ -1105,9 +1067,9 @@ class MapViewModelTest {
                 )
             val viewModel = mapViewModel()
 
-            viewModel.dispatch(MapIntent.OnShopSelected(shop))
+            viewModel.dispatch(OnShopSelected(shop))
             runCurrent()
-            viewModel.dispatch(MapIntent.OnCategoryFilterToggled(Category.MAZESOBA))
+            viewModel.dispatch(OnCategoryFilterToggled(Category.MAZESOBA))
             runCurrent()
 
             assertEquals(null, viewModel.uiState.value.selectedShop)
@@ -1130,8 +1092,8 @@ class MapViewModelTest {
             val ramenShopRepository = FakeRamenShopRepository(searchResult = searchShops)
             val viewModel = mapViewModel(ramenShopRepository)
 
-            viewModel.dispatch(MapIntent.OnCategoryFilterToggled(Category.MAZESOBA))
-            viewModel.dispatch(MapIntent.OnQueryChanged("라멘"))
+            viewModel.dispatch(OnCategoryFilterToggled(Category.MAZESOBA))
+            viewModel.dispatch(OnQueryChanged("라멘"))
             advanceTimeBy(300)
             runCurrent()
 
@@ -1154,8 +1116,8 @@ class MapViewModelTest {
             val ramenShopRepository = FakeRamenShopRepository(searchResult = searchShops)
             val viewModel = mapViewModel(ramenShopRepository)
 
-            viewModel.dispatch(MapIntent.OnCategoryFilterToggled(Category.MAZESOBA))
-            viewModel.dispatch(MapIntent.OnQueryChanged("라멘"))
+            viewModel.dispatch(OnCategoryFilterToggled(Category.MAZESOBA))
+            viewModel.dispatch(OnQueryChanged("라멘"))
             advanceTimeBy(300)
             runCurrent()
 
@@ -1358,10 +1320,10 @@ class MapViewModelTest {
             val shop = ramenShopFixture()
 
             viewModel.sideEffect.test {
-                viewModel.dispatch(MapIntent.OnBookmarkToggled(shop))
+                viewModel.dispatch(OnBookmarkToggled(shop))
                 runCurrent()
 
-                assertEquals(MapSideEffect.ShowLoginGuide, awaitItem())
+                assertEquals(ShowLoginGuide, awaitItem())
             }
         }
 
@@ -1380,7 +1342,7 @@ class MapViewModelTest {
                 )
             runCurrent()
 
-            viewModel.dispatch(MapIntent.OnBookmarkToggled(shop))
+            viewModel.dispatch(OnBookmarkToggled(shop))
             runCurrent()
 
             assertEquals(setOf(shop.id), viewModel.uiState.value.bookmarkedShopIds)
@@ -1393,10 +1355,10 @@ class MapViewModelTest {
             val shop = ramenShopFixture()
 
             viewModel.sideEffect.test {
-                viewModel.dispatch(MapIntent.OnHiddenToggled(shop))
+                viewModel.dispatch(OnHiddenToggled(shop))
                 runCurrent()
 
-                assertEquals(MapSideEffect.ShowLoginGuide, awaitItem())
+                assertEquals(ShowLoginGuide, awaitItem())
             }
         }
 
@@ -1425,8 +1387,8 @@ class MapViewModelTest {
                 )
 
             viewModel.sideEffect.test {
-                viewModel.dispatch(MapIntent.OnCategoryFilterToggled(Category.MAZESOBA))
-                viewModel.dispatch(MapIntent.OnQueryChanged("라멘"))
+                viewModel.dispatch(OnCategoryFilterToggled(Category.MAZESOBA))
+                viewModel.dispatch(OnQueryChanged("라멘"))
                 advanceTimeBy(300)
                 runCurrent()
 
@@ -1442,8 +1404,8 @@ class MapViewModelTest {
         }
 }
 
-private fun showToastSideEffect(message: StringResource): MapSideEffect.ShowToast =
-    MapSideEffect.ShowToast(
+private fun showToastSideEffect(message: StringResource): ShowToast =
+    ShowToast(
         ToastData(
             message = message,
             type = ToastType.DEFAULT,

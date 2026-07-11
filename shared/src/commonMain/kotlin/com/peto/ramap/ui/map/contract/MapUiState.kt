@@ -38,10 +38,6 @@ data class MapUiState(
      */
     val bounds: MapBounds = DefaultMapConfig.bounds,
     /**
-     * 클러스터링 또는 매장 조회에 사용할 지도 영역.
-     */
-    val clusterBounds: MapBounds = DefaultMapConfig.bounds,
-    /**
      * 마지막으로 확인된 사용자 위치.
      */
     val currentLocation: Location? = null,

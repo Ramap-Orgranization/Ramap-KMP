@@ -12,7 +12,7 @@ import androidx.compose.ui.unit.LayoutDirection
 import com.peto.ramap.extension.toPx
 
 /**
- * Compose resource로 제공되는 매장 마커 Painter를 KakaoMap label style에 사용할 Bitmap으로 변환한다.
+ * Compose resource로 제공되는 매장 마커 Painter를 지도 SDK에서 사용할 Bitmap으로 변환한다.
  */
 internal class RamenShopMarkerBitmapFactory {
     fun create(
