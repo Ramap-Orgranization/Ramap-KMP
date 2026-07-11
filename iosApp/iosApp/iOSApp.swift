@@ -1,6 +1,6 @@
 import SwiftUI
 import Shared
-import KakaoMapsSDK
+import NMapsMap
 import KakaoSDKAuth
 import KakaoSDKCommon
 import KakaoSDKUser
@@ -9,7 +9,7 @@ import KakaoSDKUser
 struct iOSApp: App {
     init() {
         UnhandledExceptionLoggerKt.installUnhandledExceptionLogger()
-        SDKInitializer.InitSDK(appKey: RamapAppConfig.shared.kakaoNativeAppKey)
+        NMFAuthManager.shared().ncpKeyId = RamapAppConfig.shared.naverMapNcpKeyId
         KakaoSDK.initSDK(appKey: RamapAppConfig.shared.kakaoNativeAppKey)
         KoinInitializerKt.doInitKoin(appDeclaration: { _ in })
         NotificationCenter.default.addObserver(
@@ -37,9 +37,6 @@ struct iOSApp: App {
         WindowGroup {
             ContentView()
                 .onOpenURL { url in
-                    if AuthApi.isKakaoTalkLoginUrl(url) {
-                        _ = AuthController.handleOpenUrl(url: url)
-                    }
                     AuthDeepLinkHandlerKt.handleAuthDeepLink(url: url)
                 }
         }

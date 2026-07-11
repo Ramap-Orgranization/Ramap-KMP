@@ -3,6 +3,7 @@ package com.peto.ramap.ui.login
 import com.peto.ramap.core.base.BaseViewModel
 import com.peto.ramap.domain.model.LoginType
 import com.peto.ramap.domain.repository.LoginRepository
+import com.peto.ramap.ui.login.contract.ClickLogin
 import com.peto.ramap.ui.login.contract.LoginIntent
 import com.peto.ramap.ui.login.contract.LoginSideEffect
 import com.peto.ramap.ui.login.contract.LoginUiState
@@ -12,7 +13,7 @@ class LoginViewModel(
 ) : BaseViewModel<LoginUiState, LoginIntent, LoginSideEffect>(initialState = LoginUiState()) {
     override suspend fun handleIntent(intent: LoginIntent) {
         when (intent) {
-            is LoginIntent.ClickLogin -> signIn(intent.type)
+            is ClickLogin -> signIn(intent.type)
         }
     }
 

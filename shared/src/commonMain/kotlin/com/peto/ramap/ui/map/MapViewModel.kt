@@ -2,7 +2,6 @@ package com.peto.ramap.ui.map
 
 import androidx.lifecycle.viewModelScope
 import com.peto.ramap.core.base.BaseViewModel
-import com.peto.ramap.core.config.MarkerClusterConfig
 import com.peto.ramap.designsystem.toast.model.ToastAction
 import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
@@ -26,6 +25,26 @@ import com.peto.ramap.network.NaverReverseGeocoder
 import com.peto.ramap.ui.map.contract.MapIntent
 import com.peto.ramap.ui.map.contract.MapSideEffect
 import com.peto.ramap.ui.map.contract.MapUiState
+import com.peto.ramap.ui.map.contract.OnAccountDeleteConfirmed
+import com.peto.ramap.ui.map.contract.OnBookmarkToggled
+import com.peto.ramap.ui.map.contract.OnBoundsChanged
+import com.peto.ramap.ui.map.contract.OnCategoryFilterToggled
+import com.peto.ramap.ui.map.contract.OnCurrentLocationReportSubmitted
+import com.peto.ramap.ui.map.contract.OnFilterCleared
+import com.peto.ramap.ui.map.contract.OnHiddenToggled
+import com.peto.ramap.ui.map.contract.OnKakaoLoginClicked
+import com.peto.ramap.ui.map.contract.OnLocationPermissionBlocked
+import com.peto.ramap.ui.map.contract.OnLogoutClicked
+import com.peto.ramap.ui.map.contract.OnMyLocationChanged
+import com.peto.ramap.ui.map.contract.OnPersonalizationViewChanged
+import com.peto.ramap.ui.map.contract.OnQueryChanged
+import com.peto.ramap.ui.map.contract.OnSearchResultsDismissed
+import com.peto.ramap.ui.map.contract.OnShopDetailDismissed
+import com.peto.ramap.ui.map.contract.OnShopReportSubmitted
+import com.peto.ramap.ui.map.contract.OnShopSelected
+import com.peto.ramap.ui.map.contract.OnUnregisteredPlaceReportSubmitted
+import com.peto.ramap.ui.map.contract.ShowLoginGuide
+import com.peto.ramap.ui.map.contract.ShowToast
 import com.peto.ramap.ui.map.model.MapPersonalization
 import com.peto.ramap.ui.map.model.SearchUiState
 import io.github.jan.supabase.auth.status.SessionStatus
@@ -71,32 +90,32 @@ class MapViewModel(
 
     override suspend fun handleIntent(intent: MapIntent) {
         when (intent) {
-            is MapIntent.OnBoundsChanged -> scheduleRamenShopsLoad(intent.bounds)
-            is MapIntent.OnMyLocationChanged -> updateMyLocation(intent.location)
-            is MapIntent.OnShopSelected -> selectShop(intent.shop)
-            is MapIntent.OnShopDetailDismissed -> dismissShopDetail()
-            is MapIntent.OnSearchResultsDismissed -> dismissSearchResults()
-            is MapIntent.OnQueryChanged -> updateQuery(intent.query)
-            is MapIntent.OnCategoryFilterToggled -> toggleCategoryFilter(intent.category)
-            is MapIntent.OnFilterCleared -> clearFilter()
-            is MapIntent.OnBookmarkToggled -> toggleBookmark(intent.shop)
-            is MapIntent.OnHiddenToggled -> toggleHidden(intent.shop)
-            is MapIntent.OnShopReportSubmitted ->
+            is OnBoundsChanged -> scheduleRamenShopsLoad(intent.bounds)
+            is OnMyLocationChanged -> updateMyLocation(intent.location)
+            is OnShopSelected -> selectShop(intent.shop)
+            is OnShopDetailDismissed -> dismissShopDetail()
+            is OnSearchResultsDismissed -> dismissSearchResults()
+            is OnQueryChanged -> updateQuery(intent.query)
+            is OnCategoryFilterToggled -> toggleCategoryFilter(intent.category)
+            is OnFilterCleared -> clearFilter()
+            is OnBookmarkToggled -> toggleBookmark(intent.shop)
+            is OnHiddenToggled -> toggleHidden(intent.shop)
+            is OnShopReportSubmitted ->
                 submitShopInformationReport(
                     wrongFields = intent.wrongFields,
                     description = intent.description,
                 )
 
-            is MapIntent.OnUnregisteredPlaceReportSubmitted ->
+            is OnUnregisteredPlaceReportSubmitted ->
                 submitUnregisteredPlaceReport(intent.placeUrl)
 
-            MapIntent.OnCurrentLocationReportSubmitted -> submitCurrentLocationReport()
+            OnCurrentLocationReportSubmitted -> submitCurrentLocationReport()
 
-            is MapIntent.OnPersonalizationViewChanged -> changePersonalizationView(intent.view)
-            MapIntent.OnKakaoLoginClicked -> signInWithKakao()
-            MapIntent.OnLogoutClicked -> signOut()
-            MapIntent.OnAccountDeleteConfirmed -> deleteAccount()
-            MapIntent.OnLocationPermissionBlocked -> showLocationPermissionBlockedToast()
+            is OnPersonalizationViewChanged -> changePersonalizationView(intent.view)
+            OnKakaoLoginClicked -> signInWithKakao()
+            OnLogoutClicked -> signOut()
+            OnAccountDeleteConfirmed -> deleteAccount()
+            OnLocationPermissionBlocked -> showLocationPermissionBlockedToast()
         }
     }
 
@@ -227,7 +246,7 @@ class MapViewModel(
 
     private fun toggleBookmark(shop: RamenShop) {
         if (!currentState.isLoggedIn) {
-            runTask { postSideEffect(MapSideEffect.ShowLoginGuide) }
+            runTask { postSideEffect(ShowLoginGuide) }
             return
         }
 
@@ -276,7 +295,7 @@ class MapViewModel(
 
     private fun toggleHidden(shop: RamenShop) {
         if (!currentState.isLoggedIn) {
-            runTask { postSideEffect(MapSideEffect.ShowLoginGuide) }
+            runTask { postSideEffect(ShowLoginGuide) }
             return
         }
 
@@ -382,7 +401,7 @@ class MapViewModel(
 
     private fun changePersonalizationView(view: MapPersonalization) {
         if (!currentState.isLoggedIn && view != MapPersonalization.ALL) {
-            runTask { postSideEffect(MapSideEffect.ShowLoginGuide) }
+            runTask { postSideEffect(ShowLoginGuide) }
             return
         }
 
@@ -421,7 +440,7 @@ class MapViewModel(
                 )
             }.onSuccess {
                 postSideEffect(
-                    MapSideEffect.ShowToast(
+                    ShowToast(
                         ToastData(
                             message = Res.string.shop_information_report_success_message,
                             type = ToastType.DEFAULT,
@@ -476,7 +495,7 @@ class MapViewModel(
             reportRepository.submit(report)
         }.onSuccess {
             postSideEffect(
-                MapSideEffect.ShowToast(
+                ShowToast(
                     ToastData(
                         message = Res.string.place_report_success_message,
                         type = ToastType.DEFAULT,
@@ -598,7 +617,7 @@ class MapViewModel(
     ) {
         viewModelScope.launch {
             postSideEffect(
-                MapSideEffect.ShowToast(
+                ShowToast(
                     ToastData(
                         message = messageResource,
                         type = type,
@@ -611,7 +630,7 @@ class MapViewModel(
     private fun showLocationPermissionBlockedToast() {
         runTask {
             postSideEffect(
-                MapSideEffect.ShowToast(
+                ShowToast(
                     ToastData(
                         message = Res.string.location_permission_enable_message,
                         type = ToastType.DEFAULT,
@@ -655,20 +674,7 @@ class MapViewModel(
      */
     private fun scheduleRamenShopsLoad(bounds: MapBounds) {
         reduce {
-            copy(
-                bounds = bounds,
-                clusterBounds =
-                    if (
-                        bounds.hasMeaningfulZoomChangeFrom(
-                            other = clusterBounds,
-                            zoomShiftRatio = MarkerClusterConfig.ZOOM_SHIFT_RATIO,
-                        )
-                    ) {
-                        bounds
-                    } else {
-                        clusterBounds
-                    },
-            )
+            copy(bounds = bounds)
         }
 
         boundsLoadJob?.cancel()

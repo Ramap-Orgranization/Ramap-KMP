@@ -23,7 +23,7 @@ import com.peto.ramap.domain.model.LoginType
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.ui.login.component.LoginButton
-import com.peto.ramap.ui.login.contract.LoginIntent
+import com.peto.ramap.ui.login.contract.ClickLogin
 import com.peto.ramap.ui.login.contract.LoginSideEffect
 import com.peto.ramap.ui.login.contract.LoginUiState
 import kotlinx.coroutines.flow.collectLatest
@@ -47,7 +47,7 @@ fun LoginRoute(
     LoginScreen(
         uiState = uiState,
         onClickLogin = { type ->
-            viewModel.dispatch(LoginIntent.ClickLogin(type))
+            viewModel.dispatch(ClickLogin(type))
         },
     )
 }

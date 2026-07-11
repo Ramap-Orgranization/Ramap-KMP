@@ -1,6 +1,5 @@
 PODS:
   - Alamofire (5.9.1)
-  - KakaoMapsSDK (2.12.14)
   - KakaoSDKAuth (2.22.7):
     - KakaoSDKCommon (= 2.22.7)
   - KakaoSDKCommon (2.22.7):
@@ -12,9 +11,11 @@ PODS:
     - KakaoSDKCommon/Common (= 2.22.7)
   - KakaoSDKUser (2.22.7):
     - KakaoSDKAuth (= 2.22.7)
+  - NMapsGeometry (1.0.2)
+  - NMapsMap (3.23.3):
+    - NMapsGeometry
   - shared (1.0.0):
-    - KakaoMapsSDK (= 2.12.14)
-    - KakaoSDKUser (= 2.22.7)
+    - NMapsMap
 
 DEPENDENCIES:
   - KakaoSDKUser (= 2.22.7)
@@ -23,10 +24,11 @@ DEPENDENCIES:
 SPEC REPOS:
   trunk:
     - Alamofire
-    - KakaoMapsSDK
     - KakaoSDKAuth
     - KakaoSDKCommon
     - KakaoSDKUser
+    - NMapsGeometry
+    - NMapsMap
 
 EXTERNAL SOURCES:
   shared:
@@ -34,11 +36,12 @@ EXTERNAL SOURCES:
 
 SPEC CHECKSUMS:
   Alamofire: f36a35757af4587d8e4f4bfa223ad10be2422b8c
-  KakaoMapsSDK: 047759200ac9e14254fc2227269006bf056253b7
   KakaoSDKAuth: 45204252ff7c379c0f86c5573f97ec36885afca0
   KakaoSDKCommon: 132164a6bac8bcd3a4346d3bf777f34f8f39fdca
   KakaoSDKUser: 4c9cf1da78710d19d0b2c2dd32d1a44c544cdfa4
-  shared: 860153ce3918b7ce6f1f5bfae9227ba80295de5b
+  NMapsGeometry: 4e02554fa9880ef02ed96b075dc84355d6352479
+  NMapsMap: 7d479b7b7141b1559b77c72c2553117ecd933d84
+  shared: 41f3d158013f88b4c28195e02a1b6a481b1001ee
 
 PODFILE CHECKSUM: 6b77ec6083ff9ce77b05aeffcb970bb315490632
 
