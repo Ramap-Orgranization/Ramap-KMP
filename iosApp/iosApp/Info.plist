@@ -2,6 +2,8 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>CFBundleDisplayName</key>
+	<string>라맵</string>
 	<!--
 		Info.plist는 iOS 앱의 설정 파일이며, AndroidManifest.xml과 비슷한 역할을 합니다.
 		iOS에서는 위치, 카메라, 사진, 마이크 같은 민감 권한을 요청하기 전에
