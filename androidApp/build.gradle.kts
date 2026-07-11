@@ -16,6 +16,23 @@ val kakaoNativeAppKey =
         .orNull
         ?: localProperties.getProperty("kakao_native_app_key").orEmpty()
 
+fun releaseProperty(
+    localName: String,
+    envName: String,
+): String? =
+    providers
+        .gradleProperty(localName)
+        .orElse(providers.environmentVariable(envName))
+        .orNull
+        ?: localProperties.getProperty(localName)
+
+val releaseStoreFile = releaseProperty("release.store.file", "RELEASE_STORE_FILE")
+val releaseStorePassword = releaseProperty("release.store.password", "RELEASE_STORE_PASSWORD")
+val releaseKeyAlias = releaseProperty("release.key.alias", "RELEASE_KEY_ALIAS")
+val releaseKeyPassword = releaseProperty("release.key.password", "RELEASE_KEY_PASSWORD")
+val hasReleaseSigning =
+    listOf(releaseStoreFile, releaseStorePassword, releaseKeyAlias, releaseKeyPassword).all { !it.isNullOrBlank() }
+
 plugins {
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.composeMultiplatform)
@@ -58,7 +75,7 @@ android {
                 .get()
                 .toInt()
         versionCode = 1
-        versionName = "1.0"
+        versionName = "1.0.0"
         manifestPlaceholders["KAKAO_NATIVE_APP_KEY"] = kakaoNativeAppKey
     }
     packaging {
@@ -66,9 +83,20 @@ android {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
+    signingConfigs {
+        if (hasReleaseSigning) {
+            create("release") {
+                storeFile = rootProject.file(requireNotNull(releaseStoreFile))
+                storePassword = releaseStorePassword
+                keyAlias = releaseKeyAlias
+                keyPassword = releaseKeyPassword
+            }
+        }
+    }
     buildTypes {
         getByName("release") {
             isMinifyEnabled = false
+            signingConfig = signingConfigs.findByName("release")
         }
     }
     compileOptions {
