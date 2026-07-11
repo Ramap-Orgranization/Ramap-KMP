@@ -180,8 +180,8 @@ private fun rememberMarkerBitmap(): Bitmap {
         RamenShopMarkerBitmapFactory().create(
             painter = painter,
             density = density,
-            width = MarkerConfig.Single.WIDTH,
-            height = MarkerConfig.Single.HEIGHT,
+            width = MarkerConfig.WIDTH,
+            height = MarkerConfig.HEIGHT,
         )
     }
 }
