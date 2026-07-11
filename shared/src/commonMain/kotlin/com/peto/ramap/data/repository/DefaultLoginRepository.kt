@@ -5,6 +5,7 @@ import com.peto.ramap.domain.repository.LoginRepository
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.status.SessionStatus
+import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.flow.StateFlow
 
 /**
@@ -47,5 +48,14 @@ class DefaultLoginRepository(
 
     override suspend fun signOut() {
         supabaseClient.auth.signOut()
+    }
+
+    override suspend fun deleteAccount() {
+        supabaseClient.postgrest.rpc(DELETE_CURRENT_USER_RPC)
+        supabaseClient.auth.signOut()
+    }
+
+    private companion object {
+        const val DELETE_CURRENT_USER_RPC = "delete_current_user"
     }
 }

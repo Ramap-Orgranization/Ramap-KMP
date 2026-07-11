@@ -66,6 +66,7 @@ data class MapUiState(
      * 계정 영역에 표시할 사용자 식별 라벨.
      */
     val accountLabel: String? = null,
+    val isDeletingAccount: Boolean = false,
 ) : State {
     /**
      * 검색 결과 리스트 바텀시트에 표시할 매장 목록.

@@ -35,7 +35,8 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.StringResource
 import ramap.shared.generated.resources.Res
-import ramap.shared.generated.resources.account_delete_unavailable_message
+import ramap.shared.generated.resources.account_delete_failure_message
+import ramap.shared.generated.resources.account_delete_success_message
 import ramap.shared.generated.resources.filter_empty_visible_result_message
 import ramap.shared.generated.resources.hidden_shop_search_result_message
 import ramap.shared.generated.resources.kakao_login_failure_message
@@ -94,7 +95,7 @@ class MapViewModel(
             is MapIntent.OnPersonalizationViewChanged -> changePersonalizationView(intent.view)
             MapIntent.OnKakaoLoginClicked -> signInWithKakao()
             MapIntent.OnLogoutClicked -> signOut()
-            MapIntent.OnAccountDeleteClicked -> showToast(Res.string.account_delete_unavailable_message)
+            MapIntent.OnAccountDeleteConfirmed -> deleteAccount()
             MapIntent.OnLocationPermissionBlocked -> showLocationPermissionBlockedToast()
         }
     }
@@ -113,6 +114,7 @@ class MapViewModel(
             copy(
                 isLoggedIn = isAuthenticated,
                 accountLabel = if (isAuthenticated) loginRepository.currentUserEmail() else null,
+                isDeletingAccount = if (isAuthenticated) isDeletingAccount else false,
                 bookmarkedShopIds = if (isAuthenticated) bookmarkedShopIds else emptySet(),
                 hiddenShopIds = if (isAuthenticated) hiddenShopIds else emptySet(),
                 personalizationView =
@@ -498,6 +500,19 @@ class MapViewModel(
     private fun signOut() {
         runTask {
             loginRepository.signOut()
+        }
+    }
+
+    private fun deleteAccount() {
+        if (currentState.isDeletingAccount) return
+        runTask {
+            reduce { copy(isDeletingAccount = true) }
+            runCatching { loginRepository.deleteAccount() }
+                .onSuccess { showToast(Res.string.account_delete_success_message, ToastType.SUCCESS) }
+                .onFailure {
+                    reduce { copy(isDeletingAccount = false) }
+                    showToast(Res.string.account_delete_failure_message, ToastType.ERROR)
+                }
         }
     }
 
