@@ -25,7 +25,6 @@ import com.peto.ramap.fake.FakeShopWaitingSystemRepository
 import com.peto.ramap.fixture.BOUNDS_FIXTURE
 import com.peto.ramap.fixture.ramenShopFixture
 import com.peto.ramap.fixture.waitingSystemFixture
-import com.peto.ramap.ui.map.contract.*
 import com.peto.ramap.ui.map.contract.MapUiState
 import com.peto.ramap.ui.map.contract.SearchResultGuide
 import com.peto.ramap.ui.map.model.MapPersonalization
