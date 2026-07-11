@@ -9,6 +9,7 @@ import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.Category
 import com.peto.ramap.domain.model.Location
 import com.peto.ramap.domain.model.MapBounds
+import com.peto.ramap.domain.model.PlaceReportTextParser
 import com.peto.ramap.domain.model.RamenShop
 import com.peto.ramap.domain.model.RamenShopFilter
 import com.peto.ramap.domain.model.RamenShops
@@ -16,7 +17,6 @@ import com.peto.ramap.domain.model.SearchQuery
 import com.peto.ramap.domain.model.ShopInformationField
 import com.peto.ramap.domain.model.ShopInformationReport
 import com.peto.ramap.domain.model.UnregisteredPlaceReport
-import com.peto.ramap.domain.model.PlaceReportTextParser
 import com.peto.ramap.domain.repository.LoginRepository
 import com.peto.ramap.domain.repository.PersonalizationRepository
 import com.peto.ramap.domain.repository.RamenShopRepository

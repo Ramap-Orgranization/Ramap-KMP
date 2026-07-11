@@ -59,10 +59,9 @@ import com.peto.ramap.designsystem.toast.ToastManager
 import com.peto.ramap.domain.model.Category
 import com.peto.ramap.domain.model.Location
 import com.peto.ramap.domain.model.MapBounds
+import com.peto.ramap.domain.model.PlaceReportTextParser
 import com.peto.ramap.domain.model.RamenShop
 import com.peto.ramap.domain.model.ShopInformationField
-import com.peto.ramap.domain.model.UnregisteredPlaceReport
-import com.peto.ramap.domain.model.PlaceReportTextParser
 import com.peto.ramap.platform.AppSettingsOpener
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.CommonColor
