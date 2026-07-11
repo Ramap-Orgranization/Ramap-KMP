@@ -83,6 +83,10 @@ import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 import ramap.shared.generated.resources.Res
+import ramap.shared.generated.resources.account_delete_confirm_action
+import ramap.shared.generated.resources.account_delete_confirm_description
+import ramap.shared.generated.resources.account_delete_confirm_dismiss
+import ramap.shared.generated.resources.account_delete_confirm_title
 import ramap.shared.generated.resources.account_delete_menu
 import ramap.shared.generated.resources.hide_shop_confirm_action
 import ramap.shared.generated.resources.hide_shop_confirm_description
@@ -200,7 +204,7 @@ fun MapRoute(
             viewModel.dispatch(MapIntent.OnLogoutClicked)
         },
         onAccountDeleteClick = {
-            viewModel.dispatch(MapIntent.OnAccountDeleteClicked)
+            viewModel.dispatch(MapIntent.OnAccountDeleteConfirmed)
         },
     )
 }
@@ -236,6 +240,7 @@ private fun MapScreen(
     var wasImeVisible by remember { mutableStateOf(false) }
     var myLocationRequestKey by remember { mutableStateOf(0) }
     var hideConfirmShop by remember { mutableStateOf<RamenShop?>(null) }
+    var showAccountDeleteConfirmDialog by remember { mutableStateOf(false) }
     var showReportDialog by remember(selectedShop?.id) { mutableStateOf(false) }
     var showPlaceReportDialog by remember { mutableStateOf(false) }
     var showLocationReportConfirmDialog by remember { mutableStateOf(false) }
@@ -354,7 +359,7 @@ private fun MapScreen(
                 )
             },
             onLogoutClick = onLogoutClick,
-            onAccountDeleteClick = onAccountDeleteClick,
+            onAccountDeleteClick = { showAccountDeleteConfirmDialog = true },
             onPlaceReportClick = { showPlaceReportDialog = true },
             onLocationReportClick = {
                 isLocationReportPending = true
@@ -469,6 +474,34 @@ private fun MapScreen(
                 hideConfirmShop = null
             },
             onDismiss = { hideConfirmShop = null },
+        )
+
+        CommonDialog(
+            visible = showAccountDeleteConfirmDialog,
+            confirmText = stringResource(Res.string.account_delete_confirm_action),
+            dismissText = stringResource(Res.string.account_delete_confirm_dismiss),
+            confirmEnabled = !uiState.isDeletingAccount,
+            onDismissRequest = { showAccountDeleteConfirmDialog = false },
+            content = {
+                AppText(
+                    text = stringResource(Res.string.account_delete_confirm_title),
+                    style = AppTextStyle.T1,
+                    color = GrayColor.C500,
+                    textAlign = TextAlign.Center,
+                )
+                AppText(
+                    text = stringResource(Res.string.account_delete_confirm_description),
+                    modifier = Modifier.padding(top = 8.dp),
+                    style = AppTextStyle.B2,
+                    color = GrayColor.C400,
+                    textAlign = TextAlign.Center,
+                )
+            },
+            onConfirm = {
+                showAccountDeleteConfirmDialog = false
+                onAccountDeleteClick()
+            },
+            onDismiss = { showAccountDeleteConfirmDialog = false },
         )
 
         selectedShop?.takeIf { showReportDialog }?.let { shop ->

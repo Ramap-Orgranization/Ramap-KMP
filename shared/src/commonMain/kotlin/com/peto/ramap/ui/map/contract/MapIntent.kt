@@ -62,7 +62,7 @@ sealed interface MapIntent : Intent {
 
     data object OnLogoutClicked : MapIntent
 
-    data object OnAccountDeleteClicked : MapIntent
+    data object OnAccountDeleteConfirmed : MapIntent
 
     data object OnLocationPermissionBlocked : MapIntent
 }

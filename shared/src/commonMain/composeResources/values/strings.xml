@@ -76,9 +76,15 @@
     <string name="hide_shop_confirm_description">숨기면 지도와 좋아요 목록에서 보이지 않아요.</string>
     <string name="hide_shop_confirm_action">숨김 처리</string>
     <string name="hide_shop_confirm_dismiss">취소</string>
-    <string name="account_delete_unavailable_message">계정 삭제는 준비 중입니다</string>
+    <string name="account_delete_confirm_title">계정을 탈퇴하시겠습니까?</string>
+    <string name="account_delete_confirm_description">탈퇴하면 계정 정보와 개인화 데이터가 삭제되며 복구할 수 없습니다.</string>
+    <string name="account_delete_confirm_action">탈퇴하기</string>
+    <string name="account_delete_confirm_dismiss">취소</string>
+    <string name="account_delete_success_message">계정 탈퇴가 완료되었습니다</string>
+    <string name="account_delete_failure_message">계정 탈퇴에 실패했습니다</string>
     <string name="hidden_shop_search_result_message">숨김 처리된 매장이에요</string>
     <string name="location_permission_settings_action">설정</string>
     <string name="location_permission_enable_message">위치 권한을 활성화해주세요</string>
     <string name="kakao_login_button_title">카카오로 시작하기</string>
+    <string name="kakao_login_failure_message">카카오 로그인에 실패했습니다. 잠시 후 다시 시도해 주세요.</string>
 </resources>

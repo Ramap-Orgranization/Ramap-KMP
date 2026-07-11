@@ -7,8 +7,19 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
+import com.peto.ramap.data.auth.KakaoLoginActivityProvider
 
 class MainActivity : ComponentActivity() {
+    override fun onResume() {
+        super.onResume()
+        KakaoLoginActivityProvider.attach(this)
+    }
+
+    override fun onPause() {
+        KakaoLoginActivityProvider.detach(this)
+        super.onPause()
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)

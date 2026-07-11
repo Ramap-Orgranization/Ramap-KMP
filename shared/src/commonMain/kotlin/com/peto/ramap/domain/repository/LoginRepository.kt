@@ -15,4 +15,6 @@ interface LoginRepository {
     suspend fun signInWithKakao()
 
     suspend fun signOut()
+
+    suspend fun deleteAccount()
 }

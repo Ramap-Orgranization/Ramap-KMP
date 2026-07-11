@@ -24,7 +24,7 @@ import org.koin.dsl.module
 val repositoryModule =
     module {
         single<LoginRepository> {
-            DefaultLoginRepository(get())
+            DefaultLoginRepository(get(), get())
         }
         single<RamenShopRepository> {
             DefaultRamenShopRepository(get<RamenShopDataSource>())
