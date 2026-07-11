@@ -3,5 +3,6 @@ platform :ios, '13.0'
 target 'iosApp' do
   use_frameworks!
 
+  pod 'KakaoSDKUser', '2.22.7'
   pod 'shared', :path => '../shared'
 end
