@@ -25,3 +25,4 @@ node_modules/
 iosApp/Pods/
 docs/
 AGENTS.md
+.scratch/
