@@ -82,9 +82,7 @@ kotlin {
             isStatic = true
         }
 
-        pod("KakaoMapsSDK") {
-            version = "2.12.14"
-        }
+        pod("NMapsMap")
     }
 
     listOf(

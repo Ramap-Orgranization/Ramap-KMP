@@ -1,12 +1,12 @@
 import SwiftUI
 import Shared
-import KakaoMapsSDK
+import NMapsMap
 
 @main
 struct iOSApp: App {
     init() {
         UnhandledExceptionLoggerKt.installUnhandledExceptionLogger()
-        SDKInitializer.InitSDK(appKey: RamapAppConfig.shared.kakaoNativeAppKey)
+        NMFAuthManager.shared().ncpKeyId = RamapAppConfig.shared.naverMapNcpKeyId
         KoinInitializerKt.doInitKoin(appDeclaration: { _ in })
     }
 
