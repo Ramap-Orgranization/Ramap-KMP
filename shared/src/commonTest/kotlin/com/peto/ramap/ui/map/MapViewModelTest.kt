@@ -41,8 +41,8 @@ import org.jetbrains.compose.resources.StringResource
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.filter_empty_visible_result_message
 import ramap.shared.generated.resources.hidden_shop_search_result_message
-import ramap.shared.generated.resources.place_report_invalid_url_message
 import ramap.shared.generated.resources.place_report_existing_shop_message
+import ramap.shared.generated.resources.place_report_invalid_url_message
 import ramap.shared.generated.resources.place_report_location_unavailable_message
 import ramap.shared.generated.resources.place_report_success_message
 import ramap.shared.generated.resources.shop_information_report_failure_message
@@ -400,10 +400,11 @@ class MapViewModelTest {
             val ramenShopRepository =
                 FakeRamenShopRepository(searchResult = RamenShops(mapOf(shop.id to shop)))
             val viewModel = mapViewModel(ramenShopRepository, shopReportRepository = reportRepository)
-            val content = """[카카오맵] 신멘
+            val content =
+                """[카카오맵] 신멘
                 |경기 안양시 동안구 호성로 20
                 |https://kko.to/example
-            """.trimMargin()
+                """.trimMargin()
 
             viewModel.sideEffect.test {
                 viewModel.dispatch(MapIntent.OnUnregisteredPlaceReportSubmitted(content))
