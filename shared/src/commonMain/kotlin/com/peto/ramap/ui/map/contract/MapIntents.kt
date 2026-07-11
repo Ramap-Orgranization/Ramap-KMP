@@ -46,6 +46,12 @@ data class OnShopReportSubmitted(
     val description: String,
 ) : MapIntent
 
+data class OnUnregisteredPlaceReportSubmitted(
+    val placeUrl: String,
+) : MapIntent
+
+data object OnCurrentLocationReportSubmitted : MapIntent
+
 data class OnPersonalizationViewChanged(
     val view: MapPersonalization,
 ) : MapIntent
@@ -54,6 +60,6 @@ data object OnKakaoLoginClicked : MapIntent
 
 data object OnLogoutClicked : MapIntent
 
-data object OnAccountDeleteClicked : MapIntent
+data object OnAccountDeleteConfirmed : MapIntent
 
 data object OnLocationPermissionBlocked : MapIntent

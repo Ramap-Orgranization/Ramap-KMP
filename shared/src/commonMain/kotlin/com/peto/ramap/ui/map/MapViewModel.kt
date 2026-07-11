@@ -8,24 +8,28 @@ import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.Category
 import com.peto.ramap.domain.model.Location
 import com.peto.ramap.domain.model.MapBounds
+import com.peto.ramap.domain.model.PlaceReportTextParser
 import com.peto.ramap.domain.model.RamenShop
 import com.peto.ramap.domain.model.RamenShopFilter
 import com.peto.ramap.domain.model.RamenShops
 import com.peto.ramap.domain.model.SearchQuery
 import com.peto.ramap.domain.model.ShopInformationField
 import com.peto.ramap.domain.model.ShopInformationReport
+import com.peto.ramap.domain.model.UnregisteredPlaceReport
 import com.peto.ramap.domain.repository.LoginRepository
 import com.peto.ramap.domain.repository.PersonalizationRepository
 import com.peto.ramap.domain.repository.RamenShopRepository
 import com.peto.ramap.domain.repository.ShopReportRepository
 import com.peto.ramap.domain.repository.ShopWaitingSystemRepository
+import com.peto.ramap.network.NaverReverseGeocoder
 import com.peto.ramap.ui.map.contract.MapIntent
 import com.peto.ramap.ui.map.contract.MapSideEffect
 import com.peto.ramap.ui.map.contract.MapUiState
-import com.peto.ramap.ui.map.contract.OnAccountDeleteClicked
+import com.peto.ramap.ui.map.contract.OnAccountDeleteConfirmed
 import com.peto.ramap.ui.map.contract.OnBookmarkToggled
 import com.peto.ramap.ui.map.contract.OnBoundsChanged
 import com.peto.ramap.ui.map.contract.OnCategoryFilterToggled
+import com.peto.ramap.ui.map.contract.OnCurrentLocationReportSubmitted
 import com.peto.ramap.ui.map.contract.OnFilterCleared
 import com.peto.ramap.ui.map.contract.OnHiddenToggled
 import com.peto.ramap.ui.map.contract.OnKakaoLoginClicked
@@ -38,6 +42,7 @@ import com.peto.ramap.ui.map.contract.OnSearchResultsDismissed
 import com.peto.ramap.ui.map.contract.OnShopDetailDismissed
 import com.peto.ramap.ui.map.contract.OnShopReportSubmitted
 import com.peto.ramap.ui.map.contract.OnShopSelected
+import com.peto.ramap.ui.map.contract.OnUnregisteredPlaceReportSubmitted
 import com.peto.ramap.ui.map.contract.ShowLoginGuide
 import com.peto.ramap.ui.map.contract.ShowToast
 import com.peto.ramap.ui.map.model.MapPersonalization
@@ -49,11 +54,18 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.StringResource
 import ramap.shared.generated.resources.Res
-import ramap.shared.generated.resources.account_delete_unavailable_message
+import ramap.shared.generated.resources.account_delete_failure_message
+import ramap.shared.generated.resources.account_delete_success_message
 import ramap.shared.generated.resources.filter_empty_visible_result_message
 import ramap.shared.generated.resources.hidden_shop_search_result_message
+import ramap.shared.generated.resources.kakao_login_failure_message
 import ramap.shared.generated.resources.location_permission_enable_message
 import ramap.shared.generated.resources.location_permission_settings_action
+import ramap.shared.generated.resources.place_report_existing_shop_message
+import ramap.shared.generated.resources.place_report_failure_message
+import ramap.shared.generated.resources.place_report_invalid_url_message
+import ramap.shared.generated.resources.place_report_location_unavailable_message
+import ramap.shared.generated.resources.place_report_success_message
 import ramap.shared.generated.resources.shop_information_report_failure_message
 import ramap.shared.generated.resources.shop_information_report_success_message
 import kotlin.time.Duration.Companion.milliseconds
@@ -64,6 +76,7 @@ class MapViewModel(
     private val personalizationRepository: PersonalizationRepository,
     private val reportRepository: ShopReportRepository,
     private val loginRepository: LoginRepository,
+    private val reverseGeocoder: NaverReverseGeocoder? = null,
 ) : BaseViewModel<MapUiState, MapIntent, MapSideEffect>(initialState = MapUiState()) {
     private var boundsLoadJob: Job? = null
     private var boundsLoadRequestId = 0L
@@ -93,10 +106,15 @@ class MapViewModel(
                     description = intent.description,
                 )
 
+            is OnUnregisteredPlaceReportSubmitted ->
+                submitUnregisteredPlaceReport(intent.placeUrl)
+
+            OnCurrentLocationReportSubmitted -> submitCurrentLocationReport()
+
             is OnPersonalizationViewChanged -> changePersonalizationView(intent.view)
             OnKakaoLoginClicked -> signInWithKakao()
             OnLogoutClicked -> signOut()
-            OnAccountDeleteClicked -> showToast(Res.string.account_delete_unavailable_message)
+            OnAccountDeleteConfirmed -> deleteAccount()
             OnLocationPermissionBlocked -> showLocationPermissionBlockedToast()
         }
     }
@@ -115,6 +133,7 @@ class MapViewModel(
             copy(
                 isLoggedIn = isAuthenticated,
                 accountLabel = if (isAuthenticated) loginRepository.currentUserEmail() else null,
+                isDeletingAccount = if (isAuthenticated) isDeletingAccount else false,
                 bookmarkedShopIds = if (isAuthenticated) bookmarkedShopIds else emptySet(),
                 hiddenShopIds = if (isAuthenticated) hiddenShopIds else emptySet(),
                 personalizationView =
@@ -143,7 +162,20 @@ class MapViewModel(
     }
 
     private fun updateMyLocation(location: Location) {
-        reduce { copy(currentLocation = location) }
+        reduce {
+            copy(
+                currentLocation = location,
+                currentAddress = null,
+            )
+        }
+        requestAddress(location)
+    }
+
+    private fun requestAddress(location: Location) {
+        runTask {
+            val address = runCatching { reverseGeocoder?.address(location) }.getOrNull()
+            reduce { copy(currentAddress = address) }
+        }
     }
 
     private fun dismissSearchResults() {
@@ -421,15 +453,85 @@ class MapViewModel(
         }
     }
 
+    private fun submitUnregisteredPlaceReport(placeUrl: String) {
+        val extractedPlaceUrl = PlaceReportTextParser.extractSupportedUrl(placeUrl)
+        if (extractedPlaceUrl == null) {
+            showToast(Res.string.place_report_invalid_url_message, ToastType.ERROR)
+            return
+        }
+
+        runTask {
+            val loadedShop = currentState.shops.values.firstOrNull { PlaceReportTextParser.matchesSharedPlace(placeUrl, it) }
+            val existingShop =
+                loadedShop ?: PlaceReportTextParser.extractSharedPlaceName(placeUrl)?.let { placeName ->
+                    ramenShopRepository
+                        .searchRamenShops(SearchQuery(placeName), SEARCH_RESULT_LIMIT)
+                        .values
+                        .firstOrNull { PlaceReportTextParser.matchesSharedPlace(placeUrl, it) }
+                }
+
+            if (existingShop != null) {
+                showToast(Res.string.place_report_existing_shop_message, ToastType.DEFAULT)
+            } else {
+                submitUnregisteredPlaceReport(UnregisteredPlaceReport(placeUrl = extractedPlaceUrl))
+            }
+        }
+    }
+
+    private fun submitCurrentLocationReport() {
+        val location = currentState.currentLocation
+        if (location == null) {
+            showToast(Res.string.place_report_location_unavailable_message, ToastType.ERROR)
+            return
+        }
+
+        runTask {
+            submitUnregisteredPlaceReport(UnregisteredPlaceReport(location = location))
+        }
+    }
+
+    private suspend fun submitUnregisteredPlaceReport(report: UnregisteredPlaceReport) {
+        runCatching {
+            reportRepository.submit(report)
+        }.onSuccess {
+            postSideEffect(
+                ShowToast(
+                    ToastData(
+                        message = Res.string.place_report_success_message,
+                        type = ToastType.DEFAULT,
+                    ),
+                ),
+            )
+        }.onFailure {
+            showToast(Res.string.place_report_failure_message, ToastType.ERROR)
+        }
+    }
+
     private fun signInWithKakao() {
         runTask {
-            loginRepository.signInWithKakao()
+            runCatching { loginRepository.signInWithKakao() }
+                .onFailure {
+                    showToast(Res.string.kakao_login_failure_message, ToastType.ERROR)
+                }
         }
     }
 
     private fun signOut() {
         runTask {
             loginRepository.signOut()
+        }
+    }
+
+    private fun deleteAccount() {
+        if (currentState.isDeletingAccount) return
+        runTask {
+            reduce { copy(isDeletingAccount = true) }
+            runCatching { loginRepository.deleteAccount() }
+                .onSuccess { showToast(Res.string.account_delete_success_message, ToastType.SUCCESS) }
+                .onFailure {
+                    reduce { copy(isDeletingAccount = false) }
+                    showToast(Res.string.account_delete_failure_message, ToastType.ERROR)
+                }
         }
     }
 

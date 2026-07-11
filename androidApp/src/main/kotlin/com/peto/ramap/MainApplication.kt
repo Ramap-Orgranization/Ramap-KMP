@@ -1,6 +1,7 @@
 package com.peto.ramap
 
 import android.app.Application
+import com.kakao.sdk.common.KakaoSdk
 import com.naver.maps.map.NaverMapSdk
 import com.peto.ramap.core.config.RamapAppConfig
 import com.peto.ramap.di.initKoin
@@ -11,6 +12,7 @@ class MainApplication : Application() {
         super.onCreate()
         NaverMapSdk.getInstance(this).client =
             NaverMapSdk.NcpKeyClient(RamapAppConfig.naverMapNcpKeyId)
+        KakaoSdk.init(this, RamapAppConfig.kakaoNativeAppKey)
         initKoin {
             androidContext(this@MainApplication)
         }

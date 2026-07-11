@@ -67,6 +67,7 @@ buildkonfig {
                 envName = "NAVER_MAP_NCP_KEY_ID",
             ),
         )
+        buildConfigField(STRING, "NAVER_CLIENT_SECRET", secretProperty("naver_client_secret", "NAVER_CLIENT_SECRET"))
     }
 }
 
@@ -125,6 +126,7 @@ kotlin {
             implementation(libs.ktor.client.okhttp)
             implementation(libs.naver.map)
             implementation(libs.play.services.location)
+            implementation(libs.kakao.user)
             implementation(libs.kotlinx.coroutines.android)
         }
         iosMain.dependencies {

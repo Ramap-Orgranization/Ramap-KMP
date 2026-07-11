@@ -2,6 +2,7 @@
 agp = "9.0.1"
 naver-map = "3.23.2"
 play-services-location = "21.4.0"
+kakao = "2.24.0"
 android-compileSdk = "37"
 android-minSdk = "24"
 android-targetSdk = "36"
@@ -42,6 +43,7 @@ compose-uiToolingPreview = { module = "org.jetbrains.compose.ui:ui-tooling-previ
 navigationevent-compose = { module = "org.jetbrains.androidx.navigationevent:navigationevent-compose", version.ref = "navigationevent" }
 naver-map = { module = "com.naver.maps:map-sdk", version.ref = "naver-map" }
 play-services-location = { module = "com.google.android.gms:play-services-location", version.ref = "play-services-location" }
+kakao-user = { module = "com.kakao.sdk:v2-user", version.ref = "kakao" }
 
 # Supabase
 supabase-postgrest = { module = "io.github.jan-tennert.supabase:postgrest-kt", version.ref = "supabase" }

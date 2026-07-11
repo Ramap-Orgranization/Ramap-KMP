@@ -47,6 +47,20 @@
     <string name="search_result_filter_empty_message">선택한 필터에 맞는 매장이 없어요</string>
     <string name="search_result_query_filter_empty_message">검색어와 선택한 필터에 맞는 매장이 없어요</string>
     <string name="search_result_hidden_only_message">숨김 처리한 매장이 검색되었어요</string>
+    <string name="place_report_title">등록되지 않은 장소인가요?</string>
+    <string name="place_report_description">네이버 지도나 카카오맵의 공유 내용을 그대로 붙여넣어도 돼요.</string>
+    <string name="place_report_placeholder">지도 링크 또는 공유 내용 붙여넣기</string>
+    <string name="place_report_action">장소 제보하기</string>
+    <string name="place_report_url_menu">지도 주소로 제보</string>
+    <string name="place_report_location_menu">현재 위치로 제보</string>
+    <string name="place_report_location_confirm_title">현재 위치로 제보할까요?</string>
+    <string name="place_report_location_address">%1$s</string>
+    <string name="place_report_location_address_failure">주소를 확인하지 못했습니다</string>
+    <string name="place_report_location_unavailable_message">현재 위치를 먼저 확인해주세요</string>
+    <string name="place_report_success_message">장소 제보가 접수되었습니다</string>
+    <string name="place_report_failure_message">장소 제보 접수에 실패했습니다</string>
+    <string name="place_report_invalid_url_message">카카오맵 또는 네이버 지도 링크를 입력해주세요</string>
+    <string name="place_report_existing_shop_message">이미 존재하는 매장입니다</string>
     <string name="filter_empty_visible_result_message">선택한 필터에 맞는 매장이 없어요</string>
     <string name="personalization_bookmarked_empty">북마크한 매장이 없습니다</string>
     <string name="personalization_hidden_empty">숨긴 매장이 없습니다</string>
@@ -62,9 +76,15 @@
     <string name="hide_shop_confirm_description">숨기면 지도와 좋아요 목록에서 보이지 않아요.</string>
     <string name="hide_shop_confirm_action">숨김 처리</string>
     <string name="hide_shop_confirm_dismiss">취소</string>
-    <string name="account_delete_unavailable_message">계정 삭제는 준비 중입니다</string>
+    <string name="account_delete_confirm_title">계정을 탈퇴하시겠습니까?</string>
+    <string name="account_delete_confirm_description">탈퇴하면 계정 정보와 개인화 데이터가 삭제되며 복구할 수 없습니다.</string>
+    <string name="account_delete_confirm_action">탈퇴하기</string>
+    <string name="account_delete_confirm_dismiss">취소</string>
+    <string name="account_delete_success_message">계정 탈퇴가 완료되었습니다</string>
+    <string name="account_delete_failure_message">계정 탈퇴에 실패했습니다</string>
     <string name="hidden_shop_search_result_message">숨김 처리된 매장이에요</string>
     <string name="location_permission_settings_action">설정</string>
     <string name="location_permission_enable_message">위치 권한을 활성화해주세요</string>
     <string name="kakao_login_button_title">카카오로 시작하기</string>
+    <string name="kakao_login_failure_message">카카오 로그인에 실패했습니다. 잠시 후 다시 시도해 주세요.</string>
 </resources>

@@ -15,6 +15,9 @@ class FakeLoginRepository(
         private set
     var signOutCallCount = 0
         private set
+    var deleteAccountCallCount = 0
+        private set
+    var deleteAccountError: Throwable? = null
 
     override val sessionStatus: StateFlow<SessionStatus> = mutableSessionStatus
 
@@ -30,6 +33,12 @@ class FakeLoginRepository(
 
     override suspend fun signOut() {
         signOutCallCount += 1
+        mutableSessionStatus.value = SessionStatus.NotAuthenticated(isSignOut = true)
+    }
+
+    override suspend fun deleteAccount() {
+        deleteAccountCallCount += 1
+        deleteAccountError?.let { throw it }
         mutableSessionStatus.value = SessionStatus.NotAuthenticated(isSignOut = true)
     }
 }

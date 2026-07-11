@@ -13,6 +13,7 @@ import com.peto.ramap.domain.model.RamenShops
 import com.peto.ramap.domain.model.SearchQuery
 import com.peto.ramap.domain.model.ShopInformationField
 import com.peto.ramap.domain.model.ShopInformationReport
+import com.peto.ramap.domain.model.UnregisteredPlaceReport
 import com.peto.ramap.domain.repository.PersonalizationRepository
 import com.peto.ramap.domain.repository.RamenShopRepository
 import com.peto.ramap.domain.repository.ShopReportRepository
@@ -26,6 +27,9 @@ import com.peto.ramap.fixture.BOUNDS_FIXTURE
 import com.peto.ramap.fixture.ramenShopFixture
 import com.peto.ramap.fixture.waitingSystemFixture
 import com.peto.ramap.ui.map.contract.MapUiState
+import com.peto.ramap.ui.map.contract.OnCurrentLocationReportSubmitted
+import com.peto.ramap.ui.map.contract.OnMyLocationChanged
+import com.peto.ramap.ui.map.contract.OnUnregisteredPlaceReportSubmitted
 import com.peto.ramap.ui.map.contract.SearchResultGuide
 import com.peto.ramap.ui.map.model.MapPersonalization
 import com.peto.ramap.ui.map.model.SearchUiState
@@ -38,6 +42,10 @@ import org.jetbrains.compose.resources.StringResource
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.filter_empty_visible_result_message
 import ramap.shared.generated.resources.hidden_shop_search_result_message
+import ramap.shared.generated.resources.place_report_existing_shop_message
+import ramap.shared.generated.resources.place_report_invalid_url_message
+import ramap.shared.generated.resources.place_report_location_unavailable_message
+import ramap.shared.generated.resources.place_report_success_message
 import ramap.shared.generated.resources.shop_information_report_failure_message
 import ramap.shared.generated.resources.shop_information_report_success_message
 import kotlin.test.Test
@@ -289,6 +297,124 @@ class MapViewModelTest {
                     ShowToast(
                         ToastData(
                             message = Res.string.shop_information_report_failure_message,
+                            type = ToastType.ERROR,
+                        ),
+                    ),
+                    awaitItem(),
+                )
+            }
+        }
+
+    @Test
+    fun `카카오맵 또는 네이버 지도 주소로 미등록 장소를 제보한다`() =
+        coroutinesTest {
+            val reportRepository = FakeShopReportRepository()
+            val viewModel = mapViewModel(shopReportRepository = reportRepository)
+
+            viewModel.sideEffect.test {
+                viewModel.dispatch(
+                    OnUnregisteredPlaceReportSubmitted(
+                        placeUrl = " https://map.kakao.com/link/map/123 ",
+                    ),
+                )
+                runCurrent()
+
+                assertEquals(
+                    listOf(UnregisteredPlaceReport(placeUrl = "https://map.kakao.com/link/map/123")),
+                    reportRepository.placeReports,
+                )
+                assertEquals(showToastSideEffect(Res.string.place_report_success_message), awaitItem())
+            }
+        }
+
+    @Test
+    fun `지원하지 않는 지도 주소는 미등록 장소 제보를 제출하지 않는다`() =
+        coroutinesTest {
+            val reportRepository = FakeShopReportRepository()
+            val viewModel = mapViewModel(shopReportRepository = reportRepository)
+
+            viewModel.sideEffect.test {
+                viewModel.dispatch(
+                    OnUnregisteredPlaceReportSubmitted(
+                        placeUrl = "https://example.com/place/123",
+                    ),
+                )
+                runCurrent()
+
+                assertEquals(emptyList(), reportRepository.placeReports)
+                assertEquals(
+                    MapSideEffect.ShowToast(
+                        ToastData(
+                            message = Res.string.place_report_invalid_url_message,
+                            type = ToastType.ERROR,
+                        ),
+                    ),
+                    awaitItem(),
+                )
+            }
+        }
+
+    @Test
+    fun `이미 등록된 매장 공유 내용이면 제보하지 않고 토스트만 표시한다`() =
+        coroutinesTest {
+            val shop = ramenShopFixture(name = "신멘", address = "경기 안양시 동안구 호성로 20")
+            val reportRepository = FakeShopReportRepository()
+            val ramenShopRepository =
+                FakeRamenShopRepository(searchResult = RamenShops(mapOf(shop.id to shop)))
+            val viewModel = mapViewModel(ramenShopRepository, shopReportRepository = reportRepository)
+            val content =
+                """[카카오맵] 신멘
+                |경기 안양시 동안구 호성로 20
+                |https://kko.to/example
+                """.trimMargin()
+
+            viewModel.sideEffect.test {
+                viewModel.dispatch(OnUnregisteredPlaceReportSubmitted(content))
+                runCurrent()
+
+                assertEquals(emptyList(), reportRepository.placeReports)
+                assertEquals(null, viewModel.uiState.value.selectedShop)
+                assertEquals(emptyList(), viewModel.uiState.value.focusShops)
+                assertEquals(showToastSideEffect(Res.string.place_report_existing_shop_message), awaitItem())
+            }
+        }
+
+    @Test
+    fun `현재 위치로 미등록 장소를 제보한다`() =
+        coroutinesTest {
+            val reportRepository = FakeShopReportRepository()
+            val viewModel = mapViewModel(shopReportRepository = reportRepository)
+            val location = Location(lat = 37.275, lng = 127.009)
+
+            viewModel.dispatch(OnMyLocationChanged(location))
+
+            viewModel.sideEffect.test {
+                viewModel.dispatch(OnCurrentLocationReportSubmitted)
+                runCurrent()
+
+                assertEquals(
+                    listOf(UnregisteredPlaceReport(location = location)),
+                    reportRepository.placeReports,
+                )
+                assertEquals(showToastSideEffect(Res.string.place_report_success_message), awaitItem())
+            }
+        }
+
+    @Test
+    fun `현재 위치가 없으면 위치 기반 미등록 장소 제보를 제출하지 않는다`() =
+        coroutinesTest {
+            val reportRepository = FakeShopReportRepository()
+            val viewModel = mapViewModel(shopReportRepository = reportRepository)
+
+            viewModel.sideEffect.test {
+                viewModel.dispatch(OnCurrentLocationReportSubmitted)
+                runCurrent()
+
+                assertEquals(emptyList(), reportRepository.placeReports)
+                assertEquals(
+                    MapSideEffect.ShowToast(
+                        ToastData(
+                            message = Res.string.place_report_location_unavailable_message,
                             type = ToastType.ERROR,
                         ),
                     ),

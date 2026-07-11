@@ -1,4 +1,20 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import java.util.Properties
+
+val localProperties =
+    Properties().apply {
+        rootProject
+            .file("local.properties")
+            .takeIf { it.exists() }
+            ?.inputStream()
+            ?.use(::load)
+    }
+val kakaoNativeAppKey =
+    providers
+        .gradleProperty("kakao_native_app_key")
+        .orElse(providers.environmentVariable("KAKAO_NATIVE_APP_KEY"))
+        .orNull
+        ?: localProperties.getProperty("kakao_native_app_key").orEmpty()
 
 plugins {
     alias(libs.plugins.androidApplication)
@@ -14,6 +30,7 @@ kotlin {
 dependencies {
     implementation(projects.shared)
     implementation(libs.naver.map)
+    implementation(libs.kakao.user)
     implementation(platform(libs.koin.bom))
     implementation(libs.koin.android)
 
@@ -42,6 +59,7 @@ android {
                 .toInt()
         versionCode = 1
         versionName = "1.0"
+        manifestPlaceholders["KAKAO_NATIVE_APP_KEY"] = kakaoNativeAppKey
     }
     packaging {
         resources {

@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
@@ -38,6 +39,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -57,6 +59,7 @@ import com.peto.ramap.designsystem.toast.ToastManager
 import com.peto.ramap.domain.model.Category
 import com.peto.ramap.domain.model.Location
 import com.peto.ramap.domain.model.MapBounds
+import com.peto.ramap.domain.model.PlaceReportTextParser
 import com.peto.ramap.domain.model.RamenShop
 import com.peto.ramap.domain.model.ShopInformationField
 import com.peto.ramap.platform.AppSettingsOpener
@@ -70,10 +73,11 @@ import com.peto.ramap.ui.map.component.RamenShopSearchBar
 import com.peto.ramap.ui.map.component.RamenShopSearchResultGuide
 import com.peto.ramap.ui.map.component.RamenShopSearchResultList
 import com.peto.ramap.ui.map.contract.MapUiState
-import com.peto.ramap.ui.map.contract.OnAccountDeleteClicked
+import com.peto.ramap.ui.map.contract.OnAccountDeleteConfirmed
 import com.peto.ramap.ui.map.contract.OnBookmarkToggled
 import com.peto.ramap.ui.map.contract.OnBoundsChanged
 import com.peto.ramap.ui.map.contract.OnCategoryFilterToggled
+import com.peto.ramap.ui.map.contract.OnCurrentLocationReportSubmitted
 import com.peto.ramap.ui.map.contract.OnHiddenToggled
 import com.peto.ramap.ui.map.contract.OnKakaoLoginClicked
 import com.peto.ramap.ui.map.contract.OnLocationPermissionBlocked
@@ -85,6 +89,7 @@ import com.peto.ramap.ui.map.contract.OnSearchResultsDismissed
 import com.peto.ramap.ui.map.contract.OnShopDetailDismissed
 import com.peto.ramap.ui.map.contract.OnShopReportSubmitted
 import com.peto.ramap.ui.map.contract.OnShopSelected
+import com.peto.ramap.ui.map.contract.OnUnregisteredPlaceReportSubmitted
 import com.peto.ramap.ui.map.contract.ShowLoginGuide
 import com.peto.ramap.ui.map.contract.ShowToast
 import com.peto.ramap.ui.map.model.MapPersonalization
@@ -94,6 +99,10 @@ import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 import ramap.shared.generated.resources.Res
+import ramap.shared.generated.resources.account_delete_confirm_action
+import ramap.shared.generated.resources.account_delete_confirm_description
+import ramap.shared.generated.resources.account_delete_confirm_dismiss
+import ramap.shared.generated.resources.account_delete_confirm_title
 import ramap.shared.generated.resources.account_delete_menu
 import ramap.shared.generated.resources.hide_shop_confirm_action
 import ramap.shared.generated.resources.hide_shop_confirm_description
@@ -105,6 +114,15 @@ import ramap.shared.generated.resources.login_required_description
 import ramap.shared.generated.resources.login_required_dismiss
 import ramap.shared.generated.resources.login_required_message
 import ramap.shared.generated.resources.logout_menu
+import ramap.shared.generated.resources.place_report_action
+import ramap.shared.generated.resources.place_report_description
+import ramap.shared.generated.resources.place_report_location_address
+import ramap.shared.generated.resources.place_report_location_address_failure
+import ramap.shared.generated.resources.place_report_location_confirm_title
+import ramap.shared.generated.resources.place_report_location_menu
+import ramap.shared.generated.resources.place_report_placeholder
+import ramap.shared.generated.resources.place_report_title
+import ramap.shared.generated.resources.place_report_url_menu
 import ramap.shared.generated.resources.settings_bookmarked_shops_menu
 import ramap.shared.generated.resources.settings_hidden_shops_menu
 import ramap.shared.generated.resources.shop_detail_link_report
@@ -179,6 +197,12 @@ fun MapRoute(
                 ),
             )
         },
+        onPlaceReportSubmit = { placeUrl ->
+            viewModel.dispatch(OnUnregisteredPlaceReportSubmitted(placeUrl))
+        },
+        onLocationReportSubmit = {
+            viewModel.dispatch(OnCurrentLocationReportSubmitted)
+        },
         onPersonalizationViewChanged = { view ->
             viewModel.dispatch(OnPersonalizationViewChanged(view))
         },
@@ -196,7 +220,7 @@ fun MapRoute(
             viewModel.dispatch(OnLogoutClicked)
         },
         onAccountDeleteClick = {
-            viewModel.dispatch(OnAccountDeleteClicked)
+            viewModel.dispatch(OnAccountDeleteConfirmed)
         },
     )
 }
@@ -216,6 +240,8 @@ private fun MapScreen(
     onBookmarkToggled: (RamenShop) -> Unit,
     onHiddenToggled: (RamenShop) -> Unit,
     onReportSubmit: (Set<ShopInformationField>, String) -> Unit,
+    onPlaceReportSubmit: (String) -> Unit,
+    onLocationReportSubmit: () -> Unit,
     onPersonalizationViewChanged: (MapPersonalization) -> Unit,
     onKakaoLoginClick: () -> Unit,
     onLoginGuideDismiss: () -> Unit,
@@ -229,7 +255,11 @@ private fun MapScreen(
     val isImeVisible = WindowInsets.ime.getBottom(density) > 0
     var wasImeVisible by remember { mutableStateOf(false) }
     var hideConfirmShop by remember { mutableStateOf<RamenShop?>(null) }
+    var showAccountDeleteConfirmDialog by remember { mutableStateOf(false) }
     var showReportDialog by remember(selectedShop?.id) { mutableStateOf(false) }
+    var showPlaceReportDialog by remember { mutableStateOf(false) }
+    var showLocationReportConfirmDialog by remember { mutableStateOf(false) }
+    var isLocationReportPending by remember { mutableStateOf(false) }
 
     val backEventState =
         rememberNavigationEventState<NavigationEventInfo>(
@@ -265,9 +295,18 @@ private fun MapScreen(
             focusRequestKey = uiState.focusRequestKey,
             selectedShopId = uiState.selectedShop?.id,
             onBoundsChanged = onBoundsChanged,
-            onMyLocationChanged = onMyLocationChanged,
+            onMyLocationChanged = { location ->
+                onMyLocationChanged(location)
+                if (isLocationReportPending) {
+                    isLocationReportPending = false
+                    showLocationReportConfirmDialog = true
+                }
+            },
             onShopClick = onShopSelected,
-            onLocationPermissionBlocked = onLocationPermissionBlocked,
+            onLocationPermissionBlocked = {
+                isLocationReportPending = false
+                onLocationPermissionBlocked()
+            },
         )
 
         Column(
@@ -314,7 +353,12 @@ private fun MapScreen(
                 )
             },
             onLogoutClick = onLogoutClick,
-            onAccountDeleteClick = onAccountDeleteClick,
+            onAccountDeleteClick = { showAccountDeleteConfirmDialog = true },
+            onPlaceReportClick = { showPlaceReportDialog = true },
+            onLocationReportClick = {
+                isLocationReportPending = uiState.currentLocation == null
+                showLocationReportConfirmDialog = uiState.currentLocation != null
+            },
             modifier =
                 Modifier
                     .align(Alignment.BottomEnd)
@@ -426,6 +470,34 @@ private fun MapScreen(
             onDismiss = { hideConfirmShop = null },
         )
 
+        CommonDialog(
+            visible = showAccountDeleteConfirmDialog,
+            confirmText = stringResource(Res.string.account_delete_confirm_action),
+            dismissText = stringResource(Res.string.account_delete_confirm_dismiss),
+            confirmEnabled = !uiState.isDeletingAccount,
+            onDismissRequest = { showAccountDeleteConfirmDialog = false },
+            content = {
+                AppText(
+                    text = stringResource(Res.string.account_delete_confirm_title),
+                    style = AppTextStyle.T1,
+                    color = GrayColor.C500,
+                    textAlign = TextAlign.Center,
+                )
+                AppText(
+                    text = stringResource(Res.string.account_delete_confirm_description),
+                    modifier = Modifier.padding(top = 8.dp),
+                    style = AppTextStyle.B2,
+                    color = GrayColor.C400,
+                    textAlign = TextAlign.Center,
+                )
+            },
+            onConfirm = {
+                showAccountDeleteConfirmDialog = false
+                onAccountDeleteClick()
+            },
+            onDismiss = { showAccountDeleteConfirmDialog = false },
+        )
+
         selectedShop?.takeIf { showReportDialog }?.let { shop ->
             ShopInformationReportDialog(
                 shopUiModel =
@@ -440,7 +512,120 @@ private fun MapScreen(
                 },
             )
         }
+
+        UnregisteredPlaceReportDialog(
+            visible = showPlaceReportDialog,
+            onDismissRequest = { showPlaceReportDialog = false },
+            onSubmit = { placeUrl ->
+                showPlaceReportDialog = false
+                onPlaceReportSubmit(placeUrl)
+            },
+        )
+
+        CommonDialog(
+            visible = showLocationReportConfirmDialog,
+            confirmText = stringResource(Res.string.place_report_action),
+            dismissText = stringResource(Res.string.shop_information_report_dismiss),
+            onDismissRequest = { showLocationReportConfirmDialog = false },
+            content = {
+                AppText(
+                    text = stringResource(Res.string.place_report_location_confirm_title),
+                    style = AppTextStyle.T1,
+                    color = GrayColor.C500,
+                    textAlign = TextAlign.Center,
+                )
+
+                AppText(
+                    text =
+                        when {
+                            uiState.currentAddress != null ->
+                                stringResource(Res.string.place_report_location_address, uiState.currentAddress)
+                            else -> stringResource(Res.string.place_report_location_address_failure)
+                        },
+                    modifier = Modifier.padding(top = 12.dp),
+                    style = AppTextStyle.B2,
+                    color = GrayColor.C500,
+                    textAlign = TextAlign.Center,
+                )
+            },
+            onConfirm = {
+                showLocationReportConfirmDialog = false
+                onLocationReportSubmit()
+            },
+            onDismiss = { showLocationReportConfirmDialog = false },
+        )
     }
+}
+
+@Composable
+private fun UnregisteredPlaceReportDialog(
+    visible: Boolean,
+    onDismissRequest: () -> Unit,
+    onSubmit: (String) -> Unit,
+) {
+    var placeUrl by remember { mutableStateOf("") }
+    val canSubmit = PlaceReportTextParser.extractSupportedUrl(placeUrl) != null
+
+    CommonDialog(
+        visible = visible,
+        confirmText = stringResource(Res.string.place_report_action),
+        dismissText = stringResource(Res.string.shop_information_report_dismiss),
+        confirmEnabled = canSubmit,
+        onDismissRequest = onDismissRequest,
+        content = {
+            AppText(
+                text = stringResource(Res.string.place_report_title),
+                style = AppTextStyle.T1,
+                color = GrayColor.C500,
+                textAlign = TextAlign.Center,
+            )
+
+            AppText(
+                text = stringResource(Res.string.place_report_description),
+                modifier = Modifier.padding(top = 8.dp),
+                style = AppTextStyle.B2,
+                color = GrayColor.C400,
+                textAlign = TextAlign.Center,
+            )
+
+            TextField(
+                value = placeUrl,
+                onValueChange = { placeUrl = it },
+                modifier =
+                    Modifier
+                        .padding(top = 16.dp)
+                        .fillMaxWidth(),
+                placeholder = {
+                    AppText(
+                        text = stringResource(Res.string.place_report_placeholder),
+                        style = AppTextStyle.B2,
+                        color = GrayColor.C300,
+                    )
+                },
+                minLines = 3,
+                maxLines = 5,
+                keyboardOptions =
+                    KeyboardOptions(
+                        keyboardType = KeyboardType.Uri,
+                    ),
+                colors =
+                    TextFieldDefaults.colors(
+                        focusedContainerColor = GrayColor.C050,
+                        unfocusedContainerColor = GrayColor.C050,
+                        disabledContainerColor = GrayColor.C050,
+                        focusedIndicatorColor = Color.Transparent,
+                        unfocusedIndicatorColor = Color.Transparent,
+                        cursorColor = GrayColor.C400,
+                    ),
+            )
+        },
+        onConfirm = {
+            if (canSubmit) {
+                onSubmit(placeUrl)
+            }
+        },
+        onDismiss = onDismissRequest,
+    )
 }
 
 @Composable
@@ -578,6 +763,8 @@ private fun SettingsFab(
     onShowHiddenShopsClick: () -> Unit,
     onLogoutClick: () -> Unit,
     onAccountDeleteClick: () -> Unit,
+    onPlaceReportClick: () -> Unit,
+    onLocationReportClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var expanded by remember { mutableStateOf(false) }
@@ -589,9 +776,9 @@ private fun SettingsFab(
                     x = (-145).dp.roundToPx(),
                     y =
                         if (isLoggedIn) {
-                            (-208).dp.roundToPx()
+                            (-296).dp.roundToPx()
                         } else {
-                            (-20).dp.roundToPx()
+                            (-108).dp.roundToPx()
                         },
                 )
             }
@@ -640,6 +827,26 @@ private fun SettingsFab(
                             color = GrayColor.C300,
                         )
                     }
+
+                    CommonPopupDivider()
+
+                    CommonPopupItem(
+                        text = stringResource(Res.string.place_report_url_menu),
+                        onClick = {
+                            expanded = false
+                            onPlaceReportClick()
+                        },
+                    )
+
+                    CommonPopupDivider()
+
+                    CommonPopupItem(
+                        text = stringResource(Res.string.place_report_location_menu),
+                        onClick = {
+                            expanded = false
+                            onLocationReportClick()
+                        },
+                    )
 
                     CommonPopupDivider()
 

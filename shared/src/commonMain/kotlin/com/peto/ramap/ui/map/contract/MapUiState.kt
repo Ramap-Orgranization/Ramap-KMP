@@ -41,6 +41,7 @@ data class MapUiState(
      * 마지막으로 확인된 사용자 위치.
      */
     val currentLocation: Location? = null,
+    val currentAddress: String? = null,
     /**
      * 사용자가 북마크한 매장 id 목록.
      */
@@ -61,6 +62,7 @@ data class MapUiState(
      * 계정 영역에 표시할 사용자 식별 라벨.
      */
     val accountLabel: String? = null,
+    val isDeletingAccount: Boolean = false,
 ) : State {
     /**
      * 검색 결과 리스트 바텀시트에 표시할 매장 목록.

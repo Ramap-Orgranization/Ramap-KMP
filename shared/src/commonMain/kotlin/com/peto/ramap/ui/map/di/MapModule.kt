@@ -6,6 +6,6 @@ import org.koin.dsl.module
 val mapModule =
     module {
         factory {
-            MapViewModel(get(), get(), get(), get(), get())
+            MapViewModel(get(), get(), get(), get(), get(), get())
         }
     }
