@@ -1,6 +1,8 @@
 package com.peto.ramap.network
 
+import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.domain.model.Location
+import com.peto.ramap.network.execute.invokeRequest
 import com.peto.ramap.shared.RamapConfig
 import io.ktor.client.HttpClient
 import io.ktor.client.request.get
@@ -17,7 +19,7 @@ import kotlinx.serialization.json.jsonPrimitive
 class NaverReverseGeocoder(
     private val client: HttpClient,
 ) {
-    suspend fun address(location: Location): String? = parseAddress(request(location))
+    suspend fun address(location: Location): RamapResult<String?> = invokeRequest { parseAddress(request(location)) }
 
     private suspend fun request(location: Location): JsonObject =
         Json

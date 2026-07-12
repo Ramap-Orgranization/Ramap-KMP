@@ -3,8 +3,9 @@ package com.peto.ramap.core.base
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import co.touchlab.kermit.Logger
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Job
+import com.peto.ramap.core.result.RamapError
+import com.peto.ramap.core.result.RamapResult
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
@@ -31,7 +32,13 @@ abstract class BaseViewModel<S : State, I : Intent, SE : SideEffect>(
     init {
         viewModelScope.launch {
             for (intent in intentChannel) {
-                handleIntent(intent)
+                try {
+                    handleIntent(intent)
+                } catch (exception: CancellationException) {
+                    throw exception
+                } catch (throwable: Throwable) {
+                    handleError(throwable)
+                }
             }
         }
     }
@@ -65,5 +72,29 @@ abstract class BaseViewModel<S : State, I : Intent, SE : SideEffect>(
         sideEffectHolder.emit(effect)
     }
 
-    protected fun runTask(block: suspend CoroutineScope.() -> Unit): Job = viewModelScope.launch(block = block)
+    protected fun trySideEffect(effect: SE) {
+        sideEffectHolder.tryEmit(effect)
+    }
+
+    protected suspend fun <T> handleResult(
+        result: RamapResult<T>,
+        onSuccess: suspend (T) -> Unit = {},
+        onError: suspend (RamapError) -> Unit = {},
+    ) {
+        when (result) {
+            is RamapResult.Success -> onSuccess(result.data)
+            is RamapResult.Error -> {
+                handleError(result.error)
+                onError(result.error)
+            }
+        }
+    }
+
+    protected open fun handleError(error: RamapError) {
+        logger.e(error.cause) { "요청 처리 실패: $error" }
+    }
+
+    protected open fun handleError(throwable: Throwable) {
+        logger.e(throwable) { "처리되지 않은 오류" }
+    }
 }

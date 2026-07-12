@@ -27,10 +27,22 @@ import com.peto.ramap.fixture.BOUNDS_FIXTURE
 import com.peto.ramap.fixture.ramenShopFixture
 import com.peto.ramap.fixture.waitingSystemFixture
 import com.peto.ramap.ui.map.contract.MapUiState
+import com.peto.ramap.ui.map.contract.OnBookmarkToggled
+import com.peto.ramap.ui.map.contract.OnBoundsChanged
+import com.peto.ramap.ui.map.contract.OnCategoryFilterToggled
 import com.peto.ramap.ui.map.contract.OnCurrentLocationReportSubmitted
+import com.peto.ramap.ui.map.contract.OnFilterCleared
+import com.peto.ramap.ui.map.contract.OnHiddenToggled
 import com.peto.ramap.ui.map.contract.OnMyLocationChanged
+import com.peto.ramap.ui.map.contract.OnQueryChanged
+import com.peto.ramap.ui.map.contract.OnSearchResultsDismissed
+import com.peto.ramap.ui.map.contract.OnShopDetailDismissed
+import com.peto.ramap.ui.map.contract.OnShopReportSubmitted
+import com.peto.ramap.ui.map.contract.OnShopSelected
 import com.peto.ramap.ui.map.contract.OnUnregisteredPlaceReportSubmitted
 import com.peto.ramap.ui.map.contract.SearchResultGuide
+import com.peto.ramap.ui.map.contract.ShowLoginGuide
+import com.peto.ramap.ui.map.contract.ShowToast
 import com.peto.ramap.ui.map.model.MapPersonalization
 import com.peto.ramap.ui.map.model.SearchUiState
 import io.github.jan.supabase.auth.status.SessionStatus
@@ -161,7 +173,11 @@ class MapViewModelTest {
             val waitingSystem = waitingSystemFixture(shopId = shop.id)
             val waitingSystemRepository =
                 FakeShopWaitingSystemRepository(result = waitingSystem)
-            val viewModel = mapViewModel(shopWaitingSystemRepository = waitingSystemRepository)
+            val viewModel =
+                mapViewModel(
+                    ramenShopRepository = FakeRamenShopRepository(fetchByIdsResult = RamenShops(mapOf(shop.id to shop))),
+                    shopWaitingSystemRepository = waitingSystemRepository,
+                )
 
             viewModel.dispatch(OnShopSelected(shop))
             runCurrent()
@@ -176,7 +192,11 @@ class MapViewModelTest {
         coroutinesTest {
             val shop = ramenShopFixture()
             val waitingSystemRepository = FakeShopWaitingSystemRepository(result = null)
-            val viewModel = mapViewModel(shopWaitingSystemRepository = waitingSystemRepository)
+            val viewModel =
+                mapViewModel(
+                    ramenShopRepository = FakeRamenShopRepository(fetchByIdsResult = RamenShops(mapOf(shop.id to shop))),
+                    shopWaitingSystemRepository = waitingSystemRepository,
+                )
 
             viewModel.dispatch(OnShopSelected(shop))
             runCurrent()
@@ -200,14 +220,18 @@ class MapViewModelTest {
             val shop = ramenShopFixture()
             val waitingSystemRepository =
                 FakeShopWaitingSystemRepository(result = waitingSystemFixture(shop.id))
-            val viewModel = mapViewModel(shopWaitingSystemRepository = waitingSystemRepository)
+            val viewModel =
+                mapViewModel(
+                    ramenShopRepository = FakeRamenShopRepository(fetchByIdsResult = RamenShops(mapOf(shop.id to shop))),
+                    shopWaitingSystemRepository = waitingSystemRepository,
+                )
 
             viewModel.dispatch(OnShopSelected(shop))
             runCurrent()
             viewModel.dispatch(OnShopSelected(shop))
             runCurrent()
 
-            assertEquals(listOf(shop.id), waitingSystemRepository.requestedShopIds)
+            assertEquals(listOf(shop.id, shop.id), waitingSystemRepository.requestedShopIds)
         }
 
     @Test
@@ -343,7 +367,7 @@ class MapViewModelTest {
 
                 assertEquals(emptyList(), reportRepository.placeReports)
                 assertEquals(
-                    MapSideEffect.ShowToast(
+                    ShowToast(
                         ToastData(
                             message = Res.string.place_report_invalid_url_message,
                             type = ToastType.ERROR,
@@ -412,7 +436,7 @@ class MapViewModelTest {
 
                 assertEquals(emptyList(), reportRepository.placeReports)
                 assertEquals(
-                    MapSideEffect.ShowToast(
+                    ShowToast(
                         ToastData(
                             message = Res.string.place_report_location_unavailable_message,
                             type = ToastType.ERROR,

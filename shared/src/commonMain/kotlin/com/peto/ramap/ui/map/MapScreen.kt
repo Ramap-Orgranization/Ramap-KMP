@@ -23,6 +23,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Surface
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
@@ -66,6 +67,9 @@ import com.peto.ramap.platform.AppSettingsOpener
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
+import com.peto.ramap.ui.common.LoadState
+import com.peto.ramap.ui.map.component.LaduckLoadingContent
+import com.peto.ramap.ui.map.component.LoadErrorContent
 import com.peto.ramap.ui.map.component.MapCircleIconButton
 import com.peto.ramap.ui.map.component.MenuCategoryFilterRow
 import com.peto.ramap.ui.map.component.RamenShopDetailContent
@@ -79,6 +83,7 @@ import com.peto.ramap.ui.map.contract.OnBoundsChanged
 import com.peto.ramap.ui.map.contract.OnCategoryFilterToggled
 import com.peto.ramap.ui.map.contract.OnCurrentLocationReportSubmitted
 import com.peto.ramap.ui.map.contract.OnHiddenToggled
+import com.peto.ramap.ui.map.contract.OnInitialMapRetryClicked
 import com.peto.ramap.ui.map.contract.OnKakaoLoginClicked
 import com.peto.ramap.ui.map.contract.OnLocationPermissionBlocked
 import com.peto.ramap.ui.map.contract.OnLogoutClicked
@@ -87,11 +92,13 @@ import com.peto.ramap.ui.map.contract.OnPersonalizationViewChanged
 import com.peto.ramap.ui.map.contract.OnQueryChanged
 import com.peto.ramap.ui.map.contract.OnSearchResultsDismissed
 import com.peto.ramap.ui.map.contract.OnShopDetailDismissed
+import com.peto.ramap.ui.map.contract.OnShopDetailRetryClicked
 import com.peto.ramap.ui.map.contract.OnShopReportSubmitted
 import com.peto.ramap.ui.map.contract.OnShopSelected
 import com.peto.ramap.ui.map.contract.OnUnregisteredPlaceReportSubmitted
 import com.peto.ramap.ui.map.contract.ShowLoginGuide
 import com.peto.ramap.ui.map.contract.ShowToast
+import com.peto.ramap.ui.map.model.InitialMapLoadState
 import com.peto.ramap.ui.map.model.MapPersonalization
 import com.peto.ramap.ui.map.model.RamenShopUiModel
 import org.jetbrains.compose.resources.painterResource
@@ -109,6 +116,10 @@ import ramap.shared.generated.resources.hide_shop_confirm_description
 import ramap.shared.generated.resources.hide_shop_confirm_dismiss
 import ramap.shared.generated.resources.hide_shop_confirm_title
 import ramap.shared.generated.resources.ic_setting
+import ramap.shared.generated.resources.initial_map_error_description
+import ramap.shared.generated.resources.initial_map_error_title
+import ramap.shared.generated.resources.laduck_error_confused
+import ramap.shared.generated.resources.laduck_error_crying
 import ramap.shared.generated.resources.login_required_action
 import ramap.shared.generated.resources.login_required_description
 import ramap.shared.generated.resources.login_required_dismiss
@@ -125,6 +136,8 @@ import ramap.shared.generated.resources.place_report_title
 import ramap.shared.generated.resources.place_report_url_menu
 import ramap.shared.generated.resources.settings_bookmarked_shops_menu
 import ramap.shared.generated.resources.settings_hidden_shops_menu
+import ramap.shared.generated.resources.shop_detail_error_description
+import ramap.shared.generated.resources.shop_detail_error_title
 import ramap.shared.generated.resources.shop_detail_link_report
 import ramap.shared.generated.resources.shop_information_report_action
 import ramap.shared.generated.resources.shop_information_report_description
@@ -180,6 +193,8 @@ fun MapRoute(
         onSearchResultsDismissed = {
             viewModel.dispatch(OnSearchResultsDismissed)
         },
+        onInitialMapRetry = { viewModel.dispatch(OnInitialMapRetryClicked) },
+        onShopDetailRetry = { viewModel.dispatch(OnShopDetailRetryClicked) },
         onCategoryFilterToggled = { category ->
             viewModel.dispatch(OnCategoryFilterToggled(category))
         },
@@ -236,6 +251,8 @@ private fun MapScreen(
     onShopDetailDismissed: () -> Unit,
     onQueryChanged: (String) -> Unit,
     onSearchResultsDismissed: () -> Unit,
+    onInitialMapRetry: () -> Unit,
+    onShopDetailRetry: () -> Unit,
     onCategoryFilterToggled: (Category) -> Unit,
     onBookmarkToggled: (RamenShop) -> Unit,
     onHiddenToggled: (RamenShop) -> Unit,
@@ -398,23 +415,56 @@ private fun MapScreen(
                 onDismissRequest = onShopDetailDismissed,
                 config = CommonBottomSheetConfig(maxHeight = detailBottomSheetMaxHeight),
                 content = {
-                    RamenShopDetailContent(
-                        shop = shop,
-                        waitingSystem = uiState.shopWaiting[shop.id],
-                        isBookmarked = shop.id in uiState.bookmarkedShopIds,
-                        isHidden = shop.id in uiState.hiddenShopIds,
-                        onBookmarkClick = { onBookmarkToggled(shop) },
-                        onHiddenClick = {
-                            if (uiState.isLoggedIn && shop.id !in uiState.hiddenShopIds) {
-                                hideConfirmShop = shop
-                            } else {
-                                onHiddenToggled(shop)
-                            }
-                        },
-                        onReportClick = { showReportDialog = true },
-                    )
+                    when (uiState.shopDetailState) {
+                        LoadState.Idle, LoadState.Loading ->
+                            LaduckLoadingContent()
+                        LoadState.Error ->
+                            LoadErrorContent(
+                                image = Res.drawable.laduck_error_confused,
+                                title = stringResource(Res.string.shop_detail_error_title),
+                                description = stringResource(Res.string.shop_detail_error_description),
+                                onRetry = onShopDetailRetry,
+                                compact = true,
+                            )
+                        is LoadState.Content ->
+                            RamenShopDetailContent(
+                                shop = shop,
+                                waitingSystem = uiState.shopWaiting[shop.id],
+                                isBookmarked = shop.id in uiState.bookmarkedShopIds,
+                                isHidden = shop.id in uiState.hiddenShopIds,
+                                onBookmarkClick = { onBookmarkToggled(shop) },
+                                onHiddenClick = {
+                                    if (uiState.isLoggedIn && shop.id !in uiState.hiddenShopIds) {
+                                        hideConfirmShop = shop
+                                    } else {
+                                        onHiddenToggled(shop)
+                                    }
+                                },
+                                onReportClick = { showReportDialog = true },
+                            )
+                    }
                 },
             )
+        }
+
+        if (uiState.initialMapLoadState != InitialMapLoadState.CONTENT) {
+            Surface(modifier = Modifier.fillMaxSize(), color = CommonColor.White) {
+                when (uiState.initialMapLoadState) {
+                    InitialMapLoadState.LOADING ->
+                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator()
+                        }
+                    InitialMapLoadState.ERROR ->
+                        LoadErrorContent(
+                            image = Res.drawable.laduck_error_crying,
+                            title = stringResource(Res.string.initial_map_error_title),
+                            description = stringResource(Res.string.initial_map_error_description),
+                            onRetry = onInitialMapRetry,
+                            modifier = Modifier.fillMaxSize(),
+                        )
+                    InitialMapLoadState.CONTENT -> Unit
+                }
+            }
         }
 
         CommonDialog(

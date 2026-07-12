@@ -1,5 +1,6 @@
 package com.peto.ramap.data.repository
 
+import com.peto.ramap.core.result.getOrThrow
 import com.peto.ramap.data.model.ShopInformationReportRequest
 import com.peto.ramap.data.model.UnregisteredPlaceReportRequest
 import com.peto.ramap.domain.model.ShopInformationField
@@ -24,7 +25,7 @@ class DefaultShopReportRepositoryTest {
                     description = "주소가 달라요",
                 )
 
-            repository.submit(report)
+            repository.submit(report).getOrThrow()
 
             assertEquals(
                 ShopInformationReportRequest(
@@ -43,7 +44,7 @@ class DefaultShopReportRepositoryTest {
             val dataSource = FakeShopReportDataSource()
             val repository = DefaultShopReportRepository(dataSource)
 
-            repository.submit(UnregisteredPlaceReport(placeUrl = "https://map.naver.com/p/entry/place/123"))
+            repository.submit(UnregisteredPlaceReport(placeUrl = "https://map.naver.com/p/entry/place/123")).getOrThrow()
 
             assertEquals(
                 UnregisteredPlaceReportRequest(placeUrl = "https://map.naver.com/p/entry/place/123"),

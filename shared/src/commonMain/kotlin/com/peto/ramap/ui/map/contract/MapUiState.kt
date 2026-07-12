@@ -9,10 +9,15 @@ import com.peto.ramap.domain.model.RamenShopFilter
 import com.peto.ramap.domain.model.RamenShops
 import com.peto.ramap.domain.model.ShopWaitingSystem
 import com.peto.ramap.domain.model.nearestTo
+import com.peto.ramap.ui.common.LoadState
+import com.peto.ramap.ui.map.model.InitialMapLoadState
 import com.peto.ramap.ui.map.model.MapPersonalization
 import com.peto.ramap.ui.map.model.SearchUiState
+import com.peto.ramap.ui.map.model.ShopDetail
 
 data class MapUiState(
+    val initialMapLoadState: InitialMapLoadState = InitialMapLoadState.LOADING,
+    val shopDetailState: LoadState<ShopDetail> = LoadState.Idle,
     /**
      * 지도에서 조회 가능한 전체 라멘 매장 목록.
      */

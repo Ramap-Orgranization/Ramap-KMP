@@ -1,7 +1,9 @@
 package com.peto.ramap.data.repository
 
+import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.data.auth.KakaoLoginProvider
 import com.peto.ramap.domain.repository.LoginRepository
+import com.peto.ramap.network.execute.invokeRequest
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.status.SessionStatus
@@ -42,18 +44,15 @@ class DefaultLoginRepository(
      *
      * OAuth 콜백은 앱 redirect URI에 연결된 Android 딥링크 핸들러에서 완료됩니다.
      */
-    override suspend fun signInWithKakao() {
-        kakaoLoginProvider.signIn(supabaseClient)
-    }
+    override suspend fun signInWithKakao(): RamapResult<Unit> = invokeRequest { kakaoLoginProvider.signIn(supabaseClient) }
 
-    override suspend fun signOut() {
-        supabaseClient.auth.signOut()
-    }
+    override suspend fun signOut(): RamapResult<Unit> = invokeRequest { supabaseClient.auth.signOut() }
 
-    override suspend fun deleteAccount() {
-        supabaseClient.postgrest.rpc(DELETE_CURRENT_USER_RPC)
-        supabaseClient.auth.signOut()
-    }
+    override suspend fun deleteAccount(): RamapResult<Unit> =
+        invokeRequest {
+            supabaseClient.postgrest.rpc(DELETE_CURRENT_USER_RPC)
+            supabaseClient.auth.signOut()
+        }
 
     private companion object {
         const val DELETE_CURRENT_USER_RPC = "delete_current_user"
