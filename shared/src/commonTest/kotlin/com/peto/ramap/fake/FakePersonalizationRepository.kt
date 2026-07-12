@@ -28,8 +28,12 @@ class FakePersonalizationRepository(
         return RamapResult.Success(Unit)
     }
 
-    override suspend fun hideShop(shopId: String): RamapResult<Unit> {
+    override suspend fun hideShop(
+        shopId: String,
+        removeBookmark: Boolean,
+    ): RamapResult<Unit> {
         hiddenShopIds += shopId
+        if (removeBookmark) bookmarkedShopIds -= shopId
         return RamapResult.Success(Unit)
     }
 

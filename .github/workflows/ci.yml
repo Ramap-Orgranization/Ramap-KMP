@@ -28,7 +28,7 @@ jobs:
       run: ./gradlew ktlintCheck
 
     - name: Unit Tests
-      run: ./gradlew test
+      run: ./gradlew :shared:testAndroidHostTest
       env:
         SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
         SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}

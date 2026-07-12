@@ -10,7 +10,10 @@ interface PersonalizationRepository {
 
     suspend fun removeBookmark(shopId: String): RamapResult<Unit>
 
-    suspend fun hideShop(shopId: String): RamapResult<Unit>
+    suspend fun hideShop(
+        shopId: String,
+        removeBookmark: Boolean = false,
+    ): RamapResult<Unit>
 
     suspend fun unhideShop(shopId: String): RamapResult<Unit>
 }
