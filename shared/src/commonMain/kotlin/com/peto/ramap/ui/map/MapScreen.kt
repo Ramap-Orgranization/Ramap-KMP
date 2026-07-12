@@ -23,7 +23,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Surface
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
@@ -118,6 +117,7 @@ import ramap.shared.generated.resources.hide_shop_confirm_title
 import ramap.shared.generated.resources.ic_setting
 import ramap.shared.generated.resources.initial_map_error_description
 import ramap.shared.generated.resources.initial_map_error_title
+import ramap.shared.generated.resources.initial_map_loading_message
 import ramap.shared.generated.resources.laduck_error_confused
 import ramap.shared.generated.resources.laduck_error_crying
 import ramap.shared.generated.resources.login_required_action
@@ -451,8 +451,17 @@ private fun MapScreen(
             Surface(modifier = Modifier.fillMaxSize(), color = CommonColor.White) {
                 when (uiState.initialMapLoadState) {
                     InitialMapLoadState.LOADING ->
-                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            CircularProgressIndicator()
+                        Column(
+                            modifier = Modifier.fillMaxSize(),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center,
+                        ) {
+                            LaduckLoadingContent()
+                            AppText(
+                                text = stringResource(Res.string.initial_map_loading_message),
+                                style = AppTextStyle.T1,
+                                color = GrayColor.C500,
+                            )
                         }
                     InitialMapLoadState.ERROR ->
                         LoadErrorContent(
