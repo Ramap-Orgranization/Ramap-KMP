@@ -8,7 +8,11 @@ import com.peto.ramap.core.result.RamapResult
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 abstract class BaseViewModel<S : State, I : Intent, SE : SideEffect>(
@@ -18,13 +22,13 @@ abstract class BaseViewModel<S : State, I : Intent, SE : SideEffect>(
         Logger.withTag(this::class.simpleName ?: "BaseViewModel")
 
     // State
-    private val stateHolder = StateHolder(initialState)
-    val uiState: StateFlow<S> = stateHolder.state
-    protected val currentState: S get() = stateHolder.current
+    private val mutableUiState = MutableStateFlow(initialState)
+    val uiState: StateFlow<S> = mutableUiState.asStateFlow()
+    protected val currentState: S get() = mutableUiState.value
 
     // SideEffect
-    private val sideEffectHolder = SideEffectHolder<SE>()
-    val sideEffect: Flow<SE> = sideEffectHolder.flow
+    private val sideEffectChannel = Channel<SE>(Channel.BUFFERED)
+    val sideEffect: Flow<SE> = sideEffectChannel.receiveAsFlow()
 
     // Intent
     private val intentChannel = Channel<I>(Channel.BUFFERED)
@@ -62,18 +66,18 @@ abstract class BaseViewModel<S : State, I : Intent, SE : SideEffect>(
      * State를 변경하는 메서드
      * */
     protected fun reduce(reducer: S.() -> S) {
-        stateHolder.reduce(reducer)
+        mutableUiState.update { it.reducer() }
     }
 
     /**
      * SideEffect를 발생시키는 메서드
      * */
     protected suspend fun postSideEffect(effect: SE) {
-        sideEffectHolder.emit(effect)
+        sideEffectChannel.send(effect)
     }
 
     protected fun trySideEffect(effect: SE) {
-        sideEffectHolder.tryEmit(effect)
+        sideEffectChannel.trySend(effect)
     }
 
     protected suspend fun <T> handleResult(

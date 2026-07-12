@@ -145,13 +145,11 @@ kotlin {
 
             // Supabase
             implementation(libs.supabase.postgrest)
-            implementation(libs.supabase.storage)
             implementation(libs.supabase.auth)
 
             // Ktor & Serialization
             implementation(libs.ktor.client.core)
             implementation(libs.ktor.client.content.negotiation)
-            implementation(libs.ktor.client.logging)
             implementation(libs.ktor.serialization.kotlinx.json)
             implementation(libs.kotlinx.serialization.json)
 
@@ -160,14 +158,6 @@ kotlin {
             implementation(libs.koin.core)
             implementation(libs.koin.compose)
             implementation(libs.koin.compose.viewmodel)
-
-            // Coil
-            implementation(libs.coil.compose)
-            implementation(libs.coil.network.ktor)
-
-            // DataStore & Okio
-            implementation(libs.androidx.datastore.preferences.core)
-            implementation(libs.okio)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)

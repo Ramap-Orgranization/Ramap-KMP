@@ -353,6 +353,7 @@ class MapViewModel(
     private suspend fun hideShop(shop: RamenShop) {
         val shouldRemoveBookmark = shop.id in currentState.bookmarkedShopIds
         val previousBookmarkedShopIds = currentState.bookmarkedShopIds
+        val previousHiddenShopIds = currentState.hiddenShopIds
         val previousSelectedShop = currentState.selectedShop
         val previousSearch = currentState.search
 
@@ -360,7 +361,13 @@ class MapViewModel(
         handleResult(
             result = persistHiddenShop(shop.id, shouldRemoveBookmark),
             onError = {
-                handleHideShopFailure(shop.id, previousBookmarkedShopIds, previousSelectedShop, previousSearch)
+                restoreHiddenShopState(
+                    previousBookmarkedShopIds,
+                    previousHiddenShopIds,
+                    previousSelectedShop,
+                    previousSearch,
+                )
+                showPersonalizationUpdateFailure()
             },
         )
     }
@@ -368,27 +375,7 @@ class MapViewModel(
     private suspend fun persistHiddenShop(
         shopId: String,
         shouldRemoveBookmark: Boolean,
-    ): RamapResult<Unit> {
-        val hideResult = personalizationRepository.hideShop(shopId)
-        if (hideResult is RamapResult.Error || !shouldRemoveBookmark) return hideResult
-
-        return personalizationRepository.removeBookmark(shopId)
-    }
-
-    private fun handleHideShopFailure(
-        shopId: String,
-        bookmarkedShopIds: Set<String>,
-        selectedShop: RamenShop?,
-        search: SearchUiState,
-    ) {
-        restoreHiddenShopState(
-            bookmarkedShopIds = bookmarkedShopIds,
-            hiddenShopIds = currentState.hiddenShopIds - shopId,
-            selectedShop = selectedShop,
-            search = search,
-        )
-        showPersonalizationUpdateFailure()
-    }
+    ): RamapResult<Unit> = personalizationRepository.hideShop(shopId, removeBookmark = shouldRemoveBookmark)
 
     private suspend fun unhideShop(shop: RamenShop) {
         reduceUnhideShopState(shop.id)
@@ -432,12 +419,7 @@ class MapViewModel(
 
             copy(
                 hiddenShopIds = hiddenShopIds + shopId,
-                bookmarkedShopIds =
-                    if (shouldRemoveBookmark) {
-                        bookmarkedShopIds - shopId
-                    } else {
-                        bookmarkedShopIds
-                    },
+                bookmarkedShopIds = if (shouldRemoveBookmark) bookmarkedShopIds - shopId else bookmarkedShopIds,
                 selectedShop = selectedShop?.takeUnless { shouldCloseSelectedShop },
                 search =
                     updateSearchState(
