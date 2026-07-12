@@ -2,9 +2,9 @@ name: Android CI
 
 on:
   push:
-    branches: [ "main", "develop" ]
+    branches: [ "main", "develop", "release/**", "hotfix/**" ]
   pull_request:
-    branches: [ "main", "develop" ]
+    branches: [ "main", "develop", "release/**", "hotfix/**" ]
 
 jobs:
   build:
@@ -34,7 +34,10 @@ jobs:
         SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
 
     - name: Build Android App
-      run: ./gradlew :androidApp:assembleDebug
+      run: ./gradlew :androidApp:assembleDebug :androidApp:bundleRelease
       env:
         SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
         SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        KAKAO_NATIVE_APP_KEY: ${{ secrets.KAKAO_NATIVE_APP_KEY }}
+        NAVER_CLIENT_SECRET: ${{ secrets.NAVER_CLIENT_SECRET }}
+        NAVER_MAP_NCP_KEY_ID: ${{ secrets.NAVER_MAP_NCP_KEY_ID }}

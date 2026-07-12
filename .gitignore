@@ -5,6 +5,8 @@
 xcuserdata
 !src/**/build/
 local.properties
+*.jks
+*.keystore
 .idea
 .DS_Store
 captures
@@ -23,3 +25,4 @@ node_modules/
 iosApp/Pods/
 docs/
 AGENTS.md
+.scratch/
