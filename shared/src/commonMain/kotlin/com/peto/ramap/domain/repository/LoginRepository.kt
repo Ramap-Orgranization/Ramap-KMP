@@ -1,5 +1,6 @@
 package com.peto.ramap.domain.repository
 
+import com.peto.ramap.core.result.RamapResult
 import io.github.jan.supabase.auth.status.SessionStatus
 import kotlinx.coroutines.flow.StateFlow
 
@@ -12,9 +13,9 @@ interface LoginRepository {
 
     fun currentUserEmail(): String?
 
-    suspend fun signInWithKakao()
+    suspend fun signInWithKakao(): RamapResult<Unit>
 
-    suspend fun signOut()
+    suspend fun signOut(): RamapResult<Unit>
 
-    suspend fun deleteAccount()
+    suspend fun deleteAccount(): RamapResult<Unit>
 }

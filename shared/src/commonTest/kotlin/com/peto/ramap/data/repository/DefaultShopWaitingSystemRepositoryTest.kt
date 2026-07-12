@@ -1,5 +1,8 @@
 package com.peto.ramap.data.repository
 
+import com.peto.ramap.core.result.RamapError
+import com.peto.ramap.core.result.RamapResult
+import com.peto.ramap.core.result.getOrThrow
 import com.peto.ramap.data.model.ShopWaitingSystemResponse
 import com.peto.ramap.domain.model.ShopWaitingSystem
 import com.peto.ramap.domain.model.WaitingProvider
@@ -7,7 +10,6 @@ import com.peto.ramap.fake.FakeShopWaitingSystemDataSource
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
 
 class DefaultShopWaitingSystemRepositoryTest {
     @Test
@@ -25,7 +27,7 @@ class DefaultShopWaitingSystemRepositoryTest {
                 )
             val repository = DefaultShopWaitingSystemRepository(dataSource)
 
-            val result = repository.fetchShopWaitingSystem("shop-1")
+            val result = repository.fetchShopWaitingSystem("shop-1").getOrThrow()
 
             assertEquals("shop-1", dataSource.requestedShopId)
             assertEquals(
@@ -54,7 +56,7 @@ class DefaultShopWaitingSystemRepositoryTest {
                     ),
                 )
 
-            val result = repository.fetchShopWaitingSystem("shop-1")
+            val result = repository.fetchShopWaitingSystem("shop-1").getOrThrow()
 
             assertEquals(WaitingProvider.UNKNOWN, result?.provider)
         }
@@ -64,13 +66,13 @@ class DefaultShopWaitingSystemRepositoryTest {
         runTest {
             val repository = DefaultShopWaitingSystemRepository(FakeShopWaitingSystemDataSource())
 
-            val result = repository.fetchShopWaitingSystem("shop-1")
+            val result = repository.fetchShopWaitingSystem("shop-1").getOrThrow()
 
             assertEquals(null, result)
         }
 
     @Test
-    fun `웨이팅 시스템 데이터 소스에서 예외가 발생하면 그대로 전달한다`() =
+    fun `웨이팅 시스템 데이터 소스에서 예외가 발생하면 Unknown 오류로 변환한다`() =
         runTest {
             val expected = IllegalStateException("Failed to fetch waiting system")
             val repository =
@@ -78,11 +80,8 @@ class DefaultShopWaitingSystemRepositoryTest {
                     FakeShopWaitingSystemDataSource(error = expected),
                 )
 
-            val actual =
-                assertFailsWith<IllegalStateException> {
-                    repository.fetchShopWaitingSystem("shop-1")
-                }
+            val actual = repository.fetchShopWaitingSystem("shop-1")
 
-            assertEquals(expected.message, actual.message)
+            assertEquals(RamapResult.Error(RamapError.Unknown(expected)), actual)
         }
 }

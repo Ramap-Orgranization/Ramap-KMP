@@ -1,5 +1,6 @@
 package com.peto.ramap.data.repository
 
+import com.peto.ramap.core.result.getOrThrow
 import com.peto.ramap.domain.model.Category
 import com.peto.ramap.domain.model.Location
 import com.peto.ramap.domain.model.MenuCategories
@@ -42,7 +43,7 @@ class DefaultRamenShopRepositoryTest {
                 )
             val repository = DefaultRamenShopRepository(dataSource)
 
-            val result = repository.fetchRamenShops(BOUNDS_FIXTURE)
+            val result = repository.fetchRamenShops(BOUNDS_FIXTURE).getOrThrow()
 
             assertEquals(BOUNDS_FIXTURE, dataSource.requestedBounds)
             assertEquals(
@@ -92,7 +93,7 @@ class DefaultRamenShopRepositoryTest {
                     FakeRamenShopDataSource(responses = emptyList()),
                 )
 
-            val result = repository.fetchRamenShops(BOUNDS_FIXTURE)
+            val result = repository.fetchRamenShops(BOUNDS_FIXTURE).getOrThrow()
 
             assertEquals(emptyMap(), result.toMap())
         }
@@ -121,7 +122,7 @@ class DefaultRamenShopRepositoryTest {
                 )
             val repository = DefaultRamenShopRepository(dataSource)
 
-            val result = repository.searchRamenShops(query, limit)
+            val result = repository.searchRamenShops(query, limit).getOrThrow()
 
             assertEquals(query, dataSource.requestedSearchQuery)
             assertEquals(limit, dataSource.requestedSearchLimit)
@@ -172,7 +173,7 @@ class DefaultRamenShopRepositoryTest {
                     FakeRamenShopDataSource(searchResponses = emptyList()),
                 )
 
-            val result = repository.searchRamenShops(SearchQuery("없음"), limit = 5)
+            val result = repository.searchRamenShops(SearchQuery("없음"), limit = 5).getOrThrow()
 
             assertEquals(emptyMap(), result.toMap())
         }
