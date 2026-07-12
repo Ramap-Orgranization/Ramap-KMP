@@ -23,6 +23,10 @@ data object OnShopDetailDismissed : MapIntent
 
 data object OnSearchResultsDismissed : MapIntent
 
+data object OnInitialMapRetryClicked : MapIntent
+
+data object OnShopDetailRetryClicked : MapIntent
+
 data class OnQueryChanged(
     val query: String,
 ) : MapIntent
