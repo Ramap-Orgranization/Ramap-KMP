@@ -330,6 +330,30 @@ class MapViewModelTest {
         }
 
     @Test
+    fun `매장 정보 제보 중에는 중복 제출하지 않는다`() =
+        coroutinesTest {
+            val shop = ramenShopFixture()
+            val reportRepository = FakeShopReportRepository(delayMillis = 1_000)
+            val viewModel = mapViewModel(shopReportRepository = reportRepository)
+
+            viewModel.dispatch(OnShopSelected(shop))
+            runCurrent()
+
+            val intent =
+                OnShopReportSubmitted(
+                    wrongFields = setOf(ShopInformationField.ADDRESS),
+                    description = "주소가 달라요",
+                )
+            viewModel.dispatch(intent)
+            viewModel.dispatch(intent)
+            runCurrent()
+
+            advanceTimeBy(1_000)
+            runCurrent()
+            assertEquals(1, reportRepository.reports.size)
+        }
+
+    @Test
     fun `카카오맵 또는 네이버 지도 주소로 미등록 장소를 제보한다`() =
         coroutinesTest {
             val reportRepository = FakeShopReportRepository()

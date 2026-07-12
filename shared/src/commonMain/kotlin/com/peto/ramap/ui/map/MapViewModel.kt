@@ -97,6 +97,8 @@ class MapViewModel(
     private var searchJob: Job? = null
     private var searchRequestId = 0L
     private var detailJob: Job? = null
+    private var shopReportJob: Job? = null
+    private var placeReportJob: Job? = null
 
     init {
         viewModelScope.launch { observeSessionStatus() }
@@ -152,12 +154,7 @@ class MapViewModel(
                 isDeletingAccount = if (isAuthenticated) isDeletingAccount else false,
                 bookmarkedShopIds = if (isAuthenticated) bookmarkedShopIds else emptySet(),
                 hiddenShopIds = if (isAuthenticated) hiddenShopIds else emptySet(),
-                personalizationView =
-                    if (isAuthenticated) {
-                        personalizationView
-                    } else {
-                        MapPersonalization.ALL
-                    },
+                personalizationView = if (isAuthenticated) personalizationView else MapPersonalization.ALL,
             )
         }
     }
@@ -282,7 +279,7 @@ class MapViewModel(
         }
 
         val isBookmarked = shop.id in currentState.bookmarkedShopIds
-        reduceBookmarkState(shop.id, isBookmarked)
+        reduceBookmarkState(shop.id)
         postBookmark(shop.id, isBookmarked)
     }
 
@@ -292,30 +289,20 @@ class MapViewModel(
     ) {
         handleResult(
             result = updateBookmarkPersonalization(id, isBookmarked),
-            onError = { handleBookmarkFailure(id, isBookmarked) },
+            onError = { handleBookmarkFailure(id) },
         )
     }
 
-    private fun handleBookmarkFailure(
-        shopId: String,
-        wasBookmarked: Boolean,
-    ) {
-        reduceBookmarkState(shopId, !wasBookmarked)
+    private fun handleBookmarkFailure(shopId: String) {
+        reduceBookmarkState(shopId)
         showPersonalizationUpdateFailure()
     }
 
-    private fun reduceBookmarkState(
-        shopId: String,
-        isBookmarked: Boolean,
-    ) {
+    private fun reduceBookmarkState(shopId: String) {
         reduce {
             copy(
                 bookmarkedShopIds =
-                    if (isBookmarked) {
-                        bookmarkedShopIds - shopId
-                    } else {
-                        bookmarkedShopIds + shopId
-                    },
+                    if (shopId in bookmarkedShopIds) bookmarkedShopIds - shopId else bookmarkedShopIds + shopId,
             )
         }
     }
@@ -476,26 +463,30 @@ class MapViewModel(
         }
     }
 
-    private suspend fun submitShopInformationReport(
+    private fun submitShopInformationReport(
         wrongFields: Set<ShopInformationField>,
         description: String,
     ) {
         val shop = currentState.selectedShop ?: return
         if (wrongFields.isEmpty() && description.isBlank()) return
+        if (shopReportJob?.isActive == true) return
 
-        handleResult(
-            result =
-                reportRepository.submit(
-                    ShopInformationReport(
-                        shopId = shop.id,
-                        shopName = shop.name,
-                        wrongFields = wrongFields,
-                        description = description.trim(),
-                    ),
-                ),
-            onSuccess = { showShopInformationReportSuccess() },
-            onError = { showShopInformationReportFailure() },
-        )
+        shopReportJob =
+            viewModelScope.launch {
+                handleResult(
+                    result =
+                        reportRepository.submit(
+                            ShopInformationReport(
+                                shopId = shop.id,
+                                shopName = shop.name,
+                                wrongFields = wrongFields,
+                                description = description.trim(),
+                            ),
+                        ),
+                    onSuccess = { showShopInformationReportSuccess() },
+                    onError = { showShopInformationReportFailure() },
+                )
+            }
     }
 
     private fun showShopInformationReportSuccess() {
@@ -506,24 +497,25 @@ class MapViewModel(
         showToast(Res.string.shop_information_report_failure_message, ToastType.ERROR)
     }
 
-    private suspend fun submitUnregisteredPlaceReport(placeUrl: String) {
-        val extractedPlaceUrl = PlaceReportTextParser.extractSupportedUrl(placeUrl)
-        if (extractedPlaceUrl == null) {
-            showToast(Res.string.place_report_invalid_url_message, ToastType.ERROR)
-            return
-        }
-
-        val loadedShop =
-            currentState.shops.values.firstOrNull {
-                PlaceReportTextParser.matchesSharedPlace(placeUrl, it)
+    private fun submitUnregisteredPlaceReport(placeUrl: String) {
+        startPlaceReport {
+            val extractedPlaceUrl = PlaceReportTextParser.extractSupportedUrl(placeUrl)
+            if (extractedPlaceUrl == null) {
+                showToast(Res.string.place_report_invalid_url_message, ToastType.ERROR)
+                return@startPlaceReport
             }
-        val existingShop =
-            loadedShop ?: findExistingShop(placeUrl)
 
-        if (existingShop != null) {
-            showToast(Res.string.place_report_existing_shop_message)
-        } else {
-            submitUnregisteredPlaceReport(UnregisteredPlaceReport(placeUrl = extractedPlaceUrl))
+            val loadedShop =
+                currentState.shops.values.firstOrNull {
+                    PlaceReportTextParser.matchesSharedPlace(placeUrl, it)
+                }
+            val existingShop = loadedShop ?: findExistingShop(placeUrl)
+
+            if (existingShop != null) {
+                showToast(Res.string.place_report_existing_shop_message)
+            } else {
+                submitUnregisteredPlaceReport(UnregisteredPlaceReport(placeUrl = extractedPlaceUrl))
+            }
         }
     }
 
@@ -538,14 +530,24 @@ class MapViewModel(
         }
     }
 
-    private suspend fun submitCurrentLocationReport() {
-        val location = currentState.currentLocation
-        if (location == null) {
-            showToast(Res.string.place_report_location_unavailable_message, ToastType.ERROR)
-            return
-        }
+    private fun submitCurrentLocationReport() {
+        startPlaceReport {
+            val location = currentState.currentLocation
+            if (location == null) {
+                showToast(Res.string.place_report_location_unavailable_message, ToastType.ERROR)
+                return@startPlaceReport
+            }
 
-        submitUnregisteredPlaceReport(UnregisteredPlaceReport(location = location))
+            submitUnregisteredPlaceReport(UnregisteredPlaceReport(location = location))
+        }
+    }
+
+    private fun startPlaceReport(block: suspend () -> Unit) {
+        if (placeReportJob?.isActive == true) return
+        placeReportJob =
+            viewModelScope.launch {
+                block()
+            }
     }
 
     private suspend fun submitUnregisteredPlaceReport(report: UnregisteredPlaceReport) {
