@@ -38,6 +38,5 @@ object ChromaticColor {
 }
 
 object LoginColor {
-    val Google = Color(0xFFFFFFFF)
     val Kakao = Color(0xFFFEE500)
 }

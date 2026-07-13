@@ -13,6 +13,7 @@ composeMultiplatform = "1.11.1"
 kotlin = "2.4.0"
 material3 = "1.11.0-alpha07"
 navigationevent = "1.1.0"
+navigation3 = "1.1.4"
 supabase = "3.6.0"
 ktor = "3.5.1"
 koin = "4.2.2"
@@ -38,6 +39,7 @@ compose-ui = { module = "org.jetbrains.compose.ui:ui", version.ref = "composeMul
 compose-components-resources = { module = "org.jetbrains.compose.components:components-resources", version.ref = "composeMultiplatform" }
 compose-uiToolingPreview = { module = "org.jetbrains.compose.ui:ui-tooling-preview", version.ref = "composeMultiplatform" }
 navigationevent-compose = { module = "org.jetbrains.androidx.navigationevent:navigationevent-compose", version.ref = "navigationevent" }
+androidx-navigation3-runtime = { module = "androidx.navigation3:navigation3-runtime", version.ref = "navigation3" }
 naver-map = { module = "com.naver.maps:map-sdk", version.ref = "naver-map" }
 play-services-location = { module = "com.google.android.gms:play-services-location", version.ref = "play-services-location" }
 kakao-user = { module = "com.kakao.sdk:v2-user", version.ref = "kakao" }
