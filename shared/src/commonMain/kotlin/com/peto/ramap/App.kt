@@ -9,8 +9,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import com.peto.ramap.designsystem.toast.ToastHost
 import com.peto.ramap.designsystem.toast.ToastManager
 import com.peto.ramap.domain.repository.LoginRepository
+import com.peto.ramap.navigation.AppRoute
 import com.peto.ramap.theme.RamapTheme
-import com.peto.ramap.ui.map.MapRoute
 import org.koin.compose.koinInject
 
 @Composable
@@ -25,7 +25,7 @@ fun App(
 
     RamapTheme {
         Box(modifier = Modifier.fillMaxSize()) {
-            MapRoute(toastManager = toastManager)
+            AppRoute()
 
             ToastHost(toastManager = toastManager)
         }
