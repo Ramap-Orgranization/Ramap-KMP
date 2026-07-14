@@ -33,7 +33,7 @@ class NavigationStateTest {
     }
 
     @Test
-    fun showingMapFromEvent_backReturnsToEvent() {
+    fun showingMapFromEvent_replacesEventFlow() {
         val backStack = NavBackStack<NavKey>(ScreenRoutes.TabRoutes)
         val navigationState = NavigationState(backStack)
         val eventRoute = ScreenRoutes.EventDetailRoutes("event-id")
@@ -42,10 +42,20 @@ class NavigationStateTest {
         navigationState.showMap()
 
         assertEquals(ScreenRoutes.TabRoutes, navigationState.currentRoute)
+        assertEquals(1, navigationState.backStack.size)
+        assertEquals(TabStatus.MAP, navigationState.selectedTab)
+    }
 
-        navigationState.pop()
+    @Test
+    fun selectingEventTabAfterShowingMapFromEvent_opensEventTab() {
+        val navigationState = NavigationState(NavBackStack<NavKey>(ScreenRoutes.EventTabRoutes))
+        navigationState.showEvent(event())
+        navigationState.showMap()
 
-        assertEquals(eventRoute, navigationState.currentRoute)
+        navigationState.selectTopLevelTab(TabStatus.EVENT)
+
+        assertEquals(ScreenRoutes.EventTabRoutes, navigationState.currentRoute)
+        assertEquals(TabStatus.EVENT, navigationState.selectedTab)
     }
 
     private fun event() =

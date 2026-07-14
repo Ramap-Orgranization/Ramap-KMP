@@ -57,8 +57,7 @@ class NavigationState(
 
     fun selectTopLevelTab(tab: TabStatus) {
         val rootRoute = tab.toRootRoute()
-        val currentRoot = backStack.firstOrNull()
-        if (currentRoot == rootRoute && backStack.isNotEmpty()) return
+        if (currentRoute == rootRoute) return
 
         backStack.clear()
         backStack.add(rootRoute)
@@ -66,11 +65,6 @@ class NavigationState(
     }
 
     fun showMap() {
-        if (currentRoute is ScreenRoutes.EventDetailRoutes) {
-            backStack.add(ScreenRoutes.TabRoutes)
-            return
-        }
-
         selectTopLevelTab(TabStatus.MAP)
     }
 }
