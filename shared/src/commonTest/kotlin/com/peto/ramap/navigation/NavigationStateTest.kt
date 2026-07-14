@@ -4,10 +4,22 @@ import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
 import com.peto.ramap.domain.model.ShopEvent
 import com.peto.ramap.domain.model.ShopEventType
+import com.peto.ramap.ui.main.map.model.TabStatus
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class NavigationStateTest {
+    @Test
+    fun eventDetail_preservesEventTabSelection() {
+        val navigationState = NavigationState(NavBackStack<NavKey>(ScreenRoutes.EventTabRoutes))
+
+        navigationState.showEvent(event())
+
+        assertEquals(TabStatus.EVENT, navigationState.selectedTab)
+        navigationState.pop()
+        assertEquals(ScreenRoutes.EventTabRoutes, navigationState.currentRoute)
+    }
+
     @Test
     fun showingEvent_keepsSelectedEventForDetail() {
         val navigationState = NavigationState(NavBackStack<NavKey>(ScreenRoutes.TabRoutes))
@@ -17,6 +29,7 @@ class NavigationStateTest {
 
         assertEquals(event, navigationState.selectedEvent)
         assertEquals(ScreenRoutes.EventDetailRoutes(event.id), navigationState.currentRoute)
+        assertEquals(TabStatus.MAP, navigationState.selectedTab)
     }
 
     @Test

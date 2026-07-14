@@ -17,6 +17,26 @@ import kotlin.test.assertEquals
 
 class DefaultRamenShopRepositoryTest {
     @Test
+    fun `활성 이벤트 목록은 잘못된 타입을 제외하고 응답 순서를 유지한다`() =
+        runTest {
+            val repository =
+                DefaultRamenShopRepository(
+                    FakeRamenShopDataSource(
+                        activeEventsResponses =
+                            listOf(
+                                shopEventResponse().copy(id = "today", isToday = true),
+                                shopEventResponse().copy(id = "invalid", eventType = "unknown"),
+                                shopEventResponse().copy(id = "upcoming"),
+                            ),
+                    ),
+                )
+
+            val events = repository.fetchActiveEvents().getOrThrow()
+
+            assertEquals(listOf("today", "upcoming"), events.map { it.id })
+        }
+
+    @Test
     fun `한 콜라보에 상대가 여러 명이면 특정 매장명을 노출하지 않는다`() =
         runTest {
             val repository =

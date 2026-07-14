@@ -1,0 +1,109 @@
+package com.peto.ramap.ui.event.list
+
+import com.peto.ramap.core.result.RamapError
+import com.peto.ramap.coroutinesTest
+import com.peto.ramap.domain.model.ShopEvent
+import com.peto.ramap.domain.model.ShopEventType
+import com.peto.ramap.fake.FakeRamenShopRepository
+import com.peto.ramap.ui.common.LoadState
+import com.peto.ramap.ui.main.event.list.EventListViewModel
+import com.peto.ramap.ui.main.event.list.contract.OnEventListEntered
+import com.peto.ramap.ui.main.event.list.contract.OnEventListRefreshed
+import com.peto.ramap.ui.main.event.list.contract.OnEventListRetried
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.advanceTimeBy
+import kotlinx.coroutines.test.runCurrent
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
+
+@OptIn(ExperimentalCoroutinesApi::class)
+class EventListViewModelTest {
+    @Test
+    fun `이벤트를 불러오면 목록을 표시한다`() =
+        coroutinesTest {
+            val event = event()
+            val viewModel =
+                EventListViewModel(FakeRamenShopRepository(activeEvents = listOf(event)))
+
+            viewModel.dispatch(OnEventListEntered)
+            runCurrent()
+
+            assertEquals(LoadState.Content(listOf(event)), viewModel.uiState.value.eventsState)
+        }
+
+    @Test
+    fun `목록 재진입은 이미 불러온 이벤트를 다시 요청하지 않는다`() =
+        coroutinesTest {
+            val repository = FakeRamenShopRepository(activeEvents = listOf(event()))
+            val viewModel = EventListViewModel(repository)
+            viewModel.dispatch(OnEventListEntered)
+            runCurrent()
+
+            viewModel.dispatch(OnEventListEntered)
+            runCurrent()
+
+            assertEquals(1, repository.activeEventsRequestCount)
+        }
+
+    @Test
+    fun `새로고침 중에는 기존 목록을 유지하고 완료 후 상태를 해제한다`() =
+        coroutinesTest {
+            val event = event()
+            val repository = FakeRamenShopRepository(activeEvents = listOf(event))
+            val viewModel = EventListViewModel(repository)
+            viewModel.dispatch(OnEventListEntered)
+            runCurrent()
+            repository.activeEventsDelayMillis = 1_000
+
+            viewModel.dispatch(OnEventListRefreshed)
+            runCurrent()
+
+            assertEquals(2, repository.activeEventsRequestCount)
+            assertEquals(LoadState.Content(listOf(event)), viewModel.uiState.value.eventsState)
+            assertTrue(viewModel.uiState.value.isRefreshing)
+
+            advanceTimeBy(1_000)
+            runCurrent()
+
+            assertFalse(viewModel.uiState.value.isRefreshing)
+        }
+
+    @Test
+    fun `이벤트 조회 실패 후 재시도해도 오류 상태를 표시한다`() =
+        coroutinesTest {
+            val viewModel =
+                EventListViewModel(
+                    FakeRamenShopRepository(error = RamapError.Unknown(IllegalStateException("failure"))),
+                )
+            viewModel.dispatch(OnEventListEntered)
+            runCurrent()
+
+            viewModel.dispatch(OnEventListRetried)
+            runCurrent()
+
+            assertEquals(LoadState.Error, viewModel.uiState.value.eventsState)
+        }
+
+    private fun event() =
+        ShopEvent(
+            id = "event",
+            type = ShopEventType.POPUP,
+            title = "팝업",
+            description = "설명",
+            startDate = "2026-07-15",
+            endDate = "2026-07-16",
+            sourceUrl = "https://instagram.com/event",
+            isToday = false,
+            isVenue = true,
+            venueShopId = "shop",
+            venueShopName = "매장",
+            venueAddress = "서울",
+            collaboratorShopId = null,
+            collaboratorName = null,
+            collaboratorInstagramUrl = null,
+            waitingMethod = null,
+            waitingUrl = null,
+        )
+}
