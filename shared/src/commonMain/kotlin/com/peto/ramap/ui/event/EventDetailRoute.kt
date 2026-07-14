@@ -30,6 +30,7 @@ import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.ChromaticColor
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.InstagramColor
+import com.peto.ramap.ui.main.component.SectionCard
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
@@ -94,30 +95,37 @@ fun EventDetailScreen(
                 EventTag(event.type.label())
             }
             AppText(event.title, style = AppTextStyle.H1, color = GrayColor.C500)
-            EventSection(stringResource(Res.string.event_venue)) {
-                EventLink(event.venueShopName, event.venueAddress) { onShopClick(event.venueShopId) }
-            }
-            event.collaboratorName?.takeIf(String::isNotBlank)?.let { name ->
-                EventSection(
-                    stringResource(
-                        if (event.collaboratorShopId.isNullOrBlank()) {
-                            Res.string.event_collaborator_person
-                        } else {
-                            Res.string.event_collaborator_shop
-                        },
-                    ),
+            SectionCard(title = stringResource(Res.string.event_venue)) {
+                Column(
+                    modifier = Modifier.padding(top = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(20.dp),
                 ) {
-                    EventLink(name) {
-                        event.collaboratorShopId?.takeIf(String::isNotBlank)?.let(onShopClick)
-                            ?: event.collaboratorInstagramUrl?.takeIf(String::isNotBlank)?.let(uriHandler::openUri)
+                    EventLink(event.venueShopName, event.venueAddress) { onShopClick(event.venueShopId) }
+                    event.collaboratorName?.takeIf(String::isNotBlank)?.let { name ->
+                        EventSection(
+                            stringResource(
+                                if (event.collaboratorShopId.isNullOrBlank()) {
+                                    Res.string.event_collaborator_person
+                                } else {
+                                    Res.string.event_collaborator_shop
+                                },
+                            ),
+                        ) {
+                            EventLink(name) {
+                                event.collaboratorShopId?.takeIf(String::isNotBlank)?.let(onShopClick)
+                                    ?: event.collaboratorInstagramUrl?.takeIf(String::isNotBlank)?.let(uriHandler::openUri)
+                            }
+                        }
                     }
+                    EventSection(stringResource(Res.string.event_date)) { EventValue(event.formattedDate) }
                 }
             }
-            EventSection(stringResource(Res.string.event_date)) { EventValue(event.formattedDate) }
-            EventSection(stringResource(Res.string.event_content)) { EventValue(event.description) }
+            SectionCard(title = stringResource(Res.string.event_content)) {
+                EventValue(event.description, Modifier.padding(top = 16.dp))
+            }
             event.waitingMethod?.let { waiting ->
-                EventSection(stringResource(Res.string.event_waiting)) {
-                    EventValue(waiting)
+                SectionCard(title = stringResource(Res.string.event_waiting)) {
+                    EventValue(waiting, Modifier.padding(top = 16.dp))
                     event.waitingUrl?.let { url ->
                         AppButton(
                             text = stringResource(Res.string.event_waiting_action),
@@ -173,7 +181,10 @@ private fun EventSection(
 }
 
 @Composable
-private fun EventValue(value: String) = AppText(value, style = AppTextStyle.B2, color = GrayColor.C500)
+private fun EventValue(
+    value: String,
+    modifier: Modifier = Modifier,
+) = AppText(value, modifier = modifier, style = AppTextStyle.B2, color = GrayColor.C500)
 
 @Composable
 private fun EventLink(
