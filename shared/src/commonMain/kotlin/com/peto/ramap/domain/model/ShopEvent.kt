@@ -18,6 +18,7 @@ data class ShopEvent(
     val collaboratorInstagramUrl: String?,
     val waitingMethod: String?,
     val waitingUrl: String?,
+    val venueProfileImageUrl: String? = null,
     val activeEventCount: Int = 1,
     val collaborationPartnerCount: Int? = null,
 ) {

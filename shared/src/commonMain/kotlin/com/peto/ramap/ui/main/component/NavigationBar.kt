@@ -27,9 +27,11 @@ import com.peto.ramap.ui.main.map.model.TabStatus
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
+import ramap.shared.generated.resources.ic_event
 import ramap.shared.generated.resources.ic_map
 import ramap.shared.generated.resources.ic_map_selected
 import ramap.shared.generated.resources.ic_person
+import ramap.shared.generated.resources.top_level_tab_event
 import ramap.shared.generated.resources.top_level_tab_map
 import ramap.shared.generated.resources.top_level_tab_my
 
@@ -73,11 +75,13 @@ private fun TabItem(
     val icon =
         when (tab) {
             TabStatus.MAP -> if (selected) Res.drawable.ic_map_selected else Res.drawable.ic_map
+            TabStatus.EVENT -> Res.drawable.ic_event
             TabStatus.MY -> Res.drawable.ic_person
         }
     val label =
         when (tab) {
             TabStatus.MAP -> stringResource(Res.string.top_level_tab_map)
+            TabStatus.EVENT -> stringResource(Res.string.top_level_tab_event)
             TabStatus.MY -> stringResource(Res.string.top_level_tab_my)
         }
 

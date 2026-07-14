@@ -28,10 +28,16 @@ class NavigationState(
         get() =
             when (currentRoute) {
                 ScreenRoutes.TabRoutes -> TabStatus.MAP
+                ScreenRoutes.EventTabRoutes -> TabStatus.EVENT
                 ScreenRoutes.MyTabRoutes,
                 ScreenRoutes.HiddenShopListRoutes,
-                is ScreenRoutes.EventDetailRoutes,
                 -> TabStatus.MY
+                is ScreenRoutes.EventDetailRoutes ->
+                    if (backStack.firstOrNull() == ScreenRoutes.EventTabRoutes) {
+                        TabStatus.EVENT
+                    } else {
+                        TabStatus.MAP
+                    }
             }
 
     fun showHiddenShops() {
@@ -78,6 +84,7 @@ fun rememberNavigationState(): NavigationState {
                     SerializersModule {
                         polymorphic(NavKey::class) {
                             subclass(ScreenRoutes.TabRoutes::class)
+                            subclass(ScreenRoutes.EventTabRoutes::class)
                             subclass(ScreenRoutes.MyTabRoutes::class)
                             subclass(ScreenRoutes.HiddenShopListRoutes::class)
                             subclass(ScreenRoutes.EventDetailRoutes::class)
@@ -96,5 +103,6 @@ fun rememberNavigationState(): NavigationState {
 private fun TabStatus.toRootRoute(): ScreenRoutes =
     when (this) {
         TabStatus.MAP -> ScreenRoutes.TabRoutes
+        TabStatus.EVENT -> ScreenRoutes.EventTabRoutes
         TabStatus.MY -> ScreenRoutes.MyTabRoutes
     }

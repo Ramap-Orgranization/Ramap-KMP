@@ -7,6 +7,7 @@ import com.peto.ramap.domain.model.RamenShops
 import com.peto.ramap.domain.model.SearchQuery
 import com.peto.ramap.domain.model.ShopEvent
 import com.peto.ramap.domain.repository.RamenShopRepository
+import kotlinx.coroutines.delay
 
 class FakeRamenShopRepository(
     private val result: RamenShops = RamenShops(emptyMap()),
@@ -14,9 +15,20 @@ class FakeRamenShopRepository(
     private val searchResult: RamenShops = RamenShops(emptyMap()),
     private val error: RamapError? = null,
     private val activeEvent: ShopEvent? = null,
+    private val activeEvents: List<ShopEvent> = emptyList(),
+    var activeEventsDelayMillis: Long = 0,
 ) : RamenShopRepository {
     override suspend fun fetchActiveShopEvent(shopId: String): RamapResult<ShopEvent?> =
         error?.let { RamapResult.Error(it) } ?: RamapResult.Success(activeEvent)
+
+    var activeEventsRequestCount = 0
+        private set
+
+    override suspend fun fetchActiveEvents(): RamapResult<List<ShopEvent>> {
+        activeEventsRequestCount += 1
+        delay(activeEventsDelayMillis)
+        return error?.let { RamapResult.Error(it) } ?: RamapResult.Success(activeEvents)
+    }
 
     val requestedBoundsHistory = mutableListOf<MapBounds>()
     val requestedShopIdsHistory = mutableListOf<Set<String>>()

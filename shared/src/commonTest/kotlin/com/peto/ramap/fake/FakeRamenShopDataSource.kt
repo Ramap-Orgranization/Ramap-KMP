@@ -12,10 +12,13 @@ class FakeRamenShopDataSource(
     private val searchResponses: List<RamenShopResponse> = emptyList(),
     private val fetchByIdsResponses: List<RamenShopResponse> = emptyList(),
     private val activeEventResponses: List<ShopEventResponse> = emptyList(),
+    private val activeEventsResponses: List<ShopEventResponse> = emptyList(),
     private val participantResponses: List<ShopEventParticipantResponse> = emptyList(),
     private val error: Throwable? = null,
 ) : RamenShopDataSource {
     override suspend fun fetchActiveShopEvents(shopId: String): List<ShopEventResponse> = activeEventResponses
+
+    override suspend fun fetchActiveEvents(): List<ShopEventResponse> = activeEventsResponses
 
     override suspend fun fetchShopEventParticipants(eventId: String): List<ShopEventParticipantResponse> = participantResponses
 

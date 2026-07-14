@@ -13,6 +13,8 @@ interface RamenShopRepository {
 
     suspend fun fetchActiveShopEvent(shopId: String): RamapResult<ShopEvent?>
 
+    suspend fun fetchActiveEvents(): RamapResult<List<ShopEvent>>
+
     suspend fun searchRamenShops(
         query: SearchQuery,
         limit: Int,

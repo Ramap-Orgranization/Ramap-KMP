@@ -11,8 +11,9 @@ import androidx.navigationevent.compose.rememberNavigationEventState
 import com.peto.ramap.designsystem.toast.ToastManager
 import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
-import com.peto.ramap.ui.event.EventDetailRoute
 import com.peto.ramap.ui.hidden.HiddenShopListRoute
+import com.peto.ramap.ui.main.event.EventDetailRoute
+import com.peto.ramap.ui.main.event.list.EventListRoute
 import com.peto.ramap.ui.main.map.MapRoute
 import com.peto.ramap.ui.main.map.MapViewModel
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopIdSelected
@@ -74,6 +75,9 @@ fun AppRoute(
         },
         myContent = {
             MyTabRoute(onHiddenShopsNavigate = navigationState::showHiddenShops)
+        },
+        eventListContent = {
+            EventListRoute(onEventClick = navigationState::showEvent)
         },
         hiddenContent = {
             HiddenShopListRoute(

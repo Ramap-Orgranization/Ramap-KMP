@@ -5,18 +5,27 @@ import com.peto.ramap.data.model.ShopEventParticipantResponse
 import com.peto.ramap.data.model.ShopEventResponse
 import com.peto.ramap.domain.model.MapBounds
 import com.peto.ramap.domain.model.SearchQuery
+import com.peto.ramap.shared.RamapConfig
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.from
 
 class RemoteRamenShopDataSource(
     private val client: SupabaseClient,
 ) : RamenShopDataSource {
+    override suspend fun fetchActiveEvents(): List<ShopEventResponse> =
+        client
+            .from(ACTIVE_EVENTS_VIEW)
+            .select()
+            .decodeList<ShopEventResponse>()
+            .map(::resolveProfileImageUrl)
+
     override suspend fun fetchActiveShopEvents(shopId: String): List<ShopEventResponse> =
         client
             .from(EVENT_VIEW)
             .select {
                 filter { eq(COLUMN_SHOP_CONTEXT_ID, shopId) }
-            }.decodeList()
+            }.decodeList<ShopEventResponse>()
+            .map(::resolveProfileImageUrl)
 
     override suspend fun fetchShopEventParticipants(eventId: String): List<ShopEventParticipantResponse> =
         client
@@ -86,9 +95,19 @@ class RemoteRamenShopDataSource(
                 limit(limit.toLong())
             }.decodeList()
 
+    private fun resolveProfileImageUrl(event: ShopEventResponse): ShopEventResponse =
+        event.copy(
+            venueProfileImageUrl =
+                event.venueProfileImageUrl?.let { path ->
+                    "${RamapConfig.SUPABASE_URL}/storage/v1/object/public/$PROFILE_BUCKET/$path"
+                },
+        )
+
     companion object {
         private const val TABLE_NAME = "shops"
         private const val EVENT_VIEW = "active_shop_events"
+        private const val ACTIVE_EVENTS_VIEW = "active_events"
+        private const val PROFILE_BUCKET = "shop-profile-images"
         private const val EVENT_PARTICIPANT_TABLE = "shop_event_participants"
         private const val COLUMN_SHOP_CONTEXT_ID = "shop_context_id"
         private const val COLUMN_EVENT_ID = "event_id"

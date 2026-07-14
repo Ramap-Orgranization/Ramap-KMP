@@ -26,3 +26,5 @@ iosApp/Pods/
 docs/
 AGENTS.md
 .scratch/
+**/__pycache__/
+*.pyc

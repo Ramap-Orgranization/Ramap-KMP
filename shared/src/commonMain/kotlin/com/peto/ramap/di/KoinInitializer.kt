@@ -5,6 +5,7 @@ import com.peto.ramap.data.repository.di.repositoryModule
 import com.peto.ramap.designsystem.di.designSystemModule
 import com.peto.ramap.platform.di.platformModule
 import com.peto.ramap.ui.hidden.di.hiddenModule
+import com.peto.ramap.ui.main.event.list.di.eventListModule
 import com.peto.ramap.ui.main.map.di.mapModule
 import com.peto.ramap.ui.main.my.di.myTabModule
 import org.koin.core.context.startKoin
@@ -22,6 +23,7 @@ fun initKoin(appDeclaration: KoinAppDeclaration = {}) {
             mapModule,
             myTabModule,
             hiddenModule,
+            eventListModule,
         )
     }
 }

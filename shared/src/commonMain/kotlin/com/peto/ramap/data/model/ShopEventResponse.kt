@@ -24,6 +24,7 @@ data class ShopEventResponse(
     @SerialName("collaborator_instagram_url") val collaboratorInstagramUrl: String? = null,
     @SerialName("waiting_method") val waitingMethod: String? = null,
     @SerialName("waiting_url") val waitingUrl: String? = null,
+    @SerialName("venue_profile_image_url") val venueProfileImageUrl: String? = null,
 ) {
     fun toDomain(): ShopEvent? {
         val type = runCatching { ShopEventType.valueOf(eventType.uppercase()) }.getOrNull() ?: return null
@@ -45,6 +46,7 @@ data class ShopEventResponse(
             collaboratorInstagramUrl,
             waitingMethod,
             waitingUrl,
+            venueProfileImageUrl,
         )
     }
 }
