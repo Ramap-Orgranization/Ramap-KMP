@@ -21,6 +21,7 @@ fun NavigationRouter(
     selectedTab: TabStatus,
     onTabSelected: (TabStatus) -> Unit,
     mapContent: @Composable () -> Unit,
+    eventListContent: @Composable () -> Unit,
     myContent: @Composable () -> Unit,
     hiddenContent: @Composable () -> Unit,
     eventContent: @Composable () -> Unit,
@@ -57,6 +58,18 @@ fun NavigationRouter(
                 if (currentRoute == ScreenRoutes.MyTabRoutes) {
                     Box(modifier = Modifier.fillMaxSize()) {
                         myContent()
+                    }
+                }
+
+                if (
+                    currentRoute == ScreenRoutes.EventTabRoutes ||
+                    (
+                        currentRoute is ScreenRoutes.EventDetailRoutes &&
+                            selectedTab == TabStatus.EVENT
+                    )
+                ) {
+                    Box(modifier = Modifier.fillMaxSize()) {
+                        eventListContent()
                     }
                 }
             }

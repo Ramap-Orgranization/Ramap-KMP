@@ -1,4 +1,4 @@
-package com.peto.ramap.ui.event
+package com.peto.ramap.ui.main.event
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -92,7 +92,7 @@ fun EventDetailScreen(
         ) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 EventTag(stringResource(if (event.isToday) Res.string.event_status_today else Res.string.event_status_upcoming))
-                EventTag(event.type.label())
+                EventTag(eventTypeLabel(event.type))
             }
             AppText(event.title, style = AppTextStyle.H1, color = GrayColor.C500)
             SectionCard(title = stringResource(Res.string.event_venue)) {
@@ -199,9 +199,9 @@ private fun EventLink(
 }
 
 @Composable
-private fun ShopEventType.label(): String =
+private fun eventTypeLabel(type: ShopEventType): String =
     stringResource(
-        when (this) {
+        when (type) {
             ShopEventType.COLLAB -> Res.string.event_type_collab
             ShopEventType.POPUP -> Res.string.event_type_popup
             ShopEventType.LIMITED_MENU -> Res.string.event_type_limited_menu
