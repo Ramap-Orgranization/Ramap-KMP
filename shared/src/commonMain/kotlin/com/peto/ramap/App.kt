@@ -18,6 +18,7 @@ import org.koin.compose.koinInject
 fun App(
     loginRepository: LoginRepository = koinInject(),
     toastManager: ToastManager = koinInject(),
+    onExitRequested: (() -> Unit)? = null,
 ) {
     LaunchedEffect(loginRepository) {
         loginRepository.awaitInitialization()
@@ -25,7 +26,10 @@ fun App(
 
     RamapTheme {
         Box(modifier = Modifier.fillMaxSize()) {
-            AppRoute()
+            AppRoute(
+                toastManager = toastManager,
+                onExitRequested = onExitRequested,
+            )
 
             ToastHost(toastManager = toastManager)
         }
