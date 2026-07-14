@@ -11,9 +11,14 @@ import androidx.navigationevent.compose.rememberNavigationEventState
 import com.peto.ramap.designsystem.toast.ToastManager
 import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
+import com.peto.ramap.ui.event.EventDetailRoute
 import com.peto.ramap.ui.hidden.HiddenShopListRoute
 import com.peto.ramap.ui.main.map.MapRoute
+import com.peto.ramap.ui.main.map.MapViewModel
+import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopIdSelected
+import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopSelected
 import com.peto.ramap.ui.main.my.MyTabRoute
+import org.koin.compose.viewmodel.koinViewModel
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.app_exit_back_message
 import kotlin.time.Duration.Companion.seconds
@@ -25,6 +30,7 @@ fun AppRoute(
     onExitRequested: (() -> Unit)?,
 ) {
     val navigationState = rememberNavigationState()
+    val mapViewModel: MapViewModel = koinViewModel()
     val backEventState =
         rememberNavigationEventState<NavigationEventInfo>(
             currentInfo = NavigationEventInfo.None,
@@ -61,8 +67,9 @@ fun AppRoute(
         onTabSelected = navigationState::selectTopLevelTab,
         mapContent = {
             MapRoute(
-                selectedShop = navigationState.selectedShop,
-                onSelectedShopHandled = navigationState::clearSelectedShop,
+                isBackEnabled = navigationState.currentRoute !is ScreenRoutes.EventDetailRoutes,
+                onEventNavigate = navigationState::showEvent,
+                viewModel = mapViewModel,
             )
         },
         myContent = {
@@ -71,7 +78,20 @@ fun AppRoute(
         hiddenContent = {
             HiddenShopListRoute(
                 onBackClick = navigationState::pop,
-                onShopClick = navigationState::showShopOnMap,
+                onShopClick = { shop ->
+                    mapViewModel.dispatch(OnShopSelected(shop))
+                    navigationState.showMap()
+                },
+            )
+        },
+        eventContent = {
+            EventDetailRoute(
+                event = requireNotNull(navigationState.selectedEvent),
+                onBack = navigationState::pop,
+                onShopClick = { shopId ->
+                    mapViewModel.dispatch(OnShopIdSelected(shopId))
+                    navigationState.showMap()
+                },
             )
         },
     )

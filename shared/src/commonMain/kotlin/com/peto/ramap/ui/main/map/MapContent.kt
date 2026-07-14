@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Surface
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
@@ -41,11 +42,11 @@ import com.peto.ramap.domain.model.Category
 import com.peto.ramap.domain.model.Location
 import com.peto.ramap.domain.model.MapBounds
 import com.peto.ramap.domain.model.RamenShop
+import com.peto.ramap.domain.model.ShopEvent
 import com.peto.ramap.domain.model.ShopInformationField
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
-import com.peto.ramap.ui.common.LoadState
 import com.peto.ramap.ui.main.component.LaduckLoadingContent
 import com.peto.ramap.ui.main.component.LoadErrorContent
 import com.peto.ramap.ui.main.component.MapCircleIconButton
@@ -70,10 +71,7 @@ import ramap.shared.generated.resources.ic_kid_star
 import ramap.shared.generated.resources.initial_map_error_description
 import ramap.shared.generated.resources.initial_map_error_title
 import ramap.shared.generated.resources.initial_map_loading_message
-import ramap.shared.generated.resources.laduck_error_confused
 import ramap.shared.generated.resources.laduck_error_crying
-import ramap.shared.generated.resources.shop_detail_error_description
-import ramap.shared.generated.resources.shop_detail_error_title
 import ramap.shared.generated.resources.shop_detail_link_report
 import ramap.shared.generated.resources.shop_information_report_action
 import ramap.shared.generated.resources.shop_information_report_description
@@ -83,6 +81,7 @@ import ramap.shared.generated.resources.shop_information_report_placeholder
 @Composable
 fun MapContent(
     uiState: MapUiState,
+    isBackEnabled: Boolean,
     onBoundsChanged: (MapBounds) -> Unit,
     onMyLocationChanged: (Location) -> Unit,
     onLocationPermissionBlocked: () -> Unit,
@@ -92,10 +91,10 @@ fun MapContent(
     onSearchResultsDismissed: () -> Unit,
     onInitialMapRetry: () -> Unit,
     onInitialLocationFocusConsumed: () -> Unit,
-    onShopDetailRetry: () -> Unit,
     onCategoryFilterToggled: (Category) -> Unit,
     onBookmarkToggled: (RamenShop) -> Unit,
     onHiddenToggled: (RamenShop) -> Unit,
+    onEventClick: (ShopEvent) -> Unit,
     onReportSubmit: (Set<ShopInformationField>, String) -> Unit,
     onBookmarkedShopsToggle: () -> Unit,
 ) {
@@ -129,7 +128,7 @@ fun MapContent(
 
         NavigationBackHandler(
             state = backEventState,
-            isBackEnabled = selectedShop != null,
+            isBackEnabled = isBackEnabled && selectedShop != null,
             onBackCompleted = onShopDetailDismissed,
         )
 
@@ -183,6 +182,7 @@ fun MapContent(
         CommonBottomSheet(
             visible = uiState.showSearchResults,
             onDismissRequest = onSearchResultsDismissed,
+            isBackEnabled = isBackEnabled,
             config = CommonBottomSheetConfig(),
         ) {
             val searchResultGuide = uiState.searchResultGuide
@@ -198,38 +198,37 @@ fun MapContent(
 
         selectedShop?.let { shop ->
             CommonBottomSheet(
-                visible = true,
+                visible = uiState.shopDetail != null,
                 onDismissRequest = onShopDetailDismissed,
+                isBackEnabled = isBackEnabled,
                 config = CommonBottomSheetConfig(maxHeight = detailBottomSheetMaxHeight),
             ) {
-                when (uiState.shopDetailState) {
-                    LoadState.Idle, LoadState.Loading -> LaduckLoadingContent()
-                    LoadState.Error ->
-                        LoadErrorContent(
-                            image = Res.drawable.laduck_error_confused,
-                            title = stringResource(Res.string.shop_detail_error_title),
-                            description = stringResource(Res.string.shop_detail_error_description),
-                            onRetry = onShopDetailRetry,
-                            compact = true,
-                        )
-
-                    is LoadState.Content ->
-                        RamenShopDetailContent(
-                            shop = shop,
-                            waitingSystem = uiState.shopWaiting[shop.id],
-                            isBookmarked = shop.id in uiState.bookmarkedShopIds,
-                            isHidden = shop.id in uiState.hiddenShopIds,
-                            onBookmarkClick = { onBookmarkToggled(shop) },
-                            onHiddenClick = {
-                                if (uiState.isLoggedIn && shop.id !in uiState.hiddenShopIds) {
-                                    hideConfirmShop = shop
-                                } else {
-                                    onHiddenToggled(shop)
-                                }
-                            },
-                            onReportClick = { showReportDialog = true },
-                        )
+                uiState.shopDetail?.let { detail ->
+                    RamenShopDetailContent(
+                        shop = shop,
+                        waitingSystem = uiState.shopWaiting[shop.id],
+                        isBookmarked = shop.id in uiState.bookmarkedShopIds,
+                        isHidden = shop.id in uiState.hiddenShopIds,
+                        onBookmarkClick = { onBookmarkToggled(shop) },
+                        onHiddenClick = {
+                            if (uiState.isLoggedIn && shop.id !in uiState.hiddenShopIds) {
+                                hideConfirmShop = shop
+                            } else {
+                                onHiddenToggled(shop)
+                            }
+                        },
+                        onReportClick = { showReportDialog = true },
+                        event = detail.event,
+                        onEventClick = onEventClick,
+                    )
                 }
+            }
+
+            if (uiState.isShopDetailLoading) {
+                CircularProgressIndicator(
+                    modifier = Modifier.align(Alignment.Center),
+                    color = GrayColor.C500,
+                )
             }
         }
 

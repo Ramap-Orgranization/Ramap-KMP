@@ -1,7 +1,6 @@
 package com.peto.ramap.ui.main.map
 
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -10,7 +9,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.peto.ramap.core.base.ObserveAsEvents
 import com.peto.ramap.designsystem.dialog.LoginGuideDialog
 import com.peto.ramap.designsystem.toast.ToastManager
-import com.peto.ramap.domain.model.RamenShop
+import com.peto.ramap.domain.model.ShopEvent
 import com.peto.ramap.platform.AppSettingsOpener
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnBookmarkToggled
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnBookmarkedShopsToggled
@@ -25,7 +24,6 @@ import com.peto.ramap.ui.main.map.contract.MapIntent.OnMyLocationChanged
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnQueryChanged
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnSearchResultsDismissed
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopDetailDismissed
-import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopDetailRetryClicked
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopReportSubmitted
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopSelected
 import com.peto.ramap.ui.main.map.contract.MapSideEffect.ShowLoginGuide
@@ -35,20 +33,14 @@ import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 fun MapRoute(
-    selectedShop: RamenShop? = null,
-    onSelectedShopHandled: () -> Unit = {},
+    isBackEnabled: Boolean = true,
+    onEventNavigate: (ShopEvent) -> Unit = {},
     toastManager: ToastManager = koinInject(),
     appSettingsOpener: AppSettingsOpener = koinInject(),
     viewModel: MapViewModel = koinViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var showLoginGuideDialog by remember { mutableStateOf(false) }
-
-    LaunchedEffect(selectedShop) {
-        val shop = selectedShop ?: return@LaunchedEffect
-        viewModel.dispatch(OnShopSelected(shop))
-        onSelectedShopHandled()
-    }
 
     ObserveAsEvents(viewModel.sideEffect) { sideEffect ->
         when (sideEffect) {
@@ -64,6 +56,7 @@ fun MapRoute(
 
     MapContent(
         uiState = uiState,
+        isBackEnabled = isBackEnabled,
         onBoundsChanged = { viewModel.dispatch(OnBoundsChanged(it)) },
         onMyLocationChanged = { viewModel.dispatch(OnMyLocationChanged(it)) },
         onLocationPermissionBlocked = { viewModel.dispatch(OnLocationPermissionBlocked) },
@@ -73,7 +66,6 @@ fun MapRoute(
         onSearchResultsDismissed = { viewModel.dispatch(OnSearchResultsDismissed) },
         onInitialMapRetry = { viewModel.dispatch(OnInitialMapRetryClicked) },
         onInitialLocationFocusConsumed = { viewModel.dispatch(OnInitialLocationFocusConsumed) },
-        onShopDetailRetry = { viewModel.dispatch(OnShopDetailRetryClicked) },
         onCategoryFilterToggled = { viewModel.dispatch(OnCategoryFilterToggled(it)) },
         onBookmarkToggled = { viewModel.dispatch(OnBookmarkToggled(it)) },
         onHiddenToggled = { viewModel.dispatch(OnHiddenToggled(it)) },
@@ -81,6 +73,7 @@ fun MapRoute(
             viewModel.dispatch(OnShopReportSubmitted(wrongFields, description))
         },
         onBookmarkedShopsToggle = { viewModel.dispatch(OnBookmarkedShopsToggled) },
+        onEventClick = onEventNavigate,
     )
 
     LoginGuideDialog(

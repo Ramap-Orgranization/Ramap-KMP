@@ -9,7 +9,7 @@ import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.savedstate.serialization.SavedStateConfiguration
-import com.peto.ramap.domain.model.RamenShop
+import com.peto.ramap.domain.model.ShopEvent
 import com.peto.ramap.ui.main.map.model.TabStatus
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.polymorphic
@@ -18,7 +18,7 @@ import kotlinx.serialization.modules.subclass
 class NavigationState(
     val backStack: NavBackStack<NavKey>,
 ) {
-    var selectedShop by mutableStateOf<RamenShop?>(null)
+    var selectedEvent by mutableStateOf<ShopEvent?>(null)
         private set
 
     val currentRoute: ScreenRoutes
@@ -30,6 +30,7 @@ class NavigationState(
                 ScreenRoutes.TabRoutes -> TabStatus.MAP
                 ScreenRoutes.MyTabRoutes,
                 ScreenRoutes.HiddenShopListRoutes,
+                is ScreenRoutes.EventDetailRoutes,
                 -> TabStatus.MY
             }
 
@@ -37,6 +38,11 @@ class NavigationState(
         if (currentRoute != ScreenRoutes.HiddenShopListRoutes) {
             backStack.add(ScreenRoutes.HiddenShopListRoutes)
         }
+    }
+
+    fun showEvent(event: ShopEvent) {
+        selectedEvent = event
+        backStack.add(ScreenRoutes.EventDetailRoutes(event.id))
     }
 
     fun pop() {
@@ -50,15 +56,16 @@ class NavigationState(
 
         backStack.clear()
         backStack.add(rootRoute)
+        selectedEvent = null
     }
 
-    fun showShopOnMap(shop: RamenShop) {
-        selectedShop = shop
+    fun showMap() {
+        if (currentRoute is ScreenRoutes.EventDetailRoutes) {
+            backStack.add(ScreenRoutes.TabRoutes)
+            return
+        }
+
         selectTopLevelTab(TabStatus.MAP)
-    }
-
-    fun clearSelectedShop() {
-        selectedShop = null
     }
 }
 
@@ -73,13 +80,17 @@ fun rememberNavigationState(): NavigationState {
                             subclass(ScreenRoutes.TabRoutes::class)
                             subclass(ScreenRoutes.MyTabRoutes::class)
                             subclass(ScreenRoutes.HiddenShopListRoutes::class)
+                            subclass(ScreenRoutes.EventDetailRoutes::class)
                         }
                     }
             }
         }
     val backStack =
         rememberNavBackStack(configuration = navigationConfiguration, ScreenRoutes.TabRoutes)
-    return remember(backStack) { NavigationState(backStack) }
+    return remember(backStack) {
+        backStack.removeAll { it is ScreenRoutes.EventDetailRoutes }
+        NavigationState(backStack)
+    }
 }
 
 private fun TabStatus.toRootRoute(): ScreenRoutes =

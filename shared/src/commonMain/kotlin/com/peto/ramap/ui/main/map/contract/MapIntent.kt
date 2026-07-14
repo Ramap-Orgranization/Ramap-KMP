@@ -24,13 +24,15 @@ sealed interface MapIntent : Intent {
         val shop: RamenShop,
     ) : MapIntent
 
+    data class OnShopIdSelected(
+        val shopId: String,
+    ) : MapIntent
+
     data object OnShopDetailDismissed : MapIntent
 
     data object OnSearchResultsDismissed : MapIntent
 
     data object OnInitialMapRetryClicked : MapIntent
-
-    data object OnShopDetailRetryClicked : MapIntent
 
     data class OnQueryChanged(
         val query: String,
