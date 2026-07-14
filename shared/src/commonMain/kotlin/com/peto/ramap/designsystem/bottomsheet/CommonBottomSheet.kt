@@ -1,69 +1,196 @@
 package com.peto.ramap.designsystem.bottomsheet
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.BottomSheetDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.navigationevent.NavigationEventInfo
+import androidx.navigationevent.compose.NavigationBackHandler
+import androidx.navigationevent.compose.rememberNavigationEventState
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
+import kotlinx.coroutines.delay
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CommonBottomSheet(
     visible: Boolean,
     onDismissRequest: () -> Unit,
+    isBackEnabled: Boolean = true,
     modifier: Modifier = Modifier,
     config: CommonBottomSheetConfig = CommonBottomSheetConfig(),
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    if (!visible) return
+    var internalVisible by remember { mutableStateOf(false) }
+    var isRendered by remember { mutableStateOf(false) }
 
-    val sheetState =
-        rememberModalBottomSheetState(
-            skipPartiallyExpanded = false,
+    LaunchedEffect(visible) {
+        if (visible) {
+            isRendered = true
+            withFrameNanos { }
+            internalVisible = true
+        } else {
+            internalVisible = false
+            delay(EXIT_ANIMATION_DURATION_MILLIS.toLong())
+            isRendered = false
+        }
+    }
+
+    if (!isRendered) return
+
+    val backEventState =
+        rememberNavigationEventState<NavigationEventInfo>(
+            currentInfo = NavigationEventInfo.None,
         )
+    NavigationBackHandler(
+        state = backEventState,
+        isBackEnabled = isBackEnabled && internalVisible,
+        onBackCompleted = onDismissRequest,
+    )
 
-    ModalBottomSheet(
-        onDismissRequest = onDismissRequest,
-        modifier = modifier,
-        sheetState = sheetState,
-        shape = config.shape,
-        containerColor = CommonColor.White,
-        tonalElevation = 0.dp,
-        scrimColor = config.scrimColor,
-        dragHandle = {
-            if (config.showHandle) {
-                BottomSheetDefaults.DragHandle(
-                    modifier =
-                        Modifier.padding(
-                            top = config.handleTopPadding,
-                            bottom = config.handleBottomPadding,
-                        ),
-                    color = GrayColor.C100,
-                )
-            }
-        },
+    BoxWithConstraints(
+        modifier = Modifier.fillMaxSize().then(modifier),
     ) {
-        Column(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .then(
-                        config.maxHeight?.let { maxHeight ->
-                            Modifier.heightIn(max = maxHeight)
-                        } ?: Modifier,
-                    ).verticalScroll(rememberScrollState()),
+        val sheetMaxHeight = config.maxHeight ?: maxHeight * config.maxHeightFraction
+
+        BottomSheetScrim(
+            visible = internalVisible,
+            config = config,
+            onDismissRequest = onDismissRequest,
+        )
+        BottomSheetContent(
+            modifier = Modifier.align(Alignment.BottomCenter),
+            visible = internalVisible,
+            config = config,
+            sheetMaxHeight = sheetMaxHeight,
             content = content,
         )
     }
 }
+
+@Composable
+private fun BottomSheetScrim(
+    visible: Boolean,
+    config: CommonBottomSheetConfig,
+    onDismissRequest: () -> Unit,
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+
+    AnimatedVisibility(
+        visible = visible,
+        enter = fadeIn(animationSpec = tween(SCRIM_ENTER_DURATION_MILLIS)),
+        exit = fadeOut(animationSpec = tween(SCRIM_EXIT_DURATION_MILLIS)),
+        modifier = Modifier.fillMaxSize(),
+    ) {
+        Box(
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .background(config.scrimColor)
+                    .clickable(
+                        enabled = config.dismissOnScrimClick,
+                        interactionSource = interactionSource,
+                        indication = null,
+                        onClick = onDismissRequest,
+                    ),
+        )
+    }
+}
+
+@Composable
+private fun BottomSheetContent(
+    modifier: Modifier,
+    visible: Boolean,
+    config: CommonBottomSheetConfig,
+    sheetMaxHeight: Dp,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    AnimatedVisibility(
+        visible = visible,
+        enter =
+            slideInVertically(
+                animationSpec = tween(SHEET_ENTER_DURATION_MILLIS),
+                initialOffsetY = { it },
+            ) + fadeIn(animationSpec = tween(SHEET_FADE_ENTER_DURATION_MILLIS)),
+        exit =
+            slideOutVertically(
+                animationSpec = tween(EXIT_ANIMATION_DURATION_MILLIS),
+                targetOffsetY = { it },
+            ) + fadeOut(animationSpec = tween(SHEET_FADE_EXIT_DURATION_MILLIS)),
+        modifier = modifier.fillMaxWidth(),
+    ) {
+        Surface(
+            shape = config.shape,
+            tonalElevation = 0.dp,
+            shadowElevation = 16.dp,
+            color = CommonColor.White,
+            modifier = Modifier.fillMaxWidth().heightIn(max = sheetMaxHeight),
+        ) {
+            Column(
+                modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                if (config.showHandle) {
+                    SheetHandle(config = config)
+                } else {
+                    Spacer(Modifier.height(config.handleTopPadding + config.handleBottomPadding))
+                }
+                content()
+            }
+        }
+    }
+}
+
+@Composable
+private fun SheetHandle(config: CommonBottomSheetConfig) {
+    Box(
+        modifier =
+            Modifier
+                .padding(
+                    top = config.handleTopPadding,
+                    bottom = config.handleBottomPadding,
+                ).width(32.dp)
+                .height(4.dp)
+                .background(
+                    color = GrayColor.C100,
+                    shape = RoundedCornerShape(2.dp),
+                ),
+    )
+}
+
+private const val SCRIM_ENTER_DURATION_MILLIS = 160
+private const val SCRIM_EXIT_DURATION_MILLIS = 160
+private const val SHEET_ENTER_DURATION_MILLIS = 220
+private const val SHEET_FADE_ENTER_DURATION_MILLIS = 140
+private const val EXIT_ANIMATION_DURATION_MILLIS = 180
+private const val SHEET_FADE_EXIT_DURATION_MILLIS = 120
