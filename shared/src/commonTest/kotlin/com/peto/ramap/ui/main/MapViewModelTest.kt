@@ -41,9 +41,9 @@ import com.peto.ramap.ui.main.map.contract.MapIntent.OnMyLocationChanged
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnQueryChanged
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnSearchResultsDismissed
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopDetailDismissed
+import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopIdSelected
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopReportSubmitted
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopSelected
-import com.peto.ramap.ui.main.map.contract.MapIntent.OnTopLevelTabChanged
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnUnregisteredPlaceReportSubmitted
 import com.peto.ramap.ui.main.map.contract.MapSideEffect.ShowLoginGuide
 import com.peto.ramap.ui.main.map.contract.MapSideEffect.ShowToast
@@ -51,7 +51,6 @@ import com.peto.ramap.ui.main.map.contract.MapUiState
 import com.peto.ramap.ui.main.map.model.MapPersonalization
 import com.peto.ramap.ui.main.map.model.SearchResultGuide
 import com.peto.ramap.ui.main.map.model.SearchUiState
-import com.peto.ramap.ui.main.map.model.TabStatus
 import io.github.jan.supabase.auth.status.SessionStatus
 import io.github.jan.supabase.auth.user.UserSession
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -261,23 +260,140 @@ class MapViewModelTest {
         }
 
     @Test
-    fun `이미 조회한 가게를 다시 선택하면 웨이팅 시스템을 중복 조회하지 않는다`() =
+    fun `이미 조회한 가게를 다시 선택하면 상세를 중복 조회하지 않고 즉시 표시한다`() =
         coroutinesTest {
             val shop = ramenShopFixture()
+            val ramenShopRepository =
+                FakeRamenShopRepository(fetchByIdsResult = RamenShops(mapOf(shop.id to shop)))
             val waitingSystemRepository =
                 FakeShopWaitingSystemRepository(result = waitingSystemFixture(shop.id))
             val viewModel =
                 mapViewModel(
-                    ramenShopRepository = FakeRamenShopRepository(fetchByIdsResult = RamenShops(mapOf(shop.id to shop))),
+                    ramenShopRepository = ramenShopRepository,
                     shopWaitingSystemRepository = waitingSystemRepository,
                 )
 
             viewModel.dispatch(OnShopSelected(shop))
             runCurrent()
+            viewModel.dispatch(OnShopDetailDismissed)
+            runCurrent()
             viewModel.dispatch(OnShopSelected(shop))
             runCurrent()
 
-            assertEquals(listOf(shop.id, shop.id), waitingSystemRepository.requestedShopIds)
+            assertEquals(listOf(setOf(shop.id)), ramenShopRepository.requestedShopIdsHistory)
+            assertEquals(listOf(shop.id), waitingSystemRepository.requestedShopIds)
+            assertEquals(listOf(shop.id), ramenShopRepository.requestedActiveEventShopIds)
+            assertEquals(
+                shop,
+                viewModel.uiState.value
+                    .shopDetail
+                    ?.shop,
+            )
+            assertEquals(false, viewModel.uiState.value.isShopDetailLoading)
+        }
+
+    @Test
+    fun `서로 다른 가게의 상세는 각각 한 번씩 캐싱한다`() =
+        coroutinesTest {
+            val firstShop = ramenShopFixture(id = "shop-1")
+            val secondShop = ramenShopFixture(id = "shop-2")
+            val ramenShopRepository =
+                FakeRamenShopRepository(
+                    fetchByIdsResult = RamenShops(mapOf(firstShop.id to firstShop, secondShop.id to secondShop)),
+                )
+            val waitingSystemRepository = FakeShopWaitingSystemRepository()
+            val viewModel = mapViewModel(ramenShopRepository, waitingSystemRepository)
+
+            viewModel.dispatch(OnShopSelected(firstShop))
+            runCurrent()
+            viewModel.dispatch(OnShopSelected(secondShop))
+            runCurrent()
+            viewModel.dispatch(OnShopSelected(firstShop))
+            runCurrent()
+
+            assertEquals(
+                listOf(setOf(firstShop.id), setOf(secondShop.id)),
+                ramenShopRepository.requestedShopIdsHistory,
+            )
+            assertEquals(listOf(firstShop.id, secondShop.id), waitingSystemRepository.requestedShopIds)
+            assertEquals(
+                firstShop,
+                viewModel.uiState.value
+                    .shopDetail
+                    ?.shop,
+            )
+        }
+
+    @Test
+    fun `실패한 가게 상세는 캐싱하지 않아 다시 선택하면 재조회한다`() =
+        coroutinesTest {
+            val shop = ramenShopFixture()
+            val ramenShopRepository =
+                FakeRamenShopRepository(
+                    error = RamapError.Unknown(IllegalStateException("failed")),
+                )
+            val viewModel = mapViewModel(ramenShopRepository)
+
+            viewModel.dispatch(OnShopSelected(shop))
+            runCurrent()
+            viewModel.dispatch(OnShopSelected(shop))
+            runCurrent()
+
+            assertEquals(4, ramenShopRepository.requestedShopIdsHistory.size)
+            assertEquals(null, viewModel.uiState.value.shopDetail)
+        }
+
+    @Test
+    fun `이벤트 조회 실패로 이벤트가 없는 상세도 캐싱한다`() =
+        coroutinesTest {
+            val shop = ramenShopFixture()
+            val ramenShopRepository =
+                FakeRamenShopRepository(
+                    fetchByIdsResult = RamenShops(mapOf(shop.id to shop)),
+                    activeEventError = RamapError.Unknown(IllegalStateException("failed")),
+                )
+            val waitingSystemRepository = FakeShopWaitingSystemRepository()
+            val viewModel = mapViewModel(ramenShopRepository, waitingSystemRepository)
+
+            viewModel.dispatch(OnShopSelected(shop))
+            runCurrent()
+            viewModel.dispatch(OnShopSelected(shop))
+            runCurrent()
+
+            assertEquals(1, ramenShopRepository.requestedShopIdsHistory.size)
+            assertEquals(1, ramenShopRepository.requestedActiveEventShopIds.size)
+            assertEquals(
+                null,
+                viewModel.uiState.value
+                    .shopDetail
+                    ?.event,
+            )
+        }
+
+    @Test
+    fun `아이디로 이미 캐싱한 가게를 선택하면 추가 조회하지 않는다`() =
+        coroutinesTest {
+            val shop = ramenShopFixture()
+            val ramenShopRepository =
+                FakeRamenShopRepository(fetchByIdsResult = RamenShops(mapOf(shop.id to shop)))
+            val waitingSystemRepository = FakeShopWaitingSystemRepository()
+            val viewModel = mapViewModel(ramenShopRepository, waitingSystemRepository)
+
+            viewModel.dispatch(OnShopSelected(shop))
+            runCurrent()
+            viewModel.dispatch(OnShopDetailDismissed)
+            runCurrent()
+            viewModel.dispatch(OnShopIdSelected(shop.id))
+            runCurrent()
+
+            assertEquals(listOf(setOf(shop.id)), ramenShopRepository.requestedShopIdsHistory)
+            assertEquals(listOf(shop.id), waitingSystemRepository.requestedShopIds)
+            assertEquals(
+                shop,
+                viewModel.uiState.value
+                    .shopDetail
+                    ?.shop,
+            )
         }
 
     @Test
@@ -405,27 +521,14 @@ class MapViewModelTest {
         }
 
     @Test
-    fun `탑레벨 탭 전환 인텐트는 현재 탭 상태를 변경한다`() =
-        coroutinesTest {
-            val viewModel = mapViewModel()
-
-            viewModel.dispatch(OnTopLevelTabChanged(TabStatus.MY))
-            runCurrent()
-
-            assertEquals(TabStatus.MY, viewModel.uiState.value.tabStatus)
-        }
-
-    @Test
     fun `좋아요 토글 인텐트는 북마크 보기와 전체 보기를 전환한다`() =
         coroutinesTest {
             val viewModel = mapViewModel(loginRepository = loggedInRepository())
             runCurrent()
 
-            viewModel.dispatch(OnTopLevelTabChanged(TabStatus.MY))
             viewModel.dispatch(OnBookmarkedShopsToggled)
             runCurrent()
 
-            assertEquals(TabStatus.MAP, viewModel.uiState.value.tabStatus)
             assertEquals(MapPersonalization.BOOKMARKED, viewModel.uiState.value.personalizationView)
 
             viewModel.dispatch(OnBookmarkedShopsToggled)

@@ -25,7 +25,6 @@ import com.peto.ramap.domain.repository.PersonalizationRepository
 import com.peto.ramap.domain.repository.RamenShopRepository
 import com.peto.ramap.domain.repository.ShopReportRepository
 import com.peto.ramap.domain.repository.ShopWaitingSystemRepository
-import com.peto.ramap.network.NaverReverseGeocoder
 import com.peto.ramap.ui.common.CurrentLocationStore
 import com.peto.ramap.ui.main.map.contract.MapIntent
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnAccountDeleteConfirmed
@@ -49,7 +48,6 @@ import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopDetailDismissed
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopIdSelected
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopReportSubmitted
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopSelected
-import com.peto.ramap.ui.main.map.contract.MapIntent.OnTopLevelTabChanged
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnUnregisteredPlaceReportSubmitted
 import com.peto.ramap.ui.main.map.contract.MapSideEffect
 import com.peto.ramap.ui.main.map.contract.MapSideEffect.ShowLoginGuide
@@ -59,7 +57,6 @@ import com.peto.ramap.ui.main.map.model.InitialMapLoadState
 import com.peto.ramap.ui.main.map.model.MapPersonalization
 import com.peto.ramap.ui.main.map.model.SearchUiState
 import com.peto.ramap.ui.main.map.model.ShopDetail
-import com.peto.ramap.ui.main.map.model.TabStatus
 import io.github.jan.supabase.auth.status.SessionStatus
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
@@ -96,7 +93,6 @@ class MapViewModel(
     private val reportRepository: ShopReportRepository,
     private val loginRepository: LoginRepository,
     private val currentLocationStore: CurrentLocationStore,
-    private val reverseGeocoder: NaverReverseGeocoder? = null,
 ) : BaseViewModel<MapUiState, MapIntent, MapSideEffect>(initialState = MapUiState()) {
     private var boundsLoadJob: Job? = null
     private var boundsLoadRequestId = 0L
@@ -104,6 +100,7 @@ class MapViewModel(
     private var searchJob: Job? = null
     private var searchRequestId = 0L
     private var detailJob: Job? = null
+    private val shopDetailCache = mutableMapOf<String, ShopDetail>()
     private var shopReportJob: Job? = null
     private var placeReportJob: Job? = null
 
@@ -139,7 +136,6 @@ class MapViewModel(
             OnCurrentLocationReportSubmitted -> submitCurrentLocationReport()
 
             is OnPersonalizationViewChanged -> changePersonalizationView(intent.view)
-            is OnTopLevelTabChanged -> changeTopLevelTab(intent.tab)
             OnKakaoLoginClicked -> signInWithKakao()
             OnLogoutClicked -> signOut()
             OnAccountDeleteConfirmed -> deleteAccount()
@@ -165,25 +161,25 @@ class MapViewModel(
                 bookmarkedShopIds = if (isAuthenticated) bookmarkedShopIds else emptySet(),
                 hiddenShopIds = if (isAuthenticated) hiddenShopIds else emptySet(),
                 personalizationView = if (isAuthenticated) personalizationView else MapPersonalization.ALL,
-                tabStatus = if (isAuthenticated) tabStatus else tabStatus,
             )
         }
-    }
-
-    private fun changeTopLevelTab(tab: TabStatus) {
-        reduce { copy(tabStatus = tab) }
     }
 
     private fun selectShop(shop: RamenShop) {
+        detailJob?.cancel()
         val isCurrentSearchResult = shop.id in currentState.search.results
+        val cachedDetail = shopDetailCache[shop.id]
         reduce {
             copy(
-                selectedShop = shop,
-                shopDetail = null,
-                isShopDetailLoading = true,
+                selectedShop = cachedDetail?.shop?.copy(isVisible = shop.isVisible) ?: shop,
+                shopDetail = cachedDetail,
+                shopWaiting = cachedDetail?.let { shopWaiting + (shop.id to it.waitingSystem) } ?: shopWaiting,
+                isShopDetailLoading = cachedDetail == null,
                 search = search.consumeResultFocus(isCurrentSearchResult),
             )
         }
+        if (cachedDetail != null) return
+
         loadShopDetail(shop.id)
     }
 
@@ -199,6 +195,11 @@ class MapViewModel(
     }
 
     private fun selectShopById(shopId: String) {
+        shopDetailCache[shopId]?.let {
+            selectShop(it.shop)
+            return
+        }
+
         viewModelScope.launch {
             handleResult(
                 result = ramenShopRepository.fetchRamenShopsByIds(setOf(shopId)),
@@ -214,26 +215,12 @@ class MapViewModel(
             copy(
                 currentLocation = location,
                 initialLocationFocus = initialLocationFocus.request(location),
-                currentAddress = null,
             )
         }
-        requestAddress(location)
     }
 
     private fun consumeInitialLocationFocus() {
         reduce { copy(initialLocationFocus = initialLocationFocus.consume()) }
-    }
-
-    private suspend fun requestAddress(location: Location) {
-        val geocoder = reverseGeocoder ?: return
-        handleResult(
-            result = geocoder.address(location),
-            onSuccess = ::updateCurrentAddress,
-        )
-    }
-
-    private fun updateCurrentAddress(address: String?) {
-        reduce { copy(currentAddress = address) }
     }
 
     private fun dismissSearchResults() {
@@ -521,7 +508,6 @@ class MapViewModel(
             }
         reduce {
             copy(
-                tabStatus = TabStatus.MAP,
                 personalizationView = nextView,
                 selectedShop =
                     selectedShop?.takeIf { shop ->
@@ -823,6 +809,7 @@ class MapViewModel(
         shopId: String,
         detail: ShopDetail,
     ) {
+        shopDetailCache[shopId] = detail
         val selectedShop = currentState.selectedShop ?: return
         if (selectedShop.id != shopId) return
 

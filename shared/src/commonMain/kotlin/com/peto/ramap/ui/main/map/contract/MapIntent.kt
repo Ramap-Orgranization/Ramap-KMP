@@ -7,7 +7,6 @@ import com.peto.ramap.domain.model.MapBounds
 import com.peto.ramap.domain.model.RamenShop
 import com.peto.ramap.domain.model.ShopInformationField
 import com.peto.ramap.ui.main.map.model.MapPersonalization
-import com.peto.ramap.ui.main.map.model.TabStatus
 
 sealed interface MapIntent : Intent {
     data class OnBoundsChanged(
@@ -65,10 +64,6 @@ sealed interface MapIntent : Intent {
 
     data class OnPersonalizationViewChanged(
         val view: MapPersonalization,
-    ) : MapIntent
-
-    data class OnTopLevelTabChanged(
-        val tab: TabStatus,
     ) : MapIntent
 
     data object OnBookmarkedShopsToggled : MapIntent

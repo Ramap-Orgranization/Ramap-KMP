@@ -15,7 +15,6 @@ import com.peto.ramap.ui.main.map.model.MapPersonalization
 import com.peto.ramap.ui.main.map.model.SearchResultGuide
 import com.peto.ramap.ui.main.map.model.SearchUiState
 import com.peto.ramap.ui.main.map.model.ShopDetail
-import com.peto.ramap.ui.main.map.model.TabStatus
 
 data class MapUiState(
     val initialMapLoadState: InitialMapLoadState = InitialMapLoadState.LOADING,
@@ -50,7 +49,6 @@ data class MapUiState(
      */
     val currentLocation: Location? = null,
     val initialLocationFocus: InitialLocationFocus = InitialLocationFocus(),
-    val currentAddress: String? = null,
     /**
      * 사용자가 북마크한 매장 id 목록.
      */
@@ -72,7 +70,6 @@ data class MapUiState(
      */
     val accountLabel: String? = null,
     val isDeletingAccount: Boolean = false,
-    val tabStatus: TabStatus = TabStatus.MAP,
 ) : State {
     /**
      * 검색 결과 리스트 바텀시트에 표시할 매장 목록.
