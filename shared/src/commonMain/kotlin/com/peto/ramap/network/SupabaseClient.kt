@@ -6,8 +6,6 @@ import io.github.jan.supabase.auth.Auth
 import io.github.jan.supabase.auth.FlowType
 import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.postgrest.Postgrest
-import io.ktor.client.plugins.logging.LogLevel
-import io.ktor.client.plugins.logging.Logging
 
 @OptIn(SupabaseInternal::class)
 val supabaseClient =
@@ -15,11 +13,6 @@ val supabaseClient =
         supabaseUrl = RamapConfig.SUPABASE_URL,
         supabaseKey = RamapConfig.SUPABASE_ANON_KEY,
     ) {
-        httpConfig {
-            install(Logging) {
-                level = LogLevel.INFO
-            }
-        }
         install(Postgrest)
         install(Auth) {
             scheme = AUTH_DEEPLINK_SCHEME
