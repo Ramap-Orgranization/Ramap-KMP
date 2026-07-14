@@ -1,6 +1,8 @@
 package com.peto.ramap.data.datasource.shop
 
 import com.peto.ramap.data.model.RamenShopResponse
+import com.peto.ramap.data.model.ShopEventParticipantResponse
+import com.peto.ramap.data.model.ShopEventResponse
 import com.peto.ramap.domain.model.MapBounds
 import com.peto.ramap.domain.model.SearchQuery
 import io.github.jan.supabase.SupabaseClient
@@ -9,6 +11,20 @@ import io.github.jan.supabase.postgrest.from
 class RemoteRamenShopDataSource(
     private val client: SupabaseClient,
 ) : RamenShopDataSource {
+    override suspend fun fetchActiveShopEvents(shopId: String): List<ShopEventResponse> =
+        client
+            .from(EVENT_VIEW)
+            .select {
+                filter { eq(COLUMN_SHOP_CONTEXT_ID, shopId) }
+            }.decodeList()
+
+    override suspend fun fetchShopEventParticipants(eventId: String): List<ShopEventParticipantResponse> =
+        client
+            .from(EVENT_PARTICIPANT_TABLE)
+            .select {
+                filter { eq(COLUMN_EVENT_ID, eventId) }
+            }.decodeList()
+
     override suspend fun fetchRamenShops(bounds: MapBounds): List<RamenShopResponse> =
         client
             .from(TABLE_NAME)
@@ -72,6 +88,10 @@ class RemoteRamenShopDataSource(
 
     companion object {
         private const val TABLE_NAME = "shops"
+        private const val EVENT_VIEW = "active_shop_events"
+        private const val EVENT_PARTICIPANT_TABLE = "shop_event_participants"
+        private const val COLUMN_SHOP_CONTEXT_ID = "shop_context_id"
+        private const val COLUMN_EVENT_ID = "event_id"
 
         private const val COLUMN_ID = "id"
         private const val COLUMN_IS_VISIBLE = "is_visible"
