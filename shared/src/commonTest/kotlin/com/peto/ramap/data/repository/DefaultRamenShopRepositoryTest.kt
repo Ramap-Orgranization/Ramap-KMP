@@ -1,6 +1,8 @@
 package com.peto.ramap.data.repository
 
 import com.peto.ramap.core.result.getOrThrow
+import com.peto.ramap.data.model.ShopEventParticipantResponse
+import com.peto.ramap.data.model.ShopEventResponse
 import com.peto.ramap.domain.model.Category
 import com.peto.ramap.domain.model.Location
 import com.peto.ramap.domain.model.MenuCategories
@@ -14,6 +16,27 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class DefaultRamenShopRepositoryTest {
+    @Test
+    fun `한 콜라보에 상대가 여러 명이면 특정 매장명을 노출하지 않는다`() =
+        runTest {
+            val repository =
+                DefaultRamenShopRepository(
+                    FakeRamenShopDataSource(
+                        activeEventResponses = listOf(shopEventResponse()),
+                        participantResponses =
+                            listOf(
+                                ShopEventParticipantResponse(shopId = "partner-shop"),
+                                ShopEventParticipantResponse(shopId = null),
+                            ),
+                    ),
+                )
+
+            val event = repository.fetchActiveShopEvent("venue-shop").getOrThrow()
+
+            assertEquals(2, event?.collaborationPartnerCount)
+            assertEquals(null, event?.upcomingCollaborationPartnerName)
+        }
+
     @Test
     fun `라멘 가게 목록을 조회하면 도메인 모델로 변환한다`() =
         runTest {
@@ -177,4 +200,22 @@ class DefaultRamenShopRepositoryTest {
 
             assertEquals(emptyMap(), result.toMap())
         }
+
+    private fun shopEventResponse() =
+        ShopEventResponse(
+            id = "event",
+            eventType = "collab",
+            title = "콜라보",
+            description = "설명",
+            startDate = "2026-07-15",
+            endDate = "2026-07-15",
+            sourceUrl = "https://instagram.com/p/event",
+            isToday = false,
+            isVenue = true,
+            venueShopId = "venue-shop",
+            venueShopName = "요아케",
+            venueAddress = "서울",
+            collaboratorShopId = "partner-shop",
+            collaboratorName = "라멘롱시즌",
+        )
 }

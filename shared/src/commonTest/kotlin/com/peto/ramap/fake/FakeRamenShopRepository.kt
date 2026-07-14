@@ -5,6 +5,7 @@ import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.domain.model.MapBounds
 import com.peto.ramap.domain.model.RamenShops
 import com.peto.ramap.domain.model.SearchQuery
+import com.peto.ramap.domain.model.ShopEvent
 import com.peto.ramap.domain.repository.RamenShopRepository
 
 class FakeRamenShopRepository(
@@ -12,7 +13,11 @@ class FakeRamenShopRepository(
     private val fetchByIdsResult: RamenShops = RamenShops(emptyMap()),
     private val searchResult: RamenShops = RamenShops(emptyMap()),
     private val error: RamapError? = null,
+    private val activeEvent: ShopEvent? = null,
 ) : RamenShopRepository {
+    override suspend fun fetchActiveShopEvent(shopId: String): RamapResult<ShopEvent?> =
+        error?.let { RamapResult.Error(it) } ?: RamapResult.Success(activeEvent)
+
     val requestedBoundsHistory = mutableListOf<MapBounds>()
     val requestedShopIdsHistory = mutableListOf<Set<String>>()
     val requestedSearchQueries = mutableListOf<SearchQuery>()
