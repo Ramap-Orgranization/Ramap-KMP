@@ -179,6 +179,8 @@ fun MyContent(
             AppButton(
                 text = stringResource(Res.string.place_report_action),
                 modifier = Modifier.padding(top = 16.dp).fillMaxWidth(),
+                enabled = uiState.currentLocation != null,
+                backgroundColor = if (uiState.currentLocation != null) GrayColor.C500 else GrayColor.C200,
                 onClick = onLocationReportSubmit,
             )
         }
