@@ -12,24 +12,25 @@ import com.peto.ramap.domain.model.UnregisteredPlaceReport
 import com.peto.ramap.domain.repository.LoginRepository
 import com.peto.ramap.domain.repository.RamenShopRepository
 import com.peto.ramap.domain.repository.ShopReportRepository
-import com.peto.ramap.network.NaverReverseGeocoder
+import com.peto.ramap.network.ReverseGeocoder
 import com.peto.ramap.ui.common.CurrentLocationStore
 import com.peto.ramap.ui.main.my.contract.MyTabIntent
+import com.peto.ramap.ui.main.my.contract.MyTabIntent.OnAccountDeleteClick
+import com.peto.ramap.ui.main.my.contract.MyTabIntent.OnAccountDeleteConfirm
+import com.peto.ramap.ui.main.my.contract.MyTabIntent.OnAccountDeleteDismiss
+import com.peto.ramap.ui.main.my.contract.MyTabIntent.OnCurrentAddressRefresh
+import com.peto.ramap.ui.main.my.contract.MyTabIntent.OnCurrentLocationReportSubmit
+import com.peto.ramap.ui.main.my.contract.MyTabIntent.OnHiddenShopsClick
+import com.peto.ramap.ui.main.my.contract.MyTabIntent.OnKakaoLoginClick
+import com.peto.ramap.ui.main.my.contract.MyTabIntent.OnLoginGuideDismiss
+import com.peto.ramap.ui.main.my.contract.MyTabIntent.OnLogoutClick
+import com.peto.ramap.ui.main.my.contract.MyTabIntent.OnPlaceReportSubmit
+import com.peto.ramap.ui.main.my.contract.MyTabIntent.OnPlaceUrlChanged
 import com.peto.ramap.ui.main.my.contract.MyTabSideEffect
+import com.peto.ramap.ui.main.my.contract.MyTabSideEffect.NavigateToHiddenShops
+import com.peto.ramap.ui.main.my.contract.MyTabSideEffect.ShowMyLoginGuide
+import com.peto.ramap.ui.main.my.contract.MyTabSideEffect.ShowMyToast
 import com.peto.ramap.ui.main.my.contract.MyTabUiState
-import com.peto.ramap.ui.main.my.contract.NavigateToHiddenShops
-import com.peto.ramap.ui.main.my.contract.OnAccountDeleteClick
-import com.peto.ramap.ui.main.my.contract.OnAccountDeleteConfirm
-import com.peto.ramap.ui.main.my.contract.OnAccountDeleteDismiss
-import com.peto.ramap.ui.main.my.contract.OnCurrentLocationReportSubmit
-import com.peto.ramap.ui.main.my.contract.OnHiddenShopsClick
-import com.peto.ramap.ui.main.my.contract.OnKakaoLoginClick
-import com.peto.ramap.ui.main.my.contract.OnLoginGuideDismiss
-import com.peto.ramap.ui.main.my.contract.OnLogoutClick
-import com.peto.ramap.ui.main.my.contract.OnPlaceReportSubmit
-import com.peto.ramap.ui.main.my.contract.OnPlaceUrlChanged
-import com.peto.ramap.ui.main.my.contract.ShowMyLoginGuide
-import com.peto.ramap.ui.main.my.contract.ShowMyToast
 import io.github.jan.supabase.auth.status.SessionStatus
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.collectLatest
@@ -50,9 +51,10 @@ class MyTabViewModel(
     private val ramenShopRepository: RamenShopRepository,
     private val reportRepository: ShopReportRepository,
     private val currentLocationStore: CurrentLocationStore,
-    private val reverseGeocoder: NaverReverseGeocoder? = null,
+    private val reverseGeocoder: ReverseGeocoder? = null,
 ) : BaseViewModel<MyTabUiState, MyTabIntent, MyTabSideEffect>(initialState = MyTabUiState()) {
     private var placeReportJob: Job? = null
+    private var hasRequestedInitialAddress = false
 
     init {
         viewModelScope.launch { observeSessionStatus() }
@@ -69,6 +71,7 @@ class MyTabViewModel(
             is OnPlaceUrlChanged -> updatePlaceUrl(intent.value)
             OnPlaceReportSubmit -> submitPlaceReport()
             OnCurrentLocationReportSubmit -> submitCurrentLocationReport()
+            OnCurrentAddressRefresh -> refreshCurrentAddress()
             OnHiddenShopsClick -> openHiddenShops()
             OnLoginGuideDismiss -> hideLoginGuideDialog()
         }
@@ -90,19 +93,24 @@ class MyTabViewModel(
 
     private suspend fun observeCurrentLocation() {
         currentLocationStore.location.collectLatest { location ->
-            reduce {
-                copy(
-                    currentLocation = location,
-                    currentAddress = null,
-                )
-            }
-            updateCurrentAddress(location)
+            reduce { copy(currentLocation = location) }
+            requestInitialAddress(location)
         }
     }
 
-    private suspend fun updateCurrentAddress(location: Location?) {
+    private suspend fun requestInitialAddress(location: Location?) {
+        if (location == null || hasRequestedInitialAddress) return
+        hasRequestedInitialAddress = true
+        startAddressRequest(location)
+    }
+
+    private suspend fun refreshCurrentAddress() {
+        val location = currentState.currentLocation ?: return
+        startAddressRequest(location)
+    }
+
+    private suspend fun startAddressRequest(location: Location) {
         val geocoder = reverseGeocoder ?: return
-        if (location == null) return
 
         handleResult(
             result = geocoder.address(location),
@@ -155,7 +163,12 @@ class MyTabViewModel(
                         reduce { copy(placeUrl = "") }
                         showToast(Res.string.place_report_success_message)
                     },
-                    onError = { showToast(Res.string.place_report_failure_message, ToastType.ERROR) },
+                    onError = {
+                        showToast(
+                            Res.string.place_report_failure_message,
+                            ToastType.ERROR,
+                        )
+                    },
                 )
             }
         }

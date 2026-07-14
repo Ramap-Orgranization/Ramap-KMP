@@ -89,6 +89,7 @@
     <string name="place_report_location_address_failure">주소를 확인하지 못했습니다</string>
     <string name="place_report_location_empty">현재 위치를 아직 확인하지 못했어요.</string>
     <string name="place_report_location_unavailable_message">현재 위치를 먼저 확인해주세요</string>
+    <string name="place_report_location_refresh">주소 새로고침</string>
     <string name="place_report_success_message">장소 제보가 접수되었습니다</string>
     <string name="place_report_failure_message">장소 제보 접수에 실패했습니다</string>
     <string name="place_report_invalid_url_message">카카오맵 또는 네이버 지도 링크를 입력해주세요</string>

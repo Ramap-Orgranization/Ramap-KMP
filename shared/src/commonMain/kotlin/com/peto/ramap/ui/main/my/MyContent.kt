@@ -3,6 +3,7 @@ package com.peto.ramap.ui.main.my
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
@@ -14,11 +15,16 @@ import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.peto.ramap.designsystem.button.AppButton
@@ -30,9 +36,11 @@ import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.ui.main.component.SectionCard
 import com.peto.ramap.ui.main.my.contract.MyTabUiState
+import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.account_delete_menu
+import ramap.shared.generated.resources.ic_refresh
 import ramap.shared.generated.resources.logout_menu
 import ramap.shared.generated.resources.my_tab_account_section
 import ramap.shared.generated.resources.my_tab_report_section
@@ -41,6 +49,7 @@ import ramap.shared.generated.resources.place_report_description
 import ramap.shared.generated.resources.place_report_location_address
 import ramap.shared.generated.resources.place_report_location_address_failure
 import ramap.shared.generated.resources.place_report_location_empty
+import ramap.shared.generated.resources.place_report_location_refresh
 import ramap.shared.generated.resources.place_report_location_section_title
 import ramap.shared.generated.resources.place_report_placeholder
 import ramap.shared.generated.resources.place_report_url_section_title
@@ -56,6 +65,7 @@ fun MyContent(
     onPlaceUrlChanged: (String) -> Unit,
     onPlaceReportSubmit: () -> Unit,
     onLocationReportSubmit: () -> Unit,
+    onCurrentAddressRefresh: () -> Unit,
 ) {
     val currentAddressText =
         when {
@@ -65,6 +75,7 @@ fun MyContent(
             uiState.currentLocation != null -> stringResource(Res.string.place_report_location_address_failure)
             else -> stringResource(Res.string.place_report_location_empty)
         }
+    val addressRefreshContentDescription = stringResource(Res.string.place_report_location_refresh)
 
     Column(
         modifier =
@@ -170,12 +181,29 @@ fun MyContent(
                 style = AppTextStyle.B1,
                 color = GrayColor.C500,
             )
-            AppText(
-                text = currentAddressText,
-                modifier = Modifier.padding(top = 8.dp),
-                style = AppTextStyle.B2,
-                color = GrayColor.C400,
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                AppText(
+                    text = currentAddressText,
+                    modifier = Modifier.weight(1f),
+                    style = AppTextStyle.B2,
+                    color = GrayColor.C400,
+                )
+                IconButton(
+                    modifier = Modifier.semantics { contentDescription = addressRefreshContentDescription },
+                    enabled = uiState.currentLocation != null,
+                    onClick = onCurrentAddressRefresh,
+                ) {
+                    Icon(
+                        painter = painterResource(Res.drawable.ic_refresh),
+                        contentDescription = null,
+                        tint = if (uiState.currentLocation != null) GrayColor.C500 else GrayColor.C300,
+                    )
+                }
+            }
             AppButton(
                 text = stringResource(Res.string.place_report_action),
                 modifier = Modifier.padding(top = 16.dp).fillMaxWidth(),
