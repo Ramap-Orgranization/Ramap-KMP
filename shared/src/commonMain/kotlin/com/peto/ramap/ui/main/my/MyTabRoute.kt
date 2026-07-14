@@ -48,7 +48,6 @@ fun MyTabRoute(
         when (sideEffect) {
             is ShowMyToast -> toastManager.show(sideEffect.data)
             NavigateToHiddenShops -> onHiddenShopsNavigate()
-            else -> Unit
         }
     }
 

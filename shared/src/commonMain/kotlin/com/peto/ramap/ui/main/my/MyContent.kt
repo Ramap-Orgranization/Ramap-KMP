@@ -194,13 +194,13 @@ fun MyContent(
                 )
                 IconButton(
                     modifier = Modifier.semantics { contentDescription = addressRefreshContentDescription },
-                    enabled = uiState.currentLocation != null,
+                    enabled = uiState.currentLocation != null && !uiState.isAddressRefreshing,
                     onClick = onCurrentAddressRefresh,
                 ) {
                     Icon(
                         painter = painterResource(Res.drawable.ic_refresh),
                         contentDescription = null,
-                        tint = if (uiState.currentLocation != null) GrayColor.C500 else GrayColor.C300,
+                        tint = if (uiState.currentLocation != null && !uiState.isAddressRefreshing) GrayColor.C500 else GrayColor.C300,
                     )
                 }
             }

@@ -15,7 +15,6 @@ import com.peto.ramap.ui.main.my.contract.MyTabIntent.OnCurrentAddressRefresh
 import com.peto.ramap.ui.main.my.contract.MyTabIntent.OnCurrentLocationReportSubmit
 import com.peto.ramap.ui.main.my.contract.MyTabIntent.OnHiddenShopsClick
 import com.peto.ramap.ui.main.my.contract.MyTabSideEffect.NavigateToHiddenShops
-import com.peto.ramap.ui.main.my.contract.MyTabSideEffect.ShowMyLoginGuide
 import com.peto.ramap.ui.main.my.contract.MyTabSideEffect.ShowMyToast
 import io.github.jan.supabase.auth.status.SessionStatus
 import io.github.jan.supabase.auth.user.UserSession
@@ -37,10 +36,8 @@ class MyTabViewModelTest {
         coroutinesTest {
             val viewModel = myTabViewModel()
 
-            viewModel.sideEffect.test {
-                viewModel.dispatch(OnHiddenShopsClick)
-                assertEquals(ShowMyLoginGuide, awaitItem())
-            }
+            viewModel.dispatch(OnHiddenShopsClick)
+            runCurrent()
 
             assertEquals(true, viewModel.uiState.value.showLoginGuideDialog)
         }
@@ -82,7 +79,7 @@ class MyTabViewModelTest {
         }
 
     @Test
-    fun `첫 현재 위치가 확인되면 주소를 한 번만 자동 조회한다`() =
+    fun `현재 위치가 변경되면 새 위치의 주소를 자동 조회한다`() =
         coroutinesTest {
             val currentLocationStore = CurrentLocationStore()
             val requestedLocations = mutableListOf<Location>()
@@ -99,7 +96,7 @@ class MyTabViewModelTest {
             currentLocationStore.update(secondLocation)
             runCurrent()
 
-            assertEquals(listOf(firstLocation), requestedLocations)
+            assertEquals(listOf(firstLocation, secondLocation), requestedLocations)
             assertEquals(secondLocation, viewModel.uiState.value.currentLocation)
             assertEquals("테스트 주소", viewModel.uiState.value.currentAddress)
         }
@@ -124,7 +121,7 @@ class MyTabViewModelTest {
             viewModel.dispatch(OnCurrentAddressRefresh)
             runCurrent()
 
-            assertEquals(listOf(firstLocation, latestLocation), requestedLocations)
+            assertEquals(listOf(firstLocation, latestLocation, latestLocation), requestedLocations)
             assertEquals("테스트 주소", viewModel.uiState.value.currentAddress)
         }
 

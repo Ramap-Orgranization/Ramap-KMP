@@ -28,7 +28,6 @@ import com.peto.ramap.ui.main.my.contract.MyTabIntent.OnPlaceReportSubmit
 import com.peto.ramap.ui.main.my.contract.MyTabIntent.OnPlaceUrlChanged
 import com.peto.ramap.ui.main.my.contract.MyTabSideEffect
 import com.peto.ramap.ui.main.my.contract.MyTabSideEffect.NavigateToHiddenShops
-import com.peto.ramap.ui.main.my.contract.MyTabSideEffect.ShowMyLoginGuide
 import com.peto.ramap.ui.main.my.contract.MyTabSideEffect.ShowMyToast
 import com.peto.ramap.ui.main.my.contract.MyTabUiState
 import io.github.jan.supabase.auth.status.SessionStatus
@@ -54,7 +53,8 @@ class MyTabViewModel(
     private val reverseGeocoder: ReverseGeocoder? = null,
 ) : BaseViewModel<MyTabUiState, MyTabIntent, MyTabSideEffect>(initialState = MyTabUiState()) {
     private var placeReportJob: Job? = null
-    private var hasRequestedInitialAddress = false
+    private var addressRequestJob: Job? = null
+    private var addressRequestGeneration = 0
 
     init {
         viewModelScope.launch { observeSessionStatus() }
@@ -93,29 +93,37 @@ class MyTabViewModel(
 
     private suspend fun observeCurrentLocation() {
         currentLocationStore.location.collectLatest { location ->
-            reduce { copy(currentLocation = location) }
-            requestInitialAddress(location)
+            if (location == currentState.currentLocation) return@collectLatest
+            addressRequestJob?.cancel()
+            reduce { copy(currentLocation = location, currentAddress = null, isAddressRefreshing = false) }
+            location?.let(::startAddressRequest)
         }
     }
 
-    private suspend fun requestInitialAddress(location: Location?) {
-        if (location == null || hasRequestedInitialAddress) return
-        hasRequestedInitialAddress = true
-        startAddressRequest(location)
-    }
-
-    private suspend fun refreshCurrentAddress() {
+    private fun refreshCurrentAddress() {
         val location = currentState.currentLocation ?: return
         startAddressRequest(location)
     }
 
-    private suspend fun startAddressRequest(location: Location) {
+    private fun startAddressRequest(location: Location) {
         val geocoder = reverseGeocoder ?: return
+        if (addressRequestJob?.isActive == true) return
+        val generation = ++addressRequestGeneration
 
-        handleResult(
-            result = geocoder.address(location),
-            onSuccess = { address -> reduce { copy(currentAddress = address) } },
-        )
+        reduce { copy(isAddressRefreshing = true) }
+        addressRequestJob =
+            viewModelScope.launch {
+                try {
+                    handleResult(
+                        result = geocoder.address(location),
+                        onSuccess = { address ->
+                            if (currentState.currentLocation == location) reduce { copy(currentAddress = address) }
+                        },
+                    )
+                } finally {
+                    if (generation == addressRequestGeneration) reduce { copy(isAddressRefreshing = false) }
+                }
+            }
     }
 
     private fun updatePlaceUrl(value: String) {
@@ -137,7 +145,6 @@ class MyTabViewModel(
     private fun openHiddenShops() {
         if (!currentState.isLoggedIn) {
             reduce { copy(showLoginGuideDialog = true) }
-            trySideEffect(ShowMyLoginGuide)
             return
         }
 
