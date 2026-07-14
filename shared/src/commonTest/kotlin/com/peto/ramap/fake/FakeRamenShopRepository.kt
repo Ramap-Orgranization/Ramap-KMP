@@ -16,6 +16,8 @@ class FakeRamenShopRepository(
     private val error: RamapError? = null,
     private val activeEvent: ShopEvent? = null,
     private val activeEvents: List<ShopEvent> = emptyList(),
+    private val activeEventError: RamapError? = null,
+    var activeEventsError: RamapError? = null,
     var activeEventsDelayMillis: Long = 0,
 ) : RamenShopRepository {
     override suspend fun fetchActiveShopEvent(shopId: String): RamapResult<ShopEvent?> =
@@ -27,7 +29,7 @@ class FakeRamenShopRepository(
     override suspend fun fetchActiveEvents(): RamapResult<List<ShopEvent>> {
         activeEventsRequestCount += 1
         delay(activeEventsDelayMillis)
-        return error?.let { RamapResult.Error(it) } ?: RamapResult.Success(activeEvents)
+        return (activeEventsError ?: error)?.let { RamapResult.Error(it) } ?: RamapResult.Success(activeEvents)
     }
 
     val requestedBoundsHistory = mutableListOf<MapBounds>()
