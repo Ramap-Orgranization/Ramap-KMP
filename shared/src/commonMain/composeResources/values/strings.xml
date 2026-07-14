@@ -23,6 +23,12 @@
     <string name="shop_event_notice_collab_participant_today">%1$s와 함께하는 콜라보가 오늘 진행돼요 ></string>
     <string name="shop_event_notice_collab_participant_upcoming">%1$s와 함께하는 콜라보가 예정되어 있어요 ></string>
     <string name="event_detail_title">이벤트 상세</string>
+    <string name="event_list_empty">진행 중이거나 예정된 이벤트가 없어요</string>
+    <string name="event_list_loading_message">이벤트를 불러오고 있어요...</string>
+    <string name="event_list_error_title">이벤트를 불러오지 못했어요</string>
+    <string name="event_list_error_description">잠시 후 다시 시도해 주세요.</string>
+    <string name="event_list_ongoing_section">오늘 진행 중</string>
+    <string name="event_list_upcoming_section">진행 예정</string>
     <string name="event_status_today">오늘 진행</string>
     <string name="event_status_upcoming">진행 예정</string>
     <string name="event_type_collab">콜라보</string>
@@ -132,6 +138,7 @@
     <string name="retry_action">다시 시도</string>
     <string name="personalization_update_failure_message">변경사항을 저장하지 못했습니다. 다시 시도해 주세요.</string>
     <string name="top_level_tab_map">지도</string>
+    <string name="top_level_tab_event">이벤트</string>
     <string name="top_level_tab_my">마이</string>
     <string name="bookmarked_shops_toggle">좋아요</string>
 </resources>

@@ -33,7 +33,7 @@ fun LoadErrorContent(
     Column(
         modifier = modifier.padding(horizontal = 24.dp, vertical = if (compact) 20.dp else 32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(if (compact) 8.dp else 12.dp),
+        verticalArrangement = Arrangement.spacedBy(if (compact) 8.dp else 12.dp, Alignment.CenterVertically),
     ) {
         Image(
             painter = painterResource(image),
