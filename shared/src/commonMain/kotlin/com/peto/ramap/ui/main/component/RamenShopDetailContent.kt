@@ -26,11 +26,14 @@ import com.peto.ramap.core.extension.noRippleClickable
 import com.peto.ramap.core.extension.stringResource
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.domain.model.RamenShop
+import com.peto.ramap.domain.model.ShopEvent
+import com.peto.ramap.domain.model.ShopEventType
 import com.peto.ramap.domain.model.ShopWaitingSystem
 import com.peto.ramap.domain.model.WaitingProvider
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
+import com.peto.ramap.theme.SystemColor
 import com.peto.ramap.ui.main.map.model.WaitingProviderLink
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
@@ -54,6 +57,17 @@ import ramap.shared.generated.resources.shop_detail_link_report
 import ramap.shared.generated.resources.shop_detail_waiting_catchtable
 import ramap.shared.generated.resources.shop_detail_waiting_syrup_friends
 import ramap.shared.generated.resources.shop_detail_waiting_tabling
+import ramap.shared.generated.resources.shop_event_notice_collab_participant_today
+import ramap.shared.generated.resources.shop_event_notice_collab_participant_upcoming
+import ramap.shared.generated.resources.shop_event_notice_collab_today
+import ramap.shared.generated.resources.shop_event_notice_collab_upcoming
+import ramap.shared.generated.resources.shop_event_notice_collab_upcoming_with_shop
+import ramap.shared.generated.resources.shop_event_notice_limited_menu_today
+import ramap.shared.generated.resources.shop_event_notice_limited_menu_upcoming
+import ramap.shared.generated.resources.shop_event_notice_participant_today
+import ramap.shared.generated.resources.shop_event_notice_participant_upcoming
+import ramap.shared.generated.resources.shop_event_notice_popup_today
+import ramap.shared.generated.resources.shop_event_notice_popup_upcoming
 import ramap.shared.generated.resources.syrup_friends
 import ramap.shared.generated.resources.tabling
 
@@ -68,6 +82,8 @@ fun RamenShopDetailContent(
     onBookmarkClick: () -> Unit = {},
     onHiddenClick: () -> Unit = {},
     onReportClick: () -> Unit = {},
+    event: ShopEvent? = null,
+    onEventClick: (ShopEvent) -> Unit = {},
 ) {
     val uriHandler = LocalUriHandler.current
     val waitingProviderLink = waitingSystem?.toWaitingProviderLink()
@@ -78,8 +94,19 @@ fun RamenShopDetailContent(
                 .fillMaxWidth()
                 .padding(horizontal = 24.dp)
                 .padding(bottom = 28.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
+        event?.let {
+            AppText(
+                text = it.noticeText(),
+                modifier =
+                    Modifier
+                        .padding(top = 10.dp)
+                        .noRippleClickable { onEventClick(it) },
+                style = AppTextStyle.B1,
+                color = SystemColor.Warning,
+            )
+        }
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -208,6 +235,43 @@ fun RamenShopDetailContent(
             )
         }
     }
+}
+
+@Composable
+private fun ShopEvent.noticeText(): String {
+    upcomingCollaborationPartnerName?.let { partnerName ->
+        return stringResource(Res.string.shop_event_notice_collab_upcoming_with_shop, partnerName)
+    }
+    if (isVenue) {
+        val resource =
+            when (type) {
+                ShopEventType.COLLAB ->
+                    if (isToday) Res.string.shop_event_notice_collab_today else Res.string.shop_event_notice_collab_upcoming
+                ShopEventType.POPUP ->
+                    if (isToday) Res.string.shop_event_notice_popup_today else Res.string.shop_event_notice_popup_upcoming
+                ShopEventType.LIMITED_MENU ->
+                    if (isToday) {
+                        Res.string.shop_event_notice_limited_menu_today
+                    } else {
+                        Res.string.shop_event_notice_limited_menu_upcoming
+                    }
+            }
+        return stringResource(resource)
+    }
+    if (type == ShopEventType.COLLAB) {
+        return stringResource(
+            if (isToday) {
+                Res.string.shop_event_notice_collab_participant_today
+            } else {
+                Res.string.shop_event_notice_collab_participant_upcoming
+            },
+            venueShopName,
+        )
+    }
+    return stringResource(
+        if (isToday) Res.string.shop_event_notice_participant_today else Res.string.shop_event_notice_participant_upcoming,
+        venueShopName,
+    )
 }
 
 @Composable

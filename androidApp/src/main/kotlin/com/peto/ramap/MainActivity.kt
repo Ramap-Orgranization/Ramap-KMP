@@ -26,7 +26,7 @@ class MainActivity : ComponentActivity() {
         handleAuthDeepLink(intent)
 
         setContent {
-            App()
+            App(onExitRequested = ::finish)
         }
     }
 

@@ -5,12 +5,31 @@ import com.peto.ramap.data.datasource.shop.RamenShopDataSource
 import com.peto.ramap.domain.model.MapBounds
 import com.peto.ramap.domain.model.RamenShops
 import com.peto.ramap.domain.model.SearchQuery
+import com.peto.ramap.domain.model.ShopEvent
+import com.peto.ramap.domain.model.ShopEventType
 import com.peto.ramap.domain.repository.RamenShopRepository
 import com.peto.ramap.network.execute.invokeRequest
 
 class DefaultRamenShopRepository(
     private val dataSource: RamenShopDataSource,
 ) : RamenShopRepository {
+    override suspend fun fetchActiveShopEvent(shopId: String): RamapResult<ShopEvent?> =
+        invokeRequest {
+            val events = dataSource.fetchActiveShopEvents(shopId)
+            val event = events.firstOrNull()?.toDomain() ?: return@invokeRequest null
+            if (events.size != 1 || event.type != ShopEventType.COLLAB || event.isToday) {
+                return@invokeRequest event.copy(activeEventCount = events.size)
+            }
+            val participants = dataSource.fetchShopEventParticipants(event.id)
+            val partnerCount =
+                if (event.isVenue) {
+                    participants.size
+                } else {
+                    1 + participants.count { it.shopId != shopId }
+                }
+            event.copy(activeEventCount = 1, collaborationPartnerCount = partnerCount)
+        }
+
     override suspend fun fetchRamenShops(bounds: MapBounds): RamapResult<RamenShops> =
         invokeRequest {
             RamenShops(

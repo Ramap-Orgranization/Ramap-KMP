@@ -1,4 +1,5 @@
 <resources>
+    <string name="app_exit_back_message">뒤로가기를 한 번 더 누르면 종료돼요</string>
     <string name="shop_detail_label_address">주소</string>
     <string name="shop_detail_label_phone">전화</string>
     <string name="shop_detail_label_business_hours">영업시간</string>
@@ -10,6 +11,31 @@
     <string name="shop_detail_waiting_catchtable">캐치테이블</string>
     <string name="shop_detail_waiting_tabling">테이블링</string>
     <string name="shop_detail_waiting_syrup_friends">시럽 프렌즈</string>
+    <string name="shop_event_notice_collab_today">오늘 진행하는 콜라보가 있어요 ></string>
+    <string name="shop_event_notice_collab_upcoming">진행 예정인 콜라보가 있어요 ></string>
+    <string name="shop_event_notice_collab_upcoming_with_shop">%1$s와 함께하는 콜라보가 예정되어 있어요 ></string>
+    <string name="shop_event_notice_popup_today">오늘 진행하는 팝업이 있어요 ></string>
+    <string name="shop_event_notice_popup_upcoming">진행 예정인 팝업이 있어요 ></string>
+    <string name="shop_event_notice_limited_menu_today">오늘 진행하는 한정 메뉴가 있어요 ></string>
+    <string name="shop_event_notice_limited_menu_upcoming">진행 예정인 한정 메뉴가 있어요 ></string>
+    <string name="shop_event_notice_participant_today">오늘 %1$s에서 진행하는 이벤트에 참여해요 ></string>
+    <string name="shop_event_notice_participant_upcoming">%1$s에서 진행 예정인 이벤트에 참여해요 ></string>
+    <string name="shop_event_notice_collab_participant_today">%1$s와 함께하는 콜라보가 오늘 진행돼요 ></string>
+    <string name="shop_event_notice_collab_participant_upcoming">%1$s와 함께하는 콜라보가 예정되어 있어요 ></string>
+    <string name="event_detail_title">이벤트 상세</string>
+    <string name="event_status_today">오늘 진행</string>
+    <string name="event_status_upcoming">진행 예정</string>
+    <string name="event_type_collab">콜라보</string>
+    <string name="event_type_popup">팝업</string>
+    <string name="event_type_limited_menu">한정 메뉴</string>
+    <string name="event_venue">행사 장소</string>
+    <string name="event_collaborator_shop">콜라보 매장</string>
+    <string name="event_collaborator_person">함께하는 사람</string>
+    <string name="event_date">날짜</string>
+    <string name="event_content">내용</string>
+    <string name="event_waiting">대기 방법</string>
+    <string name="event_waiting_action">대기 페이지 열기</string>
+    <string name="event_instagram_action">Instagram 원문 보기</string>
     <string name="shop_information_report_description">%1$s의 잘못된 정보를 알려주세요.</string>
     <string name="shop_information_report_placeholder">어떤 정보가 잘못되었나요?</string>
     <string name="shop_information_report_action">제보하기</string>

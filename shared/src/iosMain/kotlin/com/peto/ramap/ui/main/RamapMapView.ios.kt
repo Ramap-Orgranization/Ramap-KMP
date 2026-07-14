@@ -31,6 +31,7 @@ actual fun RamapMapView(
     initialFocusRequestKey: Long,
     shouldBootstrapInitialLocationFocus: Boolean,
     selectedShopId: String?,
+    onMapMoveStarted: () -> Unit,
     onBoundsChanged: (MapBounds) -> Unit,
     onInitialFocusConsumed: () -> Unit,
     onMyLocationChanged: (Location) -> Unit,
@@ -41,6 +42,7 @@ actual fun RamapMapView(
     val controller =
         remember {
             IosNaverMapController(
+                onMapMoveStarted = onMapMoveStarted,
                 onBoundsChanged = onBoundsChanged,
                 onShopClick = onShopClick,
                 onMyLocationChanged = onMyLocationChanged,

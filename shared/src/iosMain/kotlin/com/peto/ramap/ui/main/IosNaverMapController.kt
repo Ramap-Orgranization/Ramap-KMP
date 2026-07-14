@@ -20,6 +20,7 @@ import com.peto.ramap.domain.model.Location
 import com.peto.ramap.domain.model.MapBounds
 import com.peto.ramap.domain.model.RamenShop
 import com.peto.ramap.domain.model.nearestTo
+import com.peto.ramap.ui.main.ShopLeafMarkerUpdater
 import kotlinx.cinterop.BetaInteropApi
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.readValue
@@ -34,6 +35,7 @@ private const val DEBUG_SAMPLE_SIZE = 5
 private val mapLogger = Logger.withTag("RamapIosMap")
 
 internal class IosNaverMapController(
+    private val onMapMoveStarted: () -> Unit,
     private val onBoundsChanged: (MapBounds) -> Unit,
     private val onShopClick: (RamenShop) -> Unit,
     private val onMyLocationChanged: (Location) -> Unit,
@@ -54,6 +56,7 @@ internal class IosNaverMapController(
     private var lastFocusKey = ""
     private var lastCurrentLocationFocusKey = 0L
     private var currentLocation: Location? = null
+    private var isCameraMoving = false
     private var shopKeys = emptyList<ShopClusteringKey>()
     private val locationManager = NMFLocationManager.sharedInstance()
 
@@ -169,6 +172,7 @@ internal class IosNaverMapController(
     }
 
     override fun mapViewCameraIdle(mapView: NMFMapView) {
+        isCameraMoving = false
         mapLogger.d {
             "cameraIdle: zoom=${mapView.cameraPosition.zoom}, shopKeys=${shopKeys.size}, clustererEmpty=${clusterer.empty}"
         }
@@ -185,6 +189,15 @@ internal class IosNaverMapController(
                 maxLng = bounds.northEastLng(),
             ),
         )
+    }
+
+    override fun mapView(
+        mapView: NMFMapView,
+        cameraIsChangingByReason: Long,
+    ) {
+        if (isCameraMoving) return
+        isCameraMoving = true
+        onMapMoveStarted()
     }
 
     fun dispose() {

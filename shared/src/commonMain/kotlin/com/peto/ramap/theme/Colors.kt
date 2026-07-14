@@ -40,3 +40,11 @@ object ChromaticColor {
 object LoginColor {
     val Kakao = Color(0xFFFEE500)
 }
+
+object InstagramColor {
+    val Yellow = Color(0xFFFFD600)
+    val Orange = Color(0xFFFF7A00)
+    val Pink = Color(0xFFFF0069)
+    val Purple = Color(0xFFD300C5)
+    val Blue = Color(0xFF7638FA)
+}

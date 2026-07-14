@@ -27,7 +27,6 @@ import com.peto.ramap.domain.repository.ShopReportRepository
 import com.peto.ramap.domain.repository.ShopWaitingSystemRepository
 import com.peto.ramap.network.NaverReverseGeocoder
 import com.peto.ramap.ui.common.CurrentLocationStore
-import com.peto.ramap.ui.common.LoadState
 import com.peto.ramap.ui.main.map.contract.MapIntent
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnAccountDeleteConfirmed
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnBookmarkToggled
@@ -47,7 +46,7 @@ import com.peto.ramap.ui.main.map.contract.MapIntent.OnPersonalizationViewChange
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnQueryChanged
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnSearchResultsDismissed
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopDetailDismissed
-import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopDetailRetryClicked
+import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopIdSelected
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopReportSubmitted
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopSelected
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnTopLevelTabChanged
@@ -118,10 +117,10 @@ class MapViewModel(
             is OnMyLocationChanged -> updateMyLocation(intent.location)
             OnInitialLocationFocusConsumed -> consumeInitialLocationFocus()
             is OnShopSelected -> selectShop(intent.shop)
+            is OnShopIdSelected -> selectShopById(intent.shopId)
             is OnShopDetailDismissed -> dismissShopDetail()
             is OnSearchResultsDismissed -> dismissSearchResults()
             OnInitialMapRetryClicked -> retryInitialMapLoad()
-            OnShopDetailRetryClicked -> retryShopDetailLoad()
             is OnQueryChanged -> updateQuery(intent.query)
             is OnCategoryFilterToggled -> toggleCategoryFilter(intent.category)
             OnBookmarkedShopsToggled -> toggleBookmarkedView()
@@ -180,6 +179,8 @@ class MapViewModel(
         reduce {
             copy(
                 selectedShop = shop,
+                shopDetail = null,
+                isShopDetailLoading = true,
                 search = search.consumeResultFocus(isCurrentSearchResult),
             )
         }
@@ -188,7 +189,23 @@ class MapViewModel(
 
     private fun dismissShopDetail() {
         detailJob?.cancel()
-        reduce { copy(selectedShop = null, shopDetailState = LoadState.Idle) }
+        reduce {
+            copy(
+                selectedShop = null,
+                shopDetail = null,
+                isShopDetailLoading = false,
+            )
+        }
+    }
+
+    private fun selectShopById(shopId: String) {
+        viewModelScope.launch {
+            handleResult(
+                result = ramenShopRepository.fetchRamenShopsByIds(setOf(shopId)),
+                onSuccess = { shops -> shops[shopId]?.let(::selectShop) },
+                onError = {},
+            )
+        }
     }
 
     private suspend fun updateMyLocation(location: Location) {
@@ -794,7 +811,6 @@ class MapViewModel(
         detailJob?.cancel()
         detailJob =
             viewModelScope.launch {
-                reduce { copy(shopDetailState = LoadState.Loading) }
                 handleResult(
                     result = retryOnce { fetchShopDetail(shopId) },
                     onSuccess = { detail -> handleShopDetailSuccess(shopId, detail) },
@@ -814,14 +830,16 @@ class MapViewModel(
             copy(
                 selectedShop = detail.shop.copy(isVisible = selectedShop.isVisible),
                 shopWaiting = shopWaiting + (shopId to detail.waitingSystem),
-                shopDetailState = LoadState.Content(detail),
+                shopDetail = detail,
+                isShopDetailLoading = false,
             )
         }
     }
 
     private fun handleShopDetailFailure(shopId: String) {
         if (currentState.selectedShop?.id == shopId) {
-            reduce { copy(shopDetailState = LoadState.Error) }
+            reduce { copy(shopDetail = null, isShopDetailLoading = false) }
+            showDataLoadFailure()
         }
     }
 
@@ -829,6 +847,7 @@ class MapViewModel(
         coroutineScope {
             val shopResult = async { ramenShopRepository.fetchRamenShopsByIds(setOf(shopId)) }
             val waitingResult = async { shopWaitingSystemRepository.fetchShopWaitingSystem(shopId) }
+            val eventResult = async { ramenShopRepository.fetchActiveShopEvent(shopId) }
 
             when (val shops = shopResult.await()) {
                 is RamapResult.Error -> shops
@@ -841,20 +860,14 @@ class MapViewModel(
                     when (val waiting = waitingResult.await()) {
                         is RamapResult.Error -> waiting
                         is RamapResult.Success ->
-                            RamapResult.Success(
-                                ShopDetail(
-                                    shop,
-                                    waiting.data,
-                                ),
-                            )
+                            when (val event = eventResult.await()) {
+                                is RamapResult.Error -> RamapResult.Success(ShopDetail(shop, waiting.data, null))
+                                is RamapResult.Success -> RamapResult.Success(ShopDetail(shop, waiting.data, event.data))
+                            }
                     }
                 }
             }
         }
-
-    private fun retryShopDetailLoad() {
-        currentState.selectedShop?.id?.let(::loadShopDetail)
-    }
 
     /**
      * 지도 이동 이벤트를 바로 API 호출로 연결하지 않고 짧게 지연한다.

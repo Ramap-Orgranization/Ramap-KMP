@@ -2,6 +2,7 @@ package com.peto.ramap.ui.main
 
 import app.cash.turbine.test
 import com.peto.ramap.core.config.DefaultMapConfig
+import com.peto.ramap.core.result.RamapError
 import com.peto.ramap.coroutinesTest
 import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
@@ -58,6 +59,7 @@ import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import org.jetbrains.compose.resources.StringResource
 import ramap.shared.generated.resources.Res
+import ramap.shared.generated.resources.data_load_failure_message
 import ramap.shared.generated.resources.filter_empty_visible_result_message
 import ramap.shared.generated.resources.hidden_shop_search_result_message
 import ramap.shared.generated.resources.hide_shop_success_message
@@ -183,7 +185,10 @@ class MapViewModelTest {
                 FakeShopWaitingSystemRepository(result = waitingSystem)
             val viewModel =
                 mapViewModel(
-                    ramenShopRepository = FakeRamenShopRepository(fetchByIdsResult = RamenShops(mapOf(shop.id to shop))),
+                    ramenShopRepository =
+                        FakeRamenShopRepository(
+                            fetchByIdsResult = RamenShops(mapOf(shop.id to shop)),
+                        ),
                     shopWaitingSystemRepository = waitingSystemRepository,
                 )
 
@@ -202,7 +207,10 @@ class MapViewModelTest {
             val waitingSystemRepository = FakeShopWaitingSystemRepository(result = null)
             val viewModel =
                 mapViewModel(
-                    ramenShopRepository = FakeRamenShopRepository(fetchByIdsResult = RamenShops(mapOf(shop.id to shop))),
+                    ramenShopRepository =
+                        FakeRamenShopRepository(
+                            fetchByIdsResult = RamenShops(mapOf(shop.id to shop)),
+                        ),
                     shopWaitingSystemRepository = waitingSystemRepository,
                 )
 
@@ -220,6 +228,36 @@ class MapViewModelTest {
             assertEquals(listOf(shop.id), waitingSystemRepository.requestedShopIds)
             assertEquals(true, containsWaitingSystem)
             assertEquals(null, viewModel.uiState.value.shopWaiting[shop.id])
+        }
+
+    @Test
+    fun `매장 상세 조회에 실패하면 오류 토스트를 표시한다`() =
+        coroutinesTest {
+            val shop = ramenShopFixture()
+            val viewModel =
+                mapViewModel(
+                    ramenShopRepository =
+                        FakeRamenShopRepository(
+                            error = RamapError.Unknown(IllegalStateException("failed")),
+                        ),
+                )
+
+            viewModel.sideEffect.test {
+                viewModel.dispatch(OnShopSelected(shop))
+                runCurrent()
+
+                assertEquals(null, viewModel.uiState.value.shopDetail)
+                assertEquals(false, viewModel.uiState.value.isShopDetailLoading)
+                assertEquals(
+                    ShowToast(
+                        ToastData(
+                            message = Res.string.data_load_failure_message,
+                            type = ToastType.ERROR,
+                        ),
+                    ),
+                    awaitItem(),
+                )
+            }
         }
 
     @Test
@@ -272,7 +310,11 @@ class MapViewModelTest {
         coroutinesTest {
             val shop = ramenShopFixture(id = "shop-1", name = "라멘집")
             val reportRepository = FakeShopReportRepository()
-            val viewModel = mapViewModel(shopReportRepository = reportRepository)
+            val viewModel =
+                mapViewModel(
+                    ramenShopRepository = FakeRamenShopRepository(fetchByIdsResult = RamenShops(mapOf(shop.id to shop))),
+                    shopReportRepository = reportRepository,
+                )
 
             viewModel.dispatch(OnShopSelected(shop))
             runCurrent()
@@ -307,6 +349,7 @@ class MapViewModelTest {
             val shop = ramenShopFixture()
             val viewModel =
                 mapViewModel(
+                    ramenShopRepository = FakeRamenShopRepository(fetchByIdsResult = RamenShops(mapOf(shop.id to shop))),
                     shopReportRepository =
                         FakeShopReportRepository(
                             error = IllegalStateException("failed"),
