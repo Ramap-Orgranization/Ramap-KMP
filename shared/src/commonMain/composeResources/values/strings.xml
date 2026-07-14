@@ -1,4 +1,5 @@
 <resources>
+    <string name="navigation_back">뒤로가기</string>
     <string name="app_exit_back_message">뒤로가기를 한 번 더 누르면 종료돼요</string>
     <string name="shop_detail_label_address">주소</string>
     <string name="shop_detail_label_phone">전화</string>

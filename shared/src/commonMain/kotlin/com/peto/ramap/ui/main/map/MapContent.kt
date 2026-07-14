@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -29,6 +30,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigationevent.NavigationEventInfo
@@ -368,24 +370,37 @@ private fun ShopInformationReportDialog(
                 verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 fieldOptions.forEach { option ->
-                    Checkbox(
-                        checked = option.field in selectedFields,
-                        onCheckedChange = { checked ->
-                            selectedFields =
-                                if (checked) selectedFields + option.field else selectedFields - option.field
-                        },
-                        colors =
-                            CheckboxDefaults.colors(
-                                checkedColor = GrayColor.C500,
-                                uncheckedColor = GrayColor.C300,
-                                checkmarkColor = CommonColor.White,
-                            ),
-                    )
-                    AppText(
-                        text = stringResource(option.label),
-                        style = AppTextStyle.B2,
-                        color = GrayColor.C500,
-                    )
+                    val isSelected = option.field in selectedFields
+                    Row(
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .toggleable(
+                                    value = isSelected,
+                                    role = Role.Checkbox,
+                                    onValueChange = { checked ->
+                                        selectedFields =
+                                            if (checked) selectedFields + option.field else selectedFields - option.field
+                                    },
+                                ),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Checkbox(
+                            checked = isSelected,
+                            onCheckedChange = null,
+                            colors =
+                                CheckboxDefaults.colors(
+                                    checkedColor = GrayColor.C500,
+                                    uncheckedColor = GrayColor.C300,
+                                    checkmarkColor = CommonColor.White,
+                                ),
+                        )
+                        AppText(
+                            text = stringResource(option.label),
+                            style = AppTextStyle.B2,
+                            color = GrayColor.C500,
+                        )
+                    }
                 }
             }
             TextField(

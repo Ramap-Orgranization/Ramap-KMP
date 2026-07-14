@@ -86,6 +86,7 @@ fun RamenShopDetailContent(
     onEventClick: (ShopEvent) -> Unit = {},
 ) {
     val uriHandler = LocalUriHandler.current
+    val openUri: (String) -> Unit = { uri -> runCatching { uriHandler.openUri(uri) } }
     val waitingProviderLink = waitingSystem?.toWaitingProviderLink()
 
     Column(
@@ -173,11 +174,11 @@ fun RamenShopDetailContent(
                 value = shop.address,
             )
 
-            shop.phone?.let { phone ->
+            shop.phone?.takeIf(String::isNotBlank)?.let { phone ->
                 ShopInfoRow(
                     label = stringResource(Res.string.shop_detail_label_phone),
                     value = phone,
-                    onClick = { uriHandler.openUri("tel:$phone") },
+                    onClick = { openUri("tel:$phone") },
                 )
             }
 
@@ -193,7 +194,7 @@ fun RamenShopDetailContent(
                     label = stringResource(Res.string.shop_detail_label_waiting),
                     icon = waitingProviderLink.icon,
                     contentDescription = waitingProviderLink.label,
-                    onClick = { uriHandler.openUri(waitingProviderLink.providerUrl) },
+                    onClick = { openUri(waitingProviderLink.providerUrl) },
                 )
             }
         }
@@ -204,27 +205,27 @@ fun RamenShopDetailContent(
         )
 
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            shop.instagramUrl?.let { instagramUrl ->
+            shop.instagramUrl?.takeIf(::isWebUrl)?.let { instagramUrl ->
                 ShopLinkRow(
                     icon = Res.drawable.instagram_icon,
                     label = stringResource(Res.string.shop_detail_link_instagram),
-                    onClick = { uriHandler.openUri(instagramUrl) },
+                    onClick = { openUri(instagramUrl) },
                 )
             }
 
-            shop.kakaoPlaceUrl?.let { kakaoPlaceUrl ->
+            shop.kakaoPlaceUrl?.takeIf(::isWebUrl)?.let { kakaoPlaceUrl ->
                 ShopLinkRow(
                     icon = Res.drawable.kakao_map_icon,
                     label = stringResource(Res.string.shop_detail_link_kakao_map),
-                    onClick = { uriHandler.openUri(kakaoPlaceUrl) },
+                    onClick = { openUri(kakaoPlaceUrl) },
                 )
             }
 
-            shop.naverPlaceUrl?.let { naverPlaceUrl ->
+            shop.naverPlaceUrl?.takeIf(::isWebUrl)?.let { naverPlaceUrl ->
                 ShopLinkRow(
                     icon = Res.drawable.naver_map_icon,
                     label = stringResource(Res.string.shop_detail_link_naver_map),
-                    onClick = { uriHandler.openUri(naverPlaceUrl) },
+                    onClick = { openUri(naverPlaceUrl) },
                 )
             }
 
@@ -235,6 +236,11 @@ fun RamenShopDetailContent(
             )
         }
     }
+}
+
+private fun isWebUrl(value: String): Boolean {
+    val normalized = value.trim().lowercase()
+    return normalized.startsWith("https://") || normalized.startsWith("http://")
 }
 
 @Composable
