@@ -1,6 +1,6 @@
 @file:OptIn(ExperimentalForeignApi::class)
 
-package com.peto.ramap.ui.main.map
+package com.peto.ramap.ui.main
 
 import co.touchlab.kermit.Logger
 import cocoapods.NMapsMap.NMCDefaultLeafMarkerUpdater
@@ -9,6 +9,8 @@ import cocoapods.NMapsMap.NMFMarker
 import cocoapods.NMapsMap.NMFOverlayImage
 import com.peto.ramap.core.config.MapInteractionConfig
 import com.peto.ramap.domain.model.RamenShop
+import com.peto.ramap.ui.main.map.ShopClusteringKey
+import com.peto.ramap.ui.main.map.ShopMarkerTag
 import kotlinx.cinterop.ExperimentalForeignApi
 import platform.UIKit.UIImage
 
