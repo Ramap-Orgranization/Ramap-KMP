@@ -740,6 +740,27 @@ class MapViewModelTest {
         }
 
     @Test
+    fun `좋아요 보기 상태에서도 선택한 숨김 매장은 마커로 유지한다`() {
+        val hiddenShop =
+            ramenShopFixture(
+                id = "hidden-shop",
+                name = "숨김 매장",
+                isVisible = false,
+            )
+        val uiState =
+            MapUiState(
+                selectedShop = hiddenShop,
+                hiddenShopIds = setOf(hiddenShop.id),
+                personalizationView = MapPersonalization.BOOKMARKED,
+            )
+
+        assertEquals(
+            RamenShops(mapOf(hiddenShop.id to hiddenShop)),
+            uiState.markerShops,
+        )
+    }
+
+    @Test
     fun `사용자가 숨김 처리한 매장도 검색 결과에서는 투명 표시 대상으로 유지한다`() {
         val hiddenShop =
             ramenShopFixture(

@@ -121,16 +121,15 @@ data class MapUiState(
      */
     val markerShops: RamenShops
         get() {
-            val selectedHiddenShop =
+            val selectedMarkerShop =
                 selectedShop
-                    ?.takeIf { !it.isVisible && personalizationView == MapPersonalization.ALL }
                     ?.let { shop -> mapOf(shop.id to shop) }
                     .orEmpty()
 
             return if (hasLoadedSearchResultsForCurrentQuery) {
-                RamenShops(displayFilteredShops + displaySearchResults + selectedHiddenShop)
+                RamenShops(displayFilteredShops + displaySearchResults + selectedMarkerShop)
             } else {
-                RamenShops(displayFilteredShops + selectedHiddenShop)
+                RamenShops(displayFilteredShops + selectedMarkerShop)
             }
         }
 
