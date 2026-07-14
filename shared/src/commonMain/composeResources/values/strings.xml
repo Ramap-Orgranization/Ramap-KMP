@@ -141,4 +141,5 @@
     <string name="top_level_tab_event">이벤트</string>
     <string name="top_level_tab_my">마이</string>
     <string name="bookmarked_shops_toggle">좋아요</string>
+    <string name="current_location">내 위치</string>
 </resources>

@@ -1,6 +1,10 @@
 package com.peto.ramap.ui.main.map
 
 import android.graphics.Bitmap
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -8,10 +12,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -33,8 +39,12 @@ import com.peto.ramap.domain.model.RamenShops
 import com.peto.ramap.platform.permission.PermissionStatus
 import com.peto.ramap.platform.permission.findActivity
 import com.peto.ramap.platform.permission.rememberLocationPermissionGenerator
+import com.peto.ramap.ui.main.component.MapCircleIconButton
 import org.jetbrains.compose.resources.painterResource
+import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
+import ramap.shared.generated.resources.current_location
+import ramap.shared.generated.resources.ic_current_location
 import ramap.shared.generated.resources.marker_ramen
 
 @Composable
@@ -61,6 +71,7 @@ actual fun RamapMapView(
     var naverMap by remember { mutableStateOf<NaverMap?>(null) }
     var viewportHeight by remember { mutableStateOf(0) }
     var currentLocation by remember { mutableStateOf<Location?>(null) }
+    var shouldMoveToCurrentLocation by remember { mutableStateOf(false) }
     var isCameraMoving = false
     val locationSource =
         remember(context) {
@@ -69,6 +80,15 @@ actual fun RamapMapView(
             }
         }
     val cameraController = remember { NaverCameraController() }
+    val moveToCurrentLocation = {
+        val map = naverMap
+        val location = currentLocation
+        if (map != null && location != null) {
+            map.locationTrackingMode = LocationTrackingMode.NoFollow
+            map.moveCamera(CameraUpdate.scrollTo(LatLng(location.lat, location.lng)))
+            shouldMoveToCurrentLocation = false
+        }
+    }
     val markerBitmap = rememberMarkerBitmap()
     val clusterRenderer =
         remember(markerBitmap, onShopClick) {
@@ -85,9 +105,16 @@ actual fun RamapMapView(
                     if (shouldBootstrapInitialLocationFocus) {
                         naverMap?.locationTrackingMode = LocationTrackingMode.Follow
                     }
+                    if (shouldMoveToCurrentLocation) {
+                        naverMap?.locationTrackingMode = LocationTrackingMode.NoFollow
+                        moveToCurrentLocation()
+                    }
                 }
-                PermissionStatus.Blocked -> onLocationPermissionBlocked()
-                PermissionStatus.Denied -> Unit
+                PermissionStatus.Blocked -> {
+                    shouldMoveToCurrentLocation = false
+                    onLocationPermissionBlocked()
+                }
+                PermissionStatus.Denied -> shouldMoveToCurrentLocation = false
             }
         }
 
@@ -151,47 +178,84 @@ actual fun RamapMapView(
         }
     }
 
-    AndroidView(
-        modifier = modifier.onSizeChanged { viewportHeight = it.height },
-        factory = {
-            mapView.getMapAsync(
-                OnMapReadyCallback { map ->
-                    map.minZoom = MapInteractionConfig.MAX_ZOOM_OUT_LEVEL.toDouble()
-                    map.locationSource = locationSource
-                    map.uiSettings.isLocationButtonEnabled = true
-                    map.uiSettings.isZoomControlEnabled = false
-                    map.addOnLocationChangeListener { location ->
-                        Location(location.latitude, location.longitude).let { current ->
-                            currentLocation = current
-                            onMyLocationChanged(current)
+    Box(modifier = modifier.onSizeChanged { viewportHeight = it.height }) {
+        AndroidView(
+            modifier = Modifier.fillMaxSize(),
+            factory = {
+                mapView.getMapAsync(
+                    OnMapReadyCallback { map ->
+                        map.minZoom = MapInteractionConfig.MAX_ZOOM_OUT_LEVEL.toDouble()
+                        map.locationSource = locationSource
+                        map.uiSettings.isLocationButtonEnabled = false
+                        map.uiSettings.isZoomControlEnabled = false
+                        map.addOnLocationChangeListener { location ->
+                            Location(location.latitude, location.longitude).let { current ->
+                                currentLocation = current
+                                onMyLocationChanged(current)
+                                if (shouldMoveToCurrentLocation) moveToCurrentLocation()
+                            }
                         }
-                    }
-                    map.addOnCameraChangeListener { _, _ ->
-                        if (!isCameraMoving) {
-                            isCameraMoving = true
-                            onMapMoveStarted()
+                        map.addOnCameraChangeListener { _, _ ->
+                            if (!isCameraMoving) {
+                                isCameraMoving = true
+                                onMapMoveStarted()
+                            }
                         }
-                    }
-                    map.addOnCameraIdleListener {
-                        isCameraMoving = false
-                        notifyBounds(map, onBoundsChanged)
-                    }
-                    map.moveCamera(
-                        CameraUpdate.scrollAndZoomTo(
-                            LatLng(DefaultMapConfig.LATITUDE, DefaultMapConfig.LONGITUDE),
-                            DefaultMapConfig.ZOOM_LEVEL.toDouble(),
-                        ),
-                    )
-                    naverMap = map
-                    mapView.post { notifyBounds(map, onBoundsChanged) }
-                },
-            )
-            mapView
-        },
-    )
+                        map.addOnCameraIdleListener {
+                            isCameraMoving = false
+                            notifyBounds(map, onBoundsChanged)
+                        }
+                        map.moveCamera(
+                            CameraUpdate.scrollAndZoomTo(
+                                LatLng(DefaultMapConfig.LATITUDE, DefaultMapConfig.LONGITUDE),
+                                DefaultMapConfig.ZOOM_LEVEL.toDouble(),
+                            ),
+                        )
+                        naverMap = map
+                        mapView.post { notifyBounds(map, onBoundsChanged) }
+                    },
+                )
+                mapView
+            },
+        )
+
+        CurrentLocationButton(
+            onClick = {
+                if (locationPermissionGenerator.hasPermission()) {
+                    shouldMoveToCurrentLocation = true
+                    naverMap?.locationTrackingMode = LocationTrackingMode.NoFollow
+                    moveToCurrentLocation()
+                } else {
+                    shouldMoveToCurrentLocation = true
+                    locationPermissionGenerator.requestPermission()
+                }
+            },
+            modifier =
+                Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(end = 12.dp, bottom = 16.dp),
+        )
+    }
 
     DisposableEffect(clusterRenderer) {
         onDispose { clusterRenderer.dispose() }
+    }
+}
+
+@Composable
+private fun CurrentLocationButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    MapCircleIconButton(
+        isActive = false,
+        onClick = onClick,
+        modifier = modifier,
+    ) {
+        Image(
+            painter = painterResource(Res.drawable.ic_current_location),
+            contentDescription = stringResource(Res.string.current_location),
+        )
     }
 }
 
