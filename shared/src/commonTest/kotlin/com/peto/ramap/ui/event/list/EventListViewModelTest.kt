@@ -7,9 +7,7 @@ import com.peto.ramap.domain.model.ShopEventType
 import com.peto.ramap.fake.FakeRamenShopRepository
 import com.peto.ramap.ui.common.LoadState
 import com.peto.ramap.ui.main.event.list.EventListViewModel
-import com.peto.ramap.ui.main.event.list.contract.OnEventListEntered
-import com.peto.ramap.ui.main.event.list.contract.OnEventListRefreshed
-import com.peto.ramap.ui.main.event.list.contract.OnEventListRetried
+import com.peto.ramap.ui.main.event.list.contract.EventListIntent
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
@@ -27,7 +25,7 @@ class EventListViewModelTest {
             val viewModel =
                 EventListViewModel(FakeRamenShopRepository(activeEvents = listOf(event)))
 
-            viewModel.dispatch(OnEventListEntered)
+            viewModel.dispatch(EventListIntent.OnEventListEntered)
             runCurrent()
 
             assertEquals(LoadState.Content(listOf(event)), viewModel.uiState.value.eventsState)
@@ -38,10 +36,10 @@ class EventListViewModelTest {
         coroutinesTest {
             val repository = FakeRamenShopRepository(activeEvents = listOf(event()))
             val viewModel = EventListViewModel(repository)
-            viewModel.dispatch(OnEventListEntered)
+            viewModel.dispatch(EventListIntent.OnEventListEntered)
             runCurrent()
 
-            viewModel.dispatch(OnEventListEntered)
+            viewModel.dispatch(EventListIntent.OnEventListEntered)
             runCurrent()
 
             assertEquals(1, repository.activeEventsRequestCount)
@@ -53,11 +51,11 @@ class EventListViewModelTest {
             val event = event()
             val repository = FakeRamenShopRepository(activeEvents = listOf(event))
             val viewModel = EventListViewModel(repository)
-            viewModel.dispatch(OnEventListEntered)
+            viewModel.dispatch(EventListIntent.OnEventListEntered)
             runCurrent()
             repository.activeEventsDelayMillis = 1_000
 
-            viewModel.dispatch(OnEventListRefreshed)
+            viewModel.dispatch(EventListIntent.OnEventListRefreshed)
             runCurrent()
 
             assertEquals(2, repository.activeEventsRequestCount)
@@ -77,10 +75,10 @@ class EventListViewModelTest {
                 EventListViewModel(
                     FakeRamenShopRepository(error = RamapError.Unknown(IllegalStateException("failure"))),
                 )
-            viewModel.dispatch(OnEventListEntered)
+            viewModel.dispatch(EventListIntent.OnEventListEntered)
             runCurrent()
 
-            viewModel.dispatch(OnEventListRetried)
+            viewModel.dispatch(EventListIntent.OnEventListRetried)
             runCurrent()
 
             assertEquals(LoadState.Error, viewModel.uiState.value.eventsState)
