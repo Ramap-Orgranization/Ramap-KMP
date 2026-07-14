@@ -877,7 +877,7 @@ class MapViewModel(
     }
 
     /**
-     * 마지막 성공 조회 영역과 비교해 충분히 달라진 경우에만 목록을 조회한다.
+     * 마지막 성공 조회 영역이 현재 화면을 포함하지 않을 때만 확장 영역을 조회한다.
      *
      * 요청 취소를 협조하지 못한 오래된 작업이 늦게 끝나더라도 최신 request id와 다르면
      * 결과를 버리고, 조회 결과가 기존 UI 상태와 같으면 state 갱신도 생략해 마커 재렌더링을 줄인다.
@@ -886,21 +886,22 @@ class MapViewModel(
         bounds: MapBounds,
         requestId: Long,
     ) {
-        val previousBounds = lastLoadedBounds
-        if (previousBounds != null && !bounds.hasMeaningfulViewportChangeFrom(previousBounds)) return
+        if (lastLoadedBounds?.contains(bounds) == true) return
+
+        val expandedBounds = bounds.expandBy(BOUNDS_PREFETCH_RATIO)
 
         val isInitialLoad = currentState.initialMapLoadState != InitialMapLoadState.CONTENT
         val result =
             if (isInitialLoad) {
-                retryOnce { ramenShopRepository.fetchRamenShops(bounds) }
+                retryOnce { ramenShopRepository.fetchRamenShops(expandedBounds) }
             } else {
-                ramenShopRepository.fetchRamenShops(bounds)
+                ramenShopRepository.fetchRamenShops(expandedBounds)
             }
         if (requestId != boundsLoadRequestId) return
 
         handleResult(
             result = result,
-            onSuccess = { shops -> handleRamenShopsLoadSuccess(bounds, shops) },
+            onSuccess = { shops -> handleRamenShopsLoadSuccess(expandedBounds, shops) },
             onError = { handleRamenShopsLoadFailure(isInitialLoad) },
         )
     }
@@ -940,6 +941,7 @@ class MapViewModel(
         )
 
     companion object {
+        private const val BOUNDS_PREFETCH_RATIO = 0.5
         private const val BOUNDS_LOAD_DEBOUNCE_MILLIS = 350L
         private const val SEARCH_DEBOUNCE_MILLIS = 300L
         private const val SEARCH_RESULT_LIMIT = 50

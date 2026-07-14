@@ -96,11 +96,11 @@ class MapViewModelTest {
             advanceTimeBy(1)
             runCurrent()
 
-            assertEquals(listOf(lastBounds), ramenShopRepository.requestedBoundsHistory)
+            assertEquals(listOf(lastBounds.expandBy(0.5)), ramenShopRepository.requestedBoundsHistory)
         }
 
     @Test
-    fun `마지막 성공 조회 영역과 의미 있게 다르지 않으면 조회하지 않는다`() =
+    fun `마지막 성공 선조회 영역 안에서 이동하면 조회하지 않는다`() =
         coroutinesTest {
             val ramenShopRepository = FakeRamenShopRepository()
             val viewModel = mapViewModel(ramenShopRepository)
@@ -117,18 +117,18 @@ class MapViewModelTest {
             advanceTimeBy(350)
             runCurrent()
 
-            assertEquals(listOf(BOUNDS_FIXTURE), ramenShopRepository.requestedBoundsHistory)
+            assertEquals(listOf(BOUNDS_FIXTURE.expandBy(0.5)), ramenShopRepository.requestedBoundsHistory)
         }
 
     @Test
-    fun `마지막 성공 조회 영역과 의미 있게 다르면 새로 조회한다`() =
+    fun `마지막 성공 선조회 영역을 벗어나면 새 확장 영역을 조회한다`() =
         coroutinesTest {
             val ramenShopRepository = FakeRamenShopRepository()
             val viewModel = mapViewModel(ramenShopRepository)
             val changedBounds =
                 BOUNDS_FIXTURE.copy(
-                    minLat = BOUNDS_FIXTURE.minLat + 0.03,
-                    maxLat = BOUNDS_FIXTURE.maxLat + 0.03,
+                    minLat = BOUNDS_FIXTURE.minLat + BOUNDS_FIXTURE.latSpan,
+                    maxLat = BOUNDS_FIXTURE.maxLat + BOUNDS_FIXTURE.latSpan,
                 )
 
             viewModel.dispatch(OnBoundsChanged(BOUNDS_FIXTURE))
@@ -139,7 +139,32 @@ class MapViewModelTest {
             runCurrent()
 
             assertEquals(
-                listOf(BOUNDS_FIXTURE, changedBounds),
+                listOf(BOUNDS_FIXTURE.expandBy(0.5), changedBounds.expandBy(0.5)),
+                ramenShopRepository.requestedBoundsHistory,
+            )
+        }
+
+    @Test
+    fun `실패한 선조회 영역은 캐시하지 않아 다시 요청한다`() =
+        coroutinesTest {
+            val ramenShopRepository =
+                FakeRamenShopRepository(
+                    error = RamapError.Unknown(IllegalStateException("failed")),
+                )
+            val viewModel = mapViewModel(ramenShopRepository)
+            val expandedBounds = BOUNDS_FIXTURE.expandBy(0.5)
+
+            viewModel.dispatch(OnBoundsChanged(BOUNDS_FIXTURE))
+            advanceTimeBy(350)
+            runCurrent()
+            ramenShopRepository.error = null
+
+            viewModel.dispatch(OnBoundsChanged(BOUNDS_FIXTURE))
+            advanceTimeBy(350)
+            runCurrent()
+
+            assertEquals(
+                listOf(expandedBounds, expandedBounds, expandedBounds),
                 ramenShopRepository.requestedBoundsHistory,
             )
         }
@@ -152,8 +177,8 @@ class MapViewModelTest {
             val viewModel = mapViewModel(ramenShopRepository)
             val changedBounds =
                 BOUNDS_FIXTURE.copy(
-                    minLat = BOUNDS_FIXTURE.minLat + 0.03,
-                    maxLat = BOUNDS_FIXTURE.maxLat + 0.03,
+                    minLat = BOUNDS_FIXTURE.minLat + BOUNDS_FIXTURE.latSpan,
+                    maxLat = BOUNDS_FIXTURE.maxLat + BOUNDS_FIXTURE.latSpan,
                 )
 
             viewModel.uiState.test {
@@ -417,7 +442,7 @@ class MapViewModelTest {
             advanceTimeBy(350)
             runCurrent()
 
-            assertEquals(listOf(BOUNDS_FIXTURE), ramenShopRepository.requestedBoundsHistory)
+            assertEquals(listOf(BOUNDS_FIXTURE.expandBy(0.5)), ramenShopRepository.requestedBoundsHistory)
             assertEquals(emptyList(), waitingSystemRepository.requestedShopIds)
         }
 

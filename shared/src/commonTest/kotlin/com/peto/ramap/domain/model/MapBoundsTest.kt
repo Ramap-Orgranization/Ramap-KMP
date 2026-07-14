@@ -46,6 +46,35 @@ class MapBoundsTest {
     }
 
     @Test
+    fun `지도 영역을 각 방향으로 비율만큼 확장한다`() {
+        val bounds =
+            MapBounds(
+                minLat = 10.0,
+                maxLat = 20.0,
+                minLng = 30.0,
+                maxLng = 50.0,
+            )
+
+        assertEquals(
+            MapBounds(
+                minLat = 5.0,
+                maxLat = 25.0,
+                minLng = 20.0,
+                maxLng = 60.0,
+            ),
+            bounds.expandBy(0.5),
+        )
+    }
+
+    @Test
+    fun `다른 지도 영역의 경계를 포함하면 완전 포함으로 판단한다`() {
+        val bounds = MapBounds(minLat = 10.0, maxLat = 20.0, minLng = 30.0, maxLng = 50.0)
+
+        assertTrue(bounds.contains(MapBounds(minLat = 10.0, maxLat = 18.0, minLng = 32.0, maxLng = 50.0)))
+        assertFalse(bounds.contains(MapBounds(minLat = 9.9, maxLat = 18.0, minLng = 32.0, maxLng = 50.0)))
+    }
+
+    @Test
     fun `중심 이동이 기준보다 작으면 의미 있는 변경으로 판단하지 않는다`() {
         val previous =
             MapBounds(
