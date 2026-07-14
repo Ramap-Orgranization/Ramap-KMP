@@ -43,10 +43,8 @@ import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.ui.common.LoadState
 import com.peto.ramap.ui.main.component.LaduckLoadingContent
 import com.peto.ramap.ui.main.component.LoadErrorContent
+import com.peto.ramap.ui.main.event.list.contract.EventListIntent
 import com.peto.ramap.ui.main.event.list.contract.EventListUiState
-import com.peto.ramap.ui.main.event.list.contract.OnEventListEntered
-import com.peto.ramap.ui.main.event.list.contract.OnEventListRefreshed
-import com.peto.ramap.ui.main.event.list.contract.OnEventListRetried
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 import ramap.shared.generated.resources.Res
@@ -69,12 +67,12 @@ fun EventListRoute(
     viewModel: EventListViewModel = koinViewModel(),
 ) {
     val uiState = viewModel.uiState.collectAsStateWithLifecycle().value
-    LaunchedEffect(viewModel) { viewModel.dispatch(OnEventListEntered) }
+    LaunchedEffect(viewModel) { viewModel.dispatch(EventListIntent.OnEventListEntered) }
     EventListScreen(
         uiState = uiState,
         onEventClick = onEventClick,
-        onRefresh = { viewModel.dispatch(OnEventListRefreshed) },
-        onRetryClick = { viewModel.dispatch(OnEventListRetried) },
+        onRefresh = { viewModel.dispatch(EventListIntent.OnEventListRefreshed) },
+        onRetryClick = { viewModel.dispatch(EventListIntent.OnEventListRetried) },
     )
 }
 

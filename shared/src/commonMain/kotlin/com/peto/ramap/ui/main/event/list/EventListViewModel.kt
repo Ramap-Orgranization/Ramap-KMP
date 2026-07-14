@@ -6,18 +6,15 @@ import com.peto.ramap.ui.common.LoadState
 import com.peto.ramap.ui.main.event.list.contract.EventListIntent
 import com.peto.ramap.ui.main.event.list.contract.EventListSideEffect
 import com.peto.ramap.ui.main.event.list.contract.EventListUiState
-import com.peto.ramap.ui.main.event.list.contract.OnEventListEntered
-import com.peto.ramap.ui.main.event.list.contract.OnEventListRefreshed
-import com.peto.ramap.ui.main.event.list.contract.OnEventListRetried
 
 class EventListViewModel(
     private val ramenShopRepository: RamenShopRepository,
 ) : BaseViewModel<EventListUiState, EventListIntent, EventListSideEffect>(EventListUiState()) {
     override suspend fun handleIntent(intent: EventListIntent) {
         when (intent) {
-            OnEventListEntered -> if (currentState.eventsState == LoadState.Idle) loadEvents()
-            OnEventListRefreshed -> refreshEvents()
-            OnEventListRetried -> loadEvents()
+            EventListIntent.OnEventListEntered -> if (currentState.eventsState == LoadState.Idle) loadEvents()
+            EventListIntent.OnEventListRefreshed -> refreshEvents()
+            EventListIntent.OnEventListRetried -> loadEvents()
         }
     }
 
