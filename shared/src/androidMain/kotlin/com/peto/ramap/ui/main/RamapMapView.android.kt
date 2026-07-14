@@ -47,6 +47,7 @@ actual fun RamapMapView(
     initialFocusRequestKey: Long,
     shouldBootstrapInitialLocationFocus: Boolean,
     selectedShopId: String?,
+    onMapMoveStarted: () -> Unit,
     onBoundsChanged: (MapBounds) -> Unit,
     onInitialFocusConsumed: () -> Unit,
     onMyLocationChanged: (Location) -> Unit,
@@ -60,6 +61,7 @@ actual fun RamapMapView(
     var naverMap by remember { mutableStateOf<NaverMap?>(null) }
     var viewportHeight by remember { mutableStateOf(0) }
     var currentLocation by remember { mutableStateOf<Location?>(null) }
+    var isCameraMoving = false
     val locationSource =
         remember(context) {
             findActivity(context)?.let { activity ->
@@ -164,7 +166,16 @@ actual fun RamapMapView(
                             onMyLocationChanged(current)
                         }
                     }
-                    map.addOnCameraIdleListener { notifyBounds(map, onBoundsChanged) }
+                    map.addOnCameraChangeListener { _, _ ->
+                        if (!isCameraMoving) {
+                            isCameraMoving = true
+                            onMapMoveStarted()
+                        }
+                    }
+                    map.addOnCameraIdleListener {
+                        isCameraMoving = false
+                        notifyBounds(map, onBoundsChanged)
+                    }
                     map.moveCamera(
                         CameraUpdate.scrollAndZoomTo(
                             LatLng(DefaultMapConfig.LATITUDE, DefaultMapConfig.LONGITUDE),

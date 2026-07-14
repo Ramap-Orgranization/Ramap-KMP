@@ -142,6 +142,9 @@ fun MapContent(
             initialFocusRequestKey = uiState.initialFocusRequestKey,
             shouldBootstrapInitialLocationFocus = uiState.shouldBootstrapInitialLocationFocus,
             selectedShopId = uiState.selectedShop?.id,
+            onMapMoveStarted = {
+                if (isImeVisible) focusManager.clearFocus()
+            },
             onBoundsChanged = onBoundsChanged,
             onInitialFocusConsumed = onInitialLocationFocusConsumed,
             onMyLocationChanged = onMyLocationChanged,
