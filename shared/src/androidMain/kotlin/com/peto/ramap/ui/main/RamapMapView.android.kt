@@ -186,6 +186,7 @@ actual fun RamapMapView(
                     OnMapReadyCallback { map ->
                         map.minZoom = MapInteractionConfig.MAX_ZOOM_OUT_LEVEL.toDouble()
                         map.locationSource = locationSource
+                        map.uiSettings.isCompassEnabled = false
                         map.uiSettings.isLocationButtonEnabled = false
                         map.uiSettings.isZoomControlEnabled = false
                         map.addOnLocationChangeListener { location ->
