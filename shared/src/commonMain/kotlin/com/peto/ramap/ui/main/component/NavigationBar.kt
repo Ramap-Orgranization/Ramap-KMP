@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.Composable
@@ -40,7 +41,12 @@ fun NavigationBar(
     selectedTab: TabStatus,
     onTabSelected: (TabStatus) -> Unit,
 ) {
-    Column {
+    Column(
+        modifier =
+            Modifier
+                .background(CommonColor.White)
+                .navigationBarsPadding(),
+    ) {
         HorizontalDivider(thickness = 1.dp, color = GrayColor.C100)
 
         Row(
