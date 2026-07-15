@@ -1,4 +1,4 @@
-package com.peto.ramap.di
+package com.peto.ramap.network.di
 
 import com.peto.ramap.network.NaverReverseGeocoder
 import com.peto.ramap.network.ReverseGeocoder
