@@ -2,20 +2,20 @@ package com.peto.ramap.fake
 
 import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.domain.model.EventNotificationOverride
-import com.peto.ramap.domain.repository.NotificationSettingsRepository
+import com.peto.ramap.domain.repository.NotificationRepository
 
-class FakeNotificationSettingsRepository(
+class FakeNotificationRepository(
     var enabled: Boolean = true,
     val shopIds: MutableSet<String> = mutableSetOf(),
     val eventOverrides: MutableList<EventNotificationOverride> = mutableListOf(),
-) : NotificationSettingsRepository {
+) : NotificationRepository {
     val enabledUpdates = mutableListOf<Boolean>()
     val shopNotificationUpdates = mutableListOf<Pair<String, Boolean>>()
     val eventNotificationUpdates = mutableListOf<Pair<String, Boolean>>()
 
-    override suspend fun isEnabled() = RamapResult.Success(enabled)
+    override suspend fun fetchEventNotificationsEnabled() = RamapResult.Success(enabled)
 
-    override suspend fun updateEnabled(enabled: Boolean): RamapResult<Unit> {
+    override suspend fun updateNotificationEnabled(enabled: Boolean): RamapResult<Unit> {
         enabledUpdates += enabled
         this.enabled = enabled
         return RamapResult.Success(Unit)
@@ -32,7 +32,7 @@ class FakeNotificationSettingsRepository(
         return RamapResult.Success(Unit)
     }
 
-    override suspend fun isEventNotificationEnabled(eventId: String) =
+    override suspend fun fetchEventNotificationEnabled(eventId: String) =
         RamapResult.Success(eventOverrides.firstOrNull { it.eventId == eventId }?.enabled ?: false)
 
     override suspend fun updateEventNotification(

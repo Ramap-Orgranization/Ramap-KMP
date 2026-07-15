@@ -21,7 +21,7 @@ import com.peto.ramap.domain.model.ShopInformationField
 import com.peto.ramap.domain.model.ShopInformationReport
 import com.peto.ramap.domain.model.UnregisteredPlaceReport
 import com.peto.ramap.domain.repository.LoginRepository
-import com.peto.ramap.domain.repository.NotificationSettingsRepository
+import com.peto.ramap.domain.repository.NotificationRepository
 import com.peto.ramap.domain.repository.PersonalizationRepository
 import com.peto.ramap.domain.repository.RamenShopRepository
 import com.peto.ramap.domain.repository.ShopReportRepository
@@ -96,7 +96,7 @@ class MapViewModel(
     private val reportRepository: ShopReportRepository,
     private val loginRepository: LoginRepository,
     private val currentLocationStore: CurrentLocationStore,
-    private val notificationSettingsRepository: NotificationSettingsRepository,
+    private val notificationRepository: NotificationRepository,
 ) : BaseViewModel<MapUiState, MapIntent, MapSideEffect>(initialState = MapUiState()) {
     private var boundsLoadJob: Job? = null
     private var boundsLoadRequestId = 0L
@@ -316,7 +316,7 @@ class MapViewModel(
     }
 
     private suspend fun loadNotificationSubscriptions() {
-        val repository = notificationSettingsRepository
+        val repository = notificationRepository
         handleResult(
             result = repository.fetchSubscribedShopIds(),
             onSuccess = { ids -> reduce { copy(notificationShopIds = ids) } },
@@ -341,7 +341,7 @@ class MapViewModel(
         wasEnabled: Boolean,
     ) {
         handleResult(
-            result = notificationSettingsRepository.updateShopNotification(shopId, !wasEnabled),
+            result = notificationRepository.updateShopNotification(shopId, !wasEnabled),
             onError = { handleShopNotificationFailure(shopId) },
         )
     }
@@ -442,7 +442,7 @@ class MapViewModel(
         shouldRemoveBookmark: Boolean,
         shouldDisableNotification: Boolean,
     ): RamapResult<Unit> {
-        val notificationRepository = notificationSettingsRepository
+        val notificationRepository = notificationRepository
         if (shouldDisableNotification) {
             val notificationResult = notificationRepository.updateShopNotification(shopId, false)
             if (notificationResult is RamapResult.Error) return notificationResult
