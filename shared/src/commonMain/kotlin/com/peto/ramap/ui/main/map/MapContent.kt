@@ -87,7 +87,7 @@ fun MapContent(
     onBoundsChanged: (MapBounds) -> Unit,
     onMyLocationChanged: (Location) -> Unit,
     onLocationPermissionBlocked: () -> Unit,
-    onShopSelected: (RamenShop) -> Unit,
+    onShopSelected: (RamenShop, Boolean) -> Unit,
     onShopDetailDismissed: () -> Unit,
     onQueryChanged: (String) -> Unit,
     onSearchResultsDismissed: () -> Unit,
@@ -150,7 +150,7 @@ fun MapContent(
             onBoundsChanged = onBoundsChanged,
             onInitialFocusConsumed = onInitialLocationFocusConsumed,
             onMyLocationChanged = onMyLocationChanged,
-            onShopClick = onShopSelected,
+            onShopClick = { onShopSelected(it, false) },
             onLocationPermissionBlocked = onLocationPermissionBlocked,
         )
 
@@ -196,7 +196,7 @@ fun MapContent(
                 uiState.showSearchResults ->
                     RamenShopSearchResultList(
                         shops = uiState.searchResultShops,
-                        onShopClick = onShopSelected,
+                        onShopClick = { onShopSelected(it, true) },
                     )
             }
         }

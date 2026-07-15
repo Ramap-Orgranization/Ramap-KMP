@@ -21,6 +21,7 @@ sealed interface MapIntent : Intent {
 
     data class OnShopSelected(
         val shop: RamenShop,
+        val shouldFocus: Boolean = true,
     ) : MapIntent
 
     data class OnShopIdSelected(

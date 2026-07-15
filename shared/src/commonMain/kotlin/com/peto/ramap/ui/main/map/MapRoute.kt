@@ -60,7 +60,7 @@ fun MapRoute(
         onBoundsChanged = { viewModel.dispatch(OnBoundsChanged(it)) },
         onMyLocationChanged = { viewModel.dispatch(OnMyLocationChanged(it)) },
         onLocationPermissionBlocked = { viewModel.dispatch(OnLocationPermissionBlocked) },
-        onShopSelected = { viewModel.dispatch(OnShopSelected(it)) },
+        onShopSelected = { shop, shouldFocus -> viewModel.dispatch(OnShopSelected(shop, shouldFocus)) },
         onShopDetailDismissed = { viewModel.dispatch(OnShopDetailDismissed) },
         onQueryChanged = { viewModel.dispatch(OnQueryChanged(it)) },
         onSearchResultsDismissed = { viewModel.dispatch(OnSearchResultsDismissed) },

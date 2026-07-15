@@ -113,7 +113,7 @@ class MapViewModel(
             is OnBoundsChanged -> scheduleRamenShopsLoad(intent.bounds)
             is OnMyLocationChanged -> updateMyLocation(intent.location)
             OnInitialLocationFocusConsumed -> consumeInitialLocationFocus()
-            is OnShopSelected -> selectShop(intent.shop)
+            is OnShopSelected -> selectShop(intent.shop, intent.shouldFocus)
             is OnShopIdSelected -> selectShopById(intent.shopId)
             is OnShopDetailDismissed -> dismissShopDetail()
             is OnSearchResultsDismissed -> dismissSearchResults()
@@ -165,13 +165,17 @@ class MapViewModel(
         }
     }
 
-    private fun selectShop(shop: RamenShop) {
+    private fun selectShop(
+        shop: RamenShop,
+        shouldFocus: Boolean = true,
+    ) {
         detailJob?.cancel()
         val isCurrentSearchResult = shop.id in currentState.search.results
         val cachedDetail = shopDetailCache[shop.id]
         reduce {
             copy(
                 selectedShop = cachedDetail?.shop?.copy(isVisible = shop.isVisible) ?: shop,
+                shouldFocusSelectedShop = shouldFocus,
                 shopDetail = cachedDetail,
                 shopWaiting = cachedDetail?.let { shopWaiting + (shop.id to it.waitingSystem) } ?: shopWaiting,
                 isShopDetailLoading = cachedDetail == null,

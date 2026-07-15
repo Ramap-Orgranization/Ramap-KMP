@@ -28,6 +28,7 @@ data class MapUiState(
      * 상세 바텀시트에 표시할 현재 선택 매장.
      */
     val selectedShop: RamenShop? = null,
+    val shouldFocusSelectedShop: Boolean = true,
     /**
      * 검색창 입력값, 검색 결과, 검색 결과의 소비 상태.
      */
@@ -155,13 +156,13 @@ data class MapUiState(
     /**
      * 지도 카메라가 포커스해야 할 매장 목록.
      *
-     * 상세 화면에서는 선택 매장 1개를 중심으로 이동하고,
+     * 마커 외 경로에서 연 상세 화면은 선택 매장 1개를 중심으로 이동하고,
      * 검색 결과가 있으면 단일 결과는 중심으로, 여러 결과는 한 화면에 보이도록 이동한다.
      */
     val focusShops: List<RamenShop>
         get() =
             when {
-                selectedShop != null -> listOf(selectedShop)
+                selectedShop != null && shouldFocusSelectedShop -> listOf(selectedShop)
                 shouldFocusSearchResults -> searchResultShops
                 else -> emptyList()
             }
