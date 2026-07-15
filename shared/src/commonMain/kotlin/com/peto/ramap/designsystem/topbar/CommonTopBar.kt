@@ -18,6 +18,7 @@ fun CommonTopBar(
     title: String,
     left: @Composable () -> Unit,
     modifier: Modifier = Modifier,
+    right: @Composable () -> Unit = {},
 ) {
     Column(
         modifier = modifier.fillMaxWidth(),
@@ -28,8 +29,12 @@ fun CommonTopBar(
                     .fillMaxWidth()
                     .height(60.dp),
         ) {
-            Box(modifier = Modifier.align(Alignment.TopStart)) {
+            Box(modifier = Modifier.align(Alignment.CenterStart)) {
                 left()
+            }
+
+            Box(modifier = Modifier.align(Alignment.CenterEnd)) {
+                right()
             }
 
             AppText(

@@ -30,6 +30,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import com.peto.ramap.core.extension.noRippleClickable
 import com.peto.ramap.core.extension.stringResource
+import com.peto.ramap.designsystem.image.RemoteShopImage
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.domain.model.RamenShop
 import com.peto.ramap.domain.model.ShopEvent
@@ -42,7 +43,6 @@ import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.InstagramColor
 import com.peto.ramap.theme.SystemColor
-import com.peto.ramap.ui.main.event.list.RemoteShopImage
 import com.peto.ramap.ui.main.map.model.WaitingProviderLink
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource

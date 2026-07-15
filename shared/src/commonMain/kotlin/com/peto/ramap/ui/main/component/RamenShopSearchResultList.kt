@@ -12,10 +12,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.peto.ramap.core.config.MapInteractionConfig
 import com.peto.ramap.core.extension.stringResource
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.domain.model.RamenShop
@@ -35,6 +33,7 @@ fun RamenShopSearchResultList(
     shops: List<RamenShop>,
     onShopClick: (RamenShop) -> Unit,
     modifier: Modifier = Modifier,
+    itemModifier: (RamenShop) -> Modifier = { Modifier },
 ) {
     Column(
         modifier =
@@ -53,6 +52,7 @@ fun RamenShopSearchResultList(
             RamenShopSearchResultItem(
                 shop = shop,
                 onClick = { onShopClick(shop) },
+                modifier = itemModifier(shop),
             )
         }
     }
@@ -89,17 +89,17 @@ fun RamenShopSearchResultGuide(
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun RamenShopSearchResultItem(
+fun RamenShopSearchResultItem(
     shop: RamenShop,
-    onClick: () -> Unit,
+    onClick: (() -> Unit)?,
     modifier: Modifier = Modifier,
+    leadingContent: @Composable () -> Unit = {},
 ) {
     Column(
         modifier =
             modifier
                 .fillMaxWidth()
-                .alpha(if (shop.isVisible) 1f else MapInteractionConfig.HIDDEN_SHOP_ALPHA)
-                .clickable(onClick = onClick)
+                .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
                 .padding(horizontal = 24.dp, vertical = 16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
@@ -108,6 +108,7 @@ private fun RamenShopSearchResultItem(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalAlignment = Alignment.Top,
         ) {
+            leadingContent()
             AppText(
                 text = shop.name,
                 modifier = Modifier.weight(1f),

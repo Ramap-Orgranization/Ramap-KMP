@@ -1,4 +1,4 @@
-package com.peto.ramap.ui.main.event.list
+package com.peto.ramap.designsystem.image
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
