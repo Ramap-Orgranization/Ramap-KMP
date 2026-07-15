@@ -20,6 +20,8 @@ class FakeRamenShopDataSource(
 
     override suspend fun fetchActiveEvents(): List<ShopEventResponse> = activeEventsResponses
 
+    override suspend fun fetchActiveEvent(eventId: String): ShopEventResponse? = activeEventsResponses.firstOrNull { it.id == eventId }
+
     override suspend fun fetchShopEventParticipants(eventId: String): List<ShopEventParticipantResponse> = participantResponses
 
     var requestedBounds: MapBounds? = null

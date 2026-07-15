@@ -36,6 +36,10 @@ class FakeRamenShopRepository(
         return (activeEventsError ?: error)?.let { RamapResult.Error(it) } ?: RamapResult.Success(activeEvents)
     }
 
+    override suspend fun fetchActiveEvent(eventId: String): RamapResult<ShopEvent?> =
+        (activeEventError ?: error)?.let { RamapResult.Error(it) }
+            ?: RamapResult.Success(activeEvents.firstOrNull { it.id == eventId } ?: activeEvent)
+
     val requestedBoundsHistory = mutableListOf<MapBounds>()
     val requestedShopIdsHistory = mutableListOf<Set<String>>()
     val requestedSearchQueries = mutableListOf<SearchQuery>()
