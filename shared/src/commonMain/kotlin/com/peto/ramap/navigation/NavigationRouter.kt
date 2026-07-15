@@ -24,11 +24,16 @@ fun NavigationRouter(
     eventListContent: @Composable () -> Unit,
     myContent: @Composable () -> Unit,
     hiddenContent: @Composable () -> Unit,
+    notificationSettingsContent: @Composable () -> Unit,
     eventContent: @Composable () -> Unit,
 ) {
-    if (currentRoute == ScreenRoutes.HiddenShopListRoutes) {
+    if (currentRoute == ScreenRoutes.HiddenShopListRoutes || currentRoute == ScreenRoutes.NotificationSettingsRoutes) {
         Box(modifier = Modifier.fillMaxSize().background(CommonColor.White)) {
-            hiddenContent()
+            if (currentRoute == ScreenRoutes.HiddenShopListRoutes) {
+                hiddenContent()
+            } else {
+                notificationSettingsContent()
+            }
         }
         return
     }

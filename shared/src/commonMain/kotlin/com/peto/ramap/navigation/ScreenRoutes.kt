@@ -17,6 +17,9 @@ sealed interface ScreenRoutes : NavKey {
     data object HiddenShopListRoutes : ScreenRoutes
 
     @Serializable
+    data object NotificationSettingsRoutes : ScreenRoutes
+
+    @Serializable
     data class EventDetailRoutes(
         val eventId: String,
     ) : ScreenRoutes

@@ -11,6 +11,7 @@ import com.peto.ramap.ui.main.event.di.eventDetailModule
 import com.peto.ramap.ui.main.event.list.di.eventListModule
 import com.peto.ramap.ui.main.map.di.mapModule
 import com.peto.ramap.ui.main.my.di.myTabModule
+import com.peto.ramap.ui.settings.notification.di.notificationSettingsModule
 import org.koin.core.context.startKoin
 import org.koin.dsl.KoinAppDeclaration
 
@@ -30,6 +31,7 @@ fun initKoin(appDeclaration: KoinAppDeclaration = {}) {
             eventDetailModule,
             eventListModule,
             notificationModule,
+            notificationSettingsModule,
         )
     }
 }

@@ -13,26 +13,42 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.peto.ramap.core.base.ObserveAsEvents
 import com.peto.ramap.core.extension.noRippleClickable
 import com.peto.ramap.designsystem.button.AppButton
+import com.peto.ramap.designsystem.card.SectionCard
 import com.peto.ramap.designsystem.text.AppText
+import com.peto.ramap.designsystem.toast.ToastManager
 import com.peto.ramap.designsystem.topbar.CommonTopBar
 import com.peto.ramap.domain.model.ShopEvent
 import com.peto.ramap.domain.model.ShopEventType
+import com.peto.ramap.platform.AppSettingsOpener
+import com.peto.ramap.platform.ExternalUriOpener
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.ChromaticColor
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.InstagramColor
-import com.peto.ramap.ui.main.component.SectionCard
+import com.peto.ramap.ui.main.component.LaduckLoadingContent
+import com.peto.ramap.ui.main.event.contract.EventDetailIntent.OnEntered
+import com.peto.ramap.ui.main.event.contract.EventDetailIntent.OnNotificationChanged
+import com.peto.ramap.ui.main.event.contract.EventDetailSideEffect.EventUnavailable
+import com.peto.ramap.ui.main.event.contract.EventDetailSideEffect.ShowEventToast
+import com.peto.ramap.ui.main.event.contract.EventDetailUiState
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
+import org.koin.compose.koinInject
+import org.koin.compose.viewmodel.koinViewModel
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.event_collaborator_person
 import ramap.shared.generated.resources.event_collaborator_shop
@@ -40,6 +56,8 @@ import ramap.shared.generated.resources.event_content
 import ramap.shared.generated.resources.event_date
 import ramap.shared.generated.resources.event_detail_title
 import ramap.shared.generated.resources.event_instagram_action
+import ramap.shared.generated.resources.event_notification_disable
+import ramap.shared.generated.resources.event_notification_enable
 import ramap.shared.generated.resources.event_status_today
 import ramap.shared.generated.resources.event_status_upcoming
 import ramap.shared.generated.resources.event_type_collab
@@ -49,15 +67,46 @@ import ramap.shared.generated.resources.event_venue
 import ramap.shared.generated.resources.event_waiting
 import ramap.shared.generated.resources.event_waiting_action
 import ramap.shared.generated.resources.ic_arrow3_left
+import ramap.shared.generated.resources.ic_notification
+import ramap.shared.generated.resources.ic_notification_filled
 import ramap.shared.generated.resources.navigation_back
 
 @Composable
 fun EventDetailRoute(
-    event: ShopEvent,
+    eventId: String,
+    initialEvent: ShopEvent?,
     onBack: () -> Unit,
+    onUnavailable: () -> Unit,
     onShopClick: (String) -> Unit,
+    toastManager: ToastManager = koinInject(),
+    appSettingsOpener: AppSettingsOpener = koinInject(),
+    viewModel: EventDetailViewModel = koinViewModel(),
 ) {
-    EventDetailScreen(event, onBack, onShopClick)
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    LaunchedEffect(eventId, initialEvent) {
+        viewModel.dispatch(OnEntered(eventId, initialEvent))
+    }
+
+    ObserveAsEvents(viewModel.sideEffect) { sideEffect ->
+        when (sideEffect) {
+            EventUnavailable -> onUnavailable()
+            is ShowEventToast ->
+                toastManager.show(
+                    sideEffect.data.copy(
+                        action = sideEffect.data.action?.copy(onClick = appSettingsOpener::open),
+                    ),
+                )
+        }
+    }
+    uiState.event?.let {
+        EventDetailScreen(
+            event = it,
+            onBack = onBack,
+            onShopClick = onShopClick,
+            uiState = uiState,
+            onNotificationChanged = { enabled -> viewModel.dispatch(OnNotificationChanged(enabled)) },
+        )
+    } ?: LaduckLoadingContent()
 }
 
 @Composable
@@ -65,11 +114,9 @@ fun EventDetailScreen(
     event: ShopEvent,
     onBack: () -> Unit,
     onShopClick: (String) -> Unit,
+    uiState: EventDetailUiState,
+    onNotificationChanged: (Boolean) -> Unit,
 ) {
-    val uriHandler = LocalUriHandler.current
-    val openExternalUri: (String) -> Unit = { uri ->
-        uri.takeIf(::isSupportedExternalUri)?.let { runCatching { uriHandler.openUri(it) } }
-    }
     Scaffold(
         modifier = Modifier.fillMaxSize().statusBarsPadding(),
         topBar = {
@@ -79,7 +126,17 @@ fun EventDetailScreen(
                     Image(
                         painter = painterResource(Res.drawable.ic_arrow3_left),
                         contentDescription = stringResource(Res.string.navigation_back),
-                        modifier = Modifier.padding(18.dp).size(24.dp).noRippleClickable(onClick = onBack),
+                        modifier =
+                            Modifier
+                                .padding(18.dp)
+                                .size(24.dp)
+                                .noRippleClickable(onClick = onBack),
+                    )
+                },
+                right = {
+                    EventNotificationButton(
+                        uiState = uiState,
+                        onNotificationChanged = onNotificationChanged,
                     )
                 },
             )
@@ -104,7 +161,10 @@ fun EventDetailScreen(
                     modifier = Modifier.padding(top = 16.dp),
                     verticalArrangement = Arrangement.spacedBy(20.dp),
                 ) {
-                    EventLink(event.venueShopName, event.venueAddress) { onShopClick(event.venueShopId) }
+                    EventLink(
+                        event.venueShopName,
+                        event.venueAddress,
+                    ) { onShopClick(event.venueShopId) }
                     event.collaboratorName?.takeIf(String::isNotBlank)?.let { name ->
                         EventSection(
                             stringResource(
@@ -116,8 +176,10 @@ fun EventDetailScreen(
                             ),
                         ) {
                             EventLink(name) {
-                                event.collaboratorShopId?.takeIf(String::isNotBlank)?.let(onShopClick)
-                                    ?: event.collaboratorInstagramUrl?.let(openExternalUri)
+                                event.collaboratorShopId
+                                    ?.takeIf(String::isNotBlank)
+                                    ?.let(onShopClick)
+                                    ?: event.collaboratorInstagramUrl?.let(ExternalUriOpener::open)
                             }
                         }
                     }
@@ -130,16 +192,16 @@ fun EventDetailScreen(
             event.waitingMethod?.let { waiting ->
                 SectionCard(title = stringResource(Res.string.event_waiting)) {
                     EventValue(waiting, Modifier.padding(top = 16.dp))
-                    event.waitingUrl?.takeIf(::isSupportedExternalUri)?.let { url ->
+                    event.waitingUrl?.takeIf(ExternalUriOpener::isSupportedWebUri)?.let { url ->
                         AppButton(
                             text = stringResource(Res.string.event_waiting_action),
                             modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
-                            onClick = { openExternalUri(url) },
+                            onClick = { ExternalUriOpener.open(url) },
                         )
                     }
                 }
             }
-            if (isSupportedExternalUri(event.sourceUrl)) {
+            if (ExternalUriOpener.isSupportedWebUri(event.sourceUrl)) {
                 AppButton(
                     text = stringResource(Res.string.event_instagram_action),
                     modifier =
@@ -147,16 +209,48 @@ fun EventDetailScreen(
                             .fillMaxWidth()
                             .background(INSTAGRAM_GRADIENT, RoundedCornerShape(12.dp)),
                     backgroundColor = Color.Transparent,
-                    onClick = { openExternalUri(event.sourceUrl) },
+                    onClick = { ExternalUriOpener.open(event.sourceUrl) },
                 )
             }
         }
     }
 }
 
-private fun isSupportedExternalUri(uri: String): Boolean {
-    val normalized = uri.trim().lowercase()
-    return normalized.startsWith("https://") || normalized.startsWith("http://")
+@Composable
+private fun EventNotificationButton(
+    uiState: EventDetailUiState,
+    onNotificationChanged: (Boolean) -> Unit,
+) {
+    if (!uiState.isNotificationVisible) return
+    IconButton(
+        enabled = uiState.canChangeNotification && !uiState.isNotificationLoading,
+        onClick = { onNotificationChanged(!uiState.isNotificationEnabled) },
+    ) {
+        Icon(
+            painter =
+                painterResource(
+                    if (uiState.isNotificationEnabled) {
+                        Res.drawable.ic_notification_filled
+                    } else {
+                        Res.drawable.ic_notification
+                    },
+                ),
+            contentDescription =
+                stringResource(
+                    if (uiState.isNotificationEnabled) {
+                        Res.string.event_notification_disable
+                    } else {
+                        Res.string.event_notification_enable
+                    },
+                ),
+            tint =
+                if (uiState.isNotificationEnabled && !uiState.isNotificationLoading) {
+                    InstagramColor.Pink
+                } else {
+                    GrayColor.C300
+                },
+        )
+    }
 }
 
 private val INSTAGRAM_GRADIENT =
@@ -174,7 +268,10 @@ private val INSTAGRAM_GRADIENT =
 private fun EventTag(text: String) {
     AppText(
         text,
-        modifier = Modifier.background(ChromaticColor.Yellow400, RoundedCornerShape(12.dp)).padding(horizontal = 10.dp, vertical = 5.dp),
+        modifier =
+            Modifier
+                .background(ChromaticColor.Yellow400, RoundedCornerShape(12.dp))
+                .padding(horizontal = 10.dp, vertical = 5.dp),
         style = AppTextStyle.B3,
         color = GrayColor.C500,
     )
