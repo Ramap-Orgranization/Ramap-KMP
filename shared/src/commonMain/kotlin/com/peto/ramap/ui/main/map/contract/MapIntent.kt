@@ -48,6 +48,10 @@ sealed interface MapIntent : Intent {
         val shop: RamenShop,
     ) : MapIntent
 
+    data class OnShopNotificationToggled(
+        val shop: RamenShop,
+    ) : MapIntent
+
     data class OnHiddenToggled(
         val shop: RamenShop,
     ) : MapIntent
