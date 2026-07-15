@@ -3,6 +3,8 @@ package com.peto.ramap.ui.settings.notification.contract
 import com.peto.ramap.core.base.Intent
 
 sealed interface NotificationSettingsIntent : Intent {
+    data object OnResumed : NotificationSettingsIntent
+
     data class OnEnabledChanged(
         val enabled: Boolean,
     ) : NotificationSettingsIntent

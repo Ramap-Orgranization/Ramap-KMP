@@ -28,8 +28,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.ViewModelStoreOwner
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.peto.ramap.core.base.ObserveAsEvents
 import com.peto.ramap.core.extension.noRippleClickable
@@ -49,6 +51,7 @@ import com.peto.ramap.ui.settings.notification.contract.NotificationSettingsInte
 import com.peto.ramap.ui.settings.notification.contract.NotificationSettingsIntent.OnRemovalConfirmed
 import com.peto.ramap.ui.settings.notification.contract.NotificationSettingsIntent.OnRemovalDismissed
 import com.peto.ramap.ui.settings.notification.contract.NotificationSettingsIntent.OnRemovalRequested
+import com.peto.ramap.ui.settings.notification.contract.NotificationSettingsIntent.OnResumed
 import com.peto.ramap.ui.settings.notification.contract.NotificationSettingsSideEffect.ShowToast
 import com.peto.ramap.ui.settings.notification.contract.NotificationSettingsUiState
 import org.jetbrains.compose.resources.painterResource
@@ -90,6 +93,10 @@ fun NotificationSettingsRoute(
     }
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
+        viewModel.dispatch(OnResumed)
+    }
 
     ObserveAsEvents(viewModel.sideEffect) { sideEffect ->
         when (sideEffect) {

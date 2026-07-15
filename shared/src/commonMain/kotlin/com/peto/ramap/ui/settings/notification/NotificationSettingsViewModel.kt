@@ -16,6 +16,7 @@ import com.peto.ramap.ui.settings.notification.contract.NotificationSettingsInte
 import com.peto.ramap.ui.settings.notification.contract.NotificationSettingsIntent.OnRemovalConfirmed
 import com.peto.ramap.ui.settings.notification.contract.NotificationSettingsIntent.OnRemovalDismissed
 import com.peto.ramap.ui.settings.notification.contract.NotificationSettingsIntent.OnRemovalRequested
+import com.peto.ramap.ui.settings.notification.contract.NotificationSettingsIntent.OnResumed
 import com.peto.ramap.ui.settings.notification.contract.NotificationSettingsIntent.OnShopRemoved
 import com.peto.ramap.ui.settings.notification.contract.NotificationSettingsSideEffect
 import com.peto.ramap.ui.settings.notification.contract.NotificationSettingsSideEffect.ShowToast
@@ -29,6 +30,7 @@ class NotificationSettingsViewModel(
     private val notificationRepository: NotificationSettingsRepository,
     private val ramenShopRepository: RamenShopRepository,
     private val requestNotificationPermission: suspend () -> Boolean = NotificationPermissionRequester::request,
+    private val isNotificationPermissionGranted: suspend () -> Boolean = NotificationPermissionRequester::isGranted,
 ) : BaseViewModel<NotificationSettingsUiState, NotificationSettingsIntent, NotificationSettingsSideEffect>(
         initialState = NotificationSettingsUiState(),
     ) {
@@ -38,6 +40,7 @@ class NotificationSettingsViewModel(
 
     override suspend fun handleIntent(intent: NotificationSettingsIntent) {
         when (intent) {
+            OnResumed -> refreshEnabled()
             is OnEnabledChanged -> updateEnabled(intent.enabled)
             is OnShopRemoved -> removeShop(intent.shopId)
             is OnEventOverrideRemoved -> removeEventOverride(intent.eventId)
@@ -69,15 +72,25 @@ class NotificationSettingsViewModel(
                     ?.data
                     ?.let { override to it }
             }
+        val areEnabled = enabled.isEnabledWithPermission()
         reduce {
             copy(
-                areEnabled = (enabled as? RamapResult.Success)?.data ?: true,
+                areEnabled = areEnabled,
                 subscribedShopCount = subscribedShopIds.size,
                 shops = shops.sortedBy { it.name },
                 subscribedEvents = events.filter { it.first.enabled }.map { it.second },
             )
         }
     }
+
+    private suspend fun refreshEnabled() {
+        val enabled = notificationRepository.isEnabled()
+        val areEnabled = enabled.isEnabledWithPermission()
+        reduce { copy(areEnabled = areEnabled) }
+    }
+
+    private suspend fun RamapResult<Boolean>.isEnabledWithPermission(): Boolean =
+        (this as? RamapResult.Success)?.data == true && isNotificationPermissionGranted()
 
     private suspend fun loadShops(shopIds: Set<String>) =
         if (shopIds.isEmpty()) {
