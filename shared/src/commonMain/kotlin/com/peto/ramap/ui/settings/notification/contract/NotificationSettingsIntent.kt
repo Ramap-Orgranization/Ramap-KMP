@@ -1,11 +1,10 @@
 package com.peto.ramap.ui.settings.notification.contract
 
 import com.peto.ramap.core.base.Intent
+import com.peto.ramap.ui.settings.notification.model.NotificationRemovalTarget
 
 sealed interface NotificationSettingsIntent : Intent {
-    data object OnResumed : NotificationSettingsIntent
-
-    data class OnEnabledChanged(
+    data class OnEventNotificationsEnabledChanged(
         val enabled: Boolean,
     ) : NotificationSettingsIntent
 
