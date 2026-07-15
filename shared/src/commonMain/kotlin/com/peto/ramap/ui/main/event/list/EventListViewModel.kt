@@ -1,11 +1,15 @@
 package com.peto.ramap.ui.main.event.list
 
 import com.peto.ramap.core.base.BaseViewModel
+import com.peto.ramap.designsystem.toast.model.ToastData
+import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.repository.RamenShopRepository
 import com.peto.ramap.ui.common.LoadState
 import com.peto.ramap.ui.main.event.list.contract.EventListIntent
 import com.peto.ramap.ui.main.event.list.contract.EventListSideEffect
 import com.peto.ramap.ui.main.event.list.contract.EventListUiState
+import ramap.shared.generated.resources.Res
+import ramap.shared.generated.resources.event_list_refresh_failure_message
 
 class EventListViewModel(
     private val ramenShopRepository: RamenShopRepository,
@@ -32,7 +36,17 @@ class EventListViewModel(
         handleResult(
             result = ramenShopRepository.fetchActiveEvents(),
             onSuccess = { events -> reduce { copy(eventsState = LoadState.Content(events), isRefreshing = false) } },
-            onError = { reduce { copy(isRefreshing = false) } },
+            onError = {
+                reduce { copy(isRefreshing = false) }
+                trySideEffect(
+                    EventListSideEffect.ShowEventListToast(
+                        ToastData(
+                            message = Res.string.event_list_refresh_failure_message,
+                            type = ToastType.ERROR,
+                        ),
+                    ),
+                )
+            },
         )
     }
 }

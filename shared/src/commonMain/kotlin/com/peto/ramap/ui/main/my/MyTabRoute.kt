@@ -14,18 +14,19 @@ import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.designsystem.toast.ToastManager
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.GrayColor
-import com.peto.ramap.ui.main.my.contract.NavigateToHiddenShops
-import com.peto.ramap.ui.main.my.contract.OnAccountDeleteClick
-import com.peto.ramap.ui.main.my.contract.OnAccountDeleteConfirm
-import com.peto.ramap.ui.main.my.contract.OnAccountDeleteDismiss
-import com.peto.ramap.ui.main.my.contract.OnCurrentLocationReportSubmit
-import com.peto.ramap.ui.main.my.contract.OnHiddenShopsClick
-import com.peto.ramap.ui.main.my.contract.OnKakaoLoginClick
-import com.peto.ramap.ui.main.my.contract.OnLoginGuideDismiss
-import com.peto.ramap.ui.main.my.contract.OnLogoutClick
-import com.peto.ramap.ui.main.my.contract.OnPlaceReportSubmit
-import com.peto.ramap.ui.main.my.contract.OnPlaceUrlChanged
-import com.peto.ramap.ui.main.my.contract.ShowMyToast
+import com.peto.ramap.ui.main.my.contract.MyTabIntent.OnAccountDeleteClick
+import com.peto.ramap.ui.main.my.contract.MyTabIntent.OnAccountDeleteConfirm
+import com.peto.ramap.ui.main.my.contract.MyTabIntent.OnAccountDeleteDismiss
+import com.peto.ramap.ui.main.my.contract.MyTabIntent.OnCurrentAddressRefresh
+import com.peto.ramap.ui.main.my.contract.MyTabIntent.OnCurrentLocationReportSubmit
+import com.peto.ramap.ui.main.my.contract.MyTabIntent.OnHiddenShopsClick
+import com.peto.ramap.ui.main.my.contract.MyTabIntent.OnKakaoLoginClick
+import com.peto.ramap.ui.main.my.contract.MyTabIntent.OnLoginGuideDismiss
+import com.peto.ramap.ui.main.my.contract.MyTabIntent.OnLogoutClick
+import com.peto.ramap.ui.main.my.contract.MyTabIntent.OnPlaceReportSubmit
+import com.peto.ramap.ui.main.my.contract.MyTabIntent.OnPlaceUrlChanged
+import com.peto.ramap.ui.main.my.contract.MyTabSideEffect.NavigateToHiddenShops
+import com.peto.ramap.ui.main.my.contract.MyTabSideEffect.ShowMyToast
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
@@ -47,7 +48,6 @@ fun MyTabRoute(
         when (sideEffect) {
             is ShowMyToast -> toastManager.show(sideEffect.data)
             NavigateToHiddenShops -> onHiddenShopsNavigate()
-            else -> Unit
         }
     }
 
@@ -60,6 +60,7 @@ fun MyTabRoute(
         onPlaceUrlChanged = { viewModel.dispatch(OnPlaceUrlChanged(it)) },
         onPlaceReportSubmit = { viewModel.dispatch(OnPlaceReportSubmit) },
         onLocationReportSubmit = { viewModel.dispatch(OnCurrentLocationReportSubmit) },
+        onCurrentAddressRefresh = { viewModel.dispatch(OnCurrentAddressRefresh) },
     )
 
     CommonDialog(

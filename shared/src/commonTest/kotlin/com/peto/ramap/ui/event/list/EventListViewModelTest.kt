@@ -1,16 +1,22 @@
 package com.peto.ramap.ui.event.list
 
+import app.cash.turbine.test
 import com.peto.ramap.core.result.RamapError
 import com.peto.ramap.coroutinesTest
+import com.peto.ramap.designsystem.toast.model.ToastData
+import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.ShopEvent
 import com.peto.ramap.domain.model.ShopEventType
 import com.peto.ramap.fake.FakeRamenShopRepository
 import com.peto.ramap.ui.common.LoadState
 import com.peto.ramap.ui.main.event.list.EventListViewModel
 import com.peto.ramap.ui.main.event.list.contract.EventListIntent
+import com.peto.ramap.ui.main.event.list.contract.EventListSideEffect
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
+import ramap.shared.generated.resources.Res
+import ramap.shared.generated.resources.event_list_refresh_failure_message
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -82,6 +88,34 @@ class EventListViewModelTest {
             runCurrent()
 
             assertEquals(LoadState.Error, viewModel.uiState.value.eventsState)
+        }
+
+    @Test
+    fun `새로고침 실패 시 기존 목록을 유지하고 오류 토스트를 표시한다`() =
+        coroutinesTest {
+            val event = event()
+            val repository = FakeRamenShopRepository(activeEvents = listOf(event))
+            val viewModel = EventListViewModel(repository)
+            viewModel.dispatch(EventListIntent.OnEventListEntered)
+            runCurrent()
+            repository.activeEventsError = RamapError.Unknown(IllegalStateException("failure"))
+
+            viewModel.sideEffect.test {
+                viewModel.dispatch(EventListIntent.OnEventListRefreshed)
+                runCurrent()
+
+                assertEquals(LoadState.Content(listOf(event)), viewModel.uiState.value.eventsState)
+                assertFalse(viewModel.uiState.value.isRefreshing)
+                assertEquals(
+                    EventListSideEffect.ShowEventListToast(
+                        ToastData(
+                            message = Res.string.event_list_refresh_failure_message,
+                            type = ToastType.ERROR,
+                        ),
+                    ),
+                    awaitItem(),
+                )
+            }
         }
 
     private fun event() =

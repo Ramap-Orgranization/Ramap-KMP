@@ -17,6 +17,7 @@ data class RamenShop(
     val isVisible: Boolean,
     val createdAt: String,
     val updatedAt: String,
+    val instagramProfileImageUrl: String? = null,
 ) {
     val hasCategory: Boolean
         get() = menuCategories.hasCategory

@@ -13,11 +13,17 @@ import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Surface
 import androidx.compose.material3.TextField
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -29,6 +35,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigationevent.NavigationEventInfo
@@ -78,6 +85,7 @@ import ramap.shared.generated.resources.shop_information_report_description
 import ramap.shared.generated.resources.shop_information_report_dismiss
 import ramap.shared.generated.resources.shop_information_report_placeholder
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MapContent(
     uiState: MapUiState,
@@ -85,7 +93,7 @@ fun MapContent(
     onBoundsChanged: (MapBounds) -> Unit,
     onMyLocationChanged: (Location) -> Unit,
     onLocationPermissionBlocked: () -> Unit,
-    onShopSelected: (RamenShop) -> Unit,
+    onShopSelected: (RamenShop, Boolean) -> Unit,
     onShopDetailDismissed: () -> Unit,
     onQueryChanged: (String) -> Unit,
     onSearchResultsDismissed: () -> Unit,
@@ -105,6 +113,7 @@ fun MapContent(
     var wasImeVisible by remember { mutableStateOf(false) }
     var hideConfirmShop by remember { mutableStateOf<RamenShop?>(null) }
     var showReportDialog by remember(selectedShop?.id) { mutableStateOf(false) }
+    val searchResultSheetState = rememberModalBottomSheetState()
 
     val backEventState =
         rememberNavigationEventState<NavigationEventInfo>(
@@ -148,7 +157,7 @@ fun MapContent(
             onBoundsChanged = onBoundsChanged,
             onInitialFocusConsumed = onInitialLocationFocusConsumed,
             onMyLocationChanged = onMyLocationChanged,
-            onShopClick = onShopSelected,
+            onShopClick = { onShopSelected(it, false) },
             onLocationPermissionBlocked = onLocationPermissionBlocked,
         )
 
@@ -182,20 +191,23 @@ fun MapContent(
             )
         }
 
-        CommonBottomSheet(
-            visible = uiState.showSearchResults,
-            onDismissRequest = onSearchResultsDismissed,
-            isBackEnabled = isBackEnabled,
-            config = CommonBottomSheetConfig(),
-        ) {
-            val searchResultGuide = uiState.searchResultGuide
-            when {
-                searchResultGuide != null -> RamenShopSearchResultGuide(guide = searchResultGuide)
-                uiState.showSearchResults ->
-                    RamenShopSearchResultList(
-                        shops = uiState.searchResultShops,
-                        onShopClick = onShopSelected,
-                    )
+        if (uiState.showSearchResults) {
+            ModalBottomSheet(
+                onDismissRequest = onSearchResultsDismissed,
+                sheetState = searchResultSheetState,
+                containerColor = CommonColor.White,
+            ) {
+                Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                    val searchResultGuide = uiState.searchResultGuide
+                    if (searchResultGuide != null) {
+                        RamenShopSearchResultGuide(guide = searchResultGuide)
+                    } else {
+                        RamenShopSearchResultList(
+                            shops = uiState.searchResultShops,
+                            onShopClick = { onShopSelected(it, true) },
+                        )
+                    }
+                }
             }
         }
 
@@ -368,24 +380,37 @@ private fun ShopInformationReportDialog(
                 verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 fieldOptions.forEach { option ->
-                    Checkbox(
-                        checked = option.field in selectedFields,
-                        onCheckedChange = { checked ->
-                            selectedFields =
-                                if (checked) selectedFields + option.field else selectedFields - option.field
-                        },
-                        colors =
-                            CheckboxDefaults.colors(
-                                checkedColor = GrayColor.C500,
-                                uncheckedColor = GrayColor.C300,
-                                checkmarkColor = CommonColor.White,
-                            ),
-                    )
-                    AppText(
-                        text = stringResource(option.label),
-                        style = AppTextStyle.B2,
-                        color = GrayColor.C500,
-                    )
+                    val isSelected = option.field in selectedFields
+                    Row(
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .toggleable(
+                                    value = isSelected,
+                                    role = Role.Checkbox,
+                                    onValueChange = { checked ->
+                                        selectedFields =
+                                            if (checked) selectedFields + option.field else selectedFields - option.field
+                                    },
+                                ),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Checkbox(
+                            checked = isSelected,
+                            onCheckedChange = null,
+                            colors =
+                                CheckboxDefaults.colors(
+                                    checkedColor = GrayColor.C500,
+                                    uncheckedColor = GrayColor.C300,
+                                    checkmarkColor = CommonColor.White,
+                                ),
+                        )
+                        AppText(
+                            text = stringResource(option.label),
+                            style = AppTextStyle.B2,
+                            color = GrayColor.C500,
+                        )
+                    }
                 }
             }
             TextField(

@@ -20,11 +20,16 @@ import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.marker_ramen
 
 @Composable
-internal fun RemoteShopImage(
+fun RemoteShopImage(
     url: String?,
     modifier: Modifier = Modifier,
 ) {
-    Box(modifier = modifier.background(GrayColor.C100), contentAlignment = Alignment.Center) {
+    Box(
+        modifier =
+            modifier
+                .background(GrayColor.C100),
+        contentAlignment = Alignment.Center,
+    ) {
         if (url.isNullOrBlank()) {
             ShopImagePlaceholder()
             return@Box

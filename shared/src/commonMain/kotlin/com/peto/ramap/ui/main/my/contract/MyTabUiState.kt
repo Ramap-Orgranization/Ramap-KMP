@@ -10,6 +10,7 @@ data class MyTabUiState(
     val isDeletingAccount: Boolean = false,
     val currentLocation: Location? = null,
     val currentAddress: String? = null,
+    val isAddressRefreshing: Boolean = false,
     val placeUrl: String = "",
     val showAccountDeleteConfirmDialog: Boolean = false,
     val showLoginGuideDialog: Boolean = false,

@@ -35,6 +35,22 @@ data class MapBounds(
         location.lat in minLat..maxLat &&
             location.lng in minLng..maxLng
 
+    /** [other] 지도 영역을 현재 지도 영역이 완전히 포함하는지 반환한다. */
+    fun contains(other: MapBounds): Boolean =
+        other.minLat >= minLat &&
+            other.maxLat <= maxLat &&
+            other.minLng >= minLng &&
+            other.maxLng <= maxLng
+
+    /** 현재 지도 영역의 각 방향을 기존 span에 대한 [ratio]만큼 확장한다. */
+    fun expandBy(ratio: Double): MapBounds =
+        MapBounds(
+            minLat = minLat - latSpan * ratio,
+            maxLat = maxLat + latSpan * ratio,
+            minLng = minLng - lngSpan * ratio,
+            maxLng = maxLng + lngSpan * ratio,
+        )
+
     /**
      * 이전 지도 영역과 비교해 화면 영역이 충분히 달라졌는지 판단한다.
      *

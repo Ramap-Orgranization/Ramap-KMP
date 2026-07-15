@@ -49,6 +49,7 @@ import ramap.shared.generated.resources.event_venue
 import ramap.shared.generated.resources.event_waiting
 import ramap.shared.generated.resources.event_waiting_action
 import ramap.shared.generated.resources.ic_arrow3_left
+import ramap.shared.generated.resources.navigation_back
 
 @Composable
 fun EventDetailRoute(
@@ -66,6 +67,9 @@ fun EventDetailScreen(
     onShopClick: (String) -> Unit,
 ) {
     val uriHandler = LocalUriHandler.current
+    val openExternalUri: (String) -> Unit = { uri ->
+        uri.takeIf(::isSupportedExternalUri)?.let { runCatching { uriHandler.openUri(it) } }
+    }
     Scaffold(
         modifier = Modifier.fillMaxSize().statusBarsPadding(),
         topBar = {
@@ -74,7 +78,7 @@ fun EventDetailScreen(
                 left = {
                     Image(
                         painter = painterResource(Res.drawable.ic_arrow3_left),
-                        contentDescription = "back",
+                        contentDescription = stringResource(Res.string.navigation_back),
                         modifier = Modifier.padding(18.dp).size(24.dp).noRippleClickable(onClick = onBack),
                     )
                 },
@@ -113,7 +117,7 @@ fun EventDetailScreen(
                         ) {
                             EventLink(name) {
                                 event.collaboratorShopId?.takeIf(String::isNotBlank)?.let(onShopClick)
-                                    ?: event.collaboratorInstagramUrl?.takeIf(String::isNotBlank)?.let(uriHandler::openUri)
+                                    ?: event.collaboratorInstagramUrl?.let(openExternalUri)
                             }
                         }
                     }
@@ -126,26 +130,33 @@ fun EventDetailScreen(
             event.waitingMethod?.let { waiting ->
                 SectionCard(title = stringResource(Res.string.event_waiting)) {
                     EventValue(waiting, Modifier.padding(top = 16.dp))
-                    event.waitingUrl?.let { url ->
+                    event.waitingUrl?.takeIf(::isSupportedExternalUri)?.let { url ->
                         AppButton(
                             text = stringResource(Res.string.event_waiting_action),
                             modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
-                            onClick = { uriHandler.openUri(url) },
+                            onClick = { openExternalUri(url) },
                         )
                     }
                 }
             }
-            AppButton(
-                text = stringResource(Res.string.event_instagram_action),
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .background(INSTAGRAM_GRADIENT, RoundedCornerShape(12.dp)),
-                backgroundColor = Color.Transparent,
-                onClick = { uriHandler.openUri(event.sourceUrl) },
-            )
+            if (isSupportedExternalUri(event.sourceUrl)) {
+                AppButton(
+                    text = stringResource(Res.string.event_instagram_action),
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .background(INSTAGRAM_GRADIENT, RoundedCornerShape(12.dp)),
+                    backgroundColor = Color.Transparent,
+                    onClick = { openExternalUri(event.sourceUrl) },
+                )
+            }
         }
     }
+}
+
+private fun isSupportedExternalUri(uri: String): Boolean {
+    val normalized = uri.trim().lowercase()
+    return normalized.startsWith("https://") || normalized.startsWith("http://")
 }
 
 private val INSTAGRAM_GRADIENT =

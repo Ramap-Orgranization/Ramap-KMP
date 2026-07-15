@@ -33,7 +33,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.peto.ramap.core.base.ObserveAsEvents
 import com.peto.ramap.designsystem.text.AppText
+import com.peto.ramap.designsystem.toast.ToastManager
 import com.peto.ramap.domain.model.ShopEvent
 import com.peto.ramap.domain.model.ShopEventType
 import com.peto.ramap.theme.AppTextStyle
@@ -44,8 +46,10 @@ import com.peto.ramap.ui.common.LoadState
 import com.peto.ramap.ui.main.component.LaduckLoadingContent
 import com.peto.ramap.ui.main.component.LoadErrorContent
 import com.peto.ramap.ui.main.event.list.contract.EventListIntent
+import com.peto.ramap.ui.main.event.list.contract.EventListSideEffect
 import com.peto.ramap.ui.main.event.list.contract.EventListUiState
 import org.jetbrains.compose.resources.stringResource
+import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.event_list_empty
@@ -64,9 +68,15 @@ import ramap.shared.generated.resources.laduck_error_crying
 @Composable
 fun EventListRoute(
     onEventClick: (ShopEvent) -> Unit,
+    toastManager: ToastManager = koinInject(),
     viewModel: EventListViewModel = koinViewModel(),
 ) {
     val uiState = viewModel.uiState.collectAsStateWithLifecycle().value
+    ObserveAsEvents(viewModel.sideEffect) { sideEffect ->
+        when (sideEffect) {
+            is EventListSideEffect.ShowEventListToast -> toastManager.show(sideEffect.data)
+        }
+    }
     LaunchedEffect(viewModel) { viewModel.dispatch(EventListIntent.OnEventListEntered) }
     EventListScreen(
         uiState = uiState,

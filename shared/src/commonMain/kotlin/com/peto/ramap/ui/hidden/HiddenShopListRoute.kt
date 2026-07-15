@@ -39,6 +39,7 @@ import ramap.shared.generated.resources.hidden_shops_empty_title
 import ramap.shared.generated.resources.ic_arrow3_left
 import ramap.shared.generated.resources.laduck_error_confused
 import ramap.shared.generated.resources.laduck_error_crying
+import ramap.shared.generated.resources.navigation_back
 import ramap.shared.generated.resources.settings_hidden_shops_menu
 import ramap.shared.generated.resources.top_level_tab_my
 
@@ -79,7 +80,7 @@ fun HiddenShopListScreen(
             left = {
                 Image(
                     painter = painterResource(Res.drawable.ic_arrow3_left),
-                    contentDescription = "back",
+                    contentDescription = stringResource(Res.string.navigation_back),
                     modifier =
                         Modifier
                             .padding(18.dp)

@@ -1,6 +1,7 @@
 package com.peto.ramap.ui.main.my
 
 import app.cash.turbine.test
+import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.coroutinesTest
 import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
@@ -8,14 +9,16 @@ import com.peto.ramap.domain.model.Location
 import com.peto.ramap.fake.FakeLoginRepository
 import com.peto.ramap.fake.FakeRamenShopRepository
 import com.peto.ramap.fake.FakeShopReportRepository
+import com.peto.ramap.network.ReverseGeocoder
 import com.peto.ramap.ui.common.CurrentLocationStore
-import com.peto.ramap.ui.main.my.contract.NavigateToHiddenShops
-import com.peto.ramap.ui.main.my.contract.OnCurrentLocationReportSubmit
-import com.peto.ramap.ui.main.my.contract.OnHiddenShopsClick
-import com.peto.ramap.ui.main.my.contract.ShowMyLoginGuide
-import com.peto.ramap.ui.main.my.contract.ShowMyToast
+import com.peto.ramap.ui.main.my.contract.MyTabIntent.OnCurrentAddressRefresh
+import com.peto.ramap.ui.main.my.contract.MyTabIntent.OnCurrentLocationReportSubmit
+import com.peto.ramap.ui.main.my.contract.MyTabIntent.OnHiddenShopsClick
+import com.peto.ramap.ui.main.my.contract.MyTabSideEffect.NavigateToHiddenShops
+import com.peto.ramap.ui.main.my.contract.MyTabSideEffect.ShowMyToast
 import io.github.jan.supabase.auth.status.SessionStatus
 import io.github.jan.supabase.auth.user.UserSession
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runCurrent
 import org.jetbrains.compose.resources.StringResource
@@ -23,6 +26,8 @@ import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.place_report_location_unavailable_message
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class MyTabViewModelTest {
@@ -31,10 +36,8 @@ class MyTabViewModelTest {
         coroutinesTest {
             val viewModel = myTabViewModel()
 
-            viewModel.sideEffect.test {
-                viewModel.dispatch(OnHiddenShopsClick)
-                assertEquals(ShowMyLoginGuide, awaitItem())
-            }
+            viewModel.dispatch(OnHiddenShopsClick)
+            runCurrent()
 
             assertEquals(true, viewModel.uiState.value.showLoginGuideDialog)
         }
@@ -74,6 +77,82 @@ class MyTabViewModelTest {
 
             assertEquals(location, viewModel.uiState.value.currentLocation)
         }
+
+    @Test
+    fun `현재 위치가 변경되면 새 위치의 주소를 자동 조회한다`() =
+        coroutinesTest {
+            val currentLocationStore = CurrentLocationStore()
+            val requestedLocations = mutableListOf<Location>()
+            val viewModel =
+                myTabViewModel(
+                    currentLocationStore = currentLocationStore,
+                    reverseGeocoder = reverseGeocoder(requestedLocations),
+                )
+            val firstLocation = Location(lat = 37.551, lng = 126.921)
+            val secondLocation = Location(lat = 37.552, lng = 126.922)
+
+            currentLocationStore.update(firstLocation)
+            runCurrent()
+            currentLocationStore.update(secondLocation)
+            runCurrent()
+
+            assertEquals(listOf(firstLocation, secondLocation), requestedLocations)
+            assertEquals(secondLocation, viewModel.uiState.value.currentLocation)
+            assertEquals("테스트 주소", viewModel.uiState.value.currentAddress)
+        }
+
+    @Test
+    fun `주소 새로고침은 최신 현재 위치로 다시 조회한다`() =
+        coroutinesTest {
+            val currentLocationStore = CurrentLocationStore()
+            val requestedLocations = mutableListOf<Location>()
+            val viewModel =
+                myTabViewModel(
+                    currentLocationStore = currentLocationStore,
+                    reverseGeocoder = reverseGeocoder(requestedLocations),
+                )
+            val firstLocation = Location(lat = 37.551, lng = 126.921)
+            val latestLocation = Location(lat = 37.552, lng = 126.922)
+            currentLocationStore.update(firstLocation)
+            runCurrent()
+            currentLocationStore.update(latestLocation)
+            runCurrent()
+
+            viewModel.dispatch(OnCurrentAddressRefresh)
+            runCurrent()
+
+            assertEquals(listOf(firstLocation, latestLocation, latestLocation), requestedLocations)
+            assertEquals("테스트 주소", viewModel.uiState.value.currentAddress)
+        }
+
+    @Test
+    fun `주소 조회 중 새로고침을 다시 눌러도 요청을 중복 실행하지 않는다`() =
+        coroutinesTest {
+            val currentLocationStore = CurrentLocationStore()
+            val response = CompletableDeferred<RamapResult<String?>>()
+            var requestCount = 0
+            val viewModel =
+                myTabViewModel(
+                    currentLocationStore = currentLocationStore,
+                    reverseGeocoder =
+                        ReverseGeocoder {
+                            requestCount++
+                            response.await()
+                        },
+                )
+            currentLocationStore.update(Location(lat = 37.551, lng = 126.921))
+            runCurrent()
+
+            assertTrue(viewModel.uiState.value.isAddressRefreshing)
+            viewModel.dispatch(OnCurrentAddressRefresh)
+            viewModel.dispatch(OnCurrentAddressRefresh)
+            runCurrent()
+            assertEquals(1, requestCount)
+
+            response.complete(RamapResult.Success("테스트 주소"))
+            runCurrent()
+            assertFalse(viewModel.uiState.value.isAddressRefreshing)
+        }
 }
 
 private fun showMyToastSideEffect(message: StringResource): ShowMyToast =
@@ -89,13 +168,21 @@ private fun myTabViewModel(
     ramenShopRepository: FakeRamenShopRepository = FakeRamenShopRepository(),
     shopReportRepository: FakeShopReportRepository = FakeShopReportRepository(),
     currentLocationStore: CurrentLocationStore = CurrentLocationStore(),
+    reverseGeocoder: ReverseGeocoder? = null,
 ): MyTabViewModel =
     MyTabViewModel(
         loginRepository = loginRepository,
         ramenShopRepository = ramenShopRepository,
         reportRepository = shopReportRepository,
         currentLocationStore = currentLocationStore,
+        reverseGeocoder = reverseGeocoder,
     )
+
+private fun reverseGeocoder(requestedLocations: MutableList<Location>): ReverseGeocoder =
+    ReverseGeocoder { location ->
+        requestedLocations += location
+        RamapResult.Success("테스트 주소")
+    }
 
 private fun loggedInRepository(): FakeLoginRepository =
     FakeLoginRepository(
