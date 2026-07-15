@@ -46,7 +46,11 @@ class DefaultLoginRepository(
      */
     override suspend fun signInWithKakao(): RamapResult<Unit> = invokeRequest { kakaoLoginProvider.signIn(supabaseClient) }
 
-    override suspend fun signOut(): RamapResult<Unit> = invokeRequest { supabaseClient.auth.signOut() }
+    override suspend fun signOut(): RamapResult<Unit> =
+        invokeRequest {
+            supabaseClient.postgrest.rpc(UNREGISTER_PUSH_REGISTRATIONS_RPC)
+            supabaseClient.auth.signOut()
+        }
 
     override suspend fun deleteAccount(): RamapResult<Unit> =
         invokeRequest {
@@ -56,5 +60,6 @@ class DefaultLoginRepository(
 
     private companion object {
         const val DELETE_CURRENT_USER_RPC = "delete_current_user"
+        const val UNREGISTER_PUSH_REGISTRATIONS_RPC = "unregister_push_registrations"
     }
 }
