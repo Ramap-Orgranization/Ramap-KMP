@@ -20,6 +20,7 @@ import com.peto.ramap.domain.repository.RamenShopRepository
 import com.peto.ramap.domain.repository.ShopReportRepository
 import com.peto.ramap.domain.repository.ShopWaitingSystemRepository
 import com.peto.ramap.fake.FakeLoginRepository
+import com.peto.ramap.fake.FakeNotificationSettingsRepository
 import com.peto.ramap.fake.FakePersonalizationRepository
 import com.peto.ramap.fake.FakeRamenShopRepository
 import com.peto.ramap.fake.FakeShopReportRepository
@@ -42,6 +43,7 @@ import com.peto.ramap.ui.main.map.contract.MapIntent.OnQueryChanged
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnSearchResultsDismissed
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopDetailDismissed
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopIdSelected
+import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopNotificationToggled
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopReportSubmitted
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopSelected
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnUnregisteredPlaceReportSubmitted
@@ -60,6 +62,7 @@ import org.jetbrains.compose.resources.StringResource
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.data_load_failure_message
 import ramap.shared.generated.resources.filter_empty_visible_result_message
+import ramap.shared.generated.resources.hidden_shop_notification_unavailable_message
 import ramap.shared.generated.resources.hidden_shop_search_result_message
 import ramap.shared.generated.resources.hide_shop_success_message
 import ramap.shared.generated.resources.place_report_existing_shop_message
@@ -526,7 +529,14 @@ class MapViewModelTest {
         coroutinesTest {
             val shop = ramenShopFixture()
             val reportRepository = FakeShopReportRepository(delayMillis = 1_000)
-            val viewModel = mapViewModel(shopReportRepository = reportRepository)
+            val viewModel =
+                mapViewModel(
+                    ramenShopRepository =
+                        FakeRamenShopRepository(
+                            fetchByIdsResult = RamenShops(mapOf(shop.id to shop)),
+                        ),
+                    shopReportRepository = reportRepository,
+                )
 
             viewModel.dispatch(OnShopSelected(shop))
             runCurrent()
@@ -536,13 +546,16 @@ class MapViewModelTest {
                     wrongFields = setOf(ShopInformationField.ADDRESS),
                     description = "주소가 달라요",
                 )
-            viewModel.dispatch(intent)
-            viewModel.dispatch(intent)
-            runCurrent()
+            viewModel.sideEffect.test {
+                viewModel.dispatch(intent)
+                viewModel.dispatch(intent)
+                runCurrent()
 
-            advanceTimeBy(1_000)
-            runCurrent()
-            assertEquals(1, reportRepository.reports.size)
+                advanceTimeBy(1_000)
+                runCurrent()
+                assertEquals(1, reportRepository.reports.size)
+                assertEquals(showToastSideEffect(Res.string.shop_information_report_success_message), awaitItem())
+            }
         }
 
     @Test
@@ -727,19 +740,13 @@ class MapViewModelTest {
         }
 
     @Test
-    fun `검색어가 변경되면 지연 후 정규화한 검색어로 가게를 검색한다`() =
+    fun `검색어가 변경되면 즉시 정규화한 검색어로 가게를 검색한다`() =
         coroutinesTest {
             val shops = RamenShops(listOf(ramenShopFixture()).associateBy { it.id })
             val ramenShopRepository = FakeRamenShopRepository(searchResult = shops)
             val viewModel = mapViewModel(ramenShopRepository)
 
             viewModel.dispatch(OnQueryChanged("  RAMEN   SHOP  "))
-            advanceTimeBy(299)
-            runCurrent()
-
-            assertEquals(emptyList(), ramenShopRepository.requestedSearchQueries)
-
-            advanceTimeBy(1)
             runCurrent()
 
             assertEquals(
@@ -979,7 +986,7 @@ class MapViewModelTest {
     }
 
     @Test
-    fun `현재 검색 결과가 도착하기 전에는 기존 지도 영역 매장 마커를 유지한다`() =
+    fun `검색 결과가 도착하면 기존 지도 영역 매장과 함께 마커로 보여준다`() =
         coroutinesTest {
             val mapShops =
                 RamenShops(
@@ -1010,12 +1017,6 @@ class MapViewModelTest {
             advanceTimeBy(350)
             runCurrent()
             viewModel.dispatch(OnQueryChanged("라멘"))
-            advanceTimeBy(299)
-            runCurrent()
-
-            assertEquals(mapShops, viewModel.uiState.value.markerShops)
-
-            advanceTimeBy(1)
             runCurrent()
 
             assertEquals(RamenShops(mapShops + searchShops), viewModel.uiState.value.markerShops)
@@ -1028,14 +1029,7 @@ class MapViewModelTest {
             val viewModel = mapViewModel(ramenShopRepository)
 
             viewModel.dispatch(OnQueryChanged("라멘"))
-            advanceTimeBy(150)
             viewModel.dispatch(OnQueryChanged("라멘집"))
-            advanceTimeBy(299)
-            runCurrent()
-
-            assertEquals(emptyList(), ramenShopRepository.requestedSearchQueries)
-
-            advanceTimeBy(1)
             runCurrent()
 
             assertEquals(listOf(SearchQuery("라멘집")), ramenShopRepository.requestedSearchQueries)
@@ -1157,6 +1151,97 @@ class MapViewModelTest {
 
                 assertEquals(showToastSideEffect(Res.string.hide_shop_success_message), awaitItem())
             }
+        }
+
+    @Test
+    fun `알림 구독 매장을 숨기면 구독을 해제한다`() =
+        coroutinesTest {
+            val shop = ramenShopFixture(id = "subscribed-shop-to-hide")
+            val notificationRepository =
+                FakeNotificationSettingsRepository(
+                    shopIds = mutableSetOf(shop.id),
+                )
+            val viewModel =
+                mapViewModel(
+                    loginRepository = loggedInRepository(),
+                    notificationSettingsRepository = notificationRepository,
+                )
+            runCurrent()
+
+            viewModel.dispatch(OnHiddenToggled(shop))
+            runCurrent()
+
+            assertEquals(setOf(shop.id), viewModel.uiState.value.hiddenShopIds)
+            assertEquals(emptySet(), viewModel.uiState.value.notificationShopIds)
+            assertEquals(emptySet(), notificationRepository.shopIds)
+            assertEquals(listOf(shop.id to false), notificationRepository.shopNotificationUpdates)
+        }
+
+    @Test
+    fun `숨김 매장의 알림 설정 변경을 차단한다`() =
+        coroutinesTest {
+            val shop = ramenShopFixture(id = "hidden-notification-shop")
+            val notificationRepository = FakeNotificationSettingsRepository()
+            val viewModel =
+                mapViewModel(
+                    personalizationRepository =
+                        FakePersonalizationRepository(
+                            Personalization(hiddenShopIds = setOf(shop.id)),
+                        ),
+                    loginRepository = loggedInRepository(),
+                    notificationSettingsRepository = notificationRepository,
+                )
+            runCurrent()
+
+            viewModel.sideEffect.test {
+                viewModel.dispatch(OnShopNotificationToggled(shop))
+                runCurrent()
+
+                assertEquals(emptySet(), viewModel.uiState.value.notificationShopIds)
+                assertEquals(emptySet(), notificationRepository.shopIds)
+                assertEquals(
+                    showToastSideEffect(Res.string.hidden_shop_notification_unavailable_message),
+                    awaitItem(),
+                )
+            }
+        }
+
+    @Test
+    fun `매장 알림을 활성화하면 저장한다`() =
+        coroutinesTest {
+            val shop = ramenShopFixture(id = "permission-granted-shop")
+            val notificationRepository = FakeNotificationSettingsRepository()
+            val viewModel =
+                mapViewModel(
+                    loginRepository = loggedInRepository(),
+                    notificationSettingsRepository = notificationRepository,
+                )
+            runCurrent()
+
+            viewModel.dispatch(OnShopNotificationToggled(shop))
+            runCurrent()
+
+            assertEquals(setOf(shop.id), viewModel.uiState.value.notificationShopIds)
+            assertEquals(listOf(shop.id to true), notificationRepository.shopNotificationUpdates)
+        }
+
+    @Test
+    fun `매장 알림을 비활성화하면 저장한다`() =
+        coroutinesTest {
+            val shop = ramenShopFixture(id = "notification-disable-shop")
+            val notificationRepository = FakeNotificationSettingsRepository(shopIds = mutableSetOf(shop.id))
+            val viewModel =
+                mapViewModel(
+                    loginRepository = loggedInRepository(),
+                    notificationSettingsRepository = notificationRepository,
+                )
+            runCurrent()
+
+            viewModel.dispatch(OnShopNotificationToggled(shop))
+            runCurrent()
+
+            assertEquals(emptySet(), viewModel.uiState.value.notificationShopIds)
+            assertEquals(listOf(shop.id to false), notificationRepository.shopNotificationUpdates)
         }
 
     @Test
@@ -1822,6 +1907,7 @@ private fun mapViewModel(
     personalizationRepository: PersonalizationRepository = FakePersonalizationRepository(),
     loginRepository: FakeLoginRepository = FakeLoginRepository(),
     shopReportRepository: ShopReportRepository = FakeShopReportRepository(),
+    notificationSettingsRepository: FakeNotificationSettingsRepository = FakeNotificationSettingsRepository(),
 ): MapViewModel =
     MapViewModel(
         ramenShopRepository,
@@ -1830,6 +1916,7 @@ private fun mapViewModel(
         shopReportRepository,
         loginRepository,
         CurrentLocationStore(),
+        notificationSettingsRepository,
     )
 
 private fun loggedInRepository(): FakeLoginRepository =

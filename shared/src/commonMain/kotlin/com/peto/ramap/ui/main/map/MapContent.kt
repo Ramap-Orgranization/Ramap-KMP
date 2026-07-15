@@ -101,6 +101,7 @@ fun MapContent(
     onInitialLocationFocusConsumed: () -> Unit,
     onCategoryFilterToggled: (Category) -> Unit,
     onBookmarkToggled: (RamenShop) -> Unit,
+    onShopNotificationToggled: (RamenShop) -> Unit,
     onHiddenToggled: (RamenShop) -> Unit,
     onEventClick: (ShopEvent) -> Unit,
     onReportSubmit: (Set<ShopInformationField>, String) -> Unit,
@@ -223,8 +224,10 @@ fun MapContent(
                         shop = shop,
                         waitingSystem = uiState.shopWaiting[shop.id],
                         isBookmarked = shop.id in uiState.bookmarkedShopIds,
+                        isNotificationEnabled = shop.id in uiState.notificationShopIds,
                         isHidden = shop.id in uiState.hiddenShopIds,
                         onBookmarkClick = { onBookmarkToggled(shop) },
+                        onNotificationClick = { onShopNotificationToggled(shop) },
                         onHiddenClick = {
                             if (uiState.isLoggedIn && shop.id !in uiState.hiddenShopIds) {
                                 hideConfirmShop = shop
