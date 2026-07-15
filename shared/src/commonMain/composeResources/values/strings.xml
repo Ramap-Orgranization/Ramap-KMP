@@ -32,9 +32,7 @@
     <string name="event_notification_settings_section">이벤트 알림 설정</string>
     <string name="event_notification_master_action">전체 이벤트 알림</string>
     <string name="event_notification_subscribed_shop_count">알림을 설정한 매장 %1$d곳</string>
-    <string name="event_notification_subscribed_shops">구독 중인 매장</string>
-    <string name="event_notification_subscribed_events">개별 구독한 예정 이벤트</string>
-    <string name="event_notification_excluded_events">알림에서 제외한 이벤트</string>
+    <string name="event_notification_subscribed_shops">매장</string>
     <string name="event_notification_remove_action">해제</string>
     <string name="event_list_empty">진행 중이거나 예정된 이벤트가 없어요</string>
     <string name="event_list_loading_message">이벤트를 불러오고 있어요...</string>
