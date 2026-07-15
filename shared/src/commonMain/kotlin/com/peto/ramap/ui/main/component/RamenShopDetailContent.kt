@@ -1,6 +1,5 @@
 package com.peto.ramap.ui.main.component
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -12,17 +11,21 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.ColorFilter
-import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import com.peto.ramap.core.extension.noRippleClickable
@@ -33,9 +36,11 @@ import com.peto.ramap.domain.model.ShopEvent
 import com.peto.ramap.domain.model.ShopEventType
 import com.peto.ramap.domain.model.ShopWaitingSystem
 import com.peto.ramap.domain.model.WaitingProvider
+import com.peto.ramap.platform.ExternalUriOpener
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
+import com.peto.ramap.theme.InstagramColor
 import com.peto.ramap.theme.SystemColor
 import com.peto.ramap.ui.main.event.list.RemoteShopImage
 import com.peto.ramap.ui.main.map.model.WaitingProviderLink
@@ -43,8 +48,15 @@ import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
+import ramap.shared.generated.resources.bookmarked_shops_toggle
 import ramap.shared.generated.resources.catchtable
+import ramap.shared.generated.resources.event_notification_action
+import ramap.shared.generated.resources.hide_shop_action
 import ramap.shared.generated.resources.ic_kid_star
+import ramap.shared.generated.resources.ic_kid_star_filled
+import ramap.shared.generated.resources.ic_more_vert
+import ramap.shared.generated.resources.ic_notification
+import ramap.shared.generated.resources.ic_notification_filled
 import ramap.shared.generated.resources.ic_report
 import ramap.shared.generated.resources.ic_visibility_off
 import ramap.shared.generated.resources.instagram_icon
@@ -58,6 +70,7 @@ import ramap.shared.generated.resources.shop_detail_link_instagram
 import ramap.shared.generated.resources.shop_detail_link_kakao_map
 import ramap.shared.generated.resources.shop_detail_link_naver_map
 import ramap.shared.generated.resources.shop_detail_link_report
+import ramap.shared.generated.resources.shop_detail_more_actions
 import ramap.shared.generated.resources.shop_detail_waiting_catchtable
 import ramap.shared.generated.resources.shop_detail_waiting_syrup_friends
 import ramap.shared.generated.resources.shop_detail_waiting_tabling
@@ -82,15 +95,15 @@ fun RamenShopDetailContent(
     modifier: Modifier = Modifier,
     waitingSystem: ShopWaitingSystem? = null,
     isBookmarked: Boolean = false,
+    isNotificationEnabled: Boolean = false,
     isHidden: Boolean = false,
     onBookmarkClick: () -> Unit = {},
+    onNotificationClick: () -> Unit = {},
     onHiddenClick: () -> Unit = {},
     onReportClick: () -> Unit = {},
     event: ShopEvent? = null,
     onEventClick: (ShopEvent) -> Unit = {},
 ) {
-    val uriHandler = LocalUriHandler.current
-    val openUri: (String) -> Unit = { uri -> runCatching { uriHandler.openUri(uri) } }
     val waitingProviderLink = waitingSystem?.toWaitingProviderLink()
 
     Column(
@@ -112,7 +125,7 @@ fun RamenShopDetailContent(
                 color = SystemColor.Warning,
             )
         }
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(15.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -122,8 +135,11 @@ fun RamenShopDetailContent(
                     url = shop.instagramProfileImageUrl,
                     modifier =
                         Modifier
-                            .border(width = 1.dp, color = GrayColor.C100, shape = RoundedCornerShape(999.dp))
-                            .size(40.dp)
+                            .border(
+                                width = 1.dp,
+                                color = GrayColor.C100,
+                                shape = RoundedCornerShape(999.dp),
+                            ).size(40.dp)
                             .clip(CircleShape),
                 )
                 AppText(
@@ -135,40 +151,15 @@ fun RamenShopDetailContent(
                     style = AppTextStyle.H3,
                     color = GrayColor.C500,
                 )
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    if (!isHidden) {
-                        ShopActionButton(
-                            isActive = isBookmarked,
-                            enabled = true,
-                            onClick = onBookmarkClick,
-                        ) {
-                            Image(
-                                painter = painterResource(Res.drawable.ic_kid_star),
-                                contentDescription = null,
-                                modifier = Modifier.size(24.dp),
-                                colorFilter =
-                                    ColorFilter.tint(
-                                        if (isBookmarked) CommonColor.White else GrayColor.C500,
-                                    ),
-                            )
-                        }
-                    }
-                    ShopActionButton(
-                        isActive = isHidden,
-                        enabled = true,
-                        onClick = onHiddenClick,
-                    ) {
-                        Image(
-                            painter = painterResource(Res.drawable.ic_visibility_off),
-                            contentDescription = null,
-                            modifier = modifier.size(24.dp),
-                            colorFilter =
-                                ColorFilter.tint(
-                                    if (isHidden) CommonColor.White else GrayColor.C500,
-                                ),
-                        )
-                    }
-                }
+                ShopOverflowMenu(
+                    shopId = shop.id,
+                    isBookmarked = isBookmarked,
+                    isNotificationEnabled = isNotificationEnabled,
+                    isHidden = isHidden,
+                    onBookmarkClick = onBookmarkClick,
+                    onNotificationClick = onNotificationClick,
+                    onHiddenClick = onHiddenClick,
+                )
             }
 
             if (shop.hasCategory) {
@@ -193,7 +184,7 @@ fun RamenShopDetailContent(
                 ShopInfoRow(
                     label = stringResource(Res.string.shop_detail_label_phone),
                     value = phone,
-                    onClick = { openUri("tel:$phone") },
+                    onClick = { ExternalUriOpener.open("tel:$phone") },
                 )
             }
 
@@ -209,7 +200,7 @@ fun RamenShopDetailContent(
                     label = stringResource(Res.string.shop_detail_label_waiting),
                     icon = waitingProviderLink.icon,
                     contentDescription = waitingProviderLink.label,
-                    onClick = { openUri(waitingProviderLink.providerUrl) },
+                    onClick = { ExternalUriOpener.open(waitingProviderLink.providerUrl) },
                 )
             }
         }
@@ -220,27 +211,27 @@ fun RamenShopDetailContent(
         )
 
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            shop.instagramUrl?.takeIf(::isWebUrl)?.let { instagramUrl ->
+            shop.instagramUrl?.takeIf(ExternalUriOpener::isSupportedWebUri)?.let { instagramUrl ->
                 ShopLinkRow(
                     icon = Res.drawable.instagram_icon,
                     label = stringResource(Res.string.shop_detail_link_instagram),
-                    onClick = { openUri(instagramUrl) },
+                    onClick = { ExternalUriOpener.open(instagramUrl) },
                 )
             }
 
-            shop.kakaoPlaceUrl?.takeIf(::isWebUrl)?.let { kakaoPlaceUrl ->
+            shop.kakaoPlaceUrl?.takeIf(ExternalUriOpener::isSupportedWebUri)?.let { kakaoPlaceUrl ->
                 ShopLinkRow(
                     icon = Res.drawable.kakao_map_icon,
                     label = stringResource(Res.string.shop_detail_link_kakao_map),
-                    onClick = { openUri(kakaoPlaceUrl) },
+                    onClick = { ExternalUriOpener.open(kakaoPlaceUrl) },
                 )
             }
 
-            shop.naverPlaceUrl?.takeIf(::isWebUrl)?.let { naverPlaceUrl ->
+            shop.naverPlaceUrl?.takeIf(ExternalUriOpener::isSupportedWebUri)?.let { naverPlaceUrl ->
                 ShopLinkRow(
                     icon = Res.drawable.naver_map_icon,
                     label = stringResource(Res.string.shop_detail_link_naver_map),
-                    onClick = { openUri(naverPlaceUrl) },
+                    onClick = { ExternalUriOpener.open(naverPlaceUrl) },
                 )
             }
 
@@ -253,11 +244,6 @@ fun RamenShopDetailContent(
     }
 }
 
-private fun isWebUrl(value: String): Boolean {
-    val normalized = value.trim().lowercase()
-    return normalized.startsWith("https://") || normalized.startsWith("http://")
-}
-
 @Composable
 private fun ShopEvent.noticeText(): String {
     upcomingCollaborationPartnerName?.let { partnerName ->
@@ -268,8 +254,10 @@ private fun ShopEvent.noticeText(): String {
             when (type) {
                 ShopEventType.COLLAB ->
                     if (isToday) Res.string.shop_event_notice_collab_today else Res.string.shop_event_notice_collab_upcoming
+
                 ShopEventType.POPUP ->
                     if (isToday) Res.string.shop_event_notice_popup_today else Res.string.shop_event_notice_popup_upcoming
+
                 ShopEventType.LIMITED_MENU ->
                     if (isToday) {
                         Res.string.shop_event_notice_limited_menu_today
@@ -296,41 +284,97 @@ private fun ShopEvent.noticeText(): String {
 }
 
 @Composable
-private fun ShopActionButton(
-    isActive: Boolean,
-    enabled: Boolean,
-    onClick: () -> Unit,
-    onDisabledClick: () -> Unit = {},
-    icon: @Composable () -> Unit,
+private fun ShopOverflowMenu(
+    shopId: String,
+    isBookmarked: Boolean,
+    isNotificationEnabled: Boolean,
+    isHidden: Boolean,
+    onBookmarkClick: () -> Unit,
+    onNotificationClick: () -> Unit,
+    onHiddenClick: () -> Unit,
 ) {
-    Surface(
-        modifier =
-            Modifier
-                .size(36.dp)
-                .alpha(if (enabled) 1f else 0.35f),
-        color = if (isActive) GrayColor.C500 else CommonColor.White,
-        border =
-            if (isActive) {
-                null
-            } else {
-                BorderStroke(width = 1.dp, color = GrayColor.C500)
-            },
-        shape = CircleShape,
-        onClick = {
-            if (enabled) {
-                onClick()
-            } else {
-                onDisabledClick()
-            }
-        },
-    ) {
-        Box(
-            modifier = Modifier.padding(8.dp),
-            contentAlignment = Alignment.Center,
+    var isExpanded by remember(shopId) { mutableStateOf(false) }
+    val moreActionsDescription = stringResource(Res.string.shop_detail_more_actions)
+
+    Box {
+        Image(
+            painter = painterResource(Res.drawable.ic_more_vert),
+            contentDescription = moreActionsDescription,
+            modifier =
+                Modifier
+                    .size(40.dp)
+                    .noRippleClickable { isExpanded = true }
+                    .padding(8.dp),
+            colorFilter = ColorFilter.tint(GrayColor.C500),
+        )
+
+        DropdownMenu(
+            expanded = isExpanded,
+            onDismissRequest = { isExpanded = false },
+            modifier = Modifier.widthIn(min = 150.dp),
+            shape = RoundedCornerShape(16.dp),
+            containerColor = CommonColor.White,
         ) {
-            icon()
+            if (!isHidden) {
+                ShopOverflowMenuItem(
+                    text = stringResource(Res.string.bookmarked_shops_toggle),
+                    icon = if (isBookmarked) Res.drawable.ic_kid_star_filled else Res.drawable.ic_kid_star,
+                    isActive = isBookmarked,
+                    onClick = onBookmarkClick,
+                )
+                ShopOverflowMenuItem(
+                    text = stringResource(Res.string.event_notification_action),
+                    icon =
+                        if (isNotificationEnabled) {
+                            Res.drawable.ic_notification_filled
+                        } else {
+                            Res.drawable.ic_notification
+                        },
+                    isActive = isNotificationEnabled,
+                    onClick = onNotificationClick,
+                )
+            }
+            ShopOverflowMenuItem(
+                text = stringResource(Res.string.hide_shop_action),
+                icon = Res.drawable.ic_visibility_off,
+                isActive = isHidden,
+                onClick = onHiddenClick,
+            )
         }
     }
+}
+
+@Composable
+private fun ShopOverflowMenuItem(
+    text: String,
+    icon: DrawableResource,
+    isActive: Boolean,
+    onClick: () -> Unit,
+) {
+    DropdownMenuItem(
+        text = {
+            AppText(
+                text = text,
+                style = AppTextStyle.B1,
+                color = GrayColor.C500,
+            )
+        },
+        leadingIcon = {
+            Image(
+                painter = painterResource(icon),
+                contentDescription = null,
+                modifier = Modifier.size(20.dp),
+                colorFilter =
+                    ColorFilter.tint(
+                        when {
+                            isActive -> InstagramColor.Pink
+                            else -> GrayColor.C300
+                        },
+                    ),
+            )
+        },
+        onClick = onClick,
+    )
 }
 
 @Composable

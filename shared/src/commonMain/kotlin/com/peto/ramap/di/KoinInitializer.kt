@@ -3,6 +3,8 @@ package com.peto.ramap.di
 import com.peto.ramap.data.datasource.di.dataSourceModule
 import com.peto.ramap.data.repository.di.repositoryModule
 import com.peto.ramap.designsystem.di.designSystemModule
+import com.peto.ramap.network.di.networkModule
+import com.peto.ramap.notification.di.notificationModule
 import com.peto.ramap.platform.di.platformModule
 import com.peto.ramap.ui.hidden.di.hiddenModule
 import com.peto.ramap.ui.main.event.list.di.eventListModule
@@ -15,6 +17,7 @@ fun initKoin(appDeclaration: KoinAppDeclaration = {}) {
     startKoin {
         appDeclaration()
         modules(
+            appModule,
             networkModule,
             designSystemModule,
             platformModule,
@@ -24,6 +27,7 @@ fun initKoin(appDeclaration: KoinAppDeclaration = {}) {
             myTabModule,
             hiddenModule,
             eventListModule,
+            notificationModule,
         )
     }
 }

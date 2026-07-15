@@ -4,14 +4,44 @@ import NMapsMap
 import KakaoSDKAuth
 import KakaoSDKCommon
 import KakaoSDKUser
+import UserNotifications
+
+final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate {
+    func application(
+        _ application: UIApplication,
+        didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
+    ) -> Bool {
+        UNUserNotificationCenter.current().delegate = self
+        return true
+    }
+
+    func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        didReceive response: UNNotificationResponse,
+        withCompletionHandler completionHandler: @escaping () -> Void
+    ) {
+        let deepLink = response.notification.request.content.userInfo["deep_link"] as? String
+        NotificationLaunchDispatcher.shared.dispatch(deepLink: deepLink)
+        completionHandler()
+    }
+}
 
 @main
 struct iOSApp: App {
+    @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
+
     init() {
         UnhandledExceptionLoggerKt.installUnhandledExceptionLogger()
         NMFAuthManager.shared().ncpKeyId = RamapAppConfig.shared.naverMapNcpKeyId
         KakaoSDK.initSDK(appKey: RamapAppConfig.shared.kakaoNativeAppKey)
         KoinInitializerKt.doInitKoin(appDeclaration: { _ in })
+        NotificationCenter.default.addObserver(
+            forName: Notification.Name("NotificationPermissionGranted"),
+            object: nil,
+            queue: .main
+        ) { _ in
+            UIApplication.shared.registerForRemoteNotifications()
+        }
         NotificationCenter.default.addObserver(
             forName: Notification.Name("KakaoLoginRequest"),
             object: nil,
