@@ -4,6 +4,7 @@ import android.Manifest
 import android.app.Activity
 import android.content.pm.PackageManager
 import android.os.Build
+import androidx.core.app.NotificationManagerCompat
 import kotlinx.coroutines.suspendCancellableCoroutine
 import java.lang.ref.WeakReference
 import kotlin.coroutines.resume
@@ -20,10 +21,19 @@ actual object NotificationPermissionRequester {
         if (activityReference.get() === activity) activityReference.clear()
     }
 
-    actual suspend fun request(): Boolean {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return true
+    actual suspend fun isGranted(): Boolean {
         val activity = activityReference.get() ?: return false
-        if (activity.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) return true
+        val runtimePermissionGranted =
+            Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
+                activity.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
+        return runtimePermissionGranted && NotificationManagerCompat.from(activity).areNotificationsEnabled()
+    }
+
+    actual suspend fun request(): Boolean {
+        if (isGranted()) return true
+        val activity = activityReference.get() ?: return false
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return false
+        if (activity.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) return false
         return suspendCancellableCoroutine { continuation ->
             permissionContinuation?.resume(false)
             permissionContinuation = continuation
