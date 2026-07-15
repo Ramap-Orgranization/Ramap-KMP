@@ -20,7 +20,7 @@ import com.peto.ramap.domain.repository.RamenShopRepository
 import com.peto.ramap.domain.repository.ShopReportRepository
 import com.peto.ramap.domain.repository.ShopWaitingSystemRepository
 import com.peto.ramap.fake.FakeLoginRepository
-import com.peto.ramap.fake.FakeNotificationRepository
+import com.peto.ramap.fake.FakeNotificationSettingsRepository
 import com.peto.ramap.fake.FakePersonalizationRepository
 import com.peto.ramap.fake.FakeRamenShopRepository
 import com.peto.ramap.fake.FakeShopReportRepository
@@ -1158,7 +1158,7 @@ class MapViewModelTest {
         coroutinesTest {
             val shop = ramenShopFixture(id = "subscribed-shop-to-hide")
             val notificationRepository =
-                FakeNotificationRepository(
+                FakeNotificationSettingsRepository(
                     shopIds = mutableSetOf(shop.id),
                 )
             val viewModel =
@@ -1181,7 +1181,7 @@ class MapViewModelTest {
     fun `숨김 매장의 알림 설정 변경을 차단한다`() =
         coroutinesTest {
             val shop = ramenShopFixture(id = "hidden-notification-shop")
-            val notificationRepository = FakeNotificationRepository()
+            val notificationRepository = FakeNotificationSettingsRepository()
             val viewModel =
                 mapViewModel(
                     personalizationRepository =
@@ -1210,7 +1210,7 @@ class MapViewModelTest {
     fun `매장 알림을 활성화하면 저장한다`() =
         coroutinesTest {
             val shop = ramenShopFixture(id = "permission-granted-shop")
-            val notificationRepository = FakeNotificationRepository()
+            val notificationRepository = FakeNotificationSettingsRepository()
             val viewModel =
                 mapViewModel(
                     loginRepository = loggedInRepository(),
@@ -1229,7 +1229,7 @@ class MapViewModelTest {
     fun `매장 알림을 비활성화하면 저장한다`() =
         coroutinesTest {
             val shop = ramenShopFixture(id = "notification-disable-shop")
-            val notificationRepository = FakeNotificationRepository(shopIds = mutableSetOf(shop.id))
+            val notificationRepository = FakeNotificationSettingsRepository(shopIds = mutableSetOf(shop.id))
             val viewModel =
                 mapViewModel(
                     loginRepository = loggedInRepository(),
@@ -1907,7 +1907,7 @@ private fun mapViewModel(
     personalizationRepository: PersonalizationRepository = FakePersonalizationRepository(),
     loginRepository: FakeLoginRepository = FakeLoginRepository(),
     shopReportRepository: ShopReportRepository = FakeShopReportRepository(),
-    notificationSettingsRepository: FakeNotificationRepository = FakeNotificationRepository(),
+    notificationSettingsRepository: FakeNotificationSettingsRepository = FakeNotificationSettingsRepository(),
 ): MapViewModel =
     MapViewModel(
         ramenShopRepository,

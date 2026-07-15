@@ -8,7 +8,7 @@ import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.ShopEvent
 import com.peto.ramap.domain.model.ShopEventType
 import com.peto.ramap.fake.FakeLoginRepository
-import com.peto.ramap.fake.FakeNotificationRepository
+import com.peto.ramap.fake.FakeNotificationSettingsRepository
 import com.peto.ramap.fake.FakeRamenShopRepository
 import com.peto.ramap.ui.main.event.contract.EventDetailIntent.OnEntered
 import com.peto.ramap.ui.main.event.contract.EventDetailIntent.OnNotificationChanged
@@ -28,7 +28,7 @@ class EventDetailViewModelTest {
     @Test
     fun `알림 권한이 거부되면 이벤트 알림을 저장하지 않고 설정 안내를 보여준다`() =
         coroutinesTest {
-            val repository = FakeNotificationRepository()
+            val repository = FakeNotificationSettingsRepository()
             val viewModel = eventDetailViewModel(repository, permissionGranted = false)
             viewModel.dispatch(OnEntered(EVENT.id, EVENT))
             runCurrent()
@@ -55,7 +55,7 @@ class EventDetailViewModelTest {
     @Test
     fun `알림 권한이 허용되면 이벤트 알림을 저장한다`() =
         coroutinesTest {
-            val repository = FakeNotificationRepository()
+            val repository = FakeNotificationSettingsRepository()
             val viewModel = eventDetailViewModel(repository, permissionGranted = true)
             viewModel.dispatch(OnEntered(EVENT.id, EVENT))
             runCurrent()
@@ -68,7 +68,7 @@ class EventDetailViewModelTest {
         }
 
     private fun eventDetailViewModel(
-        repository: FakeNotificationRepository,
+        repository: FakeNotificationSettingsRepository,
         permissionGranted: Boolean,
     ): EventDetailViewModel =
         EventDetailViewModel(

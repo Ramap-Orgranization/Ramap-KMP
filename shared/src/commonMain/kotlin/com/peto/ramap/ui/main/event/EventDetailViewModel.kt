@@ -9,7 +9,7 @@ import com.peto.ramap.domain.model.EventNotificationWindow
 import com.peto.ramap.domain.model.ShopEvent
 import com.peto.ramap.domain.model.eventNotificationWindow
 import com.peto.ramap.domain.repository.LoginRepository
-import com.peto.ramap.domain.repository.NotificationRepository
+import com.peto.ramap.domain.repository.NotificationSettingsRepository
 import com.peto.ramap.domain.repository.RamenShopRepository
 import com.peto.ramap.platform.NotificationPermissionRequester
 import com.peto.ramap.platform.currentEpochMillis
@@ -27,7 +27,7 @@ import ramap.shared.generated.resources.notification_permission_enable_message
 class EventDetailViewModel(
     private val ramenShopRepository: RamenShopRepository,
     private val loginRepository: LoginRepository,
-    private val notificationRepository: NotificationRepository,
+    private val notificationRepository: NotificationSettingsRepository,
     private val requestNotificationPermission: suspend () -> Boolean = NotificationPermissionRequester::request,
 ) : BaseViewModel<EventDetailUiState, EventDetailIntent, EventDetailSideEffect>(EventDetailUiState()) {
     override suspend fun handleIntent(intent: EventDetailIntent) {
@@ -58,7 +58,7 @@ class EventDetailViewModel(
             )
         }
         if (!canChangeNotification || notificationWindow == EventNotificationWindow.CLOSED) return
-        val result = notificationRepository.fetchEventNotificationEnabled(event.id)
+        val result = notificationRepository.isEventNotificationEnabled(event.id)
         reduce {
             copy(
                 isNotificationEnabled = (result as? RamapResult.Success)?.data ?: false,

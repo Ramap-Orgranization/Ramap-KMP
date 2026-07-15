@@ -6,7 +6,7 @@ import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.designsystem.toast.model.ToastAction
 import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
-import com.peto.ramap.domain.repository.NotificationRepository
+import com.peto.ramap.domain.repository.NotificationSettingsRepository
 import com.peto.ramap.domain.repository.RamenShopRepository
 import com.peto.ramap.platform.NotificationPermissionRequester
 import com.peto.ramap.ui.settings.notification.contract.NotificationRemovalTarget
@@ -26,7 +26,7 @@ import ramap.shared.generated.resources.location_permission_settings_action
 import ramap.shared.generated.resources.notification_permission_enable_message
 
 class NotificationSettingsViewModel(
-    private val notificationRepository: NotificationRepository,
+    private val notificationRepository: NotificationSettingsRepository,
     private val ramenShopRepository: RamenShopRepository,
     private val requestNotificationPermission: suspend () -> Boolean = NotificationPermissionRequester::request,
 ) : BaseViewModel<NotificationSettingsUiState, NotificationSettingsIntent, NotificationSettingsSideEffect>(
@@ -57,7 +57,7 @@ class NotificationSettingsViewModel(
     }
 
     private suspend fun loadSettings() {
-        val enabled = notificationRepository.fetchEventNotificationsEnabled()
+        val enabled = notificationRepository.isEnabled()
         val shopIds = notificationRepository.fetchSubscribedShopIds()
         val overrides = notificationRepository.fetchEventOverrides()
         val subscribedShopIds = (shopIds as? RamapResult.Success)?.data.orEmpty()
@@ -123,7 +123,7 @@ class NotificationSettingsViewModel(
         }
         val previous = currentState.areEnabled
         reduce { copy(areEnabled = enabled) }
-        if (notificationRepository.updateNotificationEnabled(enabled) is RamapResult.Error) {
+        if (notificationRepository.updateEnabled(enabled) is RamapResult.Error) {
             reduce { copy(areEnabled = previous) }
         }
     }

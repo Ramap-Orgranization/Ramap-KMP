@@ -6,13 +6,13 @@ import com.peto.ramap.data.datasource.report.ShopReportDataSource
 import com.peto.ramap.data.datasource.shop.RamenShopDataSource
 import com.peto.ramap.data.datasource.waiting.ShopWaitingSystemDataSource
 import com.peto.ramap.data.repository.DefaultLoginRepository
-import com.peto.ramap.data.repository.DefaultNotificationRepository
+import com.peto.ramap.data.repository.DefaultNotificationSettingsRepository
 import com.peto.ramap.data.repository.DefaultPersonalizationRepository
 import com.peto.ramap.data.repository.DefaultRamenShopRepository
 import com.peto.ramap.data.repository.DefaultShopReportRepository
 import com.peto.ramap.data.repository.DefaultShopWaitingSystemRepository
 import com.peto.ramap.domain.repository.LoginRepository
-import com.peto.ramap.domain.repository.NotificationRepository
+import com.peto.ramap.domain.repository.NotificationSettingsRepository
 import com.peto.ramap.domain.repository.PersonalizationRepository
 import com.peto.ramap.domain.repository.RamenShopRepository
 import com.peto.ramap.domain.repository.ShopReportRepository
@@ -27,7 +27,7 @@ val repositoryModule =
         single<RamenShopRepository> {
             DefaultRamenShopRepository(get<RamenShopDataSource>())
         }
-        single<NotificationRepository> { DefaultNotificationRepository(get()) }
+        single<NotificationSettingsRepository> { DefaultNotificationSettingsRepository(get()) }
         single<ShopWaitingSystemRepository> {
             DefaultShopWaitingSystemRepository(get<ShopWaitingSystemDataSource>())
         }

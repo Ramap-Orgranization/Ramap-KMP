@@ -6,7 +6,7 @@ import com.peto.ramap.designsystem.toast.model.ToastAction
 import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.RamenShops
-import com.peto.ramap.fake.FakeNotificationRepository
+import com.peto.ramap.fake.FakeNotificationSettingsRepository
 import com.peto.ramap.fake.FakeRamenShopRepository
 import com.peto.ramap.fixture.ramenShopFixture
 import com.peto.ramap.ui.settings.notification.contract.NotificationRemovalTarget
@@ -31,7 +31,7 @@ class NotificationSettingsViewModelTest {
     @Test
     fun `알림 권한이 거부되면 전체 알림을 저장하지 않고 설정 안내를 보여준다`() =
         coroutinesTest {
-            val notificationRepository = FakeNotificationRepository(enabled = false)
+            val notificationRepository = FakeNotificationSettingsRepository(enabled = false)
             val viewModel =
                 NotificationSettingsViewModel(
                     notificationRepository = notificationRepository,
@@ -63,7 +63,7 @@ class NotificationSettingsViewModelTest {
     fun `구독 매장을 해제하면 알림 설정 목록에서 제거한다`() =
         coroutinesTest {
             val shop = ramenShopFixture()
-            val notificationRepository = FakeNotificationRepository(shopIds = mutableSetOf(shop.id))
+            val notificationRepository = FakeNotificationSettingsRepository(shopIds = mutableSetOf(shop.id))
             val viewModel =
                 NotificationSettingsViewModel(
                     notificationRepository = notificationRepository,
@@ -89,7 +89,7 @@ class NotificationSettingsViewModelTest {
     fun `구독 매장 해제를 취소하면 알림 설정을 유지한다`() =
         coroutinesTest {
             val shop = ramenShopFixture()
-            val notificationRepository = FakeNotificationRepository(shopIds = mutableSetOf(shop.id))
+            val notificationRepository = FakeNotificationSettingsRepository(shopIds = mutableSetOf(shop.id))
             val viewModel =
                 NotificationSettingsViewModel(
                     notificationRepository = notificationRepository,
@@ -109,7 +109,7 @@ class NotificationSettingsViewModelTest {
     fun `구독 매장 해제를 확인하면 알림 설정을 해제한다`() =
         coroutinesTest {
             val shop = ramenShopFixture()
-            val notificationRepository = FakeNotificationRepository(shopIds = mutableSetOf(shop.id))
+            val notificationRepository = FakeNotificationSettingsRepository(shopIds = mutableSetOf(shop.id))
             val viewModel =
                 NotificationSettingsViewModel(
                     notificationRepository = notificationRepository,

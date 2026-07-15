@@ -4,7 +4,7 @@ import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.data.model.EventNotificationOverrideResponse
 import com.peto.ramap.data.model.EventNotificationPreferenceResponse
 import com.peto.ramap.data.model.ShopEventNotificationSubscriptionResponse
-import com.peto.ramap.domain.repository.NotificationRepository
+import com.peto.ramap.domain.repository.NotificationSettingsRepository
 import com.peto.ramap.network.execute.invokeRequest
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.from
@@ -13,10 +13,10 @@ import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 
-class DefaultNotificationRepository(
+class DefaultNotificationSettingsRepository(
     private val client: SupabaseClient,
-) : NotificationRepository {
-    override suspend fun fetchEventNotificationsEnabled(): RamapResult<Boolean> =
+) : NotificationSettingsRepository {
+    override suspend fun isEnabled(): RamapResult<Boolean> =
         invokeRequest {
             client
                 .from(PREFERENCE_TABLE)
@@ -25,7 +25,7 @@ class DefaultNotificationRepository(
                 ?.enabled ?: true
         }
 
-    override suspend fun updateNotificationEnabled(enabled: Boolean): RamapResult<Unit> =
+    override suspend fun updateEnabled(enabled: Boolean): RamapResult<Unit> =
         invokeRequest {
             client.postgrest.rpc(
                 SET_ENABLED_RPC,
@@ -57,7 +57,7 @@ class DefaultNotificationRepository(
             )
         }
 
-    override suspend fun fetchEventNotificationEnabled(eventId: String): RamapResult<Boolean> =
+    override suspend fun isEventNotificationEnabled(eventId: String): RamapResult<Boolean> =
         invokeRequest {
             client.postgrest
                 .rpc(

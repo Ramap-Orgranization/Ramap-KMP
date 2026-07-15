@@ -3,10 +3,10 @@ package com.peto.ramap.domain.repository
 import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.domain.model.EventNotificationOverride
 
-interface NotificationRepository {
-    suspend fun fetchEventNotificationsEnabled(): RamapResult<Boolean>
+interface NotificationSettingsRepository {
+    suspend fun isEnabled(): RamapResult<Boolean>
 
-    suspend fun updateNotificationEnabled(enabled: Boolean): RamapResult<Unit>
+    suspend fun updateEnabled(enabled: Boolean): RamapResult<Unit>
 
     suspend fun fetchSubscribedShopIds(): RamapResult<Set<String>>
 
@@ -15,7 +15,7 @@ interface NotificationRepository {
         enabled: Boolean,
     ): RamapResult<Unit>
 
-    suspend fun fetchEventNotificationEnabled(eventId: String): RamapResult<Boolean>
+    suspend fun isEventNotificationEnabled(eventId: String): RamapResult<Boolean>
 
     suspend fun updateEventNotification(
         eventId: String,
