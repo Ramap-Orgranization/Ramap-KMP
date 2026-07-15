@@ -4,6 +4,7 @@ import com.peto.ramap.domain.model.Category
 import com.peto.ramap.domain.model.Location
 import com.peto.ramap.domain.model.MenuCategories
 import com.peto.ramap.domain.model.RamenShop
+import com.peto.ramap.shared.RamapConfig
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -27,6 +28,8 @@ data class RamenShopResponse(
     val businessHours: String? = null,
     @SerialName("instagram_url")
     val instagramUrl: String? = null,
+    @SerialName("instagram_profile_image_path")
+    val instagramProfileImagePath: String? = null,
     @SerialName("kakao_rating")
     val kakaoRating: Double? = null,
     @SerialName("menu_category_ids")
@@ -51,10 +54,19 @@ data class RamenShopResponse(
             phone = phone,
             businessHours = businessHours,
             instagramUrl = instagramUrl,
+            instagramProfileImageUrl =
+                instagramProfileImagePath?.let { path ->
+                    "${RamapConfig.SUPABASE_URL}$STORAGE_PUBLIC_PATH$PROFILE_BUCKET/$path"
+                },
             kakaoRating = kakaoRating,
             menuCategories = MenuCategories(menuCategoryIds.orEmpty().mapNotNull(Category::fromId)),
             isVisible = isVisible ?: false,
             createdAt = createdAt,
             updatedAt = updatedAt,
         )
+
+    companion object {
+        private const val PROFILE_BUCKET = "shop-profile-images"
+        private const val STORAGE_PUBLIC_PATH = "/storage/v1/object/public/"
+    }
 }

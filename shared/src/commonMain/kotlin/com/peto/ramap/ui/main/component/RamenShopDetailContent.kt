@@ -2,6 +2,7 @@ package com.peto.ramap.ui.main.component
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,12 +13,14 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.style.TextDecoration
@@ -34,6 +37,7 @@ import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.SystemColor
+import com.peto.ramap.ui.main.event.list.RemoteShopImage
 import com.peto.ramap.ui.main.map.model.WaitingProviderLink
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
@@ -114,9 +118,20 @@ fun RamenShopDetailContent(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalAlignment = Alignment.Top,
             ) {
+                RemoteShopImage(
+                    url = shop.instagramProfileImageUrl,
+                    modifier =
+                        Modifier
+                            .border(width = 1.dp, color = GrayColor.C100, shape = RoundedCornerShape(999.dp))
+                            .size(40.dp)
+                            .clip(CircleShape),
+                )
                 AppText(
                     text = shop.name,
-                    modifier = Modifier.weight(1f),
+                    modifier =
+                        Modifier
+                            .weight(1f)
+                            .padding(top = 5.dp),
                     style = AppTextStyle.H3,
                     color = GrayColor.C500,
                 )
