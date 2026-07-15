@@ -20,6 +20,21 @@ class RamapFirebaseMessagingService : FirebaseMessagingService() {
     override fun onMessageReceived(message: RemoteMessage) {
         val notification = message.notification ?: return
         val notificationManager = getSystemService(NotificationManager::class.java)
+        createNotificationChannel(notificationManager)
+        notificationManager.notify(
+            message.messageId?.hashCode() ?: notification.hashCode(),
+            NotificationCompat
+                .Builder(this, CHANNEL_ID)
+                .setSmallIcon(R.mipmap.ic_launcher)
+                .setContentTitle(notification.title)
+                .setContentText(notification.body)
+                .setAutoCancel(true)
+                .setContentIntent(createContentIntent())
+                .build(),
+        )
+    }
+
+    private fun createNotificationChannel(notificationManager: NotificationManager) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             notificationManager.createNotificationChannel(
                 NotificationChannel(
@@ -29,19 +44,11 @@ class RamapFirebaseMessagingService : FirebaseMessagingService() {
                 ),
             )
         }
+    }
+
+    private fun createContentIntent(): PendingIntent {
         val launchIntent = Intent(this, MainActivity::class.java).apply { flags = Intent.FLAG_ACTIVITY_SINGLE_TOP }
-        val contentIntent = PendingIntent.getActivity(this, 0, launchIntent, PendingIntent.FLAG_IMMUTABLE)
-        notificationManager.notify(
-            message.messageId?.hashCode() ?: notification.hashCode(),
-            NotificationCompat
-                .Builder(this, CHANNEL_ID)
-                .setSmallIcon(R.mipmap.ic_launcher)
-                .setContentTitle(notification.title)
-                .setContentText(notification.body)
-                .setAutoCancel(true)
-                .setContentIntent(contentIntent)
-                .build(),
-        )
+        return PendingIntent.getActivity(this, 0, launchIntent, PendingIntent.FLAG_IMMUTABLE)
     }
 
     private companion object {
