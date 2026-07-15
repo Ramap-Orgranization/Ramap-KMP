@@ -20,6 +20,7 @@ internal class NaverShopClusterRenderer(
         Clusterer
             .Builder<ShopKey>()
             .maxZoom(MapInteractionConfig.CLUSTER_MAX_ZOOM_LEVEL)
+            .animate(false)
             .leafMarkerUpdater(
                 object : DefaultLeafMarkerUpdater() {
                     override fun updateLeafMarker(
