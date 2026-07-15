@@ -1254,6 +1254,19 @@ class MapViewModelTest {
     }
 
     @Test
+    fun `지도 마커를 선택하면 상세를 열고 매장으로 포커스하지 않는다`() =
+        coroutinesTest {
+            val shop = ramenShopFixture(id = "marker-shop")
+            val viewModel = mapViewModel()
+
+            viewModel.dispatch(OnShopSelected(shop, shouldFocus = false))
+            runCurrent()
+
+            assertEquals(shop, viewModel.uiState.value.selectedShop)
+            assertEquals(emptyList(), viewModel.uiState.value.focusShops)
+        }
+
+    @Test
     fun `검색 결과 매장 상세를 닫아도 검색 결과 근거리 자동 이동을 다시 실행하지 않는다`() =
         coroutinesTest {
             val selectedShop = ramenShopFixture(id = "oreno-lotte-world-mall")
