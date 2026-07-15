@@ -19,6 +19,15 @@ class RemoteRamenShopDataSource(
             .decodeList<ShopEventResponse>()
             .map(::resolveProfileImageUrl)
 
+    override suspend fun fetchActiveEvent(eventId: String): ShopEventResponse? =
+        client
+            .from(ACTIVE_EVENTS_VIEW)
+            .select {
+                filter { eq(COLUMN_ID, eventId) }
+                limit(1)
+            }.decodeSingleOrNull<ShopEventResponse>()
+            ?.let(::resolveProfileImageUrl)
+
     override suspend fun fetchActiveShopEvents(shopId: String): List<ShopEventResponse> =
         client
             .from(EVENT_VIEW)

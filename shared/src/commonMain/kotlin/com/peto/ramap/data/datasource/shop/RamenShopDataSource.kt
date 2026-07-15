@@ -15,6 +15,8 @@ interface RamenShopDataSource {
 
     suspend fun fetchActiveEvents(): List<ShopEventResponse>
 
+    suspend fun fetchActiveEvent(eventId: String): ShopEventResponse?
+
     suspend fun fetchShopEventParticipants(eventId: String): List<ShopEventParticipantResponse>
 
     suspend fun searchRamenShops(
