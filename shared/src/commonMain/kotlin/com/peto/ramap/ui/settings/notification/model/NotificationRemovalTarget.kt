@@ -1,4 +1,4 @@
-package com.peto.ramap.ui.settings.notification.contract
+package com.peto.ramap.ui.settings.notification.model
 
 sealed interface NotificationRemovalTarget {
     data class Shop(

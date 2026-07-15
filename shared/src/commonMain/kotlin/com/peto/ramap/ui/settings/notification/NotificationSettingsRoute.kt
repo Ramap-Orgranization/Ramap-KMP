@@ -22,16 +22,20 @@ import androidx.compose.material3.Switch
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.ViewModelStoreOwner
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.peto.ramap.core.base.ObserveAsEvents
 import com.peto.ramap.core.extension.noRippleClickable
 import com.peto.ramap.designsystem.card.EventCard
 import com.peto.ramap.designsystem.card.SectionCard
@@ -39,18 +43,23 @@ import com.peto.ramap.designsystem.dialog.CommonDialog
 import com.peto.ramap.designsystem.image.RemoteShopImage
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.designsystem.toast.ToastManager
+import com.peto.ramap.designsystem.toast.model.ToastAction
+import com.peto.ramap.designsystem.toast.model.ToastData
+import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.designsystem.topbar.CommonTopBar
 import com.peto.ramap.platform.AppSettingsOpener
+import com.peto.ramap.platform.NotificationPermissionRequester
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.ui.main.component.RamenShopSearchResultItem
-import com.peto.ramap.ui.settings.notification.contract.NotificationRemovalTarget
-import com.peto.ramap.ui.settings.notification.contract.NotificationSettingsIntent.OnEnabledChanged
+import com.peto.ramap.ui.settings.notification.contract.NotificationSettingsIntent.OnEventNotificationsEnabledChanged
 import com.peto.ramap.ui.settings.notification.contract.NotificationSettingsIntent.OnRemovalConfirmed
 import com.peto.ramap.ui.settings.notification.contract.NotificationSettingsIntent.OnRemovalDismissed
 import com.peto.ramap.ui.settings.notification.contract.NotificationSettingsIntent.OnRemovalRequested
-import com.peto.ramap.ui.settings.notification.contract.NotificationSettingsSideEffect.ShowToast
 import com.peto.ramap.ui.settings.notification.contract.NotificationSettingsUiState
+import com.peto.ramap.ui.settings.notification.model.NotificationRemovalTarget
+import com.peto.ramap.ui.settings.notification.model.NotificationSettingsPermissionUiState
+import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
@@ -60,7 +69,9 @@ import ramap.shared.generated.resources.event_notification_master_action
 import ramap.shared.generated.resources.event_notification_settings_section
 import ramap.shared.generated.resources.event_notification_subscribed_shops
 import ramap.shared.generated.resources.ic_arrow3_left
+import ramap.shared.generated.resources.location_permission_settings_action
 import ramap.shared.generated.resources.navigation_back
+import ramap.shared.generated.resources.notification_permission_enable_message
 import ramap.shared.generated.resources.notification_removal_confirm_action
 import ramap.shared.generated.resources.notification_removal_confirm_title
 import ramap.shared.generated.resources.notification_removal_dismiss_action
@@ -72,6 +83,8 @@ fun NotificationSettingsRoute(
     onBack: () -> Unit,
     toastManager: ToastManager = koinInject(),
     appSettingsOpener: AppSettingsOpener = koinInject(),
+    requestNotificationPermission: suspend () -> Boolean = NotificationPermissionRequester::request,
+    isNotificationPermissionGranted: suspend () -> Boolean = NotificationPermissionRequester::isGranted,
 ) {
     val routeViewModelStore = remember { ViewModelStore() }
     val viewModelStoreOwner =
@@ -90,22 +103,49 @@ fun NotificationSettingsRoute(
     }
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val coroutineScope = rememberCoroutineScope()
+    var permissionUiState by remember { mutableStateOf(NotificationSettingsPermissionUiState()) }
 
-    ObserveAsEvents(viewModel.sideEffect) { sideEffect ->
-        when (sideEffect) {
-            is ShowToast ->
-                toastManager.show(
-                    sideEffect.data.copy(
-                        action = sideEffect.data.action?.copy(onClick = appSettingsOpener::open),
-                    ),
-                )
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
+        coroutineScope.launch {
+            val isGranted = isNotificationPermissionGranted()
+            permissionUiState = permissionUiState.onResume(isGranted)
+            if (permissionUiState.shouldEnableServerNotifications) {
+                permissionUiState = permissionUiState.consumePendingEnable()
+                viewModel.dispatch(OnEventNotificationsEnabledChanged(true))
+            }
         }
     }
 
     NotificationSettingsScreen(
-        uiState = uiState,
+        uiState = uiState.copy(areEnabled = permissionUiState.isEnabled(uiState.areEnabled)),
         onBack = onBack,
-        onEventNotificationsEnabledChanged = { viewModel.dispatch(OnEnabledChanged(it)) },
+        onEventNotificationsEnabledChanged = { enabled ->
+            if (enabled) {
+                coroutineScope.launch {
+                    if (requestNotificationPermission()) {
+                        permissionUiState = permissionUiState.onEnableRequestResult(true)
+                        viewModel.dispatch(OnEventNotificationsEnabledChanged(true))
+                    } else {
+                        permissionUiState = permissionUiState.onEnableRequestResult(false)
+                        toastManager.show(
+                            ToastData(
+                                message = Res.string.notification_permission_enable_message,
+                                type = ToastType.DEFAULT,
+                                action =
+                                    ToastAction(
+                                        label = Res.string.location_permission_settings_action,
+                                        onClick = appSettingsOpener::open,
+                                    ),
+                            ),
+                        )
+                    }
+                }
+            } else {
+                permissionUiState = permissionUiState.onDisabled()
+                viewModel.dispatch(OnEventNotificationsEnabledChanged(false))
+            }
+        },
         onRemovalRequested = { viewModel.dispatch(OnRemovalRequested(it)) },
         onRemovalConfirmed = { viewModel.dispatch(OnRemovalConfirmed) },
         onRemovalDismissed = { viewModel.dispatch(OnRemovalDismissed) },
