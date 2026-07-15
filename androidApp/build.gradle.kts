@@ -39,6 +39,15 @@ plugins {
     alias(libs.plugins.composeCompiler)
 }
 
+if (file("google-services.json").exists()) {
+    apply(
+        plugin =
+            libs.plugins.googleServices
+                .get()
+                .pluginId,
+    )
+}
+
 kotlin {
     compilerOptions {
         jvmTarget = JvmTarget.JVM_11
@@ -52,6 +61,9 @@ dependencies {
     implementation(libs.koin.android)
 
     implementation(libs.androidx.activity.compose)
+    implementation(libs.androidx.core)
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.messaging)
 
     implementation(libs.compose.uiToolingPreview)
     debugImplementation(libs.compose.uiTooling)

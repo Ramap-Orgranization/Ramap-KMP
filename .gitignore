@@ -5,6 +5,8 @@
 xcuserdata
 !src/**/build/
 local.properties
+google-services.json
+GoogleService-Info.plist
 *.jks
 *.keystore
 .idea
@@ -28,3 +30,4 @@ AGENTS.md
 .scratch/
 **/__pycache__/
 *.pyc
+/supabase
