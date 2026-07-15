@@ -5,5 +5,6 @@ import org.koin.dsl.module
 
 val notificationModule =
     module {
+        single { NotificationDeepLinkParser() }
         single { NotificationRegistry(get(), get()) }
     }

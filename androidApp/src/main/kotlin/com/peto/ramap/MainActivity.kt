@@ -46,5 +46,7 @@ class MainActivity : ComponentActivity() {
         super.onNewIntent(intent)
         setIntent(intent)
         handleAuthDeepLink(intent)
+    private fun handleNotificationDeepLink(intent: Intent) {
+        notificationLaunchDispatcher.dispatch(intent.getStringExtra(DeepLinkKey.NOTIFICATION_DEEP_LINK_KEY))
     }
 }
