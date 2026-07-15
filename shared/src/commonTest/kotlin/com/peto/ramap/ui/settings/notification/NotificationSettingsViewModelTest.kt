@@ -1,26 +1,17 @@
 package com.peto.ramap.ui.settings.notification
 
-import app.cash.turbine.test
 import com.peto.ramap.coroutinesTest
-import com.peto.ramap.designsystem.toast.model.ToastAction
-import com.peto.ramap.designsystem.toast.model.ToastData
-import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.RamenShops
 import com.peto.ramap.fake.FakeNotificationSettingsRepository
 import com.peto.ramap.fake.FakeRamenShopRepository
 import com.peto.ramap.fixture.ramenShopFixture
-import com.peto.ramap.ui.settings.notification.contract.NotificationRemovalTarget
-import com.peto.ramap.ui.settings.notification.contract.NotificationSettingsIntent.OnEnabledChanged
 import com.peto.ramap.ui.settings.notification.contract.NotificationSettingsIntent.OnRemovalConfirmed
 import com.peto.ramap.ui.settings.notification.contract.NotificationSettingsIntent.OnRemovalDismissed
 import com.peto.ramap.ui.settings.notification.contract.NotificationSettingsIntent.OnRemovalRequested
 import com.peto.ramap.ui.settings.notification.contract.NotificationSettingsIntent.OnShopRemoved
-import com.peto.ramap.ui.settings.notification.contract.NotificationSettingsSideEffect.ShowToast
+import com.peto.ramap.ui.settings.notification.model.NotificationRemovalTarget
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runCurrent
-import ramap.shared.generated.resources.Res
-import ramap.shared.generated.resources.location_permission_settings_action
-import ramap.shared.generated.resources.notification_permission_enable_message
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -29,34 +20,31 @@ import kotlin.test.assertTrue
 @OptIn(ExperimentalCoroutinesApi::class)
 class NotificationSettingsViewModelTest {
     @Test
-    fun `알림 권한이 거부되면 전체 알림을 저장하지 않고 설정 안내를 보여준다`() =
+    fun `서버 설정이 켜져 있으면 전체 알림 서버 상태를 켠 상태로 표시한다`() =
         coroutinesTest {
-            val notificationRepository = FakeNotificationSettingsRepository(enabled = false)
             val viewModel =
                 NotificationSettingsViewModel(
-                    notificationRepository = notificationRepository,
+                    notificationRepository = FakeNotificationSettingsRepository(enabled = true),
                     ramenShopRepository = FakeRamenShopRepository(),
-                    requestNotificationPermission = { false },
                 )
+
             runCurrent()
 
-            viewModel.sideEffect.test {
-                viewModel.dispatch(OnEnabledChanged(true))
-                runCurrent()
+            assertTrue(viewModel.uiState.value.areEnabled)
+        }
 
-                assertFalse(viewModel.uiState.value.areEnabled)
-                assertEquals(emptyList(), notificationRepository.enabledUpdates)
-                assertEquals(
-                    ShowToast(
-                        ToastData(
-                            message = Res.string.notification_permission_enable_message,
-                            type = ToastType.DEFAULT,
-                            action = ToastAction(label = Res.string.location_permission_settings_action),
-                        ),
-                    ),
-                    awaitItem(),
+    @Test
+    fun `서버 설정이 꺼져 있으면 전체 알림 서버 상태를 끈 상태로 표시한다`() =
+        coroutinesTest {
+            val viewModel =
+                NotificationSettingsViewModel(
+                    notificationRepository = FakeNotificationSettingsRepository(enabled = false),
+                    ramenShopRepository = FakeRamenShopRepository(),
                 )
-            }
+
+            runCurrent()
+
+            assertFalse(viewModel.uiState.value.areEnabled)
         }
 
     @Test
