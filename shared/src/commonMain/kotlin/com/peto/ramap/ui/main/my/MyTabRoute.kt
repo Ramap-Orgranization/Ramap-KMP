@@ -12,6 +12,7 @@ import com.peto.ramap.designsystem.dialog.CommonDialog
 import com.peto.ramap.designsystem.dialog.LoginGuideDialog
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.designsystem.toast.ToastManager
+import com.peto.ramap.platform.AppSettingsOpener
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.ui.main.my.contract.MyTabIntent.OnAccountDeleteClick
@@ -39,14 +40,21 @@ import ramap.shared.generated.resources.account_delete_confirm_title
 @Composable
 fun MyTabRoute(
     onHiddenShopsNavigate: () -> Unit,
+    onNotificationSettingsNavigate: () -> Unit,
     toastManager: ToastManager = koinInject(),
+    appSettingsOpener: AppSettingsOpener = koinInject(),
     viewModel: MyTabViewModel = koinViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     ObserveAsEvents(viewModel.sideEffect) { sideEffect ->
         when (sideEffect) {
-            is ShowMyToast -> toastManager.show(sideEffect.data)
+            is ShowMyToast ->
+                toastManager.show(
+                    sideEffect.data.copy(
+                        action = sideEffect.data.action?.copy(onClick = appSettingsOpener::open),
+                    ),
+                )
             NavigateToHiddenShops -> onHiddenShopsNavigate()
         }
     }
@@ -57,6 +65,7 @@ fun MyTabRoute(
         onLogoutClick = { viewModel.dispatch(OnLogoutClick) },
         onAccountDeleteClick = { viewModel.dispatch(OnAccountDeleteClick) },
         onHiddenShopsClick = { viewModel.dispatch(OnHiddenShopsClick) },
+        onNotificationSettingsClick = onNotificationSettingsNavigate,
         onPlaceUrlChanged = { viewModel.dispatch(OnPlaceUrlChanged(it)) },
         onPlaceReportSubmit = { viewModel.dispatch(OnPlaceReportSubmit) },
         onLocationReportSubmit = { viewModel.dispatch(OnCurrentLocationReportSubmit) },

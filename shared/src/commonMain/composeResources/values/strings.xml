@@ -109,6 +109,10 @@
     <string name="place_report_existing_shop_message">이미 존재하는 매장입니다</string>
     <string name="filter_empty_visible_result_message">선택한 필터에 맞는 매장이 없어요</string>
     <string name="settings_hidden_shops_menu">숨긴 매장 보기</string>
+    <string name="settings_notification_menu">알림 설정</string>
+    <string name="notification_removal_confirm_title">알림 설정을 해제하시겠습니까?</string>
+    <string name="notification_removal_confirm_action">해제</string>
+    <string name="notification_removal_dismiss_action">취소</string>
     <string name="hidden_shops_empty_title">숨긴 매장이 없어요</string>
     <string name="my_tab_account_section">계정</string>
     <string name="my_tab_report_section">제보</string>

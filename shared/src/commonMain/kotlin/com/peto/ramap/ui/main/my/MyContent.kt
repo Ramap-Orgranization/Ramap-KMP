@@ -29,12 +29,12 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.peto.ramap.designsystem.button.AppButton
 import com.peto.ramap.designsystem.button.LoginButton
+import com.peto.ramap.designsystem.card.SectionCard
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.domain.model.LoginType
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
-import com.peto.ramap.ui.main.component.SectionCard
 import com.peto.ramap.ui.main.my.contract.MyTabUiState
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
@@ -54,6 +54,7 @@ import ramap.shared.generated.resources.place_report_location_section_title
 import ramap.shared.generated.resources.place_report_placeholder
 import ramap.shared.generated.resources.place_report_url_section_title
 import ramap.shared.generated.resources.settings_hidden_shops_menu
+import ramap.shared.generated.resources.settings_notification_menu
 
 @Composable
 fun MyContent(
@@ -62,6 +63,7 @@ fun MyContent(
     onLogoutClick: () -> Unit,
     onAccountDeleteClick: () -> Unit,
     onHiddenShopsClick: () -> Unit,
+    onNotificationSettingsClick: () -> Unit,
     onPlaceUrlChanged: (String) -> Unit,
     onPlaceReportSubmit: () -> Unit,
     onLocationReportSubmit: () -> Unit,
@@ -124,6 +126,11 @@ fun MyContent(
                     text = stringResource(Res.string.settings_hidden_shops_menu),
                     modifier = Modifier.padding(top = 16.dp).fillMaxWidth(),
                     onClick = onHiddenShopsClick,
+                )
+                AppButton(
+                    text = stringResource(Res.string.settings_notification_menu),
+                    modifier = Modifier.padding(top = 12.dp).fillMaxWidth(),
+                    onClick = onNotificationSettingsClick,
                 )
             }
         }

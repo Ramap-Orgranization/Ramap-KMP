@@ -1,4 +1,4 @@
-package com.peto.ramap.ui.main.component
+package com.peto.ramap.designsystem.card
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -16,10 +16,11 @@ import com.peto.ramap.theme.GrayColor
 @Composable
 fun SectionCard(
     title: String,
+    modifier: Modifier = Modifier,
     content: @Composable () -> Unit,
 ) {
     Surface(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
         color = CommonColor.White,
         shadowElevation = 4.dp,

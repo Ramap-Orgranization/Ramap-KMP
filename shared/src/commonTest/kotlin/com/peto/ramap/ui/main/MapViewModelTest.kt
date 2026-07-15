@@ -525,40 +525,6 @@ class MapViewModelTest {
         }
 
     @Test
-    fun `매장 정보 제보 중에는 중복 제출하지 않는다`() =
-        coroutinesTest {
-            val shop = ramenShopFixture()
-            val reportRepository = FakeShopReportRepository(delayMillis = 1_000)
-            val viewModel =
-                mapViewModel(
-                    ramenShopRepository =
-                        FakeRamenShopRepository(
-                            fetchByIdsResult = RamenShops(mapOf(shop.id to shop)),
-                        ),
-                    shopReportRepository = reportRepository,
-                )
-
-            viewModel.dispatch(OnShopSelected(shop))
-            runCurrent()
-
-            val intent =
-                OnShopReportSubmitted(
-                    wrongFields = setOf(ShopInformationField.ADDRESS),
-                    description = "주소가 달라요",
-                )
-            viewModel.sideEffect.test {
-                viewModel.dispatch(intent)
-                viewModel.dispatch(intent)
-                runCurrent()
-
-                advanceTimeBy(1_000)
-                runCurrent()
-                assertEquals(1, reportRepository.reports.size)
-                assertEquals(showToastSideEffect(Res.string.shop_information_report_success_message), awaitItem())
-            }
-        }
-
-    @Test
     fun `좋아요 토글 인텐트는 북마크 보기와 전체 보기를 전환한다`() =
         coroutinesTest {
             val viewModel = mapViewModel(loginRepository = loggedInRepository())

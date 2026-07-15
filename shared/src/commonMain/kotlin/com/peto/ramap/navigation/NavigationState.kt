@@ -31,6 +31,7 @@ class NavigationState(
                 ScreenRoutes.EventTabRoutes -> TabStatus.EVENT
                 ScreenRoutes.MyTabRoutes,
                 ScreenRoutes.HiddenShopListRoutes,
+                ScreenRoutes.NotificationSettingsRoutes,
                 -> TabStatus.MY
                 is ScreenRoutes.EventDetailRoutes ->
                     if (backStack.firstOrNull() == ScreenRoutes.EventTabRoutes) {
@@ -46,9 +47,20 @@ class NavigationState(
         }
     }
 
+    fun showNotificationSettings() {
+        if (currentRoute != ScreenRoutes.NotificationSettingsRoutes) {
+            backStack.add(ScreenRoutes.NotificationSettingsRoutes)
+        }
+    }
+
     fun showEvent(event: ShopEvent) {
         selectedEvent = event
-        backStack.add(ScreenRoutes.EventDetailRoutes(event.id))
+        showEvent(event.id)
+    }
+
+    fun showEvent(eventId: String) {
+        if (currentRoute == ScreenRoutes.EventDetailRoutes(eventId)) return
+        backStack.add(ScreenRoutes.EventDetailRoutes(eventId))
     }
 
     fun pop() {
@@ -81,6 +93,7 @@ fun rememberNavigationState(): NavigationState {
                             subclass(ScreenRoutes.EventTabRoutes::class)
                             subclass(ScreenRoutes.MyTabRoutes::class)
                             subclass(ScreenRoutes.HiddenShopListRoutes::class)
+                            subclass(ScreenRoutes.NotificationSettingsRoutes::class)
                             subclass(ScreenRoutes.EventDetailRoutes::class)
                         }
                     }
