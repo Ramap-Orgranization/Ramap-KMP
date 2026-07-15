@@ -13,6 +13,9 @@ import com.peto.ramap.network.execute.invokeRequest
 class DefaultRamenShopRepository(
     private val dataSource: RamenShopDataSource,
 ) : RamenShopRepository {
+    override suspend fun fetchActiveEvent(eventId: String): RamapResult<ShopEvent?> =
+        invokeRequest { dataSource.fetchActiveEvent(eventId)?.toDomain() }
+
     override suspend fun fetchActiveEvents(): RamapResult<List<ShopEvent>> =
         invokeRequest {
             dataSource.fetchActiveEvents().mapNotNull { it.toDomain() }
