@@ -56,8 +56,7 @@ data class RamenShops(
     /**
      * 현재 목록에 [bounds] 안에 포함되는 노출 가게가 하나라도 있는지 반환한다.
      */
-    fun hasVisibleShopIn(bounds: MapBounds): Boolean =
-        values.any { shop -> bounds.contains(shop.location) }
+    fun hasVisibleShopIn(bounds: MapBounds): Boolean = values.any { shop -> bounds.contains(shop.location) }
 
     /**
      * 가게를 숨김 상태로 표시한 [RamenShops]를 반환한다.
@@ -97,7 +96,6 @@ data class RamenShops(
 
     fun singleShopOrNull(): RamenShop? = values.singleOrNull()
 
-
     private fun haversineDistanceMeters(
         from: Location,
         to: Location,
@@ -111,10 +109,9 @@ data class RamenShops(
                 cos(fromLat) * cos(toLat) * sin(lngDistance / 2).pow(2)
         val c = 2 * atan2(sqrt(a), sqrt(1 - a))
 
-        return EARTH_RADIUS_METERS * c
+        val earthRadiusMeters = 6_371_000.0
+        return earthRadiusMeters * c
     }
 
     private fun Double.toRadians(): Double = this / 180.0 * kotlin.math.PI
-
-    private val EARTH_RADIUS_METERS = 6_371_000.0
 }

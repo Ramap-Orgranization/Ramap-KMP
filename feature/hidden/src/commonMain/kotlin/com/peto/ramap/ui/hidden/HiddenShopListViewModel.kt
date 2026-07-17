@@ -1,10 +1,10 @@
 package com.peto.ramap.ui.hidden
 
 import androidx.lifecycle.viewModelScope
-import com.peto.ramap.ui.base.BaseViewModel
 import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.domain.repository.PersonalizationRepository
 import com.peto.ramap.domain.repository.RamenShopRepository
+import com.peto.ramap.ui.base.BaseViewModel
 import com.peto.ramap.ui.common.LoadState
 import com.peto.ramap.ui.hidden.contract.HiddenShopListIntent
 import com.peto.ramap.ui.hidden.contract.HiddenShopListSideEffect

@@ -1,10 +1,10 @@
 package com.peto.ramap.domain.repository
 
 import com.peto.ramap.core.result.RamapResult
+import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.model.shop.MapBounds
 import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.domain.model.shop.SearchQuery
-import com.peto.ramap.domain.model.event.ShopEvent
 
 interface RamenShopRepository {
     suspend fun fetchRamenShops(bounds: MapBounds): RamapResult<RamenShops>

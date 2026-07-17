@@ -24,8 +24,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import com.peto.ramap.extension.noRippleClickable
 import com.peto.ramap.designsystem.button.AppButton
+import com.peto.ramap.extension.noRippleClickable
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.DimmedColor
 import com.peto.ramap.theme.GrayColor

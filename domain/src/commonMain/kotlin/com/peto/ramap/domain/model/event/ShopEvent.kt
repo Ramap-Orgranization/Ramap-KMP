@@ -38,5 +38,4 @@ data class ShopEvent(
                 venueShopName
             }
         }
-
 }

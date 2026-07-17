@@ -2,10 +2,10 @@ package com.peto.ramap.fake
 
 import com.peto.ramap.core.result.RamapError
 import com.peto.ramap.core.result.RamapResult
+import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.model.shop.MapBounds
 import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.domain.model.shop.SearchQuery
-import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.repository.RamenShopRepository
 import kotlinx.coroutines.delay
 

@@ -1,8 +1,8 @@
 package com.peto.ramap.ui.main.my.contract
 
-import com.peto.ramap.ui.base.State
-import com.peto.ramap.domain.model.shop.Location
 import com.peto.ramap.domain.model.report.PlaceReportTextParser
+import com.peto.ramap.domain.model.shop.Location
+import com.peto.ramap.ui.base.State
 
 data class MyTabUiState(
     val isLoggedIn: Boolean = false,

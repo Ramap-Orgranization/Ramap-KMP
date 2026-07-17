@@ -1,18 +1,18 @@
 package com.peto.ramap.ui.main.event
 
-import com.peto.ramap.ui.base.BaseViewModel
 import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.designsystem.toast.model.ToastAction
 import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
-import com.peto.ramap.domain.model.notification.EventNotificationWindow
 import com.peto.ramap.domain.model.event.ShopEvent
+import com.peto.ramap.domain.model.notification.EventNotificationWindow
 import com.peto.ramap.domain.model.notification.eventNotificationWindow
 import com.peto.ramap.domain.repository.LoginRepository
 import com.peto.ramap.domain.repository.NotificationSettingsRepository
 import com.peto.ramap.domain.repository.RamenShopRepository
 import com.peto.ramap.platform.NotificationPermissionRequester
 import com.peto.ramap.platform.currentEpochMillis
+import com.peto.ramap.ui.base.BaseViewModel
 import com.peto.ramap.ui.main.event.contract.EventDetailIntent
 import com.peto.ramap.ui.main.event.contract.EventDetailIntent.OnEntered
 import com.peto.ramap.ui.main.event.contract.EventDetailIntent.OnNotificationChanged

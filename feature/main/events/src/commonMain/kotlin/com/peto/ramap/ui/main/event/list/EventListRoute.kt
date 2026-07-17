@@ -34,8 +34,8 @@ import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.ui.base.ObserveAsEvents
-import com.peto.ramap.ui.component.eventDateText
 import com.peto.ramap.ui.common.LoadState
+import com.peto.ramap.ui.component.eventDateText
 import com.peto.ramap.ui.main.event.list.contract.EventListIntent
 import com.peto.ramap.ui.main.event.list.contract.EventListSideEffect
 import com.peto.ramap.ui.main.event.list.contract.EventListUiState

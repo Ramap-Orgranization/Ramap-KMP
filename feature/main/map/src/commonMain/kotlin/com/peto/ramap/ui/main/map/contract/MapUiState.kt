@@ -1,12 +1,12 @@
 package com.peto.ramap.ui.main.map.contract
 
-import com.peto.ramap.ui.base.State
 import com.peto.ramap.domain.model.shop.Location
 import com.peto.ramap.domain.model.shop.MapBounds
 import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.domain.model.shop.RamenShopFilter
 import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.domain.model.shop.ShopWaitingSystem
+import com.peto.ramap.ui.base.State
 import com.peto.ramap.ui.main.map.config.DefaultMapConfig
 import com.peto.ramap.ui.main.map.model.InitialLocationFocus
 import com.peto.ramap.ui.main.map.model.InitialMapLoadState

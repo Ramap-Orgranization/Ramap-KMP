@@ -7,7 +7,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.peto.ramap.ui.base.ObserveAsEvents
 import com.peto.ramap.designsystem.dialog.CommonDialog
 import com.peto.ramap.designsystem.dialog.LoginGuideDialog
 import com.peto.ramap.designsystem.text.AppText
@@ -15,6 +14,7 @@ import com.peto.ramap.designsystem.toast.ToastManager
 import com.peto.ramap.platform.AppSettingsOpener
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.GrayColor
+import com.peto.ramap.ui.base.ObserveAsEvents
 import com.peto.ramap.ui.main.my.contract.MyTabIntent.OnAccountDeleteClick
 import com.peto.ramap.ui.main.my.contract.MyTabIntent.OnAccountDeleteConfirm
 import com.peto.ramap.ui.main.my.contract.MyTabIntent.OnAccountDeleteDismiss

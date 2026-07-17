@@ -1,8 +1,8 @@
 package com.peto.ramap.ui.main.map.model
 
 import androidx.compose.runtime.Immutable
-import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.domain.model.report.ShopInformationField
+import com.peto.ramap.domain.model.shop.RamenShop
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.shop_information_field_address
 import ramap.shared.generated.resources.shop_information_field_business_hours

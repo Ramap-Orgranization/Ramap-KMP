@@ -1,7 +1,7 @@
 package com.peto.ramap.ui.main.event.contract
 
-import com.peto.ramap.ui.base.State
 import com.peto.ramap.domain.model.event.ShopEvent
+import com.peto.ramap.ui.base.State
 
 data class EventDetailUiState(
     val event: ShopEvent? = null,

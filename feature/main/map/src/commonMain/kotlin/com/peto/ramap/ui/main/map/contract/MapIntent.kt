@@ -1,11 +1,11 @@
 package com.peto.ramap.ui.main.map.contract
 
-import com.peto.ramap.ui.base.Intent
+import com.peto.ramap.domain.model.report.ShopInformationField
 import com.peto.ramap.domain.model.shop.Category
 import com.peto.ramap.domain.model.shop.Location
 import com.peto.ramap.domain.model.shop.MapBounds
 import com.peto.ramap.domain.model.shop.RamenShop
-import com.peto.ramap.domain.model.report.ShopInformationField
+import com.peto.ramap.ui.base.Intent
 import com.peto.ramap.ui.main.map.model.MapPersonalization
 
 sealed interface MapIntent : Intent {

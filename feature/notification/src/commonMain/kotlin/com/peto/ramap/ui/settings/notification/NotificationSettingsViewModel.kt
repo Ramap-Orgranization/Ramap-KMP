@@ -1,11 +1,11 @@
 package com.peto.ramap.ui.settings.notification
 
 import androidx.lifecycle.viewModelScope
-import com.peto.ramap.ui.base.BaseViewModel
 import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.domain.repository.NotificationSettingsRepository
 import com.peto.ramap.domain.repository.RamenShopRepository
+import com.peto.ramap.ui.base.BaseViewModel
 import com.peto.ramap.ui.settings.notification.contract.NotificationSettingsIntent
 import com.peto.ramap.ui.settings.notification.contract.NotificationSettingsIntent.OnEventNotificationsEnabledChanged
 import com.peto.ramap.ui.settings.notification.contract.NotificationSettingsIntent.OnEventOverrideRemoved
