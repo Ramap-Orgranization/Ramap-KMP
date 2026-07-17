@@ -16,10 +16,25 @@ sealed interface ScreenRoutes : NavKey {
     data object MyTabRoutes : ScreenRoutes
 
     @Serializable
+    data object AccountSettingsRoutes : ScreenRoutes
+
+    @Serializable
+    data object InformationRoutes : ScreenRoutes
+
+    @Serializable
+    data object PlaceReportRoutes : ScreenRoutes
+
+    @Serializable
     data object HiddenShopListRoutes : ScreenRoutes
 
     @Serializable
     data object NotificationSettingsRoutes : ScreenRoutes
+
+    @Serializable
+    data object SubscribedShopListRoutes : ScreenRoutes
+
+    @Serializable
+    data object BookmarkedShopListRoutes : ScreenRoutes
 
     @Serializable
     data class EventDetailRoutes(

@@ -28,11 +28,21 @@ class NavigationState(
         }
     }
 
+    fun showAccountSettings() = showOnce(ScreenRoutes.AccountSettingsRoutes)
+
+    fun showInformation() = showOnce(ScreenRoutes.InformationRoutes)
+
+    fun showPlaceReport() = showOnce(ScreenRoutes.PlaceReportRoutes)
+
     fun showNotificationSettings() {
         if (currentRoute != ScreenRoutes.NotificationSettingsRoutes) {
             currentBackStack.add(ScreenRoutes.NotificationSettingsRoutes)
         }
     }
+
+    fun showSubscribedShops() = showOnce(ScreenRoutes.SubscribedShopListRoutes)
+
+    fun showBookmarkedShops() = showOnce(ScreenRoutes.BookmarkedShopListRoutes)
 
     fun showEvent(eventId: String) {
         if (currentRoute == ScreenRoutes.EventDetailRoutes(eventId)) return
@@ -66,5 +76,9 @@ class NavigationState(
         mapBackStack.clear()
         mapBackStack.add(mapRoute)
         selectedTab = TabStatus.MAP
+    }
+
+    private fun showOnce(route: ScreenRoutes) {
+        if (currentRoute != route) currentBackStack.add(route)
     }
 }

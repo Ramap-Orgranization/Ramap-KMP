@@ -104,6 +104,26 @@ class NavigationStateTest {
         assertEquals(ScreenRoutes.EventDetailRoutes("event-id"), navigationState.currentRoute)
     }
 
+    @Test
+    fun `설정 목록의 모든 하위 화면을 전체 화면 경로로 연다`() {
+        val navigationState = navigationState(selectedTab = TabStatus.MY)
+
+        navigationState.showAccountSettings()
+        assertEquals(ScreenRoutes.AccountSettingsRoutes, navigationState.currentRoute)
+        navigationState.pop()
+        navigationState.showInformation()
+        assertEquals(ScreenRoutes.InformationRoutes, navigationState.currentRoute)
+        navigationState.pop()
+        navigationState.showPlaceReport()
+        assertEquals(ScreenRoutes.PlaceReportRoutes, navigationState.currentRoute)
+        navigationState.pop()
+        navigationState.showSubscribedShops()
+        assertEquals(ScreenRoutes.SubscribedShopListRoutes, navigationState.currentRoute)
+        navigationState.pop()
+        navigationState.showBookmarkedShops()
+        assertEquals(ScreenRoutes.BookmarkedShopListRoutes, navigationState.currentRoute)
+    }
+
     private fun navigationState(selectedTab: TabStatus = TabStatus.MAP): NavigationState =
         NavigationState(
             selectedTabState = mutableStateOf(selectedTab),
