@@ -15,6 +15,10 @@ interface RamenShopRepository {
 
     suspend fun fetchActiveEvents(): RamapResult<List<ShopEvent>>
 
+    /**
+     * 딥링크로 들어왔을 때 이벤트가 없으면 [RamapResult.Success]에 `null`을 담고,
+     * 요청 자체가 실패하면 [RamapResult.Error]를 반환한다.
+     */
     suspend fun fetchActiveEvent(eventId: String): RamapResult<ShopEvent?>
 
     suspend fun searchRamenShops(

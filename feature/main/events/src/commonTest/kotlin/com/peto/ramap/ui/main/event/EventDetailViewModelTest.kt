@@ -1,6 +1,7 @@
 package com.peto.ramap.ui.main.event
 
 import app.cash.turbine.test
+import com.peto.ramap.core.result.RamapError
 import com.peto.ramap.coroutinesTest
 import com.peto.ramap.designsystem.toast.model.ToastAction
 import com.peto.ramap.designsystem.toast.model.ToastData
@@ -14,6 +15,7 @@ import com.peto.ramap.fake.FakeNotificationSettingsRepository
 import com.peto.ramap.fake.FakeRamenShopRepository
 import com.peto.ramap.ui.main.event.contract.EventDetailIntent.OnEntered
 import com.peto.ramap.ui.main.event.contract.EventDetailIntent.OnNotificationChanged
+import com.peto.ramap.ui.main.event.contract.EventDetailSideEffect.EventUnavailable
 import com.peto.ramap.ui.main.event.contract.EventDetailSideEffect.ShowEventToast
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runCurrent
@@ -27,6 +29,45 @@ import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class EventDetailViewModelTest {
+    @Test
+    fun `활성 이벤트가 없으면 이용 불가 안내를 보낸다`() =
+        coroutinesTest {
+            val viewModel =
+                eventDetailViewModel(
+                    repository = FakeNotificationSettingsRepository(),
+                    permissionGranted = true,
+                    ramenShopRepository = FakeRamenShopRepository(),
+                )
+
+            viewModel.sideEffect.test {
+                viewModel.dispatch(OnEntered("missing-event"))
+                runCurrent()
+
+                assertEquals(EventUnavailable, awaitItem())
+            }
+        }
+
+    @Test
+    fun `활성 이벤트 조회가 실패하면 이용 불가 안내를 보낸다`() =
+        coroutinesTest {
+            val viewModel =
+                eventDetailViewModel(
+                    repository = FakeNotificationSettingsRepository(),
+                    permissionGranted = true,
+                    ramenShopRepository =
+                        FakeRamenShopRepository(
+                            activeEventError = RamapError.Unknown(IllegalStateException("failure")),
+                        ),
+                )
+
+            viewModel.sideEffect.test {
+                viewModel.dispatch(OnEntered(EVENT.id))
+                runCurrent()
+
+                assertEquals(EventUnavailable, awaitItem())
+            }
+        }
+
     @Test
     fun `알림 권한이 거부되면 이벤트 알림을 저장하지 않고 설정 안내를 보여준다`() =
         coroutinesTest {

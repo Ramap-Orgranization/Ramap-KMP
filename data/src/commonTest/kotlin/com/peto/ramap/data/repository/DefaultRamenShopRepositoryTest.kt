@@ -1,5 +1,6 @@
 package com.peto.ramap.data.repository
 
+import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.core.result.getOrThrow
 import com.peto.ramap.data.model.ShopEventParticipantResponse
 import com.peto.ramap.data.model.ShopEventResponse
@@ -16,6 +17,19 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class DefaultRamenShopRepositoryTest {
+    @Test
+    fun `활성 이벤트가 없으면 성공 결과에 null을 반환한다`() =
+        runTest {
+            val repository =
+                DefaultRamenShopRepository(
+                    FakeRamenShopDataSource(activeEventsResponses = emptyList()),
+                )
+
+            val result = repository.fetchActiveEvent("missing-event")
+
+            assertEquals(RamapResult.Success(null), result)
+        }
+
     @Test
     fun `활성 이벤트 목록은 잘못된 타입을 제외하고 응답 순서를 유지한다`() =
         runTest {

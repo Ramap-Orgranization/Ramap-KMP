@@ -1,6 +1,5 @@
 package com.peto.ramap.ui.main.event
 
-import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.designsystem.toast.model.ToastAction
 import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
@@ -39,11 +38,20 @@ class EventDetailViewModel(
 
     private suspend fun loadEvent(eventId: String) {
         reduce { EventDetailUiState() }
-        val event = (ramenShopRepository.fetchActiveEvent(eventId) as? RamapResult.Success)?.data
-        if (event == null) return postSideEffect(EventUnavailable)
-
-        updateEventState(event)
-        refreshEventNotification(event)
+        handleResult(
+            result = ramenShopRepository.fetchActiveEvent(eventId),
+            onSuccess = { event ->
+                if (event == null) {
+                    postSideEffect(EventUnavailable)
+                    return@handleResult
+                }
+                updateEventState(event)
+                refreshEventNotification(event)
+            },
+            onError = {
+                postSideEffect(EventUnavailable)
+            },
+        )
     }
 
     private fun updateEventState(event: ShopEvent) {
@@ -62,13 +70,25 @@ class EventDetailViewModel(
 
     private suspend fun refreshEventNotification(event: ShopEvent) {
         if (!currentState.canChangeNotification || !currentState.isNotificationVisible) return
-        val result = notificationRepository.isEventNotificationEnabled(event.id)
-        reduce {
-            copy(
-                isNotificationEnabled = (result as? RamapResult.Success)?.data ?: false,
-                isNotificationLoading = false,
-            )
-        }
+        handleResult(
+            result = notificationRepository.isEventNotificationEnabled(event.id),
+            onSuccess = { isEnabled ->
+                reduce {
+                    copy(
+                        isNotificationEnabled = isEnabled,
+                        isNotificationLoading = false,
+                    )
+                }
+            },
+            onError = {
+                reduce {
+                    copy(
+                        isNotificationEnabled = false,
+                        isNotificationLoading = false,
+                    )
+                }
+            },
+        )
     }
 
     private suspend fun updateNotification(enabled: Boolean) {
@@ -76,8 +96,15 @@ class EventDetailViewModel(
         val previousValue = currentState.isNotificationEnabled
         if (!prepareNotificationUpdate(enabled)) return
 
-        val result = saveEventNotification(eventId, enabled)
-        handleNotificationUpdateResult(result, enabled, previousValue)
+        handleResult(
+            result = notificationRepository.updateEventNotification(eventId, enabled),
+            onSuccess = {
+                finishNotificationUpdate(enabled)
+            },
+            onError = {
+                finishNotificationUpdate(previousValue)
+            },
+        )
     }
 
     private suspend fun prepareNotificationUpdate(enabled: Boolean): Boolean {
@@ -97,19 +124,10 @@ class EventDetailViewModel(
         return true
     }
 
-    private suspend fun saveEventNotification(
-        eventId: String,
-        enabled: Boolean,
-    ): RamapResult<Unit> = notificationRepository.updateEventNotification(eventId, enabled)
-
-    private fun handleNotificationUpdateResult(
-        result: RamapResult<Unit>,
-        enabled: Boolean,
-        previousValue: Boolean,
-    ) {
+    private fun finishNotificationUpdate(isEnabled: Boolean) {
         reduce {
             copy(
-                isNotificationEnabled = if (result is RamapResult.Error) previousValue else enabled,
+                isNotificationEnabled = isEnabled,
                 isNotificationLoading = false,
             )
         }
