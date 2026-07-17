@@ -15,8 +15,8 @@ import com.peto.ramap.theme.GrayColor
 
 @Composable
 fun SectionCard(
-    title: String,
     modifier: Modifier = Modifier,
+    title: String? = null,
     content: @Composable () -> Unit,
 ) {
     Surface(
@@ -26,13 +26,21 @@ fun SectionCard(
         shadowElevation = 4.dp,
     ) {
         Column(
-            modifier = Modifier.padding(20.dp),
+            modifier =
+                Modifier
+                    .padding(horizontal = 20.dp)
+                    .padding(bottom = 15.dp),
         ) {
-            AppText(
-                text = title,
-                style = AppTextStyle.T1,
-                color = GrayColor.C500,
-            )
+            title?.let {
+                AppText(
+                    text = title,
+                    style = AppTextStyle.T1,
+                    color = GrayColor.C500,
+                    modifier =
+                        Modifier
+                            .padding(top = 15.dp),
+                )
+            }
             content()
         }
     }
