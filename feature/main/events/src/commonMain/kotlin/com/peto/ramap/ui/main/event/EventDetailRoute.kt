@@ -19,6 +19,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -29,12 +30,16 @@ import com.peto.ramap.designsystem.card.SectionCard
 import com.peto.ramap.designsystem.component.LaduckLoadingContent
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.designsystem.toast.ToastManager
+import com.peto.ramap.designsystem.toast.model.ToastAction
+import com.peto.ramap.designsystem.toast.model.ToastData
+import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.designsystem.topbar.CommonTopBar
 import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.model.event.ShopEventType
 import com.peto.ramap.extension.noRippleClickable
 import com.peto.ramap.platform.AppSettingsOpener
 import com.peto.ramap.platform.ExternalUriOpener
+import com.peto.ramap.platform.NotificationPermissionRequester
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.ChromaticColor
 import com.peto.ramap.theme.GrayColor
@@ -43,9 +48,11 @@ import com.peto.ramap.ui.base.ObserveAsEvents
 import com.peto.ramap.ui.component.eventDateText
 import com.peto.ramap.ui.main.event.contract.EventDetailIntent.OnEntered
 import com.peto.ramap.ui.main.event.contract.EventDetailIntent.OnNotificationChanged
+import com.peto.ramap.ui.main.event.contract.EventDetailIntent.OnNotificationPermissionGranted
 import com.peto.ramap.ui.main.event.contract.EventDetailSideEffect.EventUnavailable
-import com.peto.ramap.ui.main.event.contract.EventDetailSideEffect.ShowEventToast
+import com.peto.ramap.ui.main.event.contract.EventDetailSideEffect.RequestNotificationPermission
 import com.peto.ramap.ui.main.event.contract.EventDetailUiState
+import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
@@ -70,7 +77,9 @@ import ramap.shared.generated.resources.event_waiting_action
 import ramap.shared.generated.resources.ic_arrow3_left
 import ramap.shared.generated.resources.ic_notification
 import ramap.shared.generated.resources.ic_notification_filled
+import ramap.shared.generated.resources.location_permission_settings_action
 import ramap.shared.generated.resources.navigation_back
+import ramap.shared.generated.resources.notification_permission_enable_message
 
 @Composable
 fun EventDetailRoute(
@@ -80,9 +89,11 @@ fun EventDetailRoute(
     onShopClick: (String) -> Unit,
     toastManager: ToastManager = koinInject(),
     appSettingsOpener: AppSettingsOpener = koinInject(),
+    requestNotificationPermission: suspend () -> Boolean = NotificationPermissionRequester::request,
     viewModel: EventDetailViewModel = koinViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val coroutineScope = rememberCoroutineScope()
     LaunchedEffect(eventId) {
         viewModel.dispatch(OnEntered(eventId))
     }
@@ -90,12 +101,24 @@ fun EventDetailRoute(
     ObserveAsEvents(viewModel.sideEffect) { sideEffect ->
         when (sideEffect) {
             EventUnavailable -> onUnavailable()
-            is ShowEventToast ->
-                toastManager.show(
-                    sideEffect.data.copy(
-                        action = sideEffect.data.action?.copy(onClick = appSettingsOpener::open),
-                    ),
-                )
+            RequestNotificationPermission ->
+                coroutineScope.launch {
+                    if (requestNotificationPermission()) {
+                        viewModel.dispatch(OnNotificationPermissionGranted)
+                    } else {
+                        toastManager.show(
+                            ToastData(
+                                message = Res.string.notification_permission_enable_message,
+                                type = ToastType.DEFAULT,
+                                action =
+                                    ToastAction(
+                                        label = Res.string.location_permission_settings_action,
+                                        onClick = appSettingsOpener::open,
+                                    ),
+                            ),
+                        )
+                    }
+                }
         }
     }
     uiState.event?.let {

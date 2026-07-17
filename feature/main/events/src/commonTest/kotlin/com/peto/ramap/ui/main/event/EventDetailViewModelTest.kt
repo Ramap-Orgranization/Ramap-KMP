@@ -3,9 +3,6 @@ package com.peto.ramap.ui.main.event
 import app.cash.turbine.test
 import com.peto.ramap.core.result.RamapError
 import com.peto.ramap.coroutinesTest
-import com.peto.ramap.designsystem.toast.model.ToastAction
-import com.peto.ramap.designsystem.toast.model.ToastData
-import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.auth.LoginSessionState
 import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.model.event.ShopEventType
@@ -15,13 +12,11 @@ import com.peto.ramap.fake.FakeNotificationSettingsRepository
 import com.peto.ramap.fake.FakeRamenShopRepository
 import com.peto.ramap.ui.main.event.contract.EventDetailIntent.OnEntered
 import com.peto.ramap.ui.main.event.contract.EventDetailIntent.OnNotificationChanged
+import com.peto.ramap.ui.main.event.contract.EventDetailIntent.OnNotificationPermissionGranted
 import com.peto.ramap.ui.main.event.contract.EventDetailSideEffect.EventUnavailable
-import com.peto.ramap.ui.main.event.contract.EventDetailSideEffect.ShowEventToast
+import com.peto.ramap.ui.main.event.contract.EventDetailSideEffect.RequestNotificationPermission
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runCurrent
-import ramap.shared.generated.resources.Res
-import ramap.shared.generated.resources.location_permission_settings_action
-import ramap.shared.generated.resources.notification_permission_enable_message
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -35,7 +30,6 @@ class EventDetailViewModelTest {
             val viewModel =
                 eventDetailViewModel(
                     repository = FakeNotificationSettingsRepository(),
-                    permissionGranted = true,
                     ramenShopRepository = FakeRamenShopRepository(),
                 )
 
@@ -53,7 +47,6 @@ class EventDetailViewModelTest {
             val viewModel =
                 eventDetailViewModel(
                     repository = FakeNotificationSettingsRepository(),
-                    permissionGranted = true,
                     ramenShopRepository =
                         FakeRamenShopRepository(
                             activeEventError = RamapError.Unknown(IllegalStateException("failure")),
@@ -69,10 +62,10 @@ class EventDetailViewModelTest {
         }
 
     @Test
-    fun `알림 권한이 거부되면 이벤트 알림을 저장하지 않고 설정 안내를 보여준다`() =
+    fun `이벤트 알림을 활성화하면 UI에 권한 요청을 보낸다`() =
         coroutinesTest {
             val repository = FakeNotificationSettingsRepository()
-            val viewModel = eventDetailViewModel(repository, permissionGranted = false)
+            val viewModel = eventDetailViewModel(repository)
             viewModel.dispatch(OnEntered(EVENT.id))
             runCurrent()
 
@@ -82,32 +75,41 @@ class EventDetailViewModelTest {
 
                 assertFalse(viewModel.uiState.value.isNotificationEnabled)
                 assertEquals(emptyList(), repository.eventNotificationUpdates)
-                assertEquals(
-                    ShowEventToast(
-                        ToastData(
-                            message = Res.string.notification_permission_enable_message,
-                            type = ToastType.DEFAULT,
-                            action = ToastAction(label = Res.string.location_permission_settings_action),
-                        ),
-                    ),
-                    awaitItem(),
-                )
+                assertEquals(RequestNotificationPermission, awaitItem())
             }
         }
 
     @Test
-    fun `알림 권한이 허용되면 이벤트 알림을 저장한다`() =
+    fun `UI에서 알림 권한 허용을 전달하면 이벤트 알림을 저장한다`() =
         coroutinesTest {
             val repository = FakeNotificationSettingsRepository()
-            val viewModel = eventDetailViewModel(repository, permissionGranted = true)
+            val viewModel = eventDetailViewModel(repository)
             viewModel.dispatch(OnEntered(EVENT.id))
             runCurrent()
 
-            viewModel.dispatch(OnNotificationChanged(true))
+            viewModel.dispatch(OnNotificationPermissionGranted)
             runCurrent()
 
             assertTrue(viewModel.uiState.value.isNotificationEnabled)
             assertEquals(listOf(EVENT.id to true), repository.eventNotificationUpdates)
+        }
+
+    @Test
+    fun `이벤트 알림을 비활성화하면 권한 요청 없이 저장한다`() =
+        coroutinesTest {
+            val repository =
+                FakeNotificationSettingsRepository(
+                    eventOverrides = mutableListOf(EventNotificationOverride(EVENT.id, true)),
+                )
+            val viewModel = eventDetailViewModel(repository)
+            viewModel.dispatch(OnEntered(EVENT.id))
+            runCurrent()
+
+            viewModel.dispatch(OnNotificationChanged(false))
+            runCurrent()
+
+            assertFalse(viewModel.uiState.value.isNotificationEnabled)
+            assertEquals(listOf(EVENT.id to false), repository.eventNotificationUpdates)
         }
 
     @Test
@@ -121,7 +123,6 @@ class EventDetailViewModelTest {
             val viewModel =
                 eventDetailViewModel(
                     repository = repository,
-                    permissionGranted = true,
                     ramenShopRepository = FakeRamenShopRepository(activeEvents = events),
                 )
             viewModel.dispatch(OnEntered(EVENT.id))
@@ -141,14 +142,12 @@ class EventDetailViewModelTest {
 
     private fun eventDetailViewModel(
         repository: FakeNotificationSettingsRepository,
-        permissionGranted: Boolean,
         ramenShopRepository: FakeRamenShopRepository = FakeRamenShopRepository(activeEvent = EVENT),
     ): EventDetailViewModel =
         EventDetailViewModel(
             ramenShopRepository = ramenShopRepository,
             loginRepository = FakeLoginRepository(LoginSessionState.AUTHENTICATED),
             notificationRepository = repository,
-            requestNotificationPermission = { permissionGranted },
         )
 
     private companion object {

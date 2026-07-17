@@ -10,4 +10,6 @@ sealed interface EventDetailIntent : Intent {
     data class OnNotificationChanged(
         val enabled: Boolean,
     ) : EventDetailIntent
+
+    data object OnNotificationPermissionGranted : EventDetailIntent
 }
