@@ -1,23 +1,21 @@
 package com.peto.ramap.notification
 
-import io.github.jan.supabase.SupabaseClient
-import io.github.jan.supabase.auth.auth
-import io.github.jan.supabase.auth.status.SessionStatus
-import io.github.jan.supabase.postgrest.postgrest
+import com.peto.ramap.domain.model.auth.LoginSessionState
+import com.peto.ramap.domain.repository.LoginRepository
+import com.peto.ramap.domain.repository.PushRegistrationRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
-import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.put
 
 /**
  * 푸시 알림 수신을 위한 Firebase 푸시 대상 등록을 담당
  *
- * 인증 세션이 활성화될 때까지 대기했다가 서버 RPC에 현재 푸시 대상 정보를 저장ㄴ다.
+ * 인증 세션이 활성화될 때까지 대기했다가 현재 푸시 대상 정보를 저장한다.
  */
 class NotificationRegistry(
-    private val client: SupabaseClient,
+    private val loginRepository: LoginRepository,
+    private val pushRegistrationRepository: PushRegistrationRepository,
     private val scope: CoroutineScope,
 ) {
     private var registrationJob: Job? = null
@@ -45,13 +43,13 @@ class NotificationRegistry(
         registrationJob =
             scope.launch {
                 observeAuthenticatedSessions {
-                    runCatching { registerPushRegistration(identifier, platform, targetType) }
+                    runCatching { pushRegistrationRepository.register(identifier, platform, targetType) }
                 }
             }
     }
 
     /**
-     * 인증 세션 상태를 관찰하다가 [io.github.jan.supabase.auth.status.SessionStatus.Authenticated] 상태가 될 때마다
+     * 인증 세션 상태를 관찰하다가 [LoginSessionState.AUTHENTICATED] 상태가 될 때마다
      * [onAuthenticated]를 실행한다.
      *
      * `collectLatest`를 사용하므로, 새로운 세션 상태가 emit되면 진행 중이던
@@ -60,40 +58,8 @@ class NotificationRegistry(
      * @param onAuthenticated 인증된 세션이 감지될 때마다 실행할 suspend 블록.
      */
     private suspend fun observeAuthenticatedSessions(onAuthenticated: suspend () -> Unit) {
-        client.auth.sessionStatus.collectLatest { status ->
-            if (status is SessionStatus.Authenticated) onAuthenticated()
+        loginRepository.sessionState.collectLatest { sessionState ->
+            if (sessionState == LoginSessionState.AUTHENTICATED) onAuthenticated()
         }
-    }
-
-    /**
-     * 서버(Supabase RPC)에 푸시 등록 정보를 저장한다.
-     *
-     * @param identifier 등록할 Firebase 푸시 대상 식별자. Android에서는 현재 FID를 사용한다.
-     * @param platform 디바이스 플랫폼.
-     * @param targetType "fid" 또는 "token" 중 하나인 Firebase 발송 대상 유형. APNs 토큰 유형이 아니다.
-     * @throws Exception RPC 호출 실패 시 발생하며 [track]의 `runCatching`이 결과를 소비해 외부로 전파하지 않는다.
-     */
-    private suspend fun registerPushRegistration(
-        identifier: String,
-        platform: String,
-        targetType: String,
-    ) {
-        if (identifier.isBlank()) return
-        client.postgrest.rpc(
-            function = RPC_REGISTER_PUSH_REGISTRATION,
-            parameters =
-                buildJsonObject {
-                    put(PARAM_REGISTRATION_IDENTIFIER, identifier)
-                    put(PARAM_DEVICE_PLATFORM, platform)
-                    put(PARAM_REGISTRATION_TARGET_TYPE, targetType)
-                },
-        )
-    }
-
-    private companion object {
-        const val RPC_REGISTER_PUSH_REGISTRATION = "register_push_registration"
-        const val PARAM_REGISTRATION_IDENTIFIER = "registration_identifier"
-        const val PARAM_DEVICE_PLATFORM = "device_platform"
-        const val PARAM_REGISTRATION_TARGET_TYPE = "registration_target_type"
     }
 }

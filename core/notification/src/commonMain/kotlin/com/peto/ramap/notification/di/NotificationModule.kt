@@ -9,5 +9,5 @@ val notificationModule =
     module {
         single { NotificationDeepLinkParser() }
         single { NotificationLaunchDispatcher(get()) }
-        single { NotificationRegistry(get(), get()) }
+        single { NotificationRegistry(get(), get(), get()) }
     }
