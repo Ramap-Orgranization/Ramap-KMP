@@ -1832,12 +1832,15 @@ class MapViewModelTest {
         }
 
     @Test
-    fun `숨김 처리한 매장도 북마크할 수 있다`() =
+    fun `숨김 처리한 매장의 북마크는 지도 북마크 상태에 노출하지 않는다`() =
         coroutinesTest {
             val shop = ramenShopFixture(id = "hidden-bookmark-shop")
             val personalizationRepository =
                 FakePersonalizationRepository(
-                    Personalization(hiddenShopIds = setOf(shop.id)),
+                    Personalization(
+                        bookmarkedShopIds = setOf(shop.id),
+                        hiddenShopIds = setOf(shop.id),
+                    ),
                 )
             val viewModel =
                 mapViewModel(
@@ -1849,7 +1852,50 @@ class MapViewModelTest {
             viewModel.dispatch(OnBookmarkToggled(shop))
             runCurrent()
 
+            assertEquals(setOf(shop.id), personalizationRepository.bookmarkedShopIds.value)
+            assertEquals(emptySet(), viewModel.uiState.value.bookmarkedShopIds)
+
+            viewModel.dispatch(OnHiddenToggled(shop))
+            runCurrent()
+
             assertEquals(setOf(shop.id), viewModel.uiState.value.bookmarkedShopIds)
+        }
+
+    @Test
+    fun `다른 화면에서 북마크 상태를 변경하면 지도 북마크 상태도 갱신한다`() =
+        coroutinesTest {
+            val shop = ramenShopFixture(id = "externally-bookmarked-shop")
+            val personalizationRepository = FakePersonalizationRepository()
+            val viewModel =
+                mapViewModel(
+                    personalizationRepository = personalizationRepository,
+                    loginRepository = loggedInRepository(),
+                )
+            runCurrent()
+
+            personalizationRepository.updateBookmarkedShopIds(setOf(shop.id))
+            runCurrent()
+
+            assertEquals(setOf(shop.id), viewModel.uiState.value.bookmarkedShopIds)
+        }
+
+    @Test
+    fun `비로그인 상태에서는 공유 저장소의 북마크 상태를 노출하지 않는다`() =
+        coroutinesTest {
+            val shop = ramenShopFixture(id = "cached-bookmarked-shop")
+            val personalizationRepository =
+                FakePersonalizationRepository(
+                    Personalization(bookmarkedShopIds = setOf(shop.id)),
+                )
+            val viewModel = mapViewModel(personalizationRepository = personalizationRepository)
+            runCurrent()
+
+            assertEquals(emptySet(), viewModel.uiState.value.bookmarkedShopIds)
+
+            personalizationRepository.updateBookmarkedShopIds(setOf(shop.id, "another-shop"))
+            runCurrent()
+
+            assertEquals(emptySet(), viewModel.uiState.value.bookmarkedShopIds)
         }
 
     @Test

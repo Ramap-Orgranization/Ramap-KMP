@@ -7,16 +7,22 @@ class FakeBookmarkShopDataSource(
     initialBookmarks: List<PersonalizationResponse> = emptyList(),
 ) : BookmarkShopDataSource {
     private val bookmarks = initialBookmarks.toMutableList()
+    var error: Throwable? = null
 
-    override suspend fun fetchBookmarkedShopIds(): List<PersonalizationResponse> = bookmarks.toList()
+    override suspend fun fetchBookmarkedShopIds(): List<PersonalizationResponse> {
+        error?.let { throw it }
+        return bookmarks.toList()
+    }
 
     override suspend fun addBookmark(shopId: String) {
+        error?.let { throw it }
         if (bookmarks.none { it.shopId == shopId }) {
             bookmarks += PersonalizationResponse(shopId)
         }
     }
 
     override suspend fun removeBookmark(shopId: String) {
+        error?.let { throw it }
         bookmarks.removeAll { it.shopId == shopId }
     }
 }

@@ -109,7 +109,15 @@ class MapViewModel(
 
     init {
         viewModelScope.launch { observeSessionState() }
+        viewModelScope.launch { observeBookmarkedShopIds() }
         viewModelScope.launch { observeNotificationSubscriptions() }
+    }
+
+    private suspend fun observeBookmarkedShopIds() {
+        personalizationRepository.bookmarkedShopIds.collectLatest { shopIds ->
+            if (!currentState.isLoggedIn) return@collectLatest
+            reduce { copy(bookmarkedShopIds = shopIds - hiddenShopIds) }
+        }
     }
 
     private suspend fun observeNotificationSubscriptions() {
@@ -399,9 +407,10 @@ class MapViewModel(
 
     private fun reduceBookmarkState(shopId: String) {
         reduce {
+            val updatedBookmarkedShopIds =
+                if (shopId in bookmarkedShopIds) bookmarkedShopIds - shopId else bookmarkedShopIds + shopId
             copy(
-                bookmarkedShopIds =
-                    if (shopId in bookmarkedShopIds) bookmarkedShopIds - shopId else bookmarkedShopIds + shopId,
+                bookmarkedShopIds = updatedBookmarkedShopIds - hiddenShopIds,
             )
         }
     }
@@ -517,10 +526,13 @@ class MapViewModel(
     ) {
         reduce {
             val shouldCloseSelectedShop = selectedShop?.id == shopId
+            val updatedHiddenShopIds = hiddenShopIds + shopId
+            val updatedBookmarkedShopIds =
+                if (shouldRemoveBookmark) bookmarkedShopIds - shopId else bookmarkedShopIds
 
             copy(
-                hiddenShopIds = hiddenShopIds + shopId,
-                bookmarkedShopIds = if (shouldRemoveBookmark) bookmarkedShopIds - shopId else bookmarkedShopIds,
+                hiddenShopIds = updatedHiddenShopIds,
+                bookmarkedShopIds = updatedBookmarkedShopIds - updatedHiddenShopIds,
                 notificationShopIds =
                     if (shouldDisableNotification) notificationShopIds - shopId else notificationShopIds,
                 selectedShop = selectedShop?.takeUnless { shouldCloseSelectedShop },
@@ -535,8 +547,10 @@ class MapViewModel(
 
     private fun reduceUnhideShopState(shopId: String) {
         reduce {
+            val updatedHiddenShopIds = hiddenShopIds - shopId
             copy(
-                hiddenShopIds = hiddenShopIds - shopId,
+                hiddenShopIds = updatedHiddenShopIds,
+                bookmarkedShopIds = personalizationRepository.bookmarkedShopIds.value - updatedHiddenShopIds,
                 selectedShop =
                     if (selectedShop?.id == shopId) {
                         selectedShop.copy(isVisible = true)
