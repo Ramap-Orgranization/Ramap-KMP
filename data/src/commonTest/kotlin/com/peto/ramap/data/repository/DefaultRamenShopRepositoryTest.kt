@@ -3,11 +3,11 @@ package com.peto.ramap.data.repository
 import com.peto.ramap.core.result.getOrThrow
 import com.peto.ramap.data.model.ShopEventParticipantResponse
 import com.peto.ramap.data.model.ShopEventResponse
-import com.peto.ramap.domain.model.Category
-import com.peto.ramap.domain.model.Location
-import com.peto.ramap.domain.model.MenuCategories
-import com.peto.ramap.domain.model.RamenShop
-import com.peto.ramap.domain.model.SearchQuery
+import com.peto.ramap.domain.model.shop.Category
+import com.peto.ramap.domain.model.shop.Location
+import com.peto.ramap.domain.model.shop.MenuCategories
+import com.peto.ramap.domain.model.shop.RamenShop
+import com.peto.ramap.domain.model.shop.SearchQuery
 import com.peto.ramap.fake.FakeRamenShopDataSource
 import com.peto.ramap.fixture.BOUNDS_FIXTURE
 import com.peto.ramap.fixture.ramenShopResponseFixture

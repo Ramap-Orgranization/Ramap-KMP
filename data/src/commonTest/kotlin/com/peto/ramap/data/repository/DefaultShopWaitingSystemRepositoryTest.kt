@@ -4,8 +4,8 @@ import com.peto.ramap.core.result.RamapError
 import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.core.result.getOrThrow
 import com.peto.ramap.data.model.ShopWaitingSystemResponse
-import com.peto.ramap.domain.model.ShopWaitingSystem
-import com.peto.ramap.domain.model.WaitingProvider
+import com.peto.ramap.domain.model.shop.ShopWaitingSystem
+import com.peto.ramap.domain.model.shop.WaitingProvider
 import com.peto.ramap.fake.FakeShopWaitingSystemDataSource
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test

@@ -1,7 +1,7 @@
 package com.peto.ramap.data.model
 
-import com.peto.ramap.domain.model.ShopEvent
-import com.peto.ramap.domain.model.ShopEventType
+import com.peto.ramap.domain.model.event.ShopEvent
+import com.peto.ramap.domain.model.event.ShopEventType
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 

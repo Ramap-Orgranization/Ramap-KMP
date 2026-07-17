@@ -3,8 +3,8 @@ package com.peto.ramap.data.datasource.shop
 import com.peto.ramap.data.model.RamenShopResponse
 import com.peto.ramap.data.model.ShopEventParticipantResponse
 import com.peto.ramap.data.model.ShopEventResponse
-import com.peto.ramap.domain.model.MapBounds
-import com.peto.ramap.domain.model.SearchQuery
+import com.peto.ramap.domain.model.shop.MapBounds
+import com.peto.ramap.domain.model.shop.SearchQuery
 import com.peto.ramap.network.config.RamapSecrets
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.from

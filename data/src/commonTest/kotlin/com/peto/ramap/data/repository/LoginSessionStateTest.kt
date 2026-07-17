@@ -1,6 +1,6 @@
 package com.peto.ramap.data.repository
 
-import com.peto.ramap.domain.model.LoginSessionState
+import com.peto.ramap.domain.model.auth.LoginSessionState
 import io.github.jan.supabase.auth.status.SessionStatus
 import io.github.jan.supabase.auth.user.UserSession
 import kotlin.test.Test

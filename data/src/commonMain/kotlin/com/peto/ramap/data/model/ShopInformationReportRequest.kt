@@ -1,6 +1,6 @@
 package com.peto.ramap.data.model
 
-import com.peto.ramap.domain.model.ShopInformationReport
+import com.peto.ramap.domain.model.report.ShopInformationReport
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 

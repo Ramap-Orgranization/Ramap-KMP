@@ -3,7 +3,7 @@ package com.peto.ramap.data.repository
 import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.data.datasource.personalization.BookmarkShopDataSource
 import com.peto.ramap.data.datasource.personalization.HiddenShopDataSource
-import com.peto.ramap.domain.model.Personalization
+import com.peto.ramap.domain.model.personalization.Personalization
 import com.peto.ramap.domain.repository.PersonalizationRepository
 import com.peto.ramap.network.execute.invokeRequest
 import kotlinx.coroutines.async
