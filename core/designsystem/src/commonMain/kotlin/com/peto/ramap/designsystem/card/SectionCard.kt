@@ -1,5 +1,6 @@
 package com.peto.ramap.designsystem.card
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -21,16 +22,11 @@ fun SectionCard(
 ) {
     Surface(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
+        shape = RoundedCornerShape(10.dp),
         color = CommonColor.White,
-        shadowElevation = 4.dp,
+        border = BorderStroke(width = 1.dp, color = GrayColor.C200),
     ) {
-        Column(
-            modifier =
-                Modifier
-                    .padding(horizontal = 20.dp)
-                    .padding(bottom = 15.dp),
-        ) {
+        Column {
             title?.let {
                 AppText(
                     text = title,
@@ -38,6 +34,7 @@ fun SectionCard(
                     color = GrayColor.C500,
                     modifier =
                         Modifier
+                            .padding(start = 15.dp)
                             .padding(top = 15.dp),
                 )
             }

@@ -4,9 +4,11 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
@@ -18,6 +20,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.peto.ramap.designsystem.card.EventCard
+import com.peto.ramap.designsystem.card.SectionCard
 import com.peto.ramap.designsystem.component.LaduckLoadingContent
 import com.peto.ramap.designsystem.component.LoadErrorContent
 import com.peto.ramap.designsystem.component.RamenShopSearchResultList
@@ -26,11 +30,14 @@ import com.peto.ramap.designsystem.dialog.CommonDialog
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.designsystem.toast.ToastManager
 import com.peto.ramap.designsystem.topbar.CommonTopBar
+import com.peto.ramap.domain.model.event.ShopEvent
+import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.extension.noRippleClickable
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.ui.base.ObserveAsEvents
 import com.peto.ramap.ui.common.LoadState
+import com.peto.ramap.ui.component.eventDateText
 import com.peto.ramap.ui.extension.stringResource
 import com.peto.ramap.ui.subscribed.contract.SubscribedShopListIntent
 import com.peto.ramap.ui.subscribed.contract.SubscribedShopListSideEffect
@@ -49,6 +56,7 @@ import ramap.shared.generated.resources.notification_removal_confirm_title
 import ramap.shared.generated.resources.notification_removal_dismiss_action
 import ramap.shared.generated.resources.settings_subscribed_shops_menu
 import ramap.shared.generated.resources.subscribed_shops_empty_title
+import ramap.shared.generated.resources.top_level_tab_event
 
 @Composable
 fun SubscribedShopListRoute(
@@ -90,26 +98,18 @@ fun SubscribedShopListRoute(
                     stringResource(Res.string.data_load_failure_message),
                     onRetry = { viewModel.dispatch(SubscribedShopListIntent.OnRetry) },
                 )
+
             is LoadState.Content -> {
-                if (state.data.isEmpty()) {
+                if (state.data.isEmpty() && uiState.subscribedEvents.isEmpty()) {
                     ShopListEmptyContent(
                         title = stringResource(Res.string.subscribed_shops_empty_title),
                     )
                 } else {
-                    RamenShopSearchResultList(
+                    SubscribedContent(
                         shops = state.data,
-                        onShopClick = {
-                            viewModel.dispatch(
-                                SubscribedShopListIntent.OnRemovalRequested(
-                                    SubscribedRemovalTarget.Shop(it.id),
-                                ),
-                            )
-                        },
-                        categoryLabel = { stringResource(it.stringResource) },
-                        itemModifier = {
-                            Modifier
-                                .padding(horizontal = 24.dp, vertical = 6.dp)
-                                .border(1.dp, GrayColor.C200, RoundedCornerShape(16.dp))
+                        events = uiState.subscribedEvents,
+                        onRemovalRequested = {
+                            viewModel.dispatch(SubscribedShopListIntent.OnRemovalRequested(it))
                         },
                     )
                 }
@@ -132,4 +132,47 @@ fun SubscribedShopListRoute(
         onConfirm = { viewModel.dispatch(SubscribedShopListIntent.OnRemovalConfirmed) },
         onDismiss = { viewModel.dispatch(SubscribedShopListIntent.OnRemovalDismissed) },
     )
+}
+
+@Composable
+private fun SubscribedContent(
+    shops: RamenShops,
+    events: List<ShopEvent>,
+    onRemovalRequested: (SubscribedRemovalTarget) -> Unit,
+) {
+    Column {
+        if (events.isNotEmpty()) {
+            SectionCard(
+                title = stringResource(Res.string.top_level_tab_event),
+                modifier = Modifier.padding(horizontal = 20.dp),
+            ) {
+                events.forEach { event ->
+                    EventCard(
+                        event = event,
+                        dateText = eventDateText(event.startDate, event.endDate),
+                        onClick = {
+                            onRemovalRequested(SubscribedRemovalTarget.EventOverride(event.id))
+                        },
+                        modifier = Modifier.padding(horizontal = 20.dp).padding(vertical = 10.dp),
+                    )
+                }
+            }
+        }
+
+        if (shops.isNotEmpty()) {
+            RamenShopSearchResultList(
+                shops = shops,
+                onShopClick = {
+                    onRemovalRequested(SubscribedRemovalTarget.Shop(it.id))
+                },
+                categoryLabel = { stringResource(it.stringResource) },
+                itemModifier = {
+                    Modifier
+                        .padding(horizontal = 24.dp, vertical = 6.dp)
+                        .border(1.dp, GrayColor.C200, RoundedCornerShape(16.dp))
+                },
+            )
+        }
+        Spacer(modifier = Modifier.height(1.dp))
+    }
 }

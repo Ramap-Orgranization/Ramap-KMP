@@ -1,7 +1,9 @@
 package com.peto.ramap.ui.report
 
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Icon
@@ -77,17 +79,17 @@ private fun PlaceReportContent(
             uiState.currentLocation != null -> stringResource(Res.string.place_report_location_address_failure)
             else -> stringResource(Res.string.place_report_location_empty)
         }
-    SectionCard(title = stringResource(Res.string.settings_report_menu)) {
+    SectionCard {
         AppText(
             stringResource(Res.string.place_report_description),
-            AppTextStyle.B2,
+            AppTextStyle.B1,
             GrayColor.C400,
-            Modifier.padding(top = 8.dp),
+            Modifier.padding(top = 15.dp).padding(horizontal = 20.dp),
         )
         TextField(
             value = uiState.placeUrl,
             onValueChange = { viewModel.dispatch(PlaceReportIntent.OnPlaceUrlChanged(it)) },
-            modifier = Modifier.padding(top = 16.dp).fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().padding(top = 16.dp).padding(horizontal = 20.dp),
             placeholder = {
                 AppText(
                     stringResource(Res.string.place_report_placeholder),
@@ -108,7 +110,7 @@ private fun PlaceReportContent(
         )
         AppButton(
             text = stringResource(Res.string.place_report_action),
-            modifier = Modifier.padding(top = 16.dp).fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(top = 16.dp),
             enabled = uiState.canSubmitPlaceUrl,
             onClick = { viewModel.dispatch(PlaceReportIntent.OnPlaceReportSubmit) },
         )
@@ -116,13 +118,21 @@ private fun PlaceReportContent(
             stringResource(Res.string.place_report_location_section_title),
             AppTextStyle.B1,
             GrayColor.C500,
-            Modifier.padding(top = 20.dp),
+            Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(top = 20.dp),
         )
         Row(verticalAlignment = Alignment.CenterVertically) {
-            AppText(currentAddress, AppTextStyle.B2, GrayColor.C400, Modifier.weight(1f))
+            AppText(
+                currentAddress,
+                AppTextStyle.B2,
+                GrayColor.C400,
+                Modifier.weight(1f).padding(horizontal = 20.dp),
+            )
             IconButton(
                 enabled = uiState.currentLocation != null && !uiState.isAddressRefreshing,
-                modifier = Modifier.semantics { contentDescription = "refresh" },
+                modifier =
+                    Modifier
+                        .padding(horizontal = 20.dp)
+                        .semantics { contentDescription = "refresh" },
                 onClick = { viewModel.dispatch(PlaceReportIntent.OnCurrentAddressRefresh) },
             ) {
                 Icon(
@@ -133,9 +143,11 @@ private fun PlaceReportContent(
         }
         AppButton(
             text = stringResource(Res.string.place_report_action),
-            modifier = Modifier.padding(top = 16.dp).fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(top = 16.dp),
             enabled = uiState.currentLocation != null,
             onClick = { viewModel.dispatch(PlaceReportIntent.OnCurrentLocationReportSubmit) },
         )
+
+        Spacer(modifier = Modifier.height(10.dp))
     }
 }

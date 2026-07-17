@@ -5,6 +5,9 @@ import com.peto.ramap.core.result.RamapError
 import com.peto.ramap.coroutinesTest
 import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
+import com.peto.ramap.domain.model.event.ShopEvent
+import com.peto.ramap.domain.model.event.ShopEventType
+import com.peto.ramap.domain.model.notification.EventNotificationOverride
 import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.fake.FakeNotificationSettingsRepository
 import com.peto.ramap.fake.FakeRamenShopRepository
@@ -39,6 +42,59 @@ class SubscribedShopListViewModelTest {
 
             assertEquals(
                 LoadState.Content(RamenShops(listOf(shop))),
+                viewModel.uiState.value.shopsState,
+            )
+        }
+
+    @Test
+    fun `활성화된 이벤트 알림 설정은 활성 이벤트를 로드한다`() =
+        coroutinesTest {
+            val event = shopEventFixture("enabled-event")
+            val viewModel =
+                SubscribedShopListViewModel(
+                    notificationRepository =
+                        FakeNotificationSettingsRepository(
+                            eventOverrides =
+                                mutableListOf(EventNotificationOverride(event.id, true)),
+                        ),
+                    ramenShopRepository = FakeRamenShopRepository(activeEvents = listOf(event)),
+                )
+
+            runCurrent()
+
+            assertEquals(listOf(event), viewModel.uiState.value.subscribedEvents)
+            assertEquals(
+                LoadState.Content(RamenShops(emptyMap())),
+                viewModel.uiState.value.shopsState,
+            )
+        }
+
+    @Test
+    fun `비활성화되거나 존재하지 않는 이벤트 알림 설정은 목록에서 제외한다`() =
+        coroutinesTest {
+            val disabledEvent = shopEventFixture("disabled-event")
+            val viewModel =
+                SubscribedShopListViewModel(
+                    notificationRepository =
+                        FakeNotificationSettingsRepository(
+                            eventOverrides =
+                                mutableListOf(
+                                    EventNotificationOverride(disabledEvent.id, false),
+                                    EventNotificationOverride("missing-event", true),
+                                ),
+                        ),
+                    ramenShopRepository =
+                        FakeRamenShopRepository(activeEvents = listOf(disabledEvent)),
+                )
+
+            runCurrent()
+
+            assertTrue(
+                viewModel.uiState.value.subscribedEvents
+                    .isEmpty(),
+            )
+            assertEquals(
+                LoadState.Content(RamenShops(emptyMap())),
                 viewModel.uiState.value.shopsState,
             )
         }
@@ -110,4 +166,141 @@ class SubscribedShopListViewModelTest {
                 )
             }
         }
+
+    @Test
+    fun `이벤트 알림 설정 해제를 확인하면 목록과 저장소에서 제거한다`() =
+        coroutinesTest {
+            val event = shopEventFixture("subscribed-event")
+            val repository =
+                FakeNotificationSettingsRepository(
+                    eventOverrides = mutableListOf(EventNotificationOverride(event.id, true)),
+                )
+            val viewModel =
+                SubscribedShopListViewModel(
+                    notificationRepository = repository,
+                    ramenShopRepository = FakeRamenShopRepository(activeEvents = listOf(event)),
+                )
+            runCurrent()
+
+            viewModel.dispatch(
+                SubscribedShopListIntent.OnRemovalRequested(
+                    SubscribedRemovalTarget.EventOverride(event.id),
+                ),
+            )
+            viewModel.dispatch(SubscribedShopListIntent.OnRemovalConfirmed)
+            runCurrent()
+
+            assertTrue(
+                viewModel.uiState.value.subscribedEvents
+                    .isEmpty(),
+            )
+            assertEquals(null, viewModel.uiState.value.pendingRemoval)
+            assertTrue(repository.eventOverrides.isEmpty())
+            assertEquals(listOf(event.id), repository.clearedEventNotificationIds)
+        }
+
+    @Test
+    fun `이벤트 알림 설정 해제에 실패하면 이벤트를 유지하고 에러 토스트를 표시한다`() =
+        coroutinesTest {
+            val event = shopEventFixture("subscribed-event")
+            val repository =
+                FakeNotificationSettingsRepository(
+                    eventOverrides = mutableListOf(EventNotificationOverride(event.id, true)),
+                ).apply {
+                    clearEventNotificationOverrideError = failure()
+                }
+            val viewModel =
+                SubscribedShopListViewModel(
+                    notificationRepository = repository,
+                    ramenShopRepository = FakeRamenShopRepository(activeEvents = listOf(event)),
+                )
+            runCurrent()
+
+            viewModel.sideEffect.test {
+                viewModel.dispatch(
+                    SubscribedShopListIntent.OnRemovalRequested(
+                        SubscribedRemovalTarget.EventOverride(event.id),
+                    ),
+                )
+                viewModel.dispatch(SubscribedShopListIntent.OnRemovalConfirmed)
+
+                assertEquals(
+                    SubscribedShopListSideEffect.ShowToast(
+                        ToastData(
+                            Res.string.personalization_update_failure_message,
+                            ToastType.ERROR,
+                        ),
+                    ),
+                    awaitItem(),
+                )
+                assertEquals(listOf(event), viewModel.uiState.value.subscribedEvents)
+                assertEquals(null, viewModel.uiState.value.pendingRemoval)
+                assertEquals(listOf(event.id), repository.clearedEventNotificationIds)
+            }
+        }
+
+    @Test
+    fun `이벤트 알림 설정 조회에 실패하면 오류 상태를 표시한다`() =
+        coroutinesTest {
+            val repository =
+                FakeNotificationSettingsRepository().apply {
+                    fetchEventOverridesError = failure()
+                }
+            val viewModel =
+                SubscribedShopListViewModel(
+                    notificationRepository = repository,
+                    ramenShopRepository = FakeRamenShopRepository(),
+                )
+
+            runCurrent()
+
+            assertEquals(LoadState.Error, viewModel.uiState.value.shopsState)
+        }
+
+    @Test
+    fun `이벤트 상세 조회에 실패하면 오류 상태를 표시한다`() =
+        coroutinesTest {
+            val eventId = "failed-event"
+            val viewModel =
+                SubscribedShopListViewModel(
+                    notificationRepository =
+                        FakeNotificationSettingsRepository(
+                            eventOverrides =
+                                mutableListOf(EventNotificationOverride(eventId, true)),
+                        ),
+                    ramenShopRepository =
+                        FakeRamenShopRepository(activeEventError = failure()),
+                )
+
+            runCurrent()
+
+            assertEquals(LoadState.Error, viewModel.uiState.value.shopsState)
+            assertTrue(
+                viewModel.uiState.value.subscribedEvents
+                    .isEmpty(),
+            )
+        }
+
+    private fun failure(): RamapError = RamapError.Unknown(IllegalStateException("failure"))
+
+    private fun shopEventFixture(id: String) =
+        ShopEvent(
+            id = id,
+            type = ShopEventType.POPUP,
+            title = "팝업",
+            description = "설명",
+            startDate = "2099-07-15",
+            endDate = "2099-07-16",
+            sourceUrl = "https://instagram.com/event",
+            isToday = false,
+            isVenue = true,
+            venueShopId = "shop",
+            venueShopName = "매장",
+            venueAddress = "서울",
+            collaboratorShopId = null,
+            collaboratorName = null,
+            collaboratorInstagramUrl = null,
+            waitingMethod = null,
+            waitingUrl = null,
+        )
 }

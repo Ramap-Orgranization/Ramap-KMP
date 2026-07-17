@@ -1,7 +1,9 @@
 package com.peto.ramap.ui.account
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -56,7 +58,11 @@ fun AccountSettingsRoute(
             if (uiState.isLoggedIn) {
                 AppButton(
                     text = stringResource(Res.string.logout_menu),
-                    modifier = Modifier.padding(top = 16.dp).fillMaxWidth(),
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(top = 16.dp)
+                            .padding(horizontal = 20.dp),
                     backgroundColor = CommonColor.White,
                     textColor = GrayColor.C500,
                     border = BorderStroke(1.dp, GrayColor.C200),
@@ -64,7 +70,11 @@ fun AccountSettingsRoute(
                 )
                 AppButton(
                     text = stringResource(Res.string.account_delete_menu),
-                    modifier = Modifier.padding(top = 12.dp).fillMaxWidth(),
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(top = 12.dp)
+                            .padding(horizontal = 20.dp),
                     backgroundColor = CommonColor.White,
                     textColor = GrayColor.C500,
                     border = BorderStroke(1.dp, GrayColor.C200),
@@ -73,10 +83,16 @@ fun AccountSettingsRoute(
             } else {
                 LoginButton(
                     type = LoginType.KAKAO,
-                    modifier = Modifier.padding(top = 16.dp).fillMaxWidth(),
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 20.dp)
+                            .padding(top = 16.dp),
                     onClickLogin = { viewModel.dispatch(AccountIntent.OnKakaoLoginClick) },
                 )
             }
+
+            Spacer(modifier = Modifier.height(15.dp))
         }
     }
     CommonDialog(

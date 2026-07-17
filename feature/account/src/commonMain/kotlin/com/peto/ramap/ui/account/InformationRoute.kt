@@ -2,6 +2,7 @@ package com.peto.ramap.ui.account
 
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -27,7 +28,7 @@ fun InformationRoute(
     versionProvider: AppVersionProvider = koinInject(),
 ) {
     SettingsPage(Res.string.settings_information_menu, onBack) {
-        SectionCard(title = stringResource(Res.string.settings_information_menu)) {
+        SectionCard {
             AppText(
                 text = stringResource(Res.string.privacy_policy_menu),
                 style = AppTextStyle.B1,
@@ -38,14 +39,15 @@ fun InformationRoute(
                         .noRippleClickable(
                             enabled = PRIVACY_POLICY_URL.isNotBlank(),
                             onClick = { ExternalUriOpener.open(PRIVACY_POLICY_URL) },
-                        ).padding(vertical = 16.dp),
+                        ).padding(horizontal = 20.dp, vertical = 16.dp),
             )
 
+            HorizontalDivider(thickness = 1.dp, color = GrayColor.C200)
             AppText(
                 text = stringResource(Res.string.app_version_label, versionProvider.versionName),
                 style = AppTextStyle.B1,
                 color = GrayColor.C500,
-                modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 16.dp),
             )
         }
     }

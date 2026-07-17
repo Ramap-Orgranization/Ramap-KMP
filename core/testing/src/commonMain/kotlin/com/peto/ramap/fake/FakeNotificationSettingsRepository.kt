@@ -20,10 +20,12 @@ class FakeNotificationSettingsRepository(
     val shopNotificationUpdates = mutableListOf<Pair<String, Boolean>>()
     val eventNotificationUpdates = mutableListOf<Pair<String, Boolean>>()
     val requestedEventNotificationIds = mutableListOf<String>()
+    val clearedEventNotificationIds = mutableListOf<String>()
     var fetchEnabledError: RamapError? = null
     var fetchShopIdsError: RamapError? = null
     var fetchEventOverridesError: RamapError? = null
     var shopNotificationError: RamapError? = null
+    var clearEventNotificationOverrideError: RamapError? = null
 
     override suspend fun fetchEventNotificationsEnabled(): RamapResult<Boolean> =
         fetchEnabledError?.let { RamapResult.Error(it) } ?: RamapResult.Success(enabled)
@@ -70,6 +72,8 @@ class FakeNotificationSettingsRepository(
         fetchEventOverridesError?.let { RamapResult.Error(it) } ?: RamapResult.Success(eventOverrides.toList())
 
     override suspend fun clearEventNotificationOverride(eventId: String): RamapResult<Unit> {
+        clearedEventNotificationIds += eventId
+        clearEventNotificationOverrideError?.let { return RamapResult.Error(it) }
         eventOverrides.removeAll { it.eventId == eventId }
         return RamapResult.Success(Unit)
     }

@@ -49,7 +49,6 @@ import org.koin.compose.viewmodel.koinViewModel
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.data_load_failure_message
 import ramap.shared.generated.resources.event_notification_master_action
-import ramap.shared.generated.resources.event_notification_settings_section
 import ramap.shared.generated.resources.ic_arrow3_left
 import ramap.shared.generated.resources.laduck_error_confused
 import ramap.shared.generated.resources.location_permission_settings_action
@@ -74,7 +73,11 @@ fun NotificationSettingsRoute(
             permissionState = permissionState.onResume(isNotificationPermissionGranted())
             if (permissionState.shouldEnableServerNotifications) {
                 permissionState = permissionState.consumePendingEnable()
-                viewModel.dispatch(NotificationSettingsIntent.OnEventNotificationsEnabledChanged(true))
+                viewModel.dispatch(
+                    NotificationSettingsIntent.OnEventNotificationsEnabledChanged(
+                        true,
+                    ),
+                )
             }
         }
     }
@@ -86,19 +89,31 @@ fun NotificationSettingsRoute(
         onEnabledChanged = { enabled ->
             if (!enabled) {
                 permissionState = permissionState.onDisabled()
-                viewModel.dispatch(NotificationSettingsIntent.OnEventNotificationsEnabledChanged(false))
+                viewModel.dispatch(
+                    NotificationSettingsIntent.OnEventNotificationsEnabledChanged(
+                        false,
+                    ),
+                )
             } else {
                 scope.launch {
                     if (requestNotificationPermission()) {
                         permissionState = permissionState.onEnableRequestResult(true)
-                        viewModel.dispatch(NotificationSettingsIntent.OnEventNotificationsEnabledChanged(true))
+                        viewModel.dispatch(
+                            NotificationSettingsIntent.OnEventNotificationsEnabledChanged(
+                                true,
+                            ),
+                        )
                     } else {
                         permissionState = permissionState.onEnableRequestResult(false)
                         toastManager.show(
                             ToastData(
                                 Res.string.notification_permission_enable_message,
                                 ToastType.DEFAULT,
-                                action = ToastAction(Res.string.location_permission_settings_action, appSettingsOpener::open),
+                                action =
+                                    ToastAction(
+                                        Res.string.location_permission_settings_action,
+                                        appSettingsOpener::open,
+                                    ),
                             ),
                         )
                     }
@@ -142,19 +157,23 @@ private fun NotificationSettingsScreen(
                     stringResource(Res.string.data_load_failure_message),
                     onRetry = onRetry,
                 )
+
             is LoadState.Content ->
                 SectionCard(
-                    title = stringResource(Res.string.event_notification_settings_section),
                     modifier = Modifier.padding(horizontal = 20.dp),
                 ) {
                     Row(
-                        modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 20.dp)
+                                .padding(vertical = 10.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         AppText(
                             stringResource(Res.string.event_notification_master_action),
-                            AppTextStyle.B1,
+                            AppTextStyle.T2,
                             GrayColor.C500,
                         )
                         Switch(checked = enabled, onCheckedChange = onEnabledChanged)
