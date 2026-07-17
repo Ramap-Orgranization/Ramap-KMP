@@ -21,7 +21,7 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
         withCompletionHandler completionHandler: @escaping () -> Void
     ) {
         let deepLink = response.notification.request.content.userInfo["deep_link"] as? String
-        NotificationLaunchDispatcher.shared.dispatch(deepLink: deepLink)
+        NotificationLaunchBridgeKt.dispatchNotificationDeepLink(deepLink: deepLink)
         completionHandler()
     }
 }
