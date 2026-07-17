@@ -10,6 +10,7 @@ import com.peto.ramap.ui.base.State
 import com.peto.ramap.ui.main.map.config.DefaultMapConfig
 import com.peto.ramap.ui.main.map.model.InitialLocationFocus
 import com.peto.ramap.ui.main.map.model.InitialMapLoadState
+import com.peto.ramap.ui.main.map.model.MapCameraPosition
 import com.peto.ramap.ui.main.map.model.MapPersonalization
 import com.peto.ramap.ui.main.map.model.SearchResultGuide
 import com.peto.ramap.ui.main.map.model.SearchUiState
@@ -44,6 +45,7 @@ data class MapUiState(
      * 현재 지도 카메라가 보고 있는 영역.
      */
     val bounds: MapBounds = DefaultMapConfig.bounds,
+    val cameraPosition: MapCameraPosition? = null,
     /**
      * 마지막으로 확인된 사용자 위치.
      */

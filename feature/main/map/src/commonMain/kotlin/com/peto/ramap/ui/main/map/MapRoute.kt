@@ -20,6 +20,7 @@ import com.peto.ramap.ui.base.ObserveAsEvents
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnBookmarkToggled
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnBookmarkedShopsToggled
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnBoundsChanged
+import com.peto.ramap.ui.main.map.contract.MapIntent.OnCameraPositionChanged
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnCategoryFilterToggled
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnHiddenToggled
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnInitialLocationFocusConsumed
@@ -79,6 +80,7 @@ fun MapRoute(
         uiState = uiState,
         isBackEnabled = isBackEnabled,
         onBoundsChanged = { viewModel.dispatch(OnBoundsChanged(it)) },
+        onCameraPositionChanged = { viewModel.dispatch(OnCameraPositionChanged(it)) },
         onMyLocationChanged = { viewModel.dispatch(OnMyLocationChanged(it)) },
         onLocationPermissionBlocked = { viewModel.dispatch(OnLocationPermissionBlocked) },
         onShopSelected = { shop, shouldFocus -> viewModel.dispatch(OnShopSelected(shop, shouldFocus)) },

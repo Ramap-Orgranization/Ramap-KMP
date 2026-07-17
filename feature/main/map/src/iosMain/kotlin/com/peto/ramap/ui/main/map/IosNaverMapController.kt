@@ -21,6 +21,7 @@ import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.ui.main.ShopLeafMarkerUpdater
 import com.peto.ramap.ui.main.map.config.DefaultMapConfig
 import com.peto.ramap.ui.main.map.config.MapInteractionConfig
+import com.peto.ramap.ui.main.map.model.MapCameraPosition
 import kotlinx.cinterop.BetaInteropApi
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.readValue
@@ -37,6 +38,7 @@ private val mapLogger = Logger.withTag("RamapIosMap")
 internal class IosNaverMapController(
     private val onMapMoveStarted: () -> Unit,
     private val onBoundsChanged: (MapBounds) -> Unit,
+    private val onCameraPositionChanged: (MapCameraPosition) -> Unit,
     private val onShopClick: (RamenShop) -> Unit,
     private val onMyLocationChanged: (Location) -> Unit,
 ) : NSObject(),
@@ -55,6 +57,7 @@ internal class IosNaverMapController(
     private var lastShopsKey = ""
     private var lastFocusKey = ""
     private var lastCurrentLocationFocusKey = 0L
+    private var hasRestoredCameraPosition = false
     private var currentLocation: Location? = null
     private var isCameraMoving = false
     private var shopKeys = emptyList<ShopClusteringKey>()
@@ -96,6 +99,17 @@ internal class IosNaverMapController(
         lastShopsKey = key
         shopKeys = shops.values.map(::ShopClusteringKey)
         renderShopKeys()
+    }
+
+    fun restoreCameraPosition(position: MapCameraPosition?) {
+        if (position == null || hasRestoredCameraPosition) return
+        hasRestoredCameraPosition = true
+        mapView.moveCamera(
+            NMFCameraUpdate.cameraUpdateWithScrollTo(
+                NMGLatLng.latLngWithLat(position.center.lat, position.center.lng),
+                zoomTo = position.zoom,
+            ),
+        )
     }
 
     fun updateFocus(
@@ -187,6 +201,17 @@ internal class IosNaverMapController(
                 maxLat = bounds.northEastLat(),
                 minLng = bounds.southWestLng(),
                 maxLng = bounds.northEastLng(),
+            ),
+        )
+        val cameraPosition = mapView.cameraPosition
+        onCameraPositionChanged(
+            MapCameraPosition(
+                center =
+                    Location(
+                        lat = cameraPosition.target.lat(),
+                        lng = cameraPosition.target.lng(),
+                    ),
+                zoom = cameraPosition.zoom,
             ),
         )
     }

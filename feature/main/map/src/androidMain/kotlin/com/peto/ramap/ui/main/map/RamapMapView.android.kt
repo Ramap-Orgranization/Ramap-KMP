@@ -40,6 +40,7 @@ import com.peto.ramap.ui.main.map.component.MapCircleIconButton
 import com.peto.ramap.ui.main.map.config.DefaultMapConfig
 import com.peto.ramap.ui.main.map.config.MapInteractionConfig
 import com.peto.ramap.ui.main.map.config.MarkerConfig
+import com.peto.ramap.ui.main.map.model.MapCameraPosition
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
@@ -57,8 +58,10 @@ actual fun RamapMapView(
     initialFocusRequestKey: Long,
     shouldBootstrapInitialLocationFocus: Boolean,
     selectedShopId: String?,
+    cameraPosition: MapCameraPosition?,
     onMapMoveStarted: () -> Unit,
     onBoundsChanged: (MapBounds) -> Unit,
+    onCameraPositionChanged: (MapCameraPosition) -> Unit,
     onInitialFocusConsumed: () -> Unit,
     onMyLocationChanged: (Location) -> Unit,
     onShopClick: (RamenShop) -> Unit,
@@ -205,11 +208,15 @@ actual fun RamapMapView(
                         map.addOnCameraIdleListener {
                             isCameraMoving = false
                             notifyBounds(map, onBoundsChanged)
+                            notifyCameraPosition(map, onCameraPositionChanged)
                         }
+                        val initialCenter =
+                            cameraPosition?.center
+                                ?: Location(DefaultMapConfig.LATITUDE, DefaultMapConfig.LONGITUDE)
                         map.moveCamera(
                             CameraUpdate.scrollAndZoomTo(
-                                LatLng(DefaultMapConfig.LATITUDE, DefaultMapConfig.LONGITUDE),
-                                DefaultMapConfig.ZOOM_LEVEL.toDouble(),
+                                LatLng(initialCenter.lat, initialCenter.lng),
+                                cameraPosition?.zoom ?: DefaultMapConfig.ZOOM_LEVEL.toDouble(),
                             ),
                         )
                         naverMap = map
@@ -241,6 +248,19 @@ actual fun RamapMapView(
     DisposableEffect(clusterRenderer) {
         onDispose { clusterRenderer.dispose() }
     }
+}
+
+private fun notifyCameraPosition(
+    naverMap: NaverMap,
+    onCameraPositionChanged: (MapCameraPosition) -> Unit,
+) {
+    val cameraPosition = naverMap.cameraPosition
+    onCameraPositionChanged(
+        MapCameraPosition(
+            center = Location(cameraPosition.target.latitude, cameraPosition.target.longitude),
+            zoom = cameraPosition.zoom,
+        ),
+    )
 }
 
 @Composable

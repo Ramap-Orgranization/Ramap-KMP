@@ -33,6 +33,7 @@ import com.peto.ramap.ui.main.map.contract.MapIntent.OnAccountDeleteConfirmed
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnBookmarkToggled
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnBookmarkedShopsToggled
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnBoundsChanged
+import com.peto.ramap.ui.main.map.contract.MapIntent.OnCameraPositionChanged
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnCategoryFilterToggled
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnCurrentLocationReportSubmitted
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnFilterCleared
@@ -57,6 +58,7 @@ import com.peto.ramap.ui.main.map.contract.MapSideEffect.ShowLoginGuide
 import com.peto.ramap.ui.main.map.contract.MapSideEffect.ShowToast
 import com.peto.ramap.ui.main.map.contract.MapUiState
 import com.peto.ramap.ui.main.map.model.InitialMapLoadState
+import com.peto.ramap.ui.main.map.model.MapCameraPosition
 import com.peto.ramap.ui.main.map.model.MapPersonalization
 import com.peto.ramap.ui.main.map.model.SearchUiState
 import com.peto.ramap.ui.main.map.model.ShopDetail
@@ -119,6 +121,7 @@ class MapViewModel(
     override suspend fun handleIntent(intent: MapIntent) {
         when (intent) {
             is OnBoundsChanged -> scheduleRamenShopsLoad(intent.bounds)
+            is OnCameraPositionChanged -> updateCameraPosition(intent.position)
             is OnMyLocationChanged -> updateMyLocation(intent.location)
             OnInitialLocationFocusConsumed -> consumeInitialLocationFocus()
             is OnShopSelected -> selectShop(intent.shop, intent.shouldFocus)
@@ -237,6 +240,15 @@ class MapViewModel(
 
     private fun consumeInitialLocationFocus() {
         reduce { copy(initialLocationFocus = initialLocationFocus.consume()) }
+    }
+
+    private fun updateCameraPosition(position: MapCameraPosition) {
+        reduce {
+            copy(
+                cameraPosition = position,
+                shouldFocusSelectedShop = false,
+            )
+        }
     }
 
     private fun dismissSearchResults() {

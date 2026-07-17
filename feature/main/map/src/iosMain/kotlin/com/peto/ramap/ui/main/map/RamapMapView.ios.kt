@@ -18,6 +18,7 @@ import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.platform.permission.PermissionStatus
 import com.peto.ramap.platform.permission.rememberLocationPermissionGenerator
+import com.peto.ramap.ui.main.map.model.MapCameraPosition
 import kotlinx.cinterop.ExperimentalForeignApi
 
 @OptIn(ExperimentalComposeUiApi::class)
@@ -31,8 +32,10 @@ actual fun RamapMapView(
     initialFocusRequestKey: Long,
     shouldBootstrapInitialLocationFocus: Boolean,
     selectedShopId: String?,
+    cameraPosition: MapCameraPosition?,
     onMapMoveStarted: () -> Unit,
     onBoundsChanged: (MapBounds) -> Unit,
+    onCameraPositionChanged: (MapCameraPosition) -> Unit,
     onInitialFocusConsumed: () -> Unit,
     onMyLocationChanged: (Location) -> Unit,
     onShopClick: (RamenShop) -> Unit,
@@ -44,6 +47,7 @@ actual fun RamapMapView(
             IosNaverMapController(
                 onMapMoveStarted = onMapMoveStarted,
                 onBoundsChanged = onBoundsChanged,
+                onCameraPositionChanged = onCameraPositionChanged,
                 onShopClick = onShopClick,
                 onMyLocationChanged = onMyLocationChanged,
             )
@@ -65,6 +69,7 @@ actual fun RamapMapView(
         modifier = modifier.onSizeChanged { controller.viewportHeight = it.height },
         factory = { controller.view },
         update = {
+            controller.restoreCameraPosition(cameraPosition)
             controller.updateShops(shops)
             controller.updateInitialLocationFocus(
                 location = initialFocusLocation,
