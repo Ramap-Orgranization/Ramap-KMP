@@ -1,74 +1,17 @@
-import com.codingfeline.buildkonfig.compiler.FieldSpec.Type.STRING
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-import java.util.Properties
-
-val localProperties =
-    Properties().apply {
-        val localPropertiesFile = rootProject.file("local.properties")
-        if (localPropertiesFile.exists()) {
-            localPropertiesFile.inputStream().use(::load)
-        }
-    }
-
-fun secretProperty(
-    localName: String,
-    envName: String,
-): String =
-    providers
-        .gradleProperty(localName)
-        .orElse(providers.environmentVariable(envName))
-        .orNull
-        ?: localProperties.getProperty(localName).orEmpty()
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.androidMultiplatformLibrary)
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
-    alias(libs.plugins.kotlinxSerialization)
-    alias(libs.plugins.buildkonfig)
+    id("ramap.serialization")
     kotlin("native.cocoapods")
 }
 
-buildkonfig {
-    packageName = "com.peto.ramap.shared"
-    objectName = "RamapConfig"
-
-    defaultConfigs {
-        buildConfigField(
-            STRING,
-            "SUPABASE_URL",
-            secretProperty(
-                localName = "supabase.url",
-                envName = "SUPABASE_URL",
-            ),
-        )
-        buildConfigField(
-            STRING,
-            "SUPABASE_ANON_KEY",
-            secretProperty(
-                localName = "supabase.anon_key",
-                envName = "SUPABASE_ANON_KEY",
-            ),
-        )
-        buildConfigField(
-            STRING,
-            "KAKAO_NATIVE_APP_KEY",
-            secretProperty(
-                localName = "kakao_native_app_key",
-                envName = "KAKAO_NATIVE_APP_KEY",
-            ),
-        )
-        buildConfigField(
-            STRING,
-            "NAVER_MAP_NCP_KEY_ID",
-            secretProperty(
-                localName = "naver_map_ncp_key_id",
-                envName = "NAVER_MAP_NCP_KEY_ID",
-            ),
-        )
-        buildConfigField(STRING, "NAVER_CLIENT_SECRET", secretProperty("naver_client_secret", "NAVER_CLIENT_SECRET"))
-    }
+compose.resources {
+    generateResClass = never
+    packageOfResClass = "com.peto.ramap.shared.resources"
 }
 
 kotlin {
@@ -81,6 +24,7 @@ kotlin {
         framework {
             baseName = "Shared"
             isStatic = true
+            export(projects.core.network)
         }
 
         pod("NMapsMap")
@@ -93,6 +37,7 @@ kotlin {
         iosTarget.binaries.framework {
             baseName = "Shared"
             isStatic = true
+            export(projects.core.network)
         }
     }
 
@@ -126,13 +71,22 @@ kotlin {
             implementation(libs.ktor.client.okhttp)
             implementation(libs.naver.map)
             implementation(libs.play.services.location)
-            implementation(libs.kakao.user)
             implementation(libs.kotlinx.coroutines.android)
         }
         iosMain.dependencies {
             implementation(libs.ktor.client.darwin)
         }
         commonMain.dependencies {
+            implementation(projects.core.designsystem)
+            api(projects.core.network)
+            implementation(projects.core.platform)
+            implementation(projects.core.notification)
+            implementation(projects.core.navigation)
+            implementation(projects.domain)
+            implementation(projects.data)
+            implementation(projects.feature.main)
+            implementation(projects.feature.hidden)
+            implementation(projects.feature.notification)
             implementation(libs.compose.runtime)
             implementation(libs.compose.foundation)
             implementation(libs.compose.material3)
@@ -143,8 +97,6 @@ kotlin {
             implementation(libs.coil.network.ktor3)
             implementation(libs.androidx.lifecycle.viewmodelCompose)
             implementation(libs.androidx.lifecycle.runtimeCompose)
-            implementation(libs.androidx.navigation3.runtime)
-            implementation(libs.navigationevent.compose)
 
             // Supabase
             implementation(libs.supabase.postgrest)
@@ -155,6 +107,7 @@ kotlin {
             implementation(libs.ktor.client.content.negotiation)
             implementation(libs.ktor.serialization.kotlinx.json)
             implementation(libs.kotlinx.serialization.json)
+            implementation(libs.kotlinx.coroutines.core)
 
             // Koin
             implementation(project.dependencies.platform(libs.koin.bom))

@@ -81,7 +81,7 @@ class DefaultNotificationSettingsRepository(
             )
         }
 
-    override suspend fun fetchEventOverrides(): RamapResult<List<com.peto.ramap.domain.model.EventNotificationOverride>> =
+    override suspend fun fetchEventOverrides(): RamapResult<List<com.peto.ramap.domain.model.notification.EventNotificationOverride>> =
         invokeRequest {
             client
                 .from(EVENT_OVERRIDE_TABLE)

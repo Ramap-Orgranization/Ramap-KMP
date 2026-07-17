@@ -1,6 +1,6 @@
 package com.peto.ramap.data.model
 
-import com.peto.ramap.domain.model.UnregisteredPlaceReport
+import com.peto.ramap.domain.model.report.UnregisteredPlaceReport
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 

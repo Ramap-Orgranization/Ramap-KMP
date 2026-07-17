@@ -1,7 +1,7 @@
 package com.peto.ramap.data.model
 
-import com.peto.ramap.domain.model.ShopWaitingSystem
-import com.peto.ramap.domain.model.WaitingProvider
+import com.peto.ramap.domain.model.shop.ShopWaitingSystem
+import com.peto.ramap.domain.model.shop.WaitingProvider
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 

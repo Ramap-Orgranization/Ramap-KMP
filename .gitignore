@@ -31,3 +31,4 @@ AGENTS.md
 **/__pycache__/
 *.pyc
 /supabase
+/feature/main/map/map.podspec

@@ -21,7 +21,7 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
         withCompletionHandler completionHandler: @escaping () -> Void
     ) {
         let deepLink = response.notification.request.content.userInfo["deep_link"] as? String
-        NotificationLaunchDispatcher.shared.dispatch(deepLink: deepLink)
+        NotificationLaunchBridgeKt.dispatchNotificationDeepLink(deepLink: deepLink)
         completionHandler()
     }
 }
@@ -32,8 +32,8 @@ struct iOSApp: App {
 
     init() {
         UnhandledExceptionLoggerKt.installUnhandledExceptionLogger()
-        NMFAuthManager.shared().ncpKeyId = RamapAppConfig.shared.naverMapNcpKeyId
-        KakaoSDK.initSDK(appKey: RamapAppConfig.shared.kakaoNativeAppKey)
+        NMFAuthManager.shared().ncpKeyId = RamapSecrets.shared.naverMapNcpKeyId
+        KakaoSDK.initSDK(appKey: RamapSecrets.shared.kakaoNativeAppKey)
         KoinInitializerKt.doInitKoin(appDeclaration: { _ in })
         NotificationCenter.default.addObserver(
             forName: Notification.Name("NotificationPermissionGranted"),
@@ -67,6 +67,10 @@ struct iOSApp: App {
         WindowGroup {
             ContentView()
                 .onOpenURL { url in
+                    if AuthApi.isKakaoTalkLoginUrl(url) {
+                        _ = AuthController.handleOpenUrl(url: url)
+                        return
+                    }
                     AuthDeepLinkHandlerKt.handleAuthDeepLink(url: url)
                 }
         }

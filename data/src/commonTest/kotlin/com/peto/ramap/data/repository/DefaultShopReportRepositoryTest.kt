@@ -3,9 +3,9 @@ package com.peto.ramap.data.repository
 import com.peto.ramap.core.result.getOrThrow
 import com.peto.ramap.data.model.ShopInformationReportRequest
 import com.peto.ramap.data.model.UnregisteredPlaceReportRequest
-import com.peto.ramap.domain.model.ShopInformationField
-import com.peto.ramap.domain.model.ShopInformationReport
-import com.peto.ramap.domain.model.UnregisteredPlaceReport
+import com.peto.ramap.domain.model.report.ShopInformationField
+import com.peto.ramap.domain.model.report.ShopInformationReport
+import com.peto.ramap.domain.model.report.UnregisteredPlaceReport
 import com.peto.ramap.fake.FakeShopReportDataSource
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test

@@ -4,8 +4,8 @@ import com.peto.ramap.data.datasource.shop.RamenShopDataSource
 import com.peto.ramap.data.model.RamenShopResponse
 import com.peto.ramap.data.model.ShopEventParticipantResponse
 import com.peto.ramap.data.model.ShopEventResponse
-import com.peto.ramap.domain.model.MapBounds
-import com.peto.ramap.domain.model.SearchQuery
+import com.peto.ramap.domain.model.shop.MapBounds
+import com.peto.ramap.domain.model.shop.SearchQuery
 
 class FakeRamenShopDataSource(
     private val responses: List<RamenShopResponse> = emptyList(),

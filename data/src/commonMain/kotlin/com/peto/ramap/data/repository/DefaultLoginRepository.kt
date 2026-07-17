@@ -2,7 +2,7 @@ package com.peto.ramap.data.repository
 
 import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.data.auth.loginWithKakao
-import com.peto.ramap.domain.model.LoginSessionState
+import com.peto.ramap.domain.model.auth.LoginSessionState
 import com.peto.ramap.domain.repository.LoginRepository
 import com.peto.ramap.network.execute.invokeRequest
 import io.github.jan.supabase.SupabaseClient

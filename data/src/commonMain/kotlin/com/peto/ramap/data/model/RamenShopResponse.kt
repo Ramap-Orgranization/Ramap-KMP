@@ -1,9 +1,9 @@
 package com.peto.ramap.data.model
 
-import com.peto.ramap.domain.model.Category
-import com.peto.ramap.domain.model.Location
-import com.peto.ramap.domain.model.MenuCategories
-import com.peto.ramap.domain.model.RamenShop
+import com.peto.ramap.domain.model.shop.Category
+import com.peto.ramap.domain.model.shop.Location
+import com.peto.ramap.domain.model.shop.MenuCategories
+import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.network.config.RamapSecrets
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable

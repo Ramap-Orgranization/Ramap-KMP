@@ -12,13 +12,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import com.peto.ramap.designsystem.component.LaduckLoadingContent
 import com.peto.ramap.designsystem.toast.ToastHost
 import com.peto.ramap.designsystem.toast.ToastManager
 import com.peto.ramap.domain.repository.LoginRepository
-import com.peto.ramap.navigation.AppRoute
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.RamapTheme
-import com.peto.ramap.ui.main.component.LaduckLoadingContent
 import kotlinx.coroutines.CancellationException
 import org.koin.compose.koinInject
 
