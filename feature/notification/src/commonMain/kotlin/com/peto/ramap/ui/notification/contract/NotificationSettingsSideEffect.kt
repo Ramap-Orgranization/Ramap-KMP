@@ -1,4 +1,4 @@
-package com.peto.ramap.ui.settings.notification.contract
+package com.peto.ramap.ui.notification.contract
 
 import com.peto.ramap.ui.base.SideEffect
 

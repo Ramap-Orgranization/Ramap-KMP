@@ -1,6 +1,6 @@
-package com.peto.ramap.ui.settings.notification
+package com.peto.ramap.ui.notification
 
-import com.peto.ramap.ui.settings.notification.model.NotificationSettingsPermissionUiState
+import com.peto.ramap.ui.notification.model.NotificationSettingsPermissionUiState
 import kotlin.test.Test
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue

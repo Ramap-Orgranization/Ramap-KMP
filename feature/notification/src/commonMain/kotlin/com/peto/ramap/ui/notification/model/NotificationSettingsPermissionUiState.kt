@@ -1,4 +1,4 @@
-package com.peto.ramap.ui.settings.notification.model
+package com.peto.ramap.ui.notification.model
 
 data class NotificationSettingsPermissionUiState(
     val isGranted: Boolean = false,
