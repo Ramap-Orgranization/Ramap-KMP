@@ -1,77 +1,55 @@
 package com.peto.ramap.navigation
 
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
-import com.peto.ramap.domain.model.event.ShopEvent
 
 class NavigationState(
-    val backStack: NavBackStack<NavKey>,
+    selectedTabState: MutableState<TabStatus>,
+    val backStacks: Map<TabStatus, NavBackStack<NavKey>>,
 ) {
-    var selectedEvent by mutableStateOf<ShopEvent?>(null)
+    var selectedTab: TabStatus by selectedTabState
         private set
 
-    var requestedMapShopId by mutableStateOf<String?>(null)
-        private set
+    val currentBackStack: NavBackStack<NavKey>
+        get() = backStacks.getValue(selectedTab)
 
     val currentRoute: ScreenRoutes
-        get() = backStack.last() as ScreenRoutes
+        get() = currentBackStack.last() as ScreenRoutes
 
     val canNavigateBack: Boolean
-        get() = backStack.size > 1
-
-    val selectedTab: TabStatus
-        get() =
-            when (currentRoute) {
-                ScreenRoutes.TabRoutes -> TabStatus.MAP
-                ScreenRoutes.EventTabRoutes -> TabStatus.EVENT
-                ScreenRoutes.MyTabRoutes,
-                ScreenRoutes.HiddenShopListRoutes,
-                ScreenRoutes.NotificationSettingsRoutes,
-                -> TabStatus.MY
-                is ScreenRoutes.EventDetailRoutes ->
-                    if (backStack.firstOrNull() == ScreenRoutes.EventTabRoutes) {
-                        TabStatus.EVENT
-                    } else {
-                        TabStatus.MAP
-                    }
-            }
+        get() = currentBackStack.size > 1 || selectedTab != TabStatus.MAP
 
     fun showHiddenShops() {
         if (currentRoute != ScreenRoutes.HiddenShopListRoutes) {
-            backStack.add(ScreenRoutes.HiddenShopListRoutes)
+            currentBackStack.add(ScreenRoutes.HiddenShopListRoutes)
         }
     }
 
     fun showNotificationSettings() {
         if (currentRoute != ScreenRoutes.NotificationSettingsRoutes) {
-            backStack.add(ScreenRoutes.NotificationSettingsRoutes)
+            currentBackStack.add(ScreenRoutes.NotificationSettingsRoutes)
         }
-    }
-
-    fun showEvent(event: ShopEvent) {
-        selectedEvent = event
-        showEvent(event.id)
     }
 
     fun showEvent(eventId: String) {
         if (currentRoute == ScreenRoutes.EventDetailRoutes(eventId)) return
-        backStack.add(ScreenRoutes.EventDetailRoutes(eventId))
+        currentBackStack.add(ScreenRoutes.EventDetailRoutes(eventId))
     }
 
     fun pop() {
-        backStack.removeLastOrNull()
+        if (currentBackStack.size > 1) {
+            currentBackStack.removeLastOrNull()
+            return
+        }
+
+        selectedTab = TabStatus.MAP
     }
 
     fun selectTopLevelTab(tab: TabStatus) {
-        val rootRoute = tab.toRootRoute()
-        if (currentRoute == rootRoute) return
-
-        backStack.clear()
-        backStack.add(rootRoute)
-        selectedEvent = null
+        selectedTab = tab
     }
 
     fun showMap() {
@@ -79,20 +57,14 @@ class NavigationState(
     }
 
     fun showShopOnMap(shopId: String) {
-        requestedMapShopId = shopId
-        showMap()
-    }
+        val mapRoute = ScreenRoutes.TabRoutes(shopId = shopId)
+        val mapBackStack = backStacks.getValue(TabStatus.MAP)
+        val isRequestedShopAlreadyShown =
+            selectedTab == TabStatus.MAP && mapBackStack.singleOrNull() == mapRoute
+        if (isRequestedShopAlreadyShown) return
 
-    fun consumeMapShopRequest(shopId: String) {
-        if (requestedMapShopId == shopId) {
-            requestedMapShopId = null
-        }
+        mapBackStack.clear()
+        mapBackStack.add(mapRoute)
+        selectedTab = TabStatus.MAP
     }
 }
-
-private fun TabStatus.toRootRoute(): ScreenRoutes =
-    when (this) {
-        TabStatus.MAP -> ScreenRoutes.TabRoutes
-        TabStatus.EVENT -> ScreenRoutes.EventTabRoutes
-        TabStatus.MY -> ScreenRoutes.MyTabRoutes
-    }

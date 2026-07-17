@@ -75,7 +75,6 @@ import ramap.shared.generated.resources.navigation_back
 @Composable
 fun EventDetailRoute(
     eventId: String,
-    initialEvent: ShopEvent?,
     onBack: () -> Unit,
     onUnavailable: () -> Unit,
     onShopClick: (String) -> Unit,
@@ -84,8 +83,8 @@ fun EventDetailRoute(
     viewModel: EventDetailViewModel = koinViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    LaunchedEffect(eventId, initialEvent) {
-        viewModel.dispatch(OnEntered(eventId, initialEvent))
+    LaunchedEffect(eventId) {
+        viewModel.dispatch(OnEntered(eventId))
     }
 
     ObserveAsEvents(viewModel.sideEffect) { sideEffect ->
@@ -107,7 +106,7 @@ fun EventDetailRoute(
             uiState = uiState,
             onNotificationChanged = { enabled -> viewModel.dispatch(OnNotificationChanged(enabled)) },
         )
-    } ?: LaduckLoadingContent()
+    } ?: LaduckLoadingContent(modifier = Modifier.fillMaxSize())
 }
 
 @Composable

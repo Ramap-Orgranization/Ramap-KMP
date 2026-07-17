@@ -32,20 +32,21 @@ class EventDetailViewModel(
 ) : BaseViewModel<EventDetailUiState, EventDetailIntent, EventDetailSideEffect>(EventDetailUiState()) {
     override suspend fun handleIntent(intent: EventDetailIntent) {
         when (intent) {
-            is OnEntered -> loadEvent(intent.eventId, intent.initialEvent)
+            is OnEntered -> loadEvent(intent.eventId)
             is OnNotificationChanged -> updateNotification(intent.enabled)
         }
     }
 
-    private suspend fun loadEvent(
-        eventId: String,
-        initialEvent: ShopEvent?,
-    ) {
-        if (currentState.event?.id == eventId) return
+    private suspend fun loadEvent(eventId: String) {
         reduce { EventDetailUiState() }
-        val event = initialEvent ?: (ramenShopRepository.fetchActiveEvent(eventId) as? RamapResult.Success)?.data
+        val event = (ramenShopRepository.fetchActiveEvent(eventId) as? RamapResult.Success)?.data
         if (event == null) return postSideEffect(EventUnavailable)
 
+        updateEventState(event)
+        refreshEventNotification(event)
+    }
+
+    private fun updateEventState(event: ShopEvent) {
         val notificationWindow = eventNotificationWindow(event.startDate, currentEpochMillis())
         val canChangeNotification = loginRepository.hasSession()
         reduce {
@@ -57,7 +58,10 @@ class EventDetailViewModel(
                 isNotificationLoading = canChangeNotification,
             )
         }
-        if (!canChangeNotification || notificationWindow == EventNotificationWindow.CLOSED) return
+    }
+
+    private suspend fun refreshEventNotification(event: ShopEvent) {
+        if (!currentState.canChangeNotification || !currentState.isNotificationVisible) return
         val result = notificationRepository.isEventNotificationEnabled(event.id)
         reduce {
             copy(
@@ -68,7 +72,15 @@ class EventDetailViewModel(
     }
 
     private suspend fun updateNotification(enabled: Boolean) {
-        val event = currentState.event ?: return
+        val eventId = currentState.event?.id ?: return
+        val previousValue = currentState.isNotificationEnabled
+        if (!prepareNotificationUpdate(enabled)) return
+
+        val result = saveEventNotification(eventId, enabled)
+        handleNotificationUpdateResult(result, enabled, previousValue)
+    }
+
+    private suspend fun prepareNotificationUpdate(enabled: Boolean): Boolean {
         if (enabled && !requestNotificationPermission()) {
             postSideEffect(
                 ShowEventToast(
@@ -79,11 +91,22 @@ class EventDetailViewModel(
                     ),
                 ),
             )
-            return
+            return false
         }
-        val previousValue = currentState.isNotificationEnabled
         reduce { copy(isNotificationEnabled = enabled, isNotificationLoading = true) }
-        val result = notificationRepository.updateEventNotification(event.id, enabled)
+        return true
+    }
+
+    private suspend fun saveEventNotification(
+        eventId: String,
+        enabled: Boolean,
+    ): RamapResult<Unit> = notificationRepository.updateEventNotification(eventId, enabled)
+
+    private fun handleNotificationUpdateResult(
+        result: RamapResult<Unit>,
+        enabled: Boolean,
+        previousValue: Boolean,
+    ) {
         reduce {
             copy(
                 isNotificationEnabled = if (result is RamapResult.Error) previousValue else enabled,
