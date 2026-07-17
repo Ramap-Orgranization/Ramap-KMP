@@ -1,7 +1,0 @@
-package com.peto.ramap.platform
-
-expect object NotificationPermissionRequester {
-    suspend fun isGranted(): Boolean
-
-    suspend fun request(): Boolean
-}
