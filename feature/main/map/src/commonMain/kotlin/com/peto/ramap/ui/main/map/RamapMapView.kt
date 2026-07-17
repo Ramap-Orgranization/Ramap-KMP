@@ -6,6 +6,7 @@ import com.peto.ramap.domain.model.shop.Location
 import com.peto.ramap.domain.model.shop.MapBounds
 import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.domain.model.shop.RamenShops
+import com.peto.ramap.ui.main.map.model.MapCameraPosition
 
 @Composable
 expect fun RamapMapView(
@@ -17,8 +18,10 @@ expect fun RamapMapView(
     initialFocusRequestKey: Long,
     shouldBootstrapInitialLocationFocus: Boolean,
     selectedShopId: String?,
+    cameraPosition: MapCameraPosition?,
     onMapMoveStarted: () -> Unit,
     onBoundsChanged: (MapBounds) -> Unit,
+    onCameraPositionChanged: (MapCameraPosition) -> Unit,
     onInitialFocusConsumed: () -> Unit,
     onMyLocationChanged: (Location) -> Unit,
     onShopClick: (RamenShop) -> Unit,

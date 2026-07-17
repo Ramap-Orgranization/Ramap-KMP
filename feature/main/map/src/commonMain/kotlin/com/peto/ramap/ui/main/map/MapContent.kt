@@ -65,6 +65,7 @@ import com.peto.ramap.ui.main.map.component.RamenShopSearchBar
 import com.peto.ramap.ui.main.map.component.RamenShopSearchResultGuide
 import com.peto.ramap.ui.main.map.contract.MapUiState
 import com.peto.ramap.ui.main.map.model.InitialMapLoadState
+import com.peto.ramap.ui.main.map.model.MapCameraPosition
 import com.peto.ramap.ui.main.map.model.MapPersonalization
 import com.peto.ramap.ui.main.map.model.RamenShopUiModel
 import org.jetbrains.compose.resources.painterResource
@@ -92,6 +93,7 @@ fun MapContent(
     uiState: MapUiState,
     isBackEnabled: Boolean,
     onBoundsChanged: (MapBounds) -> Unit,
+    onCameraPositionChanged: (MapCameraPosition) -> Unit,
     onMyLocationChanged: (Location) -> Unit,
     onLocationPermissionBlocked: () -> Unit,
     onShopSelected: (RamenShop, Boolean) -> Unit,
@@ -153,10 +155,12 @@ fun MapContent(
             initialFocusRequestKey = uiState.initialFocusRequestKey,
             shouldBootstrapInitialLocationFocus = uiState.shouldBootstrapInitialLocationFocus,
             selectedShopId = uiState.selectedShop?.id,
+            cameraPosition = uiState.cameraPosition,
             onMapMoveStarted = {
                 if (isImeVisible) focusManager.clearFocus()
             },
             onBoundsChanged = onBoundsChanged,
+            onCameraPositionChanged = onCameraPositionChanged,
             onInitialFocusConsumed = onInitialLocationFocusConsumed,
             onMyLocationChanged = onMyLocationChanged,
             onShopClick = { onShopSelected(it, false) },

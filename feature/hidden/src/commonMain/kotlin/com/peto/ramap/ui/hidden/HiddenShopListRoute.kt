@@ -15,11 +15,11 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.peto.ramap.designsystem.button.AppButton
 import com.peto.ramap.designsystem.component.LaduckLoadingContent
 import com.peto.ramap.designsystem.component.LoadErrorContent
 import com.peto.ramap.designsystem.component.RamenShopSearchResultList
@@ -41,10 +41,9 @@ import ramap.shared.generated.resources.data_load_failure_message
 import ramap.shared.generated.resources.hidden_shops_empty_title
 import ramap.shared.generated.resources.ic_arrow3_left
 import ramap.shared.generated.resources.laduck_error_confused
-import ramap.shared.generated.resources.laduck_error_crying
+import ramap.shared.generated.resources.laduck_loading_walking
 import ramap.shared.generated.resources.navigation_back
 import ramap.shared.generated.resources.settings_hidden_shops_menu
-import ramap.shared.generated.resources.top_level_tab_my
 
 @Composable
 fun HiddenShopListRoute(
@@ -106,7 +105,7 @@ fun HiddenShopListScreen(
             is LoadState.Content -> {
                 val shops = shopsState.data
                 if (shops.isEmpty()) {
-                    HiddenShopEmptyContent(onBack = onBack)
+                    HiddenShopEmptyContent()
                 } else {
                     RamenShopSearchResultList(
                         shops = shops,
@@ -125,15 +124,15 @@ fun HiddenShopListScreen(
 }
 
 @Composable
-fun HiddenShopEmptyContent(onBack: () -> Unit) {
+fun HiddenShopEmptyContent() {
     Column(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 32.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Image(
-            painter = painterResource(Res.drawable.laduck_error_crying),
+            painter = painterResource(Res.drawable.laduck_loading_walking),
             contentDescription = null,
-            modifier = Modifier.size(220.dp).align(androidx.compose.ui.Alignment.CenterHorizontally),
+            modifier = Modifier.size(220.dp).align(Alignment.CenterHorizontally),
         )
         AppText(
             text = stringResource(Res.string.hidden_shops_empty_title),
@@ -141,11 +140,6 @@ fun HiddenShopEmptyContent(onBack: () -> Unit) {
             color = GrayColor.C500,
             textAlign = TextAlign.Center,
             modifier = Modifier.fillMaxWidth(),
-        )
-        AppButton(
-            text = stringResource(Res.string.top_level_tab_my),
-            modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-            onClick = onBack,
         )
     }
 }

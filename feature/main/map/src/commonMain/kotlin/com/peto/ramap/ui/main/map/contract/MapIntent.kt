@@ -6,11 +6,16 @@ import com.peto.ramap.domain.model.shop.Location
 import com.peto.ramap.domain.model.shop.MapBounds
 import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.ui.base.Intent
+import com.peto.ramap.ui.main.map.model.MapCameraPosition
 import com.peto.ramap.ui.main.map.model.MapPersonalization
 
 sealed interface MapIntent : Intent {
     data class OnBoundsChanged(
         val bounds: MapBounds,
+    ) : MapIntent
+
+    data class OnCameraPositionChanged(
+        val position: MapCameraPosition,
     ) : MapIntent
 
     data class OnMyLocationChanged(

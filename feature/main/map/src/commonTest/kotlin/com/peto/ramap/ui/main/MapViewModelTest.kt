@@ -34,6 +34,7 @@ import com.peto.ramap.ui.main.map.config.DefaultMapConfig
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnBookmarkToggled
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnBookmarkedShopsToggled
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnBoundsChanged
+import com.peto.ramap.ui.main.map.contract.MapIntent.OnCameraPositionChanged
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnCategoryFilterToggled
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnCurrentLocationReportSubmitted
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnFilterCleared
@@ -51,6 +52,7 @@ import com.peto.ramap.ui.main.map.contract.MapIntent.OnUnregisteredPlaceReportSu
 import com.peto.ramap.ui.main.map.contract.MapSideEffect.ShowLoginGuide
 import com.peto.ramap.ui.main.map.contract.MapSideEffect.ShowToast
 import com.peto.ramap.ui.main.map.contract.MapUiState
+import com.peto.ramap.ui.main.map.model.MapCameraPosition
 import com.peto.ramap.ui.main.map.model.MapPersonalization
 import com.peto.ramap.ui.main.map.model.SearchResultGuide
 import com.peto.ramap.ui.main.map.model.SearchUiState
@@ -224,6 +226,35 @@ class MapViewModelTest {
             assertEquals(shop, viewModel.uiState.value.selectedShop)
             assertEquals(listOf(shop.id), waitingSystemRepository.requestedShopIds)
             assertEquals(waitingSystem, viewModel.uiState.value.shopWaiting[shop.id])
+        }
+
+    @Test
+    fun `카메라 이동이 끝나면 위치를 저장하고 선택 매장 포커스를 소비한다`() =
+        coroutinesTest {
+            val shop = ramenShopFixture()
+            val cameraPosition =
+                MapCameraPosition(
+                    center = Location(lat = 37.5665, lng = 126.9780),
+                    zoom = 14.5,
+                )
+            val viewModel =
+                mapViewModel(
+                    ramenShopRepository =
+                        FakeRamenShopRepository(
+                            fetchByIdsResult = RamenShops(mapOf(shop.id to shop)),
+                        ),
+                )
+
+            viewModel.dispatch(OnShopSelected(shop))
+            runCurrent()
+            assertEquals(RamenShops(listOf(shop)), viewModel.uiState.value.focusShops)
+
+            viewModel.dispatch(OnCameraPositionChanged(cameraPosition))
+            runCurrent()
+
+            assertEquals(cameraPosition, viewModel.uiState.value.cameraPosition)
+            assertEquals(RamenShops(emptyMap()), viewModel.uiState.value.focusShops)
+            assertEquals(shop, viewModel.uiState.value.selectedShop)
         }
 
     @Test
