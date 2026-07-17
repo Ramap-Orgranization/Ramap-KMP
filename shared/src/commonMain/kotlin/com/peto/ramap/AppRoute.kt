@@ -13,12 +13,17 @@ import com.peto.ramap.navigation.rememberNavigationState
 import com.peto.ramap.notification.NotificationDeepLink
 import com.peto.ramap.notification.NotificationDeepLinkParser
 import com.peto.ramap.notification.NotificationLaunchDispatcher
+import com.peto.ramap.ui.account.AccountSettingsRoute
+import com.peto.ramap.ui.account.InformationRoute
+import com.peto.ramap.ui.bookmark.BookmarkedShopListRoute
 import com.peto.ramap.ui.hidden.HiddenShopListRoute
 import com.peto.ramap.ui.main.event.EventDetailRoute
 import com.peto.ramap.ui.main.event.list.EventListRoute
 import com.peto.ramap.ui.main.map.MapRoute
 import com.peto.ramap.ui.main.my.MyTabRoute
-import com.peto.ramap.ui.settings.notification.NotificationSettingsRoute
+import com.peto.ramap.ui.notification.NotificationSettingsRoute
+import com.peto.ramap.ui.report.PlaceReportRoute
+import com.peto.ramap.ui.subscribed.SubscribedShopListRoute
 import org.koin.compose.koinInject
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.event_not_found_message
@@ -54,9 +59,23 @@ fun AppRoute(
         },
         myScreen = {
             MyTabRoute(
+                onAccountNavigate = navigationState::showAccountSettings,
+                onInformationNavigate = navigationState::showInformation,
+                onReportNavigate = navigationState::showPlaceReport,
                 onHiddenShopsNavigate = navigationState::showHiddenShops,
                 onNotificationSettingsNavigate = navigationState::showNotificationSettings,
+                onSubscribedShopsNavigate = navigationState::showSubscribedShops,
+                onBookmarkedShopsNavigate = navigationState::showBookmarkedShops,
             )
+        },
+        accountSettingsScreen = {
+            AccountSettingsRoute(onBack = navigationState::pop)
+        },
+        informationScreen = {
+            InformationRoute(onBack = navigationState::pop)
+        },
+        placeReportScreen = {
+            PlaceReportRoute(onBack = navigationState::pop)
         },
         eventListScreen = {
             EventListRoute(onEventClick = { navigationState.showEvent(it.id) })
@@ -64,11 +83,18 @@ fun AppRoute(
         hiddenScreen = {
             HiddenShopListRoute(
                 onBackClick = navigationState::pop,
-                onShopClick = navigationState::showShopOnMap,
             )
         },
         notificationSettingsScreen = {
             NotificationSettingsRoute(onBack = navigationState::pop)
+        },
+        subscribedShopsScreen = {
+            SubscribedShopListRoute(onBack = navigationState::pop)
+        },
+        bookmarkedShopsScreen = {
+            BookmarkedShopListRoute(
+                onBack = navigationState::pop,
+            )
         },
         eventScreen = { route ->
             EventDetailRoute(
