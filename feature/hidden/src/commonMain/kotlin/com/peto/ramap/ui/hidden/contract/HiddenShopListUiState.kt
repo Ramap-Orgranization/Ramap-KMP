@@ -6,4 +6,5 @@ import com.peto.ramap.ui.common.LoadState
 
 data class HiddenShopListUiState(
     val shopsState: LoadState<RamenShops> = LoadState.Idle,
+    val pendingUnhideShopId: String? = null,
 ) : State

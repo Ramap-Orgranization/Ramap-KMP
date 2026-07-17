@@ -1,4 +1,4 @@
-package com.peto.ramap.ui.main.hidden
+package com.peto.ramap.ui.hidden
 
 import com.peto.ramap.coroutinesTest
 import com.peto.ramap.domain.model.personalization.Personalization
@@ -7,7 +7,7 @@ import com.peto.ramap.fake.FakePersonalizationRepository
 import com.peto.ramap.fake.FakeRamenShopRepository
 import com.peto.ramap.fixture.ramenShopFixture
 import com.peto.ramap.ui.common.LoadState
-import com.peto.ramap.ui.hidden.HiddenShopListViewModel
+import com.peto.ramap.ui.hidden.contract.HiddenShopListIntent
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runCurrent
 import kotlin.test.Test
@@ -51,5 +51,30 @@ class HiddenShopListViewModelTest {
             runCurrent()
 
             assertEquals(LoadState.Content(RamenShops(emptyMap())), viewModel.uiState.value.shopsState)
+        }
+
+    @Test
+    fun `숨긴 매장 해제 성공시 목록에서 즉시 제거한다`() =
+        coroutinesTest {
+            val shop = ramenShopFixture(id = "hidden-shop")
+            val viewModel =
+                HiddenShopListViewModel(
+                    personalizationRepository =
+                        FakePersonalizationRepository(
+                            Personalization(hiddenShopIds = setOf(shop.id)),
+                        ),
+                    ramenShopRepository = FakeRamenShopRepository(fetchByIdsResult = RamenShops(listOf(shop))),
+                )
+            runCurrent()
+
+            viewModel.dispatch(HiddenShopListIntent.OnShopClicked(shop.id))
+            viewModel.dispatch(HiddenShopListIntent.OnUnhideConfirmed)
+            runCurrent()
+
+            assertEquals(null, viewModel.uiState.value.pendingUnhideShopId)
+            assertEquals(
+                LoadState.Content(RamenShops(emptyMap())),
+                viewModel.uiState.value.shopsState,
+            )
         }
 }

@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
@@ -15,7 +14,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -23,41 +21,70 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.peto.ramap.designsystem.component.LaduckLoadingContent
 import com.peto.ramap.designsystem.component.LoadErrorContent
 import com.peto.ramap.designsystem.component.RamenShopSearchResultList
+import com.peto.ramap.designsystem.component.ShopListEmptyContent
+import com.peto.ramap.designsystem.dialog.CommonDialog
 import com.peto.ramap.designsystem.text.AppText
+import com.peto.ramap.designsystem.toast.ToastManager
 import com.peto.ramap.designsystem.topbar.CommonTopBar
 import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.extension.noRippleClickable
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.GrayColor
+import com.peto.ramap.ui.base.ObserveAsEvents
 import com.peto.ramap.ui.common.LoadState
 import com.peto.ramap.ui.extension.stringResource
 import com.peto.ramap.ui.hidden.contract.HiddenShopListIntent
+import com.peto.ramap.ui.hidden.contract.HiddenShopListSideEffect
 import com.peto.ramap.ui.hidden.contract.HiddenShopListUiState
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
+import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.data_load_failure_message
 import ramap.shared.generated.resources.hidden_shops_empty_title
 import ramap.shared.generated.resources.ic_arrow3_left
 import ramap.shared.generated.resources.laduck_error_confused
-import ramap.shared.generated.resources.laduck_loading_walking
 import ramap.shared.generated.resources.navigation_back
+import ramap.shared.generated.resources.notification_removal_dismiss_action
 import ramap.shared.generated.resources.settings_hidden_shops_menu
+import ramap.shared.generated.resources.unhide_shop_confirm_action
+import ramap.shared.generated.resources.unhide_shop_confirm_title
 
 @Composable
 fun HiddenShopListRoute(
     onBackClick: () -> Unit,
-    onShopClick: (String) -> Unit,
+    toastManager: ToastManager = koinInject(),
     viewModel: HiddenShopListViewModel = koinViewModel(),
 ) {
     val uiState = viewModel.uiState.collectAsStateWithLifecycle().value
+    ObserveAsEvents(viewModel.sideEffect) { sideEffect ->
+        when (sideEffect) {
+            is HiddenShopListSideEffect.ShowToast -> toastManager.show(sideEffect.data)
+        }
+    }
 
     HiddenShopListScreen(
         uiState = uiState,
         onBack = onBackClick,
-        onShopClick = { onShopClick(it.id) },
+        onShopClick = { viewModel.dispatch(HiddenShopListIntent.OnShopClicked(it.id)) },
         onRetryClick = { viewModel.dispatch(HiddenShopListIntent.OnHiddenShopListRetried) },
+    )
+    CommonDialog(
+        visible = uiState.pendingUnhideShopId != null,
+        confirmText = stringResource(Res.string.unhide_shop_confirm_action),
+        dismissText = stringResource(Res.string.notification_removal_dismiss_action),
+        onDismissRequest = { viewModel.dispatch(HiddenShopListIntent.OnUnhideDismissed) },
+        content = {
+            AppText(
+                text = stringResource(Res.string.unhide_shop_confirm_title),
+                style = AppTextStyle.T1,
+                color = GrayColor.C500,
+                textAlign = TextAlign.Center,
+            )
+        },
+        onConfirm = { viewModel.dispatch(HiddenShopListIntent.OnUnhideConfirmed) },
+        onDismiss = { viewModel.dispatch(HiddenShopListIntent.OnUnhideDismissed) },
     )
 }
 
@@ -100,12 +127,16 @@ fun HiddenShopListScreen(
                     title = stringResource(Res.string.settings_hidden_shops_menu),
                     description = stringResource(Res.string.data_load_failure_message),
                     onRetry = onRetryClick,
+                    modifier = Modifier.fillMaxSize(),
                 )
 
             is LoadState.Content -> {
                 val shops = shopsState.data
                 if (shops.isEmpty()) {
-                    HiddenShopEmptyContent()
+                    ShopListEmptyContent(
+                        title = stringResource(Res.string.hidden_shops_empty_title),
+                        modifier = Modifier.fillMaxSize(),
+                    )
                 } else {
                     RamenShopSearchResultList(
                         shops = shops,
@@ -120,26 +151,5 @@ fun HiddenShopListScreen(
                 }
             }
         }
-    }
-}
-
-@Composable
-fun HiddenShopEmptyContent() {
-    Column(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 32.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        Image(
-            painter = painterResource(Res.drawable.laduck_loading_walking),
-            contentDescription = null,
-            modifier = Modifier.size(220.dp).align(Alignment.CenterHorizontally),
-        )
-        AppText(
-            text = stringResource(Res.string.hidden_shops_empty_title),
-            style = AppTextStyle.H3,
-            color = GrayColor.C500,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.fillMaxWidth(),
-        )
     }
 }
