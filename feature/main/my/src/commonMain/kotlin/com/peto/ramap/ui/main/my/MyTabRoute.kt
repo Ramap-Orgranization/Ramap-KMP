@@ -1,105 +1,162 @@
 package com.peto.ramap.ui.main.my
 
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.peto.ramap.designsystem.dialog.CommonDialog
-import com.peto.ramap.designsystem.dialog.LoginGuideDialog
 import com.peto.ramap.designsystem.text.AppText
-import com.peto.ramap.designsystem.toast.ToastManager
-import com.peto.ramap.platform.AppSettingsOpener
+import com.peto.ramap.designsystem.topbar.CommonTopBar
+import com.peto.ramap.extension.noRippleClickable
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.GrayColor
-import com.peto.ramap.ui.base.ObserveAsEvents
-import com.peto.ramap.ui.main.my.contract.MyTabIntent.OnAccountDeleteClick
-import com.peto.ramap.ui.main.my.contract.MyTabIntent.OnAccountDeleteConfirm
-import com.peto.ramap.ui.main.my.contract.MyTabIntent.OnAccountDeleteDismiss
-import com.peto.ramap.ui.main.my.contract.MyTabIntent.OnCurrentAddressRefresh
-import com.peto.ramap.ui.main.my.contract.MyTabIntent.OnCurrentLocationReportSubmit
-import com.peto.ramap.ui.main.my.contract.MyTabIntent.OnHiddenShopsClick
-import com.peto.ramap.ui.main.my.contract.MyTabIntent.OnKakaoLoginClick
-import com.peto.ramap.ui.main.my.contract.MyTabIntent.OnLoginGuideDismiss
-import com.peto.ramap.ui.main.my.contract.MyTabIntent.OnLogoutClick
-import com.peto.ramap.ui.main.my.contract.MyTabIntent.OnPlaceReportSubmit
-import com.peto.ramap.ui.main.my.contract.MyTabIntent.OnPlaceUrlChanged
-import com.peto.ramap.ui.main.my.contract.MyTabSideEffect.NavigateToHiddenShops
-import com.peto.ramap.ui.main.my.contract.MyTabSideEffect.ShowMyToast
+import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
-import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 import ramap.shared.generated.resources.Res
-import ramap.shared.generated.resources.account_delete_confirm_action
-import ramap.shared.generated.resources.account_delete_confirm_description
-import ramap.shared.generated.resources.account_delete_confirm_dismiss
-import ramap.shared.generated.resources.account_delete_confirm_title
+import ramap.shared.generated.resources.settings_account_menu
+import ramap.shared.generated.resources.settings_bookmarked_shops_menu
+import ramap.shared.generated.resources.settings_hidden_shops_menu
+import ramap.shared.generated.resources.settings_information_menu
+import ramap.shared.generated.resources.settings_notification_menu
+import ramap.shared.generated.resources.settings_report_menu
+import ramap.shared.generated.resources.settings_subscribed_shops_menu
+import ramap.shared.generated.resources.settings_title
 
 @Composable
 fun MyTabRoute(
-    onHiddenShopsNavigate: () -> Unit,
+    onAccountNavigate: () -> Unit,
+    onInformationNavigate: () -> Unit,
     onNotificationSettingsNavigate: () -> Unit,
-    toastManager: ToastManager = koinInject(),
-    appSettingsOpener: AppSettingsOpener = koinInject(),
-    viewModel: MyTabViewModel = koinViewModel(),
+    onReportNavigate: () -> Unit,
+    onHiddenShopsNavigate: () -> Unit,
+    onSubscribedShopsNavigate: () -> Unit,
+    onBookmarkedShopsNavigate: () -> Unit,
+    viewModel: SettingsViewModel = koinViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    ObserveAsEvents(viewModel.sideEffect) { sideEffect ->
-        when (sideEffect) {
-            is ShowMyToast ->
-                toastManager.show(
-                    sideEffect.data.copy(
-                        action = sideEffect.data.action?.copy(onClick = appSettingsOpener::open),
-                    ),
-                )
-            NavigateToHiddenShops -> onHiddenShopsNavigate()
-        }
-    }
-
     MyContent(
-        uiState = uiState,
-        onKakaoLoginClick = { viewModel.dispatch(OnKakaoLoginClick) },
-        onLogoutClick = { viewModel.dispatch(OnLogoutClick) },
-        onAccountDeleteClick = { viewModel.dispatch(OnAccountDeleteClick) },
-        onHiddenShopsClick = { viewModel.dispatch(OnHiddenShopsClick) },
+        isLoggedIn = uiState.isLoggedIn,
+        onAccountClick = onAccountNavigate,
+        onInformationClick = onInformationNavigate,
         onNotificationSettingsClick = onNotificationSettingsNavigate,
-        onPlaceUrlChanged = { viewModel.dispatch(OnPlaceUrlChanged(it)) },
-        onPlaceReportSubmit = { viewModel.dispatch(OnPlaceReportSubmit) },
-        onLocationReportSubmit = { viewModel.dispatch(OnCurrentLocationReportSubmit) },
-        onCurrentAddressRefresh = { viewModel.dispatch(OnCurrentAddressRefresh) },
-    )
-
-    CommonDialog(
-        visible = uiState.showAccountDeleteConfirmDialog,
-        confirmText = stringResource(Res.string.account_delete_confirm_action),
-        dismissText = stringResource(Res.string.account_delete_confirm_dismiss),
-        confirmEnabled = !uiState.isDeletingAccount,
-        onDismissRequest = { viewModel.dispatch(OnAccountDeleteDismiss) },
-        content = {
-            AppText(
-                text = stringResource(Res.string.account_delete_confirm_title),
-                style = AppTextStyle.T1,
-                color = GrayColor.C500,
-                textAlign = TextAlign.Center,
-            )
-            AppText(
-                text = stringResource(Res.string.account_delete_confirm_description),
-                modifier = Modifier.padding(top = 8.dp),
-                style = AppTextStyle.B2,
-                color = GrayColor.C400,
-                textAlign = TextAlign.Center,
-            )
-        },
-        onConfirm = { viewModel.dispatch(OnAccountDeleteConfirm) },
-        onDismiss = { viewModel.dispatch(OnAccountDeleteDismiss) },
-    )
-
-    LoginGuideDialog(
-        visible = uiState.showLoginGuideDialog,
-        onDismiss = { viewModel.dispatch(OnLoginGuideDismiss) },
-        onConfirm = { viewModel.dispatch(OnKakaoLoginClick) },
+        onReportClick = onReportNavigate,
+        onHiddenShopsClick = onHiddenShopsNavigate,
+        onSubscribedShopsClick = onSubscribedShopsNavigate,
+        onBookmarkedShopsClick = onBookmarkedShopsNavigate,
     )
 }
+
+@Composable
+fun MyContent(
+    isLoggedIn: Boolean,
+    onAccountClick: () -> Unit,
+    onInformationClick: () -> Unit,
+    onNotificationSettingsClick: () -> Unit,
+    onReportClick: () -> Unit,
+    onHiddenShopsClick: () -> Unit,
+    onSubscribedShopsClick: () -> Unit,
+    onBookmarkedShopsClick: () -> Unit,
+) {
+    Column(
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .padding(top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding())
+                .padding(horizontal = 20.dp),
+    ) {
+        CommonTopBar(
+            title = stringResource(Res.string.settings_title),
+            left = {},
+        )
+        Column(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .border(width = 1.dp, color = GrayColor.C200, shape = RoundedCornerShape(20.dp))
+                    .clip(RoundedCornerShape(20.dp)),
+        ) {
+            visibleSettingsMenus(isLoggedIn).forEachIndexed { index, menu ->
+                if (index > 0) {
+                    HorizontalDivider(thickness = 1.dp, color = GrayColor.C200)
+                }
+                SettingsRow(
+                    title = menu.title(),
+                    onClick =
+                        menu.onClick(
+                            onAccountClick = onAccountClick,
+                            onInformationClick = onInformationClick,
+                            onNotificationSettingsClick = onNotificationSettingsClick,
+                            onReportClick = onReportClick,
+                            onHiddenShopsClick = onHiddenShopsClick,
+                            onSubscribedShopsClick = onSubscribedShopsClick,
+                            onBookmarkedShopsClick = onBookmarkedShopsClick,
+                        ),
+                )
+            }
+        }
+        Spacer(Modifier.height(16.dp))
+    }
+}
+
+@Composable
+private fun SettingsRow(
+    title: StringResource,
+    onClick: () -> Unit,
+) {
+    AppText(
+        text = stringResource(title),
+        style = AppTextStyle.B1,
+        color = GrayColor.C500,
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .noRippleClickable(onClick = onClick)
+                .padding(horizontal = 20.dp, vertical = 18.dp),
+    )
+}
+
+private fun SettingsMenu.title(): StringResource =
+    when (this) {
+        SettingsMenu.ACCOUNT -> Res.string.settings_account_menu
+        SettingsMenu.INFORMATION -> Res.string.settings_information_menu
+        SettingsMenu.NOTIFICATION -> Res.string.settings_notification_menu
+        SettingsMenu.REPORT -> Res.string.settings_report_menu
+        SettingsMenu.HIDDEN_SHOPS -> Res.string.settings_hidden_shops_menu
+        SettingsMenu.SUBSCRIBED_SHOPS -> Res.string.settings_subscribed_shops_menu
+        SettingsMenu.BOOKMARKED_SHOPS -> Res.string.settings_bookmarked_shops_menu
+    }
+
+@Suppress("LongParameterList")
+private fun SettingsMenu.onClick(
+    onAccountClick: () -> Unit,
+    onInformationClick: () -> Unit,
+    onNotificationSettingsClick: () -> Unit,
+    onReportClick: () -> Unit,
+    onHiddenShopsClick: () -> Unit,
+    onSubscribedShopsClick: () -> Unit,
+    onBookmarkedShopsClick: () -> Unit,
+): () -> Unit =
+    when (this) {
+        SettingsMenu.ACCOUNT -> onAccountClick
+        SettingsMenu.INFORMATION -> onInformationClick
+        SettingsMenu.NOTIFICATION -> onNotificationSettingsClick
+        SettingsMenu.REPORT -> onReportClick
+        SettingsMenu.HIDDEN_SHOPS -> onHiddenShopsClick
+        SettingsMenu.SUBSCRIBED_SHOPS -> onSubscribedShopsClick
+        SettingsMenu.BOOKMARKED_SHOPS -> onBookmarkedShopsClick
+    }
