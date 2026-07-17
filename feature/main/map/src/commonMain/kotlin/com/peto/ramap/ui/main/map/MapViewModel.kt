@@ -107,6 +107,13 @@ class MapViewModel(
 
     init {
         viewModelScope.launch { observeSessionState() }
+        viewModelScope.launch { observeNotificationSubscriptions() }
+    }
+
+    private suspend fun observeNotificationSubscriptions() {
+        notificationSettingsRepository.subscribedShopIds.collectLatest { shopIds ->
+            if (currentState.isLoggedIn) reduce { copy(notificationShopIds = shopIds) }
+        }
     }
 
     override suspend fun handleIntent(intent: MapIntent) {
