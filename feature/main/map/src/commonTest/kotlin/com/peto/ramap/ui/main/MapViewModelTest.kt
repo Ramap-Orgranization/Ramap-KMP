@@ -1210,6 +1210,25 @@ class MapViewModelTest {
         }
 
     @Test
+    fun `다른 화면에서 매장 알림을 해제하면 지도 알림 상태도 갱신한다`() =
+        coroutinesTest {
+            val shop = ramenShopFixture(id = "notification-disabled-externally")
+            val notificationRepository = FakeNotificationSettingsRepository(shopIds = mutableSetOf(shop.id))
+            val viewModel =
+                mapViewModel(
+                    loginRepository = loggedInRepository(),
+                    notificationSettingsRepository = notificationRepository,
+                )
+            runCurrent()
+            assertEquals(setOf(shop.id), viewModel.uiState.value.notificationShopIds)
+
+            notificationRepository.updateShopNotification(shop.id, false)
+            runCurrent()
+
+            assertEquals(emptySet(), viewModel.uiState.value.notificationShopIds)
+        }
+
+    @Test
     fun `숨김 매장을 선택해 이동하면 전체 보기에서도 반투명 마커로 유지한다`() =
         coroutinesTest {
             val hiddenShop =

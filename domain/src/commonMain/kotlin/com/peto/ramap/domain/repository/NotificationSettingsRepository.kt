@@ -2,11 +2,14 @@ package com.peto.ramap.domain.repository
 
 import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.domain.model.notification.EventNotificationOverride
+import kotlinx.coroutines.flow.StateFlow
 
 interface NotificationSettingsRepository {
-    suspend fun isEnabled(): RamapResult<Boolean>
+    val subscribedShopIds: StateFlow<Set<String>>
 
-    suspend fun updateEnabled(enabled: Boolean): RamapResult<Unit>
+    suspend fun fetchEventNotificationsEnabled(): RamapResult<Boolean>
+
+    suspend fun updateEventNotificationsEnabled(enabled: Boolean): RamapResult<Unit>
 
     suspend fun fetchSubscribedShopIds(): RamapResult<Set<String>>
 

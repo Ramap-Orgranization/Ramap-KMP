@@ -53,6 +53,9 @@ data class MapUiState(
      * 사용자가 북마크한 매장 id 목록.
      */
     val bookmarkedShopIds: Set<String> = emptySet(),
+    /**
+     * 사용자가 일림 설정한 매장 id 목록.
+     */
     val notificationShopIds: Set<String> = emptySet(),
     /**
      * 사용자가 숨김 처리한 매장 id 목록.

@@ -38,6 +38,8 @@ import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.peto.ramap.designsystem.card.EventCard
 import com.peto.ramap.designsystem.card.SectionCard
+import com.peto.ramap.designsystem.component.LaduckLoadingContent
+import com.peto.ramap.designsystem.component.LoadErrorContent
 import com.peto.ramap.designsystem.component.RamenShopSearchResultItem
 import com.peto.ramap.designsystem.dialog.CommonDialog
 import com.peto.ramap.designsystem.image.RemoteShopImage
@@ -52,9 +54,11 @@ import com.peto.ramap.platform.AppSettingsOpener
 import com.peto.ramap.platform.NotificationPermissionRequester
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.GrayColor
+import com.peto.ramap.ui.common.LoadState
 import com.peto.ramap.ui.component.eventDateText
 import com.peto.ramap.ui.extension.stringResource
 import com.peto.ramap.ui.settings.notification.contract.NotificationSettingsIntent.OnEventNotificationsEnabledChanged
+import com.peto.ramap.ui.settings.notification.contract.NotificationSettingsIntent.OnNotificationSettingsRetried
 import com.peto.ramap.ui.settings.notification.contract.NotificationSettingsIntent.OnRemovalConfirmed
 import com.peto.ramap.ui.settings.notification.contract.NotificationSettingsIntent.OnRemovalDismissed
 import com.peto.ramap.ui.settings.notification.contract.NotificationSettingsIntent.OnRemovalRequested
@@ -67,10 +71,12 @@ import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 import ramap.shared.generated.resources.Res
+import ramap.shared.generated.resources.data_load_failure_message
 import ramap.shared.generated.resources.event_notification_master_action
 import ramap.shared.generated.resources.event_notification_settings_section
 import ramap.shared.generated.resources.event_notification_subscribed_shops
 import ramap.shared.generated.resources.ic_arrow3_left
+import ramap.shared.generated.resources.laduck_error_confused
 import ramap.shared.generated.resources.location_permission_settings_action
 import ramap.shared.generated.resources.navigation_back
 import ramap.shared.generated.resources.notification_permission_enable_message
@@ -151,6 +157,7 @@ fun NotificationSettingsRoute(
         onRemovalRequested = { viewModel.dispatch(OnRemovalRequested(it)) },
         onRemovalConfirmed = { viewModel.dispatch(OnRemovalConfirmed) },
         onRemovalDismissed = { viewModel.dispatch(OnRemovalDismissed) },
+        onRetryClick = { viewModel.dispatch(OnNotificationSettingsRetried) },
     )
 }
 
@@ -162,6 +169,7 @@ fun NotificationSettingsScreen(
     onRemovalRequested: (NotificationRemovalTarget) -> Unit,
     onRemovalConfirmed: () -> Unit,
     onRemovalDismissed: () -> Unit,
+    onRetryClick: () -> Unit,
 ) {
     Column(
         modifier =
@@ -186,6 +194,51 @@ fun NotificationSettingsScreen(
             },
         )
 
+        when (uiState.loadState) {
+            LoadState.Idle, LoadState.Loading -> LaduckLoadingContent()
+            LoadState.Error ->
+                LoadErrorContent(
+                    image = Res.drawable.laduck_error_confused,
+                    title = stringResource(Res.string.settings_notification_menu),
+                    description = stringResource(Res.string.data_load_failure_message),
+                    onRetry = onRetryClick,
+                )
+            is LoadState.Content ->
+                NotificationSettingsContent(
+                    uiState = uiState,
+                    onEventNotificationsEnabledChanged = onEventNotificationsEnabledChanged,
+                    onRemovalRequested = onRemovalRequested,
+                )
+        }
+
+        Spacer(modifier = Modifier.height(2.dp))
+    }
+
+    CommonDialog(
+        visible = uiState.pendingRemoval != null,
+        confirmText = stringResource(Res.string.notification_removal_confirm_action),
+        dismissText = stringResource(Res.string.notification_removal_dismiss_action),
+        onDismissRequest = onRemovalDismissed,
+        content = {
+            AppText(
+                text = stringResource(Res.string.notification_removal_confirm_title),
+                style = AppTextStyle.T1,
+                color = GrayColor.C500,
+                textAlign = TextAlign.Center,
+            )
+        },
+        onConfirm = onRemovalConfirmed,
+        onDismiss = onRemovalDismissed,
+    )
+}
+
+@Composable
+private fun NotificationSettingsContent(
+    uiState: NotificationSettingsUiState,
+    onEventNotificationsEnabledChanged: (Boolean) -> Unit,
+    onRemovalRequested: (NotificationRemovalTarget) -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         SectionCard(
             title = stringResource(Res.string.event_notification_settings_section),
             modifier = Modifier.padding(horizontal = 20.dp),
@@ -249,24 +302,5 @@ fun NotificationSettingsScreen(
                 )
             }
         }
-
-        Spacer(modifier = Modifier.height(2.dp))
     }
-
-    CommonDialog(
-        visible = uiState.pendingRemoval != null,
-        confirmText = stringResource(Res.string.notification_removal_confirm_action),
-        dismissText = stringResource(Res.string.notification_removal_dismiss_action),
-        onDismissRequest = onRemovalDismissed,
-        content = {
-            AppText(
-                text = stringResource(Res.string.notification_removal_confirm_title),
-                style = AppTextStyle.T1,
-                color = GrayColor.C500,
-                textAlign = TextAlign.Center,
-            )
-        },
-        onConfirm = onRemovalConfirmed,
-        onDismiss = onRemovalDismissed,
-    )
 }

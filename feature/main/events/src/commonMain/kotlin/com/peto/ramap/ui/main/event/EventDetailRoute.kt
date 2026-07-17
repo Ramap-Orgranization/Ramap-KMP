@@ -245,11 +245,13 @@ fun EventDetailScreen(
 private fun EventNotificationButton(
     uiState: EventDetailUiState,
     onNotificationChanged: (Boolean) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     if (!uiState.isNotificationVisible) return
     IconButton(
         enabled = uiState.canChangeNotification && !uiState.isNotificationLoading,
         onClick = { onNotificationChanged(!uiState.isNotificationEnabled) },
+        modifier = modifier.padding(end = 3.dp),
     ) {
         Icon(
             painter =
