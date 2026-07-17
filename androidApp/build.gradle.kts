@@ -34,9 +34,7 @@ val hasReleaseSigning =
     listOf(releaseStoreFile, releaseStorePassword, releaseKeyAlias, releaseKeyPassword).all { !it.isNullOrBlank() }
 
 plugins {
-    alias(libs.plugins.androidApplication)
-    alias(libs.plugins.composeMultiplatform)
-    alias(libs.plugins.composeCompiler)
+    id("ramap.android.application")
 }
 
 if (file("google-services.json").exists()) {
@@ -55,6 +53,11 @@ kotlin {
 }
 dependencies {
     implementation(projects.shared)
+    implementation(projects.core.designsystem)
+    implementation(projects.core.network)
+    implementation(projects.core.notification)
+    implementation(projects.core.platform)
+    implementation(projects.data)
     implementation(libs.naver.map)
     implementation(libs.kakao.user)
     implementation(platform(libs.koin.bom))
@@ -123,5 +126,11 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
+    }
+}
+
+tasks.configureEach {
+    if (name == "mergeDebugAssets" || name == "mergeReleaseAssets") {
+        dependsOn(":core:designsystem:copyAndroidMainComposeResourcesToAndroidAssets")
     }
 }
