@@ -48,7 +48,6 @@ fun MapRoute(
     isBackEnabled: Boolean = true,
     onEventNavigate: (ShopEvent) -> Unit = {},
     requestedShopId: String? = null,
-    onRequestedShopConsumed: (String) -> Unit = {},
     toastManager: ToastManager = koinInject(),
     appSettingsOpener: AppSettingsOpener = koinInject(),
     requestNotificationPermission: suspend () -> Boolean = NotificationPermissionRequester::request,
@@ -61,7 +60,6 @@ fun MapRoute(
     LaunchedEffect(requestedShopId) {
         requestedShopId?.let { shopId ->
             viewModel.dispatch(OnShopIdSelected(shopId))
-            onRequestedShopConsumed(shopId)
         }
     }
 

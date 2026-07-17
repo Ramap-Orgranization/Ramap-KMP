@@ -3,20 +3,25 @@ package com.peto.ramap
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import com.peto.ramap.designsystem.toast.ToastManager
+import com.peto.ramap.designsystem.toast.model.ToastData
+import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.navigation.BackPressController
 import com.peto.ramap.navigation.NavigationRouter
 import com.peto.ramap.navigation.NavigationState
+import com.peto.ramap.navigation.TabStatus
 import com.peto.ramap.navigation.rememberNavigationState
 import com.peto.ramap.notification.NotificationDeepLink
 import com.peto.ramap.notification.NotificationDeepLinkParser
 import com.peto.ramap.notification.NotificationLaunchDispatcher
-import com.peto.ramap.screen.RootEventDetailScreen
-import com.peto.ramap.screen.RootEventListScreen
-import com.peto.ramap.screen.RootHiddenScreen
-import com.peto.ramap.screen.RootMapScreen
-import com.peto.ramap.screen.RootMyScreen
-import com.peto.ramap.screen.RootNotificationSettingsScreen
+import com.peto.ramap.ui.hidden.HiddenShopListRoute
+import com.peto.ramap.ui.main.event.EventDetailRoute
+import com.peto.ramap.ui.main.event.list.EventListRoute
+import com.peto.ramap.ui.main.map.MapRoute
+import com.peto.ramap.ui.main.my.MyTabRoute
+import com.peto.ramap.ui.settings.notification.NotificationSettingsRoute
 import org.koin.compose.koinInject
+import ramap.shared.generated.resources.Res
+import ramap.shared.generated.resources.event_not_found_message
 
 @Composable
 fun AppRoute(
@@ -40,15 +45,47 @@ fun AppRoute(
     )
 
     NavigationRouter(
-        currentRoute = navigationState.currentRoute,
-        selectedTab = navigationState.selectedTab,
-        onTabSelected = navigationState::selectTopLevelTab,
-        mapScreen = { RootMapScreen(navigationState) },
-        myScreen = { RootMyScreen(navigationState) },
-        eventListScreen = { RootEventListScreen(navigationState) },
-        hiddenScreen = { RootHiddenScreen(navigationState) },
-        notificationSettingsScreen = { RootNotificationSettingsScreen(navigationState) },
-        eventScreen = { RootEventDetailScreen(navigationState, toastManager) },
+        navigationState = navigationState,
+        mapScreen = { route ->
+            MapRoute(
+                onEventNavigate = { navigationState.showEvent(it.id) },
+                requestedShopId = route.shopId,
+            )
+        },
+        myScreen = {
+            MyTabRoute(
+                onHiddenShopsNavigate = navigationState::showHiddenShops,
+                onNotificationSettingsNavigate = navigationState::showNotificationSettings,
+            )
+        },
+        eventListScreen = {
+            EventListRoute(onEventClick = { navigationState.showEvent(it.id) })
+        },
+        hiddenScreen = {
+            HiddenShopListRoute(
+                onBackClick = navigationState::pop,
+                onShopClick = navigationState::showShopOnMap,
+            )
+        },
+        notificationSettingsScreen = {
+            NotificationSettingsRoute(onBack = navigationState::pop)
+        },
+        eventScreen = { route ->
+            EventDetailRoute(
+                eventId = route.eventId,
+                onBack = navigationState::pop,
+                onUnavailable = {
+                    navigationState.selectTopLevelTab(TabStatus.EVENT)
+                    toastManager.tryShow(
+                        ToastData(
+                            Res.string.event_not_found_message,
+                            ToastType.DEFAULT,
+                        ),
+                    )
+                },
+                onShopClick = navigationState::showShopOnMap,
+            )
+        },
     )
 }
 

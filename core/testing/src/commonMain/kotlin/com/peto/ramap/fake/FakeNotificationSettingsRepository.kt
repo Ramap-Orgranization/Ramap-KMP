@@ -12,6 +12,7 @@ class FakeNotificationSettingsRepository(
     val enabledUpdates = mutableListOf<Boolean>()
     val shopNotificationUpdates = mutableListOf<Pair<String, Boolean>>()
     val eventNotificationUpdates = mutableListOf<Pair<String, Boolean>>()
+    val requestedEventNotificationIds = mutableListOf<String>()
 
     override suspend fun isEnabled() = RamapResult.Success(enabled)
 
@@ -32,8 +33,10 @@ class FakeNotificationSettingsRepository(
         return RamapResult.Success(Unit)
     }
 
-    override suspend fun isEventNotificationEnabled(eventId: String) =
-        RamapResult.Success(eventOverrides.firstOrNull { it.eventId == eventId }?.enabled ?: false)
+    override suspend fun isEventNotificationEnabled(eventId: String): RamapResult<Boolean> {
+        requestedEventNotificationIds += eventId
+        return RamapResult.Success(eventOverrides.firstOrNull { it.eventId == eventId }?.enabled ?: false)
+    }
 
     override suspend fun updateEventNotification(
         eventId: String,

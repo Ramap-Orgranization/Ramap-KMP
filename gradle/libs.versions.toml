@@ -14,6 +14,7 @@ kotlin = "2.4.0"
 material3 = "1.11.0-alpha07"
 navigationevent = "1.1.0"
 navigation3 = "1.1.4"
+navigation3-ui = "1.1.1"
 supabase = "3.6.0"
 ktor = "3.5.1"
 koin = "4.2.2"
@@ -40,6 +41,7 @@ androidx-activity = { module = "androidx.activity:activity", version.ref = "andr
 androidx-core = { module = "androidx.core:core", version.ref = "androidx-core" }
 compose-uiTooling = { module = "org.jetbrains.compose.ui:ui-tooling", version.ref = "composeMultiplatform" }
 androidx-lifecycle-viewmodelCompose = { module = "org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "androidx-lifecycle" }
+androidx-lifecycle-viewmodelNavigation3 = { module = "org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-navigation3", version.ref = "androidx-lifecycle" }
 androidx-lifecycle-runtimeCompose = { module = "org.jetbrains.androidx.lifecycle:lifecycle-runtime-compose", version.ref = "androidx-lifecycle" }
 compose-runtime = { module = "org.jetbrains.compose.runtime:runtime", version.ref = "composeMultiplatform" }
 compose-foundation = { module = "org.jetbrains.compose.foundation:foundation", version.ref = "composeMultiplatform" }
@@ -52,6 +54,7 @@ coil-network-ktor3 = { module = "io.coil-kt.coil3:coil-network-ktor3", version.r
 kermit = { module = "co.touchlab:kermit", version.ref = "kermit" }
 navigationevent-compose = { module = "org.jetbrains.androidx.navigationevent:navigationevent-compose", version.ref = "navigationevent" }
 androidx-navigation3-runtime = { module = "androidx.navigation3:navigation3-runtime", version.ref = "navigation3" }
+androidx-navigation3-ui = { module = "org.jetbrains.androidx.navigation3:navigation3-ui", version.ref = "navigation3-ui" }
 naver-map = { module = "com.naver.maps:map-sdk", version.ref = "naver-map" }
 play-services-location = { module = "com.google.android.gms:play-services-location", version.ref = "play-services-location" }
 kakao-user = { module = "com.kakao.sdk:v2-user", version.ref = "kakao" }

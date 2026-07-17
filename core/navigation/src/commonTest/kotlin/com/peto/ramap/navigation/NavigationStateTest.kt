@@ -1,116 +1,117 @@
 package com.peto.ramap.navigation
 
+import androidx.compose.runtime.mutableStateOf
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
-import com.peto.ramap.domain.model.event.ShopEvent
-import com.peto.ramap.domain.model.event.ShopEventType
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
-import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class NavigationStateTest {
     @Test
-    fun canNavigateBack_isFalseAtRootAndTrueForNestedRoute() {
-        val navigationState = NavigationState(NavBackStack<NavKey>(ScreenRoutes.TabRoutes))
+    fun `탭을 전환해도 각 탭의 중첩 경로를 유지한다`() {
+        val navigationState = navigationState()
 
-        assertFalse(navigationState.canNavigateBack)
+        navigationState.selectTopLevelTab(TabStatus.EVENT)
+        navigationState.showEvent("event-id")
+        navigationState.selectTopLevelTab(TabStatus.MY)
+        navigationState.showNotificationSettings()
+        navigationState.selectTopLevelTab(TabStatus.EVENT)
 
-        navigationState.showHiddenShops()
+        assertEquals(ScreenRoutes.EventDetailRoutes("event-id"), navigationState.currentRoute)
+        assertEquals(
+            listOf(ScreenRoutes.EventTabRoutes, ScreenRoutes.EventDetailRoutes("event-id")),
+            navigationState.backStacks.getValue(TabStatus.EVENT).toList(),
+        )
 
+        navigationState.selectTopLevelTab(TabStatus.MY)
+
+        assertEquals(ScreenRoutes.NotificationSettingsRoutes, navigationState.currentRoute)
+    }
+
+    @Test
+    fun `뒤로 가면 현재 탭의 중첩 경로를 제거한다`() {
+        val navigationState = navigationState(selectedTab = TabStatus.EVENT)
+        navigationState.showEvent("event-id")
+
+        navigationState.pop()
+
+        assertEquals(TabStatus.EVENT, navigationState.selectedTab)
+        assertEquals(ScreenRoutes.EventTabRoutes, navigationState.currentRoute)
         assertTrue(navigationState.canNavigateBack)
     }
 
     @Test
-    fun eventDetail_preservesEventTabSelection() {
-        val navigationState = NavigationState(NavBackStack<NavKey>(ScreenRoutes.EventTabRoutes))
-
-        navigationState.showEvent(event())
-
-        assertEquals(TabStatus.EVENT, navigationState.selectedTab)
-        navigationState.pop()
-        assertEquals(ScreenRoutes.EventTabRoutes, navigationState.currentRoute)
-    }
-
-    @Test
-    fun showingEvent_keepsSelectedEventForDetail() {
-        val navigationState = NavigationState(NavBackStack<NavKey>(ScreenRoutes.TabRoutes))
-        val event = event()
-
-        navigationState.showEvent(event)
-
-        assertEquals(event, navigationState.selectedEvent)
-        assertEquals(ScreenRoutes.EventDetailRoutes(event.id), navigationState.currentRoute)
-        assertEquals(TabStatus.MAP, navigationState.selectedTab)
-    }
-
-    @Test
-    fun showingMapFromEvent_replacesEventFlow() {
-        val backStack = NavBackStack<NavKey>(ScreenRoutes.TabRoutes)
-        val navigationState = NavigationState(backStack)
-        val eventRoute = ScreenRoutes.EventDetailRoutes("event-id")
-        navigationState.backStack.add(eventRoute)
-
-        navigationState.showMap()
-
-        assertEquals(ScreenRoutes.TabRoutes, navigationState.currentRoute)
-        assertEquals(1, navigationState.backStack.size)
-        assertEquals(TabStatus.MAP, navigationState.selectedTab)
-    }
-
-    @Test
-    fun selectingEventTabAfterShowingMapFromEvent_opensEventTab() {
-        val navigationState = NavigationState(NavBackStack<NavKey>(ScreenRoutes.EventTabRoutes))
-        navigationState.showEvent(event())
-        navigationState.showMap()
-
+    fun `지도 외 탭의 루트에서 뒤로 가면 유지된 지도 스택으로 돌아간다`() {
+        val navigationState = navigationState()
+        navigationState.showEvent("event-id")
         navigationState.selectTopLevelTab(TabStatus.EVENT)
 
-        assertEquals(ScreenRoutes.EventTabRoutes, navigationState.currentRoute)
-        assertEquals(TabStatus.EVENT, navigationState.selectedTab)
+        navigationState.pop()
+
+        assertEquals(TabStatus.MAP, navigationState.selectedTab)
+        assertEquals(ScreenRoutes.EventDetailRoutes("event-id"), navigationState.currentRoute)
+        assertTrue(navigationState.canNavigateBack)
     }
 
     @Test
-    fun showingShopOnMap_preservesRequestWhileOpeningMap() {
-        val navigationState = NavigationState(NavBackStack<NavKey>(ScreenRoutes.HiddenShopListRoutes))
+    fun `지도 탭 루트에서는 뒤로 갈 수 없다`() {
+        val navigationState = navigationState()
+
+        assertFalse(navigationState.canNavigateBack)
+
+        navigationState.pop()
+
+        assertEquals(TabStatus.MAP, navigationState.selectedTab)
+        assertEquals(ScreenRoutes.TabRoutes(), navigationState.currentRoute)
+    }
+
+    @Test
+    fun `이벤트를 열면 현재 탭 스택에 상세 경로를 추가한다`() {
+        val navigationState = navigationState(selectedTab = TabStatus.EVENT)
+
+        navigationState.showEvent("event-id")
+
+        assertEquals(ScreenRoutes.EventDetailRoutes("event-id"), navigationState.currentRoute)
+        assertEquals(1, navigationState.backStacks.getValue(TabStatus.MAP).size)
+        assertEquals(2, navigationState.backStacks.getValue(TabStatus.EVENT).size)
+    }
+
+    @Test
+    fun `지도에서 매장을 열면 지도 스택만 교체하고 지도 탭을 선택한다`() {
+        val navigationState = navigationState(selectedTab = TabStatus.EVENT)
+        navigationState.showEvent("event-id")
 
         navigationState.showShopOnMap("shop-id")
 
-        assertEquals(ScreenRoutes.TabRoutes, navigationState.currentRoute)
-        assertEquals("shop-id", navigationState.requestedMapShopId)
+        assertEquals(TabStatus.MAP, navigationState.selectedTab)
+        assertEquals(ScreenRoutes.TabRoutes("shop-id"), navigationState.currentRoute)
+        assertEquals(1, navigationState.currentBackStack.size)
+        assertEquals(
+            ScreenRoutes.EventDetailRoutes("event-id"),
+            navigationState.backStacks.getValue(TabStatus.EVENT).last(),
+        )
     }
 
     @Test
-    fun consumingMapRequest_onlyClearsMatchingRequest() {
-        val navigationState = NavigationState(NavBackStack<NavKey>(ScreenRoutes.TabRoutes))
-        navigationState.showShopOnMap("new-shop-id")
+    fun `현재 탭을 다시 선택해도 해당 탭 스택을 유지한다`() {
+        val navigationState = navigationState(selectedTab = TabStatus.EVENT)
+        navigationState.showEvent("event-id")
 
-        navigationState.consumeMapShopRequest("stale-shop-id")
-        assertEquals("new-shop-id", navigationState.requestedMapShopId)
+        navigationState.selectTopLevelTab(TabStatus.EVENT)
 
-        navigationState.consumeMapShopRequest("new-shop-id")
-        assertNull(navigationState.requestedMapShopId)
+        assertEquals(ScreenRoutes.EventDetailRoutes("event-id"), navigationState.currentRoute)
     }
 
-    private fun event() =
-        ShopEvent(
-            id = "event-id",
-            type = ShopEventType.COLLAB,
-            title = "콜라보",
-            description = "설명",
-            startDate = "2026-07-15",
-            endDate = "2026-07-15",
-            sourceUrl = "https://instagram.com/event",
-            isToday = false,
-            isVenue = true,
-            venueShopId = "venue-id",
-            venueShopName = "행사 매장",
-            venueAddress = "서울",
-            collaboratorShopId = "collaborator-id",
-            collaboratorName = "콜라보 매장",
-            collaboratorInstagramUrl = null,
-            waitingMethod = null,
-            waitingUrl = null,
+    private fun navigationState(selectedTab: TabStatus = TabStatus.MAP): NavigationState =
+        NavigationState(
+            selectedTabState = mutableStateOf(selectedTab),
+            backStacks =
+                mapOf(
+                    TabStatus.MAP to NavBackStack<NavKey>(ScreenRoutes.TabRoutes()),
+                    TabStatus.EVENT to NavBackStack<NavKey>(ScreenRoutes.EventTabRoutes),
+                    TabStatus.MY to NavBackStack<NavKey>(ScreenRoutes.MyTabRoutes),
+                ),
         )
 }
