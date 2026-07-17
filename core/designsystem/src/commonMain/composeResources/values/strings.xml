@@ -123,6 +123,7 @@
     <string name="bookmarked_shops_empty_title">좋아요한 매장이 없어요</string>
     <string name="bookmark_removal_confirm_title">좋아요를 해제하시겠습니까?</string>
     <string name="bookmark_removal_confirm_action">좋아요 해제</string>
+    <string name="subscribed_shops_empty_title">알림을 설정한 매장이 없어요</string>
     <string name="notification_removal_confirm_title">알림 설정을 해제하시겠습니까?</string>
     <string name="notification_removal_confirm_action">해제</string>
     <string name="notification_removal_dismiss_action">취소</string>
