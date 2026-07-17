@@ -12,8 +12,8 @@ import com.peto.ramap.domain.model.shop.SearchQuery
 import com.peto.ramap.domain.model.report.UnregisteredPlaceReport
 import com.peto.ramap.domain.repository.LoginRepository
 import com.peto.ramap.domain.repository.RamenShopRepository
+import com.peto.ramap.domain.repository.ReverseGeocoder
 import com.peto.ramap.domain.repository.ShopReportRepository
-import com.peto.ramap.network.ReverseGeocoder
 import com.peto.ramap.ui.common.CurrentLocationStore
 import com.peto.ramap.ui.main.my.contract.MyTabIntent
 import com.peto.ramap.ui.main.my.contract.MyTabIntent.OnAccountDeleteClick

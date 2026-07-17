@@ -7,10 +7,10 @@ import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.shop.Location
 import com.peto.ramap.domain.model.auth.LoginSessionState
+import com.peto.ramap.domain.repository.ReverseGeocoder
 import com.peto.ramap.fake.FakeLoginRepository
 import com.peto.ramap.fake.FakeRamenShopRepository
 import com.peto.ramap.fake.FakeShopReportRepository
-import com.peto.ramap.network.ReverseGeocoder
 import com.peto.ramap.ui.common.CurrentLocationStore
 import com.peto.ramap.ui.main.my.contract.MyTabIntent.OnCurrentAddressRefresh
 import com.peto.ramap.ui.main.my.contract.MyTabIntent.OnCurrentLocationReportSubmit

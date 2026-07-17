@@ -2,6 +2,7 @@ package com.peto.ramap.network
 
 import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.domain.model.shop.Location
+import com.peto.ramap.domain.repository.ReverseGeocoder
 import com.peto.ramap.network.config.RamapSecrets
 import com.peto.ramap.network.execute.invokeRequest
 import io.ktor.client.HttpClient
