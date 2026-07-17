@@ -19,9 +19,6 @@ import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.GrayColor
-import org.jetbrains.compose.resources.stringResource
-import ramap.shared.generated.resources.Res
-import ramap.shared.generated.resources.search_result_count
 
 @Composable
 fun RamenShopSearchResultList(
@@ -37,13 +34,6 @@ fun RamenShopSearchResultList(
                 .fillMaxWidth()
                 .padding(bottom = 24.dp),
     ) {
-        AppText(
-            text = stringResource(Res.string.search_result_count, shops.size),
-            modifier = Modifier.padding(horizontal = 24.dp),
-            style = AppTextStyle.B1,
-            color = GrayColor.C500,
-        )
-
         shops.values.forEach { shop ->
             RamenShopSearchResultItem(
                 shop = shop,
