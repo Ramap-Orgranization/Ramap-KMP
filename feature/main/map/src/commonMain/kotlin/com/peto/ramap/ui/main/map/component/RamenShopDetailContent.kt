@@ -120,7 +120,7 @@ fun RamenShopDetailContent(
                 text = it.noticeText(),
                 modifier =
                     Modifier
-                        .padding(top = 100.dp)
+                        .padding(top = 20.dp)
                         .noRippleClickable { onEventClick(it) },
                 style = AppTextStyle.B1,
                 color = SystemColor.Warning,
