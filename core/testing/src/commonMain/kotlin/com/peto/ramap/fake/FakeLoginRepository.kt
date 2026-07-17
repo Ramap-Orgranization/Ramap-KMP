@@ -25,6 +25,10 @@ class FakeLoginRepository(
 
     override suspend fun awaitInitialization() = Unit
 
+    fun updateSessionState(sessionState: LoginSessionState) {
+        mutableSessionState.value = sessionState
+    }
+
     override fun hasSession(): Boolean = mutableSessionState.value == LoginSessionState.AUTHENTICATED
 
     override fun currentUserEmail(): String? = userEmail
