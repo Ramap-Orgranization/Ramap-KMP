@@ -36,7 +36,7 @@ class BookmarkedShopListViewModelTest {
                 )
             val viewModel =
                 BookmarkedShopListViewModel(
-                    personalizationRepository = personalizationRepository,
+                    personalizationStore = personalizationRepository,
                     ramenShopRepository =
                         FakeRamenShopRepository(
                             fetchByIdsResult = RamenShops(listOf(shop)),
@@ -57,7 +57,7 @@ class BookmarkedShopListViewModelTest {
             val ramenShopRepository = FakeRamenShopRepository()
             val viewModel =
                 BookmarkedShopListViewModel(
-                    personalizationRepository = FakePersonalizationRepository(),
+                    personalizationStore = FakePersonalizationRepository(),
                     ramenShopRepository = ramenShopRepository,
                 )
 
@@ -71,37 +71,24 @@ class BookmarkedShopListViewModelTest {
         }
 
     @Test
-    fun `매장 로드 재시도시 공유 북마크 아이디로 다시 로드한다`() =
+    fun `매장 조회에 실패하면 오류 상태를 표시한다`() =
         coroutinesTest {
             val shop = ramenShopFixture(id = "bookmarked-shop")
-            val ramenShopRepository =
-                FakeRamenShopRepository(
-                    fetchByIdsResult = RamenShops(listOf(shop)),
-                    error = RamapError.Unknown(IllegalStateException("failure")),
-                )
             val viewModel =
                 BookmarkedShopListViewModel(
-                    personalizationRepository =
+                    personalizationStore =
                         FakePersonalizationRepository(
                             Personalization(bookmarkedShopIds = setOf(shop.id)),
                         ),
-                    ramenShopRepository = ramenShopRepository,
+                    ramenShopRepository =
+                        FakeRamenShopRepository(
+                            error = RamapError.Unknown(IllegalStateException("failure")),
+                        ),
                 )
+
             runCurrent()
+
             assertEquals(LoadState.Error, viewModel.uiState.value.shopsState)
-
-            ramenShopRepository.error = null
-            viewModel.dispatch(BookmarkedShopListIntent.Retry)
-            runCurrent()
-
-            assertEquals(
-                LoadState.Content(RamenShops(listOf(shop))),
-                viewModel.uiState.value.shopsState,
-            )
-            assertEquals(
-                listOf(setOf(shop.id), setOf(shop.id)),
-                ramenShopRepository.requestedShopIdsHistory,
-            )
         }
 
     @Test
@@ -119,7 +106,7 @@ class BookmarkedShopListViewModelTest {
                 )
             val viewModel =
                 BookmarkedShopListViewModel(
-                    personalizationRepository = personalizationRepository,
+                    personalizationStore = personalizationRepository,
                     ramenShopRepository = ramenShopRepository,
                 )
             runCurrent()
@@ -222,7 +209,7 @@ private fun bookmarkedShopListViewModel(
             Personalization(bookmarkedShopIds = setOf(shop.id)),
         ),
 ) = BookmarkedShopListViewModel(
-    personalizationRepository = personalizationRepository,
+    personalizationStore = personalizationRepository,
     ramenShopRepository =
         FakeRamenShopRepository(
             fetchByIdsResult = RamenShops(listOf(shop)),

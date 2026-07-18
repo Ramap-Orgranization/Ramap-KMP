@@ -74,7 +74,6 @@ fun HiddenShopListRoute(
         uiState = uiState,
         onBack = onBackClick,
         onShopClick = { unhideTargetShopId = it.id },
-        onRetryClick = { viewModel.dispatch(HiddenShopListIntent.OnHiddenShopListRetried) },
     )
     CommonDialog(
         visible = unhideTargetShopId != null,
@@ -104,7 +103,6 @@ fun HiddenShopListScreen(
     uiState: HiddenShopListUiState,
     onBack: () -> Unit,
     onShopClick: (RamenShop) -> Unit,
-    onRetryClick: () -> Unit,
 ) {
     Column(
         modifier =
@@ -137,7 +135,6 @@ fun HiddenShopListScreen(
                     image = Res.drawable.laduck_error_confused,
                     title = stringResource(Res.string.settings_hidden_shops_menu),
                     description = stringResource(Res.string.data_load_failure_message),
-                    onRetry = onRetryClick,
                     modifier = Modifier.fillMaxSize(),
                 )
 

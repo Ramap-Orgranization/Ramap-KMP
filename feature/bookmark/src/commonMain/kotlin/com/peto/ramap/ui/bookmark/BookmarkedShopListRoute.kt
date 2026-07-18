@@ -93,7 +93,6 @@ fun BookmarkedShopListRoute(
                     Res.drawable.laduck_error_confused,
                     stringResource(Res.string.settings_bookmarked_shops_menu),
                     stringResource(Res.string.data_load_failure_message),
-                    onRetry = { viewModel.dispatch(BookmarkedShopListIntent.Retry) },
                 )
             is LoadState.Content -> {
                 if (state.data.isEmpty()) {

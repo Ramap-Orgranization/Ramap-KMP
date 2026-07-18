@@ -101,7 +101,6 @@ fun SubscribedShopListRoute(
                     Res.drawable.laduck_error_confused,
                     stringResource(Res.string.settings_subscribed_shops_menu),
                     stringResource(Res.string.data_load_failure_message),
-                    onRetry = { viewModel.dispatch(SubscribedShopListIntent.OnRetry) },
                 )
 
             is LoadState.Content -> {
