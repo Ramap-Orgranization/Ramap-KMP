@@ -1,5 +1,8 @@
 package com.peto.ramap.ui.main.map.model
 
+import com.peto.ramap.domain.model.place.PlaceSearchResult
+import com.peto.ramap.domain.model.place.PlaceSearchResults
+import com.peto.ramap.domain.model.shop.Location
 import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.domain.model.shop.SearchQuery
 
@@ -25,6 +28,9 @@ data class SearchUiState(
      */
     val isResultFocusConsumed: Boolean = false,
     val focusRequestKey: Long = 0,
+    val placeResults: PlaceSearchResults = PlaceSearchResults(emptyList()),
+    val placeFocusLocation: Location? = null,
+    val placeFocusRequestKey: Long = 0,
 ) {
     val hasLoadedResultsForInput: Boolean
         get() {
@@ -40,6 +46,8 @@ data class SearchUiState(
             isResultsDismissed = false,
             isResultFocusConsumed = false,
             focusRequestKey = focusRequestKey + 1,
+            placeResults = PlaceSearchResults(emptyList()),
+            placeFocusLocation = null,
         )
 
     fun dismissResults(): SearchUiState = copy(isResultsDismissed = true)
@@ -54,6 +62,8 @@ data class SearchUiState(
             loadedQuery = null,
             isResultsDismissed = false,
             isResultFocusConsumed = false,
+            placeResults = PlaceSearchResults(emptyList()),
+            placeFocusLocation = null,
         )
 
     fun updateResults(
@@ -64,6 +74,23 @@ data class SearchUiState(
             results = results,
             loadedQuery = query,
             isResultFocusConsumed = false,
+            placeResults = PlaceSearchResults(emptyList()),
+            placeFocusLocation = null,
+        )
+
+    fun updatePlaceResults(results: PlaceSearchResults): SearchUiState =
+        copy(
+            placeResults = results,
+            isResultsDismissed = false,
+            placeFocusLocation = null,
+        )
+
+    fun selectPlace(place: PlaceSearchResult): SearchUiState =
+        copy(
+            placeResults = PlaceSearchResults(emptyList()),
+            isResultsDismissed = true,
+            placeFocusLocation = place.location,
+            placeFocusRequestKey = placeFocusRequestKey + 1,
         )
 
     companion object {

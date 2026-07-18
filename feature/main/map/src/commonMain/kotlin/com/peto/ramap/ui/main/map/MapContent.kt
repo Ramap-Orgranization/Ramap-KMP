@@ -49,6 +49,7 @@ import com.peto.ramap.designsystem.component.RamenShopSearchResultList
 import com.peto.ramap.designsystem.dialog.CommonDialog
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.domain.model.event.ShopEvent
+import com.peto.ramap.domain.model.place.PlaceSearchResult
 import com.peto.ramap.domain.model.report.ShopInformationField
 import com.peto.ramap.domain.model.shop.Category
 import com.peto.ramap.domain.model.shop.Location
@@ -60,6 +61,7 @@ import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.ui.extension.stringResource
 import com.peto.ramap.ui.main.map.component.MapCircleIconButton
 import com.peto.ramap.ui.main.map.component.MenuCategoryFilterRow
+import com.peto.ramap.ui.main.map.component.PlaceSearchResultList
 import com.peto.ramap.ui.main.map.component.RamenShopDetailContent
 import com.peto.ramap.ui.main.map.component.RamenShopSearchBar
 import com.peto.ramap.ui.main.map.component.RamenShopSearchResultGuide
@@ -97,6 +99,7 @@ fun MapContent(
     onMyLocationChanged: (Location) -> Unit,
     onLocationPermissionBlocked: () -> Unit,
     onShopSelected: (RamenShop, Boolean) -> Unit,
+    onPlaceSelected: (PlaceSearchResult) -> Unit,
     onShopDetailDismissed: () -> Unit,
     onQueryChanged: (String) -> Unit,
     onSearchResultsDismissed: () -> Unit,
@@ -153,6 +156,8 @@ fun MapContent(
             focusRequestKey = uiState.focusRequestKey,
             initialFocusLocation = uiState.initialFocusLocation,
             initialFocusRequestKey = uiState.initialFocusRequestKey,
+            placeFocusLocation = uiState.placeFocusLocation,
+            placeFocusRequestKey = uiState.placeFocusRequestKey,
             shouldBootstrapInitialLocationFocus = uiState.shouldBootstrapInitialLocationFocus,
             selectedShopId = uiState.selectedShop?.id,
             cameraPosition = uiState.cameraPosition,
@@ -205,14 +210,22 @@ fun MapContent(
             ) {
                 Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
                     val searchResultGuide = uiState.searchResultGuide
-                    if (searchResultGuide != null) {
-                        RamenShopSearchResultGuide(guide = searchResultGuide)
-                    } else {
-                        RamenShopSearchResultList(
-                            shops = uiState.searchResultShops,
-                            categoryLabel = { category -> stringResource(category.stringResource) },
-                            onShopClick = { onShopSelected(it, true) },
-                        )
+                    when {
+                        uiState.placeSearchResults.isNotEmpty() ->
+                            PlaceSearchResultList(
+                                places = uiState.placeSearchResults,
+                                onPlaceClick = onPlaceSelected,
+                            )
+
+                        searchResultGuide != null ->
+                            RamenShopSearchResultGuide(guide = searchResultGuide)
+
+                        else ->
+                            RamenShopSearchResultList(
+                                shops = uiState.searchResultShops,
+                                categoryLabel = { category -> stringResource(category.stringResource) },
+                                onShopClick = { onShopSelected(it, true) },
+                            )
                     }
                 }
             }

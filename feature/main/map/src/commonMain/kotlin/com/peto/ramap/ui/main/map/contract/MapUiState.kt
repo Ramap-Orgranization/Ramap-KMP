@@ -1,5 +1,6 @@
 package com.peto.ramap.ui.main.map.contract
 
+import com.peto.ramap.domain.model.place.PlaceSearchResults
 import com.peto.ramap.domain.model.shop.Location
 import com.peto.ramap.domain.model.shop.MapBounds
 import com.peto.ramap.domain.model.shop.RamenShop
@@ -85,6 +86,9 @@ data class MapUiState(
     val searchResultShops: RamenShops
         get() = displaySearchResults.nearestFirstTo(currentLocation)
 
+    val placeSearchResults: PlaceSearchResults
+        get() = search.placeResults.nearestFirstTo(cameraPosition?.center ?: defaultCameraCenter)
+
     /**
      * 검색 결과 대신 사용자에게 안내할 메시지 상태.
      *
@@ -95,6 +99,7 @@ data class MapUiState(
         get() {
             if (!hasLoadedSearchResultsForCurrentQuery) return null
             if (personalizationView != MapPersonalization.ALL) return null
+            if (placeSearchResults.isNotEmpty()) return null
             if (search.results.isEmpty()) return SearchResultGuide.SEARCH_EMPTY
             if (
                 displaySearchResults.isNotEmpty() &&
@@ -142,7 +147,7 @@ data class MapUiState(
                 !search.isResultsDismissed &&
                 personalizationView == MapPersonalization.ALL &&
                 search.input.isNotBlank() &&
-                searchResultShops.size > 1
+                (searchResultShops.size > 1 || placeSearchResults.size > 1)
 
     /**
      * 지도 화면의 바텀시트를 열지 여부.
@@ -176,6 +181,12 @@ data class MapUiState(
 
     val focusRequestKey: Long
         get() = search.focusRequestKey
+
+    val placeFocusLocation: Location?
+        get() = search.placeFocusLocation
+
+    val placeFocusRequestKey: Long
+        get() = search.placeFocusRequestKey
 
     val initialFocusLocation: Location?
         get() = initialLocationFocus.location
@@ -237,4 +248,10 @@ data class MapUiState(
      */
     private val displayFilteredShops: RamenShops
         get() = filteredShops.markHidden(hiddenShopIds)
+
+    private val defaultCameraCenter =
+        Location(
+            lat = DefaultMapConfig.LATITUDE,
+            lng = DefaultMapConfig.LONGITUDE,
+        )
 }

@@ -9,6 +9,8 @@ import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.auth.LoginSessionState
 import com.peto.ramap.domain.model.personalization.ShopPersonalization
+import com.peto.ramap.domain.model.place.PlaceSearchResult
+import com.peto.ramap.domain.model.place.PlaceSearchResults
 import com.peto.ramap.domain.model.report.PlaceReportTextParser
 import com.peto.ramap.domain.model.report.ShopInformationField
 import com.peto.ramap.domain.model.report.ShopInformationReport
@@ -21,12 +23,14 @@ import com.peto.ramap.domain.model.shop.RamenShopFilter
 import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.domain.model.shop.SearchQuery
 import com.peto.ramap.domain.repository.LoginRepository
+import com.peto.ramap.domain.repository.PlaceSearchRepository
 import com.peto.ramap.domain.repository.RamenShopRepository
 import com.peto.ramap.domain.repository.ShopReportRepository
 import com.peto.ramap.domain.repository.ShopWaitingSystemRepository
 import com.peto.ramap.domain.store.ShopPersonalizationStore
 import com.peto.ramap.ui.base.BaseViewModel
 import com.peto.ramap.ui.location.CurrentLocationStore
+import com.peto.ramap.ui.main.map.config.DefaultMapConfig
 import com.peto.ramap.ui.main.map.contract.MapIntent
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnAccountDeleteConfirmed
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnBookmarkToggled
@@ -44,6 +48,7 @@ import com.peto.ramap.ui.main.map.contract.MapIntent.OnLocationPermissionBlocked
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnLogoutClicked
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnMyLocationChanged
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnPersonalizationViewChanged
+import com.peto.ramap.ui.main.map.contract.MapIntent.OnPlaceSelected
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnQueryChanged
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnSearchResultsDismissed
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopDetailDismissed
@@ -96,6 +101,7 @@ class MapViewModel(
     private val reportRepository: ShopReportRepository,
     private val loginRepository: LoginRepository,
     private val currentLocationStore: CurrentLocationStore,
+    private val placeSearchRepository: PlaceSearchRepository,
 ) : BaseViewModel<MapUiState, MapIntent, MapSideEffect>(initialState = MapUiState()) {
     private var boundsLoadJob: Job? = null
     private var boundsLoadRequestId = 0L
@@ -128,6 +134,7 @@ class MapViewModel(
             is OnSearchResultsDismissed -> dismissSearchResults()
             OnInitialMapRetryClicked -> retryInitialMapLoad()
             is OnQueryChanged -> updateQuery(intent.query)
+            is OnPlaceSelected -> selectPlace(intent.place)
             is OnCategoryFilterToggled -> toggleCategoryFilter(intent.category)
             OnBookmarkedShopsToggled -> toggleBookmarkedView()
             is OnFilterCleared -> clearFilter()
@@ -248,6 +255,15 @@ class MapViewModel(
         reduce { copy(search = search.dismissResults()) }
     }
 
+    private fun selectPlace(place: PlaceSearchResult) {
+        reduce {
+            copy(
+                search = search.selectPlace(place),
+                selectedShop = null,
+            )
+        }
+    }
+
     private suspend fun updateQuery(query: String) {
         val normalizedQuery = SearchQuery(query).normalizeShopSearchQuery()
         val hasCurrentSearchResults = currentState.search.hasLoadedResultsFor(normalizedQuery)
@@ -259,7 +275,11 @@ class MapViewModel(
             )
         }
 
-        if (normalizedQuery.value.isNotBlank() && hasCurrentSearchResults) {
+        if (
+            normalizedQuery.value.isNotBlank() &&
+            hasCurrentSearchResults &&
+            currentState.search.results.isNotEmpty()
+        ) {
             searchJob?.cancel()
             handleSingleSearchResult(currentState.searchResultShops.singleShopOrNull())
             return
@@ -650,10 +670,35 @@ class MapViewModel(
         shops: RamenShops,
     ) {
         reduceSearchResult(query, shops)
-        if (shops.isEmpty()) {
-            showToast(Res.string.search_result_empty_message)
+        if (shops.isNotEmpty()) {
+            handleSingleSearchResult(currentState.searchResultShops.singleShopOrNull())
+            return
         }
-        handleSingleSearchResult(currentState.searchResultShops.singleShopOrNull())
+
+        loadPlaceSearchResults(query)
+    }
+
+    private suspend fun loadPlaceSearchResults(query: SearchQuery) {
+        val requestId = searchRequestId
+        val center =
+            currentState.cameraPosition?.center
+                ?: Location(DefaultMapConfig.LATITUDE, DefaultMapConfig.LONGITUDE)
+        val result = placeSearchRepository.search(query, center)
+        if (requestId != searchRequestId) return
+
+        handleResult(
+            result = result,
+            onSuccess = ::handlePlaceSearchSuccess,
+            onError = { showDataLoadFailure() },
+        )
+    }
+
+    private fun handlePlaceSearchSuccess(results: PlaceSearchResults) {
+        reduce { copy(search = search.updatePlaceResults(results)) }
+        when (results.size) {
+            0 -> showToast(Res.string.search_result_empty_message)
+            1 -> selectPlace(results.single())
+        }
     }
 
     private fun showDataLoadFailure() {

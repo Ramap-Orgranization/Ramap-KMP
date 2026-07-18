@@ -28,6 +28,7 @@ import com.peto.ramap.ui.main.map.contract.MapIntent.OnInitialMapRetryClicked
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnKakaoLoginClicked
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnLocationPermissionBlocked
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnMyLocationChanged
+import com.peto.ramap.ui.main.map.contract.MapIntent.OnPlaceSelected
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnQueryChanged
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnSearchResultsDismissed
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopDetailDismissed
@@ -84,6 +85,7 @@ fun MapRoute(
         onMyLocationChanged = { viewModel.dispatch(OnMyLocationChanged(it)) },
         onLocationPermissionBlocked = { viewModel.dispatch(OnLocationPermissionBlocked) },
         onShopSelected = { shop, shouldFocus -> viewModel.dispatch(OnShopSelected(shop, shouldFocus)) },
+        onPlaceSelected = { viewModel.dispatch(OnPlaceSelected(it)) },
         onShopDetailDismissed = { viewModel.dispatch(OnShopDetailDismissed) },
         onQueryChanged = { viewModel.dispatch(OnQueryChanged(it)) },
         onSearchResultsDismissed = { viewModel.dispatch(OnSearchResultsDismissed) },

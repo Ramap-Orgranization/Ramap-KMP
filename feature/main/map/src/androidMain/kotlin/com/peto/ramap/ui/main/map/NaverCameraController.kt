@@ -13,6 +13,7 @@ import com.peto.ramap.ui.main.map.config.MapInteractionConfig
 internal class NaverCameraController {
     private var lastFocusKey = ""
     private var lastCurrentLocationFocusKey = 0L
+    private var lastPlaceFocusKey = 0L
 
     fun focusShops(
         naverMap: NaverMap,
@@ -36,6 +37,22 @@ internal class NaverCameraController {
         naverMap.moveCamera(
             CameraUpdate.scrollTo(
                 LatLng(location.lat, location.lng),
+            ),
+        )
+    }
+
+    fun focusPlace(
+        naverMap: NaverMap,
+        location: Location,
+        requestKey: Long,
+    ) {
+        if (requestKey == 0L || requestKey == lastPlaceFocusKey) return
+        lastPlaceFocusKey = requestKey
+        naverMap.locationTrackingMode = LocationTrackingMode.NoFollow
+        naverMap.moveCamera(
+            CameraUpdate.scrollAndZoomTo(
+                LatLng(location.lat, location.lng),
+                MapInteractionConfig.PLACE_SEARCH_ZOOM_LEVEL.toDouble(),
             ),
         )
     }
