@@ -26,7 +26,7 @@ import com.peto.ramap.domain.repository.ShopReportRepository
 import com.peto.ramap.domain.repository.ShopWaitingSystemRepository
 import com.peto.ramap.domain.store.ShopPersonalizationStore
 import com.peto.ramap.ui.base.BaseViewModel
-import com.peto.ramap.ui.common.CurrentLocationStore
+import com.peto.ramap.ui.location.CurrentLocationStore
 import com.peto.ramap.ui.main.map.contract.MapIntent
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnAccountDeleteConfirmed
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnBookmarkToggled
