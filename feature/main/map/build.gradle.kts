@@ -28,16 +28,16 @@ kotlin {
     sourceSets.commonMain {
         dependencies {
             implementation(projects.core.ui)
-            implementation(libs.navigationevent.compose)
+            implementation(libs.navigation.event.compose)
             implementation(libs.coil.compose)
-            implementation(libs.compose.uiToolingPreview)
+            implementation(libs.compose.ui.tooling.preview)
         }
     }
     sourceSets.androidMain {
         dependencies {
             implementation(libs.naver.map)
             implementation(libs.play.services.location)
-            implementation(libs.compose.uiToolingPreview)
+            implementation(libs.compose.ui.tooling.preview)
         }
     }
 }

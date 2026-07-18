@@ -10,8 +10,8 @@ class KmpFeatureConventionPlugin : Plugin<Project> {
         pluginManager.apply("ramap.kmp.compose")
         extensions.configure<KotlinMultiplatformExtension> {
             sourceSets.getByName("commonMain").dependencies {
-                implementation(libs.findLibrary("androidx-lifecycle-viewmodelCompose").get())
-                implementation(libs.findLibrary("androidx-lifecycle-runtimeCompose").get())
+                implementation(libs.findLibrary("androidx-lifecycle-viewmodel-compose").get())
+                implementation(libs.findLibrary("androidx-lifecycle-runtime-compose").get())
             }
         }
     }

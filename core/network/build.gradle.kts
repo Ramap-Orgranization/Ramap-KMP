@@ -5,7 +5,7 @@ plugins {
     id("ramap.kmp.library")
     id("ramap.kmp.test")
     id("ramap.serialization")
-    alias(libs.plugins.buildkonfig)
+    alias(libs.plugins.build.konfig)
 }
 
 val localProperties =

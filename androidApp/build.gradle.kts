@@ -40,7 +40,7 @@ plugins {
 if (file("google-services.json").exists()) {
     apply(
         plugin =
-            libs.plugins.googleServices
+            libs.plugins.google.services
                 .get()
                 .pluginId,
     )
@@ -68,25 +68,25 @@ dependencies {
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.messaging)
 
-    implementation(libs.compose.uiToolingPreview)
-    debugImplementation(libs.compose.uiTooling)
+    implementation(libs.compose.ui.tooling.preview)
+    debugImplementation(libs.compose.ui.tooling)
 }
 
 android {
     namespace = "com.peto.ramap"
     compileSdk =
-        libs.versions.android.compileSdk
+        libs.versions.android.compile.sdk
             .get()
             .toInt()
 
     defaultConfig {
         applicationId = "com.peto.ramap"
         minSdk =
-            libs.versions.android.minSdk
+            libs.versions.android.min.sdk
                 .get()
                 .toInt()
         targetSdk =
-            libs.versions.android.targetSdk
+            libs.versions.android.target.sdk
                 .get()
                 .toInt()
         versionCode = 2
