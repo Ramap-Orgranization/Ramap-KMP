@@ -14,8 +14,6 @@ import com.peto.ramap.ui.base.BaseViewModel
 import com.peto.ramap.ui.common.LoadState
 import com.peto.ramap.ui.subscribed.contract.SubscribedShopListIntent
 import com.peto.ramap.ui.subscribed.contract.SubscribedShopListIntent.OnRemovalConfirmed
-import com.peto.ramap.ui.subscribed.contract.SubscribedShopListIntent.OnRemovalDismissed
-import com.peto.ramap.ui.subscribed.contract.SubscribedShopListIntent.OnRemovalRequested
 import com.peto.ramap.ui.subscribed.contract.SubscribedShopListIntent.OnRetry
 import com.peto.ramap.ui.subscribed.contract.SubscribedShopListSideEffect
 import com.peto.ramap.ui.subscribed.contract.SubscribedShopListUiState
@@ -47,8 +45,6 @@ class SubscribedShopListViewModel(
     override suspend fun handleIntent(intent: SubscribedShopListIntent) {
         when (intent) {
             OnRetry -> loadSubscriptions()
-            is OnRemovalRequested -> reduce { copy(pendingRemoval = intent.target) }
-            OnRemovalDismissed -> reduce { copy(pendingRemoval = null) }
             is OnRemovalConfirmed -> confirmRemoval(intent.target)
         }
     }
@@ -209,19 +205,16 @@ class SubscribedShopListViewModel(
                                 ?.without(target.shopId)
                                 ?.let { LoadState.Content(it) }
                                 ?: shopsState,
-                        pendingRemoval = null,
                     )
                 is SubscribedRemovalTarget.EventOverride ->
                     copy(
                         subscribedEvents = subscribedEvents.filterNot { it.id == target.eventId },
-                        pendingRemoval = null,
                     )
             }
         }
     }
 
     private fun handleRemovalFailure() {
-        reduce { copy(pendingRemoval = null) }
         trySideEffect(
             SubscribedShopListSideEffect.ShowToast(
                 ToastData(Res.string.personalization_update_failure_message, ToastType.ERROR),

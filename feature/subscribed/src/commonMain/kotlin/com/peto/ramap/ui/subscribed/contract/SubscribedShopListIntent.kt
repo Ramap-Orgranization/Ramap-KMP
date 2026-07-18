@@ -6,12 +6,6 @@ import com.peto.ramap.ui.subscribed.model.SubscribedRemovalTarget
 sealed interface SubscribedShopListIntent : Intent {
     data object OnRetry : SubscribedShopListIntent
 
-    data class OnRemovalRequested(
-        val target: SubscribedRemovalTarget,
-    ) : SubscribedShopListIntent
-
-    data object OnRemovalDismissed : SubscribedShopListIntent
-
     data class OnRemovalConfirmed(
         val target: SubscribedRemovalTarget,
     ) : SubscribedShopListIntent
