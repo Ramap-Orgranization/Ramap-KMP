@@ -41,11 +41,12 @@ class NaverReverseGeocoder(
                     }.bodyAsText(),
             ).jsonObject
 
-    private fun parseAddress(root: JsonObject): String? {
+    internal fun parseAddress(root: JsonObject): String? {
         val result = root[FIELD_RESULTS]?.jsonArray?.firstOrNull()?.jsonObject ?: return null
         val region = result[FIELD_REGION]?.jsonObject ?: return null
         val land = result[FIELD_LAND]?.jsonObject
         return (region.names() + land?.text(FIELD_NAME) + land?.number())
+            .filterNotNull()
             .joinToString(ADDRESS_SEPARATOR)
             .takeIf(String::isNotBlank)
     }
