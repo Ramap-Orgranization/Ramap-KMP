@@ -15,10 +15,10 @@ import com.peto.ramap.domain.model.shop.Location
 import com.peto.ramap.domain.model.shop.RamenShopFilter
 import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.domain.model.shop.SearchQuery
-import com.peto.ramap.domain.repository.PersonalizationRepository
 import com.peto.ramap.domain.repository.RamenShopRepository
 import com.peto.ramap.domain.repository.ShopReportRepository
 import com.peto.ramap.domain.repository.ShopWaitingSystemRepository
+import com.peto.ramap.domain.store.ShopPersonalizationStore
 import com.peto.ramap.fake.FakeLoginRepository
 import com.peto.ramap.fake.FakeNotificationSettingsRepository
 import com.peto.ramap.fake.FakePersonalizationRepository
@@ -1135,6 +1135,68 @@ class MapViewModelTest {
         }
 
     @Test
+    fun `선택한 숨김 매장을 해제하면 선택 상태의 가시성을 복구한다`() =
+        coroutinesTest {
+            val shop =
+                ramenShopFixture(
+                    id = "selected-hidden-shop",
+                    isVisible = false,
+                )
+            val personalizationStore = FakePersonalizationRepository()
+            val viewModel =
+                mapViewModel(
+                    ramenShopRepository =
+                        FakeRamenShopRepository(
+                            fetchByIdsResult = RamenShops(mapOf(shop.id to shop)),
+                        ),
+                    personalizationRepository = personalizationStore,
+                    loginRepository = loggedInRepository(),
+                )
+            runCurrent()
+
+            personalizationStore.hideShop(shop.id)
+            runCurrent()
+            viewModel.dispatch(OnShopSelected(shop))
+            runCurrent()
+            personalizationStore.unhideShop(shop.id)
+            runCurrent()
+
+            assertEquals(shop.copy(isVisible = true), viewModel.uiState.value.selectedShop)
+        }
+
+    @Test
+    fun `여러 검색 결과 중 선택한 매장을 숨기면 검색 결과를 닫는다`() =
+        coroutinesTest {
+            val selectedShop = ramenShopFixture(id = "selected-search-shop")
+            val otherShop = ramenShopFixture(id = "other-search-shop")
+            val personalizationStore = FakePersonalizationRepository()
+            val viewModel =
+                mapViewModel(
+                    ramenShopRepository =
+                        FakeRamenShopRepository(
+                            searchResult =
+                                RamenShops(
+                                    listOf(selectedShop, otherShop).associateBy { it.id },
+                                ),
+                        ),
+                    personalizationRepository = personalizationStore,
+                    loginRepository = loggedInRepository(),
+                )
+            runCurrent()
+
+            viewModel.dispatch(OnQueryChanged("라멘"))
+            advanceTimeBy(300)
+            runCurrent()
+            viewModel.dispatch(OnShopSelected(selectedShop))
+            runCurrent()
+            personalizationStore.hideShop(selectedShop.id)
+            runCurrent()
+
+            assertEquals(null, viewModel.uiState.value.selectedShop)
+            assertEquals(false, viewModel.uiState.value.showSearchResults)
+        }
+
+    @Test
     fun `매장을 숨김 처리하면 완료 토스트를 표시한다`() =
         coroutinesTest {
             val shop = ramenShopFixture(id = "hidden-toast-shop")
@@ -1153,14 +1215,14 @@ class MapViewModelTest {
     fun `알림 구독 매장을 숨기면 구독을 해제한다`() =
         coroutinesTest {
             val shop = ramenShopFixture(id = "subscribed-shop-to-hide")
-            val notificationRepository =
-                FakeNotificationSettingsRepository(
-                    shopIds = mutableSetOf(shop.id),
+            val personalizationRepository =
+                FakePersonalizationRepository(
+                    Personalization(notificationShopIds = setOf(shop.id)),
                 )
             val viewModel =
                 mapViewModel(
                     loginRepository = loggedInRepository(),
-                    notificationSettingsRepository = notificationRepository,
+                    personalizationRepository = personalizationRepository,
                 )
             runCurrent()
 
@@ -1169,8 +1231,7 @@ class MapViewModelTest {
 
             assertEquals(setOf(shop.id), viewModel.uiState.value.hiddenShopIds)
             assertEquals(emptySet(), viewModel.uiState.value.notificationShopIds)
-            assertEquals(emptySet(), notificationRepository.shopIds)
-            assertEquals(listOf(shop.id to false), notificationRepository.shopNotificationUpdates)
+            assertEquals(emptySet(), personalizationRepository.state.value.notificationShopIds)
         }
 
     @Test
@@ -1206,11 +1267,11 @@ class MapViewModelTest {
     fun `매장 알림을 활성화하면 저장한다`() =
         coroutinesTest {
             val shop = ramenShopFixture(id = "permission-granted-shop")
-            val notificationRepository = FakeNotificationSettingsRepository()
+            val personalizationRepository = FakePersonalizationRepository()
             val viewModel =
                 mapViewModel(
                     loginRepository = loggedInRepository(),
-                    notificationSettingsRepository = notificationRepository,
+                    personalizationRepository = personalizationRepository,
                 )
             runCurrent()
 
@@ -1218,18 +1279,21 @@ class MapViewModelTest {
             runCurrent()
 
             assertEquals(setOf(shop.id), viewModel.uiState.value.notificationShopIds)
-            assertEquals(listOf(shop.id to true), notificationRepository.shopNotificationUpdates)
+            assertEquals(setOf(shop.id), personalizationRepository.state.value.notificationShopIds)
         }
 
     @Test
     fun `매장 알림을 비활성화하면 저장한다`() =
         coroutinesTest {
             val shop = ramenShopFixture(id = "notification-disable-shop")
-            val notificationRepository = FakeNotificationSettingsRepository(shopIds = mutableSetOf(shop.id))
+            val personalizationRepository =
+                FakePersonalizationRepository(
+                    Personalization(notificationShopIds = setOf(shop.id)),
+                )
             val viewModel =
                 mapViewModel(
                     loginRepository = loggedInRepository(),
-                    notificationSettingsRepository = notificationRepository,
+                    personalizationRepository = personalizationRepository,
                 )
             runCurrent()
 
@@ -1237,23 +1301,26 @@ class MapViewModelTest {
             runCurrent()
 
             assertEquals(emptySet(), viewModel.uiState.value.notificationShopIds)
-            assertEquals(listOf(shop.id to false), notificationRepository.shopNotificationUpdates)
+            assertEquals(emptySet(), personalizationRepository.state.value.notificationShopIds)
         }
 
     @Test
     fun `다른 화면에서 매장 알림을 해제하면 지도 알림 상태도 갱신한다`() =
         coroutinesTest {
             val shop = ramenShopFixture(id = "notification-disabled-externally")
-            val notificationRepository = FakeNotificationSettingsRepository(shopIds = mutableSetOf(shop.id))
+            val personalizationRepository =
+                FakePersonalizationRepository(
+                    Personalization(notificationShopIds = setOf(shop.id)),
+                )
             val viewModel =
                 mapViewModel(
                     loginRepository = loggedInRepository(),
-                    notificationSettingsRepository = notificationRepository,
+                    personalizationRepository = personalizationRepository,
                 )
             runCurrent()
             assertEquals(setOf(shop.id), viewModel.uiState.value.notificationShopIds)
 
-            notificationRepository.updateShopNotification(shop.id, false)
+            personalizationRepository.updateShopNotification(shop.id, false)
             runCurrent()
 
             assertEquals(emptySet(), viewModel.uiState.value.notificationShopIds)
@@ -1965,7 +2032,7 @@ private fun showToastSideEffect(message: StringResource): ShowToast =
 private fun mapViewModel(
     ramenShopRepository: RamenShopRepository = FakeRamenShopRepository(),
     shopWaitingSystemRepository: ShopWaitingSystemRepository = FakeShopWaitingSystemRepository(),
-    personalizationRepository: PersonalizationRepository = FakePersonalizationRepository(),
+    personalizationRepository: ShopPersonalizationStore = FakePersonalizationRepository(),
     loginRepository: FakeLoginRepository = FakeLoginRepository(),
     shopReportRepository: ShopReportRepository = FakeShopReportRepository(),
     notificationSettingsRepository: FakeNotificationSettingsRepository = FakeNotificationSettingsRepository(),
@@ -1977,7 +2044,6 @@ private fun mapViewModel(
         shopReportRepository,
         loginRepository,
         CurrentLocationStore(),
-        notificationSettingsRepository,
     )
 
 private fun loggedInRepository(): FakeLoginRepository =

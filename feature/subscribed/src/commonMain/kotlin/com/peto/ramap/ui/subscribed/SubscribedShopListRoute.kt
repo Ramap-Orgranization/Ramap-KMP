@@ -16,6 +16,10 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -65,6 +69,7 @@ fun SubscribedShopListRoute(
     viewModel: SubscribedShopListViewModel = koinViewModel(),
 ) {
     val uiState = viewModel.uiState.collectAsStateWithLifecycle().value
+    var removalTarget by remember { mutableStateOf<SubscribedRemovalTarget?>(null) }
     ObserveAsEvents(viewModel.sideEffect) { sideEffect ->
         when (sideEffect) {
             is SubscribedShopListSideEffect.ShowToast -> toastManager.show(sideEffect.data)
@@ -108,19 +113,17 @@ fun SubscribedShopListRoute(
                     SubscribedContent(
                         shops = state.data,
                         events = uiState.subscribedEvents,
-                        onRemovalRequested = {
-                            viewModel.dispatch(SubscribedShopListIntent.OnRemovalRequested(it))
-                        },
+                        onRemovalRequested = { removalTarget = it },
                     )
                 }
             }
         }
     }
     CommonDialog(
-        visible = uiState.pendingRemoval != null,
+        visible = removalTarget != null,
         confirmText = stringResource(Res.string.notification_removal_confirm_action),
         dismissText = stringResource(Res.string.notification_removal_dismiss_action),
-        onDismissRequest = { viewModel.dispatch(SubscribedShopListIntent.OnRemovalDismissed) },
+        onDismissRequest = { removalTarget = null },
         content = {
             AppText(
                 stringResource(Res.string.notification_removal_confirm_title),
@@ -129,8 +132,13 @@ fun SubscribedShopListRoute(
                 textAlign = TextAlign.Center,
             )
         },
-        onConfirm = { viewModel.dispatch(SubscribedShopListIntent.OnRemovalConfirmed) },
-        onDismiss = { viewModel.dispatch(SubscribedShopListIntent.OnRemovalDismissed) },
+        onConfirm = {
+            removalTarget?.let { target ->
+                viewModel.dispatch(SubscribedShopListIntent.OnRemovalConfirmed(target))
+            }
+            removalTarget = null
+        },
+        onDismiss = { removalTarget = null },
     )
 }
 
