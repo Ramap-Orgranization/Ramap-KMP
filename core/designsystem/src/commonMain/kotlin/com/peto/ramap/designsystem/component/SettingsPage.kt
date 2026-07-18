@@ -1,4 +1,4 @@
-package com.peto.ramap.ui.account
+package com.peto.ramap.designsystem.component
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
@@ -24,7 +24,7 @@ import ramap.shared.generated.resources.ic_arrow3_left
 import ramap.shared.generated.resources.navigation_back
 
 @Composable
-internal fun SettingsPage(
+fun SettingsPage(
     title: StringResource,
     onBack: () -> Unit,
     content: @Composable () -> Unit,

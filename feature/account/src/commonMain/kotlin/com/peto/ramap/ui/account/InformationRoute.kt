@@ -7,6 +7,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.peto.ramap.designsystem.card.SectionCard
+import com.peto.ramap.designsystem.component.SettingsPage
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.extension.noRippleClickable
 import com.peto.ramap.platform.AppVersionProvider
