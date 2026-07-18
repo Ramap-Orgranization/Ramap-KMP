@@ -14,6 +14,10 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -56,6 +60,8 @@ fun BookmarkedShopListRoute(
     viewModel: BookmarkedShopListViewModel = koinViewModel(),
 ) {
     val uiState = viewModel.uiState.collectAsStateWithLifecycle().value
+    var removalTargetShopId by remember { mutableStateOf<String?>(null) }
+
     ObserveAsEvents(viewModel.sideEffect) { sideEffect ->
         when (sideEffect) {
             is BookmarkedShopListSideEffect.ShowToast -> toastManager.show(sideEffect.data)
@@ -98,7 +104,7 @@ fun BookmarkedShopListRoute(
                     RamenShopSearchResultList(
                         shops = state.data,
                         onShopClick = {
-                            viewModel.dispatch(BookmarkedShopListIntent.OnShopClicked(it.id))
+                            removalTargetShopId = it.id
                         },
                         categoryLabel = { stringResource(it.stringResource) },
                         itemModifier = {
@@ -112,11 +118,11 @@ fun BookmarkedShopListRoute(
         }
     }
     CommonDialog(
-        visible = uiState.pendingBookmarkShopId != null,
+        visible = removalTargetShopId != null,
         confirmText = stringResource(Res.string.bookmark_removal_confirm_action),
         dismissText = stringResource(Res.string.notification_removal_dismiss_action),
         onDismissRequest = {
-            viewModel.dispatch(BookmarkedShopListIntent.OnRemovalDismissed)
+            removalTargetShopId = null
         },
         content = {
             AppText(
@@ -127,10 +133,13 @@ fun BookmarkedShopListRoute(
             )
         },
         onConfirm = {
-            viewModel.dispatch(BookmarkedShopListIntent.OnRemovalConfirmed)
+            removalTargetShopId?.let { shopId ->
+                viewModel.dispatch(BookmarkedShopListIntent.OnRemovalConfirmed(shopId))
+            }
+            removalTargetShopId = null
         },
         onDismiss = {
-            viewModel.dispatch(BookmarkedShopListIntent.OnRemovalDismissed)
+            removalTargetShopId = null
         },
     )
 }
