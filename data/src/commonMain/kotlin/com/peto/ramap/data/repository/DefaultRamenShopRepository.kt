@@ -48,7 +48,7 @@ class DefaultRamenShopRepository(
             )
         }
 
-    override suspend fun fetchRamenShopsByIds(shopIds: Set<String>): RamapResult<RamenShops> =
+    override suspend fun fetchRamenShops(shopIds: Set<String>): RamapResult<RamenShops> =
         invokeRequest {
             RamenShops(
                 dataSource

@@ -230,7 +230,7 @@ class MapViewModel(
         }
 
         handleResult(
-            result = ramenShopRepository.fetchRamenShopsByIds(setOf(shopId)),
+            result = ramenShopRepository.fetchRamenShops(setOf(shopId)),
             onSuccess = { shops -> shops[shopId]?.let { selectShop(it) } },
             onError = {},
         )
@@ -325,7 +325,7 @@ class MapViewModel(
         if (shopIds.isEmpty()) return
 
         handleResult(
-            result = ramenShopRepository.fetchRamenShopsByIds(shopIds),
+            result = ramenShopRepository.fetchRamenShops(shopIds),
             onSuccess = ::mergePersonalizedShops,
         )
     }
@@ -908,7 +908,7 @@ class MapViewModel(
 
     private suspend fun fetchShopDetail(shopId: String): RamapResult<ShopDetail> =
         coroutineScope {
-            val shopResult = async { ramenShopRepository.fetchRamenShopsByIds(setOf(shopId)) }
+            val shopResult = async { ramenShopRepository.fetchRamenShops(setOf(shopId)) }
             val waitingResult = async { shopWaitingSystemRepository.fetchShopWaitingSystem(shopId) }
             val eventResult = async { ramenShopRepository.fetchActiveShopEvent(shopId) }
 

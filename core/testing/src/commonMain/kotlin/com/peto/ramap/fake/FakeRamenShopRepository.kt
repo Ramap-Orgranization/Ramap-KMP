@@ -50,7 +50,7 @@ class FakeRamenShopRepository(
         return error?.let { RamapResult.Error(it) } ?: RamapResult.Success(result)
     }
 
-    override suspend fun fetchRamenShopsByIds(shopIds: Set<String>): RamapResult<RamenShops> {
+    override suspend fun fetchRamenShops(shopIds: Set<String>): RamapResult<RamenShops> {
         requestedShopIdsHistory += shopIds
         val shops = if (fetchByIdsResult.isNotEmpty()) fetchByIdsResult else RamenShops(result + searchResult)
         return error?.let { RamapResult.Error(it) } ?: RamapResult.Success(shops)

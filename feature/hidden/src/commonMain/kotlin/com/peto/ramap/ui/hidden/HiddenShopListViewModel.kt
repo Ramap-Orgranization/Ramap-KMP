@@ -74,7 +74,7 @@ class HiddenShopListViewModel(
         }
 
         handleResult(
-            result = ramenShopRepository.fetchRamenShopsByIds(hiddenShopIds),
+            result = ramenShopRepository.fetchRamenShops(hiddenShopIds),
             onSuccess = { shops ->
                 reduce { copy(shopsState = LoadState.Content(shops.markHidden(hiddenShopIds))) }
             },

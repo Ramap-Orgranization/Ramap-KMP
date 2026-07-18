@@ -123,7 +123,7 @@ class SubscribedShopListViewModel(
         if (shopIds.isEmpty()) {
             RamapResult.Success(RamenShops(emptyMap()))
         } else {
-            ramenShopRepository.fetchRamenShopsByIds(shopIds)
+            ramenShopRepository.fetchRamenShops(shopIds)
         }
 
     private fun updateSubscriptions(
