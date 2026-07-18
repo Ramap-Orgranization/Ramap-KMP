@@ -81,8 +81,6 @@ data class RamenShops(
         return RamenShops(listOf(nearestShop) + values.filterNot { shop -> shop.id == nearestShop.id })
     }
 
-    fun sortedByName(): RamenShops = RamenShops(values.sortedBy(RamenShop::name))
-
     fun without(shopId: String): RamenShops = RamenShops(shops - shopId)
 
     fun singleShopOrNull(): RamenShop? = values.singleOrNull()
