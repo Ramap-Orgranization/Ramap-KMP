@@ -11,7 +11,7 @@ import com.peto.ramap.domain.repository.RamenShopRepository
 import com.peto.ramap.domain.repository.ReverseGeocoder
 import com.peto.ramap.domain.repository.ShopReportRepository
 import com.peto.ramap.ui.base.BaseViewModel
-import com.peto.ramap.ui.common.CurrentLocationStore
+import com.peto.ramap.ui.location.CurrentLocationStore
 import com.peto.ramap.ui.report.contract.PlaceReportIntent
 import com.peto.ramap.ui.report.contract.PlaceReportIntent.OnCurrentAddressRefresh
 import com.peto.ramap.ui.report.contract.PlaceReportIntent.OnCurrentLocationReportSubmit

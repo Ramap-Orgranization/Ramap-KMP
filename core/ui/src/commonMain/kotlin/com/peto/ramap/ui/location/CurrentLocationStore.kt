@@ -1,4 +1,4 @@
-package com.peto.ramap.ui.common
+package com.peto.ramap.ui.location
 
 import com.peto.ramap.domain.model.shop.Location
 import kotlinx.coroutines.flow.MutableStateFlow

@@ -9,7 +9,7 @@ import com.peto.ramap.domain.model.shop.Location
 import com.peto.ramap.domain.repository.ReverseGeocoder
 import com.peto.ramap.fake.FakeRamenShopRepository
 import com.peto.ramap.fake.FakeShopReportRepository
-import com.peto.ramap.ui.common.CurrentLocationStore
+import com.peto.ramap.ui.location.CurrentLocationStore
 import com.peto.ramap.ui.report.contract.PlaceReportIntent
 import com.peto.ramap.ui.report.contract.PlaceReportSideEffect
 import kotlinx.coroutines.ExperimentalCoroutinesApi
