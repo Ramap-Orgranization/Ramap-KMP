@@ -85,6 +85,7 @@ kotlin {
             implementation(projects.domain)
             implementation(projects.data)
             implementation(projects.feature.main)
+            implementation(projects.feature.event.detail)
             implementation(projects.feature.account)
             implementation(projects.feature.bookmark)
             implementation(projects.feature.hidden)

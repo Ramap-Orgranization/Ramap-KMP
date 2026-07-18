@@ -12,6 +12,7 @@ kotlin {
         implementation(projects.domain)
         implementation(projects.core.ui)
         implementation(projects.core.designsystem)
+        implementation(projects.core.platform)
         implementation(libs.koin.compose.viewmodel)
         implementation(libs.compose.material3)
         implementation(libs.compose.components.resources)
