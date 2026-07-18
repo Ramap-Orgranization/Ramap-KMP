@@ -181,7 +181,8 @@ fun EventDetailScreen(
             AppText(event.title, style = AppTextStyle.H1, color = GrayColor.C500)
             SectionCard(title = stringResource(Res.string.event_venue)) {
                 Column(
-                    modifier = Modifier.padding(top = 16.dp),
+                    modifier = Modifier
+                        .padding(horizontal = 20.dp, vertical = 10.dp),
                     verticalArrangement = Arrangement.spacedBy(20.dp),
                 ) {
                     EventLink(
@@ -212,17 +213,22 @@ fun EventDetailScreen(
                 }
             }
             SectionCard(title = stringResource(Res.string.event_content)) {
-                EventValue(event.description, Modifier.padding(top = 16.dp))
+                EventValue(
+                    event.description,
+                    Modifier.padding(horizontal = 20.dp, vertical = 10.dp),
+                )
             }
             event.waitingMethod?.let { waiting ->
                 SectionCard(title = stringResource(Res.string.event_waiting)) {
-                    EventValue(waiting, Modifier.padding(top = 16.dp))
-                    event.waitingUrl?.takeIf(ExternalUriOpener::isSupportedWebUri)?.let { url ->
-                        AppButton(
-                            text = stringResource(Res.string.event_waiting_action),
-                            modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
-                            onClick = { ExternalUriOpener.open(url) },
-                        )
+                    Column(modifier = Modifier.padding(horizontal = 20.dp).padding(top = 16.dp)) {
+                        EventValue(waiting)
+                        event.waitingUrl?.takeIf(ExternalUriOpener::isSupportedWebUri)?.let { url ->
+                            AppButton(
+                                text = stringResource(Res.string.event_waiting_action),
+                                modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+                                onClick = { ExternalUriOpener.open(url) },
+                            )
+                        }
                     }
                 }
             }
