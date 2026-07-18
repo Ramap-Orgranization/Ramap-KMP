@@ -181,8 +181,9 @@ fun EventDetailScreen(
             AppText(event.title, style = AppTextStyle.H1, color = GrayColor.C500)
             SectionCard(title = stringResource(Res.string.event_venue)) {
                 Column(
-                    modifier = Modifier
-                        .padding(horizontal = 20.dp, vertical = 10.dp),
+                    modifier =
+                        Modifier
+                            .padding(horizontal = 20.dp, vertical = 10.dp),
                     verticalArrangement = Arrangement.spacedBy(20.dp),
                 ) {
                     EventLink(
