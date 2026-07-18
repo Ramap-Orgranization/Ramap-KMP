@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.peto.ramap.designsystem.button.AppButton
 import com.peto.ramap.designsystem.card.SectionCard
+import com.peto.ramap.designsystem.component.SettingsPage
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.designsystem.toast.ToastManager
 import com.peto.ramap.theme.AppTextStyle
@@ -79,6 +80,8 @@ private fun PlaceReportContent(
             uiState.currentLocation != null -> stringResource(Res.string.place_report_location_address_failure)
             else -> stringResource(Res.string.place_report_location_empty)
         }
+    val refreshDescription = stringResource(Res.string.place_report_location_refresh)
+
     SectionCard {
         AppText(
             stringResource(Res.string.place_report_description),
@@ -132,7 +135,9 @@ private fun PlaceReportContent(
                 modifier =
                     Modifier
                         .padding(horizontal = 20.dp)
-                        .semantics { contentDescription = "refresh" },
+                        .semantics {
+                            contentDescription = refreshDescription
+                        },
                 onClick = { viewModel.dispatch(PlaceReportIntent.OnCurrentAddressRefresh) },
             ) {
                 Icon(

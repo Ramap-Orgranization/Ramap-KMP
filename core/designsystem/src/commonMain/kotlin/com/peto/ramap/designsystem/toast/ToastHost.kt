@@ -50,6 +50,7 @@ import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.ic_toast_default
 import ramap.shared.generated.resources.ic_toast_error
 import ramap.shared.generated.resources.ic_toast_success
+import ramap.shared.generated.resources.toast_icon
 import kotlin.time.Duration.Companion.milliseconds
 
 @Composable
@@ -154,7 +155,7 @@ private fun ToastItem(
         ) {
             Image(
                 painter = res,
-                contentDescription = "toast icon",
+                contentDescription = stringResource(Res.string.toast_icon),
                 modifier = Modifier.size(24.dp),
             )
 

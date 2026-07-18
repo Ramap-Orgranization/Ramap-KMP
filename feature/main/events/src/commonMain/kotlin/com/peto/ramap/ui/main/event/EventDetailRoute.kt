@@ -64,6 +64,7 @@ import ramap.shared.generated.resources.event_content
 import ramap.shared.generated.resources.event_date
 import ramap.shared.generated.resources.event_detail_title
 import ramap.shared.generated.resources.event_instagram_action
+import ramap.shared.generated.resources.event_link_title
 import ramap.shared.generated.resources.event_notification_disable
 import ramap.shared.generated.resources.event_notification_enable
 import ramap.shared.generated.resources.event_status_today
@@ -335,7 +336,11 @@ private fun EventLink(
     onClick: () -> Unit,
 ) {
     Column(modifier = Modifier.fillMaxWidth().noRippleClickable(onClick = onClick)) {
-        AppText("$title >", style = AppTextStyle.T2, color = GrayColor.C500)
+        AppText(
+            stringResource(Res.string.event_link_title, title),
+            style = AppTextStyle.T2,
+            color = GrayColor.C500,
+        )
         subtitle?.let { EventValue(it) }
     }
 }
