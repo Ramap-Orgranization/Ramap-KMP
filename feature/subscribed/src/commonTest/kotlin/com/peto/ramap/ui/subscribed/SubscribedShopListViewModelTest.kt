@@ -8,8 +8,10 @@ import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.model.event.ShopEventType
 import com.peto.ramap.domain.model.notification.EventNotificationOverride
+import com.peto.ramap.domain.model.personalization.Personalization
 import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.fake.FakeNotificationSettingsRepository
+import com.peto.ramap.fake.FakePersonalizationRepository
 import com.peto.ramap.fake.FakeRamenShopRepository
 import com.peto.ramap.fixture.ramenShopFixture
 import com.peto.ramap.ui.common.LoadState
@@ -32,6 +34,10 @@ class SubscribedShopListViewModelTest {
             val shop = ramenShopFixture(id = "subscribed-shop")
             val viewModel =
                 SubscribedShopListViewModel(
+                    personalizationStore =
+                        FakePersonalizationRepository(
+                            Personalization(notificationShopIds = setOf(shop.id)),
+                        ),
                     notificationRepository =
                         FakeNotificationSettingsRepository(shopIds = mutableSetOf(shop.id)),
                     ramenShopRepository =
@@ -52,6 +58,7 @@ class SubscribedShopListViewModelTest {
             val event = shopEventFixture("enabled-event")
             val viewModel =
                 SubscribedShopListViewModel(
+                    personalizationStore = FakePersonalizationRepository(),
                     notificationRepository =
                         FakeNotificationSettingsRepository(
                             eventOverrides =
@@ -75,6 +82,7 @@ class SubscribedShopListViewModelTest {
             val disabledEvent = shopEventFixture("disabled-event")
             val viewModel =
                 SubscribedShopListViewModel(
+                    personalizationStore = FakePersonalizationRepository(),
                     notificationRepository =
                         FakeNotificationSettingsRepository(
                             eventOverrides =
@@ -104,8 +112,13 @@ class SubscribedShopListViewModelTest {
         coroutinesTest {
             val shop = ramenShopFixture(id = "subscribed-shop")
             val repository = FakeNotificationSettingsRepository(shopIds = mutableSetOf(shop.id))
+            val personalizationStore =
+                FakePersonalizationRepository(
+                    Personalization(notificationShopIds = setOf(shop.id)),
+                )
             val viewModel =
                 SubscribedShopListViewModel(
+                    personalizationStore = personalizationStore,
                     notificationRepository = repository,
                     ramenShopRepository =
                         FakeRamenShopRepository(fetchByIdsResult = RamenShops(listOf(shop))),
@@ -113,16 +126,17 @@ class SubscribedShopListViewModelTest {
             runCurrent()
 
             viewModel.dispatch(
-                SubscribedShopListIntent.OnRemovalRequested(
+                SubscribedShopListIntent.OnRemovalConfirmed(
                     SubscribedRemovalTarget.Shop(shop.id),
                 ),
             )
-            viewModel.dispatch(SubscribedShopListIntent.OnRemovalConfirmed)
             runCurrent()
 
             assertEquals(LoadState.Content(RamenShops(emptyMap())), viewModel.uiState.value.shopsState)
-            assertEquals(null, viewModel.uiState.value.pendingRemoval)
-            assertTrue(repository.shopIds.isEmpty())
+            assertTrue(
+                personalizationStore.state.value.notificationShopIds
+                    .isEmpty(),
+            )
         }
 
     @Test
@@ -134,8 +148,16 @@ class SubscribedShopListViewModelTest {
                     shopNotificationError =
                         RamapError.Unknown(IllegalStateException("failure"))
                 }
+            val personalizationStore =
+                FakePersonalizationRepository(
+                    Personalization(notificationShopIds = setOf(shop.id)),
+                ).apply {
+                    shopNotificationError =
+                        RamapError.Unknown(IllegalStateException("failure"))
+                }
             val viewModel =
                 SubscribedShopListViewModel(
+                    personalizationStore = personalizationStore,
                     notificationRepository = repository,
                     ramenShopRepository =
                         FakeRamenShopRepository(fetchByIdsResult = RamenShops(listOf(shop))),
@@ -144,11 +166,10 @@ class SubscribedShopListViewModelTest {
 
             viewModel.sideEffect.test {
                 viewModel.dispatch(
-                    SubscribedShopListIntent.OnRemovalRequested(
+                    SubscribedShopListIntent.OnRemovalConfirmed(
                         SubscribedRemovalTarget.Shop(shop.id),
                     ),
                 )
-                viewModel.dispatch(SubscribedShopListIntent.OnRemovalConfirmed)
 
                 assertEquals(
                     SubscribedShopListSideEffect.ShowToast(
@@ -159,7 +180,6 @@ class SubscribedShopListViewModelTest {
                     ),
                     awaitItem(),
                 )
-                assertEquals(null, viewModel.uiState.value.pendingRemoval)
                 assertEquals(
                     LoadState.Content(RamenShops(listOf(shop))),
                     viewModel.uiState.value.shopsState,
@@ -177,24 +197,23 @@ class SubscribedShopListViewModelTest {
                 )
             val viewModel =
                 SubscribedShopListViewModel(
+                    personalizationStore = FakePersonalizationRepository(),
                     notificationRepository = repository,
                     ramenShopRepository = FakeRamenShopRepository(activeEvents = listOf(event)),
                 )
             runCurrent()
 
             viewModel.dispatch(
-                SubscribedShopListIntent.OnRemovalRequested(
+                SubscribedShopListIntent.OnRemovalConfirmed(
                     SubscribedRemovalTarget.EventOverride(event.id),
                 ),
             )
-            viewModel.dispatch(SubscribedShopListIntent.OnRemovalConfirmed)
             runCurrent()
 
             assertTrue(
                 viewModel.uiState.value.subscribedEvents
                     .isEmpty(),
             )
-            assertEquals(null, viewModel.uiState.value.pendingRemoval)
             assertTrue(repository.eventOverrides.isEmpty())
             assertEquals(listOf(event.id), repository.clearedEventNotificationIds)
         }
@@ -211,6 +230,7 @@ class SubscribedShopListViewModelTest {
                 }
             val viewModel =
                 SubscribedShopListViewModel(
+                    personalizationStore = FakePersonalizationRepository(),
                     notificationRepository = repository,
                     ramenShopRepository = FakeRamenShopRepository(activeEvents = listOf(event)),
                 )
@@ -218,11 +238,10 @@ class SubscribedShopListViewModelTest {
 
             viewModel.sideEffect.test {
                 viewModel.dispatch(
-                    SubscribedShopListIntent.OnRemovalRequested(
+                    SubscribedShopListIntent.OnRemovalConfirmed(
                         SubscribedRemovalTarget.EventOverride(event.id),
                     ),
                 )
-                viewModel.dispatch(SubscribedShopListIntent.OnRemovalConfirmed)
 
                 assertEquals(
                     SubscribedShopListSideEffect.ShowToast(
@@ -234,7 +253,6 @@ class SubscribedShopListViewModelTest {
                     awaitItem(),
                 )
                 assertEquals(listOf(event), viewModel.uiState.value.subscribedEvents)
-                assertEquals(null, viewModel.uiState.value.pendingRemoval)
                 assertEquals(listOf(event.id), repository.clearedEventNotificationIds)
             }
         }
@@ -248,6 +266,7 @@ class SubscribedShopListViewModelTest {
                 }
             val viewModel =
                 SubscribedShopListViewModel(
+                    personalizationStore = FakePersonalizationRepository(),
                     notificationRepository = repository,
                     ramenShopRepository = FakeRamenShopRepository(),
                 )
@@ -263,6 +282,7 @@ class SubscribedShopListViewModelTest {
             val eventId = "failed-event"
             val viewModel =
                 SubscribedShopListViewModel(
+                    personalizationStore = FakePersonalizationRepository(),
                     notificationRepository =
                         FakeNotificationSettingsRepository(
                             eventOverrides =

@@ -129,7 +129,11 @@ fun SubscribedShopListRoute(
                 textAlign = TextAlign.Center,
             )
         },
-        onConfirm = { viewModel.dispatch(SubscribedShopListIntent.OnRemovalConfirmed) },
+        onConfirm = {
+            uiState.pendingRemoval?.let { target ->
+                viewModel.dispatch(SubscribedShopListIntent.OnRemovalConfirmed(target))
+            }
+        },
         onDismiss = { viewModel.dispatch(SubscribedShopListIntent.OnRemovalDismissed) },
     )
 }

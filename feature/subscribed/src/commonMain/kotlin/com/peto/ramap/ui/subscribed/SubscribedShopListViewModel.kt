@@ -9,6 +9,7 @@ import com.peto.ramap.domain.model.notification.EventNotificationOverride
 import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.domain.repository.NotificationSettingsRepository
 import com.peto.ramap.domain.repository.RamenShopRepository
+import com.peto.ramap.domain.store.ShopPersonalizationStore
 import com.peto.ramap.ui.base.BaseViewModel
 import com.peto.ramap.ui.common.LoadState
 import com.peto.ramap.ui.subscribed.contract.SubscribedShopListIntent
@@ -22,6 +23,7 @@ import com.peto.ramap.ui.subscribed.model.SubscribedRemovalTarget
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.personalization_update_failure_message
@@ -29,11 +31,17 @@ import ramap.shared.generated.resources.personalization_update_failure_message
 class SubscribedShopListViewModel(
     private val notificationRepository: NotificationSettingsRepository,
     private val ramenShopRepository: RamenShopRepository,
+    private val personalizationStore: ShopPersonalizationStore,
 ) : BaseViewModel<SubscribedShopListUiState, SubscribedShopListIntent, SubscribedShopListSideEffect>(
         SubscribedShopListUiState(),
     ) {
     init {
         viewModelScope.launch { loadSubscriptions() }
+        viewModelScope.launch {
+            personalizationStore.state.collectLatest { personalization ->
+                updateSubscribedShops(personalization.notificationShopIds)
+            }
+        }
     }
 
     override suspend fun handleIntent(intent: SubscribedShopListIntent) {
@@ -41,7 +49,7 @@ class SubscribedShopListViewModel(
             OnRetry -> loadSubscriptions()
             is OnRemovalRequested -> reduce { copy(pendingRemoval = intent.target) }
             OnRemovalDismissed -> reduce { copy(pendingRemoval = null) }
-            OnRemovalConfirmed -> confirmRemoval()
+            is OnRemovalConfirmed -> confirmRemoval(intent.target)
         }
     }
 
@@ -58,7 +66,13 @@ class SubscribedShopListViewModel(
 
     private suspend fun fetchInitialSubscriptions(): RamapResult<Pair<Set<String>, List<EventNotificationOverride>>> =
         coroutineScope {
-            val shopIdsDeferred = async { notificationRepository.fetchSubscribedShopIds() }
+            val shopIdsDeferred =
+                async {
+                    when (val result = personalizationStore.refresh()) {
+                        is RamapResult.Success -> RamapResult.Success(personalizationStore.state.value.notificationShopIds)
+                        is RamapResult.Error -> result
+                    }
+                }
             val eventOverridesDeferred = async { notificationRepository.fetchEventOverrides() }
             combineInitialSubscriptions(
                 shopIdsDeferred.await(),
@@ -126,6 +140,30 @@ class SubscribedShopListViewModel(
             ramenShopRepository.fetchRamenShops(shopIds)
         }
 
+    private suspend fun updateSubscribedShops(shopIds: Set<String>) {
+        val currentShops =
+            (currentState.shopsState as? LoadState.Content)?.data ?: return
+        val retainedShops = currentShops.filterByShopIds(shopIds)
+        val addedShopIds = shopIds - retainedShops.keys
+        if (addedShopIds.isEmpty()) {
+            reduce { copy(shopsState = LoadState.Content(retainedShops.sortedByName())) }
+            return
+        }
+        handleResult(
+            ramenShopRepository.fetchRamenShops(addedShopIds),
+            onSuccess = { added ->
+                reduce {
+                    copy(
+                        shopsState =
+                            LoadState.Content(
+                                RamenShops(retainedShops + added.filterByShopIds(shopIds)).sortedByName(),
+                            ),
+                    )
+                }
+            },
+        )
+    }
+
     private fun updateSubscriptions(
         shops: RamenShops,
         events: List<ShopEvent>,
@@ -142,12 +180,11 @@ class SubscribedShopListViewModel(
         reduce { copy(shopsState = LoadState.Error, subscribedEvents = emptyList()) }
     }
 
-    private suspend fun confirmRemoval() {
-        val target = currentState.pendingRemoval ?: return
+    private suspend fun confirmRemoval(target: SubscribedRemovalTarget) {
         val result =
             when (target) {
                 is SubscribedRemovalTarget.Shop ->
-                    notificationRepository.updateShopNotification(target.shopId, false)
+                    personalizationStore.updateShopNotification(target.shopId, false)
                 is SubscribedRemovalTarget.EventOverride ->
                     notificationRepository.clearEventNotificationOverride(target.eventId)
             }
@@ -183,7 +220,7 @@ class SubscribedShopListViewModel(
         }
     }
 
-    private suspend fun handleRemovalFailure() {
+    private fun handleRemovalFailure() {
         reduce { copy(pendingRemoval = null) }
         trySideEffect(
             SubscribedShopListSideEffect.ShowToast(

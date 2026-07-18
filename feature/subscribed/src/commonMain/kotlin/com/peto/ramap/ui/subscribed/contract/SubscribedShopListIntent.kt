@@ -12,5 +12,7 @@ sealed interface SubscribedShopListIntent : Intent {
 
     data object OnRemovalDismissed : SubscribedShopListIntent
 
-    data object OnRemovalConfirmed : SubscribedShopListIntent
+    data class OnRemovalConfirmed(
+        val target: SubscribedRemovalTarget,
+    ) : SubscribedShopListIntent
 }
