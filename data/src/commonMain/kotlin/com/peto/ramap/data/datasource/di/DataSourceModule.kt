@@ -4,6 +4,8 @@ import com.peto.ramap.data.datasource.personalization.BookmarkShopDataSource
 import com.peto.ramap.data.datasource.personalization.HiddenShopDataSource
 import com.peto.ramap.data.datasource.personalization.RemoteBookmarkShopDataSource
 import com.peto.ramap.data.datasource.personalization.RemoteHiddenShopDataSource
+import com.peto.ramap.data.datasource.place.PlaceSearchDataSource
+import com.peto.ramap.data.datasource.place.RemotePlaceSearchDataSource
 import com.peto.ramap.data.datasource.report.RemoteShopReportDataSource
 import com.peto.ramap.data.datasource.report.ShopReportDataSource
 import com.peto.ramap.data.datasource.shop.RamenShopDataSource
@@ -15,6 +17,9 @@ import org.koin.dsl.module
 
 val dataSourceModule =
     module {
+        single<PlaceSearchDataSource> {
+            RemotePlaceSearchDataSource(get<SupabaseClient>())
+        }
         single<RamenShopDataSource> {
             RemoteRamenShopDataSource(get<SupabaseClient>())
         }

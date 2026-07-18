@@ -16,6 +16,8 @@ expect fun RamapMapView(
     focusRequestKey: Long,
     initialFocusLocation: Location?,
     initialFocusRequestKey: Long,
+    placeFocusLocation: Location?,
+    placeFocusRequestKey: Long,
     shouldBootstrapInitialLocationFocus: Boolean,
     selectedShopId: String?,
     cameraPosition: MapCameraPosition?,

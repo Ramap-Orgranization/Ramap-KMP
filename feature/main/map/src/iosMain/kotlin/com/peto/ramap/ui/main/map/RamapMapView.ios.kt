@@ -30,6 +30,8 @@ actual fun RamapMapView(
     focusRequestKey: Long,
     initialFocusLocation: Location?,
     initialFocusRequestKey: Long,
+    placeFocusLocation: Location?,
+    placeFocusRequestKey: Long,
     shouldBootstrapInitialLocationFocus: Boolean,
     selectedShopId: String?,
     cameraPosition: MapCameraPosition?,
@@ -74,6 +76,10 @@ actual fun RamapMapView(
             controller.updateInitialLocationFocus(
                 location = initialFocusLocation,
                 requestKey = initialFocusRequestKey,
+            )
+            controller.updatePlaceFocus(
+                location = placeFocusLocation,
+                requestKey = placeFocusRequestKey,
             )
             controller.updateFocus(
                 shops = focusShops,

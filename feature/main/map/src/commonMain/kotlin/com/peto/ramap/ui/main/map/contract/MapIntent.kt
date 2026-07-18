@@ -1,5 +1,6 @@
 package com.peto.ramap.ui.main.map.contract
 
+import com.peto.ramap.domain.model.place.PlaceSearchResult
 import com.peto.ramap.domain.model.report.ShopInformationField
 import com.peto.ramap.domain.model.shop.Category
 import com.peto.ramap.domain.model.shop.Location
@@ -36,6 +37,10 @@ sealed interface MapIntent : Intent {
     data object OnShopDetailDismissed : MapIntent
 
     data object OnSearchResultsDismissed : MapIntent
+
+    data class OnPlaceSelected(
+        val place: PlaceSearchResult,
+    ) : MapIntent
 
     data object OnInitialMapRetryClicked : MapIntent
 

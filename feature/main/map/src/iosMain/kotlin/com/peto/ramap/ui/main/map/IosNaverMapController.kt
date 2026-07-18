@@ -57,6 +57,7 @@ internal class IosNaverMapController(
     private var lastShopsKey = ""
     private var lastFocusKey = ""
     private var lastCurrentLocationFocusKey = 0L
+    private var lastPlaceFocusKey = 0L
     private var hasRestoredCameraPosition = false
     private var currentLocation: Location? = null
     private var isCameraMoving = false
@@ -162,6 +163,21 @@ internal class IosNaverMapController(
         mapView.moveCamera(
             NMFCameraUpdate.cameraUpdateWithScrollTo(
                 NMGLatLng.latLngWithLat(location.lat, location.lng),
+            ),
+        )
+        mapView.positionMode = NMFMyPositionNormal
+    }
+
+    fun updatePlaceFocus(
+        location: Location?,
+        requestKey: Long,
+    ) {
+        if (location == null || requestKey == 0L || requestKey == lastPlaceFocusKey) return
+        lastPlaceFocusKey = requestKey
+        mapView.moveCamera(
+            NMFCameraUpdate.cameraUpdateWithScrollTo(
+                NMGLatLng.latLngWithLat(location.lat, location.lng),
+                zoomTo = MapInteractionConfig.PLACE_SEARCH_ZOOM_LEVEL.toDouble(),
             ),
         )
         mapView.positionMode = NMFMyPositionNormal
