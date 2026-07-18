@@ -18,7 +18,6 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
@@ -63,7 +62,6 @@ fun EventListRoute(
             is EventListSideEffect.ShowEventListToast -> toastManager.show(sideEffect.data)
         }
     }
-    LaunchedEffect(viewModel) { viewModel.dispatch(EventListIntent.OnEventListEntered) }
     EventListScreen(
         uiState = uiState,
         onEventClick = onEventClick,

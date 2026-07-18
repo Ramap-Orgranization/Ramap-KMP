@@ -1,5 +1,6 @@
 package com.peto.ramap.ui.main.event.list
 
+import androidx.lifecycle.viewModelScope
 import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.repository.RamenShopRepository
@@ -8,15 +9,19 @@ import com.peto.ramap.ui.common.LoadState
 import com.peto.ramap.ui.main.event.list.contract.EventListIntent
 import com.peto.ramap.ui.main.event.list.contract.EventListSideEffect
 import com.peto.ramap.ui.main.event.list.contract.EventListUiState
+import kotlinx.coroutines.launch
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.event_list_refresh_failure_message
 
 class EventListViewModel(
     private val ramenShopRepository: RamenShopRepository,
 ) : BaseViewModel<EventListUiState, EventListIntent, EventListSideEffect>(EventListUiState()) {
+    init {
+        viewModelScope.launch { loadEvents() }
+    }
+
     override suspend fun handleIntent(intent: EventListIntent) {
         when (intent) {
-            EventListIntent.OnEventListEntered -> if (currentState.eventsState == LoadState.Idle) loadEvents()
             EventListIntent.OnEventListRefreshed -> refreshEvents()
             EventListIntent.OnEventListRetried -> loadEvents()
         }

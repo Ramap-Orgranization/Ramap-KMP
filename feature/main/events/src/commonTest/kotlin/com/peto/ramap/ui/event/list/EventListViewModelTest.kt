@@ -28,26 +28,12 @@ class EventListViewModelTest {
     fun `이벤트를 불러오면 목록을 표시한다`() =
         coroutinesTest {
             val event = event()
-            val viewModel =
-                EventListViewModel(FakeRamenShopRepository(activeEvents = listOf(event)))
+            val repository = FakeRamenShopRepository(activeEvents = listOf(event))
+            val viewModel = EventListViewModel(repository)
 
-            viewModel.dispatch(EventListIntent.OnEventListEntered)
             runCurrent()
 
             assertEquals(LoadState.Content(listOf(event)), viewModel.uiState.value.eventsState)
-        }
-
-    @Test
-    fun `목록 재진입은 이미 불러온 이벤트를 다시 요청하지 않는다`() =
-        coroutinesTest {
-            val repository = FakeRamenShopRepository(activeEvents = listOf(event()))
-            val viewModel = EventListViewModel(repository)
-            viewModel.dispatch(EventListIntent.OnEventListEntered)
-            runCurrent()
-
-            viewModel.dispatch(EventListIntent.OnEventListEntered)
-            runCurrent()
-
             assertEquals(1, repository.activeEventsRequestCount)
         }
 
@@ -57,7 +43,6 @@ class EventListViewModelTest {
             val event = event()
             val repository = FakeRamenShopRepository(activeEvents = listOf(event))
             val viewModel = EventListViewModel(repository)
-            viewModel.dispatch(EventListIntent.OnEventListEntered)
             runCurrent()
             repository.activeEventsDelayMillis = 1_000
 
@@ -81,7 +66,6 @@ class EventListViewModelTest {
                 EventListViewModel(
                     FakeRamenShopRepository(error = RamapError.Unknown(IllegalStateException("failure"))),
                 )
-            viewModel.dispatch(EventListIntent.OnEventListEntered)
             runCurrent()
 
             viewModel.dispatch(EventListIntent.OnEventListRetried)
@@ -96,7 +80,6 @@ class EventListViewModelTest {
             val event = event()
             val repository = FakeRamenShopRepository(activeEvents = listOf(event))
             val viewModel = EventListViewModel(repository)
-            viewModel.dispatch(EventListIntent.OnEventListEntered)
             runCurrent()
             repository.activeEventsError = RamapError.Unknown(IllegalStateException("failure"))
 
