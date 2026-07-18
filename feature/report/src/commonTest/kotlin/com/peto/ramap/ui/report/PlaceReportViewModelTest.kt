@@ -13,6 +13,7 @@ import com.peto.ramap.ui.location.CurrentLocationStore
 import com.peto.ramap.ui.report.contract.PlaceReportIntent
 import com.peto.ramap.ui.report.contract.PlaceReportSideEffect
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.test.runCurrent
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.place_report_location_unavailable_message
@@ -61,6 +62,40 @@ class PlaceReportViewModelTest {
 
             assertEquals(listOf(location), requestedLocations)
             assertEquals("테스트 주소", viewModel.uiState.value.currentAddress)
+        }
+
+    @Test
+    fun `주소 조회 중 위치가 변경되면 이전 조회를 취소하고 최신 위치의 주소를 사용한다`() =
+        coroutinesTest {
+            val currentLocationStore = CurrentLocationStore()
+            val firstLocation = Location(lat = 37.551, lng = 126.921)
+            val latestLocation = Location(lat = 37.552, lng = 126.922)
+            var isFirstRequestCancelled = false
+            val viewModel =
+                placeReportViewModel(
+                    currentLocationStore = currentLocationStore,
+                    reverseGeocoder =
+                        ReverseGeocoder { location ->
+                            if (location == firstLocation) {
+                                try {
+                                    awaitCancellation()
+                                } finally {
+                                    isFirstRequestCancelled = true
+                                }
+                            }
+                            RamapResult.Success("최신 주소")
+                        },
+                )
+
+            currentLocationStore.update(firstLocation)
+            runCurrent()
+            currentLocationStore.update(latestLocation)
+            runCurrent()
+
+            assertEquals(true, isFirstRequestCancelled)
+            assertEquals(latestLocation, viewModel.uiState.value.currentLocation)
+            assertEquals("최신 주소", viewModel.uiState.value.currentAddress)
+            assertEquals(false, viewModel.uiState.value.isAddressRefreshing)
         }
 }
 

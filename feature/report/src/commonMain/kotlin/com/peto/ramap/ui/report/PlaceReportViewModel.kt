@@ -38,8 +38,6 @@ class PlaceReportViewModel(
     private val reverseGeocoder: ReverseGeocoder? = null,
 ) : BaseViewModel<PlaceReportUiState, PlaceReportIntent, PlaceReportSideEffect>(PlaceReportUiState()) {
     private var placeReportJob: Job? = null
-    private var addressRequestJob: Job? = null
-    private var addressRequestGeneration = 0
 
     init {
         viewModelScope.launch { observeCurrentLocation() }
@@ -57,63 +55,78 @@ class PlaceReportViewModel(
     private suspend fun observeCurrentLocation() {
         currentLocationStore.location.collectLatest { location ->
             if (location == currentState.currentLocation) return@collectLatest
-            addressRequestJob?.cancel()
-            reduce { copy(currentLocation = location, currentAddress = null, isAddressRefreshing = false) }
-            location?.let(::startAddressRequest)
+            reduce {
+                copy(
+                    currentLocation = location,
+                    currentAddress = null,
+                    isAddressRefreshing = false,
+                )
+            }
+            location?.let { loadAddress(it) }
         }
     }
 
-    private fun refreshCurrentAddress() {
-        currentState.currentLocation?.let(::startAddressRequest)
+    private suspend fun refreshCurrentAddress() {
+        currentState.currentLocation?.let { loadAddress(it) }
     }
 
-    private fun startAddressRequest(location: Location) {
+    private suspend fun loadAddress(location: Location) {
         val geocoder = reverseGeocoder ?: return
-        if (addressRequestJob?.isActive == true) return
-        val generation = ++addressRequestGeneration
+        if (currentState.isAddressRefreshing) return
 
         reduce { copy(isAddressRefreshing = true) }
-        addressRequestJob =
-            viewModelScope.launch {
-                try {
-                    handleResult(
-                        result = geocoder.address(location),
-                        onSuccess = { address ->
-                            if (currentState.currentLocation == location) reduce { copy(currentAddress = address) }
-                        },
-                    )
-                } finally {
-                    if (generation == addressRequestGeneration) reduce { copy(isAddressRefreshing = false) }
-                }
+        try {
+            handleResult(
+                result = geocoder.address(location),
+                onSuccess = { address ->
+                    if (currentState.currentLocation == location) {
+                        reduce {
+                            copy(currentAddress = address)
+                        }
+                    }
+                },
+            )
+        } finally {
+            if (currentState.currentLocation == location) {
+                reduce { copy(isAddressRefreshing = false) }
             }
+        }
     }
 
     private fun submitPlaceReport() {
         val placeUrl = currentState.placeUrl
-        startPlaceReport {
-            val extractedPlaceUrl = PlaceReportTextParser.extractSupportedUrl(placeUrl)
-            if (extractedPlaceUrl == null) {
-                showToast(Res.string.place_report_invalid_url_message, ToastType.ERROR)
-                return@startPlaceReport
-            }
+        startPlaceReport { processPlaceReport(placeUrl) }
+    }
 
-            if (findExistingShop(placeUrl)) {
-                showToast(Res.string.place_report_existing_shop_message)
-                return@startPlaceReport
-            }
-
-            handleResult(
-                result =
-                    reportRepository.submitUnregisteredPlaceReport(
-                        UnregisteredPlaceReport(placeUrl = extractedPlaceUrl),
-                    ),
-                onSuccess = {
-                    reduce { copy(placeUrl = "") }
-                    showToast(Res.string.place_report_success_message)
-                },
-                onError = { showToast(Res.string.place_report_failure_message, ToastType.ERROR) },
-            )
+    private suspend fun processPlaceReport(placeUrl: String) {
+        val extractedPlaceUrl = extractSupportedPlaceUrl(placeUrl) ?: return
+        if (findExistingShop(placeUrl)) {
+            showToast(Res.string.place_report_existing_shop_message)
+            return
         }
+        submitPlaceUrlReport(extractedPlaceUrl)
+    }
+
+    private fun extractSupportedPlaceUrl(placeUrl: String): String? {
+        val extractedPlaceUrl = PlaceReportTextParser.extractSupportedUrl(placeUrl)
+        if (extractedPlaceUrl == null) {
+            showToast(Res.string.place_report_invalid_url_message, ToastType.ERROR)
+        }
+        return extractedPlaceUrl
+    }
+
+    private suspend fun submitPlaceUrlReport(placeUrl: String) {
+        handleResult(
+            result =
+                reportRepository.submitUnregisteredPlaceReport(
+                    UnregisteredPlaceReport(placeUrl = placeUrl),
+                ),
+            onSuccess = {
+                reduce { copy(placeUrl = "") }
+                showToast(Res.string.place_report_success_message)
+            },
+            onError = { showToast(Res.string.place_report_failure_message, ToastType.ERROR) },
+        )
     }
 
     private suspend fun findExistingShop(placeUrl: String): Boolean {
@@ -126,7 +139,8 @@ class PlaceReportViewModel(
                     limit = SEARCH_RESULT_LIMIT,
                 ),
             onSuccess = { shops ->
-                existingShop = shops.values.any { PlaceReportTextParser.matchesSharedPlace(placeUrl, it) }
+                existingShop =
+                    shops.values.any { PlaceReportTextParser.matchesSharedPlace(placeUrl, it) }
             },
         )
         return existingShop
@@ -141,7 +155,12 @@ class PlaceReportViewModel(
             }
 
             handleResult(
-                result = reportRepository.submitUnregisteredPlaceReport(UnregisteredPlaceReport(location = location)),
+                result =
+                    reportRepository.submitUnregisteredPlaceReport(
+                        UnregisteredPlaceReport(
+                            location = location,
+                        ),
+                    ),
                 onSuccess = { showToast(Res.string.place_report_success_message) },
                 onError = { showToast(Res.string.place_report_failure_message, ToastType.ERROR) },
             )
@@ -157,7 +176,9 @@ class PlaceReportViewModel(
         messageResource: StringResource,
         type: ToastType = ToastType.DEFAULT,
     ) {
-        trySideEffect(ShowToast(ToastData(messageResource, type)))
+        viewModelScope.launch {
+            postSideEffect(ShowToast(ToastData(messageResource, type)))
+        }
     }
 
     companion object {
