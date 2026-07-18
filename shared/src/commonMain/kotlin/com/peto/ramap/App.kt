@@ -15,21 +15,26 @@ import androidx.compose.ui.tooling.preview.Preview
 import com.peto.ramap.designsystem.component.LaduckLoadingContent
 import com.peto.ramap.designsystem.toast.ToastHost
 import com.peto.ramap.designsystem.toast.ToastManager
+import com.peto.ramap.domain.model.auth.LoginSessionState
 import com.peto.ramap.domain.repository.LoginRepository
+import com.peto.ramap.domain.store.ShopPersonalizationStore
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.RamapTheme
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.distinctUntilChanged
 import org.koin.compose.koinInject
 
 @Composable
 @Preview
 fun App(
     loginRepository: LoginRepository = koinInject(),
+    personalizationStore: ShopPersonalizationStore = koinInject(),
     toastManager: ToastManager = koinInject(),
     onExitRequested: (() -> Unit)? = null,
 ) {
     var isInitialized by remember(loginRepository) { mutableStateOf(false) }
-    LaunchedEffect(loginRepository) {
+    LaunchedEffect(loginRepository, personalizationStore) {
         try {
             loginRepository.awaitInitialization()
         } catch (exception: CancellationException) {
@@ -37,7 +42,15 @@ fun App(
         } catch (_: Throwable) {
             // 초기화 실패 시 게스트 상태로 앱을 연다.
         }
-        isInitialized = true
+        loginRepository.sessionState
+            .distinctUntilChanged()
+            .collectLatest { sessionState ->
+                synchronizePersonalization(
+                    isAuthenticated = sessionState == LoginSessionState.AUTHENTICATED,
+                    personalizationStore = personalizationStore,
+                )
+                isInitialized = true
+            }
     }
 
     RamapTheme {
@@ -59,4 +72,15 @@ fun App(
             }
         }
     }
+}
+
+private suspend fun synchronizePersonalization(
+    isAuthenticated: Boolean,
+    personalizationStore: ShopPersonalizationStore,
+) {
+    if (!isAuthenticated) {
+        personalizationStore.clear()
+        return
+    }
+    personalizationStore.refresh()
 }

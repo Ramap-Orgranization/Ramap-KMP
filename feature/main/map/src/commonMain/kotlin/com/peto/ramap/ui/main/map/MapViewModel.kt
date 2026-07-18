@@ -157,12 +157,6 @@ class MapViewModel(
         loginRepository.sessionState.collectLatest { sessionState ->
             val isAuthenticated = sessionState == LoginSessionState.AUTHENTICATED
             updateAuthState(isAuthenticated)
-
-            if (isAuthenticated) {
-                loadPersonalization()
-            } else {
-                personalizationStore.clear()
-            }
         }
     }
 
@@ -288,13 +282,6 @@ class MapViewModel(
 
     private fun clearFilter() {
         updateFilter(RamenShopFilter())
-    }
-
-    private suspend fun loadPersonalization() {
-        handleResult(
-            result = personalizationStore.refresh(),
-            onError = { showPersonalizationUpdateFailure() },
-        )
     }
 
     private suspend fun updatePersonalization(personalization: ShopPersonalization) {
