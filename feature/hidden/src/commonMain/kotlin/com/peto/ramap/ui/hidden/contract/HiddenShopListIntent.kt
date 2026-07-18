@@ -5,11 +5,7 @@ import com.peto.ramap.ui.base.Intent
 sealed interface HiddenShopListIntent : Intent {
     data object OnHiddenShopListRetried : HiddenShopListIntent
 
-    data class OnShopClicked(
+    data class OnUnhideConfirmed(
         val shopId: String,
     ) : HiddenShopListIntent
-
-    data object OnUnhideConfirmed : HiddenShopListIntent
-
-    data object OnUnhideDismissed : HiddenShopListIntent
 }

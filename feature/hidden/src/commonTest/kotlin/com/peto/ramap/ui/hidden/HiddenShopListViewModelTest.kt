@@ -67,11 +67,9 @@ class HiddenShopListViewModelTest {
                 )
             runCurrent()
 
-            viewModel.dispatch(HiddenShopListIntent.OnShopClicked(shop.id))
-            viewModel.dispatch(HiddenShopListIntent.OnUnhideConfirmed)
+            viewModel.dispatch(HiddenShopListIntent.OnUnhideConfirmed(shop.id))
             runCurrent()
 
-            assertEquals(null, viewModel.uiState.value.pendingUnhideShopId)
             assertEquals(
                 LoadState.Content(RamenShops(emptyMap())),
                 viewModel.uiState.value.shopsState,

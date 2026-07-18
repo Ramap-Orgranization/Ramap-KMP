@@ -14,6 +14,10 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -58,6 +62,8 @@ fun HiddenShopListRoute(
     viewModel: HiddenShopListViewModel = koinViewModel(),
 ) {
     val uiState = viewModel.uiState.collectAsStateWithLifecycle().value
+    var unhideTargetShopId by remember { mutableStateOf<String?>(null) }
+
     ObserveAsEvents(viewModel.sideEffect) { sideEffect ->
         when (sideEffect) {
             is HiddenShopListSideEffect.ShowToast -> toastManager.show(sideEffect.data)
@@ -67,14 +73,14 @@ fun HiddenShopListRoute(
     HiddenShopListScreen(
         uiState = uiState,
         onBack = onBackClick,
-        onShopClick = { viewModel.dispatch(HiddenShopListIntent.OnShopClicked(it.id)) },
+        onShopClick = { unhideTargetShopId = it.id },
         onRetryClick = { viewModel.dispatch(HiddenShopListIntent.OnHiddenShopListRetried) },
     )
     CommonDialog(
-        visible = uiState.pendingUnhideShopId != null,
+        visible = unhideTargetShopId != null,
         confirmText = stringResource(Res.string.unhide_shop_confirm_action),
         dismissText = stringResource(Res.string.notification_removal_dismiss_action),
-        onDismissRequest = { viewModel.dispatch(HiddenShopListIntent.OnUnhideDismissed) },
+        onDismissRequest = { unhideTargetShopId = null },
         content = {
             AppText(
                 text = stringResource(Res.string.unhide_shop_confirm_title),
@@ -83,8 +89,13 @@ fun HiddenShopListRoute(
                 textAlign = TextAlign.Center,
             )
         },
-        onConfirm = { viewModel.dispatch(HiddenShopListIntent.OnUnhideConfirmed) },
-        onDismiss = { viewModel.dispatch(HiddenShopListIntent.OnUnhideDismissed) },
+        onConfirm = {
+            unhideTargetShopId?.let { shopId ->
+                viewModel.dispatch(HiddenShopListIntent.OnUnhideConfirmed(shopId))
+            }
+            unhideTargetShopId = null
+        },
+        onDismiss = { unhideTargetShopId = null },
     )
 }
 

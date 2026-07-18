@@ -29,25 +29,20 @@ class HiddenShopListViewModel(
     override suspend fun handleIntent(intent: HiddenShopListIntent) {
         when (intent) {
             HiddenShopListIntent.OnHiddenShopListRetried -> fetchHiddenShops()
-            is HiddenShopListIntent.OnShopClicked -> reduce { copy(pendingUnhideShopId = intent.shopId) }
-            HiddenShopListIntent.OnUnhideDismissed -> reduce { copy(pendingUnhideShopId = null) }
-            HiddenShopListIntent.OnUnhideConfirmed -> unhidePendingShop()
+            is HiddenShopListIntent.OnUnhideConfirmed -> unhideShop(intent.shopId)
         }
     }
 
-    private suspend fun unhidePendingShop() {
-        val shopId = currentState.pendingUnhideShopId ?: return
+    private suspend fun unhideShop(shopId: String) {
         when (personalizationRepository.unhideShop(shopId)) {
             is RamapResult.Success ->
                 reduce {
                     val content = shopsState as? LoadState.Content
                     copy(
                         shopsState = content?.let { LoadState.Content(it.data.without(shopId)) } ?: shopsState,
-                        pendingUnhideShopId = null,
                     )
                 }
             is RamapResult.Error -> {
-                reduce { copy(pendingUnhideShopId = null) }
                 trySideEffect(
                     HiddenShopListSideEffect.ShowToast(
                         ToastData(Res.string.personalization_update_failure_message, ToastType.ERROR),
