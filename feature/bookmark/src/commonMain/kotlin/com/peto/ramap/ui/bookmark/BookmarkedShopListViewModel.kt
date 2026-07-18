@@ -4,8 +4,8 @@ import androidx.lifecycle.viewModelScope
 import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.shop.RamenShops
-import com.peto.ramap.domain.repository.PersonalizationRepository
 import com.peto.ramap.domain.repository.RamenShopRepository
+import com.peto.ramap.domain.store.ShopPersonalizationStore
 import com.peto.ramap.ui.base.BaseViewModel
 import com.peto.ramap.ui.bookmark.contract.BookmarkedShopListIntent
 import com.peto.ramap.ui.bookmark.contract.BookmarkedShopListSideEffect
@@ -20,7 +20,7 @@ import ramap.shared.generated.resources.bookmark_removal_success_message
 import ramap.shared.generated.resources.personalization_update_failure_message
 
 class BookmarkedShopListViewModel(
-    private val personalizationRepository: PersonalizationRepository,
+    private val personalizationRepository: ShopPersonalizationStore,
     private val ramenShopRepository: RamenShopRepository,
 ) : BaseViewModel<BookmarkedShopListUiState, BookmarkedShopListIntent, BookmarkedShopListSideEffect>(
         BookmarkedShopListUiState(),
@@ -45,8 +45,8 @@ class BookmarkedShopListViewModel(
 
     private suspend fun loadAndObserveBookmarks() {
         reduce { copy(shopsState = LoadState.Loading) }
-        personalizationRepository.bookmarkedShopIds.collectLatest { shopIds ->
-            updateBookmarkedShops(shopIds)
+        personalizationRepository.state.collectLatest { personalization ->
+            updateBookmarkedShops(personalization.bookmarkedShopIds)
         }
     }
 
@@ -92,7 +92,7 @@ class BookmarkedShopListViewModel(
 
     private suspend fun removeBookmark(shopId: String) {
         handleResult(
-            result = personalizationRepository.removeBookmark(shopId),
+            result = personalizationRepository.updateBookmark(shopId, false),
             onSuccess = {
                 showToast(
                     Res.string.bookmark_removal_success_message,

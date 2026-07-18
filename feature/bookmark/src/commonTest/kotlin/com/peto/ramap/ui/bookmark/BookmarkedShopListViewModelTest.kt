@@ -9,7 +9,7 @@ import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.personalization.Personalization
 import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.domain.model.shop.RamenShops
-import com.peto.ramap.domain.repository.PersonalizationRepository
+import com.peto.ramap.domain.store.ShopPersonalizationStore
 import com.peto.ramap.fake.FakePersonalizationRepository
 import com.peto.ramap.fake.FakeRamenShopRepository
 import com.peto.ramap.fixture.ramenShopFixture
@@ -30,16 +30,10 @@ class BookmarkedShopListViewModelTest {
     fun `좋아요 매장 화면 진입시 개인화 아이디에 해당하는 매장을 로드한다`() =
         coroutinesTest {
             val shop = ramenShopFixture(id = "bookmarked-shop")
-            var fetchPersonalizationCount = 0
             val personalizationRepository =
-                object : PersonalizationRepository by FakePersonalizationRepository(
+                FakePersonalizationRepository(
                     Personalization(bookmarkedShopIds = setOf(shop.id)),
-                ) {
-                    override suspend fun fetchPersonalization(): RamapResult<Personalization> {
-                        fetchPersonalizationCount += 1
-                        return RamapResult.Success(Personalization())
-                    }
-                }
+                )
             val viewModel =
                 BookmarkedShopListViewModel(
                     personalizationRepository = personalizationRepository,
@@ -55,7 +49,6 @@ class BookmarkedShopListViewModelTest {
                 LoadState.Content(RamenShops(listOf(shop))),
                 viewModel.uiState.value.shopsState,
             )
-            assertEquals(0, fetchPersonalizationCount)
         }
 
     @Test
@@ -191,11 +184,13 @@ class BookmarkedShopListViewModelTest {
         coroutinesTest {
             val shop = ramenShopFixture(id = "bookmarked-shop")
             val repository =
-                object : PersonalizationRepository by FakePersonalizationRepository(
+                object : ShopPersonalizationStore by FakePersonalizationRepository(
                     Personalization(bookmarkedShopIds = setOf(shop.id)),
                 ) {
-                    override suspend fun removeBookmark(shopId: String): RamapResult<Unit> =
-                        RamapResult.Error(RamapError.Unknown(IllegalStateException("failure")))
+                    override suspend fun updateBookmark(
+                        shopId: String,
+                        enabled: Boolean,
+                    ): RamapResult<Unit> = RamapResult.Error(RamapError.Unknown(IllegalStateException("failure")))
                 }
             val viewModel = bookmarkedShopListViewModel(shop, repository)
             runCurrent()
@@ -222,7 +217,7 @@ class BookmarkedShopListViewModelTest {
 
 private fun bookmarkedShopListViewModel(
     shop: RamenShop,
-    personalizationRepository: PersonalizationRepository =
+    personalizationRepository: ShopPersonalizationStore =
         FakePersonalizationRepository(
             Personalization(bookmarkedShopIds = setOf(shop.id)),
         ),

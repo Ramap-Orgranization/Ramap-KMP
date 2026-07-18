@@ -8,7 +8,7 @@ import com.peto.ramap.designsystem.toast.model.ToastAction
 import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.auth.LoginSessionState
-import com.peto.ramap.domain.model.personalization.Personalization
+import com.peto.ramap.domain.model.personalization.ShopPersonalization
 import com.peto.ramap.domain.model.report.PlaceReportTextParser
 import com.peto.ramap.domain.model.report.ShopInformationField
 import com.peto.ramap.domain.model.report.ShopInformationReport
@@ -21,11 +21,10 @@ import com.peto.ramap.domain.model.shop.RamenShopFilter
 import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.domain.model.shop.SearchQuery
 import com.peto.ramap.domain.repository.LoginRepository
-import com.peto.ramap.domain.repository.NotificationSettingsRepository
-import com.peto.ramap.domain.repository.PersonalizationRepository
 import com.peto.ramap.domain.repository.RamenShopRepository
 import com.peto.ramap.domain.repository.ShopReportRepository
 import com.peto.ramap.domain.repository.ShopWaitingSystemRepository
+import com.peto.ramap.domain.store.ShopPersonalizationStore
 import com.peto.ramap.ui.base.BaseViewModel
 import com.peto.ramap.ui.common.CurrentLocationStore
 import com.peto.ramap.ui.main.map.contract.MapIntent
@@ -60,7 +59,6 @@ import com.peto.ramap.ui.main.map.contract.MapUiState
 import com.peto.ramap.ui.main.map.model.InitialMapLoadState
 import com.peto.ramap.ui.main.map.model.MapCameraPosition
 import com.peto.ramap.ui.main.map.model.MapPersonalization
-import com.peto.ramap.ui.main.map.model.SearchUiState
 import com.peto.ramap.ui.main.map.model.ShopDetail
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
@@ -94,11 +92,10 @@ import kotlin.time.Duration.Companion.milliseconds
 class MapViewModel(
     private val ramenShopRepository: RamenShopRepository,
     private val shopWaitingSystemRepository: ShopWaitingSystemRepository,
-    private val personalizationRepository: PersonalizationRepository,
+    private val personalizationStore: ShopPersonalizationStore,
     private val reportRepository: ShopReportRepository,
     private val loginRepository: LoginRepository,
     private val currentLocationStore: CurrentLocationStore,
-    private val notificationSettingsRepository: NotificationSettingsRepository,
 ) : BaseViewModel<MapUiState, MapIntent, MapSideEffect>(initialState = MapUiState()) {
     private var boundsLoadJob: Job? = null
     private var boundsLoadRequestId = 0L
@@ -109,20 +106,13 @@ class MapViewModel(
 
     init {
         viewModelScope.launch { observeSessionState() }
-        viewModelScope.launch { observeBookmarkedShopIds() }
-        viewModelScope.launch { observeNotificationSubscriptions() }
+        viewModelScope.launch { observePersonalization() }
     }
 
-    private suspend fun observeBookmarkedShopIds() {
-        personalizationRepository.bookmarkedShopIds.collectLatest { shopIds ->
+    private suspend fun observePersonalization() {
+        personalizationStore.state.collectLatest { personalization ->
             if (!currentState.isLoggedIn) return@collectLatest
-            reduce { copy(bookmarkedShopIds = shopIds - hiddenShopIds) }
-        }
-    }
-
-    private suspend fun observeNotificationSubscriptions() {
-        notificationSettingsRepository.subscribedShopIds.collectLatest { shopIds ->
-            if (currentState.isLoggedIn) reduce { copy(notificationShopIds = shopIds) }
+            updatePersonalization(personalization)
         }
     }
 
@@ -170,7 +160,8 @@ class MapViewModel(
 
             if (isAuthenticated) {
                 loadPersonalization()
-                loadNotificationSubscriptions()
+            } else {
+                personalizationStore.clear()
             }
         }
     }
@@ -301,22 +292,32 @@ class MapViewModel(
 
     private suspend fun loadPersonalization() {
         handleResult(
-            result = personalizationRepository.fetchPersonalization(),
-            onSuccess = ::updatePersonalization,
+            result = personalizationStore.refresh(),
             onError = { showPersonalizationUpdateFailure() },
         )
     }
 
-    private suspend fun updatePersonalization(personalization: Personalization) {
+    private suspend fun updatePersonalization(personalization: ShopPersonalization) {
         val hiddenShopIds = personalization.hiddenShopIds
         val bookmarkedShopIds = personalization.bookmarkedShopIds - hiddenShopIds
 
         loadPersonalizedShops(bookmarkedShopIds + hiddenShopIds)
         reduce {
+            val selectedShopWasHidden = selectedShop?.id in this.hiddenShopIds
+            val selectedShopIsHidden = selectedShop?.id in hiddenShopIds
+            val selectedShopBecameHidden = !selectedShopWasHidden && selectedShopIsHidden
+            val selectedShopBecameVisible = selectedShopWasHidden && !selectedShopIsHidden
             copy(
                 bookmarkedShopIds = bookmarkedShopIds,
                 hiddenShopIds = hiddenShopIds,
-                selectedShop = selectedShop?.takeIf { it.id !in hiddenShopIds },
+                notificationShopIds = personalization.notificationShopIds,
+                search = if (selectedShopBecameHidden) search.dismissResults() else search,
+                selectedShop =
+                    when {
+                        selectedShopBecameHidden -> null
+                        selectedShopBecameVisible -> selectedShop?.copy(isVisible = true)
+                        else -> selectedShop
+                    },
             )
         }
     }
@@ -338,16 +339,7 @@ class MapViewModel(
         if (!isLoggedInOrShowGuide()) return
 
         val isBookmarked = shop.id in currentState.bookmarkedShopIds
-        reduceBookmarkState(shop.id)
         postBookmark(shop.id, isBookmarked)
-    }
-
-    private suspend fun loadNotificationSubscriptions() {
-        val repository = notificationSettingsRepository
-        handleResult(
-            result = repository.fetchSubscribedShopIds(),
-            onSuccess = { ids -> reduce { copy(notificationShopIds = ids) } },
-        )
     }
 
     private suspend fun toggleShopNotification(shop: RamenShop) {
@@ -359,7 +351,6 @@ class MapViewModel(
         }
 
         val wasEnabled = shop.id in currentState.notificationShopIds
-        reduceNotificationShop(shop.id)
         postShopNotification(shop.id, wasEnabled)
     }
 
@@ -368,23 +359,9 @@ class MapViewModel(
         wasEnabled: Boolean,
     ) {
         handleResult(
-            result = notificationSettingsRepository.updateShopNotification(shopId, !wasEnabled),
-            onError = { handleShopNotificationFailure(shopId) },
+            result = personalizationStore.updateShopNotification(shopId, !wasEnabled),
+            onError = { showPersonalizationUpdateFailure() },
         )
-    }
-
-    private fun handleShopNotificationFailure(shopId: String) {
-        reduceNotificationShop(shopId)
-        showPersonalizationUpdateFailure()
-    }
-
-    private fun reduceNotificationShop(shopId: String) {
-        reduce {
-            copy(
-                notificationShopIds =
-                    if (shopId in notificationShopIds) notificationShopIds - shopId else notificationShopIds + shopId,
-            )
-        }
     }
 
     private suspend fun postBookmark(
@@ -396,23 +373,8 @@ class MapViewModel(
             onSuccess = {
                 if (!isBookmarked) loadPersonalizedShops(setOf(shopId))
             },
-            onError = { handleBookmarkFailure(shopId) },
+            onError = { showPersonalizationUpdateFailure() },
         )
-    }
-
-    private fun handleBookmarkFailure(shopId: String) {
-        reduceBookmarkState(shopId)
-        showPersonalizationUpdateFailure()
-    }
-
-    private fun reduceBookmarkState(shopId: String) {
-        reduce {
-            val updatedBookmarkedShopIds =
-                if (shopId in bookmarkedShopIds) bookmarkedShopIds - shopId else bookmarkedShopIds + shopId
-            copy(
-                bookmarkedShopIds = updatedBookmarkedShopIds - hiddenShopIds,
-            )
-        }
     }
 
     private suspend fun updateBookmarkPersonalization(
@@ -420,9 +382,9 @@ class MapViewModel(
         isBookmarked: Boolean,
     ): RamapResult<Unit> =
         if (isBookmarked) {
-            personalizationRepository.removeBookmark(shopId)
+            personalizationStore.updateBookmark(shopId, false)
         } else {
-            personalizationRepository.addBookmark(shopId)
+            personalizationStore.updateBookmark(shopId, true)
         }
 
     private suspend fun toggleHidden(shop: RamenShop) {
@@ -436,28 +398,10 @@ class MapViewModel(
     }
 
     private suspend fun hideShop(shop: RamenShop) {
-        val shouldRemoveBookmark = shop.id in currentState.bookmarkedShopIds
-        val shouldDisableNotification = shop.id in currentState.notificationShopIds
-        val previousBookmarkedShopIds = currentState.bookmarkedShopIds
-        val previousNotificationShopIds = currentState.notificationShopIds
-        val previousHiddenShopIds = currentState.hiddenShopIds
-        val previousSelectedShop = currentState.selectedShop
-        val previousSearch = currentState.search
-
-        reduceHideShopState(shop.id, shouldRemoveBookmark, shouldDisableNotification)
         handleResult(
-            result = persistHiddenShop(shop.id, shouldRemoveBookmark, shouldDisableNotification),
+            result = personalizationStore.hideShop(shop.id),
             onSuccess = { showHiddenShopSuccess() },
-            onError = {
-                restoreHiddenShopState(
-                    previousBookmarkedShopIds,
-                    previousNotificationShopIds,
-                    previousHiddenShopIds,
-                    previousSelectedShop,
-                    previousSearch,
-                )
-                showPersonalizationUpdateFailure()
-            },
+            onError = { showPersonalizationUpdateFailure() },
         )
     }
 
@@ -465,111 +409,16 @@ class MapViewModel(
         showToast(Res.string.hide_shop_success_message)
     }
 
-    private suspend fun persistHiddenShop(
-        shopId: String,
-        shouldRemoveBookmark: Boolean,
-        shouldDisableNotification: Boolean,
-    ): RamapResult<Unit> {
-        val notificationRepository = notificationSettingsRepository
-        if (shouldDisableNotification) {
-            val notificationResult = notificationRepository.updateShopNotification(shopId, false)
-            if (notificationResult is RamapResult.Error) return notificationResult
-        }
-
-        val hideResult =
-            personalizationRepository.hideShop(shopId, removeBookmark = shouldRemoveBookmark)
-        if (hideResult is RamapResult.Error && shouldDisableNotification) {
-            notificationRepository.updateShopNotification(shopId, true)
-        }
-        return hideResult
-    }
-
     private suspend fun unhideShop(shop: RamenShop) {
-        reduceUnhideShopState(shop.id)
         handleResult(
-            result = personalizationRepository.unhideShop(shop.id),
-            onError = { handleUnhideShopFailure(shop.id) },
+            result = personalizationStore.unhideShop(shop.id),
+            onError = { showPersonalizationUpdateFailure() },
         )
-    }
-
-    private fun handleUnhideShopFailure(shopId: String) {
-        reduceHideShopState(shopId, shouldRemoveBookmark = false)
-        showPersonalizationUpdateFailure()
-    }
-
-    private fun restoreHiddenShopState(
-        bookmarkedShopIds: Set<String>,
-        notificationShopIds: Set<String>,
-        hiddenShopIds: Set<String>,
-        selectedShop: RamenShop?,
-        search: SearchUiState,
-    ) {
-        reduce {
-            copy(
-                bookmarkedShopIds = bookmarkedShopIds,
-                notificationShopIds = notificationShopIds,
-                hiddenShopIds = hiddenShopIds,
-                selectedShop = selectedShop,
-                search = search,
-            )
-        }
     }
 
     private fun showPersonalizationUpdateFailure() {
         showToast(Res.string.personalization_update_failure_message, ToastType.ERROR)
     }
-
-    private fun reduceHideShopState(
-        shopId: String,
-        shouldRemoveBookmark: Boolean,
-        shouldDisableNotification: Boolean = false,
-    ) {
-        reduce {
-            val shouldCloseSelectedShop = selectedShop?.id == shopId
-            val updatedHiddenShopIds = hiddenShopIds + shopId
-            val updatedBookmarkedShopIds =
-                if (shouldRemoveBookmark) bookmarkedShopIds - shopId else bookmarkedShopIds
-
-            copy(
-                hiddenShopIds = updatedHiddenShopIds,
-                bookmarkedShopIds = updatedBookmarkedShopIds - updatedHiddenShopIds,
-                notificationShopIds =
-                    if (shouldDisableNotification) notificationShopIds - shopId else notificationShopIds,
-                selectedShop = selectedShop?.takeUnless { shouldCloseSelectedShop },
-                search =
-                    updateSearchState(
-                        search = search,
-                        shouldCloseSelectedShop = shouldCloseSelectedShop,
-                    ),
-            )
-        }
-    }
-
-    private fun reduceUnhideShopState(shopId: String) {
-        reduce {
-            val updatedHiddenShopIds = hiddenShopIds - shopId
-            copy(
-                hiddenShopIds = updatedHiddenShopIds,
-                bookmarkedShopIds = personalizationRepository.bookmarkedShopIds.value - updatedHiddenShopIds,
-                selectedShop =
-                    if (selectedShop?.id == shopId) {
-                        selectedShop.copy(isVisible = true)
-                    } else {
-                        selectedShop
-                    },
-            )
-        }
-    }
-
-    private fun updateSearchState(
-        search: SearchUiState,
-        shouldCloseSelectedShop: Boolean,
-    ): SearchUiState =
-        if (shouldCloseSelectedShop) {
-            search.dismissResults()
-        } else {
-            search
-        }
 
     private fun changePersonalizationView(view: MapPersonalization) {
         if (view != MapPersonalization.ALL && !isLoggedInOrShowGuide()) return

@@ -1,54 +1,77 @@
 package com.peto.ramap.fake
 
+import com.peto.ramap.core.result.RamapError
 import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.domain.model.personalization.Personalization
-import com.peto.ramap.domain.repository.PersonalizationRepository
+import com.peto.ramap.domain.store.ShopPersonalizationStore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 
 class FakePersonalizationRepository(
     personalization: Personalization = Personalization(),
-) : PersonalizationRepository {
-    private val mutableBookmarkedShopIds = MutableStateFlow(personalization.bookmarkedShopIds.toSet())
-    private val hiddenShopIds = personalization.hiddenShopIds.toMutableSet()
-    override val bookmarkedShopIds = mutableBookmarkedShopIds.asStateFlow()
+) : ShopPersonalizationStore {
+    private val mutableState = MutableStateFlow(personalization)
+    override val state = mutableState.asStateFlow()
+    val bookmarkedShopIds = MutableStateFlow(personalization.bookmarkedShopIds)
+    var shopNotificationError: RamapError? = null
 
-    override suspend fun fetchPersonalization(): RamapResult<Personalization> =
-        RamapResult.Success(
-            Personalization(
-                bookmarkedShopIds = bookmarkedShopIds.value,
-                hiddenShopIds = hiddenShopIds.toSet(),
-            ),
-        )
+    override suspend fun refresh(): RamapResult<Unit> = RamapResult.Success(Unit)
 
-    override suspend fun addBookmark(shopId: String): RamapResult<Unit> {
-        mutableBookmarkedShopIds.update { it + shopId }
-        return RamapResult.Success(Unit)
-    }
-
-    override suspend fun removeBookmark(shopId: String): RamapResult<Unit> {
-        mutableBookmarkedShopIds.update { it - shopId }
-        return RamapResult.Success(Unit)
-    }
-
-    override suspend fun hideShop(
+    override suspend fun updateBookmark(
         shopId: String,
-        removeBookmark: Boolean,
+        enabled: Boolean,
     ): RamapResult<Unit> {
-        hiddenShopIds += shopId
-        if (removeBookmark) {
-            mutableBookmarkedShopIds.update { it - shopId }
+        mutableState.update {
+            it.copy(
+                bookmarkedShopIds =
+                    if (enabled) it.bookmarkedShopIds + shopId else it.bookmarkedShopIds - shopId,
+            )
+        }
+        bookmarkedShopIds.value = mutableState.value.bookmarkedShopIds
+        return RamapResult.Success(Unit)
+    }
+
+    override suspend fun hideShop(shopId: String): RamapResult<Unit> {
+        mutableState.update {
+            it.copy(
+                bookmarkedShopIds = it.bookmarkedShopIds - shopId,
+                hiddenShopIds = it.hiddenShopIds + shopId,
+                notificationShopIds = it.notificationShopIds - shopId,
+            )
         }
         return RamapResult.Success(Unit)
     }
 
     override suspend fun unhideShop(shopId: String): RamapResult<Unit> {
-        hiddenShopIds -= shopId
+        mutableState.update { it.copy(hiddenShopIds = it.hiddenShopIds - shopId) }
         return RamapResult.Success(Unit)
     }
 
-    fun updateBookmarkedShopIds(shopIds: Set<String>) {
-        mutableBookmarkedShopIds.value = shopIds.toSet()
+    override suspend fun updateShopNotification(
+        shopId: String,
+        enabled: Boolean,
+    ): RamapResult<Unit> {
+        shopNotificationError?.let { return RamapResult.Error(it) }
+        mutableState.update {
+            it.copy(
+                notificationShopIds =
+                    if (enabled) it.notificationShopIds + shopId else it.notificationShopIds - shopId,
+            )
+        }
+        return RamapResult.Success(Unit)
     }
+
+    override suspend fun clear() {
+        mutableState.value = Personalization()
+    }
+
+    fun updateBookmarkedShopIds(shopIds: Set<String>) {
+        mutableState.update { it.copy(bookmarkedShopIds = shopIds.toSet()) }
+        bookmarkedShopIds.value = shopIds
+    }
+
+    suspend fun fetchPersonalization(): RamapResult<Personalization> = RamapResult.Success(state.value)
+
+    suspend fun removeBookmark(shopId: String): RamapResult<Unit> = updateBookmark(shopId, false)
 }
