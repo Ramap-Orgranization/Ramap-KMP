@@ -1,9 +1,9 @@
 package com.peto.ramap.ui.main.event.list.di
 
-import com.peto.ramap.ui.main.event.list.EventListViewModel
+import com.peto.ramap.ui.main.event.list.EventsViewModel
 import org.koin.dsl.module
 
-val eventListModule =
+val eventsModule =
     module {
-        factory { EventListViewModel(get()) }
+        factory { EventsViewModel(get()) }
     }

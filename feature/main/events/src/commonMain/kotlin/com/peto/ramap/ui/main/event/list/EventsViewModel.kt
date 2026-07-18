@@ -6,24 +6,24 @@ import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.repository.RamenShopRepository
 import com.peto.ramap.ui.base.BaseViewModel
 import com.peto.ramap.ui.common.LoadState
-import com.peto.ramap.ui.main.event.list.contract.EventListIntent
-import com.peto.ramap.ui.main.event.list.contract.EventListSideEffect
-import com.peto.ramap.ui.main.event.list.contract.EventListUiState
+import com.peto.ramap.ui.main.event.list.contract.EventsIntent
+import com.peto.ramap.ui.main.event.list.contract.EventsSideEffect
+import com.peto.ramap.ui.main.event.list.contract.EventsUiState
 import kotlinx.coroutines.launch
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.event_list_refresh_failure_message
 
-class EventListViewModel(
+class EventsViewModel(
     private val ramenShopRepository: RamenShopRepository,
-) : BaseViewModel<EventListUiState, EventListIntent, EventListSideEffect>(EventListUiState()) {
+) : BaseViewModel<EventsUiState, EventsIntent, EventsSideEffect>(EventsUiState()) {
     init {
         viewModelScope.launch { loadEvents() }
     }
 
-    override suspend fun handleIntent(intent: EventListIntent) {
+    override suspend fun handleIntent(intent: EventsIntent) {
         when (intent) {
-            EventListIntent.OnEventListRefreshed -> refreshEvents()
-            EventListIntent.OnEventListRetried -> loadEvents()
+            EventsIntent.OnEventsRefreshed -> refreshEvents()
+            EventsIntent.OnEventsRetried -> loadEvents()
         }
     }
 
@@ -44,7 +44,7 @@ class EventListViewModel(
             onError = {
                 reduce { copy(isRefreshing = false) }
                 trySideEffect(
-                    EventListSideEffect.ShowEventListToast(
+                    EventsSideEffect.ShowEventsToast(
                         ToastData(
                             message = Res.string.event_list_refresh_failure_message,
                             type = ToastType.ERROR,

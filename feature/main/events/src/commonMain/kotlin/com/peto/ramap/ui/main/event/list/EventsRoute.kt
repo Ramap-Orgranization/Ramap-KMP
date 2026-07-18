@@ -35,9 +35,9 @@ import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.ui.base.ObserveAsEvents
 import com.peto.ramap.ui.common.LoadState
 import com.peto.ramap.ui.component.eventDateText
-import com.peto.ramap.ui.main.event.list.contract.EventListIntent
-import com.peto.ramap.ui.main.event.list.contract.EventListSideEffect
-import com.peto.ramap.ui.main.event.list.contract.EventListUiState
+import com.peto.ramap.ui.main.event.list.contract.EventsIntent
+import com.peto.ramap.ui.main.event.list.contract.EventsSideEffect
+import com.peto.ramap.ui.main.event.list.contract.EventsUiState
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
@@ -51,28 +51,28 @@ import ramap.shared.generated.resources.event_list_upcoming_section
 import ramap.shared.generated.resources.laduck_error_crying
 
 @Composable
-fun EventListRoute(
+fun EventsRoute(
     onEventClick: (ShopEvent) -> Unit,
     toastManager: ToastManager = koinInject(),
-    viewModel: EventListViewModel = koinViewModel(),
+    viewModel: EventsViewModel = koinViewModel(),
 ) {
     val uiState = viewModel.uiState.collectAsStateWithLifecycle().value
     ObserveAsEvents(viewModel.sideEffect) { sideEffect ->
         when (sideEffect) {
-            is EventListSideEffect.ShowEventListToast -> toastManager.show(sideEffect.data)
+            is EventsSideEffect.ShowEventsToast -> toastManager.show(sideEffect.data)
         }
     }
-    EventListScreen(
+    EventsScreen(
         uiState = uiState,
         onEventClick = onEventClick,
-        onRefresh = { viewModel.dispatch(EventListIntent.OnEventListRefreshed) },
-        onRetryClick = { viewModel.dispatch(EventListIntent.OnEventListRetried) },
+        onRefresh = { viewModel.dispatch(EventsIntent.OnEventsRefreshed) },
+        onRetryClick = { viewModel.dispatch(EventsIntent.OnEventsRetried) },
     )
 }
 
 @Composable
-fun EventListScreen(
-    uiState: EventListUiState,
+fun EventsScreen(
+    uiState: EventsUiState,
     onEventClick: (ShopEvent) -> Unit,
     onRefresh: () -> Unit,
     onRetryClick: () -> Unit,

@@ -9,9 +9,9 @@ import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.model.event.ShopEventType
 import com.peto.ramap.fake.FakeRamenShopRepository
 import com.peto.ramap.ui.common.LoadState
-import com.peto.ramap.ui.main.event.list.EventListViewModel
-import com.peto.ramap.ui.main.event.list.contract.EventListIntent
-import com.peto.ramap.ui.main.event.list.contract.EventListSideEffect
+import com.peto.ramap.ui.main.event.list.EventsViewModel
+import com.peto.ramap.ui.main.event.list.contract.EventsIntent
+import com.peto.ramap.ui.main.event.list.contract.EventsSideEffect
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
@@ -23,13 +23,13 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class EventListViewModelTest {
+class EventsViewModelTest {
     @Test
     fun `이벤트를 불러오면 목록을 표시한다`() =
         coroutinesTest {
             val event = event()
             val repository = FakeRamenShopRepository(activeEvents = listOf(event))
-            val viewModel = EventListViewModel(repository)
+            val viewModel = EventsViewModel(repository)
 
             runCurrent()
 
@@ -42,11 +42,11 @@ class EventListViewModelTest {
         coroutinesTest {
             val event = event()
             val repository = FakeRamenShopRepository(activeEvents = listOf(event))
-            val viewModel = EventListViewModel(repository)
+            val viewModel = EventsViewModel(repository)
             runCurrent()
             repository.activeEventsDelayMillis = 1_000
 
-            viewModel.dispatch(EventListIntent.OnEventListRefreshed)
+            viewModel.dispatch(EventsIntent.OnEventsRefreshed)
             runCurrent()
 
             assertEquals(2, repository.activeEventsRequestCount)
@@ -63,12 +63,12 @@ class EventListViewModelTest {
     fun `이벤트 조회 실패 후 재시도해도 오류 상태를 표시한다`() =
         coroutinesTest {
             val viewModel =
-                EventListViewModel(
+                EventsViewModel(
                     FakeRamenShopRepository(error = RamapError.Unknown(IllegalStateException("failure"))),
                 )
             runCurrent()
 
-            viewModel.dispatch(EventListIntent.OnEventListRetried)
+            viewModel.dispatch(EventsIntent.OnEventsRetried)
             runCurrent()
 
             assertEquals(LoadState.Error, viewModel.uiState.value.eventsState)
@@ -79,18 +79,18 @@ class EventListViewModelTest {
         coroutinesTest {
             val event = event()
             val repository = FakeRamenShopRepository(activeEvents = listOf(event))
-            val viewModel = EventListViewModel(repository)
+            val viewModel = EventsViewModel(repository)
             runCurrent()
             repository.activeEventsError = RamapError.Unknown(IllegalStateException("failure"))
 
             viewModel.sideEffect.test {
-                viewModel.dispatch(EventListIntent.OnEventListRefreshed)
+                viewModel.dispatch(EventsIntent.OnEventsRefreshed)
                 runCurrent()
 
                 assertEquals(LoadState.Content(listOf(event)), viewModel.uiState.value.eventsState)
                 assertFalse(viewModel.uiState.value.isRefreshing)
                 assertEquals(
-                    EventListSideEffect.ShowEventListToast(
+                    EventsSideEffect.ShowEventsToast(
                         ToastData(
                             message = Res.string.event_list_refresh_failure_message,
                             type = ToastType.ERROR,
