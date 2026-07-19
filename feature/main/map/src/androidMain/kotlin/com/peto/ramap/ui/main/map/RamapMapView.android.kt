@@ -40,7 +40,7 @@ import com.peto.ramap.ui.main.map.component.MapCircleIconButton
 import com.peto.ramap.ui.main.map.config.DefaultMapConfig
 import com.peto.ramap.ui.main.map.config.MapInteractionConfig
 import com.peto.ramap.ui.main.map.config.MarkerConfig
-import com.peto.ramap.ui.main.map.model.MapCameraPosition
+import com.peto.ramap.ui.main.map.model.CameraPosition
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
@@ -55,15 +55,14 @@ actual fun RamapMapView(
     focusNearestToCurrentLocation: Boolean,
     focusRequestKey: Long,
     initialFocusLocation: Location?,
-    initialFocusRequestKey: Long,
     placeFocusLocation: Location?,
     placeFocusRequestKey: Long,
     shouldBootstrapInitialLocationFocus: Boolean,
     selectedShopId: String?,
-    cameraPosition: MapCameraPosition?,
+    cameraPosition: CameraPosition?,
     onMapMoveStarted: () -> Unit,
     onBoundsChanged: (MapBounds) -> Unit,
-    onCameraPositionChanged: (MapCameraPosition) -> Unit,
+    onCameraPositionChanged: (CameraPosition) -> Unit,
     onInitialFocusConsumed: () -> Unit,
     onMyLocationChanged: (Location) -> Unit,
     onShopClick: (RamenShop) -> Unit,
@@ -133,14 +132,12 @@ actual fun RamapMapView(
     LaunchedEffect(
         naverMap,
         initialFocusLocation,
-        initialFocusRequestKey,
     ) {
         val map = naverMap ?: return@LaunchedEffect
         val location = initialFocusLocation ?: return@LaunchedEffect
         cameraController.focusCurrentLocation(
             naverMap = map,
             location = location,
-            requestKey = initialFocusRequestKey,
         )
         map.locationTrackingMode = LocationTrackingMode.NoFollow
         onInitialFocusConsumed()
@@ -268,11 +265,11 @@ actual fun RamapMapView(
 
 private fun notifyCameraPosition(
     naverMap: NaverMap,
-    onCameraPositionChanged: (MapCameraPosition) -> Unit,
+    onCameraPositionChanged: (CameraPosition) -> Unit,
 ) {
     val cameraPosition = naverMap.cameraPosition
     onCameraPositionChanged(
-        MapCameraPosition(
+        CameraPosition(
             center = Location(cameraPosition.target.latitude, cameraPosition.target.longitude),
             zoom = cameraPosition.zoom,
         ),

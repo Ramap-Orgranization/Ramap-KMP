@@ -1,4 +1,4 @@
-package com.peto.ramap.ui.main.map.model
+package com.peto.ramap.ui.main.map.search
 
 enum class SearchResultGuide {
     SEARCH_EMPTY,

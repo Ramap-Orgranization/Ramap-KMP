@@ -179,9 +179,6 @@
     <string name="hide_shop_action">숨기기</string>
     <string name="hide_shop_success_message">매장을 숨김 처리했어요</string>
     <string name="hidden_shop_notification_unavailable_message">숨김 매장은 알림을 설정할 수 없어요</string>
-    <string name="initial_map_error_title">지도를 불러오지 못했어요</string>
-    <string name="initial_map_loading_message">지도를 불러오고 있어요...</string>
-    <string name="initial_map_error_description">잠시 후 다시 시도해 주세요.</string>
     <string name="bookmarked_shops_toggle">좋아요</string>
     <string name="current_location">내 위치</string>
 

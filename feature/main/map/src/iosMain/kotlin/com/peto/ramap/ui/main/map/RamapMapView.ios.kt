@@ -18,7 +18,7 @@ import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.platform.permission.PermissionStatus
 import com.peto.ramap.platform.permission.rememberLocationPermissionGenerator
-import com.peto.ramap.ui.main.map.model.MapCameraPosition
+import com.peto.ramap.ui.main.map.model.CameraPosition
 import kotlinx.cinterop.ExperimentalForeignApi
 
 @OptIn(ExperimentalComposeUiApi::class)
@@ -29,15 +29,14 @@ actual fun RamapMapView(
     focusNearestToCurrentLocation: Boolean,
     focusRequestKey: Long,
     initialFocusLocation: Location?,
-    initialFocusRequestKey: Long,
     placeFocusLocation: Location?,
     placeFocusRequestKey: Long,
     shouldBootstrapInitialLocationFocus: Boolean,
     selectedShopId: String?,
-    cameraPosition: MapCameraPosition?,
+    cameraPosition: CameraPosition?,
     onMapMoveStarted: () -> Unit,
     onBoundsChanged: (MapBounds) -> Unit,
-    onCameraPositionChanged: (MapCameraPosition) -> Unit,
+    onCameraPositionChanged: (CameraPosition) -> Unit,
     onInitialFocusConsumed: () -> Unit,
     onMyLocationChanged: (Location) -> Unit,
     onShopClick: (RamenShop) -> Unit,
@@ -75,7 +74,6 @@ actual fun RamapMapView(
             controller.updateShops(shops)
             controller.updateInitialLocationFocus(
                 location = initialFocusLocation,
-                requestKey = initialFocusRequestKey,
             )
             controller.updatePlaceFocus(
                 location = placeFocusLocation,

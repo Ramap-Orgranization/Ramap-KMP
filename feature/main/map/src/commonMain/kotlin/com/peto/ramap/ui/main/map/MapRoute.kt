@@ -24,7 +24,6 @@ import com.peto.ramap.ui.main.map.contract.MapIntent.OnCameraPositionChanged
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnCategoryFilterToggled
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnHiddenToggled
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnInitialLocationFocusConsumed
-import com.peto.ramap.ui.main.map.contract.MapIntent.OnInitialMapRetryClicked
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnKakaoLoginClicked
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnLocationPermissionBlocked
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnMyLocationChanged
@@ -36,6 +35,7 @@ import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopIdSelected
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopNotificationToggled
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopReportSubmitted
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopSelected
+import com.peto.ramap.ui.main.map.contract.MapIntent.OnViewportLoadRetry
 import com.peto.ramap.ui.main.map.contract.MapSideEffect.ShowLoginGuide
 import com.peto.ramap.ui.main.map.contract.MapSideEffect.ShowToast
 import kotlinx.coroutines.launch
@@ -89,9 +89,9 @@ fun MapRoute(
         onShopDetailDismissed = { viewModel.dispatch(OnShopDetailDismissed) },
         onQueryChanged = { viewModel.dispatch(OnQueryChanged(it)) },
         onSearchResultsDismissed = { viewModel.dispatch(OnSearchResultsDismissed) },
-        onInitialMapRetry = { viewModel.dispatch(OnInitialMapRetryClicked) },
         onInitialLocationFocusConsumed = { viewModel.dispatch(OnInitialLocationFocusConsumed) },
         onCategoryFilterToggled = { viewModel.dispatch(OnCategoryFilterToggled(it)) },
+        onViewportLoadRetry = { viewModel.dispatch(OnViewportLoadRetry) },
         onBookmarkToggled = { viewModel.dispatch(OnBookmarkToggled(it)) },
         onShopNotificationToggled = { shop ->
             val canToggleWithoutPermission =
