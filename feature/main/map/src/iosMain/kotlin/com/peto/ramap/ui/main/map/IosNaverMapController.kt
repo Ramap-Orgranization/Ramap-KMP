@@ -19,6 +19,7 @@ import com.peto.ramap.domain.model.shop.MapBounds
 import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.ui.main.ShopLeafMarkerUpdater
+import com.peto.ramap.ui.main.map.config.CurrentLocationConfig
 import com.peto.ramap.ui.main.map.config.DefaultMapConfig
 import com.peto.ramap.ui.main.map.config.MapInteractionConfig
 import com.peto.ramap.ui.main.map.model.CameraPosition
@@ -41,6 +42,7 @@ internal class IosNaverMapController(
     private val onCameraPositionChanged: (CameraPosition) -> Unit,
     private val onShopClick: (RamenShop) -> Unit,
     private val onMyLocationChanged: (Location) -> Unit,
+    private val onCurrentLocationFocused: () -> Unit,
 ) : NSObject(),
     NMFMapViewCameraDelegateProtocol,
     NMFLocationManagerDelegateProtocol {
@@ -60,6 +62,7 @@ internal class IosNaverMapController(
     private var lastPlaceFocusKey = 0L
     private var hasRestoredCameraPosition = false
     private var currentLocation: Location? = null
+    private var shouldMoveToCurrentLocation = false
     private var isCameraMoving = false
     private var shopKeys = emptyList<ShopClusteringKey>()
     private val locationManager = NMFLocationManager.sharedInstance()
@@ -68,7 +71,7 @@ internal class IosNaverMapController(
         view.showCompass = false
         view.showScaleBar = false
         view.showZoomControls = false
-        view.showLocationButton = true
+        view.showLocationButton = false
         mapView.minZoomLevel = MapInteractionConfig.MAX_ZOOM_OUT_LEVEL.toDouble()
         mapView.addCameraDelegate(this)
         locationManager?.addDelegate(this)
@@ -184,6 +187,16 @@ internal class IosNaverMapController(
         mapView.positionMode = NMFMyPositionDirection
     }
 
+    fun requestCurrentLocation() {
+        shouldMoveToCurrentLocation = true
+        mapView.positionMode = NMFMyPositionDirection
+        currentLocation?.let(::moveToCurrentLocation)
+    }
+
+    fun cancelCurrentLocationRequest() {
+        shouldMoveToCurrentLocation = false
+    }
+
     override fun locationManager(
         locationManager: NMFLocationManager?,
         didUpdateLocations: List<*>?,
@@ -195,6 +208,9 @@ internal class IosNaverMapController(
         ).let { current ->
             currentLocation = current
             onMyLocationChanged(current)
+            if (shouldMoveToCurrentLocation) {
+                moveToCurrentLocation(current)
+            }
         }
     }
 
@@ -259,6 +275,18 @@ internal class IosNaverMapController(
                 zoomTo = MapInteractionConfig.SELECTED_MARKER_ZOOM_LEVEL.toDouble(),
             ),
         )
+    }
+
+    private fun moveToCurrentLocation(location: Location) {
+        shouldMoveToCurrentLocation = false
+        mapView.moveCamera(
+            NMFCameraUpdate.cameraUpdateWithScrollTo(
+                NMGLatLng.latLngWithLat(location.lat, location.lng),
+                zoomTo = CurrentLocationConfig.zoomForCurrentLocation(mapView.cameraPosition.zoom),
+            ),
+        )
+        mapView.positionMode = NMFMyPositionNormal
+        onCurrentLocationFocused()
     }
 
     private fun renderShopKeys() {

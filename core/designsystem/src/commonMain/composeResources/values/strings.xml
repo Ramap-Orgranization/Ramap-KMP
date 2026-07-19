@@ -181,6 +181,7 @@
     <string name="hidden_shop_notification_unavailable_message">숨김 매장은 알림을 설정할 수 없어요</string>
     <string name="bookmarked_shops_toggle">좋아요</string>
     <string name="current_location">내 위치</string>
+    <string name="current_location_timeout_message">현재 위치를 찾지 못했어요. 잠시 후 다시 시도해 주세요.</string>
 
     <!-- 권한 안내 -->
     <string name="location_permission_settings_action">설정</string>

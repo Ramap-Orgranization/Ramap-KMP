@@ -92,6 +92,7 @@ fun MapContent(
     onCameraPositionChanged: (CameraPosition) -> Unit,
     onMyLocationChanged: (Location) -> Unit,
     onLocationPermissionBlocked: () -> Unit,
+    onCurrentLocationTimeout: () -> Unit,
     onShopSelected: (RamenShop, Boolean) -> Unit,
     onPlaceSelected: (PlaceSearchResult) -> Unit,
     onShopDetailDismissed: () -> Unit,
@@ -163,6 +164,7 @@ fun MapContent(
             onMyLocationChanged = onMyLocationChanged,
             onShopClick = { onShopSelected(it, false) },
             onLocationPermissionBlocked = onLocationPermissionBlocked,
+            onCurrentLocationTimeout = onCurrentLocationTimeout,
         )
 
         Column(

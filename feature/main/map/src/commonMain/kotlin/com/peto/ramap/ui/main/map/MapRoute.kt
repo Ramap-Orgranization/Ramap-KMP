@@ -42,6 +42,7 @@ import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 import ramap.shared.generated.resources.Res
+import ramap.shared.generated.resources.current_location_timeout_message
 import ramap.shared.generated.resources.location_permission_settings_action
 import ramap.shared.generated.resources.notification_permission_enable_message
 
@@ -84,6 +85,16 @@ fun MapRoute(
         onCameraPositionChanged = { viewModel.dispatch(OnCameraPositionChanged(it)) },
         onMyLocationChanged = { viewModel.dispatch(OnMyLocationChanged(it)) },
         onLocationPermissionBlocked = { viewModel.dispatch(OnLocationPermissionBlocked) },
+        onCurrentLocationTimeout = {
+            coroutineScope.launch {
+                toastManager.show(
+                    ToastData(
+                        message = Res.string.current_location_timeout_message,
+                        type = ToastType.DEFAULT,
+                    ),
+                )
+            }
+        },
         onShopSelected = { shop, shouldFocus -> viewModel.dispatch(OnShopSelected(shop, shouldFocus)) },
         onPlaceSelected = { viewModel.dispatch(OnPlaceSelected(it)) },
         onShopDetailDismissed = { viewModel.dispatch(OnShopDetailDismissed) },
