@@ -4,14 +4,14 @@ import com.peto.ramap.core.result.RamapError
 import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.core.result.getOrThrow
 import com.peto.ramap.data.model.ShopWaitingSystemResponse
-import com.peto.ramap.domain.model.shop.ShopWaitingSystem
 import com.peto.ramap.domain.model.shop.WaitingProvider
+import com.peto.ramap.domain.model.shop.WaitingSystem
 import com.peto.ramap.fake.FakeShopWaitingSystemDataSource
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-class DefaultShopWaitingSystemRepositoryTest {
+class DefaultWaitingSystemRepositoryTest {
     @Test
     fun `웨이팅 시스템을 조회하면 도메인 모델로 변환한다`() =
         runTest {
@@ -31,7 +31,7 @@ class DefaultShopWaitingSystemRepositoryTest {
 
             assertEquals("shop-1", dataSource.requestedShopId)
             assertEquals(
-                ShopWaitingSystem(
+                WaitingSystem(
                     id = "waiting-1",
                     shopId = "shop-1",
                     provider = WaitingProvider.CATCHTABLE,
