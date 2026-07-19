@@ -22,7 +22,7 @@ class HiddenShopListViewModelTest {
             val hiddenShop = ramenShopFixture(id = "hidden-shop").copy(isVisible = true)
             val viewModel =
                 HiddenShopListViewModel(
-                    personalizationRepository =
+                    personalizationStore =
                         FakePersonalizationRepository(
                             Personalization(hiddenShopIds = setOf(hiddenShop.id)),
                         ),
@@ -44,7 +44,7 @@ class HiddenShopListViewModelTest {
         coroutinesTest {
             val viewModel =
                 HiddenShopListViewModel(
-                    personalizationRepository = FakePersonalizationRepository(),
+                    personalizationStore = FakePersonalizationRepository(),
                     ramenShopRepository = FakeRamenShopRepository(),
                 )
 
@@ -59,7 +59,7 @@ class HiddenShopListViewModelTest {
             val shop = ramenShopFixture(id = "hidden-shop")
             val viewModel =
                 HiddenShopListViewModel(
-                    personalizationRepository =
+                    personalizationStore =
                         FakePersonalizationRepository(
                             Personalization(hiddenShopIds = setOf(shop.id)),
                         ),
@@ -67,11 +67,9 @@ class HiddenShopListViewModelTest {
                 )
             runCurrent()
 
-            viewModel.dispatch(HiddenShopListIntent.OnShopClicked(shop.id))
-            viewModel.dispatch(HiddenShopListIntent.OnUnhideConfirmed)
+            viewModel.dispatch(HiddenShopListIntent.OnUnhideConfirmed(shop.id))
             runCurrent()
 
-            assertEquals(null, viewModel.uiState.value.pendingUnhideShopId)
             assertEquals(
                 LoadState.Content(RamenShops(emptyMap())),
                 viewModel.uiState.value.shopsState,

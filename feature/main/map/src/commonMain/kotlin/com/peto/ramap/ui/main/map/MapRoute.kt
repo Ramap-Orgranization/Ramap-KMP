@@ -24,10 +24,10 @@ import com.peto.ramap.ui.main.map.contract.MapIntent.OnCameraPositionChanged
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnCategoryFilterToggled
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnHiddenToggled
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnInitialLocationFocusConsumed
-import com.peto.ramap.ui.main.map.contract.MapIntent.OnInitialMapRetryClicked
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnKakaoLoginClicked
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnLocationPermissionBlocked
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnMyLocationChanged
+import com.peto.ramap.ui.main.map.contract.MapIntent.OnPlaceSelected
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnQueryChanged
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnSearchResultsDismissed
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopDetailDismissed
@@ -35,12 +35,14 @@ import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopIdSelected
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopNotificationToggled
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopReportSubmitted
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopSelected
+import com.peto.ramap.ui.main.map.contract.MapIntent.OnViewportLoadRetry
 import com.peto.ramap.ui.main.map.contract.MapSideEffect.ShowLoginGuide
 import com.peto.ramap.ui.main.map.contract.MapSideEffect.ShowToast
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 import ramap.shared.generated.resources.Res
+import ramap.shared.generated.resources.current_location_timeout_message
 import ramap.shared.generated.resources.location_permission_settings_action
 import ramap.shared.generated.resources.notification_permission_enable_message
 
@@ -83,13 +85,24 @@ fun MapRoute(
         onCameraPositionChanged = { viewModel.dispatch(OnCameraPositionChanged(it)) },
         onMyLocationChanged = { viewModel.dispatch(OnMyLocationChanged(it)) },
         onLocationPermissionBlocked = { viewModel.dispatch(OnLocationPermissionBlocked) },
+        onCurrentLocationTimeout = {
+            coroutineScope.launch {
+                toastManager.show(
+                    ToastData(
+                        message = Res.string.current_location_timeout_message,
+                        type = ToastType.DEFAULT,
+                    ),
+                )
+            }
+        },
         onShopSelected = { shop, shouldFocus -> viewModel.dispatch(OnShopSelected(shop, shouldFocus)) },
+        onPlaceSelected = { viewModel.dispatch(OnPlaceSelected(it)) },
         onShopDetailDismissed = { viewModel.dispatch(OnShopDetailDismissed) },
         onQueryChanged = { viewModel.dispatch(OnQueryChanged(it)) },
         onSearchResultsDismissed = { viewModel.dispatch(OnSearchResultsDismissed) },
-        onInitialMapRetry = { viewModel.dispatch(OnInitialMapRetryClicked) },
         onInitialLocationFocusConsumed = { viewModel.dispatch(OnInitialLocationFocusConsumed) },
         onCategoryFilterToggled = { viewModel.dispatch(OnCategoryFilterToggled(it)) },
+        onViewportLoadRetry = { viewModel.dispatch(OnViewportLoadRetry) },
         onBookmarkToggled = { viewModel.dispatch(OnBookmarkToggled(it)) },
         onShopNotificationToggled = { shop ->
             val canToggleWithoutPermission =

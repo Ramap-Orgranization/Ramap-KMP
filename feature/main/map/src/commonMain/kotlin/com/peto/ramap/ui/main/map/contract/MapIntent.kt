@@ -1,21 +1,23 @@
 package com.peto.ramap.ui.main.map.contract
 
+import com.peto.ramap.domain.model.place.PlaceSearchResult
 import com.peto.ramap.domain.model.report.ShopInformationField
 import com.peto.ramap.domain.model.shop.Category
 import com.peto.ramap.domain.model.shop.Location
 import com.peto.ramap.domain.model.shop.MapBounds
 import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.ui.base.Intent
-import com.peto.ramap.ui.main.map.model.MapCameraPosition
-import com.peto.ramap.ui.main.map.model.MapPersonalization
+import com.peto.ramap.ui.main.map.model.CameraPosition
 
 sealed interface MapIntent : Intent {
     data class OnBoundsChanged(
         val bounds: MapBounds,
     ) : MapIntent
 
+    data object OnViewportLoadRetry : MapIntent
+
     data class OnCameraPositionChanged(
-        val position: MapCameraPosition,
+        val position: CameraPosition,
     ) : MapIntent
 
     data class OnMyLocationChanged(
@@ -37,7 +39,9 @@ sealed interface MapIntent : Intent {
 
     data object OnSearchResultsDismissed : MapIntent
 
-    data object OnInitialMapRetryClicked : MapIntent
+    data class OnPlaceSelected(
+        val place: PlaceSearchResult,
+    ) : MapIntent
 
     data class OnQueryChanged(
         val query: String,
@@ -66,23 +70,9 @@ sealed interface MapIntent : Intent {
         val description: String,
     ) : MapIntent
 
-    data class OnUnregisteredPlaceReportSubmitted(
-        val placeUrl: String,
-    ) : MapIntent
-
-    data object OnCurrentLocationReportSubmitted : MapIntent
-
-    data class OnPersonalizationViewChanged(
-        val view: MapPersonalization,
-    ) : MapIntent
-
     data object OnBookmarkedShopsToggled : MapIntent
 
     data object OnKakaoLoginClicked : MapIntent
-
-    data object OnLogoutClicked : MapIntent
-
-    data object OnAccountDeleteConfirmed : MapIntent
 
     data object OnLocationPermissionBlocked : MapIntent
 }

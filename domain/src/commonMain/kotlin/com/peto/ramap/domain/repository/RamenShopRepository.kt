@@ -9,7 +9,7 @@ import com.peto.ramap.domain.model.shop.SearchQuery
 interface RamenShopRepository {
     suspend fun fetchRamenShops(bounds: MapBounds): RamapResult<RamenShops>
 
-    suspend fun fetchRamenShopsByIds(shopIds: Set<String>): RamapResult<RamenShops>
+    suspend fun fetchRamenShops(shopIds: Set<String>): RamapResult<RamenShops>
 
     suspend fun fetchActiveShopEvent(shopId: String): RamapResult<ShopEvent?>
 

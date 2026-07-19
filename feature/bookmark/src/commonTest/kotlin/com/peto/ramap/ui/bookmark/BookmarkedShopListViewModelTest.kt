@@ -9,7 +9,7 @@ import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.personalization.Personalization
 import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.domain.model.shop.RamenShops
-import com.peto.ramap.domain.repository.PersonalizationRepository
+import com.peto.ramap.domain.store.ShopPersonalizationStore
 import com.peto.ramap.fake.FakePersonalizationRepository
 import com.peto.ramap.fake.FakeRamenShopRepository
 import com.peto.ramap.fixture.ramenShopFixture
@@ -19,6 +19,7 @@ import com.peto.ramap.ui.common.LoadState
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runCurrent
 import ramap.shared.generated.resources.Res
+import ramap.shared.generated.resources.bookmark_removal_success_message
 import ramap.shared.generated.resources.personalization_update_failure_message
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -29,12 +30,13 @@ class BookmarkedShopListViewModelTest {
     fun `좋아요 매장 화면 진입시 개인화 아이디에 해당하는 매장을 로드한다`() =
         coroutinesTest {
             val shop = ramenShopFixture(id = "bookmarked-shop")
+            val personalizationRepository =
+                FakePersonalizationRepository(
+                    Personalization(bookmarkedShopIds = setOf(shop.id)),
+                )
             val viewModel =
                 BookmarkedShopListViewModel(
-                    personalizationRepository =
-                        FakePersonalizationRepository(
-                            Personalization(bookmarkedShopIds = setOf(shop.id)),
-                        ),
+                    personalizationStore = personalizationRepository,
                     ramenShopRepository =
                         FakeRamenShopRepository(
                             fetchByIdsResult = RamenShops(listOf(shop)),
@@ -47,6 +49,46 @@ class BookmarkedShopListViewModelTest {
                 LoadState.Content(RamenShops(listOf(shop))),
                 viewModel.uiState.value.shopsState,
             )
+        }
+
+    @Test
+    fun `공유 북마크 상태가 비어 있으면 빈 목록을 표시한다`() =
+        coroutinesTest {
+            val ramenShopRepository = FakeRamenShopRepository()
+            val viewModel =
+                BookmarkedShopListViewModel(
+                    personalizationStore = FakePersonalizationRepository(),
+                    ramenShopRepository = ramenShopRepository,
+                )
+
+            runCurrent()
+
+            assertEquals(
+                LoadState.Content(RamenShops(emptyMap())),
+                viewModel.uiState.value.shopsState,
+            )
+            assertEquals(emptyList(), ramenShopRepository.requestedShopIdsHistory)
+        }
+
+    @Test
+    fun `매장 조회에 실패하면 오류 상태를 표시한다`() =
+        coroutinesTest {
+            val shop = ramenShopFixture(id = "bookmarked-shop")
+            val viewModel =
+                BookmarkedShopListViewModel(
+                    personalizationStore =
+                        FakePersonalizationRepository(
+                            Personalization(bookmarkedShopIds = setOf(shop.id)),
+                        ),
+                    ramenShopRepository =
+                        FakeRamenShopRepository(
+                            error = RamapError.Unknown(IllegalStateException("failure")),
+                        ),
+                )
+
+            runCurrent()
+
+            assertEquals(LoadState.Error, viewModel.uiState.value.shopsState)
         }
 
     @Test
@@ -64,7 +106,7 @@ class BookmarkedShopListViewModelTest {
                 )
             val viewModel =
                 BookmarkedShopListViewModel(
-                    personalizationRepository = personalizationRepository,
+                    personalizationStore = personalizationRepository,
                     ramenShopRepository = ramenShopRepository,
                 )
             runCurrent()
@@ -91,48 +133,6 @@ class BookmarkedShopListViewModelTest {
         }
 
     @Test
-    fun `좋아요 매장을 선택하면 좋아요 해제 확인 대상을 저장한다`() =
-        coroutinesTest {
-            val shop = ramenShopFixture(id = "bookmarked-shop")
-            val viewModel = bookmarkedShopListViewModel(shop)
-            runCurrent()
-
-            viewModel.dispatch(BookmarkedShopListIntent.OnShopClicked(shop.id))
-            runCurrent()
-
-            assertEquals(shop.id, viewModel.uiState.value.pendingBookmarkShopId)
-        }
-
-    @Test
-    fun `좋아요 해제를 취소하면 저장소를 호출하지 않고 확인 대상을 비운다`() =
-        coroutinesTest {
-            val shop = ramenShopFixture(id = "bookmarked-shop")
-            var removalCount = 0
-            val repository =
-                object : PersonalizationRepository by FakePersonalizationRepository(
-                    Personalization(bookmarkedShopIds = setOf(shop.id)),
-                ) {
-                    override suspend fun removeBookmark(shopId: String): RamapResult<Unit> {
-                        removalCount += 1
-                        return RamapResult.Success(Unit)
-                    }
-                }
-            val viewModel = bookmarkedShopListViewModel(shop, repository)
-            runCurrent()
-
-            viewModel.dispatch(BookmarkedShopListIntent.OnShopClicked(shop.id))
-            viewModel.dispatch(BookmarkedShopListIntent.OnRemovalDismissed)
-            runCurrent()
-
-            assertEquals(null, viewModel.uiState.value.pendingBookmarkShopId)
-            assertEquals(0, removalCount)
-            assertEquals(
-                LoadState.Content(RamenShops(listOf(shop))),
-                viewModel.uiState.value.shopsState,
-            )
-        }
-
-    @Test
     fun `좋아요 해제에 성공하면 저장소와 현재 목록에서 매장을 제거한다`() =
         coroutinesTest {
             val shop = ramenShopFixture(id = "bookmarked-shop")
@@ -143,19 +143,27 @@ class BookmarkedShopListViewModelTest {
             val viewModel = bookmarkedShopListViewModel(shop, repository)
             runCurrent()
 
-            viewModel.dispatch(BookmarkedShopListIntent.OnShopClicked(shop.id))
-            viewModel.dispatch(BookmarkedShopListIntent.OnRemovalConfirmed)
-            runCurrent()
+            viewModel.sideEffect.test {
+                viewModel.dispatch(BookmarkedShopListIntent.OnRemovalConfirmed(shop.id))
 
-            assertEquals(null, viewModel.uiState.value.pendingBookmarkShopId)
-            assertEquals(
-                LoadState.Content(RamenShops(emptyMap())),
-                viewModel.uiState.value.shopsState,
-            )
-            assertEquals(
-                RamapResult.Success(Personalization()),
-                repository.fetchPersonalization(),
-            )
+                assertEquals(
+                    BookmarkedShopListSideEffect.ShowToast(
+                        ToastData(
+                            Res.string.bookmark_removal_success_message,
+                            ToastType.SUCCESS,
+                        ),
+                    ),
+                    awaitItem(),
+                )
+                assertEquals(
+                    LoadState.Content(RamenShops(emptyMap())),
+                    viewModel.uiState.value.shopsState,
+                )
+                assertEquals(
+                    RamapResult.Success(Personalization()),
+                    repository.fetchPersonalization(),
+                )
+            }
         }
 
     @Test
@@ -163,18 +171,19 @@ class BookmarkedShopListViewModelTest {
         coroutinesTest {
             val shop = ramenShopFixture(id = "bookmarked-shop")
             val repository =
-                object : PersonalizationRepository by FakePersonalizationRepository(
+                object : ShopPersonalizationStore by FakePersonalizationRepository(
                     Personalization(bookmarkedShopIds = setOf(shop.id)),
                 ) {
-                    override suspend fun removeBookmark(shopId: String): RamapResult<Unit> =
-                        RamapResult.Error(RamapError.Unknown(IllegalStateException("failure")))
+                    override suspend fun updateBookmark(
+                        shopId: String,
+                        enabled: Boolean,
+                    ): RamapResult<Unit> = RamapResult.Error(RamapError.Unknown(IllegalStateException("failure")))
                 }
             val viewModel = bookmarkedShopListViewModel(shop, repository)
             runCurrent()
 
             viewModel.sideEffect.test {
-                viewModel.dispatch(BookmarkedShopListIntent.OnShopClicked(shop.id))
-                viewModel.dispatch(BookmarkedShopListIntent.OnRemovalConfirmed)
+                viewModel.dispatch(BookmarkedShopListIntent.OnRemovalConfirmed(shop.id))
 
                 assertEquals(
                     BookmarkedShopListSideEffect.ShowToast(
@@ -185,7 +194,6 @@ class BookmarkedShopListViewModelTest {
                     ),
                     awaitItem(),
                 )
-                assertEquals(null, viewModel.uiState.value.pendingBookmarkShopId)
                 assertEquals(
                     LoadState.Content(RamenShops(listOf(shop))),
                     viewModel.uiState.value.shopsState,
@@ -196,12 +204,12 @@ class BookmarkedShopListViewModelTest {
 
 private fun bookmarkedShopListViewModel(
     shop: RamenShop,
-    personalizationRepository: PersonalizationRepository =
+    personalizationRepository: ShopPersonalizationStore =
         FakePersonalizationRepository(
             Personalization(bookmarkedShopIds = setOf(shop.id)),
         ),
 ) = BookmarkedShopListViewModel(
-    personalizationRepository = personalizationRepository,
+    personalizationStore = personalizationRepository,
     ramenShopRepository =
         FakeRamenShopRepository(
             fetchByIdsResult = RamenShops(listOf(shop)),

@@ -5,6 +5,6 @@ import org.gradle.api.Project
 
 class SerializationConventionPlugin : Plugin<Project> {
     override fun apply(target: Project) = with(target) {
-        pluginManager.apply(pluginId("kotlinxSerialization"))
+        pluginManager.apply(pluginId("kotlinx-serialization"))
     }
 }

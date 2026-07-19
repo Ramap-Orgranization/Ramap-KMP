@@ -5,7 +5,7 @@ plugins {
     id("ramap.kmp.library")
     id("ramap.kmp.test")
     id("ramap.serialization")
-    alias(libs.plugins.buildkonfig)
+    alias(libs.plugins.build.konfig)
 }
 
 val localProperties =
@@ -46,6 +46,7 @@ kotlin {
         implementation(libs.ktor.client.content.negotiation)
         implementation(libs.ktor.serialization.kotlinx.json)
         implementation(libs.supabase.auth)
+        implementation(libs.supabase.functions)
         implementation(libs.supabase.postgrest)
     }
     sourceSets.androidMain.dependencies { implementation(libs.ktor.client.okhttp) }

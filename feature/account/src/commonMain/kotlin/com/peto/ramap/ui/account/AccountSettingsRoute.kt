@@ -16,6 +16,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.peto.ramap.designsystem.button.AppButton
 import com.peto.ramap.designsystem.card.SectionCard
+import com.peto.ramap.designsystem.component.SettingsPage
 import com.peto.ramap.designsystem.dialog.CommonDialog
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.designsystem.toast.ToastManager
@@ -26,6 +27,7 @@ import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.ui.account.component.LoginButton
 import com.peto.ramap.ui.account.contract.AccountIntent
 import com.peto.ramap.ui.account.contract.AccountSideEffect
+import com.peto.ramap.ui.account.model.LoginTypeUiModel
 import com.peto.ramap.ui.base.ObserveAsEvents
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
@@ -82,7 +84,7 @@ fun AccountSettingsRoute(
                 )
             } else {
                 LoginButton(
-                    type = LoginType.KAKAO,
+                    type = LoginTypeUiModel(LoginType.KAKAO),
                     modifier =
                         Modifier
                             .fillMaxWidth()

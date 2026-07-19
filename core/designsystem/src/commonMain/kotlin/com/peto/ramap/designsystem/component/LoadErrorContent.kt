@@ -26,7 +26,7 @@ fun LoadErrorContent(
     image: DrawableResource,
     title: String,
     description: String,
-    onRetry: () -> Unit,
+    onRetry: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
     compact: Boolean = false,
 ) {
@@ -42,10 +42,12 @@ fun LoadErrorContent(
         )
         AppText(text = title, style = AppTextStyle.H3, color = GrayColor.C500, textAlign = TextAlign.Center)
         AppText(text = description, style = AppTextStyle.B2, color = GrayColor.C400, textAlign = TextAlign.Center)
-        AppButton(
-            text = stringResource(Res.string.retry_action),
-            modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-            onClick = onRetry,
-        )
+        if (onRetry != null) {
+            AppButton(
+                text = stringResource(Res.string.retry_action),
+                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                onClick = onRetry,
+            )
+        }
     }
 }

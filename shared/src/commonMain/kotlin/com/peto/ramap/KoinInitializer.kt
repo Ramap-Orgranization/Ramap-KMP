@@ -2,6 +2,7 @@ package com.peto.ramap
 
 import com.peto.ramap.data.datasource.di.dataSourceModule
 import com.peto.ramap.data.repository.di.repositoryModule
+import com.peto.ramap.data.usecase.di.useCaseModule
 import com.peto.ramap.designsystem.di.designSystemModule
 import com.peto.ramap.network.di.networkModule
 import com.peto.ramap.notification.di.notificationModule
@@ -19,6 +20,7 @@ fun initKoin(appDeclaration: KoinAppDeclaration = {}) {
             platformModule,
             dataSourceModule,
             repositoryModule,
+            useCaseModule,
             notificationModule,
         )
     }

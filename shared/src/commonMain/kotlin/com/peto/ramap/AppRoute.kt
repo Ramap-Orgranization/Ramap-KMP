@@ -18,7 +18,7 @@ import com.peto.ramap.ui.account.InformationRoute
 import com.peto.ramap.ui.bookmark.BookmarkedShopListRoute
 import com.peto.ramap.ui.hidden.HiddenShopListRoute
 import com.peto.ramap.ui.main.event.EventDetailRoute
-import com.peto.ramap.ui.main.event.list.EventListRoute
+import com.peto.ramap.ui.main.event.list.EventsRoute
 import com.peto.ramap.ui.main.map.MapRoute
 import com.peto.ramap.ui.main.my.MyTabRoute
 import com.peto.ramap.ui.notification.NotificationSettingsRoute
@@ -78,7 +78,7 @@ fun AppRoute(
             PlaceReportRoute(onBack = navigationState::pop)
         },
         eventListScreen = {
-            EventListRoute(onEventClick = { navigationState.showEvent(it.id) })
+            EventsRoute(onEventClick = { navigationState.showEvent(it.id) })
         },
         hiddenScreen = {
             HiddenShopListRoute(

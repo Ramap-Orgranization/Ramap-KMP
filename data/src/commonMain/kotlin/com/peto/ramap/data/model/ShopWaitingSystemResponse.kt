@@ -1,7 +1,7 @@
 package com.peto.ramap.data.model
 
-import com.peto.ramap.domain.model.shop.ShopWaitingSystem
 import com.peto.ramap.domain.model.shop.WaitingProvider
+import com.peto.ramap.domain.model.shop.WaitingSystem
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -14,8 +14,8 @@ data class ShopWaitingSystemResponse(
     @SerialName("provider_url")
     val providerUrl: String? = null,
 ) {
-    fun toDomain(): ShopWaitingSystem =
-        ShopWaitingSystem(
+    fun toDomain(): WaitingSystem =
+        WaitingSystem(
             id = id,
             shopId = shopId,
             provider = WaitingProvider.fromId(provider),

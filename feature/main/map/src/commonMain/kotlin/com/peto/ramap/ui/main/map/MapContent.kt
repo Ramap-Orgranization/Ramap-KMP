@@ -21,7 +21,6 @@ import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.Surface
 import androidx.compose.material3.TextField
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
@@ -43,12 +42,12 @@ import androidx.navigationevent.compose.NavigationBackHandler
 import androidx.navigationevent.compose.rememberNavigationEventState
 import com.peto.ramap.designsystem.bottomsheet.CommonBottomSheet
 import com.peto.ramap.designsystem.bottomsheet.CommonBottomSheetConfig
-import com.peto.ramap.designsystem.component.LaduckLoadingContent
-import com.peto.ramap.designsystem.component.LoadErrorContent
+import com.peto.ramap.designsystem.button.AppButton
 import com.peto.ramap.designsystem.component.RamenShopSearchResultList
 import com.peto.ramap.designsystem.dialog.CommonDialog
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.domain.model.event.ShopEvent
+import com.peto.ramap.domain.model.place.PlaceSearchResult
 import com.peto.ramap.domain.model.report.ShopInformationField
 import com.peto.ramap.domain.model.shop.Category
 import com.peto.ramap.domain.model.shop.Location
@@ -60,14 +59,14 @@ import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.ui.extension.stringResource
 import com.peto.ramap.ui.main.map.component.MapCircleIconButton
 import com.peto.ramap.ui.main.map.component.MenuCategoryFilterRow
+import com.peto.ramap.ui.main.map.component.PlaceSearchResultList
 import com.peto.ramap.ui.main.map.component.RamenShopDetailContent
 import com.peto.ramap.ui.main.map.component.RamenShopSearchBar
 import com.peto.ramap.ui.main.map.component.RamenShopSearchResultGuide
 import com.peto.ramap.ui.main.map.contract.MapUiState
-import com.peto.ramap.ui.main.map.model.InitialMapLoadState
-import com.peto.ramap.ui.main.map.model.MapCameraPosition
-import com.peto.ramap.ui.main.map.model.MapPersonalization
+import com.peto.ramap.ui.main.map.model.CameraPosition
 import com.peto.ramap.ui.main.map.model.RamenShopUiModel
+import com.peto.ramap.ui.main.map.model.WaitingSystemUiModel
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
@@ -77,10 +76,7 @@ import ramap.shared.generated.resources.hide_shop_confirm_description
 import ramap.shared.generated.resources.hide_shop_confirm_dismiss
 import ramap.shared.generated.resources.hide_shop_confirm_title
 import ramap.shared.generated.resources.ic_kid_star
-import ramap.shared.generated.resources.initial_map_error_description
-import ramap.shared.generated.resources.initial_map_error_title
-import ramap.shared.generated.resources.initial_map_loading_message
-import ramap.shared.generated.resources.laduck_error_crying
+import ramap.shared.generated.resources.retry_action
 import ramap.shared.generated.resources.shop_detail_link_report
 import ramap.shared.generated.resources.shop_information_report_action
 import ramap.shared.generated.resources.shop_information_report_description
@@ -93,16 +89,18 @@ fun MapContent(
     uiState: MapUiState,
     isBackEnabled: Boolean,
     onBoundsChanged: (MapBounds) -> Unit,
-    onCameraPositionChanged: (MapCameraPosition) -> Unit,
+    onCameraPositionChanged: (CameraPosition) -> Unit,
     onMyLocationChanged: (Location) -> Unit,
     onLocationPermissionBlocked: () -> Unit,
+    onCurrentLocationTimeout: () -> Unit,
     onShopSelected: (RamenShop, Boolean) -> Unit,
+    onPlaceSelected: (PlaceSearchResult) -> Unit,
     onShopDetailDismissed: () -> Unit,
     onQueryChanged: (String) -> Unit,
     onSearchResultsDismissed: () -> Unit,
-    onInitialMapRetry: () -> Unit,
     onInitialLocationFocusConsumed: () -> Unit,
     onCategoryFilterToggled: (Category) -> Unit,
+    onViewportLoadRetry: () -> Unit,
     onBookmarkToggled: (RamenShop) -> Unit,
     onShopNotificationToggled: (RamenShop) -> Unit,
     onHiddenToggled: (RamenShop) -> Unit,
@@ -152,8 +150,9 @@ fun MapContent(
             focusNearestToCurrentLocation = uiState.shouldFocusNearestSearchResult,
             focusRequestKey = uiState.focusRequestKey,
             initialFocusLocation = uiState.initialFocusLocation,
-            initialFocusRequestKey = uiState.initialFocusRequestKey,
-            shouldBootstrapInitialLocationFocus = uiState.shouldBootstrapInitialLocationFocus,
+            placeFocusLocation = uiState.placeFocusLocation,
+            placeFocusRequestKey = uiState.placeFocusRequestKey,
+            shouldBootstrapInitialLocationFocus = uiState.shouldBootstrapLocationFocusStatus,
             selectedShopId = uiState.selectedShop?.id,
             cameraPosition = uiState.cameraPosition,
             onMapMoveStarted = {
@@ -165,6 +164,7 @@ fun MapContent(
             onMyLocationChanged = onMyLocationChanged,
             onShopClick = { onShopSelected(it, false) },
             onLocationPermissionBlocked = onLocationPermissionBlocked,
+            onCurrentLocationTimeout = onCurrentLocationTimeout,
         )
 
         Column(
@@ -185,7 +185,7 @@ fun MapContent(
                 )
 
                 BookmarkedFilterButton(
-                    isActive = uiState.personalizationView == MapPersonalization.BOOKMARKED,
+                    isActive = uiState.isBookmarkedView,
                     onClick = onBookmarkedShopsToggle,
                 )
             }
@@ -195,6 +195,17 @@ fun MapContent(
                 onCategoryClick = onCategoryFilterToggled,
                 modifier = Modifier.padding(top = 6.dp),
             )
+
+            if (uiState.hasViewportLoadFailed) {
+                AppButton(
+                    text = stringResource(Res.string.retry_action),
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(top = 8.dp),
+                    onClick = onViewportLoadRetry,
+                )
+            }
         }
 
         if (uiState.showSearchResults) {
@@ -205,14 +216,22 @@ fun MapContent(
             ) {
                 Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
                     val searchResultGuide = uiState.searchResultGuide
-                    if (searchResultGuide != null) {
-                        RamenShopSearchResultGuide(guide = searchResultGuide)
-                    } else {
-                        RamenShopSearchResultList(
-                            shops = uiState.searchResultShops,
-                            categoryLabel = { category -> stringResource(category.stringResource) },
-                            onShopClick = { onShopSelected(it, true) },
-                        )
+                    when {
+                        uiState.placeSearchResults.isNotEmpty() ->
+                            PlaceSearchResultList(
+                                places = uiState.placeSearchResults,
+                                onPlaceClick = onPlaceSelected,
+                            )
+
+                        searchResultGuide != null ->
+                            RamenShopSearchResultGuide(guide = searchResultGuide)
+
+                        else ->
+                            RamenShopSearchResultList(
+                                shops = uiState.searchResultShops,
+                                categoryLabel = { category -> stringResource(category.stringResource) },
+                                onShopClick = { onShopSelected(it, true) },
+                            )
                     }
                 }
             }
@@ -226,9 +245,10 @@ fun MapContent(
                 config = CommonBottomSheetConfig(maxHeight = detailBottomSheetMaxHeight),
             ) {
                 uiState.shopDetail?.let { detail ->
+                    val waitingSystemUiModel = WaitingSystemUiModel.from(uiState.shopWaiting[shop.id])
                     RamenShopDetailContent(
                         shop = shop,
-                        waitingSystem = uiState.shopWaiting[shop.id],
+                        waitingSystemUiModel = waitingSystemUiModel,
                         isBookmarked = shop.id in uiState.bookmarkedShopIds,
                         isNotificationEnabled = shop.id in uiState.notificationShopIds,
                         isHidden = shop.id in uiState.hiddenShopIds,
@@ -253,37 +273,6 @@ fun MapContent(
                     modifier = Modifier.align(Alignment.Center),
                     color = GrayColor.C500,
                 )
-            }
-        }
-
-        if (uiState.initialMapLoadState != InitialMapLoadState.CONTENT) {
-            Surface(modifier = Modifier.fillMaxSize(), color = CommonColor.White) {
-                when (uiState.initialMapLoadState) {
-                    InitialMapLoadState.LOADING ->
-                        Column(
-                            modifier = Modifier.fillMaxSize(),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.Center,
-                        ) {
-                            LaduckLoadingContent()
-                            AppText(
-                                text = stringResource(Res.string.initial_map_loading_message),
-                                style = AppTextStyle.T1,
-                                color = GrayColor.C500,
-                            )
-                        }
-
-                    InitialMapLoadState.ERROR ->
-                        LoadErrorContent(
-                            image = Res.drawable.laduck_error_crying,
-                            title = stringResource(Res.string.initial_map_error_title),
-                            description = stringResource(Res.string.initial_map_error_description),
-                            onRetry = onInitialMapRetry,
-                            modifier = Modifier.fillMaxSize(),
-                        )
-
-                    InitialMapLoadState.CONTENT -> Unit
-                }
             }
         }
 
@@ -319,7 +308,7 @@ fun MapContent(
                 shopUiModel =
                     RamenShopUiModel(
                         shop = shop,
-                        waitingVisible = uiState.shopWaiting[shop.id]?.providerUrl != null,
+                        waitingVisible = WaitingSystemUiModel.from(uiState.shopWaiting[shop.id]) != null,
                     ),
                 onDismissRequest = { showReportDialog = false },
                 onSubmit = { wrongFields, description ->

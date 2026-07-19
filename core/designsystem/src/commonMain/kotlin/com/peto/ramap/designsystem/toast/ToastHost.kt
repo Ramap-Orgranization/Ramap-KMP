@@ -12,8 +12,10 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -29,6 +31,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -50,6 +53,7 @@ import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.ic_toast_default
 import ramap.shared.generated.resources.ic_toast_error
 import ramap.shared.generated.resources.ic_toast_success
+import ramap.shared.generated.resources.toast_icon
 import kotlin.time.Duration.Companion.milliseconds
 
 @Composable
@@ -63,6 +67,9 @@ fun ToastHost(
     val scope = rememberCoroutineScope()
     var dismissJob by remember { mutableStateOf<Job?>(null) }
     val animationMS = 200
+    val density = LocalDensity.current
+    val isImeVisible = WindowInsets.ime.getBottom(density) > 0
+    val toastBottomPadding = if (isImeVisible) 16.dp else bottomPadding
 
     LaunchedEffect(toastManager) {
         toastManager.toasts.collectLatest { toast ->
@@ -112,7 +119,7 @@ fun ToastHost(
             current?.let { toast ->
                 ToastItem(
                     data = toast,
-                    bottomPadding = bottomPadding,
+                    bottomPadding = toastBottomPadding,
                     onDismiss = ::dismiss,
                 )
             }
@@ -154,7 +161,7 @@ private fun ToastItem(
         ) {
             Image(
                 painter = res,
-                contentDescription = "toast icon",
+                contentDescription = stringResource(Res.string.toast_icon),
                 modifier = Modifier.size(24.dp),
             )
 

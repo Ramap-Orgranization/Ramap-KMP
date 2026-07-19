@@ -34,8 +34,6 @@ import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.model.event.ShopEventType
 import com.peto.ramap.domain.model.shop.RamenShop
-import com.peto.ramap.domain.model.shop.ShopWaitingSystem
-import com.peto.ramap.domain.model.shop.WaitingProvider
 import com.peto.ramap.extension.noRippleClickable
 import com.peto.ramap.platform.ExternalUriOpener
 import com.peto.ramap.theme.AppTextStyle
@@ -44,13 +42,12 @@ import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.InstagramColor
 import com.peto.ramap.theme.SystemColor
 import com.peto.ramap.ui.extension.stringResource
-import com.peto.ramap.ui.main.map.model.WaitingProviderLink
+import com.peto.ramap.ui.main.map.model.WaitingSystemUiModel
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.bookmarked_shops_toggle
-import ramap.shared.generated.resources.catchtable
 import ramap.shared.generated.resources.event_notification_action
 import ramap.shared.generated.resources.hide_shop_action
 import ramap.shared.generated.resources.ic_kid_star
@@ -72,9 +69,6 @@ import ramap.shared.generated.resources.shop_detail_link_kakao_map
 import ramap.shared.generated.resources.shop_detail_link_naver_map
 import ramap.shared.generated.resources.shop_detail_link_report
 import ramap.shared.generated.resources.shop_detail_more_actions
-import ramap.shared.generated.resources.shop_detail_waiting_catchtable
-import ramap.shared.generated.resources.shop_detail_waiting_syrup_friends
-import ramap.shared.generated.resources.shop_detail_waiting_tabling
 import ramap.shared.generated.resources.shop_event_notice_collab_participant_today
 import ramap.shared.generated.resources.shop_event_notice_collab_participant_upcoming
 import ramap.shared.generated.resources.shop_event_notice_collab_today
@@ -86,15 +80,13 @@ import ramap.shared.generated.resources.shop_event_notice_participant_today
 import ramap.shared.generated.resources.shop_event_notice_participant_upcoming
 import ramap.shared.generated.resources.shop_event_notice_popup_today
 import ramap.shared.generated.resources.shop_event_notice_popup_upcoming
-import ramap.shared.generated.resources.syrup_friends
-import ramap.shared.generated.resources.tabling
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun RamenShopDetailContent(
     shop: RamenShop,
     modifier: Modifier = Modifier,
-    waitingSystem: ShopWaitingSystem? = null,
+    waitingSystemUiModel: WaitingSystemUiModel? = null,
     isBookmarked: Boolean = false,
     isNotificationEnabled: Boolean = false,
     isHidden: Boolean = false,
@@ -105,8 +97,6 @@ fun RamenShopDetailContent(
     event: ShopEvent? = null,
     onEventClick: (ShopEvent) -> Unit = {},
 ) {
-    val waitingProviderLink = waitingSystem?.toWaitingProviderLink()
-
     Column(
         modifier =
             modifier
@@ -196,12 +186,12 @@ fun RamenShopDetailContent(
                 )
             }
 
-            if (waitingProviderLink != null) {
+            if (waitingSystemUiModel != null) {
                 ShopIconLinkRow(
                     label = stringResource(Res.string.shop_detail_label_waiting),
-                    icon = waitingProviderLink.icon,
-                    contentDescription = waitingProviderLink.label,
-                    onClick = { ExternalUriOpener.open(waitingProviderLink.providerUrl) },
+                    icon = waitingSystemUiModel.icon,
+                    contentDescription = stringResource(waitingSystemUiModel.label),
+                    onClick = { ExternalUriOpener.open(waitingSystemUiModel.providerUrl) },
                 )
             }
         }
@@ -376,38 +366,6 @@ private fun ShopOverflowMenuItem(
         },
         onClick = onClick,
     )
-}
-
-@Composable
-private fun ShopWaitingSystem.toWaitingProviderLink(): WaitingProviderLink? {
-    val url = providerUrl ?: return null
-    val display =
-        when (provider) {
-            WaitingProvider.CATCHTABLE ->
-                WaitingProviderLink(
-                    label = stringResource(Res.string.shop_detail_waiting_catchtable),
-                    icon = Res.drawable.catchtable,
-                    providerUrl = url,
-                )
-
-            WaitingProvider.TABLING ->
-                WaitingProviderLink(
-                    label = stringResource(Res.string.shop_detail_waiting_tabling),
-                    icon = Res.drawable.tabling,
-                    providerUrl = url,
-                )
-
-            WaitingProvider.SYRUP_FRIENDS ->
-                WaitingProviderLink(
-                    label = stringResource(Res.string.shop_detail_waiting_syrup_friends),
-                    icon = Res.drawable.syrup_friends,
-                    providerUrl = url,
-                )
-
-            WaitingProvider.UNKNOWN -> null
-        }
-
-    return display
 }
 
 @Composable

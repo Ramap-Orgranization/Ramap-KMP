@@ -1,10 +1,10 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
-    alias(libs.plugins.kotlinMultiplatform)
-    alias(libs.plugins.androidMultiplatformLibrary)
-    alias(libs.plugins.composeMultiplatform)
-    alias(libs.plugins.composeCompiler)
+    alias(libs.plugins.kotlin.multiplatform)
+    alias(libs.plugins.android.multiplatform.library)
+    alias(libs.plugins.compose.multiplatform)
+    alias(libs.plugins.compose.compiler)
     id("ramap.serialization")
     kotlin("native.cocoapods")
 }
@@ -44,11 +44,11 @@ kotlin {
     androidLibrary {
         namespace = "com.peto.ramap.shared"
         compileSdk =
-            libs.versions.android.compileSdk
+            libs.versions.android.compile.sdk
                 .get()
                 .toInt()
         minSdk =
-            libs.versions.android.minSdk
+            libs.versions.android.min.sdk
                 .get()
                 .toInt()
 
@@ -67,7 +67,7 @@ kotlin {
         androidMain.dependencies {
             implementation(libs.androidx.activity)
             implementation(libs.androidx.core)
-            implementation(libs.compose.uiToolingPreview)
+            implementation(libs.compose.ui.tooling.preview)
             implementation(libs.ktor.client.okhttp)
             implementation(libs.naver.map)
             implementation(libs.play.services.location)
@@ -85,6 +85,7 @@ kotlin {
             implementation(projects.domain)
             implementation(projects.data)
             implementation(projects.feature.main)
+            implementation(projects.feature.event.detail)
             implementation(projects.feature.account)
             implementation(projects.feature.bookmark)
             implementation(projects.feature.hidden)
@@ -96,11 +97,11 @@ kotlin {
             implementation(libs.compose.material3)
             implementation(libs.compose.ui)
             implementation(libs.compose.components.resources)
-            implementation(libs.compose.uiToolingPreview)
+            implementation(libs.compose.ui.tooling.preview)
             implementation(libs.coil.compose)
             implementation(libs.coil.network.ktor3)
-            implementation(libs.androidx.lifecycle.viewmodelCompose)
-            implementation(libs.androidx.lifecycle.runtimeCompose)
+            implementation(libs.androidx.lifecycle.viewmodel.compose)
+            implementation(libs.androidx.lifecycle.runtime.compose)
 
             // Supabase
             implementation(libs.supabase.postgrest)
@@ -120,6 +121,7 @@ kotlin {
             implementation(libs.koin.compose.viewmodel)
         }
         commonTest.dependencies {
+            implementation(projects.core.testing)
             implementation(libs.kotlin.test)
             implementation(libs.kotlinx.coroutines.test)
             implementation(libs.turbine)
@@ -129,5 +131,5 @@ kotlin {
 }
 
 dependencies {
-    androidRuntimeClasspath(libs.compose.uiTooling)
+    androidRuntimeClasspath(libs.compose.ui.tooling)
 }

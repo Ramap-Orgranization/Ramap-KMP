@@ -3,16 +3,11 @@ package com.peto.ramap.data.repository
 import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.data.model.EventNotificationOverrideResponse
 import com.peto.ramap.data.model.EventNotificationPreferenceResponse
-import com.peto.ramap.data.model.ShopEventNotificationSubscriptionResponse
 import com.peto.ramap.domain.repository.NotificationSettingsRepository
 import com.peto.ramap.network.execute.invokeRequest
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.postgrest
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
@@ -20,9 +15,6 @@ import kotlinx.serialization.json.put
 class DefaultNotificationSettingsRepository(
     private val client: SupabaseClient,
 ) : NotificationSettingsRepository {
-    private val mutableSubscribedShopIds = MutableStateFlow(emptySet<String>())
-    override val subscribedShopIds: StateFlow<Set<String>> = mutableSubscribedShopIds.asStateFlow()
-
     override suspend fun fetchEventNotificationsEnabled(): RamapResult<Boolean> =
         invokeRequest {
             client
@@ -39,43 +31,6 @@ class DefaultNotificationSettingsRepository(
                 buildJsonObject { put(ENABLED_PARAMETER, enabled) },
             )
         }
-
-    override suspend fun fetchSubscribedShopIds(): RamapResult<Set<String>> {
-        val result =
-            invokeRequest {
-                client
-                    .from(SHOP_SUBSCRIPTION_TABLE)
-                    .select()
-                    .decodeList<ShopEventNotificationSubscriptionResponse>()
-                    .mapTo(mutableSetOf()) { it.shopId }
-            }
-        if (result is RamapResult.Success) mutableSubscribedShopIds.value = result.data
-        return result
-    }
-
-    override suspend fun updateShopNotification(
-        shopId: String,
-        enabled: Boolean,
-    ): RamapResult<Unit> {
-        val result =
-            invokeRequest {
-                client.postgrest.rpc(
-                    function = SET_SHOP_NOTIFICATION_RPC,
-                    parameters =
-                        buildJsonObject {
-                            put(SHOP_ID_PARAMETER, shopId)
-                            put(ENABLED_PARAMETER, enabled)
-                        },
-                )
-                Unit
-            }
-        if (result is RamapResult.Success) {
-            mutableSubscribedShopIds.update { shopIds ->
-                if (enabled) shopIds + shopId else shopIds - shopId
-            }
-        }
-        return result
-    }
 
     override suspend fun isEventNotificationEnabled(eventId: String): RamapResult<Boolean> =
         invokeRequest {
@@ -126,12 +81,9 @@ class DefaultNotificationSettingsRepository(
         private const val EVENT_NOTIFICATION_ENABLED_RPC = "is_event_notification_enabled"
         private const val SET_EVENT_NOTIFICATION_RPC = "set_event_notification"
         private const val SET_ENABLED_RPC = "set_event_notifications_enabled"
-        private const val SET_SHOP_NOTIFICATION_RPC = "set_shop_event_notification"
         private const val PREFERENCE_TABLE = "user_event_notification_preferences"
-        private const val SHOP_SUBSCRIPTION_TABLE = "shop_event_notification_subscriptions"
         private const val EVENT_OVERRIDE_TABLE = "user_event_notification_overrides"
         private const val EVENT_ID_PARAMETER = "event_id"
-        private const val SHOP_ID_PARAMETER = "shop_id"
         private const val ENABLED_PARAMETER = "enabled"
     }
 }

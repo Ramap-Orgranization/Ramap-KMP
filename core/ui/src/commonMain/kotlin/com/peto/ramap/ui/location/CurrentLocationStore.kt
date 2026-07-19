@@ -1,0 +1,15 @@
+package com.peto.ramap.ui.location
+
+import com.peto.ramap.domain.model.shop.Location
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+
+class CurrentLocationStore {
+    private val mutableLocation = MutableStateFlow<Location?>(null)
+    val location: StateFlow<Location?> = mutableLocation.asStateFlow()
+
+    fun update(location: Location) {
+        mutableLocation.value = location
+    }
+}

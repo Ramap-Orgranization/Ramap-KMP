@@ -1,6 +1,6 @@
 package com.peto.ramap.ui.main.map.di
 
-import com.peto.ramap.ui.common.CurrentLocationStore
+import com.peto.ramap.ui.location.CurrentLocationStore
 import com.peto.ramap.ui.main.map.MapViewModel
 import org.koin.dsl.module
 

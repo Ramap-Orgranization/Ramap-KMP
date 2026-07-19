@@ -32,3 +32,6 @@ AGENTS.md
 *.pyc
 /supabase
 /feature/main/map/map.podspec
+/androidApp/release/
+/distribution/
+/marketing

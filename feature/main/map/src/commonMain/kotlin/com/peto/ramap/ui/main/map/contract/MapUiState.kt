@@ -1,23 +1,21 @@
 package com.peto.ramap.ui.main.map.contract
 
+import com.peto.ramap.domain.model.place.PlaceSearchResults
 import com.peto.ramap.domain.model.shop.Location
 import com.peto.ramap.domain.model.shop.MapBounds
 import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.domain.model.shop.RamenShopFilter
 import com.peto.ramap.domain.model.shop.RamenShops
-import com.peto.ramap.domain.model.shop.ShopWaitingSystem
+import com.peto.ramap.domain.model.shop.WaitingSystem
+import com.peto.ramap.domain.usecase.ShopDetail
 import com.peto.ramap.ui.base.State
 import com.peto.ramap.ui.main.map.config.DefaultMapConfig
-import com.peto.ramap.ui.main.map.model.InitialLocationFocus
-import com.peto.ramap.ui.main.map.model.InitialMapLoadState
-import com.peto.ramap.ui.main.map.model.MapCameraPosition
-import com.peto.ramap.ui.main.map.model.MapPersonalization
-import com.peto.ramap.ui.main.map.model.SearchResultGuide
-import com.peto.ramap.ui.main.map.model.SearchUiState
-import com.peto.ramap.ui.main.map.model.ShopDetail
+import com.peto.ramap.ui.main.map.model.CameraPosition
+import com.peto.ramap.ui.main.map.model.LocationFocusStatus
+import com.peto.ramap.ui.main.map.search.SearchResultGuide
+import com.peto.ramap.ui.main.map.search.SearchUiModel
 
 data class MapUiState(
-    val initialMapLoadState: InitialMapLoadState = InitialMapLoadState.LOADING,
     val shopDetail: ShopDetail? = null,
     val isShopDetailLoading: Boolean = false,
     /**
@@ -32,11 +30,11 @@ data class MapUiState(
     /**
      * 검색창 입력값, 검색 결과, 검색 결과의 소비 상태.
      */
-    val search: SearchUiState = SearchUiState(),
+    val search: SearchUiModel = SearchUiModel(),
     /**
      * 매장 id별 웨이팅 시스템 정보.
      */
-    val shopWaiting: Map<String, ShopWaitingSystem?> = emptyMap(),
+    val shopWaiting: Map<String, WaitingSystem?> = emptyMap(),
     /**
      * 지도와 검색 결과에 적용 중인 매장 필터.
      */
@@ -45,12 +43,13 @@ data class MapUiState(
      * 현재 지도 카메라가 보고 있는 영역.
      */
     val bounds: MapBounds = DefaultMapConfig.bounds,
-    val cameraPosition: MapCameraPosition? = null,
+    val hasViewportLoadFailed: Boolean = false,
+    val cameraPosition: CameraPosition? = null,
     /**
      * 마지막으로 확인된 사용자 위치.
      */
     val currentLocation: Location? = null,
-    val initialLocationFocus: InitialLocationFocus = InitialLocationFocus(),
+    val locationFocusStatus: LocationFocusStatus = LocationFocusStatus.AwaitingLocationStatus,
     /**
      * 사용자가 북마크한 매장 id 목록.
      */
@@ -64,18 +63,13 @@ data class MapUiState(
      */
     val hiddenShopIds: Set<String> = emptySet(),
     /**
-     * 전체, 북마크, 숨김 매장 중 현재 지도에 표시할 개인화 모드.
+     * 북마크한 매장만 지도에 표시하는지 여부.
      */
-    val personalizationView: MapPersonalization = MapPersonalization.ALL,
+    val isBookmarkedView: Boolean = false,
     /**
      * 현재 사용자의 로그인 여부.
      */
     val isLoggedIn: Boolean = false,
-    /**
-     * 계정 영역에 표시할 사용자 식별 라벨.
-     */
-    val accountLabel: String? = null,
-    val isDeletingAccount: Boolean = false,
 ) : State {
     /**
      * 검색 결과 리스트 바텀시트에 표시할 매장 목록.
@@ -84,6 +78,9 @@ data class MapUiState(
      */
     val searchResultShops: RamenShops
         get() = displaySearchResults.nearestFirstTo(currentLocation)
+
+    val placeSearchResults: PlaceSearchResults
+        get() = search.placeResults.nearestFirstTo(cameraPosition?.center ?: defaultCameraCenter)
 
     /**
      * 검색 결과 대신 사용자에게 안내할 메시지 상태.
@@ -94,7 +91,8 @@ data class MapUiState(
     val searchResultGuide: SearchResultGuide?
         get() {
             if (!hasLoadedSearchResultsForCurrentQuery) return null
-            if (personalizationView != MapPersonalization.ALL) return null
+            if (isBookmarkedView) return null
+            if (placeSearchResults.isNotEmpty()) return null
             if (search.results.isEmpty()) return SearchResultGuide.SEARCH_EMPTY
             if (
                 displaySearchResults.isNotEmpty() &&
@@ -140,9 +138,9 @@ data class MapUiState(
         get() =
             selectedShop == null &&
                 !search.isResultsDismissed &&
-                personalizationView == MapPersonalization.ALL &&
+                !isBookmarkedView &&
                 search.input.isNotBlank() &&
-                searchResultShops.size > 1
+                (searchResultShops.size > 1 || placeSearchResults.size > 1)
 
     /**
      * 지도 화면의 바텀시트를 열지 여부.
@@ -177,14 +175,17 @@ data class MapUiState(
     val focusRequestKey: Long
         get() = search.focusRequestKey
 
+    val placeFocusLocation: Location?
+        get() = search.placeFocusLocation
+
+    val placeFocusRequestKey: Long
+        get() = search.placeFocusRequestKey
+
     val initialFocusLocation: Location?
-        get() = initialLocationFocus.location
+        get() = (locationFocusStatus as? LocationFocusStatus.Pending)?.location
 
-    val initialFocusRequestKey: Long
-        get() = initialLocationFocus.requestKey
-
-    val shouldBootstrapInitialLocationFocus: Boolean
-        get() = !initialLocationFocus.hasRequested
+    val shouldBootstrapLocationFocusStatus: Boolean
+        get() = locationFocusStatus is LocationFocusStatus.AwaitingLocationStatus
 
     /**
      * 검색 결과에 맞춰 지도 카메라 포커스를 수행할 수 있는 상태인지 여부.
@@ -205,25 +206,25 @@ data class MapUiState(
         }
 
     /**
-     * 개인화 보기 모드와 카테고리 필터가 적용된 전체 매장 목록.
+     * 북마크 보기 여부와 카테고리 필터가 적용된 전체 매장 목록.
      */
     private val filteredShops: RamenShops
         get() =
-            when (personalizationView) {
-                MapPersonalization.ALL -> shops.filterNotHidden(hiddenShopIds)
-                MapPersonalization.BOOKMARKED -> shops.filterByShopIds(bookmarkedShopIds)
-                MapPersonalization.HIDDEN -> shops.filterByShopIds(hiddenShopIds)
+            if (isBookmarkedView) {
+                shops.filterByShopIds(bookmarkedShopIds)
+            } else {
+                shops.filterNotHidden(hiddenShopIds)
             }.filterByCategory(filters)
 
     /**
-     * 개인화 보기 모드와 카테고리 필터가 적용된 검색 결과 목록.
+     * 북마크 보기 여부와 카테고리 필터가 적용된 검색 결과 목록.
      */
     private val filteredSearchResults: RamenShops
         get() =
-            when (personalizationView) {
-                MapPersonalization.ALL -> search.results
-                MapPersonalization.BOOKMARKED -> search.results.filterByShopIds(bookmarkedShopIds)
-                MapPersonalization.HIDDEN -> search.results.filterByShopIds(hiddenShopIds)
+            if (isBookmarkedView) {
+                search.results.filterByShopIds(bookmarkedShopIds)
+            } else {
+                search.results
             }.filterByCategory(filters)
 
     /**
@@ -237,4 +238,10 @@ data class MapUiState(
      */
     private val displayFilteredShops: RamenShops
         get() = filteredShops.markHidden(hiddenShopIds)
+
+    private val defaultCameraCenter =
+        Location(
+            lat = DefaultMapConfig.LATITUDE,
+            lng = DefaultMapConfig.LONGITUDE,
+        )
 }
