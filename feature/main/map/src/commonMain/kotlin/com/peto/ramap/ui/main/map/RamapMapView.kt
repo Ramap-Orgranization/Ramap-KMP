@@ -27,5 +27,6 @@ expect fun RamapMapView(
     onMyLocationChanged: (Location) -> Unit,
     onShopClick: (RamenShop) -> Unit,
     onLocationPermissionBlocked: () -> Unit,
+    onCurrentLocationTimeout: () -> Unit,
     modifier: Modifier = Modifier,
 )

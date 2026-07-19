@@ -1,7 +1,6 @@
 package com.peto.ramap.ui.main.map
 
 import android.graphics.Bitmap
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -36,16 +35,16 @@ import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.platform.permission.PermissionStatus
 import com.peto.ramap.platform.permission.findActivity
 import com.peto.ramap.platform.permission.rememberLocationPermissionGenerator
-import com.peto.ramap.ui.main.map.component.MapCircleIconButton
+import com.peto.ramap.ui.main.map.component.CurrentLocationButton
+import com.peto.ramap.ui.main.map.config.CurrentLocationConfig
 import com.peto.ramap.ui.main.map.config.DefaultMapConfig
 import com.peto.ramap.ui.main.map.config.MapInteractionConfig
 import com.peto.ramap.ui.main.map.config.MarkerConfig
 import com.peto.ramap.ui.main.map.model.CameraPosition
+import com.peto.ramap.ui.main.map.model.CurrentLocationRequestState
+import kotlinx.coroutines.delay
 import org.jetbrains.compose.resources.painterResource
-import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
-import ramap.shared.generated.resources.current_location
-import ramap.shared.generated.resources.ic_current_location
 import ramap.shared.generated.resources.marker_ramen
 
 @Composable
@@ -67,6 +66,7 @@ actual fun RamapMapView(
     onMyLocationChanged: (Location) -> Unit,
     onShopClick: (RamenShop) -> Unit,
     onLocationPermissionBlocked: () -> Unit,
+    onCurrentLocationTimeout: () -> Unit,
     modifier: Modifier,
 ) {
     val context = LocalContext.current
@@ -76,6 +76,9 @@ actual fun RamapMapView(
     var viewportHeight by remember { mutableStateOf(0) }
     var currentLocation by remember { mutableStateOf<Location?>(null) }
     var shouldMoveToCurrentLocation by remember { mutableStateOf(false) }
+    var currentLocationRequestState by remember {
+        mutableStateOf(CurrentLocationRequestState.Idle)
+    }
     var isCameraMoving = false
     val locationSource =
         remember(context) {
@@ -89,8 +92,14 @@ actual fun RamapMapView(
         val location = currentLocation
         if (map != null && location != null) {
             map.locationTrackingMode = LocationTrackingMode.NoFollow
-            map.moveCamera(CameraUpdate.scrollTo(LatLng(location.lat, location.lng)))
+            map.moveCamera(
+                CameraUpdate.scrollAndZoomTo(
+                    LatLng(location.lat, location.lng),
+                    CurrentLocationConfig.zoomForCurrentLocation(map.cameraPosition.zoom),
+                ),
+            )
             shouldMoveToCurrentLocation = false
+            currentLocationRequestState = currentLocationRequestState.finish()
         }
     }
     val markerBitmap = rememberMarkerBitmap()
@@ -116,9 +125,13 @@ actual fun RamapMapView(
                 }
                 PermissionStatus.Blocked -> {
                     shouldMoveToCurrentLocation = false
+                    currentLocationRequestState = currentLocationRequestState.finish()
                     onLocationPermissionBlocked()
                 }
-                PermissionStatus.Denied -> shouldMoveToCurrentLocation = false
+                PermissionStatus.Denied -> {
+                    shouldMoveToCurrentLocation = false
+                    currentLocationRequestState = currentLocationRequestState.finish()
+                }
             }
         }
 
@@ -194,6 +207,16 @@ actual fun RamapMapView(
         }
     }
 
+    LaunchedEffect(currentLocationRequestState) {
+        if (!currentLocationRequestState.isLoading) return@LaunchedEffect
+        delay(CurrentLocationConfig.REQUEST_TIMEOUT_MILLIS)
+        if (!currentLocationRequestState.isLoading) return@LaunchedEffect
+
+        shouldMoveToCurrentLocation = false
+        currentLocationRequestState = currentLocationRequestState.timeout()
+        onCurrentLocationTimeout()
+    }
+
     Box(modifier = modifier.onSizeChanged { viewportHeight = it.height }) {
         AndroidView(
             modifier = Modifier.fillMaxSize(),
@@ -241,7 +264,10 @@ actual fun RamapMapView(
         )
 
         CurrentLocationButton(
+            isLoading = currentLocationRequestState.isLoading,
             onClick = {
+                if (currentLocationRequestState.isLoading) return@CurrentLocationButton
+                currentLocationRequestState = currentLocationRequestState.start()
                 if (locationPermissionGenerator.hasPermission()) {
                     shouldMoveToCurrentLocation = true
                     naverMap?.locationTrackingMode = LocationTrackingMode.NoFollow
@@ -274,23 +300,6 @@ private fun notifyCameraPosition(
             zoom = cameraPosition.zoom,
         ),
     )
-}
-
-@Composable
-private fun CurrentLocationButton(
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    MapCircleIconButton(
-        isActive = false,
-        onClick = onClick,
-        modifier = modifier,
-    ) {
-        Image(
-            painter = painterResource(Res.drawable.ic_current_location),
-            contentDescription = stringResource(Res.string.current_location),
-        )
-    }
 }
 
 private fun notifyBounds(
