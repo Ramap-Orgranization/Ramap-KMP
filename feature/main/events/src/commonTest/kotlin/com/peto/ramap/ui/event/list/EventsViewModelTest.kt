@@ -8,7 +8,7 @@ import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.model.event.ShopEventType
 import com.peto.ramap.fake.FakeRamenShopRepository
-import com.peto.ramap.ui.common.LoadState
+import com.peto.ramap.ui.common.RamapUiState
 import com.peto.ramap.ui.main.event.list.EventsViewModel
 import com.peto.ramap.ui.main.event.list.contract.EventsIntent
 import com.peto.ramap.ui.main.event.list.contract.EventsSideEffect
@@ -33,7 +33,7 @@ class EventsViewModelTest {
 
             runCurrent()
 
-            assertEquals(LoadState.Content(listOf(event)), viewModel.uiState.value.eventsState)
+            assertEquals(RamapUiState.Success(listOf(event)), viewModel.uiState.value.eventsState)
             assertEquals(1, repository.activeEventsRequestCount)
         }
 
@@ -50,7 +50,28 @@ class EventsViewModelTest {
             runCurrent()
 
             assertEquals(2, repository.activeEventsRequestCount)
-            assertEquals(LoadState.Content(listOf(event)), viewModel.uiState.value.eventsState)
+            assertEquals(RamapUiState.Success(listOf(event)), viewModel.uiState.value.eventsState)
+            assertTrue(viewModel.uiState.value.isRefreshing)
+
+            advanceTimeBy(1_000)
+            runCurrent()
+
+            assertFalse(viewModel.uiState.value.isRefreshing)
+        }
+
+    @Test
+    fun `연속 새로고침은 이전 요청을 교체하고 마지막 요청이 끝날 때 로딩을 해제한다`() =
+        coroutinesTest {
+            val repository = FakeRamenShopRepository(activeEventsDelayMillis = 1_000)
+            val viewModel = EventsViewModel(repository)
+            runCurrent()
+
+            viewModel.dispatch(EventsIntent.OnEventsRefreshed)
+            runCurrent()
+            viewModel.dispatch(EventsIntent.OnEventsRefreshed)
+            runCurrent()
+
+            assertEquals(3, repository.activeEventsRequestCount)
             assertTrue(viewModel.uiState.value.isRefreshing)
 
             advanceTimeBy(1_000)
@@ -71,7 +92,7 @@ class EventsViewModelTest {
             viewModel.dispatch(EventsIntent.OnEventsRetried)
             runCurrent()
 
-            assertEquals(LoadState.Error, viewModel.uiState.value.eventsState)
+            assertEquals(RamapUiState.Error, viewModel.uiState.value.eventsState)
         }
 
     @Test
@@ -87,7 +108,7 @@ class EventsViewModelTest {
                 viewModel.dispatch(EventsIntent.OnEventsRefreshed)
                 runCurrent()
 
-                assertEquals(LoadState.Content(listOf(event)), viewModel.uiState.value.eventsState)
+                assertEquals(RamapUiState.Success(listOf(event)), viewModel.uiState.value.eventsState)
                 assertFalse(viewModel.uiState.value.isRefreshing)
                 assertEquals(
                     EventsSideEffect.ShowEventsToast(

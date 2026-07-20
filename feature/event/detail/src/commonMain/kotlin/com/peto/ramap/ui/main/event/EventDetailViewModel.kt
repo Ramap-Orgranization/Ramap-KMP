@@ -12,10 +12,12 @@ import com.peto.ramap.ui.main.event.contract.EventDetailIntent
 import com.peto.ramap.ui.main.event.contract.EventDetailIntent.OnEntered
 import com.peto.ramap.ui.main.event.contract.EventDetailIntent.OnNotificationChanged
 import com.peto.ramap.ui.main.event.contract.EventDetailIntent.OnNotificationPermissionGranted
+import com.peto.ramap.ui.main.event.contract.EventDetailLoadKey
 import com.peto.ramap.ui.main.event.contract.EventDetailSideEffect
 import com.peto.ramap.ui.main.event.contract.EventDetailSideEffect.EventUnavailable
 import com.peto.ramap.ui.main.event.contract.EventDetailSideEffect.RequestNotificationPermission
 import com.peto.ramap.ui.main.event.contract.EventDetailUiState
+import com.peto.ramap.ui.task.TaskPolicy
 
 class EventDetailViewModel(
     private val ramenShopRepository: RamenShopRepository,
@@ -30,9 +32,13 @@ class EventDetailViewModel(
         }
     }
 
-    private suspend fun loadEvent(eventId: String) {
-        handleResult(
-            result = ramenShopRepository.fetchActiveEvent(eventId),
+    private fun loadEvent(eventId: String) {
+        cancelTask(NOTIFICATION_TASK_KEY)
+        launchResultTask(
+            taskKey = LOAD_EVENT_TASK_KEY,
+            loadKey = EventDetailLoadKey.Fetch,
+            policy = TaskPolicy.CancelPrevious,
+            request = { ramenShopRepository.fetchActiveEvent(eventId) },
             onSuccess = ::handleLoadedEvent,
             onError = { showEventUnavailable() },
         )
@@ -57,15 +63,17 @@ class EventDetailViewModel(
                 isNotificationVisible = notificationWindow != EventNotificationWindow.CLOSED,
                 isEventDayOnly = notificationWindow == EventNotificationWindow.EVENT_DAY_ONLY,
                 canChangeNotification = canChangeNotification,
-                isNotificationLoading = canChangeNotification,
             )
         }
     }
 
-    private suspend fun refreshEventNotification(event: ShopEvent) {
+    private fun refreshEventNotification(event: ShopEvent) {
         if (!currentState.canChangeNotification || !currentState.isNotificationVisible) return
-        handleResult(
-            result = notificationRepository.isEventNotificationEnabled(event.id),
+        launchResultTask(
+            taskKey = NOTIFICATION_TASK_KEY,
+            loadKey = EventDetailLoadKey.Notification,
+            policy = TaskPolicy.CancelPrevious,
+            request = { notificationRepository.isEventNotificationEnabled(event.id) },
             onSuccess = ::finishNotificationRefresh,
             onError = { finishNotificationRefresh(isEnabled = false) },
         )
@@ -75,7 +83,6 @@ class EventDetailViewModel(
         reduce {
             copy(
                 isNotificationEnabled = isEnabled,
-                isNotificationLoading = false,
             )
         }
     }
@@ -88,13 +95,16 @@ class EventDetailViewModel(
         }
     }
 
-    private suspend fun updateNotification(enabled: Boolean) {
+    private fun updateNotification(enabled: Boolean) {
         val eventId = currentState.event?.id ?: return
         val previousValue = currentState.isNotificationEnabled
-        reduce { copy(isNotificationEnabled = enabled, isNotificationLoading = true) }
 
-        handleResult(
-            result = notificationRepository.updateEventNotification(eventId, enabled),
+        launchResultTask(
+            taskKey = NOTIFICATION_TASK_KEY,
+            loadKey = EventDetailLoadKey.Notification,
+            policy = TaskPolicy.IgnoreNew,
+            onStart = { copy(isNotificationEnabled = enabled) },
+            request = { notificationRepository.updateEventNotification(eventId, enabled) },
             onSuccess = { finishNotificationUpdate(isEnabled = enabled) },
             onError = { finishNotificationUpdate(isEnabled = previousValue) },
         )
@@ -104,8 +114,12 @@ class EventDetailViewModel(
         reduce {
             copy(
                 isNotificationEnabled = isEnabled,
-                isNotificationLoading = false,
             )
         }
+    }
+
+    companion object {
+        private const val LOAD_EVENT_TASK_KEY = "event-detail-load"
+        private const val NOTIFICATION_TASK_KEY = "event-detail-notification"
     }
 }

@@ -9,6 +9,8 @@ import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.domain.model.shop.WaitingSystem
 import com.peto.ramap.domain.usecase.ShopDetail
 import com.peto.ramap.ui.base.State
+import com.peto.ramap.ui.loading.LoadState
+import com.peto.ramap.ui.loading.LoadableState
 import com.peto.ramap.ui.main.map.config.DefaultMapConfig
 import com.peto.ramap.ui.main.map.model.CameraPosition
 import com.peto.ramap.ui.main.map.model.LocationFocusStatus
@@ -17,7 +19,8 @@ import com.peto.ramap.ui.main.map.search.SearchUiModel
 
 data class MapUiState(
     val shopDetail: ShopDetail? = null,
-    val isShopDetailLoading: Boolean = false,
+    /** 지도 화면의 작업별 로딩 카운트. */
+    override val loadState: LoadState = LoadState(),
     /**
      * 지도에서 조회 가능한 전체 라멘 매장 목록.
      */
@@ -70,7 +73,15 @@ data class MapUiState(
      * 현재 사용자의 로그인 여부.
      */
     val isLoggedIn: Boolean = false,
-) : State {
+) : State,
+    LoadableState<MapUiState> {
+    /** 현재 선택 매장의 상세 조회가 진행 중인지 여부. */
+    val isShopDetailLoading: Boolean
+        get() = loadState.isLoading(MapLoadKey.ShopDetail)
+
+    /** 로딩 카운트만 교체한 새 지도 UI 상태를 반환한다. */
+    override fun withLoadingState(loadState: LoadState): MapUiState = copy(loadState = loadState)
+
     /**
      * 검색 결과 리스트 바텀시트에 표시할 매장 목록.
      *

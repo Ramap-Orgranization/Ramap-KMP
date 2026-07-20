@@ -33,7 +33,7 @@ import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.ui.base.ObserveAsEvents
-import com.peto.ramap.ui.common.LoadState
+import com.peto.ramap.ui.common.RamapUiState
 import com.peto.ramap.ui.component.eventDateText
 import com.peto.ramap.ui.main.event.list.contract.EventsIntent
 import com.peto.ramap.ui.main.event.list.contract.EventsSideEffect
@@ -97,7 +97,7 @@ fun EventsScreen(
             },
         ) {
             when (val state = uiState.eventsState) {
-                LoadState.Idle, LoadState.Loading ->
+                RamapUiState.Idle, RamapUiState.Loading ->
                     Column(
                         modifier = Modifier.fillMaxSize(),
                         horizontalAlignment = Alignment.CenterHorizontally,
@@ -111,7 +111,7 @@ fun EventsScreen(
                         )
                     }
 
-                LoadState.Error ->
+                RamapUiState.Error ->
                     LoadErrorContent(
                         image = Res.drawable.laduck_error_crying,
                         title = stringResource(Res.string.event_list_error_title),
@@ -120,11 +120,13 @@ fun EventsScreen(
                         modifier = Modifier.fillMaxSize(),
                     )
 
-                is LoadState.Content ->
-                    if (state.data.isEmpty()) {
+                is RamapUiState.Success<*> -> {
+                    @Suppress("UNCHECKED_CAST")
+                    val events = state.data as List<ShopEvent>
+                    if (events.isEmpty()) {
                         EventListEmptyContent()
                     } else {
-                        val (ongoingEvents, upcomingEvents) = partitionBySchedule(state.data)
+                        val (ongoingEvents, upcomingEvents) = partitionBySchedule(events)
                         val ongoingTitle = stringResource(Res.string.event_list_ongoing_section)
                         val upcomingTitle = stringResource(Res.string.event_list_upcoming_section)
                         LazyColumn(
@@ -148,6 +150,7 @@ fun EventsScreen(
                             )
                         }
                     }
+                }
             }
         }
     }
