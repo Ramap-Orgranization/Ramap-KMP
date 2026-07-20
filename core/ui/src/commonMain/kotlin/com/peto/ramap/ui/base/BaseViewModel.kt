@@ -93,7 +93,7 @@ abstract class BaseViewModel<S : State, I : Intent, SE : SideEffect>(
      *
      * [CancellationException]은 다시 전파하며 그 외 예외는 [handleError]로 전달한다.
      *
-     * @param taskKey ViewModel 안에서 작업을 식별하고 중복 정책을 적용할 키
+     * @param taskKey ViewModel 안에서 작업을 식별하는 문자열. 같은 문자열에만 중복 정책을 적용한다.
      * @param loadKey 활성 개수를 추적할 로딩 키. `null`이면 로딩 카운트를 변경하지 않는다.
      * @param policy 동일 작업 키가 실행 중일 때 적용할 정책
      * @param onStart 작업 등록과 로딩 증가 시 함께 적용할 상태 reducer
@@ -102,11 +102,28 @@ abstract class BaseViewModel<S : State, I : Intent, SE : SideEffect>(
      * @return 시작한 [Job], 또는 [TaskPolicy.IgnoreNew]로 요청을 무시한 경우 `null`
      */
     protected fun launchTask(
-        taskKey: TaskKey,
+        taskKey: String,
         loadKey: LoadKey? = null,
         policy: TaskPolicy = TaskPolicy.CancelPrevious,
         onStart: S.() -> S = { this },
         onFinish: S.() -> S = { this },
+        block: suspend () -> Unit,
+    ): Job? =
+        launchTaskInternal(
+            taskKey = TaskKey(taskKey),
+            loadKey = loadKey,
+            policy = policy,
+            onStart = onStart,
+            onFinish = onFinish,
+            block = block,
+        )
+
+    private fun launchTaskInternal(
+        taskKey: TaskKey,
+        loadKey: LoadKey?,
+        policy: TaskPolicy,
+        onStart: S.() -> S,
+        onFinish: S.() -> S,
         block: suspend () -> Unit,
     ): Job? {
         val previousTask = tasks[taskKey]
@@ -147,7 +164,7 @@ abstract class BaseViewModel<S : State, I : Intent, SE : SideEffect>(
      * [handleError]를 한 번 호출한 뒤 [onError]를 호출하며, 요청이나 콜백에서 발생한 예외는
      * [launchTask]의 예외 처리 계약을 그대로 따른다.
      *
-     * @param taskKey ViewModel 안에서 요청 작업을 식별할 키
+     * @param taskKey ViewModel 안에서 요청 작업을 식별하는 문자열
      * @param loadKey 활성 개수를 추적할 로딩 키. `null`이면 로딩 카운트를 변경하지 않는다.
      * @param policy 동일 작업 키가 실행 중일 때 적용할 정책
      * @param onStart 작업 등록과 로딩 증가 시 함께 적용할 상태 reducer
@@ -158,7 +175,7 @@ abstract class BaseViewModel<S : State, I : Intent, SE : SideEffect>(
      * @return 시작한 [Job], 또는 [TaskPolicy.IgnoreNew]로 요청을 무시한 경우 `null`
      */
     protected fun <T> launchResultTask(
-        taskKey: TaskKey,
+        taskKey: String,
         loadKey: LoadKey? = null,
         policy: TaskPolicy = TaskPolicy.CancelPrevious,
         onStart: S.() -> S = { this },
@@ -189,11 +206,12 @@ abstract class BaseViewModel<S : State, I : Intent, SE : SideEffect>(
      * 작업이 있으면 레지스트리에서 먼저 제거한 뒤 로딩 카운트와 `onFinish`를 한 번 정리하므로,
      * 취소된 coroutine의 늦은 `finally`는 상태를 다시 변경하지 않는다. 등록된 작업이 없으면 아무 일도 하지 않는다.
      *
-     * @param taskKey 취소할 ViewModel 로컬 작업 키
+     * @param taskKey 취소할 ViewModel 로컬 작업의 식별 문자열
      */
-    protected fun cancelTask(taskKey: TaskKey) {
-        val task = tasks[taskKey] ?: return
-        finishTask(taskKey, task, shouldCancel = true)
+    protected fun cancelTask(taskKey: String) {
+        val registryKey = TaskKey(taskKey)
+        val task = tasks[registryKey] ?: return
+        finishTask(registryKey, task, shouldCancel = true)
     }
 
     /**

@@ -10,6 +10,6 @@ import kotlin.jvm.JvmInline
  * @property value ViewModel 내부에서 유일한 작업 식별 문자열
  */
 @JvmInline
-value class TaskKey(
+internal value class TaskKey(
     val value: String,
 )
