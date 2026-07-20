@@ -2,7 +2,6 @@ package com.peto.ramap.ui.base
 
 import com.peto.ramap.core.result.RamapError
 import com.peto.ramap.core.result.RamapResult
-import com.peto.ramap.ui.task.TaskKey
 import com.peto.ramap.ui.task.TaskPolicy
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Job
@@ -25,7 +24,7 @@ class TestViewModel : BaseViewModel<TestState, TestIntent, TestSideEffect>(TestS
         ignoreCancellation: Boolean = false,
     ) {
         launchTask(
-            taskKey = TaskKey(key.name),
+            taskKey = key.name,
             loadKey = TestLoadKey.Request,
             policy = policy,
         ) {
@@ -42,7 +41,7 @@ class TestViewModel : BaseViewModel<TestState, TestIntent, TestSideEffect>(TestS
 
     fun startFailure(key: TestTaskKey) {
         launchTask(
-            taskKey = TaskKey(key.name),
+            taskKey = key.name,
             loadKey = TestLoadKey.Request,
         ) {
             error("failure")
@@ -50,7 +49,7 @@ class TestViewModel : BaseViewModel<TestState, TestIntent, TestSideEffect>(TestS
     }
 
     fun cancel(key: TestTaskKey) {
-        cancelTask(TaskKey(key.name))
+        cancelTask(key.name)
     }
 
     fun startResult(
@@ -59,7 +58,7 @@ class TestViewModel : BaseViewModel<TestState, TestIntent, TestSideEffect>(TestS
         policy: TaskPolicy = TaskPolicy.CancelPrevious,
     ): Job? =
         launchResultTask(
-            taskKey = TaskKey(key.name),
+            taskKey = key.name,
             loadKey = TestLoadKey.Request,
             policy = policy,
             request = {
