@@ -11,6 +11,8 @@ data class BookmarkedShopListUiState(
 ) : LoadableState<BookmarkedShopListUiState> {
     override fun withLoadingState(loadState: LoadState): BookmarkedShopListUiState = copy(loadState = loadState)
 
+    val isOnlyLoading: Boolean = shops.isEmpty() && loadState.isLoading(BookmarkedShopLoadKey.FETCH)
+
     val isOverlayLoading =
         loadState.isLoading(BookmarkedShopLoadKey.REMOVE) ||
             loadState.isLoading(BookmarkedShopLoadKey.FETCH)

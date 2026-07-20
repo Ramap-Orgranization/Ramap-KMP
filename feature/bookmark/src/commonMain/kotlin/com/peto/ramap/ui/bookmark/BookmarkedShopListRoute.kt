@@ -39,7 +39,6 @@ import com.peto.ramap.ui.base.ObserveAsEvents
 import com.peto.ramap.ui.bookmark.contract.BookmarkedShopListIntent
 import com.peto.ramap.ui.bookmark.contract.BookmarkedShopListSideEffect
 import com.peto.ramap.ui.bookmark.contract.BookmarkedShopListUiState
-import com.peto.ramap.ui.bookmark.contract.BookmarkedShopLoadKey
 import com.peto.ramap.ui.extension.stringResource
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
@@ -121,8 +120,7 @@ fun BookmarkedShopListScreen(
                         stringResource(Res.string.data_load_failure_message),
                     )
 
-                uiState.shops.isEmpty() && uiState.loadState.isLoading(BookmarkedShopLoadKey.FETCH) ->
-                    RamenLoadingIndicator(modifier = Modifier.fillMaxSize())
+                uiState.isOnlyLoading -> RamenLoadingIndicator(modifier = Modifier.fillMaxSize())
 
                 else -> BookmarkedShopListContent(uiState, onShopClick)
             }
