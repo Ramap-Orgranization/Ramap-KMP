@@ -23,7 +23,7 @@ data class LoadState internal constructor(
      *
      * 등록된 작업이 없으면 `0`을 반환한다.
      */
-    fun activeCount(key: LoadKey): Int = value[key] ?: 0
+    private fun activeCount(key: LoadKey): Int = value[key] ?: 0
 
     /** 작업 시작과 짝을 이루어 [key]의 활성 개수를 증가시킨다. */
     internal operator fun plus(key: LoadKey): LoadState = copy(value = value + (key to activeCount(key) + 1))
