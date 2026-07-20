@@ -3,6 +3,7 @@ package com.peto.ramap.ui.hidden
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
@@ -22,11 +23,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.peto.ramap.designsystem.component.LaduckLoadingContent
 import com.peto.ramap.designsystem.component.LoadErrorContent
 import com.peto.ramap.designsystem.component.RamenShopSearchResultList
 import com.peto.ramap.designsystem.component.ShopListEmptyContent
 import com.peto.ramap.designsystem.dialog.CommonDialog
+import com.peto.ramap.designsystem.indicator.RamenLoadingIndicator
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.designsystem.toast.ToastManager
 import com.peto.ramap.designsystem.topbar.CommonTopBar
@@ -35,7 +36,6 @@ import com.peto.ramap.extension.noRippleClickable
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.ui.base.ObserveAsEvents
-import com.peto.ramap.ui.common.LoadState
 import com.peto.ramap.ui.extension.stringResource
 import com.peto.ramap.ui.hidden.contract.HiddenShopListIntent
 import com.peto.ramap.ui.hidden.contract.HiddenShopListSideEffect
@@ -108,9 +108,7 @@ fun HiddenShopListScreen(
         modifier =
             Modifier
                 .fillMaxSize()
-                .padding(
-                    top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding(),
-                ).verticalScroll(rememberScrollState()),
+                .padding(top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         CommonTopBar(
@@ -128,36 +126,52 @@ fun HiddenShopListScreen(
             },
         )
 
-        when (val shopsState = uiState.shopsState) {
-            LoadState.Idle, LoadState.Loading -> LaduckLoadingContent()
-            LoadState.Error ->
-                LoadErrorContent(
-                    image = Res.drawable.laduck_error_confused,
-                    title = stringResource(Res.string.settings_hidden_shops_menu),
-                    description = stringResource(Res.string.data_load_failure_message),
-                    modifier = Modifier.fillMaxSize(),
-                )
-
-            is LoadState.Content -> {
-                val shops = shopsState.data
-                if (shops.isEmpty()) {
-                    ShopListEmptyContent(
-                        title = stringResource(Res.string.hidden_shops_empty_title),
+        Box(modifier = Modifier.weight(1f)) {
+            when {
+                uiState.showError ->
+                    LoadErrorContent(
+                        image = Res.drawable.laduck_error_confused,
+                        title = stringResource(Res.string.settings_hidden_shops_menu),
+                        description = stringResource(Res.string.data_load_failure_message),
                         modifier = Modifier.fillMaxSize(),
                     )
-                } else {
-                    RamenShopSearchResultList(
-                        shops = shops,
-                        onShopClick = onShopClick,
-                        categoryLabel = { category -> stringResource(category.stringResource) },
-                        itemModifier = {
-                            Modifier
-                                .padding(horizontal = 24.dp, vertical = 6.dp)
-                                .border(1.dp, GrayColor.C200, RoundedCornerShape(16.dp))
-                        },
-                    )
-                }
+
+                uiState.isOnlyLoading -> RamenLoadingIndicator(modifier = Modifier.fillMaxSize())
+
+                else -> HiddenShopListContent(uiState, onShopClick)
             }
+        }
+    }
+}
+
+@Composable
+private fun HiddenShopListContent(
+    uiState: HiddenShopListUiState,
+    onShopClick: (RamenShop) -> Unit,
+) {
+    if (uiState.shops.isEmpty()) {
+        ShopListEmptyContent(
+            title = stringResource(Res.string.hidden_shops_empty_title),
+            modifier = Modifier.fillMaxSize(),
+        )
+    } else {
+        Column(
+            modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
+        ) {
+            RamenShopSearchResultList(
+                shops = uiState.shops,
+                onShopClick = onShopClick,
+                categoryLabel = { category -> stringResource(category.stringResource) },
+                itemModifier = {
+                    Modifier
+                        .padding(horizontal = 24.dp, vertical = 6.dp)
+                        .border(1.dp, GrayColor.C200, RoundedCornerShape(16.dp))
+                },
+            )
+        }
+
+        if (uiState.isOverlayLoading) {
+            RamenLoadingIndicator(modifier = Modifier.fillMaxSize())
         }
     }
 }
