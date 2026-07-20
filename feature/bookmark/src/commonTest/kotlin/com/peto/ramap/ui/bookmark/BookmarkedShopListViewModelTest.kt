@@ -9,13 +9,15 @@ import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.personalization.Personalization
 import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.domain.model.shop.RamenShops
+import com.peto.ramap.domain.repository.RamenShopRepository
 import com.peto.ramap.domain.store.ShopPersonalizationStore
 import com.peto.ramap.fake.FakePersonalizationRepository
 import com.peto.ramap.fake.FakeRamenShopRepository
 import com.peto.ramap.fixture.ramenShopFixture
 import com.peto.ramap.ui.bookmark.contract.BookmarkedShopListIntent
 import com.peto.ramap.ui.bookmark.contract.BookmarkedShopListSideEffect
-import com.peto.ramap.ui.common.LoadState
+import com.peto.ramap.ui.common.RamapUiState
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runCurrent
 import ramap.shared.generated.resources.Res
@@ -46,7 +48,7 @@ class BookmarkedShopListViewModelTest {
             runCurrent()
 
             assertEquals(
-                LoadState.Content(RamenShops(listOf(shop))),
+                RamapUiState.Success(RamenShops(listOf(shop))),
                 viewModel.uiState.value.shopsState,
             )
         }
@@ -64,7 +66,7 @@ class BookmarkedShopListViewModelTest {
             runCurrent()
 
             assertEquals(
-                LoadState.Content(RamenShops(emptyMap())),
+                RamapUiState.Success(RamenShops(emptyMap())),
                 viewModel.uiState.value.shopsState,
             )
             assertEquals(emptyList(), ramenShopRepository.requestedShopIdsHistory)
@@ -88,7 +90,7 @@ class BookmarkedShopListViewModelTest {
 
             runCurrent()
 
-            assertEquals(LoadState.Error, viewModel.uiState.value.shopsState)
+            assertEquals(RamapUiState.Error, viewModel.uiState.value.shopsState)
         }
 
     @Test
@@ -115,7 +117,7 @@ class BookmarkedShopListViewModelTest {
             runCurrent()
 
             assertEquals(
-                LoadState.Content(RamenShops(emptyMap())),
+                RamapUiState.Success(RamenShops(emptyMap())),
                 viewModel.uiState.value.shopsState,
             )
 
@@ -123,12 +125,106 @@ class BookmarkedShopListViewModelTest {
             runCurrent()
 
             assertEquals(
-                LoadState.Content(RamenShops(listOf(addedShop))),
+                RamapUiState.Success(RamenShops(listOf(addedShop))),
                 viewModel.uiState.value.shopsState,
             )
             assertEquals(
                 listOf(setOf(initialShop.id), setOf(addedShop.id)),
                 ramenShopRepository.requestedShopIdsHistory,
+            )
+        }
+
+    @Test
+    fun `북마크 아이디가 연속 변경되면 이전 조회를 취소하고 최신 결과만 반영한다`() =
+        coroutinesTest {
+            val initialShop = ramenShopFixture(id = "initial-shop")
+            val latestShop = ramenShopFixture(id = "latest-shop")
+            val initialResult = CompletableDeferred<RamapResult<RamenShops>>()
+            val latestResult = CompletableDeferred<RamapResult<RamenShops>>()
+            val requestedShopIds = mutableListOf<Set<String>>()
+            val ramenShopRepository =
+                object : RamenShopRepository by FakeRamenShopRepository() {
+                    override suspend fun fetchRamenShops(shopIds: Set<String>): RamapResult<RamenShops> {
+                        requestedShopIds += shopIds
+                        return when (shopIds) {
+                            setOf(initialShop.id) -> initialResult.await()
+                            setOf(latestShop.id) -> latestResult.await()
+                            else -> error("Unexpected shop ids: $shopIds")
+                        }
+                    }
+                }
+            val personalizationRepository =
+                FakePersonalizationRepository(
+                    Personalization(bookmarkedShopIds = setOf(initialShop.id)),
+                )
+            val viewModel =
+                BookmarkedShopListViewModel(
+                    personalizationStore = personalizationRepository,
+                    ramenShopRepository = ramenShopRepository,
+                )
+            runCurrent()
+
+            assertEquals(RamapUiState.Loading, viewModel.uiState.value.shopsState)
+
+            personalizationRepository.updateBookmarkedShopIds(setOf(latestShop.id))
+            runCurrent()
+            latestResult.complete(RamapResult.Success(RamenShops(listOf(latestShop))))
+            runCurrent()
+
+            assertEquals(
+                RamapUiState.Success(RamenShops(listOf(latestShop))),
+                viewModel.uiState.value.shopsState,
+            )
+
+            initialResult.complete(RamapResult.Success(RamenShops(listOf(initialShop))))
+            runCurrent()
+
+            assertEquals(
+                RamapUiState.Success(RamenShops(listOf(latestShop))),
+                viewModel.uiState.value.shopsState,
+            )
+            assertEquals(
+                listOf(setOf(initialShop.id), setOf(latestShop.id)),
+                requestedShopIds,
+            )
+        }
+
+    @Test
+    fun `북마크가 비면 진행 중인 조회를 취소하고 늦은 결과를 반영하지 않는다`() =
+        coroutinesTest {
+            val shop = ramenShopFixture(id = "bookmarked-shop")
+            val pendingResult = CompletableDeferred<RamapResult<RamenShops>>()
+            val ramenShopRepository =
+                object : RamenShopRepository by FakeRamenShopRepository() {
+                    override suspend fun fetchRamenShops(shopIds: Set<String>): RamapResult<RamenShops> = pendingResult.await()
+                }
+            val personalizationRepository =
+                FakePersonalizationRepository(
+                    Personalization(bookmarkedShopIds = setOf(shop.id)),
+                )
+            val viewModel =
+                BookmarkedShopListViewModel(
+                    personalizationStore = personalizationRepository,
+                    ramenShopRepository = ramenShopRepository,
+                )
+            runCurrent()
+
+            assertEquals(RamapUiState.Loading, viewModel.uiState.value.shopsState)
+
+            personalizationRepository.updateBookmarkedShopIds(emptySet())
+            runCurrent()
+
+            assertEquals(
+                RamapUiState.Success(RamenShops(emptyMap())),
+                viewModel.uiState.value.shopsState,
+            )
+
+            pendingResult.complete(RamapResult.Success(RamenShops(listOf(shop))))
+            runCurrent()
+
+            assertEquals(
+                RamapUiState.Success(RamenShops(emptyMap())),
+                viewModel.uiState.value.shopsState,
             )
         }
 
@@ -156,7 +252,7 @@ class BookmarkedShopListViewModelTest {
                     awaitItem(),
                 )
                 assertEquals(
-                    LoadState.Content(RamenShops(emptyMap())),
+                    RamapUiState.Success(RamenShops(emptyMap())),
                     viewModel.uiState.value.shopsState,
                 )
                 assertEquals(
@@ -195,7 +291,7 @@ class BookmarkedShopListViewModelTest {
                     awaitItem(),
                 )
                 assertEquals(
-                    LoadState.Content(RamenShops(listOf(shop))),
+                    RamapUiState.Success(RamenShops(listOf(shop))),
                     viewModel.uiState.value.shopsState,
                 )
             }
