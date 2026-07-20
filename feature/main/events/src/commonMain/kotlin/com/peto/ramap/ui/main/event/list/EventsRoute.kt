@@ -18,14 +18,15 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.peto.ramap.designsystem.card.EventCard
-import com.peto.ramap.designsystem.component.LaduckLoadingContent
 import com.peto.ramap.designsystem.component.LoadErrorContent
+import com.peto.ramap.designsystem.indicator.RamenLoadingIndicator
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.designsystem.toast.ToastManager
 import com.peto.ramap.domain.model.event.ShopEvent
@@ -33,7 +34,6 @@ import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.ui.base.ObserveAsEvents
-import com.peto.ramap.ui.common.RamapUiState
 import com.peto.ramap.ui.component.eventDateText
 import com.peto.ramap.ui.main.event.list.contract.EventsIntent
 import com.peto.ramap.ui.main.event.list.contract.EventsSideEffect
@@ -45,7 +45,6 @@ import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.event_list_empty
 import ramap.shared.generated.resources.event_list_error_description
 import ramap.shared.generated.resources.event_list_error_title
-import ramap.shared.generated.resources.event_list_loading_message
 import ramap.shared.generated.resources.event_list_ongoing_section
 import ramap.shared.generated.resources.event_list_upcoming_section
 import ramap.shared.generated.resources.laduck_error_crying
@@ -56,7 +55,7 @@ fun EventsRoute(
     toastManager: ToastManager = koinInject(),
     viewModel: EventsViewModel = koinViewModel(),
 ) {
-    val uiState = viewModel.uiState.collectAsStateWithLifecycle().value
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     ObserveAsEvents(viewModel.sideEffect) { sideEffect ->
         when (sideEffect) {
             is EventsSideEffect.ShowEventsToast -> toastManager.show(sideEffect.data)
@@ -78,7 +77,13 @@ fun EventsScreen(
     onRetryClick: () -> Unit,
 ) {
     val pullToRefreshState = rememberPullToRefreshState()
-    Column(modifier = Modifier.fillMaxSize().background(CommonColor.White).statusBarsPadding()) {
+    Column(
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .background(CommonColor.White)
+                .statusBarsPadding(),
+    ) {
         PullToRefreshBox(
             isRefreshing = uiState.isRefreshing,
             onRefresh = onRefresh,
@@ -96,22 +101,10 @@ fun EventsScreen(
                 )
             },
         ) {
-            when (val state = uiState.eventsState) {
-                RamapUiState.Idle, RamapUiState.Loading ->
-                    Column(
-                        modifier = Modifier.fillMaxSize(),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center,
-                    ) {
-                        LaduckLoadingContent()
-                        AppText(
-                            text = stringResource(Res.string.event_list_loading_message),
-                            style = AppTextStyle.T1,
-                            color = GrayColor.C500,
-                        )
-                    }
+            when {
+                uiState.isLoading -> RamenLoadingIndicator(modifier = Modifier.fillMaxSize())
 
-                RamapUiState.Error ->
+                uiState.showError ->
                     LoadErrorContent(
                         image = Res.drawable.laduck_error_crying,
                         title = stringResource(Res.string.event_list_error_title),
@@ -120,35 +113,31 @@ fun EventsScreen(
                         modifier = Modifier.fillMaxSize(),
                     )
 
-                is RamapUiState.Success<*> -> {
-                    @Suppress("UNCHECKED_CAST")
-                    val events = state.data as List<ShopEvent>
-                    if (events.isEmpty()) {
-                        EventListEmptyContent()
-                    } else {
-                        val (ongoingEvents, upcomingEvents) = partitionBySchedule(events)
-                        val ongoingTitle = stringResource(Res.string.event_list_ongoing_section)
-                        val upcomingTitle = stringResource(Res.string.event_list_upcoming_section)
-                        LazyColumn(
-                            modifier = Modifier.fillMaxSize(),
-                            contentPadding = PaddingValues(24.dp),
-                            verticalArrangement = Arrangement.spacedBy(12.dp),
-                        ) {
-                            eventSection(
-                                scope = this,
-                                title = ongoingTitle,
-                                events = ongoingEvents,
-                                isHorizontal = true,
-                                onEventClick = onEventClick,
-                            )
-                            eventSection(
-                                scope = this,
-                                title = upcomingTitle,
-                                events = upcomingEvents,
-                                isHorizontal = false,
-                                onEventClick = onEventClick,
-                            )
-                        }
+                uiState.events.isEmpty() -> EventListEmptyContent()
+
+                else -> {
+                    val (ongoingEvents, upcomingEvents) = partitionBySchedule(uiState.events)
+                    val ongoingTitle = stringResource(Res.string.event_list_ongoing_section)
+                    val upcomingTitle = stringResource(Res.string.event_list_upcoming_section)
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(24.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        eventSection(
+                            scope = this,
+                            title = ongoingTitle,
+                            events = ongoingEvents,
+                            isHorizontal = true,
+                            onEventClick = onEventClick,
+                        )
+                        eventSection(
+                            scope = this,
+                            title = upcomingTitle,
+                            events = upcomingEvents,
+                            isHorizontal = false,
+                            onEventClick = onEventClick,
+                        )
                     }
                 }
             }
