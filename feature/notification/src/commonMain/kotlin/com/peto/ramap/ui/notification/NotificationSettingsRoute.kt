@@ -2,6 +2,7 @@ package com.peto.ramap.ui.notification
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
@@ -25,8 +26,8 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.peto.ramap.designsystem.card.SectionCard
-import com.peto.ramap.designsystem.component.LaduckLoadingContent
 import com.peto.ramap.designsystem.component.LoadErrorContent
+import com.peto.ramap.designsystem.indicator.RamenLoadingIndicator
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.designsystem.toast.ToastManager
 import com.peto.ramap.designsystem.toast.model.ToastAction
@@ -38,8 +39,9 @@ import com.peto.ramap.platform.AppSettingsOpener
 import com.peto.ramap.platform.NotificationPermissionRequester
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.GrayColor
-import com.peto.ramap.ui.common.LoadState
 import com.peto.ramap.ui.notification.contract.NotificationSettingsIntent
+import com.peto.ramap.ui.notification.contract.NotificationSettingsLoadKey
+import com.peto.ramap.ui.notification.contract.NotificationSettingsUiState
 import com.peto.ramap.ui.notification.model.NotificationSettingsPermissionUiState
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
@@ -82,7 +84,7 @@ fun NotificationSettingsRoute(
         }
     }
     NotificationSettingsScreen(
-        loadState = uiState.loadState,
+        uiState = uiState,
         enabled = permissionState.isEnabled(uiState.areEnabled),
         onBack = onBack,
         onRetry = { viewModel.dispatch(NotificationSettingsIntent.OnNotificationSettingsRetried) },
@@ -125,7 +127,7 @@ fun NotificationSettingsRoute(
 
 @Composable
 private fun NotificationSettingsScreen(
-    loadState: LoadState<Unit>,
+    uiState: NotificationSettingsUiState,
     enabled: Boolean,
     onBack: () -> Unit,
     onRetry: () -> Unit,
@@ -148,37 +150,42 @@ private fun NotificationSettingsScreen(
                 )
             },
         )
-        when (loadState) {
-            LoadState.Idle, LoadState.Loading -> LaduckLoadingContent()
-            LoadState.Error ->
-                LoadErrorContent(
-                    Res.drawable.laduck_error_confused,
-                    stringResource(Res.string.settings_notification_menu),
-                    stringResource(Res.string.data_load_failure_message),
-                    onRetry = onRetry,
-                )
+        Box(modifier = Modifier.weight(1f)) {
+            when {
+                uiState.showError ->
+                    LoadErrorContent(
+                        image = Res.drawable.laduck_error_confused,
+                        title = stringResource(Res.string.settings_notification_menu),
+                        description = stringResource(Res.string.data_load_failure_message),
+                        modifier = Modifier.fillMaxSize(),
+                        onRetry = onRetry,
+                    )
 
-            is LoadState.Content ->
-                SectionCard(
-                    modifier = Modifier.padding(horizontal = 20.dp),
-                ) {
-                    Row(
-                        modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 20.dp)
-                                .padding(vertical = 10.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically,
+                uiState.loadState.isLoading(NotificationSettingsLoadKey.FETCH) ->
+                    RamenLoadingIndicator(modifier = Modifier.fillMaxSize())
+
+                else ->
+                    SectionCard(
+                        modifier = Modifier.padding(horizontal = 20.dp),
                     ) {
-                        AppText(
-                            stringResource(Res.string.event_notification_master_action),
-                            AppTextStyle.T2,
-                            GrayColor.C500,
-                        )
-                        Switch(checked = enabled, onCheckedChange = onEnabledChanged)
+                        Row(
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 20.dp)
+                                    .padding(vertical = 10.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            AppText(
+                                stringResource(Res.string.event_notification_master_action),
+                                AppTextStyle.T2,
+                                GrayColor.C500,
+                            )
+                            Switch(checked = enabled, onCheckedChange = onEnabledChanged)
+                        }
                     }
-                }
+            }
         }
     }
 }
