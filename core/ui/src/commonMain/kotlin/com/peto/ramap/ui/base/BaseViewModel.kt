@@ -5,7 +5,14 @@ import androidx.lifecycle.viewModelScope
 import co.touchlab.kermit.Logger
 import com.peto.ramap.core.result.RamapError
 import com.peto.ramap.core.result.RamapResult
+import com.peto.ramap.ui.loading.LoadKey
+import com.peto.ramap.ui.loading.LoadableState
+import com.peto.ramap.ui.task.TaskEntry
+import com.peto.ramap.ui.task.TaskKey
+import com.peto.ramap.ui.task.TaskPolicy
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -22,9 +29,9 @@ abstract class BaseViewModel<S : State, I : Intent, SE : SideEffect>(
         Logger.withTag(this::class.simpleName ?: "BaseViewModel")
 
     // State
-    private val mutableUiState = MutableStateFlow(initialState)
-    val uiState: StateFlow<S> = mutableUiState.asStateFlow()
-    protected val currentState: S get() = mutableUiState.value
+    private val _uiState = MutableStateFlow(initialState)
+    val uiState: StateFlow<S> = _uiState.asStateFlow()
+    protected val currentState: S get() = _uiState.value
 
     // SideEffect
     private val sideEffectChannel = Channel<SE>(Channel.BUFFERED)
@@ -32,6 +39,11 @@ abstract class BaseViewModel<S : State, I : Intent, SE : SideEffect>(
 
     // Intent
     private val intentChannel = Channel<I>(Channel.BUFFERED)
+
+    private val tasks = mutableMapOf<TaskKey, TaskEntry<S>>()
+
+    /** 취소된 이전 작업과 같은 키로 다시 선택된 작업도 구분하는 단조 증가 generation. */
+    private var nextTaskGeneration = 0L
 
     init {
         viewModelScope.launch {
@@ -66,7 +78,122 @@ abstract class BaseViewModel<S : State, I : Intent, SE : SideEffect>(
      * State를 변경하는 메서드
      * */
     protected fun reduce(reducer: S.() -> S) {
-        mutableUiState.update { it.reducer() }
+        _uiState.update { it.reducer() }
+    }
+
+    /**
+     * [taskKey]로 식별되는 coroutine 작업을 ViewModel 수명주기에서 실행한다.
+     *
+     * [loadKey]가 있으면 작업 시작 시 해당 키의 카운트를 증가시키고
+     * 성공·오류·취소와 관계없이 현재 generation의 작업이 끝날 때 정확히 한 번 감소시킨다.
+     * 이 경우 상태 [S]는 [LoadableState]를 구현해야 한다.
+     *
+     * 같은 [taskKey]의 실행 중 작업이 있으면 [policy]에 따라 기존 작업을 동기적으로 상태 정리한 뒤
+     * 교체하거나 새 요청을 무시한다.
+     *
+     * [CancellationException]은 다시 전파하며 그 외 예외는 [handleError]로 전달한다.
+     *
+     * @param taskKey ViewModel 안에서 작업을 식별하고 중복 정책을 적용할 키
+     * @param loadKey 활성 개수를 추적할 로딩 키. `null`이면 로딩 카운트를 변경하지 않는다.
+     * @param policy 동일 작업 키가 실행 중일 때 적용할 정책
+     * @param onStart 작업 등록과 로딩 증가 시 함께 적용할 상태 reducer
+     * @param onFinish 현재 작업의 로딩 감소 시 정확히 한 번 적용할 상태 reducer
+     * @param block 실행할 비동기 작업
+     * @return 시작한 [Job], 또는 [TaskPolicy.IgnoreNew]로 요청을 무시한 경우 `null`
+     */
+    protected fun launchTask(
+        taskKey: TaskKey,
+        loadKey: LoadKey? = null,
+        policy: TaskPolicy = TaskPolicy.CancelPrevious,
+        onStart: S.() -> S = { this },
+        onFinish: S.() -> S = { this },
+        block: suspend () -> Unit,
+    ): Job? {
+        val previousTask = tasks[taskKey]
+        if (previousTask != null) {
+            if (policy == TaskPolicy.IgnoreNew) return null
+            finishTask(taskKey, previousTask, shouldCancel = true)
+        }
+
+        val generation = ++nextTaskGeneration
+        updateTaskState(loadKey, isStarting = true, reducer = onStart)
+        val job =
+            viewModelScope.launch(start = CoroutineStart.LAZY) {
+                try {
+                    block()
+                } catch (exception: CancellationException) {
+                    throw exception
+                } catch (throwable: Throwable) {
+                    handleError(throwable)
+                } finally {
+                    completeTask(taskKey, generation)
+                }
+            }
+        tasks[taskKey] =
+            TaskEntry(
+                generation = generation,
+                job = job,
+                loadKey = loadKey,
+                onFinish = onFinish,
+            )
+        job.start()
+        return job
+    }
+
+    /**
+     * 단일 [RamapResult] 요청을 작업 정책과 로딩 상태 관리 안에서 실행한다.
+     *
+     * 실행·취소·중복·로딩 정리는 [launchTask]에 위임한다. [RamapResult.Error]이면 공통
+     * [handleError]를 한 번 호출한 뒤 [onError]를 호출하며, 요청이나 콜백에서 발생한 예외는
+     * [launchTask]의 예외 처리 계약을 그대로 따른다.
+     *
+     * @param taskKey ViewModel 안에서 요청 작업을 식별할 키
+     * @param loadKey 활성 개수를 추적할 로딩 키. `null`이면 로딩 카운트를 변경하지 않는다.
+     * @param policy 동일 작업 키가 실행 중일 때 적용할 정책
+     * @param onStart 작업 등록과 로딩 증가 시 함께 적용할 상태 reducer
+     * @param onFinish 현재 작업의 로딩 감소 시 정확히 한 번 적용할 상태 reducer
+     * @param request 한 번 실행해 [RamapResult]를 반환할 요청
+     * @param onSuccess 성공 데이터를 처리할 콜백
+     * @param onError 공통 오류 처리 후 도메인 오류를 처리할 콜백
+     * @return 시작한 [Job], 또는 [TaskPolicy.IgnoreNew]로 요청을 무시한 경우 `null`
+     */
+    protected fun <T> launchResultTask(
+        taskKey: TaskKey,
+        loadKey: LoadKey? = null,
+        policy: TaskPolicy = TaskPolicy.CancelPrevious,
+        onStart: S.() -> S = { this },
+        onFinish: S.() -> S = { this },
+        request: suspend () -> RamapResult<T>,
+        onSuccess: suspend (T) -> Unit = {},
+        onError: suspend (RamapError) -> Unit = {},
+    ): Job? =
+        launchTask(
+            taskKey = taskKey,
+            loadKey = loadKey,
+            policy = policy,
+            onStart = onStart,
+            onFinish = onFinish,
+        ) {
+            when (val result = request()) {
+                is RamapResult.Success -> onSuccess(result.data)
+                is RamapResult.Error -> {
+                    handleError(result.error)
+                    onError(result.error)
+                }
+            }
+        }
+
+    /**
+     * [taskKey]에 등록된 작업을 취소하고 종료 상태를 동기적으로 정리한다.
+     *
+     * 작업이 있으면 레지스트리에서 먼저 제거한 뒤 로딩 카운트와 `onFinish`를 한 번 정리하므로,
+     * 취소된 coroutine의 늦은 `finally`는 상태를 다시 변경하지 않는다. 등록된 작업이 없으면 아무 일도 하지 않는다.
+     *
+     * @param taskKey 취소할 ViewModel 로컬 작업 키
+     */
+    protected fun cancelTask(taskKey: TaskKey) {
+        val task = tasks[taskKey] ?: return
+        finishTask(taskKey, task, shouldCancel = true)
     }
 
     /**
@@ -101,4 +228,51 @@ abstract class BaseViewModel<S : State, I : Intent, SE : SideEffect>(
     protected open fun handleError(throwable: Throwable) {
         logger.e(throwable) { "처리되지 않은 오류" }
     }
+
+    private fun completeTask(
+        taskKey: TaskKey,
+        generation: Long,
+    ) {
+        // 교체된 이전 작업의 늦은 finally가 새 작업의 로딩을 종료하지 못하게 한다.
+        val task = tasks[taskKey] ?: return
+        if (task.generation != generation) return
+        finishTask(taskKey, task, shouldCancel = false)
+    }
+
+    private fun finishTask(
+        taskKey: TaskKey,
+        task: TaskEntry<S>,
+        shouldCancel: Boolean,
+    ) {
+        // 레지스트리를 먼저 제거해 취소 과정에서 실행되는 finally와 종료 정리가 중복되지 않게 한다.
+        tasks.remove(taskKey)
+        if (shouldCancel) task.job.cancel()
+        updateTaskState(task.loadKey, isStarting = false, reducer = task.onFinish)
+    }
+
+    private fun updateTaskState(
+        loadKey: LoadKey?,
+        isStarting: Boolean,
+        reducer: S.() -> S,
+    ) {
+        // reducer와 카운트 변경을 하나의 StateFlow 갱신으로 노출한다.
+        _uiState.update { state ->
+            val reducedState = state.reducer()
+            if (loadKey == null) return@update reducedState
+
+            val loadableState = reducedState.asLoadableState()
+            val nextLoadingState =
+                if (isStarting) {
+                    loadableState.loadState + loadKey
+                } else {
+                    loadableState.loadState - loadKey
+                }
+            loadableState.withLoadingState(nextLoadingState)
+        }
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    private fun S.asLoadableState(): LoadableState<S> =
+        this as? LoadableState<S>
+            ?: error("${this::class.simpleName} must implement LoadableState to launch a loading task")
 }
