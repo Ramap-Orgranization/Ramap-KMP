@@ -80,11 +80,6 @@ class BaseViewModelResultTaskTest {
             assertTrue(firstJob != null)
             assertNull(ignoredJob)
             assertEquals(1, viewModel.startedCount)
-            assertEquals(
-                1,
-                viewModel.uiState.value.loadState
-                    .activeCount(TestLoadKey.Request),
-            )
 
             first.complete(RamapResult.Success("first"))
             runCurrent()

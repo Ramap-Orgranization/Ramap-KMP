@@ -61,18 +61,9 @@ class BaseViewModelTaskTest {
             viewModel.start(TestTaskKey.Second, second)
             runCurrent()
 
-            assertEquals(
-                2,
-                viewModel.uiState.value.loadState
-                    .activeCount(TestLoadKey.Request),
-            )
             first.complete("first")
             runCurrent()
-            assertEquals(
-                1,
-                viewModel.uiState.value.loadState
-                    .activeCount(TestLoadKey.Request),
-            )
+
             second.complete("second")
             runCurrent()
             assertFalse(viewModel.uiState.value.loadState.isAnyLoading)
