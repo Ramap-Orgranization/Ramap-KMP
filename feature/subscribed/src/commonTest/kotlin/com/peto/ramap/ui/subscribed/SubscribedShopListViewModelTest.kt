@@ -14,7 +14,7 @@ import com.peto.ramap.fake.FakeNotificationSettingsRepository
 import com.peto.ramap.fake.FakePersonalizationRepository
 import com.peto.ramap.fake.FakeRamenShopRepository
 import com.peto.ramap.fixture.ramenShopFixture
-import com.peto.ramap.ui.common.LoadState
+import com.peto.ramap.ui.common.RamapUiState
 import com.peto.ramap.ui.subscribed.contract.SubscribedShopListIntent
 import com.peto.ramap.ui.subscribed.contract.SubscribedShopListSideEffect
 import com.peto.ramap.ui.subscribed.model.SubscribedRemovalTarget
@@ -47,7 +47,7 @@ class SubscribedShopListViewModelTest {
             runCurrent()
 
             assertEquals(
-                LoadState.Content(RamenShops(listOf(shop))),
+                RamapUiState.Success(RamenShops(listOf(shop))),
                 viewModel.uiState.value.shopsState,
             )
         }
@@ -71,7 +71,7 @@ class SubscribedShopListViewModelTest {
 
             assertEquals(listOf(event), viewModel.uiState.value.subscribedEvents)
             assertEquals(
-                LoadState.Content(RamenShops(emptyMap())),
+                RamapUiState.Success(RamenShops(emptyMap())),
                 viewModel.uiState.value.shopsState,
             )
         }
@@ -102,7 +102,7 @@ class SubscribedShopListViewModelTest {
                     .isEmpty(),
             )
             assertEquals(
-                LoadState.Content(RamenShops(emptyMap())),
+                RamapUiState.Success(RamenShops(emptyMap())),
                 viewModel.uiState.value.shopsState,
             )
         }
@@ -132,7 +132,7 @@ class SubscribedShopListViewModelTest {
             )
             runCurrent()
 
-            assertEquals(LoadState.Content(RamenShops(emptyMap())), viewModel.uiState.value.shopsState)
+            assertEquals(RamapUiState.Success(RamenShops(emptyMap())), viewModel.uiState.value.shopsState)
             assertTrue(
                 personalizationStore.state.value.notificationShopIds
                     .isEmpty(),
@@ -181,7 +181,7 @@ class SubscribedShopListViewModelTest {
                     awaitItem(),
                 )
                 assertEquals(
-                    LoadState.Content(RamenShops(listOf(shop))),
+                    RamapUiState.Success(RamenShops(listOf(shop))),
                     viewModel.uiState.value.shopsState,
                 )
             }
@@ -274,7 +274,7 @@ class SubscribedShopListViewModelTest {
             runCurrent()
 
             assertEquals(
-                LoadState.Content(RamenShops(emptyMap())),
+                RamapUiState.Success(RamenShops(emptyMap())),
                 viewModel.uiState.value.shopsState,
             )
             assertTrue(
@@ -302,7 +302,7 @@ class SubscribedShopListViewModelTest {
             runCurrent()
 
             assertEquals(
-                LoadState.Content(RamenShops(emptyMap())),
+                RamapUiState.Success(RamenShops(emptyMap())),
                 viewModel.uiState.value.shopsState,
             )
             assertTrue(
