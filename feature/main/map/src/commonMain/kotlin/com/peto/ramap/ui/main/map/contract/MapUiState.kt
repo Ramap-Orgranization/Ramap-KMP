@@ -47,6 +47,9 @@ data class MapUiState(
      */
     val bounds: MapBounds = DefaultMapConfig.bounds,
     val hasViewportLoadFailed: Boolean = false,
+    /**
+     * 현재 지도 영역(bounds) 기준 매장 조회가 진행 중인지 여부.
+     */
     val cameraPosition: CameraPosition? = null,
     /**
      * 마지막으로 확인된 사용자 위치.

@@ -35,7 +35,6 @@ import com.peto.ramap.ui.main.map.contract.MapIntent.OnBookmarkedShopsToggled
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnBoundsChanged
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnCameraPositionChanged
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnCategoryFilterToggled
-import com.peto.ramap.ui.main.map.contract.MapIntent.OnFilterCleared
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnHiddenToggled
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnInitialLocationFocusConsumed
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnKakaoLoginClicked
@@ -123,7 +122,6 @@ class MapViewModel(
             is OnPlaceSelected -> selectPlace(intent.place)
             is OnCategoryFilterToggled -> toggleCategoryFilter(intent.category)
             OnBookmarkedShopsToggled -> toggleBookmarkedView()
-            is OnFilterCleared -> clearFilter()
             is OnBookmarkToggled -> toggleBookmark(intent.shop)
             is OnShopNotificationToggled -> toggleShopNotification(intent.shop)
             is OnHiddenToggled -> toggleHidden(intent.shop)
@@ -290,10 +288,6 @@ class MapViewModel(
             }
 
         updateFilter(nextFilter)
-    }
-
-    private fun clearFilter() {
-        updateFilter(RamenShopFilter())
     }
 
     private suspend fun updatePersonalization(personalization: ShopPersonalization) {
@@ -692,7 +686,6 @@ class MapViewModel(
     private fun hiddenShopTaskKey(shopId: String): String = "map-hidden-shop:$shopId"
 
     companion object {
-        /** 지도에서 동시에 하나만 유지할 매장 상세 조회 작업 키. */
         private const val SHOP_DETAIL_TASK_KEY = "map-shop-detail"
         private const val SELECT_SHOP_TASK_KEY = "map-select-shop"
         private const val SHOP_REPORT_TASK_KEY = "map-shop-report"

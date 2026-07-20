@@ -18,7 +18,6 @@ import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.TextField
@@ -45,6 +44,7 @@ import com.peto.ramap.designsystem.bottomsheet.CommonBottomSheetConfig
 import com.peto.ramap.designsystem.button.AppButton
 import com.peto.ramap.designsystem.component.RamenShopSearchResultList
 import com.peto.ramap.designsystem.dialog.CommonDialog
+import com.peto.ramap.designsystem.indicator.RamenLoadingIndicator
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.model.place.PlaceSearchResult
@@ -139,8 +139,10 @@ fun MapContent(
 
         NavigationBackHandler(
             state = backEventState,
-            isBackEnabled = isBackEnabled && selectedShop != null,
-            onBackCompleted = onShopDetailDismissed,
+            isBackEnabled = isBackEnabled && uiState.showBottomSheet,
+            onBackCompleted = {
+                if (selectedShop != null) onShopDetailDismissed() else onSearchResultsDismissed()
+            },
         )
 
         RamapMapView(
@@ -245,7 +247,8 @@ fun MapContent(
                 config = CommonBottomSheetConfig(maxHeight = detailBottomSheetMaxHeight),
             ) {
                 uiState.shopDetail?.let { detail ->
-                    val waitingSystemUiModel = WaitingSystemUiModel.from(uiState.shopWaiting[shop.id])
+                    val waitingSystemUiModel =
+                        WaitingSystemUiModel.from(uiState.shopWaiting[shop.id])
                     RamenShopDetailContent(
                         shop = shop,
                         waitingSystemUiModel = waitingSystemUiModel,
@@ -269,10 +272,7 @@ fun MapContent(
             }
 
             if (uiState.isShopDetailLoading) {
-                CircularProgressIndicator(
-                    modifier = Modifier.align(Alignment.Center),
-                    color = GrayColor.C500,
-                )
+                RamenLoadingIndicator(modifier = Modifier.align(Alignment.Center))
             }
         }
 
