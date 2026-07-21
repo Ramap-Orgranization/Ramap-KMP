@@ -615,6 +615,39 @@ class MapViewModelTest {
         }
 
     @Test
+    fun `새 아이디 요청은 진행 중인 아이디 조회를 취소하고 마지막 요청 상태만 유지한다`() =
+        coroutinesTest {
+            val previousShop = ramenShopFixture(id = "previous-shop")
+            var didCompletePreviousRequest = false
+            val delegate =
+                FakeRamenShopRepository(
+                    fetchByIdsResult = RamenShops(mapOf(previousShop.id to previousShop)),
+                )
+            val repository =
+                object : RamenShopRepository by delegate {
+                    override suspend fun fetchRamenShops(shopIds: Set<String>): RamapResult<RamenShops> {
+                        delay(1_000)
+                        didCompletePreviousRequest = true
+                        return delegate.fetchRamenShops(shopIds)
+                    }
+                }
+            val viewModel = mapViewModel(ramenShopRepository = repository)
+
+            viewModel.dispatch(OnShopIdSelected(previousShop.id))
+            runCurrent()
+            viewModel.dispatch(OnShopIdSelected(""))
+            runCurrent()
+            advanceTimeBy(1_000)
+            runCurrent()
+
+            assertEquals(false, didCompletePreviousRequest)
+            assertEquals(false, viewModel.uiState.value.isRequestedShopLoading)
+            assertEquals(RequestedShopStatus.NotFound, viewModel.uiState.value.requestedShopStatus)
+            assertEquals("", viewModel.uiState.value.requestedShopId)
+            assertEquals(null, viewModel.uiState.value.selectedShop)
+        }
+
+    @Test
     fun `선택된 가게가 있어도 지도 영역 변경만으로는 웨이팅 시스템을 조회하지 않는다`() =
         coroutinesTest {
             val shop = ramenShopFixture()
