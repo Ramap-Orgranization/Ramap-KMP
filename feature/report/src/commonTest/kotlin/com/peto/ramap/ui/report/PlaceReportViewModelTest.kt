@@ -284,7 +284,7 @@ class PlaceReportViewModelTest {
 
 private fun placeReportViewModel(
     currentLocationStore: CurrentLocationStore = CurrentLocationStore(),
-    reverseGeocoder: ReverseGeocoder? = null,
+    reverseGeocoder: ReverseGeocoder = ReverseGeocoder { RamapResult.Success("") },
     reportRepository: FakeShopReportRepository = FakeShopReportRepository(),
     currentLocationProvider: CurrentLocationProvider = CurrentLocationProvider { null },
 ) = PlaceReportViewModel(

@@ -7,3 +7,4 @@ import platform.Foundation.NSURL
 fun handleAuthDeepLink(url: NSURL) {
     supabaseClient.handleDeeplinks(url)
 }
+ 

@@ -1,4 +1,4 @@
-package com.peto.ramap
+package com.peto.ramap.di
 
 import com.peto.ramap.ui.account.di.accountModule
 import com.peto.ramap.ui.bookmark.di.bookmarkModule

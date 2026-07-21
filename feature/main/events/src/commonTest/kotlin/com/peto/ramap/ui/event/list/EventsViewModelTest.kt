@@ -8,7 +8,6 @@ import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.model.event.ShopEventType
 import com.peto.ramap.fake.FakeRamenShopRepository
-import com.peto.ramap.ui.common.RamapUiState
 import com.peto.ramap.ui.main.event.list.EventsViewModel
 import com.peto.ramap.ui.main.event.list.contract.EventsIntent
 import com.peto.ramap.ui.main.event.list.contract.EventsSideEffect
@@ -33,7 +32,8 @@ class EventsViewModelTest {
 
             runCurrent()
 
-            assertEquals(RamapUiState.Success(listOf(event)), viewModel.uiState.value.eventsState)
+            assertEquals(listOf(event), viewModel.uiState.value.events)
+            assertFalse(viewModel.uiState.value.isLoading)
             assertEquals(1, repository.activeEventsRequestCount)
         }
 
@@ -50,7 +50,7 @@ class EventsViewModelTest {
             runCurrent()
 
             assertEquals(2, repository.activeEventsRequestCount)
-            assertEquals(RamapUiState.Success(listOf(event)), viewModel.uiState.value.eventsState)
+            assertEquals(listOf(event), viewModel.uiState.value.events)
             assertTrue(viewModel.uiState.value.isRefreshing)
 
             advanceTimeBy(1_000)
@@ -92,7 +92,8 @@ class EventsViewModelTest {
             viewModel.dispatch(EventsIntent.OnEventsRetried)
             runCurrent()
 
-            assertEquals(RamapUiState.Error, viewModel.uiState.value.eventsState)
+            assertTrue(viewModel.uiState.value.showError)
+            assertFalse(viewModel.uiState.value.isLoading)
         }
 
     @Test
@@ -108,7 +109,7 @@ class EventsViewModelTest {
                 viewModel.dispatch(EventsIntent.OnEventsRefreshed)
                 runCurrent()
 
-                assertEquals(RamapUiState.Success(listOf(event)), viewModel.uiState.value.eventsState)
+                assertEquals(listOf(event), viewModel.uiState.value.events)
                 assertFalse(viewModel.uiState.value.isRefreshing)
                 assertEquals(
                     EventsSideEffect.ShowEventsToast(

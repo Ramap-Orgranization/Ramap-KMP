@@ -43,11 +43,13 @@ class BookmarkedShopListViewModel(
 
     private fun syncBookmarkedShops(shopIds: Set<String>) {
         if (shopIds.isEmpty()) {
+            cancelTask(FETCH_BOOKMARKS_TASK_KEY)
             reduce { copy(shops = shops.filterByShopIds(shopIds)) }
             return
         }
 
         if (currentState.shops.containsAll(shopIds)) {
+            cancelTask(FETCH_BOOKMARKS_TASK_KEY)
             reduce { copy(shops = shops.filterByShopIds(shopIds)) }
             return
         }

@@ -6,7 +6,6 @@ import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.fake.FakePersonalizationRepository
 import com.peto.ramap.fake.FakeRamenShopRepository
 import com.peto.ramap.fixture.ramenShopFixture
-import com.peto.ramap.ui.common.RamapUiState
 import com.peto.ramap.ui.hidden.contract.HiddenShopListIntent
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runCurrent
@@ -34,9 +33,9 @@ class HiddenShopListViewModelTest {
 
             runCurrent()
 
-            val state = viewModel.uiState.value.shopsState
-            assertTrue(state is RamapUiState.Success<*>)
-            assertEquals(RamenShops(listOf(hiddenShop.copy(isVisible = false))), state.data)
+            val state = viewModel.uiState.value
+            assertEquals(RamenShops(listOf(hiddenShop.copy(isVisible = false))), state.shops)
+            assertTrue(!state.isOverlayLoading)
         }
 
     @Test
@@ -50,7 +49,8 @@ class HiddenShopListViewModelTest {
 
             runCurrent()
 
-            assertEquals(RamapUiState.Success(RamenShops(emptyMap())), viewModel.uiState.value.shopsState)
+            assertEquals(RamenShops(emptyMap()), viewModel.uiState.value.shops)
+            assertTrue(!viewModel.uiState.value.isOverlayLoading)
         }
 
     @Test
@@ -70,9 +70,7 @@ class HiddenShopListViewModelTest {
             viewModel.dispatch(HiddenShopListIntent.OnUnhideConfirmed(shop.id))
             runCurrent()
 
-            assertEquals(
-                RamapUiState.Success(RamenShops(emptyMap())),
-                viewModel.uiState.value.shopsState,
-            )
+            assertEquals(RamenShops(emptyMap()), viewModel.uiState.value.shops)
+            assertTrue(!viewModel.uiState.value.isOverlayLoading)
         }
 }

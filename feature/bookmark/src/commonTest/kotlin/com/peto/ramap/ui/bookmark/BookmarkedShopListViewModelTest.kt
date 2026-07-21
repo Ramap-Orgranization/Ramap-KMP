@@ -16,7 +16,6 @@ import com.peto.ramap.fake.FakeRamenShopRepository
 import com.peto.ramap.fixture.ramenShopFixture
 import com.peto.ramap.ui.bookmark.contract.BookmarkedShopListIntent
 import com.peto.ramap.ui.bookmark.contract.BookmarkedShopListSideEffect
-import com.peto.ramap.ui.common.RamapUiState
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runCurrent
@@ -47,10 +46,8 @@ class BookmarkedShopListViewModelTest {
 
             runCurrent()
 
-            assertEquals(
-                RamapUiState.Success(RamenShops(listOf(shop))),
-                viewModel.uiState.value.shopsState,
-            )
+            assertEquals(RamenShops(listOf(shop)), viewModel.uiState.value.shops)
+            assertEquals(false, viewModel.uiState.value.isOverlayLoading)
         }
 
     @Test
@@ -65,10 +62,8 @@ class BookmarkedShopListViewModelTest {
 
             runCurrent()
 
-            assertEquals(
-                RamapUiState.Success(RamenShops(emptyMap())),
-                viewModel.uiState.value.shopsState,
-            )
+            assertEquals(RamenShops(emptyMap()), viewModel.uiState.value.shops)
+            assertEquals(false, viewModel.uiState.value.isOverlayLoading)
             assertEquals(emptyList(), ramenShopRepository.requestedShopIdsHistory)
         }
 
@@ -90,7 +85,8 @@ class BookmarkedShopListViewModelTest {
 
             runCurrent()
 
-            assertEquals(RamapUiState.Error, viewModel.uiState.value.shopsState)
+            assertEquals(true, viewModel.uiState.value.showError)
+            assertEquals(false, viewModel.uiState.value.isOverlayLoading)
         }
 
     @Test
@@ -116,18 +112,12 @@ class BookmarkedShopListViewModelTest {
             personalizationRepository.updateBookmarkedShopIds(emptySet())
             runCurrent()
 
-            assertEquals(
-                RamapUiState.Success(RamenShops(emptyMap())),
-                viewModel.uiState.value.shopsState,
-            )
+            assertEquals(RamenShops(emptyMap()), viewModel.uiState.value.shops)
 
             personalizationRepository.updateBookmarkedShopIds(setOf(addedShop.id))
             runCurrent()
 
-            assertEquals(
-                RamapUiState.Success(RamenShops(listOf(addedShop))),
-                viewModel.uiState.value.shopsState,
-            )
+            assertEquals(RamenShops(listOf(addedShop)), viewModel.uiState.value.shops)
             assertEquals(
                 listOf(setOf(initialShop.id), setOf(addedShop.id)),
                 ramenShopRepository.requestedShopIdsHistory,
@@ -164,25 +154,20 @@ class BookmarkedShopListViewModelTest {
                 )
             runCurrent()
 
-            assertEquals(RamapUiState.Loading, viewModel.uiState.value.shopsState)
+            assertEquals(true, viewModel.uiState.value.isOnlyLoading)
 
             personalizationRepository.updateBookmarkedShopIds(setOf(latestShop.id))
             runCurrent()
             latestResult.complete(RamapResult.Success(RamenShops(listOf(latestShop))))
             runCurrent()
 
-            assertEquals(
-                RamapUiState.Success(RamenShops(listOf(latestShop))),
-                viewModel.uiState.value.shopsState,
-            )
+            assertEquals(RamenShops(listOf(latestShop)), viewModel.uiState.value.shops)
+            assertEquals(false, viewModel.uiState.value.isOverlayLoading)
 
             initialResult.complete(RamapResult.Success(RamenShops(listOf(initialShop))))
             runCurrent()
 
-            assertEquals(
-                RamapUiState.Success(RamenShops(listOf(latestShop))),
-                viewModel.uiState.value.shopsState,
-            )
+            assertEquals(RamenShops(listOf(latestShop)), viewModel.uiState.value.shops)
             assertEquals(
                 listOf(setOf(initialShop.id), setOf(latestShop.id)),
                 requestedShopIds,
@@ -209,23 +194,18 @@ class BookmarkedShopListViewModelTest {
                 )
             runCurrent()
 
-            assertEquals(RamapUiState.Loading, viewModel.uiState.value.shopsState)
+            assertEquals(true, viewModel.uiState.value.isOnlyLoading)
 
             personalizationRepository.updateBookmarkedShopIds(emptySet())
             runCurrent()
 
-            assertEquals(
-                RamapUiState.Success(RamenShops(emptyMap())),
-                viewModel.uiState.value.shopsState,
-            )
+            assertEquals(RamenShops(emptyMap()), viewModel.uiState.value.shops)
+            assertEquals(false, viewModel.uiState.value.isOverlayLoading)
 
             pendingResult.complete(RamapResult.Success(RamenShops(listOf(shop))))
             runCurrent()
 
-            assertEquals(
-                RamapUiState.Success(RamenShops(emptyMap())),
-                viewModel.uiState.value.shopsState,
-            )
+            assertEquals(RamenShops(emptyMap()), viewModel.uiState.value.shops)
         }
 
     @Test
@@ -251,10 +231,8 @@ class BookmarkedShopListViewModelTest {
                     ),
                     awaitItem(),
                 )
-                assertEquals(
-                    RamapUiState.Success(RamenShops(emptyMap())),
-                    viewModel.uiState.value.shopsState,
-                )
+                assertEquals(RamenShops(emptyMap()), viewModel.uiState.value.shops)
+                assertEquals(false, viewModel.uiState.value.isOverlayLoading)
                 assertEquals(
                     RamapResult.Success(Personalization()),
                     repository.fetchPersonalization(),
@@ -290,10 +268,8 @@ class BookmarkedShopListViewModelTest {
                     ),
                     awaitItem(),
                 )
-                assertEquals(
-                    RamapUiState.Success(RamenShops(listOf(shop))),
-                    viewModel.uiState.value.shopsState,
-                )
+                assertEquals(RamenShops(listOf(shop)), viewModel.uiState.value.shops)
+                assertEquals(false, viewModel.uiState.value.isOverlayLoading)
             }
         }
 }

@@ -42,11 +42,13 @@ class HiddenShopListViewModel(
 
     private fun syncHiddenShops(hiddenShopIds: Set<String>) {
         if (hiddenShopIds.isEmpty()) {
+            cancelTask(FETCH_SHOP_TASK_KEY)
             reduce { copy(shops = shops.filterByShopIds(hiddenShopIds)) }
             return
         }
 
         if (currentState.shops.containsAll(hiddenShopIds)) {
+            cancelTask(FETCH_SHOP_TASK_KEY)
             reduce { copy(shops = shops.filterByShopIds(hiddenShopIds).markHidden(hiddenShopIds)) }
             return
         }

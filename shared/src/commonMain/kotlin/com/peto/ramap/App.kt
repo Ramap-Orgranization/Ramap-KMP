@@ -20,7 +20,6 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import org.koin.compose.koinInject
 
 @Composable
-@Preview
 fun App(
     loginRepository: LoginRepository = koinInject(),
     personalizationStore: ShopPersonalizationStore = koinInject(),

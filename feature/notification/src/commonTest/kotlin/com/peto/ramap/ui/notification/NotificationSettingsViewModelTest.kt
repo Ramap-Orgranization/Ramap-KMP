@@ -5,8 +5,8 @@ import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.coroutinesTest
 import com.peto.ramap.domain.repository.NotificationSettingsRepository
 import com.peto.ramap.fake.FakeNotificationSettingsRepository
-import com.peto.ramap.ui.common.RamapUiState
 import com.peto.ramap.ui.notification.contract.NotificationSettingsIntent
+import com.peto.ramap.ui.notification.contract.NotificationSettingsLoadKey
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runCurrent
@@ -27,8 +27,11 @@ class NotificationSettingsViewModelTest {
 
             runCurrent()
 
-            assertEquals(RamapUiState.Success(Unit), viewModel.uiState.value.ramapUiState)
-            assertTrue(viewModel.uiState.value.notificationEnabled)
+            assertTrue(viewModel.uiState.value.areEnabled)
+            assertFalse(
+                viewModel.uiState.value.loadState
+                    .isLoading(NotificationSettingsLoadKey.FETCH),
+            )
         }
 
     @Test
@@ -42,7 +45,11 @@ class NotificationSettingsViewModelTest {
 
             runCurrent()
 
-            assertEquals(RamapUiState.Error, viewModel.uiState.value.ramapUiState)
+            assertTrue(viewModel.uiState.value.showError)
+            assertFalse(
+                viewModel.uiState.value.loadState
+                    .isLoading(NotificationSettingsLoadKey.FETCH),
+            )
         }
 
     @Test
@@ -55,7 +62,7 @@ class NotificationSettingsViewModelTest {
             viewModel.dispatch(NotificationSettingsIntent.OnEventNotificationsEnabledChanged(false))
             runCurrent()
 
-            assertFalse(viewModel.uiState.value.notificationEnabled)
+            assertFalse(viewModel.uiState.value.areEnabled)
             assertEquals(listOf(false), repository.enabledUpdates)
         }
 
@@ -76,16 +83,16 @@ class NotificationSettingsViewModelTest {
 
             viewModel.dispatch(NotificationSettingsIntent.OnEventNotificationsEnabledChanged(true))
             runCurrent()
-            assertTrue(viewModel.uiState.value.notificationEnabled)
+            assertTrue(viewModel.uiState.value.areEnabled)
 
             viewModel.dispatch(NotificationSettingsIntent.OnEventNotificationsEnabledChanged(false))
             runCurrent()
 
-            assertFalse(viewModel.uiState.value.notificationEnabled)
+            assertFalse(viewModel.uiState.value.areEnabled)
             assertEquals(listOf(true, false), updates)
 
             firstResult.complete(RamapResult.Error(RamapError.Unknown(IllegalStateException("late"))))
             runCurrent()
-            assertFalse(viewModel.uiState.value.notificationEnabled)
+            assertFalse(viewModel.uiState.value.areEnabled)
         }
 }

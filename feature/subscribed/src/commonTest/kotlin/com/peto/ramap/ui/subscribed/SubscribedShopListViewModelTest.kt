@@ -14,7 +14,6 @@ import com.peto.ramap.fake.FakeNotificationSettingsRepository
 import com.peto.ramap.fake.FakePersonalizationRepository
 import com.peto.ramap.fake.FakeRamenShopRepository
 import com.peto.ramap.fixture.ramenShopFixture
-import com.peto.ramap.ui.common.RamapUiState
 import com.peto.ramap.ui.subscribed.contract.SubscribedShopListIntent
 import com.peto.ramap.ui.subscribed.contract.SubscribedShopListSideEffect
 import com.peto.ramap.ui.subscribed.model.SubscribedRemovalTarget
@@ -46,10 +45,8 @@ class SubscribedShopListViewModelTest {
 
             runCurrent()
 
-            assertEquals(
-                RamapUiState.Success(RamenShops(listOf(shop))),
-                viewModel.uiState.value.shopsState,
-            )
+            assertEquals(RamenShops(listOf(shop)), viewModel.uiState.value.shops)
+            assertEquals(false, viewModel.uiState.value.isOverlayLoading)
         }
 
     @Test
@@ -70,10 +67,7 @@ class SubscribedShopListViewModelTest {
             runCurrent()
 
             assertEquals(listOf(event), viewModel.uiState.value.subscribedEvents)
-            assertEquals(
-                RamapUiState.Success(RamenShops(emptyMap())),
-                viewModel.uiState.value.shopsState,
-            )
+            assertEquals(RamenShops(emptyMap()), viewModel.uiState.value.shops)
         }
 
     @Test
@@ -101,10 +95,7 @@ class SubscribedShopListViewModelTest {
                 viewModel.uiState.value.subscribedEvents
                     .isEmpty(),
             )
-            assertEquals(
-                RamapUiState.Success(RamenShops(emptyMap())),
-                viewModel.uiState.value.shopsState,
-            )
+            assertEquals(RamenShops(emptyMap()), viewModel.uiState.value.shops)
         }
 
     @Test
@@ -132,7 +123,8 @@ class SubscribedShopListViewModelTest {
             )
             runCurrent()
 
-            assertEquals(RamapUiState.Success(RamenShops(emptyMap())), viewModel.uiState.value.shopsState)
+            assertEquals(RamenShops(emptyMap()), viewModel.uiState.value.shops)
+            assertEquals(false, viewModel.uiState.value.isOverlayLoading)
             assertTrue(
                 personalizationStore.state.value.notificationShopIds
                     .isEmpty(),
@@ -180,10 +172,8 @@ class SubscribedShopListViewModelTest {
                     ),
                     awaitItem(),
                 )
-                assertEquals(
-                    RamapUiState.Success(RamenShops(listOf(shop))),
-                    viewModel.uiState.value.shopsState,
-                )
+                assertEquals(RamenShops(listOf(shop)), viewModel.uiState.value.shops)
+                assertEquals(false, viewModel.uiState.value.isOverlayLoading)
             }
         }
 
@@ -273,10 +263,7 @@ class SubscribedShopListViewModelTest {
 
             runCurrent()
 
-            assertEquals(
-                RamapUiState.Success(RamenShops(emptyMap())),
-                viewModel.uiState.value.shopsState,
-            )
+            assertEquals(RamenShops(emptyMap()), viewModel.uiState.value.shops)
             assertTrue(
                 viewModel.uiState.value.subscribedEvents
                     .isEmpty(),
@@ -301,10 +288,7 @@ class SubscribedShopListViewModelTest {
 
             runCurrent()
 
-            assertEquals(
-                RamapUiState.Success(RamenShops(emptyMap())),
-                viewModel.uiState.value.shopsState,
-            )
+            assertEquals(RamenShops(emptyMap()), viewModel.uiState.value.shops)
             assertTrue(
                 viewModel.uiState.value.subscribedEvents
                     .isEmpty(),

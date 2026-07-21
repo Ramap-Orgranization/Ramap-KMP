@@ -1,5 +1,8 @@
 package com.peto.ramap.ui.loading
 
+import androidx.compose.runtime.Immutable
+
+@Immutable
 @ConsistentCopyVisibility
 data class LoadState internal constructor(
     private val value: Map<LoadKey, Int>,
