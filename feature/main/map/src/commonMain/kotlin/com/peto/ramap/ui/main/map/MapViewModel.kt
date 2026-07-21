@@ -42,8 +42,11 @@ import com.peto.ramap.ui.main.map.contract.MapIntent.OnLocationPermissionBlocked
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnMyLocationChanged
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnPlaceSelected
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnQueryChanged
+import com.peto.ramap.ui.main.map.contract.MapIntent.OnRequestedShopDismissed
+import com.peto.ramap.ui.main.map.contract.MapIntent.OnRequestedShopRetry
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnSearchResultsDismissed
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopDetailDismissed
+import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopDetailRetry
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopIdSelected
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopNotificationToggled
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopReportSubmitted
@@ -54,6 +57,7 @@ import com.peto.ramap.ui.main.map.contract.MapSideEffect
 import com.peto.ramap.ui.main.map.contract.MapSideEffect.ShowLoginGuide
 import com.peto.ramap.ui.main.map.contract.MapSideEffect.ShowToast
 import com.peto.ramap.ui.main.map.contract.MapUiState
+import com.peto.ramap.ui.main.map.contract.RequestedShopStatus
 import com.peto.ramap.ui.main.map.model.CameraPosition
 import com.peto.ramap.ui.main.map.model.LocationFocusStatus
 import com.peto.ramap.ui.main.map.search.MapSearchController
@@ -116,7 +120,10 @@ class MapViewModel(
             OnInitialLocationFocusConsumed -> consumeInitialLocationFocus()
             is OnShopSelected -> selectShop(intent.shop, intent.shouldFocus)
             is OnShopIdSelected -> selectShop(intent.shopId)
+            OnRequestedShopRetry -> retryRequestedShopLoad()
+            OnRequestedShopDismissed -> dismissRequestedShopLoad()
             is OnShopDetailDismissed -> dismissShopDetail()
+            OnShopDetailRetry -> retryShopDetailLoad()
             is OnSearchResultsDismissed -> dismissSearchResults()
             is OnQueryChanged -> updateQuery(intent.query)
             is OnPlaceSelected -> selectPlace(intent.place)
@@ -160,6 +167,7 @@ class MapViewModel(
         shouldFocus: Boolean = true,
     ) {
         cancelTask(SELECT_SHOP_TASK_KEY)
+        clearRequestedShopState()
         selectResolvedShop(shop, shouldFocus)
     }
 
@@ -177,6 +185,9 @@ class MapViewModel(
                 selectedShop = cachedDetail?.shop?.copy(isVisible = shop.isVisible) ?: shop,
                 shouldFocusSelectedShop = shouldFocus,
                 shopDetail = cachedDetail,
+                hasShopDetailLoadFailed = false,
+                requestedShopId = null,
+                requestedShopStatus = RequestedShopStatus.Idle,
                 shopWaiting =
                     cachedDetail?.let { shopWaiting + (shop.id to it.waitingSystem) }
                         ?: shopWaiting,
@@ -194,24 +205,80 @@ class MapViewModel(
             copy(
                 selectedShop = null,
                 shopDetail = null,
+                hasShopDetailLoadFailed = false,
             )
         }
     }
 
+    private fun retryShopDetailLoad() {
+        val shopId = currentState.selectedShop?.id ?: return
+        loadShopDetail(shopId)
+    }
+
     private fun selectShop(shopId: String) {
-        if (shopId.isBlank()) return
+        cancelTask(SELECT_SHOP_TASK_KEY)
+        cancelShopDetailLoad()
+        if (shopId.isBlank()) {
+            reduce {
+                copy(
+                    selectedShop = null,
+                    shopDetail = null,
+                    hasShopDetailLoadFailed = false,
+                    requestedShopId = shopId,
+                    requestedShopStatus = RequestedShopStatus.NotFound,
+                )
+            }
+            return
+        }
         fetchShopDetailUseCase.findCached(shopId)?.let { detail ->
+            clearRequestedShopState()
             selectShop(detail.shop)
             return
         }
 
         launchResultTask(
             taskKey = SELECT_SHOP_TASK_KEY,
+            loadKey = MapLoadKey.RequestedShop,
             policy = TaskPolicy.CancelPrevious,
+            onStart = {
+                copy(
+                    selectedShop = null,
+                    shopDetail = null,
+                    hasShopDetailLoadFailed = false,
+                    requestedShopId = shopId,
+                    requestedShopStatus = RequestedShopStatus.Loading,
+                )
+            },
             request = { ramenShopRepository.fetchRamenShops(setOf(shopId)) },
-            onSuccess = { shops -> shops[shopId]?.let { selectResolvedShop(it, shouldFocus = true) } },
-            onError = {},
+            onSuccess = { shops ->
+                val shop = shops[shopId]
+                if (shop == null) {
+                    reduce { copy(requestedShopStatus = RequestedShopStatus.NotFound) }
+                } else {
+                    selectResolvedShop(shop, shouldFocus = true)
+                }
+            },
+            onError = { reduce { copy(requestedShopStatus = RequestedShopStatus.Failed) } },
         )
+    }
+
+    private fun retryRequestedShopLoad() {
+        val shopId = currentState.requestedShopId ?: return
+        selectShop(shopId)
+    }
+
+    private fun dismissRequestedShopLoad() {
+        cancelTask(SELECT_SHOP_TASK_KEY)
+        clearRequestedShopState()
+    }
+
+    private fun clearRequestedShopState() {
+        reduce {
+            copy(
+                requestedShopId = null,
+                requestedShopStatus = RequestedShopStatus.Idle,
+            )
+        }
     }
 
     private fun updateMyLocation(location: Location) {
@@ -246,6 +313,7 @@ class MapViewModel(
             copy(
                 search = search.selectPlace(place),
                 selectedShop = null,
+                hasShopDetailLoadFailed = false,
             )
         }
     }
@@ -259,6 +327,7 @@ class MapViewModel(
             copy(
                 search = search.updateInput(query),
                 selectedShop = null,
+                hasShopDetailLoadFailed = false,
             )
         }
 
@@ -590,6 +659,7 @@ class MapViewModel(
             copy(
                 search = search.updateResults(query, result),
                 selectedShop = null,
+                hasShopDetailLoadFailed = false,
             )
         }
     }
@@ -600,6 +670,7 @@ class MapViewModel(
             taskKey = SHOP_DETAIL_TASK_KEY,
             loadKey = MapLoadKey.ShopDetail,
             policy = TaskPolicy.CancelPrevious,
+            onStart = { copy(hasShopDetailLoadFailed = false) },
         ) {
             when (val result = fetchShopDetailUseCase(shopId)) {
                 is RamapResult.Success -> {
@@ -628,14 +699,19 @@ class MapViewModel(
                 selectedShop = detail.shop.copy(isVisible = selectedShop.isVisible),
                 shopWaiting = shopWaiting + (selectedShop.id to detail.waitingSystem),
                 shopDetail = detail,
+                hasShopDetailLoadFailed = false,
             )
         }
     }
 
     private fun handleShopDetailFailure(error: RamapError) {
         handleError(error)
-        reduce { copy(shopDetail = null) }
-        showDataLoadFailure()
+        reduce {
+            copy(
+                shopDetail = null,
+                hasShopDetailLoadFailed = true,
+            )
+        }
     }
 
     private fun scheduleRamenShopsLoad(bounds: MapBounds) {

@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -42,6 +43,7 @@ import androidx.navigationevent.compose.rememberNavigationEventState
 import com.peto.ramap.designsystem.bottomsheet.CommonBottomSheet
 import com.peto.ramap.designsystem.bottomsheet.CommonBottomSheetConfig
 import com.peto.ramap.designsystem.button.AppButton
+import com.peto.ramap.designsystem.component.LoadErrorContent
 import com.peto.ramap.designsystem.component.RamenShopSearchResultList
 import com.peto.ramap.designsystem.dialog.CommonDialog
 import com.peto.ramap.designsystem.indicator.RamenLoadingIndicator
@@ -64,6 +66,13 @@ import com.peto.ramap.ui.main.map.component.RamenShopDetailContent
 import com.peto.ramap.ui.main.map.component.RamenShopSearchBar
 import com.peto.ramap.ui.main.map.component.RamenShopSearchResultGuide
 import com.peto.ramap.ui.main.map.contract.MapUiState
+import com.peto.ramap.ui.main.map.generated.resources.map_requested_shop_error_description
+import com.peto.ramap.ui.main.map.generated.resources.map_requested_shop_error_title
+import com.peto.ramap.ui.main.map.generated.resources.map_requested_shop_not_found_description
+import com.peto.ramap.ui.main.map.generated.resources.map_requested_shop_not_found_title
+import com.peto.ramap.ui.main.map.generated.resources.map_shop_detail_error_description
+import com.peto.ramap.ui.main.map.generated.resources.map_shop_detail_error_title
+import com.peto.ramap.ui.main.map.generated.resources.map_shop_load_close_action
 import com.peto.ramap.ui.main.map.model.CameraPosition
 import com.peto.ramap.ui.main.map.model.RamenShopUiModel
 import com.peto.ramap.ui.main.map.model.WaitingSystemUiModel
@@ -76,12 +85,14 @@ import ramap.shared.generated.resources.hide_shop_confirm_description
 import ramap.shared.generated.resources.hide_shop_confirm_dismiss
 import ramap.shared.generated.resources.hide_shop_confirm_title
 import ramap.shared.generated.resources.ic_kid_star
+import ramap.shared.generated.resources.laduck_error_crying
 import ramap.shared.generated.resources.retry_action
 import ramap.shared.generated.resources.shop_detail_link_report
 import ramap.shared.generated.resources.shop_information_report_action
 import ramap.shared.generated.resources.shop_information_report_description
 import ramap.shared.generated.resources.shop_information_report_dismiss
 import ramap.shared.generated.resources.shop_information_report_placeholder
+import com.peto.ramap.ui.main.map.generated.resources.Res as MapRes
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -96,6 +107,9 @@ fun MapContent(
     onShopSelected: (RamenShop, Boolean) -> Unit,
     onPlaceSelected: (PlaceSearchResult) -> Unit,
     onShopDetailDismissed: () -> Unit,
+    onShopDetailRetry: () -> Unit,
+    onRequestedShopRetry: () -> Unit,
+    onRequestedShopDismissed: () -> Unit,
     onQueryChanged: (String) -> Unit,
     onSearchResultsDismissed: () -> Unit,
     onInitialLocationFocusConsumed: () -> Unit,
@@ -141,7 +155,12 @@ fun MapContent(
             state = backEventState,
             isBackEnabled = isBackEnabled && uiState.showBottomSheet,
             onBackCompleted = {
-                if (selectedShop != null) onShopDetailDismissed() else onSearchResultsDismissed()
+                when {
+                    selectedShop != null -> onShopDetailDismissed()
+                    uiState.showRequestedShopFailure || uiState.showRequestedShopNotFound ->
+                        onRequestedShopDismissed()
+                    else -> onSearchResultsDismissed()
+                }
             },
         )
 
@@ -241,38 +260,85 @@ fun MapContent(
 
         selectedShop?.let { shop ->
             CommonBottomSheet(
-                visible = uiState.shopDetail != null,
+                visible = true,
                 onDismissRequest = onShopDetailDismissed,
                 isBackEnabled = isBackEnabled,
                 config = CommonBottomSheetConfig(maxHeight = detailBottomSheetMaxHeight),
             ) {
-                uiState.shopDetail?.let { detail ->
-                    val waitingSystemUiModel =
-                        WaitingSystemUiModel.from(uiState.shopWaiting[shop.id])
-                    RamenShopDetailContent(
-                        shop = shop,
-                        waitingSystemUiModel = waitingSystemUiModel,
-                        isBookmarked = shop.id in uiState.bookmarkedShopIds,
-                        isNotificationEnabled = shop.id in uiState.notificationShopIds,
-                        isHidden = shop.id in uiState.hiddenShopIds,
-                        onBookmarkClick = { onBookmarkToggled(shop) },
-                        onNotificationClick = { onShopNotificationToggled(shop) },
-                        onHiddenClick = {
-                            if (uiState.isLoggedIn && shop.id !in uiState.hiddenShopIds) {
-                                hideConfirmShop = shop
-                            } else {
-                                onHiddenToggled(shop)
-                            }
-                        },
-                        onReportClick = { showReportDialog = true },
-                        event = detail.event,
-                        onEventClick = onEventClick,
-                    )
+                when {
+                    uiState.isShopDetailLoading ->
+                        RamenLoadingIndicator(
+                            modifier = Modifier.fillMaxWidth().heightIn(min = 240.dp),
+                        )
+
+                    uiState.hasShopDetailLoadFailed ->
+                        ShopLoadErrorContent(
+                            title = stringResource(MapRes.string.map_shop_detail_error_title),
+                            description = stringResource(MapRes.string.map_shop_detail_error_description),
+                            onRetry = onShopDetailRetry,
+                            onDismiss = onShopDetailDismissed,
+                        )
+
+                    uiState.shopDetail != null -> {
+                        val detail = uiState.shopDetail
+                        val waitingSystemUiModel =
+                            WaitingSystemUiModel.from(uiState.shopWaiting[shop.id])
+                        RamenShopDetailContent(
+                            shop = shop,
+                            waitingSystemUiModel = waitingSystemUiModel,
+                            isBookmarked = shop.id in uiState.bookmarkedShopIds,
+                            isNotificationEnabled = shop.id in uiState.notificationShopIds,
+                            isHidden = shop.id in uiState.hiddenShopIds,
+                            onBookmarkClick = { onBookmarkToggled(shop) },
+                            onNotificationClick = { onShopNotificationToggled(shop) },
+                            onHiddenClick = {
+                                if (uiState.isLoggedIn && shop.id !in uiState.hiddenShopIds) {
+                                    hideConfirmShop = shop
+                                } else {
+                                    onHiddenToggled(shop)
+                                }
+                            },
+                            onReportClick = { showReportDialog = true },
+                            event = detail.event,
+                            onEventClick = onEventClick,
+                        )
+                    }
                 }
             }
+        }
 
-            if (uiState.isShopDetailLoading) {
-                RamenLoadingIndicator(modifier = Modifier.align(Alignment.Center))
+        if (uiState.isRequestedShopLoading) {
+            RamenLoadingIndicator(modifier = Modifier.align(Alignment.Center))
+        }
+
+        if (uiState.showRequestedShopFailure || uiState.showRequestedShopNotFound) {
+            CommonBottomSheet(
+                visible = true,
+                onDismissRequest = onRequestedShopDismissed,
+                isBackEnabled = isBackEnabled,
+                config = CommonBottomSheetConfig(maxHeight = detailBottomSheetMaxHeight),
+            ) {
+                val isNotFound = uiState.showRequestedShopNotFound
+                ShopLoadErrorContent(
+                    title =
+                        stringResource(
+                            if (isNotFound) {
+                                MapRes.string.map_requested_shop_not_found_title
+                            } else {
+                                MapRes.string.map_requested_shop_error_title
+                            },
+                        ),
+                    description =
+                        stringResource(
+                            if (isNotFound) {
+                                MapRes.string.map_requested_shop_not_found_description
+                            } else {
+                                MapRes.string.map_requested_shop_error_description
+                            },
+                        ),
+                    onRetry = onRequestedShopRetry,
+                    onDismiss = onRequestedShopDismissed,
+                )
             }
         }
 
@@ -317,6 +383,30 @@ fun MapContent(
                 },
             )
         }
+    }
+}
+
+@Composable
+private fun ShopLoadErrorContent(
+    title: String,
+    description: String,
+    onRetry: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    Column {
+        LoadErrorContent(
+            image = Res.drawable.laduck_error_crying,
+            title = title,
+            description = description,
+            onRetry = onRetry,
+            modifier = Modifier.fillMaxWidth(),
+            compact = true,
+        )
+        AppButton(
+            text = stringResource(MapRes.string.map_shop_load_close_action),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 12.dp),
+            onClick = onDismiss,
+        )
     }
 }
 
