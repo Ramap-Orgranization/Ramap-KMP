@@ -3,13 +3,9 @@ package com.peto.ramap.theme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.sp
-import org.jetbrains.compose.resources.Font
-import ramap.shared.generated.resources.Res
-import ramap.shared.generated.resources.satoshi_variable
 
 @Immutable
 data class AppTypography(
@@ -27,20 +23,15 @@ data class AppTypography(
     val b4: TextStyle,
     val c1: TextStyle,
     val c2: TextStyle,
+    val l1: TextStyle,
+    val l2: TextStyle,
+    val l3: TextStyle,
 )
 
 @Composable
 fun provideAppTypography(): AppTypography {
-    val satoshiFamily =
-        FontFamily(
-            Font(Res.font.satoshi_variable, FontWeight.Light),
-            Font(Res.font.satoshi_variable, FontWeight.Normal),
-            Font(Res.font.satoshi_variable, FontWeight.Medium),
-            Font(Res.font.satoshi_variable, FontWeight.SemiBold),
-            Font(Res.font.satoshi_variable, FontWeight.Bold),
-            Font(Res.font.satoshi_variable, FontWeight.ExtraBold),
-            Font(Res.font.satoshi_variable, FontWeight.Black),
-        )
+    val satoshiFamily = provideSatoshiFamily()
+    val laundryGothicFamily = provideLaundryGothicFontFamily()
 
     return AppTypography(
         h1 =
@@ -155,6 +146,30 @@ fun provideAppTypography(): AppTypography {
                 lineHeight = lineHeightPercent(11f, 150f),
                 letterSpacing = letterSpacingPercent(11f, -2.5f),
             ),
+        l1 =
+            TextStyle(
+                fontFamily = laundryGothicFamily,
+                fontWeight = FontWeight.Bold,
+                fontSize = 20.sp,
+                lineHeight = lineHeightPercent(20f, 140f),
+                letterSpacing = letterSpacingPercent(20f, -2f),
+            ),
+        l2 =
+            TextStyle(
+                fontFamily = laundryGothicFamily,
+                fontWeight = FontWeight.Normal,
+                fontSize = 16.sp,
+                lineHeight = lineHeightPercent(16f, 150f),
+                letterSpacing = letterSpacingPercent(16f, -2f),
+            ),
+        l3 =
+            TextStyle(
+                fontFamily = laundryGothicFamily,
+                fontWeight = FontWeight.Normal,
+                fontSize = 12.sp,
+                lineHeight = lineHeightPercent(12f, 150f),
+                letterSpacing = letterSpacingPercent(12f, -2.5f),
+            ),
     )
 }
 
@@ -174,6 +189,9 @@ fun AppTextStyle.toTextStyle(typography: AppTypography): TextStyle =
         AppTextStyle.B4 -> typography.b4
         AppTextStyle.C1 -> typography.c1
         AppTextStyle.C2 -> typography.c2
+        AppTextStyle.L1 -> typography.l1
+        AppTextStyle.L2 -> typography.l2
+        AppTextStyle.L3 -> typography.l3
     }
 
 private fun lineHeightPercent(
