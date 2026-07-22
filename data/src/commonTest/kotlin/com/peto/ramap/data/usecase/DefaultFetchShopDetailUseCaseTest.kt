@@ -4,6 +4,7 @@ import com.peto.ramap.core.result.RamapError
 import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.domain.usecase.ShopDetail
+import com.peto.ramap.domain.usecase.ShopDetailCacheLookup
 import com.peto.ramap.fake.FakeRamenShopRepository
 import com.peto.ramap.fake.FakeShopWaitingSystemRepository
 import com.peto.ramap.fixture.ramenShopFixture
@@ -12,7 +13,6 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
-import kotlin.test.assertNull
 
 class DefaultFetchShopDetailUseCaseTest {
     @Test
@@ -38,7 +38,8 @@ class DefaultFetchShopDetailUseCaseTest {
             assertEquals(listOf(setOf(shop.id)), ramenShopRepository.requestedShopIdsHistory)
             assertEquals(listOf(shop.id), waitingRepository.requestedShopIds)
             assertEquals(listOf(shop.id), ramenShopRepository.requestedActiveEventShopIds)
-            assertEquals(shop.id, useCase.findCached(shop.id)?.shop?.id)
+            val lookup = assertIs<ShopDetailCacheLookup.Hit>(useCase.findCached(shop.id))
+            assertEquals(shop.id, lookup.detail.shop.id)
         }
 
     @Test
@@ -62,7 +63,7 @@ class DefaultFetchShopDetailUseCaseTest {
                 listOf(setOf(shop.id), setOf(shop.id)),
                 ramenShopRepository.requestedShopIdsHistory,
             )
-            assertNull(useCase.findCached(shop.id))
+            assertIs<ShopDetailCacheLookup.Miss>(useCase.findCached(shop.id))
         }
 
     @Test

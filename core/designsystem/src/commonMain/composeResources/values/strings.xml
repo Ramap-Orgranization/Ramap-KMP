@@ -183,6 +183,8 @@
     <string name="bookmarked_shops_toggle">좋아요</string>
     <string name="current_location">내 위치</string>
     <string name="current_location_timeout_message">현재 위치를 찾지 못했어요. 잠시 후 다시 시도해 주세요.</string>
+    <string name="map_shop_detail_error_title">매장 정보를 불러오지 못했어요</string>
+    <string name="map_shop_detail_error_description">잠시 후 다시 시도해 주세요.</string>
 
     <!-- 권한 안내 -->
     <string name="location_permission_settings_action">설정</string>

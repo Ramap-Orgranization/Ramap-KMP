@@ -45,7 +45,6 @@ import com.peto.ramap.ui.main.map.contract.MapIntent.OnMyLocationChanged
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnPlaceSelected
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnQueryChanged
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnRequestedShopDismissed
-import com.peto.ramap.ui.main.map.contract.MapIntent.OnRequestedShopRetry
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnSearchResultsDismissed
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopDetailDismissed
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopDetailRetry
@@ -58,15 +57,17 @@ import com.peto.ramap.ui.main.map.contract.MapLoadKey
 import com.peto.ramap.ui.main.map.contract.MapSideEffect.ShowLoginGuide
 import com.peto.ramap.ui.main.map.contract.MapSideEffect.ShowToast
 import com.peto.ramap.ui.main.map.contract.MapUiState
-import com.peto.ramap.ui.main.map.contract.RequestedShopStatus
 import com.peto.ramap.ui.main.map.model.CameraPosition
 import com.peto.ramap.ui.main.map.model.LocationFocusStatus
+import com.peto.ramap.ui.main.map.model.ShopDetailUiState
 import com.peto.ramap.ui.main.map.search.SearchResultGuide
 import com.peto.ramap.ui.main.map.search.SearchUiModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
+import kotlinx.coroutines.withContext
 import org.jetbrains.compose.resources.StringResource
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.data_load_failure_message
@@ -317,6 +318,10 @@ class MapViewModelTest {
             viewModel.dispatch(OnShopSelected(shop))
             runCurrent()
 
+            assertEquals(
+                ShopDetailUiState.Error(shop.id, shop),
+                viewModel.uiState.value.shopDetailState,
+            )
             assertEquals(shop, viewModel.uiState.value.selectedShop)
             assertEquals(null, viewModel.uiState.value.shopDetail)
             assertEquals(true, viewModel.uiState.value.hasShopDetailLoadFailed)
@@ -326,6 +331,7 @@ class MapViewModelTest {
             viewModel.dispatch(OnShopDetailDismissed)
             runCurrent()
 
+            assertEquals(ShopDetailUiState.Closed, viewModel.uiState.value.shopDetailState)
             assertEquals(null, viewModel.uiState.value.selectedShop)
             assertEquals(false, viewModel.uiState.value.hasShopDetailLoadFailed)
             assertEquals(false, viewModel.uiState.value.showBottomSheet)
@@ -537,10 +543,12 @@ class MapViewModelTest {
         }
 
     @Test
-    fun `아이디로 매장을 해석하는 동안 전용 로딩 상태를 표시하고 성공하면 종료한다`() =
+    fun `아이디로 상세를 조회하는 동안 로딩하고 성공하면 매장 전체 상세를 선택하고 포커스한다`() =
         coroutinesTest {
             val shop = ramenShopFixture(id = "requested-shop")
+            val waitingSystem = waitingSystemFixture(shop.id)
             val delegate = FakeRamenShopRepository(fetchByIdsResult = RamenShops(mapOf(shop.id to shop)))
+            val waitingSystemRepository = FakeShopWaitingSystemRepository(result = waitingSystem)
             val repository =
                 object : RamenShopRepository by delegate {
                     override suspend fun fetchRamenShops(shopIds: Set<String>): RamapResult<RamenShops> {
@@ -548,20 +556,46 @@ class MapViewModelTest {
                         return delegate.fetchRamenShops(shopIds)
                     }
                 }
-            val viewModel = mapViewModel(ramenShopRepository = repository)
+            val viewModel =
+                mapViewModel(
+                    ramenShopRepository = repository,
+                    shopWaitingSystemRepository = waitingSystemRepository,
+                )
 
             viewModel.dispatch(OnShopIdSelected(shop.id))
             runCurrent()
 
-            assertEquals(true, viewModel.uiState.value.isRequestedShopLoading)
-            assertEquals(RequestedShopStatus.Loading, viewModel.uiState.value.requestedShopStatus)
+            assertEquals(
+                ShopDetailUiState.Loading(shop.id, shop = null),
+                viewModel.uiState.value.shopDetailState,
+            )
+            assertEquals(true, viewModel.uiState.value.isShopDetailLoading)
+            assertEquals(null, viewModel.uiState.value.selectedShop)
+            assertEquals(false, viewModel.uiState.value.hasShopDetailLoadFailed)
 
             advanceTimeBy(1_000)
             runCurrent()
 
-            assertEquals(false, viewModel.uiState.value.isRequestedShopLoading)
-            assertEquals(RequestedShopStatus.Idle, viewModel.uiState.value.requestedShopStatus)
+            assertEquals(false, viewModel.uiState.value.isShopDetailLoading)
+            assertEquals(false, viewModel.uiState.value.hasShopDetailLoadFailed)
             assertEquals(shop, viewModel.uiState.value.selectedShop)
+            assertEquals(
+                shop,
+                viewModel.uiState.value
+                    .shopDetail
+                    ?.shop,
+            )
+            assertEquals(waitingSystem, viewModel.uiState.value.shopWaiting[shop.id])
+            assertEquals(
+                listOf(shop),
+                viewModel.uiState.value
+                    .focusShops
+                    .values
+                    .toList(),
+            )
+            assertEquals(listOf(setOf(shop.id)), delegate.requestedShopIdsHistory)
+            assertEquals(listOf(shop.id), waitingSystemRepository.requestedShopIds)
+            assertEquals(listOf(shop.id), delegate.requestedActiveEventShopIds)
 
             viewModel.dispatch(OnShopDetailDismissed)
             runCurrent()
@@ -581,45 +615,51 @@ class MapViewModelTest {
             viewModel.dispatch(OnShopIdSelected(shop.id))
             runCurrent()
 
-            assertEquals(RequestedShopStatus.Failed, viewModel.uiState.value.requestedShopStatus)
-            assertEquals(true, viewModel.uiState.value.showRequestedShopFailure)
-            assertEquals(shop.id, viewModel.uiState.value.requestedShopId)
+            assertEquals(true, viewModel.uiState.value.hasShopDetailLoadFailed)
 
             repository.error = null
-            viewModel.dispatch(OnRequestedShopRetry)
+            viewModel.dispatch(OnShopDetailRetry)
             runCurrent()
 
             assertEquals(listOf(setOf(shop.id), setOf(shop.id), setOf(shop.id)), repository.requestedShopIdsHistory)
-            assertEquals(RequestedShopStatus.Idle, viewModel.uiState.value.requestedShopStatus)
+            assertEquals(false, viewModel.uiState.value.hasShopDetailLoadFailed)
             assertEquals(shop, viewModel.uiState.value.selectedShop)
         }
 
     @Test
-    fun `아이디에 해당하는 매장이 없으면 not found를 표시하고 닫으면 상태를 종료한다`() =
+    fun `아이디 매장 조회 실패 상태를 닫으면 오류 바텀시트를 종료한다`() =
         coroutinesTest {
-            val shopId = "missing-shop"
-            val viewModel = mapViewModel(ramenShopRepository = FakeRamenShopRepository())
+            val shopId = "requested-shop"
+            val viewModel =
+                mapViewModel(
+                    ramenShopRepository =
+                        FakeRamenShopRepository(
+                            error = RamapError.Unknown(IllegalStateException("failed")),
+                        ),
+                )
 
             viewModel.dispatch(OnShopIdSelected(shopId))
             runCurrent()
 
-            assertEquals(RequestedShopStatus.NotFound, viewModel.uiState.value.requestedShopStatus)
-            assertEquals(true, viewModel.uiState.value.showRequestedShopNotFound)
+            assertEquals(
+                ShopDetailUiState.Error(shopId, shop = null),
+                viewModel.uiState.value.shopDetailState,
+            )
+            assertEquals(true, viewModel.uiState.value.hasShopDetailLoadFailed)
             assertEquals(true, viewModel.uiState.value.showBottomSheet)
 
             viewModel.dispatch(OnRequestedShopDismissed)
             runCurrent()
 
-            assertEquals(RequestedShopStatus.Idle, viewModel.uiState.value.requestedShopStatus)
-            assertEquals(null, viewModel.uiState.value.requestedShopId)
+            assertEquals(ShopDetailUiState.Closed, viewModel.uiState.value.shopDetailState)
+            assertEquals(false, viewModel.uiState.value.hasShopDetailLoadFailed)
             assertEquals(false, viewModel.uiState.value.showBottomSheet)
         }
 
     @Test
-    fun `새 아이디 요청은 진행 중인 아이디 조회를 취소하고 마지막 요청 상태만 유지한다`() =
+    fun `빈 아이디 요청은 진행 중인 유효한 아이디 조회에 영향을 주지 않는다`() =
         coroutinesTest {
             val previousShop = ramenShopFixture(id = "previous-shop")
-            var didCompletePreviousRequest = false
             val delegate =
                 FakeRamenShopRepository(
                     fetchByIdsResult = RamenShops(mapOf(previousShop.id to previousShop)),
@@ -628,7 +668,6 @@ class MapViewModelTest {
                 object : RamenShopRepository by delegate {
                     override suspend fun fetchRamenShops(shopIds: Set<String>): RamapResult<RamenShops> {
                         delay(1_000)
-                        didCompletePreviousRequest = true
                         return delegate.fetchRamenShops(shopIds)
                     }
                 }
@@ -641,11 +680,96 @@ class MapViewModelTest {
             advanceTimeBy(1_000)
             runCurrent()
 
-            assertEquals(false, didCompletePreviousRequest)
-            assertEquals(false, viewModel.uiState.value.isRequestedShopLoading)
-            assertEquals(RequestedShopStatus.NotFound, viewModel.uiState.value.requestedShopStatus)
-            assertEquals("", viewModel.uiState.value.requestedShopId)
+            assertEquals(false, viewModel.uiState.value.isShopDetailLoading)
+            assertEquals(false, viewModel.uiState.value.hasShopDetailLoadFailed)
+            assertEquals(previousShop, viewModel.uiState.value.selectedShop)
+
+            viewModel.dispatch(OnShopDetailDismissed)
+            runCurrent()
+        }
+
+    @Test
+    fun `아이디 상세 조회 중 직접 선택하면 이전 workflow를 교체하고 늦은 결과를 무시한다`() =
+        coroutinesTest {
+            val requestedShop = ramenShopFixture(id = "requested-shop")
+            val selectedShop = ramenShopFixture(id = "selected-shop")
+            val delegate =
+                FakeRamenShopRepository(
+                    fetchByIdsResult =
+                        RamenShops(
+                            mapOf(
+                                requestedShop.id to requestedShop,
+                                selectedShop.id to selectedShop,
+                            ),
+                        ),
+                )
+            val repository =
+                object : RamenShopRepository by delegate {
+                    override suspend fun fetchRamenShops(shopIds: Set<String>): RamapResult<RamenShops> {
+                        if (requestedShop.id in shopIds) {
+                            withContext(NonCancellable) { delay(1_000) }
+                        }
+                        return delegate.fetchRamenShops(shopIds)
+                    }
+                }
+            val viewModel = mapViewModel(ramenShopRepository = repository)
+
+            viewModel.dispatch(OnShopIdSelected(requestedShop.id))
+            runCurrent()
+            assertEquals(true, viewModel.uiState.value.isShopDetailLoading)
+
+            viewModel.dispatch(OnShopSelected(selectedShop))
+            runCurrent()
+
+            assertEquals(selectedShop, viewModel.uiState.value.selectedShop)
+            assertEquals(
+                selectedShop,
+                viewModel.uiState.value
+                    .shopDetail
+                    ?.shop,
+            )
+
+            advanceTimeBy(1_000)
+            runCurrent()
+
+            assertEquals(selectedShop, viewModel.uiState.value.selectedShop)
+            assertEquals(
+                selectedShop,
+                viewModel.uiState.value
+                    .shopDetail
+                    ?.shop,
+            )
+            assertEquals(false, viewModel.uiState.value.hasShopDetailLoadFailed)
+            assertEquals(false, viewModel.uiState.value.isShopDetailLoading)
+        }
+
+    @Test
+    fun `아이디 상세 조회 중 닫으면 workflow와 로딩을 취소한다`() =
+        coroutinesTest {
+            val shop = ramenShopFixture(id = "requested-shop")
+            val delegate = FakeRamenShopRepository(fetchByIdsResult = RamenShops(mapOf(shop.id to shop)))
+            val repository =
+                object : RamenShopRepository by delegate {
+                    override suspend fun fetchRamenShops(shopIds: Set<String>): RamapResult<RamenShops> {
+                        delay(1_000)
+                        return delegate.fetchRamenShops(shopIds)
+                    }
+                }
+            val viewModel = mapViewModel(ramenShopRepository = repository)
+
+            viewModel.dispatch(OnShopIdSelected(shop.id))
+            runCurrent()
+            assertEquals(true, viewModel.uiState.value.isShopDetailLoading)
+
+            viewModel.dispatch(OnRequestedShopDismissed)
+            runCurrent()
+            advanceTimeBy(1_000)
+            runCurrent()
+
+            assertEquals(false, viewModel.uiState.value.isShopDetailLoading)
             assertEquals(null, viewModel.uiState.value.selectedShop)
+            assertEquals(null, viewModel.uiState.value.shopDetail)
+            assertEquals(false, viewModel.uiState.value.hasShopDetailLoadFailed)
         }
 
     @Test
@@ -1013,7 +1137,7 @@ class MapViewModelTest {
             )
         val uiState =
             MapUiState(
-                selectedShop = hiddenShop,
+                shopDetailState = ShopDetailUiState.Loading(hiddenShop.id, hiddenShop),
                 hiddenShopIds = setOf(hiddenShop.id),
                 isBookmarkedView = true,
             )
@@ -1566,7 +1690,7 @@ class MapViewModelTest {
                         input = "오레노",
                         results = RamenShops(listOf(selectedShop, otherShop).associateBy { it.id }),
                     ),
-                selectedShop = selectedShop,
+                shopDetailState = ShopDetailUiState.Loading(selectedShop.id, selectedShop),
             )
 
         assertEquals(RamenShops(listOf(selectedShop)), uiState.focusShops)

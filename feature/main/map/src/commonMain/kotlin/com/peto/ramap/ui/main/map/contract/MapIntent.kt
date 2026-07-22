@@ -35,8 +35,6 @@ sealed interface MapIntent : Intent {
         val shopId: String,
     ) : MapIntent
 
-    data object OnRequestedShopRetry : MapIntent
-
     data object OnRequestedShopDismissed : MapIntent
 
     data object OnShopDetailDismissed : MapIntent

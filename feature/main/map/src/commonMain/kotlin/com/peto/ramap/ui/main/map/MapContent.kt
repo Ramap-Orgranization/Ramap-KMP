@@ -15,13 +15,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Checkbox
-import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.TextField
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -34,7 +30,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigationevent.NavigationEventInfo
@@ -65,16 +60,11 @@ import com.peto.ramap.ui.main.map.component.PlaceSearchResultList
 import com.peto.ramap.ui.main.map.component.RamenShopDetailContent
 import com.peto.ramap.ui.main.map.component.RamenShopSearchBar
 import com.peto.ramap.ui.main.map.component.RamenShopSearchResultGuide
+import com.peto.ramap.ui.main.map.component.ShopInformationReportDialog
 import com.peto.ramap.ui.main.map.contract.MapUiState
-import com.peto.ramap.ui.main.map.generated.resources.map_requested_shop_error_description
-import com.peto.ramap.ui.main.map.generated.resources.map_requested_shop_error_title
-import com.peto.ramap.ui.main.map.generated.resources.map_requested_shop_not_found_description
-import com.peto.ramap.ui.main.map.generated.resources.map_requested_shop_not_found_title
-import com.peto.ramap.ui.main.map.generated.resources.map_shop_detail_error_description
-import com.peto.ramap.ui.main.map.generated.resources.map_shop_detail_error_title
-import com.peto.ramap.ui.main.map.generated.resources.map_shop_load_close_action
 import com.peto.ramap.ui.main.map.model.CameraPosition
 import com.peto.ramap.ui.main.map.model.RamenShopUiModel
+import com.peto.ramap.ui.main.map.model.ShopDetailUiState
 import com.peto.ramap.ui.main.map.model.WaitingSystemUiModel
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
@@ -86,13 +76,9 @@ import ramap.shared.generated.resources.hide_shop_confirm_dismiss
 import ramap.shared.generated.resources.hide_shop_confirm_title
 import ramap.shared.generated.resources.ic_kid_star
 import ramap.shared.generated.resources.laduck_error_crying
+import ramap.shared.generated.resources.map_shop_detail_error_description
+import ramap.shared.generated.resources.map_shop_detail_error_title
 import ramap.shared.generated.resources.retry_action
-import ramap.shared.generated.resources.shop_detail_link_report
-import ramap.shared.generated.resources.shop_information_report_action
-import ramap.shared.generated.resources.shop_information_report_description
-import ramap.shared.generated.resources.shop_information_report_dismiss
-import ramap.shared.generated.resources.shop_information_report_placeholder
-import com.peto.ramap.ui.main.map.generated.resources.Res as MapRes
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -108,7 +94,6 @@ fun MapContent(
     onPlaceSelected: (PlaceSearchResult) -> Unit,
     onShopDetailDismissed: () -> Unit,
     onShopDetailRetry: () -> Unit,
-    onRequestedShopRetry: () -> Unit,
     onRequestedShopDismissed: () -> Unit,
     onQueryChanged: (String) -> Unit,
     onSearchResultsDismissed: () -> Unit,
@@ -129,6 +114,7 @@ fun MapContent(
     var wasImeVisible by remember { mutableStateOf(false) }
     var hideConfirmShop by remember { mutableStateOf<RamenShop?>(null) }
     var showReportDialog by remember(selectedShop?.id) { mutableStateOf(false) }
+
     val searchResultSheetState = rememberModalBottomSheetState()
 
     val backEventState =
@@ -157,8 +143,8 @@ fun MapContent(
             onBackCompleted = {
                 when {
                     selectedShop != null -> onShopDetailDismissed()
-                    uiState.showRequestedShopFailure || uiState.showRequestedShopNotFound ->
-                        onRequestedShopDismissed()
+                    uiState.hasShopDetailLoadFailed -> onRequestedShopDismissed()
+
                     else -> onSearchResultsDismissed()
                 }
             },
@@ -258,29 +244,21 @@ fun MapContent(
             }
         }
 
-        selectedShop?.let { shop ->
+        selectedShop?.takeUnless { uiState.hasShopDetailLoadFailed }?.let { shop ->
             CommonBottomSheet(
                 visible = true,
                 onDismissRequest = onShopDetailDismissed,
                 isBackEnabled = isBackEnabled,
                 config = CommonBottomSheetConfig(maxHeight = detailBottomSheetMaxHeight),
             ) {
-                when {
-                    uiState.isShopDetailLoading ->
+                when (val detailState = uiState.shopDetailState) {
+                    is ShopDetailUiState.Loading ->
                         RamenLoadingIndicator(
                             modifier = Modifier.fillMaxWidth().heightIn(min = 240.dp),
                         )
 
-                    uiState.hasShopDetailLoadFailed ->
-                        ShopLoadErrorContent(
-                            title = stringResource(MapRes.string.map_shop_detail_error_title),
-                            description = stringResource(MapRes.string.map_shop_detail_error_description),
-                            onRetry = onShopDetailRetry,
-                            onDismiss = onShopDetailDismissed,
-                        )
-
-                    uiState.shopDetail != null -> {
-                        val detail = uiState.shopDetail
+                    is ShopDetailUiState.Content -> {
+                        val detail = detailState.detail
                         val waitingSystemUiModel =
                             WaitingSystemUiModel.from(uiState.shopWaiting[shop.id])
                         RamenShopDetailContent(
@@ -298,16 +276,20 @@ fun MapContent(
                                     onHiddenToggled(shop)
                                 }
                             },
-                            onReportClick = { showReportDialog = true },
                             event = detail.event,
                             onEventClick = onEventClick,
+                            onReportClick = { showReportDialog = true },
                         )
                     }
+
+                    ShopDetailUiState.Closed,
+                    is ShopDetailUiState.Error,
+                    -> Unit
                 }
             }
         }
 
-        if (uiState.isRequestedShopLoading) {
+        if (uiState.isShopDetailLoading && selectedShop == null) {
             RamenLoadingIndicator(modifier = Modifier.align(Alignment.Center))
         }
 
@@ -315,33 +297,23 @@ fun MapContent(
             RamenLoadingIndicator(modifier = Modifier.align(Alignment.Center))
         }
 
-        if (uiState.showRequestedShopFailure || uiState.showRequestedShopNotFound) {
+        if (uiState.hasShopDetailLoadFailed) {
+            val isSelectedShopFailure = selectedShop != null
             CommonBottomSheet(
                 visible = true,
-                onDismissRequest = onRequestedShopDismissed,
+                onDismissRequest = {
+                    if (isSelectedShopFailure) onShopDetailDismissed() else onRequestedShopDismissed()
+                },
                 isBackEnabled = isBackEnabled,
                 config = CommonBottomSheetConfig(maxHeight = detailBottomSheetMaxHeight),
             ) {
-                val isNotFound = uiState.showRequestedShopNotFound
-                ShopLoadErrorContent(
-                    title =
-                        stringResource(
-                            if (isNotFound) {
-                                MapRes.string.map_requested_shop_not_found_title
-                            } else {
-                                MapRes.string.map_requested_shop_error_title
-                            },
-                        ),
-                    description =
-                        stringResource(
-                            if (isNotFound) {
-                                MapRes.string.map_requested_shop_not_found_description
-                            } else {
-                                MapRes.string.map_requested_shop_error_description
-                            },
-                        ),
-                    onRetry = onRequestedShopRetry,
-                    onDismiss = onRequestedShopDismissed,
+                LoadErrorContent(
+                    image = Res.drawable.laduck_error_crying,
+                    title = stringResource(Res.string.map_shop_detail_error_title),
+                    description = stringResource(Res.string.map_shop_detail_error_description),
+                    onRetry = onShopDetailRetry,
+                    modifier = Modifier.fillMaxWidth(),
+                    compact = true,
                 )
             }
         }
@@ -373,13 +345,14 @@ fun MapContent(
             onDismiss = { hideConfirmShop = null },
         )
 
-        selectedShop?.takeIf { showReportDialog }?.let { shop ->
+        selectedShop?.let { shop ->
             ShopInformationReportDialog(
                 shopUiModel =
                     RamenShopUiModel(
                         shop = shop,
                         waitingVisible = WaitingSystemUiModel.from(uiState.shopWaiting[shop.id]) != null,
                     ),
+                visible = showReportDialog,
                 onDismissRequest = { showReportDialog = false },
                 onSubmit = { wrongFields, description ->
                     showReportDialog = false
@@ -387,30 +360,6 @@ fun MapContent(
                 },
             )
         }
-    }
-}
-
-@Composable
-private fun ShopLoadErrorContent(
-    title: String,
-    description: String,
-    onRetry: () -> Unit,
-    onDismiss: () -> Unit,
-) {
-    Column {
-        LoadErrorContent(
-            image = Res.drawable.laduck_error_crying,
-            title = title,
-            description = description,
-            onRetry = onRetry,
-            modifier = Modifier.fillMaxWidth(),
-            compact = true,
-        )
-        AppButton(
-            text = stringResource(MapRes.string.map_shop_load_close_action),
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 12.dp),
-            onClick = onDismiss,
-        )
     }
 }
 
@@ -433,94 +382,4 @@ private fun BookmarkedFilterButton(
                 ),
         )
     }
-}
-
-@Composable
-private fun ShopInformationReportDialog(
-    shopUiModel: RamenShopUiModel,
-    onDismissRequest: () -> Unit,
-    onSubmit: (Set<ShopInformationField>, String) -> Unit,
-) {
-    val shop = shopUiModel.shop
-    var selectedFields by remember(shop.id) { mutableStateOf(emptySet<ShopInformationField>()) }
-    var description by remember(shop.id) { mutableStateOf("") }
-    val fieldOptions = shopUiModel.reportFieldOptions
-    val canSubmit = selectedFields.isNotEmpty() || description.isNotBlank()
-
-    CommonDialog(
-        visible = true,
-        confirmText = stringResource(Res.string.shop_information_report_action),
-        dismissText = stringResource(Res.string.shop_information_report_dismiss),
-        confirmEnabled = canSubmit,
-        onDismissRequest = onDismissRequest,
-        content = {
-            AppText(
-                text = stringResource(Res.string.shop_detail_link_report),
-                style = AppTextStyle.T1,
-                color = GrayColor.C500,
-                textAlign = TextAlign.Center,
-            )
-            AppText(
-                text = stringResource(Res.string.shop_information_report_description, shop.name),
-                modifier = Modifier.padding(top = 8.dp),
-                style = AppTextStyle.B2,
-                color = GrayColor.C400,
-                textAlign = TextAlign.Center,
-            )
-            Column(
-                modifier = Modifier.padding(top = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp),
-            ) {
-                fieldOptions.forEach { option ->
-                    val isSelected = option.field in selectedFields
-                    Row(
-                        modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .toggleable(
-                                    value = isSelected,
-                                    role = Role.Checkbox,
-                                    onValueChange = { checked ->
-                                        selectedFields =
-                                            if (checked) selectedFields + option.field else selectedFields - option.field
-                                    },
-                                ),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Checkbox(
-                            checked = isSelected,
-                            onCheckedChange = null,
-                            colors =
-                                CheckboxDefaults.colors(
-                                    checkedColor = GrayColor.C500,
-                                    uncheckedColor = GrayColor.C300,
-                                    checkmarkColor = CommonColor.White,
-                                ),
-                        )
-                        AppText(
-                            text = stringResource(option.label),
-                            style = AppTextStyle.B2,
-                            color = GrayColor.C500,
-                        )
-                    }
-                }
-            }
-            TextField(
-                value = description,
-                onValueChange = { description = it },
-                modifier = Modifier.padding(top = 12.dp).fillMaxWidth(),
-                placeholder = {
-                    AppText(
-                        text = stringResource(Res.string.shop_information_report_placeholder),
-                        style = AppTextStyle.B2,
-                        color = GrayColor.C300,
-                    )
-                },
-            )
-        },
-        onConfirm = {
-            if (canSubmit) onSubmit(selectedFields, description)
-        },
-        onDismiss = onDismissRequest,
-    )
 }

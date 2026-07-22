@@ -7,9 +7,6 @@ enum class MapLoadKey : LoadKey {
     /** 검색어에 맞는 등록 매장 또는 외부 장소를 조회하는 로딩. */
     Search,
 
-    /** 외부 요청으로 전달된 매장 id를 실제 매장으로 해석하는 로딩. */
-    RequestedShop,
-
     /** 선택한 매장의 상세·웨이팅·이벤트 정보를 조회하는 로딩. */
     ShopDetail,
 }

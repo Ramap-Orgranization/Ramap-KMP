@@ -26,6 +26,7 @@ import com.peto.ramap.domain.repository.ShopReportRepository
 import com.peto.ramap.domain.store.ShopPersonalizationStore
 import com.peto.ramap.domain.usecase.FetchShopDetailUseCase
 import com.peto.ramap.domain.usecase.ShopDetail
+import com.peto.ramap.domain.usecase.ShopDetailCacheLookup
 import com.peto.ramap.ui.base.BaseViewModel
 import com.peto.ramap.ui.location.CurrentLocationStore
 import com.peto.ramap.ui.main.map.config.DefaultMapConfig
@@ -43,7 +44,6 @@ import com.peto.ramap.ui.main.map.contract.MapIntent.OnMyLocationChanged
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnPlaceSelected
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnQueryChanged
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnRequestedShopDismissed
-import com.peto.ramap.ui.main.map.contract.MapIntent.OnRequestedShopRetry
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnSearchResultsDismissed
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopDetailDismissed
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopDetailRetry
@@ -57,9 +57,9 @@ import com.peto.ramap.ui.main.map.contract.MapSideEffect
 import com.peto.ramap.ui.main.map.contract.MapSideEffect.ShowLoginGuide
 import com.peto.ramap.ui.main.map.contract.MapSideEffect.ShowToast
 import com.peto.ramap.ui.main.map.contract.MapUiState
-import com.peto.ramap.ui.main.map.contract.RequestedShopStatus
 import com.peto.ramap.ui.main.map.model.CameraPosition
 import com.peto.ramap.ui.main.map.model.LocationFocusStatus
+import com.peto.ramap.ui.main.map.model.ShopDetailUiState
 import com.peto.ramap.ui.main.map.search.MapSearchController
 import com.peto.ramap.ui.main.map.search.MapSearchResult
 import com.peto.ramap.ui.main.map.viewport.ViewportLoadResult
@@ -111,22 +111,46 @@ class MapViewModel(
     }
 
     override suspend fun handleIntent(intent: MapIntent) {
+        when {
+            handleViewportIntent(intent) -> Unit
+            handleShopIntent(intent) -> Unit
+            handleSearchIntent(intent) -> Unit
+            handlePersonalizationIntent(intent) -> Unit
+            else -> handleAccountIntent(intent)
+        }
+    }
+
+    private fun handleViewportIntent(intent: MapIntent): Boolean =
         when (intent) {
             is OnBoundsChanged -> scheduleRamenShopsLoad(intent.bounds)
             OnViewportLoadRetry -> scheduleRamenShopsLoad(currentState.bounds)
             is OnCameraPositionChanged -> updateCameraPosition(intent.position)
             is OnMyLocationChanged -> updateMyLocation(intent.location)
             OnInitialLocationFocusConsumed -> consumeInitialLocationFocus()
+            else -> return false
+        }.let { true }
+
+    private fun handleShopIntent(intent: MapIntent): Boolean =
+        when (intent) {
             is OnShopSelected -> selectShop(intent.shop, intent.shouldFocus)
             is OnShopIdSelected -> selectShop(intent.shopId)
-            OnRequestedShopRetry -> retryRequestedShopLoad()
             OnRequestedShopDismissed -> dismissRequestedShopLoad()
             is OnShopDetailDismissed -> dismissShopDetail()
             OnShopDetailRetry -> retryShopDetailLoad()
+            else -> return false
+        }.let { true }
+
+    private suspend fun handleSearchIntent(intent: MapIntent): Boolean =
+        when (intent) {
             is OnSearchResultsDismissed -> dismissSearchResults()
             is OnQueryChanged -> updateQuery(intent.query)
             is OnPlaceSelected -> selectPlace(intent.place)
             is OnCategoryFilterToggled -> toggleCategoryFilter(intent.category)
+            else -> return false
+        }.let { true }
+
+    private fun handlePersonalizationIntent(intent: MapIntent): Boolean =
+        when (intent) {
             OnBookmarkedShopsToggled -> toggleBookmarkedView()
             is OnBookmarkToggled -> toggleBookmark(intent.shop)
             is OnShopNotificationToggled -> toggleShopNotification(intent.shop)
@@ -137,8 +161,14 @@ class MapViewModel(
                     description = intent.description,
                 )
 
+            else -> return false
+        }.let { true }
+
+    private fun handleAccountIntent(intent: MapIntent) {
+        when (intent) {
             OnKakaoLoginClicked -> signInWithKakao()
             OnLocationPermissionBlocked -> showLocationPermissionBlockedToast()
+            else -> error("Unhandled map intent: $intent")
         }
     }
 
@@ -165,118 +195,93 @@ class MapViewModel(
         shop: RamenShop,
         shouldFocus: Boolean = true,
     ) {
-        cancelTask(SELECT_SHOP_TASK_KEY)
-        clearRequestedShopState()
-        selectResolvedShop(shop, shouldFocus)
+        val cache = checkCachedShopDetail(shop.id)
+        val selectedShopState = createSelectedShopState(currentState, shop, shouldFocus, cache)
+        reduce { selectedShopState }
+        if (cache == null) loadShopDetail(shop.id)
     }
 
-    private fun selectResolvedShop(
+    private fun createSelectedShopState(
+        state: MapUiState,
         shop: RamenShop,
         shouldFocus: Boolean,
-    ) {
-        val isCurrentSearchResult = shop.id in currentState.search.results
-        val shopId = shop.id
-        val cachedDetail = fetchShopDetailUseCase.findCached(shopId)
-        // 캐시를 즉시 표시할 때도 이전 상세 작업의 로딩 카운트를 먼저 정리한다.
-        if (cachedDetail != null) cancelTask(SHOP_DETAIL_TASK_KEY)
-        reduce {
-            copy(
-                selectedShop = cachedDetail?.shop?.copy(isVisible = shop.isVisible) ?: shop,
-                shouldFocusSelectedShop = shouldFocus,
-                shopDetail = cachedDetail,
-                hasShopDetailLoadFailed = false,
-                requestedShopId = null,
-                requestedShopStatus = RequestedShopStatus.Idle,
-                shopWaiting =
-                    cachedDetail?.let { shopWaiting + (shop.id to it.waitingSystem) }
-                        ?: shopWaiting,
-                search = search.consumeResultFocus(isCurrentSearchResult),
-            )
-        }
-        if (cachedDetail != null) return
+        cache: ShopDetail?,
+    ): MapUiState =
+        state.copy(
+            shopDetailState = createSelectedShopDetailState(shop, cache),
+            shouldFocusSelectedShop = shouldFocus,
+            shopWaiting = cache?.let { state.shopWaiting + (shop.id to it.waitingSystem) } ?: state.shopWaiting,
+            search = state.search.consumeResultFocus(shop.id in state.search.results),
+        )
 
-        loadShopDetail(shopId)
-    }
+    private fun createSelectedShopDetailState(
+        shop: RamenShop,
+        cache: ShopDetail?,
+    ): ShopDetailUiState =
+        cache?.let { detail ->
+            ShopDetailUiState.Content(
+                detail.copy(shop = detail.shop.copy(isVisible = shop.isVisible)),
+            )
+        } ?: ShopDetailUiState.Loading(shop.id, shop)
+
+    private fun checkCachedShopDetail(shopId: String): ShopDetail? =
+        when (val lookup = fetchShopDetailUseCase.findCached(shopId)) {
+            is ShopDetailCacheLookup.Hit -> {
+                cancelTask(SHOP_DETAIL_TASK_KEY)
+                lookup.detail
+            }
+
+            ShopDetailCacheLookup.Miss -> null
+        }
 
     private fun dismissShopDetail() {
         cancelShopDetailLoad()
         reduce {
             copy(
-                selectedShop = null,
-                shopDetail = null,
-                hasShopDetailLoadFailed = false,
+                shopDetailState = ShopDetailUiState.Closed,
             )
         }
     }
 
     private fun retryShopDetailLoad() {
-        val shopId = currentState.selectedShop?.id ?: return
-        loadShopDetail(shopId)
-    }
-
-    private fun selectShop(shopId: String) {
-        cancelTask(SELECT_SHOP_TASK_KEY)
-        cancelShopDetailLoad()
-        if (shopId.isBlank()) {
-            reduce {
-                copy(
-                    selectedShop = null,
-                    shopDetail = null,
-                    hasShopDetailLoadFailed = false,
-                    requestedShopId = shopId,
-                    requestedShopStatus = RequestedShopStatus.NotFound,
-                )
-            }
-            return
-        }
-        fetchShopDetailUseCase.findCached(shopId)?.let { detail ->
-            clearRequestedShopState()
-            selectShop(detail.shop)
-            return
-        }
-
-        launchResultTask(
-            taskKey = SELECT_SHOP_TASK_KEY,
-            loadKey = MapLoadKey.RequestedShop,
-            policy = TaskPolicy.CancelPrevious,
-            onStart = {
-                copy(
-                    selectedShop = null,
-                    shopDetail = null,
-                    hasShopDetailLoadFailed = false,
-                    requestedShopId = shopId,
-                    requestedShopStatus = RequestedShopStatus.Loading,
-                )
-            },
-            request = { ramenShopRepository.fetchRamenShops(setOf(shopId)) },
-            onSuccess = { shops ->
-                val shop = shops[shopId]
-                if (shop == null) {
-                    reduce { copy(requestedShopStatus = RequestedShopStatus.NotFound) }
-                } else {
-                    selectResolvedShop(shop, shouldFocus = true)
-                }
-            },
-            onError = { reduce { copy(requestedShopStatus = RequestedShopStatus.Failed) } },
+        val errorState = currentState.shopDetailState as? ShopDetailUiState.Error ?: return
+        loadShopDetail(
+            shopId = errorState.shopId,
+            selectShopOnSuccess = errorState.shop == null,
         )
     }
 
-    private fun retryRequestedShopLoad() {
-        val shopId = currentState.requestedShopId ?: return
-        selectShop(shopId)
+    private fun selectShop(shopId: String) {
+        if (shopId.isBlank()) return
+        when (val lookup = fetchShopDetailUseCase.findCached(shopId)) {
+            is ShopDetailCacheLookup.Hit -> {
+                cancelShopDetailLoad()
+                applyRequestedShopDetail(lookup.detail)
+                return
+            }
+
+            ShopDetailCacheLookup.Miss -> Unit
+        }
+
+        loadShopDetail(shopId, selectShopOnSuccess = true)
     }
 
     private fun dismissRequestedShopLoad() {
-        cancelTask(SELECT_SHOP_TASK_KEY)
+        cancelShopDetailLoad()
         clearRequestedShopState()
     }
 
     private fun clearRequestedShopState() {
         reduce {
-            copy(
-                requestedShopId = null,
-                requestedShopStatus = RequestedShopStatus.Idle,
-            )
+            when (val detailState = shopDetailState) {
+                is ShopDetailUiState.Loading ->
+                    if (detailState.shop == null) copy(shopDetailState = ShopDetailUiState.Closed) else this
+
+                is ShopDetailUiState.Error ->
+                    if (detailState.shop == null) copy(shopDetailState = ShopDetailUiState.Closed) else this
+
+                else -> this
+            }
         }
     }
 
@@ -311,25 +316,15 @@ class MapViewModel(
         reduce {
             copy(
                 search = search.selectPlace(place),
-                selectedShop = null,
-                hasShopDetailLoadFailed = false,
+                shopDetailState = ShopDetailUiState.Closed,
             )
         }
     }
 
     private suspend fun updateQuery(query: String) {
         val normalizedQuery = SearchQuery(query).normalizeShopSearchQuery()
-        val hasCurrentSearchResults = currentState.search.hasLoadedResultsFor(normalizedQuery)
-        val canReuseSearchResults = hasCurrentSearchResults && currentState.search.results.isNotEmpty()
-
-        cancelShopDetailLoad()
-        reduce {
-            copy(
-                search = search.updateInput(query),
-                selectedShop = null,
-                hasShopDetailLoadFailed = false,
-            )
-        }
+        val canReuseSearchResults = canReuseSearchResults(normalizedQuery)
+        updateSearchInput(query)
 
         if (normalizedQuery.value.isBlank()) {
             cancelTask(SEARCH_TASK_KEY)
@@ -356,6 +351,21 @@ class MapViewModel(
         }
     }
 
+    private fun canReuseSearchResults(query: SearchQuery): Boolean =
+        query.value.isNotBlank() &&
+            currentState.search.hasLoadedResultsFor(query) &&
+            currentState.search.results.isNotEmpty()
+
+    private fun updateSearchInput(query: String) {
+        cancelShopDetailLoad()
+        reduce {
+            copy(
+                search = search.updateInput(query),
+                shopDetailState = ShopDetailUiState.Closed,
+            )
+        }
+    }
+
     private fun toggleCategoryFilter(category: Category) {
         val currentFilter = currentState.filters
         val nextFilter =
@@ -373,25 +383,72 @@ class MapViewModel(
         val bookmarkedShopIds = personalization.bookmarkedShopIds
 
         loadPersonalizedShops(bookmarkedShopIds + hiddenShopIds)
+        applyPersonalization(personalization)
+    }
+
+    private fun applyPersonalization(personalization: ShopPersonalization) {
         reduce {
-            val selectedShopWasHidden = selectedShop?.id in this.hiddenShopIds
-            val selectedShopIsHidden = selectedShop?.id in hiddenShopIds
-            val selectedShopBecameHidden = !selectedShopWasHidden && selectedShopIsHidden
-            val selectedShopBecameVisible = selectedShopWasHidden && !selectedShopIsHidden
             copy(
-                bookmarkedShopIds = bookmarkedShopIds,
-                hiddenShopIds = hiddenShopIds,
+                bookmarkedShopIds = personalization.bookmarkedShopIds,
+                hiddenShopIds = personalization.hiddenShopIds,
                 notificationShopIds = personalization.notificationShopIds,
-                search = if (selectedShopBecameHidden) search.dismissResults() else search,
-                selectedShop =
-                    when {
-                        selectedShopBecameHidden -> null
-                        selectedShopBecameVisible -> selectedShop?.copy(isVisible = true)
-                        else -> selectedShop
-                    },
+                search = personalizedSearchState(this, personalization.hiddenShopIds),
+                shopDetailState = personalizedDetailState(this, personalization.hiddenShopIds),
             )
         }
     }
+
+    private fun personalizedSearchState(
+        state: MapUiState,
+        hiddenShopIds: Set<String>,
+    ) = if (selectedShopBecameHidden(state, hiddenShopIds)) {
+        state.search.dismissResults()
+    } else {
+        state.search
+    }
+
+    private fun personalizedDetailState(
+        state: MapUiState,
+        hiddenShopIds: Set<String>,
+    ): ShopDetailUiState {
+        val becameHidden = selectedShopBecameHidden(state, hiddenShopIds)
+        val becameVisible = selectedShopBecameVisible(state, hiddenShopIds)
+        return updatedDetailAfterPersonalization(state.shopDetailState, becameHidden, becameVisible)
+    }
+
+    private fun selectedShopBecameHidden(
+        state: MapUiState,
+        hiddenShopIds: Set<String>,
+    ): Boolean = state.selectedShop?.id !in state.hiddenShopIds && state.selectedShop?.id in hiddenShopIds
+
+    private fun selectedShopBecameVisible(
+        state: MapUiState,
+        hiddenShopIds: Set<String>,
+    ): Boolean = state.selectedShop?.id in state.hiddenShopIds && state.selectedShop?.id !in hiddenShopIds
+
+    private fun updatedDetailAfterPersonalization(
+        state: ShopDetailUiState,
+        becameHidden: Boolean,
+        becameVisible: Boolean,
+    ): ShopDetailUiState =
+        when {
+            becameHidden -> ShopDetailUiState.Closed
+            becameVisible -> detailStateWithVisibleShop(state)
+            else -> state
+        }
+
+    private fun detailStateWithVisibleShop(state: ShopDetailUiState): ShopDetailUiState =
+        when (state) {
+            ShopDetailUiState.Closed -> state
+            is ShopDetailUiState.Loading -> state.copy(shop = state.shop?.copy(isVisible = true))
+            is ShopDetailUiState.Content -> visibleContentState(state)
+            is ShopDetailUiState.Error -> state.copy(shop = state.shop?.copy(isVisible = true))
+        }
+
+    private fun visibleContentState(state: ShopDetailUiState.Content): ShopDetailUiState.Content =
+        state.copy(
+            detail = state.detail.copy(shop = state.detail.shop.copy(isVisible = true)),
+        )
 
     private suspend fun loadPersonalizedShops(shopIds: Set<String>) {
         if (shopIds.isEmpty()) return
@@ -447,11 +504,16 @@ class MapViewModel(
             taskKey = bookmarkTaskKey(shopId),
             policy = TaskPolicy.IgnoreNew,
             request = { personalizationStore.updateBookmark(shopId, enabled) },
-            onSuccess = {
-                if (!isBookmarked) loadPersonalizedShops(setOf(shopId))
-            },
+            onSuccess = { loadBookmarkedShopIfNeeded(shopId, isBookmarked) },
             onError = { showPersonalizationUpdateFailure() },
         )
+    }
+
+    private suspend fun loadBookmarkedShopIfNeeded(
+        shopId: String,
+        wasBookmarked: Boolean,
+    ) {
+        if (!wasBookmarked) loadPersonalizedShops(setOf(shopId))
     }
 
     private fun toggleHidden(shop: RamenShop) {
@@ -498,16 +560,23 @@ class MapViewModel(
             val willShowBookmarkedShops = !isBookmarkedView
             copy(
                 isBookmarkedView = willShowBookmarkedShops,
-                selectedShop =
-                    selectedShop?.takeIf { shop ->
-                        if (willShowBookmarkedShops) {
-                            shop.id in bookmarkedShopIds
-                        } else {
-                            shop.id !in hiddenShopIds
-                        }
-                    },
+                shopDetailState =
+                    shopDetailState.takeIf { shouldKeepSelectedShop(this, willShowBookmarkedShops) }
+                        ?: ShopDetailUiState.Closed,
                 search = search.showResults(),
             )
+        }
+    }
+
+    private fun shouldKeepSelectedShop(
+        state: MapUiState,
+        willShowBookmarkedShops: Boolean,
+    ): Boolean {
+        val shop = state.selectedShop ?: return true
+        return if (willShowBookmarkedShops) {
+            shop.id in state.bookmarkedShopIds
+        } else {
+            shop.id !in state.hiddenShopIds
         }
     }
 
@@ -522,22 +591,27 @@ class MapViewModel(
         wrongFields: Set<ShopInformationField>,
         description: String,
     ) {
-        val shop = currentState.selectedShop ?: return
-        if (wrongFields.isEmpty() && description.isBlank()) return
-
-        val report =
-            ShopInformationReport(
-                shopId = shop.id,
-                shopName = shop.name,
-                wrongFields = wrongFields,
-                description = description.trim(),
-            )
+        val report = createShopInformationReport(wrongFields, description) ?: return
         launchResultTask(
             taskKey = SHOP_REPORT_TASK_KEY,
             policy = TaskPolicy.IgnoreNew,
             request = { shopReportRepository.submitShopInformationReport(report) },
             onSuccess = { showShopInformationReportSuccess() },
             onError = { showShopInformationReportFailure() },
+        )
+    }
+
+    private fun createShopInformationReport(
+        wrongFields: Set<ShopInformationField>,
+        description: String,
+    ): ShopInformationReport? {
+        val shop = currentState.selectedShop ?: return null
+        if (wrongFields.isEmpty() && description.isBlank()) return null
+        return ShopInformationReport(
+            shopId = shop.id,
+            shopName = shop.name,
+            wrongFields = wrongFields,
+            description = description.trim(),
         )
     }
 
@@ -566,10 +640,10 @@ class MapViewModel(
         reduce {
             copy(
                 filters = filter,
-                selectedShop =
-                    selectedShop?.takeIf { shop ->
-                        shop.menuCategories.matches(filter)
-                    },
+                shopDetailState =
+                    shopDetailState.takeIf {
+                        selectedShop?.menuCategories?.matches(filter) ?: true
+                    } ?: ShopDetailUiState.Closed,
                 search = search.showResults(),
             )
         }
@@ -594,21 +668,23 @@ class MapViewModel(
     private suspend fun handleSearchResult(result: MapSearchResult) {
         when (result) {
             MapSearchResult.Cleared -> clearSearchResults()
-            is MapSearchResult.Loaded -> {
-                reduceSearchResult(result.query, result.shops)
-                if (result.shops.isNotEmpty()) {
-                    handleSingleSearchResult(currentState.searchResultShops.singleShopOrNull())
-                    return
-                }
-
-                handlePlaceSearchSuccess(result.places)
-            }
-
-            is MapSearchResult.Failed -> {
-                handleError(result.error)
-                showDataLoadFailure()
-            }
+            is MapSearchResult.Loaded -> handleLoadedSearchResult(result)
+            is MapSearchResult.Failed -> handleFailedSearchResult(result)
         }
+    }
+
+    private suspend fun handleLoadedSearchResult(result: MapSearchResult.Loaded) {
+        reduceSearchResult(result.query, result.shops)
+        if (result.shops.isNotEmpty()) {
+            handleSingleSearchResult(currentState.searchResultShops.singleShopOrNull())
+            return
+        }
+        handlePlaceSearchSuccess(result.places)
+    }
+
+    private fun handleFailedSearchResult(result: MapSearchResult.Failed) {
+        handleError(result.error)
+        showDataLoadFailure()
     }
 
     private fun handlePlaceSearchSuccess(results: PlaceSearchResults) {
@@ -646,19 +722,15 @@ class MapViewModel(
     }
 
     private fun showLocationPermissionBlockedToast() {
-        trySideEffect(
-            ShowToast(
-                ToastData(
-                    message = Res.string.location_permission_enable_message,
-                    type = ToastType.DEFAULT,
-                    action =
-                        ToastAction(
-                            label = Res.string.location_permission_settings_action,
-                        ),
-                ),
-            ),
-        )
+        trySideEffect(ShowToast(locationPermissionBlockedToastData()))
     }
+
+    private fun locationPermissionBlockedToastData(): ToastData =
+        ToastData(
+            message = Res.string.location_permission_enable_message,
+            type = ToastType.DEFAULT,
+            action = ToastAction(label = Res.string.location_permission_settings_action),
+        )
 
     private fun reduceSearchResult(
         query: SearchQuery,
@@ -667,32 +739,66 @@ class MapViewModel(
         reduce {
             copy(
                 search = search.updateResults(query, result),
-                selectedShop = null,
-                hasShopDetailLoadFailed = false,
+                shopDetailState = ShopDetailUiState.Closed,
             )
         }
     }
 
     /** 선택 매장이 바뀌면 이전 상세 조회를 교체하고 결과가 현재 선택 매장과 일치할 때만 반영한다. */
-    private fun loadShopDetail(shopId: String) {
+    private fun loadShopDetail(
+        shopId: String,
+        selectShopOnSuccess: Boolean = false,
+    ) {
         launchTask(
             taskKey = SHOP_DETAIL_TASK_KEY,
             loadKey = MapLoadKey.ShopDetail,
             policy = TaskPolicy.CancelPrevious,
-            onStart = { copy(hasShopDetailLoadFailed = false) },
+            onStart = { createShopDetailLoadingState(this, shopId, selectShopOnSuccess) },
         ) {
-            when (val result = fetchShopDetailUseCase(shopId)) {
-                is RamapResult.Success -> {
-                    if (currentState.selectedShop?.id != shopId) return@launchTask
-                    handleShopDetailSuccess(result.data)
-                }
-
-                is RamapResult.Error -> {
-                    if (currentState.selectedShop?.id != shopId) return@launchTask
-                    handleShopDetailFailure(result.error)
-                }
-            }
+            handleShopDetailResult(shopId, selectShopOnSuccess, fetchShopDetailUseCase(shopId))
         }
+    }
+
+    private fun createShopDetailLoadingState(
+        state: MapUiState,
+        shopId: String,
+        selectShopOnSuccess: Boolean,
+    ): MapUiState {
+        val shop = if (selectShopOnSuccess) null else state.selectedShop
+        return state.copy(shopDetailState = ShopDetailUiState.Loading(shopId, shop))
+    }
+
+    private fun handleShopDetailResult(
+        shopId: String,
+        selectShopOnSuccess: Boolean,
+        result: RamapResult<ShopDetail>,
+    ) {
+        when (result) {
+            is RamapResult.Success -> handleShopDetailLoadSuccess(shopId, selectShopOnSuccess, result.data)
+            is RamapResult.Error -> handleShopDetailLoadError(shopId, selectShopOnSuccess, result.error)
+        }
+    }
+
+    private fun handleShopDetailLoadSuccess(
+        shopId: String,
+        selectShopOnSuccess: Boolean,
+        detail: ShopDetail,
+    ) {
+        val loadingState = currentLoadingDetail(shopId, selectShopOnSuccess) ?: return
+        if (selectShopOnSuccess) {
+            applyRequestedShopDetail(detail)
+        } else {
+            handleShopDetailSuccess(detail, loadingState.shop ?: return)
+        }
+    }
+
+    private fun handleShopDetailLoadError(
+        shopId: String,
+        selectShopOnSuccess: Boolean,
+        error: RamapError,
+    ) {
+        val loadingState = currentLoadingDetail(shopId, selectShopOnSuccess) ?: return
+        handleShopDetailFailure(error, loadingState)
     }
 
     /** 상세 UI가 닫히거나 검색 상태가 바뀔 때 진행 중 상세 조회와 로딩을 함께 정리한다. */
@@ -700,27 +806,47 @@ class MapViewModel(
         cancelTask(SHOP_DETAIL_TASK_KEY)
     }
 
-    private fun handleShopDetailSuccess(detail: ShopDetail) {
-        val selectedShop = currentState.selectedShop ?: return
-
+    private fun handleShopDetailSuccess(
+        detail: ShopDetail,
+        selectedShop: RamenShop,
+    ) {
+        val selectedDetail = detail.copy(shop = detail.shop.copy(isVisible = selectedShop.isVisible))
         reduce {
             copy(
-                selectedShop = detail.shop.copy(isVisible = selectedShop.isVisible),
                 shopWaiting = shopWaiting + (selectedShop.id to detail.waitingSystem),
-                shopDetail = detail,
-                hasShopDetailLoadFailed = false,
+                shopDetailState = ShopDetailUiState.Content(selectedDetail),
             )
         }
     }
 
-    private fun handleShopDetailFailure(error: RamapError) {
-        handleError(error)
+    private fun applyRequestedShopDetail(detail: ShopDetail) {
         reduce {
             copy(
-                shopDetail = null,
-                hasShopDetailLoadFailed = true,
+                shouldFocusSelectedShop = true,
+                shopWaiting = shopWaiting + (detail.shop.id to detail.waitingSystem),
+                shopDetailState = ShopDetailUiState.Content(detail),
             )
         }
+    }
+
+    private fun handleShopDetailFailure(
+        error: RamapError,
+        loadingState: ShopDetailUiState.Loading,
+    ) {
+        handleError(error)
+        reduce {
+            copy(shopDetailState = ShopDetailUiState.Error(loadingState.shopId, loadingState.shop))
+        }
+    }
+
+    private fun currentLoadingDetail(
+        shopId: String,
+        expectsRequestedShop: Boolean,
+    ): ShopDetailUiState.Loading? {
+        val state = currentState.shopDetailState as? ShopDetailUiState.Loading ?: return null
+        if (state.shopId != shopId) return null
+        if ((state.shop == null) != expectsRequestedShop) return null
+        return state
     }
 
     private fun scheduleRamenShopsLoad(bounds: MapBounds) {
@@ -738,25 +864,25 @@ class MapViewModel(
 
     private fun handleViewportLoadResult(result: ViewportLoadResult) {
         when (result) {
-            is ViewportLoadResult.Loaded -> {
-                val mergedShops = mergeShops(result.shops)
-                reduce {
-                    if (shops == mergedShops && !hasViewportLoadFailed) {
-                        this
-                    } else {
-                        copy(
-                            shops = mergedShops,
-                            hasViewportLoadFailed = false,
-                        )
-                    }
-                }
-            }
+            is ViewportLoadResult.Loaded -> handleLoadedViewport(result)
+            is ViewportLoadResult.Failed -> handleFailedViewport(result)
+        }
+    }
 
-            is ViewportLoadResult.Failed -> {
-                handleError(result.error)
-                reduce { copy(hasViewportLoadFailed = true) }
+    private fun handleLoadedViewport(result: ViewportLoadResult.Loaded) {
+        val mergedShops = mergeShops(result.shops)
+        reduce {
+            if (shops == mergedShops && !hasViewportLoadFailed) {
+                this
+            } else {
+                copy(shops = mergedShops, hasViewportLoadFailed = false)
             }
         }
+    }
+
+    private fun handleFailedViewport(result: ViewportLoadResult.Failed) {
+        handleError(result.error)
+        reduce { copy(hasViewportLoadFailed = true) }
     }
 
     private fun mergeShops(newShops: RamenShops): RamenShops =
@@ -773,7 +899,6 @@ class MapViewModel(
     companion object {
         private const val SEARCH_TASK_KEY = "map-search"
         private const val SHOP_DETAIL_TASK_KEY = "map-shop-detail"
-        private const val SELECT_SHOP_TASK_KEY = "map-select-shop"
         private const val SHOP_REPORT_TASK_KEY = "map-shop-report"
         private const val SIGN_IN_TASK_KEY = "map-sign-in"
     }

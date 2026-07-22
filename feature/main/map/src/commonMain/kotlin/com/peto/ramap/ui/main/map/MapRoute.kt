@@ -30,7 +30,6 @@ import com.peto.ramap.ui.main.map.contract.MapIntent.OnMyLocationChanged
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnPlaceSelected
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnQueryChanged
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnRequestedShopDismissed
-import com.peto.ramap.ui.main.map.contract.MapIntent.OnRequestedShopRetry
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnSearchResultsDismissed
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopDetailDismissed
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopDetailRetry
@@ -103,8 +102,13 @@ fun MapRoute(
         onShopSelected = { shop, shouldFocus -> viewModel.dispatch(OnShopSelected(shop, shouldFocus)) },
         onPlaceSelected = { viewModel.dispatch(OnPlaceSelected(it)) },
         onShopDetailDismissed = { viewModel.dispatch(OnShopDetailDismissed) },
-        onShopDetailRetry = { viewModel.dispatch(OnShopDetailRetry) },
-        onRequestedShopRetry = { viewModel.dispatch(OnRequestedShopRetry) },
+        onShopDetailRetry = {
+            if (uiState.selectedShop != null) {
+                viewModel.dispatch(OnShopDetailRetry)
+            } else {
+                requestedShopId?.let { shopId -> viewModel.dispatch(OnShopIdSelected(shopId)) }
+            }
+        },
         onRequestedShopDismissed = { viewModel.dispatch(OnRequestedShopDismissed) },
         onQueryChanged = { viewModel.dispatch(OnQueryChanged(it)) },
         onSearchResultsDismissed = { viewModel.dispatch(OnSearchResultsDismissed) },

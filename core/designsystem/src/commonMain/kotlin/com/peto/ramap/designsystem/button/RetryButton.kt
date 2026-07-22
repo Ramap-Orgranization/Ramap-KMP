@@ -23,7 +23,6 @@ import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.ic_refresh
 import ramap.shared.generated.resources.retry_action
 
-
 @Composable
 fun RetryButton(
     onClick: () -> Unit,

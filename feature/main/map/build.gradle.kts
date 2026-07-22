@@ -5,10 +5,6 @@ plugins {
     kotlin("native.cocoapods")
 }
 
-compose.resources {
-    packageOfResClass = "com.peto.ramap.ui.main.map.generated.resources"
-}
-
 kotlin {
     sourceSets.commonTest.dependencies {
         implementation(projects.core.testing)
