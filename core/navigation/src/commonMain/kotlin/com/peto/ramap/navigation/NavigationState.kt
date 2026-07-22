@@ -13,6 +13,15 @@ class NavigationState(
     var selectedTab: TabStatus by selectedTabState
         private set
 
+    init {
+        val rankingBackStack = backStacks.getValue(TabStatus.RANKING)
+        if (selectedTab == TabStatus.RANKING && rankingBackStack.isEmpty()) {
+            rankingBackStack.add(ScreenRoutes.RankingTabRoutes)
+        } else if (selectedTab != TabStatus.RANKING) {
+            rankingBackStack.clear()
+        }
+    }
+
     val currentBackStack: NavBackStack<NavKey>
         get() = backStacks.getValue(selectedTab)
 
@@ -55,14 +64,27 @@ class NavigationState(
             return
         }
 
-        selectedTab = TabStatus.MAP
+        selectTopLevelTab(TabStatus.MAP)
     }
 
     fun selectTopLevelTab(tab: TabStatus) {
+        if (tab == selectedTab) return
+
+        if (selectedTab == TabStatus.RANKING) {
+            backStacks.getValue(TabStatus.RANKING).clear()
+        }
+        if (tab == TabStatus.RANKING) {
+            val rankingBackStack = backStacks.getValue(TabStatus.RANKING)
+            rankingBackStack.clear()
+            rankingBackStack.add(ScreenRoutes.RankingTabRoutes)
+        }
         selectedTab = tab
     }
 
     fun showMap() {
+        val mapBackStack = backStacks.getValue(TabStatus.MAP)
+        mapBackStack.clear()
+        mapBackStack.add(ScreenRoutes.TabRoutes())
         selectTopLevelTab(TabStatus.MAP)
     }
 
@@ -75,7 +97,7 @@ class NavigationState(
 
         mapBackStack.clear()
         mapBackStack.add(mapRoute)
-        selectedTab = TabStatus.MAP
+        selectTopLevelTab(TabStatus.MAP)
     }
 
     private fun showOnce(route: ScreenRoutes) {

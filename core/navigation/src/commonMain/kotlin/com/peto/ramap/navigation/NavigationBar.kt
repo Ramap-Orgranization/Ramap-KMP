@@ -31,9 +31,11 @@ import ramap.shared.generated.resources.ic_event
 import ramap.shared.generated.resources.ic_map
 import ramap.shared.generated.resources.ic_map_selected
 import ramap.shared.generated.resources.ic_person
+import ramap.shared.generated.resources.ic_ranking
 import ramap.shared.generated.resources.top_level_tab_event
 import ramap.shared.generated.resources.top_level_tab_map
 import ramap.shared.generated.resources.top_level_tab_my
+import ramap.shared.generated.resources.top_level_tab_ranking
 
 @Composable
 fun NavigationBar(
@@ -80,12 +82,14 @@ private fun TabItem(
     val icon =
         when (tab) {
             TabStatus.MAP -> if (selected) Res.drawable.ic_map_selected else Res.drawable.ic_map
+            TabStatus.RANKING -> Res.drawable.ic_ranking
             TabStatus.EVENT -> Res.drawable.ic_event
             TabStatus.MY -> Res.drawable.ic_person
         }
     val label =
         when (tab) {
             TabStatus.MAP -> stringResource(Res.string.top_level_tab_map)
+            TabStatus.RANKING -> stringResource(Res.string.top_level_tab_ranking)
             TabStatus.EVENT -> stringResource(Res.string.top_level_tab_event)
             TabStatus.MY -> stringResource(Res.string.top_level_tab_my)
         }

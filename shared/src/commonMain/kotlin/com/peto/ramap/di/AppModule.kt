@@ -7,6 +7,7 @@ import com.peto.ramap.ui.main.event.di.eventDetailModule
 import com.peto.ramap.ui.main.event.list.di.eventsModule
 import com.peto.ramap.ui.main.map.di.mapModule
 import com.peto.ramap.ui.main.my.di.settingsModule
+import com.peto.ramap.ui.main.ranking.di.rankingModule
 import com.peto.ramap.ui.notification.di.notificationSettingsModule
 import com.peto.ramap.ui.report.di.reportModule
 import com.peto.ramap.ui.subscribed.di.subscribedModule
@@ -24,6 +25,7 @@ val appModule =
             eventsModule,
             hiddenModule,
             mapModule,
+            rankingModule,
             notificationSettingsModule,
             reportModule,
             settingsModule,
