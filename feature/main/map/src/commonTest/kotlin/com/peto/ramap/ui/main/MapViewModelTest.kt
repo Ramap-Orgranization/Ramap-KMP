@@ -9,6 +9,7 @@ import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.auth.LoginSessionState
 import com.peto.ramap.domain.model.personalization.Personalization
 import com.peto.ramap.domain.model.place.PlaceSearchResult
+import com.peto.ramap.domain.model.place.PlaceSearchResultKind
 import com.peto.ramap.domain.model.place.PlaceSearchResults
 import com.peto.ramap.domain.model.report.ShopInformationField
 import com.peto.ramap.domain.model.report.ShopInformationReport
@@ -2224,30 +2225,123 @@ class MapViewModelTest {
         }
 
     @Test
-    fun `매장 검색 결과가 없고 장소가 하나면 장소 위치로 포커스를 요청한다`() =
+    fun `매장과 검증된 장소 검색 결과가 없으면 빈 결과를 표시한다`() =
         coroutinesTest {
-            val place = placeFixture()
-            val center = Location(lat = 37.4, lng = 127.1)
+            val ramenShopRepository = FakeRamenShopRepository()
+            val chickenPlace = placeFixture(name = "테스트 치킨")
+            val viewModel =
+                mapViewModel(
+                    ramenShopRepository = ramenShopRepository,
+                    placeSearchRepository =
+                        FakePlaceSearchRepository(
+                            results = PlaceSearchResults(listOf(chickenPlace)),
+                        ),
+                )
+
+            viewModel.dispatch(OnQueryChanged("치킨"))
+            advanceTimeBy(300)
+            runCurrent()
+
+            assertEquals(
+                listOf(SearchQuery("치킨")),
+                ramenShopRepository.requestedSearchQueries,
+            )
+            assertEquals(RamenShops(emptyMap()), viewModel.uiState.value.searchResultShops)
+            assertEquals(SearchResultGuide.SEARCH_EMPTY, viewModel.uiState.value.searchResultGuide)
+            assertEquals(false, viewModel.uiState.value.showSearchResults)
+            assertEquals(null, viewModel.uiState.value.placeFocusLocation)
+        }
+
+    @Test
+    fun `지역과 사업장이 섞인 검색어는 외부 사업장을 지도 위치로 허용하지 않는다`() =
+        coroutinesTest {
+            val viewModel =
+                mapViewModel(
+                    placeSearchRepository =
+                        FakePlaceSearchRepository(
+                            results = PlaceSearchResults(listOf(placeFixture(name = "강남역 치킨"))),
+                        ),
+                )
+
+            viewModel.dispatch(OnQueryChanged("강남역 치킨"))
+            advanceTimeBy(300)
+            runCurrent()
+
+            assertEquals(SearchResultGuide.SEARCH_EMPTY, viewModel.uiState.value.searchResultGuide)
+            assertEquals(null, viewModel.uiState.value.placeFocusLocation)
+        }
+
+    @Test
+    fun `서버가 등록 매장으로 검증한 결과는 매장 상세 흐름으로 연결한다`() =
+        coroutinesTest {
+            val shop = ramenShopFixture(id = "shop-1", name = "멘야 테스트")
+            val registeredPlace =
+                placeFixture(
+                    name = shop.name,
+                    kind = PlaceSearchResultKind.REGISTERED_SHOP,
+                    shopId = shop.id,
+                )
+            val viewModel =
+                mapViewModel(
+                    ramenShopRepository =
+                        FakeRamenShopRepository(
+                            fetchByIdsResult = RamenShops(listOf(shop)),
+                        ),
+                    placeSearchRepository =
+                        FakePlaceSearchRepository(
+                            results = PlaceSearchResults(listOf(registeredPlace)),
+                        ),
+                )
+
+            viewModel.dispatch(OnQueryChanged("라멘"))
+            advanceTimeBy(300)
+            runCurrent()
+
+            assertEquals(shop, viewModel.uiState.value.selectedShop)
+            assertEquals(null, viewModel.uiState.value.placeFocusLocation)
+        }
+
+    @Test
+    fun `매장 검색 결과가 없고 지도 위치가 하나면 해당 위치로 포커스를 요청한다`() =
+        coroutinesTest {
+            val location = Location(37.432, 127.129)
+            val center = Location(37.4, 127.1)
+            val place =
+                PlaceSearchResult(
+                    name = "모란역",
+                    address = "경기도 성남시 중원구 성남동",
+                    location = location,
+                    kind = PlaceSearchResultKind.MAP_LOCATION,
+                )
             val placeSearchRepository = FakePlaceSearchRepository(results = PlaceSearchResults(listOf(place)))
             val viewModel = mapViewModel(placeSearchRepository = placeSearchRepository)
             viewModel.dispatch(OnCameraPositionChanged(CameraPosition(center, zoom = 13.0)))
 
-            viewModel.dispatch(OnQueryChanged("지역 라멘"))
+            viewModel.dispatch(OnQueryChanged("모란역"))
             advanceTimeBy(300)
             runCurrent()
 
-            assertEquals(listOf(SearchQuery("지역 라멘") to center), placeSearchRepository.requests)
-            assertEquals(place.location, viewModel.uiState.value.placeFocusLocation)
+            assertEquals(listOf(SearchQuery("모란역") to center), placeSearchRepository.requests)
+            assertEquals(location, viewModel.uiState.value.placeFocusLocation)
             assertEquals(1L, viewModel.uiState.value.placeFocusRequestKey)
             assertEquals(PlaceSearchResults(emptyList()), viewModel.uiState.value.placeSearchResults)
-            assertEquals("지역 라멘", viewModel.uiState.value.search.input)
         }
 
     @Test
-    fun `여러 장소 결과는 현재 카메라 중심에서 가까운 순서로 노출한다`() =
+    fun `여러 지도 위치 결과는 현재 카메라 중심에서 가까운 순서로 노출한다`() =
         coroutinesTest {
-            val farPlace = placeFixture(name = "먼 곳", location = Location(37.8, 127.4))
-            val nearPlace = placeFixture(name = "가까운 곳", location = Location(37.501, 127.001))
+            val farPlace =
+                placeFixture(
+                    name = "먼 곳",
+                    location = Location(37.8, 127.4),
+                    kind = PlaceSearchResultKind.MAP_LOCATION,
+                )
+            val nearPlace =
+                placeFixture(
+                    name = "가까운 곳",
+                    location = Location(37.501, 127.001),
+                    kind = PlaceSearchResultKind.MAP_LOCATION,
+                )
             val viewModel =
                 mapViewModel(
                     placeSearchRepository =
@@ -2371,11 +2465,15 @@ private fun loadedSearchUiModel(
 private fun placeFixture(
     name: String = "지역 라멘",
     location: Location = Location(37.5, 127.0),
+    kind: PlaceSearchResultKind = PlaceSearchResultKind.UNCLASSIFIED,
+    shopId: String? = null,
 ): PlaceSearchResult =
     PlaceSearchResult(
         name = name,
         address = "서울시 테스트로 1",
         location = location,
+        kind = kind,
+        shopId = shopId,
     )
 
 private fun showToastSideEffect(message: StringResource): ShowToast =
