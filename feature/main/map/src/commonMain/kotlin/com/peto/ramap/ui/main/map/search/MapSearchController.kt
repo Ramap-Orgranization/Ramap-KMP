@@ -10,7 +10,6 @@ import com.peto.ramap.domain.model.shop.SearchQuery
 import com.peto.ramap.domain.repository.PlaceSearchRepository
 import com.peto.ramap.domain.repository.RamenShopRepository
 import kotlinx.coroutines.currentCoroutineContext
-import kotlinx.coroutines.ensureActive
 
 /**
  * 지도 검색 요청의 실행 순서를 관리하고, 장소 검색 폴백 여부와 최신 요청 결과 반영을 조정한다.
@@ -58,7 +57,6 @@ class MapSearchController(
         center: Location,
     ): MapSearchResult {
         val shopResult = ramenShopRepository.searchRamenShops(query, SEARCH_RESULT_LIMIT)
-        currentCoroutineContext().ensureActive()
 
         return when (shopResult) {
             is RamapResult.Success -> {
@@ -91,7 +89,6 @@ class MapSearchController(
         shops: RamenShops,
     ): MapSearchResult {
         val placeResult = placeSearchRepository.search(query, center)
-        currentCoroutineContext().ensureActive()
 
         return when (placeResult) {
             is RamapResult.Success -> {
@@ -171,7 +168,6 @@ class MapSearchController(
         if (shopIds.isEmpty()) return RamapResult.Success(RamenShops(emptyMap()))
 
         val result = ramenShopRepository.fetchRamenShops(shopIds)
-        currentCoroutineContext().ensureActive()
         return result
     }
 
