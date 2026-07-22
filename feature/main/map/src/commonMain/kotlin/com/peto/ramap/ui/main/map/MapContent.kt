@@ -311,6 +311,10 @@ fun MapContent(
             RamenLoadingIndicator(modifier = Modifier.align(Alignment.Center))
         }
 
+        if (uiState.isSearchLoading) {
+            RamenLoadingIndicator(modifier = Modifier.align(Alignment.Center))
+        }
+
         if (uiState.showRequestedShopFailure || uiState.showRequestedShopNotFound) {
             CommonBottomSheet(
                 visible = true,

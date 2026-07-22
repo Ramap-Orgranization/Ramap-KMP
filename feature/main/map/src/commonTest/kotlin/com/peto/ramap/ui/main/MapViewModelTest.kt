@@ -54,6 +54,7 @@ import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopNotificationToggled
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopReportSubmitted
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopSelected
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnViewportLoadRetry
+import com.peto.ramap.ui.main.map.contract.MapLoadKey
 import com.peto.ramap.ui.main.map.contract.MapSideEffect.ShowLoginGuide
 import com.peto.ramap.ui.main.map.contract.MapSideEffect.ShowToast
 import com.peto.ramap.ui.main.map.contract.MapUiState
@@ -1121,6 +1122,69 @@ class MapViewModelTest {
         }
 
     @Test
+    fun `검색 중에는 로딩 상태를 표시하고 검색이 끝나면 해제한다`() =
+        coroutinesTest {
+            val viewModel =
+                mapViewModel(
+                    placeSearchRepository =
+                        FakePlaceSearchRepository(
+                            results = PlaceSearchResults(emptyList()),
+                            delayMillis = 1_000,
+                        ),
+                )
+
+            viewModel.dispatch(OnQueryChanged("라멘"))
+            runCurrent()
+
+            assertEquals(true, viewModel.uiState.value.isSearchLoading)
+            assertEquals(
+                true,
+                viewModel.uiState.value.loadState
+                    .isLoading(MapLoadKey.Search),
+            )
+
+            advanceTimeBy(1_000)
+            runCurrent()
+
+            assertEquals(false, viewModel.uiState.value.isSearchLoading)
+            assertEquals(
+                false,
+                viewModel.uiState.value.loadState
+                    .isLoading(MapLoadKey.Search),
+            )
+        }
+
+    @Test
+    fun `검색 중 새 검색어를 입력하면 이전 결과를 무시하고 검색 로딩을 유지한다`() =
+        coroutinesTest {
+            val placeSearchRepository =
+                FakePlaceSearchRepository(
+                    results = PlaceSearchResults(listOf(placeFixture())),
+                    delayMillis = 1_000,
+                )
+            val viewModel = mapViewModel(placeSearchRepository = placeSearchRepository)
+
+            viewModel.dispatch(OnQueryChanged("이전 검색"))
+            runCurrent()
+            advanceTimeBy(500)
+
+            viewModel.dispatch(OnQueryChanged("새 검색"))
+            runCurrent()
+            advanceTimeBy(500)
+            runCurrent()
+
+            assertEquals("새 검색", viewModel.uiState.value.search.input)
+            assertEquals(PlaceSearchResults(emptyList()), viewModel.uiState.value.placeSearchResults)
+            assertEquals(true, viewModel.uiState.value.isSearchLoading)
+
+            advanceTimeBy(500)
+            runCurrent()
+
+            assertEquals(false, viewModel.uiState.value.isSearchLoading)
+            assertEquals(listOf(SearchQuery("이전 검색"), SearchQuery("새 검색")), placeSearchRepository.requests.map { it.first })
+        }
+
+    @Test
     fun `검색 결과 바텀시트를 닫아도 검색어와 검색 결과는 유지한다`() =
         coroutinesTest {
             val searchShops =
@@ -2103,8 +2167,12 @@ class MapViewModelTest {
             viewModel.dispatch(OnQueryChanged("라멘"))
             advanceTimeBy(300)
             runCurrent()
+            assertEquals(true, viewModel.uiState.value.isSearchLoading)
+
             viewModel.dispatch(OnQueryChanged(""))
             runCurrent()
+            assertEquals(false, viewModel.uiState.value.isSearchLoading)
+
             advanceTimeBy(1_000)
             runCurrent()
 
