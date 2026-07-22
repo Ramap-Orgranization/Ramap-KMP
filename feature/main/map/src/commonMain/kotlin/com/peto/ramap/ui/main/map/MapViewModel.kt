@@ -95,7 +95,6 @@ class MapViewModel(
         MapSearchController(
             ramenShopRepository = ramenShopRepository,
             placeSearchRepository = placeSearchRepository,
-            coroutineScope = viewModelScope,
         )
     private val viewportShopLoader = ViewportShopLoader(ramenShopRepository, viewModelScope)
 
@@ -321,6 +320,7 @@ class MapViewModel(
     private suspend fun updateQuery(query: String) {
         val normalizedQuery = SearchQuery(query).normalizeShopSearchQuery()
         val hasCurrentSearchResults = currentState.search.hasLoadedResultsFor(normalizedQuery)
+        val canReuseSearchResults = hasCurrentSearchResults && currentState.search.results.isNotEmpty()
 
         cancelShopDetailLoad()
         reduce {
@@ -331,12 +331,14 @@ class MapViewModel(
             )
         }
 
-        if (
-            normalizedQuery.value.isNotBlank() &&
-            hasCurrentSearchResults &&
-            currentState.search.results.isNotEmpty()
-        ) {
-            searchController.cancel()
+        if (normalizedQuery.value.isBlank()) {
+            cancelTask(SEARCH_TASK_KEY)
+            clearSearchResults()
+            return
+        }
+
+        if (canReuseSearchResults) {
+            cancelTask(SEARCH_TASK_KEY)
             handleSingleSearchResult(currentState.searchResultShops.singleShopOrNull())
             return
         }
@@ -344,7 +346,14 @@ class MapViewModel(
         val searchCenter =
             currentState.cameraPosition?.center
                 ?: Location(DefaultMapConfig.LATITUDE, DefaultMapConfig.LONGITUDE)
-        searchController.search(normalizedQuery, searchCenter, ::handleSearchResult)
+        launchTask(
+            taskKey = SEARCH_TASK_KEY,
+            loadKey = MapLoadKey.Search,
+            policy = TaskPolicy.CancelPrevious,
+        ) {
+            val result = searchController.search(normalizedQuery, searchCenter)
+            handleSearchResult(result)
+        }
     }
 
     private fun toggleCategoryFilter(category: Category) {
@@ -762,6 +771,7 @@ class MapViewModel(
     private fun hiddenShopTaskKey(shopId: String): String = "map-hidden-shop:$shopId"
 
     companion object {
+        private const val SEARCH_TASK_KEY = "map-search"
         private const val SHOP_DETAIL_TASK_KEY = "map-shop-detail"
         private const val SELECT_SHOP_TASK_KEY = "map-select-shop"
         private const val SHOP_REPORT_TASK_KEY = "map-shop-report"

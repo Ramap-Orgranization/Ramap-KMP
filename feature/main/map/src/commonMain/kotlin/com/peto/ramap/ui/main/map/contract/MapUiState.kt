@@ -88,6 +88,9 @@ data class MapUiState(
     val isRequestedShopLoading: Boolean
         get() = loadState.isLoading(MapLoadKey.RequestedShop)
 
+    val isSearchLoading: Boolean
+        get() = loadState.isLoading(MapLoadKey.Search)
+
     val showRequestedShopFailure: Boolean
         get() = requestedShopStatus == RequestedShopStatus.Failed
 

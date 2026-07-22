@@ -4,6 +4,9 @@ import com.peto.ramap.ui.loading.LoadKey
 
 /** 지도 화면에서 부분 UI로 표시하는 로딩 종류. */
 enum class MapLoadKey : LoadKey {
+    /** 검색어에 맞는 등록 매장 또는 외부 장소를 조회하는 로딩. */
+    Search,
+
     /** 외부 요청으로 전달된 매장 id를 실제 매장으로 해석하는 로딩. */
     RequestedShop,
 
