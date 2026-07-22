@@ -22,6 +22,7 @@ fun CategoryFilterChip(
     selected: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    style: AppTextStyle = AppTextStyle.C2,
 ) {
     Surface(
         modifier = modifier,
@@ -33,7 +34,7 @@ fun CategoryFilterChip(
         AppText(
             text = label,
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-            style = AppTextStyle.L3,
+            style = style,
             color = if (selected) CommonColor.White else GrayColor.C400,
         )
     }

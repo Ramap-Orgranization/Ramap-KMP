@@ -28,7 +28,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
-import com.peto.ramap.designsystem.component.MenuCategoryChip
+import com.peto.ramap.designsystem.component.CategoryFilterChip
 import com.peto.ramap.designsystem.image.RemoteShopImage
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.domain.model.event.ShopEvent
@@ -159,7 +159,11 @@ fun RamenShopDetailContent(
                     verticalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
                     shop.menuCategories.forEach { category ->
-                        MenuCategoryChip(label = stringResource(category.stringResource))
+                        CategoryFilterChip(
+                            label = stringResource(category.stringResource),
+                            selected = false,
+                            onClick = {},
+                        )
                     }
                 }
             }

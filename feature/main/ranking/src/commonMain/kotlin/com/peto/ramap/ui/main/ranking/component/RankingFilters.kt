@@ -18,6 +18,7 @@ import com.peto.ramap.designsystem.component.CategoryFilterChip
 import com.peto.ramap.domain.model.shop.AdministrativeArea
 import com.peto.ramap.domain.model.shop.AreaFilter
 import com.peto.ramap.domain.model.shop.Category
+import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.RamapTheme
 import com.peto.ramap.ui.extension.stringResource
@@ -64,6 +65,7 @@ internal fun RankingFilters(
                 label = stringResource(Res.string.ranking_all_categories),
                 selected = uiState.selectedCategories.isEmpty(),
                 onClick = onAllCategoriesSelected,
+                style = AppTextStyle.L3,
             )
         }
         items(Category.entries) { category ->
@@ -71,6 +73,7 @@ internal fun RankingFilters(
                 label = stringResource(category.stringResource),
                 selected = category in uiState.selectedCategories,
                 onClick = { onCategoryToggled(category) },
+                style = AppTextStyle.L3,
             )
         }
     }

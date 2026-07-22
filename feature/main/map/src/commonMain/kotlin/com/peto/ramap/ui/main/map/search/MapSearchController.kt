@@ -9,7 +9,6 @@ import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.domain.model.shop.SearchQuery
 import com.peto.ramap.domain.repository.PlaceSearchRepository
 import com.peto.ramap.domain.repository.RamenShopRepository
-import kotlinx.coroutines.currentCoroutineContext
 
 /**
  * 지도 검색 요청의 실행 순서를 관리하고, 장소 검색 폴백 여부와 최신 요청 결과 반영을 조정한다.

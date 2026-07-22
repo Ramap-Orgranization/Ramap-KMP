@@ -238,6 +238,7 @@ fun MapContent(
                                 shops = uiState.searchResultShops,
                                 categoryLabel = { category -> stringResource(category.stringResource) },
                                 onShopClick = { onShopSelected(it, true) },
+                                modifier = Modifier.padding(start = 10.dp),
                             )
                     }
                 }
