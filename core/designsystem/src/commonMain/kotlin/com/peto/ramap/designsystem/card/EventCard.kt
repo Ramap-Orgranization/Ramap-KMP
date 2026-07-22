@@ -67,7 +67,7 @@ fun EventCard(
                 )
                 AppText(
                     text = event.venueShopName,
-                    style = AppTextStyle.B2,
+                    style = AppTextStyle.B1,
                     color = GrayColor.C400,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
