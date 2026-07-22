@@ -623,7 +623,7 @@ class MapViewModel(
         showToast(Res.string.data_load_failure_message, ToastType.ERROR)
     }
 
-    private suspend fun handleSingleSearchResult(shop: RamenShop?) {
+    private fun handleSingleSearchResult(shop: RamenShop?) {
         when {
             shop == null -> Unit
             shop.isVisible -> selectShop(shop)
