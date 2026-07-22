@@ -167,6 +167,7 @@ private fun BookmarkedShopListContent(
                         .padding(horizontal = 24.dp, vertical = 6.dp)
                         .border(1.dp, GrayColor.C200, RoundedCornerShape(16.dp))
                 },
+                showDividers = false,
             )
         }
 

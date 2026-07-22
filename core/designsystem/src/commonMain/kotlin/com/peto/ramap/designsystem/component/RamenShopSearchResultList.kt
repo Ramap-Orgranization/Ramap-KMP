@@ -33,6 +33,7 @@ fun RamenShopSearchResultList(
     categoryLabel: @Composable (Category) -> String,
     modifier: Modifier = Modifier,
     itemModifier: (RamenShop) -> Modifier = { Modifier },
+    showDividers: Boolean = true,
 ) {
     Column(
         modifier =
@@ -41,7 +42,7 @@ fun RamenShopSearchResultList(
                 .padding(bottom = 24.dp),
     ) {
         shops.values.forEachIndexed { index, shop ->
-            if (index > 0) {
+            if (showDividers && index > 0) {
                 HorizontalDivider(thickness = 1.dp, color = GrayColor.C100)
             }
             RamenShopSearchResultItem(
