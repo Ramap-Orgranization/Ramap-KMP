@@ -13,6 +13,9 @@ sealed interface ScreenRoutes : NavKey {
     data object EventTabRoutes : ScreenRoutes
 
     @Serializable
+    data object RankingTabRoutes : ScreenRoutes
+
+    @Serializable
     data object MyTabRoutes : ScreenRoutes
 
     @Serializable

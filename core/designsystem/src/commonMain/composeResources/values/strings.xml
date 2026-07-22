@@ -199,6 +199,54 @@
 
     <!-- 최상위 탭 -->
     <string name="top_level_tab_map">지도</string>
+    <string name="top_level_tab_ranking">랭킹</string>
     <string name="top_level_tab_event">이벤트</string>
     <string name="top_level_tab_my">설정</string>
+
+    <!-- 매장 랭킹 화면 -->
+    <string name="ranking_title">매장 랭킹</string>
+    <string name="ranking_region_filter">지역</string>
+    <string name="ranking_all_regions">전국</string>
+    <string name="ranking_all_categories">전체</string>
+    <string name="ranking_empty_title">아직 좋아요가 모이지 않았어요</string>
+    <string name="ranking_empty_description">마음에 드는 매장에 좋아요를 남겨 첫 순위를 만들어 주세요.</string>
+    <string name="ranking_empty_action">지도에서 매장 찾기</string>
+    <string name="ranking_error_title">매장 랭킹을 불러오지 못했어요</string>
+    <string name="ranking_error_description">잠시 후 다시 시도해 주세요.</string>
+    <string name="ranking_refresh_failure_message">매장 랭킹을 새로고침하지 못했어요</string>
+    <string name="ranking_bookmark_cancel_action">좋아요 취소</string>
+    <string name="ranking_area_seoul_short">서울</string>
+    <string name="ranking_area_busan_short">부산</string>
+    <string name="ranking_area_daegu_short">대구</string>
+    <string name="ranking_area_incheon_short">인천</string>
+    <string name="ranking_area_gwangju_short">광주</string>
+    <string name="ranking_area_daejeon_short">대전</string>
+    <string name="ranking_area_ulsan_short">울산</string>
+    <string name="ranking_area_sejong_short">세종</string>
+    <string name="ranking_area_gyeonggi_short">경기</string>
+    <string name="ranking_area_chungbuk_short">충북</string>
+    <string name="ranking_area_chungnam_short">충남</string>
+    <string name="ranking_area_jeonnam_short">전남</string>
+    <string name="ranking_area_gyeongbuk_short">경북</string>
+    <string name="ranking_area_gyeongnam_short">경남</string>
+    <string name="ranking_area_gangwon_short">강원</string>
+    <string name="ranking_area_jeonbuk_short">전북</string>
+    <string name="ranking_area_jeju_short">제주</string>
+    <string name="ranking_area_seoul">서울특별시</string>
+    <string name="ranking_area_busan">부산광역시</string>
+    <string name="ranking_area_daegu">대구광역시</string>
+    <string name="ranking_area_incheon">인천광역시</string>
+    <string name="ranking_area_gwangju">광주광역시</string>
+    <string name="ranking_area_daejeon">대전광역시</string>
+    <string name="ranking_area_ulsan">울산광역시</string>
+    <string name="ranking_area_sejong">세종특별자치시</string>
+    <string name="ranking_area_gyeonggi">경기도</string>
+    <string name="ranking_area_chungbuk">충청북도</string>
+    <string name="ranking_area_chungnam">충청남도</string>
+    <string name="ranking_area_jeonnam">전라남도</string>
+    <string name="ranking_area_gyeongbuk">경상북도</string>
+    <string name="ranking_area_gyeongnam">경상남도</string>
+    <string name="ranking_area_gangwon">강원특별자치도</string>
+    <string name="ranking_area_jeonbuk">전북특별자치도</string>
+    <string name="ranking_area_jeju">제주특별자치도</string>
 </resources>

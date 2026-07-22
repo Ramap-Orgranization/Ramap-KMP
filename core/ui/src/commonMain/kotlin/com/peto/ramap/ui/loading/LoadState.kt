@@ -43,4 +43,9 @@ data class LoadState internal constructor(
             }
         return copy(value = nextCounts)
     }
+
+    companion object {
+        /** [key]에 해당하는 작업 하나가 활성 상태인 로딩 상태를 만든다. */
+        fun loading(key: LoadKey): LoadState = LoadState(mapOf(key to 1))
+    }
 }

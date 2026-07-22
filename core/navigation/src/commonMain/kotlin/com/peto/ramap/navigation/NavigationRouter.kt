@@ -21,6 +21,7 @@ import com.peto.ramap.theme.CommonColor
 fun NavigationRouter(
     navigationState: NavigationState,
     mapScreen: @Composable (ScreenRoutes.TabRoutes) -> Unit,
+    rankingScreen: @Composable () -> Unit,
     eventListScreen: @Composable () -> Unit,
     myScreen: @Composable () -> Unit,
     accountSettingsScreen: @Composable () -> Unit,
@@ -46,6 +47,13 @@ fun NavigationRouter(
                     selectedTab = TabStatus.EVENT,
                     onTabSelected = navigationState::selectTopLevelTab,
                     content = eventListScreen,
+                )
+            }
+            entry<ScreenRoutes.RankingTabRoutes> {
+                BottonNavigationTabScreen(
+                    selectedTab = TabStatus.RANKING,
+                    onTabSelected = navigationState::selectTopLevelTab,
+                    content = rankingScreen,
                 )
             }
             entry<ScreenRoutes.MyTabRoutes> {

@@ -21,6 +21,7 @@ import com.peto.ramap.ui.main.event.EventDetailRoute
 import com.peto.ramap.ui.main.event.list.EventsRoute
 import com.peto.ramap.ui.main.map.MapRoute
 import com.peto.ramap.ui.main.my.MyTabRoute
+import com.peto.ramap.ui.main.ranking.RankingRoute
 import com.peto.ramap.ui.notification.NotificationSettingsRoute
 import com.peto.ramap.ui.report.PlaceReportRoute
 import com.peto.ramap.ui.subscribed.SubscribedShopListRoute
@@ -55,6 +56,12 @@ fun AppRoute(
             MapRoute(
                 onEventNavigate = { navigationState.showEvent(it.id) },
                 requestedShopId = route.shopId,
+            )
+        },
+        rankingScreen = {
+            RankingRoute(
+                onShopClick = navigationState::showShopOnMap,
+                onFindShopClick = navigationState::showMap,
             )
         },
         myScreen = {

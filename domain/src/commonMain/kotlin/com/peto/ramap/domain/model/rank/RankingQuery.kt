@@ -9,12 +9,7 @@ data class RankingQuery(
     val cursor: RankingCursor? = null,
     val limit: Int = DEFAULT_PAGE_SIZE,
 ) {
-    init {
-        require(limit in 1..MAX_PAGE_SIZE)
-    }
-
     companion object {
-        private const val DEFAULT_PAGE_SIZE = 20
-        private const val MAX_PAGE_SIZE = 50
+        private const val DEFAULT_PAGE_SIZE = 10
     }
 }

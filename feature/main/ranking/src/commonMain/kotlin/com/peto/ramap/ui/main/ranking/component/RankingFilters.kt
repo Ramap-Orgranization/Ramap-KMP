@@ -1,0 +1,102 @@
+package com.peto.ramap.ui.main.ranking.component
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import com.peto.ramap.designsystem.component.CategoryFilterChip
+import com.peto.ramap.domain.model.shop.AdministrativeArea
+import com.peto.ramap.domain.model.shop.AreaFilter
+import com.peto.ramap.domain.model.shop.Category
+import com.peto.ramap.theme.GrayColor
+import com.peto.ramap.theme.RamapTheme
+import com.peto.ramap.ui.extension.stringResource
+import com.peto.ramap.ui.main.ranking.contract.RankingUiState
+import com.peto.ramap.ui.main.ranking.model.AdministrativeAreaUiModel
+import org.jetbrains.compose.resources.stringResource
+import ramap.shared.generated.resources.Res
+import ramap.shared.generated.resources.ranking_all_categories
+import ramap.shared.generated.resources.ranking_all_regions
+
+@Composable
+internal fun RankingFilters(
+    uiState: RankingUiState,
+    onAreaClick: () -> Unit,
+    onCategoryToggled: (Category) -> Unit,
+    onAllCategoriesSelected: () -> Unit,
+) {
+    LazyRow(
+        modifier =
+            Modifier
+                .height(40.dp)
+                .fillMaxWidth()
+                .padding(horizontal = 10.dp),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        item {
+            AreaFilterChip(
+                label = areaFilterLabel(uiState.areaFilter),
+                onClick = onAreaClick,
+            )
+        }
+        item {
+            Box(
+                modifier =
+                    Modifier
+                        .padding(vertical = 8.dp)
+                        .width(0.5.dp)
+                        .fillMaxHeight()
+                        .background(GrayColor.C100),
+            )
+        }
+        item {
+            CategoryFilterChip(
+                label = stringResource(Res.string.ranking_all_categories),
+                selected = uiState.selectedCategories.isEmpty(),
+                onClick = onAllCategoriesSelected,
+            )
+        }
+        items(Category.entries) { category ->
+            CategoryFilterChip(
+                label = stringResource(category.stringResource),
+                selected = category in uiState.selectedCategories,
+                onClick = { onCategoryToggled(category) },
+            )
+        }
+    }
+}
+
+@Composable
+private fun areaFilterLabel(areaFilter: AreaFilter): String =
+    when (areaFilter) {
+        AreaFilter.Nationwide -> stringResource(Res.string.ranking_all_regions)
+        is AreaFilter.Selected ->
+            stringResource(AdministrativeAreaUiModel.from(areaFilter.area).shortNameResource)
+    }
+
+@Preview(showBackground = true)
+@Composable
+private fun RankingFiltersPreview() {
+    RamapTheme {
+        RankingFilters(
+            uiState =
+                RankingUiState(
+                    areaFilter = AreaFilter.Selected(AdministrativeArea.SEOUL),
+                    selectedCategories = setOf(Category.TONKOTSU, Category.SHOYU),
+                ),
+            onAreaClick = {},
+            onCategoryToggled = {},
+            onAllCategoriesSelected = {},
+        )
+    }
+}
