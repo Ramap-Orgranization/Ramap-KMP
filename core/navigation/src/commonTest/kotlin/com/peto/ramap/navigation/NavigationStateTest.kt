@@ -10,6 +10,47 @@ import kotlin.test.assertTrue
 
 class NavigationStateTest {
     @Test
+    fun `네 개 탭은 지도 랭킹 이벤트 설정 순서와 독립 스택을 가진다`() {
+        val navigationState = navigationState()
+
+        assertEquals(listOf(TabStatus.MAP, TabStatus.RANKING, TabStatus.EVENT, TabStatus.MY), TabStatus.entries)
+        assertTrue(navigationState.backStacks.getValue(TabStatus.RANKING).isEmpty())
+
+        navigationState.selectTopLevelTab(TabStatus.RANKING)
+        assertEquals(ScreenRoutes.RankingTabRoutes, navigationState.currentRoute)
+        navigationState.showShopOnMap("shop")
+
+        assertEquals(TabStatus.MAP, navigationState.selectedTab)
+        assertEquals(ScreenRoutes.TabRoutes("shop"), navigationState.currentRoute)
+        assertTrue(navigationState.backStacks.getValue(TabStatus.RANKING).isEmpty())
+    }
+
+    @Test
+    fun `랭킹 탭을 떠나면 스택을 비우고 재진입할 때 새 루트를 만든다`() {
+        val navigationState = navigationState(selectedTab = TabStatus.RANKING)
+        val rankingBackStack = navigationState.backStacks.getValue(TabStatus.RANKING)
+
+        assertEquals(listOf(ScreenRoutes.RankingTabRoutes), rankingBackStack.toList())
+
+        navigationState.selectTopLevelTab(TabStatus.EVENT)
+
+        assertTrue(rankingBackStack.isEmpty())
+
+        navigationState.selectTopLevelTab(TabStatus.RANKING)
+
+        assertEquals(listOf(ScreenRoutes.RankingTabRoutes), rankingBackStack.toList())
+    }
+
+    @Test
+    fun `다른 탭으로 복원되면 남아 있는 랭킹 스택을 비운다`() {
+        val rankingBackStack = NavBackStack<NavKey>(ScreenRoutes.RankingTabRoutes)
+
+        navigationState(rankingBackStack = rankingBackStack)
+
+        assertTrue(rankingBackStack.isEmpty())
+    }
+
+    @Test
     fun `탭을 전환해도 각 탭의 중첩 경로를 유지한다`() {
         val navigationState = navigationState()
 
@@ -95,6 +136,21 @@ class NavigationStateTest {
     }
 
     @Test
+    fun `지도 루트를 열면 이전 매장 경로를 제거하고 지도 탭을 선택한다`() {
+        val navigationState = navigationState(selectedTab = TabStatus.RANKING)
+        navigationState.showShopOnMap("shop-id")
+        navigationState.selectTopLevelTab(TabStatus.RANKING)
+
+        navigationState.showMap()
+
+        assertEquals(TabStatus.MAP, navigationState.selectedTab)
+        assertEquals(
+            listOf(ScreenRoutes.TabRoutes()),
+            navigationState.backStacks.getValue(TabStatus.MAP).toList(),
+        )
+    }
+
+    @Test
     fun `현재 탭을 다시 선택해도 해당 탭 스택을 유지한다`() {
         val navigationState = navigationState(selectedTab = TabStatus.EVENT)
         navigationState.showEvent("event-id")
@@ -124,12 +180,16 @@ class NavigationStateTest {
         assertEquals(ScreenRoutes.BookmarkedShopListRoutes, navigationState.currentRoute)
     }
 
-    private fun navigationState(selectedTab: TabStatus = TabStatus.MAP): NavigationState =
+    private fun navigationState(
+        selectedTab: TabStatus = TabStatus.MAP,
+        rankingBackStack: NavBackStack<NavKey> = NavBackStack(),
+    ): NavigationState =
         NavigationState(
             selectedTabState = mutableStateOf(selectedTab),
             backStacks =
                 mapOf(
                     TabStatus.MAP to NavBackStack<NavKey>(ScreenRoutes.TabRoutes()),
+                    TabStatus.RANKING to rankingBackStack,
                     TabStatus.EVENT to NavBackStack<NavKey>(ScreenRoutes.EventTabRoutes),
                     TabStatus.MY to NavBackStack<NavKey>(ScreenRoutes.MyTabRoutes),
                 ),
