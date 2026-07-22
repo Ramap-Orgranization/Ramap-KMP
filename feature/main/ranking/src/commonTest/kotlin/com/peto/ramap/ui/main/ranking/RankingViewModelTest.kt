@@ -42,7 +42,6 @@ class RankingViewModelTest {
                 FakePersonalizationRepository(Personalization(hiddenShopIds = setOf("shop-id")))
             val viewModel = rankingViewModel(repository, personalizationStore)
 
-            viewModel.dispatch(RankingIntent.OnEntered)
             runCurrent()
 
             assertEquals(
@@ -82,7 +81,6 @@ class RankingViewModelTest {
                     ),
                 )
             val viewModel = rankingViewModel(repository)
-            viewModel.dispatch(RankingIntent.OnEntered)
             runCurrent()
             repository.page =
                 RankingPage(
@@ -118,7 +116,6 @@ class RankingViewModelTest {
                     RankingPage(ShopRankings(listOf(shopRanking())), cursor),
                 )
             val viewModel = rankingViewModel(repository)
-            viewModel.dispatch(RankingIntent.OnEntered)
             runCurrent()
             repository.error = RamapError.Unknown(IllegalStateException("failure"))
 
@@ -139,7 +136,6 @@ class RankingViewModelTest {
                     RankingPage(ShopRankings(listOf(shopRanking())), cursor),
                 )
             val viewModel = rankingViewModel(repository)
-            viewModel.dispatch(RankingIntent.OnEntered)
             runCurrent()
             repository.error = RamapError.Unknown(IllegalStateException("failure"))
 
@@ -167,7 +163,6 @@ class RankingViewModelTest {
                 )
             val personalizationStore = FakePersonalizationRepository()
             val viewModel = rankingViewModel(repository, personalizationStore)
-            viewModel.dispatch(RankingIntent.OnEntered)
             runCurrent()
 
             viewModel.dispatch(RankingIntent.OnBookmarkChanged("second", true))
