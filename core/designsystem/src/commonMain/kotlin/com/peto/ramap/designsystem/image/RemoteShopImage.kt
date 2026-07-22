@@ -4,12 +4,13 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
@@ -30,7 +31,8 @@ fun RemoteShopImage(
     Box(
         modifier =
             modifier
-                .border(width = 1.dp, color = GrayColor.C100, shape = RoundedCornerShape(999.dp)),
+                .border(width = 1.dp, color = GrayColor.C100, shape = CircleShape)
+                .clip(CircleShape),
         contentAlignment = Alignment.Center,
     ) {
         if (url.isNullOrBlank()) {
