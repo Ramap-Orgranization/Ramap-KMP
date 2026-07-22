@@ -50,6 +50,38 @@ class SubscribedShopListViewModelTest {
         }
 
     @Test
+    fun `매장 조회 실패 후 캐시된 구독 목록으로 동기화하면 오류 상태를 해제한다`() =
+        coroutinesTest {
+            val cachedShop = ramenShopFixture(id = "cached-subscribed-shop")
+            val missingShop = ramenShopFixture(id = "missing-subscribed-shop")
+            val personalizationRepository =
+                FakePersonalizationRepository(
+                    Personalization(notificationShopIds = setOf(cachedShop.id)),
+                )
+            val ramenShopRepository =
+                FakeRamenShopRepository(fetchByIdsResult = RamenShops(listOf(cachedShop)))
+            val viewModel =
+                SubscribedShopListViewModel(
+                    personalizationStore = personalizationRepository,
+                    notificationRepository = FakeNotificationSettingsRepository(),
+                    ramenShopRepository = ramenShopRepository,
+                )
+            runCurrent()
+
+            ramenShopRepository.error = RamapError.Unknown(IllegalStateException("failure"))
+            personalizationRepository.updateShopNotification(missingShop.id, true)
+            runCurrent()
+
+            assertEquals(true, viewModel.uiState.value.showError)
+
+            personalizationRepository.updateShopNotification(missingShop.id, false)
+            runCurrent()
+
+            assertEquals(false, viewModel.uiState.value.showError)
+            assertEquals(RamenShops(listOf(cachedShop)), viewModel.uiState.value.shops)
+        }
+
+    @Test
     fun `활성화된 이벤트 알림 설정은 활성 이벤트를 로드한다`() =
         coroutinesTest {
             val event = shopEventFixture("enabled-event")

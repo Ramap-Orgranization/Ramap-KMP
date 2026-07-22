@@ -58,13 +58,13 @@ class SubscribedShopListViewModel(
     private fun syncSubscribedShops(shopIds: Set<String>) {
         if (shopIds.isEmpty()) {
             cancelTask(FETCH_SUBSCRIBED_SHOPS_TASK_KEY)
-            reduce { copy(shops = shops.filterByShopIds(shopIds)) }
+            reduce { copy(shops = shops.filterByShopIds(shopIds), showError = false) }
             return
         }
 
         if (currentState.shops.containsAll(shopIds)) {
             cancelTask(FETCH_SUBSCRIBED_SHOPS_TASK_KEY)
-            reduce { copy(shops = shops.filterByShopIds(shopIds)) }
+            reduce { copy(shops = shops.filterByShopIds(shopIds), showError = false) }
             return
         }
 
@@ -75,9 +75,10 @@ class SubscribedShopListViewModel(
         launchResultTask(
             taskKey = FETCH_SUBSCRIBED_SHOPS_TASK_KEY,
             loadKey = SubscribedShopLoadKey.FETCH,
+            onStart = { copy(showError = false) },
             request = { ramenShopRepository.fetchRamenShops(shopIds) },
             onSuccess = { shops ->
-                reduce { copy(shops = shops.filterByShopIds(shopIds)) }
+                reduce { copy(shops = shops.filterByShopIds(shopIds), showError = false) }
             },
             onError = { reduce { copy(showError = true) } },
         )

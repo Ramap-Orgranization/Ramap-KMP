@@ -90,6 +90,50 @@ class BookmarkedShopListViewModelTest {
         }
 
     @Test
+    fun `매장 재조회를 시작하면 이전 오류를 해제하고 성공 결과를 표시한다`() =
+        coroutinesTest {
+            val initialShop = ramenShopFixture(id = "initial-bookmarked-shop")
+            val recoveredShop = ramenShopFixture(id = "recovered-bookmarked-shop")
+            val recoveredResult = CompletableDeferred<RamapResult<RamenShops>>()
+            var requestCount = 0
+            val ramenShopRepository =
+                object : RamenShopRepository by FakeRamenShopRepository() {
+                    override suspend fun fetchRamenShops(shopIds: Set<String>): RamapResult<RamenShops> {
+                        requestCount += 1
+                        return if (requestCount == 1) {
+                            RamapResult.Error(RamapError.Unknown(IllegalStateException("failure")))
+                        } else {
+                            recoveredResult.await()
+                        }
+                    }
+                }
+            val personalizationRepository =
+                FakePersonalizationRepository(
+                    Personalization(bookmarkedShopIds = setOf(initialShop.id)),
+                )
+            val viewModel =
+                BookmarkedShopListViewModel(
+                    personalizationStore = personalizationRepository,
+                    ramenShopRepository = ramenShopRepository,
+                )
+            runCurrent()
+
+            assertEquals(true, viewModel.uiState.value.showError)
+
+            personalizationRepository.updateBookmarkedShopIds(setOf(recoveredShop.id))
+            runCurrent()
+
+            assertEquals(false, viewModel.uiState.value.showError)
+            assertEquals(true, viewModel.uiState.value.isOnlyLoading)
+
+            recoveredResult.complete(RamapResult.Success(RamenShops(listOf(recoveredShop))))
+            runCurrent()
+
+            assertEquals(false, viewModel.uiState.value.showError)
+            assertEquals(RamenShops(listOf(recoveredShop)), viewModel.uiState.value.shops)
+        }
+
+    @Test
     fun `공유 북마크 상태의 제거와 추가를 목록에 동기화한다`() =
         coroutinesTest {
             val initialShop = ramenShopFixture(id = "initial-bookmarked-shop", name = "기존 매장")

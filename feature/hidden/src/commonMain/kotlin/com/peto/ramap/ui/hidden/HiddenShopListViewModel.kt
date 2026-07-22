@@ -43,13 +43,18 @@ class HiddenShopListViewModel(
     private fun syncHiddenShops(hiddenShopIds: Set<String>) {
         if (hiddenShopIds.isEmpty()) {
             cancelTask(FETCH_SHOP_TASK_KEY)
-            reduce { copy(shops = shops.filterByShopIds(hiddenShopIds)) }
+            reduce { copy(shops = shops.filterByShopIds(hiddenShopIds), showError = false) }
             return
         }
 
         if (currentState.shops.containsAll(hiddenShopIds)) {
             cancelTask(FETCH_SHOP_TASK_KEY)
-            reduce { copy(shops = shops.filterByShopIds(hiddenShopIds).markHidden(hiddenShopIds)) }
+            reduce {
+                copy(
+                    shops = shops.filterByShopIds(hiddenShopIds).markHidden(hiddenShopIds),
+                    showError = false,
+                )
+            }
             return
         }
 
@@ -60,9 +65,15 @@ class HiddenShopListViewModel(
         launchResultTask(
             taskKey = FETCH_SHOP_TASK_KEY,
             loadKey = HiddenShopLoadKey.FETCH,
+            onStart = { copy(showError = false) },
             request = { ramenShopRepository.fetchRamenShops(hiddenShopIds) },
             onSuccess = { shops ->
-                reduce { copy(shops = shops.filterByShopIds(hiddenShopIds).markHidden(hiddenShopIds)) }
+                reduce {
+                    copy(
+                        shops = shops.filterByShopIds(hiddenShopIds).markHidden(hiddenShopIds),
+                        showError = false,
+                    )
+                }
             },
             onError = { reduce { copy(showError = true) } },
         )

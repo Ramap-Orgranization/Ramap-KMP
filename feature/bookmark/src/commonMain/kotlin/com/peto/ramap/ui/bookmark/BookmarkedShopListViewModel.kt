@@ -44,13 +44,13 @@ class BookmarkedShopListViewModel(
     private fun syncBookmarkedShops(shopIds: Set<String>) {
         if (shopIds.isEmpty()) {
             cancelTask(FETCH_BOOKMARKS_TASK_KEY)
-            reduce { copy(shops = shops.filterByShopIds(shopIds)) }
+            reduce { copy(shops = shops.filterByShopIds(shopIds), showError = false) }
             return
         }
 
         if (currentState.shops.containsAll(shopIds)) {
             cancelTask(FETCH_BOOKMARKS_TASK_KEY)
-            reduce { copy(shops = shops.filterByShopIds(shopIds)) }
+            reduce { copy(shops = shops.filterByShopIds(shopIds), showError = false) }
             return
         }
 
@@ -61,8 +61,11 @@ class BookmarkedShopListViewModel(
         launchResultTask(
             taskKey = FETCH_BOOKMARKS_TASK_KEY,
             loadKey = BookmarkedShopLoadKey.FETCH,
+            onStart = { copy(showError = false) },
             request = { ramenShopRepository.fetchRamenShops(shopIds) },
-            onSuccess = { shops -> reduce { copy(shops = shops.filterByShopIds(shopIds)) } },
+            onSuccess = { shops ->
+                reduce { copy(shops = shops.filterByShopIds(shopIds), showError = false) }
+            },
             onError = { reduce { copy(showError = true) } },
         )
     }
