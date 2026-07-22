@@ -14,7 +14,6 @@ import com.peto.ramap.fake.FakeNotificationSettingsRepository
 import com.peto.ramap.fake.FakePersonalizationRepository
 import com.peto.ramap.fake.FakeRamenShopRepository
 import com.peto.ramap.fixture.ramenShopFixture
-import com.peto.ramap.ui.common.LoadState
 import com.peto.ramap.ui.subscribed.contract.SubscribedShopListIntent
 import com.peto.ramap.ui.subscribed.contract.SubscribedShopListSideEffect
 import com.peto.ramap.ui.subscribed.model.SubscribedRemovalTarget
@@ -46,10 +45,40 @@ class SubscribedShopListViewModelTest {
 
             runCurrent()
 
-            assertEquals(
-                LoadState.Content(RamenShops(listOf(shop))),
-                viewModel.uiState.value.shopsState,
-            )
+            assertEquals(RamenShops(listOf(shop)), viewModel.uiState.value.shops)
+            assertEquals(false, viewModel.uiState.value.isOverlayLoading)
+        }
+
+    @Test
+    fun `매장 조회 실패 후 캐시된 구독 목록으로 동기화하면 오류 상태를 해제한다`() =
+        coroutinesTest {
+            val cachedShop = ramenShopFixture(id = "cached-subscribed-shop")
+            val missingShop = ramenShopFixture(id = "missing-subscribed-shop")
+            val personalizationRepository =
+                FakePersonalizationRepository(
+                    Personalization(notificationShopIds = setOf(cachedShop.id)),
+                )
+            val ramenShopRepository =
+                FakeRamenShopRepository(fetchByIdsResult = RamenShops(listOf(cachedShop)))
+            val viewModel =
+                SubscribedShopListViewModel(
+                    personalizationStore = personalizationRepository,
+                    notificationRepository = FakeNotificationSettingsRepository(),
+                    ramenShopRepository = ramenShopRepository,
+                )
+            runCurrent()
+
+            ramenShopRepository.error = RamapError.Unknown(IllegalStateException("failure"))
+            personalizationRepository.updateShopNotification(missingShop.id, true)
+            runCurrent()
+
+            assertEquals(true, viewModel.uiState.value.showError)
+
+            personalizationRepository.updateShopNotification(missingShop.id, false)
+            runCurrent()
+
+            assertEquals(false, viewModel.uiState.value.showError)
+            assertEquals(RamenShops(listOf(cachedShop)), viewModel.uiState.value.shops)
         }
 
     @Test
@@ -70,10 +99,7 @@ class SubscribedShopListViewModelTest {
             runCurrent()
 
             assertEquals(listOf(event), viewModel.uiState.value.subscribedEvents)
-            assertEquals(
-                LoadState.Content(RamenShops(emptyMap())),
-                viewModel.uiState.value.shopsState,
-            )
+            assertEquals(RamenShops(emptyMap()), viewModel.uiState.value.shops)
         }
 
     @Test
@@ -101,10 +127,7 @@ class SubscribedShopListViewModelTest {
                 viewModel.uiState.value.subscribedEvents
                     .isEmpty(),
             )
-            assertEquals(
-                LoadState.Content(RamenShops(emptyMap())),
-                viewModel.uiState.value.shopsState,
-            )
+            assertEquals(RamenShops(emptyMap()), viewModel.uiState.value.shops)
         }
 
     @Test
@@ -132,7 +155,8 @@ class SubscribedShopListViewModelTest {
             )
             runCurrent()
 
-            assertEquals(LoadState.Content(RamenShops(emptyMap())), viewModel.uiState.value.shopsState)
+            assertEquals(RamenShops(emptyMap()), viewModel.uiState.value.shops)
+            assertEquals(false, viewModel.uiState.value.isOverlayLoading)
             assertTrue(
                 personalizationStore.state.value.notificationShopIds
                     .isEmpty(),
@@ -180,10 +204,8 @@ class SubscribedShopListViewModelTest {
                     ),
                     awaitItem(),
                 )
-                assertEquals(
-                    LoadState.Content(RamenShops(listOf(shop))),
-                    viewModel.uiState.value.shopsState,
-                )
+                assertEquals(RamenShops(listOf(shop)), viewModel.uiState.value.shops)
+                assertEquals(false, viewModel.uiState.value.isOverlayLoading)
             }
         }
 
@@ -273,10 +295,7 @@ class SubscribedShopListViewModelTest {
 
             runCurrent()
 
-            assertEquals(
-                LoadState.Content(RamenShops(emptyMap())),
-                viewModel.uiState.value.shopsState,
-            )
+            assertEquals(RamenShops(emptyMap()), viewModel.uiState.value.shops)
             assertTrue(
                 viewModel.uiState.value.subscribedEvents
                     .isEmpty(),
@@ -301,10 +320,7 @@ class SubscribedShopListViewModelTest {
 
             runCurrent()
 
-            assertEquals(
-                LoadState.Content(RamenShops(emptyMap())),
-                viewModel.uiState.value.shopsState,
-            )
+            assertEquals(RamenShops(emptyMap()), viewModel.uiState.value.shops)
             assertTrue(
                 viewModel.uiState.value.subscribedEvents
                     .isEmpty(),

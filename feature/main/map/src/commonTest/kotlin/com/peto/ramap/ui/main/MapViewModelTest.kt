@@ -39,14 +39,16 @@ import com.peto.ramap.ui.main.map.contract.MapIntent.OnBookmarkedShopsToggled
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnBoundsChanged
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnCameraPositionChanged
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnCategoryFilterToggled
-import com.peto.ramap.ui.main.map.contract.MapIntent.OnFilterCleared
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnHiddenToggled
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnInitialLocationFocusConsumed
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnMyLocationChanged
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnPlaceSelected
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnQueryChanged
+import com.peto.ramap.ui.main.map.contract.MapIntent.OnRequestedShopDismissed
+import com.peto.ramap.ui.main.map.contract.MapIntent.OnRequestedShopRetry
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnSearchResultsDismissed
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopDetailDismissed
+import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopDetailRetry
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopIdSelected
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopNotificationToggled
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopReportSubmitted
@@ -55,6 +57,7 @@ import com.peto.ramap.ui.main.map.contract.MapIntent.OnViewportLoadRetry
 import com.peto.ramap.ui.main.map.contract.MapSideEffect.ShowLoginGuide
 import com.peto.ramap.ui.main.map.contract.MapSideEffect.ShowToast
 import com.peto.ramap.ui.main.map.contract.MapUiState
+import com.peto.ramap.ui.main.map.contract.RequestedShopStatus
 import com.peto.ramap.ui.main.map.model.CameraPosition
 import com.peto.ramap.ui.main.map.model.LocationFocusStatus
 import com.peto.ramap.ui.main.map.search.SearchResultGuide
@@ -299,7 +302,7 @@ class MapViewModelTest {
         }
 
     @Test
-    fun `매장 상세 조회에 실패하면 오류 토스트를 표시한다`() =
+    fun `매장 상세 조회에 실패하면 선택을 유지하고 바텀시트 오류 상태를 표시한다`() =
         coroutinesTest {
             val shop = ramenShopFixture()
             val viewModel =
@@ -310,22 +313,50 @@ class MapViewModelTest {
                         ),
                 )
 
-            viewModel.sideEffect.test {
-                viewModel.dispatch(OnShopSelected(shop))
-                runCurrent()
+            viewModel.dispatch(OnShopSelected(shop))
+            runCurrent()
 
-                assertEquals(null, viewModel.uiState.value.shopDetail)
-                assertEquals(false, viewModel.uiState.value.isShopDetailLoading)
-                assertEquals(
-                    ShowToast(
-                        ToastData(
-                            message = Res.string.data_load_failure_message,
-                            type = ToastType.ERROR,
-                        ),
-                    ),
-                    awaitItem(),
+            assertEquals(shop, viewModel.uiState.value.selectedShop)
+            assertEquals(null, viewModel.uiState.value.shopDetail)
+            assertEquals(true, viewModel.uiState.value.hasShopDetailLoadFailed)
+            assertEquals(true, viewModel.uiState.value.showBottomSheet)
+            assertEquals(false, viewModel.uiState.value.isShopDetailLoading)
+
+            viewModel.dispatch(OnShopDetailDismissed)
+            runCurrent()
+
+            assertEquals(null, viewModel.uiState.value.selectedShop)
+            assertEquals(false, viewModel.uiState.value.hasShopDetailLoadFailed)
+            assertEquals(false, viewModel.uiState.value.showBottomSheet)
+        }
+
+    @Test
+    fun `매장 상세 실패 후 재시도하면 같은 매장을 조회하고 상세를 표시한다`() =
+        coroutinesTest {
+            val shop = ramenShopFixture()
+            val repository =
+                FakeRamenShopRepository(
+                    fetchByIdsResult = RamenShops(mapOf(shop.id to shop)),
+                    error = RamapError.Unknown(IllegalStateException("failed")),
                 )
-            }
+            val viewModel = mapViewModel(ramenShopRepository = repository)
+
+            viewModel.dispatch(OnShopSelected(shop))
+            runCurrent()
+            repository.error = null
+            viewModel.dispatch(OnShopDetailRetry)
+            runCurrent()
+
+            assertEquals(
+                shop.id,
+                viewModel.uiState.value
+                    .shopDetail
+                    ?.shop
+                    ?.id,
+            )
+            assertEquals(false, viewModel.uiState.value.hasShopDetailLoadFailed)
+            assertEquals(false, viewModel.uiState.value.isShopDetailLoading)
+            assertEquals(3, repository.requestedShopIdsHistory.size)
         }
 
     @Test
@@ -502,6 +533,118 @@ class MapViewModelTest {
                     .shopDetail
                     ?.shop,
             )
+        }
+
+    @Test
+    fun `아이디로 매장을 해석하는 동안 전용 로딩 상태를 표시하고 성공하면 종료한다`() =
+        coroutinesTest {
+            val shop = ramenShopFixture(id = "requested-shop")
+            val delegate = FakeRamenShopRepository(fetchByIdsResult = RamenShops(mapOf(shop.id to shop)))
+            val repository =
+                object : RamenShopRepository by delegate {
+                    override suspend fun fetchRamenShops(shopIds: Set<String>): RamapResult<RamenShops> {
+                        delay(1_000)
+                        return delegate.fetchRamenShops(shopIds)
+                    }
+                }
+            val viewModel = mapViewModel(ramenShopRepository = repository)
+
+            viewModel.dispatch(OnShopIdSelected(shop.id))
+            runCurrent()
+
+            assertEquals(true, viewModel.uiState.value.isRequestedShopLoading)
+            assertEquals(RequestedShopStatus.Loading, viewModel.uiState.value.requestedShopStatus)
+
+            advanceTimeBy(1_000)
+            runCurrent()
+
+            assertEquals(false, viewModel.uiState.value.isRequestedShopLoading)
+            assertEquals(RequestedShopStatus.Idle, viewModel.uiState.value.requestedShopStatus)
+            assertEquals(shop, viewModel.uiState.value.selectedShop)
+
+            viewModel.dispatch(OnShopDetailDismissed)
+            runCurrent()
+        }
+
+    @Test
+    fun `아이디 매장 조회 실패를 표시하고 재시도하면 같은 아이디를 다시 조회한다`() =
+        coroutinesTest {
+            val shop = ramenShopFixture(id = "requested-shop")
+            val repository =
+                FakeRamenShopRepository(
+                    fetchByIdsResult = RamenShops(mapOf(shop.id to shop)),
+                    error = RamapError.Unknown(IllegalStateException("failed")),
+                )
+            val viewModel = mapViewModel(ramenShopRepository = repository)
+
+            viewModel.dispatch(OnShopIdSelected(shop.id))
+            runCurrent()
+
+            assertEquals(RequestedShopStatus.Failed, viewModel.uiState.value.requestedShopStatus)
+            assertEquals(true, viewModel.uiState.value.showRequestedShopFailure)
+            assertEquals(shop.id, viewModel.uiState.value.requestedShopId)
+
+            repository.error = null
+            viewModel.dispatch(OnRequestedShopRetry)
+            runCurrent()
+
+            assertEquals(listOf(setOf(shop.id), setOf(shop.id), setOf(shop.id)), repository.requestedShopIdsHistory)
+            assertEquals(RequestedShopStatus.Idle, viewModel.uiState.value.requestedShopStatus)
+            assertEquals(shop, viewModel.uiState.value.selectedShop)
+        }
+
+    @Test
+    fun `아이디에 해당하는 매장이 없으면 not found를 표시하고 닫으면 상태를 종료한다`() =
+        coroutinesTest {
+            val shopId = "missing-shop"
+            val viewModel = mapViewModel(ramenShopRepository = FakeRamenShopRepository())
+
+            viewModel.dispatch(OnShopIdSelected(shopId))
+            runCurrent()
+
+            assertEquals(RequestedShopStatus.NotFound, viewModel.uiState.value.requestedShopStatus)
+            assertEquals(true, viewModel.uiState.value.showRequestedShopNotFound)
+            assertEquals(true, viewModel.uiState.value.showBottomSheet)
+
+            viewModel.dispatch(OnRequestedShopDismissed)
+            runCurrent()
+
+            assertEquals(RequestedShopStatus.Idle, viewModel.uiState.value.requestedShopStatus)
+            assertEquals(null, viewModel.uiState.value.requestedShopId)
+            assertEquals(false, viewModel.uiState.value.showBottomSheet)
+        }
+
+    @Test
+    fun `새 아이디 요청은 진행 중인 아이디 조회를 취소하고 마지막 요청 상태만 유지한다`() =
+        coroutinesTest {
+            val previousShop = ramenShopFixture(id = "previous-shop")
+            var didCompletePreviousRequest = false
+            val delegate =
+                FakeRamenShopRepository(
+                    fetchByIdsResult = RamenShops(mapOf(previousShop.id to previousShop)),
+                )
+            val repository =
+                object : RamenShopRepository by delegate {
+                    override suspend fun fetchRamenShops(shopIds: Set<String>): RamapResult<RamenShops> {
+                        delay(1_000)
+                        didCompletePreviousRequest = true
+                        return delegate.fetchRamenShops(shopIds)
+                    }
+                }
+            val viewModel = mapViewModel(ramenShopRepository = repository)
+
+            viewModel.dispatch(OnShopIdSelected(previousShop.id))
+            runCurrent()
+            viewModel.dispatch(OnShopIdSelected(""))
+            runCurrent()
+            advanceTimeBy(1_000)
+            runCurrent()
+
+            assertEquals(false, didCompletePreviousRequest)
+            assertEquals(false, viewModel.uiState.value.isRequestedShopLoading)
+            assertEquals(RequestedShopStatus.NotFound, viewModel.uiState.value.requestedShopStatus)
+            assertEquals("", viewModel.uiState.value.requestedShopId)
+            assertEquals(null, viewModel.uiState.value.selectedShop)
         }
 
     @Test
@@ -1547,24 +1690,6 @@ class MapViewModelTest {
             viewModel.dispatch(OnCategoryFilterToggled(Category.MAZESOBA))
             runCurrent()
             viewModel.dispatch(OnCategoryFilterToggled(Category.MAZESOBA))
-            runCurrent()
-
-            assertEquals(
-                emptySet(),
-                viewModel.uiState.value.filters
-                    .toSet(),
-            )
-        }
-
-    @Test
-    fun `필터 초기화 인텐트는 모든 카테고리 필터를 제거한다`() =
-        coroutinesTest {
-            val viewModel = mapViewModel()
-
-            viewModel.dispatch(OnCategoryFilterToggled(Category.MAZESOBA))
-            viewModel.dispatch(OnCategoryFilterToggled(Category.JIRO))
-            runCurrent()
-            viewModel.dispatch(OnFilterCleared)
             runCurrent()
 
             assertEquals(

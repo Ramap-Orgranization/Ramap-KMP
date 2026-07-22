@@ -35,7 +35,13 @@ sealed interface MapIntent : Intent {
         val shopId: String,
     ) : MapIntent
 
+    data object OnRequestedShopRetry : MapIntent
+
+    data object OnRequestedShopDismissed : MapIntent
+
     data object OnShopDetailDismissed : MapIntent
+
+    data object OnShopDetailRetry : MapIntent
 
     data object OnSearchResultsDismissed : MapIntent
 
@@ -50,8 +56,6 @@ sealed interface MapIntent : Intent {
     data class OnCategoryFilterToggled(
         val category: Category,
     ) : MapIntent
-
-    data object OnFilterCleared : MapIntent
 
     data class OnBookmarkToggled(
         val shop: RamenShop,

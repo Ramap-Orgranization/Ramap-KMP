@@ -1,16 +1,14 @@
 package com.peto.ramap.ui.notification
 
-import androidx.lifecycle.viewModelScope
-import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.domain.repository.NotificationSettingsRepository
 import com.peto.ramap.ui.base.BaseViewModel
-import com.peto.ramap.ui.common.LoadState
 import com.peto.ramap.ui.notification.contract.NotificationSettingsIntent
 import com.peto.ramap.ui.notification.contract.NotificationSettingsIntent.OnEventNotificationsEnabledChanged
 import com.peto.ramap.ui.notification.contract.NotificationSettingsIntent.OnNotificationSettingsRetried
+import com.peto.ramap.ui.notification.contract.NotificationSettingsLoadKey
 import com.peto.ramap.ui.notification.contract.NotificationSettingsSideEffect
 import com.peto.ramap.ui.notification.contract.NotificationSettingsUiState
-import kotlinx.coroutines.launch
+import com.peto.ramap.ui.task.TaskPolicy
 
 class NotificationSettingsViewModel(
     private val notificationRepository: NotificationSettingsRepository,
@@ -18,32 +16,44 @@ class NotificationSettingsViewModel(
         initialState = NotificationSettingsUiState(),
     ) {
     init {
-        viewModelScope.launch { loadSettings() }
+        fetchSettings()
     }
 
     override suspend fun handleIntent(intent: NotificationSettingsIntent) {
         when (intent) {
-            OnNotificationSettingsRetried -> loadSettings()
+            OnNotificationSettingsRetried -> fetchSettings()
             is OnEventNotificationsEnabledChanged -> updateEnabled(intent.enabled)
         }
     }
 
-    private suspend fun loadSettings() {
-        reduce { copy(loadState = LoadState.Loading) }
-        handleResult(
-            result = notificationRepository.fetchEventNotificationsEnabled(),
+    private fun fetchSettings() {
+        launchResultTask(
+            taskKey = FETCH_SETTINGS_TASK_KEY,
+            loadKey = NotificationSettingsLoadKey.FETCH,
+            policy = TaskPolicy.CancelPrevious,
+            onStart = { copy(showError = false) },
+            request = notificationRepository::fetchEventNotificationsEnabled,
             onSuccess = { enabled ->
-                reduce { copy(loadState = LoadState.Content(Unit), areEnabled = enabled) }
+                reduce { copy(areEnabled = enabled) }
             },
-            onError = { reduce { copy(loadState = LoadState.Error) } },
+            onError = { reduce { copy(showError = true) } },
         )
     }
 
-    private suspend fun updateEnabled(enabled: Boolean) {
+    private fun updateEnabled(enabled: Boolean) {
         val previous = currentState.areEnabled
-        reduce { copy(areEnabled = enabled) }
-        if (notificationRepository.updateEventNotificationsEnabled(enabled) is RamapResult.Error) {
-            reduce { copy(areEnabled = previous) }
-        }
+        launchResultTask(
+            taskKey = UPDATE_SETTINGS_TASK_KEY,
+            loadKey = NotificationSettingsLoadKey.UPDATE,
+            policy = TaskPolicy.CancelPrevious,
+            onStart = { copy(areEnabled = enabled) },
+            request = { notificationRepository.updateEventNotificationsEnabled(enabled) },
+            onError = { reduce { copy(areEnabled = previous) } },
+        )
+    }
+
+    companion object {
+        private const val FETCH_SETTINGS_TASK_KEY = "fetch-notification-settings"
+        private const val UPDATE_SETTINGS_TASK_KEY = "update-notification-settings"
     }
 }

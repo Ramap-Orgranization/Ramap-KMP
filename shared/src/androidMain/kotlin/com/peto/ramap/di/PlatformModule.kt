@@ -1,4 +1,4 @@
-package com.peto.ramap.platform.di
+package com.peto.ramap.di
 
 import com.peto.ramap.platform.AndroidAppSettingsOpener
 import com.peto.ramap.platform.AndroidAppVersionProvider

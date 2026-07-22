@@ -157,7 +157,7 @@
     <string name="logout_menu">로그아웃</string>
     <string name="account_delete_menu">계정 삭제</string>
     <string name="account_delete_confirm_title">계정을 탈퇴하시겠습니까?</string>
-    <string name="account_delete_confirm_description">탈퇴하면 계정 정보와 개인화 데이터가 삭제되며 복구할 수 없습니다.</string>
+    <string name="account_delete_confirm_description">탈퇴하면 계정 정보와 데이터가 삭제되며 복구할 수 없습니다.</string>
     <string name="account_delete_confirm_action">탈퇴하기</string>
     <string name="account_delete_confirm_dismiss">취소</string>
     <string name="account_delete_success_message">계정 탈퇴가 완료되었습니다</string>
@@ -165,7 +165,8 @@
 
     <!-- 로그인 화면 및 안내 -->
     <string name="kakao_login_button_title">카카오로 시작하기</string>
-    <string name="kakao_login_failure_message">카카오 로그인에 실패했습니다. 잠시 후 다시 시도해 주세요.</string>
+    <string name="kakao_login_failure_message">카카오 로그인에 실패했습니다.</string>
+    <string name="logout_failure_message">로그아웃에 실패했습니다.</string>
     <string name="login_required_message">로그인이 필요한 기능입니다</string>
     <string name="login_required_description">로그인 후 북마크와 숨김 기능을 사용할 수 있어요.</string>
     <string name="login_required_action">로그인하기</string>

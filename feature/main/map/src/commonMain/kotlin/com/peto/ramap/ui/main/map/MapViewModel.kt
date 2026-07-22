@@ -35,7 +35,6 @@ import com.peto.ramap.ui.main.map.contract.MapIntent.OnBookmarkedShopsToggled
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnBoundsChanged
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnCameraPositionChanged
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnCategoryFilterToggled
-import com.peto.ramap.ui.main.map.contract.MapIntent.OnFilterCleared
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnHiddenToggled
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnInitialLocationFocusConsumed
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnKakaoLoginClicked
@@ -43,24 +42,29 @@ import com.peto.ramap.ui.main.map.contract.MapIntent.OnLocationPermissionBlocked
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnMyLocationChanged
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnPlaceSelected
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnQueryChanged
+import com.peto.ramap.ui.main.map.contract.MapIntent.OnRequestedShopDismissed
+import com.peto.ramap.ui.main.map.contract.MapIntent.OnRequestedShopRetry
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnSearchResultsDismissed
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopDetailDismissed
+import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopDetailRetry
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopIdSelected
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopNotificationToggled
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopReportSubmitted
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopSelected
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnViewportLoadRetry
+import com.peto.ramap.ui.main.map.contract.MapLoadKey
 import com.peto.ramap.ui.main.map.contract.MapSideEffect
 import com.peto.ramap.ui.main.map.contract.MapSideEffect.ShowLoginGuide
 import com.peto.ramap.ui.main.map.contract.MapSideEffect.ShowToast
 import com.peto.ramap.ui.main.map.contract.MapUiState
+import com.peto.ramap.ui.main.map.contract.RequestedShopStatus
 import com.peto.ramap.ui.main.map.model.CameraPosition
 import com.peto.ramap.ui.main.map.model.LocationFocusStatus
 import com.peto.ramap.ui.main.map.search.MapSearchController
 import com.peto.ramap.ui.main.map.search.MapSearchResult
 import com.peto.ramap.ui.main.map.viewport.ViewportLoadResult
 import com.peto.ramap.ui.main.map.viewport.ViewportShopLoader
-import kotlinx.coroutines.Job
+import com.peto.ramap.ui.task.TaskPolicy
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.StringResource
@@ -94,7 +98,6 @@ class MapViewModel(
             coroutineScope = viewModelScope,
         )
     private val viewportShopLoader = ViewportShopLoader(ramenShopRepository, viewModelScope)
-    private var shopDetailJob: Job? = null
 
     init {
         viewModelScope.launch { observeSessionState() }
@@ -117,13 +120,15 @@ class MapViewModel(
             OnInitialLocationFocusConsumed -> consumeInitialLocationFocus()
             is OnShopSelected -> selectShop(intent.shop, intent.shouldFocus)
             is OnShopIdSelected -> selectShop(intent.shopId)
+            OnRequestedShopRetry -> retryRequestedShopLoad()
+            OnRequestedShopDismissed -> dismissRequestedShopLoad()
             is OnShopDetailDismissed -> dismissShopDetail()
+            OnShopDetailRetry -> retryShopDetailLoad()
             is OnSearchResultsDismissed -> dismissSearchResults()
             is OnQueryChanged -> updateQuery(intent.query)
             is OnPlaceSelected -> selectPlace(intent.place)
             is OnCategoryFilterToggled -> toggleCategoryFilter(intent.category)
             OnBookmarkedShopsToggled -> toggleBookmarkedView()
-            is OnFilterCleared -> clearFilter()
             is OnBookmarkToggled -> toggleBookmark(intent.shop)
             is OnShopNotificationToggled -> toggleShopNotification(intent.shop)
             is OnHiddenToggled -> toggleHidden(intent.shop)
@@ -161,18 +166,31 @@ class MapViewModel(
         shop: RamenShop,
         shouldFocus: Boolean = true,
     ) {
+        cancelTask(SELECT_SHOP_TASK_KEY)
+        clearRequestedShopState()
+        selectResolvedShop(shop, shouldFocus)
+    }
+
+    private fun selectResolvedShop(
+        shop: RamenShop,
+        shouldFocus: Boolean,
+    ) {
         val isCurrentSearchResult = shop.id in currentState.search.results
         val shopId = shop.id
         val cachedDetail = fetchShopDetailUseCase.findCached(shopId)
+        // 캐시를 즉시 표시할 때도 이전 상세 작업의 로딩 카운트를 먼저 정리한다.
+        if (cachedDetail != null) cancelTask(SHOP_DETAIL_TASK_KEY)
         reduce {
             copy(
                 selectedShop = cachedDetail?.shop?.copy(isVisible = shop.isVisible) ?: shop,
                 shouldFocusSelectedShop = shouldFocus,
                 shopDetail = cachedDetail,
+                hasShopDetailLoadFailed = false,
+                requestedShopId = null,
+                requestedShopStatus = RequestedShopStatus.Idle,
                 shopWaiting =
                     cachedDetail?.let { shopWaiting + (shop.id to it.waitingSystem) }
                         ?: shopWaiting,
-                isShopDetailLoading = cachedDetail == null,
                 search = search.consumeResultFocus(isCurrentSearchResult),
             )
         }
@@ -187,23 +205,80 @@ class MapViewModel(
             copy(
                 selectedShop = null,
                 shopDetail = null,
-                isShopDetailLoading = false,
+                hasShopDetailLoadFailed = false,
             )
         }
     }
 
-    private suspend fun selectShop(shopId: String) {
-        if (shopId.isBlank()) return
+    private fun retryShopDetailLoad() {
+        val shopId = currentState.selectedShop?.id ?: return
+        loadShopDetail(shopId)
+    }
+
+    private fun selectShop(shopId: String) {
+        cancelTask(SELECT_SHOP_TASK_KEY)
+        cancelShopDetailLoad()
+        if (shopId.isBlank()) {
+            reduce {
+                copy(
+                    selectedShop = null,
+                    shopDetail = null,
+                    hasShopDetailLoadFailed = false,
+                    requestedShopId = shopId,
+                    requestedShopStatus = RequestedShopStatus.NotFound,
+                )
+            }
+            return
+        }
         fetchShopDetailUseCase.findCached(shopId)?.let { detail ->
+            clearRequestedShopState()
             selectShop(detail.shop)
             return
         }
 
-        handleResult(
-            result = ramenShopRepository.fetchRamenShops(setOf(shopId)),
-            onSuccess = { shops -> shops[shopId]?.let { selectShop(it) } },
-            onError = {},
+        launchResultTask(
+            taskKey = SELECT_SHOP_TASK_KEY,
+            loadKey = MapLoadKey.RequestedShop,
+            policy = TaskPolicy.CancelPrevious,
+            onStart = {
+                copy(
+                    selectedShop = null,
+                    shopDetail = null,
+                    hasShopDetailLoadFailed = false,
+                    requestedShopId = shopId,
+                    requestedShopStatus = RequestedShopStatus.Loading,
+                )
+            },
+            request = { ramenShopRepository.fetchRamenShops(setOf(shopId)) },
+            onSuccess = { shops ->
+                val shop = shops[shopId]
+                if (shop == null) {
+                    reduce { copy(requestedShopStatus = RequestedShopStatus.NotFound) }
+                } else {
+                    selectResolvedShop(shop, shouldFocus = true)
+                }
+            },
+            onError = { reduce { copy(requestedShopStatus = RequestedShopStatus.Failed) } },
         )
+    }
+
+    private fun retryRequestedShopLoad() {
+        val shopId = currentState.requestedShopId ?: return
+        selectShop(shopId)
+    }
+
+    private fun dismissRequestedShopLoad() {
+        cancelTask(SELECT_SHOP_TASK_KEY)
+        clearRequestedShopState()
+    }
+
+    private fun clearRequestedShopState() {
+        reduce {
+            copy(
+                requestedShopId = null,
+                requestedShopStatus = RequestedShopStatus.Idle,
+            )
+        }
     }
 
     private fun updateMyLocation(location: Location) {
@@ -238,6 +313,7 @@ class MapViewModel(
             copy(
                 search = search.selectPlace(place),
                 selectedShop = null,
+                hasShopDetailLoadFailed = false,
             )
         }
     }
@@ -251,6 +327,7 @@ class MapViewModel(
             copy(
                 search = search.updateInput(query),
                 selectedShop = null,
+                hasShopDetailLoadFailed = false,
             )
         }
 
@@ -280,10 +357,6 @@ class MapViewModel(
             }
 
         updateFilter(nextFilter)
-    }
-
-    private fun clearFilter() {
-        updateFilter(RamenShopFilter())
     }
 
     private suspend fun updatePersonalization(personalization: ShopPersonalization) {
@@ -324,14 +397,14 @@ class MapViewModel(
         reduce { copy(shops = RamenShops(shops + result)) }
     }
 
-    private suspend fun toggleBookmark(shop: RamenShop) {
+    private fun toggleBookmark(shop: RamenShop) {
         if (!isLoggedInOrShowGuide()) return
 
         val isBookmarked = shop.id in currentState.bookmarkedShopIds
         postBookmark(shop.id, isBookmarked)
     }
 
-    private suspend fun toggleShopNotification(shop: RamenShop) {
+    private fun toggleShopNotification(shop: RamenShop) {
         if (!isLoggedInOrShowGuide()) return
         val isHiddenShop = shop.id in currentState.hiddenShopIds
         if (isHiddenShop) {
@@ -343,24 +416,28 @@ class MapViewModel(
         postShopNotification(shop.id, wasEnabled)
     }
 
-    private suspend fun postShopNotification(
+    private fun postShopNotification(
         shopId: String,
         wasEnabled: Boolean,
     ) {
         val enabled = !wasEnabled
-        handleResult(
-            result = personalizationStore.updateShopNotification(shopId, enabled),
+        launchResultTask(
+            taskKey = shopNotificationTaskKey(shopId),
+            policy = TaskPolicy.IgnoreNew,
+            request = { personalizationStore.updateShopNotification(shopId, enabled) },
             onError = { showPersonalizationUpdateFailure() },
         )
     }
 
-    private suspend fun postBookmark(
+    private fun postBookmark(
         shopId: String,
         isBookmarked: Boolean,
     ) {
         val enabled = !isBookmarked
-        handleResult(
-            result = personalizationStore.updateBookmark(shopId, enabled),
+        launchResultTask(
+            taskKey = bookmarkTaskKey(shopId),
+            policy = TaskPolicy.IgnoreNew,
+            request = { personalizationStore.updateBookmark(shopId, enabled) },
             onSuccess = {
                 if (!isBookmarked) loadPersonalizedShops(setOf(shopId))
             },
@@ -368,7 +445,7 @@ class MapViewModel(
         )
     }
 
-    private suspend fun toggleHidden(shop: RamenShop) {
+    private fun toggleHidden(shop: RamenShop) {
         if (!isLoggedInOrShowGuide()) return
 
         if (shop.id in currentState.hiddenShopIds) {
@@ -378,9 +455,11 @@ class MapViewModel(
         }
     }
 
-    private suspend fun hideShop(shop: RamenShop) {
-        handleResult(
-            result = personalizationStore.hideShop(shop.id),
+    private fun hideShop(shop: RamenShop) {
+        launchResultTask(
+            taskKey = hiddenShopTaskKey(shop.id),
+            policy = TaskPolicy.IgnoreNew,
+            request = { personalizationStore.hideShop(shop.id) },
             onSuccess = { showHiddenShopSuccess() },
             onError = { showPersonalizationUpdateFailure() },
         )
@@ -390,9 +469,11 @@ class MapViewModel(
         showToast(Res.string.hide_shop_success_message)
     }
 
-    private suspend fun unhideShop(shop: RamenShop) {
-        handleResult(
-            result = personalizationStore.unhideShop(shop.id),
+    private fun unhideShop(shop: RamenShop) {
+        launchResultTask(
+            taskKey = hiddenShopTaskKey(shop.id),
+            policy = TaskPolicy.IgnoreNew,
+            request = { personalizationStore.unhideShop(shop.id) },
             onError = { showPersonalizationUpdateFailure() },
         )
     }
@@ -428,7 +509,7 @@ class MapViewModel(
         return false
     }
 
-    private suspend fun submitShopInformationReport(
+    private fun submitShopInformationReport(
         wrongFields: Set<ShopInformationField>,
         description: String,
     ) {
@@ -442,8 +523,10 @@ class MapViewModel(
                 wrongFields = wrongFields,
                 description = description.trim(),
             )
-        handleResult(
-            result = shopReportRepository.submitShopInformationReport(report),
+        launchResultTask(
+            taskKey = SHOP_REPORT_TASK_KEY,
+            policy = TaskPolicy.IgnoreNew,
+            request = { shopReportRepository.submitShopInformationReport(report) },
             onSuccess = { showShopInformationReportSuccess() },
             onError = { showShopInformationReportFailure() },
         )
@@ -457,9 +540,11 @@ class MapViewModel(
         showToast(Res.string.shop_information_report_failure_message, ToastType.ERROR)
     }
 
-    private suspend fun signInWithKakao() {
-        handleResult(
-            result = loginRepository.signInWithKakao(),
+    private fun signInWithKakao() {
+        launchResultTask(
+            taskKey = SIGN_IN_TASK_KEY,
+            policy = TaskPolicy.IgnoreNew,
+            request = loginRepository::signInWithKakao,
             onError = { showKakaoLoginFailure() },
         )
     }
@@ -574,31 +659,36 @@ class MapViewModel(
             copy(
                 search = search.updateResults(query, result),
                 selectedShop = null,
+                hasShopDetailLoadFailed = false,
             )
         }
     }
 
+    /** 선택 매장이 바뀌면 이전 상세 조회를 교체하고 결과가 현재 선택 매장과 일치할 때만 반영한다. */
     private fun loadShopDetail(shopId: String) {
-        shopDetailJob?.cancel()
-        shopDetailJob =
-            viewModelScope.launch {
-                when (val result = fetchShopDetailUseCase(shopId)) {
-                    is RamapResult.Success -> {
-                        if (currentState.selectedShop?.id != shopId) return@launch
-                        handleShopDetailSuccess(result.data)
-                    }
+        launchTask(
+            taskKey = SHOP_DETAIL_TASK_KEY,
+            loadKey = MapLoadKey.ShopDetail,
+            policy = TaskPolicy.CancelPrevious,
+            onStart = { copy(hasShopDetailLoadFailed = false) },
+        ) {
+            when (val result = fetchShopDetailUseCase(shopId)) {
+                is RamapResult.Success -> {
+                    if (currentState.selectedShop?.id != shopId) return@launchTask
+                    handleShopDetailSuccess(result.data)
+                }
 
-                    is RamapResult.Error -> {
-                        if (currentState.selectedShop?.id != shopId) return@launch
-                        handleShopDetailFailure(result.error)
-                    }
+                is RamapResult.Error -> {
+                    if (currentState.selectedShop?.id != shopId) return@launchTask
+                    handleShopDetailFailure(result.error)
                 }
             }
+        }
     }
 
+    /** 상세 UI가 닫히거나 검색 상태가 바뀔 때 진행 중 상세 조회와 로딩을 함께 정리한다. */
     private fun cancelShopDetailLoad() {
-        shopDetailJob?.cancel()
-        shopDetailJob = null
+        cancelTask(SHOP_DETAIL_TASK_KEY)
     }
 
     private fun handleShopDetailSuccess(detail: ShopDetail) {
@@ -609,15 +699,19 @@ class MapViewModel(
                 selectedShop = detail.shop.copy(isVisible = selectedShop.isVisible),
                 shopWaiting = shopWaiting + (selectedShop.id to detail.waitingSystem),
                 shopDetail = detail,
-                isShopDetailLoading = false,
+                hasShopDetailLoadFailed = false,
             )
         }
     }
 
     private fun handleShopDetailFailure(error: RamapError) {
         handleError(error)
-        reduce { copy(shopDetail = null, isShopDetailLoading = false) }
-        showDataLoadFailure()
+        reduce {
+            copy(
+                shopDetail = null,
+                hasShopDetailLoadFailed = true,
+            )
+        }
     }
 
     private fun scheduleRamenShopsLoad(bounds: MapBounds) {
@@ -660,4 +754,17 @@ class MapViewModel(
         RamenShops(
             currentState.shops + newShops,
         )
+
+    private fun bookmarkTaskKey(shopId: String): String = "map-bookmark:$shopId"
+
+    private fun shopNotificationTaskKey(shopId: String): String = "map-shop-notification:$shopId"
+
+    private fun hiddenShopTaskKey(shopId: String): String = "map-hidden-shop:$shopId"
+
+    companion object {
+        private const val SHOP_DETAIL_TASK_KEY = "map-shop-detail"
+        private const val SELECT_SHOP_TASK_KEY = "map-select-shop"
+        private const val SHOP_REPORT_TASK_KEY = "map-shop-report"
+        private const val SIGN_IN_TASK_KEY = "map-sign-in"
+    }
 }

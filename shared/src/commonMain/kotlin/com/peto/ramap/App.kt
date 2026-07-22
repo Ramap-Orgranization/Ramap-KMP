@@ -7,7 +7,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
 import com.peto.ramap.designsystem.toast.ToastHost
 import com.peto.ramap.designsystem.toast.ToastManager
 import com.peto.ramap.domain.model.auth.LoginSessionState
@@ -20,7 +19,6 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import org.koin.compose.koinInject
 
 @Composable
-@Preview
 fun App(
     loginRepository: LoginRepository = koinInject(),
     personalizationStore: ShopPersonalizationStore = koinInject(),

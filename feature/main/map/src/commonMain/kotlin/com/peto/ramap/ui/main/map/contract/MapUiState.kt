@@ -9,6 +9,8 @@ import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.domain.model.shop.WaitingSystem
 import com.peto.ramap.domain.usecase.ShopDetail
 import com.peto.ramap.ui.base.State
+import com.peto.ramap.ui.loading.LoadState
+import com.peto.ramap.ui.loading.LoadableState
 import com.peto.ramap.ui.main.map.config.DefaultMapConfig
 import com.peto.ramap.ui.main.map.model.CameraPosition
 import com.peto.ramap.ui.main.map.model.LocationFocusStatus
@@ -17,7 +19,8 @@ import com.peto.ramap.ui.main.map.search.SearchUiModel
 
 data class MapUiState(
     val shopDetail: ShopDetail? = null,
-    val isShopDetailLoading: Boolean = false,
+    /** 지도 화면의 작업별 로딩 카운트. */
+    override val loadState: LoadState = LoadState(),
     /**
      * 지도에서 조회 가능한 전체 라멘 매장 목록.
      */
@@ -26,6 +29,9 @@ data class MapUiState(
      * 상세 바텀시트에 표시할 현재 선택 매장.
      */
     val selectedShop: RamenShop? = null,
+    val hasShopDetailLoadFailed: Boolean = false,
+    val requestedShopId: String? = null,
+    val requestedShopStatus: RequestedShopStatus = RequestedShopStatus.Idle,
     val shouldFocusSelectedShop: Boolean = true,
     /**
      * 검색창 입력값, 검색 결과, 검색 결과의 소비 상태.
@@ -44,6 +50,9 @@ data class MapUiState(
      */
     val bounds: MapBounds = DefaultMapConfig.bounds,
     val hasViewportLoadFailed: Boolean = false,
+    /**
+     * 현재 지도 영역(bounds) 기준 매장 조회가 진행 중인지 여부.
+     */
     val cameraPosition: CameraPosition? = null,
     /**
      * 마지막으로 확인된 사용자 위치.
@@ -70,7 +79,24 @@ data class MapUiState(
      * 현재 사용자의 로그인 여부.
      */
     val isLoggedIn: Boolean = false,
-) : State {
+) : State,
+    LoadableState<MapUiState> {
+    /** 현재 선택 매장의 상세 조회가 진행 중인지 여부. */
+    val isShopDetailLoading: Boolean
+        get() = loadState.isLoading(MapLoadKey.ShopDetail)
+
+    val isRequestedShopLoading: Boolean
+        get() = loadState.isLoading(MapLoadKey.RequestedShop)
+
+    val showRequestedShopFailure: Boolean
+        get() = requestedShopStatus == RequestedShopStatus.Failed
+
+    val showRequestedShopNotFound: Boolean
+        get() = requestedShopStatus == RequestedShopStatus.NotFound
+
+    /** 로딩 카운트만 교체한 새 지도 UI 상태를 반환한다. */
+    override fun withLoadingState(loadState: LoadState): MapUiState = copy(loadState = loadState)
+
     /**
      * 검색 결과 리스트 바텀시트에 표시할 매장 목록.
      *
@@ -148,7 +174,7 @@ data class MapUiState(
      * 선택 매장 상세 또는 다중 검색 결과 리스트 중 하나라도 표시할 내용이 있으면 true가 된다.
      */
     val showBottomSheet: Boolean
-        get() = selectedShop != null || showSearchResults
+        get() = selectedShop != null || showSearchResults || showRequestedShopFailure || showRequestedShopNotFound
 
     /**
      * 지도 카메라가 포커스해야 할 매장 목록.

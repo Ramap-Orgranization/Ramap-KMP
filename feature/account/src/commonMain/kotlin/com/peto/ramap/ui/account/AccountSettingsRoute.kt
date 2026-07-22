@@ -49,13 +49,18 @@ fun AccountSettingsRoute(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var isAccountDeleteConfirmDialogVisible by rememberSaveable { mutableStateOf(false) }
+
     ObserveAsEvents(viewModel.sideEffect) { sideEffect ->
         when (sideEffect) {
             is AccountSideEffect.ShowToast -> toastManager.show(sideEffect.data)
         }
     }
 
-    SettingsPage(Res.string.settings_account_menu, onBack) {
+    SettingsPage(
+        title = Res.string.settings_account_menu,
+        showLoading = uiState.loadState.isAnyLoading,
+        onBack = onBack,
+    ) {
         SectionCard(title = uiState.accountLabel) {
             if (uiState.isLoggedIn) {
                 AppButton(
@@ -101,7 +106,6 @@ fun AccountSettingsRoute(
         visible = isAccountDeleteConfirmDialogVisible,
         confirmText = stringResource(Res.string.account_delete_confirm_action),
         dismissText = stringResource(Res.string.account_delete_confirm_dismiss),
-        confirmEnabled = !uiState.isDeletingAccount,
         onDismissRequest = { isAccountDeleteConfirmDialogVisible = false },
         content = {
             AppText(

@@ -3,6 +3,7 @@ package com.peto.ramap.ui.main.event
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -27,7 +28,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.peto.ramap.designsystem.button.AppButton
 import com.peto.ramap.designsystem.card.SectionCard
-import com.peto.ramap.designsystem.component.LaduckLoadingContent
+import com.peto.ramap.designsystem.indicator.RamenLoadingIndicator
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.designsystem.toast.ToastManager
 import com.peto.ramap.designsystem.toast.model.ToastAction
@@ -122,23 +123,19 @@ fun EventDetailRoute(
                 }
         }
     }
-    uiState.event?.let {
-        EventDetailScreen(
-            event = it,
-            onBack = onBack,
-            onShopClick = onShopClick,
-            uiState = uiState,
-            onNotificationChanged = { enabled -> viewModel.dispatch(OnNotificationChanged(enabled)) },
-        )
-    } ?: LaduckLoadingContent(modifier = Modifier.fillMaxSize())
+    EventDetailScreen(
+        uiState = uiState,
+        onBack = onBack,
+        onShopClick = onShopClick,
+        onNotificationChanged = { enabled -> viewModel.dispatch(OnNotificationChanged(enabled)) },
+    )
 }
 
 @Composable
 fun EventDetailScreen(
-    event: ShopEvent,
+    uiState: EventDetailUiState,
     onBack: () -> Unit,
     onShopClick: (String) -> Unit,
-    uiState: EventDetailUiState,
     onNotificationChanged: (Boolean) -> Unit,
 ) {
     Scaffold(
@@ -166,85 +163,98 @@ fun EventDetailScreen(
             )
         },
     ) { innerPadding ->
-        Column(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(innerPadding)
-                    .padding(horizontal = 24.dp, vertical = 16.dp)
-                    .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(24.dp),
-        ) {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                EventTag(stringResource(if (event.isToday) Res.string.event_status_today else Res.string.event_status_upcoming))
-                EventTag(eventTypeLabel(event.type))
+        Box(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
+            val event = uiState.event
+            when {
+                event != null -> EventDetailContent(event = event, onShopClick = onShopClick)
+                uiState.isEventLoading -> RamenLoadingIndicator(modifier = Modifier.fillMaxSize())
             }
-            AppText(event.title, style = AppTextStyle.H1, color = GrayColor.C500)
-            SectionCard(title = stringResource(Res.string.event_venue)) {
-                Column(
-                    modifier =
-                        Modifier
-                            .padding(horizontal = 20.dp, vertical = 10.dp),
-                    verticalArrangement = Arrangement.spacedBy(20.dp),
-                ) {
-                    EventLink(
-                        event.venueShopName,
-                        event.venueAddress,
-                    ) { onShopClick(event.venueShopId) }
-                    event.collaboratorName?.takeIf(String::isNotBlank)?.let { name ->
-                        EventSection(
-                            stringResource(
-                                if (event.collaboratorShopId.isNullOrBlank()) {
-                                    Res.string.event_collaborator_person
-                                } else {
-                                    Res.string.event_collaborator_shop
-                                },
-                            ),
-                        ) {
-                            EventLink(name) {
-                                event.collaboratorShopId
-                                    ?.takeIf(String::isNotBlank)
-                                    ?.let(onShopClick)
-                                    ?: event.collaboratorInstagramUrl?.let(ExternalUriOpener::open)
-                            }
-                        }
-                    }
-                    EventSection(stringResource(Res.string.event_date)) {
-                        EventValue(eventDateText(event.startDate, event.endDate))
-                    }
-                }
-            }
-            SectionCard(title = stringResource(Res.string.event_content)) {
-                EventValue(
-                    event.description,
-                    Modifier.padding(horizontal = 20.dp, vertical = 10.dp),
-                )
-            }
-            event.waitingMethod?.let { waiting ->
-                SectionCard(title = stringResource(Res.string.event_waiting)) {
-                    Column(modifier = Modifier.padding(horizontal = 20.dp).padding(top = 16.dp)) {
-                        EventValue(waiting)
-                        event.waitingUrl?.takeIf(ExternalUriOpener::isSupportedWebUri)?.let { url ->
-                            AppButton(
-                                text = stringResource(Res.string.event_waiting_action),
-                                modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
-                                onClick = { ExternalUriOpener.open(url) },
-                            )
+        }
+    }
+}
+
+@Composable
+private fun EventDetailContent(
+    event: ShopEvent,
+    onShopClick: (String) -> Unit,
+) {
+    Column(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp, vertical = 16.dp)
+                .verticalScroll(rememberScrollState()),
+        verticalArrangement = Arrangement.spacedBy(24.dp),
+    ) {
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            EventTag(stringResource(if (event.isToday) Res.string.event_status_today else Res.string.event_status_upcoming))
+            EventTag(eventTypeLabel(event.type))
+        }
+        AppText(event.title, style = AppTextStyle.H1, color = GrayColor.C500)
+        SectionCard(title = stringResource(Res.string.event_venue)) {
+            Column(
+                modifier =
+                    Modifier
+                        .padding(horizontal = 20.dp, vertical = 10.dp),
+                verticalArrangement = Arrangement.spacedBy(20.dp),
+            ) {
+                EventLink(
+                    event.venueShopName,
+                    event.venueAddress,
+                ) { onShopClick(event.venueShopId) }
+                event.collaboratorName?.takeIf(String::isNotBlank)?.let { name ->
+                    EventSection(
+                        stringResource(
+                            if (event.collaboratorShopId.isNullOrBlank()) {
+                                Res.string.event_collaborator_person
+                            } else {
+                                Res.string.event_collaborator_shop
+                            },
+                        ),
+                    ) {
+                        EventLink(name) {
+                            event.collaboratorShopId
+                                ?.takeIf(String::isNotBlank)
+                                ?.let(onShopClick)
+                                ?: event.collaboratorInstagramUrl?.let(ExternalUriOpener::open)
                         }
                     }
                 }
+                EventSection(stringResource(Res.string.event_date)) {
+                    EventValue(eventDateText(event.startDate, event.endDate))
+                }
             }
-            if (ExternalUriOpener.isSupportedWebUri(event.sourceUrl)) {
-                AppButton(
-                    text = stringResource(Res.string.event_instagram_action),
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .background(INSTAGRAM_GRADIENT, RoundedCornerShape(12.dp)),
-                    backgroundColor = Color.Transparent,
-                    onClick = { ExternalUriOpener.open(event.sourceUrl) },
-                )
+        }
+        SectionCard(title = stringResource(Res.string.event_content)) {
+            EventValue(
+                event.description,
+                Modifier.padding(horizontal = 20.dp, vertical = 10.dp),
+            )
+        }
+        event.waitingMethod?.let { waiting ->
+            SectionCard(title = stringResource(Res.string.event_waiting)) {
+                Column(modifier = Modifier.padding(horizontal = 20.dp).padding(vertical = 10.dp)) {
+                    EventValue(waiting)
+                    event.waitingUrl?.takeIf(ExternalUriOpener::isSupportedWebUri)?.let { url ->
+                        AppButton(
+                            text = stringResource(Res.string.event_waiting_action),
+                            modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+                            onClick = { ExternalUriOpener.open(url) },
+                        )
+                    }
+                }
             }
+        }
+        if (ExternalUriOpener.isSupportedWebUri(event.sourceUrl)) {
+            AppButton(
+                text = stringResource(Res.string.event_instagram_action),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .background(INSTAGRAM_GRADIENT, RoundedCornerShape(12.dp)),
+                backgroundColor = Color.Transparent,
+                onClick = { ExternalUriOpener.open(event.sourceUrl) },
+            )
         }
     }
 }

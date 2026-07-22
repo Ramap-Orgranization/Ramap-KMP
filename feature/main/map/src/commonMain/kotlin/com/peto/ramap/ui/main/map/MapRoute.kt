@@ -29,8 +29,11 @@ import com.peto.ramap.ui.main.map.contract.MapIntent.OnLocationPermissionBlocked
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnMyLocationChanged
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnPlaceSelected
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnQueryChanged
+import com.peto.ramap.ui.main.map.contract.MapIntent.OnRequestedShopDismissed
+import com.peto.ramap.ui.main.map.contract.MapIntent.OnRequestedShopRetry
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnSearchResultsDismissed
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopDetailDismissed
+import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopDetailRetry
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopIdSelected
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopNotificationToggled
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopReportSubmitted
@@ -61,8 +64,10 @@ fun MapRoute(
     var showLoginGuideDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(requestedShopId) {
-        requestedShopId?.let { shopId ->
-            viewModel.dispatch(OnShopIdSelected(shopId))
+        if (requestedShopId == null) {
+            viewModel.dispatch(OnRequestedShopDismissed)
+        } else {
+            viewModel.dispatch(OnShopIdSelected(requestedShopId))
         }
     }
 
@@ -98,6 +103,9 @@ fun MapRoute(
         onShopSelected = { shop, shouldFocus -> viewModel.dispatch(OnShopSelected(shop, shouldFocus)) },
         onPlaceSelected = { viewModel.dispatch(OnPlaceSelected(it)) },
         onShopDetailDismissed = { viewModel.dispatch(OnShopDetailDismissed) },
+        onShopDetailRetry = { viewModel.dispatch(OnShopDetailRetry) },
+        onRequestedShopRetry = { viewModel.dispatch(OnRequestedShopRetry) },
+        onRequestedShopDismissed = { viewModel.dispatch(OnRequestedShopDismissed) },
         onQueryChanged = { viewModel.dispatch(OnQueryChanged(it)) },
         onSearchResultsDismissed = { viewModel.dispatch(OnSearchResultsDismissed) },
         onInitialLocationFocusConsumed = { viewModel.dispatch(OnInitialLocationFocusConsumed) },

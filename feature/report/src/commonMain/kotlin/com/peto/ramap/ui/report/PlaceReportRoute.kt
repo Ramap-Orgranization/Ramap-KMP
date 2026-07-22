@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.TextField
@@ -26,6 +25,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.peto.ramap.designsystem.button.AppButton
 import com.peto.ramap.designsystem.card.SectionCard
 import com.peto.ramap.designsystem.component.SettingsPage
+import com.peto.ramap.designsystem.indicator.RamenLoadingIndicator
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.designsystem.toast.ToastManager
 import com.peto.ramap.platform.permission.PermissionStatus
@@ -179,10 +179,7 @@ private fun PlaceReportContent(
         }
 
         if (uiState.isSubmitting) {
-            CircularProgressIndicator(
-                modifier = Modifier.align(Alignment.Center),
-                color = GrayColor.C500,
-            )
+            RamenLoadingIndicator(modifier = Modifier.align(Alignment.Center))
         }
     }
 }

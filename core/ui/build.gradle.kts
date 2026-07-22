@@ -1,4 +1,7 @@
-plugins { id("ramap.kmp.compose") }
+plugins {
+    id("ramap.kmp.compose")
+    id("ramap.kmp.test")
+}
 
 kotlin {
     sourceSets.commonMain.dependencies {

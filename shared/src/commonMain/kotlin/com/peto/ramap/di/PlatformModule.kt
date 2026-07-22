@@ -1,4 +1,4 @@
-package com.peto.ramap.platform.di
+package com.peto.ramap.di
 
 import org.koin.core.module.Module
 

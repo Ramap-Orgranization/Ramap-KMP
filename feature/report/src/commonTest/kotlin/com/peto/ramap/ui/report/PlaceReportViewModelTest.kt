@@ -12,7 +12,6 @@ import com.peto.ramap.fake.FakeShopReportRepository
 import com.peto.ramap.platform.location.CurrentLocationProvider
 import com.peto.ramap.platform.location.PlatformLocation
 import com.peto.ramap.platform.permission.PermissionStatus
-import com.peto.ramap.ui.common.LoadState
 import com.peto.ramap.ui.location.CurrentLocationStore
 import com.peto.ramap.ui.report.contract.PlaceReportIntent
 import com.peto.ramap.ui.report.contract.PlaceReportSideEffect
@@ -56,7 +55,7 @@ class PlaceReportViewModelTest {
                     ),
                     awaitItem(),
                 )
-                assertEquals(LoadState.Idle, viewModel.uiState.value.submitState)
+                assertFalse(viewModel.uiState.value.isSubmitting)
             }
         }
 
@@ -70,13 +69,13 @@ class PlaceReportViewModelTest {
             viewModel.dispatch(PlaceReportIntent.OnPlaceReportSubmit)
             runCurrent()
 
-            assertEquals(LoadState.Loading, viewModel.uiState.value.submitState)
+            assertTrue(viewModel.uiState.value.isSubmitting)
             assertFalse(viewModel.uiState.value.canSubmitPlaceUrl)
 
             advanceTimeBy(1_000)
             runCurrent()
 
-            assertEquals(LoadState.Content(Unit), viewModel.uiState.value.submitState)
+            assertFalse(viewModel.uiState.value.isSubmitting)
             assertEquals(1, reportRepository.placeReports.size)
         }
 
@@ -97,15 +96,32 @@ class PlaceReportViewModelTest {
             viewModel.dispatch(PlaceReportIntent.OnCurrentLocationReportSubmit)
             runCurrent()
 
-            assertEquals(LoadState.Loading, viewModel.uiState.value.submitState)
+            assertTrue(viewModel.uiState.value.isSubmitting)
             assertFalse(viewModel.uiState.value.canSubmitPlaceUrl)
             assertFalse(viewModel.uiState.value.canSubmitCurrentLocation)
 
             advanceTimeBy(1_000)
             runCurrent()
 
-            assertEquals(LoadState.Content(Unit), viewModel.uiState.value.submitState)
+            assertFalse(viewModel.uiState.value.isSubmitting)
             assertEquals(1, reportRepository.placeReports.size)
+        }
+
+    @Test
+    fun `제출 중 다시 제출해도 요청을 한 번만 보낸다`() =
+        coroutinesTest {
+            val reportRepository = FakeShopReportRepository(delayMillis = 1_000)
+            val viewModel = placeReportViewModel(reportRepository = reportRepository)
+            viewModel.dispatch(PlaceReportIntent.OnPlaceUrlChanged("https://kko.to/hgONCY9DKH"))
+
+            viewModel.dispatch(PlaceReportIntent.OnPlaceReportSubmit)
+            viewModel.dispatch(PlaceReportIntent.OnPlaceReportSubmit)
+            runCurrent()
+            advanceTimeBy(1_000)
+            runCurrent()
+
+            assertEquals(1, reportRepository.placeReports.size)
+            assertFalse(viewModel.uiState.value.isSubmitting)
         }
 
     @Test
@@ -268,7 +284,7 @@ class PlaceReportViewModelTest {
 
 private fun placeReportViewModel(
     currentLocationStore: CurrentLocationStore = CurrentLocationStore(),
-    reverseGeocoder: ReverseGeocoder? = null,
+    reverseGeocoder: ReverseGeocoder = ReverseGeocoder { RamapResult.Success("") },
     reportRepository: FakeShopReportRepository = FakeShopReportRepository(),
     currentLocationProvider: CurrentLocationProvider = CurrentLocationProvider { null },
 ) = PlaceReportViewModel(
