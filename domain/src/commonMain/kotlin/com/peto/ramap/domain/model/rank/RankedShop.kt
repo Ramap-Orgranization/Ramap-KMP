@@ -1,4 +1,4 @@
-package com.peto.ramap.domain.model.shop
+package com.peto.ramap.domain.model.rank
 
 data class RankedShop(
     val rank: Int,
