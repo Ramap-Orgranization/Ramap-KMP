@@ -101,7 +101,6 @@ fun RamenShopDetailContent(
         modifier =
             modifier
                 .fillMaxWidth()
-                .padding(horizontal = 24.dp)
                 .padding(bottom = 28.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
@@ -111,14 +110,18 @@ fun RamenShopDetailContent(
                 modifier =
                     Modifier
                         .padding(top = 20.dp)
+                        .padding(horizontal = 24.dp)
                         .noRippleClickable { onEventClick(it) },
                 style = AppTextStyle.B1,
                 color = SystemColor.Warning,
             )
         }
-        Column(verticalArrangement = Arrangement.spacedBy(15.dp)) {
+        Column {
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 24.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalAlignment = Alignment.Top,
             ) {
@@ -156,20 +159,19 @@ fun RamenShopDetailContent(
             if (shop.hasCategory) {
                 FlowRow(
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                    modifier = Modifier.padding(horizontal = 24.dp),
                 ) {
                     shop.menuCategories.forEach { category ->
-                        CategoryFilterChip(
-                            label = stringResource(category.stringResource),
-                            selected = false,
-                            onClick = {},
-                        )
+                        CategoryFilterChip(label = stringResource(category.stringResource))
                     }
                 }
             }
         }
 
-        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Column(
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+            modifier = Modifier.padding(horizontal = 24.dp),
+        ) {
             ShopInfoRow(
                 label = stringResource(Res.string.shop_detail_label_address),
                 value = shop.address,
@@ -190,7 +192,7 @@ fun RamenShopDetailContent(
                 )
             }
 
-            if (waitingSystemUiModel != null) {
+            waitingSystemUiModel?.let {
                 ShopIconLinkRow(
                     label = stringResource(Res.string.shop_detail_label_waiting),
                     icon = waitingSystemUiModel.icon,
@@ -203,9 +205,13 @@ fun RamenShopDetailContent(
         HorizontalDivider(
             thickness = 2.dp,
             color = GrayColor.C100,
+            modifier = Modifier.padding(vertical = 5.dp),
         )
 
-        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Column(
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+            modifier = Modifier.padding(horizontal = 24.dp),
+        ) {
             shop.instagramUrl?.takeIf(ExternalUriOpener::isSupportedWebUri)?.let { instagramUrl ->
                 ShopLinkRow(
                     icon = Res.drawable.instagram_icon,

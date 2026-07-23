@@ -19,8 +19,8 @@ import com.peto.ramap.theme.RamapTheme
 @Composable
 fun CategoryFilterChip(
     label: String,
-    selected: Boolean,
-    onClick: () -> Unit,
+    selected: Boolean = false,
+    onClick: () -> Unit = {},
     modifier: Modifier = Modifier,
     style: AppTextStyle = AppTextStyle.C2,
 ) {
