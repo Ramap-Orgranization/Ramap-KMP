@@ -1,7 +1,7 @@
 package com.peto.ramap.data.store
 
 import com.peto.ramap.core.result.RamapResult
-import com.peto.ramap.domain.model.personalization.Personalization
+import com.peto.ramap.domain.model.personalization.ShopPersonalization
 import com.peto.ramap.domain.repository.BookmarkRepository
 import com.peto.ramap.fake.FakeBookmarkRepository
 import com.peto.ramap.fake.FakeHiddenShopRepository
@@ -33,7 +33,7 @@ class DefaultShopPersonalizationStoreTest {
             assertIs<RamapResult.Success<Unit>>(store.refresh())
 
             assertEquals(
-                Personalization(
+                ShopPersonalization(
                     bookmarkedShopIds = setOf("bookmark"),
                     hiddenShopIds = setOf("hidden"),
                     notificationShopIds = setOf("notification"),
@@ -58,7 +58,7 @@ class DefaultShopPersonalizationStoreTest {
 
             assertIs<RamapResult.Success<Unit>>(store.hideShop("shop"))
 
-            assertEquals(Personalization(hiddenShopIds = setOf("shop")), store.state.value)
+            assertEquals(ShopPersonalization(hiddenShopIds = setOf("shop")), store.state.value)
             assertEquals(setOf("shop"), bookmarkRepository.shopIds)
             assertEquals(emptyList(), bookmarkRepository.removeRequests)
             assertEquals(listOf("shop"), hiddenShopRepository.atomicHideRequests)
@@ -132,7 +132,7 @@ class DefaultShopPersonalizationStoreTest {
 
             assertIs<RamapResult.Success<Unit>>(store.unhideShop("shop"))
 
-            assertEquals(Personalization(), store.state.value)
+            assertEquals(ShopPersonalization(), store.state.value)
             assertEquals(emptySet(), hiddenShopRepository.shopIds)
         }
 
@@ -172,7 +172,7 @@ class DefaultShopPersonalizationStoreTest {
 
             assertIs<RamapResult.Error>(store.updateBookmark("shop", true))
 
-            assertEquals(Personalization(), store.state.value)
+            assertEquals(ShopPersonalization(), store.state.value)
         }
 
     @Test
@@ -229,7 +229,7 @@ class DefaultShopPersonalizationStoreTest {
 
             store.clear()
 
-            assertEquals(Personalization(), store.state.value)
+            assertEquals(ShopPersonalization(), store.state.value)
         }
 
     @Test
@@ -284,6 +284,6 @@ class DefaultShopPersonalizationStoreTest {
             refresh.await()
             clear.await()
 
-            assertEquals(Personalization(), store.state.value)
+            assertEquals(ShopPersonalization(), store.state.value)
         }
 }

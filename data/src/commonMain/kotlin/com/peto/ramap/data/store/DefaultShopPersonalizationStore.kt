@@ -22,7 +22,7 @@ import kotlinx.coroutines.withContext
  * 새로고침, 초기화, 낙관적 변경과 롤백 전체를 하나의 [Mutex]로 직렬화한다. 따라서 진행 중인
  * 요청의 롤백이 뒤따른 변경을 덮어쓰거나, 이전 사용자 새로고침 결과가 [clear] 이후 발행되지 않는다.
  */
-class DefaultShopPersonalizationStore(
+internal class DefaultShopPersonalizationStore(
     private val bookmarkRepository: BookmarkRepository,
     private val hiddenShopRepository: HiddenShopRepository,
     private val subscribedShopRepository: SubscribedShopRepository,

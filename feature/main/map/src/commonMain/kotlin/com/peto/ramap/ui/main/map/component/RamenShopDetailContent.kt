@@ -73,7 +73,7 @@ import ramap.shared.generated.resources.shop_detail_more_actions
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun RamenShopDetailContent(
+internal fun RamenShopDetailContent(
     shop: RamenShop,
     modifier: Modifier = Modifier,
     waitingSystem: WaitingSystemUiModel? = null,

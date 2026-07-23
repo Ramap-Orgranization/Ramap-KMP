@@ -89,7 +89,7 @@ fun RankingRoute(
 }
 
 @Composable
-fun RankingScreen(
+internal fun RankingScreen(
     uiState: RankingUiState,
     onShopClick: (String) -> Unit,
     onFindShopClick: () -> Unit,

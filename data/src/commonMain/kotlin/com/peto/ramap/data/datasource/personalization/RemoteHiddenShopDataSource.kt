@@ -9,7 +9,7 @@ import io.github.jan.supabase.postgrest.query.Columns
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 
-class RemoteHiddenShopDataSource(
+internal class RemoteHiddenShopDataSource(
     private val client: SupabaseClient,
 ) : HiddenShopDataSource {
     override suspend fun fetchHiddenShopIds(): List<PersonalizationResponse> =

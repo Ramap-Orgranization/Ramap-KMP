@@ -9,7 +9,7 @@ import com.peto.ramap.domain.model.report.UnregisteredPlaceReport
 import com.peto.ramap.domain.repository.ShopReportRepository
 import com.peto.ramap.network.execute.invokeRequest
 
-class DefaultShopReportRepository(
+internal class DefaultShopReportRepository(
     private val dataSource: ShopReportDataSource,
 ) : ShopReportRepository {
     override suspend fun submitShopInformationReport(report: ShopInformationReport): RamapResult<Unit> =

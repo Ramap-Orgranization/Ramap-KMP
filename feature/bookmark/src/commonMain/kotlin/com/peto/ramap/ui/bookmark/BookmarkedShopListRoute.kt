@@ -86,7 +86,7 @@ fun BookmarkedShopListRoute(
 }
 
 @Composable
-fun BookmarkedShopListScreen(
+internal fun BookmarkedShopListScreen(
     uiState: BookmarkedShopListUiState,
     removalTargetShopId: String?,
     onBack: () -> Unit,

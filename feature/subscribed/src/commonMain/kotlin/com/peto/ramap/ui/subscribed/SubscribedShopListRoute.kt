@@ -103,7 +103,7 @@ fun SubscribedShopListRoute(
 }
 
 @Composable
-fun SubscribedShopListScreen(
+internal fun SubscribedShopListScreen(
     uiState: SubscribedShopListUiState,
     onBack: () -> Unit,
     onRemovalRequested: (SubscribedRemovalTarget) -> Unit,

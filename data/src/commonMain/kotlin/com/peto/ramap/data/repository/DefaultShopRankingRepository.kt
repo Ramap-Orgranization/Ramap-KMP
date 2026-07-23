@@ -8,7 +8,7 @@ import com.peto.ramap.domain.model.rank.RankingQuery
 import com.peto.ramap.domain.repository.ShopRankingRepository
 import com.peto.ramap.network.execute.invokeRequest
 
-class DefaultShopRankingRepository(
+internal class DefaultShopRankingRepository(
     private val dataSource: ShopRankingDataSource,
 ) : ShopRankingRepository {
     override suspend fun fetchShopRankings(query: RankingQuery): RamapResult<RankingPage> =

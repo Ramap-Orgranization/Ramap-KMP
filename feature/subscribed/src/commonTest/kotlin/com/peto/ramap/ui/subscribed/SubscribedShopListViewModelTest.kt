@@ -8,7 +8,7 @@ import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.model.event.ShopEventType
 import com.peto.ramap.domain.model.notification.EventNotificationOverride
-import com.peto.ramap.domain.model.personalization.Personalization
+import com.peto.ramap.domain.model.personalization.ShopPersonalization
 import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.fake.FakeNotificationSettingsRepository
 import com.peto.ramap.fake.FakePersonalizationRepository
@@ -35,7 +35,7 @@ class SubscribedShopListViewModelTest {
                 SubscribedShopListViewModel(
                     personalizationStore =
                         FakePersonalizationRepository(
-                            Personalization(notificationShopIds = setOf(shop.id)),
+                            ShopPersonalization(notificationShopIds = setOf(shop.id)),
                         ),
                     notificationRepository =
                         FakeNotificationSettingsRepository(shopIds = mutableSetOf(shop.id)),
@@ -56,7 +56,7 @@ class SubscribedShopListViewModelTest {
             val missingShop = ramenShopFixture(id = "missing-subscribed-shop")
             val personalizationRepository =
                 FakePersonalizationRepository(
-                    Personalization(notificationShopIds = setOf(cachedShop.id)),
+                    ShopPersonalization(notificationShopIds = setOf(cachedShop.id)),
                 )
             val ramenShopRepository =
                 FakeRamenShopRepository(fetchByIdsResult = RamenShops(listOf(cachedShop)))
@@ -137,7 +137,7 @@ class SubscribedShopListViewModelTest {
             val repository = FakeNotificationSettingsRepository(shopIds = mutableSetOf(shop.id))
             val personalizationStore =
                 FakePersonalizationRepository(
-                    Personalization(notificationShopIds = setOf(shop.id)),
+                    ShopPersonalization(notificationShopIds = setOf(shop.id)),
                 )
             val viewModel =
                 SubscribedShopListViewModel(
@@ -174,7 +174,7 @@ class SubscribedShopListViewModelTest {
                 }
             val personalizationStore =
                 FakePersonalizationRepository(
-                    Personalization(notificationShopIds = setOf(shop.id)),
+                    ShopPersonalization(notificationShopIds = setOf(shop.id)),
                 ).apply {
                     shopNotificationError =
                         RamapError.Unknown(IllegalStateException("failure"))

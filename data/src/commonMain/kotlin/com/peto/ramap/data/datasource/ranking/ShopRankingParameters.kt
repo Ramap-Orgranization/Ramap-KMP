@@ -5,7 +5,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class ShopRankingParameters(
+internal data class ShopRankingParameters(
     @SerialName("p_area") val area: String?,
     @SerialName("p_category_ids") val categoryIds: List<String>,
     @SerialName("p_cursor_like_count") val cursorLikeCount: Long?,
@@ -14,7 +14,7 @@ data class ShopRankingParameters(
     @SerialName("p_limit") val limit: Int,
 )
 
-fun RankingQuery.toRequest(): ShopRankingParameters =
+internal fun RankingQuery.toRequest(): ShopRankingParameters =
     ShopRankingParameters(
         area = area?.name,
         categoryIds = categories.map { category -> category.id },

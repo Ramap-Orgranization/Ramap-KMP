@@ -4,7 +4,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-enum class PlaceSearchResultKindResponse {
+internal enum class PlaceSearchResultKindResponse {
     @SerialName("map_location")
     MAP_LOCATION,
 

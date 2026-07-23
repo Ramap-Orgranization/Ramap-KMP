@@ -9,7 +9,7 @@ import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.ui.main.map.model.CameraPosition
 
 @Composable
-expect fun RamapMapView(
+internal expect fun RamapMapView(
     shops: RamenShops,
     focusShops: RamenShops,
     focusNearestToCurrentLocation: Boolean,

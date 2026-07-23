@@ -2,7 +2,7 @@ package com.peto.ramap.fixture
 
 import com.peto.ramap.data.model.RamenShopResponse
 
-fun ramenShopResponseFixture(
+internal fun ramenShopResponseFixture(
     id: String,
     kakaoPlaceId: String? = "kakao-shop-1",
     name: String = "라멘집",

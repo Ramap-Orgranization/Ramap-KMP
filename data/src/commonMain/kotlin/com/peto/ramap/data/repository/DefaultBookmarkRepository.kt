@@ -5,7 +5,7 @@ import com.peto.ramap.data.datasource.personalization.BookmarkShopDataSource
 import com.peto.ramap.domain.repository.BookmarkRepository
 import com.peto.ramap.network.execute.invokeRequest
 
-class DefaultBookmarkRepository(
+internal class DefaultBookmarkRepository(
     private val dataSource: BookmarkShopDataSource,
 ) : BookmarkRepository {
     override suspend fun fetchBookmarkedShopIds(): RamapResult<Set<String>> =

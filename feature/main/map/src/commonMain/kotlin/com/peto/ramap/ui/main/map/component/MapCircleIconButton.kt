@@ -14,7 +14,7 @@ import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
 
 @Composable
-fun MapCircleIconButton(
+internal fun MapCircleIconButton(
     isActive: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,

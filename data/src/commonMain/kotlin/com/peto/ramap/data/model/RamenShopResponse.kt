@@ -9,7 +9,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class RamenShopResponse(
+internal data class RamenShopResponse(
     val id: String,
     @SerialName("kakao_place_id")
     val kakaoPlaceId: String? = null,

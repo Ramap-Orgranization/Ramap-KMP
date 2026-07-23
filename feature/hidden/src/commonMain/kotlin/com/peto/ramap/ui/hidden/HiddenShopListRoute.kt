@@ -99,7 +99,7 @@ fun HiddenShopListRoute(
 }
 
 @Composable
-fun HiddenShopListScreen(
+internal fun HiddenShopListScreen(
     uiState: HiddenShopListUiState,
     onBack: () -> Unit,
     onShopClick: (RamenShop) -> Unit,

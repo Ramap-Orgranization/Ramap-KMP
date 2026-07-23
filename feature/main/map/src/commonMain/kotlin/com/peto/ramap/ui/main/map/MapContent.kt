@@ -83,7 +83,7 @@ import ramap.shared.generated.resources.retry_action
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MapContent(
+internal fun MapContent(
     uiState: MapUiState,
     isBackEnabled: Boolean,
     onBoundsChanged: (MapBounds) -> Unit,

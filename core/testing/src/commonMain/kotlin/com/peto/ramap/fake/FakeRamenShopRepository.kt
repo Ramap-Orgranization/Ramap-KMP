@@ -16,7 +16,7 @@ class FakeRamenShopRepository(
     var error: RamapError? = null,
     private val activeEvent: ShopEvent? = null,
     private val activeEvents: List<ShopEvent> = emptyList(),
-    private val activeEventError: RamapError? = null,
+    var activeEventError: RamapError? = null,
     var activeEventsError: RamapError? = null,
     var activeEventsDelayMillis: Long = 0,
 ) : RamenShopRepository {

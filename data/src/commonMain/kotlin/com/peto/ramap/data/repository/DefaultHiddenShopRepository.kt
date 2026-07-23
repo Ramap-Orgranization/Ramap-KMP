@@ -5,7 +5,7 @@ import com.peto.ramap.data.datasource.personalization.HiddenShopDataSource
 import com.peto.ramap.domain.repository.HiddenShopRepository
 import com.peto.ramap.network.execute.invokeRequest
 
-class DefaultHiddenShopRepository(
+internal class DefaultHiddenShopRepository(
     private val dataSource: HiddenShopDataSource,
 ) : HiddenShopRepository {
     override suspend fun fetchHiddenShopIds(): RamapResult<Set<String>> =

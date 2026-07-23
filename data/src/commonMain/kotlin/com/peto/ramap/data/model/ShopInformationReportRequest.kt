@@ -5,7 +5,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class ShopInformationReportRequest(
+internal data class ShopInformationReportRequest(
     @SerialName("shop_id")
     val shopId: String,
     @SerialName("shop_name")

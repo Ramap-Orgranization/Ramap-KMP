@@ -15,7 +15,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun AppRoundButton(
+internal fun AppRoundButton(
     contentHeight: Dp,
     contentColor: Color,
     contentBorderColor: Color,

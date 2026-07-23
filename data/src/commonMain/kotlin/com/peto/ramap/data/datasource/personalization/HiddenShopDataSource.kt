@@ -2,7 +2,7 @@ package com.peto.ramap.data.datasource.personalization
 
 import com.peto.ramap.data.model.PersonalizationResponse
 
-interface HiddenShopDataSource {
+internal interface HiddenShopDataSource {
     suspend fun fetchHiddenShopIds(): List<PersonalizationResponse>
 
     suspend fun hideShop(shopId: String)

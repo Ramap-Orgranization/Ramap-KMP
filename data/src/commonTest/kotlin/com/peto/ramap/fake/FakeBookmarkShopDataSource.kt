@@ -3,7 +3,7 @@ package com.peto.ramap.fake
 import com.peto.ramap.data.datasource.personalization.BookmarkShopDataSource
 import com.peto.ramap.data.model.PersonalizationResponse
 
-class FakeBookmarkShopDataSource(
+internal class FakeBookmarkShopDataSource(
     initialBookmarks: List<PersonalizationResponse> = emptyList(),
 ) : BookmarkShopDataSource {
     private val bookmarks = initialBookmarks.toMutableList()

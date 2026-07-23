@@ -2,7 +2,7 @@ package com.peto.ramap.ui.hidden
 
 import com.peto.ramap.core.result.RamapError
 import com.peto.ramap.coroutinesTest
-import com.peto.ramap.domain.model.personalization.Personalization
+import com.peto.ramap.domain.model.personalization.ShopPersonalization
 import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.fake.FakePersonalizationRepository
 import com.peto.ramap.fake.FakeRamenShopRepository
@@ -24,7 +24,7 @@ class HiddenShopListViewModelTest {
                 HiddenShopListViewModel(
                     personalizationStore =
                         FakePersonalizationRepository(
-                            Personalization(hiddenShopIds = setOf(hiddenShop.id)),
+                            ShopPersonalization(hiddenShopIds = setOf(hiddenShop.id)),
                         ),
                     ramenShopRepository =
                         FakeRamenShopRepository(
@@ -60,7 +60,7 @@ class HiddenShopListViewModelTest {
             val hiddenShop = ramenShopFixture(id = "hidden-shop")
             val personalizationRepository =
                 FakePersonalizationRepository(
-                    Personalization(hiddenShopIds = setOf(hiddenShop.id)),
+                    ShopPersonalization(hiddenShopIds = setOf(hiddenShop.id)),
                 )
             val viewModel =
                 HiddenShopListViewModel(
@@ -89,7 +89,7 @@ class HiddenShopListViewModelTest {
                 HiddenShopListViewModel(
                     personalizationStore =
                         FakePersonalizationRepository(
-                            Personalization(hiddenShopIds = setOf(shop.id)),
+                            ShopPersonalization(hiddenShopIds = setOf(shop.id)),
                         ),
                     ramenShopRepository = FakeRamenShopRepository(fetchByIdsResult = RamenShops(listOf(shop))),
                 )

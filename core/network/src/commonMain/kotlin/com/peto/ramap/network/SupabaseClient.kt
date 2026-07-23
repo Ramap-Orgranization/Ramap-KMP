@@ -24,5 +24,5 @@ val supabaseClient =
         }
     }
 
-const val AUTH_DEEPLINK_SCHEME = "ramap"
+internal const val AUTH_DEEPLINK_SCHEME = "ramap"
 const val AUTH_DEEPLINK_HOST = "auth"

@@ -48,7 +48,7 @@ import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.marker_ramen
 
 @Composable
-actual fun RamapMapView(
+internal actual fun RamapMapView(
     shops: RamenShops,
     focusShops: RamenShops,
     focusNearestToCurrentLocation: Boolean,

@@ -198,7 +198,7 @@ class MapViewModel(
         val cache = checkCachedShopDetail(shop.id)
         val selectedShopState = createSelectedShopState(currentState, shop, shouldFocus, cache)
         reduce { selectedShopState }
-        if (cache == null) loadShopDetail(shop.id)
+        loadShopDetail(shop.id)
     }
 
     private fun createSelectedShopState(
@@ -753,11 +753,19 @@ class MapViewModel(
             taskKey = SHOP_DETAIL_TASK_KEY,
             loadKey = MapLoadKey.ShopDetail,
             policy = TaskPolicy.CancelPrevious,
-            onStart = { createShopDetailLoadingState(this, shopId, selectShopOnSuccess) },
+            onStart = {
+                if (hasContentFor(shopId)) this
+                else createShopDetailLoadingState(this, shopId, selectShopOnSuccess)
+            },
         ) {
             handleShopDetailResult(shopId, selectShopOnSuccess, fetchShopDetailUseCase(shopId))
         }
     }
+
+    private fun hasContentFor(shopId: String): Boolean =
+        currentState.shopDetailState.let {
+            it is ShopDetailUiState.Content && it.detail.shop.id == shopId
+        }
 
     private fun createShopDetailLoadingState(
         state: MapUiState,
@@ -784,19 +792,29 @@ class MapViewModel(
         selectShopOnSuccess: Boolean,
         detail: ShopDetail,
     ) {
-        val loadingState = currentLoadingDetail(shopId, selectShopOnSuccess) ?: return
         if (selectShopOnSuccess) {
             applyRequestedShopDetail(detail)
-        } else {
-            handleShopDetailSuccess(detail, loadingState.shop ?: return)
+            return
         }
+        val selectedShop = resolveSelectedShop(shopId) ?: return
+        handleShopDetailSuccess(detail, selectedShop)
     }
+
+    /** Loading 또는 Content 상태에서 현재 shopId에 해당하는 매장을 찾는다. */
+    private fun resolveSelectedShop(shopId: String): RamenShop? =
+        when (val state = currentState.shopDetailState) {
+            is ShopDetailUiState.Loading -> state.shop?.takeIf { state.shopId == shopId }
+            is ShopDetailUiState.Content -> state.detail.shop.takeIf { it.id == shopId }
+            else -> null
+        }
 
     private fun handleShopDetailLoadError(
         shopId: String,
         selectShopOnSuccess: Boolean,
         error: RamapError,
     ) {
+        // 캐시된 Content가 있으면 갱신 실패에도 기존 내용을 유지한다.
+        if (currentState.shopDetailState is ShopDetailUiState.Content) return
         val loadingState = currentLoadingDetail(shopId, selectShopOnSuccess) ?: return
         handleShopDetailFailure(error, loadingState)
     }

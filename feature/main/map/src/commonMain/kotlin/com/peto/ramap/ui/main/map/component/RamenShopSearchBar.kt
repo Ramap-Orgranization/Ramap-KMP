@@ -35,7 +35,7 @@ import ramap.shared.generated.resources.search_bar_placeholder
 import ramap.shared.generated.resources.search_bar_search_icon
 
 @Composable
-fun RamenShopSearchBar(
+internal fun RamenShopSearchBar(
     query: String,
     onQueryChange: (String) -> Unit,
     modifier: Modifier = Modifier,
@@ -137,7 +137,7 @@ fun RamenShopSearchBar(
 
 @Composable
 @Preview
-fun RamenShopSearchBarPreview() {
+private fun RamenShopSearchBarPreview() {
     RamenShopSearchBar(
         query = "",
         onQueryChange = {},

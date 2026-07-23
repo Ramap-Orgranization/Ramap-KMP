@@ -27,7 +27,7 @@ import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
-fun LoginButton(
+internal fun LoginButton(
     type: LoginType,
     onClickLogin: (LoginType) -> Unit,
     modifier: Modifier = Modifier,

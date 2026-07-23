@@ -19,7 +19,7 @@ import ramap.shared.generated.resources.search_result_hidden_only_message
 import ramap.shared.generated.resources.search_result_query_filter_empty_message
 
 @Composable
-fun RamenShopSearchResultGuide(
+internal fun RamenShopSearchResultGuide(
     guide: SearchResultGuide,
     modifier: Modifier = Modifier,
 ) {

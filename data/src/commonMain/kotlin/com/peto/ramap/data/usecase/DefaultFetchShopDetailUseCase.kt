@@ -11,17 +11,22 @@ import com.peto.ramap.domain.usecase.ShopDetailCacheLookup
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 
-class DefaultFetchShopDetailUseCase(
+internal class DefaultFetchShopDetailUseCase(
     private val ramenShopRepository: RamenShopRepository,
     private val waitingSystemRepository: ShopWaitingSystemRepository,
 ) : FetchShopDetailUseCase {
     private val cache = mutableMapOf<String, ShopDetail>()
 
+    /**
+     * 매장 상세를 조회한다.
+     *
+     * 캐시에 매장·웨이팅 정보가 있으면 재사용하고 이벤트만 새로 조회해
+     * 종료·신규 이벤트가 즉시 반영되도록 한다.
+     * 이벤트 재조회 실패는 캐시된 이벤트를 그대로 사용한다.
+     */
     override suspend fun invoke(shopId: String): RamapResult<ShopDetail> {
-        when (val lookup = findCached(shopId)) {
-            is ShopDetailCacheLookup.Hit -> return RamapResult.Success(lookup.detail)
-            ShopDetailCacheLookup.Miss -> Unit
-        }
+        val cached = cache[shopId]
+        if (cached != null) return revalidateEvent(cached)
 
         val result = retryOnce { loadFresh(shopId) }
         if (result is RamapResult.Success) cache[result.data.shop.id] = result.data
@@ -32,6 +37,17 @@ class DefaultFetchShopDetailUseCase(
         cache[shopId]
             ?.let(ShopDetailCacheLookup::Hit)
             ?: ShopDetailCacheLookup.Miss
+
+    /**
+     * 캐시된 매장·웨이팅은 유지하고 이벤트만 새로 조회해 상세를 갱신한다.
+     */
+    private suspend fun revalidateEvent(cached: ShopDetail): RamapResult<ShopDetail> {
+        val eventResult = ramenShopRepository.fetchActiveShopEvent(cached.shop.id)
+        val freshEvent = (eventResult as? RamapResult.Success)?.data
+        val updated = cached.copy(event = freshEvent ?: cached.event)
+        cache[cached.shop.id] = updated
+        return RamapResult.Success(updated)
+    }
 
     private suspend fun loadFresh(shopId: String): RamapResult<ShopDetail> =
         coroutineScope {

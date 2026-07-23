@@ -19,7 +19,7 @@ import com.peto.ramap.domain.repository.RamenShopRepository
  * @property ramenShopRepository 서버에 등록된 라멘 매장을 검색하는 저장소
  * @property placeSearchRepository `place-search` Edge Function이 분류·허용한 장소를 조회하는 저장소
  */
-class MapSearchController(
+internal class MapSearchController(
     private val ramenShopRepository: RamenShopRepository,
     private val placeSearchRepository: PlaceSearchRepository,
 ) {

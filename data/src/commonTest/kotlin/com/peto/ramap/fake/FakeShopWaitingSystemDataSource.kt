@@ -3,7 +3,7 @@ package com.peto.ramap.fake
 import com.peto.ramap.data.datasource.waiting.ShopWaitingSystemDataSource
 import com.peto.ramap.data.model.ShopWaitingSystemResponse
 
-class FakeShopWaitingSystemDataSource(
+internal class FakeShopWaitingSystemDataSource(
     private val response: ShopWaitingSystemResponse? = null,
     private val error: Throwable? = null,
 ) : ShopWaitingSystemDataSource {

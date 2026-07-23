@@ -6,7 +6,7 @@ import com.peto.ramap.coroutinesTest
 import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.auth.LoginSessionState
-import com.peto.ramap.domain.model.personalization.Personalization
+import com.peto.ramap.domain.model.personalization.ShopPersonalization
 import com.peto.ramap.domain.model.rank.RankingCursor
 import com.peto.ramap.domain.model.rank.RankingPage
 import com.peto.ramap.domain.model.rank.ShopRanking
@@ -39,7 +39,7 @@ class RankingViewModelTest {
         coroutinesTest {
             val repository = FakeShopRankingRepository(page = pageOf(shopRanking()))
             val personalizationStore =
-                FakePersonalizationRepository(Personalization(hiddenShopIds = setOf("shop-id")))
+                FakePersonalizationRepository(ShopPersonalization(hiddenShopIds = setOf("shop-id")))
             val viewModel = rankingViewModel(repository, personalizationStore)
 
             runCurrent()

@@ -70,7 +70,7 @@ fun EventsRoute(
 }
 
 @Composable
-fun EventsScreen(
+internal fun EventsScreen(
     uiState: EventsUiState,
     onEventClick: (ShopEvent) -> Unit,
     onRefresh: () -> Unit,

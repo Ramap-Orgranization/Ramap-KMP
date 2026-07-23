@@ -4,6 +4,6 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class ShopEventParticipantResponse(
+internal data class ShopEventParticipantResponse(
     @SerialName("shop_id") val shopId: String? = null,
 )

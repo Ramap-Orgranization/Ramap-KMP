@@ -35,7 +35,7 @@ import ramap.shared.generated.resources.shop_information_report_dismiss
 import ramap.shared.generated.resources.shop_information_report_placeholder
 
 @Composable
-fun ShopInformationReportDialog(
+internal fun ShopInformationReportDialog(
     shopUiModel: RamenShopUiModel,
     visible: Boolean,
     onDismissRequest: () -> Unit,

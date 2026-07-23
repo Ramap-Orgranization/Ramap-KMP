@@ -4,7 +4,7 @@ import com.peto.ramap.data.datasource.report.ShopReportDataSource
 import com.peto.ramap.data.model.ShopInformationReportRequest
 import com.peto.ramap.data.model.UnregisteredPlaceReportRequest
 
-class FakeShopReportDataSource : ShopReportDataSource {
+internal class FakeShopReportDataSource : ShopReportDataSource {
     var insertedReport: ShopInformationReportRequest? = null
         private set
     var insertedPlaceReport: UnregisteredPlaceReportRequest? = null

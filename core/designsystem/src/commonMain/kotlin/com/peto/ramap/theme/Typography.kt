@@ -29,7 +29,7 @@ data class AppTypography(
 )
 
 @Composable
-fun provideAppTypography(): AppTypography {
+internal fun provideAppTypography(): AppTypography {
     val satoshiFamily = provideSatoshiFamily()
     val laundryGothicFamily = provideLaundryGothicFontFamily()
 
@@ -173,7 +173,7 @@ fun provideAppTypography(): AppTypography {
     )
 }
 
-fun AppTextStyle.toTextStyle(typography: AppTypography): TextStyle =
+internal fun AppTextStyle.toTextStyle(typography: AppTypography): TextStyle =
     when (this) {
         AppTextStyle.H1 -> typography.h1
         AppTextStyle.H2 -> typography.h2

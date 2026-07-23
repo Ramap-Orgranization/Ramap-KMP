@@ -10,14 +10,14 @@ import ramap.shared.generated.resources.laundry_gothic_regular
 import ramap.shared.generated.resources.satoshi_variable
 
 @Composable
-fun provideLaundryGothicFontFamily(): FontFamily =
+internal fun provideLaundryGothicFontFamily(): FontFamily =
     FontFamily(
         Font(Res.font.laundry_gothic_regular, FontWeight.Normal),
         Font(Res.font.laundry_gothic_bold, FontWeight.Bold),
     )
 
 @Composable
-fun provideSatoshiFamily(): FontFamily =
+internal fun provideSatoshiFamily(): FontFamily =
     FontFamily(
         Font(Res.font.satoshi_variable, FontWeight.Light),
         Font(Res.font.satoshi_variable, FontWeight.Normal),

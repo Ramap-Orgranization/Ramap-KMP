@@ -6,7 +6,7 @@ import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.rpc
 
-class RemoteShopRankingDataSource(
+internal class RemoteShopRankingDataSource(
     private val client: SupabaseClient,
 ) : ShopRankingDataSource {
     override suspend fun fetchShopRankings(parameter: ShopRankingParameters): RankingPage {

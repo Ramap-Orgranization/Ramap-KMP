@@ -62,7 +62,7 @@ fun MyTabRoute(
 }
 
 @Composable
-fun MyContent(
+internal fun MyContent(
     isLoggedIn: Boolean,
     onAccountClick: () -> Unit,
     onInformationClick: () -> Unit,

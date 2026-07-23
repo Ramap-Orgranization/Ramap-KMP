@@ -21,7 +21,7 @@ import kotlin.time.Duration.Companion.milliseconds
  * @property repository 지도 영역에 포함된 라멘 매장을 조회하는 저장소
  * @property coroutineScope 지연 조회 작업을 실행하는 코루틴 스코프
  */
-class ViewportShopLoader(
+internal class ViewportShopLoader(
     private val repository: RamenShopRepository,
     private val coroutineScope: CoroutineScope,
 ) {

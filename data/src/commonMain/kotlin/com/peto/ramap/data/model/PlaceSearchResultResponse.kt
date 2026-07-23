@@ -7,7 +7,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class PlaceSearchResultResponse(
+internal data class PlaceSearchResultResponse(
     val name: String,
     val address: String,
     val lat: Double,

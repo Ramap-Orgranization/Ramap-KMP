@@ -30,7 +30,7 @@ import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.event_not_found_message
 
 @Composable
-fun AppRoute(
+internal fun AppRoute(
     toastManager: ToastManager,
     onExitRequested: (() -> Unit)?,
     notificationDeepLinkParser: NotificationDeepLinkParser = koinInject(),

@@ -6,7 +6,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class ShopEventResponse(
+internal data class ShopEventResponse(
     val id: String,
     @SerialName("event_type") val eventType: String,
     val title: String,

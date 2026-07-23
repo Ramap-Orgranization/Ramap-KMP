@@ -14,7 +14,7 @@ import com.peto.ramap.ui.resource.category.label
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
-fun MenuCategoryFilterRow(
+internal fun MenuCategoryFilterRow(
     selectedCategories: Set<Category>,
     onCategoryClick: (Category) -> Unit,
     modifier: Modifier = Modifier,

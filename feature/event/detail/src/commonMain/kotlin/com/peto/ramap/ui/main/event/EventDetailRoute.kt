@@ -125,7 +125,7 @@ fun EventDetailRoute(
 }
 
 @Composable
-fun EventDetailScreen(
+internal fun EventDetailScreen(
     uiState: EventDetailUiState,
     onBack: () -> Unit,
     onShopClick: (String) -> Unit,

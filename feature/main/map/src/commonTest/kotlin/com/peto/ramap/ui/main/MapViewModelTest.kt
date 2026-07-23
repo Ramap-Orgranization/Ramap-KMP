@@ -7,7 +7,7 @@ import com.peto.ramap.coroutinesTest
 import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.auth.LoginSessionState
-import com.peto.ramap.domain.model.personalization.Personalization
+import com.peto.ramap.domain.model.personalization.ShopPersonalization
 import com.peto.ramap.domain.model.place.PlaceSearchResult
 import com.peto.ramap.domain.model.place.PlaceSearchResultKind
 import com.peto.ramap.domain.model.place.PlaceSearchResults
@@ -1495,7 +1495,7 @@ class MapViewModelTest {
             val shop = ramenShopFixture(id = "subscribed-shop-to-hide")
             val personalizationRepository =
                 FakePersonalizationRepository(
-                    Personalization(notificationShopIds = setOf(shop.id)),
+                    ShopPersonalization(notificationShopIds = setOf(shop.id)),
                 )
             val viewModel =
                 mapViewModel(
@@ -1521,7 +1521,7 @@ class MapViewModelTest {
                 mapViewModel(
                     personalizationRepository =
                         FakePersonalizationRepository(
-                            Personalization(hiddenShopIds = setOf(shop.id)),
+                            ShopPersonalization(hiddenShopIds = setOf(shop.id)),
                         ),
                     loginRepository = loggedInRepository(),
                     notificationSettingsRepository = notificationRepository,
@@ -1566,7 +1566,7 @@ class MapViewModelTest {
             val shop = ramenShopFixture(id = "notification-disable-shop")
             val personalizationRepository =
                 FakePersonalizationRepository(
-                    Personalization(notificationShopIds = setOf(shop.id)),
+                    ShopPersonalization(notificationShopIds = setOf(shop.id)),
                 )
             val viewModel =
                 mapViewModel(
@@ -1588,7 +1588,7 @@ class MapViewModelTest {
             val shop = ramenShopFixture(id = "notification-disabled-externally")
             val personalizationRepository =
                 FakePersonalizationRepository(
-                    Personalization(notificationShopIds = setOf(shop.id)),
+                    ShopPersonalization(notificationShopIds = setOf(shop.id)),
                 )
             val viewModel =
                 mapViewModel(
@@ -1615,7 +1615,7 @@ class MapViewModelTest {
                 )
             val personalizationRepository =
                 FakePersonalizationRepository(
-                    Personalization(hiddenShopIds = setOf(hiddenShop.id)),
+                    ShopPersonalization(hiddenShopIds = setOf(hiddenShop.id)),
                 )
             val viewModel =
                 mapViewModel(
@@ -2137,7 +2137,7 @@ class MapViewModelTest {
             val shop = ramenShopFixture(id = "cached-bookmarked-shop")
             val personalizationRepository =
                 FakePersonalizationRepository(
-                    Personalization(bookmarkedShopIds = setOf(shop.id)),
+                    ShopPersonalization(bookmarkedShopIds = setOf(shop.id)),
                 )
             val viewModel = mapViewModel(personalizationRepository = personalizationRepository)
             runCurrent()

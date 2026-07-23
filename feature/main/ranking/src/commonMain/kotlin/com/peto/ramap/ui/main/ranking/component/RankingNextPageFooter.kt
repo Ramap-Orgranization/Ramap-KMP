@@ -18,7 +18,7 @@ import com.peto.ramap.theme.RamapTheme
 import com.peto.ramap.ui.main.ranking.contract.RankingUiState
 
 @Composable
-fun RankingNextPageFooter(
+internal fun RankingNextPageFooter(
     uiState: RankingUiState,
     onLoadNext: () -> Unit,
     onRetry: () -> Unit,

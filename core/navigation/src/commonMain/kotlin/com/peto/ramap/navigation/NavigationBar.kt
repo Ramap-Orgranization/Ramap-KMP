@@ -38,7 +38,7 @@ import ramap.shared.generated.resources.top_level_tab_my
 import ramap.shared.generated.resources.top_level_tab_ranking
 
 @Composable
-fun NavigationBar(
+internal fun NavigationBar(
     selectedTab: TabStatus,
     onTabSelected: (TabStatus) -> Unit,
 ) {
