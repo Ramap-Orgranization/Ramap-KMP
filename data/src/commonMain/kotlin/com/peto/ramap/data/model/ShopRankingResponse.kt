@@ -9,7 +9,6 @@ import kotlinx.serialization.Serializable
 internal data class ShopRankingResponse(
     val id: String,
     @SerialName("kakao_place_id") val kakaoPlaceId: String? = null,
-    @SerialName("naver_place_id") val naverPlaceId: String? = null,
     val name: String,
     val address: String,
     val lat: Double,
@@ -33,7 +32,6 @@ internal data class ShopRankingResponse(
                 RamenShopResponse(
                     id = id,
                     kakaoPlaceId = kakaoPlaceId,
-                    naverPlaceId = naverPlaceId,
                     name = name,
                     address = address,
                     lat = lat,

@@ -3,7 +3,6 @@ package com.peto.ramap.domain.model.shop
 data class RamenShop(
     val id: String,
     val kakaoPlaceId: String?,
-    val naverPlaceId: String? = null,
     val name: String,
     val address: String,
     val location: Location,

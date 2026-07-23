@@ -13,8 +13,6 @@ internal data class RamenShopResponse(
     val id: String,
     @SerialName("kakao_place_id")
     val kakaoPlaceId: String? = null,
-    @SerialName("naver_place_id")
-    val naverPlaceId: String? = null,
     val name: String,
     val address: String,
     val lat: Double,
@@ -45,7 +43,6 @@ internal data class RamenShopResponse(
         RamenShop(
             id = id,
             kakaoPlaceId = kakaoPlaceId,
-            naverPlaceId = naverPlaceId,
             name = name,
             address = address,
             location = Location(lat = lat, lng = lng),
