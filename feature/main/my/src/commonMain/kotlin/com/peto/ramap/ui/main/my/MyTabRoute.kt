@@ -95,9 +95,10 @@ fun MyContent(
                     HorizontalDivider(thickness = 1.dp, color = GrayColor.C200)
                 }
                 SettingsRow(
-                    title = menu.title(),
+                    title = settingsMenuTitle(menu),
                     onClick =
-                        menu.onClick(
+                        onClickSettingsMenu(
+                            menu = menu,
                             onAccountClick = onAccountClick,
                             onInformationClick = onInformationClick,
                             onNotificationSettingsClick = onNotificationSettingsClick,
@@ -130,8 +131,8 @@ private fun SettingsRow(
     )
 }
 
-private fun SettingsMenu.title(): StringResource =
-    when (this) {
+private fun settingsMenuTitle(menu: SettingsMenu): StringResource =
+    when (menu) {
         SettingsMenu.ACCOUNT -> Res.string.settings_account_menu
         SettingsMenu.INFORMATION -> Res.string.settings_information_menu
         SettingsMenu.NOTIFICATION -> Res.string.settings_notification_menu
@@ -141,8 +142,8 @@ private fun SettingsMenu.title(): StringResource =
         SettingsMenu.BOOKMARKED_SHOPS -> Res.string.settings_bookmarked_shops_menu
     }
 
-@Suppress("LongParameterList")
-private fun SettingsMenu.onClick(
+private fun onClickSettingsMenu(
+    menu: SettingsMenu,
     onAccountClick: () -> Unit,
     onInformationClick: () -> Unit,
     onNotificationSettingsClick: () -> Unit,
@@ -151,7 +152,7 @@ private fun SettingsMenu.onClick(
     onSubscribedShopsClick: () -> Unit,
     onBookmarkedShopsClick: () -> Unit,
 ): () -> Unit =
-    when (this) {
+    when (menu) {
         SettingsMenu.ACCOUNT -> onAccountClick
         SettingsMenu.INFORMATION -> onInformationClick
         SettingsMenu.NOTIFICATION -> onNotificationSettingsClick

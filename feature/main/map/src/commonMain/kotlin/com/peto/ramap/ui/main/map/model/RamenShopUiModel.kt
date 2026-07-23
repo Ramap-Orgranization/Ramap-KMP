@@ -3,16 +3,8 @@ package com.peto.ramap.ui.main.map.model
 import androidx.compose.runtime.Immutable
 import com.peto.ramap.domain.model.report.ShopInformationField
 import com.peto.ramap.domain.model.shop.RamenShop
-import ramap.shared.generated.resources.Res
-import ramap.shared.generated.resources.shop_information_field_address
-import ramap.shared.generated.resources.shop_information_field_business_hours
-import ramap.shared.generated.resources.shop_information_field_instagram
-import ramap.shared.generated.resources.shop_information_field_kakao_map
-import ramap.shared.generated.resources.shop_information_field_menu_categories
-import ramap.shared.generated.resources.shop_information_field_naver_map
-import ramap.shared.generated.resources.shop_information_field_other
-import ramap.shared.generated.resources.shop_information_field_phone
-import ramap.shared.generated.resources.shop_information_field_waiting
+import com.peto.ramap.ui.resource.category.label
+import com.peto.ramap.ui.resource.information.label
 
 @Immutable
 data class RamenShopUiModel(
@@ -21,28 +13,34 @@ data class RamenShopUiModel(
 ) {
     val reportFieldOptions: List<ReportFieldOption> =
         buildList {
-            add(ReportFieldOption(ShopInformationField.ADDRESS, Res.string.shop_information_field_address))
+            add(reportFieldOption(ShopInformationField.ADDRESS))
             if (shop.phone != null) {
-                add(ReportFieldOption(ShopInformationField.PHONE, Res.string.shop_information_field_phone))
+                add(reportFieldOption(ShopInformationField.PHONE))
             }
             if (shop.businessHours != null) {
-                add(ReportFieldOption(ShopInformationField.BUSINESS_HOURS, Res.string.shop_information_field_business_hours))
+                add(reportFieldOption(ShopInformationField.BUSINESS_HOURS))
             }
             if (shop.hasCategory) {
-                add(ReportFieldOption(ShopInformationField.MENU_CATEGORIES, Res.string.shop_information_field_menu_categories))
+                add(reportFieldOption(ShopInformationField.MENU_CATEGORIES))
             }
             if (waitingVisible) {
-                add(ReportFieldOption(ShopInformationField.WAITING, Res.string.shop_information_field_waiting))
+                add(reportFieldOption(ShopInformationField.WAITING))
             }
             if (shop.instagramUrl != null) {
-                add(ReportFieldOption(ShopInformationField.INSTAGRAM, Res.string.shop_information_field_instagram))
+                add(reportFieldOption(ShopInformationField.INSTAGRAM))
             }
             if (shop.kakaoPlaceUrl != null) {
-                add(ReportFieldOption(ShopInformationField.KAKAO_MAP, Res.string.shop_information_field_kakao_map))
+                add(reportFieldOption(ShopInformationField.KAKAO_MAP))
             }
             if (shop.naverPlaceUrl != null) {
-                add(ReportFieldOption(ShopInformationField.NAVER_MAP, Res.string.shop_information_field_naver_map))
+                add(reportFieldOption(ShopInformationField.NAVER_MAP))
             }
-            add(ReportFieldOption(ShopInformationField.OTHER, Res.string.shop_information_field_other))
+            add(reportFieldOption(ShopInformationField.OTHER))
         }
+
+    private fun reportFieldOption(field: ShopInformationField) =
+        ReportFieldOption(
+            field = field,
+            label = field.label(),
+        )
 }

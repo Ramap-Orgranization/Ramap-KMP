@@ -53,7 +53,6 @@ import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
-import com.peto.ramap.ui.extension.stringResource
 import com.peto.ramap.ui.main.map.component.MapCircleIconButton
 import com.peto.ramap.ui.main.map.component.MenuCategoryFilterRow
 import com.peto.ramap.ui.main.map.component.PlaceSearchResultList
@@ -65,7 +64,9 @@ import com.peto.ramap.ui.main.map.contract.MapUiState
 import com.peto.ramap.ui.main.map.model.CameraPosition
 import com.peto.ramap.ui.main.map.model.RamenShopUiModel
 import com.peto.ramap.ui.main.map.model.ShopDetailUiState
-import com.peto.ramap.ui.main.map.model.WaitingSystemUiModel
+import com.peto.ramap.ui.resource.category.label
+import com.peto.ramap.ui.resource.login.toUiModel
+import com.peto.ramap.ui.resource.wating.toUiModel
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
@@ -236,7 +237,9 @@ fun MapContent(
                         else ->
                             RamenShopSearchResultList(
                                 shops = uiState.searchResultShops,
-                                categoryLabel = { category -> stringResource(category.stringResource) },
+                                categoryLabel = { category ->
+                                    stringResource(category.label())
+                                },
                                 onShopClick = { onShopSelected(it, true) },
                                 modifier = Modifier.padding(start = 10.dp),
                             )
@@ -260,11 +263,9 @@ fun MapContent(
 
                     is ShopDetailUiState.Content -> {
                         val detail = detailState.detail
-                        val waitingSystemUiModel =
-                            WaitingSystemUiModel.from(uiState.shopWaiting[shop.id])
                         RamenShopDetailContent(
                             shop = shop,
-                            waitingSystemUiModel = waitingSystemUiModel,
+                            waitingSystem = uiState.shopWaiting[shop.id].toUiModel(),
                             isBookmarked = shop.id in uiState.bookmarkedShopIds,
                             isNotificationEnabled = shop.id in uiState.notificationShopIds,
                             isHidden = shop.id in uiState.hiddenShopIds,
@@ -351,7 +352,7 @@ fun MapContent(
                 shopUiModel =
                     RamenShopUiModel(
                         shop = shop,
-                        waitingVisible = WaitingSystemUiModel.from(uiState.shopWaiting[shop.id]) != null,
+                        waitingVisible = uiState.shopWaiting[shop.id].toUiModel() != null,
                     ),
                 visible = showReportDialog,
                 onDismissRequest = { showReportDialog = false },

@@ -38,7 +38,7 @@ import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.ui.base.ObserveAsEvents
 import com.peto.ramap.ui.component.eventDateText
-import com.peto.ramap.ui.extension.stringResource
+import com.peto.ramap.ui.resource.category.label
 import com.peto.ramap.ui.subscribed.contract.SubscribedShopListIntent
 import com.peto.ramap.ui.subscribed.contract.SubscribedShopListSideEffect
 import com.peto.ramap.ui.subscribed.contract.SubscribedShopListUiState
@@ -190,7 +190,7 @@ private fun SubscribedShopListContent(
                     onShopClick = {
                         onRemovalRequested(SubscribedRemovalTarget.Shop(it.id))
                     },
-                    categoryLabel = { category -> stringResource(category.stringResource) },
+                    categoryLabel = { category -> stringResource(category.label()) },
                     itemModifier = {
                         Modifier
                             .padding(horizontal = 24.dp, vertical = 6.dp)

@@ -27,7 +27,6 @@ import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.ui.account.component.LoginButton
 import com.peto.ramap.ui.account.contract.AccountIntent
 import com.peto.ramap.ui.account.contract.AccountSideEffect
-import com.peto.ramap.ui.account.model.LoginTypeUiModel
 import com.peto.ramap.ui.base.ObserveAsEvents
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
@@ -89,7 +88,7 @@ fun AccountSettingsRoute(
                 )
             } else {
                 LoginButton(
-                    type = LoginTypeUiModel(LoginType.KAKAO),
+                    type = LoginType.KAKAO,
                     modifier =
                         Modifier
                             .fillMaxWidth()

@@ -1,8 +1,9 @@
-package com.peto.ramap.ui.main.model
+package com.peto.ramap.ui.resource
 
 import com.peto.ramap.domain.model.shop.WaitingProvider
 import com.peto.ramap.domain.model.shop.WaitingSystem
-import com.peto.ramap.ui.main.map.model.WaitingSystemUiModel
+import com.peto.ramap.ui.resource.category.label
+import com.peto.ramap.ui.resource.wating.toUiModel
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.catchtable
 import ramap.shared.generated.resources.shop_detail_waiting_catchtable
@@ -14,7 +15,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 
-class WaitingSystemUiModelTest {
+class WaitingSystemResourceMapperTest {
     @Test
     fun `지원하는 웨이팅 제공자의 표시 정보와 링크를 만든다`() {
         val providers =
@@ -37,34 +38,23 @@ class WaitingSystemUiModelTest {
             )
 
         providers.forEach { (provider, expectedLabel, expectedIcon) ->
-            val uiModel = WaitingSystemUiModel.from(waitingSystem(provider = provider))
-
-            assertEquals(expectedLabel, uiModel?.label)
-            assertEquals(expectedIcon, uiModel?.icon)
-            assertEquals(PROVIDER_URL, uiModel?.providerUrl)
+            val resources = waitingSystem(provider = provider).toUiModel()
+            assertEquals(expectedLabel, resources?.label)
+            assertEquals(expectedIcon, resources?.icon)
+            assertEquals(PROVIDER_URL, resources?.providerUrl)
         }
     }
 
     @Test
-    fun `링크가 없으면 표시 정보를 만들지 않는다`() {
+    fun `링크가 없거나 제공자를 지원하지 않으면 표시 정보를 만들지 않는다`() {
         assertNull(
-            WaitingSystemUiModel.from(
-                waitingSystem(
-                    provider = WaitingProvider.CATCHTABLE,
-                    providerUrl = null,
-                ),
-            ),
+            waitingSystem(
+                provider = WaitingProvider.CATCHTABLE,
+                providerUrl = null,
+            ).toUiModel(),
         )
-    }
-
-    @Test
-    fun `알 수 없는 제공자는 표시 정보를 만들지 않는다`() {
-        assertNull(WaitingSystemUiModel.from(waitingSystem(provider = WaitingProvider.UNKNOWN)))
-    }
-
-    @Test
-    fun `웨이팅 시스템이 없으면 표시 정보를 만들지 않는다`() {
-        assertNull(WaitingSystemUiModel.from(null))
+        assertNull(waitingSystem(WaitingProvider.UNKNOWN).toUiModel())
+        assertNull(null.toUiModel())
     }
 
     private fun waitingSystem(

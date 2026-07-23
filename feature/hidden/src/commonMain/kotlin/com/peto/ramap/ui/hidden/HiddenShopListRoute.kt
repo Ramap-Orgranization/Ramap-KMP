@@ -36,10 +36,10 @@ import com.peto.ramap.extension.noRippleClickable
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.ui.base.ObserveAsEvents
-import com.peto.ramap.ui.extension.stringResource
 import com.peto.ramap.ui.hidden.contract.HiddenShopListIntent
 import com.peto.ramap.ui.hidden.contract.HiddenShopListSideEffect
 import com.peto.ramap.ui.hidden.contract.HiddenShopListUiState
+import com.peto.ramap.ui.resource.category.label
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
@@ -161,7 +161,7 @@ private fun HiddenShopListContent(
             RamenShopSearchResultList(
                 shops = uiState.shops,
                 onShopClick = onShopClick,
-                categoryLabel = { category -> stringResource(category.stringResource) },
+                categoryLabel = { category -> stringResource(category.label()) },
                 itemModifier = {
                     Modifier
                         .padding(horizontal = 24.dp, vertical = 6.dp)

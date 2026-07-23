@@ -36,7 +36,6 @@ import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.designsystem.topbar.CommonTopBar
 import com.peto.ramap.domain.model.event.ShopEvent
-import com.peto.ramap.domain.model.event.ShopEventType
 import com.peto.ramap.extension.noRippleClickable
 import com.peto.ramap.platform.AppSettingsOpener
 import com.peto.ramap.platform.ExternalUriOpener
@@ -53,14 +52,13 @@ import com.peto.ramap.ui.main.event.contract.EventDetailIntent.OnNotificationPer
 import com.peto.ramap.ui.main.event.contract.EventDetailSideEffect.EventUnavailable
 import com.peto.ramap.ui.main.event.contract.EventDetailSideEffect.RequestNotificationPermission
 import com.peto.ramap.ui.main.event.contract.EventDetailUiState
+import com.peto.ramap.ui.resource.event.ShopEventResourceMapper
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 import ramap.shared.generated.resources.Res
-import ramap.shared.generated.resources.event_collaborator_person
-import ramap.shared.generated.resources.event_collaborator_shop
 import ramap.shared.generated.resources.event_content
 import ramap.shared.generated.resources.event_date
 import ramap.shared.generated.resources.event_detail_title
@@ -68,11 +66,6 @@ import ramap.shared.generated.resources.event_instagram_action
 import ramap.shared.generated.resources.event_link_title
 import ramap.shared.generated.resources.event_notification_disable
 import ramap.shared.generated.resources.event_notification_enable
-import ramap.shared.generated.resources.event_status_today
-import ramap.shared.generated.resources.event_status_upcoming
-import ramap.shared.generated.resources.event_type_collab
-import ramap.shared.generated.resources.event_type_limited_menu
-import ramap.shared.generated.resources.event_type_popup
 import ramap.shared.generated.resources.event_venue
 import ramap.shared.generated.resources.event_waiting
 import ramap.shared.generated.resources.event_waiting_action
@@ -187,8 +180,8 @@ private fun EventDetailContent(
         verticalArrangement = Arrangement.spacedBy(24.dp),
     ) {
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            EventTag(stringResource(if (event.isToday) Res.string.event_status_today else Res.string.event_status_upcoming))
-            EventTag(eventTypeLabel(event.type))
+            EventTag(stringResource(ShopEventResourceMapper.dateLabel(event)))
+            EventTag(stringResource(ShopEventResourceMapper.typeLabel(event.type)))
         }
         AppText(event.title, style = AppTextStyle.H1, color = GrayColor.C500)
         SectionCard(title = stringResource(Res.string.event_venue)) {
@@ -204,13 +197,7 @@ private fun EventDetailContent(
                 ) { onShopClick(event.venueShopId) }
                 event.collaboratorName?.takeIf(String::isNotBlank)?.let { name ->
                     EventSection(
-                        stringResource(
-                            if (event.collaboratorShopId.isNullOrBlank()) {
-                                Res.string.event_collaborator_person
-                            } else {
-                                Res.string.event_collaborator_shop
-                            },
-                        ),
+                        stringResource(ShopEventResourceMapper.collaboratorLabel(event)),
                     ) {
                         EventLink(name) {
                             event.collaboratorShopId
@@ -354,13 +341,3 @@ private fun EventLink(
         subtitle?.let { EventValue(it) }
     }
 }
-
-@Composable
-private fun eventTypeLabel(type: ShopEventType): String =
-    stringResource(
-        when (type) {
-            ShopEventType.COLLAB -> Res.string.event_type_collab
-            ShopEventType.POPUP -> Res.string.event_type_popup
-            ShopEventType.LIMITED_MENU -> Res.string.event_type_limited_menu
-        },
-    )

@@ -117,11 +117,7 @@ private fun RamenShopSearchResultItem(
                 verticalArrangement = Arrangement.spacedBy(6.dp),
             ) {
                 shop.menuCategories.forEach { category ->
-                    CategoryFilterChip(
-                        label = categoryLabel(category),
-                        selected = false,
-                        onClick = {},
-                    )
+                    CategoryFilterChip(label = categoryLabel(category))
                 }
             }
         }

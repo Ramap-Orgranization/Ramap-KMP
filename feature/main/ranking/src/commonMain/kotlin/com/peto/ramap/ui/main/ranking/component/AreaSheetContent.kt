@@ -15,7 +15,7 @@ import com.peto.ramap.extension.noRippleClickable
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.RamapTheme
-import com.peto.ramap.ui.main.ranking.model.AdministrativeAreaUiModel
+import com.peto.ramap.ui.resource.area.AdministrativeAreaResourceMapper
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.ranking_all_regions
@@ -30,10 +30,10 @@ internal fun AreaSheetContent(
         selected = areaFilter is AreaFilter.Nationwide,
         onClick = { onAreaFilterSelected(AreaFilter.Nationwide) },
     )
-    AdministrativeAreaUiModel.entries.forEach { area ->
+    AdministrativeAreaResourceMapper.entries.forEach { area ->
         val optionFilter = AreaFilter.Selected(area.area)
         AreaOption(
-            label = stringResource(area.officialNameResource),
+            label = stringResource(area.officialName),
             selected = areaFilter == optionFilter,
             onClick = { onAreaFilterSelected(optionFilter) },
         )

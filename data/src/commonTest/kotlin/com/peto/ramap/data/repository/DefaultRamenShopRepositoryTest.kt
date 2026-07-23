@@ -81,7 +81,7 @@ class DefaultRamenShopRepositoryTest {
                             ramenShopResponseFixture(
                                 id = "shop-1",
                                 name = "라멘집",
-                                menuCategoryIds = listOf("shoyu", "tonkotsu", "unknown"),
+                                menuCategoryIds = listOf("shoyu", "tonkotsu", "chanke", "unknown"),
                                 isVisible = true,
                             ),
                             ramenShopResponseFixture(
@@ -116,7 +116,10 @@ class DefaultRamenShopRepositoryTest {
                         businessHours = "11:00-21:00",
                         instagramUrl = "https://instagram.com/ramen_shop",
                         kakaoRating = 4.5,
-                        menuCategories = MenuCategories(listOf(Category.SHOYU, Category.TONKOTSU)),
+                        menuCategories =
+                            MenuCategories(
+                                listOf(Category.SHOYU, Category.TONKOTSU, Category.CHANKE),
+                            ),
                         isVisible = true,
                         createdAt = "2026-06-01T00:00:00Z",
                         updatedAt = "2026-06-02T00:00:00Z",

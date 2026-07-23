@@ -32,7 +32,6 @@ import com.peto.ramap.designsystem.component.CategoryFilterChip
 import com.peto.ramap.designsystem.image.RemoteShopImage
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.domain.model.event.ShopEvent
-import com.peto.ramap.domain.model.event.ShopEventType
 import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.extension.noRippleClickable
 import com.peto.ramap.platform.ExternalUriOpener
@@ -41,8 +40,10 @@ import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.InstagramColor
 import com.peto.ramap.theme.SystemColor
-import com.peto.ramap.ui.extension.stringResource
-import com.peto.ramap.ui.main.map.model.WaitingSystemUiModel
+import com.peto.ramap.ui.resource.category.label
+import com.peto.ramap.ui.resource.event.ShopEventResourceMapper
+import com.peto.ramap.ui.resource.format
+import com.peto.ramap.ui.resource.wating.WaitingSystemUiModel
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
@@ -69,24 +70,13 @@ import ramap.shared.generated.resources.shop_detail_link_kakao_map
 import ramap.shared.generated.resources.shop_detail_link_naver_map
 import ramap.shared.generated.resources.shop_detail_link_report
 import ramap.shared.generated.resources.shop_detail_more_actions
-import ramap.shared.generated.resources.shop_event_notice_collab_participant_today
-import ramap.shared.generated.resources.shop_event_notice_collab_participant_upcoming
-import ramap.shared.generated.resources.shop_event_notice_collab_today
-import ramap.shared.generated.resources.shop_event_notice_collab_upcoming
-import ramap.shared.generated.resources.shop_event_notice_collab_upcoming_with_shop
-import ramap.shared.generated.resources.shop_event_notice_limited_menu_today
-import ramap.shared.generated.resources.shop_event_notice_limited_menu_upcoming
-import ramap.shared.generated.resources.shop_event_notice_participant_today
-import ramap.shared.generated.resources.shop_event_notice_participant_upcoming
-import ramap.shared.generated.resources.shop_event_notice_popup_today
-import ramap.shared.generated.resources.shop_event_notice_popup_upcoming
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun RamenShopDetailContent(
     shop: RamenShop,
     modifier: Modifier = Modifier,
-    waitingSystemUiModel: WaitingSystemUiModel? = null,
+    waitingSystem: WaitingSystemUiModel? = null,
     isBookmarked: Boolean = false,
     isNotificationEnabled: Boolean = false,
     isHidden: Boolean = false,
@@ -106,7 +96,7 @@ fun RamenShopDetailContent(
     ) {
         event?.let {
             AppText(
-                text = it.noticeText(),
+                text = ShopEventResourceMapper.notice(it).format(),
                 modifier =
                     Modifier
                         .padding(top = 20.dp)
@@ -162,7 +152,9 @@ fun RamenShopDetailContent(
                     modifier = Modifier.padding(horizontal = 24.dp),
                 ) {
                     shop.menuCategories.forEach { category ->
-                        CategoryFilterChip(label = stringResource(category.stringResource))
+                        CategoryFilterChip(
+                            label = stringResource(category.label()),
+                        )
                     }
                 }
             }
@@ -192,12 +184,12 @@ fun RamenShopDetailContent(
                 )
             }
 
-            waitingSystemUiModel?.let {
+            waitingSystem?.let {
                 ShopIconLinkRow(
                     label = stringResource(Res.string.shop_detail_label_waiting),
-                    icon = waitingSystemUiModel.icon,
-                    contentDescription = stringResource(waitingSystemUiModel.label),
-                    onClick = { ExternalUriOpener.open(waitingSystemUiModel.providerUrl) },
+                    icon = waitingSystem.icon,
+                    contentDescription = stringResource(waitingSystem.label),
+                    onClick = { ExternalUriOpener.open(waitingSystem.providerUrl) },
                 )
             }
         }
@@ -243,45 +235,6 @@ fun RamenShopDetailContent(
             )
         }
     }
-}
-
-@Composable
-private fun ShopEvent.noticeText(): String {
-    upcomingCollaborationPartnerName?.let { partnerName ->
-        return stringResource(Res.string.shop_event_notice_collab_upcoming_with_shop, partnerName)
-    }
-    if (isVenue) {
-        val resource =
-            when (type) {
-                ShopEventType.COLLAB ->
-                    if (isToday) Res.string.shop_event_notice_collab_today else Res.string.shop_event_notice_collab_upcoming
-
-                ShopEventType.POPUP ->
-                    if (isToday) Res.string.shop_event_notice_popup_today else Res.string.shop_event_notice_popup_upcoming
-
-                ShopEventType.LIMITED_MENU ->
-                    if (isToday) {
-                        Res.string.shop_event_notice_limited_menu_today
-                    } else {
-                        Res.string.shop_event_notice_limited_menu_upcoming
-                    }
-            }
-        return stringResource(resource)
-    }
-    if (type == ShopEventType.COLLAB) {
-        return stringResource(
-            if (isToday) {
-                Res.string.shop_event_notice_collab_participant_today
-            } else {
-                Res.string.shop_event_notice_collab_participant_upcoming
-            },
-            venueShopName,
-        )
-    }
-    return stringResource(
-        if (isToday) Res.string.shop_event_notice_participant_today else Res.string.shop_event_notice_participant_upcoming,
-        venueShopName,
-    )
 }
 
 @Composable

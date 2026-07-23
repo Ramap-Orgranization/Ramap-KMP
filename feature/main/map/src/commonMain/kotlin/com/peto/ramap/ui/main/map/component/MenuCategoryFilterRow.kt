@@ -10,7 +10,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.peto.ramap.designsystem.component.CategoryFilterChip
 import com.peto.ramap.domain.model.shop.Category
-import com.peto.ramap.ui.extension.stringResource
+import com.peto.ramap.ui.resource.category.label
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
@@ -28,7 +28,7 @@ fun MenuCategoryFilterRow(
     ) {
         Category.entries.forEach { category ->
             CategoryFilterChip(
-                label = stringResource(category.stringResource),
+                label = stringResource(category.label()),
                 selected = category in selectedCategories,
                 onClick = { onCategoryClick(category) },
             )

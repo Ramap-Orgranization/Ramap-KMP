@@ -21,13 +21,12 @@ import com.peto.ramap.domain.model.shop.Category
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.RamapTheme
-import com.peto.ramap.ui.extension.stringResource
 import com.peto.ramap.ui.main.ranking.contract.RankingUiState
-import com.peto.ramap.ui.main.ranking.model.AdministrativeAreaUiModel
+import com.peto.ramap.ui.resource.area.label
+import com.peto.ramap.ui.resource.category.label
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.ranking_all_categories
-import ramap.shared.generated.resources.ranking_all_regions
 
 @Composable
 internal fun RankingFilters(
@@ -46,7 +45,7 @@ internal fun RankingFilters(
     ) {
         item {
             AreaFilterChip(
-                label = areaFilterLabel(uiState.areaFilter),
+                label = stringResource(uiState.areaFilter.label()),
                 onClick = onAreaClick,
             )
         }
@@ -70,7 +69,7 @@ internal fun RankingFilters(
         }
         items(Category.entries) { category ->
             CategoryFilterChip(
-                label = stringResource(category.stringResource),
+                label = stringResource(category.label()),
                 selected = category in uiState.selectedCategories,
                 onClick = { onCategoryToggled(category) },
                 style = AppTextStyle.L3,
@@ -78,14 +77,6 @@ internal fun RankingFilters(
         }
     }
 }
-
-@Composable
-private fun areaFilterLabel(areaFilter: AreaFilter): String =
-    when (areaFilter) {
-        AreaFilter.Nationwide -> stringResource(Res.string.ranking_all_regions)
-        is AreaFilter.Selected ->
-            stringResource(AdministrativeAreaUiModel.from(areaFilter.area).shortNameResource)
-    }
 
 @Preview(showBackground = true)
 @Composable

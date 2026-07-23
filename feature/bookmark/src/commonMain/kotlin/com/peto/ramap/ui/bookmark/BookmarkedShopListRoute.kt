@@ -39,7 +39,7 @@ import com.peto.ramap.ui.base.ObserveAsEvents
 import com.peto.ramap.ui.bookmark.contract.BookmarkedShopListIntent
 import com.peto.ramap.ui.bookmark.contract.BookmarkedShopListSideEffect
 import com.peto.ramap.ui.bookmark.contract.BookmarkedShopListUiState
-import com.peto.ramap.ui.extension.stringResource
+import com.peto.ramap.ui.resource.category.label
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
@@ -161,7 +161,7 @@ private fun BookmarkedShopListContent(
             RamenShopSearchResultList(
                 shops = uiState.shops,
                 onShopClick = onShopClick,
-                categoryLabel = { stringResource(it.stringResource) },
+                categoryLabel = { stringResource(it.label()) },
                 itemModifier = {
                     Modifier
                         .padding(horizontal = 24.dp, vertical = 6.dp)
