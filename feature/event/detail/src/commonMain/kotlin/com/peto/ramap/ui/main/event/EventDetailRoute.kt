@@ -46,9 +46,14 @@ import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.InstagramColor
 import com.peto.ramap.ui.base.ObserveAsEvents
 import com.peto.ramap.ui.component.eventDateText
+import com.peto.ramap.ui.main.event.contract.EventDetailIntent.OnCollaboratorInstagramSelected
+import com.peto.ramap.ui.main.event.contract.EventDetailIntent.OnCollaboratorShopSelected
 import com.peto.ramap.ui.main.event.contract.EventDetailIntent.OnEntered
 import com.peto.ramap.ui.main.event.contract.EventDetailIntent.OnNotificationChanged
 import com.peto.ramap.ui.main.event.contract.EventDetailIntent.OnNotificationPermissionGranted
+import com.peto.ramap.ui.main.event.contract.EventDetailIntent.OnSourceLinkSelected
+import com.peto.ramap.ui.main.event.contract.EventDetailIntent.OnVenueShopSelected
+import com.peto.ramap.ui.main.event.contract.EventDetailIntent.OnWaitingLinkSelected
 import com.peto.ramap.ui.main.event.contract.EventDetailSideEffect.EventUnavailable
 import com.peto.ramap.ui.main.event.contract.EventDetailSideEffect.RequestNotificationPermission
 import com.peto.ramap.ui.main.event.contract.EventDetailUiState
@@ -119,8 +124,37 @@ fun EventDetailRoute(
     EventDetailScreen(
         uiState = uiState,
         onBack = onBack,
-        onShopClick = onShopClick,
-        onNotificationChanged = { enabled -> viewModel.dispatch(OnNotificationChanged(enabled)) },
+        onVenueShopClick = { shopId ->
+            viewModel.dispatch(
+                OnVenueShopSelected(shopId),
+            )
+            onShopClick(shopId)
+        },
+        onCollaboratorShopClick = { shopId ->
+            viewModel.dispatch(
+                OnCollaboratorShopSelected(shopId),
+            )
+            onShopClick(shopId)
+        },
+        onCollaboratorInstagramClick = { url ->
+            viewModel.dispatch(
+                OnCollaboratorInstagramSelected,
+            )
+            ExternalUriOpener.open(url)
+        },
+        onWaitingLinkClick = { url ->
+            viewModel.dispatch(OnWaitingLinkSelected)
+            ExternalUriOpener.open(url)
+        },
+        onSourceLinkClick = { url ->
+            viewModel.dispatch(OnSourceLinkSelected)
+            ExternalUriOpener.open(url)
+        },
+        onNotificationChanged = { enabled ->
+            viewModel.dispatch(
+                OnNotificationChanged(enabled),
+            )
+        },
     )
 }
 
@@ -128,7 +162,11 @@ fun EventDetailRoute(
 internal fun EventDetailScreen(
     uiState: EventDetailUiState,
     onBack: () -> Unit,
-    onShopClick: (String) -> Unit,
+    onVenueShopClick: (String) -> Unit,
+    onCollaboratorShopClick: (String) -> Unit,
+    onCollaboratorInstagramClick: (String) -> Unit,
+    onWaitingLinkClick: (String) -> Unit,
+    onSourceLinkClick: (String) -> Unit,
     onNotificationChanged: (Boolean) -> Unit,
 ) {
     Scaffold(
@@ -159,7 +197,17 @@ internal fun EventDetailScreen(
         Box(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
             val event = uiState.event
             when {
-                event != null -> EventDetailContent(event = event, onShopClick = onShopClick)
+                event != null ->
+                    EventDetailContent(
+                        event = event,
+                        onVenueShopClick = onVenueShopClick,
+                        onCollaboratorShopClick =
+                        onCollaboratorShopClick,
+                        onCollaboratorInstagramClick =
+                        onCollaboratorInstagramClick,
+                        onWaitingLinkClick = onWaitingLinkClick,
+                        onSourceLinkClick = onSourceLinkClick,
+                    )
                 uiState.isEventLoading -> RamenLoadingIndicator(modifier = Modifier.fillMaxSize())
             }
         }
@@ -169,7 +217,11 @@ internal fun EventDetailScreen(
 @Composable
 private fun EventDetailContent(
     event: ShopEvent,
-    onShopClick: (String) -> Unit,
+    onVenueShopClick: (String) -> Unit,
+    onCollaboratorShopClick: (String) -> Unit,
+    onCollaboratorInstagramClick: (String) -> Unit,
+    onWaitingLinkClick: (String) -> Unit,
+    onSourceLinkClick: (String) -> Unit,
 ) {
     Column(
         modifier =
@@ -192,19 +244,39 @@ private fun EventDetailContent(
                 verticalArrangement = Arrangement.spacedBy(20.dp),
             ) {
                 EventLink(
-                    event.venueShopName,
-                    event.venueAddress,
-                ) { onShopClick(event.venueShopId) }
+                    title = event.venueShopName,
+                    subtitle = event.venueAddress,
+                    onClick = {
+                        onVenueShopClick(event.venueShopId)
+                    },
+                )
                 event.collaboratorName?.takeIf(String::isNotBlank)?.let { name ->
                     EventSection(
                         stringResource(ShopEventResourceMapper.collaboratorLabel(event)),
                     ) {
-                        EventLink(name) {
-                            event.collaboratorShopId
-                                ?.takeIf(String::isNotBlank)
-                                ?.let(onShopClick)
-                                ?: event.collaboratorInstagramUrl?.let(ExternalUriOpener::open)
-                        }
+                        EventLink(
+                            title = name,
+                            onClick = {
+                                val collaboratorShopId =
+                                    event.collaboratorShopId
+
+                                if (!collaboratorShopId.isNullOrBlank()) {
+                                    onCollaboratorShopClick(
+                                        collaboratorShopId,
+                                    )
+                                    return@EventLink
+                                }
+
+                                val instagramUrl =
+                                    event.collaboratorInstagramUrl
+
+                                if (instagramUrl != null) {
+                                    onCollaboratorInstagramClick(
+                                        instagramUrl,
+                                    )
+                                }
+                            },
+                        )
                     }
                 }
                 EventSection(stringResource(Res.string.event_date)) {
@@ -226,7 +298,9 @@ private fun EventDetailContent(
                         AppButton(
                             text = stringResource(Res.string.event_waiting_action),
                             modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
-                            onClick = { ExternalUriOpener.open(url) },
+                            onClick = {
+                                onWaitingLinkClick(url)
+                            },
                         )
                     }
                 }
@@ -240,7 +314,9 @@ private fun EventDetailContent(
                         .fillMaxWidth()
                         .background(INSTAGRAM_GRADIENT, RoundedCornerShape(12.dp)),
                 backgroundColor = Color.Transparent,
-                onClick = { ExternalUriOpener.open(event.sourceUrl) },
+                onClick = {
+                    onSourceLinkClick(event.sourceUrl)
+                },
             )
         }
     }

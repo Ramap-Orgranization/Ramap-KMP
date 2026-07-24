@@ -22,7 +22,6 @@ object AnalyticsEvents {
     const val SHOP_REPORT_SUBMIT = "shop_report_submit"
 
     // ── 랭킹 ──
-    const val RANKING_REFRESH = "ranking_refresh"
     const val RANKING_PAGE_LOAD = "ranking_page_load"
 
     // ── 이벤트 ──
@@ -30,13 +29,13 @@ object AnalyticsEvents {
     const val EVENT_NOTIFICATION_TOGGLE = "event_notification_toggle"
     const val EVENT_UNAVAILABLE = "event_unavailable"
     const val EVENT_SELECT = "event_select"
+    const val EVENT_SHOP_SELECT = "event_shop_select"
+    const val EVENT_EXTERNAL_LINK_SELECT = "event_external_link_select"
 
     // ── 인증 ──
     const val LOGIN_START = "login_start"
     const val LOGIN_SUCCESS = "login_success"
     const val LOGIN_FAILURE = "login_failure"
-    const val LOGOUT = "logout"
-    const val ACCOUNT_DELETE = "account_delete"
 
     // ── 알림 ──
     const val NOTIFICATION_OPEN = "notification_open"
@@ -51,5 +50,4 @@ object AnalyticsEvents {
 
     // ── 에러 & 재시도 ──
     const val VIEWPORT_LOAD_ERROR = "viewport_load_error"
-    const val VIEWPORT_LOAD_RETRY = "viewport_load_retry"
 }
