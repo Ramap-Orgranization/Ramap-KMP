@@ -5,10 +5,8 @@ object AnalyticsEvents {
     // ── 매장 발견 (Map) ──
     const val SHOP_SELECT = "shop_select"
     const val SHOP_DETAIL_VIEW = "shop_detail_view"
-    const val SHOP_DETAIL_DISMISS = "shop_detail_dismiss"
 
     // ── 검색 ──
-    const val SEARCH_QUERY = "search_query"
     const val SEARCH_PLACE_SELECT = "search_place_select"
 
     // ── 필터 ──
@@ -35,7 +33,6 @@ object AnalyticsEvents {
     const val EVENT_UNAVAILABLE = "event_unavailable"
 
     // ── 인증 ──
-    const val LOGIN_GUIDE_SHOW = "login_guide_show"
     const val LOGIN_START = "login_start"
     const val LOGIN_SUCCESS = "login_success"
     const val LOGIN_FAILURE = "login_failure"
@@ -56,5 +53,4 @@ object AnalyticsEvents {
     // ── 에러 & 재시도 ──
     const val VIEWPORT_LOAD_ERROR = "viewport_load_error"
     const val VIEWPORT_LOAD_RETRY = "viewport_load_retry"
-    const val LOCATION_PERMISSION_BLOCKED = "location_permission_blocked"
 }
