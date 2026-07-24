@@ -1,10 +1,6 @@
 package com.peto.ramap.ui.main.map
 
 import androidx.lifecycle.viewModelScope
-import com.peto.ramap.analytics.AnalyticsEvents
-import com.peto.ramap.analytics.AnalyticsParams
-import com.peto.ramap.analytics.AnalyticsSource
-import com.peto.ramap.analytics.AnalyticsTracker
 import com.peto.ramap.core.result.RamapError
 import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.designsystem.toast.model.ToastAction
@@ -94,7 +90,7 @@ class MapViewModel(
     private val shopReportRepository: ShopReportRepository,
     private val personalizationStore: ShopPersonalizationStore,
     private val fetchShopDetailUseCase: FetchShopDetailUseCase,
-    private val analyticsTracker: AnalyticsTracker,
+    private val mapAnalytics: MapAnalytics,
 ) : BaseViewModel<MapUiState, MapIntent, MapSideEffect>(initialState = MapUiState()) {
     private val searchController =
         MapSearchController(
@@ -125,21 +121,24 @@ class MapViewModel(
         }
     }
 
-    private fun handleViewportIntent(intent: MapIntent): Boolean =
+    private fun handleViewportIntent(intent: MapIntent): Boolean {
         when (intent) {
             is OnBoundsChanged -> scheduleRamenShopsLoad(intent.bounds)
-            OnViewportLoadRetry -> {
-                analyticsTracker.logEvent(AnalyticsEvents.VIEWPORT_LOAD_RETRY)
-                scheduleRamenShopsLoad(currentState.bounds)
-            }
+
+            OnViewportLoadRetry -> scheduleRamenShopsLoad(currentState.bounds)
 
             is OnCameraPositionChanged -> updateCameraPosition(intent.position)
-            is OnMyLocationChanged -> updateMyLocation(intent.location)
-            OnInitialLocationFocusConsumed -> consumeInitialLocationFocus()
-            else -> return false
-        }.let { true }
 
-    private fun handleShopIntent(intent: MapIntent): Boolean =
+            is OnMyLocationChanged -> updateMyLocation(intent.location)
+
+            OnInitialLocationFocusConsumed -> consumeInitialLocationFocus()
+
+            else -> return false
+        }
+        return true
+    }
+
+    private fun handleShopIntent(intent: MapIntent): Boolean {
         when (intent) {
             is OnShopSelected -> selectShop(intent.shop, intent.shouldFocus)
             is OnShopIdSelected -> selectShop(intent.shopId)
@@ -147,18 +146,22 @@ class MapViewModel(
             is OnShopDetailDismissed -> dismissShopDetail()
             OnShopDetailRetry -> retryShopDetailLoad()
             else -> return false
-        }.let { true }
+        }
+        return true
+    }
 
-    private suspend fun handleSearchIntent(intent: MapIntent): Boolean =
+    private suspend fun handleSearchIntent(intent: MapIntent): Boolean {
         when (intent) {
             is OnSearchResultsDismissed -> dismissSearchResults()
             is OnQueryChanged -> updateQuery(intent.query)
             is OnPlaceSelected -> selectPlace(intent.place)
             is OnCategoryFilterToggled -> toggleCategoryFilter(intent.category)
             else -> return false
-        }.let { true }
+        }
+        return true
+    }
 
-    private fun handlePersonalizationIntent(intent: MapIntent): Boolean =
+    private fun handlePersonalizationIntent(intent: MapIntent): Boolean {
         when (intent) {
             OnBookmarkedShopsToggled -> toggleBookmarkedView()
             is OnBookmarkToggled -> toggleBookmark(intent.shop)
@@ -171,15 +174,14 @@ class MapViewModel(
                 )
 
             else -> return false
-        }.let { true }
+        }
+        return true
+    }
 
     private fun handleAccountIntent(intent: MapIntent) {
         when (intent) {
             OnKakaoLoginClicked -> signInWithKakao()
-            OnLocationPermissionBlocked -> {
-                analyticsTracker.logEvent(AnalyticsEvents.LOCATION_PERMISSION_BLOCKED)
-                showLocationPermissionBlockedToast()
-            }
+            OnLocationPermissionBlocked -> showLocationPermissionBlockedToast()
 
             else -> error("Unhandled map intent: $intent")
         }
@@ -208,15 +210,7 @@ class MapViewModel(
         shop: RamenShop,
         shouldFocus: Boolean = true,
     ) {
-        analyticsTracker.logEvent(
-            AnalyticsEvents.SHOP_SELECT,
-            mapOf(
-                AnalyticsParams.SHOP_ID to shop.id,
-                AnalyticsParams.SHOP_NAME to shop.name,
-                AnalyticsParams.SOURCE to AnalyticsSource.MARKER,
-                AnalyticsParams.HAS_CATEGORY to shop.hasCategory,
-            ),
-        )
+        mapAnalytics.logShopSelected(shop)
         val cache = checkCachedShopDetail(shop.id)
         val selectedShopState = createSelectedShopState(currentState, shop, shouldFocus, cache)
         reduce { selectedShopState }
@@ -259,12 +253,6 @@ class MapViewModel(
         }
 
     private fun dismissShopDetail() {
-        currentState.selectedShop?.let { shop ->
-            analyticsTracker.logEvent(
-                AnalyticsEvents.SHOP_DETAIL_DISMISS,
-                mapOf(AnalyticsParams.SHOP_ID to shop.id),
-            )
-        }
         cancelShopDetailLoad()
         reduce {
             copy(
@@ -343,10 +331,7 @@ class MapViewModel(
     }
 
     private fun selectPlace(place: PlaceSearchResult) {
-        analyticsTracker.logEvent(
-            AnalyticsEvents.SEARCH_PLACE_SELECT,
-            mapOf(AnalyticsParams.PLACE_NAME to place.name),
-        )
+        mapAnalytics.logPlaceSelected(place)
         reduce {
             copy(
                 search = search.selectPlace(place),
@@ -365,11 +350,6 @@ class MapViewModel(
             clearSearchResults()
             return
         }
-
-        analyticsTracker.logEvent(
-            AnalyticsEvents.SEARCH_QUERY,
-            mapOf(AnalyticsParams.QUERY_LENGTH to normalizedQuery.value.length),
-        )
 
         if (canReuseSearchResults) {
             cancelTask(SEARCH_TASK_KEY)
@@ -407,20 +387,13 @@ class MapViewModel(
 
     private fun toggleCategoryFilter(category: Category) {
         val currentFilter = currentState.filters
-        val enabled = category !in currentFilter
         val nextFilter =
             if (category in currentFilter) {
                 currentFilter - category
             } else {
                 currentFilter + category
             }
-        analyticsTracker.logEvent(
-            AnalyticsEvents.CATEGORY_FILTER_TOGGLE,
-            mapOf(
-                AnalyticsParams.CATEGORY to category.id,
-                AnalyticsParams.SOURCE to AnalyticsSource.MAP,
-            ),
-        )
+        mapAnalytics.logCategoryFilterToggled(category, category !in currentFilter)
         updateFilter(nextFilter)
     }
 
@@ -459,7 +432,11 @@ class MapViewModel(
     ): ShopDetailUiState {
         val becameHidden = selectedShopBecameHidden(state, hiddenShopIds)
         val becameVisible = selectedShopBecameVisible(state, hiddenShopIds)
-        return updatedDetailAfterPersonalization(state.shopDetailState, becameHidden, becameVisible)
+        return updatedDetailAfterPersonalization(
+            state.shopDetailState,
+            becameHidden,
+            becameVisible,
+        )
     }
 
     private fun selectedShopBecameHidden(
@@ -512,32 +489,28 @@ class MapViewModel(
     private fun toggleBookmark(shop: RamenShop) {
         if (!isLoggedInOrShowGuide()) return
 
-        val isBookmarked = shop.id in currentState.bookmarkedShopIds
-        analyticsTracker.logEvent(
-            AnalyticsEvents.BOOKMARK_TOGGLE,
-            mapOf(
-                AnalyticsParams.SHOP_ID to shop.id,
-                AnalyticsParams.SOURCE to AnalyticsSource.MAP,
-            ),
-        )
-        postBookmark(shop.id, isBookmarked)
+        val wasBookmarked = shop.id in currentState.bookmarkedShopIds
+        val enabled = !wasBookmarked
+
+        mapAnalytics.logBookmarkToggled(shop.id, enabled)
+        postBookmark(shop.id, wasBookmarked)
     }
 
     private fun toggleShopNotification(shop: RamenShop) {
         if (!isLoggedInOrShowGuide()) return
+
         val isHiddenShop = shop.id in currentState.hiddenShopIds
+
         if (isHiddenShop) {
             showToast(Res.string.hidden_shop_notification_unavailable_message)
             return
         }
 
         val wasEnabled = shop.id in currentState.notificationShopIds
-        analyticsTracker.logEvent(
-            AnalyticsEvents.SHOP_NOTIFICATION_TOGGLE,
-            mapOf(
-                AnalyticsParams.SHOP_ID to shop.id,
-            ),
-        )
+        val enabled = !wasEnabled
+
+        mapAnalytics.logShopNotificationToggled(shop.id, enabled)
+
         postShopNotification(shop.id, wasEnabled)
     }
 
@@ -578,14 +551,10 @@ class MapViewModel(
     private fun toggleHidden(shop: RamenShop) {
         if (!isLoggedInOrShowGuide()) return
 
-        val isHidden = shop.id in currentState.hiddenShopIds
-        analyticsTracker.logEvent(
-            AnalyticsEvents.SHOP_HIDE_TOGGLE,
-            mapOf(
-                AnalyticsParams.SHOP_ID to shop.id,
-            ),
-        )
-        if (isHidden) {
+        val wasHidden = shop.id in currentState.hiddenShopIds
+        mapAnalytics.logShopHiddenToggled(shop.id, !wasHidden)
+
+        if (wasHidden) {
             unhideShop(shop)
         } else {
             hideShop(shop)
@@ -622,16 +591,19 @@ class MapViewModel(
     private fun toggleBookmarkedView() {
         if (!isLoggedInOrShowGuide()) return
 
-        analyticsTracker.logEvent(
-            AnalyticsEvents.BOOKMARKED_VIEW_TOGGLE,
-        )
+        val enabled = !currentState.isBookmarkedView
+        mapAnalytics.logBookmarkedViewToggled(enabled)
+
         reduce {
-            val willShowBookmarkedShops = !isBookmarkedView
             copy(
-                isBookmarkedView = willShowBookmarkedShops,
+                isBookmarkedView = enabled,
                 shopDetailState =
-                    shopDetailState.takeIf { shouldKeepSelectedShop(this, willShowBookmarkedShops) }
-                        ?: ShopDetailUiState.Closed,
+                    shopDetailState.takeIf {
+                        shouldKeepSelectedShop(
+                            state = this,
+                            willShowBookmarkedShops = enabled,
+                        )
+                    } ?: ShopDetailUiState.Closed,
                 search = search.showResults(),
             )
         }
@@ -652,10 +624,6 @@ class MapViewModel(
     private fun isLoggedInOrShowGuide(): Boolean {
         if (currentState.isLoggedIn) return true
 
-        analyticsTracker.logEvent(
-            AnalyticsEvents.LOGIN_GUIDE_SHOW,
-            mapOf(AnalyticsParams.SOURCE to AnalyticsSource.MAP),
-        )
         trySideEffect(ShowLoginGuide)
         return false
     }
@@ -665,14 +633,7 @@ class MapViewModel(
         description: String,
     ) {
         val report = createShopInformationReport(wrongFields, description) ?: return
-        analyticsTracker.logEvent(
-            AnalyticsEvents.SHOP_REPORT_SUBMIT,
-            mapOf(
-                AnalyticsParams.SHOP_ID to report.shopId,
-                AnalyticsParams.WRONG_FIELD_COUNT to wrongFields.size,
-                AnalyticsParams.HAS_DESCRIPTION to description.isNotBlank(),
-            ),
-        )
+        mapAnalytics.logShopReportSubmitted(report)
         launchResultTask(
             taskKey = SHOP_REPORT_TASK_KEY,
             policy = TaskPolicy.IgnoreNew,
@@ -705,31 +666,14 @@ class MapViewModel(
     }
 
     private fun signInWithKakao() {
-        analyticsTracker.logEvent(
-            AnalyticsEvents.LOGIN_START,
-            mapOf(AnalyticsParams.SOURCE to AnalyticsSource.MAP),
-        )
+        mapAnalytics.logLoginStarted()
         launchResultTask(
             taskKey = SIGN_IN_TASK_KEY,
             policy = TaskPolicy.IgnoreNew,
             request = loginRepository::signInWithKakao,
-            onSuccess = {
-                analyticsTracker.logEvent(
-                    AnalyticsEvents.LOGIN_SUCCESS,
-                    mapOf(
-                        AnalyticsParams.METHOD to "kakao",
-                        AnalyticsParams.SOURCE to AnalyticsSource.MAP,
-                    ),
-                )
-            },
+            onSuccess = { mapAnalytics.logLoginSucceeded() },
             onError = {
-                analyticsTracker.logEvent(
-                    AnalyticsEvents.LOGIN_FAILURE,
-                    mapOf(
-                        AnalyticsParams.METHOD to "kakao",
-                        AnalyticsParams.SOURCE to AnalyticsSource.MAP,
-                    ),
-                )
+                mapAnalytics.logLoginFailed()
                 showKakaoLoginFailure()
             },
         )
@@ -945,7 +889,7 @@ class MapViewModel(
         detail: ShopDetail,
         selectedShop: RamenShop,
     ) {
-        logShopDetailView(detail)
+        mapAnalytics.logShopDetailViewed(detail)
         val selectedDetail =
             detail.copy(shop = detail.shop.copy(isVisible = selectedShop.isVisible))
         reduce {
@@ -957,7 +901,7 @@ class MapViewModel(
     }
 
     private fun applyRequestedShopDetail(detail: ShopDetail) {
-        logShopDetailView(detail)
+        mapAnalytics.logShopDetailViewed(detail)
         reduce {
             copy(
                 shouldFocusSelectedShop = true,
@@ -973,7 +917,13 @@ class MapViewModel(
     ) {
         handleError(error)
         reduce {
-            copy(shopDetailState = ShopDetailUiState.Error(loadingState.shopId, loadingState.shop))
+            copy(
+                shopDetailState =
+                    ShopDetailUiState.Error(
+                        loadingState.shopId,
+                        loadingState.shop,
+                    ),
+            )
         }
     }
 
@@ -1019,7 +969,7 @@ class MapViewModel(
     }
 
     private fun handleFailedViewport(result: ViewportLoadResult.Failed) {
-        analyticsTracker.logEvent(AnalyticsEvents.VIEWPORT_LOAD_ERROR)
+        mapAnalytics.logViewportLoadError()
         handleError(result.error)
         reduce { copy(hasViewportLoadFailed = true) }
     }
@@ -1034,16 +984,6 @@ class MapViewModel(
     private fun shopNotificationTaskKey(shopId: String): String = "map-shop-notification:$shopId"
 
     private fun hiddenShopTaskKey(shopId: String): String = "map-hidden-shop:$shopId"
-
-    private fun logShopDetailView(detail: ShopDetail) {
-        analyticsTracker.logEvent(
-            AnalyticsEvents.SHOP_DETAIL_VIEW,
-            mapOf(
-                AnalyticsParams.SHOP_ID to detail.shop.id,
-                AnalyticsParams.CATEGORY_COUNT to detail.shop.menuCategories.size,
-            ),
-        )
-    }
 
     companion object {
         private const val SEARCH_TASK_KEY = "map-search"
