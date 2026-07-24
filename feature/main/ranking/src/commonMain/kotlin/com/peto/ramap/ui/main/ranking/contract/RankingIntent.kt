@@ -28,5 +28,9 @@ sealed interface RankingIntent : Intent {
         val enabled: Boolean,
     ) : RankingIntent
 
+    data class OnShopClicked(
+        val shopId: String,
+    ) : RankingIntent
+
     data object OnKakaoLoginClicked : RankingIntent
 }

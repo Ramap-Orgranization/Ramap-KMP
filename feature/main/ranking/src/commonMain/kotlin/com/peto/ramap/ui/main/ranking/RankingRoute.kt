@@ -57,30 +57,67 @@ fun RankingRoute(
 
     ObserveAsEvents(viewModel.sideEffect) { sideEffect ->
         when (sideEffect) {
-            RankingSideEffect.ShowLoginGuide -> showLoginGuideDialog = true
-            is RankingSideEffect.ShowToast -> toastManager.show(sideEffect.data)
+            RankingSideEffect.ShowLoginGuide -> {
+                showLoginGuideDialog = true
+            }
+
+            is RankingSideEffect.ShowToast -> {
+                toastManager.show(sideEffect.data)
+            }
         }
     }
 
     RankingScreen(
         uiState = uiState,
-        onShopClick = onShopClick,
+        onShopClick = { shopId ->
+            viewModel.dispatch(
+                RankingIntent.OnShopClicked(shopId),
+            )
+            onShopClick(shopId)
+        },
         onFindShopClick = onFindShopClick,
-        onRefresh = { viewModel.dispatch(RankingIntent.OnRefreshed) },
-        onRetry = { viewModel.dispatch(RankingIntent.OnRetried) },
-        onLoadNext = { viewModel.dispatch(RankingIntent.OnNextPageRequested) },
-        onRetryNext = { viewModel.dispatch(RankingIntent.OnNextPageRetried) },
-        onAreaFilterSelected = { viewModel.dispatch(RankingIntent.OnAreaFilterSelected(it)) },
-        onCategoryToggled = { viewModel.dispatch(RankingIntent.OnCategoryToggled(it)) },
-        onAllCategoriesSelected = { viewModel.dispatch(RankingIntent.OnAllCategoriesSelected) },
+        onRefresh = {
+            viewModel.dispatch(RankingIntent.OnRefreshed)
+        },
+        onRetry = {
+            viewModel.dispatch(RankingIntent.OnRetried)
+        },
+        onLoadNext = {
+            viewModel.dispatch(RankingIntent.OnNextPageRequested)
+        },
+        onRetryNext = {
+            viewModel.dispatch(RankingIntent.OnNextPageRetried)
+        },
+        onAreaFilterSelected = { areaFilter ->
+            viewModel.dispatch(
+                RankingIntent.OnAreaFilterSelected(areaFilter),
+            )
+        },
+        onCategoryToggled = { category ->
+            viewModel.dispatch(
+                RankingIntent.OnCategoryToggled(category),
+            )
+        },
+        onAllCategoriesSelected = {
+            viewModel.dispatch(
+                RankingIntent.OnAllCategoriesSelected,
+            )
+        },
         onBookmarkChange = { shopId, enabled ->
-            viewModel.dispatch(RankingIntent.OnBookmarkChanged(shopId, enabled))
+            viewModel.dispatch(
+                RankingIntent.OnBookmarkChanged(
+                    shopId = shopId,
+                    enabled = enabled,
+                ),
+            )
         },
     )
 
     LoginGuideDialog(
         visible = showLoginGuideDialog,
-        onDismiss = { showLoginGuideDialog = false },
+        onDismiss = {
+            showLoginGuideDialog = false
+        },
         onConfirm = {
             showLoginGuideDialog = false
             viewModel.dispatch(RankingIntent.OnKakaoLoginClicked)
@@ -102,27 +139,47 @@ internal fun RankingScreen(
     onAllCategoriesSelected: () -> Unit,
     onBookmarkChange: (String, Boolean) -> Unit,
 ) {
-    var isAreaSheetVisible by remember { mutableStateOf(false) }
-    var removalTargetShopId by remember { mutableStateOf<String?>(null) }
+    var isAreaSheetVisible by remember {
+        mutableStateOf(false)
+    }
 
-    Box(modifier = Modifier.fillMaxSize().background(CommonColor.White)) {
-        Column(modifier = Modifier.fillMaxSize().statusBarsPadding()) {
+    var removalTargetShopId by remember {
+        mutableStateOf<String?>(null)
+    }
+
+    Box(
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .background(CommonColor.White),
+    ) {
+        Column(
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .statusBarsPadding(),
+        ) {
             AppText(
                 text = "전국 인기 라멘 랭킹",
                 style = AppTextStyle.L1,
                 color = GrayColor.C500,
                 modifier =
                     Modifier
-                        .padding(top = 20.dp, bottom = 10.dp)
-                        .padding(start = 15.dp),
+                        .padding(
+                            top = 20.dp,
+                            bottom = 10.dp,
+                        ).padding(start = 15.dp),
             )
 
             RankingFilters(
                 uiState = uiState,
-                onAreaClick = { isAreaSheetVisible = true },
+                onAreaClick = {
+                    isAreaSheetVisible = true
+                },
                 onCategoryToggled = onCategoryToggled,
                 onAllCategoriesSelected = onAllCategoriesSelected,
             )
+
             RankingContent(
                 uiState = uiState,
                 onShopClick = onShopClick,
@@ -135,7 +192,10 @@ internal fun RankingScreen(
                     if (isBookmarked) {
                         removalTargetShopId = shopId
                     } else {
-                        onBookmarkChange(shopId, true)
+                        onBookmarkChange(
+                            shopId,
+                            true,
+                        )
                     }
                 },
             )
@@ -143,12 +203,14 @@ internal fun RankingScreen(
 
         CommonBottomSheet(
             visible = isAreaSheetVisible,
-            onDismissRequest = { isAreaSheetVisible = false },
+            onDismissRequest = {
+                isAreaSheetVisible = false
+            },
         ) {
             AreaSheetContent(
                 areaFilter = uiState.areaFilter,
-                onAreaFilterSelected = {
-                    onAreaFilterSelected(it)
+                onAreaFilterSelected = { areaFilter ->
+                    onAreaFilterSelected(areaFilter)
                     isAreaSheetVisible = false
                 },
             )
@@ -156,22 +218,43 @@ internal fun RankingScreen(
 
         CommonDialog(
             visible = removalTargetShopId != null,
-            confirmText = stringResource(Res.string.bookmark_removal_confirm_action),
-            dismissText = stringResource(Res.string.notification_removal_dismiss_action),
-            onDismissRequest = { removalTargetShopId = null },
+            confirmText =
+                stringResource(
+                    Res.string.bookmark_removal_confirm_action,
+                ),
+            dismissText =
+                stringResource(
+                    Res.string.notification_removal_dismiss_action,
+                ),
+            onDismissRequest = {
+                removalTargetShopId = null
+            },
             content = {
                 AppText(
-                    text = stringResource(Res.string.bookmark_removal_confirm_title),
+                    text =
+                        stringResource(
+                            Res.string.bookmark_removal_confirm_title,
+                        ),
                     style = AppTextStyle.T1,
                     color = GrayColor.C500,
                     textAlign = TextAlign.Center,
                 )
             },
             onConfirm = {
-                removalTargetShopId?.let { shopId -> onBookmarkChange(shopId, false) }
+                val shopId = removalTargetShopId
+
+                if (shopId != null) {
+                    onBookmarkChange(
+                        shopId,
+                        false,
+                    )
+                }
+
                 removalTargetShopId = null
             },
-            onDismiss = { removalTargetShopId = null },
+            onDismiss = {
+                removalTargetShopId = null
+            },
         )
     }
 }
@@ -179,7 +262,10 @@ internal fun RankingScreen(
 @Preview(showBackground = true)
 @Composable
 private fun RankingRoutePreview() {
-    val shops = RamenShopPreviewParameterProvider().ramenShopPreviewSamples
+    val shops =
+        RamenShopPreviewParameterProvider()
+            .ramenShopPreviewSamples
+
     val rankings =
         shops.mapIndexed { index, shop ->
             ShopRanking(
@@ -192,8 +278,12 @@ private fun RankingRoutePreview() {
         RankingScreen(
             uiState =
                 RankingUiState(
-                    shops = RankedShops(ShopRankings(rankings)),
-                    bookmarkedShopIds = setOf(shops.first().id),
+                    shops =
+                        RankedShops(
+                            ShopRankings(rankings),
+                        ),
+                    bookmarkedShopIds =
+                        setOf(shops.first().id),
                 ),
             onShopClick = {},
             onFindShopClick = {},

@@ -257,4 +257,11 @@ private fun rankingViewModel(
     repository: FakeShopRankingRepository = FakeShopRankingRepository(),
     personalizationStore: ShopPersonalizationStore = FakePersonalizationRepository(),
     loginRepository: FakeLoginRepository = FakeLoginRepository(LoginSessionState.AUTHENTICATED),
-) = RankingViewModel(repository, personalizationStore, loginRepository, FakeAnalyticsTracker())
+) = RankingViewModel(
+    repository,
+    personalizationStore,
+    loginRepository,
+    RankingAnalytics(
+        FakeAnalyticsTracker(),
+    ),
+)
