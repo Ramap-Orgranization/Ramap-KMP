@@ -20,7 +20,6 @@ object AnalyticsParams {
     const val METHOD = "method"
     const val PLACE_NAME = "place_name"
     const val AREA = "area"
-    const val HAS_URL = "has_url"
     const val HAS_DESCRIPTION = "has_description"
     const val WRONG_FIELD_COUNT = "wrong_field_count"
     const val ENABLED = "enabled"

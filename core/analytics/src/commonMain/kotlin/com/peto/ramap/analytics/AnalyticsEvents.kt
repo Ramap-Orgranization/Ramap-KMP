@@ -39,11 +39,8 @@ object AnalyticsEvents {
 
     // ── 알림 ──
     const val NOTIFICATION_OPEN = "notification_open"
-    const val NOTIFICATION_SETTINGS_CHANGE = "notification_settings_change"
 
     // ── 설정 & 관리 ──
-    const val PLACE_REPORT_SUBMIT = "place_report_submit"
-    const val PLACE_REPORT_LOCATION_SUBMIT = "place_report_location_submit"
     const val SUBSCRIBED_SHOP_REMOVE = "subscribed_shop_remove"
     const val BOOKMARKED_SHOP_REMOVE = "bookmarked_shop_remove"
     const val HIDDEN_SHOP_UNHIDE = "hidden_shop_unhide"

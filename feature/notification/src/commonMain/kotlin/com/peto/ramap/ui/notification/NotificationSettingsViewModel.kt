@@ -1,7 +1,5 @@
 package com.peto.ramap.ui.notification
 
-import com.peto.ramap.analytics.AnalyticsEvents
-import com.peto.ramap.analytics.AnalyticsTracker
 import com.peto.ramap.domain.repository.NotificationSettingsRepository
 import com.peto.ramap.ui.base.BaseViewModel
 import com.peto.ramap.ui.notification.contract.NotificationSettingsIntent
@@ -14,7 +12,6 @@ import com.peto.ramap.ui.task.TaskPolicy
 
 class NotificationSettingsViewModel(
     private val notificationRepository: NotificationSettingsRepository,
-    private val analyticsTracker: AnalyticsTracker,
 ) : BaseViewModel<NotificationSettingsUiState, NotificationSettingsIntent, NotificationSettingsSideEffect>(
         initialState = NotificationSettingsUiState(),
     ) {
@@ -44,9 +41,6 @@ class NotificationSettingsViewModel(
     }
 
     private fun updateEnabled(enabled: Boolean) {
-        analyticsTracker.logEvent(
-            AnalyticsEvents.NOTIFICATION_SETTINGS_CHANGE,
-        )
         val previous = currentState.areEnabled
         launchResultTask(
             taskKey = UPDATE_SETTINGS_TASK_KEY,

@@ -10,5 +10,4 @@ object AnalyticsSource {
     const val RANKING = "ranking"
     const val ACCOUNT = "account"
     const val MARKER = "marker"
-    const val RANKING_BOOKMARK = "ranking_bookmark"
 }
