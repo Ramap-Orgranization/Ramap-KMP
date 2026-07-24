@@ -2,10 +2,11 @@ package com.peto.ramap.ui.account.di
 
 import com.peto.ramap.ui.account.AccountAnalytics
 import com.peto.ramap.ui.account.AccountViewModel
+import org.koin.core.module.dsl.viewModelOf
 import org.koin.dsl.module
 
 val accountModule =
     module {
-        factory { AccountViewModel(get(), get()) }
+        viewModelOf(::AccountViewModel)
         factory { AccountAnalytics(get()) }
     }
