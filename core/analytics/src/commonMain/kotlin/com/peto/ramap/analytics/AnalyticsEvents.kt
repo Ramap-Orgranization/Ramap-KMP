@@ -40,11 +40,6 @@ object AnalyticsEvents {
     // ── 알림 ──
     const val NOTIFICATION_OPEN = "notification_open"
 
-    // ── 설정 & 관리 ──
-    const val SUBSCRIBED_SHOP_REMOVE = "subscribed_shop_remove"
-    const val BOOKMARKED_SHOP_REMOVE = "bookmarked_shop_remove"
-    const val HIDDEN_SHOP_UNHIDE = "hidden_shop_unhide"
-
     // ── 에러 & 재시도 ──
     const val VIEWPORT_LOAD_ERROR = "viewport_load_error"
 }

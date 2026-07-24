@@ -1,9 +1,6 @@
 package com.peto.ramap.ui.subscribed
 
 import androidx.lifecycle.viewModelScope
-import com.peto.ramap.analytics.AnalyticsEvents
-import com.peto.ramap.analytics.AnalyticsParams
-import com.peto.ramap.analytics.AnalyticsTracker
 import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
@@ -34,7 +31,6 @@ class SubscribedShopListViewModel(
     private val notificationRepository: NotificationSettingsRepository,
     private val ramenShopRepository: RamenShopRepository,
     private val personalizationStore: ShopPersonalizationStore,
-    private val analyticsTracker: AnalyticsTracker,
 ) : BaseViewModel<SubscribedShopListUiState, SubscribedShopListIntent, SubscribedShopListSideEffect>(
         initialState = SubscribedShopListUiState(),
     ) {
@@ -61,10 +57,6 @@ class SubscribedShopListViewModel(
                         is SubscribedRemovalTarget.Shop -> target.shopId
                         is SubscribedRemovalTarget.EventOverride -> target.eventId
                     }
-                analyticsTracker.logEvent(
-                    AnalyticsEvents.SUBSCRIBED_SHOP_REMOVE,
-                    mapOf(AnalyticsParams.SHOP_ID to targetId),
-                )
                 confirmRemoval(intent.target)
             }
         }

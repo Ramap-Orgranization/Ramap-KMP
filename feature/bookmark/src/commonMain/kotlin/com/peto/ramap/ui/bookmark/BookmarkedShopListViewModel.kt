@@ -24,7 +24,6 @@ import ramap.shared.generated.resources.personalization_update_failure_message
 class BookmarkedShopListViewModel(
     private val personalizationStore: ShopPersonalizationStore,
     private val ramenShopRepository: RamenShopRepository,
-    private val bookmarkedShopListAnalytics: BookmarkedShopListAnalytics,
 ) : BaseViewModel<BookmarkedShopListUiState, BookmarkedShopListIntent, BookmarkedShopListSideEffect>(
         initialState = BookmarkedShopListUiState(),
     ) {
@@ -41,7 +40,6 @@ class BookmarkedShopListViewModel(
     }
 
     private fun handleRemovalConfirmed(intent: BookmarkedShopListIntent.OnRemovalConfirmed) {
-        bookmarkedShopListAnalytics.logBookmarkRemovalConfirmed(intent.shopId)
         removeBookmark(intent.shopId)
     }
 

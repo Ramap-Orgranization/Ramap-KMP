@@ -24,7 +24,6 @@ import ramap.shared.generated.resources.personalization_update_failure_message
 class HiddenShopListViewModel(
     private val personalizationStore: ShopPersonalizationStore,
     private val ramenShopRepository: RamenShopRepository,
-    private val hiddenShopListAnalytics: HiddenShopListAnalytics,
 ) : BaseViewModel<
         HiddenShopListUiState,
         HiddenShopListIntent,
@@ -45,10 +44,6 @@ class HiddenShopListViewModel(
     }
 
     private fun handleUnhideConfirmed(intent: HiddenShopListIntent.OnUnhideConfirmed) {
-        hiddenShopListAnalytics.logUnhideConfirmed(
-            intent.shopId,
-        )
-
         unhideShop(intent.shopId)
     }
 
