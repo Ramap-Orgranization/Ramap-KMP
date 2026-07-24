@@ -1,5 +1,9 @@
 package com.peto.ramap.di
 
+import com.peto.ramap.analytics.AnalyticsTracker
+import com.peto.ramap.analytics.CrashReporter
+import com.peto.ramap.analytics.FirebaseAnalyticsTracker
+import com.peto.ramap.analytics.FirebaseCrashReporter
 import com.peto.ramap.platform.AppSettingsOpener
 import com.peto.ramap.platform.AppVersionProvider
 import com.peto.ramap.platform.IosAppSettingsOpener
@@ -15,4 +19,6 @@ actual val platformModule =
         }
         single<AppVersionProvider> { IosAppVersionProvider() }
         single<CurrentLocationProvider> { IosCurrentLocationProvider() }
+        single<AnalyticsTracker> { FirebaseAnalyticsTracker() }
+        single<CrashReporter> { FirebaseCrashReporter() }
     }
