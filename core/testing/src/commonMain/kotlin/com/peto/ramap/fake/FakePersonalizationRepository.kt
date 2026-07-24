@@ -2,14 +2,14 @@ package com.peto.ramap.fake
 
 import com.peto.ramap.core.result.RamapError
 import com.peto.ramap.core.result.RamapResult
-import com.peto.ramap.domain.model.personalization.Personalization
+import com.peto.ramap.domain.model.personalization.ShopPersonalization
 import com.peto.ramap.domain.store.ShopPersonalizationStore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 
 class FakePersonalizationRepository(
-    personalization: Personalization = Personalization(),
+    personalization: ShopPersonalization = ShopPersonalization(),
 ) : ShopPersonalizationStore {
     private val mutableState = MutableStateFlow(personalization)
     override val state = mutableState.asStateFlow()
@@ -67,7 +67,7 @@ class FakePersonalizationRepository(
     }
 
     override suspend fun clear() {
-        mutableState.value = Personalization()
+        mutableState.value = ShopPersonalization()
     }
 
     fun updateBookmarkedShopIds(shopIds: Set<String>) {
@@ -75,7 +75,7 @@ class FakePersonalizationRepository(
         bookmarkedShopIds.value = shopIds
     }
 
-    suspend fun fetchPersonalization(): RamapResult<Personalization> = RamapResult.Success(state.value)
+    suspend fun fetchPersonalization(): RamapResult<ShopPersonalization> = RamapResult.Success(state.value)
 
     suspend fun removeBookmark(shopId: String): RamapResult<Unit> = updateBookmark(shopId, false)
 }

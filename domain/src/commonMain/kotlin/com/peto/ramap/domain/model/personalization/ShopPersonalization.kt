@@ -68,5 +68,3 @@ data class ShopPersonalization(
         enabled: Boolean,
     ): Boolean = enabled && shopId in hiddenShopIds
 }
-
-typealias Personalization = ShopPersonalization
