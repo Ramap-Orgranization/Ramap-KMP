@@ -9,6 +9,8 @@ Pod::Spec.new do |spec|
     spec.vendored_frameworks      = 'build/cocoapods/framework/Shared.framework'
     spec.libraries                = 'c++'
     spec.ios.deployment_target    = '13.0'
+    spec.dependency 'FirebaseAnalytics'
+    spec.dependency 'FirebaseCrashlytics'
     spec.dependency 'NMapsMap'
     if !Dir.exist?('build/cocoapods/framework/Shared.framework') || Dir.empty?('build/cocoapods/framework/Shared.framework')
         raise "

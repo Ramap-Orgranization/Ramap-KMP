@@ -1,0 +1,54 @@
+package com.peto.ramap.analytics
+
+import com.google.firebase.Firebase
+import com.google.firebase.analytics.FirebaseAnalytics
+import com.google.firebase.analytics.analytics
+import com.google.firebase.analytics.logEvent
+
+class FirebaseAnalyticsTracker : AnalyticsTracker {
+    private val firebase: FirebaseAnalytics by lazy { Firebase.analytics }
+
+    override fun logEvent(
+        name: String,
+        params: Map<String, Any>,
+    ) {
+        firebase.logEvent(name) {
+            params.forEach { (key, value) ->
+                when (value) {
+                    is String -> param(key, value)
+                    is Long -> param(key, value)
+                    is Int -> param(key, value.toLong())
+                    is Double -> param(key, value)
+                    is Boolean -> param(key, if (value) 1L else 0L)
+                    else -> param(key, value.toString())
+                }
+            }
+        }
+    }
+
+    override fun logScreenView(
+        screenName: String,
+        params: Map<String, Any>,
+    ) {
+        firebase.logEvent(FirebaseAnalytics.Event.SCREEN_VIEW) {
+            param(FirebaseAnalytics.Param.SCREEN_NAME, screenName)
+            params.forEach { (key, value) ->
+                when (value) {
+                    is String -> param(key, value)
+                    is Long -> param(key, value)
+                    is Int -> param(key, value.toLong())
+                    is Double -> param(key, value)
+                    is Boolean -> param(key, if (value) 1L else 0L)
+                    else -> param(key, value.toString())
+                }
+            }
+        }
+    }
+
+    override fun setUserProperty(
+        key: String,
+        value: String,
+    ) {
+        firebase.setUserProperty(key, value)
+    }
+}
