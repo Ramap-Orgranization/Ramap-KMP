@@ -83,16 +83,6 @@ class RankingAnalytics(
         )
     }
 
-    fun logLoginGuideShown() {
-        analyticsTracker.logEvent(
-            name = AnalyticsEvents.LOGIN_GUIDE_SHOW,
-            params =
-                mapOf(
-                    AnalyticsParams.SOURCE to AnalyticsSource.RANKING_BOOKMARK,
-                ),
-        )
-    }
-
     fun logNextPageRequested() {
         analyticsTracker.logEvent(
             name = AnalyticsEvents.RANKING_PAGE_LOAD,
