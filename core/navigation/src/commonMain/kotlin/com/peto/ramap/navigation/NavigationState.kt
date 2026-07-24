@@ -13,6 +13,10 @@ class NavigationState(
     var selectedTab: TabStatus by selectedTabState
         private set
 
+    /** 마지막 네비게이션 소스. shop_select 등의 analytics source 파라미터로 사용. */
+    var lastNavigationSource: String? = null
+        private set
+
     init {
         val rankingBackStack = backStacks.getValue(TabStatus.RANKING)
         if (selectedTab == TabStatus.RANKING && rankingBackStack.isEmpty()) {
@@ -88,7 +92,11 @@ class NavigationState(
         selectTopLevelTab(TabStatus.MAP)
     }
 
-    fun showShopOnMap(shopId: String) {
+    fun showShopOnMap(
+        shopId: String,
+        source: String? = null,
+    ) {
+        lastNavigationSource = source
         val mapRoute = ScreenRoutes.TabRoutes(shopId = shopId)
         val mapBackStack = backStacks.getValue(TabStatus.MAP)
         val isRequestedShopAlreadyShown =

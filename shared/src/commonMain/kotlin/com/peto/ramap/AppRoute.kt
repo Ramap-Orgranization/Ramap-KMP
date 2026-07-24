@@ -2,9 +2,18 @@ package com.peto.ramap
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.snapshotFlow
+import com.peto.ramap.analytics.AnalyticsEvents
+import com.peto.ramap.analytics.AnalyticsParams
+import com.peto.ramap.analytics.AnalyticsTracker
+import com.peto.ramap.analytics.AnalyticsUserProperties
+import com.peto.ramap.analytics.analyticsScreenName
 import com.peto.ramap.designsystem.toast.ToastManager
 import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
+import com.peto.ramap.domain.model.auth.LoginSessionState
+import com.peto.ramap.domain.repository.LoginRepository
+import com.peto.ramap.domain.store.ShopPersonalizationStore
 import com.peto.ramap.navigation.BackPressController
 import com.peto.ramap.navigation.NavigationRouter
 import com.peto.ramap.navigation.NavigationState
@@ -25,6 +34,7 @@ import com.peto.ramap.ui.main.ranking.RankingRoute
 import com.peto.ramap.ui.notification.NotificationSettingsRoute
 import com.peto.ramap.ui.report.PlaceReportRoute
 import com.peto.ramap.ui.subscribed.SubscribedShopListRoute
+import kotlinx.coroutines.flow.distinctUntilChanged
 import org.koin.compose.koinInject
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.event_not_found_message
@@ -35,13 +45,20 @@ internal fun AppRoute(
     onExitRequested: (() -> Unit)?,
     notificationDeepLinkParser: NotificationDeepLinkParser = koinInject(),
     notificationLaunchDispatcher: NotificationLaunchDispatcher = koinInject(),
+    analyticsTracker: AnalyticsTracker = koinInject(),
+    loginRepository: LoginRepository = koinInject(),
+    personalizationStore: ShopPersonalizationStore = koinInject(),
 ) {
     val navigationState = rememberNavigationState()
+
+    TrackScreenViews(navigationState, analyticsTracker)
+    TrackUserProperties(analyticsTracker, loginRepository, personalizationStore)
 
     NotificationDeepLink(
         navigationState = navigationState,
         notificationDeepLinkParser = notificationDeepLinkParser,
         notificationLaunchDispatcher = notificationLaunchDispatcher,
+        analyticsTracker = analyticsTracker,
     )
 
     BackPressController(
@@ -60,7 +77,7 @@ internal fun AppRoute(
         },
         rankingScreen = {
             RankingRoute(
-                onShopClick = navigationState::showShopOnMap,
+                onShopClick = { navigationState.showShopOnMap(it, source = "ranking") },
                 onFindShopClick = navigationState::showMap,
             )
         },
@@ -116,10 +133,56 @@ internal fun AppRoute(
                         ),
                     )
                 },
-                onShopClick = navigationState::showShopOnMap,
+                onShopClick = { navigationState.showShopOnMap(it, source = "event_detail") },
             )
         },
     )
+}
+
+@Composable
+private fun TrackScreenViews(
+    navigationState: NavigationState,
+    tracker: AnalyticsTracker,
+) {
+    LaunchedEffect(navigationState) {
+        snapshotFlow { navigationState.currentRoute }
+            .distinctUntilChanged()
+            .collect { route ->
+                tracker.logScreenView(route.analyticsScreenName)
+            }
+    }
+}
+
+@Composable
+private fun TrackUserProperties(
+    tracker: AnalyticsTracker,
+    loginRepository: LoginRepository,
+    personalizationStore: ShopPersonalizationStore,
+) {
+    LaunchedEffect(Unit) {
+        loginRepository.sessionState.collect { state ->
+            tracker.setUserProperty(
+                AnalyticsUserProperties.LOGIN_STATUS,
+                if (state == LoginSessionState.AUTHENTICATED) "logged_in" else "guest",
+            )
+        }
+    }
+    LaunchedEffect(Unit) {
+        personalizationStore.state.collect { personalization ->
+            tracker.setUserProperty(
+                AnalyticsUserProperties.BOOKMARKED_COUNT,
+                personalization.bookmarkedShopIds.size.toString(),
+            )
+            tracker.setUserProperty(
+                AnalyticsUserProperties.SUBSCRIBED_COUNT,
+                personalization.notificationShopIds.size.toString(),
+            )
+            tracker.setUserProperty(
+                AnalyticsUserProperties.HIDDEN_COUNT,
+                personalization.hiddenShopIds.size.toString(),
+            )
+        }
+    }
 }
 
 @Composable
@@ -127,6 +190,7 @@ private fun NotificationDeepLink(
     navigationState: NavigationState,
     notificationDeepLinkParser: NotificationDeepLinkParser,
     notificationLaunchDispatcher: NotificationLaunchDispatcher,
+    analyticsTracker: AnalyticsTracker,
 ) {
     LaunchedEffect(navigationState) {
         notificationLaunchDispatcher.pendingDeepLink.collect { value ->
@@ -134,6 +198,10 @@ private fun NotificationDeepLink(
             val eventDeepLink = deepLink as? NotificationDeepLink.Event
 
             eventDeepLink?.let {
+                analyticsTracker.logEvent(
+                    AnalyticsEvents.NOTIFICATION_OPEN,
+                    mapOf(AnalyticsParams.EVENT_ID to it.eventId),
+                )
                 navigationState.showEvent(it.eventId)
                 notificationLaunchDispatcher.consume(requireNotNull(value))
             }
