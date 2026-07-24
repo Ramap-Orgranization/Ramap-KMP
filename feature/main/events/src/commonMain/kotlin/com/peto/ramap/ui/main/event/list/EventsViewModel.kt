@@ -1,7 +1,5 @@
 package com.peto.ramap.ui.main.event.list
 
-import com.peto.ramap.analytics.AnalyticsEvents
-import com.peto.ramap.analytics.AnalyticsTracker
 import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.repository.RamenShopRepository
@@ -16,7 +14,7 @@ import ramap.shared.generated.resources.event_list_refresh_failure_message
 
 class EventsViewModel(
     private val ramenShopRepository: RamenShopRepository,
-    private val analyticsTracker: AnalyticsTracker,
+    private val eventsAnalytics: EventsAnalytics,
 ) : BaseViewModel<EventsUiState, EventsIntent, EventsSideEffect>(EventsUiState()) {
     init {
         loadEvents()
@@ -26,6 +24,7 @@ class EventsViewModel(
         when (intent) {
             EventsIntent.OnEventsRefreshed -> refreshEvents()
             EventsIntent.OnEventsRetried -> loadEvents()
+            is EventsIntent.OnEventClicked -> handleEventClicked(intent)
         }
     }
 
@@ -42,7 +41,6 @@ class EventsViewModel(
     }
 
     private fun refreshEvents() {
-        analyticsTracker.logEvent(AnalyticsEvents.EVENT_LIST_REFRESH)
         launchResultTask(
             taskKey = EVENTS_TASK_KEY,
             loadKey = EventsLoadKey.Refresh,
@@ -60,6 +58,10 @@ class EventsViewModel(
                 )
             },
         )
+    }
+
+    private fun handleEventClicked(intent: EventsIntent.OnEventClicked) {
+        eventsAnalytics.logEventSelected(intent.event)
     }
 
     companion object {

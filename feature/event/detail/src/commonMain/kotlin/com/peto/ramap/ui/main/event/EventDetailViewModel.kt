@@ -31,15 +31,7 @@ class EventDetailViewModel(
         when (intent) {
             is OnEntered -> loadEvent(intent.eventId)
             is OnNotificationChanged -> handleNotificationChanged(intent.enabled)
-            OnNotificationPermissionGranted -> {
-                currentState.event?.let { event ->
-                    analyticsTracker.logEvent(
-                        AnalyticsEvents.EVENT_NOTIFICATION_PERMISSION,
-                        mapOf(AnalyticsParams.EVENT_ID to event.id),
-                    )
-                }
-                updateNotification(enabled = true)
-            }
+            OnNotificationPermissionGranted -> updateNotification(enabled = true)
         }
     }
 

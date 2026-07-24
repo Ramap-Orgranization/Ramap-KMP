@@ -26,11 +26,10 @@ object AnalyticsEvents {
     const val RANKING_PAGE_LOAD = "ranking_page_load"
 
     // ── 이벤트 ──
-    const val EVENT_LIST_REFRESH = "event_list_refresh"
     const val EVENT_DETAIL_VIEW = "event_detail_view"
     const val EVENT_NOTIFICATION_TOGGLE = "event_notification_toggle"
-    const val EVENT_NOTIFICATION_PERMISSION = "event_notification_permission"
     const val EVENT_UNAVAILABLE = "event_unavailable"
+    const val EVENT_SELECT = "event_select"
 
     // ── 인증 ──
     const val LOGIN_START = "login_start"
