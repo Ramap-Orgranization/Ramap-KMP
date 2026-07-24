@@ -1,6 +1,10 @@
 package com.peto.ramap.ui.main.ranking
 
 import androidx.lifecycle.viewModelScope
+import com.peto.ramap.analytics.AnalyticsEvents
+import com.peto.ramap.analytics.AnalyticsParams
+import com.peto.ramap.analytics.AnalyticsSource
+import com.peto.ramap.analytics.AnalyticsTracker
 import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.rank.RankedShops
@@ -30,6 +34,7 @@ class RankingViewModel(
     private val shopRankRepository: ShopRankingRepository,
     private val personalizationStore: ShopPersonalizationStore,
     private val loginRepository: LoginRepository,
+    private val analyticsTracker: AnalyticsTracker,
 ) : BaseViewModel<RankingUiState, RankingIntent, RankingSideEffect>(RankingUiState()) {
     init {
         observePersonalization()
@@ -58,22 +63,46 @@ class RankingViewModel(
     }
 
     private fun toggleCategory(intent: RankingIntent.OnCategoryToggled) {
+        val enabled = intent.category !in currentState.selectedCategories
         val categories =
             if (intent.category in currentState.selectedCategories) {
                 currentState.selectedCategories - intent.category
             } else {
                 currentState.selectedCategories + intent.category
             }
+        analyticsTracker.logEvent(
+            AnalyticsEvents.CATEGORY_FILTER_TOGGLE,
+            mapOf(
+                AnalyticsParams.CATEGORY to intent.category.id,
+                AnalyticsParams.SOURCE to AnalyticsSource.RANKING,
+            ),
+        )
         changeFilters { copy(selectedCategories = categories) }
     }
 
     private fun selectAllCategories() {
         if (currentState.selectedCategories.isEmpty()) return
+        analyticsTracker.logEvent(
+            AnalyticsEvents.CATEGORY_FILTER_ALL,
+            mapOf(AnalyticsParams.SOURCE to AnalyticsSource.RANKING),
+        )
         changeFilters { copy(selectedCategories = emptySet()) }
     }
 
     private fun selectAreaFilter(areaFilter: AreaFilter) {
         if (currentState.areaFilter == areaFilter) return
+        val areaName =
+            when (areaFilter) {
+                is AreaFilter.Nationwide -> "nationwide"
+                is AreaFilter.Selected -> areaFilter.area.name
+            }
+        analyticsTracker.logEvent(
+            AnalyticsEvents.AREA_FILTER_SELECT,
+            mapOf(
+                AnalyticsParams.AREA to areaName,
+                AnalyticsParams.SOURCE to AnalyticsSource.RANKING,
+            ),
+        )
         changeFilters { copy(areaFilter = areaFilter) }
     }
 
@@ -91,10 +120,22 @@ class RankingViewModel(
 
     private suspend fun updateBookmark(intent: RankingIntent.OnBookmarkChanged) {
         if (!loginRepository.hasSession()) {
+            analyticsTracker.logEvent(
+                AnalyticsEvents.LOGIN_GUIDE_SHOW,
+                mapOf(AnalyticsParams.SOURCE to AnalyticsSource.RANKING_BOOKMARK),
+            )
             postSideEffect(RankingSideEffect.ShowLoginGuide)
             return
         }
         if ((intent.shopId in currentState.bookmarkedShopIds) == intent.enabled) return
+
+        analyticsTracker.logEvent(
+            AnalyticsEvents.BOOKMARK_TOGGLE,
+            mapOf(
+                AnalyticsParams.SHOP_ID to intent.shopId,
+                AnalyticsParams.SOURCE to AnalyticsSource.RANKING,
+            ),
+        )
 
         val likeCount = if (intent.enabled) 1L else -1L
         launchResultTask(
@@ -143,6 +184,7 @@ class RankingViewModel(
     }
 
     private fun refreshRankings() {
+        analyticsTracker.logEvent(AnalyticsEvents.RANKING_REFRESH)
         cancelTask(NEXT_PAGE_TASK_KEY)
         val query = currentState.toQuery(cursor = null)
         launchResultTask(
@@ -162,6 +204,7 @@ class RankingViewModel(
     private fun loadNextPage() {
         val cursor = currentState.nextCursor ?: return
         if (currentState.isRefreshing || currentState.isLoading) return
+        analyticsTracker.logEvent(AnalyticsEvents.RANKING_PAGE_LOAD)
         val query = currentState.toQuery(cursor)
         launchResultTask(
             taskKey = NEXT_PAGE_TASK_KEY,
@@ -205,11 +248,33 @@ class RankingViewModel(
         )
 
     private fun signInWithKakao() {
+        analyticsTracker.logEvent(
+            AnalyticsEvents.LOGIN_START,
+            mapOf(AnalyticsParams.SOURCE to AnalyticsSource.RANKING),
+        )
         launchResultTask(
             taskKey = SIGN_IN_TASK_KEY,
             policy = TaskPolicy.IgnoreNew,
             request = loginRepository::signInWithKakao,
-            onError = { showToast(Res.string.kakao_login_failure_message, ToastType.ERROR) },
+            onSuccess = {
+                analyticsTracker.logEvent(
+                    AnalyticsEvents.LOGIN_SUCCESS,
+                    mapOf(
+                        AnalyticsParams.METHOD to "kakao",
+                        AnalyticsParams.SOURCE to AnalyticsSource.RANKING,
+                    ),
+                )
+            },
+            onError = {
+                analyticsTracker.logEvent(
+                    AnalyticsEvents.LOGIN_FAILURE,
+                    mapOf(
+                        AnalyticsParams.METHOD to "kakao",
+                        AnalyticsParams.SOURCE to AnalyticsSource.RANKING,
+                    ),
+                )
+                showToast(Res.string.kakao_login_failure_message, ToastType.ERROR)
+            },
         )
     }
 

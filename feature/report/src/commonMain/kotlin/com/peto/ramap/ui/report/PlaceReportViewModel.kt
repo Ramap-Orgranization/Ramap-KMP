@@ -1,6 +1,9 @@
 package com.peto.ramap.ui.report
 
 import androidx.lifecycle.viewModelScope
+import com.peto.ramap.analytics.AnalyticsEvents
+import com.peto.ramap.analytics.AnalyticsParams
+import com.peto.ramap.analytics.AnalyticsTracker
 import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.report.PlaceReportTextParser
@@ -44,6 +47,7 @@ class PlaceReportViewModel(
     private val currentLocationStore: CurrentLocationStore,
     private val reverseGeocoder: ReverseGeocoder,
     private val currentLocationProvider: CurrentLocationProvider,
+    private val analyticsTracker: AnalyticsTracker,
 ) : BaseViewModel<PlaceReportUiState, PlaceReportIntent, PlaceReportSideEffect>(PlaceReportUiState()) {
     init {
         viewModelScope.launch { observeCurrentLocation() }
@@ -52,8 +56,19 @@ class PlaceReportViewModel(
     override suspend fun handleIntent(intent: PlaceReportIntent) {
         when (intent) {
             is OnPlaceUrlChanged -> reduce { copy(placeUrl = intent.value) }
-            OnPlaceReportSubmit -> submitPlaceReport()
-            OnCurrentLocationReportSubmit -> submitCurrentLocationReport()
+            OnPlaceReportSubmit -> {
+                analyticsTracker.logEvent(
+                    AnalyticsEvents.PLACE_REPORT_SUBMIT,
+                    mapOf(AnalyticsParams.HAS_URL to currentState.placeUrl.isNotBlank()),
+                )
+                submitPlaceReport()
+            }
+
+            OnCurrentLocationReportSubmit -> {
+                analyticsTracker.logEvent(AnalyticsEvents.PLACE_REPORT_LOCATION_SUBMIT)
+                submitCurrentLocationReport()
+            }
+
             is OnLocationPermissionResult -> handleLocationPermission(intent.status)
         }
     }

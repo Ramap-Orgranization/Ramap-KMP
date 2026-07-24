@@ -22,6 +22,7 @@ import com.peto.ramap.domain.repository.RamenShopRepository
 import com.peto.ramap.domain.repository.ShopReportRepository
 import com.peto.ramap.domain.repository.ShopWaitingSystemRepository
 import com.peto.ramap.domain.store.ShopPersonalizationStore
+import com.peto.ramap.fake.FakeAnalyticsTracker
 import com.peto.ramap.fake.FakeLoginRepository
 import com.peto.ramap.fake.FakeNotificationSettingsRepository
 import com.peto.ramap.fake.FakePersonalizationRepository
@@ -2504,6 +2505,7 @@ private fun mapViewModel(
             ramenShopRepository,
             shopWaitingSystemRepository,
         ),
+        analyticsTracker = FakeAnalyticsTracker(),
     )
 
 private fun loggedInRepository(): FakeLoginRepository =

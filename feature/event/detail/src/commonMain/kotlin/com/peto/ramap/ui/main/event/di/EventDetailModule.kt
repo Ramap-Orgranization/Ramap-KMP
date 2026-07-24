@@ -5,5 +5,5 @@ import org.koin.dsl.module
 
 val eventDetailModule =
     module {
-        factory { EventDetailViewModel(get(), get(), get()) }
+        factory { EventDetailViewModel(get(), get(), get(), get()) }
     }

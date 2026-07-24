@@ -1,6 +1,9 @@
 package com.peto.ramap.ui.hidden
 
 import androidx.lifecycle.viewModelScope
+import com.peto.ramap.analytics.AnalyticsEvents
+import com.peto.ramap.analytics.AnalyticsParams
+import com.peto.ramap.analytics.AnalyticsTracker
 import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.repository.RamenShopRepository
@@ -22,6 +25,7 @@ import ramap.shared.generated.resources.personalization_update_failure_message
 class HiddenShopListViewModel(
     private val personalizationStore: ShopPersonalizationStore,
     private val ramenShopRepository: RamenShopRepository,
+    private val analyticsTracker: AnalyticsTracker,
 ) : BaseViewModel<HiddenShopListUiState, HiddenShopListIntent, HiddenShopListSideEffect>(
         initialState = HiddenShopListUiState(),
     ) {
@@ -36,7 +40,13 @@ class HiddenShopListViewModel(
 
     override suspend fun handleIntent(intent: HiddenShopListIntent) {
         when (intent) {
-            is HiddenShopListIntent.OnUnhideConfirmed -> unhideShop(intent.shopId)
+            is HiddenShopListIntent.OnUnhideConfirmed -> {
+                analyticsTracker.logEvent(
+                    AnalyticsEvents.HIDDEN_SHOP_UNHIDE,
+                    mapOf(AnalyticsParams.SHOP_ID to intent.shopId),
+                )
+                unhideShop(intent.shopId)
+            }
         }
     }
 

@@ -1,8 +1,10 @@
 package com.peto.ramap.ui.main.event
 
+import com.peto.ramap.analytics.AnalyticsEvents
+import com.peto.ramap.analytics.AnalyticsParams
+import com.peto.ramap.analytics.AnalyticsTracker
 import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.model.notification.EventNotificationWindow
-import com.peto.ramap.domain.model.notification.eventNotificationWindow
 import com.peto.ramap.domain.repository.LoginRepository
 import com.peto.ramap.domain.repository.NotificationSettingsRepository
 import com.peto.ramap.domain.repository.RamenShopRepository
@@ -23,12 +25,21 @@ class EventDetailViewModel(
     private val ramenShopRepository: RamenShopRepository,
     private val loginRepository: LoginRepository,
     private val notificationRepository: NotificationSettingsRepository,
+    private val analyticsTracker: AnalyticsTracker,
 ) : BaseViewModel<EventDetailUiState, EventDetailIntent, EventDetailSideEffect>(EventDetailUiState()) {
     override suspend fun handleIntent(intent: EventDetailIntent) {
         when (intent) {
             is OnEntered -> loadEvent(intent.eventId)
             is OnNotificationChanged -> handleNotificationChanged(intent.enabled)
-            OnNotificationPermissionGranted -> updateNotification(enabled = true)
+            OnNotificationPermissionGranted -> {
+                currentState.event?.let { event ->
+                    analyticsTracker.logEvent(
+                        AnalyticsEvents.EVENT_NOTIFICATION_PERMISSION,
+                        mapOf(AnalyticsParams.EVENT_ID to event.id),
+                    )
+                }
+                updateNotification(enabled = true)
+            }
         }
     }
 
@@ -51,11 +62,26 @@ class EventDetailViewModel(
     }
 
     private suspend fun showEventUnavailable() {
+        currentState.event?.let { event ->
+            analyticsTracker.logEvent(
+                AnalyticsEvents.EVENT_UNAVAILABLE,
+                mapOf(AnalyticsParams.EVENT_ID to event.id),
+            )
+        }
         postSideEffect(EventUnavailable)
     }
 
     private fun updateEventState(event: ShopEvent) {
-        val notificationWindow = eventNotificationWindow(event.startDate, currentEpochMillis())
+        analyticsTracker.logEvent(
+            AnalyticsEvents.EVENT_DETAIL_VIEW,
+            mapOf(
+                AnalyticsParams.EVENT_ID to event.id,
+                AnalyticsParams.EVENT_TYPE to event.type.name.lowercase(),
+                AnalyticsParams.VENUE_SHOP_ID to event.venueShopId,
+                AnalyticsParams.IS_TODAY to event.isToday,
+            ),
+        )
+        val notificationWindow = EventNotificationWindow.from(event.startDate, currentEpochMillis())
         val canChangeNotification = loginRepository.hasSession()
         reduce {
             copy(
@@ -88,6 +114,12 @@ class EventDetailViewModel(
     }
 
     private suspend fun handleNotificationChanged(enabled: Boolean) {
+        currentState.event?.let { event ->
+            analyticsTracker.logEvent(
+                AnalyticsEvents.EVENT_NOTIFICATION_TOGGLE,
+                mapOf(AnalyticsParams.EVENT_ID to event.id),
+            )
+        }
         if (enabled) {
             postSideEffect(RequestNotificationPermission)
         } else {

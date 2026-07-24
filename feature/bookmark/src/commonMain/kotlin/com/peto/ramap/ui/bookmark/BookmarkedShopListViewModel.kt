@@ -1,6 +1,9 @@
 package com.peto.ramap.ui.bookmark
 
 import androidx.lifecycle.viewModelScope
+import com.peto.ramap.analytics.AnalyticsEvents
+import com.peto.ramap.analytics.AnalyticsParams
+import com.peto.ramap.analytics.AnalyticsTracker
 import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.repository.RamenShopRepository
@@ -23,6 +26,7 @@ import ramap.shared.generated.resources.personalization_update_failure_message
 class BookmarkedShopListViewModel(
     private val personalizationStore: ShopPersonalizationStore,
     private val ramenShopRepository: RamenShopRepository,
+    private val analyticsTracker: AnalyticsTracker,
 ) : BaseViewModel<BookmarkedShopListUiState, BookmarkedShopListIntent, BookmarkedShopListSideEffect>(
         BookmarkedShopListUiState(),
     ) {
@@ -37,7 +41,13 @@ class BookmarkedShopListViewModel(
 
     override suspend fun handleIntent(intent: BookmarkedShopListIntent) {
         when (intent) {
-            is BookmarkedShopListIntent.OnRemovalConfirmed -> removeBookmark(intent.shopId)
+            is BookmarkedShopListIntent.OnRemovalConfirmed -> {
+                analyticsTracker.logEvent(
+                    AnalyticsEvents.BOOKMARKED_SHOP_REMOVE,
+                    mapOf(AnalyticsParams.SHOP_ID to intent.shopId),
+                )
+                removeBookmark(intent.shopId)
+            }
         }
     }
 

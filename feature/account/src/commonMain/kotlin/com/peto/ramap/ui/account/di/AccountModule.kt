@@ -5,5 +5,5 @@ import org.koin.dsl.module
 
 val accountModule =
     module {
-        factory { AccountViewModel(get()) }
+        factory { AccountViewModel(get(), get()) }
     }

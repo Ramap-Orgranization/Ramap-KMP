@@ -7,6 +7,7 @@ import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.shop.Location
 import com.peto.ramap.domain.repository.ReverseGeocoder
+import com.peto.ramap.fake.FakeAnalyticsTracker
 import com.peto.ramap.fake.FakeRamenShopRepository
 import com.peto.ramap.fake.FakeShopReportRepository
 import com.peto.ramap.platform.location.CurrentLocationProvider
@@ -293,4 +294,5 @@ private fun placeReportViewModel(
     currentLocationStore = currentLocationStore,
     reverseGeocoder = reverseGeocoder,
     currentLocationProvider = currentLocationProvider,
+    analyticsTracker = FakeAnalyticsTracker(),
 )

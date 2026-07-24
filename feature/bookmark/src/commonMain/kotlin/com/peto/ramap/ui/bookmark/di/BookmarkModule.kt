@@ -5,5 +5,5 @@ import org.koin.dsl.module
 
 val bookmarkModule =
     module {
-        factory { BookmarkedShopListViewModel(get(), get()) }
+        factory { BookmarkedShopListViewModel(get(), get(), get()) }
     }

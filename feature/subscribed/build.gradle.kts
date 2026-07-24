@@ -11,7 +11,8 @@ kotlin {
     sourceSets.commonMain {
         dependencies {
             implementation(projects.domain)
-            implementation(projects.core.ui)
+            implementation(projects.core.analytics)
+        implementation(projects.core.ui)
             implementation(projects.core.designsystem)
             implementation(libs.koin.compose.viewmodel)
             implementation(libs.compose.material3)

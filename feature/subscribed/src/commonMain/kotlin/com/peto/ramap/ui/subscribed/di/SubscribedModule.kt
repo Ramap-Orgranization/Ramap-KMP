@@ -5,5 +5,5 @@ import org.koin.dsl.module
 
 val subscribedModule =
     module {
-        factory { SubscribedShopListViewModel(get(), get(), get()) }
+        factory { SubscribedShopListViewModel(get(), get(), get(), get()) }
     }

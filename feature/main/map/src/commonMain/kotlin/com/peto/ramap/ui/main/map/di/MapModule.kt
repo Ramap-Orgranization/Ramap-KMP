@@ -8,6 +8,6 @@ val mapModule =
     module {
         single { CurrentLocationStore() }
         factory {
-            MapViewModel(get(), get(), get(), get(), get(), get(), get())
+            MapViewModel(get(), get(), get(), get(), get(), get(), get(), get())
         }
     }

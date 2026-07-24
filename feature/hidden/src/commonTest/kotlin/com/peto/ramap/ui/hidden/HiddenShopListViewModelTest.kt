@@ -4,6 +4,7 @@ import com.peto.ramap.core.result.RamapError
 import com.peto.ramap.coroutinesTest
 import com.peto.ramap.domain.model.personalization.ShopPersonalization
 import com.peto.ramap.domain.model.shop.RamenShops
+import com.peto.ramap.fake.FakeAnalyticsTracker
 import com.peto.ramap.fake.FakePersonalizationRepository
 import com.peto.ramap.fake.FakeRamenShopRepository
 import com.peto.ramap.fixture.ramenShopFixture
@@ -30,6 +31,7 @@ class HiddenShopListViewModelTest {
                         FakeRamenShopRepository(
                             fetchByIdsResult = RamenShops(mapOf(hiddenShop.id to hiddenShop)),
                         ),
+                    analyticsTracker = FakeAnalyticsTracker(),
                 )
 
             runCurrent()
@@ -46,6 +48,7 @@ class HiddenShopListViewModelTest {
                 HiddenShopListViewModel(
                     personalizationStore = FakePersonalizationRepository(),
                     ramenShopRepository = FakeRamenShopRepository(),
+                    analyticsTracker = FakeAnalyticsTracker(),
                 )
 
             runCurrent()
@@ -69,6 +72,7 @@ class HiddenShopListViewModelTest {
                         FakeRamenShopRepository(
                             error = RamapError.Unknown(IllegalStateException("failure")),
                         ),
+                    analyticsTracker = FakeAnalyticsTracker(),
                 )
             runCurrent()
 
@@ -92,6 +96,7 @@ class HiddenShopListViewModelTest {
                             ShopPersonalization(hiddenShopIds = setOf(shop.id)),
                         ),
                     ramenShopRepository = FakeRamenShopRepository(fetchByIdsResult = RamenShops(listOf(shop))),
+                    analyticsTracker = FakeAnalyticsTracker(),
                 )
             runCurrent()
 

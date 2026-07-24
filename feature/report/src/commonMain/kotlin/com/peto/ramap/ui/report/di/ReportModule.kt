@@ -5,5 +5,5 @@ import org.koin.dsl.module
 
 val reportModule =
     module {
-        factory { PlaceReportViewModel(get(), get(), get(), get(), get()) }
+        factory { PlaceReportViewModel(get(), get(), get(), get(), get(), get()) }
     }

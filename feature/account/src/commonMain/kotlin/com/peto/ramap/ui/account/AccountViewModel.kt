@@ -1,6 +1,10 @@
 package com.peto.ramap.ui.account
 
 import androidx.lifecycle.viewModelScope
+import com.peto.ramap.analytics.AnalyticsEvents
+import com.peto.ramap.analytics.AnalyticsParams
+import com.peto.ramap.analytics.AnalyticsSource
+import com.peto.ramap.analytics.AnalyticsTracker
 import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.auth.LoginSessionState
@@ -26,6 +30,7 @@ import ramap.shared.generated.resources.logout_failure_message
 
 class AccountViewModel(
     private val loginRepository: LoginRepository,
+    private val analyticsTracker: AnalyticsTracker,
 ) : BaseViewModel<AccountUiState, AccountIntent, AccountSideEffect>(AccountUiState()) {
     init {
         observeSessionState()
@@ -54,16 +59,39 @@ class AccountViewModel(
     }
 
     private fun signInWithKakao() {
+        analyticsTracker.logEvent(
+            AnalyticsEvents.LOGIN_START,
+            mapOf(AnalyticsParams.SOURCE to AnalyticsSource.ACCOUNT),
+        )
         launchResultTask(
             taskKey = SIGN_IN_TASK_KEY,
             loadKey = AccountLoadKey.Login,
             policy = TaskPolicy.IgnoreNew,
             request = loginRepository::signInWithKakao,
-            onError = { showToast(Res.string.kakao_login_failure_message, ToastType.ERROR) },
+            onSuccess = {
+                analyticsTracker.logEvent(
+                    AnalyticsEvents.LOGIN_SUCCESS,
+                    mapOf(
+                        AnalyticsParams.METHOD to "kakao",
+                        AnalyticsParams.SOURCE to AnalyticsSource.ACCOUNT,
+                    ),
+                )
+            },
+            onError = {
+                analyticsTracker.logEvent(
+                    AnalyticsEvents.LOGIN_FAILURE,
+                    mapOf(
+                        AnalyticsParams.METHOD to "kakao",
+                        AnalyticsParams.SOURCE to AnalyticsSource.ACCOUNT,
+                    ),
+                )
+                showToast(Res.string.kakao_login_failure_message, ToastType.ERROR)
+            },
         )
     }
 
     private fun signOut() {
+        analyticsTracker.logEvent(AnalyticsEvents.LOGOUT)
         launchResultTask(
             taskKey = SIGN_OUT_TASK_KEY,
             loadKey = AccountLoadKey.Logout,
@@ -74,6 +102,7 @@ class AccountViewModel(
     }
 
     private fun deleteAccount() {
+        analyticsTracker.logEvent(AnalyticsEvents.ACCOUNT_DELETE)
         launchResultTask(
             taskKey = DELETE_ACCOUNT_TASK_KEY,
             loadKey = AccountLoadKey.Delete,

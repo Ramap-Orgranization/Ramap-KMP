@@ -18,6 +18,7 @@ import com.peto.ramap.domain.model.shop.Location
 import com.peto.ramap.domain.model.shop.MenuCategories
 import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.domain.store.ShopPersonalizationStore
+import com.peto.ramap.fake.FakeAnalyticsTracker
 import com.peto.ramap.fake.FakeLoginRepository
 import com.peto.ramap.fake.FakePersonalizationRepository
 import com.peto.ramap.ui.main.ranking.contract.RankingIntent
@@ -256,4 +257,4 @@ private fun rankingViewModel(
     repository: FakeShopRankingRepository = FakeShopRankingRepository(),
     personalizationStore: ShopPersonalizationStore = FakePersonalizationRepository(),
     loginRepository: FakeLoginRepository = FakeLoginRepository(LoginSessionState.AUTHENTICATED),
-) = RankingViewModel(repository, personalizationStore, loginRepository)
+) = RankingViewModel(repository, personalizationStore, loginRepository, FakeAnalyticsTracker())

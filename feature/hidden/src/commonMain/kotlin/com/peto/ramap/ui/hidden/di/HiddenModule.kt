@@ -6,6 +6,6 @@ import org.koin.dsl.module
 val hiddenModule =
     module {
         factory {
-            HiddenShopListViewModel(get(), get())
+            HiddenShopListViewModel(get(), get(), get())
         }
     }

@@ -5,5 +5,5 @@ import org.koin.dsl.module
 
 val notificationSettingsModule =
     module {
-        factory { NotificationSettingsViewModel(get()) }
+        factory { NotificationSettingsViewModel(get(), get()) }
     }

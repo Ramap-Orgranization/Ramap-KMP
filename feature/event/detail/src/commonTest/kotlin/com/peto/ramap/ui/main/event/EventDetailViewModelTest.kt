@@ -7,6 +7,7 @@ import com.peto.ramap.domain.model.auth.LoginSessionState
 import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.model.event.ShopEventType
 import com.peto.ramap.domain.model.notification.EventNotificationOverride
+import com.peto.ramap.fake.FakeAnalyticsTracker
 import com.peto.ramap.fake.FakeLoginRepository
 import com.peto.ramap.fake.FakeNotificationSettingsRepository
 import com.peto.ramap.fake.FakeRamenShopRepository
@@ -148,6 +149,7 @@ class EventDetailViewModelTest {
             ramenShopRepository = ramenShopRepository,
             loginRepository = FakeLoginRepository(LoginSessionState.AUTHENTICATED),
             notificationRepository = repository,
+            analyticsTracker = FakeAnalyticsTracker(),
         )
 
     private companion object {
