@@ -1,7 +1,6 @@
 package com.peto.ramap.ui.subscribed
 
 import androidx.lifecycle.viewModelScope
-import com.peto.ramap.analytics.AnalyticsTracker
 import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
@@ -32,7 +31,6 @@ class SubscribedShopListViewModel(
     private val notificationRepository: NotificationSettingsRepository,
     private val ramenShopRepository: RamenShopRepository,
     private val personalizationStore: ShopPersonalizationStore,
-    private val analyticsTracker: AnalyticsTracker,
 ) : BaseViewModel<SubscribedShopListUiState, SubscribedShopListIntent, SubscribedShopListSideEffect>(
         initialState = SubscribedShopListUiState(),
     ) {
