@@ -99,7 +99,7 @@ fun MapRoute(
                 )
             }
         },
-        onShopSelected = { shop, shouldFocus -> viewModel.dispatch(OnShopSelected(shop, shouldFocus)) },
+        onShopSelected = { shop, shouldFocus, source -> viewModel.dispatch(OnShopSelected(shop, shouldFocus, source)) },
         onPlaceSelected = { viewModel.dispatch(OnSearchedShopSelected(it)) },
         onShopDetailDismissed = { viewModel.dispatch(OnShopDetailDismissed) },
         onShopDetailRetry = {

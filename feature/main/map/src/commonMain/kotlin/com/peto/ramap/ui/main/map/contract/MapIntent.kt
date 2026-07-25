@@ -1,5 +1,6 @@
 package com.peto.ramap.ui.main.map.contract
 
+import com.peto.ramap.analytics.AnalyticsSource
 import com.peto.ramap.domain.model.place.PlaceSearchResult
 import com.peto.ramap.domain.model.report.ShopInformationField
 import com.peto.ramap.domain.model.shop.Category
@@ -29,6 +30,7 @@ sealed interface MapIntent : Intent {
     data class OnShopSelected(
         val shop: RamenShop,
         val shouldFocus: Boolean = true,
+        val source: AnalyticsSource = AnalyticsSource.MARKER,
     ) : MapIntent
 
     data class OnShopIdSelected(

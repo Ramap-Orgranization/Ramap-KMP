@@ -1,6 +1,7 @@
 package com.peto.ramap.ui.main.map.log.event
 
 import com.peto.ramap.analytics.AnalyticsEvent
+import com.peto.ramap.analytics.AnalyticsSource
 
 internal data class SearchResultSelected(
     val shopName: String,
@@ -10,5 +11,6 @@ internal data class SearchResultSelected(
     override fun params(): Map<String, Any> =
         mapOf(
             "shop_name" to shopName,
+            "source" to AnalyticsSource.SEARCH_RESULT.value,
         )
 }

@@ -145,7 +145,7 @@ class MapViewModel(
     private fun handleShopIntent(intent: MapIntent): Boolean {
         when (intent) {
             is OnShopSelected -> {
-                mapAnalytics.logShopSelected(intent.shop, AnalyticsSource.MARKER)
+                mapAnalytics.logShopSelected(intent.shop, intent.source)
                 selectShop(intent.shop, intent.shouldFocus)
             }
 

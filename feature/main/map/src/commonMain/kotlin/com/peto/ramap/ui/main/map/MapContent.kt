@@ -35,6 +35,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigationevent.NavigationEventInfo
 import androidx.navigationevent.compose.NavigationBackHandler
 import androidx.navigationevent.compose.rememberNavigationEventState
+import com.peto.ramap.analytics.AnalyticsSource
 import com.peto.ramap.designsystem.bottomsheet.CommonBottomSheet
 import com.peto.ramap.designsystem.bottomsheet.CommonBottomSheetConfig
 import com.peto.ramap.designsystem.button.AppButton
@@ -91,7 +92,7 @@ internal fun MapContent(
     onMyLocationChanged: (Location) -> Unit,
     onLocationPermissionBlocked: () -> Unit,
     onCurrentLocationTimeout: () -> Unit,
-    onShopSelected: (RamenShop, Boolean) -> Unit,
+    onShopSelected: (RamenShop, Boolean, AnalyticsSource) -> Unit,
     onPlaceSelected: (PlaceSearchResult) -> Unit,
     onShopDetailDismissed: () -> Unit,
     onShopDetailRetry: () -> Unit,
@@ -170,7 +171,7 @@ internal fun MapContent(
             onCameraPositionChanged = onCameraPositionChanged,
             onInitialFocusConsumed = onInitialLocationFocusConsumed,
             onMyLocationChanged = onMyLocationChanged,
-            onShopClick = { onShopSelected(it, false) },
+            onShopClick = { onShopSelected(it, false, AnalyticsSource.MARKER) },
             onLocationPermissionBlocked = onLocationPermissionBlocked,
             onCurrentLocationTimeout = onCurrentLocationTimeout,
         )
@@ -240,7 +241,7 @@ internal fun MapContent(
                                 categoryLabel = { category ->
                                     stringResource(category.label())
                                 },
-                                onShopClick = { onShopSelected(it, true) },
+                                onShopClick = { onShopSelected(it, true, AnalyticsSource.SEARCH_RESULT) },
                                 modifier = Modifier.padding(start = 10.dp),
                             )
                     }
