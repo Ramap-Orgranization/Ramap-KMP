@@ -1,5 +1,7 @@
 package com.peto.ramap.di
 
+import com.peto.ramap.analytics.di.analyticsModule
+import com.peto.ramap.log.AppAnalytics
 import com.peto.ramap.ui.account.di.accountModule
 import com.peto.ramap.ui.bookmark.di.bookmarkModule
 import com.peto.ramap.ui.hidden.di.hiddenModule
@@ -14,6 +16,7 @@ import com.peto.ramap.ui.subscribed.di.subscribedModule
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import org.koin.core.module.dsl.singleOf
 import org.koin.dsl.module
 
 internal val appModule =
@@ -30,8 +33,10 @@ internal val appModule =
             reportModule,
             settingsModule,
             subscribedModule,
+            analyticsModule,
         )
         single<CoroutineScope> {
             CoroutineScope(SupervisorJob() + Dispatchers.Default)
         }
+        singleOf(::AppAnalytics)
     }

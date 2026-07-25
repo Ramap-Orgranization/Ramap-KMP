@@ -1,6 +1,8 @@
 package com.peto.ramap.ui.main.ranking
 
 import androidx.lifecycle.viewModelScope
+import com.peto.ramap.analytics.AnalyticsSource
+import com.peto.ramap.analytics.common.login.LoginAnalytics
 import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.rank.RankedShops
@@ -9,6 +11,7 @@ import com.peto.ramap.domain.model.rank.RankingPage
 import com.peto.ramap.domain.model.rank.RankingQuery
 import com.peto.ramap.domain.model.rank.ShopRankings
 import com.peto.ramap.domain.model.shop.AreaFilter
+import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.domain.repository.LoginRepository
 import com.peto.ramap.domain.repository.ShopRankingRepository
 import com.peto.ramap.domain.store.ShopPersonalizationStore
@@ -17,6 +20,7 @@ import com.peto.ramap.ui.main.ranking.contract.RankingIntent
 import com.peto.ramap.ui.main.ranking.contract.RankingLoadKey
 import com.peto.ramap.ui.main.ranking.contract.RankingSideEffect
 import com.peto.ramap.ui.main.ranking.contract.RankingUiState
+import com.peto.ramap.ui.main.ranking.log.RankingAnalytics
 import com.peto.ramap.ui.task.TaskPolicy
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -31,6 +35,7 @@ class RankingViewModel(
     private val personalizationStore: ShopPersonalizationStore,
     private val loginRepository: LoginRepository,
     private val rankingAnalytics: RankingAnalytics,
+    private val loginAnalytics: LoginAnalytics,
 ) : BaseViewModel<RankingUiState, RankingIntent, RankingSideEffect>(
         RankingUiState(),
     ) {
@@ -43,22 +48,23 @@ class RankingViewModel(
         when (intent) {
             RankingIntent.OnRefreshed -> refreshRankings()
 
+            RankingIntent.OnRetried -> loadFirstPage()
+
             RankingIntent.OnNextPageRequested,
             RankingIntent.OnNextPageRetried,
             -> loadNextPage()
 
             RankingIntent.OnAllCategoriesSelected -> selectAllCategories()
+
             RankingIntent.OnKakaoLoginClicked -> signInWithKakao()
 
             is RankingIntent.OnAreaFilterSelected -> selectAreaFilter(intent.areaFilter)
 
-            is RankingIntent.OnBookmarkChanged -> updateBookmark(intent)
+            is RankingIntent.OnBookmarkChanged -> updateBookmark(intent.shop, intent.enabled)
 
             is RankingIntent.OnCategoryToggled -> toggleCategory(intent)
 
-            is RankingIntent.OnShopClicked -> logShopSelected(intent.shopId)
-
-            else -> Unit
+            is RankingIntent.OnShopClicked -> rankingAnalytics.logShopSelected(intent.shop)
         }
     }
 
@@ -75,7 +81,8 @@ class RankingViewModel(
     }
 
     private fun toggleCategory(intent: RankingIntent.OnCategoryToggled) {
-        val enabled = intent.category !in currentState.selectedCategories
+        val enabled =
+            intent.category !in currentState.selectedCategories
 
         val updatedCategories =
             if (enabled) {
@@ -83,14 +90,13 @@ class RankingViewModel(
             } else {
                 currentState.selectedCategories - intent.category
             }
+
         rankingAnalytics.logCategoryToggled(intent.category.id, enabled)
         changeFilters { copy(selectedCategories = updatedCategories) }
     }
 
     private fun selectAllCategories() {
         if (currentState.selectedCategories.isEmpty()) return
-
-        rankingAnalytics.logAllCategoriesSelected()
 
         changeFilters { copy(selectedCategories = emptySet()) }
     }
@@ -100,21 +106,11 @@ class RankingViewModel(
 
         rankingAnalytics.logAreaSelected(areaFilter)
 
-        changeFilters { copy(areaFilter = areaFilter) }
-    }
-
-    private fun logShopSelected(shopId: String) {
-        val selectedShop =
-            currentState.shops
-                .firstOrNull { rankingItem -> rankingItem.ranking.shop.id == shopId }
-                ?.ranking
-                ?.shop
-
-        rankingAnalytics.logShopSelected(
-            shopId = shopId,
-            shopName = selectedShop?.name.orEmpty(),
-            hasCategory = selectedShop?.hasCategory ?: false,
-        )
+        changeFilters {
+            copy(
+                areaFilter = areaFilter,
+            )
+        }
     }
 
     private fun changeFilters(reducer: RankingUiState.() -> RankingUiState) {
@@ -130,21 +126,20 @@ class RankingViewModel(
         loadFirstPage()
     }
 
-    private suspend fun updateBookmark(intent: RankingIntent.OnBookmarkChanged) {
-        if (!checkBookmarkSession()) return
+    private suspend fun updateBookmark(
+        shop: RamenShop,
+        enabled: Boolean,
+    ) {
+        if (!hasBookmarkSessionOrShowGuide()) return
+        if (!shouldUpdateBookmark(shop.id, enabled)) return
 
-        val shouldUpdate = shouldUpdateBookmark(intent.shopId, intent.enabled)
+        rankingAnalytics.logBookmarkToggled(shop, enabled)
 
-        if (!shouldUpdate) return
-
-        rankingAnalytics.logBookmarkToggled(intent.shopId, intent.enabled)
-        executeBookmarkUpdate(intent.shopId, intent.enabled)
+        executeBookmarkUpdate(shop.id, enabled)
     }
 
-    private suspend fun checkBookmarkSession(): Boolean {
-        if (loginRepository.hasSession()) {
-            return true
-        }
+    private suspend fun hasBookmarkSessionOrShowGuide(): Boolean {
+        if (loginRepository.hasSession()) return true
 
         postSideEffect(RankingSideEffect.ShowLoginGuide)
         return false
@@ -159,51 +154,19 @@ class RankingViewModel(
         return isCurrentlyBookmarked != enabled
     }
 
-    private fun logBookmarkToggled(
-        shopId: String,
-        enabled: Boolean,
-    ) {
-        rankingAnalytics.logBookmarkToggled(
-            shopId = shopId,
-            enabled = enabled,
-        )
-    }
-
     private fun executeBookmarkUpdate(
         shopId: String,
         enabled: Boolean,
     ) {
-        val likeCountDelta =
-            calculateBookmarkLikeCountDelta(enabled)
+        val likeCountDelta = calculateBookmarkLikeCountDelta(enabled)
 
         launchResultTask(
             taskKey = bookmarkTaskKey(shopId),
             policy = TaskPolicy.IgnoreNew,
-            onStart = {
-                createBookmarkUpdatingState(
-                    state = this,
-                    shopId = shopId,
-                    likeCountDelta = likeCountDelta,
-                )
-            },
-            onFinish = {
-                createBookmarkUpdateFinishedState(
-                    state = this,
-                    shopId = shopId,
-                )
-            },
-            request = {
-                personalizationStore.updateBookmark(
-                    shopId = shopId,
-                    enabled = enabled,
-                )
-            },
-            onError = {
-                handleBookmarkUpdateFailure(
-                    shopId = shopId,
-                    appliedDelta = likeCountDelta,
-                )
-            },
+            onStart = { createBookmarkUpdatingState(this, shopId, likeCountDelta) },
+            onFinish = { createBookmarkUpdateFinishedState(this, shopId) },
+            request = { personalizationStore.updateBookmark(shopId, enabled) },
+            onError = { handleBookmarkUpdateFailure(shopId, likeCountDelta) },
         )
     }
 
@@ -247,8 +210,15 @@ class RankingViewModel(
         shopId: String,
         appliedDelta: Long,
     ) {
-        revertBookmarkLikeCountDelta(shopId = shopId, appliedDelta = appliedDelta)
-        showToast(Res.string.personalization_update_failure_message, ToastType.ERROR)
+        revertBookmarkLikeCountDelta(
+            shopId = shopId,
+            appliedDelta = appliedDelta,
+        )
+
+        showToast(
+            message = Res.string.personalization_update_failure_message,
+            type = ToastType.ERROR,
+        )
     }
 
     private fun revertBookmarkLikeCountDelta(
@@ -256,15 +226,13 @@ class RankingViewModel(
         appliedDelta: Long,
     ) {
         reduce {
-            val updatedDeltas =
-                createRevertedBookmarkLikeCountDeltas(
-                    currentDeltas = bookmarkLikeCountDeltas,
-                    shopId = shopId,
-                    appliedDelta = appliedDelta,
-                )
-
             copy(
-                bookmarkLikeCountDeltas = updatedDeltas,
+                bookmarkLikeCountDeltas =
+                    createRevertedBookmarkLikeCountDeltas(
+                        currentDeltas = bookmarkLikeCountDeltas,
+                        shopId = shopId,
+                        appliedDelta = appliedDelta,
+                    ),
             )
         }
     }
@@ -275,6 +243,7 @@ class RankingViewModel(
         appliedDelta: Long,
     ): Map<String, Long> {
         val currentDelta = currentDeltas[shopId] ?: 0L
+
         val revertedDelta = currentDelta - appliedDelta
 
         return if (revertedDelta == 0L) {
@@ -292,6 +261,7 @@ class RankingViewModel(
         launchResultTask(
             taskKey = RANKINGS_TASK_KEY,
             loadKey = RankingLoadKey.FirstPage,
+            policy = TaskPolicy.CancelPrevious,
             onStart = { copy(showError = false) },
             request = { shopRankRepository.fetchShopRankings(query) },
             onSuccess = { page -> replaceFirstPage(page) },
@@ -307,19 +277,14 @@ class RankingViewModel(
         launchResultTask(
             taskKey = RANKINGS_TASK_KEY,
             loadKey = RankingLoadKey.Refresh,
-            request = {
-                shopRankRepository.fetchShopRankings(query)
-            },
-            onSuccess = { page ->
-                replaceFirstPage(page)
-            },
-            onError = {
-                handleRefreshFailure()
-            },
+            policy = TaskPolicy.CancelPrevious,
+            request = { shopRankRepository.fetchShopRankings(query) },
+            onSuccess = { page -> replaceFirstPage(page) },
+            onError = { showRefreshFailure() },
         )
     }
 
-    private fun handleRefreshFailure() {
+    private fun showRefreshFailure() {
         showToast(
             message = Res.string.ranking_refresh_failure_message,
             type = ToastType.ERROR,
@@ -327,51 +292,30 @@ class RankingViewModel(
     }
 
     private fun loadNextPage() {
-        val cursor =
-            currentState.nextCursor ?: return
+        val cursor = currentState.nextCursor ?: return
 
-        if (!canLoadNextPage()) {
-            return
-        }
+        if (!canLoadNextPage()) return
 
-        rankingAnalytics.logNextPageRequested()
-
-        val query =
-            createRankingQuery(
-                cursor = cursor,
-            )
+        val query = createRankingQuery(cursor = cursor)
 
         launchResultTask(
             taskKey = NEXT_PAGE_TASK_KEY,
             loadKey = RankingLoadKey.NextPage,
             policy = TaskPolicy.IgnoreNew,
-            onStart = {
-                copy(
-                    showNextPageError = false,
-                )
-            },
-            request = {
-                shopRankRepository.fetchShopRankings(query)
-            },
-            onSuccess = { page ->
-                appendNextPage(page)
-            },
-            onError = {
-                handleNextPageLoadFailure()
-            },
+            onStart = { copy(showNextPageError = false) },
+            request = { shopRankRepository.fetchShopRankings(query) },
+            onSuccess = { page -> appendNextPage(page) },
+            onError = { showNextPageLoadFailure() },
         )
     }
 
     private fun canLoadNextPage(): Boolean =
         !currentState.isRefreshing &&
-            !currentState.isLoading
+            !currentState.isLoading &&
+            !currentState.isLoadingNext
 
-    private fun handleNextPageLoadFailure() {
-        reduce {
-            copy(
-                showNextPageError = true,
-            )
-        }
+    private fun showNextPageLoadFailure() {
+        reduce { copy(showNextPageError = true) }
     }
 
     private fun replaceFirstPage(page: RankingPage) {
@@ -402,20 +346,21 @@ class RankingViewModel(
     }
 
     private fun signInWithKakao() {
-        rankingAnalytics.logLoginStarted()
+        loginAnalytics.logLoginStarted(AnalyticsSource.RANKING)
 
         launchResultTask(
             taskKey = SIGN_IN_TASK_KEY,
             policy = TaskPolicy.IgnoreNew,
-            request = { loginRepository.signInWithKakao() },
-            onSuccess = { rankingAnalytics.logLoginSucceeded() },
+            request = loginRepository::signInWithKakao,
+            onSuccess = { loginAnalytics.logLoginSucceeded(AnalyticsSource.RANKING) },
             onError = { handleKakaoLoginFailure() },
         )
     }
 
     private fun handleKakaoLoginFailure() {
-        rankingAnalytics.logLoginFailed()
-        showToast(message = Res.string.kakao_login_failure_message, type = ToastType.ERROR)
+        loginAnalytics.logLoginFailed(AnalyticsSource.RANKING)
+
+        showToast(Res.string.kakao_login_failure_message, ToastType.ERROR)
     }
 
     private fun createRankingQuery(cursor: RankingCursor?): RankingQuery {
@@ -440,7 +385,7 @@ class RankingViewModel(
     }
 
     companion object {
-        private const val BOOKMARK_TASK_KEY = "bookmark_shop_task:"
+        private const val BOOKMARK_TASK_KEY = "bookmark-shop:"
         private const val RANKINGS_TASK_KEY = "rankings"
         private const val NEXT_PAGE_TASK_KEY = "ranking-next-page"
         private const val SIGN_IN_TASK_KEY = "ranking-sign-in"

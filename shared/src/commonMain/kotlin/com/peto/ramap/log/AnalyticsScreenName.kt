@@ -1,4 +1,4 @@
-package com.peto.ramap.analytics
+package com.peto.ramap.log
 
 import com.peto.ramap.navigation.ScreenRoutes
 

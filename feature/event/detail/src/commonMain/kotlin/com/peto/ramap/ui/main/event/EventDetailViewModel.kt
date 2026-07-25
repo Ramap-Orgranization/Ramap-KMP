@@ -21,6 +21,7 @@ import com.peto.ramap.ui.main.event.contract.EventDetailSideEffect
 import com.peto.ramap.ui.main.event.contract.EventDetailSideEffect.EventUnavailable
 import com.peto.ramap.ui.main.event.contract.EventDetailSideEffect.RequestNotificationPermission
 import com.peto.ramap.ui.main.event.contract.EventDetailUiState
+import com.peto.ramap.ui.main.event.log.EventDetailAnalytics
 import com.peto.ramap.ui.task.TaskPolicy
 
 class EventDetailViewModel(
@@ -101,22 +102,18 @@ class EventDetailViewModel(
             },
             onSuccess = { event ->
                 handleLoadedEvent(
-                    requestedEventId = eventId,
                     event = event,
                 )
             },
             onError = {
-                showEventUnavailable(eventId)
+                showEventUnavailable()
             },
         )
     }
 
-    private suspend fun handleLoadedEvent(
-        requestedEventId: String,
-        event: ShopEvent?,
-    ) {
+    private suspend fun handleLoadedEvent(event: ShopEvent?) {
         if (event == null) {
-            showEventUnavailable(requestedEventId)
+            showEventUnavailable()
             return
         }
 
@@ -124,14 +121,11 @@ class EventDetailViewModel(
         refreshEventNotification(event)
     }
 
-    private suspend fun showEventUnavailable(eventId: String) {
-        eventDetailAnalytics.logEventUnavailable(eventId)
+    private suspend fun showEventUnavailable() {
         postSideEffect(EventUnavailable)
     }
 
     private fun applyLoadedEvent(event: ShopEvent) {
-        eventDetailAnalytics.logDetailViewed(event)
-
         val notificationWindow =
             EventNotificationWindow.from(
                 event.startDate,
@@ -191,7 +185,7 @@ class EventDetailViewModel(
         val eventId =
             currentState.event?.id ?: return
 
-        eventDetailAnalytics.logNotificationChanged(
+        eventDetailAnalytics.logNotificationToggled(
             eventId = eventId,
             enabled = enabled,
         )

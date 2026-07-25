@@ -8,12 +8,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.withContext
 
-class TestViewModel :
-    BaseViewModel<TestState, TestIntent, TestSideEffect>(
-        TestState(),
-        com.peto.ramap.analytics
-            .NoOpAnalyticsTracker(),
-    ) {
+class TestViewModel : BaseViewModel<TestState, TestIntent, TestSideEffect>(TestState()) {
     var startedCount = 0
     var errorCount = 0
     val handledResultErrors = mutableListOf<RamapError>()

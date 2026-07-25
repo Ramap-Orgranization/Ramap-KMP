@@ -3,17 +3,13 @@ package com.peto.ramap
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.snapshotFlow
-import com.peto.ramap.analytics.AnalyticsEvents
-import com.peto.ramap.analytics.AnalyticsParams
-import com.peto.ramap.analytics.AnalyticsTracker
-import com.peto.ramap.analytics.AnalyticsUserProperties
-import com.peto.ramap.analytics.analyticsScreenName
 import com.peto.ramap.designsystem.toast.ToastManager
 import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
-import com.peto.ramap.domain.model.auth.LoginSessionState
 import com.peto.ramap.domain.repository.LoginRepository
 import com.peto.ramap.domain.store.ShopPersonalizationStore
+import com.peto.ramap.log.AppAnalytics
+import com.peto.ramap.log.analyticsScreenName
 import com.peto.ramap.navigation.BackPressController
 import com.peto.ramap.navigation.NavigationRouter
 import com.peto.ramap.navigation.NavigationState
@@ -45,20 +41,25 @@ internal fun AppRoute(
     onExitRequested: (() -> Unit)?,
     notificationDeepLinkParser: NotificationDeepLinkParser = koinInject(),
     notificationLaunchDispatcher: NotificationLaunchDispatcher = koinInject(),
-    analyticsTracker: AnalyticsTracker = koinInject(),
+    appAnalytics: AppAnalytics = koinInject(),
     loginRepository: LoginRepository = koinInject(),
     personalizationStore: ShopPersonalizationStore = koinInject(),
 ) {
     val navigationState = rememberNavigationState()
 
-    TrackScreenViews(navigationState, analyticsTracker)
-    TrackUserProperties(analyticsTracker, loginRepository, personalizationStore)
+    TrackScreenViews(navigationState, appAnalytics)
 
-    NotificationDeepLink(
+    TrackUserProperties(
+        appAnalytics = appAnalytics,
+        loginRepository = loginRepository,
+        personalizationStore = personalizationStore,
+    )
+
+    HandleNotificationDeepLink(
         navigationState = navigationState,
         notificationDeepLinkParser = notificationDeepLinkParser,
         notificationLaunchDispatcher = notificationLaunchDispatcher,
-        analyticsTracker = analyticsTracker,
+        appAnalytics = appAnalytics,
     )
 
     BackPressController(
@@ -71,13 +72,20 @@ internal fun AppRoute(
         navigationState = navigationState,
         mapScreen = { route ->
             MapRoute(
-                onEventNavigate = { navigationState.showEvent(it.id) },
+                onEventNavigate = { event ->
+                    navigationState.showEvent(event.id)
+                },
                 requestedShopId = route.shopId,
             )
         },
         rankingScreen = {
             RankingRoute(
-                onShopClick = { navigationState.showShopOnMap(it, source = "ranking") },
+                onShopClick = { shopId ->
+                    navigationState.showShopOnMap(
+                        shopId = shopId,
+                        source = "ranking",
+                    )
+                },
                 onFindShopClick = navigationState::showMap,
             )
         },
@@ -87,22 +95,35 @@ internal fun AppRoute(
                 onInformationNavigate = navigationState::showInformation,
                 onReportNavigate = navigationState::showPlaceReport,
                 onHiddenShopsNavigate = navigationState::showHiddenShops,
-                onNotificationSettingsNavigate = navigationState::showNotificationSettings,
-                onSubscribedShopsNavigate = navigationState::showSubscribedShops,
-                onBookmarkedShopsNavigate = navigationState::showBookmarkedShops,
+                onNotificationSettingsNavigate =
+                    navigationState::showNotificationSettings,
+                onSubscribedShopsNavigate =
+                    navigationState::showSubscribedShops,
+                onBookmarkedShopsNavigate =
+                    navigationState::showBookmarkedShops,
             )
         },
         accountSettingsScreen = {
-            AccountSettingsRoute(onBack = navigationState::pop)
+            AccountSettingsRoute(
+                onBack = navigationState::pop,
+            )
         },
         informationScreen = {
-            InformationRoute(onBack = navigationState::pop)
+            InformationRoute(
+                onBack = navigationState::pop,
+            )
         },
         placeReportScreen = {
-            PlaceReportRoute(onBack = navigationState::pop)
+            PlaceReportRoute(
+                onBack = navigationState::pop,
+            )
         },
         eventListScreen = {
-            EventsRoute(onEventClick = { navigationState.showEvent(it.id) })
+            EventsRoute(
+                onEventClick = { event ->
+                    navigationState.showEvent(event.id)
+                },
+            )
         },
         hiddenScreen = {
             HiddenShopListRoute(
@@ -110,10 +131,14 @@ internal fun AppRoute(
             )
         },
         notificationSettingsScreen = {
-            NotificationSettingsRoute(onBack = navigationState::pop)
+            NotificationSettingsRoute(
+                onBack = navigationState::pop,
+            )
         },
         subscribedShopsScreen = {
-            SubscribedShopListRoute(onBack = navigationState::pop)
+            SubscribedShopListRoute(
+                onBack = navigationState::pop,
+            )
         },
         bookmarkedShopsScreen = {
             BookmarkedShopListRoute(
@@ -125,15 +150,23 @@ internal fun AppRoute(
                 eventId = route.eventId,
                 onBack = navigationState::pop,
                 onUnavailable = {
-                    navigationState.selectTopLevelTab(TabStatus.EVENT)
+                    navigationState.selectTopLevelTab(
+                        TabStatus.EVENT,
+                    )
+
                     toastManager.tryShow(
                         ToastData(
-                            Res.string.event_not_found_message,
-                            ToastType.DEFAULT,
+                            message = Res.string.event_not_found_message,
+                            type = ToastType.DEFAULT,
                         ),
                     )
                 },
-                onShopClick = { navigationState.showShopOnMap(it, source = "event_detail") },
+                onShopClick = { shopId ->
+                    navigationState.showShopOnMap(
+                        shopId = shopId,
+                        source = "event_detail",
+                    )
+                },
             )
         },
     )
@@ -142,68 +175,71 @@ internal fun AppRoute(
 @Composable
 private fun TrackScreenViews(
     navigationState: NavigationState,
-    tracker: AnalyticsTracker,
+    appAnalytics: AppAnalytics,
 ) {
     LaunchedEffect(navigationState) {
-        snapshotFlow { navigationState.currentRoute }
-            .distinctUntilChanged()
+        snapshotFlow {
+            navigationState.currentRoute
+        }.distinctUntilChanged()
             .collect { route ->
-                tracker.logScreenView(route.analyticsScreenName)
+                appAnalytics.logScreenView(
+                    route.analyticsScreenName,
+                )
             }
     }
 }
 
 @Composable
 private fun TrackUserProperties(
-    tracker: AnalyticsTracker,
+    appAnalytics: AppAnalytics,
     loginRepository: LoginRepository,
     personalizationStore: ShopPersonalizationStore,
 ) {
-    LaunchedEffect(Unit) {
+    LaunchedEffect(loginRepository) {
         loginRepository.sessionState.collect { state ->
-            tracker.setUserProperty(
-                AnalyticsUserProperties.LOGIN_STATUS,
-                if (state == LoginSessionState.AUTHENTICATED) "logged_in" else "guest",
-            )
+            appAnalytics.updateLoginStatus(state)
         }
     }
-    LaunchedEffect(Unit) {
+
+    LaunchedEffect(personalizationStore) {
         personalizationStore.state.collect { personalization ->
-            tracker.setUserProperty(
-                AnalyticsUserProperties.BOOKMARKED_COUNT,
-                personalization.bookmarkedShopIds.size.toString(),
-            )
-            tracker.setUserProperty(
-                AnalyticsUserProperties.SUBSCRIBED_COUNT,
-                personalization.notificationShopIds.size.toString(),
-            )
-            tracker.setUserProperty(
-                AnalyticsUserProperties.HIDDEN_COUNT,
-                personalization.hiddenShopIds.size.toString(),
+            appAnalytics.updatePersonalizationProperties(
+                personalization,
             )
         }
     }
 }
 
 @Composable
-private fun NotificationDeepLink(
+private fun HandleNotificationDeepLink(
     navigationState: NavigationState,
     notificationDeepLinkParser: NotificationDeepLinkParser,
     notificationLaunchDispatcher: NotificationLaunchDispatcher,
-    analyticsTracker: AnalyticsTracker,
+    appAnalytics: AppAnalytics,
 ) {
-    LaunchedEffect(navigationState) {
+    LaunchedEffect(
+        navigationState,
+        notificationDeepLinkParser,
+        notificationLaunchDispatcher,
+    ) {
         notificationLaunchDispatcher.pendingDeepLink.collect { value ->
-            val deepLink = notificationDeepLinkParser.parse(value)
-            val eventDeepLink = deepLink as? NotificationDeepLink.Event
+            val eventDeepLink =
+                notificationDeepLinkParser.parse(value)
+                    as? NotificationDeepLink.Event
+                    ?: return@collect
 
-            eventDeepLink?.let {
-                analyticsTracker.logEvent(
-                    AnalyticsEvents.NOTIFICATION_OPEN,
-                    mapOf(AnalyticsParams.EVENT_ID to it.eventId),
+            appAnalytics.logNotificationOpened(
+                eventId = eventDeepLink.eventId,
+            )
+
+            navigationState.showEvent(
+                eventDeepLink.eventId,
+            )
+
+            value?.let { deepLinkValue ->
+                notificationLaunchDispatcher.consume(
+                    deepLinkValue,
                 )
-                navigationState.showEvent(it.eventId)
-                notificationLaunchDispatcher.consume(requireNotNull(value))
             }
         }
     }

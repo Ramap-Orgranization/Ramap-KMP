@@ -26,6 +26,7 @@ import com.peto.ramap.domain.model.rank.ShopRanking
 import com.peto.ramap.domain.model.rank.ShopRankings
 import com.peto.ramap.domain.model.shop.AreaFilter
 import com.peto.ramap.domain.model.shop.Category
+import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
@@ -53,7 +54,10 @@ fun RankingRoute(
     viewModel: RankingViewModel = koinViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    var showLoginGuideDialog by remember { mutableStateOf(false) }
+
+    var showLoginGuideDialog by remember {
+        mutableStateOf(false)
+    }
 
     ObserveAsEvents(viewModel.sideEffect) { sideEffect ->
         when (sideEffect) {
@@ -69,33 +73,48 @@ fun RankingRoute(
 
     RankingScreen(
         uiState = uiState,
-        onShopClick = { shopId ->
+        onShopClick = { shop ->
             viewModel.dispatch(
-                RankingIntent.OnShopClicked(shopId),
+                RankingIntent.OnShopClicked(
+                    shop = shop,
+                ),
             )
-            onShopClick(shopId)
+
+            onShopClick(shop.id)
         },
         onFindShopClick = onFindShopClick,
         onRefresh = {
-            viewModel.dispatch(RankingIntent.OnRefreshed)
+            viewModel.dispatch(
+                RankingIntent.OnRefreshed,
+            )
         },
         onRetry = {
-            viewModel.dispatch(RankingIntent.OnRetried)
+            viewModel.dispatch(
+                RankingIntent.OnRefreshed,
+            )
         },
         onLoadNext = {
-            viewModel.dispatch(RankingIntent.OnNextPageRequested)
+            viewModel.dispatch(
+                RankingIntent.OnNextPageRequested,
+            )
         },
         onRetryNext = {
-            viewModel.dispatch(RankingIntent.OnNextPageRetried)
+            viewModel.dispatch(
+                RankingIntent.OnNextPageRetried,
+            )
         },
         onAreaFilterSelected = { areaFilter ->
             viewModel.dispatch(
-                RankingIntent.OnAreaFilterSelected(areaFilter),
+                RankingIntent.OnAreaFilterSelected(
+                    areaFilter = areaFilter,
+                ),
             )
         },
         onCategoryToggled = { category ->
             viewModel.dispatch(
-                RankingIntent.OnCategoryToggled(category),
+                RankingIntent.OnCategoryToggled(
+                    category = category,
+                ),
             )
         },
         onAllCategoriesSelected = {
@@ -103,10 +122,10 @@ fun RankingRoute(
                 RankingIntent.OnAllCategoriesSelected,
             )
         },
-        onBookmarkChange = { shopId, enabled ->
+        onBookmarkChange = { shop, enabled ->
             viewModel.dispatch(
                 RankingIntent.OnBookmarkChanged(
-                    shopId = shopId,
+                    shop = shop,
                     enabled = enabled,
                 ),
             )
@@ -120,7 +139,10 @@ fun RankingRoute(
         },
         onConfirm = {
             showLoginGuideDialog = false
-            viewModel.dispatch(RankingIntent.OnKakaoLoginClicked)
+
+            viewModel.dispatch(
+                RankingIntent.OnKakaoLoginClicked,
+            )
         },
     )
 }
@@ -128,7 +150,7 @@ fun RankingRoute(
 @Composable
 internal fun RankingScreen(
     uiState: RankingUiState,
-    onShopClick: (String) -> Unit,
+    onShopClick: (RamenShop) -> Unit,
     onFindShopClick: () -> Unit,
     onRefresh: () -> Unit,
     onRetry: () -> Unit,
@@ -137,14 +159,14 @@ internal fun RankingScreen(
     onAreaFilterSelected: (AreaFilter) -> Unit,
     onCategoryToggled: (Category) -> Unit,
     onAllCategoriesSelected: () -> Unit,
-    onBookmarkChange: (String, Boolean) -> Unit,
+    onBookmarkChange: (RamenShop, Boolean) -> Unit,
 ) {
     var isAreaSheetVisible by remember {
         mutableStateOf(false)
     }
 
-    var removalTargetShopId by remember {
-        mutableStateOf<String?>(null)
+    var removalTargetShop by remember {
+        mutableStateOf<RamenShop?>(null)
     }
 
     Box(
@@ -188,12 +210,12 @@ internal fun RankingScreen(
                 onRetry = onRetry,
                 onLoadNext = onLoadNext,
                 onRetryNext = onRetryNext,
-                onBookmarkClick = { shopId, isBookmarked ->
+                onBookmarkClick = { shop, isBookmarked ->
                     if (isBookmarked) {
-                        removalTargetShopId = shopId
+                        removalTargetShop = shop
                     } else {
                         onBookmarkChange(
-                            shopId,
+                            shop,
                             true,
                         )
                     }
@@ -217,7 +239,7 @@ internal fun RankingScreen(
         }
 
         CommonDialog(
-            visible = removalTargetShopId != null,
+            visible = removalTargetShop != null,
             confirmText =
                 stringResource(
                     Res.string.bookmark_removal_confirm_action,
@@ -227,7 +249,7 @@ internal fun RankingScreen(
                     Res.string.notification_removal_dismiss_action,
                 ),
             onDismissRequest = {
-                removalTargetShopId = null
+                removalTargetShop = null
             },
             content = {
                 AppText(
@@ -241,19 +263,19 @@ internal fun RankingScreen(
                 )
             },
             onConfirm = {
-                val shopId = removalTargetShopId
+                val shop = removalTargetShop
 
-                if (shopId != null) {
+                if (shop != null) {
                     onBookmarkChange(
-                        shopId,
+                        shop,
                         false,
                     )
                 }
 
-                removalTargetShopId = null
+                removalTargetShop = null
             },
             onDismiss = {
-                removalTargetShopId = null
+                removalTargetShop = null
             },
         )
     }
@@ -262,9 +284,7 @@ internal fun RankingScreen(
 @Preview(showBackground = true)
 @Composable
 private fun RankingRoutePreview() {
-    val shops =
-        RamenShopPreviewParameterProvider()
-            .ramenShopPreviewSamples
+    val shops = RamenShopPreviewParameterProvider().ramenShopPreviewSamples
 
     val rankings =
         shops.mapIndexed { index, shop ->

@@ -258,7 +258,9 @@ internal fun MapContent(
                 when (val detailState = uiState.shopDetailState) {
                     is ShopDetailUiState.Loading ->
                         RamenLoadingIndicator(
-                            modifier = Modifier.fillMaxWidth().heightIn(min = 240.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .heightIn(min = 240.dp),
                         )
 
                     is ShopDetailUiState.Content -> {

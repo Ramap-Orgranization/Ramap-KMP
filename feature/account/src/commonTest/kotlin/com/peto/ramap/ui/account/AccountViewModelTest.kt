@@ -1,5 +1,6 @@
 package com.peto.ramap.ui.account
 
+import com.peto.ramap.analytics.common.login.LoginAnalytics
 import com.peto.ramap.coroutinesTest
 import com.peto.ramap.domain.model.auth.LoginSessionState
 import com.peto.ramap.fake.FakeAnalyticsTracker
@@ -22,7 +23,7 @@ class AccountViewModelTest {
                         initialSessionState = LoginSessionState.AUTHENTICATED,
                         userEmail = "test@ramap.com",
                     ),
-                    FakeAnalyticsTracker(),
+                    LoginAnalytics(FakeAnalyticsTracker()),
                 )
 
             runCurrent()
@@ -36,7 +37,7 @@ class AccountViewModelTest {
         coroutinesTest {
             val repository =
                 FakeLoginRepository(initialSessionState = LoginSessionState.AUTHENTICATED)
-            val viewModel = AccountViewModel(repository, FakeAnalyticsTracker())
+            val viewModel = AccountViewModel(repository, LoginAnalytics(FakeAnalyticsTracker()))
             runCurrent()
 
             viewModel.dispatch(AccountIntent.OnAccountDeleteConfirm)

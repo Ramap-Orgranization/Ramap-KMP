@@ -8,6 +8,7 @@ import com.peto.ramap.ui.main.event.list.contract.EventsIntent
 import com.peto.ramap.ui.main.event.list.contract.EventsLoadKey
 import com.peto.ramap.ui.main.event.list.contract.EventsSideEffect
 import com.peto.ramap.ui.main.event.list.contract.EventsUiState
+import com.peto.ramap.ui.main.event.list.log.EventsAnalytics
 import com.peto.ramap.ui.task.TaskPolicy
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.event_list_refresh_failure_message
@@ -24,7 +25,7 @@ class EventsViewModel(
         when (intent) {
             EventsIntent.OnEventsRefreshed -> refreshEvents()
             EventsIntent.OnEventsRetried -> loadEvents()
-            is EventsIntent.OnEventClicked -> handleEventClicked(intent)
+            is EventsIntent.OnEventClicked -> eventsAnalytics.logEventSelected(intent.event)
         }
     }
 
@@ -58,10 +59,6 @@ class EventsViewModel(
                 )
             },
         )
-    }
-
-    private fun handleEventClicked(intent: EventsIntent.OnEventClicked) {
-        eventsAnalytics.logEventSelected(intent.event)
     }
 
     companion object {

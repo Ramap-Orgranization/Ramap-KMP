@@ -9,13 +9,9 @@ interface AnalyticsTracker {
     /**
      * 커스텀 이벤트를 로깅한다.
      *
-     * @param name 이벤트명. [AnalyticsEvents] 상수 사용.
-     * @param params 이벤트 파라미터. [AnalyticsParams] 키 사용.
+     * @param event 타입
      */
-    fun logEvent(
-        name: String,
-        params: Map<String, Any> = emptyMap(),
-    )
+    fun logEvent(event: AnalyticsEvent)
 
     /**
      * 화면 조회 이벤트를 로깅한다.

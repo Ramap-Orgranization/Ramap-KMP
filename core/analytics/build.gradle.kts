@@ -1,11 +1,11 @@
 plugins {
     id("ramap.kmp.library")
     id("ramap.kmp.test")
+    id("ramap.koin")
 }
 
 kotlin {
     sourceSets.commonMain.dependencies {
-        implementation(projects.core.navigation)
         implementation(libs.kermit)
     }
     sourceSets.androidMain.dependencies {

@@ -1,6 +1,8 @@
 package com.peto.ramap.ui.account
 
 import androidx.lifecycle.viewModelScope
+import com.peto.ramap.analytics.AnalyticsSource
+import com.peto.ramap.analytics.common.login.LoginAnalytics
 import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.auth.LoginSessionState
@@ -26,7 +28,7 @@ import ramap.shared.generated.resources.logout_failure_message
 
 class AccountViewModel(
     private val loginRepository: LoginRepository,
-    private val accountAnalytics: AccountAnalytics,
+    private val loginAnalytics: LoginAnalytics,
 ) : BaseViewModel<AccountUiState, AccountIntent, AccountSideEffect>(
         AccountUiState(),
     ) {
@@ -36,15 +38,10 @@ class AccountViewModel(
 
     override suspend fun handleIntent(intent: AccountIntent) {
         when (intent) {
-            OnKakaoLoginClick -> handleKakaoLoginClick()
+            OnKakaoLoginClick -> signInWithKakao()
             OnLogoutClick -> signOut()
             OnAccountDeleteConfirm -> deleteAccount()
         }
-    }
-
-    private fun handleKakaoLoginClick() {
-        accountAnalytics.logLoginStarted()
-        signInWithKakao()
     }
 
     private fun observeSessionState() {
@@ -59,39 +56,38 @@ class AccountViewModel(
         val isAuthenticated = sessionState == LoginSessionState.AUTHENTICATED
         val accountLabel = findAccountLabel(isAuthenticated)
 
-        reduce { copy(isLoggedIn = isAuthenticated, accountLabel = accountLabel) }
+        reduce {
+            copy(
+                isLoggedIn = isAuthenticated,
+                accountLabel = accountLabel,
+            )
+        }
     }
 
     private fun findAccountLabel(isAuthenticated: Boolean): String? {
-        if (!isAuthenticated) {
-            return null
-        }
+        if (!isAuthenticated) return null
 
         return loginRepository.currentUserEmail()
     }
 
     private fun signInWithKakao() {
+        loginAnalytics.logLoginStarted(AnalyticsSource.ACCOUNT)
+
         launchResultTask(
             taskKey = SIGN_IN_TASK_KEY,
             loadKey = AccountLoadKey.Login,
             policy = TaskPolicy.IgnoreNew,
             request = loginRepository::signInWithKakao,
-            onSuccess = { handleSignInSuccess() },
-            onError = { handleSignInFailure() },
-        )
-    }
-
-    private fun handleSignInSuccess() {
-        accountAnalytics.logLoginSucceeded()
-    }
-
-    private fun handleSignInFailure() {
-        accountAnalytics.logLoginFailed()
-
-        showToast(
-            messageResource =
-                Res.string.kakao_login_failure_message,
-            type = ToastType.ERROR,
+            onSuccess = {
+                loginAnalytics.logLoginSucceeded(AnalyticsSource.ACCOUNT)
+            },
+            onError = {
+                loginAnalytics.logLoginFailed(AnalyticsSource.ACCOUNT)
+                showToast(
+                    messageResource = Res.string.kakao_login_failure_message,
+                    type = ToastType.ERROR,
+                )
+            },
         )
     }
 
@@ -101,7 +97,12 @@ class AccountViewModel(
             loadKey = AccountLoadKey.Logout,
             policy = TaskPolicy.IgnoreNew,
             request = loginRepository::signOut,
-            onError = { showToast(Res.string.logout_failure_message, ToastType.ERROR) },
+            onError = {
+                showToast(
+                    messageResource = Res.string.logout_failure_message,
+                    type = ToastType.ERROR,
+                )
+            },
         )
     }
 
@@ -113,14 +114,14 @@ class AccountViewModel(
             request = loginRepository::deleteAccount,
             onSuccess = {
                 showToast(
-                    Res.string.account_delete_success_message,
-                    ToastType.SUCCESS,
+                    messageResource = Res.string.account_delete_success_message,
+                    type = ToastType.SUCCESS,
                 )
             },
             onError = {
                 showToast(
-                    Res.string.account_delete_failure_message,
-                    ToastType.ERROR,
+                    messageResource = Res.string.account_delete_failure_message,
+                    type = ToastType.ERROR,
                 )
             },
         )
