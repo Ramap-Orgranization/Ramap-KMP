@@ -3,6 +3,7 @@
 package com.peto.ramap.analytics
 
 import cocoapods.FirebaseAnalytics.FIRAnalytics
+import cocoapods.FirebaseCore.FIRApp
 import platform.Foundation.NSNumber
 import platform.Foundation.numberWithBool
 import platform.Foundation.numberWithDouble
@@ -10,7 +11,11 @@ import platform.Foundation.numberWithInt
 import platform.Foundation.numberWithLong
 
 class FirebaseAnalyticsTracker : AnalyticsTracker {
+    private val isConfigured: Boolean
+        get() = FIRApp.defaultApp() != null
+
     override fun logEvent(event: AnalyticsEvent) {
+        if (!isConfigured) return
         FIRAnalytics.logEventWithName(event.name, event.params().toNsParams())
     }
 
@@ -18,6 +23,7 @@ class FirebaseAnalyticsTracker : AnalyticsTracker {
         screenName: String,
         params: Map<String, Any>,
     ) {
+        if (!isConfigured) return
         val allParams = params + ("screen_name" to screenName)
         FIRAnalytics.logEventWithName("screen_view", allParams.toNsParams())
     }
@@ -26,6 +32,7 @@ class FirebaseAnalyticsTracker : AnalyticsTracker {
         key: String,
         value: String,
     ) {
+        if (!isConfigured) return
         FIRAnalytics.setUserPropertyString(value, key)
     }
 

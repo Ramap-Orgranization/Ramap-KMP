@@ -28,6 +28,7 @@ kotlin {
         }
 
         pod("NMapsMap")
+        pod("FirebaseCore")
         pod("FirebaseAnalytics")
         pod("FirebaseCrashlytics")
     }
