@@ -1,6 +1,7 @@
 package com.peto.ramap.ui.hidden
 
 import androidx.lifecycle.viewModelScope
+import com.peto.ramap.analytics.AnalyticsTracker
 import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.shop.RamenShops
@@ -24,6 +25,7 @@ import ramap.shared.generated.resources.personalization_update_failure_message
 class HiddenShopListViewModel(
     private val personalizationStore: ShopPersonalizationStore,
     private val ramenShopRepository: RamenShopRepository,
+    private val analyticsTracker: AnalyticsTracker,
 ) : BaseViewModel<
         HiddenShopListUiState,
         HiddenShopListIntent,

@@ -1,6 +1,7 @@
 package com.peto.ramap.ui.report
 
 import androidx.lifecycle.viewModelScope
+import com.peto.ramap.analytics.AnalyticsTracker
 import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.report.PlaceReportTextParser
@@ -44,6 +45,7 @@ class PlaceReportViewModel(
     private val currentLocationStore: CurrentLocationStore,
     private val reverseGeocoder: ReverseGeocoder,
     private val currentLocationProvider: CurrentLocationProvider,
+    private val analyticsTracker: AnalyticsTracker,
 ) : BaseViewModel<PlaceReportUiState, PlaceReportIntent, PlaceReportSideEffect>(PlaceReportUiState()) {
     init {
         viewModelScope.launch { observeCurrentLocation() }
