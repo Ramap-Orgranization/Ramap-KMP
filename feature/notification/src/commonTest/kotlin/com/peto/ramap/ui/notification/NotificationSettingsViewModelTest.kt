@@ -4,7 +4,6 @@ import com.peto.ramap.core.result.RamapError
 import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.coroutinesTest
 import com.peto.ramap.domain.repository.NotificationSettingsRepository
-import com.peto.ramap.fake.FakeAnalyticsTracker
 import com.peto.ramap.fake.FakeNotificationSettingsRepository
 import com.peto.ramap.ui.notification.contract.NotificationSettingsIntent
 import com.peto.ramap.ui.notification.contract.NotificationSettingsLoadKey
@@ -24,7 +23,6 @@ class NotificationSettingsViewModelTest {
             val viewModel =
                 NotificationSettingsViewModel(
                     FakeNotificationSettingsRepository(enabled = true),
-                    FakeAnalyticsTracker(),
                 )
 
             runCurrent()
@@ -43,7 +41,7 @@ class NotificationSettingsViewModelTest {
                 FakeNotificationSettingsRepository().apply {
                     fetchEnabledError = RamapError.Unknown(IllegalStateException("failure"))
                 }
-            val viewModel = NotificationSettingsViewModel(repository, FakeAnalyticsTracker())
+            val viewModel = NotificationSettingsViewModel(repository)
 
             runCurrent()
 
@@ -58,7 +56,7 @@ class NotificationSettingsViewModelTest {
     fun `알림 토글을 끄면 저장소 상태를 갱신한다`() =
         coroutinesTest {
             val repository = FakeNotificationSettingsRepository(enabled = true)
-            val viewModel = NotificationSettingsViewModel(repository, FakeAnalyticsTracker())
+            val viewModel = NotificationSettingsViewModel(repository)
             runCurrent()
 
             viewModel.dispatch(NotificationSettingsIntent.OnEventNotificationsEnabledChanged(false))
@@ -74,13 +72,14 @@ class NotificationSettingsViewModelTest {
             val firstResult = CompletableDeferred<RamapResult<Unit>>()
             val updates = mutableListOf<Boolean>()
             val repository =
-                object : NotificationSettingsRepository by FakeNotificationSettingsRepository(enabled = false) {
+                object :
+                    NotificationSettingsRepository by FakeNotificationSettingsRepository(enabled = false) {
                     override suspend fun updateEventNotificationsEnabled(enabled: Boolean): RamapResult<Unit> {
                         updates += enabled
                         return if (enabled) firstResult.await() else RamapResult.Success(Unit)
                     }
                 }
-            val viewModel = NotificationSettingsViewModel(repository, FakeAnalyticsTracker())
+            val viewModel = NotificationSettingsViewModel(repository)
             runCurrent()
 
             viewModel.dispatch(NotificationSettingsIntent.OnEventNotificationsEnabledChanged(true))

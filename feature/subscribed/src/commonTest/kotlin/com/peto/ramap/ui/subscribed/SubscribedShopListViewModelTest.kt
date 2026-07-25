@@ -10,7 +10,6 @@ import com.peto.ramap.domain.model.event.ShopEventType
 import com.peto.ramap.domain.model.notification.EventNotificationOverride
 import com.peto.ramap.domain.model.personalization.ShopPersonalization
 import com.peto.ramap.domain.model.shop.RamenShops
-import com.peto.ramap.fake.FakeAnalyticsTracker
 import com.peto.ramap.fake.FakeNotificationSettingsRepository
 import com.peto.ramap.fake.FakePersonalizationRepository
 import com.peto.ramap.fake.FakeRamenShopRepository
@@ -42,7 +41,6 @@ class SubscribedShopListViewModelTest {
                         FakeNotificationSettingsRepository(shopIds = mutableSetOf(shop.id)),
                     ramenShopRepository =
                         FakeRamenShopRepository(fetchByIdsResult = RamenShops(listOf(shop))),
-                    analyticsTracker = FakeAnalyticsTracker(),
                 )
 
             runCurrent()
@@ -67,7 +65,6 @@ class SubscribedShopListViewModelTest {
                     personalizationStore = personalizationRepository,
                     notificationRepository = FakeNotificationSettingsRepository(),
                     ramenShopRepository = ramenShopRepository,
-                    analyticsTracker = FakeAnalyticsTracker(),
                 )
             runCurrent()
 
@@ -97,7 +94,6 @@ class SubscribedShopListViewModelTest {
                                 mutableListOf(EventNotificationOverride(event.id, true)),
                         ),
                     ramenShopRepository = FakeRamenShopRepository(activeEvents = listOf(event)),
-                    analyticsTracker = FakeAnalyticsTracker(),
                 )
 
             runCurrent()
@@ -123,7 +119,6 @@ class SubscribedShopListViewModelTest {
                         ),
                     ramenShopRepository =
                         FakeRamenShopRepository(activeEvents = listOf(disabledEvent)),
-                    analyticsTracker = FakeAnalyticsTracker(),
                 )
 
             runCurrent()
@@ -150,7 +145,6 @@ class SubscribedShopListViewModelTest {
                     notificationRepository = repository,
                     ramenShopRepository =
                         FakeRamenShopRepository(fetchByIdsResult = RamenShops(listOf(shop))),
-                    analyticsTracker = FakeAnalyticsTracker(),
                 )
             runCurrent()
 
@@ -191,7 +185,6 @@ class SubscribedShopListViewModelTest {
                     notificationRepository = repository,
                     ramenShopRepository =
                         FakeRamenShopRepository(fetchByIdsResult = RamenShops(listOf(shop))),
-                    analyticsTracker = FakeAnalyticsTracker(),
                 )
             runCurrent()
 
@@ -229,7 +222,6 @@ class SubscribedShopListViewModelTest {
                     personalizationStore = FakePersonalizationRepository(),
                     notificationRepository = repository,
                     ramenShopRepository = FakeRamenShopRepository(activeEvents = listOf(event)),
-                    analyticsTracker = FakeAnalyticsTracker(),
                 )
             runCurrent()
 
@@ -263,7 +255,6 @@ class SubscribedShopListViewModelTest {
                     personalizationStore = FakePersonalizationRepository(),
                     notificationRepository = repository,
                     ramenShopRepository = FakeRamenShopRepository(activeEvents = listOf(event)),
-                    analyticsTracker = FakeAnalyticsTracker(),
                 )
             runCurrent()
 
@@ -300,7 +291,6 @@ class SubscribedShopListViewModelTest {
                     personalizationStore = FakePersonalizationRepository(),
                     notificationRepository = repository,
                     ramenShopRepository = FakeRamenShopRepository(),
-                    analyticsTracker = FakeAnalyticsTracker(),
                 )
 
             runCurrent()
@@ -326,7 +316,6 @@ class SubscribedShopListViewModelTest {
                         ),
                     ramenShopRepository =
                         FakeRamenShopRepository(activeEventError = failure()),
-                    analyticsTracker = FakeAnalyticsTracker(),
                 )
 
             runCurrent()
