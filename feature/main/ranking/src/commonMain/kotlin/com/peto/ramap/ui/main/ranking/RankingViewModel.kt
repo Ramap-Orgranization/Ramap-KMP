@@ -296,6 +296,8 @@ class RankingViewModel(
 
         if (!canLoadNextPage()) return
 
+        rankingAnalytics.logNextPageRequested()
+
         val query = createRankingQuery(cursor = cursor)
 
         launchResultTask(

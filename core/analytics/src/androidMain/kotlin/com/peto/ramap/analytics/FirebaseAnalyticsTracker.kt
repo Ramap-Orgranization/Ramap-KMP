@@ -16,7 +16,7 @@ class FirebaseAnalyticsTracker : AnalyticsTracker {
                     is Long -> param(key, value)
                     is Int -> param(key, value.toLong())
                     is Double -> param(key, value)
-                    is Boolean -> param(key, if (value) 1L else 0L)
+                    is Boolean -> bundle.putBoolean(key, value)
                     else ->
                         error(
                             "Unsupported analytics parameter: " +

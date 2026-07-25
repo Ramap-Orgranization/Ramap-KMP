@@ -223,24 +223,22 @@ private fun HandleNotificationDeepLink(
         notificationLaunchDispatcher,
     ) {
         notificationLaunchDispatcher.pendingDeepLink.collect { value ->
-            val eventDeepLink =
-                notificationDeepLinkParser.parse(value)
-                    as? NotificationDeepLink.Event
-                    ?: return@collect
+            if (value == null) return@collect
 
-            appAnalytics.logNotificationOpened(
-                eventId = eventDeepLink.eventId,
-            )
-
-            navigationState.showEvent(
-                eventDeepLink.eventId,
-            )
-
-            value?.let { deepLinkValue ->
-                notificationLaunchDispatcher.consume(
-                    deepLinkValue,
+            val deepLink = notificationDeepLinkParser.parse(value)
+            if (deepLink is NotificationDeepLink.Event) {
+                appAnalytics.logNotificationOpened(
+                    eventId = deepLink.eventId,
                 )
+
+                navigationState.showEvent(
+                    deepLink.eventId,
+                )
+            } else {
+                // TODO: 다른 타입의 딥링크 처리 또는 미지원 로깅
             }
+
+            notificationLaunchDispatcher.consume(value)
         }
     }
 }

@@ -10,11 +10,8 @@ import platform.Foundation.numberWithInt
 import platform.Foundation.numberWithLong
 
 class FirebaseAnalyticsTracker : AnalyticsTracker {
-    override fun logEvent(
-        name: String,
-        params: Map<String, Any>,
-    ) {
-        FIRAnalytics.logEventWithName(name, params.toNsParams())
+    override fun logEvent(event: AnalyticsEvent) {
+        FIRAnalytics.logEventWithName(event.name, event.params().toNsParams())
     }
 
     override fun logScreenView(

@@ -5,6 +5,7 @@ import KakaoSDKAuth
 import KakaoSDKCommon
 import KakaoSDKUser
 import UserNotifications
+import FirebaseCore
 
 final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate {
     func application(
@@ -31,6 +32,7 @@ struct iOSApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
 
     init() {
+        FirebaseApp.configure()
         UnhandledExceptionLoggerKt.installUnhandledExceptionLogger()
         NMFAuthManager.shared().ncpKeyId = RamapSecrets.shared.naverMapNcpKeyId
         KakaoSDK.initSDK(appKey: RamapSecrets.shared.kakaoNativeAppKey)

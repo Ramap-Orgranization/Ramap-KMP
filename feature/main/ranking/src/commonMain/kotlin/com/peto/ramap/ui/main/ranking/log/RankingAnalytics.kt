@@ -8,6 +8,7 @@ import com.peto.ramap.analytics.event.CategoryFilterToggled
 import com.peto.ramap.domain.model.shop.AreaFilter
 import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.ui.main.ranking.log.event.AreaFilterSelected
+import com.peto.ramap.ui.main.ranking.log.event.RankingPageLoad
 
 class RankingAnalytics(
     private val analyticsTracker: AnalyticsTracker,
@@ -39,6 +40,7 @@ class RankingAnalytics(
         analyticsTracker.logEvent(
             AreaFilterSelected(
                 area = areaName(areaFilter),
+                source = AnalyticsSource.RANKING,
             ),
         )
     }
@@ -55,6 +57,10 @@ class RankingAnalytics(
                 source = AnalyticsSource.RANKING,
             ),
         )
+    }
+
+    fun logNextPageRequested() {
+        analyticsTracker.logEvent(RankingPageLoad)
     }
 
     private fun areaName(areaFilter: AreaFilter): String =
