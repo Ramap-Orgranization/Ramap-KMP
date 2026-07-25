@@ -35,7 +35,7 @@ import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.platform.permission.PermissionStatus
 import com.peto.ramap.platform.permission.findActivity
 import com.peto.ramap.platform.permission.rememberLocationPermissionGenerator
-import com.peto.ramap.ui.main.map.component.CurrentLocationButton
+import com.peto.ramap.ui.main.map.component.LocationButton
 import com.peto.ramap.ui.main.map.config.CurrentLocationConfig
 import com.peto.ramap.ui.main.map.config.DefaultMapConfig
 import com.peto.ramap.ui.main.map.config.MapInteractionConfig
@@ -263,10 +263,10 @@ internal actual fun RamapMapView(
             },
         )
 
-        CurrentLocationButton(
+        LocationButton(
             isLoading = currentLocationRequestState.isLoading,
             onClick = {
-                if (currentLocationRequestState.isLoading) return@CurrentLocationButton
+                if (currentLocationRequestState.isLoading) return@LocationButton
                 currentLocationRequestState = currentLocationRequestState.start()
                 if (locationPermissionGenerator.hasPermission()) {
                     shouldMoveToCurrentLocation = true

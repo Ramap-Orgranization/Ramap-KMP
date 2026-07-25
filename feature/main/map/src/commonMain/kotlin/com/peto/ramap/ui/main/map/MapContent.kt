@@ -56,17 +56,16 @@ import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.ui.main.map.component.MapCircleIconButton
 import com.peto.ramap.ui.main.map.component.MenuCategoryFilterRow
-import com.peto.ramap.ui.main.map.component.PlaceSearchResultList
-import com.peto.ramap.ui.main.map.component.RamenShopDetailContent
-import com.peto.ramap.ui.main.map.component.RamenShopSearchBar
-import com.peto.ramap.ui.main.map.component.RamenShopSearchResultGuide
-import com.peto.ramap.ui.main.map.component.ShopInformationReportDialog
+import com.peto.ramap.ui.main.map.component.SearchResultList
+import com.peto.ramap.ui.main.map.component.RamenShopOverview
+import com.peto.ramap.ui.main.map.component.SearchBar
+import com.peto.ramap.ui.main.map.component.SearchResultGuide
+import com.peto.ramap.ui.main.map.component.ReportDialog
 import com.peto.ramap.ui.main.map.contract.MapUiState
 import com.peto.ramap.ui.main.map.model.CameraPosition
 import com.peto.ramap.ui.main.map.model.RamenShopUiModel
 import com.peto.ramap.ui.main.map.model.ShopDetailUiState
 import com.peto.ramap.ui.resource.category.label
-import com.peto.ramap.ui.resource.login.toUiModel
 import com.peto.ramap.ui.resource.wating.toUiModel
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
@@ -187,7 +186,7 @@ internal fun MapContent(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                RamenShopSearchBar(
+                SearchBar(
                     query = uiState.search.input,
                     onQueryChange = onQueryChanged,
                     modifier = Modifier.weight(1f),
@@ -227,13 +226,13 @@ internal fun MapContent(
                     val searchResultGuide = uiState.searchResultGuide
                     when {
                         uiState.placeSearchResults.isNotEmpty() ->
-                            PlaceSearchResultList(
+                            SearchResultList(
                                 places = uiState.placeSearchResults,
                                 onPlaceClick = onPlaceSelected,
                             )
 
                         searchResultGuide != null ->
-                            RamenShopSearchResultGuide(guide = searchResultGuide)
+                            SearchResultGuide(guide = searchResultGuide)
 
                         else ->
                             RamenShopSearchResultList(
@@ -267,7 +266,7 @@ internal fun MapContent(
 
                     is ShopDetailUiState.Content -> {
                         val detail = detailState.detail
-                        RamenShopDetailContent(
+                        RamenShopOverview(
                             shop = shop,
                             waitingSystem = uiState.shopWaiting[shop.id].toUiModel(),
                             isBookmarked = shop.id in uiState.bookmarkedShopIds,
@@ -352,7 +351,7 @@ internal fun MapContent(
         )
 
         selectedShop?.let { shop ->
-            ShopInformationReportDialog(
+            ReportDialog(
                 shopUiModel =
                     RamenShopUiModel(
                         shop = shop,

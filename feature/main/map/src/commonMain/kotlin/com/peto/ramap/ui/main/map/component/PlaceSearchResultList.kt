@@ -16,7 +16,7 @@ import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.GrayColor
 
 @Composable
-internal fun PlaceSearchResultList(
+internal fun SearchResultList(
     places: PlaceSearchResults,
     onPlaceClick: (PlaceSearchResult) -> Unit,
     modifier: Modifier = Modifier,

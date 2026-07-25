@@ -27,11 +27,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
 import com.peto.ramap.designsystem.component.CategoryFilterChip
 import com.peto.ramap.designsystem.image.RemoteShopImage
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.domain.model.event.ShopEvent
+import com.peto.ramap.domain.model.event.ShopEventType
 import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.extension.noRippleClickable
 import com.peto.ramap.platform.ExternalUriOpener
@@ -39,16 +42,19 @@ import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.InstagramColor
+import com.peto.ramap.theme.RamapTheme
 import com.peto.ramap.theme.SystemColor
 import com.peto.ramap.ui.resource.category.label
 import com.peto.ramap.ui.resource.event.ShopEventResourceMapper
 import com.peto.ramap.ui.resource.format
+import com.peto.ramap.ui.preview.RamenShopPreviewParameterProvider
 import com.peto.ramap.ui.resource.wating.WaitingSystemUiModel
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.bookmarked_shops_toggle
+import ramap.shared.generated.resources.catchtable
 import ramap.shared.generated.resources.event_notification_action
 import ramap.shared.generated.resources.hide_shop_action
 import ramap.shared.generated.resources.ic_kid_star
@@ -70,10 +76,11 @@ import ramap.shared.generated.resources.shop_detail_link_kakao_map
 import ramap.shared.generated.resources.shop_detail_link_naver_map
 import ramap.shared.generated.resources.shop_detail_link_report
 import ramap.shared.generated.resources.shop_detail_more_actions
+import ramap.shared.generated.resources.shop_detail_waiting_catchtable
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-internal fun RamenShopDetailContent(
+internal fun RamenShopOverview(
     shop: RamenShop,
     modifier: Modifier = Modifier,
     waitingSystem: WaitingSystemUiModel? = null,
@@ -414,6 +421,42 @@ private fun ShopIconLinkRow(
                 Modifier
                     .size(28.dp)
                     .noRippleClickable(onClick = onClick),
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun RamenShopOverviewPreview(
+    @PreviewParameter(RamenShopPreviewParameterProvider::class) shop: RamenShop,
+) {
+    RamapTheme {
+        RamenShopOverview(
+            shop = shop,
+            waitingSystem = WaitingSystemUiModel(
+                label = Res.string.shop_detail_waiting_catchtable,
+                icon = Res.drawable.catchtable,
+                providerUrl = "https://app.catchtable.co.kr",
+            ),
+            event = ShopEvent(
+                id = "1",
+                type = ShopEventType.LIMITED_MENU,
+                title = "한정 메뉴 이벤트",
+                description = "오늘만 판매하는 특별한 라멘!",
+                startDate = "2024-01-01",
+                endDate = "2024-01-02",
+                sourceUrl = "https://instagram.com/p/xxx",
+                isToday = true,
+                isVenue = true,
+                venueShopId = shop.id,
+                venueShopName = shop.name,
+                venueAddress = shop.address,
+                collaboratorShopId = null,
+                collaboratorName = null,
+                collaboratorInstagramUrl = null,
+                waitingMethod = null,
+                waitingUrl = null,
+            ),
         )
     }
 }

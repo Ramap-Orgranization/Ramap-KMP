@@ -14,7 +14,7 @@ import ramap.shared.generated.resources.current_location
 import ramap.shared.generated.resources.ic_current_location
 
 @Composable
-internal fun CurrentLocationButton(
+internal fun LocationButton(
     isLoading: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
