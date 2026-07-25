@@ -43,7 +43,7 @@ sealed interface MapIntent : Intent {
 
     data object OnSearchResultsDismissed : MapIntent
 
-    data class OnPlaceSelected(
+    data class OnSearchedShopSelected(
         val place: PlaceSearchResult,
     ) : MapIntent
 

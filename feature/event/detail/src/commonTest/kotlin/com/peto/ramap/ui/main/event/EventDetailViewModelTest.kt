@@ -7,6 +7,7 @@ import com.peto.ramap.domain.model.auth.LoginSessionState
 import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.model.event.ShopEventType
 import com.peto.ramap.domain.model.notification.EventNotificationOverride
+import com.peto.ramap.fake.FakeAnalyticsTracker
 import com.peto.ramap.fake.FakeLoginRepository
 import com.peto.ramap.fake.FakeNotificationSettingsRepository
 import com.peto.ramap.fake.FakeRamenShopRepository
@@ -15,6 +16,7 @@ import com.peto.ramap.ui.main.event.contract.EventDetailIntent.OnNotificationCha
 import com.peto.ramap.ui.main.event.contract.EventDetailIntent.OnNotificationPermissionGranted
 import com.peto.ramap.ui.main.event.contract.EventDetailSideEffect.EventUnavailable
 import com.peto.ramap.ui.main.event.contract.EventDetailSideEffect.RequestNotificationPermission
+import com.peto.ramap.ui.main.event.log.EventDetailAnalytics
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runCurrent
 import kotlin.test.Test
@@ -148,6 +150,7 @@ class EventDetailViewModelTest {
             ramenShopRepository = ramenShopRepository,
             loginRepository = FakeLoginRepository(LoginSessionState.AUTHENTICATED),
             notificationRepository = repository,
+            eventDetailAnalytics = EventDetailAnalytics(FakeAnalyticsTracker()),
         )
 
     private companion object {

@@ -28,6 +28,9 @@ kotlin {
         }
 
         pod("NMapsMap")
+        pod("FirebaseCore")
+        pod("FirebaseAnalytics")
+        pod("FirebaseCrashlytics")
     }
 
     listOf(
@@ -77,6 +80,7 @@ kotlin {
             implementation(libs.ktor.client.darwin)
         }
         commonMain.dependencies {
+            implementation(projects.core.analytics)
             implementation(projects.core.designsystem)
             api(projects.core.network)
             implementation(projects.core.platform)

@@ -27,10 +27,10 @@ import com.peto.ramap.ui.main.map.contract.MapIntent.OnInitialLocationFocusConsu
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnKakaoLoginClicked
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnLocationPermissionBlocked
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnMyLocationChanged
-import com.peto.ramap.ui.main.map.contract.MapIntent.OnPlaceSelected
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnQueryChanged
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnRequestedShopDismissed
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnSearchResultsDismissed
+import com.peto.ramap.ui.main.map.contract.MapIntent.OnSearchedShopSelected
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopDetailDismissed
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopDetailRetry
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopIdSelected
@@ -100,7 +100,7 @@ fun MapRoute(
             }
         },
         onShopSelected = { shop, shouldFocus -> viewModel.dispatch(OnShopSelected(shop, shouldFocus)) },
-        onPlaceSelected = { viewModel.dispatch(OnPlaceSelected(it)) },
+        onPlaceSelected = { viewModel.dispatch(OnSearchedShopSelected(it)) },
         onShopDetailDismissed = { viewModel.dispatch(OnShopDetailDismissed) },
         onShopDetailRetry = {
             if (uiState.selectedShop != null) {

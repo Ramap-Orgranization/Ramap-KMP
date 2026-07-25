@@ -72,7 +72,8 @@ class NotificationSettingsViewModelTest {
             val firstResult = CompletableDeferred<RamapResult<Unit>>()
             val updates = mutableListOf<Boolean>()
             val repository =
-                object : NotificationSettingsRepository by FakeNotificationSettingsRepository(enabled = false) {
+                object :
+                    NotificationSettingsRepository by FakeNotificationSettingsRepository(enabled = false) {
                     override suspend fun updateEventNotificationsEnabled(enabled: Boolean): RamapResult<Unit> {
                         updates += enabled
                         return if (enabled) firstResult.await() else RamapResult.Success(Unit)

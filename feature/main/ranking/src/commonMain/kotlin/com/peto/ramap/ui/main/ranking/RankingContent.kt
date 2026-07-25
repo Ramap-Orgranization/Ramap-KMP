@@ -19,6 +19,7 @@ import com.peto.ramap.domain.model.rank.RankedShops
 import com.peto.ramap.domain.model.rank.RankingCursor
 import com.peto.ramap.domain.model.rank.ShopRanking
 import com.peto.ramap.domain.model.rank.ShopRankings
+import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.RamapTheme
 import com.peto.ramap.ui.loading.LoadState
@@ -37,13 +38,13 @@ import ramap.shared.generated.resources.ranking_error_title
 @Composable
 internal fun RankingContent(
     uiState: RankingUiState,
-    onShopClick: (String) -> Unit,
+    onShopClick: (RamenShop) -> Unit,
     onFindShopClick: () -> Unit,
     onRefresh: () -> Unit,
     onRetry: () -> Unit,
     onLoadNext: () -> Unit,
     onRetryNext: () -> Unit,
-    onBookmarkClick: (String, Boolean) -> Unit,
+    onBookmarkClick: (RamenShop, Boolean) -> Unit,
 ) {
     val pullState = rememberPullToRefreshState()
     PullToRefreshBox(
@@ -85,11 +86,11 @@ internal fun RankingContent(
                             likeCount = uiState.displayedLikeCount(item),
                             onBookmarkClick = {
                                 onBookmarkClick(
-                                    item.ranking.shop.id,
+                                    item.ranking.shop,
                                     item.ranking.shop.id in uiState.bookmarkedShopIds,
                                 )
                             },
-                            onClick = { onShopClick(item.ranking.shop.id) },
+                            onClick = { onShopClick(item.ranking.shop) },
                         )
                     }
                     if (uiState.hasNext || uiState.isLoadingNext || uiState.showNextPageError) {

@@ -1,6 +1,10 @@
 package com.peto.ramap
 
 import android.app.Application
+import android.content.pm.ApplicationInfo
+import co.touchlab.kermit.Logger
+import com.google.firebase.analytics.FirebaseAnalytics
+import com.google.firebase.crashlytics.FirebaseCrashlytics
 import com.google.firebase.messaging.FirebaseMessaging
 import com.kakao.sdk.common.KakaoSdk
 import com.naver.maps.map.NaverMapSdk
@@ -11,12 +15,22 @@ import org.koin.android.ext.koin.androidContext
 class MainApplication : Application() {
     override fun onCreate() {
         super.onCreate()
+        configureFirebase()
+        Logger.setLogWriters(listOf(CrashlyticsLogWriter()))
         FirebaseMessaging.getInstance().register()
         NaverMapSdk.getInstance(this).client =
             NaverMapSdk.NcpKeyClient(RamapSecrets.naverMapNcpKeyId)
         KakaoSdk.init(this, RamapSecrets.kakaoNativeAppKey)
         initKoin {
             androidContext(this@MainApplication)
+        }
+    }
+
+    private fun configureFirebase() {
+        val isDebug = applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE != 0
+        if (isDebug) {
+            FirebaseAnalytics.getInstance(this).setAnalyticsCollectionEnabled(false)
+            FirebaseCrashlytics.getInstance().isCrashlyticsCollectionEnabled = false
         }
     }
 }

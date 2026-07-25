@@ -10,7 +10,7 @@ class EventNotificationWindowTest {
     fun `전날 오후 9시 전에는 전날과 당일 알림을 설정한다`() {
         assertEquals(
             EventNotificationWindow.DAY_BEFORE_AND_EVENT_DAY,
-            eventNotificationWindow("2026-07-08", eventDayNineAm - 43_200_001),
+            EventNotificationWindow.from("2026-07-08", eventDayNineAm - 43_200_001),
         )
     }
 
@@ -18,7 +18,7 @@ class EventNotificationWindowTest {
     fun `전날 오후 9시부터 당일 오전 9시 전에는 당일 알림만 설정한다`() {
         assertEquals(
             EventNotificationWindow.EVENT_DAY_ONLY,
-            eventNotificationWindow("2026-07-08", eventDayNineAm - 43_200_000),
+            EventNotificationWindow.from("2026-07-08", eventDayNineAm - 43_200_000),
         )
     }
 
@@ -26,7 +26,7 @@ class EventNotificationWindowTest {
     fun `당일 오전 9시부터 설정을 닫는다`() {
         assertEquals(
             EventNotificationWindow.CLOSED,
-            eventNotificationWindow("2026-07-08", eventDayNineAm),
+            EventNotificationWindow.from("2026-07-08", eventDayNineAm),
         )
     }
 }

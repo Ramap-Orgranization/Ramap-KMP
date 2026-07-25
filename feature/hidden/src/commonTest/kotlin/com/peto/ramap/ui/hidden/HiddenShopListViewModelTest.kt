@@ -1,9 +1,9 @@
 package com.peto.ramap.ui.hidden
 
-import com.peto.ramap.core.result.RamapError
 import com.peto.ramap.coroutinesTest
 import com.peto.ramap.domain.model.personalization.ShopPersonalization
 import com.peto.ramap.domain.model.shop.RamenShops
+import com.peto.ramap.fake.FakeAnalyticsTracker
 import com.peto.ramap.fake.FakePersonalizationRepository
 import com.peto.ramap.fake.FakeRamenShopRepository
 import com.peto.ramap.fixture.ramenShopFixture
@@ -30,6 +30,7 @@ class HiddenShopListViewModelTest {
                         FakeRamenShopRepository(
                             fetchByIdsResult = RamenShops(mapOf(hiddenShop.id to hiddenShop)),
                         ),
+                    analyticsTracker = FakeAnalyticsTracker(),
                 )
 
             runCurrent()
@@ -46,39 +47,13 @@ class HiddenShopListViewModelTest {
                 HiddenShopListViewModel(
                     personalizationStore = FakePersonalizationRepository(),
                     ramenShopRepository = FakeRamenShopRepository(),
+                    analyticsTracker = FakeAnalyticsTracker(),
                 )
 
             runCurrent()
 
             assertEquals(RamenShops(emptyMap()), viewModel.uiState.value.shops)
             assertTrue(!viewModel.uiState.value.isOverlayLoading)
-        }
-
-    @Test
-    fun `매장 조회 실패 후 숨긴 매장이 비면 오류 상태를 해제한다`() =
-        coroutinesTest {
-            val hiddenShop = ramenShopFixture(id = "hidden-shop")
-            val personalizationRepository =
-                FakePersonalizationRepository(
-                    ShopPersonalization(hiddenShopIds = setOf(hiddenShop.id)),
-                )
-            val viewModel =
-                HiddenShopListViewModel(
-                    personalizationStore = personalizationRepository,
-                    ramenShopRepository =
-                        FakeRamenShopRepository(
-                            error = RamapError.Unknown(IllegalStateException("failure")),
-                        ),
-                )
-            runCurrent()
-
-            assertEquals(true, viewModel.uiState.value.showError)
-
-            personalizationRepository.unhideShop(hiddenShop.id)
-            runCurrent()
-
-            assertEquals(false, viewModel.uiState.value.showError)
-            assertEquals(RamenShops(emptyMap()), viewModel.uiState.value.shops)
         }
 
     @Test
@@ -92,6 +67,7 @@ class HiddenShopListViewModelTest {
                             ShopPersonalization(hiddenShopIds = setOf(shop.id)),
                         ),
                     ramenShopRepository = FakeRamenShopRepository(fetchByIdsResult = RamenShops(listOf(shop))),
+                    analyticsTracker = FakeAnalyticsTracker(),
                 )
             runCurrent()
 

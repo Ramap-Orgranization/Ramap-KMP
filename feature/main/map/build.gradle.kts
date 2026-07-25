@@ -27,6 +27,7 @@ kotlin {
     }
     sourceSets.commonMain {
         dependencies {
+            implementation(projects.core.analytics)
             implementation(projects.core.ui)
             implementation(libs.navigation.event.compose)
             implementation(libs.coil.compose)

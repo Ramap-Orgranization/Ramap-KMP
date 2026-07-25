@@ -7,10 +7,12 @@ import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.model.event.ShopEventType
+import com.peto.ramap.fake.FakeAnalyticsTracker
 import com.peto.ramap.fake.FakeRamenShopRepository
 import com.peto.ramap.ui.main.event.list.EventsViewModel
 import com.peto.ramap.ui.main.event.list.contract.EventsIntent
 import com.peto.ramap.ui.main.event.list.contract.EventsSideEffect
+import com.peto.ramap.ui.main.event.list.log.EventsAnalytics
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
@@ -28,7 +30,7 @@ class EventsViewModelTest {
         coroutinesTest {
             val event = event()
             val repository = FakeRamenShopRepository(activeEvents = listOf(event))
-            val viewModel = EventsViewModel(repository)
+            val viewModel = EventsViewModel(repository, EventsAnalytics(FakeAnalyticsTracker()))
 
             runCurrent()
 
@@ -42,7 +44,7 @@ class EventsViewModelTest {
         coroutinesTest {
             val event = event()
             val repository = FakeRamenShopRepository(activeEvents = listOf(event))
-            val viewModel = EventsViewModel(repository)
+            val viewModel = EventsViewModel(repository, EventsAnalytics(FakeAnalyticsTracker()))
             runCurrent()
             repository.activeEventsDelayMillis = 1_000
 
@@ -63,7 +65,7 @@ class EventsViewModelTest {
     fun `연속 새로고침은 이전 요청을 교체하고 마지막 요청이 끝날 때 로딩을 해제한다`() =
         coroutinesTest {
             val repository = FakeRamenShopRepository(activeEventsDelayMillis = 1_000)
-            val viewModel = EventsViewModel(repository)
+            val viewModel = EventsViewModel(repository, EventsAnalytics(FakeAnalyticsTracker()))
             runCurrent()
 
             viewModel.dispatch(EventsIntent.OnEventsRefreshed)
@@ -86,6 +88,7 @@ class EventsViewModelTest {
             val viewModel =
                 EventsViewModel(
                     FakeRamenShopRepository(error = RamapError.Unknown(IllegalStateException("failure"))),
+                    EventsAnalytics(FakeAnalyticsTracker()),
                 )
             runCurrent()
 
@@ -101,7 +104,7 @@ class EventsViewModelTest {
         coroutinesTest {
             val event = event()
             val repository = FakeRamenShopRepository(activeEvents = listOf(event))
-            val viewModel = EventsViewModel(repository)
+            val viewModel = EventsViewModel(repository, EventsAnalytics(FakeAnalyticsTracker()))
             runCurrent()
             repository.activeEventsError = RamapError.Unknown(IllegalStateException("failure"))
 

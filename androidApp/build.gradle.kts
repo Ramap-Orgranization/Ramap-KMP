@@ -44,6 +44,12 @@ if (file("google-services.json").exists()) {
                 .get()
                 .pluginId,
     )
+    apply(
+        plugin =
+            libs.plugins.firebase.crashlytics
+                .get()
+                .pluginId,
+    )
 }
 
 kotlin {
@@ -67,6 +73,9 @@ dependencies {
     implementation(libs.androidx.core)
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.messaging)
+    implementation(libs.firebase.analytics)
+    implementation(libs.firebase.crashlytics)
+    implementation(libs.kermit)
 
     implementation(libs.compose.ui.tooling.preview)
     debugImplementation(libs.compose.ui.tooling)

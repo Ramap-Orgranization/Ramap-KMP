@@ -5,6 +5,7 @@ import KakaoSDKAuth
 import KakaoSDKCommon
 import KakaoSDKUser
 import UserNotifications
+import FirebaseCore
 
 final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate {
     func application(
@@ -31,6 +32,11 @@ struct iOSApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
 
     init() {
+        if let path = Bundle.main.path(forResource: "GoogleService-Info", ofType: "plist") {
+            FirebaseApp.configure()
+        } else {
+            print("GoogleService-Info.plist not found. Firebase is not configured.")
+        }
         UnhandledExceptionLoggerKt.installUnhandledExceptionLogger()
         NMFAuthManager.shared().ncpKeyId = RamapSecrets.shared.naverMapNcpKeyId
         KakaoSDK.initSDK(appKey: RamapSecrets.shared.kakaoNativeAppKey)

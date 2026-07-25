@@ -5,6 +5,7 @@ plugins {
 
 kotlin {
     sourceSets.commonMain.dependencies {
+        api(projects.core.analytics)
         api(projects.core.common)
         api(projects.domain)
         implementation(projects.core.designsystem)

@@ -1,6 +1,8 @@
 package com.peto.ramap.ui.account
 
 import androidx.lifecycle.viewModelScope
+import com.peto.ramap.analytics.AnalyticsSource
+import com.peto.ramap.analytics.common.login.LoginAnalytics
 import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.auth.LoginSessionState
@@ -26,7 +28,10 @@ import ramap.shared.generated.resources.logout_failure_message
 
 class AccountViewModel(
     private val loginRepository: LoginRepository,
-) : BaseViewModel<AccountUiState, AccountIntent, AccountSideEffect>(AccountUiState()) {
+    private val loginAnalytics: LoginAnalytics,
+) : BaseViewModel<AccountUiState, AccountIntent, AccountSideEffect>(
+        AccountUiState(),
+    ) {
     init {
         observeSessionState()
     }
@@ -42,24 +47,47 @@ class AccountViewModel(
     private fun observeSessionState() {
         viewModelScope.launch {
             loginRepository.sessionState.collectLatest { sessionState ->
-                val isAuthenticated = sessionState == LoginSessionState.AUTHENTICATED
-                reduce {
-                    copy(
-                        isLoggedIn = isAuthenticated,
-                        accountLabel = if (isAuthenticated) loginRepository.currentUserEmail() else null,
-                    )
-                }
+                updateSessionState(sessionState)
             }
         }
     }
 
+    private fun updateSessionState(sessionState: LoginSessionState) {
+        val isAuthenticated = sessionState == LoginSessionState.AUTHENTICATED
+        val accountLabel = findAccountLabel(isAuthenticated)
+
+        reduce {
+            copy(
+                isLoggedIn = isAuthenticated,
+                accountLabel = accountLabel,
+            )
+        }
+    }
+
+    private fun findAccountLabel(isAuthenticated: Boolean): String? {
+        if (!isAuthenticated) return null
+
+        return loginRepository.currentUserEmail()
+    }
+
     private fun signInWithKakao() {
+        loginAnalytics.logLoginStarted(AnalyticsSource.ACCOUNT)
+
         launchResultTask(
             taskKey = SIGN_IN_TASK_KEY,
             loadKey = AccountLoadKey.Login,
             policy = TaskPolicy.IgnoreNew,
             request = loginRepository::signInWithKakao,
-            onError = { showToast(Res.string.kakao_login_failure_message, ToastType.ERROR) },
+            onSuccess = {
+                loginAnalytics.logLoginSucceeded(AnalyticsSource.ACCOUNT)
+            },
+            onError = {
+                loginAnalytics.logLoginFailed(AnalyticsSource.ACCOUNT)
+                showToast(
+                    messageResource = Res.string.kakao_login_failure_message,
+                    type = ToastType.ERROR,
+                )
+            },
         )
     }
 
@@ -69,7 +97,12 @@ class AccountViewModel(
             loadKey = AccountLoadKey.Logout,
             policy = TaskPolicy.IgnoreNew,
             request = loginRepository::signOut,
-            onError = { showToast(Res.string.logout_failure_message, ToastType.ERROR) },
+            onError = {
+                showToast(
+                    messageResource = Res.string.logout_failure_message,
+                    type = ToastType.ERROR,
+                )
+            },
         )
     }
 
@@ -79,9 +112,17 @@ class AccountViewModel(
             loadKey = AccountLoadKey.Delete,
             policy = TaskPolicy.IgnoreNew,
             request = loginRepository::deleteAccount,
-            onSuccess = { showToast(Res.string.account_delete_success_message, ToastType.SUCCESS) },
+            onSuccess = {
+                showToast(
+                    messageResource = Res.string.account_delete_success_message,
+                    type = ToastType.SUCCESS,
+                )
+            },
             onError = {
-                showToast(Res.string.account_delete_failure_message, ToastType.ERROR)
+                showToast(
+                    messageResource = Res.string.account_delete_failure_message,
+                    type = ToastType.ERROR,
+                )
             },
         )
     }
@@ -91,7 +132,14 @@ class AccountViewModel(
         type: ToastType,
     ) {
         viewModelScope.launch {
-            postSideEffect(ShowToast(ToastData(messageResource, type)))
+            postSideEffect(
+                ShowToast(
+                    ToastData(
+                        message = messageResource,
+                        type = type,
+                    ),
+                ),
+            )
         }
     }
 

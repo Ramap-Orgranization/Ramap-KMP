@@ -1,6 +1,8 @@
 package com.peto.ramap.ui.main.map
 
 import androidx.lifecycle.viewModelScope
+import com.peto.ramap.analytics.AnalyticsSource
+import com.peto.ramap.analytics.common.login.LoginAnalytics
 import com.peto.ramap.core.result.RamapError
 import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.designsystem.toast.model.ToastAction
@@ -41,10 +43,10 @@ import com.peto.ramap.ui.main.map.contract.MapIntent.OnInitialLocationFocusConsu
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnKakaoLoginClicked
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnLocationPermissionBlocked
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnMyLocationChanged
-import com.peto.ramap.ui.main.map.contract.MapIntent.OnPlaceSelected
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnQueryChanged
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnRequestedShopDismissed
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnSearchResultsDismissed
+import com.peto.ramap.ui.main.map.contract.MapIntent.OnSearchedShopSelected
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopDetailDismissed
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopDetailRetry
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopIdSelected
@@ -57,6 +59,7 @@ import com.peto.ramap.ui.main.map.contract.MapSideEffect
 import com.peto.ramap.ui.main.map.contract.MapSideEffect.ShowLoginGuide
 import com.peto.ramap.ui.main.map.contract.MapSideEffect.ShowToast
 import com.peto.ramap.ui.main.map.contract.MapUiState
+import com.peto.ramap.ui.main.map.log.MapAnalytics
 import com.peto.ramap.ui.main.map.model.CameraPosition
 import com.peto.ramap.ui.main.map.model.LocationFocusStatus
 import com.peto.ramap.ui.main.map.model.ShopDetailUiState
@@ -90,6 +93,8 @@ class MapViewModel(
     private val shopReportRepository: ShopReportRepository,
     private val personalizationStore: ShopPersonalizationStore,
     private val fetchShopDetailUseCase: FetchShopDetailUseCase,
+    private val mapAnalytics: MapAnalytics,
+    private val loginAnalytics: LoginAnalytics,
 ) : BaseViewModel<MapUiState, MapIntent, MapSideEffect>(initialState = MapUiState()) {
     private val searchController =
         MapSearchController(
@@ -120,40 +125,59 @@ class MapViewModel(
         }
     }
 
-    private fun handleViewportIntent(intent: MapIntent): Boolean =
+    private fun handleViewportIntent(intent: MapIntent): Boolean {
         when (intent) {
             is OnBoundsChanged -> scheduleRamenShopsLoad(intent.bounds)
-            OnViewportLoadRetry -> scheduleRamenShopsLoad(currentState.bounds)
-            is OnCameraPositionChanged -> updateCameraPosition(intent.position)
-            is OnMyLocationChanged -> updateMyLocation(intent.location)
-            OnInitialLocationFocusConsumed -> consumeInitialLocationFocus()
-            else -> return false
-        }.let { true }
 
-    private fun handleShopIntent(intent: MapIntent): Boolean =
+            OnViewportLoadRetry -> scheduleRamenShopsLoad(currentState.bounds)
+
+            is OnCameraPositionChanged -> updateCameraPosition(intent.position)
+
+            is OnMyLocationChanged -> updateMyLocation(intent.location)
+
+            OnInitialLocationFocusConsumed -> consumeInitialLocationFocus()
+
+            else -> return false
+        }
+        return true
+    }
+
+    private fun handleShopIntent(intent: MapIntent): Boolean {
         when (intent) {
-            is OnShopSelected -> selectShop(intent.shop, intent.shouldFocus)
+            is OnShopSelected -> {
+                mapAnalytics.logShopSelected(intent.shop, AnalyticsSource.MARKER)
+                selectShop(intent.shop, intent.shouldFocus)
+            }
+
             is OnShopIdSelected -> selectShop(intent.shopId)
             OnRequestedShopDismissed -> dismissRequestedShopLoad()
             is OnShopDetailDismissed -> dismissShopDetail()
             OnShopDetailRetry -> retryShopDetailLoad()
             else -> return false
-        }.let { true }
+        }
+        return true
+    }
 
-    private suspend fun handleSearchIntent(intent: MapIntent): Boolean =
+    private suspend fun handleSearchIntent(intent: MapIntent): Boolean {
         when (intent) {
             is OnSearchResultsDismissed -> dismissSearchResults()
             is OnQueryChanged -> updateQuery(intent.query)
-            is OnPlaceSelected -> selectPlace(intent.place)
+            is OnSearchedShopSelected -> {
+                mapAnalytics.logSearchResultSelected(intent.place)
+                selectPlace(intent.place)
+            }
+
             is OnCategoryFilterToggled -> toggleCategoryFilter(intent.category)
             else -> return false
-        }.let { true }
+        }
+        return true
+    }
 
-    private fun handlePersonalizationIntent(intent: MapIntent): Boolean =
+    private fun handlePersonalizationIntent(intent: MapIntent): Boolean {
         when (intent) {
             OnBookmarkedShopsToggled -> toggleBookmarkedView()
             is OnBookmarkToggled -> toggleBookmark(intent.shop)
-            is OnShopNotificationToggled -> toggleShopNotification(intent.shop)
+            is OnShopNotificationToggled -> toggleShopSubscribed(intent.shop)
             is OnHiddenToggled -> toggleHidden(intent.shop)
             is OnShopReportSubmitted ->
                 submitShopInformationReport(
@@ -162,12 +186,15 @@ class MapViewModel(
                 )
 
             else -> return false
-        }.let { true }
+        }
+        return true
+    }
 
     private fun handleAccountIntent(intent: MapIntent) {
         when (intent) {
             OnKakaoLoginClicked -> signInWithKakao()
             OnLocationPermissionBlocked -> showLocationPermissionBlockedToast()
+
             else -> error("Unhandled map intent: $intent")
         }
     }
@@ -210,7 +237,9 @@ class MapViewModel(
         state.copy(
             shopDetailState = createSelectedShopDetailState(shop, cache),
             shouldFocusSelectedShop = shouldFocus,
-            shopWaiting = cache?.let { state.shopWaiting + (shop.id to it.waitingSystem) } ?: state.shopWaiting,
+            shopWaiting =
+                cache?.let { state.shopWaiting + (shop.id to it.waitingSystem) }
+                    ?: state.shopWaiting,
             search = state.search.consumeResultFocus(shop.id in state.search.results),
         )
 
@@ -321,7 +350,7 @@ class MapViewModel(
         }
     }
 
-    private suspend fun updateQuery(query: String) {
+    private fun updateQuery(query: String) {
         val normalizedQuery = SearchQuery(query).normalizeShopSearchQuery()
         val canReuseSearchResults = canReuseSearchResults(normalizedQuery)
         updateSearchInput(query)
@@ -374,7 +403,7 @@ class MapViewModel(
             } else {
                 currentFilter + category
             }
-
+        mapAnalytics.logCategoryFilterToggled(category, category !in currentFilter)
         updateFilter(nextFilter)
     }
 
@@ -413,7 +442,11 @@ class MapViewModel(
     ): ShopDetailUiState {
         val becameHidden = selectedShopBecameHidden(state, hiddenShopIds)
         val becameVisible = selectedShopBecameVisible(state, hiddenShopIds)
-        return updatedDetailAfterPersonalization(state.shopDetailState, becameHidden, becameVisible)
+        return updatedDetailAfterPersonalization(
+            state.shopDetailState,
+            becameHidden,
+            becameVisible,
+        )
     }
 
     private fun selectedShopBecameHidden(
@@ -466,19 +499,28 @@ class MapViewModel(
     private fun toggleBookmark(shop: RamenShop) {
         if (!isLoggedInOrShowGuide()) return
 
-        val isBookmarked = shop.id in currentState.bookmarkedShopIds
-        postBookmark(shop.id, isBookmarked)
+        val wasBookmarked = shop.id in currentState.bookmarkedShopIds
+        val enabled = !wasBookmarked
+
+        mapAnalytics.logBookmarkToggled(shop, enabled)
+        postBookmark(shop.id, wasBookmarked)
     }
 
-    private fun toggleShopNotification(shop: RamenShop) {
+    private fun toggleShopSubscribed(shop: RamenShop) {
         if (!isLoggedInOrShowGuide()) return
+
         val isHiddenShop = shop.id in currentState.hiddenShopIds
+
         if (isHiddenShop) {
             showToast(Res.string.hidden_shop_notification_unavailable_message)
             return
         }
 
         val wasEnabled = shop.id in currentState.notificationShopIds
+        val enabled = !wasEnabled
+
+        mapAnalytics.logShopSubscribed(shop, enabled)
+
         postShopNotification(shop.id, wasEnabled)
     }
 
@@ -519,7 +561,10 @@ class MapViewModel(
     private fun toggleHidden(shop: RamenShop) {
         if (!isLoggedInOrShowGuide()) return
 
-        if (shop.id in currentState.hiddenShopIds) {
+        val wasHidden = shop.id in currentState.hiddenShopIds
+        mapAnalytics.logHiddenToggled(shop, !wasHidden)
+
+        if (wasHidden) {
             unhideShop(shop)
         } else {
             hideShop(shop)
@@ -556,14 +601,18 @@ class MapViewModel(
     private fun toggleBookmarkedView() {
         if (!isLoggedInOrShowGuide()) return
 
+        val enabled = !currentState.isBookmarkedView
+
         reduce {
-            val willShowBookmarkedShops = !isBookmarkedView
             copy(
-                isBookmarkedView = willShowBookmarkedShops,
+                isBookmarkedView = enabled,
                 shopDetailState =
-                    shopDetailState.takeIf { shouldKeepSelectedShop(this, willShowBookmarkedShops) }
-                        ?: ShopDetailUiState.Closed,
-                search = search.showResults(),
+                    shopDetailState.takeIf {
+                        shouldKeepSelectedShop(
+                            state = this,
+                            willShowBookmarkedShops = enabled,
+                        )
+                    } ?: ShopDetailUiState.Closed,
             )
         }
     }
@@ -624,11 +673,16 @@ class MapViewModel(
     }
 
     private fun signInWithKakao() {
+        loginAnalytics.logLoginStarted(AnalyticsSource.MAP)
         launchResultTask(
             taskKey = SIGN_IN_TASK_KEY,
             policy = TaskPolicy.IgnoreNew,
             request = loginRepository::signInWithKakao,
-            onError = { showKakaoLoginFailure() },
+            onSuccess = { loginAnalytics.logLoginSucceeded(AnalyticsSource.MAP) },
+            onError = {
+                loginAnalytics.logLoginFailed(AnalyticsSource.MAP)
+                showKakaoLoginFailure()
+            },
         )
     }
 
@@ -644,7 +698,6 @@ class MapViewModel(
                     shopDetailState.takeIf {
                         selectedShop?.menuCategories?.matches(filter) ?: true
                     } ?: ShopDetailUiState.Closed,
-                search = search.showResults(),
             )
         }
         showEmptyFilterResultMessageIfNeeded()
@@ -754,8 +807,11 @@ class MapViewModel(
             loadKey = MapLoadKey.ShopDetail,
             policy = TaskPolicy.CancelPrevious,
             onStart = {
-                if (hasContentFor(shopId)) this
-                else createShopDetailLoadingState(this, shopId, selectShopOnSuccess)
+                if (hasContentFor(shopId)) {
+                    this
+                } else {
+                    createShopDetailLoadingState(this, shopId, selectShopOnSuccess)
+                }
             },
         ) {
             handleShopDetailResult(shopId, selectShopOnSuccess, fetchShopDetailUseCase(shopId))
@@ -782,8 +838,19 @@ class MapViewModel(
         result: RamapResult<ShopDetail>,
     ) {
         when (result) {
-            is RamapResult.Success -> handleShopDetailLoadSuccess(shopId, selectShopOnSuccess, result.data)
-            is RamapResult.Error -> handleShopDetailLoadError(shopId, selectShopOnSuccess, result.error)
+            is RamapResult.Success ->
+                handleShopDetailLoadSuccess(
+                    shopId,
+                    selectShopOnSuccess,
+                    result.data,
+                )
+
+            is RamapResult.Error ->
+                handleShopDetailLoadError(
+                    shopId,
+                    selectShopOnSuccess,
+                    result.error,
+                )
         }
     }
 
@@ -828,7 +895,8 @@ class MapViewModel(
         detail: ShopDetail,
         selectedShop: RamenShop,
     ) {
-        val selectedDetail = detail.copy(shop = detail.shop.copy(isVisible = selectedShop.isVisible))
+        val selectedDetail =
+            detail.copy(shop = detail.shop.copy(isVisible = selectedShop.isVisible))
         reduce {
             copy(
                 shopWaiting = shopWaiting + (selectedShop.id to detail.waitingSystem),
@@ -853,7 +921,13 @@ class MapViewModel(
     ) {
         handleError(error)
         reduce {
-            copy(shopDetailState = ShopDetailUiState.Error(loadingState.shopId, loadingState.shop))
+            copy(
+                shopDetailState =
+                    ShopDetailUiState.Error(
+                        loadingState.shopId,
+                        loadingState.shop,
+                    ),
+            )
         }
     }
 
@@ -899,6 +973,7 @@ class MapViewModel(
     }
 
     private fun handleFailedViewport(result: ViewportLoadResult.Failed) {
+        mapAnalytics.logViewportLoadError()
         handleError(result.error)
         reduce { copy(hasViewportLoadFailed = true) }
     }

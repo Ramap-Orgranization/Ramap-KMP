@@ -8,12 +8,14 @@ import com.peto.ramap.ui.main.event.list.contract.EventsIntent
 import com.peto.ramap.ui.main.event.list.contract.EventsLoadKey
 import com.peto.ramap.ui.main.event.list.contract.EventsSideEffect
 import com.peto.ramap.ui.main.event.list.contract.EventsUiState
+import com.peto.ramap.ui.main.event.list.log.EventsAnalytics
 import com.peto.ramap.ui.task.TaskPolicy
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.event_list_refresh_failure_message
 
 class EventsViewModel(
     private val ramenShopRepository: RamenShopRepository,
+    private val eventsAnalytics: EventsAnalytics,
 ) : BaseViewModel<EventsUiState, EventsIntent, EventsSideEffect>(EventsUiState()) {
     init {
         loadEvents()
@@ -23,6 +25,7 @@ class EventsViewModel(
         when (intent) {
             EventsIntent.OnEventsRefreshed -> refreshEvents()
             EventsIntent.OnEventsRetried -> loadEvents()
+            is EventsIntent.OnEventClicked -> eventsAnalytics.logEventSelected(intent.event)
         }
     }
 

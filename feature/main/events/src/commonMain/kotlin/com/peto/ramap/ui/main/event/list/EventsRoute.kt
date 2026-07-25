@@ -63,7 +63,10 @@ fun EventsRoute(
     }
     EventsScreen(
         uiState = uiState,
-        onEventClick = onEventClick,
+        onEventClick = { event ->
+            viewModel.dispatch(EventsIntent.OnEventClicked(event))
+            onEventClick(event)
+        },
         onRefresh = { viewModel.dispatch(EventsIntent.OnEventsRefreshed) },
         onRetryClick = { viewModel.dispatch(EventsIntent.OnEventsRetried) },
     )

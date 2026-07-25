@@ -3,6 +3,7 @@ package com.peto.ramap.ui.bookmark
 import androidx.lifecycle.viewModelScope
 import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
+import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.domain.repository.RamenShopRepository
 import com.peto.ramap.domain.store.ShopPersonalizationStore
 import com.peto.ramap.ui.base.BaseViewModel
@@ -24,37 +25,54 @@ class BookmarkedShopListViewModel(
     private val personalizationStore: ShopPersonalizationStore,
     private val ramenShopRepository: RamenShopRepository,
 ) : BaseViewModel<BookmarkedShopListUiState, BookmarkedShopListIntent, BookmarkedShopListSideEffect>(
-        BookmarkedShopListUiState(),
+        initialState = BookmarkedShopListUiState(),
     ) {
     init {
-        viewModelScope.launch {
-            personalizationStore.state
-                .map { it.bookmarkedShopIds }
-                .distinctUntilChanged()
-                .collectLatest(::syncBookmarkedShops)
-        }
+        observeBookmarkedShopIds()
     }
 
     override suspend fun handleIntent(intent: BookmarkedShopListIntent) {
         when (intent) {
-            is BookmarkedShopListIntent.OnRemovalConfirmed -> removeBookmark(intent.shopId)
+            is BookmarkedShopListIntent.OnRemovalConfirmed -> {
+                handleRemovalConfirmed(intent)
+            }
+        }
+    }
+
+    private fun handleRemovalConfirmed(intent: BookmarkedShopListIntent.OnRemovalConfirmed) {
+        removeBookmark(intent.shopId)
+    }
+
+    private fun observeBookmarkedShopIds() {
+        viewModelScope.launch {
+            personalizationStore.state
+                .map { personalization ->
+                    personalization.bookmarkedShopIds
+                }.distinctUntilChanged()
+                .collectLatest { shopIds ->
+                    syncBookmarkedShops(shopIds)
+                }
         }
     }
 
     private fun syncBookmarkedShops(shopIds: Set<String>) {
         if (shopIds.isEmpty()) {
-            cancelTask(FETCH_BOOKMARKS_TASK_KEY)
-            reduce { copy(shops = shops.filterByShopIds(shopIds), showError = false) }
+            applyExistingBookmarkedShops(shopIds)
             return
         }
 
         if (currentState.shops.containsAll(shopIds)) {
-            cancelTask(FETCH_BOOKMARKS_TASK_KEY)
-            reduce { copy(shops = shops.filterByShopIds(shopIds), showError = false) }
+            applyExistingBookmarkedShops(shopIds)
             return
         }
 
         fetchBookmarkedShops(shopIds)
+    }
+
+    private fun applyExistingBookmarkedShops(shopIds: Set<String>) {
+        cancelTask(FETCH_BOOKMARKS_TASK_KEY)
+
+        reduce { copy(shops = shops.filterByShopIds(shopIds), showError = false) }
     }
 
     private fun fetchBookmarkedShops(shopIds: Set<String>) {
@@ -63,11 +81,24 @@ class BookmarkedShopListViewModel(
             loadKey = BookmarkedShopLoadKey.FETCH,
             onStart = { copy(showError = false) },
             request = { ramenShopRepository.fetchRamenShops(shopIds) },
-            onSuccess = { shops ->
-                reduce { copy(shops = shops.filterByShopIds(shopIds), showError = false) }
-            },
+            onSuccess = { shops -> handleFetchSuccess(shops, shopIds) },
             onError = { reduce { copy(showError = true) } },
         )
+    }
+
+    private fun handleFetchSuccess(
+        shops: RamenShops,
+        requestedShopIds: Set<String>,
+    ) {
+        reduce {
+            copy(
+                shops =
+                    shops.filterByShopIds(
+                        requestedShopIds,
+                    ),
+                showError = false,
+            )
+        }
     }
 
     private fun removeBookmark(shopId: String) {
@@ -76,23 +107,35 @@ class BookmarkedShopListViewModel(
             loadKey = BookmarkedShopLoadKey.REMOVE,
             policy = TaskPolicy.IgnoreNew,
             request = { personalizationStore.updateBookmark(shopId, false) },
-            onSuccess = {
-                reduce { copy(shops = shops.remove(shopId)) }
-                showToast(Res.string.bookmark_removal_success_message, ToastType.SUCCESS)
+            onSuccess = { handleBookmarkRemovalSuccess(shopId) },
+            onError = {
+                showToast(
+                    Res.string.personalization_update_failure_message,
+                    type = ToastType.ERROR,
+                )
             },
-            onError = { showToast(Res.string.personalization_update_failure_message) },
         )
     }
 
-    private suspend fun showToast(
+    private fun handleBookmarkRemovalSuccess(shopId: String) {
+        reduce { copy(shops = shops.remove(shopId)) }
+        showToast(Res.string.bookmark_removal_success_message, ToastType.SUCCESS)
+    }
+
+    private fun showToast(
         message: StringResource,
-        type: ToastType = ToastType.ERROR,
+        type: ToastType,
     ) {
-        postSideEffect(BookmarkedShopListSideEffect.ShowToast(ToastData(message, type)))
+        viewModelScope.launch {
+            postSideEffect(
+                BookmarkedShopListSideEffect.ShowToast(ToastData(message, type)),
+            )
+        }
     }
 
     companion object {
         private const val FETCH_BOOKMARKS_TASK_KEY = "fetch-bookmarks"
+
         private const val REMOVE_BOOKMARK_TASK_KEY = "remove-bookmark"
     }
 }

@@ -1,9 +1,10 @@
 package com.peto.ramap.ui.bookmark.di
 
 import com.peto.ramap.ui.bookmark.BookmarkedShopListViewModel
+import org.koin.core.module.dsl.viewModelOf
 import org.koin.dsl.module
 
 val bookmarkModule =
     module {
-        factory { BookmarkedShopListViewModel(get(), get()) }
+        viewModelOf(::BookmarkedShopListViewModel)
     }

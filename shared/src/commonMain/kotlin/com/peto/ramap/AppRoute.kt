@@ -2,9 +2,14 @@ package com.peto.ramap
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.snapshotFlow
 import com.peto.ramap.designsystem.toast.ToastManager
 import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
+import com.peto.ramap.domain.repository.LoginRepository
+import com.peto.ramap.domain.store.ShopPersonalizationStore
+import com.peto.ramap.log.AppAnalytics
+import com.peto.ramap.log.analyticsScreenName
 import com.peto.ramap.navigation.BackPressController
 import com.peto.ramap.navigation.NavigationRouter
 import com.peto.ramap.navigation.NavigationState
@@ -25,6 +30,7 @@ import com.peto.ramap.ui.main.ranking.RankingRoute
 import com.peto.ramap.ui.notification.NotificationSettingsRoute
 import com.peto.ramap.ui.report.PlaceReportRoute
 import com.peto.ramap.ui.subscribed.SubscribedShopListRoute
+import kotlinx.coroutines.flow.distinctUntilChanged
 import org.koin.compose.koinInject
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.event_not_found_message
@@ -35,13 +41,25 @@ internal fun AppRoute(
     onExitRequested: (() -> Unit)?,
     notificationDeepLinkParser: NotificationDeepLinkParser = koinInject(),
     notificationLaunchDispatcher: NotificationLaunchDispatcher = koinInject(),
+    appAnalytics: AppAnalytics = koinInject(),
+    loginRepository: LoginRepository = koinInject(),
+    personalizationStore: ShopPersonalizationStore = koinInject(),
 ) {
     val navigationState = rememberNavigationState()
 
-    NotificationDeepLink(
+    TrackScreenViews(navigationState, appAnalytics)
+
+    TrackUserProperties(
+        appAnalytics = appAnalytics,
+        loginRepository = loginRepository,
+        personalizationStore = personalizationStore,
+    )
+
+    HandleNotificationDeepLink(
         navigationState = navigationState,
         notificationDeepLinkParser = notificationDeepLinkParser,
         notificationLaunchDispatcher = notificationLaunchDispatcher,
+        appAnalytics = appAnalytics,
     )
 
     BackPressController(
@@ -54,13 +72,20 @@ internal fun AppRoute(
         navigationState = navigationState,
         mapScreen = { route ->
             MapRoute(
-                onEventNavigate = { navigationState.showEvent(it.id) },
+                onEventNavigate = { event ->
+                    navigationState.showEvent(event.id)
+                },
                 requestedShopId = route.shopId,
             )
         },
         rankingScreen = {
             RankingRoute(
-                onShopClick = navigationState::showShopOnMap,
+                onShopClick = { shopId ->
+                    navigationState.showShopOnMap(
+                        shopId = shopId,
+                        source = "ranking",
+                    )
+                },
                 onFindShopClick = navigationState::showMap,
             )
         },
@@ -70,22 +95,35 @@ internal fun AppRoute(
                 onInformationNavigate = navigationState::showInformation,
                 onReportNavigate = navigationState::showPlaceReport,
                 onHiddenShopsNavigate = navigationState::showHiddenShops,
-                onNotificationSettingsNavigate = navigationState::showNotificationSettings,
-                onSubscribedShopsNavigate = navigationState::showSubscribedShops,
-                onBookmarkedShopsNavigate = navigationState::showBookmarkedShops,
+                onNotificationSettingsNavigate =
+                    navigationState::showNotificationSettings,
+                onSubscribedShopsNavigate =
+                    navigationState::showSubscribedShops,
+                onBookmarkedShopsNavigate =
+                    navigationState::showBookmarkedShops,
             )
         },
         accountSettingsScreen = {
-            AccountSettingsRoute(onBack = navigationState::pop)
+            AccountSettingsRoute(
+                onBack = navigationState::pop,
+            )
         },
         informationScreen = {
-            InformationRoute(onBack = navigationState::pop)
+            InformationRoute(
+                onBack = navigationState::pop,
+            )
         },
         placeReportScreen = {
-            PlaceReportRoute(onBack = navigationState::pop)
+            PlaceReportRoute(
+                onBack = navigationState::pop,
+            )
         },
         eventListScreen = {
-            EventsRoute(onEventClick = { navigationState.showEvent(it.id) })
+            EventsRoute(
+                onEventClick = { event ->
+                    navigationState.showEvent(event.id)
+                },
+            )
         },
         hiddenScreen = {
             HiddenShopListRoute(
@@ -93,10 +131,14 @@ internal fun AppRoute(
             )
         },
         notificationSettingsScreen = {
-            NotificationSettingsRoute(onBack = navigationState::pop)
+            NotificationSettingsRoute(
+                onBack = navigationState::pop,
+            )
         },
         subscribedShopsScreen = {
-            SubscribedShopListRoute(onBack = navigationState::pop)
+            SubscribedShopListRoute(
+                onBack = navigationState::pop,
+            )
         },
         bookmarkedShopsScreen = {
             BookmarkedShopListRoute(
@@ -108,35 +150,95 @@ internal fun AppRoute(
                 eventId = route.eventId,
                 onBack = navigationState::pop,
                 onUnavailable = {
-                    navigationState.selectTopLevelTab(TabStatus.EVENT)
+                    navigationState.selectTopLevelTab(
+                        TabStatus.EVENT,
+                    )
+
                     toastManager.tryShow(
                         ToastData(
-                            Res.string.event_not_found_message,
-                            ToastType.DEFAULT,
+                            message = Res.string.event_not_found_message,
+                            type = ToastType.DEFAULT,
                         ),
                     )
                 },
-                onShopClick = navigationState::showShopOnMap,
+                onShopClick = { shopId ->
+                    navigationState.showShopOnMap(
+                        shopId = shopId,
+                        source = "event_detail",
+                    )
+                },
             )
         },
     )
 }
 
 @Composable
-private fun NotificationDeepLink(
+private fun TrackScreenViews(
+    navigationState: NavigationState,
+    appAnalytics: AppAnalytics,
+) {
+    LaunchedEffect(navigationState) {
+        snapshotFlow {
+            navigationState.currentRoute
+        }.distinctUntilChanged()
+            .collect { route ->
+                appAnalytics.logScreenView(
+                    route.analyticsScreenName,
+                )
+            }
+    }
+}
+
+@Composable
+private fun TrackUserProperties(
+    appAnalytics: AppAnalytics,
+    loginRepository: LoginRepository,
+    personalizationStore: ShopPersonalizationStore,
+) {
+    LaunchedEffect(loginRepository) {
+        loginRepository.sessionState.collect { state ->
+            appAnalytics.updateLoginStatus(state)
+        }
+    }
+
+    LaunchedEffect(personalizationStore) {
+        personalizationStore.state.collect { personalization ->
+            appAnalytics.updatePersonalizationProperties(
+                personalization,
+            )
+        }
+    }
+}
+
+@Composable
+private fun HandleNotificationDeepLink(
     navigationState: NavigationState,
     notificationDeepLinkParser: NotificationDeepLinkParser,
     notificationLaunchDispatcher: NotificationLaunchDispatcher,
+    appAnalytics: AppAnalytics,
 ) {
-    LaunchedEffect(navigationState) {
+    LaunchedEffect(
+        navigationState,
+        notificationDeepLinkParser,
+        notificationLaunchDispatcher,
+    ) {
         notificationLaunchDispatcher.pendingDeepLink.collect { value ->
-            val deepLink = notificationDeepLinkParser.parse(value)
-            val eventDeepLink = deepLink as? NotificationDeepLink.Event
+            if (value == null) return@collect
 
-            eventDeepLink?.let {
-                navigationState.showEvent(it.eventId)
-                notificationLaunchDispatcher.consume(requireNotNull(value))
+            val deepLink = notificationDeepLinkParser.parse(value)
+            if (deepLink is NotificationDeepLink.Event) {
+                appAnalytics.logNotificationOpened(
+                    eventId = deepLink.eventId,
+                )
+
+                navigationState.showEvent(
+                    deepLink.eventId,
+                )
+            } else {
+                // TODO: 다른 타입의 딥링크 처리 또는 미지원 로깅
             }
+
+            notificationLaunchDispatcher.consume(value)
         }
     }
 }
