@@ -3,6 +3,8 @@ package com.peto.ramap
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.snapshotFlow
+import com.peto.ramap.deeplink.DeepLinkEntryPoint
+import com.peto.ramap.deeplink.DeepLinkEvent
 import com.peto.ramap.designsystem.toast.ToastManager
 import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
@@ -14,6 +16,9 @@ import com.peto.ramap.navigation.BackPressController
 import com.peto.ramap.navigation.NavigationRouter
 import com.peto.ramap.navigation.NavigationState
 import com.peto.ramap.navigation.TabStatus
+import com.peto.ramap.navigation.deeplink.ShopDeepLink
+import com.peto.ramap.navigation.deeplink.ShopDeepLinkDispatcher
+import com.peto.ramap.navigation.deeplink.ShopDeepLinkParser
 import com.peto.ramap.navigation.rememberNavigationState
 import com.peto.ramap.notification.NotificationDeepLink
 import com.peto.ramap.notification.NotificationDeepLinkParser
@@ -31,6 +36,7 @@ import com.peto.ramap.ui.notification.NotificationSettingsRoute
 import com.peto.ramap.ui.report.PlaceReportRoute
 import com.peto.ramap.ui.subscribed.SubscribedShopListRoute
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filterNotNull
 import org.koin.compose.koinInject
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.event_not_found_message
@@ -41,11 +47,16 @@ internal fun AppRoute(
     onExitRequested: (() -> Unit)?,
     notificationDeepLinkParser: NotificationDeepLinkParser = koinInject(),
     notificationLaunchDispatcher: NotificationLaunchDispatcher = koinInject(),
+    shopDeepLinkParser: ShopDeepLinkParser = koinInject(),
+    shopDeepLinkDispatcher: ShopDeepLinkDispatcher = koinInject(),
+    deepLinkEntryPoint: DeepLinkEntryPoint = koinInject(),
     appAnalytics: AppAnalytics = koinInject(),
     loginRepository: LoginRepository = koinInject(),
     personalizationStore: ShopPersonalizationStore = koinInject(),
 ) {
     val navigationState = rememberNavigationState()
+
+    HandleDeepLinkEvents(deepLinkEntryPoint, notificationLaunchDispatcher, shopDeepLinkDispatcher)
 
     TrackScreenViews(navigationState, appAnalytics)
 
@@ -59,6 +70,13 @@ internal fun AppRoute(
         navigationState = navigationState,
         notificationDeepLinkParser = notificationDeepLinkParser,
         notificationLaunchDispatcher = notificationLaunchDispatcher,
+        appAnalytics = appAnalytics,
+    )
+
+    HandleShopDeepLink(
+        navigationState = navigationState,
+        parser = shopDeepLinkParser,
+        dispatcher = shopDeepLinkDispatcher,
         appAnalytics = appAnalytics,
     )
 
@@ -170,6 +188,46 @@ internal fun AppRoute(
             )
         },
     )
+}
+
+@Composable
+private fun HandleDeepLinkEvents(
+    entryPoint: DeepLinkEntryPoint,
+    notificationDispatcher: NotificationLaunchDispatcher,
+    shopDispatcher: ShopDeepLinkDispatcher,
+) {
+    LaunchedEffect(entryPoint) {
+        entryPoint.events.filterNotNull().collect { event ->
+            when (event) {
+                is DeepLinkEvent.Url -> shopDispatcher.dispatch(event.value)
+                is DeepLinkEvent.Notification -> notificationDispatcher.dispatch(event.value)
+            }
+            entryPoint.consume(event)
+        }
+    }
+}
+
+@Composable
+private fun HandleShopDeepLink(
+    navigationState: NavigationState,
+    parser: ShopDeepLinkParser,
+    dispatcher: ShopDeepLinkDispatcher,
+    appAnalytics: AppAnalytics,
+) {
+    LaunchedEffect(navigationState, parser, dispatcher) {
+        dispatcher.pendingDeepLink.collect { value ->
+            if (value == null) return@collect
+            val deepLink = parser.parse(value)
+            if (deepLink is ShopDeepLink.Shop) {
+                appAnalytics.logSharedShopLinkOpened(deepLink.shopId)
+                navigationState.showShopOnMap(
+                    shopId = deepLink.shopId,
+                    source = "shared_link",
+                )
+            }
+            dispatcher.consume(value)
+        }
+    }
 }
 
 @Composable
