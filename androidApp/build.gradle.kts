@@ -62,6 +62,7 @@ dependencies {
     implementation(projects.core.designsystem)
     implementation(projects.core.network)
     implementation(projects.core.notification)
+    implementation(projects.core.navigation)
     implementation(projects.core.platform)
     implementation(projects.data)
     implementation(libs.naver.map)

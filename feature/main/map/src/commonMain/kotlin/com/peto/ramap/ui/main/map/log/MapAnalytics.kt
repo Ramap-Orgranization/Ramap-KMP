@@ -10,12 +10,22 @@ import com.peto.ramap.domain.model.shop.Category
 import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.ui.main.map.log.event.HiddenShopToggled
 import com.peto.ramap.ui.main.map.log.event.SearchResultSelected
+import com.peto.ramap.ui.main.map.log.event.ShopShared
 import com.peto.ramap.ui.main.map.log.event.SubscribedToggled
 import com.peto.ramap.ui.main.map.log.event.ViewportLoadFailed
 
 class MapAnalytics(
     private val analyticsTracker: AnalyticsTracker,
 ) {
+    fun logShopShared(shop: RamenShop) {
+        analyticsTracker.logEvent(
+            ShopShared(
+                shopId = shop.id,
+                shopName = shop.name,
+            ),
+        )
+    }
+
     fun logViewportLoadError() {
         analyticsTracker.logEvent(ViewportLoadFailed)
     }

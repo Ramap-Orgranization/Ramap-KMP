@@ -67,6 +67,32 @@ struct iOSApp: App {
                 UserApi.shared.loginWithKakaoAccount(completion: completion)
             }
         }
+        NotificationCenter.default.addObserver(
+            forName: Notification.Name("ShopShareRequest"),
+            object: nil,
+            queue: .main
+        ) { notification in
+            guard let text = notification.object as? String, !text.isEmpty else {
+                return
+            }
+            guard let presenter = UIApplication.shared.topViewController else {
+                return
+            }
+            let controller = UIActivityViewController(
+                activityItems: [text],
+                applicationActivities: nil
+            )
+            if let popover = controller.popoverPresentationController {
+                popover.sourceView = presenter.view
+                popover.sourceRect = CGRect(
+                    x: presenter.view.bounds.midX,
+                    y: presenter.view.bounds.midY,
+                    width: 1,
+                    height: 1
+                )
+            }
+            presenter.present(controller, animated: true)
+        }
     }
 
     var body: some Scene {
@@ -77,8 +103,30 @@ struct iOSApp: App {
                         _ = AuthController.handleOpenUrl(url: url)
                         return
                     }
+                    if ShopDeepLinkBridgeKt.dispatchShopDeepLink(rawUrl: url.absoluteString) {
+                        return
+                    }
                     AuthDeepLinkHandlerKt.handleAuthDeepLink(url: url)
                 }
+                .onContinueUserActivity(NSUserActivityTypeBrowsingWeb) { activity in
+                    guard let url = activity.webpageURL else {
+                        return
+                    }
+                    _ = ShopDeepLinkBridgeKt.dispatchShopDeepLink(rawUrl: url.absoluteString)
+                }
         }
+    }
+}
+
+private extension UIApplication {
+    var topViewController: UIViewController? {
+        let activeScene = connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .first { $0.activationState == .foregroundActive }
+        var controller = activeScene?.windows.first { $0.isKeyWindow }?.rootViewController
+        while let presented = controller?.presentedViewController {
+            controller = presented
+        }
+        return controller
     }
 }

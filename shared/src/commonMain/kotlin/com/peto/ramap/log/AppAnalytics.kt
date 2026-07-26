@@ -20,6 +20,10 @@ class AppAnalytics(
         )
     }
 
+    fun logSharedShopLinkOpened(shopId: String) {
+        analyticsTracker.logEvent(SharedShopLinkOpened(shopId))
+    }
+
     fun updateLoginStatus(state: LoginSessionState) {
         analyticsTracker.setUserProperty(
             AnalyticsUserProperties.LOGIN_STATUS,

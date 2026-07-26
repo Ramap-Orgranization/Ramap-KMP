@@ -53,9 +53,11 @@ import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopIdSelected
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopNotificationToggled
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopReportSubmitted
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopSelected
+import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopShareClicked
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnViewportLoadRetry
 import com.peto.ramap.ui.main.map.contract.MapLoadKey
 import com.peto.ramap.ui.main.map.contract.MapSideEffect
+import com.peto.ramap.ui.main.map.contract.MapSideEffect.ShareShop
 import com.peto.ramap.ui.main.map.contract.MapSideEffect.ShowLoginGuide
 import com.peto.ramap.ui.main.map.contract.MapSideEffect.ShowToast
 import com.peto.ramap.ui.main.map.contract.MapUiState
@@ -150,12 +152,23 @@ class MapViewModel(
             }
 
             is OnShopIdSelected -> selectShop(intent.shopId)
+            is OnShopShareClicked -> shareShop(intent.shop)
             OnRequestedShopDismissed -> dismissRequestedShopLoad()
             is OnShopDetailDismissed -> dismissShopDetail()
             OnShopDetailRetry -> retryShopDetailLoad()
             else -> return false
         }
         return true
+    }
+
+    private fun shareShop(shop: RamenShop) {
+        mapAnalytics.logShopShared(shop)
+        trySideEffect(
+            ShareShop(
+                shopId = shop.id,
+                shopName = shop.name,
+            ),
+        )
     }
 
     private suspend fun handleSearchIntent(intent: MapIntent): Boolean {

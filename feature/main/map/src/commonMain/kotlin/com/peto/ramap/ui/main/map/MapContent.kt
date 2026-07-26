@@ -56,11 +56,11 @@ import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.ui.main.map.component.MapCircleIconButton
 import com.peto.ramap.ui.main.map.component.MenuCategoryFilterRow
-import com.peto.ramap.ui.main.map.component.SearchResultList
 import com.peto.ramap.ui.main.map.component.RamenShopOverview
+import com.peto.ramap.ui.main.map.component.ReportDialog
 import com.peto.ramap.ui.main.map.component.SearchBar
 import com.peto.ramap.ui.main.map.component.SearchResultGuide
-import com.peto.ramap.ui.main.map.component.ReportDialog
+import com.peto.ramap.ui.main.map.component.SearchResultList
 import com.peto.ramap.ui.main.map.contract.MapUiState
 import com.peto.ramap.ui.main.map.model.CameraPosition
 import com.peto.ramap.ui.main.map.model.RamenShopUiModel
@@ -104,6 +104,7 @@ internal fun MapContent(
     onBookmarkToggled: (RamenShop) -> Unit,
     onShopNotificationToggled: (RamenShop) -> Unit,
     onHiddenToggled: (RamenShop) -> Unit,
+    onShopShareClick: (RamenShop) -> Unit,
     onEventClick: (ShopEvent) -> Unit,
     onReportSubmit: (Set<ShopInformationField>, String) -> Unit,
     onBookmarkedShopsToggle: () -> Unit,
@@ -281,6 +282,7 @@ internal fun MapContent(
                                     onHiddenToggled(shop)
                                 }
                             },
+                            onShareClick = { onShopShareClick(shop) },
                             event = detail.event,
                             onEventClick = onEventClick,
                             onReportClick = { showReportDialog = true },
