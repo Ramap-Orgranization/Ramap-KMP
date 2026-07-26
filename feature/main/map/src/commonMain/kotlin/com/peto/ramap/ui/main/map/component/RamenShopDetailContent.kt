@@ -44,10 +44,10 @@ import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.InstagramColor
 import com.peto.ramap.theme.RamapTheme
 import com.peto.ramap.theme.SystemColor
+import com.peto.ramap.ui.preview.RamenShopPreviewParameterProvider
 import com.peto.ramap.ui.resource.category.label
 import com.peto.ramap.ui.resource.event.ShopEventResourceMapper
 import com.peto.ramap.ui.resource.format
-import com.peto.ramap.ui.preview.RamenShopPreviewParameterProvider
 import com.peto.ramap.ui.resource.wating.WaitingSystemUiModel
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
@@ -63,10 +63,12 @@ import ramap.shared.generated.resources.ic_more_vert
 import ramap.shared.generated.resources.ic_notification
 import ramap.shared.generated.resources.ic_notification_filled
 import ramap.shared.generated.resources.ic_report
+import ramap.shared.generated.resources.ic_share
 import ramap.shared.generated.resources.ic_visibility_off
 import ramap.shared.generated.resources.instagram_icon
 import ramap.shared.generated.resources.kakao_map_icon
 import ramap.shared.generated.resources.naver_map_icon
+import ramap.shared.generated.resources.share_shop_action
 import ramap.shared.generated.resources.shop_detail_label_address
 import ramap.shared.generated.resources.shop_detail_label_business_hours
 import ramap.shared.generated.resources.shop_detail_label_phone
@@ -91,6 +93,7 @@ internal fun RamenShopOverview(
     onNotificationClick: () -> Unit = {},
     onHiddenClick: () -> Unit = {},
     onReportClick: () -> Unit = {},
+    onShareClick: () -> Unit = {},
     event: ShopEvent? = null,
     onEventClick: (ShopEvent) -> Unit = {},
 ) {
@@ -150,6 +153,7 @@ internal fun RamenShopOverview(
                     onBookmarkClick = onBookmarkClick,
                     onNotificationClick = onNotificationClick,
                     onHiddenClick = onHiddenClick,
+                    onShareClick = onShareClick,
                 )
             }
 
@@ -253,6 +257,7 @@ private fun ShopOverflowMenu(
     onBookmarkClick: () -> Unit,
     onNotificationClick: () -> Unit,
     onHiddenClick: () -> Unit,
+    onShareClick: () -> Unit,
 ) {
     var isExpanded by remember(shopId) { mutableStateOf(false) }
     val moreActionsDescription = stringResource(Res.string.shop_detail_more_actions)
@@ -276,6 +281,15 @@ private fun ShopOverflowMenu(
             shape = RoundedCornerShape(16.dp),
             containerColor = CommonColor.White,
         ) {
+            ShopOverflowMenuItem(
+                text = stringResource(Res.string.share_shop_action),
+                icon = Res.drawable.ic_share,
+                isActive = null,
+                onClick = {
+                    isExpanded = false
+                    onShareClick()
+                },
+            )
             if (!isHidden) {
                 ShopOverflowMenuItem(
                     text = stringResource(Res.string.bookmarked_shops_toggle),
@@ -309,7 +323,7 @@ private fun ShopOverflowMenu(
 private fun ShopOverflowMenuItem(
     text: String,
     icon: DrawableResource,
-    isActive: Boolean,
+    isActive: Boolean?,
     onClick: () -> Unit,
 ) {
     DropdownMenuItem(
@@ -328,7 +342,7 @@ private fun ShopOverflowMenuItem(
                 colorFilter =
                     ColorFilter.tint(
                         when {
-                            isActive -> InstagramColor.Pink
+                            isActive == true -> InstagramColor.Pink
                             else -> GrayColor.C300
                         },
                     ),
@@ -433,30 +447,32 @@ fun RamenShopOverviewPreview(
     RamapTheme {
         RamenShopOverview(
             shop = shop,
-            waitingSystem = WaitingSystemUiModel(
-                label = Res.string.shop_detail_waiting_catchtable,
-                icon = Res.drawable.catchtable,
-                providerUrl = "https://app.catchtable.co.kr",
-            ),
-            event = ShopEvent(
-                id = "1",
-                type = ShopEventType.LIMITED_MENU,
-                title = "한정 메뉴 이벤트",
-                description = "오늘만 판매하는 특별한 라멘!",
-                startDate = "2024-01-01",
-                endDate = "2024-01-02",
-                sourceUrl = "https://instagram.com/p/xxx",
-                isToday = true,
-                isVenue = true,
-                venueShopId = shop.id,
-                venueShopName = shop.name,
-                venueAddress = shop.address,
-                collaboratorShopId = null,
-                collaboratorName = null,
-                collaboratorInstagramUrl = null,
-                waitingMethod = null,
-                waitingUrl = null,
-            ),
+            waitingSystem =
+                WaitingSystemUiModel(
+                    label = Res.string.shop_detail_waiting_catchtable,
+                    icon = Res.drawable.catchtable,
+                    providerUrl = "https://app.catchtable.co.kr",
+                ),
+            event =
+                ShopEvent(
+                    id = "1",
+                    type = ShopEventType.LIMITED_MENU,
+                    title = "한정 메뉴 이벤트",
+                    description = "오늘만 판매하는 특별한 라멘!",
+                    startDate = "2024-01-01",
+                    endDate = "2024-01-02",
+                    sourceUrl = "https://instagram.com/p/xxx",
+                    isToday = true,
+                    isVenue = true,
+                    venueShopId = shop.id,
+                    venueShopName = shop.name,
+                    venueAddress = shop.address,
+                    collaboratorShopId = null,
+                    collaboratorName = null,
+                    collaboratorInstagramUrl = null,
+                    waitingMethod = null,
+                    waitingUrl = null,
+                ),
         )
     }
 }

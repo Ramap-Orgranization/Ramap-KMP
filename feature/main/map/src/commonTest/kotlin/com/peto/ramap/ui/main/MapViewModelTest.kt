@@ -55,8 +55,10 @@ import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopIdSelected
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopNotificationToggled
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopReportSubmitted
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopSelected
+import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopShareClicked
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnViewportLoadRetry
 import com.peto.ramap.ui.main.map.contract.MapLoadKey
+import com.peto.ramap.ui.main.map.contract.MapSideEffect.ShareShop
 import com.peto.ramap.ui.main.map.contract.MapSideEffect.ShowLoginGuide
 import com.peto.ramap.ui.main.map.contract.MapSideEffect.ShowToast
 import com.peto.ramap.ui.main.map.contract.MapUiState
@@ -87,6 +89,25 @@ import kotlin.test.assertEquals
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class MapViewModelTest {
+    @Test
+    fun `매장 공유를 누르면 공유 정보 side effect를 보낸다`() =
+        coroutinesTest {
+            val shop = ramenShopFixture()
+            val viewModel = mapViewModel()
+
+            viewModel.sideEffect.test {
+                viewModel.dispatch(OnShopShareClicked(shop))
+
+                assertEquals(
+                    ShareShop(
+                        shopId = shop.id,
+                        shopName = shop.name,
+                    ),
+                    awaitItem(),
+                )
+            }
+        }
+
     @Test
     fun `연속 지도 영역 변경은 지연 후 마지막 영역만 조회한다`() =
         coroutinesTest {

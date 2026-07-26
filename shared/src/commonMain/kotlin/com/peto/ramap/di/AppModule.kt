@@ -1,7 +1,13 @@
 package com.peto.ramap.di
 
 import com.peto.ramap.analytics.di.analyticsModule
+import com.peto.ramap.deeplink.DeepLinkEntryPoint
 import com.peto.ramap.log.AppAnalytics
+import com.peto.ramap.navigation.deeplink.ShopDeepLinkDispatcher
+import com.peto.ramap.navigation.deeplink.ShopDeepLinkParser
+import com.peto.ramap.navigation.deeplink.ShopLinkConfig
+import com.peto.ramap.navigation.deeplink.ShopShareLinkFactory
+import com.peto.ramap.network.config.RamapSecrets
 import com.peto.ramap.ui.account.di.accountModule
 import com.peto.ramap.ui.bookmark.di.bookmarkModule
 import com.peto.ramap.ui.hidden.di.hiddenModule
@@ -39,4 +45,14 @@ internal val appModule =
             CoroutineScope(SupervisorJob() + Dispatchers.Default)
         }
         singleOf(::AppAnalytics)
+        singleOf(::DeepLinkEntryPoint)
+        single {
+            ShopLinkConfig(
+                baseUrl = RamapSecrets.shopLinkBaseUrl,
+                webHost = RamapSecrets.shopLinkWebHost,
+            )
+        }
+        singleOf(::ShopShareLinkFactory)
+        singleOf(::ShopDeepLinkParser)
+        singleOf(::ShopDeepLinkDispatcher)
     }

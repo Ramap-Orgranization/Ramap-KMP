@@ -33,6 +33,10 @@ sealed interface MapIntent : Intent {
         val source: AnalyticsSource = AnalyticsSource.MARKER,
     ) : MapIntent
 
+    data class OnShopShareClicked(
+        val shop: RamenShop,
+    ) : MapIntent
+
     data class OnShopIdSelected(
         val shopId: String,
     ) : MapIntent

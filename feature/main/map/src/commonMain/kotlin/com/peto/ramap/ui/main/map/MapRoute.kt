@@ -14,8 +14,10 @@ import com.peto.ramap.designsystem.toast.model.ToastAction
 import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.event.ShopEvent
+import com.peto.ramap.navigation.deeplink.ShopShareLinkFactory
 import com.peto.ramap.platform.AppSettingsOpener
 import com.peto.ramap.platform.NotificationPermissionRequester
+import com.peto.ramap.platform.ShareLauncher
 import com.peto.ramap.ui.base.ObserveAsEvents
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnBookmarkToggled
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnBookmarkedShopsToggled
@@ -37,16 +39,22 @@ import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopIdSelected
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopNotificationToggled
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopReportSubmitted
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopSelected
+import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopShareClicked
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnViewportLoadRetry
+import com.peto.ramap.ui.main.map.contract.MapSideEffect.ShareShop
 import com.peto.ramap.ui.main.map.contract.MapSideEffect.ShowLoginGuide
 import com.peto.ramap.ui.main.map.contract.MapSideEffect.ShowToast
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.getString
+import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.current_location_timeout_message
 import ramap.shared.generated.resources.location_permission_settings_action
 import ramap.shared.generated.resources.notification_permission_enable_message
+import ramap.shared.generated.resources.share_shop_chooser_title
+import ramap.shared.generated.resources.share_shop_message
 
 @Composable
 fun MapRoute(
@@ -55,12 +63,14 @@ fun MapRoute(
     requestedShopId: String? = null,
     toastManager: ToastManager = koinInject(),
     appSettingsOpener: AppSettingsOpener = koinInject(),
+    shopShareLinkFactory: ShopShareLinkFactory = koinInject(),
     requestNotificationPermission: suspend () -> Boolean = NotificationPermissionRequester::request,
     viewModel: MapViewModel = koinViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val coroutineScope = rememberCoroutineScope()
     var showLoginGuideDialog by remember { mutableStateOf(false) }
+    val shareChooserTitle = stringResource(Res.string.share_shop_chooser_title)
 
     LaunchedEffect(requestedShopId) {
         if (requestedShopId == null) {
@@ -79,6 +89,19 @@ fun MapRoute(
                         action = sideEffect.data.action?.copy(onClick = appSettingsOpener::open),
                     ),
                 )
+            is ShareShop -> {
+                val link = shopShareLinkFactory.create(sideEffect.shopId)
+                val message =
+                    getString(
+                        Res.string.share_shop_message,
+                        sideEffect.shopName,
+                        link,
+                    )
+                ShareLauncher.share(
+                    text = message,
+                    chooserTitle = shareChooserTitle,
+                )
+            }
         }
     }
 
@@ -144,6 +167,7 @@ fun MapRoute(
             }
         },
         onHiddenToggled = { viewModel.dispatch(OnHiddenToggled(it)) },
+        onShopShareClick = { viewModel.dispatch(OnShopShareClicked(it)) },
         onReportSubmit = { wrongFields, description ->
             viewModel.dispatch(OnShopReportSubmitted(wrongFields, description))
         },
