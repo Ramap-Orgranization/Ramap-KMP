@@ -1,12 +1,20 @@
 package com.peto.ramap.ui.resource.area
 
 import com.peto.ramap.domain.model.shop.AreaFilter
-import org.jetbrains.compose.resources.StringResource
+import com.peto.ramap.ui.resource.UiText
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.ranking_all_regions
+import ramap.shared.generated.resources.ranking_district_label
 
-fun AreaFilter.label(): StringResource =
-    when (this) {
-        AreaFilter.Nationwide -> Res.string.ranking_all_regions
-        is AreaFilter.Selected -> AdministrativeAreaResourceMapper.map(area).shortName
-    }
+object AreaFilterResourceMapper {
+    fun label(areaFilter: AreaFilter): UiText =
+        when (areaFilter) {
+            AreaFilter.Nationwide -> UiText(Res.string.ranking_all_regions)
+            is AreaFilter.Province -> UiText(AdministrativeAreaUiModel.map(areaFilter.area).shortName)
+            is AreaFilter.District ->
+                UiText(
+                    resource = Res.string.ranking_district_label,
+                    arguments = listOf(areaFilter.district.name),
+                )
+        }
+}

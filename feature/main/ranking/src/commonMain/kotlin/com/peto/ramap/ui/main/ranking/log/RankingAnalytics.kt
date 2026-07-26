@@ -40,6 +40,7 @@ class RankingAnalytics(
         analyticsTracker.logEvent(
             AreaFilterSelected(
                 area = areaName(areaFilter),
+                district = districtName(areaFilter),
                 source = AnalyticsSource.RANKING,
             ),
         )
@@ -66,7 +67,16 @@ class RankingAnalytics(
     private fun areaName(areaFilter: AreaFilter): String =
         when (areaFilter) {
             AreaFilter.Nationwide -> NATIONWIDE
-            is AreaFilter.Selected -> areaFilter.area.name
+            is AreaFilter.Province -> areaFilter.area.name
+            is AreaFilter.District -> areaFilter.area.name
+        }
+
+    private fun districtName(areaFilter: AreaFilter): String? =
+        when (areaFilter) {
+            AreaFilter.Nationwide,
+            is AreaFilter.Province,
+            -> null
+            is AreaFilter.District -> areaFilter.district.name
         }
 
     companion object {

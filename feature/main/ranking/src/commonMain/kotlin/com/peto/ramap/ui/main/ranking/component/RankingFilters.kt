@@ -22,8 +22,9 @@ import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.RamapTheme
 import com.peto.ramap.ui.main.ranking.contract.RankingUiState
-import com.peto.ramap.ui.resource.area.label
+import com.peto.ramap.ui.resource.area.AreaFilterResourceMapper
 import com.peto.ramap.ui.resource.category.label
+import com.peto.ramap.ui.resource.format
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.ranking_all_categories
@@ -45,7 +46,7 @@ internal fun RankingFilters(
     ) {
         item {
             AreaFilterChip(
-                label = stringResource(uiState.areaFilter.label()),
+                label = AreaFilterResourceMapper.label(uiState.areaFilter).format(),
                 onClick = onAreaClick,
             )
         }
@@ -85,7 +86,7 @@ private fun RankingFiltersPreview() {
         RankingFilters(
             uiState =
                 RankingUiState(
-                    areaFilter = AreaFilter.Selected(AdministrativeArea.SEOUL),
+                    areaFilter = AreaFilter.Province(AdministrativeArea.SEOUL),
                     selectedCategories = setOf(Category.TONKOTSU, Category.SHOYU),
                 ),
             onAreaClick = {},

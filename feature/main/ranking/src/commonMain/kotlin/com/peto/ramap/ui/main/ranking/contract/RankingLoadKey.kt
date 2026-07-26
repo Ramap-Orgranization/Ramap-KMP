@@ -6,4 +6,5 @@ enum class RankingLoadKey : LoadKey {
     FirstPage,
     Refresh,
     NextPage,
+    Districts,
 }

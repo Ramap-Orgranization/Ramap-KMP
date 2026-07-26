@@ -14,6 +14,11 @@ data class ShopRankings(
         val rankedShops = mutableListOf<RankedShop>()
 
         for (ranking in values) {
+            if (ranking.likeCount == 0L) {
+                rankedShops.add(RankedShop(rank = null, ranking = ranking))
+                previousLikeCount = ranking.likeCount
+                continue
+            }
             if (startsNextRank(ranking, previousLikeCount)) {
                 denseRank += 1
             }

@@ -10,6 +10,8 @@ import com.peto.ramap.domain.model.rank.RankingCursor
 import com.peto.ramap.domain.model.rank.RankingPage
 import com.peto.ramap.domain.model.rank.RankingQuery
 import com.peto.ramap.domain.model.rank.ShopRankings
+import com.peto.ramap.domain.model.shop.AdministrativeArea
+import com.peto.ramap.domain.model.shop.AdministrativeDistricts
 import com.peto.ramap.domain.model.shop.AreaFilter
 import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.domain.repository.LoginRepository
@@ -56,9 +58,15 @@ class RankingViewModel(
 
             RankingIntent.OnAllCategoriesSelected -> selectAllCategories()
 
+            RankingIntent.OnAreaSheetOpened -> restoreAreaSelection()
+
             RankingIntent.OnKakaoLoginClicked -> signInWithKakao()
 
             is RankingIntent.OnAreaFilterSelected -> selectAreaFilter(intent.areaFilter)
+
+            is RankingIntent.OnAdministrativeAreaSelected -> selectAdministrativeArea(intent.area)
+
+            RankingIntent.OnAreaSelectionBack -> showAdministrativeAreas()
 
             is RankingIntent.OnBookmarkChanged -> updateBookmark(intent.shop, intent.enabled)
 
@@ -111,6 +119,65 @@ class RankingViewModel(
                 areaFilter = areaFilter,
             )
         }
+    }
+
+    private fun selectAdministrativeArea(area: AdministrativeArea) {
+        if (area == AdministrativeArea.SEJONG) {
+            selectAreaFilter(AreaFilter.Province(area))
+            return
+        }
+
+        loadAdministrativeDistricts(area)
+    }
+
+    private fun restoreAreaSelection() {
+        when (val areaFilter = currentState.areaFilter) {
+            AreaFilter.Nationwide -> showAdministrativeAreas()
+            is AreaFilter.Province -> restoreAdministrativeArea(areaFilter.area)
+            is AreaFilter.District -> restoreAdministrativeArea(areaFilter.area)
+        }
+    }
+
+    private fun restoreAdministrativeArea(area: AdministrativeArea) {
+        if (area == AdministrativeArea.SEJONG) {
+            reduce {
+                copy(
+                    areaSelectionArea = area,
+                    administrativeDistricts = AdministrativeDistricts(emptyList()),
+                )
+            }
+            return
+        }
+
+        loadAdministrativeDistricts(area)
+    }
+
+    private fun showAdministrativeAreas() {
+        cancelTask(DISTRICTS_TASK_KEY)
+        reduce {
+            copy(
+                areaSelectionArea = null,
+                administrativeDistricts = AdministrativeDistricts(emptyList()),
+            )
+        }
+    }
+
+    private fun loadAdministrativeDistricts(area: AdministrativeArea) {
+        launchResultTask(
+            taskKey = DISTRICTS_TASK_KEY,
+            loadKey = RankingLoadKey.Districts,
+            policy = TaskPolicy.CancelPrevious,
+            onStart = {
+                copy(
+                    areaSelectionArea = area,
+                    administrativeDistricts = AdministrativeDistricts(emptyList()),
+                )
+            },
+            request = { shopRankRepository.fetchAdministrativeDistricts(area) },
+            onSuccess = { districts ->
+                reduce { copy(administrativeDistricts = districts) }
+            },
+        )
     }
 
     private fun changeFilters(reducer: RankingUiState.() -> RankingUiState) {
@@ -365,15 +432,12 @@ class RankingViewModel(
         showToast(Res.string.kakao_login_failure_message, ToastType.ERROR)
     }
 
-    private fun createRankingQuery(cursor: RankingCursor?): RankingQuery {
-        val selectedAreaFilter = currentState.areaFilter as? AreaFilter.Selected
-
-        return RankingQuery(
-            area = selectedAreaFilter?.area,
+    private fun createRankingQuery(cursor: RankingCursor?): RankingQuery =
+        RankingQuery(
+            areaFilter = currentState.areaFilter,
             categories = currentState.selectedCategories,
             cursor = cursor,
         )
-    }
 
     private fun bookmarkTaskKey(shopId: String): String = "$BOOKMARK_TASK_KEY$shopId"
 
@@ -391,5 +455,6 @@ class RankingViewModel(
         private const val RANKINGS_TASK_KEY = "rankings"
         private const val NEXT_PAGE_TASK_KEY = "ranking-next-page"
         private const val SIGN_IN_TASK_KEY = "ranking-sign-in"
+        private const val DISTRICTS_TASK_KEY = "ranking-districts"
     }
 }

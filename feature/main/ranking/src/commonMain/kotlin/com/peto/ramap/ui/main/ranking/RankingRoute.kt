@@ -24,6 +24,7 @@ import com.peto.ramap.designsystem.toast.ToastManager
 import com.peto.ramap.domain.model.rank.RankedShops
 import com.peto.ramap.domain.model.rank.ShopRanking
 import com.peto.ramap.domain.model.rank.ShopRankings
+import com.peto.ramap.domain.model.shop.AdministrativeArea
 import com.peto.ramap.domain.model.shop.AreaFilter
 import com.peto.ramap.domain.model.shop.Category
 import com.peto.ramap.domain.model.shop.RamenShop
@@ -110,6 +111,17 @@ fun RankingRoute(
                 ),
             )
         },
+        onAreaSheetOpened = {
+            viewModel.dispatch(RankingIntent.OnAreaSheetOpened)
+        },
+        onAdministrativeAreaSelected = { area ->
+            viewModel.dispatch(
+                RankingIntent.OnAdministrativeAreaSelected(area),
+            )
+        },
+        onAreaSelectionBack = {
+            viewModel.dispatch(RankingIntent.OnAreaSelectionBack)
+        },
         onCategoryToggled = { category ->
             viewModel.dispatch(
                 RankingIntent.OnCategoryToggled(
@@ -157,6 +169,9 @@ internal fun RankingScreen(
     onLoadNext: () -> Unit,
     onRetryNext: () -> Unit,
     onAreaFilterSelected: (AreaFilter) -> Unit,
+    onAreaSheetOpened: () -> Unit,
+    onAdministrativeAreaSelected: (AdministrativeArea) -> Unit,
+    onAreaSelectionBack: () -> Unit,
     onCategoryToggled: (Category) -> Unit,
     onAllCategoriesSelected: () -> Unit,
     onBookmarkChange: (RamenShop, Boolean) -> Unit,
@@ -196,6 +211,7 @@ internal fun RankingScreen(
             RankingFilters(
                 uiState = uiState,
                 onAreaClick = {
+                    onAreaSheetOpened()
                     isAreaSheetVisible = true
                 },
                 onCategoryToggled = onCategoryToggled,
@@ -227,13 +243,25 @@ internal fun RankingScreen(
             visible = isAreaSheetVisible,
             onDismissRequest = {
                 isAreaSheetVisible = false
+                onAreaSelectionBack()
             },
         ) {
             AreaSheetContent(
                 areaFilter = uiState.areaFilter,
+                areaSelectionArea = uiState.areaSelectionArea,
+                administrativeDistricts = uiState.administrativeDistricts,
+                isLoadingDistricts = uiState.isLoadingDistricts,
+                onAdministrativeAreaSelected = { area ->
+                    onAdministrativeAreaSelected(area)
+                    if (area == AdministrativeArea.SEJONG) {
+                        isAreaSheetVisible = false
+                        onAreaSelectionBack()
+                    }
+                },
                 onAreaFilterSelected = { areaFilter ->
                     onAreaFilterSelected(areaFilter)
                     isAreaSheetVisible = false
+                    onAreaSelectionBack()
                 },
             )
         }
@@ -312,6 +340,9 @@ private fun RankingRoutePreview() {
             onLoadNext = {},
             onRetryNext = {},
             onAreaFilterSelected = {},
+            onAreaSheetOpened = {},
+            onAdministrativeAreaSelected = {},
+            onAreaSelectionBack = {},
             onCategoryToggled = {},
             onAllCategoriesSelected = {},
             onBookmarkChange = { _, _ -> },
