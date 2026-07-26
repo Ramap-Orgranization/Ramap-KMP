@@ -13,6 +13,8 @@ import com.peto.ramap.domain.model.rank.RankingPage
 import com.peto.ramap.domain.model.rank.ShopRanking
 import com.peto.ramap.domain.model.rank.ShopRankings
 import com.peto.ramap.domain.model.shop.AdministrativeArea
+import com.peto.ramap.domain.model.shop.AdministrativeDistrict
+import com.peto.ramap.domain.model.shop.AdministrativeDistricts
 import com.peto.ramap.domain.model.shop.AreaFilter
 import com.peto.ramap.domain.model.shop.Category
 import com.peto.ramap.domain.model.shop.Location
@@ -38,6 +40,80 @@ import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class RankingViewModelTest {
+    @Test
+    fun `시도를 선택하면 시군구 옵션을 조회한다`() =
+        coroutinesTest {
+            val districts =
+                AdministrativeDistricts(
+                    listOf(
+                        AdministrativeDistrict("수원시"),
+                        AdministrativeDistrict("용인시"),
+                    ),
+                )
+            val repository =
+                FakeShopRankingRepository().apply {
+                    this.districts = districts
+                }
+            val viewModel = rankingViewModel(repository = repository)
+
+            viewModel.dispatch(
+                RankingIntent.OnAdministrativeAreaSelected(AdministrativeArea.GYEONGGI),
+            )
+            runCurrent()
+
+            assertEquals(listOf(AdministrativeArea.GYEONGGI), repository.districtQueries)
+            assertEquals(AdministrativeArea.GYEONGGI, viewModel.uiState.value.areaSelectionArea)
+            assertEquals(districts, viewModel.uiState.value.administrativeDistricts)
+        }
+
+    @Test
+    fun `세종을 선택하면 하위 조회 없이 세종 전체 필터를 적용한다`() =
+        coroutinesTest {
+            val repository = FakeShopRankingRepository()
+            val viewModel = rankingViewModel(repository = repository)
+
+            viewModel.dispatch(
+                RankingIntent.OnAdministrativeAreaSelected(AdministrativeArea.SEJONG),
+            )
+            runCurrent()
+
+            assertEquals(emptyList(), repository.districtQueries)
+            assertEquals(
+                AreaFilter.Province(AdministrativeArea.SEJONG),
+                repository.queries.last().areaFilter,
+            )
+        }
+
+    @Test
+    fun `지역 시트를 다시 열면 현재 시군구의 시도를 복원하고 옵션을 조회한다`() =
+        coroutinesTest {
+            val repository =
+                FakeShopRankingRepository().apply {
+                    districts =
+                        AdministrativeDistricts(
+                            listOf(AdministrativeDistrict("수원시")),
+                        )
+                }
+            val viewModel = rankingViewModel(repository = repository)
+            val districtFilter =
+                AreaFilter.District(
+                    AdministrativeArea.GYEONGGI,
+                    AdministrativeDistrict("수원시"),
+                )
+
+            viewModel.dispatch(RankingIntent.OnAreaFilterSelected(districtFilter))
+            runCurrent()
+            viewModel.dispatch(RankingIntent.OnAreaSelectionBack)
+            runCurrent()
+            viewModel.dispatch(RankingIntent.OnAreaSheetOpened)
+            runCurrent()
+
+            assertEquals(AdministrativeArea.GYEONGGI, viewModel.uiState.value.areaSelectionArea)
+            assertEquals(repository.districts, viewModel.uiState.value.administrativeDistricts)
+            assertEquals(districtFilter, viewModel.uiState.value.areaFilter)
+            assertEquals(listOf(AdministrativeArea.GYEONGGI), repository.districtQueries)
+        }
+
     @Test
     fun `숨긴 매장 상태와 무관하게 서버 랭킹을 표시한다`() =
         coroutinesTest {
@@ -76,7 +152,7 @@ class RankingViewModelTest {
 
             viewModel.dispatch(
                 RankingIntent.OnAreaFilterSelected(
-                    AreaFilter.Selected(AdministrativeArea.SEOUL),
+                    AreaFilter.Province(AdministrativeArea.SEOUL),
                 ),
             )
             runCurrent()
@@ -89,8 +165,8 @@ class RankingViewModelTest {
             val query = repository.queries.last()
 
             assertEquals(
-                AdministrativeArea.SEOUL,
-                query.area,
+                AreaFilter.Province(AdministrativeArea.SEOUL),
+                query.areaFilter,
             )
             assertEquals(
                 setOf(Category.MISO),
