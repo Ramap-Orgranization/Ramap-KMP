@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
@@ -38,6 +39,7 @@ import ramap.shared.generated.resources.ranking_error_title
 @Composable
 internal fun RankingContent(
     uiState: RankingUiState,
+    listState: LazyListState,
     onShopClick: (RamenShop) -> Unit,
     onFindShopClick: () -> Unit,
     onRefresh: () -> Unit,
@@ -76,6 +78,7 @@ internal fun RankingContent(
             uiState.shops.isEmpty() -> RankingEmptyContent(onFindShopClick)
             else ->
                 LazyColumn(
+                    state = listState,
                     contentPadding = PaddingValues(start = 24.dp, end = 10.dp),
                     verticalArrangement = Arrangement.spacedBy(2.dp),
                 ) {
@@ -107,13 +110,13 @@ internal fun RankingContent(
     }
 }
 
-@Preview(name = "Next page available", showBackground = true)
+@Preview(showBackground = true)
 @Composable
 private fun RankingContentNextPageAvailablePreview() {
     RankingContentPreview(uiState = rankingContentPreviewState())
 }
 
-@Preview(name = "Next page loading", showBackground = true)
+@Preview(showBackground = true)
 @Composable
 private fun RankingContentNextPageLoadingPreview() {
     RankingContentPreview(
@@ -121,7 +124,7 @@ private fun RankingContentNextPageLoadingPreview() {
     )
 }
 
-@Preview(name = "Next page error", showBackground = true)
+@Preview(showBackground = true)
 @Composable
 private fun RankingContentNextPageErrorPreview() {
     RankingContentPreview(
@@ -134,6 +137,7 @@ private fun RankingContentPreview(uiState: RankingUiState) {
     RamapTheme {
         RankingContent(
             uiState = uiState,
+            listState = LazyListState(),
             onShopClick = {},
             onFindShopClick = {},
             onRefresh = {},

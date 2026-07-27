@@ -27,6 +27,8 @@ sealed interface MapIntent : Intent {
 
     data object OnInitialLocationFocusConsumed : MapIntent
 
+    data object OnSelectedShopFocusConsumed : MapIntent
+
     data object OnMapTabExited : MapIntent
 
     data class OnShopSelected(

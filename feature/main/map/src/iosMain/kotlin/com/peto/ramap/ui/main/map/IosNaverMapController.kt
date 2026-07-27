@@ -121,7 +121,7 @@ internal class IosNaverMapController(
         focusNearestToCurrentLocation: Boolean,
         focusRequestKey: Long,
         selectedShopId: String?,
-    ) {
+    ): Boolean {
         mapLogger.d {
             "updateFocus: focusShops=${shops.size}, nearest=$focusNearestToCurrentLocation, selected=$selectedShopId, request=$focusRequestKey, zoom=${mapView.cameraPosition.zoom}"
         }
@@ -141,7 +141,8 @@ internal class IosNaverMapController(
         val key =
             shops.values.joinToString("|") { "${it.id}:${it.location.lat}:${it.location.lng}" } +
                 ":${location != null}:$focusRequestKey"
-        if (shops.isEmpty() || key == lastFocusKey) return
+        if (shops.isEmpty()) return false
+        if (key == lastFocusKey) return true
         lastFocusKey = key
         mapView.positionMode = NMFMyPositionNormal
 
@@ -155,6 +156,7 @@ internal class IosNaverMapController(
                 mapView.moveCamera(NMFCameraUpdate.cameraUpdateWithFitBounds(bounds, FOCUS_PADDING))
             }
         }
+        return true
     }
 
     fun updateInitialLocationFocus(location: Location?) {

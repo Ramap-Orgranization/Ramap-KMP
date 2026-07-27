@@ -33,6 +33,7 @@ import com.peto.ramap.ui.main.map.contract.MapIntent.OnQueryChanged
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnRequestedShopDismissed
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnSearchResultsDismissed
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnSearchedShopSelected
+import com.peto.ramap.ui.main.map.contract.MapIntent.OnSelectedShopFocusConsumed
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopDetailDismissed
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopDetailRetry
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopIdSelected
@@ -59,6 +60,7 @@ import ramap.shared.generated.resources.share_shop_message
 @Composable
 fun MapRoute(
     isBackEnabled: Boolean = true,
+    onDetailDismissed: () -> Unit = {},
     onEventNavigate: (ShopEvent) -> Unit = {},
     requestedShopId: String? = null,
     toastManager: ToastManager = koinInject(),
@@ -124,7 +126,10 @@ fun MapRoute(
         },
         onShopSelected = { shop, shouldFocus, source -> viewModel.dispatch(OnShopSelected(shop, shouldFocus, source)) },
         onPlaceSelected = { viewModel.dispatch(OnSearchedShopSelected(it)) },
-        onShopDetailDismissed = { viewModel.dispatch(OnShopDetailDismissed) },
+        onShopDetailDismissed = {
+            viewModel.dispatch(OnShopDetailDismissed)
+            onDetailDismissed()
+        },
         onShopDetailRetry = {
             if (uiState.selectedShop != null) {
                 viewModel.dispatch(OnShopDetailRetry)
@@ -132,10 +137,14 @@ fun MapRoute(
                 requestedShopId?.let { shopId -> viewModel.dispatch(OnShopIdSelected(shopId)) }
             }
         },
-        onRequestedShopDismissed = { viewModel.dispatch(OnRequestedShopDismissed) },
+        onRequestedShopDismissed = {
+            viewModel.dispatch(OnRequestedShopDismissed)
+            onDetailDismissed()
+        },
         onQueryChanged = { viewModel.dispatch(OnQueryChanged(it)) },
         onSearchResultsDismissed = { viewModel.dispatch(OnSearchResultsDismissed) },
         onInitialLocationFocusConsumed = { viewModel.dispatch(OnInitialLocationFocusConsumed) },
+        onSelectedShopFocusConsumed = { viewModel.dispatch(OnSelectedShopFocusConsumed) },
         onCategoryFilterToggled = { viewModel.dispatch(OnCategoryFilterToggled(it)) },
         onViewportLoadRetry = { viewModel.dispatch(OnViewportLoadRetry) },
         onBookmarkToggled = { viewModel.dispatch(OnBookmarkToggled(it)) },

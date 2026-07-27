@@ -48,6 +48,7 @@ import com.peto.ramap.ui.main.map.contract.MapIntent.OnQueryChanged
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnRequestedShopDismissed
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnSearchResultsDismissed
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnSearchedShopSelected
+import com.peto.ramap.ui.main.map.contract.MapIntent.OnSelectedShopFocusConsumed
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopDetailDismissed
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopDetailRetry
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopIdSelected
@@ -139,6 +140,8 @@ class MapViewModel(
             is OnMyLocationChanged -> updateMyLocation(intent.location)
 
             OnInitialLocationFocusConsumed -> consumeInitialLocationFocus()
+
+            OnSelectedShopFocusConsumed -> consumeSelectedShopFocus()
 
             OnMapTabExited -> dismissBottomSheet()
 
@@ -355,11 +358,14 @@ class MapViewModel(
         reduce { copy(locationFocusStatus = LocationFocusStatus.Consumed) }
     }
 
+    private fun consumeSelectedShopFocus() {
+        reduce { copy(shouldFocusSelectedShop = false) }
+    }
+
     private fun updateCameraPosition(position: CameraPosition) {
         reduce {
             copy(
                 cameraPosition = position,
-                shouldFocusSelectedShop = false,
             )
         }
     }

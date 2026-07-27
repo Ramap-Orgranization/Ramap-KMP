@@ -41,6 +41,9 @@ class RankingViewModel(
 ) : BaseViewModel<RankingUiState, RankingIntent, RankingSideEffect>(
         RankingUiState(),
     ) {
+    private var observedBookmarkedShopIds: Set<String>? = null
+    private val expectedBookmarkStates = mutableMapOf<String, Boolean>()
+
     init {
         observePersonalization()
         loadFirstPage()
@@ -79,6 +82,7 @@ class RankingViewModel(
     private fun observePersonalization() {
         viewModelScope.launch {
             personalizationStore.state.collectLatest { personalization ->
+                synchronizeLikeCounts(personalization.bookmarkedShopIds)
                 reduce {
                     copy(
                         bookmarkedShopIds = personalization.bookmarkedShopIds,
@@ -86,6 +90,50 @@ class RankingViewModel(
                 }
             }
         }
+    }
+
+    private fun synchronizeLikeCounts(bookmarkedShopIds: Set<String>) {
+        val previousIds = observedBookmarkedShopIds
+        observedBookmarkedShopIds = bookmarkedShopIds
+        if (previousIds == null) return
+
+        val addedShopIds = bookmarkedShopIds - previousIds
+        val removedShopIds = previousIds - bookmarkedShopIds
+        val loadedShopIds = currentState.shops.map { it.ranking.shop.id }.toSet()
+        val changedDeltas = mutableMapOf<String, Long>()
+
+        for (shopId in addedShopIds) {
+            synchronizeLikeCountChange(shopId, enabled = true, loadedShopIds, changedDeltas)
+        }
+        for (shopId in removedShopIds) {
+            synchronizeLikeCountChange(shopId, enabled = false, loadedShopIds, changedDeltas)
+        }
+        if (changedDeltas.isEmpty()) return
+
+        reduce {
+            copy(
+                bookmarkLikeCountDeltas =
+                    bookmarkLikeCountDeltas.toMutableMap().apply {
+                        for ((shopId, delta) in changedDeltas) {
+                            val updatedDelta = (this[shopId] ?: 0L) + delta
+                            if (updatedDelta == 0L) remove(shopId) else this[shopId] = updatedDelta
+                        }
+                    },
+            )
+        }
+    }
+
+    private fun synchronizeLikeCountChange(
+        shopId: String,
+        enabled: Boolean,
+        loadedShopIds: Set<String>,
+        changedDeltas: MutableMap<String, Long>,
+    ) {
+        val expectedState = expectedBookmarkStates.remove(shopId)
+        if (expectedState == enabled) return
+        if (shopId !in loadedShopIds) return
+
+        changedDeltas[shopId] = calculateBookmarkLikeCountDelta(enabled)
     }
 
     private fun toggleCategory(intent: RankingIntent.OnCategoryToggled) {
@@ -202,6 +250,7 @@ class RankingViewModel(
 
         rankingAnalytics.logBookmarkToggled(shop, enabled)
 
+        expectedBookmarkStates[shop.id] = enabled
         executeBookmarkUpdate(shop.id, enabled)
     }
 
@@ -233,7 +282,10 @@ class RankingViewModel(
             onStart = { createBookmarkUpdatingState(this, shopId, likeCountDelta) },
             onFinish = { createBookmarkUpdateFinishedState(this, shopId) },
             request = { personalizationStore.updateBookmark(shopId, enabled) },
-            onError = { handleBookmarkUpdateFailure(shopId, likeCountDelta) },
+            onError = {
+                expectedBookmarkStates.remove(shopId)
+                handleBookmarkUpdateFailure(shopId, likeCountDelta)
+            },
         )
     }
 
@@ -331,7 +383,7 @@ class RankingViewModel(
             policy = TaskPolicy.CancelPrevious,
             onStart = { copy(showError = false) },
             request = { shopRankRepository.fetchShopRankings(query) },
-            onSuccess = { page -> replaceFirstPage(page) },
+            onSuccess = ::replaceFirstPage,
             onError = { reduce { copy(showError = true) } },
         )
     }
@@ -346,7 +398,7 @@ class RankingViewModel(
             loadKey = RankingLoadKey.Refresh,
             policy = TaskPolicy.CancelPrevious,
             request = { shopRankRepository.fetchShopRankings(query) },
-            onSuccess = { page -> replaceFirstPage(page) },
+            onSuccess = ::replaceFirstPage,
             onError = { showRefreshFailure() },
         )
     }

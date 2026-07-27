@@ -220,6 +220,7 @@
     <string name="ranking_error_title">매장 랭킹을 불러오지 못했어요</string>
     <string name="ranking_error_description">잠시 후 다시 시도해 주세요.</string>
     <string name="ranking_refresh_failure_message">매장 랭킹을 새로고침하지 못했어요</string>
+    <string name="ranking_show_shop_on_map">지도에서 보기</string>
     <string name="ranking_bookmark_cancel_action">좋아요 취소</string>
     <string name="ranking_area_seoul_short">서울</string>
     <string name="ranking_area_busan_short">부산</string>

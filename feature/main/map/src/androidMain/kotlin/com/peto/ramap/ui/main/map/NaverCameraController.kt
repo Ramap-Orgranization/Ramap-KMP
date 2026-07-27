@@ -20,11 +20,12 @@ internal class NaverCameraController {
         shops: RamenShops,
         currentLocation: Location?,
         focusRequestKey: Long,
-    ) {
-        if (shops.isEmpty()) return
-        if (isSameFocusRequest(shops, currentLocation, focusRequestKey)) return
+    ): Boolean {
+        if (shops.isEmpty()) return false
+        if (isSameFocusRequest(shops, currentLocation, focusRequestKey)) return true
 
         moveToFocusTarget(naverMap, shops, currentLocation)
+        return true
     }
 
     fun focusCurrentLocation(

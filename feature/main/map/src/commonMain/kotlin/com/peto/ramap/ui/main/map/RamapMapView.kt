@@ -24,6 +24,7 @@ internal expect fun RamapMapView(
     onBoundsChanged: (MapBounds) -> Unit,
     onCameraPositionChanged: (CameraPosition) -> Unit,
     onInitialFocusConsumed: () -> Unit,
+    onSelectedShopFocusConsumed: () -> Unit,
     onMyLocationChanged: (Location) -> Unit,
     onShopClick: (RamenShop) -> Unit,
     onLocationPermissionBlocked: () -> Unit,

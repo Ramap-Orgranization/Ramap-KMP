@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -55,6 +57,7 @@ fun RankingRoute(
     viewModel: RankingViewModel = koinViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val listState = rememberLazyListState()
 
     var showLoginGuideDialog by remember {
         mutableStateOf(false)
@@ -74,6 +77,7 @@ fun RankingRoute(
 
     RankingScreen(
         uiState = uiState,
+        listState = listState,
         onShopClick = { shop ->
             viewModel.dispatch(
                 RankingIntent.OnShopClicked(
@@ -162,6 +166,7 @@ fun RankingRoute(
 @Composable
 internal fun RankingScreen(
     uiState: RankingUiState,
+    listState: LazyListState,
     onShopClick: (RamenShop) -> Unit,
     onFindShopClick: () -> Unit,
     onRefresh: () -> Unit,
@@ -220,7 +225,11 @@ internal fun RankingScreen(
 
             RankingContent(
                 uiState = uiState,
-                onShopClick = onShopClick,
+                listState = listState,
+                onShopClick = { shop ->
+                    isAreaSheetVisible = false
+                    onShopClick(shop)
+                },
                 onFindShopClick = onFindShopClick,
                 onRefresh = onRefresh,
                 onRetry = onRetry,
@@ -334,6 +343,7 @@ private fun RankingRoutePreview() {
                         setOf(shops.first().id),
                 ),
             onShopClick = {},
+            listState = rememberLazyListState(),
             onFindShopClick = {},
             onRefresh = {},
             onRetry = {},

@@ -101,7 +101,7 @@ internal fun RamenShopOverview(
         modifier =
             modifier
                 .fillMaxWidth()
-                .padding(bottom = 28.dp),
+                .padding(bottom = 15.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         event?.let {
