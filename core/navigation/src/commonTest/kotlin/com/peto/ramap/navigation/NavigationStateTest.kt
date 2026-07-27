@@ -151,6 +151,19 @@ class NavigationStateTest {
     }
 
     @Test
+    fun `랭킹 매장을 지도에서 연 뒤 다른 탭을 거치면 매장 요청 없이 지도에 돌아온다`() {
+        val navigationState = navigationState(selectedTab = TabStatus.RANKING)
+
+        navigationState.showShopOnMap("shop-id")
+        assertEquals(ScreenRoutes.TabRoutes("shop-id"), navigationState.currentRoute)
+
+        navigationState.selectTopLevelTab(TabStatus.EVENT)
+        navigationState.selectTopLevelTab(TabStatus.MAP)
+
+        assertEquals(ScreenRoutes.TabRoutes(), navigationState.currentRoute)
+    }
+
+    @Test
     fun `현재 탭을 다시 선택해도 해당 탭 스택을 유지한다`() {
         val navigationState = navigationState(selectedTab = TabStatus.EVENT)
         navigationState.showEvent("event-id")

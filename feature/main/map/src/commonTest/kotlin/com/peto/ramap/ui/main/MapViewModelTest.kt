@@ -91,7 +91,7 @@ import kotlin.test.assertEquals
 @OptIn(ExperimentalCoroutinesApi::class)
 class MapViewModelTest {
     @Test
-    fun `지도 탭을 떠나면 상세와 검색 결과 바텀시트를 닫는다`() =
+    fun `랭킹 매장 상세를 연 뒤 지도 탭을 떠나면 모든 바텀시트를 닫는다`() =
         coroutinesTest {
             val selectedShop = ramenShopFixture(id = "selected-shop")
             val searchShops =
@@ -109,7 +109,7 @@ class MapViewModelTest {
             viewModel.dispatch(OnQueryChanged("라멘"))
             advanceTimeBy(300)
             runCurrent()
-            viewModel.dispatch(OnShopSelected(selectedShop))
+            viewModel.dispatch(OnShopIdSelected(selectedShop.id))
             runCurrent()
 
             assertEquals(true, viewModel.uiState.value.showBottomSheet)
