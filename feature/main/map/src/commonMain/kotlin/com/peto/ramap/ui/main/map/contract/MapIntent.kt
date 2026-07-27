@@ -27,6 +27,10 @@ sealed interface MapIntent : Intent {
 
     data object OnInitialLocationFocusConsumed : MapIntent
 
+    data object OnSelectedShopFocusConsumed : MapIntent
+
+    data object OnMapTabExited : MapIntent
+
     data class OnShopSelected(
         val shop: RamenShop,
         val shouldFocus: Boolean = true,

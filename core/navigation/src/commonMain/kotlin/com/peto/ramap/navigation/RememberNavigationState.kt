@@ -26,7 +26,7 @@ fun rememberNavigationState(): NavigationState {
     val eventBackStack =
         rememberNavBackStack(configuration = navigationConfiguration, ScreenRoutes.EventTabRoutes)
     val rankingBackStack =
-        rememberNavBackStack(configuration = navigationConfiguration)
+        rememberNavBackStack(configuration = navigationConfiguration, ScreenRoutes.RankingTabRoutes)
     val myBackStack =
         rememberNavBackStack(configuration = navigationConfiguration, ScreenRoutes.MyTabRoutes)
     val backStacks =

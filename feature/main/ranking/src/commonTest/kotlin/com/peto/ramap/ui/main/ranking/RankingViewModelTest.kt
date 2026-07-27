@@ -13,6 +13,8 @@ import com.peto.ramap.domain.model.rank.RankingPage
 import com.peto.ramap.domain.model.rank.ShopRanking
 import com.peto.ramap.domain.model.rank.ShopRankings
 import com.peto.ramap.domain.model.shop.AdministrativeArea
+import com.peto.ramap.domain.model.shop.AdministrativeDistrict
+import com.peto.ramap.domain.model.shop.AdministrativeDistricts
 import com.peto.ramap.domain.model.shop.AreaFilter
 import com.peto.ramap.domain.model.shop.Category
 import com.peto.ramap.domain.model.shop.Location
@@ -38,6 +40,114 @@ import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class RankingViewModelTest {
+    @Test
+    fun `수동 새로고침은 첫 페이지를 즉시 적용한다`() =
+        coroutinesTest {
+            val repository = FakeShopRankingRepository(pageOf(shopRanking("old")))
+            val viewModel = rankingViewModel(repository = repository)
+            runCurrent()
+            repository.page = pageOf(shopRanking("fresh"))
+
+            viewModel.dispatch(RankingIntent.OnRefreshed)
+            runCurrent()
+
+            assertEquals(listOf("fresh"), shopIds(viewModel))
+        }
+
+    @Test
+    fun `공통 상세에서 바뀐 좋아요는 랭킹 표시 수에 한 번만 반영한다`() =
+        coroutinesTest {
+            val personalizationStore = FakePersonalizationRepository()
+            val viewModel =
+                rankingViewModel(
+                    repository = FakeShopRankingRepository(pageOf(shopRanking(likeCount = 3))),
+                    personalizationStore = personalizationStore,
+                )
+            runCurrent()
+
+            personalizationStore.updateBookmark("shop-id", true)
+            runCurrent()
+
+            assertEquals(
+                4L,
+                viewModel.uiState.value.displayedLikeCount(viewModel.uiState.value.shops[0]),
+            )
+        }
+
+    @Test
+    fun `시도를 선택하면 시군구 옵션을 조회한다`() =
+        coroutinesTest {
+            val districts =
+                AdministrativeDistricts(
+                    listOf(
+                        AdministrativeDistrict("수원시"),
+                        AdministrativeDistrict("용인시"),
+                    ),
+                )
+            val repository =
+                FakeShopRankingRepository().apply {
+                    this.districts = districts
+                }
+            val viewModel = rankingViewModel(repository = repository)
+
+            viewModel.dispatch(
+                RankingIntent.OnAdministrativeAreaSelected(AdministrativeArea.GYEONGGI),
+            )
+            runCurrent()
+
+            assertEquals(listOf(AdministrativeArea.GYEONGGI), repository.districtQueries)
+            assertEquals(AdministrativeArea.GYEONGGI, viewModel.uiState.value.areaSelectionArea)
+            assertEquals(districts, viewModel.uiState.value.administrativeDistricts)
+        }
+
+    @Test
+    fun `세종을 선택하면 하위 조회 없이 세종 전체 필터를 적용한다`() =
+        coroutinesTest {
+            val repository = FakeShopRankingRepository()
+            val viewModel = rankingViewModel(repository = repository)
+
+            viewModel.dispatch(
+                RankingIntent.OnAdministrativeAreaSelected(AdministrativeArea.SEJONG),
+            )
+            runCurrent()
+
+            assertEquals(emptyList(), repository.districtQueries)
+            assertEquals(
+                AreaFilter.Province(AdministrativeArea.SEJONG),
+                repository.queries.last().areaFilter,
+            )
+        }
+
+    @Test
+    fun `지역 시트를 다시 열면 현재 시군구의 시도를 복원하고 옵션을 조회한다`() =
+        coroutinesTest {
+            val repository =
+                FakeShopRankingRepository().apply {
+                    districts =
+                        AdministrativeDistricts(
+                            listOf(AdministrativeDistrict("수원시")),
+                        )
+                }
+            val viewModel = rankingViewModel(repository = repository)
+            val districtFilter =
+                AreaFilter.District(
+                    AdministrativeArea.GYEONGGI,
+                    AdministrativeDistrict("수원시"),
+                )
+
+            viewModel.dispatch(RankingIntent.OnAreaFilterSelected(districtFilter))
+            runCurrent()
+            viewModel.dispatch(RankingIntent.OnAreaSelectionBack)
+            runCurrent()
+            viewModel.dispatch(RankingIntent.OnAreaSheetOpened)
+            runCurrent()
+
+            assertEquals(AdministrativeArea.GYEONGGI, viewModel.uiState.value.areaSelectionArea)
+            assertEquals(repository.districts, viewModel.uiState.value.administrativeDistricts)
+            assertEquals(districtFilter, viewModel.uiState.value.areaFilter)
+            assertEquals(listOf(AdministrativeArea.GYEONGGI), repository.districtQueries)
+        }
+
     @Test
     fun `숨긴 매장 상태와 무관하게 서버 랭킹을 표시한다`() =
         coroutinesTest {
@@ -76,7 +186,7 @@ class RankingViewModelTest {
 
             viewModel.dispatch(
                 RankingIntent.OnAreaFilterSelected(
-                    AreaFilter.Selected(AdministrativeArea.SEOUL),
+                    AreaFilter.Province(AdministrativeArea.SEOUL),
                 ),
             )
             runCurrent()
@@ -89,8 +199,8 @@ class RankingViewModelTest {
             val query = repository.queries.last()
 
             assertEquals(
-                AdministrativeArea.SEOUL,
-                query.area,
+                AreaFilter.Province(AdministrativeArea.SEOUL),
+                query.areaFilter,
             )
             assertEquals(
                 setOf(Category.MISO),

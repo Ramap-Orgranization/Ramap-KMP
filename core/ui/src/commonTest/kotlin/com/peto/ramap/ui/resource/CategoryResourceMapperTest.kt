@@ -1,7 +1,6 @@
 package com.peto.ramap.ui.resource
 
 import com.peto.ramap.domain.model.shop.Category
-import com.peto.ramap.ui.resource.area.label
 import com.peto.ramap.ui.resource.category.label
 import kotlin.test.Test
 import kotlin.test.assertEquals

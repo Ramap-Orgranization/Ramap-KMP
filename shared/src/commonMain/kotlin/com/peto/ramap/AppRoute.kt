@@ -1,8 +1,15 @@
 package com.peto.ramap
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
+import androidx.compose.ui.Modifier
 import com.peto.ramap.deeplink.DeepLinkEntryPoint
 import com.peto.ramap.deeplink.DeepLinkEvent
 import com.peto.ramap.designsystem.toast.ToastManager
@@ -30,6 +37,9 @@ import com.peto.ramap.ui.hidden.HiddenShopListRoute
 import com.peto.ramap.ui.main.event.EventDetailRoute
 import com.peto.ramap.ui.main.event.list.EventsRoute
 import com.peto.ramap.ui.main.map.MapRoute
+import com.peto.ramap.ui.main.map.MapViewModel
+import com.peto.ramap.ui.main.map.ShopDetailRoute
+import com.peto.ramap.ui.main.map.contract.MapIntent.OnMapTabExited
 import com.peto.ramap.ui.main.my.MyTabRoute
 import com.peto.ramap.ui.main.ranking.RankingRoute
 import com.peto.ramap.ui.notification.NotificationSettingsRoute
@@ -38,6 +48,7 @@ import com.peto.ramap.ui.subscribed.SubscribedShopListRoute
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
 import org.koin.compose.koinInject
+import org.koin.compose.viewmodel.koinViewModel
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.event_not_found_message
 
@@ -55,6 +66,7 @@ internal fun AppRoute(
     personalizationStore: ShopPersonalizationStore = koinInject(),
 ) {
     val navigationState = rememberNavigationState()
+    val mapViewModel = koinViewModel<MapViewModel>()
 
     HandleDeepLinkEvents(deepLinkEntryPoint, notificationLaunchDispatcher, shopDeepLinkDispatcher)
 
@@ -88,24 +100,52 @@ internal fun AppRoute(
 
     NavigationRouter(
         navigationState = navigationState,
+        onMapTabExited = {
+            mapViewModel.dispatch(OnMapTabExited)
+        },
         mapScreen = { route ->
             MapRoute(
+                isBackEnabled = route.returnTab == null,
+                onDetailDismissed = navigationState::consumeMapReturnOrigin,
                 onEventNavigate = { event ->
                     navigationState.showEvent(event.id)
                 },
                 requestedShopId = route.shopId,
+                viewModel = mapViewModel,
             )
         },
         rankingScreen = {
-            RankingRoute(
-                onShopClick = { shopId ->
-                    navigationState.showShopOnMap(
+            var rankingDetailShopId by rememberSaveable { mutableStateOf<String?>(null) }
+            Box(modifier = Modifier.fillMaxSize()) {
+                RankingRoute(
+                    onShopClick = { shopId ->
+                        rankingDetailShopId = shopId
+                    },
+                    onFindShopClick = {
+                        rankingDetailShopId = null
+                        navigationState.showMap()
+                    },
+                )
+                rankingDetailShopId?.let { shopId ->
+                    ShopDetailRoute(
                         shopId = shopId,
-                        source = "ranking",
+                        viewModel = mapViewModel,
+                        onDismiss = { rankingDetailShopId = null },
+                        onShowOnMap = { selectedShopId ->
+                            rankingDetailShopId = null
+                            navigationState.showShopOnMap(
+                                shopId = selectedShopId,
+                                source = "ranking",
+                                returnTab = TabStatus.RANKING,
+                            )
+                        },
+                        onEventNavigate = { event ->
+                            rankingDetailShopId = null
+                            navigationState.showEvent(event.id)
+                        },
                     )
-                },
-                onFindShopClick = navigationState::showMap,
-            )
+                }
+            }
         },
         myScreen = {
             MyTabRoute(

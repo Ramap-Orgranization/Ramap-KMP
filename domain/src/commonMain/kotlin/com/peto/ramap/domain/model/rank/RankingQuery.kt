@@ -1,10 +1,10 @@
 package com.peto.ramap.domain.model.rank
 
-import com.peto.ramap.domain.model.shop.AdministrativeArea
+import com.peto.ramap.domain.model.shop.AreaFilter
 import com.peto.ramap.domain.model.shop.Category
 
 data class RankingQuery(
-    val area: AdministrativeArea?,
+    val areaFilter: AreaFilter,
     val categories: Set<Category>,
     val cursor: RankingCursor? = null,
     val limit: Int = DEFAULT_PAGE_SIZE,

@@ -86,6 +86,7 @@ kotlin {
             implementation(projects.core.platform)
             implementation(projects.core.notification)
             implementation(projects.core.navigation)
+            implementation(projects.core.ui)
             implementation(projects.domain)
             implementation(projects.data)
             implementation(projects.feature.main)

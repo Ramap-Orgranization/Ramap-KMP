@@ -42,11 +42,13 @@ import com.peto.ramap.ui.main.map.contract.MapIntent.OnHiddenToggled
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnInitialLocationFocusConsumed
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnKakaoLoginClicked
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnLocationPermissionBlocked
+import com.peto.ramap.ui.main.map.contract.MapIntent.OnMapTabExited
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnMyLocationChanged
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnQueryChanged
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnRequestedShopDismissed
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnSearchResultsDismissed
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnSearchedShopSelected
+import com.peto.ramap.ui.main.map.contract.MapIntent.OnSelectedShopFocusConsumed
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopDetailDismissed
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopDetailRetry
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopIdSelected
@@ -139,9 +141,23 @@ class MapViewModel(
 
             OnInitialLocationFocusConsumed -> consumeInitialLocationFocus()
 
+            OnSelectedShopFocusConsumed -> consumeSelectedShopFocus()
+
+            OnMapTabExited -> dismissBottomSheet()
+
             else -> return false
         }
         return true
+    }
+
+    private fun dismissBottomSheet() {
+        cancelShopDetailLoad()
+        reduce {
+            copy(
+                shopDetailState = ShopDetailUiState.Closed,
+                search = search.dismissResults(),
+            )
+        }
     }
 
     private fun handleShopIntent(intent: MapIntent): Boolean {
@@ -295,6 +311,7 @@ class MapViewModel(
 
     private fun selectShop(shopId: String) {
         if (shopId.isBlank()) return
+        consumeInitialLocationFocus()
         when (val lookup = fetchShopDetailUseCase.findCached(shopId)) {
             is ShopDetailCacheLookup.Hit -> {
                 cancelShopDetailLoad()
@@ -341,11 +358,14 @@ class MapViewModel(
         reduce { copy(locationFocusStatus = LocationFocusStatus.Consumed) }
     }
 
+    private fun consumeSelectedShopFocus() {
+        reduce { copy(shouldFocusSelectedShop = false) }
+    }
+
     private fun updateCameraPosition(position: CameraPosition) {
         reduce {
             copy(
                 cameraPosition = position,
-                shouldFocusSelectedShop = false,
             )
         }
     }

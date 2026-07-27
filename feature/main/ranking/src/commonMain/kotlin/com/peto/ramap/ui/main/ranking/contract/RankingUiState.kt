@@ -5,6 +5,8 @@ import com.peto.ramap.domain.model.rank.RankedShop
 import com.peto.ramap.domain.model.rank.RankedShops
 import com.peto.ramap.domain.model.rank.RankingCursor
 import com.peto.ramap.domain.model.rank.ShopRankings
+import com.peto.ramap.domain.model.shop.AdministrativeArea
+import com.peto.ramap.domain.model.shop.AdministrativeDistricts
 import com.peto.ramap.domain.model.shop.AreaFilter
 import com.peto.ramap.domain.model.shop.Category
 import com.peto.ramap.ui.base.State
@@ -16,6 +18,8 @@ data class RankingUiState(
     val shops: RankedShops = RankedShops(ShopRankings(emptyList())),
     val nextCursor: RankingCursor? = null,
     val areaFilter: AreaFilter = AreaFilter.Nationwide,
+    val areaSelectionArea: AdministrativeArea? = null,
+    val administrativeDistricts: AdministrativeDistricts = AdministrativeDistricts(emptyList()),
     val selectedCategories: Set<Category> = emptySet(),
     val bookmarkedShopIds: Set<String> = emptySet(),
     val bookmarkUpdatingShopIds: Set<String> = emptySet(),
@@ -33,6 +37,9 @@ data class RankingUiState(
 
     val isLoadingNext: Boolean
         get() = loadState.isLoading(RankingLoadKey.NextPage)
+
+    val isLoadingDistricts: Boolean
+        get() = loadState.isLoading(RankingLoadKey.Districts)
 
     val hasNext: Boolean
         get() = nextCursor != null

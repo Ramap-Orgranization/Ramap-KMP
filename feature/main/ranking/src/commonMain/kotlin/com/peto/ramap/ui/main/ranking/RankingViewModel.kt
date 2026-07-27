@@ -10,6 +10,8 @@ import com.peto.ramap.domain.model.rank.RankingCursor
 import com.peto.ramap.domain.model.rank.RankingPage
 import com.peto.ramap.domain.model.rank.RankingQuery
 import com.peto.ramap.domain.model.rank.ShopRankings
+import com.peto.ramap.domain.model.shop.AdministrativeArea
+import com.peto.ramap.domain.model.shop.AdministrativeDistricts
 import com.peto.ramap.domain.model.shop.AreaFilter
 import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.domain.repository.LoginRepository
@@ -39,6 +41,9 @@ class RankingViewModel(
 ) : BaseViewModel<RankingUiState, RankingIntent, RankingSideEffect>(
         RankingUiState(),
     ) {
+    private var observedBookmarkedShopIds: Set<String>? = null
+    private val expectedBookmarkStates = mutableMapOf<String, Boolean>()
+
     init {
         observePersonalization()
         loadFirstPage()
@@ -56,9 +61,15 @@ class RankingViewModel(
 
             RankingIntent.OnAllCategoriesSelected -> selectAllCategories()
 
+            RankingIntent.OnAreaSheetOpened -> restoreAreaSelection()
+
             RankingIntent.OnKakaoLoginClicked -> signInWithKakao()
 
             is RankingIntent.OnAreaFilterSelected -> selectAreaFilter(intent.areaFilter)
+
+            is RankingIntent.OnAdministrativeAreaSelected -> selectAdministrativeArea(intent.area)
+
+            RankingIntent.OnAreaSelectionBack -> showAdministrativeAreas()
 
             is RankingIntent.OnBookmarkChanged -> updateBookmark(intent.shop, intent.enabled)
 
@@ -71,6 +82,7 @@ class RankingViewModel(
     private fun observePersonalization() {
         viewModelScope.launch {
             personalizationStore.state.collectLatest { personalization ->
+                synchronizeLikeCounts(personalization.bookmarkedShopIds)
                 reduce {
                     copy(
                         bookmarkedShopIds = personalization.bookmarkedShopIds,
@@ -78,6 +90,50 @@ class RankingViewModel(
                 }
             }
         }
+    }
+
+    private fun synchronizeLikeCounts(bookmarkedShopIds: Set<String>) {
+        val previousIds = observedBookmarkedShopIds
+        observedBookmarkedShopIds = bookmarkedShopIds
+        if (previousIds == null) return
+
+        val addedShopIds = bookmarkedShopIds - previousIds
+        val removedShopIds = previousIds - bookmarkedShopIds
+        val loadedShopIds = currentState.shops.map { it.ranking.shop.id }.toSet()
+        val changedDeltas = mutableMapOf<String, Long>()
+
+        for (shopId in addedShopIds) {
+            synchronizeLikeCountChange(shopId, enabled = true, loadedShopIds, changedDeltas)
+        }
+        for (shopId in removedShopIds) {
+            synchronizeLikeCountChange(shopId, enabled = false, loadedShopIds, changedDeltas)
+        }
+        if (changedDeltas.isEmpty()) return
+
+        reduce {
+            copy(
+                bookmarkLikeCountDeltas =
+                    bookmarkLikeCountDeltas.toMutableMap().apply {
+                        for ((shopId, delta) in changedDeltas) {
+                            val updatedDelta = (this[shopId] ?: 0L) + delta
+                            if (updatedDelta == 0L) remove(shopId) else this[shopId] = updatedDelta
+                        }
+                    },
+            )
+        }
+    }
+
+    private fun synchronizeLikeCountChange(
+        shopId: String,
+        enabled: Boolean,
+        loadedShopIds: Set<String>,
+        changedDeltas: MutableMap<String, Long>,
+    ) {
+        val expectedState = expectedBookmarkStates.remove(shopId)
+        if (expectedState == enabled) return
+        if (shopId !in loadedShopIds) return
+
+        changedDeltas[shopId] = calculateBookmarkLikeCountDelta(enabled)
     }
 
     private fun toggleCategory(intent: RankingIntent.OnCategoryToggled) {
@@ -113,6 +169,65 @@ class RankingViewModel(
         }
     }
 
+    private fun selectAdministrativeArea(area: AdministrativeArea) {
+        if (area == AdministrativeArea.SEJONG) {
+            selectAreaFilter(AreaFilter.Province(area))
+            return
+        }
+
+        loadAdministrativeDistricts(area)
+    }
+
+    private fun restoreAreaSelection() {
+        when (val areaFilter = currentState.areaFilter) {
+            AreaFilter.Nationwide -> showAdministrativeAreas()
+            is AreaFilter.Province -> restoreAdministrativeArea(areaFilter.area)
+            is AreaFilter.District -> restoreAdministrativeArea(areaFilter.area)
+        }
+    }
+
+    private fun restoreAdministrativeArea(area: AdministrativeArea) {
+        if (area == AdministrativeArea.SEJONG) {
+            reduce {
+                copy(
+                    areaSelectionArea = area,
+                    administrativeDistricts = AdministrativeDistricts(emptyList()),
+                )
+            }
+            return
+        }
+
+        loadAdministrativeDistricts(area)
+    }
+
+    private fun showAdministrativeAreas() {
+        cancelTask(DISTRICTS_TASK_KEY)
+        reduce {
+            copy(
+                areaSelectionArea = null,
+                administrativeDistricts = AdministrativeDistricts(emptyList()),
+            )
+        }
+    }
+
+    private fun loadAdministrativeDistricts(area: AdministrativeArea) {
+        launchResultTask(
+            taskKey = DISTRICTS_TASK_KEY,
+            loadKey = RankingLoadKey.Districts,
+            policy = TaskPolicy.CancelPrevious,
+            onStart = {
+                copy(
+                    areaSelectionArea = area,
+                    administrativeDistricts = AdministrativeDistricts(emptyList()),
+                )
+            },
+            request = { shopRankRepository.fetchAdministrativeDistricts(area) },
+            onSuccess = { districts ->
+                reduce { copy(administrativeDistricts = districts) }
+            },
+        )
+    }
+
     private fun changeFilters(reducer: RankingUiState.() -> RankingUiState) {
         reduce {
             reducer().copy(
@@ -135,6 +250,7 @@ class RankingViewModel(
 
         rankingAnalytics.logBookmarkToggled(shop, enabled)
 
+        expectedBookmarkStates[shop.id] = enabled
         executeBookmarkUpdate(shop.id, enabled)
     }
 
@@ -166,7 +282,10 @@ class RankingViewModel(
             onStart = { createBookmarkUpdatingState(this, shopId, likeCountDelta) },
             onFinish = { createBookmarkUpdateFinishedState(this, shopId) },
             request = { personalizationStore.updateBookmark(shopId, enabled) },
-            onError = { handleBookmarkUpdateFailure(shopId, likeCountDelta) },
+            onError = {
+                expectedBookmarkStates.remove(shopId)
+                handleBookmarkUpdateFailure(shopId, likeCountDelta)
+            },
         )
     }
 
@@ -264,7 +383,7 @@ class RankingViewModel(
             policy = TaskPolicy.CancelPrevious,
             onStart = { copy(showError = false) },
             request = { shopRankRepository.fetchShopRankings(query) },
-            onSuccess = { page -> replaceFirstPage(page) },
+            onSuccess = ::replaceFirstPage,
             onError = { reduce { copy(showError = true) } },
         )
     }
@@ -279,7 +398,7 @@ class RankingViewModel(
             loadKey = RankingLoadKey.Refresh,
             policy = TaskPolicy.CancelPrevious,
             request = { shopRankRepository.fetchShopRankings(query) },
-            onSuccess = { page -> replaceFirstPage(page) },
+            onSuccess = ::replaceFirstPage,
             onError = { showRefreshFailure() },
         )
     }
@@ -365,15 +484,12 @@ class RankingViewModel(
         showToast(Res.string.kakao_login_failure_message, ToastType.ERROR)
     }
 
-    private fun createRankingQuery(cursor: RankingCursor?): RankingQuery {
-        val selectedAreaFilter = currentState.areaFilter as? AreaFilter.Selected
-
-        return RankingQuery(
-            area = selectedAreaFilter?.area,
+    private fun createRankingQuery(cursor: RankingCursor?): RankingQuery =
+        RankingQuery(
+            areaFilter = currentState.areaFilter,
             categories = currentState.selectedCategories,
             cursor = cursor,
         )
-    }
 
     private fun bookmarkTaskKey(shopId: String): String = "$BOOKMARK_TASK_KEY$shopId"
 
@@ -391,5 +507,6 @@ class RankingViewModel(
         private const val RANKINGS_TASK_KEY = "rankings"
         private const val NEXT_PAGE_TASK_KEY = "ranking-next-page"
         private const val SIGN_IN_TASK_KEY = "ranking-sign-in"
+        private const val DISTRICTS_TASK_KEY = "ranking-districts"
     }
 }

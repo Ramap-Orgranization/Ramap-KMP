@@ -63,6 +63,7 @@ internal actual fun RamapMapView(
     onBoundsChanged: (MapBounds) -> Unit,
     onCameraPositionChanged: (CameraPosition) -> Unit,
     onInitialFocusConsumed: () -> Unit,
+    onSelectedShopFocusConsumed: () -> Unit,
     onMyLocationChanged: (Location) -> Unit,
     onShopClick: (RamenShop) -> Unit,
     onLocationPermissionBlocked: () -> Unit,
@@ -190,12 +191,16 @@ internal actual fun RamapMapView(
                 0
             },
         )
-        cameraController.focusShops(
-            map,
-            focusShops,
-            currentLocation.takeIf { focusNearestToCurrentLocation },
-            focusRequestKey,
-        )
+        val didMoveCamera =
+            cameraController.focusShops(
+                map,
+                focusShops,
+                currentLocation.takeIf { focusNearestToCurrentLocation },
+                focusRequestKey,
+            )
+        if (didMoveCamera && selectedShopId != null && focusShops.size == 1) {
+            onSelectedShopFocusConsumed()
+        }
     }
 
     LaunchedEffect(naverMap, shouldBootstrapInitialLocationFocus) {

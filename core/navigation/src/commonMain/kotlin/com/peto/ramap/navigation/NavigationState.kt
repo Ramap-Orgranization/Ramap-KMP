@@ -17,15 +17,6 @@ class NavigationState(
     var lastNavigationSource: String? = null
         private set
 
-    init {
-        val rankingBackStack = backStacks.getValue(TabStatus.RANKING)
-        if (selectedTab == TabStatus.RANKING && rankingBackStack.isEmpty()) {
-            rankingBackStack.add(ScreenRoutes.RankingTabRoutes)
-        } else if (selectedTab != TabStatus.RANKING) {
-            rankingBackStack.clear()
-        }
-    }
-
     val currentBackStack: NavBackStack<NavKey>
         get() = backStacks.getValue(selectedTab)
 
@@ -33,7 +24,10 @@ class NavigationState(
         get() = currentBackStack.last() as ScreenRoutes
 
     val canNavigateBack: Boolean
-        get() = currentBackStack.size > 1 || selectedTab != TabStatus.MAP
+        get() =
+            currentBackStack.size > 1 ||
+                selectedTab != TabStatus.MAP ||
+                requestedMapReturnTab() != null
 
     fun showHiddenShops() {
         if (currentRoute != ScreenRoutes.HiddenShopListRoutes) {
@@ -68,21 +62,29 @@ class NavigationState(
             return
         }
 
+        requestedMapReturnTab()?.let { returnTab ->
+            selectTopLevelTab(returnTab)
+            return
+        }
+
         selectTopLevelTab(TabStatus.MAP)
     }
 
     fun selectTopLevelTab(tab: TabStatus) {
         if (tab == selectedTab) return
 
-        if (selectedTab == TabStatus.RANKING) {
-            backStacks.getValue(TabStatus.RANKING).clear()
-        }
-        if (tab == TabStatus.RANKING) {
-            val rankingBackStack = backStacks.getValue(TabStatus.RANKING)
-            rankingBackStack.clear()
-            rankingBackStack.add(ScreenRoutes.RankingTabRoutes)
+        if (selectedTab == TabStatus.MAP) {
+            clearRequestedShopFromMapRoute()
         }
         selectedTab = tab
+    }
+
+    private fun clearRequestedShopFromMapRoute() {
+        val mapBackStack = backStacks.getValue(TabStatus.MAP)
+        val mapRoute = mapBackStack.firstOrNull() as? ScreenRoutes.TabRoutes ?: return
+        if (mapRoute.shopId == null) return
+
+        mapBackStack[0] = ScreenRoutes.TabRoutes()
     }
 
     fun showMap() {
@@ -95,9 +97,14 @@ class NavigationState(
     fun showShopOnMap(
         shopId: String,
         source: String? = null,
+        returnTab: TabStatus? = null,
     ) {
         lastNavigationSource = source
-        val mapRoute = ScreenRoutes.TabRoutes(shopId = shopId)
+        val mapRoute =
+            ScreenRoutes.TabRoutes(
+                shopId = shopId,
+                returnTab = returnTab,
+            )
         val mapBackStack = backStacks.getValue(TabStatus.MAP)
         val isRequestedShopAlreadyShown =
             selectedTab == TabStatus.MAP && mapBackStack.singleOrNull() == mapRoute
@@ -106,6 +113,19 @@ class NavigationState(
         mapBackStack.clear()
         mapBackStack.add(mapRoute)
         selectTopLevelTab(TabStatus.MAP)
+    }
+
+    fun consumeMapReturnOrigin() {
+        val mapBackStack = backStacks.getValue(TabStatus.MAP)
+        val route = mapBackStack.singleOrNull() as? ScreenRoutes.TabRoutes ?: return
+        if (route.returnTab == null) return
+
+        mapBackStack[0] = ScreenRoutes.TabRoutes()
+    }
+
+    private fun requestedMapReturnTab(): TabStatus? {
+        if (selectedTab != TabStatus.MAP) return null
+        return (currentBackStack.singleOrNull() as? ScreenRoutes.TabRoutes)?.returnTab
     }
 
     private fun showOnce(route: ScreenRoutes) {

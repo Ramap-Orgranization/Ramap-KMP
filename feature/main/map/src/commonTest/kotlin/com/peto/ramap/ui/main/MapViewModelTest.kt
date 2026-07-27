@@ -44,11 +44,13 @@ import com.peto.ramap.ui.main.map.contract.MapIntent.OnCameraPositionChanged
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnCategoryFilterToggled
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnHiddenToggled
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnInitialLocationFocusConsumed
+import com.peto.ramap.ui.main.map.contract.MapIntent.OnMapTabExited
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnMyLocationChanged
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnQueryChanged
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnRequestedShopDismissed
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnSearchResultsDismissed
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnSearchedShopSelected
+import com.peto.ramap.ui.main.map.contract.MapIntent.OnSelectedShopFocusConsumed
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopDetailDismissed
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopDetailRetry
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopIdSelected
@@ -89,6 +91,40 @@ import kotlin.test.assertEquals
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class MapViewModelTest {
+    @Test
+    fun `랭킹 매장 상세를 연 뒤 지도 탭을 떠나면 모든 바텀시트를 닫는다`() =
+        coroutinesTest {
+            val selectedShop = ramenShopFixture(id = "selected-shop")
+            val searchShops =
+                RamenShops(
+                    listOf(
+                        selectedShop,
+                        ramenShopFixture(id = "other-shop"),
+                    ).associateBy { it.id },
+                )
+            val viewModel =
+                mapViewModel(
+                    ramenShopRepository = FakeRamenShopRepository(searchResult = searchShops),
+                )
+
+            viewModel.dispatch(OnQueryChanged("라멘"))
+            advanceTimeBy(300)
+            runCurrent()
+            viewModel.dispatch(OnShopIdSelected(selectedShop.id))
+            runCurrent()
+
+            assertEquals(true, viewModel.uiState.value.showBottomSheet)
+
+            viewModel.dispatch(OnMapTabExited)
+            runCurrent()
+
+            assertEquals(null, viewModel.uiState.value.selectedShop)
+            assertEquals("라멘", viewModel.uiState.value.search.input)
+            assertEquals(searchShops, viewModel.uiState.value.search.results)
+            assertEquals(false, viewModel.uiState.value.showSearchResults)
+            assertEquals(false, viewModel.uiState.value.showBottomSheet)
+        }
+
     @Test
     fun `매장 공유를 누르면 공유 정보 side effect를 보낸다`() =
         coroutinesTest {
@@ -276,7 +312,7 @@ class MapViewModelTest {
         }
 
     @Test
-    fun `카메라 이동이 끝나면 위치를 저장하고 선택 매장 포커스를 소비한다`() =
+    fun `선택 매장 카메라 이동이 수행되면 포커스를 소비한다`() =
         coroutinesTest {
             val shop = ramenShopFixture()
             val cameraPosition =
@@ -300,8 +336,49 @@ class MapViewModelTest {
             runCurrent()
 
             assertEquals(cameraPosition, viewModel.uiState.value.cameraPosition)
+            assertEquals(RamenShops(listOf(shop)), viewModel.uiState.value.focusShops)
+
+            viewModel.dispatch(OnSelectedShopFocusConsumed)
+            runCurrent()
+
             assertEquals(RamenShops(emptyMap()), viewModel.uiState.value.focusShops)
             assertEquals(shop, viewModel.uiState.value.selectedShop)
+        }
+
+    @Test
+    fun `랭킹 상세에서 지도 진입시 초기 카메라 갱신보다 요청 매장 포커스를 우선한다`() =
+        coroutinesTest {
+            val shop = ramenShopFixture(id = "ranking-requested-shop")
+            val currentLocation = Location(lat = 37.275, lng = 127.009)
+            val currentLocationCamera =
+                CameraPosition(
+                    center = currentLocation,
+                    zoom = 14.0,
+                )
+            val viewModel =
+                mapViewModel(
+                    ramenShopRepository =
+                        FakeRamenShopRepository(
+                            fetchByIdsResult = RamenShops(mapOf(shop.id to shop)),
+                        ),
+                )
+
+            viewModel.dispatch(OnShopIdSelected(shop.id))
+            runCurrent()
+
+            viewModel.dispatch(OnShopDetailDismissed)
+            viewModel.dispatch(OnShopIdSelected(shop.id))
+            viewModel.dispatch(OnCameraPositionChanged(currentLocationCamera))
+            runCurrent()
+
+            assertEquals(currentLocationCamera, viewModel.uiState.value.cameraPosition)
+            assertEquals(shop, viewModel.uiState.value.selectedShop)
+            assertEquals(RamenShops(listOf(shop)), viewModel.uiState.value.focusShops)
+
+            viewModel.dispatch(OnSelectedShopFocusConsumed)
+            runCurrent()
+
+            assertEquals(RamenShops(emptyMap()), viewModel.uiState.value.focusShops)
         }
 
     @Test
@@ -640,6 +717,37 @@ class MapViewModelTest {
 
             viewModel.dispatch(OnShopDetailDismissed)
             runCurrent()
+        }
+
+    @Test
+    fun `아이디로 요청한 매장 포커스는 이후 수신한 최초 현재 위치로 덮어쓰지 않는다`() =
+        coroutinesTest {
+            val shop = ramenShopFixture(id = "requested-shop")
+            val currentLocation = Location(lat = 37.275, lng = 127.009)
+            val repository =
+                FakeRamenShopRepository(
+                    fetchByIdsResult = RamenShops(mapOf(shop.id to shop)),
+                )
+            val viewModel = mapViewModel(ramenShopRepository = repository)
+
+            viewModel.dispatch(OnShopIdSelected(shop.id))
+            runCurrent()
+            viewModel.dispatch(OnMyLocationChanged(currentLocation))
+            runCurrent()
+
+            assertEquals(shop, viewModel.uiState.value.selectedShop)
+            assertEquals(
+                listOf(shop),
+                viewModel.uiState.value.focusShops.values
+                    .toList(),
+            )
+            assertEquals(currentLocation, viewModel.uiState.value.currentLocation)
+            assertEquals(null, viewModel.uiState.value.initialFocusLocation)
+            assertEquals(
+                LocationFocusStatus.Consumed,
+                viewModel.uiState.value.locationFocusStatus,
+            )
+            assertEquals(false, viewModel.uiState.value.shouldBootstrapLocationFocusStatus)
         }
 
     @Test

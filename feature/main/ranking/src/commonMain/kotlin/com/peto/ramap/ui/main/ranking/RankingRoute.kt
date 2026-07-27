@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -24,6 +26,7 @@ import com.peto.ramap.designsystem.toast.ToastManager
 import com.peto.ramap.domain.model.rank.RankedShops
 import com.peto.ramap.domain.model.rank.ShopRanking
 import com.peto.ramap.domain.model.rank.ShopRankings
+import com.peto.ramap.domain.model.shop.AdministrativeArea
 import com.peto.ramap.domain.model.shop.AreaFilter
 import com.peto.ramap.domain.model.shop.Category
 import com.peto.ramap.domain.model.shop.RamenShop
@@ -54,6 +57,7 @@ fun RankingRoute(
     viewModel: RankingViewModel = koinViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val listState = rememberLazyListState()
 
     var showLoginGuideDialog by remember {
         mutableStateOf(false)
@@ -73,6 +77,7 @@ fun RankingRoute(
 
     RankingScreen(
         uiState = uiState,
+        listState = listState,
         onShopClick = { shop ->
             viewModel.dispatch(
                 RankingIntent.OnShopClicked(
@@ -109,6 +114,17 @@ fun RankingRoute(
                     areaFilter = areaFilter,
                 ),
             )
+        },
+        onAreaSheetOpened = {
+            viewModel.dispatch(RankingIntent.OnAreaSheetOpened)
+        },
+        onAdministrativeAreaSelected = { area ->
+            viewModel.dispatch(
+                RankingIntent.OnAdministrativeAreaSelected(area),
+            )
+        },
+        onAreaSelectionBack = {
+            viewModel.dispatch(RankingIntent.OnAreaSelectionBack)
         },
         onCategoryToggled = { category ->
             viewModel.dispatch(
@@ -150,6 +166,7 @@ fun RankingRoute(
 @Composable
 internal fun RankingScreen(
     uiState: RankingUiState,
+    listState: LazyListState,
     onShopClick: (RamenShop) -> Unit,
     onFindShopClick: () -> Unit,
     onRefresh: () -> Unit,
@@ -157,6 +174,9 @@ internal fun RankingScreen(
     onLoadNext: () -> Unit,
     onRetryNext: () -> Unit,
     onAreaFilterSelected: (AreaFilter) -> Unit,
+    onAreaSheetOpened: () -> Unit,
+    onAdministrativeAreaSelected: (AdministrativeArea) -> Unit,
+    onAreaSelectionBack: () -> Unit,
     onCategoryToggled: (Category) -> Unit,
     onAllCategoriesSelected: () -> Unit,
     onBookmarkChange: (RamenShop, Boolean) -> Unit,
@@ -196,6 +216,7 @@ internal fun RankingScreen(
             RankingFilters(
                 uiState = uiState,
                 onAreaClick = {
+                    onAreaSheetOpened()
                     isAreaSheetVisible = true
                 },
                 onCategoryToggled = onCategoryToggled,
@@ -204,7 +225,11 @@ internal fun RankingScreen(
 
             RankingContent(
                 uiState = uiState,
-                onShopClick = onShopClick,
+                listState = listState,
+                onShopClick = { shop ->
+                    isAreaSheetVisible = false
+                    onShopClick(shop)
+                },
                 onFindShopClick = onFindShopClick,
                 onRefresh = onRefresh,
                 onRetry = onRetry,
@@ -227,13 +252,25 @@ internal fun RankingScreen(
             visible = isAreaSheetVisible,
             onDismissRequest = {
                 isAreaSheetVisible = false
+                onAreaSelectionBack()
             },
         ) {
             AreaSheetContent(
                 areaFilter = uiState.areaFilter,
+                areaSelectionArea = uiState.areaSelectionArea,
+                administrativeDistricts = uiState.administrativeDistricts,
+                isLoadingDistricts = uiState.isLoadingDistricts,
+                onAdministrativeAreaSelected = { area ->
+                    onAdministrativeAreaSelected(area)
+                    if (area == AdministrativeArea.SEJONG) {
+                        isAreaSheetVisible = false
+                        onAreaSelectionBack()
+                    }
+                },
                 onAreaFilterSelected = { areaFilter ->
                     onAreaFilterSelected(areaFilter)
                     isAreaSheetVisible = false
+                    onAreaSelectionBack()
                 },
             )
         }
@@ -306,12 +343,16 @@ private fun RankingRoutePreview() {
                         setOf(shops.first().id),
                 ),
             onShopClick = {},
+            listState = rememberLazyListState(),
             onFindShopClick = {},
             onRefresh = {},
             onRetry = {},
             onLoadNext = {},
             onRetryNext = {},
             onAreaFilterSelected = {},
+            onAreaSheetOpened = {},
+            onAdministrativeAreaSelected = {},
+            onAreaSelectionBack = {},
             onCategoryToggled = {},
             onAllCategoriesSelected = {},
             onBookmarkChange = { _, _ -> },

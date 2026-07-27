@@ -69,6 +69,22 @@ class RankedShopsTest {
         assertEquals(listOf(1, 2, 3), result.map(RankedShop::rank))
     }
 
+    @Test
+    fun `좋아요가 0인 매장은 순위를 부여하지 않는다`() {
+        val rankedShops =
+            RankedShops(
+                ShopRankings(
+                    listOf(
+                        ranking(id = "positive", likeCount = 1),
+                        ranking(id = "zero-first", likeCount = 0),
+                        ranking(id = "zero-second", likeCount = 0),
+                    ),
+                ),
+            )
+
+        assertEquals(listOf(1, null, null), rankedShops.map(RankedShop::rank))
+    }
+
     private fun ranking(
         id: String,
         likeCount: Long,

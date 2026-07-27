@@ -63,7 +63,7 @@ internal fun RankingRow(
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         AppText(
-            text = "${item.rank}",
+            text = item.rank?.toString() ?: "-",
             style = AppTextStyle.H3,
             color = GrayColor.C500,
         )

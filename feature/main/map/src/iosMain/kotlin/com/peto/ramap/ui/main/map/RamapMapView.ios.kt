@@ -50,6 +50,7 @@ internal actual fun RamapMapView(
     onBoundsChanged: (MapBounds) -> Unit,
     onCameraPositionChanged: (CameraPosition) -> Unit,
     onInitialFocusConsumed: () -> Unit,
+    onSelectedShopFocusConsumed: () -> Unit,
     onMyLocationChanged: (Location) -> Unit,
     onShopClick: (RamenShop) -> Unit,
     onLocationPermissionBlocked: () -> Unit,
@@ -109,12 +110,16 @@ internal actual fun RamapMapView(
                     location = placeFocusLocation,
                     requestKey = placeFocusRequestKey,
                 )
-                controller.updateFocus(
-                    shops = focusShops,
-                    focusNearestToCurrentLocation = focusNearestToCurrentLocation,
-                    focusRequestKey = focusRequestKey,
-                    selectedShopId = selectedShopId,
-                )
+                val didMoveCamera =
+                    controller.updateFocus(
+                        shops = focusShops,
+                        focusNearestToCurrentLocation = focusNearestToCurrentLocation,
+                        focusRequestKey = focusRequestKey,
+                        selectedShopId = selectedShopId,
+                    )
+                if (didMoveCamera && selectedShopId != null && focusShops.size == 1) {
+                    onSelectedShopFocusConsumed()
+                }
                 if (initialFocusLocation != null) {
                     onInitialFocusConsumed()
                 }

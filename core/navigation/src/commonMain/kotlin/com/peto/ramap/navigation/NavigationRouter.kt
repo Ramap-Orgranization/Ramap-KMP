@@ -20,6 +20,7 @@ import com.peto.ramap.theme.CommonColor
 @Composable
 fun NavigationRouter(
     navigationState: NavigationState,
+    onMapTabExited: () -> Unit,
     mapScreen: @Composable (ScreenRoutes.TabRoutes) -> Unit,
     rankingScreen: @Composable () -> Unit,
     eventListScreen: @Composable () -> Unit,
@@ -33,33 +34,39 @@ fun NavigationRouter(
     bookmarkedShopsScreen: @Composable () -> Unit,
     eventScreen: @Composable (ScreenRoutes.EventDetailRoutes) -> Unit,
 ) {
+    val onTabSelected: (TabStatus) -> Unit = { tab ->
+        if (navigationState.selectedTab == TabStatus.MAP && tab != TabStatus.MAP) {
+            onMapTabExited()
+        }
+        navigationState.selectTopLevelTab(tab)
+    }
     val routeEntryProvider: (NavKey) -> NavEntry<NavKey> =
         entryProvider {
             entry<ScreenRoutes.TabRoutes> { route ->
                 BottonNavigationTabScreen(
                     selectedTab = TabStatus.MAP,
-                    onTabSelected = navigationState::selectTopLevelTab,
+                    onTabSelected = onTabSelected,
                     content = { mapScreen(route) },
                 )
             }
             entry<ScreenRoutes.EventTabRoutes> {
                 BottonNavigationTabScreen(
                     selectedTab = TabStatus.EVENT,
-                    onTabSelected = navigationState::selectTopLevelTab,
+                    onTabSelected = onTabSelected,
                     content = eventListScreen,
                 )
             }
             entry<ScreenRoutes.RankingTabRoutes> {
                 BottonNavigationTabScreen(
                     selectedTab = TabStatus.RANKING,
-                    onTabSelected = navigationState::selectTopLevelTab,
+                    onTabSelected = onTabSelected,
                     content = rankingScreen,
                 )
             }
             entry<ScreenRoutes.MyTabRoutes> {
                 BottonNavigationTabScreen(
                     selectedTab = TabStatus.MY,
-                    onTabSelected = navigationState::selectTopLevelTab,
+                    onTabSelected = onTabSelected,
                     content = myScreen,
                 )
             }
