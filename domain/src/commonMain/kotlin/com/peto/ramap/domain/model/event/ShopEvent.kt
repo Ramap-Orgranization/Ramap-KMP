@@ -6,7 +6,7 @@ data class ShopEvent(
     val title: String,
     val description: String,
     val startDate: String,
-    val endDate: String,
+    val endDate: String?,
     val sourceUrl: String,
     val isToday: Boolean,
     val isVenue: Boolean,

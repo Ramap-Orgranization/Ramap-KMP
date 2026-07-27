@@ -61,6 +61,7 @@
     <string name="event_collaborator_shop">콜라보 매장</string>
     <string name="event_collaborator_person">함께하는 사람</string>
     <string name="event_date">날짜</string>
+    <string name="event_date_end_unknown">%1$s년 %2$d월 %3$d일 ~ 종료일 미정</string>
     <string name="event_single_date_format">%1$s년 %2$d월 %3$d일</string>
     <string name="event_date_range_format">%1$s년 %2$d월 %3$d일 ~ %4$s년 %5$d월 %6$d일</string>
     <string name="event_content">내용</string>

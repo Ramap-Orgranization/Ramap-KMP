@@ -12,7 +12,7 @@ internal data class ShopEventResponse(
     val title: String,
     val description: String,
     @SerialName("start_date") val startDate: String,
-    @SerialName("end_date") val endDate: String,
+    @SerialName("end_date") val endDate: String?,
     @SerialName("source_url") val sourceUrl: String,
     @SerialName("is_today") val isToday: Boolean,
     @SerialName("is_venue") val isVenue: Boolean,
