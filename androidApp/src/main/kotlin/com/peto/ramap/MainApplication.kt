@@ -8,9 +8,12 @@ import com.google.firebase.crashlytics.FirebaseCrashlytics
 import com.google.firebase.messaging.FirebaseMessaging
 import com.kakao.sdk.common.KakaoSdk
 import com.naver.maps.map.NaverMapSdk
+import com.peto.ramap.analytics.AnalyticsTracker
+import com.peto.ramap.attribution.InstallReferrerAttributor
 import com.peto.ramap.di.initKoin
 import com.peto.ramap.network.config.RamapSecrets
 import org.koin.android.ext.koin.androidContext
+import org.koin.java.KoinJavaComponent.get
 
 class MainApplication : Application() {
     override fun onCreate() {
@@ -24,6 +27,8 @@ class MainApplication : Application() {
         initKoin {
             androidContext(this@MainApplication)
         }
+        InstallReferrerAttributor(this, get(AnalyticsTracker::class.java))
+            .collectOnce()
     }
 
     private fun configureFirebase() {
