@@ -308,6 +308,7 @@ class MapViewModel(
 
     private fun selectShop(shopId: String) {
         if (shopId.isBlank()) return
+        consumeInitialLocationFocus()
         when (val lookup = fetchShopDetailUseCase.findCached(shopId)) {
             is ShopDetailCacheLookup.Hit -> {
                 cancelShopDetailLoad()

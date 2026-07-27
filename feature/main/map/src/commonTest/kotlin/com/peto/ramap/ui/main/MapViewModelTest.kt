@@ -678,6 +678,33 @@ class MapViewModelTest {
         }
 
     @Test
+    fun `아이디로 요청한 매장 포커스는 이후 수신한 최초 현재 위치로 덮어쓰지 않는다`() =
+        coroutinesTest {
+            val shop = ramenShopFixture(id = "requested-shop")
+            val currentLocation = Location(lat = 37.275, lng = 127.009)
+            val repository =
+                FakeRamenShopRepository(
+                    fetchByIdsResult = RamenShops(mapOf(shop.id to shop)),
+                )
+            val viewModel = mapViewModel(ramenShopRepository = repository)
+
+            viewModel.dispatch(OnShopIdSelected(shop.id))
+            runCurrent()
+            viewModel.dispatch(OnMyLocationChanged(currentLocation))
+            runCurrent()
+
+            assertEquals(shop, viewModel.uiState.value.selectedShop)
+            assertEquals(listOf(shop), viewModel.uiState.value.focusShops.values.toList())
+            assertEquals(currentLocation, viewModel.uiState.value.currentLocation)
+            assertEquals(null, viewModel.uiState.value.initialFocusLocation)
+            assertEquals(
+                LocationFocusStatus.Consumed,
+                viewModel.uiState.value.locationFocusStatus,
+            )
+            assertEquals(false, viewModel.uiState.value.shouldBootstrapLocationFocusStatus)
+        }
+
+    @Test
     fun `아이디 매장 조회 실패를 표시하고 재시도하면 같은 아이디를 다시 조회한다`() =
         coroutinesTest {
             val shop = ramenShopFixture(id = "requested-shop")
