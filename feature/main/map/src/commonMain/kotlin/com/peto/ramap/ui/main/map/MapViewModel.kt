@@ -152,10 +152,11 @@ class MapViewModel(
 
     private fun dismissBottomSheet() {
         cancelShopDetailLoad()
+        cancelTask(SEARCH_TASK_KEY)
         reduce {
             copy(
                 shopDetailState = ShopDetailUiState.Closed,
-                search = search.dismissResults(),
+                search = search.reset(),
             )
         }
     }

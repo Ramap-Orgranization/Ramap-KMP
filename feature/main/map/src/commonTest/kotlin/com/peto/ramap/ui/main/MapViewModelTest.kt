@@ -119,10 +119,32 @@ class MapViewModelTest {
             runCurrent()
 
             assertEquals(null, viewModel.uiState.value.selectedShop)
-            assertEquals("라멘", viewModel.uiState.value.search.input)
-            assertEquals(searchShops, viewModel.uiState.value.search.results)
+            assertEquals("", viewModel.uiState.value.search.input)
+            assertEquals(RamenShops(emptyMap()), viewModel.uiState.value.search.results)
             assertEquals(false, viewModel.uiState.value.showSearchResults)
             assertEquals(false, viewModel.uiState.value.showBottomSheet)
+        }
+
+    @Test
+    fun `지도 탭을 떠나면 진행 중인 검색과 검색 상태를 초기화한다`() =
+        coroutinesTest {
+            val viewModel =
+                mapViewModel(
+                    placeSearchRepository = FakePlaceSearchRepository(delayMillis = 1_000),
+                )
+
+            viewModel.dispatch(OnQueryChanged("라멘"))
+            advanceTimeBy(300)
+            runCurrent()
+            assertEquals(true, viewModel.uiState.value.isSearchLoading)
+
+            viewModel.dispatch(OnMapTabExited)
+            runCurrent()
+            advanceTimeBy(1_000)
+            runCurrent()
+
+            assertEquals(SearchUiModel(), viewModel.uiState.value.search)
+            assertEquals(false, viewModel.uiState.value.isSearchLoading)
         }
 
     @Test
