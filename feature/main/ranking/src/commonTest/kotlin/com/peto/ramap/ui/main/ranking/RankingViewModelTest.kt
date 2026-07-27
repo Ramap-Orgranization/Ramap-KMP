@@ -41,6 +41,40 @@ import kotlin.test.assertTrue
 @OptIn(ExperimentalCoroutinesApi::class)
 class RankingViewModelTest {
     @Test
+    fun `수동 새로고침은 첫 페이지를 즉시 적용한다`() =
+        coroutinesTest {
+            val repository = FakeShopRankingRepository(pageOf(shopRanking("old")))
+            val viewModel = rankingViewModel(repository = repository)
+            runCurrent()
+            repository.page = pageOf(shopRanking("fresh"))
+
+            viewModel.dispatch(RankingIntent.OnRefreshed)
+            runCurrent()
+
+            assertEquals(listOf("fresh"), shopIds(viewModel))
+        }
+
+    @Test
+    fun `공통 상세에서 바뀐 좋아요는 랭킹 표시 수에 한 번만 반영한다`() =
+        coroutinesTest {
+            val personalizationStore = FakePersonalizationRepository()
+            val viewModel =
+                rankingViewModel(
+                    repository = FakeShopRankingRepository(pageOf(shopRanking(likeCount = 3))),
+                    personalizationStore = personalizationStore,
+                )
+            runCurrent()
+
+            personalizationStore.updateBookmark("shop-id", true)
+            runCurrent()
+
+            assertEquals(
+                4L,
+                viewModel.uiState.value.displayedLikeCount(viewModel.uiState.value.shops[0]),
+            )
+        }
+
+    @Test
     fun `시도를 선택하면 시군구 옵션을 조회한다`() =
         coroutinesTest {
             val districts =

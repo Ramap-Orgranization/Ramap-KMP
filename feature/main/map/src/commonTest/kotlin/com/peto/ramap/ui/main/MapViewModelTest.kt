@@ -50,6 +50,7 @@ import com.peto.ramap.ui.main.map.contract.MapIntent.OnQueryChanged
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnRequestedShopDismissed
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnSearchResultsDismissed
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnSearchedShopSelected
+import com.peto.ramap.ui.main.map.contract.MapIntent.OnSelectedShopFocusConsumed
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopDetailDismissed
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopDetailRetry
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopIdSelected
@@ -311,7 +312,7 @@ class MapViewModelTest {
         }
 
     @Test
-    fun `카메라 이동이 끝나면 위치를 저장하고 선택 매장 포커스를 소비한다`() =
+    fun `선택 매장 카메라 이동이 수행되면 포커스를 소비한다`() =
         coroutinesTest {
             val shop = ramenShopFixture()
             val cameraPosition =
@@ -335,8 +336,49 @@ class MapViewModelTest {
             runCurrent()
 
             assertEquals(cameraPosition, viewModel.uiState.value.cameraPosition)
+            assertEquals(RamenShops(listOf(shop)), viewModel.uiState.value.focusShops)
+
+            viewModel.dispatch(OnSelectedShopFocusConsumed)
+            runCurrent()
+
             assertEquals(RamenShops(emptyMap()), viewModel.uiState.value.focusShops)
             assertEquals(shop, viewModel.uiState.value.selectedShop)
+        }
+
+    @Test
+    fun `랭킹 상세에서 지도 진입시 초기 카메라 갱신보다 요청 매장 포커스를 우선한다`() =
+        coroutinesTest {
+            val shop = ramenShopFixture(id = "ranking-requested-shop")
+            val currentLocation = Location(lat = 37.275, lng = 127.009)
+            val currentLocationCamera =
+                CameraPosition(
+                    center = currentLocation,
+                    zoom = 14.0,
+                )
+            val viewModel =
+                mapViewModel(
+                    ramenShopRepository =
+                        FakeRamenShopRepository(
+                            fetchByIdsResult = RamenShops(mapOf(shop.id to shop)),
+                        ),
+                )
+
+            viewModel.dispatch(OnShopIdSelected(shop.id))
+            runCurrent()
+
+            viewModel.dispatch(OnShopDetailDismissed)
+            viewModel.dispatch(OnShopIdSelected(shop.id))
+            viewModel.dispatch(OnCameraPositionChanged(currentLocationCamera))
+            runCurrent()
+
+            assertEquals(currentLocationCamera, viewModel.uiState.value.cameraPosition)
+            assertEquals(shop, viewModel.uiState.value.selectedShop)
+            assertEquals(RamenShops(listOf(shop)), viewModel.uiState.value.focusShops)
+
+            viewModel.dispatch(OnSelectedShopFocusConsumed)
+            runCurrent()
+
+            assertEquals(RamenShops(emptyMap()), viewModel.uiState.value.focusShops)
         }
 
     @Test
@@ -694,7 +736,11 @@ class MapViewModelTest {
             runCurrent()
 
             assertEquals(shop, viewModel.uiState.value.selectedShop)
-            assertEquals(listOf(shop), viewModel.uiState.value.focusShops.values.toList())
+            assertEquals(
+                listOf(shop),
+                viewModel.uiState.value.focusShops.values
+                    .toList(),
+            )
             assertEquals(currentLocation, viewModel.uiState.value.currentLocation)
             assertEquals(null, viewModel.uiState.value.initialFocusLocation)
             assertEquals(

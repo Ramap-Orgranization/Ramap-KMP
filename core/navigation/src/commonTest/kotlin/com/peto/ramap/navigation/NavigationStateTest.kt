@@ -14,7 +14,10 @@ class NavigationStateTest {
         val navigationState = navigationState()
 
         assertEquals(listOf(TabStatus.MAP, TabStatus.RANKING, TabStatus.EVENT, TabStatus.MY), TabStatus.entries)
-        assertTrue(navigationState.backStacks.getValue(TabStatus.RANKING).isEmpty())
+        assertEquals(
+            listOf(ScreenRoutes.RankingTabRoutes),
+            navigationState.backStacks.getValue(TabStatus.RANKING).toList(),
+        )
 
         navigationState.selectTopLevelTab(TabStatus.RANKING)
         assertEquals(ScreenRoutes.RankingTabRoutes, navigationState.currentRoute)
@@ -22,11 +25,14 @@ class NavigationStateTest {
 
         assertEquals(TabStatus.MAP, navigationState.selectedTab)
         assertEquals(ScreenRoutes.TabRoutes("shop"), navigationState.currentRoute)
-        assertTrue(navigationState.backStacks.getValue(TabStatus.RANKING).isEmpty())
+        assertEquals(
+            listOf(ScreenRoutes.RankingTabRoutes),
+            navigationState.backStacks.getValue(TabStatus.RANKING).toList(),
+        )
     }
 
     @Test
-    fun `랭킹 탭을 떠나면 스택을 비우고 재진입할 때 새 루트를 만든다`() {
+    fun `랭킹 탭을 떠나도 스택을 유지한다`() {
         val navigationState = navigationState(selectedTab = TabStatus.RANKING)
         val rankingBackStack = navigationState.backStacks.getValue(TabStatus.RANKING)
 
@@ -34,7 +40,7 @@ class NavigationStateTest {
 
         navigationState.selectTopLevelTab(TabStatus.EVENT)
 
-        assertTrue(rankingBackStack.isEmpty())
+        assertEquals(listOf(ScreenRoutes.RankingTabRoutes), rankingBackStack.toList())
 
         navigationState.selectTopLevelTab(TabStatus.RANKING)
 
@@ -42,12 +48,12 @@ class NavigationStateTest {
     }
 
     @Test
-    fun `다른 탭으로 복원되면 남아 있는 랭킹 스택을 비운다`() {
+    fun `다른 탭으로 복원돼도 랭킹 스택을 유지한다`() {
         val rankingBackStack = NavBackStack<NavKey>(ScreenRoutes.RankingTabRoutes)
 
         navigationState(rankingBackStack = rankingBackStack)
 
-        assertTrue(rankingBackStack.isEmpty())
+        assertEquals(listOf(ScreenRoutes.RankingTabRoutes), rankingBackStack.toList())
     }
 
     @Test
@@ -164,6 +170,43 @@ class NavigationStateTest {
     }
 
     @Test
+    fun `랭킹에서 지도 상세을 열고 뒤로 가면 랭킹 상태로 복귀한다`() {
+        val navigationState = navigationState(selectedTab = TabStatus.RANKING)
+
+        navigationState.showShopOnMap(
+            shopId = "shop-id",
+            returnTab = TabStatus.RANKING,
+        )
+
+        assertTrue(navigationState.canNavigateBack)
+        assertEquals(
+            ScreenRoutes.TabRoutes("shop-id", TabStatus.RANKING),
+            navigationState.currentRoute,
+        )
+
+        navigationState.pop()
+
+        assertEquals(TabStatus.RANKING, navigationState.selectedTab)
+        assertEquals(ScreenRoutes.RankingTabRoutes, navigationState.currentRoute)
+        assertEquals(ScreenRoutes.TabRoutes(), navigationState.backStacks.getValue(TabStatus.MAP).single())
+    }
+
+    @Test
+    fun `랭킹에서 연 지도 상세을 닫으면 지도에 머물고 복귀 출처를 소비한다`() {
+        val navigationState = navigationState(selectedTab = TabStatus.RANKING)
+        navigationState.showShopOnMap(
+            shopId = "shop-id",
+            returnTab = TabStatus.RANKING,
+        )
+
+        navigationState.consumeMapReturnOrigin()
+
+        assertEquals(TabStatus.MAP, navigationState.selectedTab)
+        assertEquals(ScreenRoutes.TabRoutes(), navigationState.currentRoute)
+        assertFalse(navigationState.canNavigateBack)
+    }
+
+    @Test
     fun `현재 탭을 다시 선택해도 해당 탭 스택을 유지한다`() {
         val navigationState = navigationState(selectedTab = TabStatus.EVENT)
         navigationState.showEvent("event-id")
@@ -171,6 +214,17 @@ class NavigationStateTest {
         navigationState.selectTopLevelTab(TabStatus.EVENT)
 
         assertEquals(ScreenRoutes.EventDetailRoutes("event-id"), navigationState.currentRoute)
+    }
+
+    @Test
+    fun `현재 랭킹 탭을 다시 선택해도 아무 상태를 변경하지 않는다`() {
+        val navigationState = navigationState(selectedTab = TabStatus.RANKING)
+        val rankingBackStack = navigationState.backStacks.getValue(TabStatus.RANKING).toList()
+
+        navigationState.selectTopLevelTab(TabStatus.RANKING)
+
+        assertEquals(rankingBackStack, navigationState.backStacks.getValue(TabStatus.RANKING).toList())
+        assertEquals(TabStatus.RANKING, navigationState.selectedTab)
     }
 
     @Test
@@ -195,7 +249,7 @@ class NavigationStateTest {
 
     private fun navigationState(
         selectedTab: TabStatus = TabStatus.MAP,
-        rankingBackStack: NavBackStack<NavKey> = NavBackStack(),
+        rankingBackStack: NavBackStack<NavKey> = NavBackStack(ScreenRoutes.RankingTabRoutes),
     ): NavigationState =
         NavigationState(
             selectedTabState = mutableStateOf(selectedTab),
