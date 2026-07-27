@@ -74,6 +74,9 @@ class NavigationState(
     fun selectTopLevelTab(tab: TabStatus) {
         if (tab == selectedTab) return
 
+        if (selectedTab == TabStatus.MAP) {
+            clearRequestedShopFromMapRoute()
+        }
         if (selectedTab == TabStatus.RANKING) {
             backStacks.getValue(TabStatus.RANKING).clear()
         }
@@ -83,6 +86,14 @@ class NavigationState(
             rankingBackStack.add(ScreenRoutes.RankingTabRoutes)
         }
         selectedTab = tab
+    }
+
+    private fun clearRequestedShopFromMapRoute() {
+        val mapBackStack = backStacks.getValue(TabStatus.MAP)
+        val mapRoute = mapBackStack.firstOrNull() as? ScreenRoutes.TabRoutes ?: return
+        if (mapRoute.shopId == null) return
+
+        mapBackStack[0] = ScreenRoutes.TabRoutes()
     }
 
     fun showMap() {

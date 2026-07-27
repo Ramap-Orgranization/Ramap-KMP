@@ -30,6 +30,8 @@ import com.peto.ramap.ui.hidden.HiddenShopListRoute
 import com.peto.ramap.ui.main.event.EventDetailRoute
 import com.peto.ramap.ui.main.event.list.EventsRoute
 import com.peto.ramap.ui.main.map.MapRoute
+import com.peto.ramap.ui.main.map.MapViewModel
+import com.peto.ramap.ui.main.map.contract.MapIntent.OnMapTabExited
 import com.peto.ramap.ui.main.my.MyTabRoute
 import com.peto.ramap.ui.main.ranking.RankingRoute
 import com.peto.ramap.ui.notification.NotificationSettingsRoute
@@ -38,6 +40,7 @@ import com.peto.ramap.ui.subscribed.SubscribedShopListRoute
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
 import org.koin.compose.koinInject
+import org.koin.compose.viewmodel.koinViewModel
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.event_not_found_message
 
@@ -55,6 +58,7 @@ internal fun AppRoute(
     personalizationStore: ShopPersonalizationStore = koinInject(),
 ) {
     val navigationState = rememberNavigationState()
+    val mapViewModel = koinViewModel<MapViewModel>()
 
     HandleDeepLinkEvents(deepLinkEntryPoint, notificationLaunchDispatcher, shopDeepLinkDispatcher)
 
@@ -88,12 +92,16 @@ internal fun AppRoute(
 
     NavigationRouter(
         navigationState = navigationState,
+        onMapTabExited = {
+            mapViewModel.dispatch(OnMapTabExited)
+        },
         mapScreen = { route ->
             MapRoute(
                 onEventNavigate = { event ->
                     navigationState.showEvent(event.id)
                 },
                 requestedShopId = route.shopId,
+                viewModel = mapViewModel,
             )
         },
         rankingScreen = {

@@ -1,7 +1,6 @@
 package com.peto.ramap.ui.main.map
 
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -29,7 +28,6 @@ import com.peto.ramap.ui.main.map.contract.MapIntent.OnHiddenToggled
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnInitialLocationFocusConsumed
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnKakaoLoginClicked
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnLocationPermissionBlocked
-import com.peto.ramap.ui.main.map.contract.MapIntent.OnMapTabExited
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnMyLocationChanged
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnQueryChanged
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnRequestedShopDismissed
@@ -79,12 +77,6 @@ fun MapRoute(
             viewModel.dispatch(OnRequestedShopDismissed)
         } else {
             viewModel.dispatch(OnShopIdSelected(requestedShopId))
-        }
-    }
-
-    DisposableEffect(viewModel) {
-        onDispose {
-            viewModel.dispatch(OnMapTabExited)
         }
     }
 
