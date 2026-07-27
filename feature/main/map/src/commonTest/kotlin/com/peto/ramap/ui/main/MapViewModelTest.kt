@@ -44,6 +44,7 @@ import com.peto.ramap.ui.main.map.contract.MapIntent.OnCameraPositionChanged
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnCategoryFilterToggled
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnHiddenToggled
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnInitialLocationFocusConsumed
+import com.peto.ramap.ui.main.map.contract.MapIntent.OnMapTabExited
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnMyLocationChanged
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnQueryChanged
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnRequestedShopDismissed
@@ -89,6 +90,40 @@ import kotlin.test.assertEquals
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class MapViewModelTest {
+    @Test
+    fun `지도 탭을 떠나면 상세와 검색 결과 바텀시트를 닫는다`() =
+        coroutinesTest {
+            val selectedShop = ramenShopFixture(id = "selected-shop")
+            val searchShops =
+                RamenShops(
+                    listOf(
+                        selectedShop,
+                        ramenShopFixture(id = "other-shop"),
+                    ).associateBy { it.id },
+                )
+            val viewModel =
+                mapViewModel(
+                    ramenShopRepository = FakeRamenShopRepository(searchResult = searchShops),
+                )
+
+            viewModel.dispatch(OnQueryChanged("라멘"))
+            advanceTimeBy(300)
+            runCurrent()
+            viewModel.dispatch(OnShopSelected(selectedShop))
+            runCurrent()
+
+            assertEquals(true, viewModel.uiState.value.showBottomSheet)
+
+            viewModel.dispatch(OnMapTabExited)
+            runCurrent()
+
+            assertEquals(null, viewModel.uiState.value.selectedShop)
+            assertEquals("라멘", viewModel.uiState.value.search.input)
+            assertEquals(searchShops, viewModel.uiState.value.search.results)
+            assertEquals(false, viewModel.uiState.value.showSearchResults)
+            assertEquals(false, viewModel.uiState.value.showBottomSheet)
+        }
+
     @Test
     fun `매장 공유를 누르면 공유 정보 side effect를 보낸다`() =
         coroutinesTest {

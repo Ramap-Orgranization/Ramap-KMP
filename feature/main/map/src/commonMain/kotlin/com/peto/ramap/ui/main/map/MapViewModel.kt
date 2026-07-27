@@ -42,6 +42,7 @@ import com.peto.ramap.ui.main.map.contract.MapIntent.OnHiddenToggled
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnInitialLocationFocusConsumed
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnKakaoLoginClicked
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnLocationPermissionBlocked
+import com.peto.ramap.ui.main.map.contract.MapIntent.OnMapTabExited
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnMyLocationChanged
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnQueryChanged
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnRequestedShopDismissed
@@ -139,9 +140,21 @@ class MapViewModel(
 
             OnInitialLocationFocusConsumed -> consumeInitialLocationFocus()
 
+            OnMapTabExited -> dismissBottomSheet()
+
             else -> return false
         }
         return true
+    }
+
+    private fun dismissBottomSheet() {
+        cancelShopDetailLoad()
+        reduce {
+            copy(
+                shopDetailState = ShopDetailUiState.Closed,
+                search = search.dismissResults(),
+            )
+        }
     }
 
     private fun handleShopIntent(intent: MapIntent): Boolean {
