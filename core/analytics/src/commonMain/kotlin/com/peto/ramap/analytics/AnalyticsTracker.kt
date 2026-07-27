@@ -30,7 +30,7 @@ interface AnalyticsTracker {
      * @param key 속성 키. [AnalyticsUserProperties] 상수 사용.
      * @param value 속성 값.
      */
-    fun setUserProperty(
+    fun userProperty(
         key: String,
         value: String,
     )

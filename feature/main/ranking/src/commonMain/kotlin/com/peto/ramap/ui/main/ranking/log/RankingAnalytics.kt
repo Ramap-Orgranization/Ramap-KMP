@@ -2,9 +2,9 @@ package com.peto.ramap.ui.main.ranking.log
 
 import com.peto.ramap.analytics.AnalyticsSource
 import com.peto.ramap.analytics.AnalyticsTracker
+import com.peto.ramap.analytics.common.CategoryFilterToggled
 import com.peto.ramap.analytics.common.shop.BookmarkToggled
 import com.peto.ramap.analytics.common.shop.ShopSelected
-import com.peto.ramap.analytics.event.CategoryFilterToggled
 import com.peto.ramap.domain.model.shop.AreaFilter
 import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.ui.main.ranking.log.event.AreaFilterSelected

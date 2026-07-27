@@ -2,15 +2,15 @@ package com.peto.ramap.ui.main.map.log
 
 import com.peto.ramap.analytics.AnalyticsSource
 import com.peto.ramap.analytics.AnalyticsTracker
+import com.peto.ramap.analytics.common.CategoryFilterToggled
+import com.peto.ramap.analytics.common.deeplink.ShareLinkClicked
 import com.peto.ramap.analytics.common.shop.BookmarkToggled
 import com.peto.ramap.analytics.common.shop.ShopSelected
-import com.peto.ramap.analytics.event.CategoryFilterToggled
 import com.peto.ramap.domain.model.place.PlaceSearchResult
 import com.peto.ramap.domain.model.shop.Category
 import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.ui.main.map.log.event.HiddenShopToggled
 import com.peto.ramap.ui.main.map.log.event.SearchResultSelected
-import com.peto.ramap.ui.main.map.log.event.ShopShared
 import com.peto.ramap.ui.main.map.log.event.SubscribedToggled
 import com.peto.ramap.ui.main.map.log.event.ViewportLoadFailed
 
@@ -19,10 +19,7 @@ class MapAnalytics(
 ) {
     fun logShopShared(shop: RamenShop) {
         analyticsTracker.logEvent(
-            ShopShared(
-                shopId = shop.id,
-                shopName = shop.name,
-            ),
+            ShareLinkClicked(shopId = shop.id),
         )
     }
 
