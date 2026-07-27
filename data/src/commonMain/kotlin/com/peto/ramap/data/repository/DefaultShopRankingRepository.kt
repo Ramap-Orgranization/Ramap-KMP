@@ -15,6 +15,8 @@ import com.peto.ramap.network.execute.invokeRequest
 internal class DefaultShopRankingRepository(
     private val dataSource: ShopRankingDataSource,
 ) : ShopRankingRepository {
+    private val administrativeDistrictsCache = mutableMapOf<AdministrativeArea, AdministrativeDistricts>()
+
     override suspend fun fetchShopRankings(query: RankingQuery): RamapResult<RankingPage> =
         invokeRequest {
             val params =
@@ -43,12 +45,20 @@ internal class DefaultShopRankingRepository(
             dataSource.fetchShopRankings(params)
         }
 
-    override suspend fun fetchAdministrativeDistricts(area: AdministrativeArea): RamapResult<AdministrativeDistricts> =
-        invokeRequest {
-            dataSource.fetchAdministrativeDistricts(
-                AdministrativeDistrictParameters(
-                    area.name,
-                ),
-            )
+    override suspend fun fetchAdministrativeDistricts(area: AdministrativeArea): RamapResult<AdministrativeDistricts> {
+        administrativeDistrictsCache[area]?.let { return RamapResult.Success(it) }
+
+        val result =
+            invokeRequest {
+                dataSource.fetchAdministrativeDistricts(
+                    AdministrativeDistrictParameters(
+                        area.name,
+                    ),
+                )
+            }
+        if (result is RamapResult.Success) {
+            administrativeDistrictsCache[area] = result.data
         }
+        return result
+    }
 }
