@@ -52,6 +52,7 @@ import com.peto.ramap.ui.main.map.contract.MapIntent.OnSelectedShopFocusConsumed
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopDetailDismissed
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopDetailRetry
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopIdSelected
+import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopMapLinkClicked
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopNotificationToggled
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopReportSubmitted
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopSelected
@@ -170,6 +171,7 @@ class MapViewModel(
 
             is OnShopIdSelected -> selectShop(intent.shopId)
             is OnShopShareClicked -> shareShop(intent.shop)
+            is OnShopMapLinkClicked -> mapAnalytics.logShopMapLinkOpened(intent.shop, intent.mapProvider)
             OnRequestedShopDismissed -> dismissRequestedShopLoad()
             is OnShopDetailDismissed -> dismissShopDetail()
             OnShopDetailRetry -> retryShopDetailLoad()

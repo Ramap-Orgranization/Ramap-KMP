@@ -51,6 +51,7 @@ internal fun ShopDetailSheet(
     onShopNotificationToggled: (RamenShop) -> Unit,
     onHiddenToggled: (RamenShop) -> Unit,
     onShopShareClick: (RamenShop) -> Unit,
+    onShopMapLinkClick: (RamenShop, String) -> Unit,
     onEventClick: (ShopEvent) -> Unit,
     onReportSubmit: (Set<ShopInformationField>, String) -> Unit,
     onShowOnMap: ((String) -> Unit)? = null,
@@ -96,6 +97,7 @@ internal fun ShopDetailSheet(
                             }
                         },
                         onShareClick = { onShopShareClick(shop) },
+                        onMapLinkClick = { provider -> onShopMapLinkClick(shop, provider) },
                         event = detailState.detail.event,
                         onEventClick = onEventClick,
                         onReportClick = { showReportDialog = true },

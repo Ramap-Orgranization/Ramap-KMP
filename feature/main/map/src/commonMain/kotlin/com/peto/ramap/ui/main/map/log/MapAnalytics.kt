@@ -11,6 +11,7 @@ import com.peto.ramap.domain.model.shop.Category
 import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.ui.main.map.log.event.HiddenShopToggled
 import com.peto.ramap.ui.main.map.log.event.SearchResultSelected
+import com.peto.ramap.ui.main.map.log.event.ShopMapLinkOpened
 import com.peto.ramap.ui.main.map.log.event.SubscribedToggled
 import com.peto.ramap.ui.main.map.log.event.ViewportLoadFailed
 
@@ -20,6 +21,19 @@ class MapAnalytics(
     fun logShopShared(shop: RamenShop) {
         analyticsTracker.logEvent(
             ShareLinkClicked(shopId = shop.id),
+        )
+    }
+
+    fun logShopMapLinkOpened(
+        shop: RamenShop,
+        mapProvider: String,
+    ) {
+        analyticsTracker.logEvent(
+            ShopMapLinkOpened(
+                shopId = shop.id,
+                shopName = shop.name,
+                mapProvider = mapProvider,
+            ),
         )
     }
 

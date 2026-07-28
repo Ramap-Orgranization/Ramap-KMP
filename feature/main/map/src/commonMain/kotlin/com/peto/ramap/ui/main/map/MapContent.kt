@@ -87,6 +87,7 @@ internal fun MapContent(
     onShopNotificationToggled: (RamenShop) -> Unit,
     onHiddenToggled: (RamenShop) -> Unit,
     onShopShareClick: (RamenShop) -> Unit,
+    onShopMapLinkClick: (RamenShop, String) -> Unit,
     onEventClick: (ShopEvent) -> Unit,
     onReportSubmit: (Set<ShopInformationField>, String) -> Unit,
     onBookmarkedShopsToggle: () -> Unit,
@@ -242,6 +243,7 @@ internal fun MapContent(
             onShopNotificationToggled = onShopNotificationToggled,
             onHiddenToggled = onHiddenToggled,
             onShopShareClick = onShopShareClick,
+            onShopMapLinkClick = onShopMapLinkClick,
             onEventClick = onEventClick,
             onReportSubmit = onReportSubmit,
         )

@@ -123,6 +123,7 @@ fun ShopDetailRoute(
             },
             onHiddenToggled = { viewModel.dispatch(MapIntent.OnHiddenToggled(it)) },
             onShopShareClick = { viewModel.dispatch(MapIntent.OnShopShareClicked(it)) },
+            onShopMapLinkClick = { shop, provider -> viewModel.dispatch(MapIntent.OnShopMapLinkClicked(shop, provider)) },
             onEventClick = onEventNavigate,
             onReportSubmit = { wrongFields, description ->
                 viewModel.dispatch(MapIntent.OnShopReportSubmitted(wrongFields, description))

@@ -53,6 +53,7 @@ import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
+import ramap.shared.generated.resources.apple_maps_icon
 import ramap.shared.generated.resources.bookmarked_shops_toggle
 import ramap.shared.generated.resources.catchtable
 import ramap.shared.generated.resources.event_notification_action
@@ -73,6 +74,7 @@ import ramap.shared.generated.resources.shop_detail_label_address
 import ramap.shared.generated.resources.shop_detail_label_business_hours
 import ramap.shared.generated.resources.shop_detail_label_phone
 import ramap.shared.generated.resources.shop_detail_label_waiting
+import ramap.shared.generated.resources.shop_detail_link_apple_maps
 import ramap.shared.generated.resources.shop_detail_link_instagram
 import ramap.shared.generated.resources.shop_detail_link_kakao_map
 import ramap.shared.generated.resources.shop_detail_link_naver_map
@@ -94,6 +96,7 @@ internal fun RamenShopOverview(
     onHiddenClick: () -> Unit = {},
     onReportClick: () -> Unit = {},
     onShareClick: () -> Unit = {},
+    onMapLinkClick: (String) -> Unit = {},
     event: ShopEvent? = null,
     onEventClick: (ShopEvent) -> Unit = {},
 ) {
@@ -227,7 +230,10 @@ internal fun RamenShopOverview(
                 ShopLinkRow(
                     icon = Res.drawable.kakao_map_icon,
                     label = stringResource(Res.string.shop_detail_link_kakao_map),
-                    onClick = { ExternalUriOpener.open(kakaoPlaceUrl) },
+                    onClick = {
+                        onMapLinkClick("kakao")
+                        ExternalUriOpener.open(kakaoPlaceUrl)
+                    },
                 )
             }
 
@@ -235,7 +241,26 @@ internal fun RamenShopOverview(
                 ShopLinkRow(
                     icon = Res.drawable.naver_map_icon,
                     label = stringResource(Res.string.shop_detail_link_naver_map),
-                    onClick = { ExternalUriOpener.open(naverPlaceUrl) },
+                    onClick = {
+                        onMapLinkClick("naver")
+                        ExternalUriOpener.open(naverPlaceUrl)
+                    },
+                )
+            }
+
+            if (ExternalUriOpener.isAppleMapsAvailable) {
+                ShopLinkRow(
+                    icon = Res.drawable.apple_maps_icon,
+                    label = stringResource(Res.string.shop_detail_link_apple_maps),
+                    onClick = {
+                        onMapLinkClick("apple")
+                        ExternalUriOpener.openAppleMaps(
+                            name = shop.name,
+                            address = shop.address,
+                            latitude = shop.location.lat,
+                            longitude = shop.location.lng,
+                        )
+                    },
                 )
             }
 
