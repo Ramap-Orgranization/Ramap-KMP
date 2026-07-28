@@ -1,6 +1,16 @@
 package com.peto.ramap.ui.component
 
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import com.peto.ramap.designsystem.text.AppText
+import com.peto.ramap.theme.AppTextStyle
+import com.peto.ramap.theme.GrayColor
+import com.peto.ramap.theme.RamapTheme
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.event_date_end_unknown
@@ -41,4 +51,40 @@ private fun parseDate(date: String): Triple<String, Int, Int>? {
         return null
     }
     return Triple(date.take(4), date.substring(5, 7).toInt(), date.takeLast(2).toInt())
+}
+
+@Preview
+@Composable
+internal fun EventDateTextPreview() {
+    RamapTheme {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            val singleDate = eventDateText("2026-07-28", "2026-07-28")
+            AppText(
+                text = "Single date: $singleDate",
+                style = AppTextStyle.B1,
+                color = GrayColor.C500,
+            )
+            val rangeDate = eventDateText("2026-07-28", "2026-08-15")
+            AppText(
+                text = "Range date: $rangeDate",
+                style = AppTextStyle.B1,
+                color = GrayColor.C500,
+            )
+            val unknownEnd = eventDateText("2026-07-28", null)
+            AppText(
+                text = "Unknown end: $unknownEnd",
+                style = AppTextStyle.B1,
+                color = GrayColor.C500,
+            )
+            val invalidDate = eventDateText("invalid", null)
+            AppText(
+                text = "Invalid date: $invalidDate",
+                style = AppTextStyle.B1,
+                color = GrayColor.C500,
+            )
+        }
+    }
 }

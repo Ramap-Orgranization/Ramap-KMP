@@ -14,8 +14,7 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -24,6 +23,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.peto.ramap.designsystem.button.AppButton
@@ -36,17 +37,21 @@ import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.designsystem.topbar.CommonTopBar
 import com.peto.ramap.domain.model.event.ShopEvent
+import com.peto.ramap.domain.model.event.ShopEventType
 import com.peto.ramap.extension.noRippleClickable
 import com.peto.ramap.platform.AppSettingsOpener
 import com.peto.ramap.platform.ExternalUriOpener
 import com.peto.ramap.platform.NotificationPermissionRequester
 import com.peto.ramap.theme.AppTextStyle
-import com.peto.ramap.theme.ChromaticColor
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.InstagramColor
+import com.peto.ramap.theme.RamapTheme
 import com.peto.ramap.ui.base.ObserveAsEvents
 import com.peto.ramap.ui.component.eventDateText
+import com.peto.ramap.ui.main.event.component.EventMapActions
+import com.peto.ramap.ui.main.event.component.EventNotificationButton
+import com.peto.ramap.ui.main.event.component.EventTag
 import com.peto.ramap.ui.main.event.contract.EventDetailIntent.OnCollaboratorInstagramSelected
 import com.peto.ramap.ui.main.event.contract.EventDetailIntent.OnCollaboratorShopSelected
 import com.peto.ramap.ui.main.event.contract.EventDetailIntent.OnEntered
@@ -60,7 +65,6 @@ import com.peto.ramap.ui.main.event.contract.EventDetailSideEffect.RequestNotifi
 import com.peto.ramap.ui.main.event.contract.EventDetailUiState
 import com.peto.ramap.ui.resource.event.ShopEventResourceMapper
 import kotlinx.coroutines.launch
-import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
@@ -71,24 +75,13 @@ import ramap.shared.generated.resources.event_content
 import ramap.shared.generated.resources.event_date
 import ramap.shared.generated.resources.event_detail_title
 import ramap.shared.generated.resources.event_instagram_action
-import ramap.shared.generated.resources.event_link_title
-import ramap.shared.generated.resources.event_notification_disable
-import ramap.shared.generated.resources.event_notification_enable
 import ramap.shared.generated.resources.event_venue
 import ramap.shared.generated.resources.event_waiting
 import ramap.shared.generated.resources.event_waiting_action
-import ramap.shared.generated.resources.ic_apple
 import ramap.shared.generated.resources.ic_arrow3_left
-import ramap.shared.generated.resources.ic_notification
-import ramap.shared.generated.resources.ic_notification_filled
-import ramap.shared.generated.resources.kakao_map_icon
 import ramap.shared.generated.resources.location_permission_settings_action
-import ramap.shared.generated.resources.naver_map_icon
 import ramap.shared.generated.resources.navigation_back
 import ramap.shared.generated.resources.notification_permission_enable_message
-import ramap.shared.generated.resources.shop_detail_link_apple_maps
-import ramap.shared.generated.resources.shop_detail_link_kakao_map
-import ramap.shared.generated.resources.shop_detail_link_naver_map
 
 @Composable
 fun EventDetailRoute(
@@ -180,6 +173,7 @@ internal fun EventDetailScreen(
 ) {
     Scaffold(
         modifier = Modifier.fillMaxSize().statusBarsPadding(),
+        containerColor = GrayColor.C050,
         topBar = {
             CommonTopBar(
                 title = stringResource(Res.string.event_detail_title),
@@ -203,17 +197,21 @@ internal fun EventDetailScreen(
             )
         },
     ) { innerPadding ->
-        Box(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
+        Box(
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .background(GrayColor.C050)
+                    .padding(innerPadding),
+        ) {
             val event = uiState.event
             when {
-                event != null ->
+                uiState.event != null ->
                     EventDetailContent(
                         event = event,
                         onVenueShopClick = onVenueShopClick,
-                        onCollaboratorShopClick =
-                        onCollaboratorShopClick,
-                        onCollaboratorInstagramClick =
-                        onCollaboratorInstagramClick,
+                        onCollaboratorShopClick = onCollaboratorShopClick,
+                        onCollaboratorInstagramClick = onCollaboratorInstagramClick,
                         onWaitingLinkClick = onWaitingLinkClick,
                         onSourceLinkClick = onSourceLinkClick,
                     )
@@ -237,9 +235,9 @@ private fun EventDetailContent(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 24.dp, vertical = 16.dp)
+                .padding(horizontal = 24.dp)
                 .verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(24.dp),
+        verticalArrangement = Arrangement.spacedBy(15.dp),
     ) {
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             EventTag(stringResource(ShopEventResourceMapper.dateLabel(event)))
@@ -250,78 +248,50 @@ private fun EventDetailContent(
             Column(
                 modifier =
                     Modifier
-                        .padding(horizontal = 20.dp, vertical = 10.dp),
-                verticalArrangement = Arrangement.spacedBy(20.dp),
+                        .padding(vertical = 12.dp, horizontal = 15.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                EventLink(
+                EventVenueLink(
                     title = event.venueShopName,
-                    onClick = {
-                        onVenueShopClick(event.venueShopId)
+                    onClick = { onVenueShopClick(event.venueShopId) },
+                )
+                EventMapActions(
+                    event = event,
+                    onKakaoClick = { url -> ExternalUriOpener.open(url) },
+                    onNaverClick = { url -> ExternalUriOpener.open(url) },
+                    onAppleClick = { latitude, longitude ->
+                        ExternalUriOpener.openAppleMaps(
+                            name = event.venueShopName,
+                            address = event.venueAddress,
+                            latitude = latitude,
+                            longitude = longitude,
+                        )
                     },
                 )
-                event.venueKakaoPlaceUrl?.takeIf(ExternalUriOpener::isSupportedWebUri)?.let { url ->
-                    EventMapLink(
-                        icon = Res.drawable.kakao_map_icon,
-                        label = stringResource(Res.string.shop_detail_link_kakao_map),
-                        onClick = { ExternalUriOpener.open(url) },
-                    )
-                }
-                event.venueNaverPlaceUrl?.takeIf(ExternalUriOpener::isSupportedWebUri)?.let { url ->
-                    EventMapLink(
-                        icon = Res.drawable.naver_map_icon,
-                        label = stringResource(Res.string.shop_detail_link_naver_map),
-                        onClick = { ExternalUriOpener.open(url) },
-                    )
-                }
-                val latitude = event.venueLatitude
-                val longitude = event.venueLongitude
-                if (
-                    ExternalUriOpener.isAppleMapsAvailable &&
-                    latitude != null &&
-                    longitude != null
-                ) {
-                    EventMapLink(
-                        icon = Res.drawable.ic_apple,
-                        label = stringResource(Res.string.shop_detail_link_apple_maps),
-                        onClick = {
-                            ExternalUriOpener.openAppleMaps(
-                                name = event.venueShopName,
-                                address = event.venueAddress,
-                                latitude = latitude,
-                                longitude = longitude,
-                            )
-                        },
-                    )
-                }
                 event.collaboratorName?.takeIf(String::isNotBlank)?.let { name ->
                     EventSection(
                         stringResource(ShopEventResourceMapper.collaboratorLabel(event)),
                     ) {
-                        EventLink(
+                        EventVenueLink(
                             title = name,
                             onClick = {
-                                val collaboratorShopId =
-                                    event.collaboratorShopId
+                                val collaboratorShopId = event.collaboratorShopId
 
                                 if (!collaboratorShopId.isNullOrBlank()) {
-                                    onCollaboratorShopClick(
-                                        collaboratorShopId,
-                                    )
-                                    return@EventLink
+                                    onCollaboratorShopClick(collaboratorShopId)
+                                    return@EventVenueLink
                                 }
 
-                                val instagramUrl =
-                                    event.collaboratorInstagramUrl
-
-                                if (instagramUrl != null) {
-                                    onCollaboratorInstagramClick(
-                                        instagramUrl,
-                                    )
+                                event.collaboratorInstagramUrl?.let {
+                                    onCollaboratorInstagramClick(it)
                                 }
                             },
                         )
                     }
                 }
+
+                HorizontalDivider(thickness = 1.dp, color = GrayColor.C100)
+
                 EventSection(stringResource(Res.string.event_date)) {
                     EventValue(eventDateText(event.startDate, event.endDate))
                 }
@@ -358,52 +328,13 @@ private fun EventDetailContent(
                 modifier =
                     Modifier
                         .fillMaxWidth()
-                        .background(INSTAGRAM_GRADIENT, RoundedCornerShape(12.dp)),
+                        .background(INSTAGRAM_GRADIENT, RoundedCornerShape(16.dp)),
                 backgroundColor = Color.Transparent,
                 onClick = {
                     onSourceLinkClick(event.sourceUrl)
                 },
             )
         }
-    }
-}
-
-@Composable
-private fun EventNotificationButton(
-    uiState: EventDetailUiState,
-    onNotificationChanged: (Boolean) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    if (!uiState.isNotificationVisible) return
-    IconButton(
-        enabled = uiState.canChangeNotification && !uiState.isNotificationLoading,
-        onClick = { onNotificationChanged(!uiState.isNotificationEnabled) },
-        modifier = modifier.padding(end = 3.dp),
-    ) {
-        Icon(
-            painter =
-                painterResource(
-                    if (uiState.isNotificationEnabled) {
-                        Res.drawable.ic_notification_filled
-                    } else {
-                        Res.drawable.ic_notification
-                    },
-                ),
-            contentDescription =
-                stringResource(
-                    if (uiState.isNotificationEnabled) {
-                        Res.string.event_notification_disable
-                    } else {
-                        Res.string.event_notification_enable
-                    },
-                ),
-            tint =
-                if (uiState.isNotificationEnabled && !uiState.isNotificationLoading) {
-                    InstagramColor.Pink
-                } else {
-                    GrayColor.C300
-                },
-        )
     }
 }
 
@@ -419,25 +350,12 @@ private val INSTAGRAM_GRADIENT =
     )
 
 @Composable
-private fun EventTag(text: String) {
-    AppText(
-        text,
-        modifier =
-            Modifier
-                .background(ChromaticColor.Yellow400, RoundedCornerShape(12.dp))
-                .padding(horizontal = 10.dp, vertical = 5.dp),
-        style = AppTextStyle.B3,
-        color = GrayColor.C500,
-    )
-}
-
-@Composable
 private fun EventSection(
     title: String,
     content: @Composable () -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        AppText(title, style = AppTextStyle.T3, color = GrayColor.C300)
+        AppText(title, style = AppTextStyle.T2, color = GrayColor.C500)
         content()
     }
 }
@@ -449,36 +367,69 @@ private fun EventValue(
 ) = AppText(value, modifier = modifier, style = AppTextStyle.B2, color = GrayColor.C500)
 
 @Composable
-private fun EventLink(
+private fun EventVenueLink(
     title: String,
-    subtitle: String? = null,
-    onClick: () -> Unit,
-) {
-    Column(modifier = Modifier.fillMaxWidth().noRippleClickable(onClick = onClick)) {
-        AppText(
-            stringResource(Res.string.event_link_title, title),
-            style = AppTextStyle.T2,
-            color = GrayColor.C500,
-        )
-        subtitle?.let { EventValue(it) }
-    }
-}
-
-@Composable
-private fun EventMapLink(
-    icon: DrawableResource,
-    label: String,
     onClick: () -> Unit,
 ) {
     Row(
-        modifier = Modifier.noRippleClickable(onClick = onClick),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier.fillMaxWidth().noRippleClickable(onClick = onClick),
+        horizontalArrangement = Arrangement.SpaceBetween,
     ) {
-        Image(
-            painter = painterResource(icon),
-            contentDescription = null,
-            modifier = Modifier.size(20.dp),
+        AppText(
+            text = title,
+            style = AppTextStyle.T2,
+            color = GrayColor.C500,
+            modifier = Modifier.weight(1f),
         )
-        AppText(label, style = AppTextStyle.B1, color = GrayColor.C500)
+        AppText(
+            ">",
+            style = AppTextStyle.T2,
+            color = GrayColor.C400,
+            textAlign = TextAlign.End,
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun EventDetailRoutePreview() {
+    val sampleEvent =
+        ShopEvent(
+            id = "1",
+            type = ShopEventType.COLLAB,
+            title = "라멘 팝업 이벤트",
+            description = "맛있는 라멘 팝업 이벤트입니다. 많은 참여 부탁드립니다.",
+            startDate = "2026-07-28",
+            endDate = "2026-07-30",
+            sourceUrl = "https://www.instagram.com/ramap_official/",
+            isToday = true,
+            isVenue = true,
+            venueShopId = "shop1",
+            venueShopName = "이리에 라멘",
+            venueAddress = "서울시 마포구",
+            collaboratorShopId = "shop2",
+            collaboratorName = "콜라보 샵",
+            collaboratorInstagramUrl = "https://www.instagram.com/collab_shop/",
+            waitingMethod = "현장 대기",
+            waitingUrl = "https://catchtable.co.kr/",
+        )
+
+    RamapTheme {
+        EventDetailScreen(
+            uiState =
+                EventDetailUiState(
+                    event = sampleEvent,
+                    isNotificationVisible = true,
+                    canChangeNotification = true,
+                    isNotificationEnabled = false,
+                ),
+            onBack = {},
+            onVenueShopClick = {},
+            onCollaboratorShopClick = {},
+            onCollaboratorInstagramClick = {},
+            onWaitingLinkClick = {},
+            onSourceLinkClick = {},
+            onNotificationChanged = {},
+        )
     }
 }
