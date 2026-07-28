@@ -59,6 +59,7 @@ import com.peto.ramap.ui.main.event.contract.EventDetailSideEffect.RequestNotifi
 import com.peto.ramap.ui.main.event.contract.EventDetailUiState
 import com.peto.ramap.ui.resource.event.ShopEventResourceMapper
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
@@ -75,11 +76,17 @@ import ramap.shared.generated.resources.event_venue
 import ramap.shared.generated.resources.event_waiting
 import ramap.shared.generated.resources.event_waiting_action
 import ramap.shared.generated.resources.ic_arrow3_left
+import ramap.shared.generated.resources.ic_apple
 import ramap.shared.generated.resources.ic_notification
 import ramap.shared.generated.resources.ic_notification_filled
+import ramap.shared.generated.resources.kakao_map_icon
+import ramap.shared.generated.resources.naver_map_icon
 import ramap.shared.generated.resources.location_permission_settings_action
 import ramap.shared.generated.resources.navigation_back
 import ramap.shared.generated.resources.notification_permission_enable_message
+import ramap.shared.generated.resources.shop_detail_link_kakao_map
+import ramap.shared.generated.resources.shop_detail_link_naver_map
+import ramap.shared.generated.resources.shop_detail_link_apple_maps
 
 @Composable
 fun EventDetailRoute(
@@ -245,11 +252,44 @@ private fun EventDetailContent(
             ) {
                 EventLink(
                     title = event.venueShopName,
-                    subtitle = event.venueAddress,
                     onClick = {
                         onVenueShopClick(event.venueShopId)
                     },
                 )
+                event.venueKakaoPlaceUrl?.takeIf(ExternalUriOpener::isSupportedWebUri)?.let { url ->
+                    EventMapLink(
+                        icon = Res.drawable.kakao_map_icon,
+                        label = stringResource(Res.string.shop_detail_link_kakao_map),
+                        onClick = { ExternalUriOpener.open(url) },
+                    )
+                }
+                event.venueNaverPlaceUrl?.takeIf(ExternalUriOpener::isSupportedWebUri)?.let { url ->
+                    EventMapLink(
+                        icon = Res.drawable.naver_map_icon,
+                        label = stringResource(Res.string.shop_detail_link_naver_map),
+                        onClick = { ExternalUriOpener.open(url) },
+                    )
+                }
+                val latitude = event.venueLatitude
+                val longitude = event.venueLongitude
+                if (
+                    ExternalUriOpener.isAppleMapsAvailable &&
+                    latitude != null &&
+                    longitude != null
+                ) {
+                    EventMapLink(
+                        icon = Res.drawable.ic_apple,
+                        label = stringResource(Res.string.shop_detail_link_apple_maps),
+                        onClick = {
+                            ExternalUriOpener.openAppleMaps(
+                                name = event.venueShopName,
+                                address = event.venueAddress,
+                                latitude = latitude,
+                                longitude = longitude,
+                            )
+                        },
+                    )
+                }
                 event.collaboratorName?.takeIf(String::isNotBlank)?.let { name ->
                     EventSection(
                         stringResource(ShopEventResourceMapper.collaboratorLabel(event)),
@@ -284,13 +324,15 @@ private fun EventDetailContent(
                 }
             }
         }
-        SectionCard(title = stringResource(Res.string.event_content)) {
-            EventValue(
-                event.description,
-                Modifier.padding(horizontal = 20.dp, vertical = 10.dp),
-            )
+        event.description.takeIf(String::isNotBlank)?.let { content ->
+            SectionCard(title = stringResource(Res.string.event_content)) {
+                EventValue(
+                    content,
+                    Modifier.padding(horizontal = 20.dp, vertical = 10.dp),
+                )
+            }
         }
-        event.waitingMethod?.let { waiting ->
+        event.waitingMethod?.takeIf(String::isNotBlank)?.let { waiting ->
             SectionCard(title = stringResource(Res.string.event_waiting)) {
                 Column(modifier = Modifier.padding(horizontal = 20.dp).padding(vertical = 10.dp)) {
                     EventValue(waiting)
@@ -415,5 +457,24 @@ private fun EventLink(
             color = GrayColor.C500,
         )
         subtitle?.let { EventValue(it) }
+    }
+}
+
+@Composable
+private fun EventMapLink(
+    icon: DrawableResource,
+    label: String,
+    onClick: () -> Unit,
+) {
+    Row(
+        modifier = Modifier.noRippleClickable(onClick = onClick),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Image(
+            painter = painterResource(icon),
+            contentDescription = null,
+            modifier = Modifier.size(20.dp),
+        )
+        AppText(label, style = AppTextStyle.B1, color = GrayColor.C500)
     }
 }
