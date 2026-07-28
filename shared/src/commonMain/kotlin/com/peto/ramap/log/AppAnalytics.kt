@@ -2,6 +2,7 @@ package com.peto.ramap.log
 
 import com.peto.ramap.analytics.AnalyticsTracker
 import com.peto.ramap.analytics.AnalyticsUserProperties
+import com.peto.ramap.analytics.common.deeplink.DeepLinkAnalyticsEvent
 import com.peto.ramap.domain.model.auth.LoginSessionState
 import com.peto.ramap.domain.model.personalization.ShopPersonalization
 
@@ -24,25 +25,35 @@ class AppAnalytics(
         analyticsTracker.logEvent(SharedShopLinkOpened(shopId))
     }
 
+    fun logDeepLinkReceived() = analyticsTracker.logEvent(DeepLinkAnalyticsEvent.Received)
+
+    fun logDeepLinkParseSucceeded(shopId: String) = analyticsTracker.logEvent(DeepLinkAnalyticsEvent.ParseSucceeded(shopId))
+
+    fun logDeepLinkParseFailed() = analyticsTracker.logEvent(DeepLinkAnalyticsEvent.ParseFailed)
+
+    fun logDeepLinkNavigationSucceeded(shopId: String) = analyticsTracker.logEvent(DeepLinkAnalyticsEvent.NavigationSucceeded(shopId))
+
+    fun logDeepLinkNavigationFailed(shopId: String? = null) = analyticsTracker.logEvent(DeepLinkAnalyticsEvent.NavigationFailed(shopId))
+
     fun updateLoginStatus(state: LoginSessionState) {
-        analyticsTracker.setUserProperty(
+        analyticsTracker.userProperty(
             AnalyticsUserProperties.LOGIN_STATUS,
             loginStatus(state),
         )
     }
 
     fun updatePersonalizationProperties(personalization: ShopPersonalization) {
-        analyticsTracker.setUserProperty(
+        analyticsTracker.userProperty(
             AnalyticsUserProperties.BOOKMARKED_COUNT,
             personalization.bookmarkedShopIds.size.toString(),
         )
 
-        analyticsTracker.setUserProperty(
+        analyticsTracker.userProperty(
             AnalyticsUserProperties.SUBSCRIBED_COUNT,
             personalization.notificationShopIds.size.toString(),
         )
 
-        analyticsTracker.setUserProperty(
+        analyticsTracker.userProperty(
             AnalyticsUserProperties.HIDDEN_COUNT,
             personalization.hiddenShopIds.size.toString(),
         )

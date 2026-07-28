@@ -1,4 +1,4 @@
-package com.peto.ramap.analytics.event
+package com.peto.ramap.analytics.common
 
 import com.peto.ramap.analytics.AnalyticsEvent
 import com.peto.ramap.analytics.AnalyticsSource

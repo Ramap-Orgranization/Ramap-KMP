@@ -60,6 +60,7 @@ kotlin {
 dependencies {
     implementation(projects.shared)
     implementation(projects.core.designsystem)
+    implementation(projects.core.analytics)
     implementation(projects.core.network)
     implementation(projects.core.notification)
     implementation(projects.core.navigation)
@@ -76,6 +77,7 @@ dependencies {
     implementation(libs.firebase.messaging)
     implementation(libs.firebase.analytics)
     implementation(libs.firebase.crashlytics)
+    implementation(libs.install.referrer)
     implementation(libs.kermit)
 
     implementation(libs.compose.ui.tooling.preview)
