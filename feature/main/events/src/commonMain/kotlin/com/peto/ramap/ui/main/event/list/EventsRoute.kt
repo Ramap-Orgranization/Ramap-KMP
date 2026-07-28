@@ -2,18 +2,11 @@ package com.peto.ramap.ui.main.event.list
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyListScope
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
@@ -21,28 +14,27 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.peto.ramap.designsystem.card.EventCard
 import com.peto.ramap.designsystem.component.LoadErrorContent
 import com.peto.ramap.designsystem.indicator.RamenLoadingIndicator
-import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.designsystem.toast.ToastManager
 import com.peto.ramap.domain.model.event.ShopEvent
-import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.CommonColor
-import com.peto.ramap.theme.GrayColor
+import com.peto.ramap.theme.RamapTheme
 import com.peto.ramap.ui.base.ObserveAsEvents
-import com.peto.ramap.ui.component.eventDateText
+import com.peto.ramap.ui.main.event.list.component.EventListEmptyContent
+import com.peto.ramap.ui.main.event.list.component.eventSection
 import com.peto.ramap.ui.main.event.list.contract.EventsIntent
 import com.peto.ramap.ui.main.event.list.contract.EventsSideEffect
 import com.peto.ramap.ui.main.event.list.contract.EventsUiState
+import com.peto.ramap.ui.main.event.list.preview.EventsPreviewParameterProvider
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 import ramap.shared.generated.resources.Res
-import ramap.shared.generated.resources.event_list_empty
 import ramap.shared.generated.resources.event_list_error_description
 import ramap.shared.generated.resources.event_list_error_title
 import ramap.shared.generated.resources.event_list_ongoing_section
@@ -131,7 +123,7 @@ internal fun EventsScreen(
                             scope = this,
                             title = ongoingTitle,
                             events = ongoingEvents,
-                            isHorizontal = true,
+                            isHorizontal = ongoingEvents.size > 1,
                             onEventClick = onEventClick,
                         )
                         eventSection(
@@ -148,57 +140,19 @@ internal fun EventsScreen(
     }
 }
 
-private fun eventSection(
-    scope: LazyListScope,
-    title: String,
-    events: List<ShopEvent>,
-    isHorizontal: Boolean,
-    onEventClick: (ShopEvent) -> Unit,
-) {
-    if (events.isEmpty()) return
-
-    scope.item(key = title) {
-        AppText(
-            text = title,
-            modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-            style = AppTextStyle.H3,
-            color = GrayColor.C500,
-        )
-    }
-    if (isHorizontal) {
-        scope.item(key = "$title-events") {
-            LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                items(events, key = ShopEvent::id) { event ->
-                    EventCard(
-                        event = event,
-                        dateText = eventDateText(event.startDate, event.endDate),
-                        onClick = { onEventClick(event) },
-                        modifier = Modifier.width(280.dp),
-                    )
-                }
-            }
-        }
-    } else {
-        scope.items(events, key = ShopEvent::id) { event ->
-            EventCard(
-                event = event,
-                dateText = eventDateText(event.startDate, event.endDate),
-                onClick = { onEventClick(event) },
-            )
-        }
-    }
-}
-
 internal fun partitionBySchedule(events: List<ShopEvent>): Pair<List<ShopEvent>, List<ShopEvent>> = events.partition(ShopEvent::isToday)
 
+@Preview(showBackground = true)
 @Composable
-private fun EventListEmptyContent() {
-    Box(modifier = Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
-        AppText(
-            text = stringResource(Res.string.event_list_empty),
-            style = AppTextStyle.B1,
-            color = GrayColor.C400,
-            textAlign = TextAlign.Center,
+private fun EventsRoutePreview(
+    @PreviewParameter(EventsPreviewParameterProvider::class) uiState: EventsUiState,
+) {
+    RamapTheme {
+        EventsScreen(
+            uiState = uiState,
+            onEventClick = {},
+            onRefresh = {},
+            onRetryClick = {},
         )
     }
 }
