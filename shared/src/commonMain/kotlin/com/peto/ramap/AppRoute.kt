@@ -68,7 +68,7 @@ internal fun AppRoute(
     val navigationState = rememberNavigationState()
     val mapViewModel = koinViewModel<MapViewModel>()
 
-    HandleDeepLinkEvents(deepLinkEntryPoint, notificationLaunchDispatcher, shopDeepLinkDispatcher)
+    HandleDeepLinkEvents(deepLinkEntryPoint, notificationLaunchDispatcher, shopDeepLinkDispatcher, appAnalytics)
 
     TrackScreenViews(navigationState, appAnalytics)
 
@@ -235,11 +235,15 @@ private fun HandleDeepLinkEvents(
     entryPoint: DeepLinkEntryPoint,
     notificationDispatcher: NotificationLaunchDispatcher,
     shopDispatcher: ShopDeepLinkDispatcher,
+    appAnalytics: AppAnalytics,
 ) {
     LaunchedEffect(entryPoint) {
         entryPoint.events.filterNotNull().collect { event ->
             when (event) {
-                is DeepLinkEvent.Url -> shopDispatcher.dispatch(event.value)
+                is DeepLinkEvent.Url -> {
+                    appAnalytics.logDeepLinkReceived()
+                    if (!shopDispatcher.dispatch(event.value)) appAnalytics.logDeepLinkParseFailed()
+                }
                 is DeepLinkEvent.Notification -> notificationDispatcher.dispatch(event.value)
             }
             entryPoint.consume(event)
@@ -259,11 +263,15 @@ private fun HandleShopDeepLink(
             if (value == null) return@collect
             val deepLink = parser.parse(value)
             if (deepLink is ShopDeepLink.Shop) {
+                appAnalytics.logDeepLinkParseSucceeded(deepLink.shopId)
                 appAnalytics.logSharedShopLinkOpened(deepLink.shopId)
                 navigationState.showShopOnMap(
                     shopId = deepLink.shopId,
                     source = "shared_link",
                 )
+                appAnalytics.logDeepLinkNavigationSucceeded(deepLink.shopId)
+            } else {
+                appAnalytics.logDeepLinkNavigationFailed()
             }
             dispatcher.consume(value)
         }

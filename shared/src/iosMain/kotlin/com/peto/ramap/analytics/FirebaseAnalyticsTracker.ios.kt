@@ -28,7 +28,7 @@ class FirebaseAnalyticsTracker : AnalyticsTracker {
         FIRAnalytics.logEventWithName("screen_view", allParams.toNsParams())
     }
 
-    override fun setUserProperty(
+    override fun userProperty(
         key: String,
         value: String,
     ) {

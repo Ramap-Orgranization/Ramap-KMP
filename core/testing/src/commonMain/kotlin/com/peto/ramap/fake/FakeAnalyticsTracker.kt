@@ -19,7 +19,7 @@ class FakeAnalyticsTracker : AnalyticsTracker {
         screenViews += screenName to params
     }
 
-    override fun setUserProperty(
+    override fun userProperty(
         key: String,
         value: String,
     ) {

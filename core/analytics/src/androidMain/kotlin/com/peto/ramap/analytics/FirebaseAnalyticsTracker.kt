@@ -51,7 +51,7 @@ class FirebaseAnalyticsTracker : AnalyticsTracker {
         }
     }
 
-    override fun setUserProperty(
+    override fun userProperty(
         key: String,
         value: String,
     ) {
