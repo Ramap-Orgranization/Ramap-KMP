@@ -41,6 +41,11 @@ sealed interface MapIntent : Intent {
         val shop: RamenShop,
     ) : MapIntent
 
+    data class OnShopMapLinkClicked(
+        val shop: RamenShop,
+        val mapProvider: String,
+    ) : MapIntent
+
     data class OnShopIdSelected(
         val shopId: String,
     ) : MapIntent

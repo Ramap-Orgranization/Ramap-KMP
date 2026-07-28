@@ -37,6 +37,7 @@ import com.peto.ramap.ui.main.map.contract.MapIntent.OnSelectedShopFocusConsumed
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopDetailDismissed
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopDetailRetry
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopIdSelected
+import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopMapLinkClicked
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopNotificationToggled
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopReportSubmitted
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopSelected
@@ -177,6 +178,7 @@ fun MapRoute(
         },
         onHiddenToggled = { viewModel.dispatch(OnHiddenToggled(it)) },
         onShopShareClick = { viewModel.dispatch(OnShopShareClicked(it)) },
+        onShopMapLinkClick = { shop, provider -> viewModel.dispatch(OnShopMapLinkClicked(shop, provider)) },
         onReportSubmit = { wrongFields, description ->
             viewModel.dispatch(OnShopReportSubmitted(wrongFields, description))
         },
