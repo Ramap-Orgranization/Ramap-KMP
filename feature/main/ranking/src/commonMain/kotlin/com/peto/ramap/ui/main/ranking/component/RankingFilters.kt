@@ -35,10 +35,11 @@ internal fun RankingFilters(
     onAreaClick: () -> Unit,
     onCategoryToggled: (Category) -> Unit,
     onAllCategoriesSelected: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     LazyRow(
         modifier =
-            Modifier
+            modifier
                 .height(40.dp)
                 .fillMaxWidth()
                 .padding(horizontal = 10.dp),

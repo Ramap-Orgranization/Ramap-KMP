@@ -201,18 +201,6 @@ internal fun RankingScreen(
                     .fillMaxSize()
                     .statusBarsPadding(),
         ) {
-            AppText(
-                text = "전국 인기 라멘 랭킹",
-                style = AppTextStyle.L1,
-                color = GrayColor.C500,
-                modifier =
-                    Modifier
-                        .padding(
-                            top = 20.dp,
-                            bottom = 10.dp,
-                        ).padding(start = 15.dp),
-            )
-
             RankingFilters(
                 uiState = uiState,
                 onAreaClick = {
@@ -221,6 +209,7 @@ internal fun RankingScreen(
                 },
                 onCategoryToggled = onCategoryToggled,
                 onAllCategoriesSelected = onAllCategoriesSelected,
+                modifier = Modifier.padding(top = 20.dp),
             )
 
             RankingContent(
