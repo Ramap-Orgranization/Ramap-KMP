@@ -42,6 +42,7 @@ import com.peto.ramap.platform.ExternalUriOpener
 import com.peto.ramap.platform.NotificationPermissionRequester
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.ChromaticColor
+import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.InstagramColor
 import com.peto.ramap.ui.base.ObserveAsEvents
@@ -65,6 +66,7 @@ import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 import ramap.shared.generated.resources.Res
+import ramap.shared.generated.resources.catchtable
 import ramap.shared.generated.resources.event_content
 import ramap.shared.generated.resources.event_date
 import ramap.shared.generated.resources.event_detail_title
@@ -75,18 +77,18 @@ import ramap.shared.generated.resources.event_notification_enable
 import ramap.shared.generated.resources.event_venue
 import ramap.shared.generated.resources.event_waiting
 import ramap.shared.generated.resources.event_waiting_action
-import ramap.shared.generated.resources.ic_arrow3_left
 import ramap.shared.generated.resources.ic_apple
+import ramap.shared.generated.resources.ic_arrow3_left
 import ramap.shared.generated.resources.ic_notification
 import ramap.shared.generated.resources.ic_notification_filled
 import ramap.shared.generated.resources.kakao_map_icon
-import ramap.shared.generated.resources.naver_map_icon
 import ramap.shared.generated.resources.location_permission_settings_action
+import ramap.shared.generated.resources.naver_map_icon
 import ramap.shared.generated.resources.navigation_back
 import ramap.shared.generated.resources.notification_permission_enable_message
+import ramap.shared.generated.resources.shop_detail_link_apple_maps
 import ramap.shared.generated.resources.shop_detail_link_kakao_map
 import ramap.shared.generated.resources.shop_detail_link_naver_map
-import ramap.shared.generated.resources.shop_detail_link_apple_maps
 
 @Composable
 fun EventDetailRoute(
@@ -215,6 +217,7 @@ internal fun EventDetailScreen(
                         onWaitingLinkClick = onWaitingLinkClick,
                         onSourceLinkClick = onSourceLinkClick,
                     )
+
                 uiState.isEventLoading -> RamenLoadingIndicator(modifier = Modifier.fillMaxSize())
             }
         }
@@ -339,10 +342,11 @@ private fun EventDetailContent(
                     event.waitingUrl?.takeIf(ExternalUriOpener::isSupportedWebUri)?.let { url ->
                         AppButton(
                             text = stringResource(Res.string.event_waiting_action),
+                            icon = Res.drawable.catchtable,
                             modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
-                            onClick = {
-                                onWaitingLinkClick(url)
-                            },
+                            textColor = CommonColor.Black,
+                            backgroundColor = GrayColor.C100,
+                            onClick = { onWaitingLinkClick(url) },
                         )
                     }
                 }
