@@ -52,11 +52,11 @@ import com.peto.ramap.ui.main.map.contract.MapIntent.OnSelectedShopFocusConsumed
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopDetailDismissed
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopDetailRetry
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopIdSelected
+import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopMapLinkClicked
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopNotificationToggled
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopReportSubmitted
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopSelected
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopShareClicked
-import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopMapLinkClicked
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnViewportLoadRetry
 import com.peto.ramap.ui.main.map.contract.MapLoadKey
 import com.peto.ramap.ui.main.map.contract.MapSideEffect

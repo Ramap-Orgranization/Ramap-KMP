@@ -8,11 +8,12 @@ import kotlin.test.assertEquals
 class MapAnalyticsTest {
     @Test
     fun shopMapLinkOpened_containsShopAndProviderParameters() {
-        val event = ShopMapLinkOpened(
-            shopId = "shop-1",
-            shopName = "라멘집",
-            mapProvider = "naver",
-        )
+        val event =
+            ShopMapLinkOpened(
+                shopId = "shop-1",
+                shopName = "라멘집",
+                mapProvider = "naver",
+            )
 
         assertEquals("shop_map_link_open", event.name)
         assertEquals(
@@ -29,22 +30,27 @@ class MapAnalyticsTest {
     fun mapAnalytics_logsMapLinkEventOnce() {
         val tracker = FakeAnalyticsTracker()
         val analytics = MapAnalytics(tracker)
-        val shop = com.peto.ramap.domain.model.shop.RamenShop(
-            id = "shop-1",
-            kakaoPlaceId = null,
-            name = "라멘집",
-            address = "서울",
-            location = com.peto.ramap.domain.model.shop.Location(0.0, 0.0),
-            kakaoPlaceUrl = null,
-            phone = null,
-            businessHours = null,
-            instagramUrl = null,
-            kakaoRating = null,
-            menuCategories = com.peto.ramap.domain.model.shop.MenuCategories(emptyList()),
-            isVisible = true,
-            createdAt = "",
-            updatedAt = "",
-        )
+        val shop =
+            com.peto.ramap.domain.model.shop.RamenShop(
+                id = "shop-1",
+                kakaoPlaceId = null,
+                name = "라멘집",
+                address = "서울",
+                location =
+                    com.peto.ramap.domain.model.shop
+                        .Location(0.0, 0.0),
+                kakaoPlaceUrl = null,
+                phone = null,
+                businessHours = null,
+                instagramUrl = null,
+                kakaoRating = null,
+                menuCategories =
+                    com.peto.ramap.domain.model.shop
+                        .MenuCategories(emptyList()),
+                isVisible = true,
+                createdAt = "",
+                updatedAt = "",
+            )
 
         analytics.logShopMapLinkOpened(shop, "apple")
 

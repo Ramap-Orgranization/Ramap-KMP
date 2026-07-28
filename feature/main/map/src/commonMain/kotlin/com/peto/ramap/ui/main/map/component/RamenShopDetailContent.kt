@@ -230,7 +230,10 @@ internal fun RamenShopOverview(
                 ShopLinkRow(
                     icon = Res.drawable.kakao_map_icon,
                     label = stringResource(Res.string.shop_detail_link_kakao_map),
-                    onClick = { onMapLinkClick("kakao"); ExternalUriOpener.open(kakaoPlaceUrl) },
+                    onClick = {
+                        onMapLinkClick("kakao")
+                        ExternalUriOpener.open(kakaoPlaceUrl)
+                    },
                 )
             }
 
@@ -238,7 +241,10 @@ internal fun RamenShopOverview(
                 ShopLinkRow(
                     icon = Res.drawable.naver_map_icon,
                     label = stringResource(Res.string.shop_detail_link_naver_map),
-                    onClick = { onMapLinkClick("naver"); ExternalUriOpener.open(naverPlaceUrl) },
+                    onClick = {
+                        onMapLinkClick("naver")
+                        ExternalUriOpener.open(naverPlaceUrl)
+                    },
                 )
             }
 

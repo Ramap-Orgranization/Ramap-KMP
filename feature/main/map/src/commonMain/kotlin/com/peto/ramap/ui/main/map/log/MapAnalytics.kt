@@ -24,7 +24,10 @@ class MapAnalytics(
         )
     }
 
-    fun logShopMapLinkOpened(shop: RamenShop, mapProvider: String) {
+    fun logShopMapLinkOpened(
+        shop: RamenShop,
+        mapProvider: String,
+    ) {
         analyticsTracker.logEvent(
             ShopMapLinkOpened(
                 shopId = shop.id,
