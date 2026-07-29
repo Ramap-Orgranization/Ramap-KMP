@@ -183,7 +183,6 @@ internal fun MapContent(
             MenuCategoryFilterRow(
                 selectedCategories = uiState.filters,
                 onCategoryClick = onCategoryFilterToggled,
-                modifier = Modifier.padding(top = 6.dp),
             )
 
             if (uiState.hasViewportLoadFailed) {

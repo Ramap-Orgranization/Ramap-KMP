@@ -163,7 +163,10 @@ internal fun RamenShopOverview(
             if (shop.hasCategory) {
                 FlowRow(
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    modifier = Modifier.padding(horizontal = 24.dp),
+                    modifier =
+                        Modifier
+                            .padding(top = 10.dp)
+                            .padding(horizontal = 24.dp),
                 ) {
                     shop.menuCategories.forEach { category ->
                         CategoryFilterChip(
