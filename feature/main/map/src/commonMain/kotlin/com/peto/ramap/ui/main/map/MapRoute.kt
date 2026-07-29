@@ -3,22 +3,15 @@ package com.peto.ramap.ui.main.map
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.peto.ramap.designsystem.dialog.LoginGuideDialog
 import com.peto.ramap.designsystem.toast.ToastManager
-import com.peto.ramap.designsystem.toast.model.ToastAction
 import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.navigation.deeplink.ShopShareLinkFactory
 import com.peto.ramap.platform.AppSettingsOpener
 import com.peto.ramap.platform.NotificationPermissionRequester
-import com.peto.ramap.platform.ShareLauncher
-import com.peto.ramap.ui.base.ObserveAsEvents
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnBookmarkToggled
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnBookmarkedShopsToggled
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnBoundsChanged
@@ -43,20 +36,11 @@ import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopReportSubmitted
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopSelected
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopShareClicked
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnViewportLoadRetry
-import com.peto.ramap.ui.main.map.contract.MapSideEffect.ShareShop
-import com.peto.ramap.ui.main.map.contract.MapSideEffect.ShowLoginGuide
-import com.peto.ramap.ui.main.map.contract.MapSideEffect.ShowToast
 import kotlinx.coroutines.launch
-import org.jetbrains.compose.resources.getString
-import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.current_location_timeout_message
-import ramap.shared.generated.resources.location_permission_settings_action
-import ramap.shared.generated.resources.notification_permission_enable_message
-import ramap.shared.generated.resources.share_shop_chooser_title
-import ramap.shared.generated.resources.share_shop_message
 
 @Composable
 fun MapRoute(
@@ -72,8 +56,6 @@ fun MapRoute(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val coroutineScope = rememberCoroutineScope()
-    var showLoginGuideDialog by remember { mutableStateOf(false) }
-    val shareChooserTitle = stringResource(Res.string.share_shop_chooser_title)
 
     LaunchedEffect(requestedShopId) {
         if (requestedShopId == null) {
@@ -83,115 +65,70 @@ fun MapRoute(
         }
     }
 
-    ObserveAsEvents(viewModel.sideEffect) { sideEffect ->
-        when (sideEffect) {
-            ShowLoginGuide -> showLoginGuideDialog = true
-            is ShowToast ->
-                toastManager.show(
-                    sideEffect.data.copy(
-                        action = sideEffect.data.action?.copy(onClick = appSettingsOpener::open),
-                    ),
-                )
-            is ShareShop -> {
-                val link = shopShareLinkFactory.create(sideEffect.shopId)
-                val message =
-                    getString(
-                        Res.string.share_shop_message,
-                        sideEffect.shopName,
-                        link,
-                    )
-                ShareLauncher.share(
-                    text = message,
-                    chooserTitle = shareChooserTitle,
-                )
-            }
-        }
-    }
-
-    MapContent(
-        uiState = uiState,
-        isBackEnabled = isBackEnabled,
-        onBoundsChanged = { viewModel.dispatch(OnBoundsChanged(it)) },
-        onCameraPositionChanged = { viewModel.dispatch(OnCameraPositionChanged(it)) },
-        onMyLocationChanged = { viewModel.dispatch(OnMyLocationChanged(it)) },
-        onLocationPermissionBlocked = { viewModel.dispatch(OnLocationPermissionBlocked) },
-        onCurrentLocationTimeout = {
-            coroutineScope.launch {
-                toastManager.show(
-                    ToastData(
-                        message = Res.string.current_location_timeout_message,
-                        type = ToastType.DEFAULT,
-                    ),
-                )
-            }
-        },
-        onShopSelected = { shop, shouldFocus, source -> viewModel.dispatch(OnShopSelected(shop, shouldFocus, source)) },
-        onPlaceSelected = { viewModel.dispatch(OnSearchedShopSelected(it)) },
-        onShopDetailDismissed = {
-            viewModel.dispatch(OnShopDetailDismissed)
-            onDetailDismissed()
-        },
-        onShopDetailRetry = {
-            if (uiState.selectedShop != null) {
-                viewModel.dispatch(OnShopDetailRetry)
-            } else {
-                requestedShopId?.let { shopId -> viewModel.dispatch(OnShopIdSelected(shopId)) }
-            }
-        },
-        onRequestedShopDismissed = {
-            viewModel.dispatch(OnRequestedShopDismissed)
-            onDetailDismissed()
-        },
-        onQueryChanged = { viewModel.dispatch(OnQueryChanged(it)) },
-        onSearchResultsDismissed = { viewModel.dispatch(OnSearchResultsDismissed) },
-        onInitialLocationFocusConsumed = { viewModel.dispatch(OnInitialLocationFocusConsumed) },
-        onSelectedShopFocusConsumed = { viewModel.dispatch(OnSelectedShopFocusConsumed) },
-        onCategoryFilterToggled = { viewModel.dispatch(OnCategoryFilterToggled(it)) },
-        onViewportLoadRetry = { viewModel.dispatch(OnViewportLoadRetry) },
-        onBookmarkToggled = { viewModel.dispatch(OnBookmarkToggled(it)) },
-        onShopNotificationToggled = { shop ->
-            val canToggleWithoutPermission =
-                !uiState.isLoggedIn ||
-                    shop.id in uiState.hiddenShopIds ||
-                    shop.id in uiState.notificationShopIds
-            if (canToggleWithoutPermission) {
-                viewModel.dispatch(OnShopNotificationToggled(shop))
-            } else {
+    MapInteractionHost(
+        sideEffect = viewModel.sideEffect,
+        isLoggedIn = uiState.isLoggedIn,
+        hiddenShopIds = uiState.hiddenShopIds,
+        notificationShopIds = uiState.notificationShopIds,
+        toastManager = toastManager,
+        appSettingsOpener = appSettingsOpener,
+        shopShareLinkFactory = shopShareLinkFactory,
+        requestNotificationPermission = requestNotificationPermission,
+        onNotificationToggled = { viewModel.dispatch(OnShopNotificationToggled(it)) },
+        onLoginConfirmed = { viewModel.dispatch(OnKakaoLoginClicked) },
+    ) { onShopNotificationToggled ->
+        MapContent(
+            uiState = uiState,
+            isBackEnabled = isBackEnabled,
+            onBoundsChanged = { viewModel.dispatch(OnBoundsChanged(it)) },
+            onCameraPositionChanged = { viewModel.dispatch(OnCameraPositionChanged(it)) },
+            onMyLocationChanged = { viewModel.dispatch(OnMyLocationChanged(it)) },
+            onLocationPermissionBlocked = { viewModel.dispatch(OnLocationPermissionBlocked) },
+            onCurrentLocationTimeout = {
                 coroutineScope.launch {
-                    if (requestNotificationPermission()) {
-                        viewModel.dispatch(OnShopNotificationToggled(shop))
-                    } else {
-                        toastManager.show(
-                            ToastData(
-                                message = Res.string.notification_permission_enable_message,
-                                type = ToastType.DEFAULT,
-                                action =
-                                    ToastAction(
-                                        label = Res.string.location_permission_settings_action,
-                                        onClick = appSettingsOpener::open,
-                                    ),
-                            ),
-                        )
-                    }
+                    toastManager.show(
+                        ToastData(
+                            message = Res.string.current_location_timeout_message,
+                            type = ToastType.DEFAULT,
+                        ),
+                    )
                 }
-            }
-        },
-        onHiddenToggled = { viewModel.dispatch(OnHiddenToggled(it)) },
-        onShopShareClick = { viewModel.dispatch(OnShopShareClicked(it)) },
-        onShopMapLinkClick = { shop, provider -> viewModel.dispatch(OnShopMapLinkClicked(shop, provider)) },
-        onReportSubmit = { wrongFields, description ->
-            viewModel.dispatch(OnShopReportSubmitted(wrongFields, description))
-        },
-        onBookmarkedShopsToggle = { viewModel.dispatch(OnBookmarkedShopsToggled) },
-        onEventClick = onEventNavigate,
-    )
-
-    LoginGuideDialog(
-        visible = showLoginGuideDialog,
-        onDismiss = { showLoginGuideDialog = false },
-        onConfirm = {
-            showLoginGuideDialog = false
-            viewModel.dispatch(OnKakaoLoginClicked)
-        },
-    )
+            },
+            onShopSelected = { shop, shouldFocus, source ->
+                viewModel.dispatch(OnShopSelected(shop, shouldFocus, source))
+            },
+            onPlaceSelected = { viewModel.dispatch(OnSearchedShopSelected(it)) },
+            onShopDetailDismissed = {
+                viewModel.dispatch(OnShopDetailDismissed)
+                onDetailDismissed()
+            },
+            onShopDetailRetry = {
+                if (uiState.selectedShop != null) {
+                    viewModel.dispatch(OnShopDetailRetry)
+                } else {
+                    requestedShopId?.let { shopId -> viewModel.dispatch(OnShopIdSelected(shopId)) }
+                }
+            },
+            onRequestedShopDismissed = {
+                viewModel.dispatch(OnRequestedShopDismissed)
+                onDetailDismissed()
+            },
+            onQueryChanged = { viewModel.dispatch(OnQueryChanged(it)) },
+            onSearchResultsDismissed = { viewModel.dispatch(OnSearchResultsDismissed) },
+            onInitialLocationFocusConsumed = { viewModel.dispatch(OnInitialLocationFocusConsumed) },
+            onSelectedShopFocusConsumed = { viewModel.dispatch(OnSelectedShopFocusConsumed) },
+            onCategoryFilterToggled = { viewModel.dispatch(OnCategoryFilterToggled(it)) },
+            onViewportLoadRetry = { viewModel.dispatch(OnViewportLoadRetry) },
+            onBookmarkToggled = { viewModel.dispatch(OnBookmarkToggled(it)) },
+            onShopNotificationToggled = onShopNotificationToggled,
+            onHiddenToggled = { viewModel.dispatch(OnHiddenToggled(it)) },
+            onShopShareClick = { viewModel.dispatch(OnShopShareClicked(it)) },
+            onShopMapLinkClick = { shop, provider -> viewModel.dispatch(OnShopMapLinkClicked(shop, provider)) },
+            onReportSubmit = { wrongFields, description ->
+                viewModel.dispatch(OnShopReportSubmitted(wrongFields, description))
+            },
+            onBookmarkedShopsToggle = { viewModel.dispatch(OnBookmarkedShopsToggled) },
+            onEventClick = onEventNavigate,
+        )
+    }
 }

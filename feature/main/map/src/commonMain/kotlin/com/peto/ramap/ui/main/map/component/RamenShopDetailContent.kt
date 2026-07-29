@@ -45,7 +45,7 @@ import com.peto.ramap.theme.InstagramColor
 import com.peto.ramap.theme.RamapTheme
 import com.peto.ramap.theme.SystemColor
 import com.peto.ramap.ui.preview.RamenShopPreviewParameterProvider
-import com.peto.ramap.ui.resource.category.label
+import com.peto.ramap.ui.resource.category.CategoryResourceMapper
 import com.peto.ramap.ui.resource.event.ShopEventResourceMapper
 import com.peto.ramap.ui.resource.format
 import com.peto.ramap.ui.resource.wating.WaitingSystemUiModel
@@ -167,7 +167,7 @@ internal fun RamenShopOverview(
                 ) {
                     shop.menuCategories.forEach { category ->
                         CategoryFilterChip(
-                            label = stringResource(category.label()),
+                            label = stringResource(CategoryResourceMapper.label(category)),
                         )
                     }
                 }

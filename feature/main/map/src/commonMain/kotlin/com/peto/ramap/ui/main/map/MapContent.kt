@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -54,7 +53,7 @@ import com.peto.ramap.ui.main.map.component.SearchResultList
 import com.peto.ramap.ui.main.map.component.ShopDetailSheet
 import com.peto.ramap.ui.main.map.contract.MapUiState
 import com.peto.ramap.ui.main.map.model.CameraPosition
-import com.peto.ramap.ui.resource.category.label
+import com.peto.ramap.ui.resource.category.CategoryResourceMapper
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
@@ -167,7 +166,6 @@ internal fun MapContent(
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically,
             ) {
                 SearchBar(
                     query = uiState.search.input,
@@ -178,6 +176,7 @@ internal fun MapContent(
                 BookmarkedFilterButton(
                     isActive = uiState.isBookmarkedView,
                     onClick = onBookmarkedShopsToggle,
+                    modifier = Modifier.padding(top = 5.dp),
                 )
             }
 
@@ -221,9 +220,15 @@ internal fun MapContent(
                             RamenShopSearchResultList(
                                 shops = uiState.searchResultShops,
                                 categoryLabel = { category ->
-                                    stringResource(category.label())
+                                    stringResource(CategoryResourceMapper.label(category))
                                 },
-                                onShopClick = { onShopSelected(it, true, AnalyticsSource.SEARCH_RESULT) },
+                                onShopClick = {
+                                    onShopSelected(
+                                        it,
+                                        true,
+                                        AnalyticsSource.SEARCH_RESULT,
+                                    )
+                                },
                                 modifier = Modifier.padding(start = 10.dp),
                             )
                     }
@@ -262,15 +267,16 @@ internal fun MapContent(
 private fun BookmarkedFilterButton(
     isActive: Boolean,
     onClick: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     MapCircleIconButton(
         isActive = isActive,
         onClick = onClick,
+        modifier = modifier,
     ) {
         Image(
             painter = painterResource(Res.drawable.ic_kid_star),
             contentDescription = stringResource(Res.string.bookmarked_shops_toggle),
-            modifier = Modifier.size(22.dp),
             colorFilter =
                 ColorFilter.tint(
                     if (isActive) CommonColor.White else GrayColor.C500,

@@ -204,11 +204,12 @@ internal actual fun RamapMapView(
     }
 
     LaunchedEffect(naverMap, shouldBootstrapInitialLocationFocus) {
-        if (naverMap != null) {
-            locationPermissionGenerator.requestPermission()
-            if (locationPermissionGenerator.hasPermission() && shouldBootstrapInitialLocationFocus) {
-                naverMap?.locationTrackingMode = LocationTrackingMode.Follow
-            }
+        if (
+            naverMap != null &&
+            locationPermissionGenerator.hasPermission() &&
+            shouldBootstrapInitialLocationFocus
+        ) {
+            naverMap?.locationTrackingMode = LocationTrackingMode.Follow
         }
     }
 

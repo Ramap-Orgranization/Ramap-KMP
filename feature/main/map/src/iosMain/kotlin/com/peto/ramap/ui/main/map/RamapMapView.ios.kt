@@ -127,7 +127,7 @@ internal actual fun RamapMapView(
             properties =
                 UIKitInteropProperties(
                     interactionMode = UIKitInteropInteractionMode.NonCooperative,
-                    isNativeAccessibilityEnabled = false,
+                    isNativeAccessibilityEnabled = true,
                 ),
         )
 
@@ -147,10 +147,6 @@ internal actual fun RamapMapView(
                     .align(Alignment.BottomEnd)
                     .padding(end = 12.dp, bottom = 16.dp),
         )
-    }
-
-    LaunchedEffect(Unit) {
-        permission.requestPermission()
     }
 
     LaunchedEffect(currentLocationRequestState) {

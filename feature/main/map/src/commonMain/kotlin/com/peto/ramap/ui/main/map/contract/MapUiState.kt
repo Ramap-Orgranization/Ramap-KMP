@@ -171,7 +171,11 @@ data class MapUiState(
                 !search.isResultsDismissed &&
                 !isBookmarkedView &&
                 search.input.isNotBlank() &&
-                (searchResultShops.size > 1 || placeSearchResults.size > 1)
+                (
+                    searchResultGuide != null ||
+                        searchResultShops.size > 1 ||
+                        placeSearchResults.size > 1
+                )
 
     /**
      * 지도 화면의 바텀시트를 열지 여부.

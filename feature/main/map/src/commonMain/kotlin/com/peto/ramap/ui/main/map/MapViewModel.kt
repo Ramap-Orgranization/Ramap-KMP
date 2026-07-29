@@ -391,7 +391,7 @@ class MapViewModel(
         val canReuseSearchResults = canReuseSearchResults(normalizedQuery)
         updateSearchInput(query)
 
-        if (normalizedQuery.value.isBlank()) {
+        if (normalizedQuery.value.length !in SEARCH_QUERY_LENGTH) {
             cancelTask(SEARCH_TASK_KEY)
             clearSearchResults()
             return
@@ -1026,6 +1026,7 @@ class MapViewModel(
     private fun hiddenShopTaskKey(shopId: String): String = "map-hidden-shop:$shopId"
 
     companion object {
+        private val SEARCH_QUERY_LENGTH = 2..15
         private const val SEARCH_TASK_KEY = "map-search"
         private const val SHOP_DETAIL_TASK_KEY = "map-shop-detail"
         private const val SHOP_REPORT_TASK_KEY = "map-shop-report"

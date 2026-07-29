@@ -3,8 +3,7 @@ package com.peto.ramap.ui.main.map.model
 import androidx.compose.runtime.Immutable
 import com.peto.ramap.domain.model.report.ShopInformationField
 import com.peto.ramap.domain.model.shop.RamenShop
-import com.peto.ramap.ui.resource.category.label
-import com.peto.ramap.ui.resource.information.label
+import com.peto.ramap.ui.resource.information.ShopInformationFieldResourceMapper
 
 @Immutable
 data class RamenShopUiModel(
@@ -41,6 +40,6 @@ data class RamenShopUiModel(
     private fun reportFieldOption(field: ShopInformationField) =
         ReportFieldOption(
             field = field,
-            label = field.label(),
+            label = ShopInformationFieldResourceMapper.label(field),
         )
 }
