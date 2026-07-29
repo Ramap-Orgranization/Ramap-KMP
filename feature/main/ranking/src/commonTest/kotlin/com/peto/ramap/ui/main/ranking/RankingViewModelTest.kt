@@ -3,6 +3,7 @@ package com.peto.ramap.ui.main.ranking
 import app.cash.turbine.test
 import com.peto.ramap.analytics.common.login.LoginAnalytics
 import com.peto.ramap.core.result.RamapError
+import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.coroutinesTest
 import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
@@ -28,8 +29,12 @@ import com.peto.ramap.fake.FakePersonalizationRepository
 import com.peto.ramap.ui.main.ranking.contract.RankingIntent
 import com.peto.ramap.ui.main.ranking.contract.RankingSideEffect
 import com.peto.ramap.ui.main.ranking.log.RankingAnalytics
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.test.runCurrent
+import kotlinx.coroutines.yield
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.personalization_update_failure_message
 import ramap.shared.generated.resources.ranking_refresh_failure_message
@@ -456,6 +461,93 @@ class RankingViewModelTest {
                     shop.id in viewModel.uiState.value.bookmarkUpdatingShopIds,
                 )
             }
+        }
+
+    @Test
+    fun `저장소가 낙관적 상태와 롤백을 차례로 발행하면 좋아요 수를 한 번만 원복한다`() =
+        coroutinesTest {
+            val mutablePersonalization = MutableStateFlow(ShopPersonalization())
+            val store =
+                object : ShopPersonalizationStore by FakePersonalizationRepository() {
+                    override val state = mutablePersonalization.asStateFlow()
+
+                    override suspend fun updateBookmark(
+                        shopId: String,
+                        enabled: Boolean,
+                    ): RamapResult<Unit> {
+                        mutablePersonalization.value =
+                            ShopPersonalization(bookmarkedShopIds = setOf(shopId))
+                        yield()
+                        mutablePersonalization.value = ShopPersonalization()
+                        return RamapResult.Error(
+                            RamapError.Unknown(IllegalStateException("failure")),
+                        )
+                    }
+                }
+            val viewModel =
+                rankingViewModel(
+                    repository = FakeShopRankingRepository(pageOf(shopRanking(likeCount = 3))),
+                    personalizationStore = store,
+                )
+            runCurrent()
+
+            viewModel.dispatch(
+                RankingIntent.OnBookmarkChanged(
+                    shop = ramenShop(),
+                    enabled = true,
+                ),
+            )
+            runCurrent()
+
+            assertEquals(
+                3L,
+                viewModel.uiState.value
+                    .displayedLikeCount(viewModel.uiState.value.shops[0]),
+            )
+            assertFalse(
+                viewModel.uiState.value.bookmarkLikeCountDeltas
+                    .containsKey("shop-id"),
+            )
+        }
+
+    @Test
+    fun `북마크 추가 중 빠른 제거 입력은 버튼 잠금 계약에 따라 새 요청을 시작하지 않는다`() =
+        coroutinesTest {
+            val mutablePersonalization = MutableStateFlow(ShopPersonalization())
+            val allowCompletion = CompletableDeferred<Unit>()
+            val requests = mutableListOf<Pair<String, Boolean>>()
+            val store =
+                object : ShopPersonalizationStore by FakePersonalizationRepository() {
+                    override val state = mutablePersonalization.asStateFlow()
+
+                    override suspend fun updateBookmark(
+                        shopId: String,
+                        enabled: Boolean,
+                    ): RamapResult<Unit> {
+                        requests += shopId to enabled
+                        mutablePersonalization.value =
+                            ShopPersonalization(bookmarkedShopIds = setOf(shopId))
+                        allowCompletion.await()
+                        return RamapResult.Success(Unit)
+                    }
+                }
+            val shop = ramenShop()
+            val viewModel = rankingViewModel(personalizationStore = store)
+            runCurrent()
+
+            viewModel.dispatch(RankingIntent.OnBookmarkChanged(shop, enabled = true))
+            runCurrent()
+            viewModel.dispatch(RankingIntent.OnBookmarkChanged(shop, enabled = false))
+            runCurrent()
+
+            assertEquals(listOf(shop.id to true), requests)
+            assertTrue(shop.id in viewModel.uiState.value.bookmarkUpdatingShopIds)
+
+            allowCompletion.complete(Unit)
+            runCurrent()
+
+            assertEquals(listOf(shop.id to true), requests)
+            assertTrue(shop.id in viewModel.uiState.value.bookmarkedShopIds)
         }
 
     @Test

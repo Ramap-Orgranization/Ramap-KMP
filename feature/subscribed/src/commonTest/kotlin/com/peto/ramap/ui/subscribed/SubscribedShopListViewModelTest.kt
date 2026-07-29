@@ -280,7 +280,7 @@ class SubscribedShopListViewModelTest {
         }
 
     @Test
-    fun `이벤트 알림 설정 조회 실패는 매장 목록 상태에 영향을 주지 않는다`() =
+    fun `이벤트 알림 설정 조회 실패는 오류 상태로 표시하고 재시도한다`() =
         coroutinesTest {
             val repository =
                 FakeNotificationSettingsRepository().apply {
@@ -295,15 +295,23 @@ class SubscribedShopListViewModelTest {
 
             runCurrent()
 
+            assertTrue(viewModel.uiState.value.showError)
             assertEquals(RamenShops(emptyMap()), viewModel.uiState.value.shops)
+
+            repository.fetchEventOverridesError = null
+            viewModel.dispatch(SubscribedShopListIntent.OnRetry)
+            runCurrent()
+
+            assertTrue(!viewModel.uiState.value.showError)
             assertTrue(
-                viewModel.uiState.value.subscribedEvents
+                viewModel.uiState.value
+                    .subscribedEvents
                     .isEmpty(),
             )
         }
 
     @Test
-    fun `이벤트 상세 조회 실패는 매장 목록 상태에 영향을 주지 않는다`() =
+    fun `이벤트 상세 조회 실패는 오류 상태로 표시한다`() =
         coroutinesTest {
             val eventId = "failed-event"
             val viewModel =
@@ -320,6 +328,7 @@ class SubscribedShopListViewModelTest {
 
             runCurrent()
 
+            assertTrue(viewModel.uiState.value.showError)
             assertEquals(RamenShops(emptyMap()), viewModel.uiState.value.shops)
             assertTrue(
                 viewModel.uiState.value.subscribedEvents

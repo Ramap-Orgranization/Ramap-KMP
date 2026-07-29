@@ -2,6 +2,8 @@ package com.peto.ramap.data.usecase
 
 import com.peto.ramap.core.result.RamapError
 import com.peto.ramap.core.result.RamapResult
+import com.peto.ramap.domain.model.event.ShopEvent
+import com.peto.ramap.domain.model.event.ShopEventType
 import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.domain.usecase.ShopDetail
 import com.peto.ramap.domain.usecase.ShopDetailCacheLookup
@@ -115,4 +117,51 @@ class DefaultFetchShopDetailUseCaseTest {
             val detail = assertIs<ShopDetail>(assertIs<RamapResult.Success<*>>(secondResult).data)
             assertNull(detail.event)
         }
+
+    @Test
+    fun `캐시 히트 시 활성 이벤트가 없으면 종료된 이벤트를 캐시에서 제거한다`() =
+        runTest {
+            val shop = ramenShopFixture()
+            val event = event(shop.id)
+            val ramenShopRepository =
+                FakeRamenShopRepository(
+                    fetchByIdsResult = RamenShops(mapOf(shop.id to shop)),
+                    activeEvent = event,
+                )
+            val useCase =
+                DefaultFetchShopDetailUseCase(
+                    ramenShopRepository,
+                    FakeShopWaitingSystemRepository(),
+                )
+
+            val firstResult = assertIs<RamapResult.Success<ShopDetail>>(useCase(shop.id))
+            assertEquals(event, firstResult.data.event)
+
+            ramenShopRepository.activeEvent = null
+            val secondResult = assertIs<RamapResult.Success<ShopDetail>>(useCase(shop.id))
+
+            assertNull(secondResult.data.event)
+            assertNull(assertIs<ShopDetailCacheLookup.Hit>(useCase.findCached(shop.id)).detail.event)
+        }
+
+    private fun event(shopId: String) =
+        ShopEvent(
+            id = "event",
+            type = ShopEventType.POPUP,
+            title = "팝업",
+            description = "설명",
+            startDate = "2099-01-01",
+            endDate = "2099-01-02",
+            sourceUrl = "https://example.com/event",
+            isToday = false,
+            isVenue = true,
+            venueShopId = shopId,
+            venueShopName = "매장",
+            venueAddress = "서울",
+            collaboratorShopId = null,
+            collaboratorName = null,
+            collaboratorInstagramUrl = null,
+            waitingMethod = null,
+            waitingUrl = null,
+        )
 }

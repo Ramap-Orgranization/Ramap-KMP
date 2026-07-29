@@ -10,7 +10,6 @@ class SettingsMenuTest {
             listOf(
                 SettingsMenu.ACCOUNT,
                 SettingsMenu.INFORMATION,
-                SettingsMenu.NOTIFICATION,
                 SettingsMenu.REPORT,
             ),
             visibleSettingsMenus(isLoggedIn = false),

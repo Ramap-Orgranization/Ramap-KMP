@@ -90,6 +90,37 @@ class BookmarkedShopListViewModelTest {
         }
 
     @Test
+    fun `매장 조회 실패 후 재시도하면 현재 북마크 아이디로 다시 조회한다`() =
+        coroutinesTest {
+            val shop = ramenShopFixture(id = "bookmarked-shop")
+            val ramenShopRepository =
+                FakeRamenShopRepository(
+                    fetchByIdsResult = RamenShops(listOf(shop)),
+                    error = RamapError.Unknown(IllegalStateException("failure")),
+                )
+            val viewModel =
+                BookmarkedShopListViewModel(
+                    personalizationStore =
+                        FakePersonalizationRepository(
+                            ShopPersonalization(bookmarkedShopIds = setOf(shop.id)),
+                        ),
+                    ramenShopRepository = ramenShopRepository,
+                )
+            runCurrent()
+
+            ramenShopRepository.error = null
+            viewModel.dispatch(BookmarkedShopListIntent.OnRetry)
+            runCurrent()
+
+            assertEquals(false, viewModel.uiState.value.showError)
+            assertEquals(RamenShops(listOf(shop)), viewModel.uiState.value.shops)
+            assertEquals(
+                listOf(setOf(shop.id), setOf(shop.id)),
+                ramenShopRepository.requestedShopIdsHistory,
+            )
+        }
+
+    @Test
     fun `매장 재조회를 시작하면 이전 오류를 해제하고 성공 결과를 표시한다`() =
         coroutinesTest {
             val initialShop = ramenShopFixture(id = "initial-bookmarked-shop")

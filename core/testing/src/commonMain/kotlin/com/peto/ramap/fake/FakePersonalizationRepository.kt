@@ -3,6 +3,7 @@ package com.peto.ramap.fake
 import com.peto.ramap.core.result.RamapError
 import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.domain.model.personalization.ShopPersonalization
+import com.peto.ramap.domain.store.PersonalizationBootstrapState
 import com.peto.ramap.domain.store.ShopPersonalizationStore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -10,15 +11,21 @@ import kotlinx.coroutines.flow.update
 
 class FakePersonalizationRepository(
     personalization: ShopPersonalization = ShopPersonalization(),
+    bootstrapState: PersonalizationBootstrapState = PersonalizationBootstrapState.Ready,
 ) : ShopPersonalizationStore {
     private val mutableState = MutableStateFlow(personalization)
     override val state = mutableState.asStateFlow()
+    private val mutableBootstrapState = MutableStateFlow(bootstrapState)
+    override val bootstrapState = mutableBootstrapState.asStateFlow()
     val bookmarkedShopIds = MutableStateFlow(personalization.bookmarkedShopIds)
     val bookmarkUpdateRequests = mutableListOf<Pair<String, Boolean>>()
     var bookmarkUpdateError: RamapError? = null
     var shopNotificationError: RamapError? = null
 
-    override suspend fun refresh(): RamapResult<Unit> = RamapResult.Success(Unit)
+    override suspend fun refresh(): RamapResult<Unit> {
+        mutableBootstrapState.value = PersonalizationBootstrapState.Ready
+        return RamapResult.Success(Unit)
+    }
 
     override suspend fun updateBookmark(
         shopId: String,
@@ -68,6 +75,7 @@ class FakePersonalizationRepository(
 
     override suspend fun clear() {
         mutableState.value = ShopPersonalization()
+        mutableBootstrapState.value = PersonalizationBootstrapState.Ready
     }
 
     fun updateBookmarkedShopIds(shopIds: Set<String>) {

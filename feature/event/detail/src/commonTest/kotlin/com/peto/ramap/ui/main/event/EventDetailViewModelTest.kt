@@ -14,11 +14,16 @@ import com.peto.ramap.fake.FakeRamenShopRepository
 import com.peto.ramap.ui.main.event.contract.EventDetailIntent.OnEntered
 import com.peto.ramap.ui.main.event.contract.EventDetailIntent.OnNotificationChanged
 import com.peto.ramap.ui.main.event.contract.EventDetailIntent.OnNotificationPermissionGranted
+import com.peto.ramap.ui.main.event.contract.EventDetailIntent.OnRetry
 import com.peto.ramap.ui.main.event.contract.EventDetailSideEffect.EventUnavailable
 import com.peto.ramap.ui.main.event.contract.EventDetailSideEffect.RequestNotificationPermission
+import com.peto.ramap.ui.main.event.contract.EventDetailSideEffect.ShowToast
 import com.peto.ramap.ui.main.event.log.EventDetailAnalytics
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runCurrent
+import ramap.shared.generated.resources.Res
+import ramap.shared.generated.resources.event_notification_load_failure_message
+import ramap.shared.generated.resources.event_notification_update_failure_message
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -44,7 +49,7 @@ class EventDetailViewModelTest {
         }
 
     @Test
-    fun `활성 이벤트 조회가 실패하면 이용 불가 안내를 보낸다`() =
+    fun `활성 이벤트 조회가 실패하면 화면 내 재시도 상태를 표시한다`() =
         coroutinesTest {
             val viewModel =
                 eventDetailViewModel(
@@ -55,12 +60,69 @@ class EventDetailViewModelTest {
                         ),
                 )
 
-            viewModel.sideEffect.test {
-                viewModel.dispatch(OnEntered(EVENT.id))
-                runCurrent()
+            viewModel.dispatch(OnEntered(EVENT.id))
+            runCurrent()
 
-                assertEquals(EventUnavailable, awaitItem())
-            }
+            assertTrue(viewModel.uiState.value.hasEventLoadFailed)
+            assertEquals(null, viewModel.uiState.value.event)
+        }
+
+    @Test
+    fun `이벤트 조회 실패 후 재시도하면 이벤트를 표시한다`() =
+        coroutinesTest {
+            val ramenShopRepository =
+                FakeRamenShopRepository(
+                    activeEvent = EVENT,
+                    activeEventError = RamapError.Unknown(IllegalStateException("failure")),
+                )
+            val viewModel =
+                eventDetailViewModel(
+                    repository = FakeNotificationSettingsRepository(),
+                    ramenShopRepository = ramenShopRepository,
+                )
+            viewModel.dispatch(OnEntered(EVENT.id))
+            runCurrent()
+            assertTrue(viewModel.uiState.value.hasEventLoadFailed)
+
+            ramenShopRepository.activeEventError = null
+            viewModel.dispatch(OnRetry)
+            runCurrent()
+
+            assertFalse(viewModel.uiState.value.hasEventLoadFailed)
+            assertEquals(EVENT, viewModel.uiState.value.event)
+        }
+
+    @Test
+    fun `표시 중인 이벤트 재조회가 실패하면 이전 알림 상태를 모두 제거한다`() =
+        coroutinesTest {
+            val notificationRepository =
+                FakeNotificationSettingsRepository(
+                    eventOverrides = mutableListOf(EventNotificationOverride(EVENT.id, true)),
+                )
+            val ramenShopRepository = FakeRamenShopRepository(activeEvent = EVENT)
+            val viewModel =
+                eventDetailViewModel(
+                    repository = notificationRepository,
+                    ramenShopRepository = ramenShopRepository,
+                )
+            viewModel.dispatch(OnEntered(EVENT.id))
+            runCurrent()
+            assertTrue(viewModel.uiState.value.isNotificationVisible)
+            assertTrue(viewModel.uiState.value.canChangeNotification)
+            assertTrue(viewModel.uiState.value.isNotificationEnabled)
+
+            ramenShopRepository.activeEventError =
+                RamapError.Unknown(IllegalStateException("failure"))
+            viewModel.dispatch(OnRetry)
+            runCurrent()
+
+            val state = viewModel.uiState.value
+            assertTrue(state.hasEventLoadFailed)
+            assertEquals(null, state.event)
+            assertFalse(state.isNotificationVisible)
+            assertFalse(state.isEventDayOnly)
+            assertFalse(state.canChangeNotification)
+            assertFalse(state.isNotificationEnabled)
         }
 
     @Test
@@ -140,6 +202,54 @@ class EventDetailViewModelTest {
             assertFalse(viewModel.uiState.value.isNotificationEnabled)
             assertEquals(updatedEvent, viewModel.uiState.value.event)
             assertEquals(listOf(EVENT.id, EVENT.id), repository.requestedEventNotificationIds)
+        }
+
+    @Test
+    fun `알림 상태 조회 실패는 초기화된 상태를 유지하고 피드백을 보낸다`() =
+        coroutinesTest {
+            val repository =
+                FakeNotificationSettingsRepository(
+                    eventOverrides = mutableListOf(EventNotificationOverride(EVENT.id, true)),
+                )
+            val viewModel = eventDetailViewModel(repository)
+            viewModel.dispatch(OnEntered(EVENT.id))
+            runCurrent()
+            assertTrue(viewModel.uiState.value.isNotificationEnabled)
+
+            repository.eventNotificationStatusError =
+                RamapError.Unknown(IllegalStateException("failure"))
+            viewModel.sideEffect.test {
+                viewModel.dispatch(OnEntered(EVENT.id))
+                runCurrent()
+
+                assertFalse(viewModel.uiState.value.isNotificationEnabled)
+                assertEquals(
+                    ShowToast(Res.string.event_notification_load_failure_message),
+                    awaitItem(),
+                )
+            }
+        }
+
+    @Test
+    fun `알림 설정 저장 실패는 이전 상태로 복원하고 피드백을 보낸다`() =
+        coroutinesTest {
+            val repository = FakeNotificationSettingsRepository()
+            val viewModel = eventDetailViewModel(repository)
+            viewModel.dispatch(OnEntered(EVENT.id))
+            runCurrent()
+            repository.eventNotificationUpdateError =
+                RamapError.Unknown(IllegalStateException("failure"))
+
+            viewModel.sideEffect.test {
+                viewModel.dispatch(OnNotificationPermissionGranted)
+                runCurrent()
+
+                assertFalse(viewModel.uiState.value.isNotificationEnabled)
+                assertEquals(
+                    ShowToast(Res.string.event_notification_update_failure_message),
+                    awaitItem(),
+                )
+            }
         }
 
     private fun eventDetailViewModel(

@@ -1,8 +1,10 @@
 package com.peto.ramap.data.store
 
+import com.peto.ramap.core.result.RamapError
 import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.domain.model.personalization.ShopPersonalization
 import com.peto.ramap.domain.repository.BookmarkRepository
+import com.peto.ramap.domain.store.PersonalizationBootstrapState
 import com.peto.ramap.fake.FakeBookmarkRepository
 import com.peto.ramap.fake.FakeHiddenShopRepository
 import com.peto.ramap.fake.FakeSubscribedShopRepository
@@ -20,6 +22,73 @@ import kotlin.test.assertIs
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class DefaultShopPersonalizationStoreTest {
+    @Test
+    fun `초기 동기화 상태는 성공 전 로딩이고 성공 후 준비가 된다`() =
+        runTest {
+            val store =
+                DefaultShopPersonalizationStore(
+                    FakeBookmarkRepository(),
+                    FakeHiddenShopRepository(),
+                    FakeSubscribedShopRepository(),
+                )
+
+            assertEquals(PersonalizationBootstrapState.Loading, store.bootstrapState.value)
+            store.refresh()
+            assertEquals(PersonalizationBootstrapState.Ready, store.bootstrapState.value)
+        }
+
+    @Test
+    fun `초기 동기화 실패는 빈 값을 준비 상태로 확정하지 않는다`() =
+        runTest {
+            val bookmarkRepository =
+                object : BookmarkRepository {
+                    override suspend fun fetchBookmarkedShopIds(): RamapResult<Set<String>> =
+                        RamapResult.Error(RamapError.Unknown(IllegalStateException("failure")))
+
+                    override suspend fun addBookmark(shopId: String) = RamapResult.Success(Unit)
+
+                    override suspend fun removeBookmark(shopId: String) = RamapResult.Success(Unit)
+                }
+            val store =
+                DefaultShopPersonalizationStore(
+                    bookmarkRepository,
+                    FakeHiddenShopRepository(),
+                    FakeSubscribedShopRepository(),
+                )
+
+            assertIs<RamapResult.Error>(store.refresh())
+
+            assertEquals(ShopPersonalization(), store.state.value)
+            assertEquals(PersonalizationBootstrapState.Error, store.bootstrapState.value)
+        }
+
+    @Test
+    fun `초기 동기화 저장소가 예외를 던지면 오류 결과와 오류 상태로 전환한다`() =
+        runTest {
+            val failure = IllegalStateException("failure")
+            val bookmarkRepository =
+                object : BookmarkRepository {
+                    override suspend fun fetchBookmarkedShopIds(): RamapResult<Set<String>> = throw failure
+
+                    override suspend fun addBookmark(shopId: String) = RamapResult.Success(Unit)
+
+                    override suspend fun removeBookmark(shopId: String) = RamapResult.Success(Unit)
+                }
+            val store =
+                DefaultShopPersonalizationStore(
+                    bookmarkRepository,
+                    FakeHiddenShopRepository(),
+                    FakeSubscribedShopRepository(),
+                )
+
+            val result = assertIs<RamapResult.Error>(store.refresh())
+
+            val cause = assertIs<IllegalStateException>(result.error.cause)
+            assertEquals(failure.message, cause.message)
+            assertEquals(ShopPersonalization(), store.state.value)
+            assertEquals(PersonalizationBootstrapState.Error, store.bootstrapState.value)
+        }
+
     @Test
     fun `새로고침 결과를 하나의 상태로 발행한다`() =
         runTest {

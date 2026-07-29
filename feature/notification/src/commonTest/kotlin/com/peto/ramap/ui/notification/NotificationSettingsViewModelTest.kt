@@ -1,5 +1,6 @@
 package com.peto.ramap.ui.notification
 
+import app.cash.turbine.test
 import com.peto.ramap.core.result.RamapError
 import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.coroutinesTest
@@ -7,9 +8,12 @@ import com.peto.ramap.domain.repository.NotificationSettingsRepository
 import com.peto.ramap.fake.FakeNotificationSettingsRepository
 import com.peto.ramap.ui.notification.contract.NotificationSettingsIntent
 import com.peto.ramap.ui.notification.contract.NotificationSettingsLoadKey
+import com.peto.ramap.ui.notification.contract.NotificationSettingsSideEffect
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runCurrent
+import ramap.shared.generated.resources.Res
+import ramap.shared.generated.resources.personalization_update_failure_message
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -95,5 +99,30 @@ class NotificationSettingsViewModelTest {
             firstResult.complete(RamapResult.Error(RamapError.Unknown(IllegalStateException("late"))))
             runCurrent()
             assertFalse(viewModel.uiState.value.areEnabled)
+        }
+
+    @Test
+    fun `알림 설정 저장에 실패하면 이전 상태로 복원하고 오류 토스트를 표시한다`() =
+        coroutinesTest {
+            val repository =
+                object :
+                    NotificationSettingsRepository by FakeNotificationSettingsRepository(enabled = true) {
+                    override suspend fun updateEventNotificationsEnabled(enabled: Boolean): RamapResult<Unit> =
+                        RamapResult.Error(RamapError.Unknown(IllegalStateException("failure")))
+                }
+            val viewModel = NotificationSettingsViewModel(repository)
+            runCurrent()
+
+            viewModel.sideEffect.test {
+                viewModel.dispatch(NotificationSettingsIntent.OnEventNotificationsEnabledChanged(false))
+                runCurrent()
+
+                assertTrue(viewModel.uiState.value.areEnabled)
+                val sideEffect = awaitItem() as NotificationSettingsSideEffect.ShowToast
+                assertEquals(
+                    Res.string.personalization_update_failure_message,
+                    sideEffect.data.message,
+                )
+            }
         }
 }

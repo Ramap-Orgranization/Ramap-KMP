@@ -1,5 +1,6 @@
 package com.peto.ramap.ui.hidden
 
+import com.peto.ramap.core.result.RamapError
 import com.peto.ramap.coroutinesTest
 import com.peto.ramap.domain.model.personalization.ShopPersonalization
 import com.peto.ramap.domain.model.shop.RamenShops
@@ -54,6 +55,39 @@ class HiddenShopListViewModelTest {
 
             assertEquals(RamenShops(emptyMap()), viewModel.uiState.value.shops)
             assertTrue(!viewModel.uiState.value.isOverlayLoading)
+        }
+
+    @Test
+    fun `숨긴 매장 조회 실패 후 재시도하면 현재 아이디로 목록을 복구한다`() =
+        coroutinesTest {
+            val shop = ramenShopFixture(id = "hidden-shop")
+            val ramenShopRepository =
+                FakeRamenShopRepository(
+                    fetchByIdsResult = RamenShops(listOf(shop)),
+                    error = RamapError.Unknown(IllegalStateException("failure")),
+                )
+            val viewModel =
+                HiddenShopListViewModel(
+                    personalizationStore =
+                        FakePersonalizationRepository(
+                            ShopPersonalization(hiddenShopIds = setOf(shop.id)),
+                        ),
+                    ramenShopRepository = ramenShopRepository,
+                    analyticsTracker = FakeAnalyticsTracker(),
+                )
+            runCurrent()
+
+            assertTrue(viewModel.uiState.value.showError)
+
+            ramenShopRepository.error = null
+            viewModel.dispatch(HiddenShopListIntent.OnRetry)
+            runCurrent()
+
+            assertTrue(!viewModel.uiState.value.showError)
+            assertEquals(
+                RamenShops(listOf(shop.copy(isVisible = false))),
+                viewModel.uiState.value.shops,
+            )
         }
 
     @Test
