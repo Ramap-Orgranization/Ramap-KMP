@@ -199,6 +199,38 @@ class NavigationStateTest {
     }
 
     @Test
+    fun `지도 탭을 떠나는 모든 전환에서 종료 콜백을 호출한다`() {
+        var mapTabExitCount = 0
+        val navigationState =
+            navigationState(
+                onMapTabExited = { mapTabExitCount += 1 },
+            )
+
+        navigationState.selectTopLevelTab(TabStatus.EVENT)
+        navigationState.selectTopLevelTab(TabStatus.MAP)
+        navigationState.showShopOnMap(
+            shopId = "shop-id",
+            returnTab = TabStatus.EVENT,
+        )
+        navigationState.pop()
+
+        assertEquals(2, mapTabExitCount)
+    }
+
+    @Test
+    fun `현재 지도 탭을 다시 선택하면 종료 콜백을 호출하지 않는다`() {
+        var mapTabExitCount = 0
+        val navigationState =
+            navigationState(
+                onMapTabExited = { mapTabExitCount += 1 },
+            )
+
+        navigationState.selectTopLevelTab(TabStatus.MAP)
+
+        assertEquals(0, mapTabExitCount)
+    }
+
+    @Test
     fun `랭킹 매장을 지도에서 연 뒤 다른 탭을 거치면 매장 요청 없이 지도에 돌아온다`() {
         val navigationState = navigationState(selectedTab = TabStatus.RANKING)
 
@@ -292,6 +324,7 @@ class NavigationStateTest {
     private fun navigationState(
         selectedTab: TabStatus = TabStatus.MAP,
         rankingBackStack: NavBackStack<NavKey> = NavBackStack(ScreenRoutes.RankingTabRoutes),
+        onMapTabExited: () -> Unit = {},
     ): NavigationState =
         NavigationState(
             selectedTabState = mutableStateOf(selectedTab),
@@ -302,5 +335,6 @@ class NavigationStateTest {
                     TabStatus.EVENT to NavBackStack<NavKey>(ScreenRoutes.EventTabRoutes),
                     TabStatus.MY to NavBackStack<NavKey>(ScreenRoutes.MyTabRoutes),
                 ),
+            onMapTabExited = onMapTabExited,
         )
 }
