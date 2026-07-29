@@ -7,6 +7,8 @@ sealed interface EventDetailIntent : Intent {
         val eventId: String,
     ) : EventDetailIntent
 
+    data object OnRetry : EventDetailIntent
+
     data class OnNotificationChanged(
         val enabled: Boolean,
     ) : EventDetailIntent

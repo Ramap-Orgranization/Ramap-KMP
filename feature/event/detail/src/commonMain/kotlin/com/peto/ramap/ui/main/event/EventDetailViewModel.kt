@@ -13,6 +13,7 @@ import com.peto.ramap.ui.main.event.contract.EventDetailIntent.OnCollaboratorSho
 import com.peto.ramap.ui.main.event.contract.EventDetailIntent.OnEntered
 import com.peto.ramap.ui.main.event.contract.EventDetailIntent.OnNotificationChanged
 import com.peto.ramap.ui.main.event.contract.EventDetailIntent.OnNotificationPermissionGranted
+import com.peto.ramap.ui.main.event.contract.EventDetailIntent.OnRetry
 import com.peto.ramap.ui.main.event.contract.EventDetailIntent.OnSourceLinkSelected
 import com.peto.ramap.ui.main.event.contract.EventDetailIntent.OnVenueShopSelected
 import com.peto.ramap.ui.main.event.contract.EventDetailIntent.OnWaitingLinkSelected
@@ -20,9 +21,13 @@ import com.peto.ramap.ui.main.event.contract.EventDetailLoadKey
 import com.peto.ramap.ui.main.event.contract.EventDetailSideEffect
 import com.peto.ramap.ui.main.event.contract.EventDetailSideEffect.EventUnavailable
 import com.peto.ramap.ui.main.event.contract.EventDetailSideEffect.RequestNotificationPermission
+import com.peto.ramap.ui.main.event.contract.EventDetailSideEffect.ShowToast
 import com.peto.ramap.ui.main.event.contract.EventDetailUiState
 import com.peto.ramap.ui.main.event.log.EventDetailAnalytics
 import com.peto.ramap.ui.task.TaskPolicy
+import ramap.shared.generated.resources.Res
+import ramap.shared.generated.resources.event_notification_load_failure_message
+import ramap.shared.generated.resources.event_notification_update_failure_message
 
 class EventDetailViewModel(
     private val ramenShopRepository: RamenShopRepository,
@@ -39,6 +44,7 @@ class EventDetailViewModel(
     override suspend fun handleIntent(intent: EventDetailIntent) {
         when (intent) {
             is OnEntered -> handleEntered(intent)
+            OnRetry -> retryEventLoad()
             is OnNotificationChanged -> handleNotificationChanged(intent.enabled)
             OnNotificationPermissionGranted -> handleNotificationPermissionGranted()
             is OnVenueShopSelected -> handleVenueShopSelected(intent.shopId)
@@ -50,7 +56,13 @@ class EventDetailViewModel(
     }
 
     private fun handleEntered(intent: OnEntered) {
+        currentEventId = intent.eventId
         loadEvent(intent.eventId)
+    }
+
+    private fun retryEventLoad() {
+        val eventId = currentEventId ?: return
+        loadEvent(eventId)
     }
 
     private fun handleNotificationPermissionGranted() {
@@ -97,6 +109,16 @@ class EventDetailViewModel(
             taskKey = LOAD_EVENT_TASK_KEY,
             loadKey = EventDetailLoadKey.Fetch,
             policy = TaskPolicy.CancelPrevious,
+            onStart = {
+                copy(
+                    event = null,
+                    isNotificationVisible = false,
+                    isEventDayOnly = false,
+                    canChangeNotification = false,
+                    isNotificationEnabled = false,
+                    hasEventLoadFailed = false,
+                )
+            },
             request = {
                 ramenShopRepository.fetchActiveEvent(eventId)
             },
@@ -106,7 +128,16 @@ class EventDetailViewModel(
                 )
             },
             onError = {
-                showEventUnavailable()
+                reduce {
+                    copy(
+                        event = null,
+                        isNotificationVisible = false,
+                        isEventDayOnly = false,
+                        canChangeNotification = false,
+                        isNotificationEnabled = false,
+                        hasEventLoadFailed = true,
+                    )
+                }
             },
         )
     }
@@ -145,6 +176,7 @@ class EventDetailViewModel(
                     notificationWindow ==
                         EventNotificationWindow.EVENT_DAY_ONLY,
                 canChangeNotification = canChangeNotification,
+                hasEventLoadFailed = false,
             )
         }
     }
@@ -168,7 +200,7 @@ class EventDetailViewModel(
             },
             onSuccess = ::finishNotificationRefresh,
             onError = {
-                finishNotificationRefresh(isEnabled = false)
+                showNotificationFailure(Res.string.event_notification_load_failure_message)
             },
         )
     }
@@ -229,6 +261,7 @@ class EventDetailViewModel(
                 finishNotificationUpdate(
                     isEnabled = previousValue,
                 )
+                showNotificationFailure(Res.string.event_notification_update_failure_message)
             },
         )
     }
@@ -237,8 +270,14 @@ class EventDetailViewModel(
         reduce { copy(isNotificationEnabled = isEnabled) }
     }
 
+    private suspend fun showNotificationFailure(message: org.jetbrains.compose.resources.StringResource) {
+        postSideEffect(ShowToast(message))
+    }
+
     companion object {
         private const val LOAD_EVENT_TASK_KEY = "event-detail-load"
         private const val NOTIFICATION_TASK_KEY = "event-detail-notification"
     }
+
+    private var currentEventId: String? = null
 }

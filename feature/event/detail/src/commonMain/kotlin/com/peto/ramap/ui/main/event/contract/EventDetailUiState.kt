@@ -11,6 +11,7 @@ data class EventDetailUiState(
     val isEventDayOnly: Boolean = false,
     val canChangeNotification: Boolean = false,
     val isNotificationEnabled: Boolean = false,
+    val hasEventLoadFailed: Boolean = false,
     override val loadState: LoadState = LoadState(),
 ) : State,
     LoadableState<EventDetailUiState> {

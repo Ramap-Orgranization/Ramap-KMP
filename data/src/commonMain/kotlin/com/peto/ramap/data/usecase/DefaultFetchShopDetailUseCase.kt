@@ -43,8 +43,11 @@ internal class DefaultFetchShopDetailUseCase(
      */
     private suspend fun revalidateEvent(cached: ShopDetail): RamapResult<ShopDetail> {
         val eventResult = ramenShopRepository.fetchActiveShopEvent(cached.shop.id)
-        val freshEvent = (eventResult as? RamapResult.Success)?.data
-        val updated = cached.copy(event = freshEvent ?: cached.event)
+        val updated =
+            when (eventResult) {
+                is RamapResult.Success -> cached.copy(event = eventResult.data)
+                is RamapResult.Error -> cached
+            }
         cache[cached.shop.id] = updated
         return RamapResult.Success(updated)
     }

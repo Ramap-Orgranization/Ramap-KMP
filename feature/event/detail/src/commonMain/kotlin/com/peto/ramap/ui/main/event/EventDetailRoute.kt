@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.peto.ramap.designsystem.button.AppButton
 import com.peto.ramap.designsystem.card.SectionCard
+import com.peto.ramap.designsystem.component.LoadErrorContent
 import com.peto.ramap.designsystem.indicator.RamenLoadingIndicator
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.designsystem.toast.ToastManager
@@ -57,11 +58,13 @@ import com.peto.ramap.ui.main.event.contract.EventDetailIntent.OnCollaboratorSho
 import com.peto.ramap.ui.main.event.contract.EventDetailIntent.OnEntered
 import com.peto.ramap.ui.main.event.contract.EventDetailIntent.OnNotificationChanged
 import com.peto.ramap.ui.main.event.contract.EventDetailIntent.OnNotificationPermissionGranted
+import com.peto.ramap.ui.main.event.contract.EventDetailIntent.OnRetry
 import com.peto.ramap.ui.main.event.contract.EventDetailIntent.OnSourceLinkSelected
 import com.peto.ramap.ui.main.event.contract.EventDetailIntent.OnVenueShopSelected
 import com.peto.ramap.ui.main.event.contract.EventDetailIntent.OnWaitingLinkSelected
 import com.peto.ramap.ui.main.event.contract.EventDetailSideEffect.EventUnavailable
 import com.peto.ramap.ui.main.event.contract.EventDetailSideEffect.RequestNotificationPermission
+import com.peto.ramap.ui.main.event.contract.EventDetailSideEffect.ShowToast
 import com.peto.ramap.ui.main.event.contract.EventDetailUiState
 import com.peto.ramap.ui.resource.event.ShopEventResourceMapper
 import kotlinx.coroutines.launch
@@ -71,14 +74,17 @@ import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.catchtable
+import ramap.shared.generated.resources.data_load_failure_message
 import ramap.shared.generated.resources.event_content
 import ramap.shared.generated.resources.event_date
+import ramap.shared.generated.resources.event_detail_load_failure_title
 import ramap.shared.generated.resources.event_detail_title
 import ramap.shared.generated.resources.event_instagram_action
 import ramap.shared.generated.resources.event_venue
 import ramap.shared.generated.resources.event_waiting
 import ramap.shared.generated.resources.event_waiting_action
 import ramap.shared.generated.resources.ic_arrow3_left
+import ramap.shared.generated.resources.laduck_error_crying
 import ramap.shared.generated.resources.location_permission_settings_action
 import ramap.shared.generated.resources.navigation_back
 import ramap.shared.generated.resources.notification_permission_enable_message
@@ -103,6 +109,13 @@ fun EventDetailRoute(
     ObserveAsEvents(viewModel.sideEffect) { sideEffect ->
         when (sideEffect) {
             EventUnavailable -> onUnavailable()
+            is ShowToast ->
+                toastManager.show(
+                    ToastData(
+                        message = sideEffect.message,
+                        type = ToastType.ERROR,
+                    ),
+                )
             RequestNotificationPermission ->
                 coroutineScope.launch {
                     if (requestNotificationPermission()) {
@@ -157,6 +170,7 @@ fun EventDetailRoute(
                 OnNotificationChanged(enabled),
             )
         },
+        onRetry = { viewModel.dispatch(OnRetry) },
     )
 }
 
@@ -170,6 +184,7 @@ internal fun EventDetailScreen(
     onWaitingLinkClick: (String) -> Unit,
     onSourceLinkClick: (String) -> Unit,
     onNotificationChanged: (Boolean) -> Unit,
+    onRetry: () -> Unit,
 ) {
     Scaffold(
         modifier =
@@ -218,6 +233,15 @@ internal fun EventDetailScreen(
                     )
 
                 uiState.isEventLoading -> RamenLoadingIndicator(modifier = Modifier.fillMaxSize())
+
+                uiState.hasEventLoadFailed ->
+                    LoadErrorContent(
+                        image = Res.drawable.laduck_error_crying,
+                        title = stringResource(Res.string.event_detail_load_failure_title),
+                        description = stringResource(Res.string.data_load_failure_message),
+                        onRetry = onRetry,
+                        modifier = Modifier.fillMaxSize(),
+                    )
             }
         }
     }
@@ -270,23 +294,29 @@ private fun EventDetailContent(
                     },
                 )
                 event.collaboratorName?.takeIf(String::isNotBlank)?.let { name ->
+                    val hasCollaboratorLink =
+                        !event.collaboratorShopId.isNullOrBlank() ||
+                            !event.collaboratorInstagramUrl.isNullOrBlank()
                     EventSection(
                         stringResource(ShopEventResourceMapper.collaboratorLabel(event)),
                     ) {
                         EventVenueLink(
                             title = name,
-                            onClick = {
-                                val collaboratorShopId = event.collaboratorShopId
-
-                                if (!collaboratorShopId.isNullOrBlank()) {
-                                    onCollaboratorShopClick(collaboratorShopId)
-                                    return@EventVenueLink
-                                }
-
-                                event.collaboratorInstagramUrl?.let {
-                                    onCollaboratorInstagramClick(it)
-                                }
-                            },
+                            onClick =
+                                if (hasCollaboratorLink) {
+                                    {
+                                        val collaboratorShopId = event.collaboratorShopId
+                                        if (!collaboratorShopId.isNullOrBlank()) {
+                                            onCollaboratorShopClick(collaboratorShopId)
+                                        } else {
+                                            event.collaboratorInstagramUrl?.let {
+                                                onCollaboratorInstagramClick(it)
+                                            }
+                                        }
+                                    }
+                                } else {
+                                    null
+                                },
                         )
                     }
                 }
@@ -370,10 +400,13 @@ private fun EventValue(
 @Composable
 private fun EventVenueLink(
     title: String,
-    onClick: () -> Unit,
+    onClick: (() -> Unit)?,
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth().noRippleClickable(onClick = onClick),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .then(if (onClick == null) Modifier else Modifier.noRippleClickable(onClick = onClick)),
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
         AppText(
@@ -382,12 +415,14 @@ private fun EventVenueLink(
             color = GrayColor.C500,
             modifier = Modifier.weight(1f),
         )
-        AppText(
-            ">",
-            style = AppTextStyle.T2,
-            color = GrayColor.C400,
-            textAlign = TextAlign.End,
-        )
+        if (onClick != null) {
+            AppText(
+                ">",
+                style = AppTextStyle.T2,
+                color = GrayColor.C400,
+                textAlign = TextAlign.End,
+            )
+        }
     }
 }
 
@@ -431,6 +466,7 @@ private fun EventDetailRoutePreview() {
             onWaitingLinkClick = {},
             onSourceLinkClick = {},
             onNotificationChanged = {},
+            onRetry = {},
         )
     }
 }
