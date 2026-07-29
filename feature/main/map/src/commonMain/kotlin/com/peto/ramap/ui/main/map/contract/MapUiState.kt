@@ -162,8 +162,8 @@ data class MapUiState(
     /**
      * 검색 결과 리스트 바텀시트를 보여줄지 여부.
      *
-     * 매장 상세가 열려 있지 않고 검색어가 있으며, 선택 가능한 검색 결과가 여러 개일 때만
-     * 리스트를 노출한다.
+     * 매장 상세가 열려 있지 않고 검색어가 있으며, 선택 가능한 검색 결과가 여러 개이거나
+     * 빈 검색 결과를 제외한 안내가 있을 때만 리스트를 노출한다.
      */
     val showSearchResults: Boolean
         get() =
@@ -172,7 +172,10 @@ data class MapUiState(
                 !isBookmarkedView &&
                 search.input.isNotBlank() &&
                 (
-                    searchResultGuide != null ||
+                    (
+                        searchResultGuide != null &&
+                            searchResultGuide != SearchResultGuide.SEARCH_EMPTY
+                    ) ||
                         searchResultShops.size > 1 ||
                         placeSearchResults.size > 1
                 )

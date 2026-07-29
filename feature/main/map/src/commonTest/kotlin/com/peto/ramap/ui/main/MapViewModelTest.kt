@@ -2217,7 +2217,7 @@ class MapViewModelTest {
         }
 
     @Test
-    fun `검색 결과가 없으면 안내 바텀시트를 보여준다`() {
+    fun `검색 결과가 없으면 안내 바텀시트를 보여주지 않는다`() {
         val uiState =
             MapUiState(
                 search =
@@ -2228,8 +2228,8 @@ class MapViewModelTest {
             )
 
         assertEquals(SearchResultGuide.SEARCH_EMPTY, uiState.searchResultGuide)
-        assertEquals(true, uiState.showSearchResults)
-        assertEquals(true, uiState.showBottomSheet)
+        assertEquals(false, uiState.showSearchResults)
+        assertEquals(false, uiState.showBottomSheet)
     }
 
     @Test
@@ -2716,7 +2716,7 @@ class MapViewModelTest {
         }
 
     @Test
-    fun `장소 검색 오류는 데이터 로드 오류로 안내한다`() =
+    fun `장소 검색 오류는 빈 검색 결과로 안내한다`() =
         coroutinesTest {
             val viewModel =
                 mapViewModel(
@@ -2732,9 +2732,12 @@ class MapViewModelTest {
                 runCurrent()
 
                 assertEquals(
-                    ShowToast(ToastData(Res.string.data_load_failure_message, ToastType.ERROR)),
+                    showToastSideEffect(Res.string.search_result_empty_message),
                     awaitItem(),
                 )
+                assertEquals(SearchResultGuide.SEARCH_EMPTY, viewModel.uiState.value.searchResultGuide)
+                assertEquals(false, viewModel.uiState.value.showSearchResults)
+                assertEquals(false, viewModel.uiState.value.showBottomSheet)
                 assertEquals(
                     PlaceSearchResults(emptyList()),
                     viewModel.uiState.value.placeSearchResults,

@@ -80,7 +80,7 @@ internal class MapSearchController(
      * @param query 장소 검색에 사용할 정규화된 검색어
      * @param center 장소 검색의 거리 기준이 되는 현재 지도 중심
      * @param shops 앞서 진행한 등록 매장 검색에서 확인된 빈 매장 목록
-     * @return Edge Function의 분류를 반영한 검색 결과 또는 장소 저장소 오류
+     * @return Edge Function의 분류를 반영한 검색 결과. 보조 장소 검색이 실패하면 등록 매장이 없는 빈 결과를 반환한다.
      */
     private suspend fun resolvePlaceFallback(
         query: SearchQuery,
@@ -94,7 +94,12 @@ internal class MapSearchController(
                 resolveVerifiedPlaceResult(query, shops, placeResult.data)
             }
 
-            is RamapResult.Error -> MapSearchResult.Failed(placeResult.error)
+            is RamapResult.Error ->
+                MapSearchResult.Loaded(
+                    query = query,
+                    shops = shops,
+                    places = PlaceSearchResults(emptyList()),
+                )
         }
     }
 
