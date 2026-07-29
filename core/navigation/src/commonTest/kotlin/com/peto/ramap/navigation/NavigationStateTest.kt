@@ -126,6 +126,35 @@ class NavigationStateTest {
     }
 
     @Test
+    fun `이용 불가 이벤트에서 이벤트 루트로 이동하면 실패한 상세 경로를 제거한다`() {
+        val navigationState = navigationState(selectedTab = TabStatus.EVENT)
+        navigationState.showEvent("missing-event")
+
+        navigationState.showEventRoot()
+
+        assertEquals(TabStatus.EVENT, navigationState.selectedTab)
+        assertEquals(
+            listOf(ScreenRoutes.EventTabRoutes),
+            navigationState.backStacks.getValue(TabStatus.EVENT).toList(),
+        )
+    }
+
+    @Test
+    fun `다른 탭에서 연 이용 불가 이벤트는 소유 스택에서도 제거한다`() {
+        val navigationState = navigationState(selectedTab = TabStatus.RANKING)
+        navigationState.showEvent("missing-event")
+
+        navigationState.showEventRoot()
+        navigationState.selectTopLevelTab(TabStatus.RANKING)
+
+        assertEquals(ScreenRoutes.RankingTabRoutes, navigationState.currentRoute)
+        assertEquals(
+            listOf(ScreenRoutes.RankingTabRoutes),
+            navigationState.backStacks.getValue(TabStatus.RANKING).toList(),
+        )
+    }
+
+    @Test
     fun `지도에서 매장을 열면 지도 스택만 교체하고 지도 탭을 선택한다`() {
         val navigationState = navigationState(selectedTab = TabStatus.EVENT)
         navigationState.showEvent("event-id")
@@ -139,6 +168,19 @@ class NavigationStateTest {
             ScreenRoutes.EventDetailRoutes("event-id"),
             navigationState.backStacks.getValue(TabStatus.EVENT).last(),
         )
+    }
+
+    @Test
+    fun `매장을 지도에서 열 때 네비게이션 출처를 저장한다`() {
+        val navigationState = navigationState()
+
+        navigationState.showShopOnMap(
+            shopId = "shop-id",
+            source = ShopNavigationSource.RANKING,
+        )
+
+        assertEquals(ShopNavigationSource.RANKING, navigationState.lastNavigationSource)
+        assertEquals("ranking", ShopNavigationSource.RANKING.value)
     }
 
     @Test
