@@ -27,7 +27,6 @@ import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.ui.account.component.LoginButton
 import com.peto.ramap.ui.account.contract.AccountIntent
 import com.peto.ramap.ui.account.contract.AccountSideEffect
-import com.peto.ramap.ui.account.model.LoginTypeUiModel
 import com.peto.ramap.ui.base.ObserveAsEvents
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
@@ -49,13 +48,18 @@ fun AccountSettingsRoute(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var isAccountDeleteConfirmDialogVisible by rememberSaveable { mutableStateOf(false) }
+
     ObserveAsEvents(viewModel.sideEffect) { sideEffect ->
         when (sideEffect) {
             is AccountSideEffect.ShowToast -> toastManager.show(sideEffect.data)
         }
     }
 
-    SettingsPage(Res.string.settings_account_menu, onBack) {
+    SettingsPage(
+        title = Res.string.settings_account_menu,
+        showLoading = uiState.loadState.isAnyLoading,
+        onBack = onBack,
+    ) {
         SectionCard(title = uiState.accountLabel) {
             if (uiState.isLoggedIn) {
                 AppButton(
@@ -84,7 +88,7 @@ fun AccountSettingsRoute(
                 )
             } else {
                 LoginButton(
-                    type = LoginTypeUiModel(LoginType.KAKAO),
+                    type = LoginType.KAKAO,
                     modifier =
                         Modifier
                             .fillMaxWidth()
@@ -101,7 +105,6 @@ fun AccountSettingsRoute(
         visible = isAccountDeleteConfirmDialogVisible,
         confirmText = stringResource(Res.string.account_delete_confirm_action),
         dismissText = stringResource(Res.string.account_delete_confirm_dismiss),
-        confirmEnabled = !uiState.isDeletingAccount,
         onDismissRequest = { isAccountDeleteConfirmDialogVisible = false },
         content = {
             AppText(

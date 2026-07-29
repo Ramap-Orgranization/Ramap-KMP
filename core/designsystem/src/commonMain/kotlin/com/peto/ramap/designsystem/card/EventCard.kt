@@ -12,10 +12,14 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.peto.ramap.designsystem.image.RemoteShopImage
@@ -26,11 +30,13 @@ import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.ChromaticColor
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
+import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.event_type_collab
 import ramap.shared.generated.resources.event_type_limited_menu
 import ramap.shared.generated.resources.event_type_popup
+import ramap.shared.generated.resources.ic_close
 
 @Composable
 fun EventCard(
@@ -38,6 +44,8 @@ fun EventCard(
     dateText: String,
     onClick: (() -> Unit)?,
     modifier: Modifier = Modifier.fillMaxWidth(),
+    actionLabel: String? = null,
+    onAction: (() -> Unit)? = null,
 ) {
     val cardShape = RoundedCornerShape(16.dp)
 
@@ -67,13 +75,28 @@ fun EventCard(
                 )
                 AppText(
                     text = event.venueShopName,
-                    style = AppTextStyle.B2,
+                    style = AppTextStyle.B1,
                     color = GrayColor.C400,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
             }
             EventTag(eventTypeLabel(event.type))
+            if (actionLabel != null && onAction != null) {
+                IconButton(
+                    onClick = onAction,
+                    modifier =
+                        Modifier.semantics {
+                            contentDescription = "${event.title} $actionLabel"
+                        },
+                ) {
+                    Icon(
+                        painter = painterResource(Res.drawable.ic_close),
+                        contentDescription = null,
+                        tint = GrayColor.C400,
+                    )
+                }
+            }
         }
         AppText(event.title, style = AppTextStyle.T2, color = GrayColor.C500)
         HorizontalDivider(thickness = 1.dp, color = GrayColor.C100)

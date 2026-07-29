@@ -9,8 +9,13 @@ import androidx.navigation3.runtime.NavKey
 class NavigationState(
     selectedTabState: MutableState<TabStatus>,
     val backStacks: Map<TabStatus, NavBackStack<NavKey>>,
+    private val onMapTabExited: () -> Unit = {},
 ) {
     var selectedTab: TabStatus by selectedTabState
+        private set
+
+    /** 마지막 네비게이션 소스. shop_select 등의 analytics source 파라미터로 사용. */
+    var lastNavigationSource: ShopNavigationSource? = null
         private set
 
     val currentBackStack: NavBackStack<NavKey>
@@ -20,7 +25,10 @@ class NavigationState(
         get() = currentBackStack.last() as ScreenRoutes
 
     val canNavigateBack: Boolean
-        get() = currentBackStack.size > 1 || selectedTab != TabStatus.MAP
+        get() =
+            currentBackStack.size > 1 ||
+                selectedTab != TabStatus.MAP ||
+                requestedMapReturnTab() != null
 
     fun showHiddenShops() {
         if (currentRoute != ScreenRoutes.HiddenShopListRoutes) {
@@ -49,25 +57,66 @@ class NavigationState(
         currentBackStack.add(ScreenRoutes.EventDetailRoutes(eventId))
     }
 
+    fun showEventRoot() {
+        if (currentBackStack.lastOrNull() is ScreenRoutes.EventDetailRoutes) {
+            currentBackStack.removeLastOrNull()
+        }
+        val eventBackStack = backStacks.getValue(TabStatus.EVENT)
+        eventBackStack.clear()
+        eventBackStack.add(ScreenRoutes.EventTabRoutes)
+        selectTopLevelTab(TabStatus.EVENT)
+    }
+
     fun pop() {
         if (currentBackStack.size > 1) {
             currentBackStack.removeLastOrNull()
             return
         }
 
-        selectedTab = TabStatus.MAP
-    }
+        requestedMapReturnTab()?.let { returnTab ->
+            selectTopLevelTab(returnTab)
+            return
+        }
 
-    fun selectTopLevelTab(tab: TabStatus) {
-        selectedTab = tab
-    }
-
-    fun showMap() {
         selectTopLevelTab(TabStatus.MAP)
     }
 
-    fun showShopOnMap(shopId: String) {
-        val mapRoute = ScreenRoutes.TabRoutes(shopId = shopId)
+    fun selectTopLevelTab(tab: TabStatus) {
+        if (tab == selectedTab) return
+
+        if (selectedTab == TabStatus.MAP) {
+            onMapTabExited()
+            clearRequestedShopFromMapRoute()
+        }
+        selectedTab = tab
+    }
+
+    private fun clearRequestedShopFromMapRoute() {
+        val mapBackStack = backStacks.getValue(TabStatus.MAP)
+        val mapRoute = mapBackStack.firstOrNull() as? ScreenRoutes.TabRoutes ?: return
+        if (mapRoute.shopId == null) return
+
+        mapBackStack[0] = ScreenRoutes.TabRoutes()
+    }
+
+    fun showMap() {
+        val mapBackStack = backStacks.getValue(TabStatus.MAP)
+        mapBackStack.clear()
+        mapBackStack.add(ScreenRoutes.TabRoutes())
+        selectTopLevelTab(TabStatus.MAP)
+    }
+
+    fun showShopOnMap(
+        shopId: String,
+        source: ShopNavigationSource? = null,
+        returnTab: TabStatus? = null,
+    ) {
+        lastNavigationSource = source
+        val mapRoute =
+            ScreenRoutes.TabRoutes(
+                shopId = shopId,
+                returnTab = returnTab,
+            )
         val mapBackStack = backStacks.getValue(TabStatus.MAP)
         val isRequestedShopAlreadyShown =
             selectedTab == TabStatus.MAP && mapBackStack.singleOrNull() == mapRoute
@@ -75,7 +124,20 @@ class NavigationState(
 
         mapBackStack.clear()
         mapBackStack.add(mapRoute)
-        selectedTab = TabStatus.MAP
+        selectTopLevelTab(TabStatus.MAP)
+    }
+
+    fun consumeMapReturnOrigin() {
+        val mapBackStack = backStacks.getValue(TabStatus.MAP)
+        val route = mapBackStack.singleOrNull() as? ScreenRoutes.TabRoutes ?: return
+        if (route.returnTab == null) return
+
+        mapBackStack[0] = ScreenRoutes.TabRoutes()
+    }
+
+    private fun requestedMapReturnTab(): TabStatus? {
+        if (selectedTab != TabStatus.MAP) return null
+        return (currentBackStack.singleOrNull() as? ScreenRoutes.TabRoutes)?.returnTab
     }
 
     private fun showOnce(route: ScreenRoutes) {

@@ -106,6 +106,9 @@ data class SearchUiModel(
             placeFocusLocation = null,
         )
 
+    /** 검색어와 매장·장소 검색 결과를 모두 초기화한다. */
+    fun reset(): SearchUiModel = SearchUiModel()
+
     /**
      * 정규화 검색어 [query]에 대한 등록 매장 검색 결과를 저장한다.
      *

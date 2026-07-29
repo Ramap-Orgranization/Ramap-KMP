@@ -6,7 +6,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class ShopWaitingSystemResponse(
+internal data class ShopWaitingSystemResponse(
     val id: String,
     @SerialName("shop_id")
     val shopId: String,

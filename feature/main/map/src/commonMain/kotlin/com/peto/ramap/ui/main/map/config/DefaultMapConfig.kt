@@ -6,7 +6,7 @@ import com.peto.ramap.domain.model.shop.MapBounds
 /**
  * 앱이 지도 최초 진입 시 사용할 기본 카메라 값
  */
-object DefaultMapConfig {
+internal object DefaultMapConfig {
     const val LATITUDE = 37.402005
     const val LONGITUDE = 127.108621
     const val ZOOM_LEVEL = 15

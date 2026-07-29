@@ -1,7 +1,7 @@
 package com.peto.ramap.ui.main.map.component
 
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -16,7 +16,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.semantics.contentDescription
@@ -28,6 +27,7 @@ import androidx.compose.ui.unit.sp
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.GrayColor
+import com.peto.ramap.theme.RamapTheme
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.search_bar_clear_action
@@ -35,7 +35,7 @@ import ramap.shared.generated.resources.search_bar_placeholder
 import ramap.shared.generated.resources.search_bar_search_icon
 
 @Composable
-fun RamenShopSearchBar(
+internal fun SearchBar(
     query: String,
     onQueryChange: (String) -> Unit,
     modifier: Modifier = Modifier,
@@ -49,7 +49,7 @@ fun RamenShopSearchBar(
     fun commitIfChanged() {
         val trimmed = internalValue.trim()
 
-        if (trimmed.length in 2..15) {
+        if (trimmed.length in MIN_QUERY_LENGTH..MAX_QUERY_LENGTH) {
             lastCommitted = trimmed
             onQueryChange(trimmed)
         }
@@ -58,22 +58,18 @@ fun RamenShopSearchBar(
     TextField(
         value = internalValue,
         onValueChange = { value ->
-            internalValue = value
+            val limitedValue = value.take(MAX_QUERY_LENGTH)
+            internalValue = limitedValue
 
-            if (value.isBlank() && lastCommitted.isNotBlank()) {
-                lastCommitted = ""
-                onQueryChange("")
+            if (limitedValue.trim().length < MIN_QUERY_LENGTH) {
+                lastCommitted = limitedValue
+                onQueryChange(limitedValue)
             }
         },
         modifier =
             modifier
                 .fillMaxWidth()
-                .height(52.dp)
-                .shadow(
-                    elevation = 6.dp,
-                    shape = RoundedCornerShape(28.dp),
-                    clip = false,
-                ),
+                .border(width = 1.dp, color = GrayColor.C200, shape = RoundedCornerShape(28.dp)),
         shape = RoundedCornerShape(28.dp),
         singleLine = true,
         leadingIcon = {
@@ -135,11 +131,16 @@ fun RamenShopSearchBar(
     )
 }
 
+private const val MIN_QUERY_LENGTH = 2
+private const val MAX_QUERY_LENGTH = 15
+
 @Composable
 @Preview
-fun RamenShopSearchBarPreview() {
-    RamenShopSearchBar(
-        query = "",
-        onQueryChange = {},
-    )
+private fun SearchBarPreview() {
+    RamapTheme {
+        SearchBar(
+            query = "",
+            onQueryChange = {},
+        )
+    }
 }

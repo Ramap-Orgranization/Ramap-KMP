@@ -14,9 +14,9 @@ class FakeRamenShopRepository(
     private val fetchByIdsResult: RamenShops = RamenShops(emptyMap()),
     private val searchResult: RamenShops = RamenShops(emptyMap()),
     var error: RamapError? = null,
-    private val activeEvent: ShopEvent? = null,
+    var activeEvent: ShopEvent? = null,
     private val activeEvents: List<ShopEvent> = emptyList(),
-    private val activeEventError: RamapError? = null,
+    var activeEventError: RamapError? = null,
     var activeEventsError: RamapError? = null,
     var activeEventsDelayMillis: Long = 0,
 ) : RamenShopRepository {

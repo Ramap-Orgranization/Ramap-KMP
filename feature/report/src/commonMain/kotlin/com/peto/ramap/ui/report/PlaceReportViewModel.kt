@@ -13,16 +13,17 @@ import com.peto.ramap.domain.repository.ShopReportRepository
 import com.peto.ramap.platform.location.CurrentLocationProvider
 import com.peto.ramap.platform.permission.PermissionStatus
 import com.peto.ramap.ui.base.BaseViewModel
-import com.peto.ramap.ui.common.LoadState
 import com.peto.ramap.ui.location.CurrentLocationStore
 import com.peto.ramap.ui.report.contract.PlaceReportIntent
 import com.peto.ramap.ui.report.contract.PlaceReportIntent.OnCurrentLocationReportSubmit
 import com.peto.ramap.ui.report.contract.PlaceReportIntent.OnLocationPermissionResult
 import com.peto.ramap.ui.report.contract.PlaceReportIntent.OnPlaceReportSubmit
 import com.peto.ramap.ui.report.contract.PlaceReportIntent.OnPlaceUrlChanged
+import com.peto.ramap.ui.report.contract.PlaceReportLoadKey
 import com.peto.ramap.ui.report.contract.PlaceReportSideEffect
 import com.peto.ramap.ui.report.contract.PlaceReportSideEffect.ShowToast
 import com.peto.ramap.ui.report.contract.PlaceReportUiState
+import com.peto.ramap.ui.task.TaskPolicy
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -35,12 +36,13 @@ import ramap.shared.generated.resources.place_report_failure_message
 import ramap.shared.generated.resources.place_report_invalid_url_message
 import ramap.shared.generated.resources.place_report_location_unavailable_message
 import ramap.shared.generated.resources.place_report_success_message
+import kotlin.time.Duration.Companion.milliseconds
 
 class PlaceReportViewModel(
     private val ramenShopRepository: RamenShopRepository,
     private val reportRepository: ShopReportRepository,
     private val currentLocationStore: CurrentLocationStore,
-    private val reverseGeocoder: ReverseGeocoder? = null,
+    private val reverseGeocoder: ReverseGeocoder,
     private val currentLocationProvider: CurrentLocationProvider,
 ) : BaseViewModel<PlaceReportUiState, PlaceReportIntent, PlaceReportSideEffect>(PlaceReportUiState()) {
     init {
@@ -59,18 +61,18 @@ class PlaceReportViewModel(
     private suspend fun observeCurrentLocation() {
         currentLocationStore.location.collectLatest { location ->
             if (location == currentState.currentLocation) return@collectLatest
+            cancelTask(ADDRESS_TASK_KEY)
             reduce {
                 copy(
                     currentLocation = location,
                     currentAddress = null,
-                    isAddressRefreshing = false,
                 )
             }
             location?.let { loadAddress(it) }
         }
     }
 
-    private suspend fun handleLocationPermission(status: PermissionStatus) {
+    private fun handleLocationPermission(status: PermissionStatus) {
         when (status) {
             PermissionStatus.Granted -> loadCurrentLocation()
             PermissionStatus.Denied,
@@ -79,62 +81,59 @@ class PlaceReportViewModel(
         }
     }
 
-    private suspend fun loadCurrentLocation() {
-        if (currentState.isLocationLoading) return
-
-        reduce { copy(isLocationLoading = true) }
-        val platformLocation =
-            try {
-                withTimeoutOrNull(LOCATION_REQUEST_TIMEOUT_MILLIS) {
-                    currentLocationProvider.fetchCurrentLocation()
+    private fun loadCurrentLocation() {
+        launchTask(
+            taskKey = CURRENT_LOCATION_TASK_KEY,
+            loadKey = PlaceReportLoadKey.CurrentLocation,
+            policy = TaskPolicy.IgnoreNew,
+        ) {
+            val platformLocation =
+                try {
+                    withTimeoutOrNull(LOCATION_REQUEST_TIMEOUT_MILLIS.milliseconds) {
+                        currentLocationProvider.fetchCurrentLocation()
+                    }
+                } catch (error: CancellationException) {
+                    throw error
+                } catch (_: Exception) {
+                    null
                 }
-            } catch (error: CancellationException) {
-                throw error
-            } catch (_: Exception) {
-                null
-            } finally {
-                reduce { copy(isLocationLoading = false) }
+            if (platformLocation == null) {
+                showToast(Res.string.place_report_location_unavailable_message, ToastType.ERROR)
+                return@launchTask
             }
-        if (platformLocation == null) {
-            showToast(Res.string.place_report_location_unavailable_message, ToastType.ERROR)
-            return
-        }
 
-        currentLocationStore.update(
-            Location(
-                lat = platformLocation.latitude,
-                lng = platformLocation.longitude,
-            ),
-        )
+            currentLocationStore.update(
+                Location(
+                    lat = platformLocation.latitude,
+                    lng = platformLocation.longitude,
+                ),
+            )
+        }
     }
 
-    private suspend fun loadAddress(location: Location) {
-        val geocoder = reverseGeocoder ?: return
-        if (currentState.isAddressRefreshing) return
-
-        reduce { copy(isAddressRefreshing = true) }
-        try {
+    /** 이전 주소 변환을 취소하고 결과가 현재 위치와 일치할 때만 반영한다. */
+    private fun loadAddress(location: Location) {
+        launchTask(
+            taskKey = ADDRESS_TASK_KEY,
+            loadKey = PlaceReportLoadKey.Address,
+            policy = TaskPolicy.CancelPrevious,
+        ) {
+            val result = reverseGeocoder.address(location)
+            if (currentState.currentLocation != location) return@launchTask
             handleResult(
-                result = geocoder.address(location),
+                result = result,
                 onSuccess = { address ->
                     if (currentState.currentLocation == location) {
-                        reduce {
-                            copy(currentAddress = address)
-                        }
+                        reduce { copy(currentAddress = address) }
                     }
                 },
             )
-        } finally {
-            if (currentState.currentLocation == location) {
-                reduce { copy(isAddressRefreshing = false) }
-            }
         }
     }
 
-    private suspend fun submitPlaceReport() {
-        if (currentState.isSubmitting) return
+    private fun submitPlaceReport() {
         val placeUrl = currentState.placeUrl
-        processPlaceReport(placeUrl)
+        launchSubmission { processPlaceReport(placeUrl) }
     }
 
     private suspend fun processPlaceReport(placeUrl: String) {
@@ -178,16 +177,28 @@ class PlaceReportViewModel(
         return existingShop
     }
 
-    private suspend fun submitCurrentLocationReport() {
-        if (currentState.isSubmitting) return
+    private fun submitCurrentLocationReport() {
         val location = currentState.currentLocation
         if (location == null) {
             showToast(Res.string.place_report_location_unavailable_message, ToastType.ERROR)
             return
         }
 
-        submitReport(UnregisteredPlaceReport(location = location)) {
-            showToast(Res.string.place_report_success_message)
+        launchSubmission {
+            submitReport(UnregisteredPlaceReport(location = location)) {
+                showToast(Res.string.place_report_success_message)
+            }
+        }
+    }
+
+    /** 두 제보 경로가 공유하는 제출 작업을 실행하고 실행 중 추가 제출은 무시한다. */
+    private fun launchSubmission(block: suspend () -> Unit) {
+        launchTask(
+            taskKey = SUBMIT_TASK_KEY,
+            loadKey = PlaceReportLoadKey.Submit,
+            policy = TaskPolicy.IgnoreNew,
+        ) {
+            block()
         }
     }
 
@@ -195,37 +206,28 @@ class PlaceReportViewModel(
         report: UnregisteredPlaceReport,
         onSuccess: suspend () -> Unit,
     ) {
-        reduce { copy(submitState = LoadState.Loading) }
-        try {
-            handleResult(
-                result = reportRepository.submitUnregisteredPlaceReport(report),
-                onSuccess = {
-                    reduce { copy(submitState = LoadState.Content(Unit)) }
-                    onSuccess()
-                },
-                onError = {
-                    reduce { copy(submitState = LoadState.Error) }
-                    showToast(Res.string.place_report_failure_message, ToastType.ERROR)
-                },
-            )
-        } finally {
-            if (currentState.submitState == LoadState.Loading) {
-                reduce { copy(submitState = LoadState.Error) }
-            }
-        }
+        handleResult(
+            result = reportRepository.submitUnregisteredPlaceReport(report),
+            onSuccess = { onSuccess() },
+            onError = {
+                showToast(Res.string.place_report_failure_message, ToastType.ERROR)
+            },
+        )
     }
 
     private fun showToast(
         messageResource: StringResource,
         type: ToastType = ToastType.DEFAULT,
     ) {
-        viewModelScope.launch {
-            postSideEffect(ShowToast(ToastData(messageResource, type)))
-        }
+        trySideEffect(ShowToast(ToastData(messageResource, type)))
     }
 
     companion object {
         private const val SEARCH_RESULT_LIMIT = 10
         private const val LOCATION_REQUEST_TIMEOUT_MILLIS = 10_000L
+
+        private const val SUBMIT_TASK_KEY = "submit-place-report"
+        private const val CURRENT_LOCATION_TASK_KEY = "place-report-current-location"
+        private const val ADDRESS_TASK_KEY = "place-report-address"
     }
 }

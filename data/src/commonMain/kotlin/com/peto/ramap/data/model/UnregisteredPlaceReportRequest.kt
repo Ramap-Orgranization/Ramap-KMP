@@ -5,7 +5,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class UnregisteredPlaceReportRequest(
+internal data class UnregisteredPlaceReportRequest(
     @SerialName("place_url")
     val placeUrl: String? = null,
     val lat: Double? = null,

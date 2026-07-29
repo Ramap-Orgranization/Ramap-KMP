@@ -10,7 +10,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -62,7 +64,7 @@ fun MyTabRoute(
 }
 
 @Composable
-fun MyContent(
+internal fun MyContent(
     isLoggedIn: Boolean,
     onAccountClick: () -> Unit,
     onInformationClick: () -> Unit,
@@ -76,6 +78,7 @@ fun MyContent(
         modifier =
             Modifier
                 .fillMaxSize()
+                .verticalScroll(rememberScrollState())
                 .padding(top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding())
                 .padding(horizontal = 20.dp),
     ) {
@@ -95,9 +98,10 @@ fun MyContent(
                     HorizontalDivider(thickness = 1.dp, color = GrayColor.C200)
                 }
                 SettingsRow(
-                    title = menu.title(),
+                    title = settingsMenuTitle(menu),
                     onClick =
-                        menu.onClick(
+                        onClickSettingsMenu(
+                            menu = menu,
                             onAccountClick = onAccountClick,
                             onInformationClick = onInformationClick,
                             onNotificationSettingsClick = onNotificationSettingsClick,
@@ -130,8 +134,8 @@ private fun SettingsRow(
     )
 }
 
-private fun SettingsMenu.title(): StringResource =
-    when (this) {
+private fun settingsMenuTitle(menu: SettingsMenu): StringResource =
+    when (menu) {
         SettingsMenu.ACCOUNT -> Res.string.settings_account_menu
         SettingsMenu.INFORMATION -> Res.string.settings_information_menu
         SettingsMenu.NOTIFICATION -> Res.string.settings_notification_menu
@@ -141,8 +145,8 @@ private fun SettingsMenu.title(): StringResource =
         SettingsMenu.BOOKMARKED_SHOPS -> Res.string.settings_bookmarked_shops_menu
     }
 
-@Suppress("LongParameterList")
-private fun SettingsMenu.onClick(
+private fun onClickSettingsMenu(
+    menu: SettingsMenu,
     onAccountClick: () -> Unit,
     onInformationClick: () -> Unit,
     onNotificationSettingsClick: () -> Unit,
@@ -151,7 +155,7 @@ private fun SettingsMenu.onClick(
     onSubscribedShopsClick: () -> Unit,
     onBookmarkedShopsClick: () -> Unit,
 ): () -> Unit =
-    when (this) {
+    when (menu) {
         SettingsMenu.ACCOUNT -> onAccountClick
         SettingsMenu.INFORMATION -> onInformationClick
         SettingsMenu.NOTIFICATION -> onNotificationSettingsClick

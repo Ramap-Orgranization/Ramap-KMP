@@ -2,8 +2,11 @@ package com.peto.ramap.data.usecase
 
 import com.peto.ramap.core.result.RamapError
 import com.peto.ramap.core.result.RamapResult
+import com.peto.ramap.domain.model.event.ShopEvent
+import com.peto.ramap.domain.model.event.ShopEventType
 import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.domain.usecase.ShopDetail
+import com.peto.ramap.domain.usecase.ShopDetailCacheLookup
 import com.peto.ramap.fake.FakeRamenShopRepository
 import com.peto.ramap.fake.FakeShopWaitingSystemRepository
 import com.peto.ramap.fixture.ramenShopFixture
@@ -16,7 +19,7 @@ import kotlin.test.assertNull
 
 class DefaultFetchShopDetailUseCaseTest {
     @Test
-    fun `아이디로 조회한 상세는 캐시해 다시 요청하지 않는다`() =
+    fun `아이디로 조회한 상세는 캐시해 매장과 웨이팅을 다시 요청하지 않는다`() =
         runTest {
             val shop = ramenShopFixture()
             val ramenShopRepository =
@@ -35,10 +38,13 @@ class DefaultFetchShopDetailUseCaseTest {
             val secondResult = useCase(shop.id)
 
             assertIs<RamapResult.Success<*>>(secondResult)
+            // 매장·웨이팅은 최초 1회만 조회
             assertEquals(listOf(setOf(shop.id)), ramenShopRepository.requestedShopIdsHistory)
             assertEquals(listOf(shop.id), waitingRepository.requestedShopIds)
-            assertEquals(listOf(shop.id), ramenShopRepository.requestedActiveEventShopIds)
-            assertEquals(shop.id, useCase.findCached(shop.id)?.shop?.id)
+            // 이벤트는 매 호출마다 재조회
+            assertEquals(listOf(shop.id, shop.id), ramenShopRepository.requestedActiveEventShopIds)
+            val lookup = assertIs<ShopDetailCacheLookup.Hit>(useCase.findCached(shop.id))
+            assertEquals(shop.id, lookup.detail.shop.id)
         }
 
     @Test
@@ -62,7 +68,7 @@ class DefaultFetchShopDetailUseCaseTest {
                 listOf(setOf(shop.id), setOf(shop.id)),
                 ramenShopRepository.requestedShopIdsHistory,
             )
-            assertNull(useCase.findCached(shop.id))
+            assertIs<ShopDetailCacheLookup.Miss>(useCase.findCached(shop.id))
         }
 
     @Test
@@ -83,6 +89,79 @@ class DefaultFetchShopDetailUseCaseTest {
             val result = useCase(shop.id)
 
             val detail = assertIs<ShopDetail>(assertIs<RamapResult.Success<*>>(result).data)
-            assertEquals(null, detail.event)
+            assertNull(detail.event)
         }
+
+    @Test
+    fun `캐시 히트 시 이벤트 재조회 실패는 캐시된 이벤트를 유지한다`() =
+        runTest {
+            val shop = ramenShopFixture()
+            val ramenShopRepository =
+                FakeRamenShopRepository(
+                    fetchByIdsResult = RamenShops(mapOf(shop.id to shop)),
+                )
+            val useCase =
+                DefaultFetchShopDetailUseCase(
+                    ramenShopRepository,
+                    FakeShopWaitingSystemRepository(),
+                )
+
+            // 최초 조회: 이벤트 없음 (null)
+            useCase(shop.id)
+
+            // 이벤트 조회 실패로 전환
+            ramenShopRepository.activeEventError = RamapError.Unknown(IllegalStateException("failed"))
+            val secondResult = useCase(shop.id)
+
+            // 실패해도 캐시된 이벤트(null)를 유지하며 성공 반환
+            val detail = assertIs<ShopDetail>(assertIs<RamapResult.Success<*>>(secondResult).data)
+            assertNull(detail.event)
+        }
+
+    @Test
+    fun `캐시 히트 시 활성 이벤트가 없으면 종료된 이벤트를 캐시에서 제거한다`() =
+        runTest {
+            val shop = ramenShopFixture()
+            val event = event(shop.id)
+            val ramenShopRepository =
+                FakeRamenShopRepository(
+                    fetchByIdsResult = RamenShops(mapOf(shop.id to shop)),
+                    activeEvent = event,
+                )
+            val useCase =
+                DefaultFetchShopDetailUseCase(
+                    ramenShopRepository,
+                    FakeShopWaitingSystemRepository(),
+                )
+
+            val firstResult = assertIs<RamapResult.Success<ShopDetail>>(useCase(shop.id))
+            assertEquals(event, firstResult.data.event)
+
+            ramenShopRepository.activeEvent = null
+            val secondResult = assertIs<RamapResult.Success<ShopDetail>>(useCase(shop.id))
+
+            assertNull(secondResult.data.event)
+            assertNull(assertIs<ShopDetailCacheLookup.Hit>(useCase.findCached(shop.id)).detail.event)
+        }
+
+    private fun event(shopId: String) =
+        ShopEvent(
+            id = "event",
+            type = ShopEventType.POPUP,
+            title = "팝업",
+            description = "설명",
+            startDate = "2099-01-01",
+            endDate = "2099-01-02",
+            sourceUrl = "https://example.com/event",
+            isToday = false,
+            isVenue = true,
+            venueShopId = shopId,
+            venueShopName = "매장",
+            venueAddress = "서울",
+            collaboratorShopId = null,
+            collaboratorName = null,
+            collaboratorInstagramUrl = null,
+            waitingMethod = null,
+            waitingUrl = null,
+        )
 }

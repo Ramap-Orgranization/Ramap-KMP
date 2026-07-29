@@ -20,7 +20,7 @@ import kotlinx.coroutines.flow.map
  *
  * 카카오 OAuth 호출을 UI 계층에서 분리하고, 로그인 세션 상태를 앱 진입점에 제공합니다.
  */
-class DefaultLoginRepository(
+internal class DefaultLoginRepository(
     private val supabaseClient: SupabaseClient,
 ) : LoginRepository {
     /**

@@ -12,7 +12,7 @@ import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 
-class DefaultNotificationSettingsRepository(
+internal class DefaultNotificationSettingsRepository(
     private val client: SupabaseClient,
 ) : NotificationSettingsRepository {
     override suspend fun fetchEventNotificationsEnabled(): RamapResult<Boolean> =

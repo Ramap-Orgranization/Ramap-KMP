@@ -6,6 +6,8 @@ import android.app.PendingIntent
 import android.content.Intent
 import android.os.Build
 import androidx.core.app.NotificationCompat
+import com.google.firebase.analytics.FirebaseAnalytics
+import com.google.firebase.analytics.logEvent
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 import com.peto.ramap.MainActivity
@@ -51,6 +53,10 @@ class RamapFirebaseMessagingService : FirebaseMessagingService() {
      */
     override fun onMessageReceived(message: RemoteMessage) {
         val notification = message.notification ?: return
+        logNotificationReceived(
+            message.messageId.orEmpty(),
+            if (message.data.containsKey(NOTIFICATION_DEEP_LINK_KEY)) 1L else 0L,
+        )
         val notificationManager = getSystemService(NotificationManager::class.java)
         createNotificationChannel(notificationManager)
         notificationManager.notify(
@@ -64,6 +70,16 @@ class RamapFirebaseMessagingService : FirebaseMessagingService() {
                 .setContentIntent(createContentIntent(message.data[NOTIFICATION_DEEP_LINK_KEY]))
                 .build(),
         )
+    }
+
+    private fun logNotificationReceived(
+        messageId: String,
+        hasDeepLinkKey: Long,
+    ) {
+        FirebaseAnalytics.getInstance(this).logEvent("notification_received") {
+            param(ANALYTICS_KEY_MESSAGE_ID, messageId)
+            param(ANALYTICS_KEY_HAS_DEEP_LINK, hasDeepLinkKey)
+        }
     }
 
     /**
@@ -113,8 +129,11 @@ class RamapFirebaseMessagingService : FirebaseMessagingService() {
     }
 
     private companion object {
-        const val PLATFORM_ANDROID = "android"
-        const val TARGET_TYPE_FID = "fid"
-        const val CHANNEL_ID = "events"
+        private const val PLATFORM_ANDROID = "android"
+        private const val TARGET_TYPE_FID = "fid"
+        private const val CHANNEL_ID = "events"
+
+        private const val ANALYTICS_KEY_MESSAGE_ID = "message_id"
+        private const val ANALYTICS_KEY_HAS_DEEP_LINK = "has_deep_link"
     }
 }

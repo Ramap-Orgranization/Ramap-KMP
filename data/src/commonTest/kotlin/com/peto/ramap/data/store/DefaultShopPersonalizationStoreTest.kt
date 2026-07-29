@@ -1,8 +1,10 @@
 package com.peto.ramap.data.store
 
+import com.peto.ramap.core.result.RamapError
 import com.peto.ramap.core.result.RamapResult
-import com.peto.ramap.domain.model.personalization.Personalization
+import com.peto.ramap.domain.model.personalization.ShopPersonalization
 import com.peto.ramap.domain.repository.BookmarkRepository
+import com.peto.ramap.domain.store.PersonalizationBootstrapState
 import com.peto.ramap.fake.FakeBookmarkRepository
 import com.peto.ramap.fake.FakeHiddenShopRepository
 import com.peto.ramap.fake.FakeSubscribedShopRepository
@@ -21,6 +23,74 @@ import kotlin.test.assertIs
 @OptIn(ExperimentalCoroutinesApi::class)
 class DefaultShopPersonalizationStoreTest {
     @Test
+    fun `초기 동기화 상태는 성공 전 로딩이고 성공 후 준비가 된다`() =
+        runTest {
+            val store =
+                DefaultShopPersonalizationStore(
+                    FakeBookmarkRepository(),
+                    FakeHiddenShopRepository(),
+                    FakeSubscribedShopRepository(),
+                )
+
+            assertEquals(PersonalizationBootstrapState.Loading, store.state.value)
+            store.refresh()
+            assertEquals(
+                PersonalizationBootstrapState.Success(ShopPersonalization()),
+                store.state.value,
+            )
+        }
+
+    @Test
+    fun `초기 동기화 실패는 빈 값을 준비 상태로 확정하지 않는다`() =
+        runTest {
+            val bookmarkRepository =
+                object : BookmarkRepository {
+                    override suspend fun fetchBookmarkedShopIds(): RamapResult<Set<String>> =
+                        RamapResult.Error(RamapError.Unknown(IllegalStateException("failure")))
+
+                    override suspend fun addBookmark(shopId: String) = RamapResult.Success(Unit)
+
+                    override suspend fun removeBookmark(shopId: String) = RamapResult.Success(Unit)
+                }
+            val store =
+                DefaultShopPersonalizationStore(
+                    bookmarkRepository,
+                    FakeHiddenShopRepository(),
+                    FakeSubscribedShopRepository(),
+                )
+
+            assertIs<RamapResult.Error>(store.refresh())
+
+            assertEquals(PersonalizationBootstrapState.Error, store.state.value)
+        }
+
+    @Test
+    fun `초기 동기화 저장소가 예외를 던지면 오류 결과와 오류 상태로 전환한다`() =
+        runTest {
+            val failure = IllegalStateException("failure")
+            val bookmarkRepository =
+                object : BookmarkRepository {
+                    override suspend fun fetchBookmarkedShopIds(): RamapResult<Set<String>> = throw failure
+
+                    override suspend fun addBookmark(shopId: String) = RamapResult.Success(Unit)
+
+                    override suspend fun removeBookmark(shopId: String) = RamapResult.Success(Unit)
+                }
+            val store =
+                DefaultShopPersonalizationStore(
+                    bookmarkRepository,
+                    FakeHiddenShopRepository(),
+                    FakeSubscribedShopRepository(),
+                )
+
+            val result = assertIs<RamapResult.Error>(store.refresh())
+
+            val cause = assertIs<IllegalStateException>(result.error.cause)
+            assertEquals(failure.message, cause.message)
+            assertEquals(PersonalizationBootstrapState.Error, store.state.value)
+        }
+
+    @Test
     fun `새로고침 결과를 하나의 상태로 발행한다`() =
         runTest {
             val store =
@@ -33,12 +103,12 @@ class DefaultShopPersonalizationStoreTest {
             assertIs<RamapResult.Success<Unit>>(store.refresh())
 
             assertEquals(
-                Personalization(
+                ShopPersonalization(
                     bookmarkedShopIds = setOf("bookmark"),
                     hiddenShopIds = setOf("hidden"),
                     notificationShopIds = setOf("notification"),
                 ),
-                store.state.value,
+                personalization(store),
             )
         }
 
@@ -58,7 +128,7 @@ class DefaultShopPersonalizationStoreTest {
 
             assertIs<RamapResult.Success<Unit>>(store.hideShop("shop"))
 
-            assertEquals(Personalization(hiddenShopIds = setOf("shop")), store.state.value)
+            assertEquals(ShopPersonalization(hiddenShopIds = setOf("shop")), personalization(store))
             assertEquals(setOf("shop"), bookmarkRepository.shopIds)
             assertEquals(emptyList(), bookmarkRepository.removeRequests)
             assertEquals(listOf("shop"), hiddenShopRepository.atomicHideRequests)
@@ -79,11 +149,11 @@ class DefaultShopPersonalizationStoreTest {
                     subscribedShopRepository,
                 )
             store.refresh()
-            val previous = store.state.value
+            val previous = personalization(store)
 
             assertIs<RamapResult.Error>(store.hideShop("shop"))
 
-            assertEquals(previous, store.state.value)
+            assertEquals(previous, personalization(store))
             assertEquals(setOf("shop"), bookmarkRepository.shopIds)
             assertEquals(setOf("shop"), subscribedShopRepository.shopIds)
         }
@@ -107,14 +177,14 @@ class DefaultShopPersonalizationStoreTest {
                     subscribedShopRepository,
                 )
             store.refresh()
-            val previous = store.state.value
+            val previous = personalization(store)
 
             val hide = async { store.hideShop("shop") }
             hideStarted.await()
             hide.cancel()
 
             assertFailsWith<CancellationException> { hide.await() }
-            assertEquals(previous, store.state.value)
+            assertEquals(previous, personalization(store))
             assertEquals(setOf("shop"), subscribedShopRepository.shopIds)
         }
 
@@ -132,7 +202,7 @@ class DefaultShopPersonalizationStoreTest {
 
             assertIs<RamapResult.Success<Unit>>(store.unhideShop("shop"))
 
-            assertEquals(Personalization(), store.state.value)
+            assertEquals(ShopPersonalization(), personalization(store))
             assertEquals(emptySet(), hiddenShopRepository.shopIds)
         }
 
@@ -151,11 +221,11 @@ class DefaultShopPersonalizationStoreTest {
                     FakeSubscribedShopRepository(),
                 )
             store.refresh()
-            val previous = store.state.value
+            val previous = personalization(store)
 
             assertIs<RamapResult.Error>(store.unhideShop("shop"))
 
-            assertEquals(previous, store.state.value)
+            assertEquals(previous, personalization(store))
             assertEquals(setOf("shop"), hiddenShopRepository.shopIds)
         }
 
@@ -172,7 +242,7 @@ class DefaultShopPersonalizationStoreTest {
 
             assertIs<RamapResult.Error>(store.updateBookmark("shop", true))
 
-            assertEquals(Personalization(), store.state.value)
+            assertEquals(ShopPersonalization(), personalization(store))
         }
 
     @Test
@@ -190,7 +260,7 @@ class DefaultShopPersonalizationStoreTest {
                 store.updateShopNotification("shop", true),
             )
 
-            assertEquals(setOf("shop"), store.state.value.notificationShopIds)
+            assertEquals(setOf("shop"), personalization(store).notificationShopIds)
             assertEquals(listOf("shop"), subscribedShopRepository.subscriptionRequests)
             assertEquals(emptyList(), subscribedShopRepository.unsubscriptionRequests)
         }
@@ -211,7 +281,7 @@ class DefaultShopPersonalizationStoreTest {
                 store.updateShopNotification("shop", false),
             )
 
-            assertEquals(emptySet(), store.state.value.notificationShopIds)
+            assertEquals(emptySet(), personalization(store).notificationShopIds)
             assertEquals(emptyList(), subscribedShopRepository.subscriptionRequests)
             assertEquals(listOf("shop"), subscribedShopRepository.unsubscriptionRequests)
         }
@@ -229,7 +299,7 @@ class DefaultShopPersonalizationStoreTest {
 
             store.clear()
 
-            assertEquals(Personalization(), store.state.value)
+            assertEquals(ShopPersonalization(), personalization(store))
         }
 
     @Test
@@ -248,7 +318,7 @@ class DefaultShopPersonalizationStoreTest {
                 store.updateShopNotification("hidden", true),
             )
 
-            assertEquals(emptySet(), store.state.value.notificationShopIds)
+            assertEquals(emptySet(), personalization(store).notificationShopIds)
             assertEquals(emptyList(), subscribedShopRepository.subscriptionRequests)
         }
 
@@ -284,6 +354,9 @@ class DefaultShopPersonalizationStoreTest {
             refresh.await()
             clear.await()
 
-            assertEquals(Personalization(), store.state.value)
+            assertEquals(ShopPersonalization(), personalization(store))
         }
+
+    private fun personalization(store: DefaultShopPersonalizationStore): ShopPersonalization =
+        assertIs<PersonalizationBootstrapState.Success>(store.state.value).value
 }

@@ -23,7 +23,7 @@ import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.laduck_loading_walking
 
 @Composable
-fun LaduckLoadingContent(modifier: Modifier = Modifier) {
+internal fun LaduckLoadingContent(modifier: Modifier = Modifier) {
     val transition = rememberInfiniteTransition(label = "laduckWalking")
     val progress by
         transition.animateFloat(

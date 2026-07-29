@@ -17,7 +17,7 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 
-class NaverReverseGeocoder(
+internal class NaverReverseGeocoder(
     private val client: HttpClient,
 ) : ReverseGeocoder {
     override suspend fun address(location: Location): RamapResult<String?> = invokeRequest { parseAddress(request(location)) }

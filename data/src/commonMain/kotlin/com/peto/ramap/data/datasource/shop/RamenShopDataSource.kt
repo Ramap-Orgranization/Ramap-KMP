@@ -6,7 +6,7 @@ import com.peto.ramap.data.model.ShopEventResponse
 import com.peto.ramap.domain.model.shop.MapBounds
 import com.peto.ramap.domain.model.shop.SearchQuery
 
-interface RamenShopDataSource {
+internal interface RamenShopDataSource {
     suspend fun fetchRamenShops(bounds: MapBounds): List<RamenShopResponse>
 
     suspend fun fetchRamenShopsByIds(shopIds: Set<String>): List<RamenShopResponse>

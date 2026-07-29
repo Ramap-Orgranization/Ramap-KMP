@@ -6,23 +6,26 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import com.peto.ramap.data.auth.KakaoLoginActivityProvider
+import com.peto.ramap.deeplink.DeepLinkEntryPoint
 import com.peto.ramap.notification.DeepLinkKey
-import com.peto.ramap.notification.NotificationLaunchDispatcher
 import com.peto.ramap.platform.ExternalUriOpener
 import com.peto.ramap.platform.NotificationPermissionRequester
+import com.peto.ramap.platform.ShareLauncher
 import org.koin.android.ext.android.inject
 
 class MainActivity : ComponentActivity() {
-    private val notificationLaunchDispatcher: NotificationLaunchDispatcher by inject()
+    private val deepLinkEntryPoint: DeepLinkEntryPoint by inject()
 
     override fun onResume() {
         super.onResume()
         KakaoLoginActivityProvider.attach(this)
         ExternalUriOpener.attach(this)
         NotificationPermissionRequester.attach(this)
+        ShareLauncher.attach(this)
     }
 
     override fun onPause() {
+        ShareLauncher.detach(this)
         KakaoLoginActivityProvider.detach(this)
         ExternalUriOpener.detach(this)
         NotificationPermissionRequester.detach(this)
@@ -33,7 +36,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         handleAuthDeepLink(intent)
-        handleNotificationDeepLink(intent)
+        dispatchDeepLinks(intent)
 
         setContent {
             App(onExitRequested = ::finish)
@@ -44,7 +47,7 @@ class MainActivity : ComponentActivity() {
         super.onNewIntent(intent)
         setIntent(intent)
         handleAuthDeepLink(intent)
-        handleNotificationDeepLink(intent)
+        dispatchDeepLinks(intent)
     }
 
     override fun onRequestPermissionsResult(
@@ -56,7 +59,10 @@ class MainActivity : ComponentActivity() {
         NotificationPermissionRequester.complete(requestCode, grantResults)
     }
 
-    private fun handleNotificationDeepLink(intent: Intent) {
-        notificationLaunchDispatcher.dispatch(intent.getStringExtra(DeepLinkKey.NOTIFICATION_DEEP_LINK_KEY))
+    private fun dispatchDeepLinks(intent: Intent) {
+        deepLinkEntryPoint.submitUrl(intent.dataString)
+        deepLinkEntryPoint.submitNotification(
+            intent.getStringExtra(DeepLinkKey.NOTIFICATION_DEEP_LINK_KEY),
+        )
     }
 }

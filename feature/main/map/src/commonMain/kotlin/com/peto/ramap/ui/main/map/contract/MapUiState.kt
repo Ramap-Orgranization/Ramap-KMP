@@ -9,23 +9,26 @@ import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.domain.model.shop.WaitingSystem
 import com.peto.ramap.domain.usecase.ShopDetail
 import com.peto.ramap.ui.base.State
+import com.peto.ramap.ui.loading.LoadState
+import com.peto.ramap.ui.loading.LoadableState
 import com.peto.ramap.ui.main.map.config.DefaultMapConfig
 import com.peto.ramap.ui.main.map.model.CameraPosition
 import com.peto.ramap.ui.main.map.model.LocationFocusStatus
+import com.peto.ramap.ui.main.map.model.ShopDetailUiState
 import com.peto.ramap.ui.main.map.search.SearchResultGuide
 import com.peto.ramap.ui.main.map.search.SearchUiModel
 
 data class MapUiState(
-    val shopDetail: ShopDetail? = null,
-    val isShopDetailLoading: Boolean = false,
+    val shopDetailState: ShopDetailUiState = ShopDetailUiState.Closed,
+    /** 지도 화면의 작업별 로딩 카운트. */
+    override val loadState: LoadState = LoadState(),
     /**
      * 지도에서 조회 가능한 전체 라멘 매장 목록.
      */
     val shops: RamenShops = RamenShops(emptyMap()),
     /**
-     * 상세 바텀시트에 표시할 현재 선택 매장.
+     * 매장 상세보기시 지도 포커스 여부
      */
-    val selectedShop: RamenShop? = null,
     val shouldFocusSelectedShop: Boolean = true,
     /**
      * 검색창 입력값, 검색 결과, 검색 결과의 소비 상태.
@@ -44,6 +47,9 @@ data class MapUiState(
      */
     val bounds: MapBounds = DefaultMapConfig.bounds,
     val hasViewportLoadFailed: Boolean = false,
+    /**
+     * 현재 지도 영역(bounds) 기준 매장 조회가 진행 중인지 여부.
+     */
     val cameraPosition: CameraPosition? = null,
     /**
      * 마지막으로 확인된 사용자 위치.
@@ -70,7 +76,32 @@ data class MapUiState(
      * 현재 사용자의 로그인 여부.
      */
     val isLoggedIn: Boolean = false,
-) : State {
+) : State,
+    LoadableState<MapUiState> {
+    val selectedShop: RamenShop?
+        get() =
+            when (val state = shopDetailState) {
+                ShopDetailUiState.Closed -> null
+                is ShopDetailUiState.Loading -> state.shop
+                is ShopDetailUiState.Content -> state.detail.shop
+                is ShopDetailUiState.Error -> state.shop
+            }
+
+    val shopDetail: ShopDetail?
+        get() = (shopDetailState as? ShopDetailUiState.Content)?.detail
+
+    val isShopDetailLoading: Boolean
+        get() = shopDetailState is ShopDetailUiState.Loading
+
+    val isSearchLoading: Boolean
+        get() = loadState.isLoading(MapLoadKey.Search)
+
+    val hasShopDetailLoadFailed: Boolean
+        get() = shopDetailState is ShopDetailUiState.Error
+
+    /** 로딩 카운트만 교체한 새 지도 UI 상태를 반환한다. */
+    override fun withLoadingState(loadState: LoadState): MapUiState = copy(loadState = loadState)
+
     /**
      * 검색 결과 리스트 바텀시트에 표시할 매장 목록.
      *
@@ -131,8 +162,8 @@ data class MapUiState(
     /**
      * 검색 결과 리스트 바텀시트를 보여줄지 여부.
      *
-     * 매장 상세가 열려 있지 않고 검색어가 있으며, 선택 가능한 검색 결과가 여러 개일 때만
-     * 리스트를 노출한다.
+     * 매장 상세가 열려 있지 않고 검색어가 있으며, 선택 가능한 검색 결과가 여러 개이거나
+     * 빈 검색 결과를 제외한 안내가 있을 때만 리스트를 노출한다.
      */
     val showSearchResults: Boolean
         get() =
@@ -140,7 +171,14 @@ data class MapUiState(
                 !search.isResultsDismissed &&
                 !isBookmarkedView &&
                 search.input.isNotBlank() &&
-                (searchResultShops.size > 1 || placeSearchResults.size > 1)
+                (
+                    (
+                        searchResultGuide != null &&
+                            searchResultGuide != SearchResultGuide.SEARCH_EMPTY
+                    ) ||
+                        searchResultShops.size > 1 ||
+                        placeSearchResults.size > 1
+                )
 
     /**
      * 지도 화면의 바텀시트를 열지 여부.
@@ -148,7 +186,7 @@ data class MapUiState(
      * 선택 매장 상세 또는 다중 검색 결과 리스트 중 하나라도 표시할 내용이 있으면 true가 된다.
      */
     val showBottomSheet: Boolean
-        get() = selectedShop != null || showSearchResults
+        get() = selectedShop != null || showSearchResults || hasShopDetailLoadFailed
 
     /**
      * 지도 카메라가 포커스해야 할 매장 목록.
@@ -157,12 +195,14 @@ data class MapUiState(
      * 검색 결과가 있으면 단일 결과는 중심으로, 여러 결과는 한 화면에 보이도록 이동한다.
      */
     val focusShops: RamenShops
-        get() =
-            when {
-                selectedShop != null && shouldFocusSelectedShop -> RamenShops(listOf(selectedShop))
+        get() {
+            val shop = selectedShop
+            return when {
+                shop != null && shouldFocusSelectedShop -> RamenShops(listOf(shop))
                 shouldFocusSearchResults -> searchResultShops
                 else -> RamenShops(emptyMap())
             }
+        }
 
     /**
      * 가장 가까운 검색 결과로 지도 카메라를 이동해야 하는지 여부.

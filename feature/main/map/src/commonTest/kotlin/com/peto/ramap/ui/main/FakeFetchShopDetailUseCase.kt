@@ -7,6 +7,7 @@ import com.peto.ramap.domain.repository.RamenShopRepository
 import com.peto.ramap.domain.repository.ShopWaitingSystemRepository
 import com.peto.ramap.domain.usecase.FetchShopDetailUseCase
 import com.peto.ramap.domain.usecase.ShopDetail
+import com.peto.ramap.domain.usecase.ShopDetailCacheLookup
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 
@@ -17,14 +18,20 @@ internal class FakeFetchShopDetailUseCase(
     private val cache = mutableMapOf<String, ShopDetail>()
 
     override suspend fun invoke(shopId: String): RamapResult<ShopDetail> {
-        findCached(shopId)?.let { return RamapResult.Success(it) }
+        when (val lookup = findCached(shopId)) {
+            is ShopDetailCacheLookup.Hit -> return RamapResult.Success(lookup.detail)
+            ShopDetailCacheLookup.Miss -> Unit
+        }
 
         val result = retryOnce { fetchDetail(shopId) }
         if (result is RamapResult.Success) cache[shopId] = result.data
         return result
     }
 
-    override fun findCached(shopId: String): ShopDetail? = cache[shopId]
+    override fun findCached(shopId: String): ShopDetailCacheLookup =
+        cache[shopId]
+            ?.let(ShopDetailCacheLookup::Hit)
+            ?: ShopDetailCacheLookup.Miss
 
     private suspend fun fetchDetail(shopId: String): RamapResult<ShopDetail> =
         coroutineScope {

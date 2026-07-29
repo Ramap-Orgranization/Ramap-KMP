@@ -2,15 +2,16 @@ package com.peto.ramap.navigation
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -19,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.theme.AppTextStyle
@@ -31,12 +33,14 @@ import ramap.shared.generated.resources.ic_event
 import ramap.shared.generated.resources.ic_map
 import ramap.shared.generated.resources.ic_map_selected
 import ramap.shared.generated.resources.ic_person
+import ramap.shared.generated.resources.ic_ranking
 import ramap.shared.generated.resources.top_level_tab_event
 import ramap.shared.generated.resources.top_level_tab_map
 import ramap.shared.generated.resources.top_level_tab_my
+import ramap.shared.generated.resources.top_level_tab_ranking
 
 @Composable
-fun NavigationBar(
+internal fun NavigationBar(
     selectedTab: TabStatus,
     onTabSelected: (TabStatus) -> Unit,
 ) {
@@ -80,19 +84,32 @@ private fun TabItem(
     val icon =
         when (tab) {
             TabStatus.MAP -> if (selected) Res.drawable.ic_map_selected else Res.drawable.ic_map
+            TabStatus.RANKING -> Res.drawable.ic_ranking
             TabStatus.EVENT -> Res.drawable.ic_event
             TabStatus.MY -> Res.drawable.ic_person
         }
     val label =
         when (tab) {
             TabStatus.MAP -> stringResource(Res.string.top_level_tab_map)
+            TabStatus.RANKING -> stringResource(Res.string.top_level_tab_ranking)
             TabStatus.EVENT -> stringResource(Res.string.top_level_tab_event)
             TabStatus.MY -> stringResource(Res.string.top_level_tab_my)
         }
 
     Column(
-        modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(4.dp),
+        modifier =
+            modifier
+                .fillMaxHeight()
+                .selectable(
+                    selected = selected,
+                    role = Role.Tab,
+                    interactionSource = interactionSource,
+                    indication = null,
+                ) {
+                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    onClick()
+                },
+        verticalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterVertically),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Image(
@@ -100,14 +117,7 @@ private fun TabItem(
             contentDescription = null,
             modifier =
                 Modifier
-                    .size(24.dp)
-                    .clickable(
-                        indication = null,
-                        interactionSource = interactionSource,
-                    ) {
-                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                        onClick()
-                    },
+                    .size(24.dp),
             colorFilter = ColorFilter.tint(if (selected) GrayColor.C500 else GrayColor.C300),
         )
 

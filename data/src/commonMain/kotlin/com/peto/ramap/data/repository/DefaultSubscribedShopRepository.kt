@@ -10,7 +10,7 @@ import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 
-class DefaultSubscribedShopRepository(
+internal class DefaultSubscribedShopRepository(
     private val client: SupabaseClient,
 ) : SubscribedShopRepository {
     override suspend fun fetchSubscribedShopIds(): RamapResult<Set<String>> =

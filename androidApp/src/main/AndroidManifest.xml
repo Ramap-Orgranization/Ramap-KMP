@@ -38,6 +38,27 @@
                     android:host="auth"
                     android:scheme="ramap" />
             </intent-filter>
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data
+                    android:scheme="https"
+                    android:host="ramap-link.vercel.app"
+                    android:pathPrefix="/shops/" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data
+                    android:scheme="ramap"
+                    android:host="shop" />
+            </intent-filter>
         </activity>
         <service
             android:name=".notification.RamapFirebaseMessagingService"

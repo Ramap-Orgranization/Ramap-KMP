@@ -5,5 +5,5 @@ import com.peto.ramap.core.result.RamapResult
 interface FetchShopDetailUseCase {
     suspend operator fun invoke(shopId: String): RamapResult<ShopDetail>
 
-    fun findCached(shopId: String): ShopDetail?
+    fun findCached(shopId: String): ShopDetailCacheLookup
 }

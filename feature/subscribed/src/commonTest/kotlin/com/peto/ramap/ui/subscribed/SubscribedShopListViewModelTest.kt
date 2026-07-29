@@ -8,13 +8,13 @@ import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.model.event.ShopEventType
 import com.peto.ramap.domain.model.notification.EventNotificationOverride
-import com.peto.ramap.domain.model.personalization.Personalization
+import com.peto.ramap.domain.model.personalization.ShopPersonalization
 import com.peto.ramap.domain.model.shop.RamenShops
+import com.peto.ramap.domain.store.PersonalizationBootstrapState
 import com.peto.ramap.fake.FakeNotificationSettingsRepository
 import com.peto.ramap.fake.FakePersonalizationRepository
 import com.peto.ramap.fake.FakeRamenShopRepository
 import com.peto.ramap.fixture.ramenShopFixture
-import com.peto.ramap.ui.common.LoadState
 import com.peto.ramap.ui.subscribed.contract.SubscribedShopListIntent
 import com.peto.ramap.ui.subscribed.contract.SubscribedShopListSideEffect
 import com.peto.ramap.ui.subscribed.model.SubscribedRemovalTarget
@@ -36,7 +36,7 @@ class SubscribedShopListViewModelTest {
                 SubscribedShopListViewModel(
                     personalizationStore =
                         FakePersonalizationRepository(
-                            Personalization(notificationShopIds = setOf(shop.id)),
+                            ShopPersonalization(notificationShopIds = setOf(shop.id)),
                         ),
                     notificationRepository =
                         FakeNotificationSettingsRepository(shopIds = mutableSetOf(shop.id)),
@@ -46,10 +46,40 @@ class SubscribedShopListViewModelTest {
 
             runCurrent()
 
-            assertEquals(
-                LoadState.Content(RamenShops(listOf(shop))),
-                viewModel.uiState.value.shopsState,
-            )
+            assertEquals(RamenShops(listOf(shop)), viewModel.uiState.value.shops)
+            assertEquals(false, viewModel.uiState.value.isOverlayLoading)
+        }
+
+    @Test
+    fun `매장 조회 실패 후 캐시된 구독 목록으로 동기화하면 오류 상태를 해제한다`() =
+        coroutinesTest {
+            val cachedShop = ramenShopFixture(id = "cached-subscribed-shop")
+            val missingShop = ramenShopFixture(id = "missing-subscribed-shop")
+            val personalizationRepository =
+                FakePersonalizationRepository(
+                    ShopPersonalization(notificationShopIds = setOf(cachedShop.id)),
+                )
+            val ramenShopRepository =
+                FakeRamenShopRepository(fetchByIdsResult = RamenShops(listOf(cachedShop)))
+            val viewModel =
+                SubscribedShopListViewModel(
+                    personalizationStore = personalizationRepository,
+                    notificationRepository = FakeNotificationSettingsRepository(),
+                    ramenShopRepository = ramenShopRepository,
+                )
+            runCurrent()
+
+            ramenShopRepository.error = RamapError.Unknown(IllegalStateException("failure"))
+            personalizationRepository.updateShopNotification(missingShop.id, true)
+            runCurrent()
+
+            assertEquals(true, viewModel.uiState.value.showError)
+
+            personalizationRepository.updateShopNotification(missingShop.id, false)
+            runCurrent()
+
+            assertEquals(false, viewModel.uiState.value.showError)
+            assertEquals(RamenShops(listOf(cachedShop)), viewModel.uiState.value.shops)
         }
 
     @Test
@@ -70,10 +100,7 @@ class SubscribedShopListViewModelTest {
             runCurrent()
 
             assertEquals(listOf(event), viewModel.uiState.value.subscribedEvents)
-            assertEquals(
-                LoadState.Content(RamenShops(emptyMap())),
-                viewModel.uiState.value.shopsState,
-            )
+            assertEquals(RamenShops(emptyMap()), viewModel.uiState.value.shops)
         }
 
     @Test
@@ -101,10 +128,7 @@ class SubscribedShopListViewModelTest {
                 viewModel.uiState.value.subscribedEvents
                     .isEmpty(),
             )
-            assertEquals(
-                LoadState.Content(RamenShops(emptyMap())),
-                viewModel.uiState.value.shopsState,
-            )
+            assertEquals(RamenShops(emptyMap()), viewModel.uiState.value.shops)
         }
 
     @Test
@@ -114,7 +138,7 @@ class SubscribedShopListViewModelTest {
             val repository = FakeNotificationSettingsRepository(shopIds = mutableSetOf(shop.id))
             val personalizationStore =
                 FakePersonalizationRepository(
-                    Personalization(notificationShopIds = setOf(shop.id)),
+                    ShopPersonalization(notificationShopIds = setOf(shop.id)),
                 )
             val viewModel =
                 SubscribedShopListViewModel(
@@ -132,9 +156,12 @@ class SubscribedShopListViewModelTest {
             )
             runCurrent()
 
-            assertEquals(LoadState.Content(RamenShops(emptyMap())), viewModel.uiState.value.shopsState)
+            assertEquals(RamenShops(emptyMap()), viewModel.uiState.value.shops)
+            assertEquals(false, viewModel.uiState.value.isOverlayLoading)
             assertTrue(
-                personalizationStore.state.value.notificationShopIds
+                (personalizationStore.state.value as PersonalizationBootstrapState.Success)
+                    .value
+                    .notificationShopIds
                     .isEmpty(),
             )
         }
@@ -150,7 +177,7 @@ class SubscribedShopListViewModelTest {
                 }
             val personalizationStore =
                 FakePersonalizationRepository(
-                    Personalization(notificationShopIds = setOf(shop.id)),
+                    ShopPersonalization(notificationShopIds = setOf(shop.id)),
                 ).apply {
                     shopNotificationError =
                         RamapError.Unknown(IllegalStateException("failure"))
@@ -180,10 +207,8 @@ class SubscribedShopListViewModelTest {
                     ),
                     awaitItem(),
                 )
-                assertEquals(
-                    LoadState.Content(RamenShops(listOf(shop))),
-                    viewModel.uiState.value.shopsState,
-                )
+                assertEquals(RamenShops(listOf(shop)), viewModel.uiState.value.shops)
+                assertEquals(false, viewModel.uiState.value.isOverlayLoading)
             }
         }
 
@@ -258,7 +283,7 @@ class SubscribedShopListViewModelTest {
         }
 
     @Test
-    fun `이벤트 알림 설정 조회 실패는 매장 목록 상태에 영향을 주지 않는다`() =
+    fun `이벤트 알림 설정 조회 실패는 오류 상태로 표시하고 재시도한다`() =
         coroutinesTest {
             val repository =
                 FakeNotificationSettingsRepository().apply {
@@ -273,18 +298,23 @@ class SubscribedShopListViewModelTest {
 
             runCurrent()
 
-            assertEquals(
-                LoadState.Content(RamenShops(emptyMap())),
-                viewModel.uiState.value.shopsState,
-            )
+            assertTrue(viewModel.uiState.value.showError)
+            assertEquals(RamenShops(emptyMap()), viewModel.uiState.value.shops)
+
+            repository.fetchEventOverridesError = null
+            viewModel.dispatch(SubscribedShopListIntent.OnRetry)
+            runCurrent()
+
+            assertTrue(!viewModel.uiState.value.showError)
             assertTrue(
-                viewModel.uiState.value.subscribedEvents
+                viewModel.uiState.value
+                    .subscribedEvents
                     .isEmpty(),
             )
         }
 
     @Test
-    fun `이벤트 상세 조회 실패는 매장 목록 상태에 영향을 주지 않는다`() =
+    fun `이벤트 상세 조회 실패는 오류 상태로 표시한다`() =
         coroutinesTest {
             val eventId = "failed-event"
             val viewModel =
@@ -301,10 +331,8 @@ class SubscribedShopListViewModelTest {
 
             runCurrent()
 
-            assertEquals(
-                LoadState.Content(RamenShops(emptyMap())),
-                viewModel.uiState.value.shopsState,
-            )
+            assertTrue(viewModel.uiState.value.showError)
+            assertEquals(RamenShops(emptyMap()), viewModel.uiState.value.shops)
             assertTrue(
                 viewModel.uiState.value.subscribedEvents
                     .isEmpty(),

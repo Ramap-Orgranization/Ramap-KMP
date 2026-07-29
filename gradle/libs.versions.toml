@@ -43,12 +43,15 @@ kakao = "2.24.0"
 
 # Firebase
 firebase-bom = "34.16.0"
+firebase-crashlytics-gradle = "3.0.3"
 google-services = "4.5.0"
+install-referrer = "2.2"
 
 # Logging
 kermit = "2.1.0"
 
 # Testing
+junit = "4.13.2"
 robolectric = "4.16.1"
 turbine = "1.2.1"
 
@@ -120,11 +123,17 @@ kakao-user = { module = "com.kakao.sdk:v2-user", version.ref = "kakao" }
 # Firebase
 firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "firebase-bom" }
 firebase-messaging = { module = "com.google.firebase:firebase-messaging" }
+firebase-analytics = { module = "com.google.firebase:firebase-analytics" }
+firebase-crashlytics = { module = "com.google.firebase:firebase-crashlytics" }
+
+# Attribution
+install-referrer = { module = "com.android.installreferrer:installreferrer", version.ref = "install-referrer" }
 
 # Logging
 kermit = { module = "co.touchlab:kermit", version.ref = "kermit" }
 
 # Testing
+junit = { module = "junit:junit", version.ref = "junit" }
 compose-ui-test = { module = "org.jetbrains.compose.ui:ui-test", version.ref = "compose-multiplatform" }
 kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinx-coroutines-core" }
 robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
@@ -146,4 +155,5 @@ compose-multiplatform = { id = "org.jetbrains.compose", version.ref = "compose-m
 # Build
 build-konfig = { id = "com.codingfeline.buildkonfig", version.ref = "build-konfig" }
 google-services = { id = "com.google.gms.google-services", version.ref = "google-services" }
+firebase-crashlytics = { id = "com.google.firebase.crashlytics", version.ref = "firebase-crashlytics-gradle" }
 ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlint" }

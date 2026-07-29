@@ -35,7 +35,7 @@ import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.platform.permission.PermissionStatus
 import com.peto.ramap.platform.permission.findActivity
 import com.peto.ramap.platform.permission.rememberLocationPermissionGenerator
-import com.peto.ramap.ui.main.map.component.CurrentLocationButton
+import com.peto.ramap.ui.main.map.component.LocationButton
 import com.peto.ramap.ui.main.map.config.CurrentLocationConfig
 import com.peto.ramap.ui.main.map.config.DefaultMapConfig
 import com.peto.ramap.ui.main.map.config.MapInteractionConfig
@@ -48,7 +48,7 @@ import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.marker_ramen
 
 @Composable
-actual fun RamapMapView(
+internal actual fun RamapMapView(
     shops: RamenShops,
     focusShops: RamenShops,
     focusNearestToCurrentLocation: Boolean,
@@ -63,6 +63,7 @@ actual fun RamapMapView(
     onBoundsChanged: (MapBounds) -> Unit,
     onCameraPositionChanged: (CameraPosition) -> Unit,
     onInitialFocusConsumed: () -> Unit,
+    onSelectedShopFocusConsumed: () -> Unit,
     onMyLocationChanged: (Location) -> Unit,
     onShopClick: (RamenShop) -> Unit,
     onLocationPermissionBlocked: () -> Unit,
@@ -190,20 +191,25 @@ actual fun RamapMapView(
                 0
             },
         )
-        cameraController.focusShops(
-            map,
-            focusShops,
-            currentLocation.takeIf { focusNearestToCurrentLocation },
-            focusRequestKey,
-        )
+        val didMoveCamera =
+            cameraController.focusShops(
+                map,
+                focusShops,
+                currentLocation.takeIf { focusNearestToCurrentLocation },
+                focusRequestKey,
+            )
+        if (didMoveCamera && selectedShopId != null && focusShops.size == 1) {
+            onSelectedShopFocusConsumed()
+        }
     }
 
     LaunchedEffect(naverMap, shouldBootstrapInitialLocationFocus) {
-        if (naverMap != null) {
-            locationPermissionGenerator.requestPermission()
-            if (locationPermissionGenerator.hasPermission() && shouldBootstrapInitialLocationFocus) {
-                naverMap?.locationTrackingMode = LocationTrackingMode.Follow
-            }
+        if (
+            naverMap != null &&
+            locationPermissionGenerator.hasPermission() &&
+            shouldBootstrapInitialLocationFocus
+        ) {
+            naverMap?.locationTrackingMode = LocationTrackingMode.Follow
         }
     }
 
@@ -263,10 +269,10 @@ actual fun RamapMapView(
             },
         )
 
-        CurrentLocationButton(
+        LocationButton(
             isLoading = currentLocationRequestState.isLoading,
             onClick = {
-                if (currentLocationRequestState.isLoading) return@CurrentLocationButton
+                if (currentLocationRequestState.isLoading) return@LocationButton
                 currentLocationRequestState = currentLocationRequestState.start()
                 if (locationPermissionGenerator.hasPermission()) {
                     shouldMoveToCurrentLocation = true

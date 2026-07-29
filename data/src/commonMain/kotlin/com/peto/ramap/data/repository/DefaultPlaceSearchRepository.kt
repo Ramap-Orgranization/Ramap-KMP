@@ -10,7 +10,7 @@ import com.peto.ramap.domain.model.shop.SearchQuery
 import com.peto.ramap.domain.repository.PlaceSearchRepository
 import com.peto.ramap.network.execute.invokeRequest
 
-class DefaultPlaceSearchRepository(
+internal class DefaultPlaceSearchRepository(
     private val dataSource: PlaceSearchDataSource,
 ) : PlaceSearchRepository {
     override suspend fun search(

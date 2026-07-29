@@ -1,5 +1,6 @@
 package com.peto.ramap.ui.main.map.contract
 
+import com.peto.ramap.analytics.AnalyticsSource
 import com.peto.ramap.domain.model.place.PlaceSearchResult
 import com.peto.ramap.domain.model.report.ShopInformationField
 import com.peto.ramap.domain.model.shop.Category
@@ -26,20 +27,38 @@ sealed interface MapIntent : Intent {
 
     data object OnInitialLocationFocusConsumed : MapIntent
 
+    data object OnSelectedShopFocusConsumed : MapIntent
+
+    data object OnMapTabExited : MapIntent
+
     data class OnShopSelected(
         val shop: RamenShop,
         val shouldFocus: Boolean = true,
+        val source: AnalyticsSource = AnalyticsSource.MARKER,
+    ) : MapIntent
+
+    data class OnShopShareClicked(
+        val shop: RamenShop,
+    ) : MapIntent
+
+    data class OnShopMapLinkClicked(
+        val shop: RamenShop,
+        val mapProvider: String,
     ) : MapIntent
 
     data class OnShopIdSelected(
         val shopId: String,
     ) : MapIntent
 
+    data object OnRequestedShopDismissed : MapIntent
+
     data object OnShopDetailDismissed : MapIntent
+
+    data object OnShopDetailRetry : MapIntent
 
     data object OnSearchResultsDismissed : MapIntent
 
-    data class OnPlaceSelected(
+    data class OnSearchedShopSelected(
         val place: PlaceSearchResult,
     ) : MapIntent
 
@@ -50,8 +69,6 @@ sealed interface MapIntent : Intent {
     data class OnCategoryFilterToggled(
         val category: Category,
     ) : MapIntent
-
-    data object OnFilterCleared : MapIntent
 
     data class OnBookmarkToggled(
         val shop: RamenShop,

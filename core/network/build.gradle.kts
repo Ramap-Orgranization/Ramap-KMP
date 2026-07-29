@@ -33,6 +33,16 @@ buildkonfig {
         buildConfigField(STRING, "KAKAO_NATIVE_APP_KEY", secretProperty("kakao_native_app_key", "KAKAO_NATIVE_APP_KEY"))
         buildConfigField(STRING, "NAVER_MAP_NCP_KEY_ID", secretProperty("naver_map_ncp_key_id", "NAVER_MAP_NCP_KEY_ID"))
         buildConfigField(STRING, "NAVER_CLIENT_SECRET", secretProperty("naver_client_secret", "NAVER_CLIENT_SECRET"))
+        buildConfigField(
+            STRING,
+            "SHOP_LINK_BASE_URL",
+            secretProperty("shop.link.base_url", "SHOP_LINK_BASE_URL").ifBlank { "https://ramap-link.vercel.app" },
+        )
+        buildConfigField(
+            STRING,
+            "SHOP_LINK_WEB_HOST",
+            secretProperty("shop.link.web_host", "SHOP_LINK_WEB_HOST").ifBlank { "ramap-link.vercel.app" },
+        )
     }
 }
 

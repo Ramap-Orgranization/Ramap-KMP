@@ -4,7 +4,7 @@ import com.peto.ramap.data.datasource.place.PlaceSearchDataSource
 import com.peto.ramap.data.model.PlaceSearchRequest
 import com.peto.ramap.data.model.PlaceSearchResponse
 
-class FakePlaceSearchDataSource(
+internal class FakePlaceSearchDataSource(
     private val response: PlaceSearchResponse,
 ) : PlaceSearchDataSource {
     var request: PlaceSearchRequest? = null

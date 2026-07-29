@@ -9,7 +9,7 @@ import com.peto.ramap.network.config.RamapSecrets
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.from
 
-class RemoteRamenShopDataSource(
+internal class RemoteRamenShopDataSource(
     private val client: SupabaseClient,
 ) : RamenShopDataSource {
     override suspend fun fetchActiveEvents(): List<ShopEventResponse> =

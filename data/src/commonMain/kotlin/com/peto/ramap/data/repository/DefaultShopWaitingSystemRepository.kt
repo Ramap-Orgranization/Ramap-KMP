@@ -6,7 +6,7 @@ import com.peto.ramap.domain.model.shop.WaitingSystem
 import com.peto.ramap.domain.repository.ShopWaitingSystemRepository
 import com.peto.ramap.network.execute.invokeRequest
 
-class DefaultShopWaitingSystemRepository(
+internal class DefaultShopWaitingSystemRepository(
     private val dataSource: ShopWaitingSystemDataSource,
 ) : ShopWaitingSystemRepository {
     override suspend fun fetchShopWaitingSystem(shopId: String): RamapResult<WaitingSystem?> =

@@ -44,6 +44,12 @@ if (file("google-services.json").exists()) {
                 .get()
                 .pluginId,
     )
+    apply(
+        plugin =
+            libs.plugins.firebase.crashlytics
+                .get()
+                .pluginId,
+    )
 }
 
 kotlin {
@@ -54,8 +60,10 @@ kotlin {
 dependencies {
     implementation(projects.shared)
     implementation(projects.core.designsystem)
+    implementation(projects.core.analytics)
     implementation(projects.core.network)
     implementation(projects.core.notification)
+    implementation(projects.core.navigation)
     implementation(projects.core.platform)
     implementation(projects.data)
     implementation(libs.naver.map)
@@ -67,6 +75,10 @@ dependencies {
     implementation(libs.androidx.core)
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.messaging)
+    implementation(libs.firebase.analytics)
+    implementation(libs.firebase.crashlytics)
+    implementation(libs.install.referrer)
+    implementation(libs.kermit)
 
     implementation(libs.compose.ui.tooling.preview)
     debugImplementation(libs.compose.ui.tooling)

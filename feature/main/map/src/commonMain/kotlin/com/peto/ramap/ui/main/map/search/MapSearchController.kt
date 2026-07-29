@@ -1,93 +1,61 @@
 package com.peto.ramap.ui.main.map.search
 
 import com.peto.ramap.core.result.RamapResult
+import com.peto.ramap.domain.model.place.PlaceSearchResult
+import com.peto.ramap.domain.model.place.PlaceSearchResultKind
 import com.peto.ramap.domain.model.place.PlaceSearchResults
 import com.peto.ramap.domain.model.shop.Location
 import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.domain.model.shop.SearchQuery
 import com.peto.ramap.domain.repository.PlaceSearchRepository
 import com.peto.ramap.domain.repository.RamenShopRepository
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.launch
 
 /**
- * 지도 검색 요청의 실행 순서, 장소 검색 fallback과 최신 요청 반영을 조정한다.
+ * 지도 검색 요청의 실행 순서를 관리하고, 장소 검색 폴백 여부와 최신 요청 결과 반영을 조정한다.
+ * 서버에 등록된 매장을 먼저 검색하고 결과가 없을 때만 Supabase `place-search` Edge Function을 호출한다.
+ * Edge Function은 네이버 지역 검색·Geocoding API 결과를 Ramap DB와 대조해 지도 이동 장소와
+ * 등록 라멘 매장으로 분류하며, 앱은 서버가 허용한 결과만 처리한다.
  *
- * Ramap 등록 매장을 먼저 검색하고 결과가 없을 때만 네이버 장소 검색 api를 수행한다.
- * 새로운 검색이 시작되면 이전 작업을 취소하며 취소에 협조하지 않은 이전 요청이 완료되더라도
- * 요청 ID를 비교해 오래된 결과가 화면 상태에 반영되지 않도록 한다.
- *
- * @property ramenShopRepository Ramap에 등록된 라멘 매장을 검색하는 저장소
- * @property placeSearchRepository 등록 매장 결과가 없을 때 일반 장소를 검색하는 저장소
- * @property coroutineScope 검색 작업을 실행하고 취소 수명주기를 공유하는 코루틴 스코프
+ * @property ramenShopRepository 서버에 등록된 라멘 매장을 검색하는 저장소
+ * @property placeSearchRepository `place-search` Edge Function이 분류·허용한 장소를 조회하는 저장소
  */
-class MapSearchController(
+internal class MapSearchController(
     private val ramenShopRepository: RamenShopRepository,
     private val placeSearchRepository: PlaceSearchRepository,
-    private val coroutineScope: CoroutineScope,
 ) {
-    /** 현재 실행 중인 검색 작업. */
-    private var job: Job? = null
-
-    /** 새로운 검색이나 명시적 취소를 구분하는 ID. */
-    private var requestId = 0L
-
     /**
-     * [query]에 대한 새로운 지도 검색을 시작한다.
+     * [query]로 새로운 지도 검색을 시작한다.
      *
-     * 진행 중인 검색을 취소한 뒤 Ramap 등록 매장을 검색하고, 등록 매장이 없으면 [center]를
-     * 기준으로 일반 장소를 검색한다.
+     * 서버에 등록된 매장을 먼저 검색하고 결과가 없으면 [center]를 기준으로 `place-search` Edge Function에
+     * 분류 결과를 요청한다. 네이버 API 호출과 Ramap DB 대조는 Edge Function에서 수행한다.
      *
-     * 정규화된 검색어가 비어 있으면 저장소를 호출하지 않고 [MapSearchResult.Cleared]를 전달한다.
+     * 정규화된 검색어가 비어 있으면 저장소를 호출하지 않고 [MapSearchResult.Cleared]를 반환한다.
      *
      * @param query 검색에 사용할 정규화된 검색어
      * @param center 장소 검색 결과의 거리 기준이 되는 현재 지도 중심
-     * @param onResult 최신 검색 요청의 결과를 전달받는 콜백
+     * @return 검색어가 비어 있으면 초기화 결과, 그 외에는 매장·장소 검색 결과 또는 저장소 오류
      */
-    fun search(
+    suspend fun search(
         query: SearchQuery,
         center: Location,
-        onResult: suspend (MapSearchResult) -> Unit,
-    ) {
-        cancel()
-        val currentRequestId = requestId
-        job =
-            coroutineScope.launch {
-                val result = resolveSearch(query, center, currentRequestId) ?: return@launch
-                deliverIfCurrent(currentRequestId, result, onResult)
-            }
-    }
-
-    /**
-     * 검색어가 비어 있는지 확인하고 실제 검색 단계로 진입한다.
-     *
-     * @return 검색 결과, 또는 처리 중 요청이 오래된 요청이 되면 `null`
-     */
-    private suspend fun resolveSearch(
-        query: SearchQuery,
-        center: Location,
-        currentRequestId: Long,
-    ): MapSearchResult? {
+    ): MapSearchResult {
         if (query.value.isBlank()) return MapSearchResult.Cleared
 
-        return resolveRamapShopSearch(query, center, currentRequestId)
+        return resolveRamapShopSearch(query, center)
     }
 
     /**
-     * Ramap에 등록된 라멘 매장을 검색한다.
+     * Ramap 등록 매장을 우선 검색하고, 매장이 없을 때만 `place-search` Edge Function 조회로 넘어간다.
      *
-     * 검색 결과가 있으면 즉시 반환하고, 결과가 없으면 [resolvePlaceFallback]으로 장소 검색을 이어간다.
-     *
-     * @return 검색 결과, 또는 처리 중 요청이 오래된 요청이 되면 `null`
+     * @param query 등록 매장 이름 검색에 사용할 정규화된 검색어
+     * @param center 이어지는 장소 검색의 거리 기준이 되는 현재 지도 중심
+     * @return 등록 매장 결과, Edge Function이 허용한 장소 검색 결과 또는 매장 저장소 오류
      */
     private suspend fun resolveRamapShopSearch(
         query: SearchQuery,
         center: Location,
-        currentRequestId: Long,
-    ): MapSearchResult? {
+    ): MapSearchResult {
         val shopResult = ramenShopRepository.searchRamenShops(query, SEARCH_RESULT_LIMIT)
-        if (!isCurrentRequest(currentRequestId)) return null
 
         return when (shopResult) {
             is RamapResult.Success -> {
@@ -98,7 +66,7 @@ class MapSearchController(
                         places = PlaceSearchResults(emptyList()),
                     )
                 } else {
-                    resolvePlaceFallback(query, center, shopResult.data, currentRequestId)
+                    resolvePlaceFallback(query, center, shopResult.data)
                 }
             }
 
@@ -107,68 +75,129 @@ class MapSearchController(
     }
 
     /**
-     * 등록 매장 검색 결과가 없을 때 네이버 장소 검색 api를 검색한다.
+     * 등록 매장 결과가 없을 때 `place-search` Edge Function이 허용한 장소 결과를 조회한다.
      *
      * @param query 장소 검색에 사용할 정규화된 검색어
-     * @param center 검색 결과의 거리 기준이 되는 현재 지도 중심
-     * @param shops 앞선 등록 매장 검색에서 반환된 빈 매장 목록
-     * @param currentRequestId 현재 검색 작업이 시작될 때 발급된 요청 ID
-     * @return 검색 결과, 또는 처리 중 요청이 오래된 요청이 되면 `null`
+     * @param center 장소 검색의 거리 기준이 되는 현재 지도 중심
+     * @param shops 앞서 진행한 등록 매장 검색에서 확인된 빈 매장 목록
+     * @return Edge Function의 분류를 반영한 검색 결과. 보조 장소 검색이 실패하면 등록 매장이 없는 빈 결과를 반환한다.
      */
     private suspend fun resolvePlaceFallback(
         query: SearchQuery,
         center: Location,
         shops: RamenShops,
-        currentRequestId: Long,
-    ): MapSearchResult? {
+    ): MapSearchResult {
         val placeResult = placeSearchRepository.search(query, center)
-        if (!isCurrentRequest(currentRequestId)) return null
 
         return when (placeResult) {
-            is RamapResult.Success ->
+            is RamapResult.Success -> {
+                resolveVerifiedPlaceResult(query, shops, placeResult.data)
+            }
+
+            is RamapResult.Error ->
                 MapSearchResult.Loaded(
                     query = query,
                     shops = shops,
-                    places = placeResult.data,
+                    places = PlaceSearchResults(emptyList()),
                 )
-
-            is RamapResult.Error -> MapSearchResult.Failed(placeResult.error)
         }
     }
 
     /**
-     * [currentRequestId]가 최신 요청일 때만 [result]를 전달한다.
+     * Edge Function이 분류·허용한 장소를 지도 위치와 등록 매장으로 나누어 앱 검색 결과로 변환한다.
      *
-     * 저장소 호출 이후 결과를 만든 시점과 콜백을 실행하는 시점 사이에 새 검색이 시작되는 경우도
-     * 오래된 결과가 반영되지 않도록 마지막으로 요청 ID를 확인한다.
+     * 종류가 분류되지 않은 장소와 매장 ID가 없는 등록 매장 결과는 노출하지 않는다.
+     *
+     * @param query 최종 검색 결과에 포함할 정규화된 검색어
+     * @param initialShops 앞서 진행한 등록 매장 검색 결과
+     * @param places Edge Function이 네이버 API 결과와 Ramap DB를 대조해 분류한 장소 검색 결과
+     * @return 노출 가능한 지도 위치와 조회된 등록 매장, 혹은 등록 매장 조회 오류
      */
-    private suspend fun deliverIfCurrent(
-        currentRequestId: Long,
-        result: MapSearchResult,
-        onResult: suspend (MapSearchResult) -> Unit,
-    ) {
-        if (isCurrentRequest(currentRequestId)) {
-            onResult(result)
-        }
-    }
+    private suspend fun resolveVerifiedPlaceResult(
+        query: SearchQuery,
+        initialShops: RamenShops,
+        places: PlaceSearchResults,
+    ): MapSearchResult {
+        val mapLocations = selectMapLocations(places)
+        val registeredShopIds = collectRegisteredShopIds(places)
+        val shopsById = fetchRegisteredShops(registeredShopIds)
+        val fetchedShops =
+            when (shopsById) {
+                is RamapResult.Success -> shopsById.data
+                is RamapResult.Error -> return MapSearchResult.Failed(shopsById.error)
+            }
 
-    /** [currentRequestId]가 현재 최신 검색 요청의 ID인지 확인한다. */
-    private fun isCurrentRequest(currentRequestId: Long): Boolean = currentRequestId == requestId
+        return buildLoadedResult(query, initialShops, fetchedShops, mapLocations)
+    }
 
     /**
-     * 현재 검색 작업을 취소하고 진행 중인 요청의 결과를 무효화한다.
+     * Edge Function이 지도 이동 대상으로 분류한 장소만 골라낸다.
      *
-     * 코루틴 취소에 협조하지 않는 저장소 작업이 늦게 완료되더라도 결과를 버릴 수 있도록
-     * [requestId]를 함께 증가시킨다.
+     * @param places Edge Function이 네이버 API 결과와 Ramap DB를 대조해 분류한 장소 검색 결과
+     * @return 입력 순서를 그대로 유지한 지도 이동 장소 목록
      */
-    fun cancel() {
-        requestId += 1
-        job?.cancel()
-        job = null
+    private fun selectMapLocations(places: PlaceSearchResults): PlaceSearchResults {
+        val mapLocations = mutableListOf<PlaceSearchResult>()
+        for (place in places) {
+            if (place.kind == PlaceSearchResultKind.MAP_LOCATION) mapLocations += place
+        }
+        return PlaceSearchResults(mapLocations)
     }
+
+    /**
+     * Edge Function이 등록 매장으로 분류한 장소에서 유효한 Ramap 매장 ID를 뽑아낸다.
+     *
+     * @param places Edge Function이 네이버 API 결과와 Ramap DB를 대조해 분류한 장소 검색 결과
+     * @return 빈 값을 제외하고 중복도 제거한 등록 매장 ID 집합
+     */
+    private fun collectRegisteredShopIds(places: PlaceSearchResults): Set<String> {
+        val registeredShopIds = linkedSetOf<String>()
+        for (place in places) {
+            if (place.kind == PlaceSearchResultKind.REGISTERED_SHOP) {
+                place.shopId?.takeIf(String::isNotBlank)?.let(registeredShopIds::add)
+            }
+        }
+        return registeredShopIds
+    }
+
+    /**
+     * Edge Function이 Ramap DB와 대조해 반환한 매장 ID에 해당하는 매장 정보를 조회한다.
+     *
+     * ID가 없으면 저장소를 호출하지 않으며, 실제로 호출한 경우에는 취소 여부를 확인한다.
+     *
+     * @param shopIds 조회할 Ramap 매장 ID 집합
+     * @return 조회된 매장 목록 또는 매장 저장소 오류
+     */
+    private suspend fun fetchRegisteredShops(shopIds: Set<String>): RamapResult<RamenShops> {
+        if (shopIds.isEmpty()) return RamapResult.Success(RamenShops(emptyMap()))
+
+        val result = ramenShopRepository.fetchRamenShops(shopIds)
+        return result
+    }
+
+    /**
+     * 기존 매장, Edge Function이 검증한 매장, 지도 위치를 하나의 성공 검색 결과로 합친다.
+     *
+     * @param query 검색 결과에 포함할 정규화된 검색어
+     * @param initialShops 등록 매장 이름 검색으로 얻은 매장 목록
+     * @param fetchedShops Edge Function이 내려준 ID로 조회한 매장 목록
+     * @param mapLocations Edge Function이 지도 이동 대상으로 분류한 장소 목록
+     * @return 노출 가능한 결과를 모두 담은 성공 검색 결과
+     */
+    private fun buildLoadedResult(
+        query: SearchQuery,
+        initialShops: RamenShops,
+        fetchedShops: RamenShops,
+        mapLocations: PlaceSearchResults,
+    ): MapSearchResult.Loaded =
+        MapSearchResult.Loaded(
+            query = query,
+            shops = RamenShops(initialShops.values + fetchedShops.values),
+            places = mapLocations,
+        )
 
     companion object {
-        /** 한 번의 Ramap 등록 매장 검색에서 요청하는 최대 결과 수. */
+        /** 한 번의 Ramap 등록 매장 검색에서 요청할 최대 결과 수. */
         const val SEARCH_RESULT_LIMIT = 50
     }
 }

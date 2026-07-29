@@ -1,12 +1,13 @@
 package com.peto.ramap.ui.hidden
 
+import com.peto.ramap.core.result.RamapError
 import com.peto.ramap.coroutinesTest
-import com.peto.ramap.domain.model.personalization.Personalization
+import com.peto.ramap.domain.model.personalization.ShopPersonalization
 import com.peto.ramap.domain.model.shop.RamenShops
+import com.peto.ramap.fake.FakeAnalyticsTracker
 import com.peto.ramap.fake.FakePersonalizationRepository
 import com.peto.ramap.fake.FakeRamenShopRepository
 import com.peto.ramap.fixture.ramenShopFixture
-import com.peto.ramap.ui.common.LoadState
 import com.peto.ramap.ui.hidden.contract.HiddenShopListIntent
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runCurrent
@@ -24,19 +25,20 @@ class HiddenShopListViewModelTest {
                 HiddenShopListViewModel(
                     personalizationStore =
                         FakePersonalizationRepository(
-                            Personalization(hiddenShopIds = setOf(hiddenShop.id)),
+                            ShopPersonalization(hiddenShopIds = setOf(hiddenShop.id)),
                         ),
                     ramenShopRepository =
                         FakeRamenShopRepository(
                             fetchByIdsResult = RamenShops(mapOf(hiddenShop.id to hiddenShop)),
                         ),
+                    analyticsTracker = FakeAnalyticsTracker(),
                 )
 
             runCurrent()
 
-            val state = viewModel.uiState.value.shopsState
-            assertTrue(state is LoadState.Content)
-            assertEquals(RamenShops(listOf(hiddenShop.copy(isVisible = false))), state.data)
+            val state = viewModel.uiState.value
+            assertEquals(RamenShops(listOf(hiddenShop.copy(isVisible = false))), state.shops)
+            assertTrue(!state.isOverlayLoading)
         }
 
     @Test
@@ -46,11 +48,46 @@ class HiddenShopListViewModelTest {
                 HiddenShopListViewModel(
                     personalizationStore = FakePersonalizationRepository(),
                     ramenShopRepository = FakeRamenShopRepository(),
+                    analyticsTracker = FakeAnalyticsTracker(),
                 )
 
             runCurrent()
 
-            assertEquals(LoadState.Content(RamenShops(emptyMap())), viewModel.uiState.value.shopsState)
+            assertEquals(RamenShops(emptyMap()), viewModel.uiState.value.shops)
+            assertTrue(!viewModel.uiState.value.isOverlayLoading)
+        }
+
+    @Test
+    fun `숨긴 매장 조회 실패 후 재시도하면 현재 아이디로 목록을 복구한다`() =
+        coroutinesTest {
+            val shop = ramenShopFixture(id = "hidden-shop")
+            val ramenShopRepository =
+                FakeRamenShopRepository(
+                    fetchByIdsResult = RamenShops(listOf(shop)),
+                    error = RamapError.Unknown(IllegalStateException("failure")),
+                )
+            val viewModel =
+                HiddenShopListViewModel(
+                    personalizationStore =
+                        FakePersonalizationRepository(
+                            ShopPersonalization(hiddenShopIds = setOf(shop.id)),
+                        ),
+                    ramenShopRepository = ramenShopRepository,
+                    analyticsTracker = FakeAnalyticsTracker(),
+                )
+            runCurrent()
+
+            assertTrue(viewModel.uiState.value.showError)
+
+            ramenShopRepository.error = null
+            viewModel.dispatch(HiddenShopListIntent.OnRetry)
+            runCurrent()
+
+            assertTrue(!viewModel.uiState.value.showError)
+            assertEquals(
+                RamenShops(listOf(shop.copy(isVisible = false))),
+                viewModel.uiState.value.shops,
+            )
         }
 
     @Test
@@ -61,18 +98,17 @@ class HiddenShopListViewModelTest {
                 HiddenShopListViewModel(
                     personalizationStore =
                         FakePersonalizationRepository(
-                            Personalization(hiddenShopIds = setOf(shop.id)),
+                            ShopPersonalization(hiddenShopIds = setOf(shop.id)),
                         ),
                     ramenShopRepository = FakeRamenShopRepository(fetchByIdsResult = RamenShops(listOf(shop))),
+                    analyticsTracker = FakeAnalyticsTracker(),
                 )
             runCurrent()
 
             viewModel.dispatch(HiddenShopListIntent.OnUnhideConfirmed(shop.id))
             runCurrent()
 
-            assertEquals(
-                LoadState.Content(RamenShops(emptyMap())),
-                viewModel.uiState.value.shopsState,
-            )
+            assertEquals(RamenShops(emptyMap()), viewModel.uiState.value.shops)
+            assertTrue(!viewModel.uiState.value.isOverlayLoading)
         }
 }

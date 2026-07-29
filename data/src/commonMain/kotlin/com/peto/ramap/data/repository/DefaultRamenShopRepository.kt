@@ -10,7 +10,7 @@ import com.peto.ramap.domain.model.shop.SearchQuery
 import com.peto.ramap.domain.repository.RamenShopRepository
 import com.peto.ramap.network.execute.invokeRequest
 
-class DefaultRamenShopRepository(
+internal class DefaultRamenShopRepository(
     private val dataSource: RamenShopDataSource,
 ) : RamenShopRepository {
     override suspend fun fetchActiveEvent(eventId: String): RamapResult<ShopEvent?> =

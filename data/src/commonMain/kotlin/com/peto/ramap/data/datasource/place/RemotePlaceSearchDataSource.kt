@@ -6,7 +6,7 @@ import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.functions.functions
 import io.ktor.client.call.body
 
-class RemotePlaceSearchDataSource(
+internal class RemotePlaceSearchDataSource(
     private val client: SupabaseClient,
 ) : PlaceSearchDataSource {
     override suspend fun search(request: PlaceSearchRequest): PlaceSearchResponse =

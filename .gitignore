@@ -30,8 +30,11 @@ AGENTS.md
 .scratch/
 **/__pycache__/
 *.pyc
-/supabase
+/supabase/*
+!/supabase/migrations/
+!/supabase/migrations/*.sql
 /feature/main/map/map.podspec
 /androidApp/release/
 /distribution/
 /marketing
+tools

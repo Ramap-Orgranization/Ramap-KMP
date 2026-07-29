@@ -12,7 +12,7 @@ import kotlinx.serialization.modules.polymorphic
 import kotlinx.serialization.modules.subclass
 
 @Composable
-fun rememberNavigationState(): NavigationState {
+fun rememberNavigationState(onMapTabExited: () -> Unit = {}): NavigationState {
     val navigationConfiguration = rememberNavigationConfiguration()
     val selectedTabState =
         rememberSerializable(
@@ -25,21 +25,25 @@ fun rememberNavigationState(): NavigationState {
         rememberNavBackStack(configuration = navigationConfiguration, ScreenRoutes.TabRoutes())
     val eventBackStack =
         rememberNavBackStack(configuration = navigationConfiguration, ScreenRoutes.EventTabRoutes)
+    val rankingBackStack =
+        rememberNavBackStack(configuration = navigationConfiguration, ScreenRoutes.RankingTabRoutes)
     val myBackStack =
         rememberNavBackStack(configuration = navigationConfiguration, ScreenRoutes.MyTabRoutes)
     val backStacks =
-        remember(mapBackStack, eventBackStack, myBackStack) {
+        remember(mapBackStack, rankingBackStack, eventBackStack, myBackStack) {
             mapOf(
                 TabStatus.MAP to mapBackStack,
+                TabStatus.RANKING to rankingBackStack,
                 TabStatus.EVENT to eventBackStack,
                 TabStatus.MY to myBackStack,
             )
         }
 
-    return remember(selectedTabState, backStacks) {
+    return remember(selectedTabState, backStacks, onMapTabExited) {
         NavigationState(
             selectedTabState = selectedTabState,
             backStacks = backStacks,
+            onMapTabExited = onMapTabExited,
         )
     }
 }
@@ -57,6 +61,7 @@ private fun navKeySerializersModule(): SerializersModule =
         polymorphic(NavKey::class) {
             subclass(ScreenRoutes.TabRoutes::class)
             subclass(ScreenRoutes.EventTabRoutes::class)
+            subclass(ScreenRoutes.RankingTabRoutes::class)
             subclass(ScreenRoutes.MyTabRoutes::class)
             subclass(ScreenRoutes.AccountSettingsRoutes::class)
             subclass(ScreenRoutes.InformationRoutes::class)

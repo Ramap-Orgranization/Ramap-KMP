@@ -5,7 +5,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class EventNotificationOverrideResponse(
+internal data class EventNotificationOverrideResponse(
     @SerialName("event_id") val eventId: String,
     val enabled: Boolean,
 ) {

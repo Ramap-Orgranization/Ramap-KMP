@@ -26,7 +26,7 @@ import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.platform.permission.PermissionStatus
 import com.peto.ramap.platform.permission.rememberLocationPermissionGenerator
-import com.peto.ramap.ui.main.map.component.CurrentLocationButton
+import com.peto.ramap.ui.main.map.component.LocationButton
 import com.peto.ramap.ui.main.map.config.CurrentLocationConfig
 import com.peto.ramap.ui.main.map.model.CameraPosition
 import com.peto.ramap.ui.main.map.model.CurrentLocationRequestState
@@ -35,7 +35,7 @@ import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
-actual fun RamapMapView(
+internal actual fun RamapMapView(
     shops: RamenShops,
     focusShops: RamenShops,
     focusNearestToCurrentLocation: Boolean,
@@ -50,6 +50,7 @@ actual fun RamapMapView(
     onBoundsChanged: (MapBounds) -> Unit,
     onCameraPositionChanged: (CameraPosition) -> Unit,
     onInitialFocusConsumed: () -> Unit,
+    onSelectedShopFocusConsumed: () -> Unit,
     onMyLocationChanged: (Location) -> Unit,
     onShopClick: (RamenShop) -> Unit,
     onLocationPermissionBlocked: () -> Unit,
@@ -109,12 +110,16 @@ actual fun RamapMapView(
                     location = placeFocusLocation,
                     requestKey = placeFocusRequestKey,
                 )
-                controller.updateFocus(
-                    shops = focusShops,
-                    focusNearestToCurrentLocation = focusNearestToCurrentLocation,
-                    focusRequestKey = focusRequestKey,
-                    selectedShopId = selectedShopId,
-                )
+                val didMoveCamera =
+                    controller.updateFocus(
+                        shops = focusShops,
+                        focusNearestToCurrentLocation = focusNearestToCurrentLocation,
+                        focusRequestKey = focusRequestKey,
+                        selectedShopId = selectedShopId,
+                    )
+                if (didMoveCamera && selectedShopId != null && focusShops.size == 1) {
+                    onSelectedShopFocusConsumed()
+                }
                 if (initialFocusLocation != null) {
                     onInitialFocusConsumed()
                 }
@@ -122,14 +127,14 @@ actual fun RamapMapView(
             properties =
                 UIKitInteropProperties(
                     interactionMode = UIKitInteropInteractionMode.NonCooperative,
-                    isNativeAccessibilityEnabled = false,
+                    isNativeAccessibilityEnabled = true,
                 ),
         )
 
-        CurrentLocationButton(
+        LocationButton(
             isLoading = currentLocationRequestState.isLoading,
             onClick = {
-                if (currentLocationRequestState.isLoading) return@CurrentLocationButton
+                if (currentLocationRequestState.isLoading) return@LocationButton
                 currentLocationRequestState = currentLocationRequestState.start()
                 if (permission.hasPermission()) {
                     controller.requestCurrentLocation()
@@ -142,10 +147,6 @@ actual fun RamapMapView(
                     .align(Alignment.BottomEnd)
                     .padding(end = 12.dp, bottom = 16.dp),
         )
-    }
-
-    LaunchedEffect(Unit) {
-        permission.requestPermission()
     }
 
     LaunchedEffect(currentLocationRequestState) {

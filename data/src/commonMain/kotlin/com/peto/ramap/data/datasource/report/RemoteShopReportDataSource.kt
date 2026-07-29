@@ -5,7 +5,7 @@ import com.peto.ramap.data.model.UnregisteredPlaceReportRequest
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.from
 
-class RemoteShopReportDataSource(
+internal class RemoteShopReportDataSource(
     private val client: SupabaseClient,
 ) : ShopReportDataSource {
     override suspend fun submitShopInformationReport(report: ShopInformationReportRequest) {

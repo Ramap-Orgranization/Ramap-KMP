@@ -7,7 +7,7 @@ import com.peto.ramap.data.model.ShopEventResponse
 import com.peto.ramap.domain.model.shop.MapBounds
 import com.peto.ramap.domain.model.shop.SearchQuery
 
-class FakeRamenShopDataSource(
+internal class FakeRamenShopDataSource(
     private val responses: List<RamenShopResponse> = emptyList(),
     private val searchResponses: List<RamenShopResponse> = emptyList(),
     private val fetchByIdsResponses: List<RamenShopResponse> = emptyList(),

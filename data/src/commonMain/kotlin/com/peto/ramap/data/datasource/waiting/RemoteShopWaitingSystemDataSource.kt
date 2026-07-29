@@ -4,7 +4,7 @@ import com.peto.ramap.data.model.ShopWaitingSystemResponse
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.from
 
-class RemoteShopWaitingSystemDataSource(
+internal class RemoteShopWaitingSystemDataSource(
     private val client: SupabaseClient,
 ) : ShopWaitingSystemDataSource {
     override suspend fun fetchShopWaitingSystem(shopId: String): ShopWaitingSystemResponse? {

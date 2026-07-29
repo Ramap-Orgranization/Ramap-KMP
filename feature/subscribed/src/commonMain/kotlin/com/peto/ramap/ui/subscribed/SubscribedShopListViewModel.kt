@@ -6,17 +6,18 @@ import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.model.notification.EventNotificationOverride
-import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.domain.repository.NotificationSettingsRepository
 import com.peto.ramap.domain.repository.RamenShopRepository
+import com.peto.ramap.domain.store.PersonalizationBootstrapState
 import com.peto.ramap.domain.store.ShopPersonalizationStore
 import com.peto.ramap.ui.base.BaseViewModel
-import com.peto.ramap.ui.common.LoadState
 import com.peto.ramap.ui.subscribed.contract.SubscribedShopListIntent
 import com.peto.ramap.ui.subscribed.contract.SubscribedShopListIntent.OnRemovalConfirmed
 import com.peto.ramap.ui.subscribed.contract.SubscribedShopListSideEffect
 import com.peto.ramap.ui.subscribed.contract.SubscribedShopListUiState
+import com.peto.ramap.ui.subscribed.contract.SubscribedShopLoadKey
 import com.peto.ramap.ui.subscribed.model.SubscribedRemovalTarget
+import com.peto.ramap.ui.task.TaskPolicy
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
@@ -32,56 +33,134 @@ class SubscribedShopListViewModel(
     private val ramenShopRepository: RamenShopRepository,
     private val personalizationStore: ShopPersonalizationStore,
 ) : BaseViewModel<SubscribedShopListUiState, SubscribedShopListIntent, SubscribedShopListSideEffect>(
-        SubscribedShopListUiState(),
+        initialState = SubscribedShopListUiState(),
     ) {
     init {
         viewModelScope.launch {
             personalizationStore.state
-                .map { it.notificationShopIds }
+                .map { (it as? PersonalizationBootstrapState.Success)?.value?.notificationShopIds }
                 .distinctUntilChanged()
-                .collectLatest(::fetchSubscribedShops)
+                .collectLatest { shopIds ->
+                    if (shopIds == null) return@collectLatest
+                    syncSubscribedShops(shopIds)
+                }
         }
-        viewModelScope.launch { loadSubscribedEvents() }
+        loadSubscribedEvents()
     }
 
     override suspend fun handleIntent(intent: SubscribedShopListIntent) {
         when (intent) {
-            is OnRemovalConfirmed -> confirmRemoval(intent.target)
+            SubscribedShopListIntent.OnRetry -> retryCurrentSubscriptions()
+
+            is OnRemovalConfirmed -> {
+                confirmRemoval(intent.target)
+            }
         }
     }
 
-    private suspend fun fetchSubscribedShops(shopIds: Set<String>) {
-        reduce { copy(shopsState = LoadState.Loading) }
+    private fun retryCurrentSubscriptions() {
+        syncSubscribedShops(
+            shopIds = currentNotificationShopIds(),
+            forceFetch = true,
+        )
+        loadSubscribedEvents()
+    }
+
+    private fun currentNotificationShopIds(): Set<String> =
+        (personalizationStore.state.value as? PersonalizationBootstrapState.Success)
+            ?.value
+            ?.notificationShopIds
+            ?: emptySet()
+
+    private fun syncSubscribedShops(
+        shopIds: Set<String>,
+        forceFetch: Boolean = false,
+    ) {
         if (shopIds.isEmpty()) {
-            reduce { copy(shopsState = LoadState.Content(RamenShops(emptyMap()))) }
+            cancelTask(FETCH_SUBSCRIBED_SHOPS_TASK_KEY)
+            reduce {
+                copy(
+                    shops = shops.filterByShopIds(shopIds),
+                    showShopError = false,
+                    haveShopsLoaded = true,
+                )
+            }
             return
         }
 
-        handleResult(
-            result = ramenShopRepository.fetchRamenShops(shopIds),
+        if (!forceFetch && currentState.shops.containsAll(shopIds)) {
+            cancelTask(FETCH_SUBSCRIBED_SHOPS_TASK_KEY)
+            reduce {
+                copy(
+                    shops = shops.filterByShopIds(shopIds),
+                    showShopError = false,
+                    haveShopsLoaded = true,
+                )
+            }
+            return
+        }
+
+        fetchSubscribedShops(shopIds)
+    }
+
+    private fun fetchSubscribedShops(shopIds: Set<String>) {
+        launchResultTask(
+            taskKey = FETCH_SUBSCRIBED_SHOPS_TASK_KEY,
+            loadKey = SubscribedShopLoadKey.SHOPS,
+            onStart = { copy(showShopError = false) },
+            request = { ramenShopRepository.fetchRamenShops(shopIds) },
             onSuccess = { shops ->
                 reduce {
-                    copy(shopsState = LoadState.Content(shops.filterByShopIds(shopIds)))
+                    copy(
+                        shops = shops.filterByShopIds(shopIds),
+                        showShopError = false,
+                        haveShopsLoaded = true,
+                    )
                 }
             },
-            onError = { reduce { copy(shopsState = LoadState.Error) } },
+            onError = {
+                reduce {
+                    copy(
+                        showShopError = true,
+                        haveShopsLoaded = true,
+                    )
+                }
+            },
         )
     }
 
-    private suspend fun loadSubscribedEvents() {
-        handleResult(
-            result = notificationRepository.fetchEventOverrides(),
-            onSuccess = ::fetchActiveEvents,
-            onError = { reduce { copy(subscribedEvents = emptyList()) } },
+    private fun loadSubscribedEvents() {
+        launchResultTask(
+            taskKey = LOAD_EVENTS_TASK_KEY,
+            loadKey = SubscribedShopLoadKey.EVENTS,
+            policy = TaskPolicy.CancelPrevious,
+            onStart = { copy(showEventError = false) },
+            request = { fetchSubscribedEvents() },
+            onSuccess = { events ->
+                reduce {
+                    copy(
+                        subscribedEvents = events,
+                        showEventError = false,
+                        haveEventsLoaded = true,
+                    )
+                }
+            },
+            onError = {
+                reduce {
+                    copy(
+                        showEventError = true,
+                        haveEventsLoaded = true,
+                    )
+                }
+            },
         )
     }
 
-    private suspend fun fetchActiveEvents(eventOverrides: List<EventNotificationOverride>) {
-        handleResult(
-            result = fetchEnabledActiveEvents(eventOverrides),
-            onSuccess = { events -> reduce { copy(subscribedEvents = events) } },
-            onError = { reduce { copy(subscribedEvents = emptyList()) } },
-        )
+    private suspend fun fetchSubscribedEvents(): RamapResult<List<ShopEvent>> {
+        val overrides = notificationRepository.fetchEventOverrides()
+        if (overrides is RamapResult.Error) return overrides
+
+        return fetchEnabledActiveEvents((overrides as RamapResult.Success).data)
     }
 
     private suspend fun fetchEnabledActiveEvents(eventOverrides: List<EventNotificationOverride>): RamapResult<List<ShopEvent>> =
@@ -107,40 +186,33 @@ class SubscribedShopListViewModel(
         return RamapResult.Success(events)
     }
 
-    private suspend fun confirmRemoval(target: SubscribedRemovalTarget) {
-        val result =
-            when (target) {
-                is SubscribedRemovalTarget.Shop ->
-                    personalizationStore.updateShopNotification(target.shopId, false)
-                is SubscribedRemovalTarget.EventOverride ->
-                    notificationRepository.clearEventNotificationOverride(target.eventId)
-            }
-        when (result) {
-            is RamapResult.Success -> {
-                removeTargetFromState(target)
-            }
-            is RamapResult.Error -> {
-                handleRemovalFailure()
-            }
-        }
+    private fun confirmRemoval(target: SubscribedRemovalTarget) {
+        launchResultTask(
+            taskKey = REMOVE_SUBSCRIPTION_TASK_KEY,
+            loadKey = SubscribedShopLoadKey.REMOVE,
+            policy = TaskPolicy.IgnoreNew,
+            request = {
+                when (target) {
+                    is SubscribedRemovalTarget.Shop ->
+                        personalizationStore.updateShopNotification(target.shopId, false)
+
+                    is SubscribedRemovalTarget.EventOverride ->
+                        notificationRepository.clearEventNotificationOverride(target.eventId)
+                }
+            },
+            onSuccess = { removeTargetFromState(target) },
+            onError = { handleRemovalFailure() },
+        )
     }
 
     private fun removeTargetFromState(target: SubscribedRemovalTarget) {
         reduce {
             when (target) {
                 is SubscribedRemovalTarget.Shop ->
-                    copy(
-                        shopsState =
-                            (shopsState as? LoadState.Content)
-                                ?.data
-                                ?.without(target.shopId)
-                                ?.let { LoadState.Content(it) }
-                                ?: shopsState,
-                    )
+                    copy(shops = shops.remove(target.shopId))
+
                 is SubscribedRemovalTarget.EventOverride ->
-                    copy(
-                        subscribedEvents = subscribedEvents.filterNot { it.id == target.eventId },
-                    )
+                    copy(subscribedEvents = subscribedEvents.filterNot { it.id == target.eventId })
             }
         }
     }
@@ -151,5 +223,11 @@ class SubscribedShopListViewModel(
                 ToastData(Res.string.personalization_update_failure_message, ToastType.ERROR),
             ),
         )
+    }
+
+    companion object {
+        private const val FETCH_SUBSCRIBED_SHOPS_TASK_KEY = "fetch-subscribed-shops"
+        private const val LOAD_EVENTS_TASK_KEY = "load-subscription-events"
+        private const val REMOVE_SUBSCRIPTION_TASK_KEY = "remove-subscription"
     }
 }

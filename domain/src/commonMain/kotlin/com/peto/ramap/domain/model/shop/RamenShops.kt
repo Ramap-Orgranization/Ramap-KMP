@@ -81,7 +81,9 @@ data class RamenShops(
         return RamenShops(listOf(nearestShop) + values.filterNot { shop -> shop.id == nearestShop.id })
     }
 
-    fun without(shopId: String): RamenShops = RamenShops(shops - shopId)
+    fun remove(shopId: String): RamenShops = RamenShops(shops - shopId)
 
     fun singleShopOrNull(): RamenShop? = values.singleOrNull()
+
+    fun containsAll(shopIds: Set<String>): Boolean = shops.keys.containsAll(shopIds)
 }

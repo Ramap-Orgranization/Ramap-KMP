@@ -20,6 +20,8 @@ class FakeNotificationSettingsRepository(
     var fetchEventOverridesError: RamapError? = null
     var shopNotificationError: RamapError? = null
     var clearEventNotificationOverrideError: RamapError? = null
+    var eventNotificationStatusError: RamapError? = null
+    var eventNotificationUpdateError: RamapError? = null
 
     override suspend fun fetchEventNotificationsEnabled(): RamapResult<Boolean> =
         fetchEnabledError?.let { RamapResult.Error(it) } ?: RamapResult.Success(enabled)
@@ -32,6 +34,7 @@ class FakeNotificationSettingsRepository(
 
     override suspend fun isEventNotificationEnabled(eventId: String): RamapResult<Boolean> {
         requestedEventNotificationIds += eventId
+        eventNotificationStatusError?.let { return RamapResult.Error(it) }
         return RamapResult.Success(eventOverrides.firstOrNull { it.eventId == eventId }?.enabled ?: false)
     }
 
@@ -40,6 +43,7 @@ class FakeNotificationSettingsRepository(
         enabled: Boolean,
     ): RamapResult<Unit> {
         eventNotificationUpdates += eventId to enabled
+        eventNotificationUpdateError?.let { return RamapResult.Error(it) }
         eventOverrides.removeAll { it.eventId == eventId }
         eventOverrides += EventNotificationOverride(eventId, enabled)
         return RamapResult.Success(Unit)

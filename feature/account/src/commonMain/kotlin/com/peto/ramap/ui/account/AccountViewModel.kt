@@ -1,6 +1,8 @@
 package com.peto.ramap.ui.account
 
 import androidx.lifecycle.viewModelScope
+import com.peto.ramap.analytics.AnalyticsSource
+import com.peto.ramap.analytics.common.login.LoginAnalytics
 import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.auth.LoginSessionState
@@ -9,10 +11,12 @@ import com.peto.ramap.ui.account.contract.AccountIntent
 import com.peto.ramap.ui.account.contract.AccountIntent.OnAccountDeleteConfirm
 import com.peto.ramap.ui.account.contract.AccountIntent.OnKakaoLoginClick
 import com.peto.ramap.ui.account.contract.AccountIntent.OnLogoutClick
+import com.peto.ramap.ui.account.contract.AccountLoadKey
 import com.peto.ramap.ui.account.contract.AccountSideEffect
 import com.peto.ramap.ui.account.contract.AccountSideEffect.ShowToast
 import com.peto.ramap.ui.account.contract.AccountUiState
 import com.peto.ramap.ui.base.BaseViewModel
+import com.peto.ramap.ui.task.TaskPolicy
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.StringResource
@@ -20,12 +24,16 @@ import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.account_delete_failure_message
 import ramap.shared.generated.resources.account_delete_success_message
 import ramap.shared.generated.resources.kakao_login_failure_message
+import ramap.shared.generated.resources.logout_failure_message
 
 class AccountViewModel(
     private val loginRepository: LoginRepository,
-) : BaseViewModel<AccountUiState, AccountIntent, AccountSideEffect>(AccountUiState()) {
+    private val loginAnalytics: LoginAnalytics,
+) : BaseViewModel<AccountUiState, AccountIntent, AccountSideEffect>(
+        AccountUiState(),
+    ) {
     init {
-        viewModelScope.launch { observeSessionState() }
+        observeSessionState()
     }
 
     override suspend fun handleIntent(intent: AccountIntent) {
@@ -36,40 +44,85 @@ class AccountViewModel(
         }
     }
 
-    private suspend fun observeSessionState() {
-        loginRepository.sessionState.collectLatest { sessionState ->
-            val isAuthenticated = sessionState == LoginSessionState.AUTHENTICATED
-            reduce {
-                copy(
-                    isLoggedIn = isAuthenticated,
-                    accountLabel = if (isAuthenticated) loginRepository.currentUserEmail() else null,
-                    isDeletingAccount = if (isAuthenticated) isDeletingAccount else false,
-                )
+    private fun observeSessionState() {
+        viewModelScope.launch {
+            loginRepository.sessionState.collectLatest { sessionState ->
+                updateSessionState(sessionState)
             }
         }
     }
 
-    private suspend fun signInWithKakao() {
-        handleResult(
-            result = loginRepository.signInWithKakao(),
-            onError = { showToast(Res.string.kakao_login_failure_message, ToastType.ERROR) },
+    private fun updateSessionState(sessionState: LoginSessionState) {
+        val isAuthenticated = sessionState == LoginSessionState.AUTHENTICATED
+        val accountLabel = findAccountLabel(isAuthenticated)
+
+        reduce {
+            copy(
+                isLoggedIn = isAuthenticated,
+                accountLabel = accountLabel,
+            )
+        }
+    }
+
+    private fun findAccountLabel(isAuthenticated: Boolean): String? {
+        if (!isAuthenticated) return null
+
+        return loginRepository.currentUserEmail()
+    }
+
+    private fun signInWithKakao() {
+        loginAnalytics.logLoginStarted(AnalyticsSource.ACCOUNT)
+
+        launchResultTask(
+            taskKey = SIGN_IN_TASK_KEY,
+            loadKey = AccountLoadKey.Login,
+            policy = TaskPolicy.IgnoreNew,
+            request = loginRepository::signInWithKakao,
+            onSuccess = {
+                loginAnalytics.logLoginSucceeded(AnalyticsSource.ACCOUNT)
+            },
+            onError = {
+                loginAnalytics.logLoginFailed(AnalyticsSource.ACCOUNT)
+                showToast(
+                    messageResource = Res.string.kakao_login_failure_message,
+                    type = ToastType.ERROR,
+                )
+            },
         )
     }
 
-    private suspend fun signOut() {
-        handleResult(result = loginRepository.signOut())
+    private fun signOut() {
+        launchResultTask(
+            taskKey = SIGN_OUT_TASK_KEY,
+            loadKey = AccountLoadKey.Logout,
+            policy = TaskPolicy.IgnoreNew,
+            request = loginRepository::signOut,
+            onError = {
+                showToast(
+                    messageResource = Res.string.logout_failure_message,
+                    type = ToastType.ERROR,
+                )
+            },
+        )
     }
 
-    private suspend fun deleteAccount() {
-        if (currentState.isDeletingAccount) return
-
-        reduce { copy(isDeletingAccount = true) }
-        handleResult(
-            result = loginRepository.deleteAccount(),
-            onSuccess = { showToast(Res.string.account_delete_success_message, ToastType.SUCCESS) },
+    private fun deleteAccount() {
+        launchResultTask(
+            taskKey = DELETE_ACCOUNT_TASK_KEY,
+            loadKey = AccountLoadKey.Delete,
+            policy = TaskPolicy.IgnoreNew,
+            request = loginRepository::deleteAccount,
+            onSuccess = {
+                showToast(
+                    messageResource = Res.string.account_delete_success_message,
+                    type = ToastType.SUCCESS,
+                )
+            },
             onError = {
-                reduce { copy(isDeletingAccount = false) }
-                showToast(Res.string.account_delete_failure_message, ToastType.ERROR)
+                showToast(
+                    messageResource = Res.string.account_delete_failure_message,
+                    type = ToastType.ERROR,
+                )
             },
         )
     }
@@ -78,6 +131,21 @@ class AccountViewModel(
         messageResource: StringResource,
         type: ToastType,
     ) {
-        trySideEffect(ShowToast(ToastData(messageResource, type)))
+        viewModelScope.launch {
+            postSideEffect(
+                ShowToast(
+                    ToastData(
+                        message = messageResource,
+                        type = type,
+                    ),
+                ),
+            )
+        }
+    }
+
+    companion object {
+        private const val SIGN_IN_TASK_KEY = "account-sign-in"
+        private const val SIGN_OUT_TASK_KEY = "account-sign-out"
+        private const val DELETE_ACCOUNT_TASK_KEY = "account-delete"
     }
 }

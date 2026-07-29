@@ -3,7 +3,7 @@ package com.peto.ramap.fake
 import com.peto.ramap.data.datasource.personalization.HiddenShopDataSource
 import com.peto.ramap.data.model.PersonalizationResponse
 
-class FakeHiddenShopDataSource(
+internal class FakeHiddenShopDataSource(
     initialHiddenShops: List<PersonalizationResponse> = emptyList(),
 ) : HiddenShopDataSource {
     private val hiddenShops = initialHiddenShops.toMutableList()

@@ -6,7 +6,7 @@ import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 
-class DefaultPushRegistrationRepository(
+internal class DefaultPushRegistrationRepository(
     private val supabaseClient: SupabaseClient,
 ) : PushRegistrationRepository {
     override suspend fun register(
