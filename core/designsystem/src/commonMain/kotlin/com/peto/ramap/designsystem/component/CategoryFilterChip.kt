@@ -20,22 +20,34 @@ import com.peto.ramap.theme.RamapTheme
 fun CategoryFilterChip(
     label: String,
     selected: Boolean = false,
-    onClick: () -> Unit = {},
+    onClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
     style: AppTextStyle = AppTextStyle.C2,
 ) {
-    Surface(
-        modifier = modifier,
-        shape = RoundedCornerShape(999.dp),
-        color = if (selected) GrayColor.C500 else CommonColor.White,
-        border = BorderStroke(width = 1.dp, color = GrayColor.C200),
-        onClick = onClick,
-    ) {
+    val content = @Composable {
         AppText(
             text = label,
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
             style = style,
             color = if (selected) CommonColor.White else GrayColor.C400,
+        )
+    }
+    if (onClick == null) {
+        Surface(
+            modifier = modifier,
+            shape = RoundedCornerShape(999.dp),
+            color = if (selected) GrayColor.C500 else CommonColor.White,
+            border = BorderStroke(width = 1.dp, color = GrayColor.C200),
+            content = content,
+        )
+    } else {
+        Surface(
+            modifier = modifier,
+            shape = RoundedCornerShape(999.dp),
+            color = if (selected) GrayColor.C500 else CommonColor.White,
+            border = BorderStroke(width = 1.dp, color = GrayColor.C200),
+            onClick = onClick,
+            content = content,
         )
     }
 }

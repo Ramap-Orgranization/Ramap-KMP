@@ -15,12 +15,16 @@ internal fun visibleSettingsMenus(isLoggedIn: Boolean): List<SettingsMenu> {
         listOf(
             SettingsMenu.ACCOUNT,
             SettingsMenu.INFORMATION,
-            SettingsMenu.NOTIFICATION,
             SettingsMenu.REPORT,
         )
     if (!isLoggedIn) return commonMenus
 
-    return commonMenus +
+    return listOf(
+        SettingsMenu.ACCOUNT,
+        SettingsMenu.INFORMATION,
+        SettingsMenu.NOTIFICATION,
+        SettingsMenu.REPORT,
+    ) +
         listOf(
             SettingsMenu.HIDDEN_SHOPS,
             SettingsMenu.SUBSCRIBED_SHOPS,

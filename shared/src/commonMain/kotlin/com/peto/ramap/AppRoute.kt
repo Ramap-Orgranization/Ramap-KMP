@@ -22,6 +22,7 @@ import com.peto.ramap.log.analyticsScreenName
 import com.peto.ramap.navigation.BackPressController
 import com.peto.ramap.navigation.NavigationRouter
 import com.peto.ramap.navigation.NavigationState
+import com.peto.ramap.navigation.ShopNavigationSource
 import com.peto.ramap.navigation.TabStatus
 import com.peto.ramap.navigation.deeplink.ShopDeepLink
 import com.peto.ramap.navigation.deeplink.ShopDeepLinkDispatcher
@@ -65,8 +66,11 @@ internal fun AppRoute(
     loginRepository: LoginRepository = koinInject(),
     personalizationStore: ShopPersonalizationStore = koinInject(),
 ) {
-    val navigationState = rememberNavigationState()
     val mapViewModel = koinViewModel<MapViewModel>()
+    val navigationState =
+        rememberNavigationState(
+            onMapTabExited = { mapViewModel.dispatch(OnMapTabExited) },
+        )
 
     HandleDeepLinkEvents(deepLinkEntryPoint, notificationLaunchDispatcher, shopDeepLinkDispatcher, appAnalytics)
 
@@ -100,9 +104,6 @@ internal fun AppRoute(
 
     NavigationRouter(
         navigationState = navigationState,
-        onMapTabExited = {
-            mapViewModel.dispatch(OnMapTabExited)
-        },
         mapScreen = { route ->
             MapRoute(
                 isBackEnabled = route.returnTab == null,
@@ -135,7 +136,7 @@ internal fun AppRoute(
                             rankingDetailShopId = null
                             navigationState.showShopOnMap(
                                 shopId = selectedShopId,
-                                source = "ranking",
+                                source = ShopNavigationSource.RANKING,
                                 returnTab = TabStatus.RANKING,
                             )
                         },
@@ -186,6 +187,13 @@ internal fun AppRoute(
         hiddenScreen = {
             HiddenShopListRoute(
                 onBackClick = navigationState::pop,
+                onShopOpen = { shopId ->
+                    navigationState.showShopOnMap(
+                        shopId,
+                        source = ShopNavigationSource.HIDDEN_SHOPS,
+                        returnTab = TabStatus.MY,
+                    )
+                },
             )
         },
         notificationSettingsScreen = {
@@ -196,11 +204,26 @@ internal fun AppRoute(
         subscribedShopsScreen = {
             SubscribedShopListRoute(
                 onBack = navigationState::pop,
+                onShopOpen = { shopId ->
+                    navigationState.showShopOnMap(
+                        shopId,
+                        source = ShopNavigationSource.SUBSCRIBED_SHOPS,
+                        returnTab = TabStatus.MY,
+                    )
+                },
+                onEventOpen = navigationState::showEvent,
             )
         },
         bookmarkedShopsScreen = {
             BookmarkedShopListRoute(
                 onBack = navigationState::pop,
+                onShopOpen = { shopId ->
+                    navigationState.showShopOnMap(
+                        shopId,
+                        source = ShopNavigationSource.BOOKMARKED_SHOPS,
+                        returnTab = TabStatus.MY,
+                    )
+                },
             )
         },
         eventScreen = { route ->
@@ -208,9 +231,7 @@ internal fun AppRoute(
                 eventId = route.eventId,
                 onBack = navigationState::pop,
                 onUnavailable = {
-                    navigationState.selectTopLevelTab(
-                        TabStatus.EVENT,
-                    )
+                    navigationState.showEventRoot()
 
                     toastManager.tryShow(
                         ToastData(
@@ -222,7 +243,7 @@ internal fun AppRoute(
                 onShopClick = { shopId ->
                     navigationState.showShopOnMap(
                         shopId = shopId,
-                        source = "event_detail",
+                        source = ShopNavigationSource.EVENT_DETAIL,
                     )
                 },
             )
@@ -267,7 +288,7 @@ private fun HandleShopDeepLink(
                 appAnalytics.logSharedShopLinkOpened(deepLink.shopId)
                 navigationState.showShopOnMap(
                     shopId = deepLink.shopId,
-                    source = "shared_link",
+                    source = ShopNavigationSource.SHARED_LINK,
                 )
                 appAnalytics.logDeepLinkNavigationSucceeded(deepLink.shopId)
             } else {

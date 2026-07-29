@@ -19,7 +19,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.StringResource
 import ramap.shared.generated.resources.Res
-import ramap.shared.generated.resources.personalization_load_failure_message
 import ramap.shared.generated.resources.personalization_update_failure_message
 
 class HiddenShopListViewModel(
@@ -39,10 +38,16 @@ class HiddenShopListViewModel(
 
     override suspend fun handleIntent(intent: HiddenShopListIntent) {
         when (intent) {
+            HiddenShopListIntent.OnRetry -> retryCurrentHiddenShops()
+
             is HiddenShopListIntent.OnUnhideConfirmed -> {
                 handleUnhideConfirmed(intent)
             }
         }
+    }
+
+    private fun retryCurrentHiddenShops() {
+        syncHiddenShops(personalizationStore.state.value.hiddenShopIds, forceFetch = true)
     }
 
     private fun handleUnhideConfirmed(intent: HiddenShopListIntent.OnUnhideConfirmed) {
@@ -61,13 +66,16 @@ class HiddenShopListViewModel(
         }
     }
 
-    private fun syncHiddenShops(hiddenShopIds: Set<String>) {
+    private fun syncHiddenShops(
+        hiddenShopIds: Set<String>,
+        forceFetch: Boolean = false,
+    ) {
         if (hiddenShopIds.isEmpty()) {
             applyExistingHiddenShops(hiddenShopIds)
             return
         }
 
-        if (currentState.shops.containsAll(hiddenShopIds)) {
+        if (!forceFetch && currentState.shops.containsAll(hiddenShopIds)) {
             applyExistingHiddenShops(hiddenShopIds)
             return
         }
@@ -88,6 +96,7 @@ class HiddenShopListViewModel(
             copy(
                 shops = hiddenShops,
                 showError = false,
+                hasLoaded = true,
             )
         }
     }
@@ -100,10 +109,7 @@ class HiddenShopListViewModel(
             request = { ramenShopRepository.fetchRamenShops(hiddenShopIds) },
             onSuccess = { shops -> handleFetchSuccess(shops, hiddenShopIds) },
             onError = {
-                showToast(
-                    Res.string.personalization_load_failure_message,
-                    ToastType.ERROR,
-                )
+                reduce { copy(showError = true, hasLoaded = true) }
             },
         )
     }
@@ -113,7 +119,7 @@ class HiddenShopListViewModel(
         requestedShopIds: Set<String>,
     ) {
         val hiddenShops = createHiddenShops(shops, requestedShopIds)
-        reduce { copy(shops = hiddenShops, showError = false) }
+        reduce { copy(shops = hiddenShops, showError = false, hasLoaded = true) }
     }
 
     private fun createHiddenShops(

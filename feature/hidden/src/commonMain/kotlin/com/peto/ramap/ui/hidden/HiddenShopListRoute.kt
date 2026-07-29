@@ -1,16 +1,9 @@
 package com.peto.ramap.ui.hidden
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -23,33 +16,27 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.peto.ramap.designsystem.component.LoadErrorContent
 import com.peto.ramap.designsystem.component.RamenShopSearchResultList
+import com.peto.ramap.designsystem.component.SettingsListPage
 import com.peto.ramap.designsystem.component.ShopListEmptyContent
 import com.peto.ramap.designsystem.dialog.CommonDialog
-import com.peto.ramap.designsystem.indicator.RamenLoadingIndicator
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.designsystem.toast.ToastManager
-import com.peto.ramap.designsystem.topbar.CommonTopBar
 import com.peto.ramap.domain.model.shop.RamenShop
-import com.peto.ramap.extension.noRippleClickable
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.ui.base.ObserveAsEvents
 import com.peto.ramap.ui.hidden.contract.HiddenShopListIntent
 import com.peto.ramap.ui.hidden.contract.HiddenShopListSideEffect
 import com.peto.ramap.ui.hidden.contract.HiddenShopListUiState
-import com.peto.ramap.ui.resource.category.label
-import org.jetbrains.compose.resources.painterResource
+import com.peto.ramap.ui.resource.category.CategoryResourceMapper
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.data_load_failure_message
 import ramap.shared.generated.resources.hidden_shops_empty_title
-import ramap.shared.generated.resources.ic_arrow3_left
 import ramap.shared.generated.resources.laduck_error_confused
-import ramap.shared.generated.resources.navigation_back
 import ramap.shared.generated.resources.notification_removal_dismiss_action
 import ramap.shared.generated.resources.settings_hidden_shops_menu
 import ramap.shared.generated.resources.unhide_shop_confirm_action
@@ -58,6 +45,7 @@ import ramap.shared.generated.resources.unhide_shop_confirm_title
 @Composable
 fun HiddenShopListRoute(
     onBackClick: () -> Unit,
+    onShopOpen: (String) -> Unit,
     toastManager: ToastManager = koinInject(),
     viewModel: HiddenShopListViewModel = koinViewModel(),
 ) {
@@ -73,7 +61,9 @@ fun HiddenShopListRoute(
     HiddenShopListScreen(
         uiState = uiState,
         onBack = onBackClick,
-        onShopClick = { unhideTargetShopId = it.id },
+        onShopOpen = { onShopOpen(it.id) },
+        onUnhideRequested = { unhideTargetShopId = it.id },
+        onRetry = { viewModel.dispatch(HiddenShopListIntent.OnRetry) },
     )
     CommonDialog(
         visible = unhideTargetShopId != null,
@@ -102,52 +92,29 @@ fun HiddenShopListRoute(
 internal fun HiddenShopListScreen(
     uiState: HiddenShopListUiState,
     onBack: () -> Unit,
-    onShopClick: (RamenShop) -> Unit,
+    onShopOpen: (RamenShop) -> Unit,
+    onUnhideRequested: (RamenShop) -> Unit,
+    onRetry: () -> Unit,
 ) {
-    Column(
-        modifier =
-            Modifier
-                .fillMaxSize()
-                .padding(top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+    SettingsListPage(
+        title = Res.string.settings_hidden_shops_menu,
+        onBack = onBack,
+        showError = uiState.showError,
+        showInitialLoading = uiState.isOnlyLoading,
+        showOverlayLoading = uiState.isOverlayLoading,
+        errorImage = Res.drawable.laduck_error_confused,
+        errorDescription = Res.string.data_load_failure_message,
+        onRetry = onRetry,
     ) {
-        CommonTopBar(
-            title = stringResource(Res.string.settings_hidden_shops_menu),
-            left = {
-                Image(
-                    painter = painterResource(Res.drawable.ic_arrow3_left),
-                    contentDescription = stringResource(Res.string.navigation_back),
-                    modifier =
-                        Modifier
-                            .padding(18.dp)
-                            .size(24.dp)
-                            .noRippleClickable(onClick = onBack),
-                )
-            },
-        )
-
-        Box(modifier = Modifier.weight(1f)) {
-            when {
-                uiState.showError ->
-                    LoadErrorContent(
-                        image = Res.drawable.laduck_error_confused,
-                        title = stringResource(Res.string.settings_hidden_shops_menu),
-                        description = stringResource(Res.string.data_load_failure_message),
-                        modifier = Modifier.fillMaxSize(),
-                    )
-
-                uiState.isOnlyLoading -> RamenLoadingIndicator(modifier = Modifier.fillMaxSize())
-
-                else -> HiddenShopListContent(uiState, onShopClick)
-            }
-        }
+        HiddenShopListContent(uiState, onShopOpen, onUnhideRequested)
     }
 }
 
 @Composable
 private fun HiddenShopListContent(
     uiState: HiddenShopListUiState,
-    onShopClick: (RamenShop) -> Unit,
+    onShopOpen: (RamenShop) -> Unit,
+    onUnhideRequested: (RamenShop) -> Unit,
 ) {
     if (uiState.shops.isEmpty()) {
         ShopListEmptyContent(
@@ -160,8 +127,10 @@ private fun HiddenShopListContent(
         ) {
             RamenShopSearchResultList(
                 shops = uiState.shops,
-                onShopClick = onShopClick,
-                categoryLabel = { category -> stringResource(category.label()) },
+                onShopClick = onShopOpen,
+                categoryLabel = { category -> stringResource(CategoryResourceMapper.label(category)) },
+                itemActionLabel = { stringResource(Res.string.unhide_shop_confirm_action) },
+                onItemAction = onUnhideRequested,
                 itemModifier = {
                     Modifier
                         .padding(horizontal = 24.dp, vertical = 6.dp)
@@ -169,10 +138,6 @@ private fun HiddenShopListContent(
                 },
                 showDividers = false,
             )
-        }
-
-        if (uiState.isOverlayLoading) {
-            RamenLoadingIndicator(modifier = Modifier.fillMaxSize())
         }
     }
 }

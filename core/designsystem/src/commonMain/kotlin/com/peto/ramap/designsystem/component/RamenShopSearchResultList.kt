@@ -11,10 +11,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -29,6 +33,9 @@ import com.peto.ramap.extension.noRippleClickable
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.RamapTheme
+import org.jetbrains.compose.resources.painterResource
+import ramap.shared.generated.resources.Res
+import ramap.shared.generated.resources.ic_close
 
 @Composable
 fun RamenShopSearchResultList(
@@ -38,6 +45,8 @@ fun RamenShopSearchResultList(
     modifier: Modifier = Modifier,
     itemModifier: (RamenShop) -> Modifier = { Modifier },
     showDividers: Boolean = true,
+    itemActionLabel: (@Composable (RamenShop) -> String)? = null,
+    onItemAction: ((RamenShop) -> Unit)? = null,
 ) {
     Column(
         modifier =
@@ -54,6 +63,8 @@ fun RamenShopSearchResultList(
                 onClick = { onShopClick(shop) },
                 categoryLabel = categoryLabel,
                 modifier = itemModifier(shop),
+                actionLabel = itemActionLabel?.invoke(shop),
+                onAction = onItemAction?.let { action -> { action(shop) } },
             )
         }
     }
@@ -67,6 +78,8 @@ private fun RamenShopSearchResultItem(
     categoryLabel: @Composable (Category) -> String,
     modifier: Modifier = Modifier,
     leadingContent: @Composable () -> Unit = {},
+    actionLabel: String? = null,
+    onAction: (() -> Unit)? = null,
 ) {
     Column(
         modifier =
@@ -108,6 +121,21 @@ private fun RamenShopSearchResultItem(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
+            }
+            if (actionLabel != null && onAction != null) {
+                IconButton(
+                    onClick = onAction,
+                    modifier =
+                        Modifier.semantics {
+                            contentDescription = "${shop.name} $actionLabel"
+                        },
+                ) {
+                    Icon(
+                        painter = painterResource(Res.drawable.ic_close),
+                        contentDescription = null,
+                        tint = GrayColor.C400,
+                    )
+                }
             }
         }
 

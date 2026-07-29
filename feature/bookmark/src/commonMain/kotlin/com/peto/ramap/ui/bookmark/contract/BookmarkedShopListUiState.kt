@@ -7,11 +7,14 @@ import com.peto.ramap.ui.loading.LoadableState
 data class BookmarkedShopListUiState(
     val shops: RamenShops = RamenShops(emptyMap()),
     val showError: Boolean = false,
+    val hasLoaded: Boolean = false,
     override val loadState: LoadState = LoadState(),
 ) : LoadableState<BookmarkedShopListUiState> {
     override fun withLoadingState(loadState: LoadState): BookmarkedShopListUiState = copy(loadState = loadState)
 
-    val isOnlyLoading: Boolean = shops.isEmpty() && loadState.isLoading(BookmarkedShopLoadKey.FETCH)
+    val isOnlyLoading: Boolean =
+        shops.isEmpty() &&
+            (!hasLoaded || loadState.isLoading(BookmarkedShopLoadKey.FETCH))
 
     val isOverlayLoading =
         loadState.isLoading(BookmarkedShopLoadKey.REMOVE) ||

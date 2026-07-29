@@ -197,9 +197,13 @@
 
     <!-- 공통 상태 및 피드백 -->
     <string name="data_load_failure_message">정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.</string>
+    <string name="event_detail_load_failure_title">이벤트를 불러오지 못했어요</string>
+    <string name="event_notification_load_failure_message">알림 상태를 확인하지 못했어요. 잠시 후 다시 시도해 주세요.</string>
+    <string name="event_notification_update_failure_message">알림 설정을 저장하지 못했어요. 다시 시도해 주세요.</string>
     <string name="retry_action">다시 시도</string>
     <string name="personalization_update_failure_message">변경사항을 저장하지 못했습니다. 다시 시도해 주세요.</string>
     <string name="personalization_load_failure_message">설정을 불러오지 못했습니다. 다시 시도해 주세요.</string>
+    <string name="personalization_load_failure_title">개인 설정을 불러오지 못했어요</string>
     <string name="toast_icon">알림</string>
 
     <!-- 최상위 탭 -->

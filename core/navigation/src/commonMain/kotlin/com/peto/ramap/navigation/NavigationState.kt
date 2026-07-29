@@ -9,12 +9,13 @@ import androidx.navigation3.runtime.NavKey
 class NavigationState(
     selectedTabState: MutableState<TabStatus>,
     val backStacks: Map<TabStatus, NavBackStack<NavKey>>,
+    private val onMapTabExited: () -> Unit = {},
 ) {
     var selectedTab: TabStatus by selectedTabState
         private set
 
     /** 마지막 네비게이션 소스. shop_select 등의 analytics source 파라미터로 사용. */
-    var lastNavigationSource: String? = null
+    var lastNavigationSource: ShopNavigationSource? = null
         private set
 
     val currentBackStack: NavBackStack<NavKey>
@@ -56,6 +57,16 @@ class NavigationState(
         currentBackStack.add(ScreenRoutes.EventDetailRoutes(eventId))
     }
 
+    fun showEventRoot() {
+        if (currentBackStack.lastOrNull() is ScreenRoutes.EventDetailRoutes) {
+            currentBackStack.removeLastOrNull()
+        }
+        val eventBackStack = backStacks.getValue(TabStatus.EVENT)
+        eventBackStack.clear()
+        eventBackStack.add(ScreenRoutes.EventTabRoutes)
+        selectTopLevelTab(TabStatus.EVENT)
+    }
+
     fun pop() {
         if (currentBackStack.size > 1) {
             currentBackStack.removeLastOrNull()
@@ -74,6 +85,7 @@ class NavigationState(
         if (tab == selectedTab) return
 
         if (selectedTab == TabStatus.MAP) {
+            onMapTabExited()
             clearRequestedShopFromMapRoute()
         }
         selectedTab = tab
@@ -96,7 +108,7 @@ class NavigationState(
 
     fun showShopOnMap(
         shopId: String,
-        source: String? = null,
+        source: ShopNavigationSource? = null,
         returnTab: TabStatus? = null,
     ) {
         lastNavigationSource = source

@@ -33,10 +33,16 @@ class BookmarkedShopListViewModel(
 
     override suspend fun handleIntent(intent: BookmarkedShopListIntent) {
         when (intent) {
+            BookmarkedShopListIntent.OnRetry -> retryCurrentBookmarks()
+
             is BookmarkedShopListIntent.OnRemovalConfirmed -> {
                 handleRemovalConfirmed(intent)
             }
         }
+    }
+
+    private fun retryCurrentBookmarks() {
+        syncBookmarkedShops(personalizationStore.state.value.bookmarkedShopIds, forceFetch = true)
     }
 
     private fun handleRemovalConfirmed(intent: BookmarkedShopListIntent.OnRemovalConfirmed) {
@@ -55,13 +61,16 @@ class BookmarkedShopListViewModel(
         }
     }
 
-    private fun syncBookmarkedShops(shopIds: Set<String>) {
+    private fun syncBookmarkedShops(
+        shopIds: Set<String>,
+        forceFetch: Boolean = false,
+    ) {
         if (shopIds.isEmpty()) {
             applyExistingBookmarkedShops(shopIds)
             return
         }
 
-        if (currentState.shops.containsAll(shopIds)) {
+        if (!forceFetch && currentState.shops.containsAll(shopIds)) {
             applyExistingBookmarkedShops(shopIds)
             return
         }
@@ -72,7 +81,13 @@ class BookmarkedShopListViewModel(
     private fun applyExistingBookmarkedShops(shopIds: Set<String>) {
         cancelTask(FETCH_BOOKMARKS_TASK_KEY)
 
-        reduce { copy(shops = shops.filterByShopIds(shopIds), showError = false) }
+        reduce {
+            copy(
+                shops = shops.filterByShopIds(shopIds),
+                showError = false,
+                hasLoaded = true,
+            )
+        }
     }
 
     private fun fetchBookmarkedShops(shopIds: Set<String>) {
@@ -82,7 +97,7 @@ class BookmarkedShopListViewModel(
             onStart = { copy(showError = false) },
             request = { ramenShopRepository.fetchRamenShops(shopIds) },
             onSuccess = { shops -> handleFetchSuccess(shops, shopIds) },
-            onError = { reduce { copy(showError = true) } },
+            onError = { reduce { copy(showError = true, hasLoaded = true) } },
         )
     }
 
@@ -97,6 +112,7 @@ class BookmarkedShopListViewModel(
                         requestedShopIds,
                     ),
                 showError = false,
+                hasLoaded = true,
             )
         }
     }

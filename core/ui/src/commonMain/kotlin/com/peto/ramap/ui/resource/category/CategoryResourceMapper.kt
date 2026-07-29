@@ -18,20 +18,22 @@ import ramap.shared.generated.resources.menu_category_tonkotsu
 import ramap.shared.generated.resources.menu_category_tori
 import ramap.shared.generated.resources.menu_category_tsukemen
 
-fun Category.label(): StringResource =
-    when (this) {
-        Category.TONKOTSU -> Res.string.menu_category_tonkotsu
-        Category.SHOYU -> Res.string.menu_category_shoyu
-        Category.SHIO -> Res.string.menu_category_shio
-        Category.MISO -> Res.string.menu_category_miso
-        Category.TORI -> Res.string.menu_category_tori
-        Category.CHANKE -> Res.string.menu_category_chanke
-        Category.TSUKEMEN -> Res.string.menu_category_tsukemen
-        Category.MAZESOBA -> Res.string.menu_category_mazesoba
-        Category.ABURASOBA -> Res.string.menu_category_aburasoba
-        Category.JIRO -> Res.string.menu_category_jiro
-        Category.NIBOSHI_GYOKAI -> Res.string.menu_category_niboshi_gyokai
-        Category.IEKEI -> Res.string.menu_category_iekei
-        Category.HIYASHI -> Res.string.menu_category_hiyashi
-        Category.TOMATO -> Res.string.menu_category_tomato
-    }
+object CategoryResourceMapper {
+    fun label(category: Category): StringResource =
+        when (category) {
+            Category.TONKOTSU -> Res.string.menu_category_tonkotsu
+            Category.SHOYU -> Res.string.menu_category_shoyu
+            Category.SHIO -> Res.string.menu_category_shio
+            Category.MISO -> Res.string.menu_category_miso
+            Category.TORI -> Res.string.menu_category_tori
+            Category.CHANKE -> Res.string.menu_category_chanke
+            Category.TSUKEMEN -> Res.string.menu_category_tsukemen
+            Category.MAZESOBA -> Res.string.menu_category_mazesoba
+            Category.ABURASOBA -> Res.string.menu_category_aburasoba
+            Category.JIRO -> Res.string.menu_category_jiro
+            Category.NIBOSHI_GYOKAI -> Res.string.menu_category_niboshi_gyokai
+            Category.IEKEI -> Res.string.menu_category_iekei
+            Category.HIYASHI -> Res.string.menu_category_hiyashi
+            Category.TOMATO -> Res.string.menu_category_tomato
+        }
+}

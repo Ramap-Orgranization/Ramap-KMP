@@ -1,16 +1,9 @@
 package com.peto.ramap.ui.subscribed
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -25,33 +18,29 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.peto.ramap.designsystem.card.EventCard
 import com.peto.ramap.designsystem.card.SectionCard
-import com.peto.ramap.designsystem.component.LoadErrorContent
 import com.peto.ramap.designsystem.component.RamenShopSearchResultList
+import com.peto.ramap.designsystem.component.SettingsListPage
 import com.peto.ramap.designsystem.component.ShopListEmptyContent
 import com.peto.ramap.designsystem.dialog.CommonDialog
-import com.peto.ramap.designsystem.indicator.RamenLoadingIndicator
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.designsystem.toast.ToastManager
-import com.peto.ramap.designsystem.topbar.CommonTopBar
-import com.peto.ramap.extension.noRippleClickable
+import com.peto.ramap.domain.model.event.ShopEvent
+import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.ui.base.ObserveAsEvents
 import com.peto.ramap.ui.component.eventDateText
-import com.peto.ramap.ui.resource.category.label
+import com.peto.ramap.ui.resource.category.CategoryResourceMapper
 import com.peto.ramap.ui.subscribed.contract.SubscribedShopListIntent
 import com.peto.ramap.ui.subscribed.contract.SubscribedShopListSideEffect
 import com.peto.ramap.ui.subscribed.contract.SubscribedShopListUiState
 import com.peto.ramap.ui.subscribed.model.SubscribedRemovalTarget
-import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.data_load_failure_message
-import ramap.shared.generated.resources.ic_arrow3_left
 import ramap.shared.generated.resources.laduck_error_confused
-import ramap.shared.generated.resources.navigation_back
 import ramap.shared.generated.resources.notification_removal_confirm_action
 import ramap.shared.generated.resources.notification_removal_confirm_title
 import ramap.shared.generated.resources.notification_removal_dismiss_action
@@ -62,6 +51,8 @@ import ramap.shared.generated.resources.top_level_tab_event
 @Composable
 fun SubscribedShopListRoute(
     onBack: () -> Unit,
+    onShopOpen: (String) -> Unit,
+    onEventOpen: (String) -> Unit,
     toastManager: ToastManager = koinInject(),
     viewModel: SubscribedShopListViewModel = koinViewModel(),
 ) {
@@ -77,7 +68,10 @@ fun SubscribedShopListRoute(
     SubscribedShopListScreen(
         uiState = uiState,
         onBack = onBack,
+        onShopOpen = { onShopOpen(it.id) },
+        onEventOpen = { onEventOpen(it.id) },
         onRemovalRequested = { removalTarget = it },
+        onRetry = { viewModel.dispatch(SubscribedShopListIntent.OnRetry) },
     )
     CommonDialog(
         visible = removalTarget != null,
@@ -106,52 +100,30 @@ fun SubscribedShopListRoute(
 internal fun SubscribedShopListScreen(
     uiState: SubscribedShopListUiState,
     onBack: () -> Unit,
+    onShopOpen: (RamenShop) -> Unit,
+    onEventOpen: (ShopEvent) -> Unit,
     onRemovalRequested: (SubscribedRemovalTarget) -> Unit,
+    onRetry: () -> Unit,
 ) {
-    Column(
-        modifier =
-            Modifier
-                .fillMaxSize()
-                .padding(top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+    SettingsListPage(
+        title = Res.string.settings_subscribed_shops_menu,
+        onBack = onBack,
+        showError = uiState.showError,
+        showInitialLoading = uiState.isOnlyLoading,
+        showOverlayLoading = uiState.isOverlayLoading,
+        errorImage = Res.drawable.laduck_error_confused,
+        errorDescription = Res.string.data_load_failure_message,
+        onRetry = onRetry,
     ) {
-        CommonTopBar(
-            title = stringResource(Res.string.settings_subscribed_shops_menu),
-            left = {
-                Image(
-                    painter = painterResource(Res.drawable.ic_arrow3_left),
-                    contentDescription = stringResource(Res.string.navigation_back),
-                    modifier =
-                        Modifier
-                            .padding(18.dp)
-                            .size(24.dp)
-                            .noRippleClickable(onClick = onBack),
-                )
-            },
-        )
-
-        Box(modifier = Modifier.weight(1f)) {
-            when {
-                uiState.showError ->
-                    LoadErrorContent(
-                        image = Res.drawable.laduck_error_confused,
-                        title = stringResource(Res.string.settings_subscribed_shops_menu),
-                        description = stringResource(Res.string.data_load_failure_message),
-                        modifier = Modifier.fillMaxSize(),
-                    )
-
-                uiState.isOnlyLoading ->
-                    RamenLoadingIndicator(modifier = Modifier.fillMaxSize())
-
-                else -> SubscribedShopListContent(uiState, onRemovalRequested)
-            }
-        }
+        SubscribedShopListContent(uiState, onShopOpen, onEventOpen, onRemovalRequested)
     }
 }
 
 @Composable
 private fun SubscribedShopListContent(
     uiState: SubscribedShopListUiState,
+    onShopOpen: (RamenShop) -> Unit,
+    onEventOpen: (ShopEvent) -> Unit,
     onRemovalRequested: (SubscribedRemovalTarget) -> Unit,
 ) {
     if (uiState.shops.isEmpty() && uiState.subscribedEvents.isEmpty()) {
@@ -172,7 +144,9 @@ private fun SubscribedShopListContent(
                         EventCard(
                             event = event,
                             dateText = eventDateText(event.startDate, event.endDate),
-                            onClick = {
+                            onClick = { onEventOpen(event) },
+                            actionLabel = stringResource(Res.string.notification_removal_confirm_action),
+                            onAction = {
                                 onRemovalRequested(SubscribedRemovalTarget.EventOverride(event.id))
                             },
                             modifier =
@@ -187,10 +161,12 @@ private fun SubscribedShopListContent(
             if (uiState.shops.isNotEmpty()) {
                 RamenShopSearchResultList(
                     shops = uiState.shops,
-                    onShopClick = {
+                    onShopClick = onShopOpen,
+                    categoryLabel = { category -> stringResource(CategoryResourceMapper.label(category)) },
+                    itemActionLabel = { stringResource(Res.string.notification_removal_confirm_action) },
+                    onItemAction = {
                         onRemovalRequested(SubscribedRemovalTarget.Shop(it.id))
                     },
-                    categoryLabel = { category -> stringResource(category.label()) },
                     itemModifier = {
                         Modifier
                             .padding(horizontal = 24.dp, vertical = 6.dp)
@@ -199,10 +175,6 @@ private fun SubscribedShopListContent(
                     showDividers = false,
                 )
             }
-        }
-
-        if (uiState.isOverlayLoading) {
-            RamenLoadingIndicator(modifier = Modifier.fillMaxSize())
         }
     }
 }
