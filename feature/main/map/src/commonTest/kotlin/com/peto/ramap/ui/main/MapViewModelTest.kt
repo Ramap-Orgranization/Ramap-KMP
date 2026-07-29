@@ -1268,8 +1268,8 @@ class MapViewModelTest {
                 runCurrent()
 
                 assertEquals(null, viewModel.uiState.value.selectedShop)
-                assertEquals(false, viewModel.uiState.value.showBottomSheet)
-                assertEquals(false, viewModel.uiState.value.showSearchResults)
+                assertEquals(true, viewModel.uiState.value.showBottomSheet)
+                assertEquals(true, viewModel.uiState.value.showSearchResults)
                 assertEquals(
                     SearchResultGuide.HIDDEN_ONLY,
                     viewModel.uiState.value.searchResultGuide,
@@ -2073,6 +2073,28 @@ class MapViewModelTest {
         }
 
     @Test
+    fun `두 글자 미만 검색어로 바꾸면 이전 결과를 지우고 새 검색을 요청하지 않는다`() =
+        coroutinesTest {
+            val searchShop = ramenShopFixture(id = "search-shop")
+            val ramenShopRepository =
+                FakeRamenShopRepository(
+                    searchResult = RamenShops(listOf(searchShop)),
+                )
+            val viewModel = mapViewModel(ramenShopRepository)
+            viewModel.dispatch(OnQueryChanged("라멘"))
+            advanceTimeBy(300)
+            runCurrent()
+            assertEquals(RamenShops(listOf(searchShop)), viewModel.uiState.value.search.results)
+
+            viewModel.dispatch(OnQueryChanged("라"))
+            runCurrent()
+
+            assertEquals("라", viewModel.uiState.value.search.input)
+            assertEquals(RamenShops(emptyMap()), viewModel.uiState.value.search.results)
+            assertEquals(listOf(SearchQuery("라멘")), ramenShopRepository.requestedSearchQueries)
+        }
+
+    @Test
     fun `카테고리 필터를 선택하면 필터 상태가 갱신되고 마커 목록에 적용된다`() =
         coroutinesTest {
             val mazesobaShop =
@@ -2195,7 +2217,7 @@ class MapViewModelTest {
         }
 
     @Test
-    fun `검색 결과가 없으면 바텀시트를 보여주지 않는다`() {
+    fun `검색 결과가 없으면 안내 바텀시트를 보여준다`() {
         val uiState =
             MapUiState(
                 search =
@@ -2206,12 +2228,12 @@ class MapViewModelTest {
             )
 
         assertEquals(SearchResultGuide.SEARCH_EMPTY, uiState.searchResultGuide)
-        assertEquals(false, uiState.showSearchResults)
-        assertEquals(false, uiState.showBottomSheet)
+        assertEquals(true, uiState.showSearchResults)
+        assertEquals(true, uiState.showBottomSheet)
     }
 
     @Test
-    fun `검색어와 선택한 필터에 맞는 매장이 없으면 바텀시트를 보여주지 않는다`() {
+    fun `검색어와 선택한 필터에 맞는 매장이 없으면 안내 바텀시트를 보여준다`() {
         val shop =
             ramenShopFixture(
                 id = "jiro-shop",
@@ -2228,8 +2250,8 @@ class MapViewModelTest {
             )
 
         assertEquals(SearchResultGuide.QUERY_AND_FILTER_EMPTY, uiState.searchResultGuide)
-        assertEquals(false, uiState.showSearchResults)
-        assertEquals(false, uiState.showBottomSheet)
+        assertEquals(true, uiState.showSearchResults)
+        assertEquals(true, uiState.showBottomSheet)
     }
 
     @Test
@@ -2433,7 +2455,8 @@ class MapViewModelTest {
                 runCurrent()
 
                 assertEquals(null, viewModel.uiState.value.selectedShop)
-                assertEquals(false, viewModel.uiState.value.showBottomSheet)
+                assertEquals(true, viewModel.uiState.value.showBottomSheet)
+                assertEquals(true, viewModel.uiState.value.showSearchResults)
                 assertEquals(
                     SearchResultGuide.HIDDEN_ONLY,
                     viewModel.uiState.value.searchResultGuide,
