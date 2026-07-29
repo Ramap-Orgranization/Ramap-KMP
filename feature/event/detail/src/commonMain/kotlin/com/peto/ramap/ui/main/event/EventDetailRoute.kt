@@ -172,8 +172,10 @@ internal fun EventDetailScreen(
     onNotificationChanged: (Boolean) -> Unit,
 ) {
     Scaffold(
-        modifier = Modifier.fillMaxSize().statusBarsPadding(),
-        containerColor = GrayColor.C050,
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .statusBarsPadding(),
         topBar = {
             CommonTopBar(
                 title = stringResource(Res.string.event_detail_title),
@@ -201,7 +203,6 @@ internal fun EventDetailScreen(
             modifier =
                 Modifier
                     .fillMaxSize()
-                    .background(GrayColor.C050)
                     .padding(innerPadding),
         ) {
             val event = uiState.event
