@@ -31,6 +31,11 @@ kotlin {
         pod("FirebaseCore")
         pod("FirebaseAnalytics")
         pod("FirebaseCrashlytics")
+        pod("FirebaseMessaging")
+        pod("FirebaseInstallations")
+        pod("GoogleDataTransport")
+        pod("GoogleUtilities")
+        pod("nanopb")
     }
 
     listOf(

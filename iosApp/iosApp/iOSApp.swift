@@ -6,14 +6,39 @@ import KakaoSDKCommon
 import KakaoSDKUser
 import UserNotifications
 import FirebaseCore
+import FirebaseMessaging
 
-final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate {
+final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate, MessagingDelegate {
     func application(
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
     ) -> Bool {
         UNUserNotificationCenter.current().delegate = self
+        if FirebaseApp.app() != nil {
+            Messaging.messaging().delegate = self
+            refreshFirebaseMessagingToken()
+            registerForRemoteNotificationsIfAuthorized(application)
+        }
         return true
+    }
+
+    func application(
+        _ application: UIApplication,
+        didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data
+    ) {
+        Messaging.messaging().apnsToken = deviceToken
+        refreshFirebaseMessagingToken()
+    }
+
+    func application(
+        _ application: UIApplication,
+        didFailToRegisterForRemoteNotificationsWithError error: Error
+    ) {
+        print("Remote notification registration failed: \(error.localizedDescription)")
+    }
+
+    func messaging(_ messaging: Messaging, didReceiveRegistrationToken fcmToken: String?) {
+        trackFirebaseMessagingToken(fcmToken)
     }
 
     func userNotificationCenter(
@@ -25,6 +50,36 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
         NotificationLaunchBridgeKt.dispatchNotificationDeepLink(deepLink: deepLink)
         completionHandler()
     }
+
+    private func refreshFirebaseMessagingToken() {
+        Messaging.messaging().token { token, error in
+            if let error {
+                print("Firebase messaging token refresh failed: \(error.localizedDescription)")
+                return
+            }
+            self.trackFirebaseMessagingToken(token)
+        }
+    }
+
+    private func registerForRemoteNotificationsIfAuthorized(_ application: UIApplication) {
+        UNUserNotificationCenter.current().getNotificationSettings { settings in
+            switch settings.authorizationStatus {
+            case .authorized, .provisional, .ephemeral:
+                DispatchQueue.main.async {
+                    application.registerForRemoteNotifications()
+                }
+            default:
+                break
+            }
+        }
+    }
+
+    private func trackFirebaseMessagingToken(_ token: String?) {
+        guard let token, !token.isEmpty else {
+            return
+        }
+        IosPushNotificationBridgeKt.trackIosPushToken(token: token)
+    }
 }
 
 @main
@@ -32,7 +87,7 @@ struct iOSApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
 
     init() {
-        if let path = Bundle.main.path(forResource: "GoogleService-Info", ofType: "plist") {
+        if Bundle.main.path(forResource: "GoogleService-Info", ofType: "plist") != nil {
             FirebaseApp.configure()
         } else {
             print("GoogleService-Info.plist not found. Firebase is not configured.")
