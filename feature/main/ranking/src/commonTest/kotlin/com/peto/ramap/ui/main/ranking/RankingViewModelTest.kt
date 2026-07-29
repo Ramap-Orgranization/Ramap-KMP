@@ -22,6 +22,7 @@ import com.peto.ramap.domain.model.shop.Location
 import com.peto.ramap.domain.model.shop.MenuCategories
 import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.domain.repository.LoginRepository
+import com.peto.ramap.domain.store.PersonalizationBootstrapState
 import com.peto.ramap.domain.store.ShopPersonalizationStore
 import com.peto.ramap.fake.FakeAnalyticsTracker
 import com.peto.ramap.fake.FakeLoginRepository
@@ -466,7 +467,10 @@ class RankingViewModelTest {
     @Test
     fun `저장소가 낙관적 상태와 롤백을 차례로 발행하면 좋아요 수를 한 번만 원복한다`() =
         coroutinesTest {
-            val mutablePersonalization = MutableStateFlow(ShopPersonalization())
+            val mutablePersonalization =
+                MutableStateFlow<PersonalizationBootstrapState>(
+                    PersonalizationBootstrapState.Success(ShopPersonalization()),
+                )
             val store =
                 object : ShopPersonalizationStore by FakePersonalizationRepository() {
                     override val state = mutablePersonalization.asStateFlow()
@@ -476,9 +480,12 @@ class RankingViewModelTest {
                         enabled: Boolean,
                     ): RamapResult<Unit> {
                         mutablePersonalization.value =
-                            ShopPersonalization(bookmarkedShopIds = setOf(shopId))
+                            PersonalizationBootstrapState.Success(
+                                ShopPersonalization(bookmarkedShopIds = setOf(shopId)),
+                            )
                         yield()
-                        mutablePersonalization.value = ShopPersonalization()
+                        mutablePersonalization.value =
+                            PersonalizationBootstrapState.Success(ShopPersonalization())
                         return RamapResult.Error(
                             RamapError.Unknown(IllegalStateException("failure")),
                         )
@@ -513,7 +520,10 @@ class RankingViewModelTest {
     @Test
     fun `북마크 추가 중 빠른 제거 입력은 버튼 잠금 계약에 따라 새 요청을 시작하지 않는다`() =
         coroutinesTest {
-            val mutablePersonalization = MutableStateFlow(ShopPersonalization())
+            val mutablePersonalization =
+                MutableStateFlow<PersonalizationBootstrapState>(
+                    PersonalizationBootstrapState.Success(ShopPersonalization()),
+                )
             val allowCompletion = CompletableDeferred<Unit>()
             val requests = mutableListOf<Pair<String, Boolean>>()
             val store =
@@ -526,7 +536,9 @@ class RankingViewModelTest {
                     ): RamapResult<Unit> {
                         requests += shopId to enabled
                         mutablePersonalization.value =
-                            ShopPersonalization(bookmarkedShopIds = setOf(shopId))
+                            PersonalizationBootstrapState.Success(
+                                ShopPersonalization(bookmarkedShopIds = setOf(shopId)),
+                            )
                         allowCompletion.await()
                         return RamapResult.Success(Unit)
                     }

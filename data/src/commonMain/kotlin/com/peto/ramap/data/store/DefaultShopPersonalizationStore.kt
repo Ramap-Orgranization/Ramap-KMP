@@ -29,11 +29,9 @@ internal class DefaultShopPersonalizationStore(
     private val hiddenShopRepository: HiddenShopRepository,
     private val subscribedShopRepository: SubscribedShopRepository,
 ) : ShopPersonalizationStore {
-    private val mutableState = MutableStateFlow(ShopPersonalization())
-    override val state = mutableState.asStateFlow()
-    private val mutableBootstrapState =
+    private val _state =
         MutableStateFlow<PersonalizationBootstrapState>(PersonalizationBootstrapState.Loading)
-    override val bootstrapState = mutableBootstrapState.asStateFlow()
+    override val state = _state.asStateFlow()
     private val mutex = Mutex()
 
     /**
@@ -43,14 +41,9 @@ internal class DefaultShopPersonalizationStore(
      */
     override suspend fun refresh(): RamapResult<Unit> =
         mutex.withLock {
-            mutableBootstrapState.value = PersonalizationBootstrapState.Loading
+            _state.value = PersonalizationBootstrapState.Loading
             fetchAndPublishRefresh().also { result ->
-                mutableBootstrapState.value =
-                    if (result is RamapResult.Success) {
-                        PersonalizationBootstrapState.Ready
-                    } else {
-                        PersonalizationBootstrapState.Error
-                    }
+                if (result is RamapResult.Error) _state.value = PersonalizationBootstrapState.Error
             }
         }
 
@@ -90,12 +83,13 @@ internal class DefaultShopPersonalizationStore(
         if (subscribedShops is RamapResult.Error) return subscribedShops
 
         val hiddenShopIds = (hiddenShops as RamapResult.Success).data
-        mutableState.value =
+        publish(
             ShopPersonalization(
                 bookmarkedShopIds = (bookmarks as RamapResult.Success).data - hiddenShopIds,
                 hiddenShopIds = hiddenShopIds,
                 notificationShopIds = (subscribedShops as RamapResult.Success).data - hiddenShopIds,
-            )
+            ),
+        )
         return RamapResult.Success(Unit)
     }
 
@@ -107,8 +101,8 @@ internal class DefaultShopPersonalizationStore(
         enabled: Boolean,
     ): RamapResult<Unit> =
         mutex.withLock {
-            val previous = state.value
-            mutableState.value = previous.changeBookmark(shopId, isBookmarked = enabled)
+            val previous = currentPersonalization
+            publish(previous.changeBookmark(shopId, isBookmarked = enabled))
 
             val result =
                 if (enabled) {
@@ -142,8 +136,8 @@ internal class DefaultShopPersonalizationStore(
      * [mutex]가 잠긴 상태에서 숨김을 해제하고 원격 요청 실패 시 이전 상태를 복구한다.
      */
     private suspend fun unhideShopLocked(shopId: String): RamapResult<Unit> {
-        val previous = state.value
-        mutableState.value = previous.copy(hiddenShopIds = previous.hiddenShopIds - shopId)
+        val previous = currentPersonalization
+        publish(previous.copy(hiddenShopIds = previous.hiddenShopIds - shopId))
         return rollbackOnError(hiddenShopRepository.unhideShop(shopId), previous)
     }
 
@@ -153,10 +147,10 @@ internal class DefaultShopPersonalizationStore(
      * 숨김 실패나 코루틴 취소 시 구독과 로컬 상태를 취소 불가능한 구간에서 복구한다.
      */
     private suspend fun hideShopLocked(shopId: String): RamapResult<Unit> {
-        val previous = state.value
+        val previous = currentPersonalization
         val hadBookmark = shopId in previous.bookmarkedShopIds
         val hadNotification = shopId in previous.notificationShopIds
-        mutableState.value = previous.hideShop(shopId)
+        publish(previous.hideShop(shopId))
 
         return try {
             removeSubscriptionOrRollback(shopId, hadNotification, previous)?.let { return it }
@@ -181,12 +175,11 @@ internal class DefaultShopPersonalizationStore(
         enabled: Boolean,
     ): RamapResult<Unit> =
         mutex.withLock {
-            val previous = state.value
+            val previous = currentPersonalization
             if (previous.shouldIgnoreNotificationUpdate(shopId, enabled)) {
                 return@withLock RamapResult.Success(Unit)
             }
-            mutableState.value =
-                previous.changeNotificationSubscription(shopId, isSubscribed = enabled)
+            publish(previous.changeNotificationSubscription(shopId, isSubscribed = enabled))
             val result = changeSubscriptionRemotely(shopId, shouldSubscribe = enabled)
             rollbackOnError(result, previous)
         }
@@ -211,8 +204,7 @@ internal class DefaultShopPersonalizationStore(
      */
     override suspend fun clear() =
         mutex.withLock {
-            mutableState.value = ShopPersonalization()
-            mutableBootstrapState.value = PersonalizationBootstrapState.Ready
+            publish(ShopPersonalization())
         }
 
     /**
@@ -253,7 +245,7 @@ internal class DefaultShopPersonalizationStore(
     ) {
         withContext(NonCancellable) {
             restoreSubscription(shopId, hadNotification)
-            mutableState.value = previous
+            publish(previous)
         }
     }
 
@@ -274,7 +266,7 @@ internal class DefaultShopPersonalizationStore(
         result: RamapResult.Error,
         previous: ShopPersonalization,
     ): RamapResult.Error {
-        mutableState.value = previous
+        publish(previous)
         return result
     }
 
@@ -285,7 +277,14 @@ internal class DefaultShopPersonalizationStore(
         result: RamapResult<T>,
         previous: ShopPersonalization,
     ): RamapResult<T> {
-        if (result is RamapResult.Error) mutableState.value = previous
+        if (result is RamapResult.Error) publish(previous)
         return result
+    }
+
+    private val currentPersonalization: ShopPersonalization
+        get() = (state.value as? PersonalizationBootstrapState.Success)?.value ?: ShopPersonalization()
+
+    private fun publish(personalization: ShopPersonalization) {
+        _state.value = PersonalizationBootstrapState.Success(personalization)
     }
 }

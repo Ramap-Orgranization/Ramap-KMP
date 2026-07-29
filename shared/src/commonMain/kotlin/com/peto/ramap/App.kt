@@ -39,7 +39,7 @@ fun App(
     onExitRequested: (() -> Unit)? = null,
 ) {
     val retryRequests = remember { MutableSharedFlow<Unit>(extraBufferCapacity = 1) }
-    val bootstrapState by personalizationStore.bootstrapState.collectAsStateWithLifecycle()
+    val personalizationState by personalizationStore.state.collectAsStateWithLifecycle()
 
     LaunchedEffect(loginRepository, personalizationStore) {
         observeSessionPersonalization(
@@ -51,7 +51,7 @@ fun App(
 
     RamapTheme {
         Box(modifier = Modifier.fillMaxSize()) {
-            when (bootstrapState) {
+            when (personalizationState) {
                 PersonalizationBootstrapState.Loading ->
                     RamenLoadingIndicator(modifier = Modifier.fillMaxSize())
 
@@ -64,7 +64,7 @@ fun App(
                         modifier = Modifier.fillMaxSize(),
                     )
 
-                PersonalizationBootstrapState.Ready ->
+                is PersonalizationBootstrapState.Success ->
                     AppRoute(
                         toastManager = toastManager,
                         onExitRequested = onExitRequested,

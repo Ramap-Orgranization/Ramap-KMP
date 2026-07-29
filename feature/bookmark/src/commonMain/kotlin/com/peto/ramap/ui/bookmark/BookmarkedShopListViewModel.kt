@@ -5,6 +5,7 @@ import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.domain.repository.RamenShopRepository
+import com.peto.ramap.domain.store.PersonalizationBootstrapState
 import com.peto.ramap.domain.store.ShopPersonalizationStore
 import com.peto.ramap.ui.base.BaseViewModel
 import com.peto.ramap.ui.bookmark.contract.BookmarkedShopListIntent
@@ -42,7 +43,7 @@ class BookmarkedShopListViewModel(
     }
 
     private fun retryCurrentBookmarks() {
-        syncBookmarkedShops(personalizationStore.state.value.bookmarkedShopIds, forceFetch = true)
+        syncBookmarkedShops(currentBookmarkedShopIds(), forceFetch = true)
     }
 
     private fun handleRemovalConfirmed(intent: BookmarkedShopListIntent.OnRemovalConfirmed) {
@@ -52,14 +53,21 @@ class BookmarkedShopListViewModel(
     private fun observeBookmarkedShopIds() {
         viewModelScope.launch {
             personalizationStore.state
-                .map { personalization ->
-                    personalization.bookmarkedShopIds
+                .map { state ->
+                    (state as? PersonalizationBootstrapState.Success)?.value?.bookmarkedShopIds
                 }.distinctUntilChanged()
                 .collectLatest { shopIds ->
+                    if (shopIds == null) return@collectLatest
                     syncBookmarkedShops(shopIds)
                 }
         }
     }
+
+    private fun currentBookmarkedShopIds(): Set<String> =
+        (personalizationStore.state.value as? PersonalizationBootstrapState.Success)
+            ?.value
+            ?.bookmarkedShopIds
+            ?: emptySet()
 
     private fun syncBookmarkedShops(
         shopIds: Set<String>,

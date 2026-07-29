@@ -25,6 +25,7 @@ import com.peto.ramap.domain.repository.LoginRepository
 import com.peto.ramap.domain.repository.PlaceSearchRepository
 import com.peto.ramap.domain.repository.RamenShopRepository
 import com.peto.ramap.domain.repository.ShopReportRepository
+import com.peto.ramap.domain.store.PersonalizationBootstrapState
 import com.peto.ramap.domain.store.ShopPersonalizationStore
 import com.peto.ramap.domain.usecase.FetchShopDetailUseCase
 import com.peto.ramap.domain.usecase.ShopDetail
@@ -114,7 +115,10 @@ class MapViewModel(
     }
 
     private suspend fun observePersonalization() {
-        personalizationStore.state.collectLatest { personalization ->
+        personalizationStore.state.collectLatest { state ->
+            val personalization =
+                (state as? PersonalizationBootstrapState.Success)?.value
+                    ?: return@collectLatest
             if (!currentState.isLoggedIn) return@collectLatest
             updatePersonalization(personalization)
         }

@@ -22,6 +22,7 @@ import com.peto.ramap.domain.model.shop.SearchQuery
 import com.peto.ramap.domain.repository.RamenShopRepository
 import com.peto.ramap.domain.repository.ShopReportRepository
 import com.peto.ramap.domain.repository.ShopWaitingSystemRepository
+import com.peto.ramap.domain.store.PersonalizationBootstrapState
 import com.peto.ramap.domain.store.ShopPersonalizationStore
 import com.peto.ramap.fake.FakeAnalyticsTracker
 import com.peto.ramap.fake.FakeLoginRepository
@@ -1733,7 +1734,7 @@ class MapViewModelTest {
 
             assertEquals(setOf(shop.id), viewModel.uiState.value.hiddenShopIds)
             assertEquals(emptySet(), viewModel.uiState.value.notificationShopIds)
-            assertEquals(emptySet(), personalizationRepository.state.value.notificationShopIds)
+            assertEquals(emptySet(), personalization(personalizationRepository).notificationShopIds)
         }
 
     @Test
@@ -1781,7 +1782,7 @@ class MapViewModelTest {
             runCurrent()
 
             assertEquals(setOf(shop.id), viewModel.uiState.value.notificationShopIds)
-            assertEquals(setOf(shop.id), personalizationRepository.state.value.notificationShopIds)
+            assertEquals(setOf(shop.id), personalization(personalizationRepository).notificationShopIds)
         }
 
     @Test
@@ -1803,7 +1804,7 @@ class MapViewModelTest {
             runCurrent()
 
             assertEquals(emptySet(), viewModel.uiState.value.notificationShopIds)
-            assertEquals(emptySet(), personalizationRepository.state.value.notificationShopIds)
+            assertEquals(emptySet(), personalization(personalizationRepository).notificationShopIds)
         }
 
     @Test
@@ -2809,3 +2810,6 @@ private fun loggedInRepository(): FakeLoginRepository =
         initialSessionState = LoginSessionState.AUTHENTICATED,
         userEmail = "test@ramap.com",
     )
+
+private fun personalization(repository: FakePersonalizationRepository): ShopPersonalization =
+    (repository.state.value as PersonalizationBootstrapState.Success).value

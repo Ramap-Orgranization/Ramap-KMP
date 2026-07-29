@@ -10,6 +10,7 @@ import com.peto.ramap.domain.model.event.ShopEventType
 import com.peto.ramap.domain.model.notification.EventNotificationOverride
 import com.peto.ramap.domain.model.personalization.ShopPersonalization
 import com.peto.ramap.domain.model.shop.RamenShops
+import com.peto.ramap.domain.store.PersonalizationBootstrapState
 import com.peto.ramap.fake.FakeNotificationSettingsRepository
 import com.peto.ramap.fake.FakePersonalizationRepository
 import com.peto.ramap.fake.FakeRamenShopRepository
@@ -158,7 +159,9 @@ class SubscribedShopListViewModelTest {
             assertEquals(RamenShops(emptyMap()), viewModel.uiState.value.shops)
             assertEquals(false, viewModel.uiState.value.isOverlayLoading)
             assertTrue(
-                personalizationStore.state.value.notificationShopIds
+                (personalizationStore.state.value as PersonalizationBootstrapState.Success)
+                    .value
+                    .notificationShopIds
                     .isEmpty(),
             )
         }

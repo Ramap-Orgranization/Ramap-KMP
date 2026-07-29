@@ -8,6 +8,7 @@ import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.model.notification.EventNotificationOverride
 import com.peto.ramap.domain.repository.NotificationSettingsRepository
 import com.peto.ramap.domain.repository.RamenShopRepository
+import com.peto.ramap.domain.store.PersonalizationBootstrapState
 import com.peto.ramap.domain.store.ShopPersonalizationStore
 import com.peto.ramap.ui.base.BaseViewModel
 import com.peto.ramap.ui.subscribed.contract.SubscribedShopListIntent
@@ -37,9 +38,12 @@ class SubscribedShopListViewModel(
     init {
         viewModelScope.launch {
             personalizationStore.state
-                .map { it.notificationShopIds }
+                .map { (it as? PersonalizationBootstrapState.Success)?.value?.notificationShopIds }
                 .distinctUntilChanged()
-                .collectLatest(::syncSubscribedShops)
+                .collectLatest { shopIds ->
+                    if (shopIds == null) return@collectLatest
+                    syncSubscribedShops(shopIds)
+                }
         }
         loadSubscribedEvents()
     }
@@ -56,11 +60,17 @@ class SubscribedShopListViewModel(
 
     private fun retryCurrentSubscriptions() {
         syncSubscribedShops(
-            shopIds = personalizationStore.state.value.notificationShopIds,
+            shopIds = currentNotificationShopIds(),
             forceFetch = true,
         )
         loadSubscribedEvents()
     }
+
+    private fun currentNotificationShopIds(): Set<String> =
+        (personalizationStore.state.value as? PersonalizationBootstrapState.Success)
+            ?.value
+            ?.notificationShopIds
+            ?: emptySet()
 
     private fun syncSubscribedShops(
         shopIds: Set<String>,

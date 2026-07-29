@@ -6,6 +6,7 @@ import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.domain.repository.RamenShopRepository
+import com.peto.ramap.domain.store.PersonalizationBootstrapState
 import com.peto.ramap.domain.store.ShopPersonalizationStore
 import com.peto.ramap.ui.base.BaseViewModel
 import com.peto.ramap.ui.hidden.contract.HiddenShopListIntent
@@ -47,7 +48,7 @@ class HiddenShopListViewModel(
     }
 
     private fun retryCurrentHiddenShops() {
-        syncHiddenShops(personalizationStore.state.value.hiddenShopIds, forceFetch = true)
+        syncHiddenShops(currentHiddenShopIds(), forceFetch = true)
     }
 
     private fun handleUnhideConfirmed(intent: HiddenShopListIntent.OnUnhideConfirmed) {
@@ -57,14 +58,21 @@ class HiddenShopListViewModel(
     private fun observeHiddenShopIds() {
         viewModelScope.launch {
             personalizationStore.state
-                .map { personalization ->
-                    personalization.hiddenShopIds
+                .map { state ->
+                    (state as? PersonalizationBootstrapState.Success)?.value?.hiddenShopIds
                 }.distinctUntilChanged()
                 .collectLatest { hiddenShopIds ->
+                    if (hiddenShopIds == null) return@collectLatest
                     syncHiddenShops(hiddenShopIds)
                 }
         }
     }
+
+    private fun currentHiddenShopIds(): Set<String> =
+        (personalizationStore.state.value as? PersonalizationBootstrapState.Success)
+            ?.value
+            ?.hiddenShopIds
+            ?: emptySet()
 
     private fun syncHiddenShops(
         hiddenShopIds: Set<String>,

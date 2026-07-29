@@ -16,6 +16,7 @@ import com.peto.ramap.domain.model.shop.AreaFilter
 import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.domain.repository.LoginRepository
 import com.peto.ramap.domain.repository.ShopRankingRepository
+import com.peto.ramap.domain.store.PersonalizationBootstrapState
 import com.peto.ramap.domain.store.ShopPersonalizationStore
 import com.peto.ramap.ui.base.BaseViewModel
 import com.peto.ramap.ui.main.ranking.contract.RankingIntent
@@ -80,7 +81,10 @@ class RankingViewModel(
 
     private fun observePersonalization() {
         viewModelScope.launch {
-            personalizationStore.state.collectLatest { personalization ->
+            personalizationStore.state.collectLatest { state ->
+                val personalization =
+                    (state as? PersonalizationBootstrapState.Success)?.value
+                        ?: return@collectLatest
                 synchronizeLikeCounts(personalization.bookmarkedShopIds)
                 reduce {
                     copy(

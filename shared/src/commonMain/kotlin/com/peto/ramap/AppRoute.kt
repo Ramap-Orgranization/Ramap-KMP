@@ -16,6 +16,7 @@ import com.peto.ramap.designsystem.toast.ToastManager
 import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.repository.LoginRepository
+import com.peto.ramap.domain.store.PersonalizationBootstrapState
 import com.peto.ramap.domain.store.ShopPersonalizationStore
 import com.peto.ramap.log.AppAnalytics
 import com.peto.ramap.log.analyticsScreenName
@@ -329,10 +330,10 @@ private fun TrackUserProperties(
     }
 
     LaunchedEffect(personalizationStore) {
-        personalizationStore.state.collect { personalization ->
-            appAnalytics.updatePersonalizationProperties(
-                personalization,
-            )
+        personalizationStore.state.collect { state ->
+            if (state is PersonalizationBootstrapState.Success) {
+                appAnalytics.updatePersonalizationProperties(state.value)
+            }
         }
     }
 }
