@@ -20,7 +20,6 @@ import com.peto.ramap.theme.CommonColor
 @Composable
 fun NavigationRouter(
     navigationState: NavigationState,
-    onMapTabExited: () -> Unit,
     mapScreen: @Composable (ScreenRoutes.TabRoutes) -> Unit,
     rankingScreen: @Composable () -> Unit,
     eventListScreen: @Composable () -> Unit,
@@ -34,12 +33,7 @@ fun NavigationRouter(
     bookmarkedShopsScreen: @Composable () -> Unit,
     eventScreen: @Composable (ScreenRoutes.EventDetailRoutes) -> Unit,
 ) {
-    val onTabSelected: (TabStatus) -> Unit = { tab ->
-        if (navigationState.selectedTab == TabStatus.MAP && tab != TabStatus.MAP) {
-            onMapTabExited()
-        }
-        navigationState.selectTopLevelTab(tab)
-    }
+    val onTabSelected: (TabStatus) -> Unit = navigationState::selectTopLevelTab
     val routeEntryProvider: (NavKey) -> NavEntry<NavKey> =
         entryProvider {
             entry<ScreenRoutes.TabRoutes> { route ->
