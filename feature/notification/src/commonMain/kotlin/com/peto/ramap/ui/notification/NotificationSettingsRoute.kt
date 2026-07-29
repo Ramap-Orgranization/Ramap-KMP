@@ -39,8 +39,10 @@ import com.peto.ramap.platform.AppSettingsOpener
 import com.peto.ramap.platform.NotificationPermissionRequester
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.GrayColor
+import com.peto.ramap.ui.base.ObserveAsEvents
 import com.peto.ramap.ui.notification.contract.NotificationSettingsIntent
 import com.peto.ramap.ui.notification.contract.NotificationSettingsLoadKey
+import com.peto.ramap.ui.notification.contract.NotificationSettingsSideEffect
 import com.peto.ramap.ui.notification.contract.NotificationSettingsUiState
 import com.peto.ramap.ui.notification.model.NotificationSettingsPermissionUiState
 import kotlinx.coroutines.launch
@@ -70,6 +72,11 @@ fun NotificationSettingsRoute(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
     var permissionState by remember { mutableStateOf(NotificationSettingsPermissionUiState()) }
+    ObserveAsEvents(viewModel.sideEffect) { sideEffect ->
+        when (sideEffect) {
+            is NotificationSettingsSideEffect.ShowToast -> toastManager.show(sideEffect.data)
+        }
+    }
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
         scope.launch {
             permissionState = permissionState.onResume(isNotificationPermissionGranted())

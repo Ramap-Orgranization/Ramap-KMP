@@ -23,7 +23,7 @@ import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.RamapTheme
 import com.peto.ramap.ui.main.ranking.contract.RankingUiState
 import com.peto.ramap.ui.resource.area.AreaFilterResourceMapper
-import com.peto.ramap.ui.resource.category.label
+import com.peto.ramap.ui.resource.category.CategoryResourceMapper
 import com.peto.ramap.ui.resource.format
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
@@ -71,7 +71,7 @@ internal fun RankingFilters(
         }
         items(Category.entries) { category ->
             CategoryFilterChip(
-                label = stringResource(category.label()),
+                label = stringResource(CategoryResourceMapper.label(category)),
                 selected = category in uiState.selectedCategories,
                 onClick = { onCategoryToggled(category) },
                 style = AppTextStyle.L3,

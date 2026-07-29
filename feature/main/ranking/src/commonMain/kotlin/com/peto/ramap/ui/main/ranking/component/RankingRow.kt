@@ -40,6 +40,7 @@ import ramap.shared.generated.resources.ranking_bookmark_cancel_action
 internal fun RankingRow(
     item: RankedShop,
     isBookmarked: Boolean,
+    isBookmarkEnabled: Boolean,
     likeCount: Long,
     onBookmarkClick: () -> Unit,
     onClick: () -> Unit,
@@ -96,6 +97,7 @@ internal fun RankingRow(
             val bookmarkColor = if (isBookmarked) InstagramColor.Pink else GrayColor.C500
             IconButton(
                 onClick = onBookmarkClick,
+                enabled = isBookmarkEnabled,
                 modifier =
                     Modifier
                         .size(48.dp)
@@ -134,6 +136,7 @@ private fun RankingRowPreview(
                         ),
                 ),
             isBookmarked = true,
+            isBookmarkEnabled = true,
             likeCount = 128,
             onBookmarkClick = {},
             onClick = {},

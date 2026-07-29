@@ -42,7 +42,6 @@ class RankingViewModel(
         RankingUiState(),
     ) {
     private var observedBookmarkedShopIds: Set<String>? = null
-    private val expectedBookmarkStates = mutableMapOf<String, Boolean>()
 
     init {
         observePersonalization()
@@ -129,8 +128,6 @@ class RankingViewModel(
         loadedShopIds: Set<String>,
         changedDeltas: MutableMap<String, Long>,
     ) {
-        val expectedState = expectedBookmarkStates.remove(shopId)
-        if (expectedState == enabled) return
         if (shopId !in loadedShopIds) return
 
         changedDeltas[shopId] = calculateBookmarkLikeCountDelta(enabled)
@@ -246,11 +243,11 @@ class RankingViewModel(
         enabled: Boolean,
     ) {
         if (!hasBookmarkSessionOrShowGuide()) return
+        if (shop.id in currentState.bookmarkUpdatingShopIds) return
         if (!shouldUpdateBookmark(shop.id, enabled)) return
 
         rankingAnalytics.logBookmarkToggled(shop, enabled)
 
-        expectedBookmarkStates[shop.id] = enabled
         executeBookmarkUpdate(shop.id, enabled)
     }
 
@@ -274,17 +271,14 @@ class RankingViewModel(
         shopId: String,
         enabled: Boolean,
     ) {
-        val likeCountDelta = calculateBookmarkLikeCountDelta(enabled)
-
         launchResultTask(
             taskKey = bookmarkTaskKey(shopId),
             policy = TaskPolicy.IgnoreNew,
-            onStart = { createBookmarkUpdatingState(this, shopId, likeCountDelta) },
+            onStart = { createBookmarkUpdatingState(this, shopId) },
             onFinish = { createBookmarkUpdateFinishedState(this, shopId) },
             request = { personalizationStore.updateBookmark(shopId, enabled) },
             onError = {
-                expectedBookmarkStates.remove(shopId)
-                handleBookmarkUpdateFailure(shopId, likeCountDelta)
+                handleBookmarkUpdateFailure()
             },
         )
     }
@@ -299,22 +293,11 @@ class RankingViewModel(
     private fun createBookmarkUpdatingState(
         state: RankingUiState,
         shopId: String,
-        likeCountDelta: Long,
-    ): RankingUiState {
-        val currentDelta =
-            state.bookmarkLikeCountDeltas[shopId] ?: 0L
-
-        val updatedDelta =
-            currentDelta + likeCountDelta
-
-        return state.copy(
+    ): RankingUiState =
+        state.copy(
             bookmarkUpdatingShopIds =
                 state.bookmarkUpdatingShopIds + shopId,
-            bookmarkLikeCountDeltas =
-                state.bookmarkLikeCountDeltas +
-                    (shopId to updatedDelta),
         )
-    }
 
     private fun createBookmarkUpdateFinishedState(
         state: RankingUiState,
@@ -325,51 +308,11 @@ class RankingViewModel(
                 state.bookmarkUpdatingShopIds - shopId,
         )
 
-    private fun handleBookmarkUpdateFailure(
-        shopId: String,
-        appliedDelta: Long,
-    ) {
-        revertBookmarkLikeCountDelta(
-            shopId = shopId,
-            appliedDelta = appliedDelta,
-        )
-
+    private fun handleBookmarkUpdateFailure() {
         showToast(
             message = Res.string.personalization_update_failure_message,
             type = ToastType.ERROR,
         )
-    }
-
-    private fun revertBookmarkLikeCountDelta(
-        shopId: String,
-        appliedDelta: Long,
-    ) {
-        reduce {
-            copy(
-                bookmarkLikeCountDeltas =
-                    createRevertedBookmarkLikeCountDeltas(
-                        currentDeltas = bookmarkLikeCountDeltas,
-                        shopId = shopId,
-                        appliedDelta = appliedDelta,
-                    ),
-            )
-        }
-    }
-
-    private fun createRevertedBookmarkLikeCountDeltas(
-        currentDeltas: Map<String, Long>,
-        shopId: String,
-        appliedDelta: Long,
-    ): Map<String, Long> {
-        val currentDelta = currentDeltas[shopId] ?: 0L
-
-        val revertedDelta = currentDelta - appliedDelta
-
-        return if (revertedDelta == 0L) {
-            currentDeltas - shopId
-        } else {
-            currentDeltas + (shopId to revertedDelta)
-        }
     }
 
     private fun loadFirstPage() {

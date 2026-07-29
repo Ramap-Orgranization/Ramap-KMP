@@ -1,5 +1,7 @@
 package com.peto.ramap.ui.notification
 
+import com.peto.ramap.designsystem.toast.model.ToastData
+import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.repository.NotificationSettingsRepository
 import com.peto.ramap.ui.base.BaseViewModel
 import com.peto.ramap.ui.notification.contract.NotificationSettingsIntent
@@ -9,6 +11,8 @@ import com.peto.ramap.ui.notification.contract.NotificationSettingsLoadKey
 import com.peto.ramap.ui.notification.contract.NotificationSettingsSideEffect
 import com.peto.ramap.ui.notification.contract.NotificationSettingsUiState
 import com.peto.ramap.ui.task.TaskPolicy
+import ramap.shared.generated.resources.Res
+import ramap.shared.generated.resources.personalization_update_failure_message
 
 class NotificationSettingsViewModel(
     private val notificationRepository: NotificationSettingsRepository,
@@ -48,7 +52,17 @@ class NotificationSettingsViewModel(
             policy = TaskPolicy.CancelPrevious,
             onStart = { copy(areEnabled = enabled) },
             request = { notificationRepository.updateEventNotificationsEnabled(enabled) },
-            onError = { reduce { copy(areEnabled = previous) } },
+            onError = {
+                reduce { copy(areEnabled = previous) }
+                trySideEffect(
+                    NotificationSettingsSideEffect.ShowToast(
+                        ToastData(
+                            Res.string.personalization_update_failure_message,
+                            ToastType.ERROR,
+                        ),
+                    ),
+                )
+            },
         )
     }
 

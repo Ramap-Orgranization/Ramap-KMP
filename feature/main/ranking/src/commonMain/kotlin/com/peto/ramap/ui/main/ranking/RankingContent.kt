@@ -86,6 +86,8 @@ internal fun RankingContent(
                         RankingRow(
                             item = item,
                             isBookmarked = item.ranking.shop.id in uiState.bookmarkedShopIds,
+                            isBookmarkEnabled =
+                                item.ranking.shop.id !in uiState.bookmarkUpdatingShopIds,
                             likeCount = uiState.displayedLikeCount(item),
                             onBookmarkClick = {
                                 onBookmarkClick(
