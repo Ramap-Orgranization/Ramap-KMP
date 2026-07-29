@@ -13,6 +13,9 @@ interface ShopPersonalizationStore {
     /** 북마크, 숨김, 알림 설정을 통합한 현재 개인화 상태. */
     val state: StateFlow<ShopPersonalization>
 
+    /** 현재 세션의 개인화 초기 동기화 상태. */
+    val bootstrapState: StateFlow<PersonalizationBootstrapState>
+
     /**
      * 원격 저장소의 개인화 데이터를 다시 불러와 [state]를 한 번에 교체한다.
      *

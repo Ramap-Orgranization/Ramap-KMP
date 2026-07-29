@@ -1,10 +1,12 @@
 package com.peto.ramap.data.store
 
+import com.peto.ramap.core.result.RamapError
 import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.domain.model.personalization.ShopPersonalization
 import com.peto.ramap.domain.repository.BookmarkRepository
 import com.peto.ramap.domain.repository.HiddenShopRepository
 import com.peto.ramap.domain.repository.SubscribedShopRepository
+import com.peto.ramap.domain.store.PersonalizationBootstrapState
 import com.peto.ramap.domain.store.ShopPersonalizationStore
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.NonCancellable
@@ -29,6 +31,9 @@ internal class DefaultShopPersonalizationStore(
 ) : ShopPersonalizationStore {
     private val mutableState = MutableStateFlow(ShopPersonalization())
     override val state = mutableState.asStateFlow()
+    private val mutableBootstrapState =
+        MutableStateFlow<PersonalizationBootstrapState>(PersonalizationBootstrapState.Loading)
+    override val bootstrapState = mutableBootstrapState.asStateFlow()
     private val mutex = Mutex()
 
     /**
@@ -38,8 +43,25 @@ internal class DefaultShopPersonalizationStore(
      */
     override suspend fun refresh(): RamapResult<Unit> =
         mutex.withLock {
+            mutableBootstrapState.value = PersonalizationBootstrapState.Loading
+            fetchAndPublishRefresh().also { result ->
+                mutableBootstrapState.value =
+                    if (result is RamapResult.Success) {
+                        PersonalizationBootstrapState.Ready
+                    } else {
+                        PersonalizationBootstrapState.Error
+                    }
+            }
+        }
+
+    private suspend fun fetchAndPublishRefresh(): RamapResult<Unit> =
+        try {
             val (bookmarks, hiddenShops, subscribedShops) = fetchPersonalization()
             publishRefresh(bookmarks, hiddenShops, subscribedShops)
+        } catch (cancellation: CancellationException) {
+            throw cancellation
+        } catch (throwable: Throwable) {
+            RamapResult.Error(RamapError.Unknown(throwable))
         }
 
     /**
@@ -190,6 +212,7 @@ internal class DefaultShopPersonalizationStore(
     override suspend fun clear() =
         mutex.withLock {
             mutableState.value = ShopPersonalization()
+            mutableBootstrapState.value = PersonalizationBootstrapState.Ready
         }
 
     /**
