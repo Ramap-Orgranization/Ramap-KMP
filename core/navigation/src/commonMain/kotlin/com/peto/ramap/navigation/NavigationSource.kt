@@ -1,6 +1,6 @@
 package com.peto.ramap.navigation
 
-enum class ShopNavigationSource(
+enum class NavigationSource(
     val value: String,
 ) {
     RANKING("ranking"),

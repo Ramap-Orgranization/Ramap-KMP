@@ -176,11 +176,11 @@ class NavigationStateTest {
 
         navigationState.showShopOnMap(
             shopId = "shop-id",
-            source = ShopNavigationSource.RANKING,
+            source = NavigationSource.RANKING,
         )
 
-        assertEquals(ShopNavigationSource.RANKING, navigationState.lastNavigationSource)
-        assertEquals("ranking", ShopNavigationSource.RANKING.value)
+        assertEquals(NavigationSource.RANKING, navigationState.lastNavigationSource)
+        assertEquals("ranking", NavigationSource.RANKING.value)
     }
 
     @Test

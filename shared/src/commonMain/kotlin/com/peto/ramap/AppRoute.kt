@@ -23,7 +23,7 @@ import com.peto.ramap.log.analyticsScreenName
 import com.peto.ramap.navigation.BackPressController
 import com.peto.ramap.navigation.NavigationRouter
 import com.peto.ramap.navigation.NavigationState
-import com.peto.ramap.navigation.ShopNavigationSource
+import com.peto.ramap.navigation.NavigationSource
 import com.peto.ramap.navigation.TabStatus
 import com.peto.ramap.navigation.deeplink.ShopDeepLink
 import com.peto.ramap.navigation.deeplink.ShopDeepLinkDispatcher
@@ -137,7 +137,7 @@ internal fun AppRoute(
                             rankingDetailShopId = null
                             navigationState.showShopOnMap(
                                 shopId = selectedShopId,
-                                source = ShopNavigationSource.RANKING,
+                                source = NavigationSource.RANKING,
                                 returnTab = TabStatus.RANKING,
                             )
                         },
@@ -191,7 +191,7 @@ internal fun AppRoute(
                 onShopOpen = { shopId ->
                     navigationState.showShopOnMap(
                         shopId,
-                        source = ShopNavigationSource.HIDDEN_SHOPS,
+                        source = NavigationSource.HIDDEN_SHOPS,
                         returnTab = TabStatus.MY,
                     )
                 },
@@ -208,7 +208,7 @@ internal fun AppRoute(
                 onShopOpen = { shopId ->
                     navigationState.showShopOnMap(
                         shopId,
-                        source = ShopNavigationSource.SUBSCRIBED_SHOPS,
+                        source = NavigationSource.SUBSCRIBED_SHOPS,
                         returnTab = TabStatus.MY,
                     )
                 },
@@ -221,7 +221,7 @@ internal fun AppRoute(
                 onShopOpen = { shopId ->
                     navigationState.showShopOnMap(
                         shopId,
-                        source = ShopNavigationSource.BOOKMARKED_SHOPS,
+                        source = NavigationSource.BOOKMARKED_SHOPS,
                         returnTab = TabStatus.MY,
                     )
                 },
@@ -244,7 +244,7 @@ internal fun AppRoute(
                 onShopClick = { shopId ->
                     navigationState.showShopOnMap(
                         shopId = shopId,
-                        source = ShopNavigationSource.EVENT_DETAIL,
+                        source = NavigationSource.EVENT_DETAIL,
                     )
                 },
             )
@@ -289,7 +289,7 @@ private fun HandleShopDeepLink(
                 appAnalytics.logSharedShopLinkOpened(deepLink.shopId)
                 navigationState.showShopOnMap(
                     shopId = deepLink.shopId,
-                    source = ShopNavigationSource.SHARED_LINK,
+                    source = NavigationSource.SHARED_LINK,
                 )
                 appAnalytics.logDeepLinkNavigationSucceeded(deepLink.shopId)
             } else {
