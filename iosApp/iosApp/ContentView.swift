@@ -12,7 +12,7 @@ struct ComposeView: UIViewControllerRepresentable {
 
 struct ContentView: View {
     var body: some View {
-        KakaoMapNativeView()
+        ComposeView()
             .ignoresSafeArea()
     }
 }

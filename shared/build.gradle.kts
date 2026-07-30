@@ -1,65 +1,17 @@
-import com.codingfeline.buildkonfig.compiler.FieldSpec.Type.STRING
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-import java.util.Properties
-
-val localProperties =
-    Properties().apply {
-        val localPropertiesFile = rootProject.file("local.properties")
-        if (localPropertiesFile.exists()) {
-            localPropertiesFile.inputStream().use(::load)
-        }
-    }
-
-fun secretProperty(
-    localName: String,
-    envName: String,
-): String =
-    providers
-        .gradleProperty(localName)
-        .orElse(providers.environmentVariable(envName))
-        .orNull
-        ?: localProperties.getProperty(localName).orEmpty()
 
 plugins {
-    alias(libs.plugins.kotlinMultiplatform)
-    alias(libs.plugins.androidMultiplatformLibrary)
-    alias(libs.plugins.composeMultiplatform)
-    alias(libs.plugins.composeCompiler)
-    alias(libs.plugins.kotlinxSerialization)
-    alias(libs.plugins.buildkonfig)
+    alias(libs.plugins.kotlin.multiplatform)
+    alias(libs.plugins.android.multiplatform.library)
+    alias(libs.plugins.compose.multiplatform)
+    alias(libs.plugins.compose.compiler)
+    id("ramap.serialization")
     kotlin("native.cocoapods")
 }
 
-buildkonfig {
-    packageName = "com.peto.ramap.shared"
-    objectName = "RamapConfig"
-
-    defaultConfigs {
-        buildConfigField(
-            STRING,
-            "SUPABASE_URL",
-            secretProperty(
-                localName = "supabase.url",
-                envName = "SUPABASE_URL",
-            ),
-        )
-        buildConfigField(
-            STRING,
-            "SUPABASE_ANON_KEY",
-            secretProperty(
-                localName = "supabase.anon_key",
-                envName = "SUPABASE_ANON_KEY",
-            ),
-        )
-        buildConfigField(
-            STRING,
-            "KAKAO_NATIVE_APP_KEY",
-            secretProperty(
-                localName = "kakao_native_app_key",
-                envName = "KAKAO_NATIVE_APP_KEY",
-            ),
-        )
-    }
+compose.resources {
+    generateResClass = never
+    packageOfResClass = "com.peto.ramap.shared.resources"
 }
 
 kotlin {
@@ -72,11 +24,18 @@ kotlin {
         framework {
             baseName = "Shared"
             isStatic = true
+            export(projects.core.network)
         }
 
-        pod("KakaoMapsSDK") {
-            version = "2.12.14"
-        }
+        pod("NMapsMap")
+        pod("FirebaseCore")
+        pod("FirebaseAnalytics")
+        pod("FirebaseCrashlytics")
+        pod("FirebaseMessaging")
+        pod("FirebaseInstallations")
+        pod("GoogleDataTransport")
+        pod("GoogleUtilities")
+        pod("nanopb")
     }
 
     listOf(
@@ -86,17 +45,18 @@ kotlin {
         iosTarget.binaries.framework {
             baseName = "Shared"
             isStatic = true
+            export(projects.core.network)
         }
     }
 
     androidLibrary {
         namespace = "com.peto.ramap.shared"
         compileSdk =
-            libs.versions.android.compileSdk
+            libs.versions.android.compile.sdk
                 .get()
                 .toInt()
         minSdk =
-            libs.versions.android.minSdk
+            libs.versions.android.min.sdk
                 .get()
                 .toInt()
 
@@ -115,26 +75,46 @@ kotlin {
         androidMain.dependencies {
             implementation(libs.androidx.activity)
             implementation(libs.androidx.core)
-            implementation(libs.compose.uiToolingPreview)
+            implementation(libs.compose.ui.tooling.preview)
             implementation(libs.ktor.client.okhttp)
-            implementation(libs.kakao.map)
+            implementation(libs.naver.map)
+            implementation(libs.play.services.location)
+            implementation(libs.kotlinx.coroutines.android)
         }
         iosMain.dependencies {
             implementation(libs.ktor.client.darwin)
         }
         commonMain.dependencies {
+            implementation(projects.core.analytics)
+            implementation(projects.core.designsystem)
+            api(projects.core.network)
+            implementation(projects.core.platform)
+            implementation(projects.core.notification)
+            implementation(projects.core.navigation)
+            implementation(projects.core.ui)
+            implementation(projects.domain)
+            implementation(projects.data)
+            implementation(projects.feature.main)
+            implementation(projects.feature.event.detail)
+            implementation(projects.feature.account)
+            implementation(projects.feature.bookmark)
+            implementation(projects.feature.hidden)
+            implementation(projects.feature.notification)
+            implementation(projects.feature.report)
+            implementation(projects.feature.subscribed)
             implementation(libs.compose.runtime)
             implementation(libs.compose.foundation)
             implementation(libs.compose.material3)
             implementation(libs.compose.ui)
             implementation(libs.compose.components.resources)
-            implementation(libs.compose.uiToolingPreview)
-            implementation(libs.androidx.lifecycle.viewmodelCompose)
-            implementation(libs.androidx.lifecycle.runtimeCompose)
+            implementation(libs.compose.ui.tooling.preview)
+            implementation(libs.coil.compose)
+            implementation(libs.coil.network.ktor3)
+            implementation(libs.androidx.lifecycle.viewmodel.compose)
+            implementation(libs.androidx.lifecycle.runtime.compose)
 
             // Supabase
             implementation(libs.supabase.postgrest)
-            implementation(libs.supabase.storage)
             implementation(libs.supabase.auth)
 
             // Ktor & Serialization
@@ -142,33 +122,24 @@ kotlin {
             implementation(libs.ktor.client.content.negotiation)
             implementation(libs.ktor.serialization.kotlinx.json)
             implementation(libs.kotlinx.serialization.json)
+            implementation(libs.kotlinx.coroutines.core)
 
             // Koin
+            implementation(project.dependencies.platform(libs.koin.bom))
             implementation(libs.koin.core)
             implementation(libs.koin.compose)
-
-            // Coil
-            implementation(libs.coil.compose)
-            implementation(libs.coil.network.ktor)
-
-            // DataStore & Okio
-            implementation(libs.androidx.datastore.preferences.core)
-            implementation(libs.okio)
+            implementation(libs.koin.compose.viewmodel)
         }
         commonTest.dependencies {
+            implementation(projects.core.testing)
             implementation(libs.kotlin.test)
             implementation(libs.kotlinx.coroutines.test)
             implementation(libs.turbine)
             implementation(libs.compose.ui.test)
         }
-        val androidHostTest by getting {
-            dependencies {
-                implementation(libs.robolectric)
-            }
-        }
     }
 }
 
 dependencies {
-    androidRuntimeClasspath(libs.compose.uiTooling)
+    androidRuntimeClasspath(libs.compose.ui.tooling)
 }

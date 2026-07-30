@@ -1,86 +1,159 @@
 [versions]
-agp = "9.0.1"
-android = "2.13.5"
-android-compileSdk = "37"
-android-minSdk = "24"
-android-targetSdk = "36"
-androidx-activity = "1.13.0"
-androidx-core = "1.18.0"
-androidx-lifecycle = "2.11.0-beta01"
-composeMultiplatform = "1.11.1"
-kotlin = "2.4.0"
-material3 = "1.11.0-alpha07"
-supabase = "3.6.0"
-ktor = "3.5.1"
-koin = "4.2.2"
-coil3 = "3.5.0"
-kotlinx-serialization = "1.8.0"
-datastore = "1.2.1"
-buildkonfig = "0.22.0"
-okio = "3.17.0"
+# Build
+agp = "9.3.0"
+android-compile-sdk = "37"
+android-min-sdk = "24"
+android-target-sdk = "36"
+build-konfig = "0.22.0"
 ktlint = "14.2.0"
-kotlinx-coroutines = "1.11.0"
-turbine = "1.2.1"
-robolectric = "4.16.1"
 
-[libraries]
-kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
-androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "androidx-activity" }
-androidx-activity = { module = "androidx.activity:activity", version.ref = "androidx-activity" }
-androidx-core = { module = "androidx.core:core", version.ref = "androidx-core" }
-compose-uiTooling = { module = "org.jetbrains.compose.ui:ui-tooling", version.ref = "composeMultiplatform" }
-androidx-lifecycle-viewmodelCompose = { module = "org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "androidx-lifecycle" }
-androidx-lifecycle-runtimeCompose = { module = "org.jetbrains.androidx.lifecycle:lifecycle-runtime-compose", version.ref = "androidx-lifecycle" }
-compose-runtime = { module = "org.jetbrains.compose.runtime:runtime", version.ref = "composeMultiplatform" }
-compose-foundation = { module = "org.jetbrains.compose.foundation:foundation", version.ref = "composeMultiplatform" }
-compose-material3 = { module = "org.jetbrains.compose.material3:material3", version.ref = "material3" }
-compose-ui = { module = "org.jetbrains.compose.ui:ui", version.ref = "composeMultiplatform" }
-compose-components-resources = { module = "org.jetbrains.compose.components:components-resources", version.ref = "composeMultiplatform" }
-compose-uiToolingPreview = { module = "org.jetbrains.compose.ui:ui-tooling-preview", version.ref = "composeMultiplatform" }
-kakao-map = { module = "com.kakao.maps.open:android", version.ref = "android" }
+# Kotlin
+kotlin = "2.4.10"
+kotlinx-coroutines-core = "1.11.0"
+kotlinx-serialization-json = "1.11.0"
 
-# Supabase
-supabase-postgrest = { module = "io.github.jan-tennert.supabase:postgrest-kt", version.ref = "supabase" }
-supabase-storage = { module = "io.github.jan-tennert.supabase:storage-kt", version.ref = "supabase" }
-supabase-auth = { module = "io.github.jan-tennert.supabase:auth-kt", version.ref = "supabase" }
+# AndroidX
+androidx-activity = "1.13.0"
+androidx-core = "1.19.0"
+androidx-lifecycle = "2.11.0"
+navigation-event = "1.1.0"
+navigation3 = "1.1.4"
+navigation3-ui = "1.1.1"
 
-# Ktor
-ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
-ktor-client-okhttp = { module = "io.ktor:ktor-client-okhttp", version.ref = "ktor" }
-ktor-client-darwin = { module = "io.ktor:ktor-client-darwin", version.ref = "ktor" }
-ktor-client-content-negotiation = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktor" }
-ktor-serialization-kotlinx-json = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor" }
+# Compose Multiplatform
+compose-multiplatform = "1.11.1"
+material3 = "1.11.0-alpha07"
 
-# Koin
-koin-core = { module = "io.insert-koin:koin-core", version.ref = "koin" }
-koin-compose = { module = "io.insert-koin:koin-compose", version.ref = "koin" }
-koin-android = { module = "io.insert-koin:koin-android", version.ref = "koin" }
+# Dependency Injection
+koin = "4.2.2"
 
-# Coil
-coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil3" }
-coil-network-ktor = { module = "io.coil-kt.coil3:coil-network-ktor3", version.ref = "coil3" }
+# Network
+ktor = "3.5.1"
+supabase = "3.6.0"
 
-# DataStore
-androidx-datastore-preferences-core = { module = "androidx.datastore:datastore-preferences-core", version.ref = "datastore" }
+# Image
+coil = "3.5.0"
 
-# Okio
-okio = { module = "com.squareup.okio:okio", version.ref = "okio" }
+# Map and Location
+naver-map = "3.23.2"
+play-services-location = "21.4.0"
 
-# Serialization
-kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
+# Authentication
+kakao = "2.24.0"
+
+# Firebase
+firebase-bom = "34.16.0"
+firebase-crashlytics-gradle = "3.0.3"
+google-services = "4.5.0"
+install-referrer = "2.2"
+
+# Logging
+kermit = "2.1.0"
 
 # Testing
-kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinx-coroutines" }
-turbine = { module = "app.cash.turbine:turbine", version.ref = "turbine" }
-compose-ui-test = { module = "org.jetbrains.compose.ui:ui-test", version.ref = "composeMultiplatform" }
+junit = "4.13.2"
+robolectric = "4.16.1"
+turbine = "1.2.1"
+
+[libraries]
+
+# Build
+android-gradle-plugin = { module = "com.android.tools.build:gradle", version.ref = "agp" }
+kotlin-gradle-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
+kotlin-serialization-gradle-plugin = { module = "org.jetbrains.kotlin:kotlin-serialization", version.ref = "kotlin" }
+compose-compiler-gradle-plugin = { module = "org.jetbrains.kotlin:compose-compiler-gradle-plugin", version.ref = "kotlin" }
+compose-gradle-plugin = { module = "org.jetbrains.compose:compose-gradle-plugin", version.ref = "compose-multiplatform" }
+
+# Kotlin
+kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
+kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "kotlinx-coroutines-core" }
+kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinx-coroutines-core" }
+kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization-json" }
+
+# AndroidX
+androidx-activity = { module = "androidx.activity:activity", version.ref = "androidx-activity" }
+androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "androidx-activity" }
+androidx-core = { module = "androidx.core:core", version.ref = "androidx-core" }
+androidx-lifecycle-runtime-compose = { module = "org.jetbrains.androidx.lifecycle:lifecycle-runtime-compose", version.ref = "androidx-lifecycle" }
+androidx-lifecycle-viewmodel-compose = { module = "org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "androidx-lifecycle" }
+androidx-lifecycle-viewmodel-navigation3 = { module = "org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-navigation3", version.ref = "androidx-lifecycle" }
+androidx-navigation3-runtime = { module = "androidx.navigation3:navigation3-runtime", version.ref = "navigation3" }
+androidx-navigation3-ui = { module = "org.jetbrains.androidx.navigation3:navigation3-ui", version.ref = "navigation3-ui" }
+navigation-event-compose = { module = "org.jetbrains.androidx.navigationevent:navigationevent-compose", version.ref = "navigation-event" }
+
+# Compose Multiplatform
+compose-components-resources = { module = "org.jetbrains.compose.components:components-resources", version.ref = "compose-multiplatform" }
+compose-foundation = { module = "org.jetbrains.compose.foundation:foundation", version.ref = "compose-multiplatform" }
+compose-material3 = { module = "org.jetbrains.compose.material3:material3", version.ref = "material3" }
+compose-runtime = { module = "org.jetbrains.compose.runtime:runtime", version.ref = "compose-multiplatform" }
+compose-ui = { module = "org.jetbrains.compose.ui:ui", version.ref = "compose-multiplatform" }
+compose-ui-tooling = { module = "org.jetbrains.compose.ui:ui-tooling", version.ref = "compose-multiplatform" }
+compose-ui-tooling-preview = { module = "org.jetbrains.compose.ui:ui-tooling-preview", version.ref = "compose-multiplatform" }
+
+# Dependency Injection
+koin-bom = { module = "io.insert-koin:koin-bom", version.ref = "koin" }
+koin-android = { module = "io.insert-koin:koin-android" }
+koin-compose = { module = "io.insert-koin:koin-compose" }
+koin-compose-viewmodel = { module = "io.insert-koin:koin-compose-viewmodel" }
+koin-core = { module = "io.insert-koin:koin-core" }
+
+# Network
+ktor-client-content-negotiation = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktor" }
+ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
+ktor-client-darwin = { module = "io.ktor:ktor-client-darwin", version.ref = "ktor" }
+ktor-client-okhttp = { module = "io.ktor:ktor-client-okhttp", version.ref = "ktor" }
+ktor-serialization-kotlinx-json = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor" }
+
+# Supabase
+supabase-auth = { module = "io.github.jan-tennert.supabase:auth-kt", version.ref = "supabase" }
+supabase-functions = { module = "io.github.jan-tennert.supabase:functions-kt", version.ref = "supabase" }
+supabase-postgrest = { module = "io.github.jan-tennert.supabase:postgrest-kt", version.ref = "supabase" }
+
+# Image
+coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil" }
+coil-network-ktor3 = { module = "io.coil-kt.coil3:coil-network-ktor3", version.ref = "coil" }
+
+# Map and Location
+naver-map = { module = "com.naver.maps:map-sdk", version.ref = "naver-map" }
+play-services-location = { module = "com.google.android.gms:play-services-location", version.ref = "play-services-location" }
+
+# Authentication
+kakao-user = { module = "com.kakao.sdk:v2-user", version.ref = "kakao" }
+
+# Firebase
+firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "firebase-bom" }
+firebase-messaging = { module = "com.google.firebase:firebase-messaging" }
+firebase-analytics = { module = "com.google.firebase:firebase-analytics" }
+firebase-crashlytics = { module = "com.google.firebase:firebase-crashlytics" }
+
+# Attribution
+install-referrer = { module = "com.android.installreferrer:installreferrer", version.ref = "install-referrer" }
+
+# Logging
+kermit = { module = "co.touchlab:kermit", version.ref = "kermit" }
+
+# Testing
+junit = { module = "junit:junit", version.ref = "junit" }
+compose-ui-test = { module = "org.jetbrains.compose.ui:ui-test", version.ref = "compose-multiplatform" }
+kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinx-coroutines-core" }
 robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
+turbine = { module = "app.cash.turbine:turbine", version.ref = "turbine" }
 
 [plugins]
-androidApplication = { id = "com.android.application", version.ref = "agp" }
-androidMultiplatformLibrary = { id = "com.android.kotlin.multiplatform.library", version.ref = "agp" }
-composeMultiplatform = { id = "org.jetbrains.compose", version.ref = "composeMultiplatform" }
-composeCompiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
-kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
-kotlinxSerialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
-buildkonfig = { id = "com.codingfeline.buildkonfig", version.ref = "buildkonfig" }
+# Android
+android-application = { id = "com.android.application", version.ref = "agp" }
+android-multiplatform-library = { id = "com.android.kotlin.multiplatform.library", version.ref = "agp" }
+
+# Kotlin
+kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
+kotlinx-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+
+# Compose Multiplatform
+compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+compose-multiplatform = { id = "org.jetbrains.compose", version.ref = "compose-multiplatform" }
+
+# Build
+build-konfig = { id = "com.codingfeline.buildkonfig", version.ref = "build-konfig" }
+google-services = { id = "com.google.gms.google-services", version.ref = "google-services" }
+firebase-crashlytics = { id = "com.google.firebase.crashlytics", version.ref = "firebase-crashlytics-gradle" }
 ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlint" }
