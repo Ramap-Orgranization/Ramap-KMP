@@ -22,6 +22,7 @@ import com.peto.ramap.domain.model.shop.RamenShopFilter
 import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.domain.model.shop.SearchQuery
 import com.peto.ramap.domain.repository.LoginRepository
+import com.peto.ramap.domain.model.auth.LoginType
 import com.peto.ramap.domain.repository.PlaceSearchRepository
 import com.peto.ramap.domain.repository.RamenShopRepository
 import com.peto.ramap.domain.repository.ShopReportRepository
@@ -717,7 +718,7 @@ class MapViewModel(
         launchResultTask(
             taskKey = SIGN_IN_TASK_KEY,
             policy = TaskPolicy.IgnoreNew,
-            request = loginRepository::signInWithKakao,
+            request = { loginRepository.signIn(LoginType.KAKAO) },
             onSuccess = { loginAnalytics.logLoginSucceeded(AnalyticsSource.MAP) },
             onError = {
                 loginAnalytics.logLoginFailed(AnalyticsSource.MAP)

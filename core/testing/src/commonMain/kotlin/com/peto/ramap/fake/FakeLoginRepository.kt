@@ -3,6 +3,7 @@ package com.peto.ramap.fake
 import com.peto.ramap.core.result.RamapError
 import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.domain.model.auth.LoginSessionState
+import com.peto.ramap.domain.model.auth.LoginType
 import com.peto.ramap.domain.repository.LoginRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -14,6 +15,8 @@ class FakeLoginRepository(
     private val mutableSessionState = MutableStateFlow(initialSessionState)
 
     var signInWithKakaoCallCount = 0
+        private set
+    var signInWithAppleCallCount = 0
         private set
     var signOutCallCount = 0
         private set
@@ -33,8 +36,11 @@ class FakeLoginRepository(
 
     override fun currentUserEmail(): String? = userEmail
 
-    override suspend fun signInWithKakao(): RamapResult<Unit> {
-        signInWithKakaoCallCount += 1
+    override suspend fun signIn(type: LoginType): RamapResult<Unit> {
+        when (type) {
+            LoginType.KAKAO -> signInWithKakaoCallCount += 1
+            LoginType.APPLE -> signInWithAppleCallCount += 1
+        }
         return RamapResult.Success(Unit)
     }
 

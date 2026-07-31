@@ -45,4 +45,17 @@ class AccountViewModelTest {
 
             assertEquals(1, repository.deleteAccountCallCount)
         }
+
+    @Test
+    fun `Apple 로그인을 누르면 저장소에 요청한다`() =
+        coroutinesTest {
+            val repository = FakeLoginRepository()
+            val viewModel = AccountViewModel(repository, LoginAnalytics(FakeAnalyticsTracker()))
+            runCurrent()
+
+            viewModel.dispatch(AccountIntent.OnAppleLoginClick)
+            runCurrent()
+
+            assertEquals(1, repository.signInWithAppleCallCount)
+        }
 }

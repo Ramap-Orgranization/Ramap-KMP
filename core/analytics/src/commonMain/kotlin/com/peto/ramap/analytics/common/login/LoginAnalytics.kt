@@ -6,28 +6,37 @@ import com.peto.ramap.analytics.AnalyticsTracker
 class LoginAnalytics(
     private val analyticsTracker: AnalyticsTracker,
 ) {
-    fun logLoginStarted(source: AnalyticsSource) {
+    fun logLoginStarted(
+        source: AnalyticsSource,
+        method: LoginMethod = LoginMethod.KAKAO,
+    ) {
         analyticsTracker.logEvent(
             LoginEvent.LoginStarted(
-                method = LoginMethod.KAKAO,
+                method = method,
                 source = source,
             ),
         )
     }
 
-    fun logLoginSucceeded(source: AnalyticsSource) {
+    fun logLoginSucceeded(
+        source: AnalyticsSource,
+        method: LoginMethod = LoginMethod.KAKAO,
+    ) {
         analyticsTracker.logEvent(
             LoginEvent.LoginSucceeded(
-                method = LoginMethod.KAKAO,
+                method = method,
                 source = source,
             ),
         )
     }
 
-    fun logLoginFailed(source: AnalyticsSource) {
+    fun logLoginFailed(
+        source: AnalyticsSource,
+        method: LoginMethod = LoginMethod.KAKAO,
+    ) {
         analyticsTracker.logEvent(
             LoginEvent.LoginFailed(
-                method = LoginMethod.KAKAO,
+                method = method,
                 source = source,
             ),
         )

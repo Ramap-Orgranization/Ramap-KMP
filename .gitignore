@@ -5,6 +5,7 @@
 xcuserdata
 !src/**/build/
 local.properties
+iosApp/Configuration/Secrets.xcconfig
 google-services.json
 GoogleService-Info.plist
 *.jks

@@ -15,6 +15,7 @@ import com.peto.ramap.domain.model.shop.AdministrativeDistricts
 import com.peto.ramap.domain.model.shop.AreaFilter
 import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.domain.repository.LoginRepository
+import com.peto.ramap.domain.model.auth.LoginType
 import com.peto.ramap.domain.repository.ShopRankingRepository
 import com.peto.ramap.domain.store.PersonalizationBootstrapState
 import com.peto.ramap.domain.store.ShopPersonalizationStore
@@ -419,7 +420,7 @@ class RankingViewModel(
         launchResultTask(
             taskKey = SIGN_IN_TASK_KEY,
             policy = TaskPolicy.IgnoreNew,
-            request = loginRepository::signInWithKakao,
+            request = { loginRepository.signIn(LoginType.KAKAO) },
             onSuccess = { loginAnalytics.logLoginSucceeded(AnalyticsSource.RANKING) },
             onError = { handleKakaoLoginFailure() },
         )

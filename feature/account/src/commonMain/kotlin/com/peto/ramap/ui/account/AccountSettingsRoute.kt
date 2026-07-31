@@ -21,6 +21,7 @@ import com.peto.ramap.designsystem.dialog.CommonDialog
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.designsystem.toast.ToastManager
 import com.peto.ramap.domain.model.auth.LoginType
+import com.peto.ramap.domain.model.auth.supportedLoginTypes
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
@@ -87,15 +88,24 @@ fun AccountSettingsRoute(
                     onClick = { isAccountDeleteConfirmDialogVisible = true },
                 )
             } else {
-                LoginButton(
-                    type = LoginType.KAKAO,
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 20.dp)
-                            .padding(top = 16.dp),
-                    onClickLogin = { viewModel.dispatch(AccountIntent.OnKakaoLoginClick) },
-                )
+                supportedLoginTypes().forEachIndexed { index, loginType ->
+                    LoginButton(
+                        type = loginType,
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 20.dp)
+                                .padding(top = if (index == 0) 16.dp else 12.dp),
+                        onClickLogin = { type ->
+                            val intent =
+                                when (type) {
+                                    LoginType.KAKAO -> AccountIntent.OnKakaoLoginClick
+                                    LoginType.APPLE -> AccountIntent.OnAppleLoginClick
+                                }
+                            viewModel.dispatch(intent)
+                        },
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(15.dp))
