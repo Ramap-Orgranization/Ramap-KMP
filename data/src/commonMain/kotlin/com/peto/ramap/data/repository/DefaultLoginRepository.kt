@@ -1,16 +1,16 @@
 package com.peto.ramap.data.repository
 
 import com.peto.ramap.core.result.RamapResult
-import com.peto.ramap.data.auth.loginWithKakao
 import com.peto.ramap.data.auth.loginWithApple
+import com.peto.ramap.data.auth.loginWithKakao
 import com.peto.ramap.domain.model.auth.LoginSessionState
 import com.peto.ramap.domain.model.auth.LoginType
 import com.peto.ramap.domain.repository.LoginRepository
 import com.peto.ramap.network.execute.invokeRequest
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
-import io.github.jan.supabase.auth.providers.Kakao
 import io.github.jan.supabase.auth.providers.Apple
+import io.github.jan.supabase.auth.providers.Kakao
 import io.github.jan.supabase.auth.providers.builtin.IDToken
 import io.github.jan.supabase.auth.status.SessionStatus
 import io.github.jan.supabase.postgrest.postgrest
