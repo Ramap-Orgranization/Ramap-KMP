@@ -121,15 +121,15 @@ internal fun EventsScreen(
                             scope = this,
                             title = ongoingTitle,
                             events = ongoingEvents,
-                            isHorizontal = ongoingEvents.size > 1,
-                            horizontalContentPadding = 5.dp,
+                            isOngoingSection = true,
+                            horizontalContentPadding = 15.dp,
                             onEventClick = onEventClick,
                         )
                         eventSection(
                             scope = this,
                             title = upcomingTitle,
                             events = upcomingEvents,
-                            isHorizontal = false,
+                            isOngoingSection = false,
                             horizontalContentPadding = 15.dp,
                             onEventClick = onEventClick,
                         )
