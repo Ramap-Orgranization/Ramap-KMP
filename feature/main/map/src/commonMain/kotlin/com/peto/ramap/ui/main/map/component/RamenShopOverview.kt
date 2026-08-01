@@ -323,7 +323,10 @@ private fun ShopOverflowMenu(
                     text = stringResource(Res.string.bookmarked_shops_toggle),
                     icon = if (isBookmarked) Res.drawable.ic_kid_star_filled else Res.drawable.ic_kid_star,
                     isActive = isBookmarked,
-                    onClick = onBookmarkClick,
+                    onClick = {
+                        isExpanded = false
+                        onBookmarkClick()
+                    },
                 )
                 ShopOverflowMenuItem(
                     text = stringResource(Res.string.event_notification_action),
@@ -334,14 +337,20 @@ private fun ShopOverflowMenu(
                             Res.drawable.ic_notification
                         },
                     isActive = isNotificationEnabled,
-                    onClick = onNotificationClick,
+                    onClick = {
+                        isExpanded = false
+                        onNotificationClick()
+                    },
                 )
             }
             ShopOverflowMenuItem(
                 text = stringResource(Res.string.hide_shop_action),
                 icon = Res.drawable.ic_visibility_off,
                 isActive = isHidden,
-                onClick = onHiddenClick,
+                onClick = {
+                    isExpanded = false
+                    onHiddenClick()
+                },
             )
         }
     }

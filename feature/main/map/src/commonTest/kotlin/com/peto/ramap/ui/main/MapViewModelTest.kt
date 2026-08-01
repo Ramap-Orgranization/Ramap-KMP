@@ -8,6 +8,7 @@ import com.peto.ramap.coroutinesTest
 import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.auth.LoginSessionState
+import com.peto.ramap.domain.model.auth.LoginType
 import com.peto.ramap.domain.model.personalization.ShopPersonalization
 import com.peto.ramap.domain.model.place.PlaceSearchResult
 import com.peto.ramap.domain.model.place.PlaceSearchResultKind
@@ -25,6 +26,7 @@ import com.peto.ramap.domain.repository.ShopWaitingSystemRepository
 import com.peto.ramap.domain.store.PersonalizationBootstrapState
 import com.peto.ramap.domain.store.ShopPersonalizationStore
 import com.peto.ramap.fake.FakeAnalyticsTracker
+import com.peto.ramap.fake.FakeCrashReporter
 import com.peto.ramap.fake.FakeLoginRepository
 import com.peto.ramap.fake.FakeNotificationSettingsRepository
 import com.peto.ramap.fake.FakePersonalizationRepository
@@ -45,6 +47,7 @@ import com.peto.ramap.ui.main.map.contract.MapIntent.OnCameraPositionChanged
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnCategoryFilterToggled
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnHiddenToggled
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnInitialLocationFocusConsumed
+import com.peto.ramap.ui.main.map.contract.MapIntent.OnLoginTypeSelected
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnMapTabExited
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnMyLocationChanged
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnQueryChanged
@@ -2375,6 +2378,27 @@ class MapViewModelTest {
         }
 
     @Test
+    fun `Apple 로그인 성공 후 대기 중인 북마크 요청을 재개한다`() =
+        coroutinesTest {
+            val shop = ramenShopFixture()
+            val loginRepository = FakeLoginRepository()
+            val personalizationRepository = FakePersonalizationRepository()
+            val viewModel =
+                mapViewModel(
+                    loginRepository = loginRepository,
+                    personalizationRepository = personalizationRepository,
+                )
+
+            viewModel.dispatch(OnBookmarkToggled(shop))
+            runCurrent()
+            viewModel.dispatch(OnLoginTypeSelected(LoginType.APPLE))
+            runCurrent()
+
+            assertEquals(1, loginRepository.signInWithAppleCallCount)
+            assertEquals(listOf(shop.id to true), personalizationRepository.bookmarkUpdateRequests)
+        }
+
+    @Test
     fun `다른 화면에서 북마크 상태를 변경하면 지도 북마크 상태도 갱신한다`() =
         coroutinesTest {
             val shop = ramenShopFixture(id = "externally-bookmarked-shop")
@@ -2802,7 +2826,7 @@ private fun mapViewModel(
             shopWaitingSystemRepository,
         ),
         MapAnalytics(FakeAnalyticsTracker()),
-        LoginAnalytics(FakeAnalyticsTracker()),
+        LoginAnalytics(FakeAnalyticsTracker(), FakeCrashReporter()),
     )
 
 private fun loggedInRepository(): FakeLoginRepository =

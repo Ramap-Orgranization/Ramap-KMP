@@ -6,11 +6,14 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import com.peto.ramap.designsystem.component.LoginButton
 import com.peto.ramap.designsystem.dialog.LoginGuideDialog
 import com.peto.ramap.designsystem.toast.ToastManager
 import com.peto.ramap.designsystem.toast.model.ToastAction
 import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
+import com.peto.ramap.domain.model.auth.LoginType
+import com.peto.ramap.domain.model.auth.supportedLoginTypes
 import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.navigation.deeplink.ShopShareLinkFactory
 import com.peto.ramap.platform.AppSettingsOpener
@@ -38,16 +41,24 @@ internal fun MapInteractionHost(
     shopShareLinkFactory: ShopShareLinkFactory,
     requestNotificationPermission: suspend () -> Boolean,
     onNotificationToggled: (RamenShop) -> Unit,
-    onLoginConfirmed: () -> Unit,
+    onLoginTypeSelected: (LoginType) -> Unit,
+    onLoginDismissed: () -> Unit,
     content: @Composable ((RamenShop) -> Unit) -> Unit,
 ) {
     val coroutineScope = rememberCoroutineScope()
     var showLoginGuideDialog by remember { mutableStateOf(false) }
     val shareChooserTitle = stringResource(Res.string.share_shop_chooser_title)
+    val loginTypes = supportedLoginTypes()
 
     ObserveAsEvents(sideEffect) { effect ->
         when (effect) {
-            MapSideEffect.ShowLoginGuide -> showLoginGuideDialog = true
+            MapSideEffect.ShowLoginGuide -> {
+                if (loginTypes.size == 1) {
+                    onLoginTypeSelected(loginTypes.single())
+                } else {
+                    showLoginGuideDialog = true
+                }
+            }
             is MapSideEffect.ShowToast ->
                 toastManager.show(
                     effect.data.copy(
@@ -97,10 +108,14 @@ internal fun MapInteractionHost(
 
     LoginGuideDialog(
         visible = showLoginGuideDialog,
-        onDismiss = { showLoginGuideDialog = false },
-        onConfirm = {
+        onDismiss = {
             showLoginGuideDialog = false
-            onLoginConfirmed()
+            onLoginDismissed()
         },
+        onLoginTypeSelected = { type ->
+            showLoginGuideDialog = false
+            onLoginTypeSelected(type)
+        },
+        loginButton = { type, onClick -> LoginButton(type, onClick) },
     )
 }

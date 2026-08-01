@@ -1,6 +1,7 @@
 package com.peto.ramap.ui.main.map.contract
 
 import com.peto.ramap.analytics.AnalyticsSource
+import com.peto.ramap.domain.model.auth.LoginType
 import com.peto.ramap.domain.model.place.PlaceSearchResult
 import com.peto.ramap.domain.model.report.ShopInformationField
 import com.peto.ramap.domain.model.shop.Category
@@ -89,7 +90,11 @@ sealed interface MapIntent : Intent {
 
     data object OnBookmarkedShopsToggled : MapIntent
 
-    data object OnKakaoLoginClicked : MapIntent
+    data class OnLoginTypeSelected(
+        val type: LoginType,
+    ) : MapIntent
+
+    data object OnLoginSelectionDismissed : MapIntent
 
     data object OnLocationPermissionBlocked : MapIntent
 }

@@ -1,5 +1,6 @@
 package com.peto.ramap.ui.main.ranking.contract
 
+import com.peto.ramap.domain.model.auth.LoginType
 import com.peto.ramap.domain.model.shop.AdministrativeArea
 import com.peto.ramap.domain.model.shop.AreaFilter
 import com.peto.ramap.domain.model.shop.Category
@@ -42,5 +43,9 @@ sealed interface RankingIntent : Intent {
         val shop: RamenShop,
     ) : RankingIntent
 
-    data object OnKakaoLoginClicked : RankingIntent
+    data class OnLoginTypeSelected(
+        val type: LoginType,
+    ) : RankingIntent
+
+    data object OnLoginSelectionDismissed : RankingIntent
 }

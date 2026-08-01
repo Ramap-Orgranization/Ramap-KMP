@@ -3,8 +3,11 @@ package com.peto.ramap.ui.main.ranking
 import androidx.lifecycle.viewModelScope
 import com.peto.ramap.analytics.AnalyticsSource
 import com.peto.ramap.analytics.common.login.LoginAnalytics
+import com.peto.ramap.analytics.common.login.LoginMethod
+import com.peto.ramap.designsystem.component.LoginTypeResourceMapper
 import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
+import com.peto.ramap.domain.model.auth.LoginSessionState
 import com.peto.ramap.domain.model.auth.LoginType
 import com.peto.ramap.domain.model.rank.RankedShops
 import com.peto.ramap.domain.model.rank.RankingCursor
@@ -25,12 +28,12 @@ import com.peto.ramap.ui.main.ranking.contract.RankingLoadKey
 import com.peto.ramap.ui.main.ranking.contract.RankingSideEffect
 import com.peto.ramap.ui.main.ranking.contract.RankingUiState
 import com.peto.ramap.ui.main.ranking.log.RankingAnalytics
+import com.peto.ramap.ui.main.ranking.model.PendingRankingAction
 import com.peto.ramap.ui.task.TaskPolicy
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.StringResource
 import ramap.shared.generated.resources.Res
-import ramap.shared.generated.resources.kakao_login_failure_message
 import ramap.shared.generated.resources.personalization_update_failure_message
 import ramap.shared.generated.resources.ranking_refresh_failure_message
 
@@ -44,9 +47,12 @@ class RankingViewModel(
         RankingUiState(),
     ) {
     private var observedBookmarkedShopIds: Set<String>? = null
+    private var pendingRankingAction: PendingRankingAction? = null
+    private var pendingKakaoLogin = false
 
     init {
         observePersonalization()
+        viewModelScope.launch { observeSessionState() }
         loadFirstPage()
     }
 
@@ -64,7 +70,9 @@ class RankingViewModel(
 
             RankingIntent.OnAreaSheetOpened -> restoreAreaSelection()
 
-            RankingIntent.OnKakaoLoginClicked -> signInWithKakao()
+            is RankingIntent.OnLoginTypeSelected -> signIn(intent.type)
+
+            RankingIntent.OnLoginSelectionDismissed -> clearPendingAction()
 
             is RankingIntent.OnAreaFilterSelected -> selectAreaFilter(intent.areaFilter)
 
@@ -247,7 +255,14 @@ class RankingViewModel(
         shop: RamenShop,
         enabled: Boolean,
     ) {
-        if (!hasBookmarkSessionOrShowGuide()) return
+        val action = PendingRankingAction(shop, enabled)
+        if (!hasBookmarkSessionOrShowGuide(action)) return
+        executeBookmarkUpdate(action)
+    }
+
+    private suspend fun executeBookmarkUpdate(action: PendingRankingAction) {
+        val shop = action.shop
+        val enabled = action.enabled
         if (shop.id in currentState.bookmarkUpdatingShopIds) return
         if (!shouldUpdateBookmark(shop.id, enabled)) return
 
@@ -256,9 +271,10 @@ class RankingViewModel(
         executeBookmarkUpdate(shop.id, enabled)
     }
 
-    private suspend fun hasBookmarkSessionOrShowGuide(): Boolean {
+    private suspend fun hasBookmarkSessionOrShowGuide(action: PendingRankingAction): Boolean {
         if (loginRepository.hasSession()) return true
 
+        pendingRankingAction = action
         postSideEffect(RankingSideEffect.ShowLoginGuide)
         return false
     }
@@ -414,23 +430,64 @@ class RankingViewModel(
         }
     }
 
-    private fun signInWithKakao() {
-        loginAnalytics.logLoginStarted(AnalyticsSource.RANKING)
+    private fun signIn(type: LoginType) {
+        val method = loginMethod(type)
+        loginAnalytics.logLoginStarted(AnalyticsSource.RANKING, method)
+        if (type == LoginType.KAKAO) pendingKakaoLogin = true
 
         launchResultTask(
             taskKey = SIGN_IN_TASK_KEY,
             policy = TaskPolicy.IgnoreNew,
-            request = { loginRepository.signIn(LoginType.KAKAO) },
-            onSuccess = { loginAnalytics.logLoginSucceeded(AnalyticsSource.RANKING) },
-            onError = { handleKakaoLoginFailure() },
+            request = { loginRepository.signIn(type) },
+            onSuccess = {
+                if (type == LoginType.APPLE) completeLogin(type)
+            },
+            onError = {
+                if (type == LoginType.KAKAO) pendingKakaoLogin = false
+                loginAnalytics.logLoginFailed(AnalyticsSource.RANKING, method)
+                showLoginFailure(type)
+                clearPendingAction()
+            },
         )
     }
 
-    private fun handleKakaoLoginFailure() {
-        loginAnalytics.logLoginFailed(AnalyticsSource.RANKING)
-
-        showToast(Res.string.kakao_login_failure_message, ToastType.ERROR)
+    private suspend fun observeSessionState() {
+        loginRepository.sessionState.collectLatest { sessionState ->
+            completeKakaoLoginIfAuthenticated(sessionState == LoginSessionState.AUTHENTICATED)
+        }
     }
+
+    private fun completeKakaoLoginIfAuthenticated(isAuthenticated: Boolean) {
+        if (!isAuthenticated || !pendingKakaoLogin) return
+
+        pendingKakaoLogin = false
+        completeLogin(LoginType.KAKAO)
+    }
+
+    private fun completeLogin(type: LoginType) {
+        loginAnalytics.logLoginSucceeded(AnalyticsSource.RANKING, loginMethod(type))
+        resumePendingAction()
+    }
+
+    private fun resumePendingAction() {
+        val action = pendingRankingAction ?: return
+        pendingRankingAction = null
+        viewModelScope.launch { executeBookmarkUpdate(action) }
+    }
+
+    private fun clearPendingAction() {
+        pendingRankingAction = null
+    }
+
+    private fun showLoginFailure(type: LoginType) {
+        showToast(LoginTypeResourceMapper.failureMessage(type), ToastType.ERROR)
+    }
+
+    private fun loginMethod(type: LoginType): LoginMethod =
+        when (type) {
+            LoginType.KAKAO -> LoginMethod.KAKAO
+            LoginType.APPLE -> LoginMethod.APPLE
+        }
 
     private fun createRankingQuery(cursor: RankingCursor?): RankingQuery =
         RankingQuery(

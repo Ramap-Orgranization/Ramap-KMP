@@ -176,7 +176,6 @@
     <string name="login_required_message">로그인이 필요한 기능입니다</string>
     <string name="login_required_description">로그인 후 북마크와 숨김 기능을 사용할 수 있어요.</string>
     <string name="login_required_action">로그인하기</string>
-    <string name="login_required_dismiss">나중에</string>
 
     <!-- 지도 화면 -->
     <string name="hide_shop_confirm_title">숨김 처리하시겠습니까?</string>
