@@ -4,7 +4,6 @@ import com.peto.ramap.analytics.common.login.LoginAnalytics
 import com.peto.ramap.coroutinesTest
 import com.peto.ramap.domain.model.auth.LoginSessionState
 import com.peto.ramap.fake.FakeAnalyticsTracker
-import com.peto.ramap.fake.FakeCrashReporter
 import com.peto.ramap.fake.FakeLoginRepository
 import com.peto.ramap.ui.account.contract.AccountIntent
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -24,7 +23,7 @@ class AccountViewModelTest {
                         initialSessionState = LoginSessionState.AUTHENTICATED,
                         userEmail = "test@ramap.com",
                     ),
-                    LoginAnalytics(FakeAnalyticsTracker(), FakeCrashReporter()),
+                    LoginAnalytics(FakeAnalyticsTracker()),
                 )
 
             runCurrent()
@@ -38,8 +37,7 @@ class AccountViewModelTest {
         coroutinesTest {
             val repository =
                 FakeLoginRepository(initialSessionState = LoginSessionState.AUTHENTICATED)
-            val viewModel =
-                AccountViewModel(repository, LoginAnalytics(FakeAnalyticsTracker(), FakeCrashReporter()))
+            val viewModel = AccountViewModel(repository, LoginAnalytics(FakeAnalyticsTracker()))
             runCurrent()
 
             viewModel.dispatch(AccountIntent.OnAccountDeleteConfirm)
@@ -52,8 +50,7 @@ class AccountViewModelTest {
     fun `Apple 로그인을 누르면 저장소에 요청한다`() =
         coroutinesTest {
             val repository = FakeLoginRepository()
-            val viewModel =
-                AccountViewModel(repository, LoginAnalytics(FakeAnalyticsTracker(), FakeCrashReporter()))
+            val viewModel = AccountViewModel(repository, LoginAnalytics(FakeAnalyticsTracker()))
             runCurrent()
 
             viewModel.dispatch(AccountIntent.OnAppleLoginClick)

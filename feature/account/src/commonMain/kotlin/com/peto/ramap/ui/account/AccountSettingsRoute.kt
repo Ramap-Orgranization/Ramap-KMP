@@ -15,7 +15,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.peto.ramap.designsystem.button.AppButton
-import com.peto.ramap.designsystem.button.login.LoginButton
 import com.peto.ramap.designsystem.card.SectionCard
 import com.peto.ramap.designsystem.component.SettingsPage
 import com.peto.ramap.designsystem.dialog.CommonDialog
@@ -26,6 +25,7 @@ import com.peto.ramap.domain.model.auth.supportedLoginTypes
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
+import com.peto.ramap.designsystem.button.login.LoginButton
 import com.peto.ramap.ui.account.contract.AccountIntent
 import com.peto.ramap.ui.account.contract.AccountSideEffect
 import com.peto.ramap.ui.base.ObserveAsEvents
@@ -97,12 +97,12 @@ fun AccountSettingsRoute(
                                 .padding(horizontal = 20.dp)
                                 .padding(top = if (index == 0) 16.dp else 12.dp),
                         onClick = {
-                            val intent =
+                            viewModel.dispatch(
                                 when (loginType) {
                                     LoginType.KAKAO -> AccountIntent.OnKakaoLoginClick
                                     LoginType.APPLE -> AccountIntent.OnAppleLoginClick
-                                }
-                            viewModel.dispatch(intent)
+                                },
+                            )
                         },
                     )
                 }
