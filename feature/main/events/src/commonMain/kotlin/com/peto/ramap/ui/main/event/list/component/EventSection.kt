@@ -23,7 +23,7 @@ internal fun eventSection(
     title: String,
     events: List<ShopEvent>,
     isHorizontal: Boolean,
-    horizontalContentPadding: Dp = 0.dp,
+    horizontalContentPadding: Dp,
     onEventClick: (ShopEvent) -> Unit,
 ) {
     if (events.isEmpty()) return
