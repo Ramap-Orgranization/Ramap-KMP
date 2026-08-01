@@ -2,13 +2,13 @@
 
 package com.peto.ramap.ui.main.map
 
-import co.touchlab.kermit.Logger
 import cocoapods.NMapsMap.NMCBuilder
 import cocoapods.NMapsMap.NMFCameraUpdate
 import cocoapods.NMapsMap.NMFLocationManager
 import cocoapods.NMapsMap.NMFLocationManagerDelegateProtocol
 import cocoapods.NMapsMap.NMFMapView
 import cocoapods.NMapsMap.NMFMapViewCameraDelegateProtocol
+import cocoapods.NMapsMap.NMFMapViewLoadDelegateProtocol
 import cocoapods.NMapsMap.NMFMyPositionDirection
 import cocoapods.NMapsMap.NMFMyPositionNormal
 import cocoapods.NMapsMap.NMFNaverMapView
@@ -33,8 +33,6 @@ import platform.UIKit.UIEdgeInsetsMake
 import platform.darwin.NSObject
 
 private const val FOCUS_PADDING = 120.0
-private const val DEBUG_SAMPLE_SIZE = 5
-private val mapLogger = Logger.withTag("RamapIosMap")
 
 internal class IosNaverMapController(
     private val onMapMoveStarted: () -> Unit,
@@ -45,17 +43,13 @@ internal class IosNaverMapController(
     private val onCurrentLocationFocused: () -> Unit,
 ) : NSObject(),
     NMFMapViewCameraDelegateProtocol,
+    NMFMapViewLoadDelegateProtocol,
     NMFLocationManagerDelegateProtocol {
     val view = NMFNaverMapView(frame = CGRectZero.readValue())
     val mapView = view.mapView
     var viewportHeight: Int = 0
     private val leafUpdater = ShopLeafMarkerUpdater(onShopClick)
-    private val clusterer =
-        NMCBuilder()
-            .apply {
-                maxZoom = MapInteractionConfig.CLUSTER_MAX_ZOOM_LEVEL.toLong()
-                leafMarkerUpdater = leafUpdater
-            }.build()
+    private var clusterer = newClusterer()
     private var lastShopsKey = ""
     private var lastFocusKey = ""
     private var hasFocusedCurrentLocation = false
@@ -65,6 +59,13 @@ internal class IosNaverMapController(
     private var shouldMoveToCurrentLocation = false
     private var isCameraMoving = false
     private var shopKeys = emptyList<ShopClusteringKey>()
+    private var hasMapLoaded = false
+    private var isRenderingShops = false
+    private var isDisposed = false
+    private var shopRenderGeneration = 0L
+    private var lastRenderedShopGeneration = -1L
+    private var lastNotifiedBounds: MapBounds? = null
+    private var lastNotifiedCameraPosition: CameraPosition? = null
     private val locationManager = NMFLocationManager.sharedInstance()
 
     init {
@@ -74,41 +75,32 @@ internal class IosNaverMapController(
         view.showLocationButton = false
         mapView.minZoomLevel = MapInteractionConfig.MAX_ZOOM_OUT_LEVEL.toDouble()
         mapView.addCameraDelegate(this)
+        mapView.addLoadDelegate(this)
         locationManager?.addDelegate(this)
-        mapLogger.d {
-            "init: minZoom=${mapView.minZoomLevel}, clusterMaxZoom=${MapInteractionConfig.CLUSTER_MAX_ZOOM_LEVEL}"
-        }
-        mapView.moveCamera(
+        moveCamera(
             NMFCameraUpdate.cameraUpdateWithScrollTo(
                 NMGLatLng.latLngWithLat(DefaultMapConfig.LATITUDE, DefaultMapConfig.LONGITUDE),
                 zoomTo = DefaultMapConfig.ZOOM_LEVEL.toDouble(),
             ),
         )
-        clusterer.mapView = mapView
     }
 
     fun updateShops(shops: RamenShops) {
-        val key = shops.values.joinToString("|") { "${it.id}:${it.location.lat}:${it.location.lng}" }
-        if (key == lastShopsKey && !clusterer.empty) {
-            mapLogger.d {
-                "updateShops: skip sameKey shops=${shops.size}, clustererEmpty=${clusterer.empty}, zoom=${mapView.cameraPosition.zoom}"
-            }
+        val key = shops.values.joinToString("|") { shopRenderKey(it) }
+        if (key == lastShopsKey) {
+            renderPendingShopKeys()
             return
-        }
-        val sample = shops.values.take(DEBUG_SAMPLE_SIZE).joinToString { it.debugLabel() }
-        mapLogger.d {
-            "updateShops: shops=${shops.size}, sameKey=${key == lastShopsKey}, " +
-                "clustererEmpty=${clusterer.empty}, zoom=${mapView.cameraPosition.zoom}, sample=$sample"
         }
         lastShopsKey = key
         shopKeys = shops.values.map(::ShopClusteringKey)
-        renderShopKeys()
+        shopRenderGeneration += 1
+        renderPendingShopKeys()
     }
 
     fun restoreCameraPosition(position: CameraPosition?) {
         if (position == null || hasRestoredCameraPosition) return
         hasRestoredCameraPosition = true
-        mapView.moveCamera(
+        moveCamera(
             NMFCameraUpdate.cameraUpdateWithScrollTo(
                 NMGLatLng.latLngWithLat(position.center.lat, position.center.lng),
                 zoomTo = position.zoom,
@@ -122,9 +114,6 @@ internal class IosNaverMapController(
         focusRequestKey: Long,
         selectedShopId: String?,
     ): Boolean {
-        mapLogger.d {
-            "updateFocus: focusShops=${shops.size}, nearest=$focusNearestToCurrentLocation, selected=$selectedShopId, request=$focusRequestKey, zoom=${mapView.cameraPosition.zoom}"
-        }
         mapView.contentInset =
             UIEdgeInsetsMake(
                 top = 0.0,
@@ -153,7 +142,7 @@ internal class IosNaverMapController(
             else -> {
                 val points = shops.values.map { NMGLatLng.latLngWithLat(it.location.lat, it.location.lng) }
                 val bounds = NMGLatLngBounds.latLngBoundsWithLatLngs(points)
-                mapView.moveCamera(NMFCameraUpdate.cameraUpdateWithFitBounds(bounds, FOCUS_PADDING))
+                moveCamera(NMFCameraUpdate.cameraUpdateWithFitBounds(bounds, FOCUS_PADDING))
             }
         }
         return true
@@ -162,7 +151,7 @@ internal class IosNaverMapController(
     fun updateInitialLocationFocus(location: Location?) {
         if (location == null || hasFocusedCurrentLocation) return
         hasFocusedCurrentLocation = true
-        mapView.moveCamera(
+        moveCamera(
             NMFCameraUpdate.cameraUpdateWithScrollTo(
                 NMGLatLng.latLngWithLat(location.lat, location.lng),
             ),
@@ -176,7 +165,7 @@ internal class IosNaverMapController(
     ) {
         if (location == null || requestKey == 0L || requestKey == lastPlaceFocusKey) return
         lastPlaceFocusKey = requestKey
-        mapView.moveCamera(
+        moveCamera(
             NMFCameraUpdate.cameraUpdateWithScrollTo(
                 NMGLatLng.latLngWithLat(location.lat, location.lng),
                 zoomTo = MapInteractionConfig.PLACE_SEARCH_ZOOM_LEVEL.toDouble(),
@@ -218,33 +207,8 @@ internal class IosNaverMapController(
 
     override fun mapViewCameraIdle(mapView: NMFMapView) {
         isCameraMoving = false
-        mapLogger.d {
-            "cameraIdle: zoom=${mapView.cameraPosition.zoom}, shopKeys=${shopKeys.size}, clustererEmpty=${clusterer.empty}"
-        }
-
-        val bounds = mapView.contentBounds
-        mapLogger.d {
-            "cameraIdle bounds: lat=${bounds.southWestLat()}..${bounds.northEastLat()}, lng=${bounds.southWestLng()}..${bounds.northEastLng()}"
-        }
-        onBoundsChanged(
-            MapBounds(
-                minLat = bounds.southWestLat(),
-                maxLat = bounds.northEastLat(),
-                minLng = bounds.southWestLng(),
-                maxLng = bounds.northEastLng(),
-            ),
-        )
-        val cameraPosition = mapView.cameraPosition
-        onCameraPositionChanged(
-            CameraPosition(
-                center =
-                    Location(
-                        lat = cameraPosition.target.lat(),
-                        lng = cameraPosition.target.lng(),
-                    ),
-                zoom = cameraPosition.zoom,
-            ),
-        )
+        renderPendingShopKeys()
+        notifyViewportIfReady()
     }
 
     override fun mapView(
@@ -256,22 +220,26 @@ internal class IosNaverMapController(
         onMapMoveStarted()
     }
 
+    override fun mapViewDidFinishLoadingMap(mapView: NMFMapView) {
+        hasMapLoaded = true
+        renderPendingShopKeys()
+        notifyViewportIfReady()
+    }
+
     fun dispose() {
-        mapLogger.d {
-            "dispose: shopKeys=${shopKeys.size}, clustererEmpty=${clusterer.empty}, zoom=${mapView.cameraPosition.zoom}"
-        }
+        isDisposed = true
+        shopRenderGeneration += 1
+        isRenderingShops = false
         clusterer.mapView = null
         clusterer.clear()
         shopKeys = emptyList()
         mapView.removeCameraDelegate(this)
+        mapView.removeLoadDelegate(this)
         locationManager?.removeDelegate(this)
     }
 
     private fun moveToShop(shop: RamenShop) {
-        mapLogger.d {
-            "moveToShop: ${shop.debugLabel()}, zoom=${MapInteractionConfig.SELECTED_MARKER_ZOOM_LEVEL}"
-        }
-        mapView.moveCamera(
+        moveCamera(
             NMFCameraUpdate.cameraUpdateWithScrollTo(
                 NMGLatLng.latLngWithLat(shop.location.lat, shop.location.lng),
                 zoomTo = MapInteractionConfig.SELECTED_MARKER_ZOOM_LEVEL.toDouble(),
@@ -281,7 +249,7 @@ internal class IosNaverMapController(
 
     private fun moveToCurrentLocation(location: Location) {
         shouldMoveToCurrentLocation = false
-        mapView.moveCamera(
+        moveCamera(
             NMFCameraUpdate.cameraUpdateWithScrollTo(
                 NMGLatLng.latLngWithLat(location.lat, location.lng),
                 zoomTo = CurrentLocationConfig.zoomForCurrentLocation(mapView.cameraPosition.zoom),
@@ -291,19 +259,106 @@ internal class IosNaverMapController(
         onCurrentLocationFocused()
     }
 
-    private fun renderShopKeys() {
-        val sample = shopKeys.take(DEBUG_SAMPLE_SIZE).joinToString { it.shop.debugLabel() }
-        mapLogger.d {
-            "renderShopKeys start: keys=${shopKeys.size}, clustererEmpty=${clusterer.empty}, " +
-                "zoom=${mapView.cameraPosition.zoom}, sample=$sample"
+    private fun renderPendingShopKeys() {
+        if (
+            !canRenderShopKeys() ||
+            isRenderingShops ||
+            shopRenderGeneration == lastRenderedShopGeneration
+        ) {
+            return
         }
+
+        val renderGeneration = shopRenderGeneration
+        val keysForRender = shopKeys
+        isRenderingShops = true
+
+        // NMCClusterer can retain its previous camera index when data is replaced in place.
+        // Populate a fresh instance before attachment so it renders against the current viewport.
+        val replacementClusterer = newClusterer()
+        val keyTagMap: Map<Any?, Any> = keysForRender.associate { key -> key to ShopMarkerTag(key.shop) }
+        if (keyTagMap.isNotEmpty()) {
+            replacementClusterer.addAll(keyTagMap)
+        }
+        if (!isCurrentShopRender(renderGeneration)) {
+            replacementClusterer.clear()
+            isRenderingShops = false
+            renderPendingShopKeys()
+            return
+        }
+
+        clusterer.mapView = null
         clusterer.clear()
-        val keyTagMap: Map<Any?, Any> = shopKeys.associate { key -> key to ShopMarkerTag(key.shop) }
-        clusterer.addAll(keyTagMap)
-        mapLogger.d {
-            "renderShopKeys end: keys=${shopKeys.size}, clustererEmpty=${clusterer.empty}, zoom=${mapView.cameraPosition.zoom}"
+        clusterer = replacementClusterer
+        clusterer.mapView = mapView
+        lastRenderedShopGeneration = renderGeneration
+        isRenderingShops = false
+    }
+
+    private fun newClusterer() =
+        NMCBuilder()
+            .apply {
+                maxZoom = MapInteractionConfig.CLUSTER_MAX_ZOOM_LEVEL.toLong()
+                animate = false
+                leafMarkerUpdater = leafUpdater
+            }.build()
+
+    private fun canRenderShopKeys(): Boolean =
+        !isDisposed &&
+            hasMapLoaded &&
+            mapView.contentWidth > 0.0 &&
+            mapView.contentHeight > 0.0
+
+    private fun isCurrentShopRender(renderGeneration: Long): Boolean = canRenderShopKeys() && renderGeneration == shopRenderGeneration
+
+    private fun moveCamera(cameraUpdate: NMFCameraUpdate) {
+        mapView.moveCamera(cameraUpdate) { isCancelled ->
+            if (!isCancelled) {
+                notifyViewportIfReady()
+            }
         }
     }
 
-    private fun RamenShop.debugLabel(): String = "$id(${location.lat},${location.lng},visible=$isVisible)"
+    private fun notifyViewportIfReady() {
+        if (!canNotifyViewport()) return
+
+        val bounds = currentMapBounds()
+        val cameraPosition = currentCameraPosition()
+        if (bounds == lastNotifiedBounds && cameraPosition == lastNotifiedCameraPosition) return
+
+        lastNotifiedBounds = bounds
+        lastNotifiedCameraPosition = cameraPosition
+        onBoundsChanged(bounds)
+        onCameraPositionChanged(cameraPosition)
+    }
+
+    private fun canNotifyViewport(): Boolean =
+        !isDisposed &&
+            hasMapLoaded &&
+            mapView.contentWidth > 0.0 &&
+            mapView.contentHeight > 0.0
+
+    private fun currentMapBounds(): MapBounds {
+        val bounds = mapView.contentBounds
+        return MapBounds(
+            minLat = bounds.southWestLat(),
+            maxLat = bounds.northEastLat(),
+            minLng = bounds.southWestLng(),
+            maxLng = bounds.northEastLng(),
+        )
+    }
+
+    private fun currentCameraPosition(): CameraPosition {
+        val cameraPosition = mapView.cameraPosition
+        return CameraPosition(
+            center =
+                Location(
+                    lat = cameraPosition.target.lat(),
+                    lng = cameraPosition.target.lng(),
+                ),
+            zoom = cameraPosition.zoom,
+        )
+    }
+
+    private fun shopRenderKey(shop: RamenShop): String =
+        "${shop.id}:${shop.location.lat}:${shop.location.lng}:${shop.name}:${shop.isVisible}"
 }
