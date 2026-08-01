@@ -15,8 +15,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.peto.ramap.designsystem.button.AppButton
+import com.peto.ramap.designsystem.button.login.LoginButton
 import com.peto.ramap.designsystem.card.SectionCard
-import com.peto.ramap.designsystem.component.LoginButton
 import com.peto.ramap.designsystem.component.SettingsPage
 import com.peto.ramap.designsystem.dialog.CommonDialog
 import com.peto.ramap.designsystem.text.AppText

@@ -4,7 +4,7 @@ import androidx.lifecycle.viewModelScope
 import com.peto.ramap.analytics.AnalyticsSource
 import com.peto.ramap.analytics.common.login.LoginAnalytics
 import com.peto.ramap.analytics.common.login.LoginMethod
-import com.peto.ramap.designsystem.component.LoginTypeResourceMapper
+import com.peto.ramap.designsystem.button.login.LoginTypeResourceMapper
 import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.auth.LoginSessionState

@@ -1,5 +1,6 @@
-package com.peto.ramap.designsystem.component
+package com.peto.ramap.designsystem.button.login
 
+import com.peto.ramap.designsystem.component.LoginTypeUiModel
 import com.peto.ramap.domain.model.auth.LoginType
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor

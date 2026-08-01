@@ -6,7 +6,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import com.peto.ramap.designsystem.component.LoginButton
+import com.peto.ramap.designsystem.button.login.LoginButton
 import com.peto.ramap.designsystem.dialog.LoginGuideDialog
 import com.peto.ramap.designsystem.toast.ToastManager
 import com.peto.ramap.designsystem.toast.model.ToastAction

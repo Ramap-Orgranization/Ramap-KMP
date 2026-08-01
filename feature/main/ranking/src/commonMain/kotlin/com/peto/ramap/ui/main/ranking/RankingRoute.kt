@@ -19,7 +19,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.peto.ramap.designsystem.bottomsheet.CommonBottomSheet
-import com.peto.ramap.designsystem.component.LoginButton
+import com.peto.ramap.designsystem.button.login.LoginButton
 import com.peto.ramap.designsystem.dialog.CommonDialog
 import com.peto.ramap.designsystem.dialog.LoginGuideDialog
 import com.peto.ramap.designsystem.text.AppText
