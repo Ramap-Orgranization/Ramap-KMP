@@ -39,3 +39,5 @@ AGENTS.md
 /distribution/
 /marketing
 tools
+iosApp/Configuration/Secrets.xcconfig
+iosApp/iosApp/GoogleService-Info-Release.plist
