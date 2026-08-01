@@ -1,0 +1,2 @@
+[functions.reverse-geocode]
+verify_jwt = true

@@ -59,7 +59,7 @@ internal fun RankingRow(
             Modifier
                 .fillMaxWidth()
                 .noRippleClickable(onClick = onClick)
-                .padding(vertical = 10.dp),
+                .padding(vertical = 3.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {

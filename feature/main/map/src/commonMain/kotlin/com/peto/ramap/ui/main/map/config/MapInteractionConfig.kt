@@ -6,5 +6,5 @@ internal object MapInteractionConfig {
     const val SELECTED_MARKER_ZOOM_LEVEL = 17
     const val PLACE_SEARCH_ZOOM_LEVEL = 15
     const val SELECTED_MARKER_BOTTOM_PADDING_RATIO = 0.35f
-    const val HIDDEN_SHOP_ALPHA = 0.45f
+    const val HIDDEN_SHOP_ALPHA = 0.5f
 }

@@ -10,9 +10,6 @@ import FirebaseMessaging
 import AuthenticationServices
 import CryptoKit
 import Security
-import AuthenticationServices
-import CryptoKit
-import Security
 
 final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate, MessagingDelegate {
     func application(
@@ -114,6 +111,14 @@ struct iOSApp: App {
             object: nil,
             queue: .main
         ) { _ in
+            guard hasKakaoCallbackScheme() else {
+                IosKakaoLoginBridge.shared.complete(
+                    idToken: nil,
+                    accessToken: nil,
+                    errorMessage: "카카오 URL scheme이 iOS 앱에 등록되어 있지 않습니다.",
+                )
+                return
+            }
             let completion: (OAuthToken?, Error?) -> Void = { token, error in
                 IosKakaoLoginBridge.shared.complete(
                     idToken: token?.idToken,

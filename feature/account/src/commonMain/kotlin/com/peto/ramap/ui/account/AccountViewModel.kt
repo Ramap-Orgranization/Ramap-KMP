@@ -28,6 +28,7 @@ import ramap.shared.generated.resources.account_delete_failure_message
 import ramap.shared.generated.resources.account_delete_success_message
 import ramap.shared.generated.resources.apple_login_failure_message
 import ramap.shared.generated.resources.kakao_login_failure_message
+import ramap.shared.generated.resources.login_success_message
 import ramap.shared.generated.resources.logout_failure_message
 
 class AccountViewModel(
@@ -85,6 +86,7 @@ class AccountViewModel(
             request = { loginRepository.signIn(LoginType.KAKAO) },
             onSuccess = {
                 loginAnalytics.logLoginSucceeded(AnalyticsSource.ACCOUNT)
+                showToast(Res.string.login_success_message, ToastType.SUCCESS)
             },
             onError = {
                 loginAnalytics.logLoginFailed(AnalyticsSource.ACCOUNT)
@@ -106,6 +108,7 @@ class AccountViewModel(
             request = { loginRepository.signIn(LoginType.APPLE) },
             onSuccess = {
                 loginAnalytics.logLoginSucceeded(AnalyticsSource.ACCOUNT, LoginMethod.APPLE)
+                showToast(Res.string.login_success_message, ToastType.SUCCESS)
             },
             onError = {
                 loginAnalytics.logLoginFailed(AnalyticsSource.ACCOUNT, LoginMethod.APPLE)

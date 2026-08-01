@@ -34,6 +34,12 @@ AGENTS.md
 /supabase/*
 !/supabase/migrations/
 !/supabase/migrations/*.sql
+!/supabase/config.toml
+!/supabase/functions/
+!/supabase/functions/*/
+!/supabase/functions/*/index.ts
+!/supabase/functions/*/README.md
+/supabase/functions/**/.env
 /feature/main/map/map.podspec
 /androidApp/release/
 /distribution/
