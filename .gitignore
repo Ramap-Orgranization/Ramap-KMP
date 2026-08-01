@@ -5,6 +5,7 @@
 xcuserdata
 !src/**/build/
 local.properties
+iosApp/Configuration/Secrets.xcconfig
 google-services.json
 GoogleService-Info.plist
 *.jks
@@ -38,3 +39,5 @@ AGENTS.md
 /distribution/
 /marketing
 tools
+iosApp/Configuration/Secrets.xcconfig
+iosApp/iosApp/GoogleService-Info-Release.plist

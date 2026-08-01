@@ -19,10 +19,12 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.peto.ramap.designsystem.bottomsheet.CommonBottomSheet
+import com.peto.ramap.designsystem.button.login.LoginButton
 import com.peto.ramap.designsystem.dialog.CommonDialog
 import com.peto.ramap.designsystem.dialog.LoginGuideDialog
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.designsystem.toast.ToastManager
+import com.peto.ramap.domain.model.auth.supportedLoginTypes
 import com.peto.ramap.domain.model.rank.RankedShops
 import com.peto.ramap.domain.model.rank.ShopRanking
 import com.peto.ramap.domain.model.rank.ShopRankings
@@ -62,11 +64,16 @@ fun RankingRoute(
     var showLoginGuideDialog by remember {
         mutableStateOf(false)
     }
+    val loginTypes = supportedLoginTypes()
 
     ObserveAsEvents(viewModel.sideEffect) { sideEffect ->
         when (sideEffect) {
             RankingSideEffect.ShowLoginGuide -> {
-                showLoginGuideDialog = true
+                if (loginTypes.size == 1) {
+                    viewModel.dispatch(RankingIntent.OnLoginTypeSelected(loginTypes.single()))
+                } else {
+                    showLoginGuideDialog = true
+                }
             }
 
             is RankingSideEffect.ShowToast -> {
@@ -152,14 +159,13 @@ fun RankingRoute(
         visible = showLoginGuideDialog,
         onDismiss = {
             showLoginGuideDialog = false
+            viewModel.dispatch(RankingIntent.OnLoginSelectionDismissed)
         },
-        onConfirm = {
+        onLoginTypeSelected = { type ->
             showLoginGuideDialog = false
-
-            viewModel.dispatch(
-                RankingIntent.OnKakaoLoginClicked,
-            )
+            viewModel.dispatch(RankingIntent.OnLoginTypeSelected(type))
         },
+        loginButton = { type, onClick -> LoginButton(type, onClick) },
     )
 }
 

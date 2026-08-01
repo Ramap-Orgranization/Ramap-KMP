@@ -4,4 +4,5 @@ enum class LoginMethod(
     val value: String,
 ) {
     KAKAO("kakao"),
+    APPLE("apple"),
 }

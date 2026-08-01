@@ -44,7 +44,8 @@ fun ShopDetailRoute(
         shopShareLinkFactory = shopShareLinkFactory,
         requestNotificationPermission = requestNotificationPermission,
         onNotificationToggled = { viewModel.dispatch(MapIntent.OnShopNotificationToggled(it)) },
-        onLoginConfirmed = { viewModel.dispatch(MapIntent.OnKakaoLoginClicked) },
+        onLoginTypeSelected = { viewModel.dispatch(MapIntent.OnLoginTypeSelected(it)) },
+        onLoginDismissed = { viewModel.dispatch(MapIntent.OnLoginSelectionDismissed) },
     ) { onShopNotificationToggled ->
         BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
             ShopDetailSheet(

@@ -19,8 +19,9 @@ import com.peto.ramap.ui.main.map.contract.MapIntent.OnCameraPositionChanged
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnCategoryFilterToggled
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnHiddenToggled
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnInitialLocationFocusConsumed
-import com.peto.ramap.ui.main.map.contract.MapIntent.OnKakaoLoginClicked
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnLocationPermissionBlocked
+import com.peto.ramap.ui.main.map.contract.MapIntent.OnLoginSelectionDismissed
+import com.peto.ramap.ui.main.map.contract.MapIntent.OnLoginTypeSelected
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnMyLocationChanged
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnQueryChanged
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnRequestedShopDismissed
@@ -75,7 +76,8 @@ fun MapRoute(
         shopShareLinkFactory = shopShareLinkFactory,
         requestNotificationPermission = requestNotificationPermission,
         onNotificationToggled = { viewModel.dispatch(OnShopNotificationToggled(it)) },
-        onLoginConfirmed = { viewModel.dispatch(OnKakaoLoginClicked) },
+        onLoginTypeSelected = { viewModel.dispatch(OnLoginTypeSelected(it)) },
+        onLoginDismissed = { viewModel.dispatch(OnLoginSelectionDismissed) },
     ) { onShopNotificationToggled ->
         MapContent(
             uiState = uiState,

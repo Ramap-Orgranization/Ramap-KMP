@@ -5,6 +5,9 @@ plugins {
 }
 
 kotlin {
+    sourceSets.commonTest.dependencies {
+        implementation(projects.core.testing)
+    }
     sourceSets.commonMain.dependencies {
         implementation(libs.kermit)
     }

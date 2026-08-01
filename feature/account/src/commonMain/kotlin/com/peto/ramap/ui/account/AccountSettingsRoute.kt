@@ -15,16 +15,17 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.peto.ramap.designsystem.button.AppButton
+import com.peto.ramap.designsystem.button.login.LoginButton
 import com.peto.ramap.designsystem.card.SectionCard
 import com.peto.ramap.designsystem.component.SettingsPage
 import com.peto.ramap.designsystem.dialog.CommonDialog
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.designsystem.toast.ToastManager
 import com.peto.ramap.domain.model.auth.LoginType
+import com.peto.ramap.domain.model.auth.supportedLoginTypes
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
-import com.peto.ramap.ui.account.component.LoginButton
 import com.peto.ramap.ui.account.contract.AccountIntent
 import com.peto.ramap.ui.account.contract.AccountSideEffect
 import com.peto.ramap.ui.base.ObserveAsEvents
@@ -87,15 +88,24 @@ fun AccountSettingsRoute(
                     onClick = { isAccountDeleteConfirmDialogVisible = true },
                 )
             } else {
-                LoginButton(
-                    type = LoginType.KAKAO,
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 20.dp)
-                            .padding(top = 16.dp),
-                    onClickLogin = { viewModel.dispatch(AccountIntent.OnKakaoLoginClick) },
-                )
+                supportedLoginTypes().forEachIndexed { index, loginType ->
+                    LoginButton(
+                        type = loginType,
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 20.dp)
+                                .padding(top = if (index == 0) 16.dp else 12.dp),
+                        onClick = {
+                            val intent =
+                                when (loginType) {
+                                    LoginType.KAKAO -> AccountIntent.OnKakaoLoginClick
+                                    LoginType.APPLE -> AccountIntent.OnAppleLoginClick
+                                }
+                            viewModel.dispatch(intent)
+                        },
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(15.dp))

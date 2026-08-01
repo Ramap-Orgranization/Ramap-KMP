@@ -15,7 +15,7 @@ class NavigationState(
         private set
 
     /** 마지막 네비게이션 소스. shop_select 등의 analytics source 파라미터로 사용. */
-    var lastNavigationSource: ShopNavigationSource? = null
+    var lastNavigationSource: NavigationSource? = null
         private set
 
     val currentBackStack: NavBackStack<NavKey>
@@ -108,7 +108,7 @@ class NavigationState(
 
     fun showShopOnMap(
         shopId: String,
-        source: ShopNavigationSource? = null,
+        source: NavigationSource? = null,
         returnTab: TabStatus? = null,
     ) {
         lastNavigationSource = source
