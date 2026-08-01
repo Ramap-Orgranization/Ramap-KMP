@@ -5,6 +5,7 @@ import com.peto.ramap.analytics.AnalyticsSource
 import com.peto.ramap.analytics.common.login.LoginAnalytics
 import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
+import com.peto.ramap.domain.model.auth.LoginType
 import com.peto.ramap.domain.model.rank.RankedShops
 import com.peto.ramap.domain.model.rank.RankingCursor
 import com.peto.ramap.domain.model.rank.RankingPage
@@ -15,7 +16,6 @@ import com.peto.ramap.domain.model.shop.AdministrativeDistricts
 import com.peto.ramap.domain.model.shop.AreaFilter
 import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.domain.repository.LoginRepository
-import com.peto.ramap.domain.model.auth.LoginType
 import com.peto.ramap.domain.repository.ShopRankingRepository
 import com.peto.ramap.domain.store.PersonalizationBootstrapState
 import com.peto.ramap.domain.store.ShopPersonalizationStore
@@ -31,6 +31,7 @@ import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.StringResource
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.kakao_login_failure_message
+import ramap.shared.generated.resources.login_success_message
 import ramap.shared.generated.resources.personalization_update_failure_message
 import ramap.shared.generated.resources.ranking_refresh_failure_message
 
@@ -428,7 +429,10 @@ class RankingViewModel(
             taskKey = SIGN_IN_TASK_KEY,
             policy = TaskPolicy.IgnoreNew,
             request = { loginRepository.signIn(LoginType.KAKAO) },
-            onSuccess = { loginAnalytics.logLoginSucceeded(AnalyticsSource.RANKING) },
+            onSuccess = {
+                loginAnalytics.logLoginSucceeded(AnalyticsSource.RANKING)
+                showToast(Res.string.login_success_message, ToastType.SUCCESS)
+            },
             onError = { handleKakaoLoginFailure() },
         )
     }
@@ -440,7 +444,10 @@ class RankingViewModel(
             taskKey = SIGN_IN_TASK_KEY,
             policy = TaskPolicy.IgnoreNew,
             request = { loginRepository.signIn(LoginType.APPLE) },
-            onSuccess = { loginAnalytics.logLoginSucceeded(AnalyticsSource.RANKING) },
+            onSuccess = {
+                loginAnalytics.logLoginSucceeded(AnalyticsSource.RANKING)
+                showToast(Res.string.login_success_message, ToastType.SUCCESS)
+            },
             onError = {
                 loginAnalytics.logLoginFailed(AnalyticsSource.RANKING)
                 showToast(Res.string.kakao_login_failure_message, ToastType.ERROR)

@@ -11,8 +11,8 @@ import com.peto.ramap.domain.model.auth.LoginType
 import com.peto.ramap.domain.repository.LoginRepository
 import com.peto.ramap.ui.account.contract.AccountIntent
 import com.peto.ramap.ui.account.contract.AccountIntent.OnAccountDeleteConfirm
-import com.peto.ramap.ui.account.contract.AccountIntent.OnKakaoLoginClick
 import com.peto.ramap.ui.account.contract.AccountIntent.OnAppleLoginClick
+import com.peto.ramap.ui.account.contract.AccountIntent.OnKakaoLoginClick
 import com.peto.ramap.ui.account.contract.AccountIntent.OnLogoutClick
 import com.peto.ramap.ui.account.contract.AccountLoadKey
 import com.peto.ramap.ui.account.contract.AccountSideEffect
@@ -26,8 +26,9 @@ import org.jetbrains.compose.resources.StringResource
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.account_delete_failure_message
 import ramap.shared.generated.resources.account_delete_success_message
-import ramap.shared.generated.resources.kakao_login_failure_message
 import ramap.shared.generated.resources.apple_login_failure_message
+import ramap.shared.generated.resources.kakao_login_failure_message
+import ramap.shared.generated.resources.login_success_message
 import ramap.shared.generated.resources.logout_failure_message
 
 class AccountViewModel(
@@ -85,6 +86,7 @@ class AccountViewModel(
             request = { loginRepository.signIn(LoginType.KAKAO) },
             onSuccess = {
                 loginAnalytics.logLoginSucceeded(AnalyticsSource.ACCOUNT)
+                showToast(Res.string.login_success_message, ToastType.SUCCESS)
             },
             onError = {
                 loginAnalytics.logLoginFailed(AnalyticsSource.ACCOUNT)
@@ -106,6 +108,7 @@ class AccountViewModel(
             request = { loginRepository.signIn(LoginType.APPLE) },
             onSuccess = {
                 loginAnalytics.logLoginSucceeded(AnalyticsSource.ACCOUNT, LoginMethod.APPLE)
+                showToast(Res.string.login_success_message, ToastType.SUCCESS)
             },
             onError = {
                 loginAnalytics.logLoginFailed(AnalyticsSource.ACCOUNT, LoginMethod.APPLE)

@@ -9,6 +9,7 @@ import com.peto.ramap.designsystem.toast.model.ToastAction
 import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.auth.LoginSessionState
+import com.peto.ramap.domain.model.auth.LoginType
 import com.peto.ramap.domain.model.personalization.ShopPersonalization
 import com.peto.ramap.domain.model.place.PlaceSearchResult
 import com.peto.ramap.domain.model.place.PlaceSearchResults
@@ -22,7 +23,6 @@ import com.peto.ramap.domain.model.shop.RamenShopFilter
 import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.domain.model.shop.SearchQuery
 import com.peto.ramap.domain.repository.LoginRepository
-import com.peto.ramap.domain.model.auth.LoginType
 import com.peto.ramap.domain.repository.PlaceSearchRepository
 import com.peto.ramap.domain.repository.RamenShopRepository
 import com.peto.ramap.domain.repository.ShopReportRepository
@@ -42,8 +42,8 @@ import com.peto.ramap.ui.main.map.contract.MapIntent.OnCameraPositionChanged
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnCategoryFilterToggled
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnHiddenToggled
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnInitialLocationFocusConsumed
-import com.peto.ramap.ui.main.map.contract.MapIntent.OnLoginTypeSelected
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnLocationPermissionBlocked
+import com.peto.ramap.ui.main.map.contract.MapIntent.OnLoginTypeSelected
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnMapTabExited
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnMyLocationChanged
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnQueryChanged
@@ -87,6 +87,7 @@ import ramap.shared.generated.resources.hide_shop_success_message
 import ramap.shared.generated.resources.kakao_login_failure_message
 import ramap.shared.generated.resources.location_permission_enable_message
 import ramap.shared.generated.resources.location_permission_settings_action
+import ramap.shared.generated.resources.login_success_message
 import ramap.shared.generated.resources.personalization_update_failure_message
 import ramap.shared.generated.resources.search_result_empty_message
 import ramap.shared.generated.resources.shop_information_report_failure_message
@@ -721,7 +722,10 @@ class MapViewModel(
             taskKey = SIGN_IN_TASK_KEY,
             policy = TaskPolicy.IgnoreNew,
             request = { loginRepository.signIn(LoginType.KAKAO) },
-            onSuccess = { loginAnalytics.logLoginSucceeded(AnalyticsSource.MAP) },
+            onSuccess = {
+                loginAnalytics.logLoginSucceeded(AnalyticsSource.MAP)
+                showToast(Res.string.login_success_message)
+            },
             onError = {
                 loginAnalytics.logLoginFailed(AnalyticsSource.MAP)
                 showKakaoLoginFailure()
