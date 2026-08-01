@@ -1,6 +1,7 @@
 package com.peto.ramap.ui.main.event.list.component
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
@@ -8,6 +9,7 @@ import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.peto.ramap.designsystem.card.EventCard
 import com.peto.ramap.designsystem.text.AppText
@@ -21,6 +23,7 @@ internal fun eventSection(
     title: String,
     events: List<ShopEvent>,
     isHorizontal: Boolean,
+    horizontalContentPadding: Dp = 0.dp,
     onEventClick: (ShopEvent) -> Unit,
 ) {
     if (events.isEmpty()) return
@@ -28,14 +31,20 @@ internal fun eventSection(
     scope.item(key = title) {
         AppText(
             text = title,
-            modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp, start = 15.dp),
             style = AppTextStyle.H3,
             color = GrayColor.C500,
         )
     }
     if (isHorizontal) {
         scope.item(key = "$title-events") {
-            LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            LazyRow(
+                contentPadding = PaddingValues(horizontal = horizontalContentPadding),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
                 items(events, key = ShopEvent::id) { event ->
                     EventCard(
                         event = event,
@@ -52,6 +61,7 @@ internal fun eventSection(
                 event = event,
                 dateText = eventDateText(event.startDate, event.endDate),
                 onClick = { onEventClick(event) },
+                modifier = Modifier.padding(horizontal = horizontalContentPadding),
             )
         }
     }
