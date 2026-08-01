@@ -5,7 +5,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.peto.ramap.designsystem.component.LoadErrorContent
@@ -40,6 +43,12 @@ fun App(
 ) {
     val retryRequests = remember { MutableSharedFlow<Unit>(extraBufferCapacity = 1) }
     val personalizationState by personalizationStore.state.collectAsStateWithLifecycle()
+    // 구성 변경이 새로고침의 Loading 상태에서 끝나도 네비게이션 저장소를 다시 연결한다.
+    var hasShownAppRoute by rememberSaveable { mutableStateOf(false) }
+
+    if (personalizationState is PersonalizationBootstrapState.Success) {
+        hasShownAppRoute = true
+    }
 
     LaunchedEffect(loginRepository, personalizationStore) {
         observeSessionPersonalization(
@@ -51,11 +60,20 @@ fun App(
 
     RamapTheme {
         Box(modifier = Modifier.fillMaxSize()) {
-            when (personalizationState) {
-                PersonalizationBootstrapState.Loading ->
+            when {
+                shouldShowAppRoute(
+                    personalizationState = personalizationState,
+                    hasShownAppRoute = hasShownAppRoute,
+                ) ->
+                    AppRoute(
+                        toastManager = toastManager,
+                        onExitRequested = onExitRequested,
+                    )
+
+                personalizationState == PersonalizationBootstrapState.Loading ->
                     RamenLoadingIndicator(modifier = Modifier.fillMaxSize())
 
-                PersonalizationBootstrapState.Error ->
+                personalizationState == PersonalizationBootstrapState.Error ->
                     LoadErrorContent(
                         image = Res.drawable.laduck_error_confused,
                         title = stringResource(Res.string.personalization_load_failure_title),
@@ -64,17 +82,18 @@ fun App(
                         modifier = Modifier.fillMaxSize(),
                     )
 
-                is PersonalizationBootstrapState.Success ->
-                    AppRoute(
-                        toastManager = toastManager,
-                        onExitRequested = onExitRequested,
-                    )
+                else -> Unit
             }
 
             ToastHost(toastManager = toastManager)
         }
     }
 }
+
+internal fun shouldShowAppRoute(
+    personalizationState: PersonalizationBootstrapState,
+    hasShownAppRoute: Boolean,
+): Boolean = hasShownAppRoute || personalizationState is PersonalizationBootstrapState.Success
 
 internal suspend fun observeSessionPersonalization(
     loginRepository: LoginRepository,

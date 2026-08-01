@@ -3,6 +3,8 @@ package com.peto.ramap
 import com.peto.ramap.core.result.RamapError
 import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.domain.model.auth.LoginSessionState
+import com.peto.ramap.domain.model.personalization.ShopPersonalization
+import com.peto.ramap.domain.store.PersonalizationBootstrapState
 import com.peto.ramap.domain.store.ShopPersonalizationStore
 import com.peto.ramap.fake.FakeLoginRepository
 import com.peto.ramap.fake.FakePersonalizationRepository
@@ -15,9 +17,45 @@ import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class AppPersonalizationTest {
+    @Test
+    fun `이미 표시한 앱 경로는 구성 변경 새로고침 중에도 유지한다`() {
+        assertTrue(
+            shouldShowAppRoute(
+                personalizationState = PersonalizationBootstrapState.Success(ShopPersonalization()),
+                hasShownAppRoute = false,
+            ),
+        )
+        assertTrue(
+            shouldShowAppRoute(
+                personalizationState = PersonalizationBootstrapState.Loading,
+                hasShownAppRoute = true,
+            ),
+        )
+        assertFalse(
+            shouldShowAppRoute(
+                personalizationState = PersonalizationBootstrapState.Loading,
+                hasShownAppRoute = false,
+            ),
+        )
+        assertFalse(
+            shouldShowAppRoute(
+                personalizationState = PersonalizationBootstrapState.Error,
+                hasShownAppRoute = false,
+            ),
+        )
+        assertTrue(
+            shouldShowAppRoute(
+                personalizationState = PersonalizationBootstrapState.Error,
+                hasShownAppRoute = true,
+            ),
+        )
+    }
+
     @Test
     fun `인증 후 초기 동기화 실패 상태를 유지하고 사용자 재시도를 받는다`() =
         runTest {
