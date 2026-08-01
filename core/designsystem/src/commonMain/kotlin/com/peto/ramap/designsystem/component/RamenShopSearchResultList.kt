@@ -1,7 +1,10 @@
 package com.peto.ramap.designsystem.component
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -9,8 +12,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.HorizontalDivider
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
@@ -31,11 +33,15 @@ import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.extension.noRippleClickable
 import com.peto.ramap.theme.AppTextStyle
+import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.RamapTheme
 import org.jetbrains.compose.resources.painterResource
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.ic_close
+import ramap.shared.generated.resources.ic_favorite_border
+
+private val SearchResultCardShape = RoundedCornerShape(8.dp)
 
 @Composable
 fun RamenShopSearchResultList(
@@ -43,8 +49,12 @@ fun RamenShopSearchResultList(
     onShopClick: (RamenShop) -> Unit,
     categoryLabel: @Composable (Category) -> String,
     modifier: Modifier = Modifier,
-    itemModifier: (RamenShop) -> Modifier = { Modifier },
-    showDividers: Boolean = true,
+    itemModifier: (RamenShop) -> Modifier = {
+        Modifier.padding(
+            horizontal = 12.dp,
+            vertical = 6.dp,
+        )
+    },
     itemActionLabel: (@Composable (RamenShop) -> String)? = null,
     onItemAction: ((RamenShop) -> Unit)? = null,
 ) {
@@ -54,10 +64,7 @@ fun RamenShopSearchResultList(
                 .fillMaxWidth()
                 .padding(bottom = 24.dp),
     ) {
-        shops.values.forEachIndexed { index, shop ->
-            if (showDividers && index > 0) {
-                HorizontalDivider(thickness = 1.dp, color = GrayColor.C100)
-            }
+        shops.values.forEach { shop ->
             RamenShopSearchResultItem(
                 shop = shop,
                 onClick = { onShopClick(shop) },
@@ -81,27 +88,29 @@ private fun RamenShopSearchResultItem(
     actionLabel: String? = null,
     onAction: (() -> Unit)? = null,
 ) {
-    Column(
+    Box(
         modifier =
             modifier
                 .fillMaxWidth()
                 .then(if (onClick != null) Modifier.noRippleClickable(onClick = onClick) else Modifier)
-                .padding(12.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
+                .border(1.dp, GrayColor.C100, SearchResultCardShape)
+                .clip(SearchResultCardShape)
+                .background(CommonColor.White),
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(12.dp)
+                    .padding(end = 48.dp),
             horizontalArrangement = Arrangement.spacedBy(10.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             leadingContent()
             RemoteShopImage(
                 url = shop.instagramProfileImageUrl,
-                modifier =
-                    Modifier
-                        .size(44.dp)
-                        .border(1.dp, GrayColor.C100, CircleShape)
-                        .clip(CircleShape),
+                modifier = Modifier.size(60.dp),
+                shape = RoundedCornerShape(8.dp),
             )
             Column(
                 modifier = Modifier.weight(1f),
@@ -121,35 +130,67 @@ private fun RamenShopSearchResultItem(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
-            }
-            if (actionLabel != null && onAction != null) {
-                IconButton(
-                    onClick = onAction,
-                    modifier =
-                        Modifier.semantics {
-                            contentDescription = "${shop.name} $actionLabel"
-                        },
-                ) {
-                    Icon(
-                        painter = painterResource(Res.drawable.ic_close),
-                        contentDescription = null,
-                        tint = GrayColor.C400,
-                    )
+                if (shop.hasCategory) {
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp),
+                    ) {
+                        shop.menuCategories.forEach { category ->
+                            CategoryFilterChip(
+                                label = categoryLabel(category),
+                                shape = RoundedCornerShape(8.dp),
+                            )
+                        }
+                    }
                 }
             }
         }
 
-        if (shop.hasCategory) {
-            FlowRow(
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                verticalArrangement = Arrangement.spacedBy(6.dp),
-            ) {
-                shop.menuCategories.forEach { category ->
-                    CategoryFilterChip(label = categoryLabel(category))
-                }
-            }
-        }
+        SearchResultItemAction(
+            shop = shop,
+            actionLabel = actionLabel,
+            onAction = onAction,
+        )
     }
+}
+
+@Composable
+private fun BoxScope.SearchResultItemAction(
+    shop: RamenShop,
+    actionLabel: String?,
+    onAction: (() -> Unit)?,
+) {
+    if (actionLabel != null && onAction != null) {
+        IconButton(
+            onClick = onAction,
+            modifier =
+                Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(10.dp)
+                    .size(24.dp)
+                    .semantics {
+                        contentDescription = "${shop.name} $actionLabel"
+                    },
+        ) {
+            Icon(
+                painter = painterResource(Res.drawable.ic_close),
+                contentDescription = null,
+                tint = GrayColor.C400,
+            )
+        }
+        return
+    }
+
+    Icon(
+        painter = painterResource(Res.drawable.ic_favorite_border),
+        contentDescription = null,
+        modifier =
+            Modifier
+                .align(Alignment.TopEnd)
+                .padding(10.dp)
+                .size(24.dp),
+        tint = GrayColor.C400,
+    )
 }
 
 @Preview(showBackground = true)
@@ -172,7 +213,13 @@ private fun RamenShopSearchResultListPreview() {
                             instagramUrl = null,
                             instagramProfileImageUrl = null,
                             kakaoRating = 4.5,
-                            menuCategories = MenuCategories(listOf(Category.TONKOTSU, Category.TSUKEMEN)),
+                            menuCategories =
+                                MenuCategories(
+                                    listOf(
+                                        Category.TONKOTSU,
+                                        Category.TSUKEMEN,
+                                    ),
+                                ),
                             isVisible = true,
                             createdAt = "",
                             updatedAt = "",
