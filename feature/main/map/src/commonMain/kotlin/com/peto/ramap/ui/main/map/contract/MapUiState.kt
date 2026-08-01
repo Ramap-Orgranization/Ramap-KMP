@@ -174,7 +174,8 @@ data class MapUiState(
                 (
                     (
                         searchResultGuide != null &&
-                            searchResultGuide != SearchResultGuide.SEARCH_EMPTY
+                            searchResultGuide != SearchResultGuide.SEARCH_EMPTY &&
+                            searchResultGuide != SearchResultGuide.HIDDEN_ONLY
                     ) ||
                         searchResultShops.size > 1 ||
                         placeSearchResults.size > 1

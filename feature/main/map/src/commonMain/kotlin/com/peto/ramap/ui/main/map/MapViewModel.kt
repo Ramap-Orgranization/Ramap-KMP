@@ -3,6 +3,7 @@ package com.peto.ramap.ui.main.map
 import androidx.lifecycle.viewModelScope
 import com.peto.ramap.analytics.AnalyticsSource
 import com.peto.ramap.analytics.common.login.LoginAnalytics
+import com.peto.ramap.analytics.common.login.LoginMethod
 import com.peto.ramap.core.result.RamapError
 import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.designsystem.toast.model.ToastAction
@@ -69,6 +70,7 @@ import com.peto.ramap.ui.main.map.contract.MapUiState
 import com.peto.ramap.ui.main.map.log.MapAnalytics
 import com.peto.ramap.ui.main.map.model.CameraPosition
 import com.peto.ramap.ui.main.map.model.LocationFocusStatus
+import com.peto.ramap.ui.main.map.model.PendingMapAction
 import com.peto.ramap.ui.main.map.model.ShopDetailUiState
 import com.peto.ramap.ui.main.map.search.MapSearchController
 import com.peto.ramap.ui.main.map.search.MapSearchResult
@@ -79,6 +81,7 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.StringResource
 import ramap.shared.generated.resources.Res
+import ramap.shared.generated.resources.apple_login_failure_message
 import ramap.shared.generated.resources.data_load_failure_message
 import ramap.shared.generated.resources.filter_empty_visible_result_message
 import ramap.shared.generated.resources.hidden_shop_notification_unavailable_message
@@ -110,6 +113,7 @@ class MapViewModel(
             placeSearchRepository = placeSearchRepository,
         )
     private val viewportShopLoader = ViewportShopLoader(ramenShopRepository, viewModelScope)
+    private var pendingMapAction: PendingMapAction? = null
 
     init {
         viewModelScope.launch { observeSessionState() }
@@ -231,7 +235,10 @@ class MapViewModel(
     private fun handleAccountIntent(intent: MapIntent) {
         when (intent) {
             is OnLoginTypeSelected -> {
-                if (intent.type == LoginType.KAKAO) signInWithKakao()
+                when (intent.type) {
+                    LoginType.KAKAO -> signInWithKakao()
+                    LoginType.APPLE -> signInWithApple()
+                }
             }
             OnLocationPermissionBlocked -> showLocationPermissionBlockedToast()
 
@@ -541,10 +548,12 @@ class MapViewModel(
     }
 
     private fun toggleBookmark(shop: RamenShop) {
-        if (!isLoggedInOrShowGuide()) return
-
         val wasBookmarked = shop.id in currentState.bookmarkedShopIds
         val enabled = !wasBookmarked
+        if (!currentState.isLoggedIn) {
+            pendingMapAction = PendingMapAction.ToggleBookmark(shop)
+            if (!isLoggedInOrShowGuide()) return
+        }
 
         mapAnalytics.logBookmarkToggled(shop, enabled)
         postBookmark(shop.id, wasBookmarked)
@@ -725,6 +734,7 @@ class MapViewModel(
             onSuccess = {
                 loginAnalytics.logLoginSucceeded(AnalyticsSource.MAP)
                 showToast(Res.string.login_success_message)
+                resumePendingBookmark()
             },
             onError = {
                 loginAnalytics.logLoginFailed(AnalyticsSource.MAP)
@@ -733,8 +743,38 @@ class MapViewModel(
         )
     }
 
+    private fun signInWithApple() {
+        loginAnalytics.logLoginStarted(AnalyticsSource.MAP, LoginMethod.APPLE)
+        launchResultTask(
+            taskKey = SIGN_IN_TASK_KEY,
+            policy = TaskPolicy.IgnoreNew,
+            request = { loginRepository.signIn(LoginType.APPLE) },
+            onSuccess = {
+                loginAnalytics.logLoginSucceeded(AnalyticsSource.MAP, LoginMethod.APPLE)
+                showToast(Res.string.login_success_message)
+                resumePendingBookmark()
+            },
+            onError = {
+                loginAnalytics.logLoginFailed(AnalyticsSource.MAP, LoginMethod.APPLE)
+                showAppleLoginFailure()
+            },
+        )
+    }
+
     private fun showKakaoLoginFailure() {
         showToast(Res.string.kakao_login_failure_message, ToastType.ERROR)
+    }
+
+    private fun showAppleLoginFailure() {
+        showToast(Res.string.apple_login_failure_message, ToastType.ERROR)
+    }
+
+    private fun resumePendingBookmark() {
+        val pending = pendingMapAction as? PendingMapAction.ToggleBookmark ?: return
+        pendingMapAction = null
+        val wasBookmarked = pending.shop.id in currentState.bookmarkedShopIds
+        mapAnalytics.logBookmarkToggled(pending.shop, !wasBookmarked)
+        postBookmark(pending.shop.id, wasBookmarked)
     }
 
     private fun updateFilter(filter: RamenShopFilter) {
@@ -775,8 +815,12 @@ class MapViewModel(
 
     private suspend fun handleLoadedSearchResult(result: MapSearchResult.Loaded) {
         reduceSearchResult(result.query, result.shops)
+        val searchResultShops = currentState.searchResultShops
+        if (searchResultShops.size > 1 && searchResultShops.values.any { !it.isVisible }) {
+            showToast(Res.string.hidden_shop_search_result_message)
+        }
         if (result.shops.isNotEmpty()) {
-            handleSingleSearchResult(currentState.searchResultShops.singleShopOrNull())
+            handleSingleSearchResult(searchResultShops.singleShopOrNull())
             return
         }
         handlePlaceSearchSuccess(result.places)

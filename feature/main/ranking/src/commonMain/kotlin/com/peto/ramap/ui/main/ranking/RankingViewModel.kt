@@ -3,6 +3,7 @@ package com.peto.ramap.ui.main.ranking
 import androidx.lifecycle.viewModelScope
 import com.peto.ramap.analytics.AnalyticsSource
 import com.peto.ramap.analytics.common.login.LoginAnalytics
+import com.peto.ramap.analytics.common.login.LoginMethod
 import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.auth.LoginType
@@ -30,6 +31,7 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.StringResource
 import ramap.shared.generated.resources.Res
+import ramap.shared.generated.resources.apple_login_failure_message
 import ramap.shared.generated.resources.kakao_login_failure_message
 import ramap.shared.generated.resources.login_success_message
 import ramap.shared.generated.resources.personalization_update_failure_message
@@ -45,6 +47,7 @@ class RankingViewModel(
         RankingUiState(),
     ) {
     private var observedBookmarkedShopIds: Set<String>? = null
+    private var pendingBookmarkRequest: Pair<RamenShop, Boolean>? = null
 
     init {
         observePersonalization()
@@ -255,7 +258,10 @@ class RankingViewModel(
         shop: RamenShop,
         enabled: Boolean,
     ) {
-        if (!hasBookmarkSessionOrShowGuide()) return
+        if (!hasBookmarkSessionOrShowGuide()) {
+            pendingBookmarkRequest = shop to enabled
+            return
+        }
         if (shop.id in currentState.bookmarkUpdatingShopIds) return
         if (!shouldUpdateBookmark(shop.id, enabled)) return
 
@@ -432,27 +438,40 @@ class RankingViewModel(
             onSuccess = {
                 loginAnalytics.logLoginSucceeded(AnalyticsSource.RANKING)
                 showToast(Res.string.login_success_message, ToastType.SUCCESS)
+                resumePendingBookmark()
             },
             onError = { handleKakaoLoginFailure() },
         )
     }
 
     private fun signInWithApple() {
-        loginAnalytics.logLoginStarted(AnalyticsSource.RANKING)
+        loginAnalytics.logLoginStarted(AnalyticsSource.RANKING, LoginMethod.APPLE)
 
         launchResultTask(
             taskKey = SIGN_IN_TASK_KEY,
             policy = TaskPolicy.IgnoreNew,
             request = { loginRepository.signIn(LoginType.APPLE) },
             onSuccess = {
-                loginAnalytics.logLoginSucceeded(AnalyticsSource.RANKING)
+                loginAnalytics.logLoginSucceeded(AnalyticsSource.RANKING, LoginMethod.APPLE)
                 showToast(Res.string.login_success_message, ToastType.SUCCESS)
+                resumePendingBookmark()
             },
             onError = {
-                loginAnalytics.logLoginFailed(AnalyticsSource.RANKING)
-                showToast(Res.string.kakao_login_failure_message, ToastType.ERROR)
+                loginAnalytics.logLoginFailed(AnalyticsSource.RANKING, LoginMethod.APPLE)
+                showToast(Res.string.apple_login_failure_message, ToastType.ERROR)
             },
         )
+    }
+
+    private fun resumePendingBookmark() {
+        val pending = pendingBookmarkRequest ?: return
+        pendingBookmarkRequest = null
+        val (shop, enabled) = pending
+        if (shop.id in currentState.bookmarkUpdatingShopIds) return
+        if (!shouldUpdateBookmark(shop.id, enabled)) return
+
+        rankingAnalytics.logBookmarkToggled(shop, enabled)
+        executeBookmarkUpdate(shop.id, enabled)
     }
 
     private fun handleKakaoLoginFailure() {
