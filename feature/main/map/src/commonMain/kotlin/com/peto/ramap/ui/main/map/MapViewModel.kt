@@ -3,12 +3,15 @@ package com.peto.ramap.ui.main.map
 import androidx.lifecycle.viewModelScope
 import com.peto.ramap.analytics.AnalyticsSource
 import com.peto.ramap.analytics.common.login.LoginAnalytics
+import com.peto.ramap.analytics.common.login.LoginMethod
 import com.peto.ramap.core.result.RamapError
 import com.peto.ramap.core.result.RamapResult
+import com.peto.ramap.designsystem.button.login.LoginTypeResourceMapper
 import com.peto.ramap.designsystem.toast.model.ToastAction
 import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.auth.LoginSessionState
+import com.peto.ramap.domain.model.auth.LoginType
 import com.peto.ramap.domain.model.personalization.ShopPersonalization
 import com.peto.ramap.domain.model.place.PlaceSearchResult
 import com.peto.ramap.domain.model.place.PlaceSearchResults
@@ -41,8 +44,9 @@ import com.peto.ramap.ui.main.map.contract.MapIntent.OnCameraPositionChanged
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnCategoryFilterToggled
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnHiddenToggled
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnInitialLocationFocusConsumed
-import com.peto.ramap.ui.main.map.contract.MapIntent.OnKakaoLoginClicked
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnLocationPermissionBlocked
+import com.peto.ramap.ui.main.map.contract.MapIntent.OnLoginSelectionDismissed
+import com.peto.ramap.ui.main.map.contract.MapIntent.OnLoginTypeSelected
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnMapTabExited
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnMyLocationChanged
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnQueryChanged
@@ -68,6 +72,7 @@ import com.peto.ramap.ui.main.map.contract.MapUiState
 import com.peto.ramap.ui.main.map.log.MapAnalytics
 import com.peto.ramap.ui.main.map.model.CameraPosition
 import com.peto.ramap.ui.main.map.model.LocationFocusStatus
+import com.peto.ramap.ui.main.map.model.PendingMapAction
 import com.peto.ramap.ui.main.map.model.ShopDetailUiState
 import com.peto.ramap.ui.main.map.search.MapSearchController
 import com.peto.ramap.ui.main.map.search.MapSearchResult
@@ -83,7 +88,6 @@ import ramap.shared.generated.resources.filter_empty_visible_result_message
 import ramap.shared.generated.resources.hidden_shop_notification_unavailable_message
 import ramap.shared.generated.resources.hidden_shop_search_result_message
 import ramap.shared.generated.resources.hide_shop_success_message
-import ramap.shared.generated.resources.kakao_login_failure_message
 import ramap.shared.generated.resources.location_permission_enable_message
 import ramap.shared.generated.resources.location_permission_settings_action
 import ramap.shared.generated.resources.personalization_update_failure_message
@@ -108,6 +112,8 @@ class MapViewModel(
             placeSearchRepository = placeSearchRepository,
         )
     private val viewportShopLoader = ViewportShopLoader(ramenShopRepository, viewModelScope)
+    private var pendingMapAction: PendingMapAction? = null
+    private var pendingKakaoLogin = false
 
     init {
         viewModelScope.launch { observeSessionState() }
@@ -228,7 +234,8 @@ class MapViewModel(
 
     private fun handleAccountIntent(intent: MapIntent) {
         when (intent) {
-            OnKakaoLoginClicked -> signInWithKakao()
+            is OnLoginTypeSelected -> signIn(intent.type)
+            OnLoginSelectionDismissed -> clearPendingAction()
             OnLocationPermissionBlocked -> showLocationPermissionBlockedToast()
 
             else -> error("Unhandled map intent: $intent")
@@ -239,6 +246,7 @@ class MapViewModel(
         loginRepository.sessionState.collectLatest { sessionState ->
             val isAuthenticated = sessionState == LoginSessionState.AUTHENTICATED
             updateAuthState(isAuthenticated)
+            completeKakaoLoginIfAuthenticated(isAuthenticated)
         }
     }
 
@@ -537,8 +545,10 @@ class MapViewModel(
     }
 
     private fun toggleBookmark(shop: RamenShop) {
-        if (!isLoggedInOrShowGuide()) return
+        executeLoginRequiredAction(PendingMapAction.ToggleBookmark(shop))
+    }
 
+    private fun updateBookmark(shop: RamenShop) {
         val wasBookmarked = shop.id in currentState.bookmarkedShopIds
         val enabled = !wasBookmarked
 
@@ -547,8 +557,10 @@ class MapViewModel(
     }
 
     private fun toggleShopSubscribed(shop: RamenShop) {
-        if (!isLoggedInOrShowGuide()) return
+        executeLoginRequiredAction(PendingMapAction.ToggleShopNotification(shop))
+    }
 
+    private fun updateShopNotification(shop: RamenShop) {
         val isHiddenShop = shop.id in currentState.hiddenShopIds
 
         if (isHiddenShop) {
@@ -599,8 +611,10 @@ class MapViewModel(
     }
 
     private fun toggleHidden(shop: RamenShop) {
-        if (!isLoggedInOrShowGuide()) return
+        executeLoginRequiredAction(PendingMapAction.ToggleHidden(shop))
+    }
 
+    private fun updateHiddenShop(shop: RamenShop) {
         val wasHidden = shop.id in currentState.hiddenShopIds
         mapAnalytics.logHiddenToggled(shop, !wasHidden)
 
@@ -639,8 +653,10 @@ class MapViewModel(
     }
 
     private fun toggleBookmarkedView() {
-        if (!isLoggedInOrShowGuide()) return
+        executeLoginRequiredAction(PendingMapAction.ToggleBookmarkedShops)
+    }
 
+    private fun updateBookmarkedView() {
         val enabled = !currentState.isBookmarkedView
 
         reduce {
@@ -669,11 +685,14 @@ class MapViewModel(
         }
     }
 
-    private fun isLoggedInOrShowGuide(): Boolean {
-        if (currentState.isLoggedIn) return true
+    private fun executeLoginRequiredAction(action: PendingMapAction) {
+        if (currentState.isLoggedIn) {
+            performPendingAction(action)
+            return
+        }
 
+        pendingMapAction = action
         trySideEffect(ShowLoginGuide)
-        return false
     }
 
     private fun submitShopInformationReport(
@@ -712,23 +731,66 @@ class MapViewModel(
         showToast(Res.string.shop_information_report_failure_message, ToastType.ERROR)
     }
 
-    private fun signInWithKakao() {
-        loginAnalytics.logLoginStarted(AnalyticsSource.MAP)
+    private fun signIn(type: LoginType) {
+        val method = loginMethod(type)
+        loginAnalytics.logLoginStarted(AnalyticsSource.MAP, method)
+        if (type == LoginType.KAKAO) pendingKakaoLogin = true
         launchResultTask(
             taskKey = SIGN_IN_TASK_KEY,
             policy = TaskPolicy.IgnoreNew,
-            request = loginRepository::signInWithKakao,
-            onSuccess = { loginAnalytics.logLoginSucceeded(AnalyticsSource.MAP) },
+            request = { loginRepository.signIn(type) },
+            onSuccess = {
+                if (type == LoginType.APPLE) completeLogin(type)
+            },
             onError = {
-                loginAnalytics.logLoginFailed(AnalyticsSource.MAP)
-                showKakaoLoginFailure()
+                if (type == LoginType.KAKAO) pendingKakaoLogin = false
+                loginAnalytics.logLoginFailed(AnalyticsSource.MAP, method)
+                showLoginFailure(type)
+                clearPendingAction()
             },
         )
     }
 
-    private fun showKakaoLoginFailure() {
-        showToast(Res.string.kakao_login_failure_message, ToastType.ERROR)
+    private fun completeKakaoLoginIfAuthenticated(isAuthenticated: Boolean) {
+        if (!isAuthenticated || !pendingKakaoLogin) return
+
+        pendingKakaoLogin = false
+        completeLogin(LoginType.KAKAO)
     }
+
+    private fun completeLogin(type: LoginType) {
+        loginAnalytics.logLoginSucceeded(AnalyticsSource.MAP, loginMethod(type))
+        resumePendingAction()
+    }
+
+    private fun resumePendingAction() {
+        val action = pendingMapAction ?: return
+        pendingMapAction = null
+        performPendingAction(action)
+    }
+
+    private fun clearPendingAction() {
+        pendingMapAction = null
+    }
+
+    private fun performPendingAction(action: PendingMapAction) {
+        when (action) {
+            is PendingMapAction.ToggleBookmark -> updateBookmark(action.shop)
+            is PendingMapAction.ToggleShopNotification -> updateShopNotification(action.shop)
+            is PendingMapAction.ToggleHidden -> updateHiddenShop(action.shop)
+            PendingMapAction.ToggleBookmarkedShops -> updateBookmarkedView()
+        }
+    }
+
+    private fun showLoginFailure(type: LoginType) {
+        showToast(LoginTypeResourceMapper.failureMessage(type), ToastType.ERROR)
+    }
+
+    private fun loginMethod(type: LoginType): LoginMethod =
+        when (type) {
+            LoginType.KAKAO -> LoginMethod.KAKAO
+            LoginType.APPLE -> LoginMethod.APPLE
+        }
 
     private fun updateFilter(filter: RamenShopFilter) {
         reduce {

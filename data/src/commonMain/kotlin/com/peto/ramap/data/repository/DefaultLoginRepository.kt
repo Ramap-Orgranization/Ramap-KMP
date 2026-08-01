@@ -1,12 +1,15 @@
 package com.peto.ramap.data.repository
 
 import com.peto.ramap.core.result.RamapResult
+import com.peto.ramap.data.auth.loginWithApple
 import com.peto.ramap.data.auth.loginWithKakao
 import com.peto.ramap.domain.model.auth.LoginSessionState
+import com.peto.ramap.domain.model.auth.LoginType
 import com.peto.ramap.domain.repository.LoginRepository
 import com.peto.ramap.network.execute.invokeRequest
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
+import io.github.jan.supabase.auth.providers.Apple
 import io.github.jan.supabase.auth.providers.Kakao
 import io.github.jan.supabase.auth.providers.builtin.IDToken
 import io.github.jan.supabase.auth.status.SessionStatus
@@ -44,13 +47,25 @@ internal class DefaultLoginRepository(
     override fun currentUserEmail(): String? = supabaseClient.auth.currentUserOrNull()?.email
 
     /** 플랫폼 카카오 SDK로 로그인한 뒤 Supabase 세션을 생성합니다. */
-    override suspend fun signInWithKakao(): RamapResult<Unit> =
+    override suspend fun signIn(type: LoginType): RamapResult<Unit> =
         invokeRequest {
-            val token = loginWithKakao()
-            supabaseClient.auth.signInWith(IDToken) {
-                idToken = token.idToken
-                provider = Kakao
-                accessToken = token.accessToken
+            when (type) {
+                LoginType.KAKAO -> {
+                    val token = loginWithKakao()
+                    supabaseClient.auth.signInWith(IDToken) {
+                        idToken = token.idToken
+                        provider = Kakao
+                        accessToken = token.accessToken
+                    }
+                }
+                LoginType.APPLE -> {
+                    val token = loginWithApple()
+                    supabaseClient.auth.signInWith(IDToken) {
+                        idToken = token.idToken
+                        provider = Apple
+                        nonce = token.nonce
+                    }
+                }
             }
         }
 

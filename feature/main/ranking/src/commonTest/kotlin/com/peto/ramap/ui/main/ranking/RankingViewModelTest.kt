@@ -8,6 +8,7 @@ import com.peto.ramap.coroutinesTest
 import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.auth.LoginSessionState
+import com.peto.ramap.domain.model.auth.LoginType
 import com.peto.ramap.domain.model.personalization.ShopPersonalization
 import com.peto.ramap.domain.model.rank.RankingCursor
 import com.peto.ramap.domain.model.rank.RankingPage
@@ -25,6 +26,7 @@ import com.peto.ramap.domain.repository.LoginRepository
 import com.peto.ramap.domain.store.PersonalizationBootstrapState
 import com.peto.ramap.domain.store.ShopPersonalizationStore
 import com.peto.ramap.fake.FakeAnalyticsTracker
+import com.peto.ramap.fake.FakeCrashReporter
 import com.peto.ramap.fake.FakeLoginRepository
 import com.peto.ramap.fake.FakePersonalizationRepository
 import com.peto.ramap.ui.main.ranking.contract.RankingIntent
@@ -599,6 +601,27 @@ class RankingViewModelTest {
         }
 
     @Test
+    fun `Apple 로그인 성공 후 대기 중인 좋아요 요청을 재개한다`() =
+        coroutinesTest {
+            val shop = ramenShop()
+            val personalizationStore = FakePersonalizationRepository()
+            val loginRepository = FakeLoginRepository(LoginSessionState.NOT_AUTHENTICATED)
+            val viewModel =
+                rankingViewModel(
+                    personalizationStore = personalizationStore,
+                    loginRepository = loginRepository,
+                )
+
+            viewModel.dispatch(RankingIntent.OnBookmarkChanged(shop, enabled = true))
+            runCurrent()
+            viewModel.dispatch(RankingIntent.OnLoginTypeSelected(LoginType.APPLE))
+            runCurrent()
+
+            assertEquals(1, loginRepository.signInWithAppleCallCount)
+            assertEquals(listOf(shop.id to true), personalizationStore.bookmarkUpdateRequests)
+        }
+
+    @Test
     fun `이미 좋아요한 매장에 좋아요 요청을 하면 저장 요청하지 않는다`() =
         coroutinesTest {
             val shop = ramenShop()
@@ -692,5 +715,6 @@ private fun rankingViewModel(
         loginAnalytics =
             LoginAnalytics(
                 analyticsTracker,
+                FakeCrashReporter(),
             ),
     )

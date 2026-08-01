@@ -22,8 +22,8 @@ import com.peto.ramap.log.AppAnalytics
 import com.peto.ramap.log.analyticsScreenName
 import com.peto.ramap.navigation.BackPressController
 import com.peto.ramap.navigation.NavigationRouter
-import com.peto.ramap.navigation.NavigationState
 import com.peto.ramap.navigation.NavigationSource
+import com.peto.ramap.navigation.NavigationState
 import com.peto.ramap.navigation.TabStatus
 import com.peto.ramap.navigation.deeplink.ShopDeepLink
 import com.peto.ramap.navigation.deeplink.ShopDeepLinkDispatcher

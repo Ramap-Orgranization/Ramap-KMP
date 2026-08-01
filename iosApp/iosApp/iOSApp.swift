@@ -7,6 +7,12 @@ import KakaoSDKUser
 import UserNotifications
 import FirebaseCore
 import FirebaseMessaging
+import AuthenticationServices
+import CryptoKit
+import Security
+import AuthenticationServices
+import CryptoKit
+import Security
 
 final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate, MessagingDelegate {
     func application(
@@ -123,6 +129,13 @@ struct iOSApp: App {
             }
         }
         NotificationCenter.default.addObserver(
+            forName: Notification.Name("AppleLoginRequest"),
+            object: nil,
+            queue: .main
+        ) { _ in
+            AppleLoginCoordinator.shared.start()
+        }
+        NotificationCenter.default.addObserver(
             forName: Notification.Name("ShopShareRequest"),
             object: nil,
             queue: .main
@@ -171,6 +184,101 @@ struct iOSApp: App {
                 }
         }
     }
+}
+
+final class AppleLoginCoordinator: NSObject, ASAuthorizationControllerDelegate, ASAuthorizationControllerPresentationContextProviding {
+    static let shared = AppleLoginCoordinator()
+
+    private var nonce: String?
+
+    func start() {
+        let nonce = randomNonce()
+        self.nonce = nonce
+
+        let request = ASAuthorizationAppleIDProvider().createRequest()
+        request.requestedScopes = [.fullName, .email]
+        request.nonce = sha256(nonce)
+
+        let controller = ASAuthorizationController(authorizationRequests: [request])
+        controller.delegate = self
+        controller.presentationContextProvider = self
+        controller.performRequests()
+    }
+
+    func authorizationController(
+        controller: ASAuthorizationController,
+        didCompleteWithAuthorization authorization: ASAuthorization
+    ) {
+        guard let credential = authorization.credential as? ASAuthorizationAppleIDCredential,
+              let identityToken = credential.identityToken,
+              let idToken = String(data: identityToken, encoding: .utf8),
+              let nonce else {
+            complete(errorMessage: "Apple 로그인 결과에 ID 토큰이 없습니다.")
+            return
+        }
+
+        IosAppleLoginBridge.shared.complete(
+            idToken: idToken,
+            nonce: nonce,
+            errorMessage: nil,
+        )
+        self.nonce = nil
+    }
+
+    func authorizationController(
+        controller: ASAuthorizationController,
+        didCompleteWithError error: Error
+    ) {
+        complete(errorMessage: error.localizedDescription)
+    }
+
+    func presentationAnchor(for controller: ASAuthorizationController) -> ASPresentationAnchor {
+        let activeScene = UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .first { $0.activationState == .foregroundActive }
+        return activeScene?.windows.first { $0.isKeyWindow } ?? ASPresentationAnchor()
+    }
+
+    private func complete(errorMessage: String) {
+        IosAppleLoginBridge.shared.complete(
+            idToken: nil,
+            nonce: nonce,
+            errorMessage: errorMessage,
+        )
+        nonce = nil
+    }
+}
+
+private func randomNonce(length: Int = 32) -> String {
+    let characters = Array("0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._")
+    var nonce = ""
+
+    while nonce.count < length {
+        var randomByte: UInt8 = 0
+        let result = SecRandomCopyBytes(kSecRandomDefault, 1, &randomByte)
+        guard result == errSecSuccess else {
+            fatalError("Apple 로그인 nonce를 생성할 수 없습니다.")
+        }
+
+        if Int(randomByte) < characters.count {
+            nonce.append(characters[Int(randomByte)])
+        }
+    }
+    return nonce
+}
+
+private func sha256(_ value: String) -> String {
+    SHA256.hash(data: Data(value.utf8)).map { String(format: "%02x", $0) }.joined()
+}
+
+private func hasKakaoCallbackScheme() -> Bool {
+    let expectedScheme = "kakao\(RamapSecrets.shared.kakaoNativeAppKey)"
+    let urlTypes = Bundle.main.object(forInfoDictionaryKey: "CFBundleURLTypes") as? [[String: Any]]
+
+    return urlTypes?.contains { urlType in
+        let schemes = urlType["CFBundleURLSchemes"] as? [String]
+        return schemes?.contains(expectedScheme) == true
+    } == true
 }
 
 private extension UIApplication {

@@ -2,6 +2,7 @@ package com.peto.ramap.domain.repository
 
 import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.domain.model.auth.LoginSessionState
+import com.peto.ramap.domain.model.auth.LoginType
 import kotlinx.coroutines.flow.Flow
 
 interface LoginRepository {
@@ -13,7 +14,7 @@ interface LoginRepository {
 
     fun currentUserEmail(): String?
 
-    suspend fun signInWithKakao(): RamapResult<Unit>
+    suspend fun signIn(type: LoginType): RamapResult<Unit>
 
     suspend fun signOut(): RamapResult<Unit>
 
