@@ -15,7 +15,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.peto.ramap.designsystem.component.LoadErrorContent
-import com.peto.ramap.designsystem.indicator.RamenLoadingIndicator
 import com.peto.ramap.domain.model.rank.RankedShops
 import com.peto.ramap.domain.model.rank.RankingCursor
 import com.peto.ramap.domain.model.rank.ShopRanking
@@ -27,6 +26,7 @@ import com.peto.ramap.ui.loading.LoadState
 import com.peto.ramap.ui.main.ranking.component.RankingEmptyContent
 import com.peto.ramap.ui.main.ranking.component.RankingNextPageFooter
 import com.peto.ramap.ui.main.ranking.component.RankingRow
+import com.peto.ramap.ui.main.ranking.component.RankingSkeleton
 import com.peto.ramap.ui.main.ranking.contract.RankingLoadKey
 import com.peto.ramap.ui.main.ranking.contract.RankingUiState
 import com.peto.ramap.ui.preview.RamenShopPreviewParameterProvider
@@ -65,7 +65,7 @@ internal fun RankingContent(
         },
     ) {
         when {
-            uiState.isLoading -> RamenLoadingIndicator(Modifier.fillMaxSize())
+            uiState.isLoading -> RankingSkeleton(Modifier.fillMaxSize())
             uiState.showError ->
                 LoadErrorContent(
                     image = Res.drawable.laduck_error_crying,
