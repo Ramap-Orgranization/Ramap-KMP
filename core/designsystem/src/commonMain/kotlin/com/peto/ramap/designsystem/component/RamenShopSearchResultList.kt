@@ -1,7 +1,6 @@
 package com.peto.ramap.designsystem.component
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -18,9 +17,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -39,9 +36,6 @@ import com.peto.ramap.theme.RamapTheme
 import org.jetbrains.compose.resources.painterResource
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.ic_close
-import ramap.shared.generated.resources.ic_favorite_border
-
-private val SearchResultCardShape = RoundedCornerShape(8.dp)
 
 @Composable
 fun RamenShopSearchResultList(
@@ -61,8 +55,7 @@ fun RamenShopSearchResultList(
     Column(
         modifier =
             modifier
-                .fillMaxWidth()
-                .padding(bottom = 24.dp),
+                .fillMaxWidth(),
     ) {
         shops.values.forEach { shop ->
             RamenShopSearchResultItem(
@@ -93,16 +86,12 @@ private fun RamenShopSearchResultItem(
             modifier
                 .fillMaxWidth()
                 .then(if (onClick != null) Modifier.noRippleClickable(onClick = onClick) else Modifier)
-                .border(1.dp, GrayColor.C100, SearchResultCardShape)
-                .clip(SearchResultCardShape)
                 .background(CommonColor.White),
     ) {
         Row(
             modifier =
                 Modifier
-                    .fillMaxWidth()
-                    .padding(12.dp)
-                    .padding(end = 48.dp),
+                    .fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(10.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -125,21 +114,29 @@ private fun RamenShopSearchResultItem(
                 )
                 AppText(
                     text = shop.address,
-                    style = AppTextStyle.B2,
+                    style = AppTextStyle.C1,
                     color = GrayColor.C300,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
                 if (shop.hasCategory) {
                     FlowRow(
-                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        horizontalArrangement = Arrangement.spacedBy(2.dp),
                         verticalArrangement = Arrangement.spacedBy(6.dp),
                     ) {
-                        shop.menuCategories.forEach { category ->
-                            CategoryFilterChip(
-                                label = categoryLabel(category),
-                                shape = RoundedCornerShape(8.dp),
+                        shop.menuCategories.forEachIndexed { index, category ->
+                            AppText(
+                                text = categoryLabel(category),
+                                style = AppTextStyle.C1,
+                                color = GrayColor.C300,
                             )
+                            if (index != shop.menuCategories.lastIndex) {
+                                AppText(
+                                    text = "·",
+                                    style = AppTextStyle.B1,
+                                    color = GrayColor.C300,
+                                )
+                            }
                         }
                     }
                 }
@@ -147,7 +144,6 @@ private fun RamenShopSearchResultItem(
         }
 
         SearchResultItemAction(
-            shop = shop,
             actionLabel = actionLabel,
             onAction = onAction,
         )
@@ -156,7 +152,6 @@ private fun RamenShopSearchResultItem(
 
 @Composable
 private fun BoxScope.SearchResultItemAction(
-    shop: RamenShop,
     actionLabel: String?,
     onAction: (() -> Unit)?,
 ) {
@@ -166,11 +161,7 @@ private fun BoxScope.SearchResultItemAction(
             modifier =
                 Modifier
                     .align(Alignment.TopEnd)
-                    .padding(10.dp)
-                    .size(24.dp)
-                    .semantics {
-                        contentDescription = "${shop.name} $actionLabel"
-                    },
+                    .size(15.dp),
         ) {
             Icon(
                 painter = painterResource(Res.drawable.ic_close),
@@ -178,19 +169,7 @@ private fun BoxScope.SearchResultItemAction(
                 tint = GrayColor.C400,
             )
         }
-        return
     }
-
-    Icon(
-        painter = painterResource(Res.drawable.ic_favorite_border),
-        contentDescription = null,
-        modifier =
-            Modifier
-                .align(Alignment.TopEnd)
-                .padding(10.dp)
-                .size(24.dp),
-        tint = GrayColor.C400,
-    )
 }
 
 @Preview(showBackground = true)

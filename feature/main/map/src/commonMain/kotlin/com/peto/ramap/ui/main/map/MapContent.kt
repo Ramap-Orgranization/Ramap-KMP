@@ -225,7 +225,6 @@ internal fun MapContent(
                                         AnalyticsSource.SEARCH_RESULT,
                                     )
                                 },
-                                modifier = Modifier.padding(start = 10.dp),
                             )
                     }
                 }
