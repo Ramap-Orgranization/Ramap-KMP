@@ -11,7 +11,7 @@ import com.peto.ramap.platform.ExternalUriOpener
 import com.peto.ramap.theme.RamapTheme
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
-import ramap.shared.generated.resources.ic_apple
+import ramap.shared.generated.resources.apple_maps_icon
 import ramap.shared.generated.resources.kakao_map_icon
 import ramap.shared.generated.resources.naver_map_icon
 import ramap.shared.generated.resources.shop_detail_link_apple_maps
@@ -48,7 +48,7 @@ internal fun EventMapActions(
             longitude != null
         ) {
             EventMapLink(
-                icon = Res.drawable.ic_apple,
+                icon = Res.drawable.apple_maps_icon,
                 label = stringResource(Res.string.shop_detail_link_apple_maps),
                 onClick = { onAppleClick(latitude, longitude) },
             )

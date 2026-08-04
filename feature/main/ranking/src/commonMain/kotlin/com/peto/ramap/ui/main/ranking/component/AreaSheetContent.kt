@@ -1,18 +1,16 @@
 package com.peto.ramap.ui.main.ranking.component
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.key
 import androidx.compose.ui.Alignment
@@ -20,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.peto.ramap.designsystem.component.Skeleton
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.domain.model.shop.AdministrativeArea
 import com.peto.ramap.domain.model.shop.AdministrativeDistrict
@@ -28,7 +27,6 @@ import com.peto.ramap.domain.model.shop.AreaFilter
 import com.peto.ramap.extension.noRippleClickable
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.GrayColor
-import com.peto.ramap.theme.InstagramColor
 import com.peto.ramap.theme.RamapTheme
 import com.peto.ramap.ui.resource.area.AdministrativeAreaUiModel
 import org.jetbrains.compose.resources.stringResource
@@ -137,15 +135,19 @@ private fun DistrictOptions(
 
 @Composable
 private fun DistrictLoading() {
-    Box(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 32.dp),
-        contentAlignment = Alignment.Center,
+    Column(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        CircularProgressIndicator(
-            modifier = Modifier.size(24.dp),
-            color = InstagramColor.Pink,
-            strokeWidth = 2.dp,
-        )
+        repeat(8) {
+            Skeleton(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .height(32.dp),
+                shape = RoundedCornerShape(16.dp),
+            )
+        }
     }
 }
 

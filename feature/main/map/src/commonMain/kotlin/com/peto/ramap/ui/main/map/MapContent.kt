@@ -103,10 +103,7 @@ internal fun MapContent(
         rememberNavigationEventState<NavigationEventInfo>(
             currentInfo = NavigationEventInfo.None,
         )
-    val searchBarTopPadding =
-        WindowInsets.statusBars
-            .asPaddingValues()
-            .calculateTopPadding() + 16.dp
+    val searchBarTopPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
     val searchBarHeight = 52.dp
 
     LaunchedEffect(isImeVisible) {
@@ -228,7 +225,6 @@ internal fun MapContent(
                                         AnalyticsSource.SEARCH_RESULT,
                                     )
                                 },
-                                modifier = Modifier.padding(start = 10.dp),
                             )
                     }
                 }

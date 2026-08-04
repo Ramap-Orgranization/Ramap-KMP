@@ -3,7 +3,6 @@ package com.peto.ramap.ui.main.event.list
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -116,21 +115,22 @@ internal fun EventsScreen(
                     val upcomingTitle = stringResource(Res.string.event_list_upcoming_section)
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(24.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
                         eventSection(
                             scope = this,
                             title = ongoingTitle,
                             events = ongoingEvents,
-                            isHorizontal = ongoingEvents.size > 1,
+                            isOngoingSection = true,
+                            horizontalContentPadding = 15.dp,
                             onEventClick = onEventClick,
                         )
                         eventSection(
                             scope = this,
                             title = upcomingTitle,
                             events = upcomingEvents,
-                            isHorizontal = false,
+                            isOngoingSection = false,
+                            horizontalContentPadding = 15.dp,
                             onEventClick = onEventClick,
                         )
                     }

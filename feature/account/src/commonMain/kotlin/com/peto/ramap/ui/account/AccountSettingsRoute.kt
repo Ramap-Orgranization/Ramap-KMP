@@ -97,12 +97,12 @@ fun AccountSettingsRoute(
                                 .padding(horizontal = 20.dp)
                                 .padding(top = if (index == 0) 16.dp else 12.dp),
                         onClick = {
-                            val intent =
+                            viewModel.dispatch(
                                 when (loginType) {
                                     LoginType.KAKAO -> AccountIntent.OnKakaoLoginClick
                                     LoginType.APPLE -> AccountIntent.OnAppleLoginClick
-                                }
-                            viewModel.dispatch(intent)
+                                },
+                            )
                         },
                     )
                 }

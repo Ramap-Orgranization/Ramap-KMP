@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -98,7 +99,14 @@ fun EventCard(
                 }
             }
         }
-        AppText(event.title, style = AppTextStyle.T2, color = GrayColor.C500)
+        AppText(
+            text = event.title,
+            modifier = Modifier.height(48.dp),
+            style = AppTextStyle.T2,
+            color = GrayColor.C500,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+        )
         HorizontalDivider(thickness = 1.dp, color = GrayColor.C100)
         AppText(dateText, style = AppTextStyle.B4, color = GrayColor.C400)
     }

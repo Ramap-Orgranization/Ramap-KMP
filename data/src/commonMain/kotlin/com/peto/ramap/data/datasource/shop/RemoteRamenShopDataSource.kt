@@ -90,19 +90,23 @@ internal class RemoteRamenShopDataSource(
     private suspend fun searchByTextFields(
         pattern: String,
         limit: Int,
-    ): List<RamenShopResponse> =
-        client
+    ): List<RamenShopResponse> {
+        val searchFilter = ShopTextSearchFilter.forVisibleShops(pattern)
+
+        return client
             .from(TABLE_NAME)
             .select {
                 filter {
+                    eq(COLUMN_IS_VISIBLE, searchFilter.isVisible)
                     or {
-                        SEARCH_COLUMNS.forEach { column ->
-                            ilike(column, pattern)
+                        searchFilter.columns.forEach { column ->
+                            ilike(column, searchFilter.pattern)
                         }
                     }
                 }
                 limit(limit.toLong())
             }.decodeList()
+    }
 
     private fun resolveProfileImageUrl(event: ShopEventResponse): ShopEventResponse =
         event.copy(
@@ -125,17 +129,5 @@ internal class RemoteRamenShopDataSource(
         private const val COLUMN_IS_VISIBLE = "is_visible"
         private const val COLUMN_LAT = "lat"
         private const val COLUMN_LNG = "lng"
-        private const val COLUMN_NAME = "name"
-        private const val COLUMN_ADDRESS = "address"
-        private const val COLUMN_PHONE = "phone"
-        private const val COLUMN_BUSINESS_HOURS = "business_hours"
-
-        private val SEARCH_COLUMNS =
-            listOf(
-                COLUMN_NAME,
-                COLUMN_ADDRESS,
-                COLUMN_PHONE,
-                COLUMN_BUSINESS_HOURS,
-            )
     }
 }

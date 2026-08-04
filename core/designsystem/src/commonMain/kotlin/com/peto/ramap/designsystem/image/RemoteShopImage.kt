@@ -12,6 +12,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
@@ -27,12 +28,13 @@ import ramap.shared.generated.resources.ic_progress
 fun RemoteShopImage(
     url: String?,
     modifier: Modifier = Modifier,
+    shape: Shape = CircleShape,
 ) {
     Box(
         modifier =
             modifier
-                .border(width = 1.dp, color = GrayColor.C100, shape = CircleShape)
-                .clip(CircleShape),
+                .border(width = 1.dp, color = GrayColor.C100, shape = shape)
+                .clip(shape),
         contentAlignment = Alignment.Center,
     ) {
         if (url.isNullOrBlank()) {

@@ -38,8 +38,7 @@ class AccountViewModelTest {
         coroutinesTest {
             val repository =
                 FakeLoginRepository(initialSessionState = LoginSessionState.AUTHENTICATED)
-            val viewModel =
-                AccountViewModel(repository, LoginAnalytics(FakeAnalyticsTracker(), FakeCrashReporter()))
+            val viewModel = AccountViewModel(repository, LoginAnalytics(FakeAnalyticsTracker(), FakeCrashReporter()))
             runCurrent()
 
             viewModel.dispatch(AccountIntent.OnAccountDeleteConfirm)
@@ -52,8 +51,7 @@ class AccountViewModelTest {
     fun `Apple 로그인을 누르면 저장소에 요청한다`() =
         coroutinesTest {
             val repository = FakeLoginRepository()
-            val viewModel =
-                AccountViewModel(repository, LoginAnalytics(FakeAnalyticsTracker(), FakeCrashReporter()))
+            val viewModel = AccountViewModel(repository, LoginAnalytics(FakeAnalyticsTracker(), FakeCrashReporter()))
             runCurrent()
 
             viewModel.dispatch(AccountIntent.OnAppleLoginClick)

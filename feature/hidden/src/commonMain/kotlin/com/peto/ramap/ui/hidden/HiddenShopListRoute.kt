@@ -1,11 +1,9 @@
 package com.peto.ramap.ui.hidden
 
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -132,11 +130,8 @@ private fun HiddenShopListContent(
                 itemActionLabel = { stringResource(Res.string.unhide_shop_confirm_action) },
                 onItemAction = onUnhideRequested,
                 itemModifier = {
-                    Modifier
-                        .padding(horizontal = 24.dp, vertical = 6.dp)
-                        .border(1.dp, GrayColor.C200, RoundedCornerShape(16.dp))
+                    Modifier.padding(horizontal = 24.dp, vertical = 6.dp)
                 },
-                showDividers = false,
             )
         }
     }

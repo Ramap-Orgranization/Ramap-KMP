@@ -1272,8 +1272,8 @@ class MapViewModelTest {
                 runCurrent()
 
                 assertEquals(null, viewModel.uiState.value.selectedShop)
-                assertEquals(true, viewModel.uiState.value.showBottomSheet)
-                assertEquals(true, viewModel.uiState.value.showSearchResults)
+                assertEquals(false, viewModel.uiState.value.showBottomSheet)
+                assertEquals(false, viewModel.uiState.value.showSearchResults)
                 assertEquals(
                     SearchResultGuide.HIDDEN_ONLY,
                     viewModel.uiState.value.searchResultGuide,
@@ -1290,7 +1290,7 @@ class MapViewModelTest {
         }
 
     @Test
-    fun `여러 검색 결과에 숨김 매장이 포함되어도 안내를 보여주지 않고 결과 목록을 보여준다`() =
+    fun `여러 검색 결과에 숨김 매장이 포함되면 안내 토스트와 결과 목록을 보여준다`() =
         coroutinesTest {
             val visibleShop =
                 ramenShopFixture(
@@ -1321,7 +1321,10 @@ class MapViewModelTest {
                     viewModel.uiState.value.searchResultShops,
                 )
                 assertEquals(searchShops, viewModel.uiState.value.markerShops)
-                expectNoEvents()
+                assertEquals(
+                    showToastSideEffect(Res.string.hidden_shop_search_result_message),
+                    awaitItem(),
+                )
             }
         }
 
@@ -2480,8 +2483,8 @@ class MapViewModelTest {
                 runCurrent()
 
                 assertEquals(null, viewModel.uiState.value.selectedShop)
-                assertEquals(true, viewModel.uiState.value.showBottomSheet)
-                assertEquals(true, viewModel.uiState.value.showSearchResults)
+                assertEquals(false, viewModel.uiState.value.showBottomSheet)
+                assertEquals(false, viewModel.uiState.value.showSearchResults)
                 assertEquals(
                     SearchResultGuide.HIDDEN_ONLY,
                     viewModel.uiState.value.searchResultGuide,

@@ -28,7 +28,7 @@ fun LoginButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val uiModel = LoginTypeResourceMapper.button(type)
+    val uiModel = LoginTypeUiModel.from(type)
 
     Row(
         modifier =

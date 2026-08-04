@@ -86,72 +86,30 @@ fun RankingRoute(
         uiState = uiState,
         listState = listState,
         onShopClick = { shop ->
-            viewModel.dispatch(
-                RankingIntent.OnShopClicked(
-                    shop = shop,
-                ),
-            )
-
+            viewModel.dispatch(RankingIntent.OnShopClicked(shop))
             onShopClick(shop.id)
         },
         onFindShopClick = onFindShopClick,
-        onRefresh = {
-            viewModel.dispatch(
-                RankingIntent.OnRefreshed,
-            )
-        },
-        onRetry = {
-            viewModel.dispatch(
-                RankingIntent.OnRefreshed,
-            )
-        },
-        onLoadNext = {
-            viewModel.dispatch(
-                RankingIntent.OnNextPageRequested,
-            )
-        },
-        onRetryNext = {
-            viewModel.dispatch(
-                RankingIntent.OnNextPageRetried,
-            )
-        },
+        onRefresh = { viewModel.dispatch(RankingIntent.OnRefreshed) },
+        onRetry = { viewModel.dispatch(RankingIntent.OnRefreshed) },
+        onLoadNext = { viewModel.dispatch(RankingIntent.OnNextPageRequested) },
+        onRetryNext = { viewModel.dispatch(RankingIntent.OnNextPageRetried) },
         onAreaFilterSelected = { areaFilter ->
-            viewModel.dispatch(
-                RankingIntent.OnAreaFilterSelected(
-                    areaFilter = areaFilter,
-                ),
-            )
+            viewModel.dispatch(RankingIntent.OnAreaFilterSelected(areaFilter))
         },
-        onAreaSheetOpened = {
-            viewModel.dispatch(RankingIntent.OnAreaSheetOpened)
-        },
+        onAreaSheetOpened = { viewModel.dispatch(RankingIntent.OnAreaSheetOpened) },
         onAdministrativeAreaSelected = { area ->
-            viewModel.dispatch(
-                RankingIntent.OnAdministrativeAreaSelected(area),
-            )
+            viewModel.dispatch(RankingIntent.OnAdministrativeAreaSelected(area))
         },
-        onAreaSelectionBack = {
-            viewModel.dispatch(RankingIntent.OnAreaSelectionBack)
-        },
+        onAreaSelectionBack = { viewModel.dispatch(RankingIntent.OnAreaSelectionBack) },
         onCategoryToggled = { category ->
-            viewModel.dispatch(
-                RankingIntent.OnCategoryToggled(
-                    category = category,
-                ),
-            )
+            viewModel.dispatch(RankingIntent.OnCategoryToggled(category))
         },
         onAllCategoriesSelected = {
-            viewModel.dispatch(
-                RankingIntent.OnAllCategoriesSelected,
-            )
+            viewModel.dispatch(RankingIntent.OnAllCategoriesSelected)
         },
         onBookmarkChange = { shop, enabled ->
-            viewModel.dispatch(
-                RankingIntent.OnBookmarkChanged(
-                    shop = shop,
-                    enabled = enabled,
-                ),
-            )
+            viewModel.dispatch(RankingIntent.OnBookmarkChanged(shop, enabled))
         },
     )
 

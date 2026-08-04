@@ -8,6 +8,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.peto.ramap.designsystem.text.AppText
@@ -23,6 +24,7 @@ fun CategoryFilterChip(
     onClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
     style: AppTextStyle = AppTextStyle.C2,
+    shape: Shape = RoundedCornerShape(999.dp),
 ) {
     val content = @Composable {
         AppText(
@@ -35,7 +37,7 @@ fun CategoryFilterChip(
     if (onClick == null) {
         Surface(
             modifier = modifier,
-            shape = RoundedCornerShape(999.dp),
+            shape = shape,
             color = if (selected) GrayColor.C500 else CommonColor.White,
             border = BorderStroke(width = 1.dp, color = GrayColor.C200),
             content = content,
@@ -43,7 +45,7 @@ fun CategoryFilterChip(
     } else {
         Surface(
             modifier = modifier,
-            shape = RoundedCornerShape(999.dp),
+            shape = shape,
             color = if (selected) GrayColor.C500 else CommonColor.White,
             border = BorderStroke(width = 1.dp, color = GrayColor.C200),
             onClick = onClick,
