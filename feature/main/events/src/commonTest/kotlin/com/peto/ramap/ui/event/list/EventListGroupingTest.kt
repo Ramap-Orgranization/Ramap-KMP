@@ -21,12 +21,39 @@ class EventListGroupingTest {
         assertEquals(listOf(upcomingFirst, upcomingSecond), upcomingEvents)
     }
 
+    @Test
+    fun `진행 중인 여름 한정 이벤트만 별도 목록으로 제외하고 예정된 여름 한정 이벤트는 예정 목록에 포함한다`() {
+        val ongoingSummerLimited =
+            event(
+                id = "ongoing-summer-limited",
+                isToday = true,
+                type = ShopEventType.SUMMER_LIMITED,
+            )
+        val upcomingSummerLimited =
+            event(
+                id = "upcoming-summer-limited",
+                isToday = false,
+                type = ShopEventType.SUMMER_LIMITED,
+            )
+        val ongoing = event(id = "ongoing", isToday = true)
+        val upcoming = event(id = "upcoming", isToday = false)
+
+        val (ongoingEvents, upcomingEvents) =
+            partitionBySchedule(
+                listOf(ongoingSummerLimited, upcomingSummerLimited, ongoing, upcoming),
+            )
+
+        assertEquals(listOf(ongoing), ongoingEvents)
+        assertEquals(listOf(upcomingSummerLimited, upcoming), upcomingEvents)
+    }
+
     private fun event(
         id: String,
         isToday: Boolean,
+        type: ShopEventType = ShopEventType.POPUP,
     ) = ShopEvent(
         id = id,
-        type = ShopEventType.POPUP,
+        type = type,
         title = id,
         description = "설명",
         startDate = if (isToday) "2026-07-13" else "2026-07-15",

@@ -9,6 +9,7 @@ import ramap.shared.generated.resources.event_status_upcoming
 import ramap.shared.generated.resources.event_type_collab
 import ramap.shared.generated.resources.event_type_limited_menu
 import ramap.shared.generated.resources.event_type_popup
+import ramap.shared.generated.resources.event_type_summer_limited
 import ramap.shared.generated.resources.shop_event_notice_collab_participant_today
 import ramap.shared.generated.resources.shop_event_notice_collab_upcoming_with_shop
 import ramap.shared.generated.resources.shop_event_notice_limited_menu_upcoming
@@ -26,6 +27,10 @@ class ShopEventResourceMapperTest {
         assertEquals(
             Res.string.event_type_limited_menu,
             ShopEventResourceMapper.typeLabel(ShopEventType.LIMITED_MENU),
+        )
+        assertEquals(
+            Res.string.event_type_summer_limited,
+            ShopEventResourceMapper.typeLabel(ShopEventType.SUMMER_LIMITED),
         )
     }
 
