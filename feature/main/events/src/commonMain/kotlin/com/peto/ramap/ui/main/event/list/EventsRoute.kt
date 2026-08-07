@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -118,7 +119,7 @@ internal fun EventsScreen(
                     val summerLimitedTitle =
                         stringResource(ShopEventResourceMapper.typeLabel(ShopEventType.SUMMER_LIMITED))
                     LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
+                        modifier = Modifier.fillMaxSize().padding(bottom = 5.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
                         eventSection(
