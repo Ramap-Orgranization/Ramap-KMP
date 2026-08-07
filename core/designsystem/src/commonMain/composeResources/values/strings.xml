@@ -57,6 +57,7 @@
     <string name="event_type_collab">콜라보</string>
     <string name="event_type_popup">팝업</string>
     <string name="event_type_limited_menu">한정 메뉴</string>
+    <string name="event_type_summer_limited">여름 한정</string>
     <string name="event_venue">행사 장소</string>
     <string name="event_collaborator_shop">콜라보 매장</string>
     <string name="event_collaborator_person">함께하는 사람</string>

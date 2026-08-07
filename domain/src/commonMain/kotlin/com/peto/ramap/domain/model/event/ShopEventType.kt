@@ -4,4 +4,5 @@ enum class ShopEventType {
     COLLAB,
     POPUP,
     LIMITED_MENU,
+    SUMMER_LIMITED,
 }

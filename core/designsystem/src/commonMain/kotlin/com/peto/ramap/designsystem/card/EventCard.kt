@@ -37,6 +37,7 @@ import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.event_type_collab
 import ramap.shared.generated.resources.event_type_limited_menu
 import ramap.shared.generated.resources.event_type_popup
+import ramap.shared.generated.resources.event_type_summer_limited
 import ramap.shared.generated.resources.ic_close
 
 @Composable
@@ -131,6 +132,7 @@ private fun eventTypeLabel(type: ShopEventType): String =
         when (type) {
             ShopEventType.COLLAB -> Res.string.event_type_collab
             ShopEventType.POPUP -> Res.string.event_type_popup
+            ShopEventType.SUMMER_LIMITED -> Res.string.event_type_summer_limited
             ShopEventType.LIMITED_MENU -> Res.string.event_type_limited_menu
         },
     )

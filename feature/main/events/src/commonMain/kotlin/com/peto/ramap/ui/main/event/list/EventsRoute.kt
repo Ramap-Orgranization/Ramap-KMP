@@ -21,6 +21,7 @@ import com.peto.ramap.designsystem.component.LoadErrorContent
 import com.peto.ramap.designsystem.indicator.RamenLoadingIndicator
 import com.peto.ramap.designsystem.toast.ToastManager
 import com.peto.ramap.domain.model.event.ShopEvent
+import com.peto.ramap.domain.model.event.ShopEventType
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.RamapTheme
 import com.peto.ramap.ui.base.ObserveAsEvents
@@ -30,6 +31,7 @@ import com.peto.ramap.ui.main.event.list.contract.EventsIntent
 import com.peto.ramap.ui.main.event.list.contract.EventsSideEffect
 import com.peto.ramap.ui.main.event.list.contract.EventsUiState
 import com.peto.ramap.ui.main.event.list.preview.EventsPreviewParameterProvider
+import com.peto.ramap.ui.resource.event.ShopEventResourceMapper
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
@@ -113,10 +115,20 @@ internal fun EventsScreen(
                     val (ongoingEvents, upcomingEvents) = partitionBySchedule(uiState.events)
                     val ongoingTitle = stringResource(Res.string.event_list_ongoing_section)
                     val upcomingTitle = stringResource(Res.string.event_list_upcoming_section)
+                    val summerLimitedTitle =
+                        stringResource(ShopEventResourceMapper.typeLabel(ShopEventType.SUMMER_LIMITED))
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
                         verticalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
+                        eventSection(
+                            scope = this,
+                            title = summerLimitedTitle,
+                            events = uiState.summerLimitedEvents,
+                            isOngoingSection = true,
+                            horizontalContentPadding = 15.dp,
+                            onEventClick = onEventClick,
+                        )
                         eventSection(
                             scope = this,
                             title = ongoingTitle,
@@ -140,7 +152,10 @@ internal fun EventsScreen(
     }
 }
 
-internal fun partitionBySchedule(events: List<ShopEvent>): Pair<List<ShopEvent>, List<ShopEvent>> = events.partition(ShopEvent::isToday)
+internal fun partitionBySchedule(events: List<ShopEvent>): Pair<List<ShopEvent>, List<ShopEvent>> =
+    events
+        .filterNot { it.type == ShopEventType.SUMMER_LIMITED && it.isToday }
+        .partition(ShopEvent::isToday)
 
 @Preview(showBackground = true)
 @Composable
