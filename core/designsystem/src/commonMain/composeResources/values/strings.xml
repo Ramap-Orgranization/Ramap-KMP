@@ -102,6 +102,7 @@
     <string name="menu_category_iekei">이에케</string>
     <string name="menu_category_hiyashi">히야시</string>
     <string name="menu_category_tomato">토마토라멘</string>
+    <string name="menu_category_separator">·</string>
 
     <!-- 매장 검색 화면 -->
     <string name="search_bar_placeholder">검색어를 입력해주세요</string>
