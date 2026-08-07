@@ -45,5 +45,8 @@ AGENTS.md
 /distribution/
 /marketing
 tools
+/trace_processor
 iosApp/Configuration/Secrets.xcconfig
 iosApp/iosApp/GoogleService-Info-Release.plist
+iosApp/Configuration/Config.xcconfig
+iosApp/iosApp.xcodeproj/project.pbxproj
