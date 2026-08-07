@@ -1,4 +1,4 @@
-package com.peto.ramap.ui.bookmark.contract
+package com.peto.ramap.ui.bookmark.list.contract
 
 import com.peto.ramap.ui.loading.LoadKey
 

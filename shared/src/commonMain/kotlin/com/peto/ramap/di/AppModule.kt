@@ -9,7 +9,7 @@ import com.peto.ramap.navigation.deeplink.ShopLinkConfig
 import com.peto.ramap.navigation.deeplink.ShopShareLinkFactory
 import com.peto.ramap.network.config.RamapSecrets
 import com.peto.ramap.ui.account.di.accountModule
-import com.peto.ramap.ui.bookmark.di.bookmarkModule
+import com.peto.ramap.ui.bookmark.list.di.bookmarkListModule
 import com.peto.ramap.ui.hidden.di.hiddenModule
 import com.peto.ramap.ui.main.event.di.eventDetailModule
 import com.peto.ramap.ui.main.event.list.di.eventsModule
@@ -29,7 +29,7 @@ internal val appModule =
     module {
         includes(
             accountModule,
-            bookmarkModule,
+            bookmarkListModule,
             eventDetailModule,
             eventsModule,
             hiddenModule,

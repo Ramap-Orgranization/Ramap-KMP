@@ -1,4 +1,4 @@
-package com.peto.ramap.ui.bookmark
+package com.peto.ramap.ui.bookmark.list
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -24,9 +24,9 @@ import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.ui.base.ObserveAsEvents
-import com.peto.ramap.ui.bookmark.contract.BookmarkedShopListIntent
-import com.peto.ramap.ui.bookmark.contract.BookmarkedShopListSideEffect
-import com.peto.ramap.ui.bookmark.contract.BookmarkedShopListUiState
+import com.peto.ramap.ui.bookmark.list.contract.BookmarkedShopListIntent
+import com.peto.ramap.ui.bookmark.list.contract.BookmarkedShopListSideEffect
+import com.peto.ramap.ui.bookmark.list.contract.BookmarkedShopListUiState
 import com.peto.ramap.ui.resource.category.CategoryResourceMapper
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject

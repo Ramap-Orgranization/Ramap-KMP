@@ -34,7 +34,7 @@ import com.peto.ramap.notification.NotificationDeepLinkParser
 import com.peto.ramap.notification.NotificationLaunchDispatcher
 import com.peto.ramap.ui.account.AccountSettingsRoute
 import com.peto.ramap.ui.account.InformationRoute
-import com.peto.ramap.ui.bookmark.BookmarkedShopListRoute
+import com.peto.ramap.ui.bookmark.list.BookmarkedShopListRoute
 import com.peto.ramap.ui.hidden.HiddenShopListRoute
 import com.peto.ramap.ui.main.event.EventDetailRoute
 import com.peto.ramap.ui.main.event.list.EventsRoute

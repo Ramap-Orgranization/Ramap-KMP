@@ -1,4 +1,4 @@
-package com.peto.ramap.ui.bookmark
+package com.peto.ramap.ui.bookmark.list
 
 import androidx.lifecycle.viewModelScope
 import com.peto.ramap.designsystem.toast.model.ToastData
@@ -8,10 +8,10 @@ import com.peto.ramap.domain.repository.RamenShopRepository
 import com.peto.ramap.domain.store.PersonalizationBootstrapState
 import com.peto.ramap.domain.store.ShopPersonalizationStore
 import com.peto.ramap.ui.base.BaseViewModel
-import com.peto.ramap.ui.bookmark.contract.BookmarkedShopListIntent
-import com.peto.ramap.ui.bookmark.contract.BookmarkedShopListSideEffect
-import com.peto.ramap.ui.bookmark.contract.BookmarkedShopListUiState
-import com.peto.ramap.ui.bookmark.contract.BookmarkedShopLoadKey
+import com.peto.ramap.ui.bookmark.list.contract.BookmarkedShopListIntent
+import com.peto.ramap.ui.bookmark.list.contract.BookmarkedShopListSideEffect
+import com.peto.ramap.ui.bookmark.list.contract.BookmarkedShopListUiState
+import com.peto.ramap.ui.bookmark.list.contract.BookmarkedShopLoadKey
 import com.peto.ramap.ui.task.TaskPolicy
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged

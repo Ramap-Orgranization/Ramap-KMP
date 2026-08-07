@@ -1,4 +1,4 @@
-package com.peto.ramap.ui.bookmark
+package com.peto.ramap.ui.bookmark.list
 
 import app.cash.turbine.test
 import com.peto.ramap.core.result.RamapError
@@ -14,8 +14,8 @@ import com.peto.ramap.domain.store.ShopPersonalizationStore
 import com.peto.ramap.fake.FakePersonalizationRepository
 import com.peto.ramap.fake.FakeRamenShopRepository
 import com.peto.ramap.fixture.ramenShopFixture
-import com.peto.ramap.ui.bookmark.contract.BookmarkedShopListIntent
-import com.peto.ramap.ui.bookmark.contract.BookmarkedShopListSideEffect
+import com.peto.ramap.ui.bookmark.list.contract.BookmarkedShopListIntent
+import com.peto.ramap.ui.bookmark.list.contract.BookmarkedShopListSideEffect
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runCurrent

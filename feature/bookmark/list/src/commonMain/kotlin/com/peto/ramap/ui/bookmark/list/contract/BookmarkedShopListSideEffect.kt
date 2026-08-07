@@ -1,4 +1,4 @@
-package com.peto.ramap.ui.bookmark.contract
+package com.peto.ramap.ui.bookmark.list.contract
 
 import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.ui.base.SideEffect
