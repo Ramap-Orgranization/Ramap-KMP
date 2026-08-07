@@ -11,21 +11,46 @@ class EventsPreviewParameterProvider : PreviewParameterProvider<EventsUiState> {
             EventsUiState(
                 events =
                     listOf(
-                        previewEvent(id = "ongoing-1", title = "오늘 진행 중인 라멘 이벤트", isToday = true),
-                        previewEvent(id = "ongoing-2", title = "또 다른 진행 중인 라멘 이벤트", isToday = true),
-                        previewEvent(id = "upcoming-1", title = "다음 주 예정된 라멘 이벤트", isToday = false),
+                        previewEvent(
+                            id = "ongoing-1",
+                            title = "오늘 진행 중인 라멘 이벤트",
+                            type = ShopEventType.POPUP,
+                            isToday = true,
+                        ),
+                        previewEvent(
+                            id = "ongoing-2",
+                            title = "또 다른 진행 중인 라멘 이벤트",
+                            type = ShopEventType.COLLAB,
+                            isToday = true,
+                        ),
+                        previewEvent(
+                            id = "upcoming-1",
+                            title = "다음 주 예정된 라멘 이벤트",
+                            type = ShopEventType.POPUP,
+                            isToday = false,
+                        ),
                     ),
             ),
             EventsUiState(
                 events =
                     listOf(
-                        previewEvent(id = "ongoing-2", title = "오늘 진행 중인 라멘 이벤트", isToday = true),
+                        previewEvent(
+                            id = "ongoing-2",
+                            title = "오늘 진행 중인 라멘 이벤트",
+                            type = ShopEventType.SUMMER_LIMITED,
+                            isToday = true,
+                        ),
                     ),
             ),
             EventsUiState(
                 events =
                     listOf(
-                        previewEvent(id = "upcoming-2", title = "다음 주 예정된 라멘 이벤트", isToday = false),
+                        previewEvent(
+                            id = "upcoming-2",
+                            title = "다음 주 예정된 라멘 이벤트",
+                            type = ShopEventType.POPUP,
+                            isToday = false,
+                        ),
                     ),
             ),
             EventsUiState(),
@@ -34,10 +59,11 @@ class EventsPreviewParameterProvider : PreviewParameterProvider<EventsUiState> {
     private fun previewEvent(
         id: String,
         title: String,
+        type: ShopEventType,
         isToday: Boolean,
     ) = ShopEvent(
         id = id,
-        type = ShopEventType.POPUP,
+        type = type,
         title = title,
         description = "이벤트 설명",
         startDate = if (isToday) "2026-07-29" else "2026-08-05",

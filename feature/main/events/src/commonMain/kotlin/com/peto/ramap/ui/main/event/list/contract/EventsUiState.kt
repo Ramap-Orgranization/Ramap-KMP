@@ -1,6 +1,7 @@
 package com.peto.ramap.ui.main.event.list.contract
 
 import com.peto.ramap.domain.model.event.ShopEvent
+import com.peto.ramap.domain.model.event.ShopEventType
 import com.peto.ramap.ui.base.State
 import com.peto.ramap.ui.loading.LoadableState
 import com.peto.ramap.ui.loading.LoadState as TaskLoadState
@@ -16,6 +17,9 @@ data class EventsUiState(
 
     val isRefreshing: Boolean
         get() = loadState.isLoading(EventsLoadKey.Refresh)
+
+    val summerLimitedEvents: List<ShopEvent>
+        get() = events.filter { it.type == ShopEventType.SUMMER_LIMITED && it.isToday }
 
     override fun withLoadingState(loadState: TaskLoadState): EventsUiState = copy(loadState = loadState)
 }

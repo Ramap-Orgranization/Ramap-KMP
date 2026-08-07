@@ -12,6 +12,7 @@ import ramap.shared.generated.resources.event_status_upcoming
 import ramap.shared.generated.resources.event_type_collab
 import ramap.shared.generated.resources.event_type_limited_menu
 import ramap.shared.generated.resources.event_type_popup
+import ramap.shared.generated.resources.event_type_summer_limited
 import ramap.shared.generated.resources.shop_event_notice_collab_participant_today
 import ramap.shared.generated.resources.shop_event_notice_collab_participant_upcoming
 import ramap.shared.generated.resources.shop_event_notice_collab_today
@@ -32,6 +33,7 @@ object ShopEventResourceMapper {
             ShopEventType.COLLAB -> Res.string.event_type_collab
             ShopEventType.POPUP -> Res.string.event_type_popup
             ShopEventType.LIMITED_MENU -> Res.string.event_type_limited_menu
+            ShopEventType.SUMMER_LIMITED -> Res.string.event_type_summer_limited
         }
 
     fun collaboratorLabel(event: ShopEvent): StringResource =
@@ -70,6 +72,13 @@ object ShopEventResourceMapper {
                     }
 
                 ShopEventType.LIMITED_MENU ->
+                    if (event.isToday) {
+                        Res.string.shop_event_notice_limited_menu_today
+                    } else {
+                        Res.string.shop_event_notice_limited_menu_upcoming
+                    }
+
+                ShopEventType.SUMMER_LIMITED ->
                     if (event.isToday) {
                         Res.string.shop_event_notice_limited_menu_today
                     } else {

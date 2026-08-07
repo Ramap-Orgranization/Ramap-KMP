@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -37,13 +36,14 @@ import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.event_type_collab
 import ramap.shared.generated.resources.event_type_limited_menu
 import ramap.shared.generated.resources.event_type_popup
+import ramap.shared.generated.resources.event_type_summer_limited
 import ramap.shared.generated.resources.ic_close
 
 @Composable
 fun EventCard(
     event: ShopEvent,
     dateText: String,
-    onClick: (() -> Unit)?,
+    onClick: () -> Unit,
     modifier: Modifier = Modifier.fillMaxWidth(),
     actionLabel: String? = null,
     onAction: (() -> Unit)? = null,
@@ -56,7 +56,7 @@ fun EventCard(
                 .clip(cardShape)
                 .background(CommonColor.White)
                 .border(1.dp, GrayColor.C100, cardShape)
-                .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
+                .clickable(onClick = onClick)
                 .padding(14.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
@@ -101,7 +101,6 @@ fun EventCard(
         }
         AppText(
             text = event.title,
-            modifier = Modifier.height(48.dp),
             style = AppTextStyle.T2,
             color = GrayColor.C500,
             maxLines = 2,
@@ -132,5 +131,6 @@ private fun eventTypeLabel(type: ShopEventType): String =
             ShopEventType.COLLAB -> Res.string.event_type_collab
             ShopEventType.POPUP -> Res.string.event_type_popup
             ShopEventType.LIMITED_MENU -> Res.string.event_type_limited_menu
+            ShopEventType.SUMMER_LIMITED -> Res.string.event_type_summer_limited
         },
     )
