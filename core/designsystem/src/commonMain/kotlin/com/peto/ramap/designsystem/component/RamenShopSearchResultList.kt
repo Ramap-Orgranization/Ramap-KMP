@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -119,27 +118,11 @@ private fun RamenShopSearchResultItem(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
-                if (shop.hasCategory) {
-                    FlowRow(
-                        horizontalArrangement = Arrangement.spacedBy(2.dp),
-                        verticalArrangement = Arrangement.spacedBy(6.dp),
-                    ) {
-                        shop.menuCategories.forEachIndexed { index, category ->
-                            AppText(
-                                text = categoryLabel(category),
-                                style = AppTextStyle.C1,
-                                color = GrayColor.C300,
-                            )
-                            if (index != shop.menuCategories.lastIndex) {
-                                AppText(
-                                    text = "·",
-                                    style = AppTextStyle.B1,
-                                    color = GrayColor.C300,
-                                )
-                            }
-                        }
-                    }
-                }
+                MenuCategoryLabels(
+                    menuCategories = shop.menuCategories,
+                    style = AppTextStyle.C1,
+                    categoryLabel = categoryLabel,
+                )
             }
         }
 

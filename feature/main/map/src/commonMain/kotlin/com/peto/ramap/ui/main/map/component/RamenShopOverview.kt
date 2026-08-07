@@ -5,8 +5,6 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -30,7 +28,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
-import com.peto.ramap.designsystem.component.CategoryFilterChip
+import com.peto.ramap.designsystem.component.MenuCategoryLabels
 import com.peto.ramap.designsystem.image.RemoteShopImage
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.domain.model.event.ShopEvent
@@ -82,7 +80,6 @@ import ramap.shared.generated.resources.shop_detail_link_report
 import ramap.shared.generated.resources.shop_detail_more_actions
 import ramap.shared.generated.resources.shop_detail_waiting_catchtable
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 internal fun RamenShopOverview(
     shop: RamenShop,
@@ -112,7 +109,7 @@ internal fun RamenShopOverview(
                 text = ShopEventResourceMapper.notice(it).format(),
                 modifier =
                     Modifier
-                        .padding(top = 20.dp)
+                        .padding(top = 5.dp)
                         .padding(horizontal = 24.dp)
                         .noRippleClickable { onEventClick(it) },
                 style = AppTextStyle.B1,
@@ -160,21 +157,15 @@ internal fun RamenShopOverview(
                 )
             }
 
-            if (shop.hasCategory) {
-                FlowRow(
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    modifier =
-                        Modifier
-                            .padding(top = 10.dp)
-                            .padding(horizontal = 24.dp),
-                ) {
-                    shop.menuCategories.forEach { category ->
-                        CategoryFilterChip(
-                            label = stringResource(CategoryResourceMapper.label(category)),
-                        )
-                    }
-                }
-            }
+            MenuCategoryLabels(
+                menuCategories = shop.menuCategories,
+                categoryLabel = { category -> stringResource(CategoryResourceMapper.label(category)) },
+                style = AppTextStyle.B2,
+                modifier =
+                    Modifier
+                        .padding(top = 10.dp)
+                        .padding(horizontal = 24.dp),
+            )
         }
 
         Column(
