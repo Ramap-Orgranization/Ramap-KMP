@@ -25,6 +25,9 @@ interface ShopPersonalizationStore {
         enabled: Boolean,
     ): RamapResult<Unit>
 
+    /** 숨김 및 기존 좋아요 매장을 제외한 매장을 좋아요에 추가한다. */
+    suspend fun addBookmarks(shopIds: Set<String>): RamapResult<Unit>
+
     /**
      * [shopId]를 숨기고 해당 매장의 북마크와 알림 설정도 함께 해제한다.
      *
