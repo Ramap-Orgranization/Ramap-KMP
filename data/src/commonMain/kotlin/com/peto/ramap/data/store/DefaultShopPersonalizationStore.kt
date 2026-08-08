@@ -14,15 +14,12 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 
 /**
  * 역할별 저장소를 조합해 [ShopPersonalizationStore]를 제공하는 기본 구현.
  *
- * 새로고침, 초기화, 낙관적 변경과 롤백 전체를 하나의 [Mutex]로 직렬화한다. 따라서 진행 중인
- * 요청의 롤백이 뒤따른 변경을 덮어쓰거나, 이전 사용자 새로고침 결과가 [clear] 이후 발행되지 않는다.
+ * 역할별 저장소의 결과를 공유 개인화 상태로 발행하고, 원격 반영 실패 시 로컬 상태를 롤백한다.
  */
 internal class DefaultShopPersonalizationStore(
     private val bookmarkRepository: BookmarkRepository,
@@ -32,20 +29,18 @@ internal class DefaultShopPersonalizationStore(
     private val _state =
         MutableStateFlow<PersonalizationBootstrapState>(PersonalizationBootstrapState.Loading)
     override val state = _state.asStateFlow()
-    private val mutex = Mutex()
 
     /**
      * 세 저장소의 최신 값을 병렬 조회해 일관된 개인화 상태로 한 번에 발행한다.
      *
      * 어느 한 조회라도 실패하면 기존 상태를 유지하고 해당 오류를 반환한다.
      */
-    override suspend fun refresh(): RamapResult<Unit> =
-        mutex.withLock {
-            _state.value = PersonalizationBootstrapState.Loading
-            fetchAndPublishRefresh().also { result ->
-                if (result is RamapResult.Error) _state.value = PersonalizationBootstrapState.Error
-            }
+    override suspend fun refresh(): RamapResult<Unit> {
+        _state.value = PersonalizationBootstrapState.Loading
+        return fetchAndPublishRefresh().also { result ->
+            if (result is RamapResult.Error) _state.value = PersonalizationBootstrapState.Error
         }
+    }
 
     private suspend fun fetchAndPublishRefresh(): RamapResult<Unit> =
         try {
@@ -99,43 +94,47 @@ internal class DefaultShopPersonalizationStore(
     override suspend fun updateBookmark(
         shopId: String,
         enabled: Boolean,
-    ): RamapResult<Unit> =
-        mutex.withLock {
-            val previous = currentPersonalization
-            publish(previous.changeBookmark(shopId, isBookmarked = enabled))
+    ): RamapResult<Unit> {
+        val previous = currentPersonalization
+        publish(previous.changeBookmark(shopId, isBookmarked = enabled))
 
-            val result =
-                if (enabled) {
-                    bookmarkRepository.addBookmark(shopId)
-                } else {
-                    bookmarkRepository.removeBookmark(shopId)
-                }
+        val result =
+            if (enabled) {
+                bookmarkRepository.addBookmark(shopId)
+            } else {
+                bookmarkRepository.removeBookmark(shopId)
+            }
 
-            rollbackOnError(result, previous)
-        }
+        return rollbackOnError(result, previous)
+    }
+
+    /** 모든 원격 북마크 저장이 성공한 뒤에만 공유 개인화 상태를 갱신한다. */
+    override suspend fun addBookmarks(shopIds: Set<String>): RamapResult<Unit> {
+        val previous = currentPersonalization
+        val newShopIds = shopIds - previous.hiddenShopIds - previous.bookmarkedShopIds
+        if (newShopIds.isEmpty()) return RamapResult.Success(Unit)
+
+        val result = addBookmarksRemotely(newShopIds)
+        if (result is RamapResult.Success) publish(previous.addBookmarks(newShopIds))
+        return result
+    }
+
+    private suspend fun addBookmarksRemotely(shopIds: Set<String>): RamapResult<Unit> = bookmarkRepository.addBookmarks(shopIds)
 
     /**
      * 매장을 숨기고 연관된 구독과 북마크를 함께 해제한다.
      *
      * 원격 처리 중 실패하면 완료된 변경을 가능한 범위에서 보상하고 로컬 상태 전체를 복구한다.
      */
-    override suspend fun hideShop(shopId: String): RamapResult<Unit> =
-        mutex.withLock {
-            hideShopLocked(shopId)
-        }
+    override suspend fun hideShop(shopId: String): RamapResult<Unit> = hideShopInternal(shopId)
 
     /**
      * 매장의 숨김 상태만 낙관적으로 해제하고 원격 요청 실패 시 이전 상태를 복구한다.
      */
-    override suspend fun unhideShop(shopId: String): RamapResult<Unit> =
-        mutex.withLock {
-            unhideShopLocked(shopId)
-        }
+    override suspend fun unhideShop(shopId: String): RamapResult<Unit> = unhideShopInternal(shopId)
 
-    /**
-     * [mutex]가 잠긴 상태에서 숨김을 해제하고 원격 요청 실패 시 이전 상태를 복구한다.
-     */
-    private suspend fun unhideShopLocked(shopId: String): RamapResult<Unit> {
+    /** 숨김을 해제하고 원격 요청 실패 시 이전 상태를 복구한다. */
+    private suspend fun unhideShopInternal(shopId: String): RamapResult<Unit> {
         val previous = currentPersonalization
         publish(previous.copy(hiddenShopIds = previous.hiddenShopIds - shopId))
         return rollbackOnError(hiddenShopRepository.unhideShop(shopId), previous)
@@ -146,7 +145,7 @@ internal class DefaultShopPersonalizationStore(
      *
      * 숨김 실패나 코루틴 취소 시 구독과 로컬 상태를 취소 불가능한 구간에서 복구한다.
      */
-    private suspend fun hideShopLocked(shopId: String): RamapResult<Unit> {
+    private suspend fun hideShopInternal(shopId: String): RamapResult<Unit> {
         val previous = currentPersonalization
         val hadBookmark = shopId in previous.bookmarkedShopIds
         val hadNotification = shopId in previous.notificationShopIds
@@ -173,16 +172,15 @@ internal class DefaultShopPersonalizationStore(
     override suspend fun updateShopNotification(
         shopId: String,
         enabled: Boolean,
-    ): RamapResult<Unit> =
-        mutex.withLock {
-            val previous = currentPersonalization
-            if (previous.shouldIgnoreNotificationUpdate(shopId, enabled)) {
-                return@withLock RamapResult.Success(Unit)
-            }
-            publish(previous.changeNotificationSubscription(shopId, isSubscribed = enabled))
-            val result = changeSubscriptionRemotely(shopId, shouldSubscribe = enabled)
-            rollbackOnError(result, previous)
+    ): RamapResult<Unit> {
+        val previous = currentPersonalization
+        if (previous.shouldIgnoreNotificationUpdate(shopId, enabled)) {
+            return RamapResult.Success(Unit)
         }
+        publish(previous.changeNotificationSubscription(shopId, isSubscribed = enabled))
+        val result = changeSubscriptionRemotely(shopId, shouldSubscribe = enabled)
+        return rollbackOnError(result, previous)
+    }
 
     /**
      * 요청 상태에 따라 구독 또는 구독 해제 명령을 명시적으로 호출한다.
@@ -200,12 +198,11 @@ internal class DefaultShopPersonalizationStore(
     /**
      * 저장된 개인화 상태를 비운다.
      *
-     * 다른 변경과 같은 [mutex]로 직렬화되어 로그아웃 이후 이전 사용자 요청이 상태를 되살리지 못하게 한다.
+     * 로그아웃 시 공유 개인화 상태를 초기화한다.
      */
-    override suspend fun clear() =
-        mutex.withLock {
-            publish(ShopPersonalization())
-        }
+    override suspend fun clear() {
+        publish(ShopPersonalization())
+    }
 
     /**
      * 기존 구독이 있던 매장만 구독 해제하며, 실패하면 즉시 로컬 상태를 롤백한다.

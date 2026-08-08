@@ -21,6 +21,11 @@ internal class FakeBookmarkShopDataSource(
         }
     }
 
+    override suspend fun addBookmarks(shopIds: Set<String>) {
+        error?.let { throw it }
+        bookmarks += shopIds.filter { shopId -> bookmarks.none { it.shopId == shopId } }.map(::PersonalizationResponse)
+    }
+
     override suspend fun removeBookmark(shopId: String) {
         error?.let { throw it }
         bookmarks.removeAll { it.shopId == shopId }
