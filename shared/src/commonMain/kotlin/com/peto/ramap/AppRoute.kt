@@ -34,6 +34,7 @@ import com.peto.ramap.notification.NotificationDeepLinkParser
 import com.peto.ramap.notification.NotificationLaunchDispatcher
 import com.peto.ramap.ui.account.AccountSettingsRoute
 import com.peto.ramap.ui.account.InformationRoute
+import com.peto.ramap.ui.bookmark.importation.ImportationGuideRoute
 import com.peto.ramap.ui.bookmark.importation.ImportationRoute
 import com.peto.ramap.ui.bookmark.list.BookmarkedShopListRoute
 import com.peto.ramap.ui.hidden.HiddenShopListRoute
@@ -232,8 +233,12 @@ internal fun AppRoute(
         importationScreen = {
             ImportationRoute(
                 onBack = navigationState::pop,
+                onGuideNavigate = navigationState::showImportationGuide,
                 onImportCompleted = navigationState::pop,
             )
+        },
+        importationGuideScreen = {
+            ImportationGuideRoute(onBack = navigationState::pop)
         },
         eventScreen = { route ->
             EventDetailRoute(

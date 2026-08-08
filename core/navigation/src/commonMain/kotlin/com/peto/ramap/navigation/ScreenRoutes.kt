@@ -44,6 +44,9 @@ sealed interface ScreenRoutes : NavKey {
     data object ImportationRoutes : ScreenRoutes
 
     @Serializable
+    data object ImportationGuideRoutes : ScreenRoutes
+
+    @Serializable
     data class EventDetailRoutes(
         val eventId: String,
     ) : ScreenRoutes

@@ -22,5 +22,6 @@ val ScreenRoutes.analyticsScreenName: String
             is ScreenRoutes.SubscribedShopListRoutes -> "subscribed_shop_list"
             is ScreenRoutes.BookmarkedShopListRoutes -> "bookmarked_shop_list"
             is ScreenRoutes.ImportationRoutes -> "importation"
+            is ScreenRoutes.ImportationGuideRoutes -> "importation_guide"
             is ScreenRoutes.EventDetailRoutes -> "event_detail"
         }
