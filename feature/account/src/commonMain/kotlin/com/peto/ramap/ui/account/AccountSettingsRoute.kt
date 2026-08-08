@@ -61,7 +61,10 @@ fun AccountSettingsRoute(
         showLoading = uiState.loadState.isAnyLoading,
         onBack = onBack,
     ) {
-        SectionCard(title = uiState.accountLabel) {
+        SectionCard(
+            title = uiState.accountLabel,
+            modifier = Modifier.padding(horizontal = 10.dp),
+        ) {
             if (uiState.isLoggedIn) {
                 AppButton(
                     text = stringResource(Res.string.logout_menu),

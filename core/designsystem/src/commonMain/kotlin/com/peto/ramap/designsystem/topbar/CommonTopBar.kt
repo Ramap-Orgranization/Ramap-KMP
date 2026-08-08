@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -27,13 +28,23 @@ fun CommonTopBar(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .height(60.dp),
+                    .height(40.dp),
         ) {
-            Box(modifier = Modifier.align(Alignment.CenterStart)) {
+            Box(
+                modifier =
+                    Modifier
+                        .align(Alignment.CenterStart)
+                        .wrapContentSize(unbounded = true),
+            ) {
                 left()
             }
 
-            Box(modifier = Modifier.align(Alignment.CenterEnd)) {
+            Box(
+                modifier =
+                    Modifier
+                        .align(Alignment.CenterEnd)
+                        .wrapContentSize(unbounded = true),
+            ) {
                 right()
             }
 
