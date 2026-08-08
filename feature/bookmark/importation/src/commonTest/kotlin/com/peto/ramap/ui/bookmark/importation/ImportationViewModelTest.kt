@@ -246,7 +246,7 @@ class ImportationViewModelTest {
                 runCurrent()
 
                 assertEquals(
-                    ImportationSideEffect.showToast(
+                    ImportationSideEffect.ShowToast(
                         ToastData(Res.string.importation_error_analyze, ToastType.ERROR),
                     ),
                     awaitItem(),

@@ -4,7 +4,7 @@ import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.ui.base.SideEffect
 
 sealed interface ImportationSideEffect : SideEffect {
-    data class showToast(
+    data class ShowToast(
         val toast: ToastData,
     ) : ImportationSideEffect
 

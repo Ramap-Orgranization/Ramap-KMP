@@ -72,7 +72,7 @@ fun ImportationRoute(
 
     ObserveAsEvents(viewModel.sideEffect) { effect ->
         when (effect) {
-            is ImportationSideEffect.showToast -> toastManager.show(effect.toast)
+            is ImportationSideEffect.ShowToast -> toastManager.show(effect.toast)
             is ImportationSideEffect.ImportCompleted -> {
                 toastManager.show(effect.toast)
                 onImportCompleted()

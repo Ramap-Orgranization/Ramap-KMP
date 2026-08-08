@@ -143,7 +143,7 @@ class ImportationViewModel(
     private fun publishError(error: ImportationError) {
         reduce { copy(error = error) }
         trySideEffect(
-            ImportationSideEffect.showToast(
+            ImportationSideEffect.ShowToast(
                 ToastData(ImportationErrorHandler.resourceFor(error), ToastType.ERROR),
             ),
         )
