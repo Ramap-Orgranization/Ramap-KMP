@@ -215,15 +215,15 @@ internal fun MapContent(
                         else ->
                             RamenShopSearchResultList(
                                 shops = uiState.searchResultShops,
-                                categoryLabel = { category ->
-                                    stringResource(CategoryResourceMapper.label(category))
-                                },
                                 onShopClick = {
                                     onShopSelected(
                                         it,
                                         true,
                                         AnalyticsSource.SEARCH_RESULT,
                                     )
+                                },
+                                categoryLabel = { category ->
+                                    stringResource(CategoryResourceMapper.label(category))
                                 },
                             )
                     }

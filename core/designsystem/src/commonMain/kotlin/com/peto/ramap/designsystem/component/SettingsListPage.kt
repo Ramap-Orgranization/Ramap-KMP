@@ -34,6 +34,7 @@ fun SettingsListPage(
     errorImage: DrawableResource,
     errorDescription: StringResource,
     onRetry: () -> Unit,
+    topBarAction: @Composable () -> Unit = {},
     content: @Composable () -> Unit,
 ) {
     Column(
@@ -56,6 +57,7 @@ fun SettingsListPage(
                             .noRippleClickable(onClick = onBack),
                 )
             },
+            right = topBarAction,
         )
 
         Box(modifier = Modifier.weight(1f)) {

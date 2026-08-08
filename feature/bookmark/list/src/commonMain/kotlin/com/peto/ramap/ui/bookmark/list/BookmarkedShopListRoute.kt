@@ -3,52 +3,48 @@ package com.peto.ramap.ui.bookmark.list
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.peto.ramap.designsystem.component.RamenShopSearchResultList
 import com.peto.ramap.designsystem.component.SettingsListPage
 import com.peto.ramap.designsystem.component.ShopListEmptyContent
-import com.peto.ramap.designsystem.dialog.CommonDialog
-import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.designsystem.toast.ToastManager
 import com.peto.ramap.domain.model.shop.RamenShop
-import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.ui.base.ObserveAsEvents
 import com.peto.ramap.ui.bookmark.list.contract.BookmarkedShopListIntent
 import com.peto.ramap.ui.bookmark.list.contract.BookmarkedShopListSideEffect
 import com.peto.ramap.ui.bookmark.list.contract.BookmarkedShopListUiState
 import com.peto.ramap.ui.resource.category.CategoryResourceMapper
+import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.bookmark_removal_confirm_action
-import ramap.shared.generated.resources.bookmark_removal_confirm_title
 import ramap.shared.generated.resources.bookmarked_shops_empty_title
 import ramap.shared.generated.resources.data_load_failure_message
+import ramap.shared.generated.resources.ic_add
+import ramap.shared.generated.resources.importation_add_action_description
 import ramap.shared.generated.resources.laduck_error_confused
-import ramap.shared.generated.resources.notification_removal_dismiss_action
 import ramap.shared.generated.resources.settings_bookmarked_shops_menu
 
 @Composable
 fun BookmarkedShopListRoute(
     onBack: () -> Unit,
+    onImportationNavigate: () -> Unit,
     onShopOpen: (String) -> Unit,
     toastManager: ToastManager = koinInject(),
     viewModel: BookmarkedShopListViewModel = koinViewModel(),
 ) {
     val uiState = viewModel.uiState.collectAsStateWithLifecycle().value
-    var removalTargetShopId by remember { mutableStateOf<String?>(null) }
 
     ObserveAsEvents(viewModel.sideEffect) { sideEffect ->
         when (sideEffect) {
@@ -58,31 +54,24 @@ fun BookmarkedShopListRoute(
 
     BookmarkedShopListScreen(
         uiState = uiState,
-        removalTargetShopId = removalTargetShopId,
         onBack = onBack,
+        onImportationNavigate = onImportationNavigate,
         onShopOpen = { onShopOpen(it.id) },
-        onRemovalRequested = { removalTargetShopId = it.id },
-        onRetry = { viewModel.dispatch(BookmarkedShopListIntent.OnRetry) },
-        onRemovalDismiss = { removalTargetShopId = null },
-        onRemovalConfirm = {
-            removalTargetShopId?.let { shopId ->
-                viewModel.dispatch(BookmarkedShopListIntent.OnRemovalConfirmed(shopId))
-            }
-            removalTargetShopId = null
+        onRemovalRequested = { shop ->
+            viewModel.dispatch(BookmarkedShopListIntent.OnRemovalConfirmed(shop.id))
         },
+        onRetry = { viewModel.dispatch(BookmarkedShopListIntent.OnRetry) },
     )
 }
 
 @Composable
 internal fun BookmarkedShopListScreen(
     uiState: BookmarkedShopListUiState,
-    removalTargetShopId: String?,
     onBack: () -> Unit,
+    onImportationNavigate: () -> Unit,
     onShopOpen: (RamenShop) -> Unit,
     onRemovalRequested: (RamenShop) -> Unit,
     onRetry: () -> Unit,
-    onRemovalDismiss: () -> Unit,
-    onRemovalConfirm: () -> Unit,
 ) {
     SettingsListPage(
         title = Res.string.settings_bookmarked_shops_menu,
@@ -93,26 +82,19 @@ internal fun BookmarkedShopListScreen(
         errorImage = Res.drawable.laduck_error_confused,
         errorDescription = Res.string.data_load_failure_message,
         onRetry = onRetry,
+        topBarAction = {
+            IconButton(onClick = onImportationNavigate, modifier = Modifier.padding(horizontal = 12.dp)) {
+                Icon(
+                    painter = painterResource(Res.drawable.ic_add),
+                    contentDescription = stringResource(Res.string.importation_add_action_description),
+                    modifier = Modifier.size(24.dp),
+                    tint = GrayColor.C500,
+                )
+            }
+        },
     ) {
         BookmarkedShopListContent(uiState, onShopOpen, onRemovalRequested)
     }
-
-    CommonDialog(
-        visible = removalTargetShopId != null,
-        confirmText = stringResource(Res.string.bookmark_removal_confirm_action),
-        dismissText = stringResource(Res.string.notification_removal_dismiss_action),
-        onDismissRequest = onRemovalDismiss,
-        content = {
-            AppText(
-                text = stringResource(Res.string.bookmark_removal_confirm_title),
-                style = AppTextStyle.T1,
-                color = GrayColor.C500,
-                textAlign = TextAlign.Center,
-            )
-        },
-        onConfirm = onRemovalConfirm,
-        onDismiss = onRemovalDismiss,
-    )
 }
 
 @Composable
