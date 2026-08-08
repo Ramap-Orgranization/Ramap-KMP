@@ -10,10 +10,18 @@ class FakeBookmarkRepository(
 ) : BookmarkRepository {
     val shopIds = initialShopIds.toMutableSet()
     val removeRequests = mutableListOf<String>()
+    val bulkAddRequests = mutableListOf<Set<String>>()
 
     override suspend fun fetchBookmarkedShopIds() = RamapResult.Success(shopIds.toSet())
 
     override suspend fun addBookmark(shopId: String): RamapResult<Unit> = update(shopId, true)
+
+    override suspend fun addBookmarks(shopIds: Set<String>): RamapResult<Unit> {
+        bulkAddRequests += shopIds
+        if (shouldFailUpdate) return RamapResult.Error(RamapError.Unknown(IllegalStateException("failure")))
+        this.shopIds += shopIds
+        return RamapResult.Success(Unit)
+    }
 
     override suspend fun removeBookmark(shopId: String): RamapResult<Unit> {
         removeRequests += shopId

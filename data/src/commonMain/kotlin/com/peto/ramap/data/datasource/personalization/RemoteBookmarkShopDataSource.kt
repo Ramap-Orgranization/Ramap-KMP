@@ -4,7 +4,12 @@ import com.peto.ramap.data.model.PersonalizationRequest
 import com.peto.ramap.data.model.PersonalizationResponse
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.from
+import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Columns
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonArray
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 
 internal class RemoteBookmarkShopDataSource(
     private val client: SupabaseClient,
@@ -24,6 +29,20 @@ internal class RemoteBookmarkShopDataSource(
             }
     }
 
+    override suspend fun addBookmarks(shopIds: Set<String>) {
+        if (shopIds.isEmpty()) return
+        client.postgrest.rpc(
+            function = ADD_BOOKMARKS_RPC,
+            parameters =
+                buildJsonObject {
+                    put(
+                        SHOP_IDS_PARAMETER,
+                        buildJsonArray { shopIds.forEach { add(JsonPrimitive(it)) } },
+                    )
+                },
+        )
+    }
+
     override suspend fun removeBookmark(shopId: String) {
         client
             .from(TABLE_NAME)
@@ -38,5 +57,7 @@ internal class RemoteBookmarkShopDataSource(
         private const val TABLE_NAME = "user_shop_bookmarks"
         private const val COLUMN_USER_ID = "user_id"
         private const val COLUMN_SHOP_ID = "shop_id"
+        private const val ADD_BOOKMARKS_RPC = "add_shop_bookmarks"
+        private const val SHOP_IDS_PARAMETER = "p_shop_ids"
     }
 }

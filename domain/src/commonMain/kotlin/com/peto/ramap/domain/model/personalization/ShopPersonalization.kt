@@ -31,6 +31,9 @@ data class ShopPersonalization(
         )
     }
 
+    /** 숨김 매장을 제외하고 여러 매장을 좋아요에 추가한다. */
+    fun addBookmarks(shopIds: Set<String>): ShopPersonalization = copy(bookmarkedShopIds = bookmarkedShopIds + (shopIds - hiddenShopIds))
+
     /**
      * 특정 매장의 알림 구독 상태를 [isSubscribed]로 변경한다.
      */

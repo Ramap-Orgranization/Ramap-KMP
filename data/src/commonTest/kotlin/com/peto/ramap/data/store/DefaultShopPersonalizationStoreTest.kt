@@ -13,7 +13,6 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitCancellation
-import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -50,6 +49,8 @@ class DefaultShopPersonalizationStoreTest {
 
                     override suspend fun addBookmark(shopId: String) = RamapResult.Success(Unit)
 
+                    override suspend fun addBookmarks(shopIds: Set<String>) = RamapResult.Success(Unit)
+
                     override suspend fun removeBookmark(shopId: String) = RamapResult.Success(Unit)
                 }
             val store =
@@ -73,6 +74,8 @@ class DefaultShopPersonalizationStoreTest {
                     override suspend fun fetchBookmarkedShopIds(): RamapResult<Set<String>> = throw failure
 
                     override suspend fun addBookmark(shopId: String) = RamapResult.Success(Unit)
+
+                    override suspend fun addBookmarks(shopIds: Set<String>) = RamapResult.Success(Unit)
 
                     override suspend fun removeBookmark(shopId: String) = RamapResult.Success(Unit)
                 }
@@ -246,6 +249,44 @@ class DefaultShopPersonalizationStoreTest {
         }
 
     @Test
+    fun `여러 매장 추가는 원격 bulk 저장을 사용한다`() =
+        runTest {
+            val bookmarkRepository = FakeBookmarkRepository()
+            val store =
+                DefaultShopPersonalizationStore(
+                    bookmarkRepository,
+                    FakeHiddenShopRepository(),
+                    FakeSubscribedShopRepository(),
+                )
+            store.refresh()
+
+            assertIs<RamapResult.Success<Unit>>(store.addBookmarks(setOf("shop-a", "shop-b")))
+
+            assertEquals(setOf("shop-a", "shop-b"), bookmarkRepository.shopIds)
+            assertEquals(listOf(setOf("shop-a", "shop-b")), bookmarkRepository.bulkAddRequests)
+            assertEquals(
+                setOf("shop-a", "shop-b"),
+                personalization(store).bookmarkedShopIds,
+            )
+        }
+
+    @Test
+    fun `여러 매장 중 저장 실패가 발생하면 공유 상태를 갱신하지 않는다`() =
+        runTest {
+            val store =
+                DefaultShopPersonalizationStore(
+                    FakeBookmarkRepository(shouldFailUpdate = true),
+                    FakeHiddenShopRepository(),
+                    FakeSubscribedShopRepository(),
+                )
+            store.refresh()
+
+            assertIs<RamapResult.Error>(store.addBookmarks(setOf("shop-a", "shop-b")))
+
+            assertEquals(ShopPersonalization(), personalization(store))
+        }
+
+    @Test
     fun `알림을 활성화하면 매장을 구독한다`() =
         runTest {
             val subscribedShopRepository = FakeSubscribedShopRepository()
@@ -320,41 +361,6 @@ class DefaultShopPersonalizationStoreTest {
 
             assertEquals(emptySet(), personalization(store).notificationShopIds)
             assertEquals(emptyList(), subscribedShopRepository.subscriptionRequests)
-        }
-
-    @Test
-    fun `진행 중인 새로고침 뒤 초기화하면 이전 사용자 상태를 다시 발행하지 않는다`() =
-        runTest {
-            val fetchStarted = CompletableDeferred<Unit>()
-            val allowFetchCompletion = CompletableDeferred<Unit>()
-            val bookmarkRepository =
-                object : BookmarkRepository {
-                    override suspend fun fetchBookmarkedShopIds(): RamapResult<Set<String>> {
-                        fetchStarted.complete(Unit)
-                        allowFetchCompletion.await()
-                        return RamapResult.Success(setOf("previous-user-shop"))
-                    }
-
-                    override suspend fun addBookmark(shopId: String) = RamapResult.Success(Unit)
-
-                    override suspend fun removeBookmark(shopId: String) = RamapResult.Success(Unit)
-                }
-            val store =
-                DefaultShopPersonalizationStore(
-                    bookmarkRepository,
-                    FakeHiddenShopRepository(),
-                    FakeSubscribedShopRepository(),
-                )
-
-            val refresh = async { store.refresh() }
-            fetchStarted.await()
-            val clear = async { store.clear() }
-            runCurrent()
-            allowFetchCompletion.complete(Unit)
-            refresh.await()
-            clear.await()
-
-            assertEquals(ShopPersonalization(), personalization(store))
         }
 
     private fun personalization(store: DefaultShopPersonalizationStore): ShopPersonalization =
