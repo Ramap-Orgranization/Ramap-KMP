@@ -138,7 +138,9 @@
     <string name="settings_information_menu">정보</string>
     <string name="settings_report_menu">제보하기</string>
     <string name="settings_subscribed_shops_menu">알림 설정한 매장 보기</string>
+    <string name="settings_subscribed_shops_topbar_title">알림 설정 매장</string>
     <string name="settings_bookmarked_shops_menu">좋아요한 매장 보기</string>
+    <string name="shop_list_count">총 %1$d개</string>
     <string name="privacy_policy_menu">개인정보 처리방침</string>
     <string name="app_version_label">앱 버전 %1$s</string>
 
