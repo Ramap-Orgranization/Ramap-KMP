@@ -147,6 +147,27 @@
     <string name="bookmark_removal_confirm_title">좋아요를 해제하시겠습니까?</string>
     <string name="bookmark_removal_confirm_action">좋아요 해제</string>
     <string name="bookmark_removal_success_message">좋아요를 해제했어요</string>
+    <string name="importation_add_action_description">지도 목록에서 좋아요 추가</string>
+    <string name="importation_screen_title">지도 목록에서 추가</string>
+    <string name="importation_remove_candidate">추가 대상에서 제외</string>
+    <string name="importation_input_label">카카오맵 또는 네이버 지도 목록 링크</string>
+    <string name="importation_analyze">목록 찾기</string>
+    <string name="importation_preview_added_count">%1$d곳</string>
+    <string name="importation_registered_count_label">기등록 매장</string>
+    <string name="importation_hidden_count_label">숨김 제외</string>
+    <string name="importation_unmatched_count_label">매칭 실패</string>
+    <string name="importation_count">%1$d개</string>
+    <string name="importation_candidates_title">추가할 매장</string>
+    <string name="importation_confirm">추가하기</string>
+    <string name="importation_reset">초기화</string>
+    <string name="importation_completed">좋아요 목록에 추가했어요</string>
+    <string name="importation_error_invalid_url">링크를 입력해주세요</string>
+    <string name="importation_error_unsupported_url">카카오맵 또는 네이버 지도 목록 링크만 사용할 수 있어요</string>
+    <string name="importation_error_unavailable_list">비공개·삭제·만료된 목록이거나 불러올 수 없는 목록이에요</string>
+    <string name="importation_error_provider_failure">지도 목록 제공 서비스에 일시적인 문제가 있어요</string>
+    <string name="importation_error_personalization">좋아요 정보를 불러온 뒤 다시 시도해주세요</string>
+    <string name="importation_error_analyze">목록을 불러오지 못했어요. 링크를 확인해주세요</string>
+    <string name="importation_error_confirm">좋아요 추가에 실패했어요</string>
 
     <!-- 알림 설정한 매장 화면 -->
     <string name="subscribed_shops_empty_title">알림을 설정한 매장이 없어요</string>

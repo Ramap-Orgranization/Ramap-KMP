@@ -70,6 +70,7 @@ private fun navKeySerializersModule(): SerializersModule =
             subclass(ScreenRoutes.NotificationSettingsRoutes::class)
             subclass(ScreenRoutes.SubscribedShopListRoutes::class)
             subclass(ScreenRoutes.BookmarkedShopListRoutes::class)
+            subclass(ScreenRoutes.ImportationRoutes::class)
             subclass(ScreenRoutes.EventDetailRoutes::class)
         }
     }

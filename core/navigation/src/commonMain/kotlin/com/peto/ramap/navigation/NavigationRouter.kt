@@ -31,6 +31,7 @@ fun NavigationRouter(
     notificationSettingsScreen: @Composable () -> Unit,
     subscribedShopsScreen: @Composable () -> Unit,
     bookmarkedShopsScreen: @Composable () -> Unit,
+    importationScreen: @Composable () -> Unit,
     eventScreen: @Composable (ScreenRoutes.EventDetailRoutes) -> Unit,
 ) {
     val onTabSelected: (TabStatus) -> Unit = navigationState::selectTopLevelTab
@@ -78,6 +79,9 @@ fun NavigationRouter(
             }
             entry<ScreenRoutes.BookmarkedShopListRoutes> {
                 FullScreen(bookmarkedShopsScreen)
+            }
+            entry<ScreenRoutes.ImportationRoutes> {
+                FullScreen(importationScreen)
             }
             entry<ScreenRoutes.EventDetailRoutes> { route ->
                 FullScreen { (eventScreen(route)) }

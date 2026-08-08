@@ -52,6 +52,8 @@ class NavigationState(
 
     fun showBookmarkedShops() = showOnce(ScreenRoutes.BookmarkedShopListRoutes)
 
+    fun showImportation() = showOnce(ScreenRoutes.ImportationRoutes)
+
     fun showEvent(eventId: String) {
         if (currentRoute == ScreenRoutes.EventDetailRoutes(eventId)) return
         currentBackStack.add(ScreenRoutes.EventDetailRoutes(eventId))

@@ -21,5 +21,6 @@ val ScreenRoutes.analyticsScreenName: String
             is ScreenRoutes.NotificationSettingsRoutes -> "notification_settings"
             is ScreenRoutes.SubscribedShopListRoutes -> "subscribed_shop_list"
             is ScreenRoutes.BookmarkedShopListRoutes -> "bookmarked_shop_list"
+            is ScreenRoutes.ImportationRoutes -> "importation"
             is ScreenRoutes.EventDetailRoutes -> "event_detail"
         }
