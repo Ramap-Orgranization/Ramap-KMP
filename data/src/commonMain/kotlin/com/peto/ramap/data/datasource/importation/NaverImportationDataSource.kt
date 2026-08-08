@@ -19,7 +19,6 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.http.Url
 import kotlinx.serialization.json.Json
 
-/** 네이버 지도 공유 목록을 조회하고 매칭 Function에 전달한다. */
 internal class NaverImportationDataSource(
     private val functionClient: ImportationFunctionClient,
     private val httpClient: HttpClient,
