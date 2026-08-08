@@ -1,5 +1,9 @@
 package com.peto.ramap.data.datasource.di
 
+import com.peto.ramap.data.datasource.importation.ImportationDataSource
+import com.peto.ramap.data.datasource.importation.KakaoImportationDataSource
+import com.peto.ramap.data.datasource.importation.NaverImportationDataSource
+import com.peto.ramap.data.datasource.importation.RemoteImportationDataSource
 import com.peto.ramap.data.datasource.personalization.BookmarkShopDataSource
 import com.peto.ramap.data.datasource.personalization.HiddenShopDataSource
 import com.peto.ramap.data.datasource.personalization.RemoteBookmarkShopDataSource
@@ -15,10 +19,14 @@ import com.peto.ramap.data.datasource.shop.RemoteRamenShopDataSource
 import com.peto.ramap.data.datasource.waiting.RemoteShopWaitingSystemDataSource
 import com.peto.ramap.data.datasource.waiting.ShopWaitingSystemDataSource
 import io.github.jan.supabase.SupabaseClient
+import io.ktor.client.HttpClient
 import org.koin.dsl.module
 
 val dataSourceModule =
     module {
+        single { NaverImportationDataSource(get(), get<HttpClient>()) }
+        single { KakaoImportationDataSource(get()) }
+        single<ImportationDataSource> { RemoteImportationDataSource(get(), get()) }
         single<PlaceSearchDataSource> {
             RemotePlaceSearchDataSource(get<SupabaseClient>())
         }
