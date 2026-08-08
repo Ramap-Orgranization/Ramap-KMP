@@ -1,16 +1,14 @@
-package com.peto.ramap.domain.usecase
+package com.peto.ramap.domain.model.importation
 
-import com.peto.ramap.domain.model.importation.ImportationPreview
-import com.peto.ramap.domain.model.importation.ImportationProvider
 import com.peto.ramap.domain.model.personalization.ShopPersonalization
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-class ResolveImportationCandidatesUseCaseTest {
+class ImportationCandidatesTest {
     @Test
     fun `숨김과 이미 좋아요한 매장을 제외한 후보를 반환한다`() {
         val result =
-            ResolveImportationCandidatesUseCase()(
+            ImportationCandidates.from(
                 preview =
                     ImportationPreview(
                         provider = ImportationProvider.KAKAO,
