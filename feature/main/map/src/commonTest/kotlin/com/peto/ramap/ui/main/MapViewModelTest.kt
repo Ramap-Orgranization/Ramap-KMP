@@ -2853,6 +2853,7 @@ private fun mapViewModel(
             ramenShopRepository,
             shopWaitingSystemRepository,
         ),
+        FakeMapSearchHistoryStorage(),
         MapAnalytics(FakeAnalyticsTracker()),
         LoginAnalytics(FakeAnalyticsTracker(), FakeCrashReporter()),
     )

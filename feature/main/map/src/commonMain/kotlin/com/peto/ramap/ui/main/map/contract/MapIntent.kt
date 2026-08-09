@@ -67,6 +67,16 @@ sealed interface MapIntent : Intent {
         val query: String,
     ) : MapIntent
 
+    data class OnRecentSearchSelected(
+        val query: String,
+    ) : MapIntent
+
+    data class OnRecentSearchDeleted(
+        val query: String,
+    ) : MapIntent
+
+    data object OnRecentSearchesCleared : MapIntent
+
     data class OnCategoryFilterToggled(
         val category: Category,
     ) : MapIntent

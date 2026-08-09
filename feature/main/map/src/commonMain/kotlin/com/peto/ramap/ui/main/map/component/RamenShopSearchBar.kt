@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
@@ -18,6 +19,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
@@ -28,8 +30,11 @@ import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.RamapTheme
+import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
+import ramap.shared.generated.resources.ic_arrow3_left
+import ramap.shared.generated.resources.ic_close
 import ramap.shared.generated.resources.search_bar_clear_action
 import ramap.shared.generated.resources.search_bar_placeholder
 import ramap.shared.generated.resources.search_bar_search_icon
@@ -38,6 +43,8 @@ import ramap.shared.generated.resources.search_bar_search_icon
 internal fun SearchBar(
     query: String,
     onQueryChange: (String) -> Unit,
+    onFocusChanged: (Boolean) -> Unit ,
+    isSearchMode: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     val focusManager = LocalFocusManager.current
@@ -69,19 +76,27 @@ internal fun SearchBar(
         modifier =
             modifier
                 .fillMaxWidth()
+                .onFocusChanged { onFocusChanged(it.isFocused) }
                 .border(width = 1.dp, color = GrayColor.C200, shape = RoundedCornerShape(28.dp)),
         shape = RoundedCornerShape(28.dp),
         singleLine = true,
         leadingIcon = {
-            Text(
-                text = "⌕",
-                modifier =
-                    Modifier.semantics {
-                        contentDescription = searchIconDescription
-                    },
-                fontSize = 28.sp,
-                color = GrayColor.C500,
-            )
+            if (isSearchMode) {
+                IconButton(onClick = { focusManager.clearFocus() }) {
+                    Icon(
+                        painter = painterResource(Res.drawable.ic_arrow3_left),
+                        contentDescription = stringResource(Res.string.search_bar_search_icon),
+                        tint = GrayColor.C500,
+                    )
+                }
+            } else {
+                Text(
+                    text = "⌕",
+                    modifier = Modifier.semantics { contentDescription = searchIconDescription },
+                    fontSize = 28.sp,
+                    color = GrayColor.C500,
+                )
+            }
         },
         placeholder = {
             AppText(
@@ -99,14 +114,10 @@ internal fun SearchBar(
                         onQueryChange("")
                     },
                 ) {
-                    Text(
-                        text = "×",
-                        modifier =
-                            Modifier.semantics {
-                                contentDescription = clearActionDescription
-                            },
-                        fontSize = 25.sp,
-                        color = GrayColor.C400,
+                    Icon(
+                        painter = painterResource(Res.drawable.ic_close),
+                        contentDescription = clearActionDescription,
+                        tint = GrayColor.C400,
                     )
                 }
             }
@@ -141,6 +152,7 @@ private fun SearchBarPreview() {
         SearchBar(
             query = "",
             onQueryChange = {},
+            onFocusChanged = {},
         )
     }
 }

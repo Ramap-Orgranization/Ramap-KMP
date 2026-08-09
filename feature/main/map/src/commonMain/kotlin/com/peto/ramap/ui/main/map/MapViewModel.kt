@@ -32,6 +32,7 @@ import com.peto.ramap.domain.store.ShopPersonalizationStore
 import com.peto.ramap.domain.usecase.FetchShopDetailUseCase
 import com.peto.ramap.domain.usecase.ShopDetail
 import com.peto.ramap.domain.usecase.ShopDetailCacheLookup
+import com.peto.ramap.platform.MapSearchHistoryStorage
 import com.peto.ramap.ui.base.BaseViewModel
 import com.peto.ramap.ui.location.CurrentLocationStore
 import com.peto.ramap.ui.main.map.config.DefaultMapConfig
@@ -48,6 +49,9 @@ import com.peto.ramap.ui.main.map.contract.MapIntent.OnLoginTypeSelected
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnMapTabExited
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnMyLocationChanged
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnQueryChanged
+import com.peto.ramap.ui.main.map.contract.MapIntent.OnRecentSearchDeleted
+import com.peto.ramap.ui.main.map.contract.MapIntent.OnRecentSearchSelected
+import com.peto.ramap.ui.main.map.contract.MapIntent.OnRecentSearchesCleared
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnRequestedShopDismissed
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnSearchResultsDismissed
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnSearchedShopSelected
@@ -78,6 +82,7 @@ import com.peto.ramap.ui.main.map.viewport.ViewportLoadResult
 import com.peto.ramap.ui.main.map.viewport.ViewportShopLoader
 import com.peto.ramap.ui.task.TaskPolicy
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.StringResource
 import ramap.shared.generated.resources.Res
@@ -104,6 +109,7 @@ class MapViewModel(
     private val shopReportRepository: ShopReportRepository,
     private val personalizationStore: ShopPersonalizationStore,
     private val fetchShopDetailUseCase: FetchShopDetailUseCase,
+    private val mapSearchHistoryStorage: MapSearchHistoryStorage,
     private val mapAnalytics: MapAnalytics,
     private val loginAnalytics: LoginAnalytics,
 ) : BaseViewModel<MapUiState, MapIntent, MapSideEffect>(initialState = MapUiState()) {
@@ -118,6 +124,25 @@ class MapViewModel(
     init {
         viewModelScope.launch { observeSessionState() }
         viewModelScope.launch { observePersonalization() }
+        viewModelScope.launch { observeRecentSearches() }
+        viewModelScope.launch { observeRecentlyViewedShops() }
+    }
+
+    private suspend fun observeRecentSearches() {
+        mapSearchHistoryStorage.recentSearches.collectLatest { searches ->
+            reduce { copy(recentSearches = searches) }
+        }
+    }
+
+    private suspend fun observeRecentlyViewedShops() {
+        val shopIds = mapSearchHistoryStorage.recentlyViewedShopIds.first()
+        if (shopIds.isEmpty()) return
+        val shops =
+            when (val result = ramenShopRepository.fetchRamenShops(shopIds.toSet())) {
+                is RamapResult.Success -> RamenShops(shopIds.mapNotNull { result.data[it] })
+                is RamapResult.Error -> RamenShops(emptyMap())
+            }
+        reduce { copy(recentlyViewedShops = shops) }
     }
 
     private suspend fun observePersonalization() {
@@ -204,6 +229,9 @@ class MapViewModel(
         when (intent) {
             is OnSearchResultsDismissed -> dismissSearchResults()
             is OnQueryChanged -> updateQuery(intent.query)
+            is OnRecentSearchSelected -> updateQuery(intent.query)
+            is OnRecentSearchDeleted -> mapSearchHistoryStorage.removeRecentSearch(intent.query)
+            OnRecentSearchesCleared -> mapSearchHistoryStorage.clearRecentSearches()
             is OnSearchedShopSelected -> {
                 mapAnalytics.logSearchResultSelected(intent.place)
                 selectPlace(intent.place)
@@ -270,6 +298,7 @@ class MapViewModel(
         shouldFocus: Boolean = true,
     ) {
         val cache = checkCachedShopDetail(shop.id)
+        if (cache != null) recordRecentlyViewedShop(shop)
         val selectedShopState = createSelectedShopState(currentState, shop, shouldFocus, cache)
         reduce { selectedShopState }
         loadShopDetail(shop.id)
@@ -412,6 +441,8 @@ class MapViewModel(
             clearSearchResults()
             return
         }
+
+        recordRecentSearch(normalizedQuery.value)
 
         if (canReuseSearchResults) {
             cancelTask(SEARCH_TASK_KEY)
@@ -995,6 +1026,7 @@ class MapViewModel(
                 shopDetailState = ShopDetailUiState.Content(selectedDetail),
             )
         }
+        recordRecentlyViewedShop(selectedDetail.shop)
     }
 
     private fun applyRequestedShopDetail(detail: ShopDetail) {
@@ -1005,6 +1037,23 @@ class MapViewModel(
                 shopDetailState = ShopDetailUiState.Content(detail),
             )
         }
+        recordRecentlyViewedShop(detail.shop)
+    }
+
+    private fun recordRecentSearch(query: String) {
+        viewModelScope.launch { mapSearchHistoryStorage.addRecentSearch(query) }
+    }
+
+    private fun recordRecentlyViewedShop(shop: RamenShop) {
+        reduce {
+            copy(
+                recentlyViewedShops =
+                    RamenShops(
+                        listOf(shop) + recentlyViewedShops.values.filterNot { it.id == shop.id },
+                    ),
+            )
+        }
+        viewModelScope.launch { mapSearchHistoryStorage.addRecentlyViewedShop(shop.id) }
     }
 
     private fun handleShopDetailFailure(
