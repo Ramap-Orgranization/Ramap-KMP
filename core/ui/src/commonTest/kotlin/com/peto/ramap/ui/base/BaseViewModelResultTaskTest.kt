@@ -2,6 +2,7 @@ package com.peto.ramap.ui.base
 
 import com.peto.ramap.core.result.RamapError
 import com.peto.ramap.core.result.RamapResult
+import com.peto.ramap.ui.retry.NetworkRetryGenerator
 import com.peto.ramap.ui.task.TaskPolicy
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
@@ -58,6 +59,62 @@ class BaseViewModelResultTaskTest {
         }
 
     @Test
+    fun `네트워크 오류는 기본적으로 재시도하지 않고 오류 콜백을 호출한다`() =
+        viewModelTest {
+            val viewModel = TestViewModel()
+            viewModel.startNetworkResult(TestTaskKey.First)
+            runCurrent()
+
+            assertEquals(1, viewModel.startedCount)
+            assertEquals(1, viewModel.callbackResultErrors.size)
+            assertFalse(viewModel.uiState.value.loadState.isAnyLoading)
+
+            viewModel.networkResult = RamapResult.Success("restored")
+            NetworkRetryGenerator.retryPending()
+            runCurrent()
+
+            assertEquals(1, viewModel.startedCount)
+            assertEquals(emptyList(), viewModel.uiState.value.results)
+        }
+
+    @Test
+    fun `네트워크 오류 재시도는 명시한 작업만 복구한다`() =
+        viewModelTest {
+            val viewModel = TestViewModel()
+            viewModel.startNetworkResult(TestTaskKey.First, retryOnNetworkError = true)
+            runCurrent()
+
+            assertEquals(1, viewModel.startedCount)
+            assertEquals(1, viewModel.callbackResultErrors.size)
+            assertFalse(viewModel.uiState.value.loadState.isAnyLoading)
+
+            viewModel.networkResult = RamapResult.Success("restored")
+            NetworkRetryGenerator.retryPending()
+            runCurrent()
+
+            assertEquals(2, viewModel.startedCount)
+            assertEquals(listOf("restored"), viewModel.uiState.value.results)
+            assertFalse(viewModel.uiState.value.loadState.isAnyLoading)
+        }
+
+    @Test
+    fun `작업 취소는 대기 중인 네트워크 재시도도 제거한다`() =
+        viewModelTest {
+            val viewModel = TestViewModel()
+            viewModel.startNetworkResult(TestTaskKey.First, retryOnNetworkError = true)
+            runCurrent()
+
+            viewModel.cancel(TestTaskKey.First)
+            viewModel.networkResult = RamapResult.Success("restored")
+            NetworkRetryGenerator.retryPending()
+            runCurrent()
+
+            assertEquals(1, viewModel.startedCount)
+            assertEquals(emptyList(), viewModel.uiState.value.results)
+            assertFalse(viewModel.uiState.value.loadState.isAnyLoading)
+        }
+
+    @Test
     fun `중복 무시 정책은 새 요청과 로딩 증가를 모두 위임한다`() =
         viewModelTest {
             val viewModel = TestViewModel()
@@ -92,6 +149,7 @@ class BaseViewModelResultTaskTest {
             try {
                 testBody()
             } finally {
+                NetworkRetryGenerator.clear()
                 Dispatchers.resetMain()
             }
         }

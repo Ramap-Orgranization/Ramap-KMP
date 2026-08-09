@@ -10,6 +10,7 @@ import kotlinx.coroutines.withContext
 
 class TestViewModel : BaseViewModel<TestState, TestIntent, TestSideEffect>(TestState()) {
     var startedCount = 0
+    var networkResult: RamapResult<String> = RamapResult.Error(RamapError.Network(IllegalStateException("offline")))
     var errorCount = 0
     val handledResultErrors = mutableListOf<RamapError>()
     val callbackResultErrors = mutableListOf<RamapError>()
@@ -64,6 +65,25 @@ class TestViewModel : BaseViewModel<TestState, TestIntent, TestSideEffect>(TestS
             request = {
                 startedCount += 1
                 result.await()
+            },
+            onSuccess = { value -> reduce { copy(results = results + value) } },
+            onError = { error ->
+                resultErrorCalls += "callback"
+                callbackResultErrors += error
+            },
+        )
+
+    fun startNetworkResult(
+        key: TestTaskKey,
+        retryOnNetworkError: Boolean = false,
+    ): Job? =
+        launchResultTask(
+            taskKey = key.name,
+            loadKey = TestLoadKey.Request,
+            retryOnNetworkError = retryOnNetworkError,
+            request = {
+                startedCount += 1
+                networkResult
             },
             onSuccess = { value -> reduce { copy(results = results + value) } },
             onError = { error ->
