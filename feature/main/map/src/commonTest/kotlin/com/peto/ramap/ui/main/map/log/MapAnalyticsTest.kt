@@ -43,7 +43,6 @@ class MapAnalyticsTest {
                 phone = null,
                 businessHours = null,
                 instagramUrl = null,
-                kakaoRating = null,
                 menuCategories =
                     com.peto.ramap.domain.model.shop
                         .MenuCategories(emptyList()),

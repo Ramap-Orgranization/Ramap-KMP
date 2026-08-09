@@ -12,7 +12,7 @@ class ShopTextSearchFilterTest {
         assertTrue(filter.isVisible)
         assertEquals("%라멘%", filter.pattern)
         assertEquals(
-            listOf("name", "address", "phone", "business_hours"),
+            listOf("name", "address", "phone", "business_hours", "business_hours_notice"),
             filter.columns,
         )
     }

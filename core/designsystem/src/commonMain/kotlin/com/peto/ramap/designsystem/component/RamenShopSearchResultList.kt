@@ -174,7 +174,6 @@ private fun RamenShopSearchResultListPreview() {
                             businessHours = null,
                             instagramUrl = null,
                             instagramProfileImageUrl = null,
-                            kakaoRating = 4.5,
                             menuCategories =
                                 MenuCategories(
                                     listOf(
@@ -197,7 +196,6 @@ private fun RamenShopSearchResultListPreview() {
                             businessHours = null,
                             instagramUrl = null,
                             instagramProfileImageUrl = null,
-                            kakaoRating = 4.2,
                             menuCategories = MenuCategories(emptyList()),
                             isVisible = true,
                             createdAt = "",

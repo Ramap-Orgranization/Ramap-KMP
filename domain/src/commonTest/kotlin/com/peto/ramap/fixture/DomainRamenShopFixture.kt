@@ -23,7 +23,6 @@ fun ramenShopFixture(
         phone = null,
         businessHours = null,
         instagramUrl = null,
-        kakaoRating = null,
         menuCategories = MenuCategories(menuCategories),
         isVisible = isVisible,
         createdAt = "2026-06-01T00:00:00Z",

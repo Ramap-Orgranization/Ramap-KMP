@@ -1,5 +1,6 @@
 package com.peto.ramap.data.model
 
+import com.peto.ramap.domain.model.shop.BusinessHours
 import com.peto.ramap.domain.model.shop.Category
 import com.peto.ramap.domain.model.shop.Location
 import com.peto.ramap.domain.model.shop.MenuCategories
@@ -24,12 +25,20 @@ internal data class RamenShopResponse(
     val phone: String? = null,
     @SerialName("business_hours")
     val businessHours: String? = null,
+    @SerialName("business_hours_weekly")
+    val businessHoursWeekly: Map<String, BusinessHoursDayResponse>? = null,
+    @SerialName("business_hours_break_times")
+    val businessHoursBreakTimes: Map<String, List<BreakTimeResponse>>? = null,
+    @SerialName("business_hours_last_orders")
+    val businessHoursLastOrders: Map<String, List<String>>? = null,
+    @SerialName("business_hours_notice")
+    val businessHoursNotice: String? = null,
+    @SerialName("business_hours_notice_type")
+    val businessHoursNoticeType: String? = null,
     @SerialName("instagram_url")
     val instagramUrl: String? = null,
     @SerialName("instagram_profile_image_path")
     val instagramProfileImagePath: String? = null,
-    @SerialName("kakao_rating")
-    val kakaoRating: Double? = null,
     @SerialName("menu_category_ids")
     val menuCategoryIds: List<String>? = null,
     @SerialName("is_visible")
@@ -55,11 +64,23 @@ internal data class RamenShopResponse(
                 instagramProfileImagePath?.let { path ->
                     "${RamapSecrets.supabaseUrl}$STORAGE_PUBLIC_PATH$PROFILE_BUCKET/$path"
                 },
-            kakaoRating = kakaoRating,
             menuCategories = MenuCategories(menuCategoryIds.orEmpty().mapNotNull(Category::fromId)),
             isVisible = isVisible ?: false,
             createdAt = createdAt,
             updatedAt = updatedAt,
+            businessHoursDetails =
+                BusinessHours(
+                    weekly = businessHoursWeekly.orEmpty().mapValues { (_, day) -> day.toDomain() },
+                    breakTimes = businessHoursBreakTimes.orEmpty().mapValues { (_, breaks) -> breaks.map(BreakTimeResponse::toDomain) },
+                    lastOrders = businessHoursLastOrders.orEmpty(),
+                    notice = businessHoursNotice,
+                    noticeType = businessHoursNoticeType,
+                ).takeIf {
+                    businessHoursWeekly?.isNotEmpty() == true ||
+                        businessHoursBreakTimes?.values?.any(List<BreakTimeResponse>::isNotEmpty) == true ||
+                        businessHoursLastOrders?.values?.any(List<String>::isNotEmpty) == true ||
+                        !businessHoursNotice.isNullOrBlank()
+                },
         )
 
     companion object {

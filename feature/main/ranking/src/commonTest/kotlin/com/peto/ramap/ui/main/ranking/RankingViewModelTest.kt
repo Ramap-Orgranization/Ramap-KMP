@@ -683,7 +683,6 @@ class RankingViewModelTest {
             phone = null,
             businessHours = null,
             instagramUrl = null,
-            kakaoRating = null,
             menuCategories =
                 MenuCategories(
                     listOf(Category.SHOYU),

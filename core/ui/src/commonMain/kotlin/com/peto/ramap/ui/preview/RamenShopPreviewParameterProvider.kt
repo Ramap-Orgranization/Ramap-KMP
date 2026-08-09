@@ -19,7 +19,6 @@ class RamenShopPreviewParameterProvider : PreviewParameterProvider<RamenShop> {
                 phone = null,
                 businessHours = null,
                 instagramUrl = null,
-                kakaoRating = 4.5,
                 menuCategories =
                     MenuCategories(
                         listOf(
@@ -41,7 +40,6 @@ class RamenShopPreviewParameterProvider : PreviewParameterProvider<RamenShop> {
                 phone = null,
                 businessHours = null,
                 instagramUrl = null,
-                kakaoRating = null,
                 menuCategories = MenuCategories(listOf(Category.SHOYU)),
                 isVisible = true,
                 createdAt = "",

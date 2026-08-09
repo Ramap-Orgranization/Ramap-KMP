@@ -19,6 +19,7 @@ internal data class ShopTextSearchFilter(
                 "address",
                 "phone",
                 "business_hours",
+                "business_hours_notice",
             )
     }
 }
