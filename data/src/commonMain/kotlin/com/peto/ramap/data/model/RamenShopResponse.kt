@@ -23,8 +23,6 @@ internal data class RamenShopResponse(
     @SerialName("naver_place_url")
     val naverPlaceUrl: String? = null,
     val phone: String? = null,
-    @SerialName("business_hours")
-    val businessHours: String? = null,
     @SerialName("business_hours_weekly")
     val businessHoursWeekly: Map<String, BusinessHoursDayResponse>? = null,
     @SerialName("business_hours_break_times")
@@ -41,8 +39,6 @@ internal data class RamenShopResponse(
     val instagramProfileImagePath: String? = null,
     @SerialName("menu_category_ids")
     val menuCategoryIds: List<String>? = null,
-    @SerialName("is_visible")
-    val isVisible: Boolean? = null,
     @SerialName("created_at")
     val createdAt: String,
     @SerialName("updated_at")
@@ -58,14 +54,13 @@ internal data class RamenShopResponse(
             kakaoPlaceUrl = kakaoPlaceUrl,
             naverPlaceUrl = naverPlaceUrl,
             phone = phone,
-            businessHours = businessHours,
             instagramUrl = instagramUrl,
             instagramProfileImageUrl =
                 instagramProfileImagePath?.let { path ->
                     "${RamapSecrets.supabaseUrl}$STORAGE_PUBLIC_PATH$PROFILE_BUCKET/$path"
                 },
             menuCategories = MenuCategories(menuCategoryIds.orEmpty().mapNotNull(Category::fromId)),
-            isVisible = isVisible ?: false,
+            isVisible = true,
             createdAt = createdAt,
             updatedAt = updatedAt,
             businessHoursDetails =

@@ -16,7 +16,6 @@ class RamenShopUiModelTest {
                     ramenShopFixture(
                         kakaoPlaceUrl = null,
                         phone = null,
-                        businessHours = null,
                         instagramUrl = null,
                         menuCategories = emptyList(),
                     ),

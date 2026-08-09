@@ -211,13 +211,6 @@ internal fun RamenShopOverview(
             shop.businessHoursDetails?.let { businessHours ->
                 BusinessHoursCard(
                     businessHours = businessHours,
-                    fallbackText = shop.businessHours,
-                )
-            } ?: shop.businessHours?.let { businessHours ->
-                ShopInfoRow(
-                    label = stringResource(Res.string.shop_detail_label_business_hours),
-                    value = businessHours,
-                    showBusinessHoursNotice = true,
                 )
             }
 
@@ -458,19 +451,8 @@ private fun ShopInfoRow(
 @Composable
 private fun BusinessHoursCard(
     businessHours: BusinessHours,
-    fallbackText: String?,
 ) {
     val lines = BusinessHoursResourceMapper.all(businessHours)
-    if (lines.isEmpty()) {
-        fallbackText?.let {
-            ShopInfoRow(
-                label = stringResource(Res.string.shop_detail_label_business_hours),
-                value = it,
-                showBusinessHoursNotice = true,
-            )
-        }
-        return
-    }
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(

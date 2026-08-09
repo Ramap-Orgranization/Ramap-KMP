@@ -9,7 +9,6 @@ data class RamenShop(
     val kakaoPlaceUrl: String?,
     val naverPlaceUrl: String? = null,
     val phone: String?,
-    val businessHours: String?,
     val instagramUrl: String?,
     val menuCategories: MenuCategories,
     val isVisible: Boolean,

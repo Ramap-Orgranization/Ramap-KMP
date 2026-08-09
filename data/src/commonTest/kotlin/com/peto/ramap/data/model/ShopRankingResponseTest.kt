@@ -14,7 +14,6 @@ class ShopRankingResponseTest {
                 lat = 37.0,
                 lng = 127.0,
                 menuCategoryIds = listOf("shoyu"),
-                isVisible = true,
                 createdAt = "2026-01-01T00:00:00Z",
                 updatedAt = "2026-01-01T00:00:00Z",
                 likeCount = 7,

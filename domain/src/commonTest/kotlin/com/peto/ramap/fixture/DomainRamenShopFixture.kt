@@ -21,7 +21,6 @@ fun ramenShopFixture(
         location = location,
         kakaoPlaceUrl = null,
         phone = null,
-        businessHours = null,
         instagramUrl = null,
         menuCategories = MenuCategories(menuCategories),
         isVisible = isVisible,

@@ -681,7 +681,6 @@ class RankingViewModelTest {
             location = Location(37.0, 127.0),
             kakaoPlaceUrl = null,
             phone = null,
-            businessHours = null,
             instagramUrl = null,
             menuCategories =
                 MenuCategories(

@@ -17,7 +17,6 @@ class RamenShopPreviewParameterProvider : PreviewParameterProvider<RamenShop> {
                 location = Location(lat = 37.5, lng = 127.0),
                 kakaoPlaceUrl = null,
                 phone = null,
-                businessHours = null,
                 instagramUrl = null,
                 menuCategories =
                     MenuCategories(
@@ -38,7 +37,6 @@ class RamenShopPreviewParameterProvider : PreviewParameterProvider<RamenShop> {
                 location = Location(lat = 37.55, lng = 126.92),
                 kakaoPlaceUrl = null,
                 phone = null,
-                businessHours = null,
                 instagramUrl = null,
                 menuCategories = MenuCategories(listOf(Category.SHOYU)),
                 isVisible = true,
