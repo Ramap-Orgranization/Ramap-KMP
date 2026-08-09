@@ -130,5 +130,4 @@ object BusinessHoursResourceMapper {
         }
 
     private val DAY_RESOURCES = BusinessHoursWeekday.entries.associateBy(BusinessHoursWeekday::key)
-
 }
