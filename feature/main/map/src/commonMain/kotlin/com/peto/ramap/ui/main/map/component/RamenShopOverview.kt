@@ -25,6 +25,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
@@ -80,6 +82,7 @@ import ramap.shared.generated.resources.shop_detail_business_hours_closed_label_
 import ramap.shared.generated.resources.shop_detail_business_hours_weekday_range_format
 import ramap.shared.generated.resources.shop_detail_business_hours_weekly_title
 import ramap.shared.generated.resources.shop_detail_label_address
+import ramap.shared.generated.resources.shop_detail_copy_address
 import ramap.shared.generated.resources.shop_detail_label_business_hours
 import ramap.shared.generated.resources.shop_detail_label_phone
 import ramap.shared.generated.resources.shop_detail_label_waiting
@@ -108,6 +111,8 @@ internal fun RamenShopOverview(
     event: ShopEvent? = null,
     onEventClick: (ShopEvent) -> Unit = {},
 ) {
+    val clipboardManager = LocalClipboardManager.current
+
     Column(
         modifier =
             modifier
@@ -187,6 +192,8 @@ internal fun RamenShopOverview(
             ShopInfoRow(
                 label = stringResource(Res.string.shop_detail_label_address),
                 value = shop.address,
+                onClick = { clipboardManager.setText(AnnotatedString(shop.address)) },
+                onClickLabel = stringResource(Res.string.shop_detail_copy_address),
             )
 
             shop.phone?.takeIf(String::isNotBlank)?.let { phone ->
@@ -400,6 +407,7 @@ private fun ShopInfoRow(
     label: String,
     value: String,
     onClick: (() -> Unit)? = null,
+    onClickLabel: String? = null,
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -420,7 +428,10 @@ private fun ShopInfoRow(
                         if (onClick == null) {
                             Modifier
                         } else {
-                            Modifier.noRippleClickable(onClick = onClick)
+                            Modifier.noRippleClickable(
+                                onClick = onClick,
+                                onClickLabel = onClickLabel,
+                            )
                         },
                     ),
             style = AppTextStyle.B2,

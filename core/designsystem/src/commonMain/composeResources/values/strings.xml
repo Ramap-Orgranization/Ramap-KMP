@@ -5,6 +5,7 @@
 
     <!-- 매장 상세 화면 -->
     <string name="shop_detail_label_address">주소</string>
+    <string name="shop_detail_copy_address">주소 복사</string>
     <string name="shop_detail_label_phone">전화</string>
     <string name="shop_detail_label_business_hours">영업시간</string>
     <string name="shop_detail_business_hours_weekly_title">주간 영업시간</string>
