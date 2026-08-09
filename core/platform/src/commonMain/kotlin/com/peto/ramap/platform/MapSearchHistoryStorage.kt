@@ -17,8 +17,11 @@ interface MapSearchHistoryStorage {
     val recentlyViewedShopIds: StateFlow<List<String>>
 
     suspend fun addRecentSearch(query: String)
+
     suspend fun removeRecentSearch(query: String)
+
     suspend fun clearRecentSearches()
+
     suspend fun addRecentlyViewedShop(shopId: String)
 }
 
@@ -27,16 +30,18 @@ class DefaultMapSearchHistoryStorage(
 ) : MapSearchHistoryStorage {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
-    override val recentSearches: StateFlow<List<String>> = dataStore.data.map { it[RECENT_SEARCHES_KEY].decode() }.stateIn(
-        scope,
-        SharingStarted.Eagerly,
-        emptyList(),
-    )
-    override val recentlyViewedShopIds: StateFlow<List<String>> = dataStore.data.map { it[RECENTLY_VIEWED_SHOPS_KEY].decode() }.stateIn(
-        scope,
-        SharingStarted.Eagerly,
-        emptyList(),
-    )
+    override val recentSearches: StateFlow<List<String>> =
+        dataStore.data.map { it[RECENT_SEARCHES_KEY].decode() }.stateIn(
+            scope,
+            SharingStarted.Eagerly,
+            emptyList(),
+        )
+    override val recentlyViewedShopIds: StateFlow<List<String>> =
+        dataStore.data.map { it[RECENTLY_VIEWED_SHOPS_KEY].decode() }.stateIn(
+            scope,
+            SharingStarted.Eagerly,
+            emptyList(),
+        )
 
     override suspend fun addRecentSearch(query: String) = update(RECENT_SEARCHES_KEY, query)
 
