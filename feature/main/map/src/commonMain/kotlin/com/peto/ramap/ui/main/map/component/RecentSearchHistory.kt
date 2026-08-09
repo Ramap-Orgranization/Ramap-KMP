@@ -73,9 +73,10 @@ internal fun RecentSearchHistory(
                 ) {
                     Text(
                         text = "⌕",
-                        modifier = Modifier.semantics {
-                            contentDescription = searchIconDescription
-                        },
+                        modifier =
+                            Modifier.semantics {
+                                contentDescription = searchIconDescription
+                            },
                         fontSize = 24.sp,
                         color = GrayColor.C500,
                     )

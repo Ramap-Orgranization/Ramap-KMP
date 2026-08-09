@@ -31,8 +31,8 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
-import com.peto.ramap.designsystem.component.MenuCategoryLabels
 import com.peto.ramap.designsystem.card.SectionCard
+import com.peto.ramap.designsystem.component.MenuCategoryLabels
 import com.peto.ramap.designsystem.image.RemoteShopImage
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.domain.model.event.ShopEvent
@@ -49,11 +49,11 @@ import com.peto.ramap.theme.InstagramColor
 import com.peto.ramap.theme.RamapTheme
 import com.peto.ramap.theme.SystemColor
 import com.peto.ramap.ui.preview.RamenShopPreviewParameterProvider
-import com.peto.ramap.ui.resource.format
 import com.peto.ramap.ui.resource.businesshours.BusinessHoursResourceLine
 import com.peto.ramap.ui.resource.businesshours.BusinessHoursResourceMapper
 import com.peto.ramap.ui.resource.category.CategoryResourceMapper
 import com.peto.ramap.ui.resource.event.ShopEventResourceMapper
+import com.peto.ramap.ui.resource.format
 import com.peto.ramap.ui.resource.wating.WaitingSystemUiModel
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
@@ -81,8 +81,8 @@ import ramap.shared.generated.resources.shop_detail_business_hours_closed
 import ramap.shared.generated.resources.shop_detail_business_hours_closed_label_format
 import ramap.shared.generated.resources.shop_detail_business_hours_weekday_range_format
 import ramap.shared.generated.resources.shop_detail_business_hours_weekly_title
-import ramap.shared.generated.resources.shop_detail_label_address
 import ramap.shared.generated.resources.shop_detail_copy_address
+import ramap.shared.generated.resources.shop_detail_label_address
 import ramap.shared.generated.resources.shop_detail_label_business_hours
 import ramap.shared.generated.resources.shop_detail_label_phone
 import ramap.shared.generated.resources.shop_detail_label_waiting
