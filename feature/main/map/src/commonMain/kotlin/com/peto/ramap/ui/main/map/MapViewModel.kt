@@ -315,6 +315,7 @@ class MapViewModel(
         reduce {
             copy(
                 shopDetailState = ShopDetailUiState.Closed,
+                search = if (search.results.size == 1) search.reset() else search,
             )
         }
     }
@@ -389,7 +390,7 @@ class MapViewModel(
     }
 
     private fun dismissSearchResults() {
-        reduce { copy(search = search.dismissResults()) }
+        reduce { copy(search = search.reset()) }
     }
 
     private fun selectPlace(place: PlaceSearchResult) {
