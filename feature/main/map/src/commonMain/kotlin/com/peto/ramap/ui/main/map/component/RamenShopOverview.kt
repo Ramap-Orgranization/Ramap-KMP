@@ -17,6 +17,7 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -55,6 +56,7 @@ import com.peto.ramap.ui.resource.category.CategoryResourceMapper
 import com.peto.ramap.ui.resource.event.ShopEventResourceMapper
 import com.peto.ramap.ui.resource.format
 import com.peto.ramap.ui.resource.wating.WaitingSystemUiModel
+import kotlinx.coroutines.delay
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
@@ -79,6 +81,8 @@ import ramap.shared.generated.resources.share_shop_action
 import ramap.shared.generated.resources.shop_detail_business_hours_break_time_format
 import ramap.shared.generated.resources.shop_detail_business_hours_closed
 import ramap.shared.generated.resources.shop_detail_business_hours_closed_label_format
+import ramap.shared.generated.resources.shop_detail_business_hours_notice
+import ramap.shared.generated.resources.shop_detail_business_hours_notice_show
 import ramap.shared.generated.resources.shop_detail_business_hours_weekday_range_format
 import ramap.shared.generated.resources.shop_detail_business_hours_weekly_title
 import ramap.shared.generated.resources.shop_detail_copy_address
@@ -213,6 +217,7 @@ internal fun RamenShopOverview(
                 ShopInfoRow(
                     label = stringResource(Res.string.shop_detail_label_business_hours),
                     value = businessHours,
+                    showBusinessHoursNotice = true,
                 )
             }
 
@@ -408,17 +413,26 @@ private fun ShopInfoRow(
     value: String,
     onClick: (() -> Unit)? = null,
     onClickLabel: String? = null,
+    showBusinessHoursNotice: Boolean = false,
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.Top,
     ) {
-        AppText(
-            text = label,
-            style = AppTextStyle.B1,
-            color = GrayColor.C300,
-        )
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            AppText(
+                text = label,
+                style = AppTextStyle.B1,
+                color = GrayColor.C300,
+            )
+            if (showBusinessHoursNotice) {
+                BusinessHoursNotice()
+            }
+        }
         AppText(
             text = value,
             modifier =
@@ -452,17 +466,24 @@ private fun BusinessHoursCard(
             ShopInfoRow(
                 label = stringResource(Res.string.shop_detail_label_business_hours),
                 value = it,
+                showBusinessHoursNotice = true,
             )
         }
         return
     }
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        AppText(
-            text = stringResource(Res.string.shop_detail_business_hours_weekly_title),
-            style = AppTextStyle.B1,
-            color = GrayColor.C300,
-        )
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            AppText(
+                text = stringResource(Res.string.shop_detail_business_hours_weekly_title),
+                style = AppTextStyle.B1,
+                color = GrayColor.C300,
+            )
+            BusinessHoursNotice()
+        }
         SectionCard(modifier = Modifier.fillMaxWidth()) {
             lines.forEachIndexed { index, line ->
                 BusinessHoursCardRow(
@@ -470,6 +491,47 @@ private fun BusinessHoursCard(
                     isLast = index == lines.lastIndex,
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun BusinessHoursNotice() {
+    var isNoticeVisible by remember { mutableStateOf(false) }
+
+    LaunchedEffect(isNoticeVisible) {
+        if (isNoticeVisible) {
+            delay(3_000)
+            isNoticeVisible = false
+        }
+    }
+
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            modifier =
+                Modifier
+                    .size(14.dp)
+                    .border(1.dp, SystemColor.Warning, CircleShape)
+                    .noRippleClickable(
+                        onClickLabel = stringResource(Res.string.shop_detail_business_hours_notice_show),
+                    ) { isNoticeVisible = !isNoticeVisible },
+            contentAlignment = Alignment.Center,
+        ) {
+            AppText(
+                text = "!",
+                style = AppTextStyle.C1,
+                color = SystemColor.Warning,
+            )
+        }
+        if (isNoticeVisible) {
+            AppText(
+                text = stringResource(Res.string.shop_detail_business_hours_notice),
+                style = AppTextStyle.C1,
+                color = SystemColor.Warning,
+            )
         }
     }
 }
