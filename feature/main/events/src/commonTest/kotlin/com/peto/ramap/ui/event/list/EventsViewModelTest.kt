@@ -13,6 +13,7 @@ import com.peto.ramap.ui.main.event.list.EventsViewModel
 import com.peto.ramap.ui.main.event.list.contract.EventsIntent
 import com.peto.ramap.ui.main.event.list.contract.EventsSideEffect
 import com.peto.ramap.ui.main.event.list.log.EventsAnalytics
+import com.peto.ramap.ui.retry.NetworkRetryGenerator
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
@@ -96,6 +97,38 @@ class EventsViewModelTest {
             runCurrent()
 
             assertTrue(viewModel.uiState.value.showError)
+            assertFalse(viewModel.uiState.value.isLoading)
+        }
+
+    @Test
+    fun `네트워크 오류 후 연결이 복구되면 이벤트 목록과 오류 로딩 상태를 복구한다`() =
+        coroutinesTest {
+            val event = event()
+            val repository =
+                FakeRamenShopRepository(
+                    activeEvents = listOf(event),
+                    activeEventsError = RamapError.Network(IllegalStateException("offline")),
+                )
+            val viewModel = EventsViewModel(repository, EventsAnalytics(FakeAnalyticsTracker()))
+            runCurrent()
+
+            assertTrue(viewModel.uiState.value.showError)
+            assertFalse(viewModel.uiState.value.isLoading)
+
+            repository.activeEventsError = null
+            repository.activeEventsDelayMillis = 1_000
+            NetworkRetryGenerator.retryPending()
+            runCurrent()
+
+            assertEquals(2, repository.activeEventsRequestCount)
+            assertFalse(viewModel.uiState.value.showError)
+            assertTrue(viewModel.uiState.value.isLoading)
+
+            advanceTimeBy(1_000)
+            runCurrent()
+
+            assertEquals(listOf(event), viewModel.uiState.value.events)
+            assertFalse(viewModel.uiState.value.showError)
             assertFalse(viewModel.uiState.value.isLoading)
         }
 

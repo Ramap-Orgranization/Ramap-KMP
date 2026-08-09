@@ -7,6 +7,7 @@ import com.peto.ramap.core.result.RamapError
 import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.ui.loading.LoadKey
 import com.peto.ramap.ui.loading.LoadableState
+import com.peto.ramap.ui.retry.NetworkRetryGenerator
 import com.peto.ramap.ui.task.TaskEntry
 import com.peto.ramap.ui.task.TaskKey
 import com.peto.ramap.ui.task.TaskPolicy
@@ -57,6 +58,11 @@ abstract class BaseViewModel<S : State, I : Intent, SE : SideEffect>(
                 }
             }
         }
+    }
+
+    override fun onCleared() {
+        NetworkRetryGenerator.remove(this)
+        super.onCleared()
     }
 
     /**
@@ -172,6 +178,7 @@ abstract class BaseViewModel<S : State, I : Intent, SE : SideEffect>(
      * @param request 한 번 실행해 [RamapResult]를 반환할 요청
      * @param onSuccess 성공 데이터를 처리할 콜백
      * @param onError 공통 오류 처리 후 도메인 오류를 처리할 콜백
+     * @param retryOnNetworkError 네트워크 오류를 연결 복구 후 다시 실행할지 여부
      * @return 시작한 [Job], 또는 [TaskPolicy.IgnoreNew]로 요청을 무시한 경우 `null`
      */
     protected fun <T> launchResultTask(
@@ -180,11 +187,13 @@ abstract class BaseViewModel<S : State, I : Intent, SE : SideEffect>(
         policy: TaskPolicy = TaskPolicy.CancelPrevious,
         onStart: S.() -> S = { this },
         onFinish: S.() -> S = { this },
+        retryOnNetworkError: Boolean = false,
         request: suspend () -> RamapResult<T>,
         onSuccess: suspend (T) -> Unit = {},
         onError: suspend (RamapError) -> Unit = {},
-    ): Job? =
-        launchTask(
+    ): Job? {
+        NetworkRetryGenerator.remove(this, taskKey)
+        return launchTask(
             taskKey = taskKey,
             loadKey = loadKey,
             policy = policy,
@@ -192,13 +201,32 @@ abstract class BaseViewModel<S : State, I : Intent, SE : SideEffect>(
             onFinish = onFinish,
         ) {
             when (val result = request()) {
-                is RamapResult.Success -> onSuccess(result.data)
+                is RamapResult.Success -> {
+                    NetworkRetryGenerator.remove(this@BaseViewModel, taskKey)
+                    onSuccess(result.data)
+                }
                 is RamapResult.Error -> {
                     handleError(result.error)
+                    if (retryOnNetworkError && result.error is RamapError.Network) {
+                        NetworkRetryGenerator.enqueue(this@BaseViewModel, taskKey) {
+                            launchResultTask(
+                                taskKey = taskKey,
+                                loadKey = loadKey,
+                                policy = policy,
+                                onStart = onStart,
+                                onFinish = onFinish,
+                                retryOnNetworkError = retryOnNetworkError,
+                                request = request,
+                                onSuccess = onSuccess,
+                                onError = onError,
+                            )
+                        }
+                    }
                     onError(result.error)
                 }
             }
         }
+    }
 
     /**
      * [taskKey]에 등록된 작업을 취소하고 종료 상태를 동기적으로 정리한다.
@@ -210,6 +238,7 @@ abstract class BaseViewModel<S : State, I : Intent, SE : SideEffect>(
      */
     protected fun cancelTask(taskKey: String) {
         val registryKey = TaskKey(taskKey)
+        NetworkRetryGenerator.remove(this, taskKey)
         val task = tasks[registryKey] ?: return
         finishTask(registryKey, task, shouldCancel = true)
     }

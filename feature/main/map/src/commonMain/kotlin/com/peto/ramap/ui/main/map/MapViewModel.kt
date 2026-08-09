@@ -566,11 +566,13 @@ class MapViewModel(
             detail = state.detail.copy(shop = state.detail.shop.copy(isVisible = true)),
         )
 
-    private suspend fun loadPersonalizedShops(shopIds: Set<String>) {
+    private fun loadPersonalizedShops(shopIds: Set<String>) {
         if (shopIds.isEmpty()) return
 
-        handleResult(
-            result = ramenShopRepository.fetchRamenShops(shopIds),
+        launchResultTask(
+            taskKey = PERSONALIZED_SHOPS_TASK_KEY,
+            retryOnNetworkError = true,
+            request = { ramenShopRepository.fetchRamenShops(shopIds) },
             onSuccess = ::mergePersonalizedShops,
         )
     }
@@ -1139,5 +1141,6 @@ class MapViewModel(
         private const val SHOP_DETAIL_TASK_KEY = "map-shop-detail"
         private const val SHOP_REPORT_TASK_KEY = "map-shop-report"
         private const val SIGN_IN_TASK_KEY = "map-sign-in"
+        private const val PERSONALIZED_SHOPS_TASK_KEY = "map-personalized-shops"
     }
 }

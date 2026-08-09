@@ -113,22 +113,18 @@ class PlaceReportViewModel(
 
     /** 이전 주소 변환을 취소하고 결과가 현재 위치와 일치할 때만 반영한다. */
     private fun loadAddress(location: Location) {
-        launchTask(
+        launchResultTask(
             taskKey = ADDRESS_TASK_KEY,
             loadKey = PlaceReportLoadKey.Address,
             policy = TaskPolicy.CancelPrevious,
-        ) {
-            val result = reverseGeocoder.address(location)
-            if (currentState.currentLocation != location) return@launchTask
-            handleResult(
-                result = result,
-                onSuccess = { address ->
-                    if (currentState.currentLocation == location) {
-                        reduce { copy(currentAddress = address) }
-                    }
-                },
-            )
-        }
+            retryOnNetworkError = true,
+            request = { reverseGeocoder.address(location) },
+            onSuccess = { address ->
+                if (currentState.currentLocation == location) {
+                    reduce { copy(currentAddress = address) }
+                }
+            },
+        )
     }
 
     private fun submitPlaceReport() {
@@ -138,7 +134,8 @@ class PlaceReportViewModel(
 
     private suspend fun processPlaceReport(placeUrl: String) {
         val extractedPlaceUrl = extractSupportedPlaceUrl(placeUrl) ?: return
-        if (findExistingShop(placeUrl)) {
+        val existingShop = findExistingShop(placeUrl) ?: return
+        if (existingShop) {
             showToast(Res.string.place_report_existing_shop_message)
             return
         }
@@ -160,9 +157,9 @@ class PlaceReportViewModel(
         }
     }
 
-    private suspend fun findExistingShop(placeUrl: String): Boolean {
+    private suspend fun findExistingShop(placeUrl: String): Boolean? {
         val placeName = PlaceReportTextParser.extractSharedPlaceName(placeUrl) ?: return false
-        var existingShop = false
+        var existingShop: Boolean? = null
         handleResult(
             result =
                 ramenShopRepository.searchRamenShops(
@@ -173,6 +170,7 @@ class PlaceReportViewModel(
                 existingShop =
                     shops.values.any { PlaceReportTextParser.matchesSharedPlace(placeUrl, it) }
             },
+            onError = { showToast(Res.string.place_report_failure_message, ToastType.ERROR) },
         )
         return existingShop
     }

@@ -87,7 +87,6 @@ import ramap.shared.generated.resources.shop_detail_business_hours_weekday_range
 import ramap.shared.generated.resources.shop_detail_business_hours_weekly_title
 import ramap.shared.generated.resources.shop_detail_copy_address
 import ramap.shared.generated.resources.shop_detail_label_address
-import ramap.shared.generated.resources.shop_detail_label_business_hours
 import ramap.shared.generated.resources.shop_detail_label_phone
 import ramap.shared.generated.resources.shop_detail_label_waiting
 import ramap.shared.generated.resources.shop_detail_link_apple_maps
@@ -449,9 +448,7 @@ private fun ShopInfoRow(
 }
 
 @Composable
-private fun BusinessHoursCard(
-    businessHours: BusinessHours,
-) {
+private fun BusinessHoursCard(businessHours: BusinessHours) {
     val lines = BusinessHoursResourceMapper.all(businessHours)
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
