@@ -171,7 +171,7 @@ internal fun RamenShopOverview(
             MenuCategoryLabels(
                 menuCategories = shop.menuCategories,
                 categoryLabel = { category -> stringResource(CategoryResourceMapper.label(category)) },
-                style = AppTextStyle.B2,
+                style = AppTextStyle.B1,
                 modifier =
                     Modifier
                         .padding(top = 10.dp)
