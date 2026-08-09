@@ -8,6 +8,7 @@ import com.peto.ramap.domain.store.PersonalizationBootstrapState
 import com.peto.ramap.domain.store.ShopPersonalizationStore
 import com.peto.ramap.fake.FakeLoginRepository
 import com.peto.ramap.fake.FakePersonalizationRepository
+import com.peto.ramap.ui.retry.NetworkRetryGenerator
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.awaitCancellation
@@ -126,6 +127,51 @@ class AppPersonalizationTest {
         }
 
     @Test
+    fun `개인 설정 네트워크 오류는 연결 복구 후 성공 상태로 갱신된다`() =
+        runTest {
+            NetworkRetryGenerator.clear()
+            var refreshCount = 0
+            val fakeStore =
+                FakePersonalizationRepository(
+                    initialState = PersonalizationBootstrapState.Error,
+                )
+            val store =
+                object : ShopPersonalizationStore by fakeStore {
+                    override suspend fun refresh(): RamapResult<Unit> {
+                        refreshCount += 1
+                        return if (refreshCount == 1) {
+                            RamapResult.Error(RamapError.Network(IllegalStateException("offline")))
+                        } else {
+                            fakeStore.refresh()
+                        }
+                    }
+                }
+            val retryRequests = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+
+            try {
+                backgroundScope.launch {
+                    observeSessionPersonalization(
+                        loginRepository = FakeLoginRepository(LoginSessionState.AUTHENTICATED),
+                        personalizationStore = store,
+                        retryRequests = retryRequests,
+                    )
+                }
+                runCurrent()
+
+                assertEquals(1, refreshCount)
+                assertEquals(PersonalizationBootstrapState.Error, store.state.value)
+
+                NetworkRetryGenerator.retryPending()
+                runCurrent()
+
+                assertEquals(2, refreshCount)
+                assertTrue(store.state.value is PersonalizationBootstrapState.Success)
+            } finally {
+                NetworkRetryGenerator.clear()
+            }
+        }
+
+    @Test
     fun `로그아웃 전이는 진행 중인 초기 동기화를 취소하고 상태를 비운다`() =
         runTest {
             val refreshStarted = CompletableDeferred<Unit>()
@@ -152,5 +198,25 @@ class AppPersonalizationTest {
             runCurrent()
 
             assertEquals(1, clearCount)
+        }
+
+    @Test
+    fun `인증 주체를 잃으면 대기 중인 네트워크 재시도를 비운다`() =
+        runTest {
+            val store = FakePersonalizationRepository()
+            var retryCount = 0
+            NetworkRetryGenerator.enqueue(store, "stale") { retryCount += 1 }
+
+            backgroundScope.launch {
+                observeSessionPersonalization(
+                    loginRepository = FakeLoginRepository(LoginSessionState.NOT_AUTHENTICATED),
+                    personalizationStore = store,
+                )
+            }
+            runCurrent()
+
+            NetworkRetryGenerator.retryPending()
+
+            assertEquals(0, retryCount)
         }
 }

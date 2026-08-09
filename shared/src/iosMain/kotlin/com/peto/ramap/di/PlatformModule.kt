@@ -12,6 +12,8 @@ import com.peto.ramap.platform.MapSearchHistoryStorage
 import com.peto.ramap.platform.createMapSearchHistoryStorage
 import com.peto.ramap.platform.location.CurrentLocationProvider
 import com.peto.ramap.platform.location.IosCurrentLocationProvider
+import com.peto.ramap.platform.network.IosNetworkConnectivityObserver
+import com.peto.ramap.platform.network.NetworkConnectivityObserver
 import org.koin.dsl.module
 
 actual val platformModule =
@@ -21,6 +23,7 @@ actual val platformModule =
         }
         single<AppVersionProvider> { IosAppVersionProvider() }
         single<MapSearchHistoryStorage> { createMapSearchHistoryStorage() }
+        single<NetworkConnectivityObserver> { IosNetworkConnectivityObserver() }
         single<CurrentLocationProvider> { IosCurrentLocationProvider() }
         single<AnalyticsTracker> { FirebaseAnalyticsTracker() }
         single<CrashReporter> { FirebaseCrashReporter() }

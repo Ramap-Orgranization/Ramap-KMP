@@ -11,6 +11,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.peto.ramap.core.result.RamapError
+import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.designsystem.component.LoadErrorContent
 import com.peto.ramap.designsystem.indicator.RamenLoadingIndicator
 import com.peto.ramap.designsystem.toast.ToastHost
@@ -19,7 +21,10 @@ import com.peto.ramap.domain.model.auth.LoginSessionState
 import com.peto.ramap.domain.repository.LoginRepository
 import com.peto.ramap.domain.store.PersonalizationBootstrapState
 import com.peto.ramap.domain.store.ShopPersonalizationStore
+import com.peto.ramap.platform.network.NetworkConnectivityObserver
+import com.peto.ramap.platform.network.NetworkConnectivityStatus
 import com.peto.ramap.theme.RamapTheme
+import com.peto.ramap.ui.retry.NetworkRetryGenerator
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -42,6 +47,7 @@ fun App(
     onExitRequested: (() -> Unit)? = null,
 ) {
     val retryRequests = remember { MutableSharedFlow<Unit>(extraBufferCapacity = 1) }
+    val networkConnectivityObserver: NetworkConnectivityObserver = koinInject()
     val personalizationState by personalizationStore.state.collectAsStateWithLifecycle()
     // 구성 변경이 새로고침의 Loading 상태에서 끝나도 네비게이션 저장소를 다시 연결한다.
     var hasShownAppRoute by rememberSaveable { mutableStateOf(false) }
@@ -56,6 +62,14 @@ fun App(
             personalizationStore = personalizationStore,
             retryRequests = retryRequests,
         )
+    }
+
+    LaunchedEffect(networkConnectivityObserver) {
+        networkConnectivityObserver.observe().collect { status ->
+            if (status == NetworkConnectivityStatus.Available) {
+                NetworkRetryGenerator.retryPending()
+            }
+        }
     }
 
     RamapTheme {
@@ -106,6 +120,7 @@ internal suspend fun observeSessionPersonalization(
         .collectLatest { sessionState ->
             if (sessionState != LoginSessionState.AUTHENTICATED) {
                 personalizationStore.clear()
+                NetworkRetryGenerator.clear()
                 return@collectLatest
             }
 
@@ -126,11 +141,27 @@ private suspend fun awaitSessionInitialization(loginRepository: LoginRepository)
 }
 
 private suspend fun refreshPersonalization(personalizationStore: ShopPersonalizationStore) {
+    NetworkRetryGenerator.remove(personalizationStore, PERSONALIZATION_TASK_KEY)
+
     try {
-        personalizationStore.refresh()
+        when (val result = personalizationStore.refresh()) {
+            is RamapResult.Success -> Unit
+            is RamapResult.Error -> {
+                if (result.error is RamapError.Network) {
+                    NetworkRetryGenerator.enqueue(
+                        owner = personalizationStore,
+                        taskKey = PERSONALIZATION_TASK_KEY,
+                    ) {
+                        refreshPersonalization(personalizationStore)
+                    }
+                }
+            }
+        }
     } catch (cancellation: CancellationException) {
         throw cancellation
     } catch (_: Throwable) {
         // Store 경계 밖 구현의 예외가 사용자 재시도 수집을 종료하지 않게 한다.
     }
 }
+
+private const val PERSONALIZATION_TASK_KEY = "app-personalization"
