@@ -866,7 +866,10 @@ class MapViewModel(
     private fun handlePlaceSearchSuccess(results: PlaceSearchResults) {
         reduce { copy(search = search.updatePlaceResults(results)) }
         when (results.size) {
-            0 -> showToast(Res.string.search_result_empty_message)
+            0 -> {
+                showToast(Res.string.search_result_empty_message)
+                reduce { copy(search = search.reset()) }
+            }
             1 -> selectPlace(results.single())
         }
     }

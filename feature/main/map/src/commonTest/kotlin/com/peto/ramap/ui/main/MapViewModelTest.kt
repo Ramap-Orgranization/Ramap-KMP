@@ -1339,10 +1339,8 @@ class MapViewModelTest {
                 advanceTimeBy(300)
                 runCurrent()
 
-                assertEquals(
-                    SearchResultGuide.SEARCH_EMPTY,
-                    viewModel.uiState.value.searchResultGuide,
-                )
+                assertEquals("", viewModel.uiState.value.search.input)
+                assertEquals(null, viewModel.uiState.value.searchResultGuide)
                 assertEquals(
                     showToastSideEffect(Res.string.search_result_empty_message),
                     awaitItem(),
@@ -2582,7 +2580,8 @@ class MapViewModelTest {
                 ramenShopRepository.requestedSearchQueries,
             )
             assertEquals(RamenShops(emptyMap()), viewModel.uiState.value.searchResultShops)
-            assertEquals(SearchResultGuide.SEARCH_EMPTY, viewModel.uiState.value.searchResultGuide)
+            assertEquals("", viewModel.uiState.value.search.input)
+            assertEquals(null, viewModel.uiState.value.searchResultGuide)
             assertEquals(false, viewModel.uiState.value.showSearchResults)
             assertEquals(null, viewModel.uiState.value.placeFocusLocation)
         }
@@ -2602,7 +2601,8 @@ class MapViewModelTest {
             advanceTimeBy(300)
             runCurrent()
 
-            assertEquals(SearchResultGuide.SEARCH_EMPTY, viewModel.uiState.value.searchResultGuide)
+            assertEquals("", viewModel.uiState.value.search.input)
+            assertEquals(null, viewModel.uiState.value.searchResultGuide)
             assertEquals(null, viewModel.uiState.value.placeFocusLocation)
         }
 
@@ -2788,7 +2788,8 @@ class MapViewModelTest {
                     showToastSideEffect(Res.string.search_result_empty_message),
                     awaitItem(),
                 )
-                assertEquals(SearchResultGuide.SEARCH_EMPTY, viewModel.uiState.value.searchResultGuide)
+                assertEquals("", viewModel.uiState.value.search.input)
+                assertEquals(null, viewModel.uiState.value.searchResultGuide)
                 assertEquals(false, viewModel.uiState.value.showSearchResults)
                 assertEquals(false, viewModel.uiState.value.showBottomSheet)
                 assertEquals(
