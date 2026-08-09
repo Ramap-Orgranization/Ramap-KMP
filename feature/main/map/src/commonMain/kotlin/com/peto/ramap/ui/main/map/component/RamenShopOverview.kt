@@ -140,6 +140,7 @@ internal fun RamenShopOverview(
                     url = shop.instagramProfileImageUrl,
                     modifier =
                         Modifier
+                            .align(Alignment.CenterVertically)
                             .border(
                                 width = 1.dp,
                                 color = GrayColor.C100,
