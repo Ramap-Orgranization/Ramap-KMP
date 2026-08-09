@@ -13,5 +13,7 @@ internal class DefaultBookmarkRepository(
 
     override suspend fun addBookmark(shopId: String): RamapResult<Unit> = invokeRequest { dataSource.addBookmark(shopId) }
 
+    override suspend fun addBookmarks(shopIds: Set<String>): RamapResult<Unit> = invokeRequest { dataSource.addBookmarks(shopIds) }
+
     override suspend fun removeBookmark(shopId: String): RamapResult<Unit> = invokeRequest { dataSource.removeBookmark(shopId) }
 }

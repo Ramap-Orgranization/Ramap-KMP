@@ -1,2 +1,8 @@
 [functions.reverse-geocode]
 verify_jwt = true
+
+[functions.kakao-importation]
+verify_jwt = true
+
+[functions.importation-match]
+verify_jwt = true

@@ -35,8 +35,9 @@ class EventsViewModel(
             loadKey = EventsLoadKey.Fetch,
             policy = TaskPolicy.CancelPrevious,
             onStart = { copy(showError = false) },
+            retryOnNetworkError = true,
             request = ramenShopRepository::fetchActiveEvents,
-            onSuccess = { events -> reduce { copy(events = events) } },
+            onSuccess = { events -> reduce { copy(events = events, showError = false) } },
             onError = { reduce { copy(showError = true) } },
         )
     }
@@ -46,6 +47,7 @@ class EventsViewModel(
             taskKey = EVENTS_TASK_KEY,
             loadKey = EventsLoadKey.Refresh,
             policy = TaskPolicy.CancelPrevious,
+            retryOnNetworkError = true,
             request = ramenShopRepository::fetchActiveEvents,
             onSuccess = { events -> reduce { copy(events = events, showError = false) } },
             onError = {

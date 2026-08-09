@@ -5,8 +5,30 @@
 
     <!-- 매장 상세 화면 -->
     <string name="shop_detail_label_address">주소</string>
+    <string name="shop_detail_copy_address">주소 복사</string>
     <string name="shop_detail_label_phone">전화</string>
     <string name="shop_detail_label_business_hours">영업시간</string>
+    <string name="shop_detail_business_hours_notice">실제 매장 운영 상황과 다를 수 있어요</string>
+    <string name="shop_detail_business_hours_notice_show">영업시간 안내 보기</string>
+    <string name="shop_detail_business_hours_weekly_title">영업시간</string>
+    <string name="shop_detail_business_hours_expand">영업시간 펼치기</string>
+    <string name="shop_detail_business_hours_collapse">영업시간 접기</string>
+    <string name="shop_detail_business_hours_weekday_mon">월</string>
+    <string name="shop_detail_business_hours_weekday_tue">화</string>
+    <string name="shop_detail_business_hours_weekday_wed">수</string>
+    <string name="shop_detail_business_hours_weekday_thu">목</string>
+    <string name="shop_detail_business_hours_weekday_fri">금</string>
+    <string name="shop_detail_business_hours_weekday_sat">토</string>
+    <string name="shop_detail_business_hours_weekday_sun">일</string>
+    <string name="shop_detail_business_hours_weekday_range_format">%1$s–%2$s</string>
+    <string name="shop_detail_business_hours_time_format">%1$s ~ %2$s</string>
+    <string name="shop_detail_business_hours_next_day_time_format">%1$s ~ 다음 날 %2$s</string>
+    <string name="shop_detail_business_hours_closed">정기휴무</string>
+    <string name="shop_detail_business_hours_closed_label_format">%1$s</string>
+    <string name="shop_detail_business_hours_break_time_format">%1$s ~ %2$s (브레이크타임)</string>
+    <string name="shop_detail_business_hours_last_order_format">%1$s (라스트오더)</string>
+    <string name="shop_detail_business_hours_item_separator"> / </string>
+    <string name="shop_detail_business_hours_show_all">전체보기 &gt;</string>
     <string name="shop_detail_label_waiting">대기</string>
     <string name="shop_detail_link_instagram">Instagram</string>
     <string name="shop_detail_link_kakao_map">카카오 지도에서 보기</string>
@@ -114,6 +136,10 @@
     <string name="search_result_hidden_only_message">숨김 처리한 매장이 검색되었어요</string>
     <string name="filter_empty_visible_result_message">선택한 필터에 맞는 매장이 없어요</string>
     <string name="hidden_shop_search_result_message">숨김 처리된 매장이에요</string>
+    <string name="recent_searches_title">최근 검색</string>
+    <string name="recent_search_clear_all">전체 삭제</string>
+    <string name="recent_search_delete_action">최근 검색어 삭제</string>
+    <string name="recent_viewed_shops_title">최근 본 매장</string>
 
     <!-- 장소 제보 화면 -->
     <string name="place_report_description">네이버나 카카오맵의 공유 내용을 그대로 붙여주세요</string>
@@ -138,15 +164,37 @@
     <string name="settings_information_menu">정보</string>
     <string name="settings_report_menu">제보하기</string>
     <string name="settings_subscribed_shops_menu">알림 설정한 매장 보기</string>
-    <string name="settings_bookmarked_shops_menu">좋아요한 매장 보기</string>
+    <string name="settings_bookmarked_shops_menu">저장한 매장 보기</string>
+    <string name="shop_list_count">총 %1$d개</string>
     <string name="privacy_policy_menu">개인정보 처리방침</string>
     <string name="app_version_label">앱 버전 %1$s</string>
 
-    <!-- 좋아요한 매장 화면 -->
-    <string name="bookmarked_shops_empty_title">좋아요한 매장이 없어요</string>
-    <string name="bookmark_removal_confirm_title">좋아요를 해제하시겠습니까?</string>
-    <string name="bookmark_removal_confirm_action">좋아요 해제</string>
-    <string name="bookmark_removal_success_message">좋아요를 해제했어요</string>
+    <!-- 저장한 매장 화면 -->
+    <string name="bookmarked_shops_empty_title">저장한 매장이 없어요</string>
+    <string name="bookmark_removal_confirm_title">저장을 해제하시겠습니까?</string>
+    <string name="bookmark_removal_confirm_action">저장 해제</string>
+    <string name="bookmark_removal_success_message">저장을 해제했어요</string>
+    <string name="importation_add_action_description">지도 목록에서 매장 저장</string>
+    <string name="importation_screen_title">지도 목록에서 추가</string>
+    <string name="importation_remove_candidate">추가 대상에서 제외</string>
+    <string name="importation_input_label">카카오맵 또는 네이버 지도 목록 링크</string>
+    <string name="importation_analyze">목록 찾기</string>
+    <string name="importation_preview_added_count">%1$d곳</string>
+    <string name="importation_registered_count_label">기등록 매장</string>
+    <string name="importation_hidden_count_label">숨김 제외</string>
+    <string name="importation_unmatched_count_label">매칭 실패</string>
+    <string name="importation_count">%1$d개</string>
+    <string name="importation_candidates_title">추가할 매장</string>
+    <string name="importation_confirm">추가하기</string>
+    <string name="importation_reset">초기화</string>
+    <string name="importation_completed">저장 목록에 추가했어요</string>
+    <string name="importation_error_invalid_url">링크를 입력해주세요</string>
+    <string name="importation_error_unsupported_url">카카오맵 또는 네이버 지도 목록 링크만 사용할 수 있어요</string>
+    <string name="importation_error_unavailable_list">비공개·삭제·만료된 목록이거나 불러올 수 없는 목록이에요</string>
+    <string name="importation_error_provider_failure">지도 목록 제공 서비스에 일시적인 문제가 있어요</string>
+    <string name="importation_error_personalization">저장 정보를 불러온 뒤 다시 시도해주세요</string>
+    <string name="importation_error_analyze">목록을 불러오지 못했어요. 링크를 확인해주세요</string>
+    <string name="importation_error_confirm">저장 추가에 실패했어요</string>
 
     <!-- 알림 설정한 매장 화면 -->
     <string name="subscribed_shops_empty_title">알림을 설정한 매장이 없어요</string>
@@ -177,18 +225,18 @@
     <string name="login_success_message">로그인 되었습니다.</string>
     <string name="logout_failure_message">로그아웃에 실패했습니다.</string>
     <string name="login_required_message">로그인이 필요한 기능입니다</string>
-    <string name="login_required_description">로그인 후 북마크와 숨김 기능을 사용할 수 있어요.</string>
+    <string name="login_required_description">로그인 후 저장과 숨김 기능을 사용할 수 있어요.</string>
     <string name="login_required_action">로그인하기</string>
 
     <!-- 지도 화면 -->
     <string name="hide_shop_confirm_title">숨김 처리하시겠습니까?</string>
-    <string name="hide_shop_confirm_description">숨기면 지도와 좋아요 목록에서 보이지 않아요.</string>
+    <string name="hide_shop_confirm_description">숨기면 지도와 저장 목록에서 보이지 않아요.</string>
     <string name="hide_shop_confirm_action">숨김 처리</string>
     <string name="hide_shop_confirm_dismiss">취소</string>
     <string name="hide_shop_action">숨기기</string>
     <string name="hide_shop_success_message">매장을 숨김 처리했어요</string>
     <string name="hidden_shop_notification_unavailable_message">숨김 매장은 알림을 설정할 수 없어요</string>
-    <string name="bookmarked_shops_toggle">좋아요</string>
+    <string name="bookmarked_shops_toggle">저장</string>
     <string name="current_location">내 위치</string>
     <string name="current_location_timeout_message">현재 위치를 찾지 못했어요. 잠시 후 다시 시도해 주세요.</string>
     <string name="map_shop_detail_error_title">매장 정보를 불러오지 못했어요</string>
@@ -230,7 +278,7 @@
     <string name="ranking_error_description">잠시 후 다시 시도해 주세요.</string>
     <string name="ranking_refresh_failure_message">매장 랭킹을 새로고침하지 못했어요</string>
     <string name="ranking_show_shop_on_map">지도에서 보기</string>
-    <string name="ranking_bookmark_cancel_action">좋아요 취소</string>
+    <string name="ranking_bookmark_cancel_action">저장 해제</string>
     <string name="ranking_area_seoul_short">서울</string>
     <string name="ranking_area_busan_short">부산</string>
     <string name="ranking_area_daegu_short">대구</string>

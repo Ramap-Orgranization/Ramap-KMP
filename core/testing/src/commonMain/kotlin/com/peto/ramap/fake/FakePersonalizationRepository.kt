@@ -16,6 +16,7 @@ class FakePersonalizationRepository(
     override val state = mutableState.asStateFlow()
     val bookmarkedShopIds = MutableStateFlow(personalization.bookmarkedShopIds)
     val bookmarkUpdateRequests = mutableListOf<Pair<String, Boolean>>()
+    val bookmarkBulkAddRequests = mutableListOf<Set<String>>()
     var bookmarkUpdateError: RamapError? = null
     var shopNotificationError: RamapError? = null
 
@@ -38,6 +39,14 @@ class FakePersonalizationRepository(
                 )
             },
         )
+        bookmarkedShopIds.value = currentPersonalization.bookmarkedShopIds
+        return RamapResult.Success(Unit)
+    }
+
+    override suspend fun addBookmarks(shopIds: Set<String>): RamapResult<Unit> {
+        bookmarkBulkAddRequests += shopIds
+        bookmarkUpdateError?.let { return RamapResult.Error(it) }
+        publish(currentPersonalization.addBookmarks(shopIds))
         bookmarkedShopIds.value = currentPersonalization.bookmarkedShopIds
         return RamapResult.Success(Unit)
     }

@@ -1,6 +1,7 @@
 package com.peto.ramap.ui.main.map.component
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -16,6 +17,7 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -24,29 +26,37 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
+import com.peto.ramap.designsystem.card.SectionCard
 import com.peto.ramap.designsystem.component.MenuCategoryLabels
 import com.peto.ramap.designsystem.image.RemoteShopImage
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.model.event.ShopEventType
+import com.peto.ramap.domain.model.shop.BusinessHours
 import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.extension.noRippleClickable
 import com.peto.ramap.platform.ExternalUriOpener
 import com.peto.ramap.theme.AppTextStyle
+import com.peto.ramap.theme.ChromaticColor
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.InstagramColor
 import com.peto.ramap.theme.RamapTheme
 import com.peto.ramap.theme.SystemColor
 import com.peto.ramap.ui.preview.RamenShopPreviewParameterProvider
+import com.peto.ramap.ui.resource.businesshours.BusinessHoursResourceLine
+import com.peto.ramap.ui.resource.businesshours.BusinessHoursResourceMapper
 import com.peto.ramap.ui.resource.category.CategoryResourceMapper
 import com.peto.ramap.ui.resource.event.ShopEventResourceMapper
 import com.peto.ramap.ui.resource.format
 import com.peto.ramap.ui.resource.wating.WaitingSystemUiModel
+import kotlinx.coroutines.delay
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
@@ -68,8 +78,15 @@ import ramap.shared.generated.resources.instagram_icon
 import ramap.shared.generated.resources.kakao_map_icon
 import ramap.shared.generated.resources.naver_map_icon
 import ramap.shared.generated.resources.share_shop_action
+import ramap.shared.generated.resources.shop_detail_business_hours_break_time_format
+import ramap.shared.generated.resources.shop_detail_business_hours_closed
+import ramap.shared.generated.resources.shop_detail_business_hours_closed_label_format
+import ramap.shared.generated.resources.shop_detail_business_hours_notice
+import ramap.shared.generated.resources.shop_detail_business_hours_notice_show
+import ramap.shared.generated.resources.shop_detail_business_hours_weekday_range_format
+import ramap.shared.generated.resources.shop_detail_business_hours_weekly_title
+import ramap.shared.generated.resources.shop_detail_copy_address
 import ramap.shared.generated.resources.shop_detail_label_address
-import ramap.shared.generated.resources.shop_detail_label_business_hours
 import ramap.shared.generated.resources.shop_detail_label_phone
 import ramap.shared.generated.resources.shop_detail_label_waiting
 import ramap.shared.generated.resources.shop_detail_link_apple_maps
@@ -97,6 +114,8 @@ internal fun RamenShopOverview(
     event: ShopEvent? = null,
     onEventClick: (ShopEvent) -> Unit = {},
 ) {
+    val clipboardManager = LocalClipboardManager.current
+
     Column(
         modifier =
             modifier
@@ -129,6 +148,7 @@ internal fun RamenShopOverview(
                     url = shop.instagramProfileImageUrl,
                     modifier =
                         Modifier
+                            .align(Alignment.CenterVertically)
                             .border(
                                 width = 1.dp,
                                 color = GrayColor.C100,
@@ -160,7 +180,7 @@ internal fun RamenShopOverview(
             MenuCategoryLabels(
                 menuCategories = shop.menuCategories,
                 categoryLabel = { category -> stringResource(CategoryResourceMapper.label(category)) },
-                style = AppTextStyle.B2,
+                style = AppTextStyle.B1,
                 modifier =
                     Modifier
                         .padding(top = 10.dp)
@@ -175,6 +195,8 @@ internal fun RamenShopOverview(
             ShopInfoRow(
                 label = stringResource(Res.string.shop_detail_label_address),
                 value = shop.address,
+                onClick = { clipboardManager.setText(AnnotatedString(shop.address)) },
+                onClickLabel = stringResource(Res.string.shop_detail_copy_address),
             )
 
             shop.phone?.takeIf(String::isNotBlank)?.let { phone ->
@@ -185,10 +207,9 @@ internal fun RamenShopOverview(
                 )
             }
 
-            shop.businessHours?.let { businessHours ->
-                ShopInfoRow(
-                    label = stringResource(Res.string.shop_detail_label_business_hours),
-                    value = businessHours,
+            shop.businessHoursDetails?.let { businessHours ->
+                BusinessHoursCard(
+                    businessHours = businessHours,
                 )
             }
 
@@ -383,17 +404,27 @@ private fun ShopInfoRow(
     label: String,
     value: String,
     onClick: (() -> Unit)? = null,
+    onClickLabel: String? = null,
+    showBusinessHoursNotice: Boolean = false,
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.Top,
     ) {
-        AppText(
-            text = label,
-            style = AppTextStyle.B1,
-            color = GrayColor.C300,
-        )
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            AppText(
+                text = label,
+                style = AppTextStyle.B1,
+                color = GrayColor.C300,
+            )
+            if (showBusinessHoursNotice) {
+                BusinessHoursNotice()
+            }
+        }
         AppText(
             text = value,
             modifier =
@@ -403,7 +434,10 @@ private fun ShopInfoRow(
                         if (onClick == null) {
                             Modifier
                         } else {
-                            Modifier.noRippleClickable(onClick = onClick)
+                            Modifier.noRippleClickable(
+                                onClick = onClick,
+                                onClickLabel = onClickLabel,
+                            )
                         },
                     ),
             style = AppTextStyle.B2,
@@ -412,6 +446,143 @@ private fun ShopInfoRow(
         )
     }
 }
+
+@Composable
+private fun BusinessHoursCard(businessHours: BusinessHours) {
+    val lines = BusinessHoursResourceMapper.all(businessHours)
+
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            AppText(
+                text = stringResource(Res.string.shop_detail_business_hours_weekly_title),
+                style = AppTextStyle.B1,
+                color = GrayColor.C300,
+            )
+            BusinessHoursNotice()
+        }
+        SectionCard(modifier = Modifier.fillMaxWidth()) {
+            lines.forEachIndexed { index, line ->
+                BusinessHoursCardRow(
+                    line = line,
+                    isLast = index == lines.lastIndex,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun BusinessHoursNotice() {
+    var isNoticeVisible by remember { mutableStateOf(false) }
+
+    LaunchedEffect(isNoticeVisible) {
+        if (isNoticeVisible) {
+            delay(3_000)
+            isNoticeVisible = false
+        }
+    }
+
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            modifier =
+                Modifier
+                    .size(14.dp)
+                    .border(1.dp, SystemColor.Warning, CircleShape)
+                    .noRippleClickable(
+                        onClickLabel = stringResource(Res.string.shop_detail_business_hours_notice_show),
+                    ) { isNoticeVisible = !isNoticeVisible },
+            contentAlignment = Alignment.Center,
+        ) {
+            AppText(
+                text = "!",
+                style = AppTextStyle.C1,
+                color = SystemColor.Warning,
+            )
+        }
+        if (isNoticeVisible) {
+            AppText(
+                text = stringResource(Res.string.shop_detail_business_hours_notice),
+                style = AppTextStyle.C1,
+                color = SystemColor.Warning,
+            )
+        }
+    }
+}
+
+@Composable
+private fun BusinessHoursCardRow(
+    line: BusinessHoursResourceLine,
+    isLast: Boolean,
+) {
+    val mainValue = line.values.firstOrNull() ?: return
+    val isClosed =
+        mainValue.resource == Res.string.shop_detail_business_hours_closed ||
+            mainValue.resource == Res.string.shop_detail_business_hours_closed_label_format
+
+    Column {
+        Row(
+            modifier = Modifier.padding(horizontal = 15.dp, vertical = 10.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            AppText(
+                text = line.dayLabelText(),
+                modifier = Modifier.weight(1f),
+                style = AppTextStyle.B1,
+                color = if (isClosed) SystemColor.Warning else GrayColor.C500,
+            )
+            Column(horizontalAlignment = Alignment.End) {
+                AppText(
+                    text = mainValue.format(),
+                    style = AppTextStyle.B3,
+                    color = if (isClosed) SystemColor.Warning else GrayColor.C500,
+                )
+                line.values.drop(1).forEach { value ->
+                    if (value.resource == Res.string.shop_detail_business_hours_break_time_format) {
+                        AppText(
+                            text = value.format(),
+                            modifier =
+                                Modifier
+                                    .padding(top = 4.dp)
+                                    .background(
+                                        color = ChromaticColor.Orange400.copy(alpha = 0.2f),
+                                        shape = RoundedCornerShape(4.dp),
+                                    ).padding(horizontal = 5.dp, vertical = 2.dp),
+                            style = AppTextStyle.C2,
+                            color = InstagramColor.Orange,
+                        )
+                    } else {
+                        AppText(
+                            text = value.format(),
+                            modifier = Modifier.padding(top = 4.dp),
+                            style = AppTextStyle.C2,
+                            color = GrayColor.C300,
+                        )
+                    }
+                }
+            }
+        }
+        if (!isLast) {
+            HorizontalDivider(thickness = 1.dp, color = GrayColor.C100)
+        }
+    }
+}
+
+@Composable
+private fun BusinessHoursResourceLine.dayLabelText(): String =
+    endDayLabel?.let { endDayLabel ->
+        stringResource(
+            Res.string.shop_detail_business_hours_weekday_range_format,
+            stringResource(dayLabel),
+            stringResource(endDayLabel),
+        )
+    } ?: stringResource(dayLabel)
 
 @Composable
 private fun ShopLinkRow(

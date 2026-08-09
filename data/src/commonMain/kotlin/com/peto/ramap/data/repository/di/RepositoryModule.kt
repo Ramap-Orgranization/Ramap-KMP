@@ -1,5 +1,6 @@
 package com.peto.ramap.data.repository.di
 
+import com.peto.ramap.data.datasource.importation.ImportationDataSource
 import com.peto.ramap.data.datasource.personalization.BookmarkShopDataSource
 import com.peto.ramap.data.datasource.personalization.HiddenShopDataSource
 import com.peto.ramap.data.datasource.place.PlaceSearchDataSource
@@ -8,6 +9,7 @@ import com.peto.ramap.data.datasource.shop.RamenShopDataSource
 import com.peto.ramap.data.datasource.waiting.ShopWaitingSystemDataSource
 import com.peto.ramap.data.repository.DefaultBookmarkRepository
 import com.peto.ramap.data.repository.DefaultHiddenShopRepository
+import com.peto.ramap.data.repository.DefaultImportationRepository
 import com.peto.ramap.data.repository.DefaultLoginRepository
 import com.peto.ramap.data.repository.DefaultNotificationSettingsRepository
 import com.peto.ramap.data.repository.DefaultPlaceSearchRepository
@@ -20,6 +22,7 @@ import com.peto.ramap.data.repository.DefaultSubscribedShopRepository
 import com.peto.ramap.data.store.DefaultShopPersonalizationStore
 import com.peto.ramap.domain.repository.BookmarkRepository
 import com.peto.ramap.domain.repository.HiddenShopRepository
+import com.peto.ramap.domain.repository.ImportationRepository
 import com.peto.ramap.domain.repository.LoginRepository
 import com.peto.ramap.domain.repository.NotificationSettingsRepository
 import com.peto.ramap.domain.repository.PlaceSearchRepository
@@ -34,6 +37,7 @@ import org.koin.dsl.module
 
 val repositoryModule =
     module {
+        single<ImportationRepository> { DefaultImportationRepository(get<ImportationDataSource>()) }
         single<LoginRepository> {
             DefaultLoginRepository(get())
         }

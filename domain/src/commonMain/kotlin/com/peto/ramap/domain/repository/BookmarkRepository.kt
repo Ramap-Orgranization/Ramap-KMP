@@ -7,5 +7,7 @@ interface BookmarkRepository {
 
     suspend fun addBookmark(shopId: String): RamapResult<Unit>
 
+    suspend fun addBookmarks(shopIds: Set<String>): RamapResult<Unit>
+
     suspend fun removeBookmark(shopId: String): RamapResult<Unit>
 }

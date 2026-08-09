@@ -24,6 +24,9 @@ import com.peto.ramap.ui.main.map.contract.MapIntent.OnLoginSelectionDismissed
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnLoginTypeSelected
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnMyLocationChanged
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnQueryChanged
+import com.peto.ramap.ui.main.map.contract.MapIntent.OnRecentSearchDeleted
+import com.peto.ramap.ui.main.map.contract.MapIntent.OnRecentSearchSelected
+import com.peto.ramap.ui.main.map.contract.MapIntent.OnRecentSearchesCleared
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnRequestedShopDismissed
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnSearchResultsDismissed
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnSearchedShopSelected
@@ -116,6 +119,10 @@ fun MapRoute(
                 onDetailDismissed()
             },
             onQueryChanged = { viewModel.dispatch(OnQueryChanged(it)) },
+            onRecentSearchSelected = { viewModel.dispatch(OnRecentSearchSelected(it)) },
+            onRecentSearchDeleted = { viewModel.dispatch(OnRecentSearchDeleted(it)) },
+            onRecentSearchesCleared = { viewModel.dispatch(OnRecentSearchesCleared) },
+            onRecentlyViewedShopSelected = { viewModel.dispatch(OnShopIdSelected(it)) },
             onSearchResultsDismissed = { viewModel.dispatch(OnSearchResultsDismissed) },
             onInitialLocationFocusConsumed = { viewModel.dispatch(OnInitialLocationFocusConsumed) },
             onSelectedShopFocusConsumed = { viewModel.dispatch(OnSelectedShopFocusConsumed) },

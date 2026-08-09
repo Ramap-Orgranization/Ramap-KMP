@@ -8,11 +8,8 @@ internal fun ramenShopResponseFixture(
     name: String = "라멘집",
     kakaoPlaceUrl: String? = "https://place.map.kakao.com/shop-1",
     phone: String? = "02-0000-0000",
-    businessHours: String? = "11:00-21:00",
     instagramUrl: String? = "https://instagram.com/ramen_shop",
-    kakaoRating: Double? = 4.5,
     menuCategoryIds: List<String>? = listOf("shoyu"),
-    isVisible: Boolean? = true,
 ): RamenShopResponse =
     RamenShopResponse(
         id = id,
@@ -23,11 +20,8 @@ internal fun ramenShopResponseFixture(
         lng = 126.921,
         kakaoPlaceUrl = kakaoPlaceUrl,
         phone = phone,
-        businessHours = businessHours,
         instagramUrl = instagramUrl,
-        kakaoRating = kakaoRating,
         menuCategoryIds = menuCategoryIds,
-        isVisible = isVisible,
         createdAt = "2026-06-01T00:00:00Z",
         updatedAt = "2026-06-02T00:00:00Z",
     )

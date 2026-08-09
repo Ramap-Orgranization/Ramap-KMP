@@ -7,5 +7,7 @@ internal interface BookmarkShopDataSource {
 
     suspend fun addBookmark(shopId: String)
 
+    suspend fun addBookmarks(shopIds: Set<String>)
+
     suspend fun removeBookmark(shopId: String)
 }

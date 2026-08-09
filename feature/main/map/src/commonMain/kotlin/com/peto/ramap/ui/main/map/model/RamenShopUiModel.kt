@@ -16,7 +16,7 @@ data class RamenShopUiModel(
             if (shop.phone != null) {
                 add(reportFieldOption(ShopInformationField.PHONE))
             }
-            if (shop.businessHours != null) {
+            if (shop.businessHoursDetails != null) {
                 add(reportFieldOption(ShopInformationField.BUSINESS_HOURS))
             }
             if (shop.hasCategory) {

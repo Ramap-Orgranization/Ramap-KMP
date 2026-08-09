@@ -18,6 +18,7 @@ import com.peto.ramap.designsystem.card.EventCard
 import com.peto.ramap.designsystem.card.SectionCard
 import com.peto.ramap.designsystem.component.RamenShopSearchResultList
 import com.peto.ramap.designsystem.component.SettingsListPage
+import com.peto.ramap.designsystem.component.ShopListCount
 import com.peto.ramap.designsystem.component.ShopListEmptyContent
 import com.peto.ramap.designsystem.dialog.CommonDialog
 import com.peto.ramap.designsystem.text.AppText
@@ -133,6 +134,7 @@ private fun SubscribedShopListContent(
         Column(
             modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
         ) {
+            ShopListCount(count = uiState.shops.size)
             if (uiState.subscribedEvents.isNotEmpty()) {
                 SectionCard(
                     title = stringResource(Res.string.top_level_tab_event),

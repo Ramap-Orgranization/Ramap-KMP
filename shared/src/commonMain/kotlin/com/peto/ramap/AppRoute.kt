@@ -34,7 +34,8 @@ import com.peto.ramap.notification.NotificationDeepLinkParser
 import com.peto.ramap.notification.NotificationLaunchDispatcher
 import com.peto.ramap.ui.account.AccountSettingsRoute
 import com.peto.ramap.ui.account.InformationRoute
-import com.peto.ramap.ui.bookmark.BookmarkedShopListRoute
+import com.peto.ramap.ui.bookmark.importation.ImportationRoute
+import com.peto.ramap.ui.bookmark.list.BookmarkedShopListRoute
 import com.peto.ramap.ui.hidden.HiddenShopListRoute
 import com.peto.ramap.ui.main.event.EventDetailRoute
 import com.peto.ramap.ui.main.event.list.EventsRoute
@@ -218,6 +219,7 @@ internal fun AppRoute(
         bookmarkedShopsScreen = {
             BookmarkedShopListRoute(
                 onBack = navigationState::pop,
+                onImportationNavigate = navigationState::showImportation,
                 onShopOpen = { shopId ->
                     navigationState.showShopOnMap(
                         shopId,
@@ -225,6 +227,12 @@ internal fun AppRoute(
                         returnTab = TabStatus.MY,
                     )
                 },
+            )
+        },
+        importationScreen = {
+            ImportationRoute(
+                onBack = navigationState::pop,
+                onImportCompleted = navigationState::pop,
             )
         },
         eventScreen = { route ->

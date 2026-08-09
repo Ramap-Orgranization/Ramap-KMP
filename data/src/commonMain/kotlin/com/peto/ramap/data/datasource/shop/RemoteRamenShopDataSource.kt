@@ -48,13 +48,10 @@ internal class RemoteRamenShopDataSource(
             .from(TABLE_NAME)
             .select {
                 filter {
-                    eq(COLUMN_IS_VISIBLE, true)
-                    and {
-                        gte(COLUMN_LAT, bounds.minLat)
-                        lte(COLUMN_LAT, bounds.maxLat)
-                        gte(COLUMN_LNG, bounds.minLng)
-                        lte(COLUMN_LNG, bounds.maxLng)
-                    }
+                    gte(COLUMN_LAT, bounds.minLat)
+                    lte(COLUMN_LAT, bounds.maxLat)
+                    gte(COLUMN_LNG, bounds.minLng)
+                    lte(COLUMN_LNG, bounds.maxLng)
                 }
             }.decodeList()
 
@@ -65,7 +62,6 @@ internal class RemoteRamenShopDataSource(
             .from(TABLE_NAME)
             .select {
                 filter {
-                    eq(COLUMN_IS_VISIBLE, true)
                     isIn(COLUMN_ID, shopIds.toList())
                 }
             }.decodeList()
@@ -91,13 +87,12 @@ internal class RemoteRamenShopDataSource(
         pattern: String,
         limit: Int,
     ): List<RamenShopResponse> {
-        val searchFilter = ShopTextSearchFilter.forVisibleShops(pattern)
+        val searchFilter = ShopTextSearchFilter(pattern)
 
         return client
             .from(TABLE_NAME)
             .select {
                 filter {
-                    eq(COLUMN_IS_VISIBLE, searchFilter.isVisible)
                     or {
                         searchFilter.columns.forEach { column ->
                             ilike(column, searchFilter.pattern)
@@ -126,7 +121,6 @@ internal class RemoteRamenShopDataSource(
         private const val COLUMN_EVENT_ID = "event_id"
 
         private const val COLUMN_ID = "id"
-        private const val COLUMN_IS_VISIBLE = "is_visible"
         private const val COLUMN_LAT = "lat"
         private const val COLUMN_LNG = "lng"
     }

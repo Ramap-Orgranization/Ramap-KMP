@@ -16,6 +16,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.peto.ramap.designsystem.component.RamenShopSearchResultList
 import com.peto.ramap.designsystem.component.SettingsListPage
+import com.peto.ramap.designsystem.component.ShopListCount
 import com.peto.ramap.designsystem.component.ShopListEmptyContent
 import com.peto.ramap.designsystem.dialog.CommonDialog
 import com.peto.ramap.designsystem.text.AppText
@@ -123,6 +124,7 @@ private fun HiddenShopListContent(
         Column(
             modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
         ) {
+            ShopListCount(count = uiState.shops.size)
             RamenShopSearchResultList(
                 shops = uiState.shops,
                 onShopClick = onShopOpen,
