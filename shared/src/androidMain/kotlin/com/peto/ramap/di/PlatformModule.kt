@@ -8,6 +8,8 @@ import com.peto.ramap.platform.AndroidAppSettingsOpener
 import com.peto.ramap.platform.AndroidAppVersionProvider
 import com.peto.ramap.platform.AppSettingsOpener
 import com.peto.ramap.platform.AppVersionProvider
+import com.peto.ramap.platform.MapSearchHistoryStorage
+import com.peto.ramap.platform.createMapSearchHistoryStorage
 import com.peto.ramap.platform.location.AndroidCurrentLocationProvider
 import com.peto.ramap.platform.location.CurrentLocationProvider
 import org.koin.android.ext.koin.androidContext
@@ -19,6 +21,7 @@ actual val platformModule =
             AndroidAppSettingsOpener(androidContext())
         }
         single<AppVersionProvider> { AndroidAppVersionProvider(androidContext()) }
+        single<MapSearchHistoryStorage> { createMapSearchHistoryStorage(androidContext()) }
         single<CurrentLocationProvider> { AndroidCurrentLocationProvider(androidContext()) }
         single<AnalyticsTracker> { FirebaseAnalyticsTracker() }
         single<CrashReporter> { FirebaseCrashReporter() }

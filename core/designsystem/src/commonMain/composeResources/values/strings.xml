@@ -134,6 +134,10 @@
     <string name="search_result_hidden_only_message">숨김 처리한 매장이 검색되었어요</string>
     <string name="filter_empty_visible_result_message">선택한 필터에 맞는 매장이 없어요</string>
     <string name="hidden_shop_search_result_message">숨김 처리된 매장이에요</string>
+    <string name="recent_searches_title">최근 검색</string>
+    <string name="recent_search_clear_all">전체 삭제</string>
+    <string name="recent_search_delete_action">최근 검색어 삭제</string>
+    <string name="recent_viewed_shops_title">최근 본 매장</string>
 
     <!-- 장소 제보 화면 -->
     <string name="place_report_description">네이버나 카카오맵의 공유 내용을 그대로 붙여주세요</string>

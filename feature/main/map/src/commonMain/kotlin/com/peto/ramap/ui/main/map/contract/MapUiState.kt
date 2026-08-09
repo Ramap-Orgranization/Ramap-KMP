@@ -34,6 +34,8 @@ data class MapUiState(
      * 검색창 입력값, 검색 결과, 검색 결과의 소비 상태.
      */
     val search: SearchUiModel = SearchUiModel(),
+    val recentSearches: List<String> = emptyList(),
+    val recentlyViewedShops: RamenShops = RamenShops(emptyMap()),
     /**
      * 매장 id별 웨이팅 시스템 정보.
      */
