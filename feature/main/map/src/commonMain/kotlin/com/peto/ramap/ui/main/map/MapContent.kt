@@ -195,7 +195,10 @@ internal fun MapContent(
                 RecentSearchHistory(
                     searches = uiState.recentSearches,
                     viewedShops = uiState.recentlyViewedShops,
-                    onSearchSelected = onRecentSearchSelected,
+                    onSearchSelected = { query ->
+                        focusManager.clearFocus()
+                        onRecentSearchSelected(query)
+                    },
                     onSearchDeleted = onRecentSearchDeleted,
                     onSearchesCleared = onRecentSearchesCleared,
                     onViewedShopSelected = onRecentlyViewedShopSelected,
