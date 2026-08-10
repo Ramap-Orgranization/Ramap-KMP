@@ -6,6 +6,7 @@ import com.peto.ramap.analytics.common.login.LoginAnalytics
 import com.peto.ramap.analytics.common.login.LoginMethod
 import com.peto.ramap.core.result.RamapError
 import com.peto.ramap.core.result.RamapResult
+import com.peto.ramap.designsystem.shop.model.ShopDetailSheetUiState
 import com.peto.ramap.designsystem.toast.model.ToastAction
 import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
@@ -75,7 +76,6 @@ import com.peto.ramap.ui.main.map.log.MapAnalytics
 import com.peto.ramap.ui.main.map.model.CameraPosition
 import com.peto.ramap.ui.main.map.model.LocationFocusStatus
 import com.peto.ramap.ui.main.map.model.PendingMapAction
-import com.peto.ramap.designsystem.shop.model.ShopDetailSheetUiState
 import com.peto.ramap.ui.main.map.search.MapSearchController
 import com.peto.ramap.ui.main.map.search.MapSearchResult
 import com.peto.ramap.ui.main.map.viewport.ViewportLoadResult

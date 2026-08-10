@@ -7,6 +7,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.peto.ramap.designsystem.resource.wating.toUiModel
 import com.peto.ramap.designsystem.shop.ShopDetailContent
 import com.peto.ramap.designsystem.toast.ToastManager
 import com.peto.ramap.domain.model.event.ShopEvent
@@ -15,7 +16,6 @@ import com.peto.ramap.platform.AppSettingsOpener
 import com.peto.ramap.platform.ExternalUriOpener
 import com.peto.ramap.platform.NotificationPermissionRequester
 import com.peto.ramap.ui.main.map.contract.MapIntent
-import com.peto.ramap.designsystem.resource.wating.toUiModel
 import org.koin.compose.koinInject
 
 @Composable

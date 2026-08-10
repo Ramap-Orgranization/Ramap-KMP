@@ -31,6 +31,7 @@ import com.peto.ramap.designsystem.button.AppButton
 import com.peto.ramap.designsystem.card.SectionCard
 import com.peto.ramap.designsystem.component.LoadErrorContent
 import com.peto.ramap.designsystem.indicator.RamenLoadingIndicator
+import com.peto.ramap.designsystem.resource.event.ShopEventResourceMapper
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.designsystem.text.eventDateText
 import com.peto.ramap.designsystem.toast.ToastManager
@@ -66,7 +67,6 @@ import com.peto.ramap.ui.main.event.contract.EventDetailSideEffect.EventUnavaila
 import com.peto.ramap.ui.main.event.contract.EventDetailSideEffect.RequestNotificationPermission
 import com.peto.ramap.ui.main.event.contract.EventDetailSideEffect.ShowToast
 import com.peto.ramap.ui.main.event.contract.EventDetailUiState
-import com.peto.ramap.designsystem.resource.event.ShopEventResourceMapper
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource

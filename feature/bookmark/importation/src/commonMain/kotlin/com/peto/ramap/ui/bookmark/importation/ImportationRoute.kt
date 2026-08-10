@@ -26,6 +26,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.peto.ramap.designsystem.button.AppButton
 import com.peto.ramap.designsystem.component.RamenShopSearchResultList
 import com.peto.ramap.designsystem.component.SettingsListPage
+import com.peto.ramap.designsystem.resource.category.CategoryResourceMapper
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.designsystem.toast.ToastManager
 import com.peto.ramap.domain.model.importation.ImportationPreview
@@ -41,7 +42,6 @@ import com.peto.ramap.ui.bookmark.importation.contract.ImportationIntent
 import com.peto.ramap.ui.bookmark.importation.contract.ImportationSideEffect
 import com.peto.ramap.ui.bookmark.importation.contract.ImportationUiState
 import com.peto.ramap.ui.preview.RamenShopPreviewParameterProvider
-import com.peto.ramap.designsystem.resource.category.CategoryResourceMapper
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel

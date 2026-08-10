@@ -1,5 +1,6 @@
 package com.peto.ramap.ui.main.map.contract
 
+import com.peto.ramap.designsystem.shop.model.ShopDetailSheetUiState
 import com.peto.ramap.domain.model.place.PlaceSearchResults
 import com.peto.ramap.domain.model.shop.Location
 import com.peto.ramap.domain.model.shop.MapBounds
@@ -14,7 +15,6 @@ import com.peto.ramap.ui.loading.LoadableState
 import com.peto.ramap.ui.main.map.config.DefaultMapConfig
 import com.peto.ramap.ui.main.map.model.CameraPosition
 import com.peto.ramap.ui.main.map.model.LocationFocusStatus
-import com.peto.ramap.designsystem.shop.model.ShopDetailSheetUiState
 import com.peto.ramap.ui.main.map.search.SearchResultGuide
 import com.peto.ramap.ui.main.map.search.SearchUiModel
 

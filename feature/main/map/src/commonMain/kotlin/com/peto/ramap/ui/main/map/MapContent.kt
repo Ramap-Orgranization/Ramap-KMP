@@ -36,6 +36,8 @@ import com.peto.ramap.analytics.AnalyticsSource
 import com.peto.ramap.designsystem.button.AppButton
 import com.peto.ramap.designsystem.component.RamenShopSearchResultList
 import com.peto.ramap.designsystem.indicator.RamenLoadingIndicator
+import com.peto.ramap.designsystem.resource.category.CategoryResourceMapper
+import com.peto.ramap.designsystem.resource.wating.toUiModel
 import com.peto.ramap.designsystem.shop.ShopDetailContent
 import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.model.place.PlaceSearchResult
@@ -44,9 +46,9 @@ import com.peto.ramap.domain.model.shop.Category
 import com.peto.ramap.domain.model.shop.Location
 import com.peto.ramap.domain.model.shop.MapBounds
 import com.peto.ramap.domain.model.shop.RamenShop
+import com.peto.ramap.platform.ExternalUriOpener
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
-import com.peto.ramap.platform.ExternalUriOpener
 import com.peto.ramap.ui.main.map.component.MapCircleIconButton
 import com.peto.ramap.ui.main.map.component.MenuCategoryFilterRow
 import com.peto.ramap.ui.main.map.component.RecentSearchHistory
@@ -55,8 +57,6 @@ import com.peto.ramap.ui.main.map.component.SearchResultGuide
 import com.peto.ramap.ui.main.map.component.SearchResultList
 import com.peto.ramap.ui.main.map.contract.MapUiState
 import com.peto.ramap.ui.main.map.model.CameraPosition
-import com.peto.ramap.designsystem.resource.category.CategoryResourceMapper
-import com.peto.ramap.designsystem.resource.wating.toUiModel
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
