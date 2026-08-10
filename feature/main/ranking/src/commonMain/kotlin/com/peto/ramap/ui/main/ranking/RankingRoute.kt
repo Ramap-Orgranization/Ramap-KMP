@@ -16,15 +16,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.peto.ramap.designsystem.bottomsheet.CommonBottomSheet
 import com.peto.ramap.designsystem.button.login.LoginButton
-import com.peto.ramap.designsystem.dialog.CommonDialog
 import com.peto.ramap.designsystem.dialog.LoginGuideDialog
-import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.designsystem.toast.ToastManager
 import com.peto.ramap.domain.model.auth.supportedLoginTypes
 import com.peto.ramap.domain.model.event.ShopEvent
@@ -35,9 +32,7 @@ import com.peto.ramap.domain.model.shop.AdministrativeArea
 import com.peto.ramap.domain.model.shop.AreaFilter
 import com.peto.ramap.domain.model.shop.Category
 import com.peto.ramap.domain.model.shop.RamenShop
-import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.CommonColor
-import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.RamapTheme
 import com.peto.ramap.ui.base.ObserveAsEvents
 import com.peto.ramap.ui.main.ranking.component.AreaSheetContent
@@ -49,10 +44,6 @@ import com.peto.ramap.ui.preview.RamenShopPreviewParameterProvider
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
-import ramap.shared.generated.resources.Res
-import ramap.shared.generated.resources.bookmark_removal_confirm_action
-import ramap.shared.generated.resources.bookmark_removal_confirm_title
-import ramap.shared.generated.resources.notification_removal_dismiss_action
 
 @Composable
 fun RankingRoute(
@@ -185,10 +176,6 @@ internal fun RankingScreen(
         mutableStateOf(false)
     }
 
-    var removalTargetShop by remember {
-        mutableStateOf<RamenShop?>(null)
-    }
-
     Box(
         modifier =
             Modifier
@@ -225,14 +212,7 @@ internal fun RankingScreen(
                 onLoadNext = onLoadNext,
                 onRetryNext = onRetryNext,
                 onBookmarkClick = { shop, isBookmarked ->
-                    if (isBookmarked) {
-                        removalTargetShop = shop
-                    } else {
-                        onBookmarkChange(
-                            shop,
-                            true,
-                        )
-                    }
+                    onBookmarkChange(shop, !isBookmarked)
                 },
             )
         }
@@ -243,7 +223,7 @@ internal fun RankingScreen(
                 isAreaSheetVisible = false
                 onAreaSelectionBack()
             },
-        ) {
+        ) { _ ->
             AreaSheetContent(
                 areaFilter = uiState.areaFilter,
                 areaSelectionArea = uiState.areaSelectionArea,
@@ -264,46 +244,6 @@ internal fun RankingScreen(
             )
         }
 
-        CommonDialog(
-            visible = removalTargetShop != null,
-            confirmText =
-                stringResource(
-                    Res.string.bookmark_removal_confirm_action,
-                ),
-            dismissText =
-                stringResource(
-                    Res.string.notification_removal_dismiss_action,
-                ),
-            onDismissRequest = {
-                removalTargetShop = null
-            },
-            content = {
-                AppText(
-                    text =
-                        stringResource(
-                            Res.string.bookmark_removal_confirm_title,
-                        ),
-                    style = AppTextStyle.T1,
-                    color = GrayColor.C500,
-                    textAlign = TextAlign.Center,
-                )
-            },
-            onConfirm = {
-                val shop = removalTargetShop
-
-                if (shop != null) {
-                    onBookmarkChange(
-                        shop,
-                        false,
-                    )
-                }
-
-                removalTargetShop = null
-            },
-            onDismiss = {
-                removalTargetShop = null
-            },
-        )
     }
 }
 
