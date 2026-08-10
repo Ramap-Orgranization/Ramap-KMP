@@ -33,6 +33,12 @@ import androidx.compose.ui.unit.dp
 import com.peto.ramap.designsystem.card.SectionCard
 import com.peto.ramap.designsystem.component.MenuCategoryLabels
 import com.peto.ramap.designsystem.image.RemoteShopImage
+import com.peto.ramap.designsystem.resource.businesshours.BusinessHoursResourceLine
+import com.peto.ramap.designsystem.resource.businesshours.BusinessHoursResourceMapper
+import com.peto.ramap.designsystem.resource.category.CategoryResourceMapper
+import com.peto.ramap.designsystem.resource.event.ShopEventResourceMapper
+import com.peto.ramap.designsystem.resource.format
+import com.peto.ramap.designsystem.resource.wating.WaitingSystemUiModel
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.model.shop.BusinessHours
@@ -44,12 +50,6 @@ import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.InstagramColor
 import com.peto.ramap.theme.SystemColor
-import com.peto.ramap.designsystem.resource.businesshours.BusinessHoursResourceLine
-import com.peto.ramap.designsystem.resource.businesshours.BusinessHoursResourceMapper
-import com.peto.ramap.designsystem.resource.category.CategoryResourceMapper
-import com.peto.ramap.designsystem.resource.event.ShopEventResourceMapper
-import com.peto.ramap.designsystem.resource.format
-import com.peto.ramap.designsystem.resource.wating.WaitingSystemUiModel
 import kotlinx.coroutines.delay
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
