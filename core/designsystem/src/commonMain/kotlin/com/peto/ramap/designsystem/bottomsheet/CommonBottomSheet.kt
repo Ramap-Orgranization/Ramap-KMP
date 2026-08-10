@@ -2,8 +2,6 @@ package com.peto.ramap.designsystem.bottomsheet
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
@@ -95,7 +93,6 @@ fun CommonBottomSheet(
         val sheetMaxHeight = config.maxHeight ?: maxHeight * config.maxHeightFraction
 
         BottomSheetScrim(
-            visible = internalVisible,
             config = config,
             onDismissRequest = onDismissRequest,
         )
@@ -111,31 +108,23 @@ fun CommonBottomSheet(
 
 @Composable
 private fun BottomSheetScrim(
-    visible: Boolean,
     config: CommonBottomSheetConfig,
     onDismissRequest: () -> Unit,
 ) {
     val interactionSource = remember { MutableInteractionSource() }
 
-    AnimatedVisibility(
-        visible = visible,
-        enter = fadeIn(animationSpec = tween(SCRIM_ENTER_DURATION_MILLIS)),
-        exit = fadeOut(animationSpec = tween(SCRIM_EXIT_DURATION_MILLIS)),
-        modifier = Modifier.fillMaxSize(),
-    ) {
-        Box(
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .background(config.scrimColor)
-                    .clickable(
-                        enabled = config.dismissOnScrimClick,
-                        interactionSource = interactionSource,
-                        indication = null,
-                        onClick = onDismissRequest,
-                    ),
-        )
-    }
+    Box(
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .background(config.scrimColor)
+                .clickable(
+                    enabled = config.dismissOnScrimClick,
+                    interactionSource = interactionSource,
+                    indication = null,
+                    onClick = onDismissRequest,
+                ),
+    )
 }
 
 @Composable
@@ -152,12 +141,12 @@ private fun BottomSheetContent(
             slideInVertically(
                 animationSpec = tween(SHEET_ENTER_DURATION_MILLIS),
                 initialOffsetY = { it },
-            ) + fadeIn(animationSpec = tween(SHEET_FADE_ENTER_DURATION_MILLIS)),
+            ),
         exit =
             slideOutVertically(
                 animationSpec = tween(EXIT_ANIMATION_DURATION_MILLIS),
                 targetOffsetY = { it },
-            ) + fadeOut(animationSpec = tween(SHEET_FADE_EXIT_DURATION_MILLIS)),
+            ),
         modifier = modifier.fillMaxWidth(),
     ) {
         Surface(
@@ -199,9 +188,5 @@ private fun SheetHandle(config: CommonBottomSheetConfig) {
     )
 }
 
-private const val SCRIM_ENTER_DURATION_MILLIS = 160
-private const val SCRIM_EXIT_DURATION_MILLIS = 160
 private const val SHEET_ENTER_DURATION_MILLIS = 220
-private const val SHEET_FADE_ENTER_DURATION_MILLIS = 140
 private const val EXIT_ANIMATION_DURATION_MILLIS = 180
-private const val SHEET_FADE_EXIT_DURATION_MILLIS = 120
