@@ -61,7 +61,7 @@ fun SettingsPage(
                     )
                 },
             )
-            Column(modifier = Modifier.padding(horizontal = 20.dp)) { content() }
+            Column { content() }
         }
 
         if (showLoading) {

@@ -321,6 +321,10 @@ class NavigationStateTest {
         assertEquals(ScreenRoutes.BookmarkedShopListRoutes, navigationState.currentRoute)
         navigationState.showImportation()
         assertEquals(ScreenRoutes.ImportationRoutes, navigationState.currentRoute)
+        navigationState.showImportationGuide()
+        assertEquals(ScreenRoutes.ImportationGuideRoutes, navigationState.currentRoute)
+        navigationState.pop()
+        assertEquals(ScreenRoutes.ImportationRoutes, navigationState.currentRoute)
         navigationState.pop()
         assertEquals(ScreenRoutes.BookmarkedShopListRoutes, navigationState.currentRoute)
     }

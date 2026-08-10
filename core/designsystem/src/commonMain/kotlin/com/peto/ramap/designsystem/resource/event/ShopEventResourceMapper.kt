@@ -1,8 +1,8 @@
 package com.peto.ramap.designsystem.resource.event
 
+import com.peto.ramap.designsystem.resource.UiText
 import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.model.event.ShopEventType
-import com.peto.ramap.designsystem.resource.UiText
 import org.jetbrains.compose.resources.StringResource
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.event_collaborator_person

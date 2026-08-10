@@ -41,7 +41,6 @@ import com.peto.ramap.ui.main.ranking.contract.RankingIntent
 import com.peto.ramap.ui.main.ranking.contract.RankingSideEffect
 import com.peto.ramap.ui.main.ranking.contract.RankingUiState
 import com.peto.ramap.ui.preview.RamenShopPreviewParameterProvider
-import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -243,7 +242,6 @@ internal fun RankingScreen(
                 },
             )
         }
-
     }
 }
 

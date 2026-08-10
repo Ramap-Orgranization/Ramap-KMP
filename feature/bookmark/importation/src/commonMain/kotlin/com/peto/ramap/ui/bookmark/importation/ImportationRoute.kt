@@ -26,6 +26,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.peto.ramap.designsystem.button.AppButton
 import com.peto.ramap.designsystem.component.RamenShopSearchResultList
 import com.peto.ramap.designsystem.component.SettingsListPage
+import com.peto.ramap.designsystem.resource.category.CategoryResourceMapper
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.designsystem.toast.ToastManager
 import com.peto.ramap.domain.model.importation.ImportationPreview
@@ -41,7 +42,6 @@ import com.peto.ramap.ui.bookmark.importation.contract.ImportationIntent
 import com.peto.ramap.ui.bookmark.importation.contract.ImportationSideEffect
 import com.peto.ramap.ui.bookmark.importation.contract.ImportationUiState
 import com.peto.ramap.ui.preview.RamenShopPreviewParameterProvider
-import com.peto.ramap.designsystem.resource.category.CategoryResourceMapper
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
@@ -51,6 +51,7 @@ import ramap.shared.generated.resources.importation_analyze
 import ramap.shared.generated.resources.importation_candidates_title
 import ramap.shared.generated.resources.importation_confirm
 import ramap.shared.generated.resources.importation_count
+import ramap.shared.generated.resources.importation_guide_action_description
 import ramap.shared.generated.resources.importation_hidden_count_label
 import ramap.shared.generated.resources.importation_input_label
 import ramap.shared.generated.resources.importation_registered_count_label
@@ -64,6 +65,7 @@ import ramap.shared.generated.resources.search_bar_clear_action
 @Composable
 fun ImportationRoute(
     onBack: () -> Unit,
+    onGuideNavigate: () -> Unit,
     onImportCompleted: () -> Unit,
     toastManager: ToastManager = koinInject(),
     viewModel: ImportationViewModel = koinViewModel(),
@@ -83,6 +85,7 @@ fun ImportationRoute(
     ImportationScreen(
         uiState = uiState,
         onBack = onBack,
+        onGuideNavigate = onGuideNavigate,
         onUrlChange = { viewModel.dispatch(ImportationIntent.UrlChanged(it)) },
         onAnalyze = { viewModel.dispatch(ImportationIntent.Analyze) },
         onRetry = { viewModel.dispatch(ImportationIntent.Retry) },
@@ -96,6 +99,7 @@ fun ImportationRoute(
 internal fun ImportationScreen(
     uiState: ImportationUiState,
     onBack: () -> Unit,
+    onGuideNavigate: () -> Unit,
     onUrlChange: (String) -> Unit,
     onAnalyze: () -> Unit,
     onRetry: () -> Unit,
@@ -103,6 +107,8 @@ internal fun ImportationScreen(
     onConfirm: () -> Unit,
     onReset: () -> Unit,
 ) {
+    val guideActionDescription = stringResource(Res.string.importation_guide_action_description)
+
     SettingsListPage(
         title = Res.string.importation_screen_title,
         onBack = onBack,
@@ -112,6 +118,19 @@ internal fun ImportationScreen(
         errorImage = Res.drawable.laduck_error_confused,
         errorDescription = Res.string.data_load_failure_message,
         onRetry = onRetry,
+        topBarAction = {
+            IconButton(
+                onClick = onGuideNavigate,
+                modifier =
+                    Modifier
+                        .padding(horizontal = 12.dp)
+                        .semantics {
+                            contentDescription = guideActionDescription
+                        },
+            ) {
+                Text(text = "?", fontSize = 24.sp, color = GrayColor.C500)
+            }
+        },
     ) {
         Column(
             modifier =
@@ -299,6 +318,7 @@ private fun ImportationScreenPreview() {
                     hiddenCount = 1,
                 ),
             onBack = {},
+            onGuideNavigate = {},
             onUrlChange = {},
             onAnalyze = {},
             onRetry = {},
@@ -316,6 +336,7 @@ private fun ImportationScreenEmptyPreview() {
         ImportationScreen(
             uiState = ImportationUiState(),
             onBack = {},
+            onGuideNavigate = {},
             onUrlChange = {},
             onAnalyze = {},
             onRetry = {},

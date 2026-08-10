@@ -1,7 +1,7 @@
 package com.peto.ramap.ui.resource
 
-import com.peto.ramap.domain.model.report.ShopInformationField
 import com.peto.ramap.designsystem.resource.information.ShopInformationFieldResourceMapper
+import com.peto.ramap.domain.model.report.ShopInformationField
 import kotlin.test.Test
 import kotlin.test.assertEquals
 

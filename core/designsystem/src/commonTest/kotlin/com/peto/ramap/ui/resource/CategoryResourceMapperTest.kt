@@ -1,7 +1,7 @@
 package com.peto.ramap.ui.resource
 
-import com.peto.ramap.domain.model.shop.Category
 import com.peto.ramap.designsystem.resource.category.CategoryResourceMapper
+import com.peto.ramap.domain.model.shop.Category
 import kotlin.test.Test
 import kotlin.test.assertEquals
 

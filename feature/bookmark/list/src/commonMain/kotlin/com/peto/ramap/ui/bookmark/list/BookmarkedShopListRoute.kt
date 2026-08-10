@@ -16,6 +16,7 @@ import com.peto.ramap.designsystem.component.RamenShopSearchResultList
 import com.peto.ramap.designsystem.component.SettingsListPage
 import com.peto.ramap.designsystem.component.ShopListCount
 import com.peto.ramap.designsystem.component.ShopListEmptyContent
+import com.peto.ramap.designsystem.resource.category.CategoryResourceMapper
 import com.peto.ramap.designsystem.toast.ToastManager
 import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.theme.GrayColor
@@ -23,7 +24,6 @@ import com.peto.ramap.ui.base.ObserveAsEvents
 import com.peto.ramap.ui.bookmark.list.contract.BookmarkedShopListIntent
 import com.peto.ramap.ui.bookmark.list.contract.BookmarkedShopListSideEffect
 import com.peto.ramap.ui.bookmark.list.contract.BookmarkedShopListUiState
-import com.peto.ramap.designsystem.resource.category.CategoryResourceMapper
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject

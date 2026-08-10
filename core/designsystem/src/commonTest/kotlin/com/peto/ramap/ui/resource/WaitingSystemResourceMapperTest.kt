@@ -1,8 +1,8 @@
 package com.peto.ramap.ui.resource
 
+import com.peto.ramap.designsystem.resource.wating.toUiModel
 import com.peto.ramap.domain.model.shop.WaitingProvider
 import com.peto.ramap.domain.model.shop.WaitingSystem
-import com.peto.ramap.designsystem.resource.wating.toUiModel
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.catchtable
 import ramap.shared.generated.resources.shop_detail_waiting_catchtable

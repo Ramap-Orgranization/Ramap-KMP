@@ -54,6 +54,8 @@ class NavigationState(
 
     fun showImportation() = showOnce(ScreenRoutes.ImportationRoutes)
 
+    fun showImportationGuide() = showOnce(ScreenRoutes.ImportationGuideRoutes)
+
     fun showEvent(eventId: String) {
         if (currentRoute == ScreenRoutes.EventDetailRoutes(eventId)) return
         currentBackStack.add(ScreenRoutes.EventDetailRoutes(eventId))
