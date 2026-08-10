@@ -116,14 +116,7 @@ internal fun AppRoute(
         rankingScreen = {
             RankingRoute(
                 onFindShopClick = navigationState::showMap,
-                onShowShopOnMap = { selectedShopId ->
-                    navigationState.showShopOnMap(
-                        shopId = selectedShopId,
-                        source = NavigationSource.RANKING,
-                        returnTab = TabStatus.RANKING,
-                        showShopDetail = false,
-                    )
-                },
+                onShowShopOnMap = { navigationState.showMap() },
                 onEventNavigate = { event -> navigationState.showEvent(event.id) },
                 shopDetailContent = { shopId, onDismiss, onShowOnMap, onEventNavigate ->
                     ShopDetailRoute(

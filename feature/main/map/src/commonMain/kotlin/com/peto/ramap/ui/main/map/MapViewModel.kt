@@ -374,22 +374,7 @@ class MapViewModel(
     }
 
     private fun dismissRequestedShopLoad() {
-        cancelShopDetailLoad()
-        clearRequestedShopState()
-    }
-
-    private fun clearRequestedShopState() {
-        reduce {
-            when (val detailState = shopDetailState) {
-                is ShopDetailUiState.Loading ->
-                    if (detailState.shop == null) copy(shopDetailState = ShopDetailUiState.Closed) else this
-
-                is ShopDetailUiState.Error ->
-                    if (detailState.shop == null) copy(shopDetailState = ShopDetailUiState.Closed) else this
-
-                else -> this
-            }
-        }
+        dismissShopDetail()
     }
 
     private fun updateMyLocation(location: Location) {
