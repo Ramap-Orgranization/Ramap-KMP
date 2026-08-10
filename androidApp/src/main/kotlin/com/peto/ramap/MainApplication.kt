@@ -2,6 +2,7 @@ package com.peto.ramap
 
 import android.app.Application
 import android.content.pm.ApplicationInfo
+import co.touchlab.kermit.LogcatWriter
 import co.touchlab.kermit.Logger
 import com.google.firebase.analytics.FirebaseAnalytics
 import com.google.firebase.crashlytics.FirebaseCrashlytics
@@ -19,7 +20,13 @@ class MainApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         configureFirebase()
-        Logger.setLogWriters(listOf(CrashlyticsLogWriter()))
+        val isDebug = applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE != 0
+        Logger.setLogWriters(
+            buildList {
+                if (isDebug) add(LogcatWriter())
+                add(CrashlyticsLogWriter())
+            },
+        )
         FirebaseMessaging.getInstance().register()
         NaverMapSdk.getInstance(this).client =
             NaverMapSdk.NcpKeyClient(RamapSecrets.naverMapNcpKeyId)
