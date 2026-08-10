@@ -79,6 +79,7 @@ internal fun RankingContent(
             else ->
                 LazyColumn(
                     state = listState,
+                    overscrollEffect = null,
                     contentPadding = PaddingValues(start = 24.dp, end = 10.dp),
                     verticalArrangement = Arrangement.spacedBy(2.dp),
                 ) {
