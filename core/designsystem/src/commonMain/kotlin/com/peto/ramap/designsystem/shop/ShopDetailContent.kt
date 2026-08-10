@@ -141,7 +141,7 @@ fun ShopDetailContent(
 
                 ShopDetailSheetUiState.Closed,
                 is ShopDetailSheetUiState.Error,
-                    -> Unit
+                -> Unit
             }
         }
     }

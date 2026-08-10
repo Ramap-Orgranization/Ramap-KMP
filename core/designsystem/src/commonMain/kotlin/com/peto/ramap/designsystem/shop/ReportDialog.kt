@@ -40,7 +40,7 @@ import ramap.shared.generated.resources.shop_information_report_placeholder
 
 @Composable
 fun ReportDialog(
-    shopUiModel: RamenShopUiModel ,
+    shopUiModel: RamenShopUiModel,
     visible: Boolean,
     onDismissRequest: () -> Unit,
     onSubmit: (Set<ShopInformationField>, String) -> Unit,
