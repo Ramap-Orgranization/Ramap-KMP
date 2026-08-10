@@ -16,6 +16,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.peto.ramap.designsystem.component.RamenShopSearchResultList
 import com.peto.ramap.designsystem.component.SettingsListPage
+import com.peto.ramap.designsystem.component.ShopListCount
 import com.peto.ramap.designsystem.component.ShopListEmptyContent
 import com.peto.ramap.designsystem.dialog.CommonDialog
 import com.peto.ramap.designsystem.text.AppText
@@ -27,7 +28,7 @@ import com.peto.ramap.ui.base.ObserveAsEvents
 import com.peto.ramap.ui.hidden.contract.HiddenShopListIntent
 import com.peto.ramap.ui.hidden.contract.HiddenShopListSideEffect
 import com.peto.ramap.ui.hidden.contract.HiddenShopListUiState
-import com.peto.ramap.ui.resource.category.CategoryResourceMapper
+import com.peto.ramap.designsystem.resource.category.CategoryResourceMapper
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
@@ -123,6 +124,7 @@ private fun HiddenShopListContent(
         Column(
             modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
         ) {
+            ShopListCount(count = uiState.shops.size)
             RamenShopSearchResultList(
                 shops = uiState.shops,
                 onShopClick = onShopOpen,

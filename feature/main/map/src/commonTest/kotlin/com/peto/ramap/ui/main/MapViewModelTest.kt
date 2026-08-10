@@ -71,7 +71,7 @@ import com.peto.ramap.ui.main.map.contract.MapUiState
 import com.peto.ramap.ui.main.map.log.MapAnalytics
 import com.peto.ramap.ui.main.map.model.CameraPosition
 import com.peto.ramap.ui.main.map.model.LocationFocusStatus
-import com.peto.ramap.ui.main.map.model.ShopDetailUiState
+import com.peto.ramap.designsystem.shop.model.ShopDetailSheetUiState
 import com.peto.ramap.ui.main.map.search.SearchResultGuide
 import com.peto.ramap.ui.main.map.search.SearchUiModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -453,7 +453,7 @@ class MapViewModelTest {
             runCurrent()
 
             assertEquals(
-                ShopDetailUiState.Error(shop.id, shop),
+                ShopDetailSheetUiState.Error(shop.id, shop),
                 viewModel.uiState.value.shopDetailState,
             )
             assertEquals(shop, viewModel.uiState.value.selectedShop)
@@ -465,7 +465,7 @@ class MapViewModelTest {
             viewModel.dispatch(OnShopDetailDismissed)
             runCurrent()
 
-            assertEquals(ShopDetailUiState.Closed, viewModel.uiState.value.shopDetailState)
+            assertEquals(ShopDetailSheetUiState.Closed, viewModel.uiState.value.shopDetailState)
             assertEquals(null, viewModel.uiState.value.selectedShop)
             assertEquals(false, viewModel.uiState.value.hasShopDetailLoadFailed)
             assertEquals(false, viewModel.uiState.value.showBottomSheet)
@@ -710,7 +710,7 @@ class MapViewModelTest {
             runCurrent()
 
             assertEquals(
-                ShopDetailUiState.Loading(shop.id, shop = null),
+                ShopDetailSheetUiState.Loading(shop.id, shop = null),
                 viewModel.uiState.value.shopDetailState,
             )
             assertEquals(true, viewModel.uiState.value.isShopDetailLoading)
@@ -820,7 +820,7 @@ class MapViewModelTest {
             runCurrent()
 
             assertEquals(
-                ShopDetailUiState.Error(shopId, shop = null),
+                ShopDetailSheetUiState.Error(shopId, shop = null),
                 viewModel.uiState.value.shopDetailState,
             )
             assertEquals(true, viewModel.uiState.value.hasShopDetailLoadFailed)
@@ -829,7 +829,7 @@ class MapViewModelTest {
             viewModel.dispatch(OnRequestedShopDismissed)
             runCurrent()
 
-            assertEquals(ShopDetailUiState.Closed, viewModel.uiState.value.shopDetailState)
+            assertEquals(ShopDetailSheetUiState.Closed, viewModel.uiState.value.shopDetailState)
             assertEquals(false, viewModel.uiState.value.hasShopDetailLoadFailed)
             assertEquals(false, viewModel.uiState.value.showBottomSheet)
         }
@@ -1339,10 +1339,8 @@ class MapViewModelTest {
                 advanceTimeBy(300)
                 runCurrent()
 
-                assertEquals(
-                    SearchResultGuide.SEARCH_EMPTY,
-                    viewModel.uiState.value.searchResultGuide,
-                )
+                assertEquals("", viewModel.uiState.value.search.input)
+                assertEquals(null, viewModel.uiState.value.searchResultGuide)
                 assertEquals(
                     showToastSideEffect(Res.string.search_result_empty_message),
                     awaitItem(),
@@ -1360,7 +1358,7 @@ class MapViewModelTest {
             )
         val uiState =
             MapUiState(
-                shopDetailState = ShopDetailUiState.Loading(hiddenShop.id, hiddenShop),
+                shopDetailState = ShopDetailSheetUiState.Loading(hiddenShop.id, hiddenShop),
                 hiddenShopIds = setOf(hiddenShop.id),
                 isBookmarkedView = true,
             )
@@ -1538,7 +1536,7 @@ class MapViewModelTest {
         }
 
     @Test
-    fun `검색 결과 바텀시트를 닫아도 검색어와 검색 결과는 유지한다`() =
+    fun `검색 결과 바텀시트를 닫으면 검색어와 검색 결과를 초기화한다`() =
         coroutinesTest {
             val searchShops =
                 RamenShops(
@@ -1560,15 +1558,41 @@ class MapViewModelTest {
             viewModel.dispatch(OnSearchResultsDismissed)
             runCurrent()
 
-            assertEquals("라멘", viewModel.uiState.value.search.input)
-            assertEquals(searchShops, viewModel.uiState.value.search.results)
-            assertEquals(searchShops, viewModel.uiState.value.markerShops)
+            assertEquals("", viewModel.uiState.value.search.input)
+            assertEquals(RamenShops(emptyMap()), viewModel.uiState.value.search.results)
             assertEquals(false, viewModel.uiState.value.showSearchResults)
             assertEquals(false, viewModel.uiState.value.showBottomSheet)
         }
 
     @Test
-    fun `동일 검색어로 다시 검색하면 재조회하지 않고 검색 결과 바텀시트를 다시 연다`() =
+    fun `단일 검색 결과 상세를 닫으면 검색어와 검색 결과를 초기화한다`() =
+        coroutinesTest {
+            val shop = ramenShopFixture(id = "single-search-shop")
+            val viewModel =
+                mapViewModel(
+                    ramenShopRepository =
+                        FakeRamenShopRepository(
+                            searchResult = RamenShops(mapOf(shop.id to shop)),
+                        ),
+                )
+
+            viewModel.dispatch(OnQueryChanged("라멘"))
+            advanceTimeBy(300)
+            runCurrent()
+
+            assertEquals(shop, viewModel.uiState.value.selectedShop)
+            assertEquals(true, viewModel.uiState.value.showBottomSheet)
+
+            viewModel.dispatch(OnShopDetailDismissed)
+            runCurrent()
+
+            assertEquals("", viewModel.uiState.value.search.input)
+            assertEquals(RamenShops(emptyMap()), viewModel.uiState.value.search.results)
+            assertEquals(false, viewModel.uiState.value.showBottomSheet)
+        }
+
+    @Test
+    fun `검색 결과를 닫은 뒤 같은 검색어로 다시 입력하면 재조회한다`() =
         coroutinesTest {
             val searchShops =
                 RamenShops(
@@ -1586,14 +1610,13 @@ class MapViewModelTest {
             viewModel.dispatch(OnSearchResultsDismissed)
             runCurrent()
             ramenShopRepository.requestedSearchQueries.clear()
-            val previousFocusRequestKey = viewModel.uiState.value.focusRequestKey
 
             viewModel.dispatch(OnQueryChanged("라멘"))
+            advanceTimeBy(300)
             runCurrent()
 
-            assertEquals(emptyList(), ramenShopRepository.requestedSearchQueries)
+            assertEquals(listOf(SearchQuery("라멘")), ramenShopRepository.requestedSearchQueries)
             assertEquals(searchShops, viewModel.uiState.value.search.results)
-            assertEquals(previousFocusRequestKey + 1, viewModel.uiState.value.focusRequestKey)
             assertEquals(searchShops, viewModel.uiState.value.focusShops)
             assertEquals(true, viewModel.uiState.value.showSearchResults)
             assertEquals(true, viewModel.uiState.value.showBottomSheet)
@@ -1933,7 +1956,7 @@ class MapViewModelTest {
                         input = "오레노",
                         results = RamenShops(listOf(selectedShop, otherShop).associateBy { it.id }),
                     ),
-                shopDetailState = ShopDetailUiState.Loading(selectedShop.id, selectedShop),
+                shopDetailState = ShopDetailSheetUiState.Loading(selectedShop.id, selectedShop),
             )
 
         assertEquals(RamenShops(listOf(selectedShop)), uiState.focusShops)
@@ -2557,7 +2580,8 @@ class MapViewModelTest {
                 ramenShopRepository.requestedSearchQueries,
             )
             assertEquals(RamenShops(emptyMap()), viewModel.uiState.value.searchResultShops)
-            assertEquals(SearchResultGuide.SEARCH_EMPTY, viewModel.uiState.value.searchResultGuide)
+            assertEquals("", viewModel.uiState.value.search.input)
+            assertEquals(null, viewModel.uiState.value.searchResultGuide)
             assertEquals(false, viewModel.uiState.value.showSearchResults)
             assertEquals(null, viewModel.uiState.value.placeFocusLocation)
         }
@@ -2577,7 +2601,8 @@ class MapViewModelTest {
             advanceTimeBy(300)
             runCurrent()
 
-            assertEquals(SearchResultGuide.SEARCH_EMPTY, viewModel.uiState.value.searchResultGuide)
+            assertEquals("", viewModel.uiState.value.search.input)
+            assertEquals(null, viewModel.uiState.value.searchResultGuide)
             assertEquals(null, viewModel.uiState.value.placeFocusLocation)
         }
 
@@ -2763,7 +2788,8 @@ class MapViewModelTest {
                     showToastSideEffect(Res.string.search_result_empty_message),
                     awaitItem(),
                 )
-                assertEquals(SearchResultGuide.SEARCH_EMPTY, viewModel.uiState.value.searchResultGuide)
+                assertEquals("", viewModel.uiState.value.search.input)
+                assertEquals(null, viewModel.uiState.value.searchResultGuide)
                 assertEquals(false, viewModel.uiState.value.showSearchResults)
                 assertEquals(false, viewModel.uiState.value.showBottomSheet)
                 assertEquals(
@@ -2828,6 +2854,7 @@ private fun mapViewModel(
             ramenShopRepository,
             shopWaitingSystemRepository,
         ),
+        FakeMapSearchHistoryStorage(),
         MapAnalytics(FakeAnalyticsTracker()),
         LoginAnalytics(FakeAnalyticsTracker(), FakeCrashReporter()),
     )

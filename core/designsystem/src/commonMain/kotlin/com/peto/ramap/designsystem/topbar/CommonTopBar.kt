@@ -25,10 +25,10 @@ fun CommonTopBar(
         modifier = modifier.fillMaxWidth(),
     ) {
         Box(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .height(40.dp),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                    .height(30.dp),
         ) {
             Box(
                 modifier =

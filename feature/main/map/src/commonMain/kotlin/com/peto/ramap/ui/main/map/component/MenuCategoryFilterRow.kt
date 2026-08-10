@@ -10,7 +10,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.peto.ramap.designsystem.component.CategoryFilterChip
 import com.peto.ramap.domain.model.shop.Category
-import com.peto.ramap.ui.resource.category.CategoryResourceMapper
+import com.peto.ramap.designsystem.resource.category.CategoryResourceMapper
 import org.jetbrains.compose.resources.stringResource
 
 @Composable

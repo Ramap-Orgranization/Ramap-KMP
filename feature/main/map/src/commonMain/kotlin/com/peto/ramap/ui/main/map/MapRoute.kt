@@ -3,6 +3,9 @@ package com.peto.ramap.ui.main.map
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.peto.ramap.designsystem.toast.ToastManager
@@ -24,6 +27,9 @@ import com.peto.ramap.ui.main.map.contract.MapIntent.OnLoginSelectionDismissed
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnLoginTypeSelected
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnMyLocationChanged
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnQueryChanged
+import com.peto.ramap.ui.main.map.contract.MapIntent.OnRecentSearchDeleted
+import com.peto.ramap.ui.main.map.contract.MapIntent.OnRecentSearchSelected
+import com.peto.ramap.ui.main.map.contract.MapIntent.OnRecentSearchesCleared
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnRequestedShopDismissed
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnSearchResultsDismissed
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnSearchedShopSelected
@@ -49,6 +55,7 @@ fun MapRoute(
     onDetailDismissed: () -> Unit = {},
     onEventNavigate: (ShopEvent) -> Unit = {},
     requestedShopId: String? = null,
+    showShopDetail: Boolean = true,
     toastManager: ToastManager = koinInject(),
     appSettingsOpener: AppSettingsOpener = koinInject(),
     shopShareLinkFactory: ShopShareLinkFactory = koinInject(),
@@ -57,6 +64,7 @@ fun MapRoute(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val coroutineScope = rememberCoroutineScope()
+    var shouldShowShopDetail by remember(requestedShopId, showShopDetail) { mutableStateOf(showShopDetail) }
 
     LaunchedEffect(requestedShopId) {
         if (requestedShopId == null) {
@@ -97,6 +105,7 @@ fun MapRoute(
                 }
             },
             onShopSelected = { shop, shouldFocus, source ->
+                shouldShowShopDetail = true
                 viewModel.dispatch(OnShopSelected(shop, shouldFocus, source))
             },
             onPlaceSelected = { viewModel.dispatch(OnSearchedShopSelected(it)) },
@@ -116,6 +125,13 @@ fun MapRoute(
                 onDetailDismissed()
             },
             onQueryChanged = { viewModel.dispatch(OnQueryChanged(it)) },
+            onRecentSearchSelected = { viewModel.dispatch(OnRecentSearchSelected(it)) },
+            onRecentSearchDeleted = { viewModel.dispatch(OnRecentSearchDeleted(it)) },
+            onRecentSearchesCleared = { viewModel.dispatch(OnRecentSearchesCleared) },
+            onRecentlyViewedShopSelected = {
+                shouldShowShopDetail = true
+                viewModel.dispatch(OnShopIdSelected(it))
+            },
             onSearchResultsDismissed = { viewModel.dispatch(OnSearchResultsDismissed) },
             onInitialLocationFocusConsumed = { viewModel.dispatch(OnInitialLocationFocusConsumed) },
             onSelectedShopFocusConsumed = { viewModel.dispatch(OnSelectedShopFocusConsumed) },
@@ -131,6 +147,7 @@ fun MapRoute(
             },
             onBookmarkedShopsToggle = { viewModel.dispatch(OnBookmarkedShopsToggled) },
             onEventClick = onEventNavigate,
+            showShopDetail = shouldShowShopDetail,
         )
     }
 }

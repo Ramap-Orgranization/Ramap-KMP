@@ -41,7 +41,7 @@ import com.peto.ramap.ui.bookmark.importation.contract.ImportationIntent
 import com.peto.ramap.ui.bookmark.importation.contract.ImportationSideEffect
 import com.peto.ramap.ui.bookmark.importation.contract.ImportationUiState
 import com.peto.ramap.ui.preview.RamenShopPreviewParameterProvider
-import com.peto.ramap.ui.resource.category.CategoryResourceMapper
+import com.peto.ramap.designsystem.resource.category.CategoryResourceMapper
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel

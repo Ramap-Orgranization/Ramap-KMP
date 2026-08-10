@@ -23,8 +23,8 @@ import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.RamapTheme
 import com.peto.ramap.ui.main.ranking.contract.RankingUiState
 import com.peto.ramap.ui.resource.area.AreaFilterResourceMapper
-import com.peto.ramap.ui.resource.category.CategoryResourceMapper
-import com.peto.ramap.ui.resource.format
+import com.peto.ramap.designsystem.resource.category.CategoryResourceMapper
+import com.peto.ramap.designsystem.resource.format
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.ranking_all_categories

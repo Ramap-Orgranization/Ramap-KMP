@@ -41,9 +41,7 @@ class MapAnalyticsTest {
                         .Location(0.0, 0.0),
                 kakaoPlaceUrl = null,
                 phone = null,
-                businessHours = null,
                 instagramUrl = null,
-                kakaoRating = null,
                 menuCategories =
                     com.peto.ramap.domain.model.shop
                         .MenuCategories(emptyList()),

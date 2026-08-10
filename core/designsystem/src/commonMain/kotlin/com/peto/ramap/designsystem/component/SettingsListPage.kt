@@ -71,7 +71,7 @@ fun SettingsListPage(
                         modifier = Modifier.fillMaxSize(),
                     )
 
-                showInitialLoading -> RamenLoadingIndicator(modifier = Modifier.fillMaxSize())
+                showInitialLoading -> ShopListSkeleton(modifier = Modifier.fillMaxSize())
                 else -> content()
             }
 

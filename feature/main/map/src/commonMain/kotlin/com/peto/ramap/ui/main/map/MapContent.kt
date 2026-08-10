@@ -1,6 +1,7 @@
 package com.peto.ramap.ui.main.map
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -18,7 +19,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -36,6 +36,7 @@ import com.peto.ramap.analytics.AnalyticsSource
 import com.peto.ramap.designsystem.button.AppButton
 import com.peto.ramap.designsystem.component.RamenShopSearchResultList
 import com.peto.ramap.designsystem.indicator.RamenLoadingIndicator
+import com.peto.ramap.designsystem.shop.ShopDetailContent
 import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.model.place.PlaceSearchResult
 import com.peto.ramap.domain.model.report.ShopInformationField
@@ -45,15 +46,17 @@ import com.peto.ramap.domain.model.shop.MapBounds
 import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
+import com.peto.ramap.platform.ExternalUriOpener
 import com.peto.ramap.ui.main.map.component.MapCircleIconButton
 import com.peto.ramap.ui.main.map.component.MenuCategoryFilterRow
+import com.peto.ramap.ui.main.map.component.RecentSearchHistory
 import com.peto.ramap.ui.main.map.component.SearchBar
 import com.peto.ramap.ui.main.map.component.SearchResultGuide
 import com.peto.ramap.ui.main.map.component.SearchResultList
-import com.peto.ramap.ui.main.map.component.ShopDetailSheet
 import com.peto.ramap.ui.main.map.contract.MapUiState
 import com.peto.ramap.ui.main.map.model.CameraPosition
-import com.peto.ramap.ui.resource.category.CategoryResourceMapper
+import com.peto.ramap.designsystem.resource.category.CategoryResourceMapper
+import com.peto.ramap.designsystem.resource.wating.toUiModel
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
@@ -77,6 +80,10 @@ internal fun MapContent(
     onShopDetailRetry: () -> Unit,
     onRequestedShopDismissed: () -> Unit,
     onQueryChanged: (String) -> Unit,
+    onRecentSearchSelected: (String) -> Unit,
+    onRecentSearchDeleted: (String) -> Unit,
+    onRecentSearchesCleared: () -> Unit,
+    onRecentlyViewedShopSelected: (String) -> Unit,
     onSearchResultsDismissed: () -> Unit,
     onInitialLocationFocusConsumed: () -> Unit,
     onSelectedShopFocusConsumed: () -> Unit,
@@ -90,12 +97,13 @@ internal fun MapContent(
     onEventClick: (ShopEvent) -> Unit,
     onReportSubmit: (Set<ShopInformationField>, String) -> Unit,
     onBookmarkedShopsToggle: () -> Unit,
+    showShopDetail: Boolean,
 ) {
     val selectedShop: RamenShop? = uiState.selectedShop
     val focusManager = LocalFocusManager.current
     val density = LocalDensity.current
     val isImeVisible = WindowInsets.ime.getBottom(density) > 0
-    var wasImeVisible by remember { mutableStateOf(false) }
+    var isSearchFocused by remember { mutableStateOf(false) }
 
     val searchResultSheetState = rememberModalBottomSheetState()
 
@@ -106,21 +114,15 @@ internal fun MapContent(
     val searchBarTopPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
     val searchBarHeight = 52.dp
 
-    LaunchedEffect(isImeVisible) {
-        if (wasImeVisible && !isImeVisible) {
-            focusManager.clearFocus()
-        }
-        wasImeVisible = isImeVisible
-    }
-
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         val detailBottomSheetMaxHeight = maxHeight - searchBarTopPadding - searchBarHeight
 
         NavigationBackHandler(
             state = backEventState,
-            isBackEnabled = isBackEnabled && uiState.showBottomSheet,
+            isBackEnabled = isBackEnabled && (isSearchFocused || uiState.showBottomSheet),
             onBackCompleted = {
                 when {
+                    isSearchFocused -> focusManager.clearFocus()
                     selectedShop != null -> onShopDetailDismissed()
                     uiState.hasShopDetailLoadFailed -> onRequestedShopDismissed()
 
@@ -156,9 +158,17 @@ internal fun MapContent(
 
         Column(
             modifier =
-                Modifier
-                    .padding(top = searchBarTopPadding)
-                    .padding(horizontal = 10.dp),
+                if (isSearchFocused) {
+                    Modifier
+                        .fillMaxSize()
+                        .background(CommonColor.White)
+                        .padding(top = searchBarTopPadding)
+                        .padding(horizontal = 10.dp)
+                } else {
+                    Modifier
+                        .padding(top = searchBarTopPadding)
+                        .padding(horizontal = 10.dp)
+                },
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -167,34 +177,56 @@ internal fun MapContent(
                 SearchBar(
                     query = uiState.search.input,
                     onQueryChange = onQueryChanged,
+                    onFocusChanged = { isSearchFocused = it },
+                    isSearchMode = isSearchFocused,
                     modifier = Modifier.weight(1f),
                 )
 
-                BookmarkedFilterButton(
-                    isActive = uiState.isBookmarkedView,
-                    onClick = onBookmarkedShopsToggle,
-                    modifier = Modifier.padding(top = 5.dp),
-                )
+                if (!isSearchFocused) {
+                    BookmarkedFilterButton(
+                        isActive = uiState.isBookmarkedView,
+                        onClick = onBookmarkedShopsToggle,
+                        modifier = Modifier.padding(top = 5.dp),
+                    )
+                }
             }
 
-            MenuCategoryFilterRow(
-                selectedCategories = uiState.filters,
-                onCategoryClick = onCategoryFilterToggled,
-            )
-
-            if (uiState.hasViewportLoadFailed) {
-                AppButton(
-                    text = stringResource(Res.string.retry_action),
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(top = 8.dp),
-                    onClick = onViewportLoadRetry,
+            if (isSearchFocused) {
+                RecentSearchHistory(
+                    searches = uiState.recentSearches,
+                    viewedShops = uiState.recentlyViewedShops,
+                    onSearchSelected = { query ->
+                        focusManager.clearFocus()
+                        onRecentSearchSelected(query)
+                    },
+                    onSearchDeleted = onRecentSearchDeleted,
+                    onSearchesCleared = onRecentSearchesCleared,
+                    onViewedShopSelected = onRecentlyViewedShopSelected,
+                    categoryLabel = { category ->
+                        stringResource(CategoryResourceMapper.label(category))
+                    },
+                    modifier = Modifier.weight(1f).verticalScroll(rememberScrollState()),
                 )
+            } else {
+                MenuCategoryFilterRow(
+                    selectedCategories = uiState.filters,
+                    onCategoryClick = onCategoryFilterToggled,
+                )
+
+                if (uiState.hasViewportLoadFailed) {
+                    AppButton(
+                        text = stringResource(Res.string.retry_action),
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(top = 8.dp),
+                        onClick = onViewportLoadRetry,
+                    )
+                }
             }
         }
 
-        if (uiState.showSearchResults) {
+        if (!isSearchFocused && uiState.showSearchResults) {
             ModalBottomSheet(
                 onDismissRequest = onSearchResultsDismissed,
                 sheetState = searchResultSheetState,
@@ -231,11 +263,18 @@ internal fun MapContent(
             }
         }
 
-        ShopDetailSheet(
-            uiState = uiState,
+        ShopDetailContent(
+            state =
+                uiState.shopDetailState,
+            visible = showShopDetail,
             isBackEnabled = isBackEnabled,
             maxHeight = detailBottomSheetMaxHeight,
-            onDismiss = {
+            waitingSystem = selectedShop?.let { uiState.shopWaiting[it.id].toUiModel() },
+            isBookmarked = selectedShop?.id in uiState.bookmarkedShopIds,
+            isNotificationEnabled = selectedShop?.id in uiState.notificationShopIds,
+            isHidden = selectedShop?.id in uiState.hiddenShopIds,
+            isLoggedIn = uiState.isLoggedIn,
+            onDismissRequest = {
                 if (selectedShop != null) onShopDetailDismissed() else onRequestedShopDismissed()
             },
             onRetry = onShopDetailRetry,
@@ -244,6 +283,20 @@ internal fun MapContent(
             onHiddenToggled = onHiddenToggled,
             onShopShareClick = onShopShareClick,
             onShopMapLinkClick = onShopMapLinkClick,
+            onPhoneClick = { ExternalUriOpener.open("tel:$it") },
+            onWaitingClick = ExternalUriOpener::open,
+            shouldShowExternalLink = ExternalUriOpener::isSupportedWebUri,
+            onExternalLinkClick = ExternalUriOpener::open,
+            isAppleMapsAvailable = ExternalUriOpener.isAppleMapsAvailable,
+            onAppleMapsClick = { shop ->
+                onShopMapLinkClick(shop, "apple")
+                ExternalUriOpener.openAppleMaps(
+                    name = shop.name,
+                    address = shop.address,
+                    latitude = shop.location.lat,
+                    longitude = shop.location.lng,
+                )
+            },
             onEventClick = onEventClick,
             onReportSubmit = onReportSubmit,
         )

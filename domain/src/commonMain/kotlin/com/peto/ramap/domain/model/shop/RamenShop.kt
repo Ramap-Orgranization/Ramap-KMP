@@ -9,14 +9,13 @@ data class RamenShop(
     val kakaoPlaceUrl: String?,
     val naverPlaceUrl: String? = null,
     val phone: String?,
-    val businessHours: String?,
     val instagramUrl: String?,
-    val kakaoRating: Double?,
     val menuCategories: MenuCategories,
     val isVisible: Boolean,
     val createdAt: String,
     val updatedAt: String,
     val instagramProfileImageUrl: String? = null,
+    val businessHoursDetails: BusinessHours? = null,
 ) {
     val hasCategory: Boolean
         get() = menuCategories.hasCategory

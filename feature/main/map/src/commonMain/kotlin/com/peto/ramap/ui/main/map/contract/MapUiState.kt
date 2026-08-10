@@ -14,12 +14,12 @@ import com.peto.ramap.ui.loading.LoadableState
 import com.peto.ramap.ui.main.map.config.DefaultMapConfig
 import com.peto.ramap.ui.main.map.model.CameraPosition
 import com.peto.ramap.ui.main.map.model.LocationFocusStatus
-import com.peto.ramap.ui.main.map.model.ShopDetailUiState
+import com.peto.ramap.designsystem.shop.model.ShopDetailSheetUiState
 import com.peto.ramap.ui.main.map.search.SearchResultGuide
 import com.peto.ramap.ui.main.map.search.SearchUiModel
 
 data class MapUiState(
-    val shopDetailState: ShopDetailUiState = ShopDetailUiState.Closed,
+    val shopDetailState: ShopDetailSheetUiState = ShopDetailSheetUiState.Closed,
     /** 지도 화면의 작업별 로딩 카운트. */
     override val loadState: LoadState = LoadState(),
     /**
@@ -34,6 +34,8 @@ data class MapUiState(
      * 검색창 입력값, 검색 결과, 검색 결과의 소비 상태.
      */
     val search: SearchUiModel = SearchUiModel(),
+    val recentSearches: List<String> = emptyList(),
+    val recentlyViewedShops: RamenShops = RamenShops(emptyMap()),
     /**
      * 매장 id별 웨이팅 시스템 정보.
      */
@@ -81,23 +83,23 @@ data class MapUiState(
     val selectedShop: RamenShop?
         get() =
             when (val state = shopDetailState) {
-                ShopDetailUiState.Closed -> null
-                is ShopDetailUiState.Loading -> state.shop
-                is ShopDetailUiState.Content -> state.detail.shop
-                is ShopDetailUiState.Error -> state.shop
+                ShopDetailSheetUiState.Closed -> null
+                is ShopDetailSheetUiState.Loading -> state.shop
+                is ShopDetailSheetUiState.Content -> state.detail.shop
+                is ShopDetailSheetUiState.Error -> state.shop
             }
 
     val shopDetail: ShopDetail?
-        get() = (shopDetailState as? ShopDetailUiState.Content)?.detail
+        get() = (shopDetailState as? ShopDetailSheetUiState.Content)?.detail
 
     val isShopDetailLoading: Boolean
-        get() = shopDetailState is ShopDetailUiState.Loading
+        get() = shopDetailState is ShopDetailSheetUiState.Loading
 
     val isSearchLoading: Boolean
         get() = loadState.isLoading(MapLoadKey.Search)
 
     val hasShopDetailLoadFailed: Boolean
-        get() = shopDetailState is ShopDetailUiState.Error
+        get() = shopDetailState is ShopDetailSheetUiState.Error
 
     /** 로딩 카운트만 교체한 새 지도 UI 상태를 반환한다. */
     override fun withLoadingState(loadState: LoadState): MapUiState = copy(loadState = loadState)

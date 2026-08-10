@@ -18,17 +18,18 @@ import com.peto.ramap.designsystem.card.EventCard
 import com.peto.ramap.designsystem.card.SectionCard
 import com.peto.ramap.designsystem.component.RamenShopSearchResultList
 import com.peto.ramap.designsystem.component.SettingsListPage
+import com.peto.ramap.designsystem.component.ShopListCount
 import com.peto.ramap.designsystem.component.ShopListEmptyContent
 import com.peto.ramap.designsystem.dialog.CommonDialog
 import com.peto.ramap.designsystem.text.AppText
+import com.peto.ramap.designsystem.text.eventDateText
 import com.peto.ramap.designsystem.toast.ToastManager
 import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.ui.base.ObserveAsEvents
-import com.peto.ramap.ui.component.eventDateText
-import com.peto.ramap.ui.resource.category.CategoryResourceMapper
+import com.peto.ramap.designsystem.resource.category.CategoryResourceMapper
 import com.peto.ramap.ui.subscribed.contract.SubscribedShopListIntent
 import com.peto.ramap.ui.subscribed.contract.SubscribedShopListSideEffect
 import com.peto.ramap.ui.subscribed.contract.SubscribedShopListUiState
@@ -133,6 +134,7 @@ private fun SubscribedShopListContent(
         Column(
             modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
         ) {
+            ShopListCount(count = uiState.shops.size)
             if (uiState.subscribedEvents.isNotEmpty()) {
                 SectionCard(
                     title = stringResource(Res.string.top_level_tab_event),

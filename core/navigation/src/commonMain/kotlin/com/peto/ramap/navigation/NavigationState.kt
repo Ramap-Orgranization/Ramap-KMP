@@ -114,12 +114,14 @@ class NavigationState(
         shopId: String,
         source: NavigationSource? = null,
         returnTab: TabStatus? = null,
+        showShopDetail: Boolean = true,
     ) {
         lastNavigationSource = source
         val mapRoute =
             ScreenRoutes.TabRoutes(
                 shopId = shopId,
                 returnTab = returnTab,
+                showShopDetail = showShopDetail,
             )
         val mapBackStack = backStacks.getValue(TabStatus.MAP)
         val isRequestedShopAlreadyShown =

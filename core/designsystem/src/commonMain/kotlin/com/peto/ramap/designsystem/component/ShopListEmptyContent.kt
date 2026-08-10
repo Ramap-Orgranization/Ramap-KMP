@@ -15,8 +15,23 @@ import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.GrayColor
 import org.jetbrains.compose.resources.painterResource
+import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.laduck_loading_walking
+import ramap.shared.generated.resources.shop_list_count
+
+@Composable
+fun ShopListCount(
+    count: Int,
+    modifier: Modifier = Modifier,
+) {
+    AppText(
+        text = stringResource(Res.string.shop_list_count, count),
+        style = AppTextStyle.B1,
+        color = GrayColor.C500,
+        modifier = modifier.padding(horizontal = 24.dp, vertical = 8.dp),
+    )
+}
 
 @Composable
 fun ShopListEmptyContent(

@@ -1,5 +1,6 @@
 package com.peto.ramap.ui.resource
 
+import com.peto.ramap.designsystem.resource.UiText
 import com.peto.ramap.domain.model.shop.AdministrativeArea
 import com.peto.ramap.domain.model.shop.AdministrativeDistrict
 import com.peto.ramap.domain.model.shop.AreaFilter

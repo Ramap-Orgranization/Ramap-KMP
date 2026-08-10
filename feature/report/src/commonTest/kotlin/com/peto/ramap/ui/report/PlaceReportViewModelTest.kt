@@ -1,6 +1,7 @@
 package com.peto.ramap.ui.report
 
 import app.cash.turbine.test
+import com.peto.ramap.core.result.RamapError
 import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.coroutinesTest
 import com.peto.ramap.designsystem.toast.model.ToastData
@@ -22,6 +23,7 @@ import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.location_permission_enable_message
+import ramap.shared.generated.resources.place_report_failure_message
 import ramap.shared.generated.resources.place_report_invalid_url_message
 import ramap.shared.generated.resources.place_report_location_unavailable_message
 import kotlin.test.Test
@@ -77,6 +79,42 @@ class PlaceReportViewModelTest {
 
             assertFalse(viewModel.uiState.value.isSubmitting)
             assertEquals(1, reportRepository.placeReports.size)
+        }
+
+    @Test
+    fun `기존 장소 검색에 실패하면 오류 토스트를 보여주고 제보하지 않는다`() =
+        coroutinesTest {
+            val reportRepository = FakeShopReportRepository()
+            val viewModel =
+                placeReportViewModel(
+                    ramenShopRepository =
+                        FakeRamenShopRepository(
+                            error = RamapError.Network(IllegalStateException("offline")),
+                        ),
+                    reportRepository = reportRepository,
+                )
+            val sharedPlaceText =
+                """[카카오맵] 신멘
+                |경기 안양시 동안구 호성로 20
+                |https://kko.to/hgONCY9DKH
+                """.trimMargin()
+
+            viewModel.sideEffect.test {
+                viewModel.dispatch(PlaceReportIntent.OnPlaceUrlChanged(sharedPlaceText))
+                viewModel.dispatch(PlaceReportIntent.OnPlaceReportSubmit)
+
+                assertEquals(
+                    PlaceReportSideEffect.ShowToast(
+                        ToastData(
+                            Res.string.place_report_failure_message,
+                            ToastType.ERROR,
+                        ),
+                    ),
+                    awaitItem(),
+                )
+            }
+
+            assertEquals(0, reportRepository.placeReports.size)
         }
 
     @Test
@@ -283,12 +321,13 @@ class PlaceReportViewModelTest {
 }
 
 private fun placeReportViewModel(
+    ramenShopRepository: FakeRamenShopRepository = FakeRamenShopRepository(),
     currentLocationStore: CurrentLocationStore = CurrentLocationStore(),
     reverseGeocoder: ReverseGeocoder = ReverseGeocoder { RamapResult.Success("") },
     reportRepository: FakeShopReportRepository = FakeShopReportRepository(),
     currentLocationProvider: CurrentLocationProvider = CurrentLocationProvider { null },
 ) = PlaceReportViewModel(
-    ramenShopRepository = FakeRamenShopRepository(),
+    ramenShopRepository = ramenShopRepository,
     reportRepository = reportRepository,
     currentLocationStore = currentLocationStore,
     reverseGeocoder = reverseGeocoder,

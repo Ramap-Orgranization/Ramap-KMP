@@ -24,13 +24,13 @@ import androidx.compose.ui.unit.dp
 import com.peto.ramap.designsystem.card.EventCard
 import com.peto.ramap.designsystem.image.RemoteShopImage
 import com.peto.ramap.designsystem.text.AppText
+import com.peto.ramap.designsystem.text.eventDateText
 import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.model.event.ShopEventType
 import com.peto.ramap.extension.noRippleClickable
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.RamapTheme
-import com.peto.ramap.ui.component.eventDateText
 
 internal fun eventSection(
     scope: LazyListScope,

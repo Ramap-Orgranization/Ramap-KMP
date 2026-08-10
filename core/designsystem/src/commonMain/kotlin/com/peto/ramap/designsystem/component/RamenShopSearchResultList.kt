@@ -171,10 +171,8 @@ private fun RamenShopSearchResultListPreview() {
                             location = Location(lat = 37.5, lng = 127.0),
                             kakaoPlaceUrl = null,
                             phone = null,
-                            businessHours = null,
                             instagramUrl = null,
                             instagramProfileImageUrl = null,
-                            kakaoRating = 4.5,
                             menuCategories =
                                 MenuCategories(
                                     listOf(
@@ -194,10 +192,8 @@ private fun RamenShopSearchResultListPreview() {
                             location = Location(lat = 37.55, lng = 126.9),
                             kakaoPlaceUrl = null,
                             phone = null,
-                            businessHours = null,
                             instagramUrl = null,
                             instagramProfileImageUrl = null,
-                            kakaoRating = 4.2,
                             menuCategories = MenuCategories(emptyList()),
                             isVisible = true,
                             createdAt = "",
