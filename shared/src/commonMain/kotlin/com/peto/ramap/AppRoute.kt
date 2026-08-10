@@ -1,15 +1,10 @@
 package com.peto.ramap
 
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
-import androidx.compose.ui.Modifier
 import com.peto.ramap.deeplink.DeepLinkEntryPoint
 import com.peto.ramap.deeplink.DeepLinkEvent
 import com.peto.ramap.designsystem.toast.ToastManager
@@ -114,41 +109,32 @@ internal fun AppRoute(
                     navigationState.showEvent(event.id)
                 },
                 requestedShopId = route.shopId,
+                showShopDetail = route.showShopDetail,
                 viewModel = mapViewModel,
             )
         },
         rankingScreen = {
-            var rankingDetailShopId by rememberSaveable { mutableStateOf<String?>(null) }
-            Box(modifier = Modifier.fillMaxSize()) {
-                RankingRoute(
-                    onShopClick = { shopId ->
-                        rankingDetailShopId = shopId
-                    },
-                    onFindShopClick = {
-                        rankingDetailShopId = null
-                        navigationState.showMap()
-                    },
-                )
-                rankingDetailShopId?.let { shopId ->
+            RankingRoute(
+                onFindShopClick = navigationState::showMap,
+                onShowShopOnMap = { selectedShopId ->
+                    navigationState.showShopOnMap(
+                        shopId = selectedShopId,
+                        source = NavigationSource.RANKING,
+                        returnTab = TabStatus.RANKING,
+                        showShopDetail = false,
+                    )
+                },
+                onEventNavigate = { event -> navigationState.showEvent(event.id) },
+                shopDetailContent = { shopId, onDismiss, onShowOnMap, onEventNavigate ->
                     ShopDetailRoute(
                         shopId = shopId,
                         viewModel = mapViewModel,
-                        onDismiss = { rankingDetailShopId = null },
-                        onShowOnMap = { selectedShopId ->
-                            rankingDetailShopId = null
-                            navigationState.showShopOnMap(
-                                shopId = selectedShopId,
-                                source = NavigationSource.RANKING,
-                                returnTab = TabStatus.RANKING,
-                            )
-                        },
-                        onEventNavigate = { event ->
-                            rankingDetailShopId = null
-                            navigationState.showEvent(event.id)
-                        },
+                        onDismiss = onDismiss,
+                        onShowOnMap = onShowOnMap,
+                        onEventNavigate = { event -> onEventNavigate(event) },
                     )
-                }
-            }
+                },
+            )
         },
         myScreen = {
             MyTabRoute(

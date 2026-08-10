@@ -42,6 +42,7 @@ import ramap.shared.generated.resources.ranking_show_shop_on_map
 @Composable
 internal fun ShopDetailSheet(
     uiState: MapUiState,
+    visible: Boolean = true,
     isBackEnabled: Boolean,
     maxHeight: Dp,
     showRequestedLoadingInSheet: Boolean = false,
@@ -63,7 +64,7 @@ internal fun ShopDetailSheet(
         selectedShop != null ||
             (showRequestedLoadingInSheet && uiState.isShopDetailLoading)
 
-    if (shouldShowMainSheet && !uiState.hasShopDetailLoadFailed) {
+    if (visible && shouldShowMainSheet && !uiState.hasShopDetailLoadFailed) {
         CommonBottomSheet(
             visible = true,
             onDismissRequest = onDismiss,
@@ -122,7 +123,7 @@ internal fun ShopDetailSheet(
         }
     }
 
-    if (uiState.hasShopDetailLoadFailed) {
+    if (visible && uiState.hasShopDetailLoadFailed) {
         CommonBottomSheet(
             visible = true,
             onDismissRequest = onDismiss,

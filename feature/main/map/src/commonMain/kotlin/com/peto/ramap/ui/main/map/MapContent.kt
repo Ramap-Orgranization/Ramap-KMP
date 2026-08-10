@@ -95,6 +95,7 @@ internal fun MapContent(
     onEventClick: (ShopEvent) -> Unit,
     onReportSubmit: (Set<ShopInformationField>, String) -> Unit,
     onBookmarkedShopsToggle: () -> Unit,
+    showShopDetail: Boolean,
 ) {
     val selectedShop: RamenShop? = uiState.selectedShop
     val focusManager = LocalFocusManager.current
@@ -259,6 +260,7 @@ internal fun MapContent(
 
         ShopDetailSheet(
             uiState = uiState,
+            visible = showShopDetail,
             isBackEnabled = isBackEnabled,
             maxHeight = detailBottomSheetMaxHeight,
             onDismiss = {
