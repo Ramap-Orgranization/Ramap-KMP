@@ -85,8 +85,8 @@ fun ShopDetailContent(
             visible = visible,
             onDismissRequest = onDismissRequest,
             isBackEnabled = isBackEnabled,
-            config = CommonBottomSheetConfig(maxHeight = maxHeight),
-        ) {
+            config = CommonBottomSheetConfig(maxHeight = maxHeight, isDraggable = true),
+        ) { dragModifier ->
             when (state) {
                 is ShopDetailSheetUiState.Loading ->
                     RamenLoadingIndicator(
@@ -100,6 +100,7 @@ fun ShopDetailContent(
                     val shop = state.detail.shop
                     RamenShopOverview(
                         shop = shop,
+                        dragAreaModifier = dragModifier,
                         waitingSystem = waitingSystem,
                         isBookmarked = isBookmarked,
                         isNotificationEnabled = isNotificationEnabled,
@@ -150,8 +151,8 @@ fun ShopDetailContent(
             visible = visible,
             onDismissRequest = onDismissRequest,
             isBackEnabled = isBackEnabled,
-            config = CommonBottomSheetConfig(maxHeight = maxHeight),
-        ) {
+            config = CommonBottomSheetConfig(maxHeight = maxHeight, isDraggable = true),
+        ) { _ ->
             LoadErrorContent(
                 image = Res.drawable.laduck_error_crying,
                 title = stringResource(Res.string.map_shop_detail_error_title),

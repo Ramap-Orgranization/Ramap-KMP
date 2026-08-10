@@ -93,6 +93,7 @@ import ramap.shared.generated.resources.shop_detail_more_actions
 fun RamenShopOverview(
     shop: RamenShop,
     modifier: Modifier = Modifier,
+    dragAreaModifier: Modifier = Modifier,
     waitingSystem: WaitingSystemUiModel? = null,
     isBookmarked: Boolean = false,
     isNotificationEnabled: Boolean = false,
@@ -121,90 +122,96 @@ fun RamenShopOverview(
                 .padding(bottom = 15.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        event?.let {
-            AppText(
-                text = ShopEventResourceMapper.notice(it).format(),
-                modifier =
-                    Modifier
-                        .padding(top = 5.dp)
-                        .padding(horizontal = 24.dp)
-                        .noRippleClickable { onEventClick(it) },
-                style = AppTextStyle.B1,
-                color = SystemColor.Warning,
-            )
-        }
-        Column {
-            Row(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 24.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalAlignment = Alignment.Top,
-            ) {
-                RemoteShopImage(
-                    url = shop.instagramProfileImageUrl,
-                    modifier =
-                        Modifier
-                            .align(Alignment.CenterVertically)
-                            .border(
-                                width = 1.dp,
-                                color = GrayColor.C100,
-                                shape = RoundedCornerShape(999.dp),
-                            ).size(40.dp)
-                            .clip(CircleShape),
-                )
+        Column(modifier = dragAreaModifier, verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            event?.let {
                 AppText(
-                    text = shop.name,
+                    text = ShopEventResourceMapper.notice(it).format(),
                     modifier =
                         Modifier
-                            .weight(1f)
-                            .padding(top = 5.dp),
-                    style = AppTextStyle.H3,
-                    color = GrayColor.C500,
-                )
-                ShopOverflowMenu(
-                    shopId = shop.id,
-                    isBookmarked = isBookmarked,
-                    isNotificationEnabled = isNotificationEnabled,
-                    isHidden = isHidden,
-                    onBookmarkClick = onBookmarkClick,
-                    onNotificationClick = onNotificationClick,
-                    onHiddenClick = onHiddenClick,
-                    onShareClick = onShareClick,
+                            .padding(top = 5.dp)
+                            .padding(horizontal = 24.dp)
+                            .noRippleClickable { onEventClick(it) },
+                    style = AppTextStyle.B1,
+                    color = SystemColor.Warning,
                 )
             }
+            Column {
+                Row(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 24.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalAlignment = Alignment.Top,
+                ) {
+                    RemoteShopImage(
+                        url = shop.instagramProfileImageUrl,
+                        modifier =
+                            Modifier
+                                .align(Alignment.CenterVertically)
+                                .border(
+                                    width = 1.dp,
+                                    color = GrayColor.C100,
+                                    shape = RoundedCornerShape(999.dp),
+                                ).size(40.dp)
+                                .clip(CircleShape),
+                    )
+                    AppText(
+                        text = shop.name,
+                        modifier =
+                            Modifier
+                                .weight(1f)
+                                .padding(top = 5.dp),
+                        style = AppTextStyle.H3,
+                        color = GrayColor.C500,
+                    )
+                    ShopOverflowMenu(
+                        shopId = shop.id,
+                        isBookmarked = isBookmarked,
+                        isNotificationEnabled = isNotificationEnabled,
+                        isHidden = isHidden,
+                        onBookmarkClick = onBookmarkClick,
+                        onNotificationClick = onNotificationClick,
+                        onHiddenClick = onHiddenClick,
+                        onShareClick = onShareClick,
+                    )
+                }
 
-            MenuCategoryLabels(
-                menuCategories = shop.menuCategories,
-                categoryLabel = { category -> stringResource(CategoryResourceMapper.label(category)) },
-                style = AppTextStyle.B1,
-                modifier =
-                    Modifier
-                        .padding(top = 10.dp)
-                        .padding(horizontal = 24.dp),
-            )
+                MenuCategoryLabels(
+                    menuCategories = shop.menuCategories,
+                    categoryLabel = { category -> stringResource(CategoryResourceMapper.label(category)) },
+                    style = AppTextStyle.B1,
+                    modifier =
+                        Modifier
+                            .padding(top = 10.dp)
+                            .padding(horizontal = 24.dp),
+                )
+            }
+            Column(
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+                modifier = Modifier.padding(horizontal = 24.dp),
+            ) {
+                ShopInfoRow(
+                    label = stringResource(Res.string.shop_detail_label_address),
+                    value = shop.address,
+                    onClick = { clipboardManager.setText(AnnotatedString(shop.address)) },
+                    onClickLabel = stringResource(Res.string.shop_detail_copy_address),
+                )
+
+                shop.phone?.takeIf(String::isNotBlank)?.let { phone ->
+                    ShopInfoRow(
+                        label = stringResource(Res.string.shop_detail_label_phone),
+                        value = phone,
+                        onClick = { onPhoneClick(phone) },
+                    )
+                }
+            }
         }
 
         Column(
             verticalArrangement = Arrangement.spacedBy(10.dp),
             modifier = Modifier.padding(horizontal = 24.dp),
         ) {
-            ShopInfoRow(
-                label = stringResource(Res.string.shop_detail_label_address),
-                value = shop.address,
-                onClick = { clipboardManager.setText(AnnotatedString(shop.address)) },
-                onClickLabel = stringResource(Res.string.shop_detail_copy_address),
-            )
-
-            shop.phone?.takeIf(String::isNotBlank)?.let { phone ->
-                ShopInfoRow(
-                    label = stringResource(Res.string.shop_detail_label_phone),
-                    value = phone,
-                    onClick = { onPhoneClick(phone) },
-                )
-            }
-
             shop.businessHoursDetails?.let { businessHours ->
                 BusinessHoursCard(
                     businessHours = businessHours,

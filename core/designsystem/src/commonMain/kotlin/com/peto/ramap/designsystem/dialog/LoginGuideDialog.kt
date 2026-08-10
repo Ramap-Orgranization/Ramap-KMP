@@ -29,7 +29,7 @@ fun LoginGuideDialog(
     CommonBottomSheet(
         visible = visible,
         onDismissRequest = onDismiss,
-    ) {
+    ) { _ ->
         Column(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 24.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),

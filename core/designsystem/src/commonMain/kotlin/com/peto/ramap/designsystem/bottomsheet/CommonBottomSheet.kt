@@ -6,6 +6,9 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.draggable
+import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -27,12 +30,14 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.Dp
@@ -52,7 +57,7 @@ fun CommonBottomSheet(
     isBackEnabled: Boolean = true,
     modifier: Modifier = Modifier,
     config: CommonBottomSheetConfig = CommonBottomSheetConfig(),
-    content: @Composable ColumnScope.() -> Unit,
+    content: @Composable ColumnScope.(Modifier) -> Unit,
 ) {
     if (!visible) return
 
@@ -101,6 +106,7 @@ fun CommonBottomSheet(
             visible = internalVisible,
             config = config,
             sheetMaxHeight = sheetMaxHeight,
+            onDismissRequest = onDismissRequest,
             content = content,
         )
     }
@@ -133,8 +139,31 @@ private fun BottomSheetContent(
     visible: Boolean,
     config: CommonBottomSheetConfig,
     sheetMaxHeight: Dp,
-    content: @Composable ColumnScope.() -> Unit,
+    onDismissRequest: () -> Unit,
+    content: @Composable ColumnScope.(Modifier) -> Unit,
 ) {
+    var dragOffsetPx by remember { mutableFloatStateOf(0f) }
+    val density = LocalDensity.current
+    val dragModifier =
+        if (config.isDraggable) {
+            Modifier.draggable(
+                orientation = Orientation.Vertical,
+                state =
+                    rememberDraggableState { dragAmount ->
+                        dragOffsetPx = (dragOffsetPx + dragAmount).coerceAtLeast(0f)
+                    },
+                onDragStopped = {
+                    if (dragOffsetPx >= with(density) { DRAG_DISMISS_THRESHOLD.toPx() }) {
+                        onDismissRequest()
+                    } else {
+                        dragOffsetPx = 0f
+                    }
+                },
+            )
+        } else {
+            Modifier
+        }
+
     AnimatedVisibility(
         visible = visible,
         enter =
@@ -154,39 +183,56 @@ private fun BottomSheetContent(
             tonalElevation = 0.dp,
             shadowElevation = 16.dp,
             color = CommonColor.White,
-            modifier = Modifier.fillMaxWidth().heightIn(max = sheetMaxHeight),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = sheetMaxHeight)
+                    .graphicsLayer { translationY = dragOffsetPx },
         ) {
             Column(
                 modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 if (config.showHandle) {
-                    SheetHandle(config = config)
+                    SheetHandle(
+                        config = config,
+                        dragModifier = dragModifier,
+                    )
                 } else {
                     Spacer(Modifier.height(config.handleTopPadding + config.handleBottomPadding))
                 }
-                content()
+                content(dragModifier)
             }
         }
     }
 }
 
 @Composable
-private fun SheetHandle(config: CommonBottomSheetConfig) {
+private fun SheetHandle(
+    config: CommonBottomSheetConfig,
+    dragModifier: Modifier,
+) {
     Box(
         modifier =
             Modifier
-                .padding(
-                    top = config.handleTopPadding,
-                    bottom = config.handleBottomPadding,
-                ).width(32.dp)
-                .height(4.dp)
-                .background(
-                    color = GrayColor.C100,
-                    shape = RoundedCornerShape(2.dp),
-                ),
-    )
+                .fillMaxWidth()
+                .height(config.handleTopPadding + 4.dp + config.handleBottomPadding)
+                .then(dragModifier),
+        contentAlignment = Alignment.Center,
+    ) {
+        Box(
+            modifier =
+                Modifier
+                    .width(32.dp)
+                    .height(4.dp)
+                    .background(
+                        color = GrayColor.C100,
+                        shape = RoundedCornerShape(2.dp),
+                    ),
+        )
+    }
 }
 
 private const val SHEET_ENTER_DURATION_MILLIS = 220
 private const val EXIT_ANIMATION_DURATION_MILLIS = 180
+private val DRAG_DISMISS_THRESHOLD = 120.dp
