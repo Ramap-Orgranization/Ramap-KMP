@@ -36,6 +36,7 @@ import com.peto.ramap.analytics.AnalyticsSource
 import com.peto.ramap.designsystem.button.AppButton
 import com.peto.ramap.designsystem.component.RamenShopSearchResultList
 import com.peto.ramap.designsystem.indicator.RamenLoadingIndicator
+import com.peto.ramap.designsystem.shop.ShopDetailContent
 import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.model.place.PlaceSearchResult
 import com.peto.ramap.domain.model.report.ShopInformationField
@@ -45,16 +46,17 @@ import com.peto.ramap.domain.model.shop.MapBounds
 import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
+import com.peto.ramap.platform.ExternalUriOpener
 import com.peto.ramap.ui.main.map.component.MapCircleIconButton
 import com.peto.ramap.ui.main.map.component.MenuCategoryFilterRow
 import com.peto.ramap.ui.main.map.component.RecentSearchHistory
 import com.peto.ramap.ui.main.map.component.SearchBar
 import com.peto.ramap.ui.main.map.component.SearchResultGuide
 import com.peto.ramap.ui.main.map.component.SearchResultList
-import com.peto.ramap.ui.main.map.component.ShopDetailSheet
 import com.peto.ramap.ui.main.map.contract.MapUiState
 import com.peto.ramap.ui.main.map.model.CameraPosition
-import com.peto.ramap.ui.resource.category.CategoryResourceMapper
+import com.peto.ramap.designsystem.resource.category.CategoryResourceMapper
+import com.peto.ramap.designsystem.resource.wating.toUiModel
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
@@ -258,12 +260,18 @@ internal fun MapContent(
             }
         }
 
-        ShopDetailSheet(
-            uiState = uiState,
+        ShopDetailContent(
+            state =
+                uiState.shopDetailState,
             visible = showShopDetail,
             isBackEnabled = isBackEnabled,
             maxHeight = detailBottomSheetMaxHeight,
-            onDismiss = {
+            waitingSystem = selectedShop?.let { uiState.shopWaiting[it.id].toUiModel() },
+            isBookmarked = selectedShop?.id in uiState.bookmarkedShopIds,
+            isNotificationEnabled = selectedShop?.id in uiState.notificationShopIds,
+            isHidden = selectedShop?.id in uiState.hiddenShopIds,
+            isLoggedIn = uiState.isLoggedIn,
+            onDismissRequest = {
                 if (selectedShop != null) onShopDetailDismissed() else onRequestedShopDismissed()
             },
             onRetry = onShopDetailRetry,
@@ -272,6 +280,20 @@ internal fun MapContent(
             onHiddenToggled = onHiddenToggled,
             onShopShareClick = onShopShareClick,
             onShopMapLinkClick = onShopMapLinkClick,
+            onPhoneClick = { ExternalUriOpener.open("tel:$it") },
+            onWaitingClick = ExternalUriOpener::open,
+            shouldShowExternalLink = ExternalUriOpener::isSupportedWebUri,
+            onExternalLinkClick = ExternalUriOpener::open,
+            isAppleMapsAvailable = ExternalUriOpener.isAppleMapsAvailable,
+            onAppleMapsClick = { shop ->
+                onShopMapLinkClick(shop, "apple")
+                ExternalUriOpener.openAppleMaps(
+                    name = shop.name,
+                    address = shop.address,
+                    latitude = shop.location.lat,
+                    longitude = shop.location.lng,
+                )
+            },
             onEventClick = onEventClick,
             onReportSubmit = onReportSubmit,
         )

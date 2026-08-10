@@ -32,6 +32,7 @@ import com.peto.ramap.designsystem.card.SectionCard
 import com.peto.ramap.designsystem.component.LoadErrorContent
 import com.peto.ramap.designsystem.indicator.RamenLoadingIndicator
 import com.peto.ramap.designsystem.text.AppText
+import com.peto.ramap.designsystem.text.eventDateText
 import com.peto.ramap.designsystem.toast.ToastManager
 import com.peto.ramap.designsystem.toast.model.ToastAction
 import com.peto.ramap.designsystem.toast.model.ToastData
@@ -49,7 +50,6 @@ import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.InstagramColor
 import com.peto.ramap.theme.RamapTheme
 import com.peto.ramap.ui.base.ObserveAsEvents
-import com.peto.ramap.ui.component.eventDateText
 import com.peto.ramap.ui.main.event.component.EventMapActions
 import com.peto.ramap.ui.main.event.component.EventNotificationButton
 import com.peto.ramap.ui.main.event.component.EventTag
@@ -66,7 +66,7 @@ import com.peto.ramap.ui.main.event.contract.EventDetailSideEffect.EventUnavaila
 import com.peto.ramap.ui.main.event.contract.EventDetailSideEffect.RequestNotificationPermission
 import com.peto.ramap.ui.main.event.contract.EventDetailSideEffect.ShowToast
 import com.peto.ramap.ui.main.event.contract.EventDetailUiState
-import com.peto.ramap.ui.resource.event.ShopEventResourceMapper
+import com.peto.ramap.designsystem.resource.event.ShopEventResourceMapper
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource

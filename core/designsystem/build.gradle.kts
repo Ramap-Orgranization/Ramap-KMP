@@ -1,4 +1,7 @@
-plugins { id("ramap.kmp.compose") }
+plugins {
+    id("ramap.kmp.compose")
+    id("ramap.kmp.test")
+}
 
 compose.resources {
     publicResClass = true
@@ -6,6 +9,10 @@ compose.resources {
 }
 
 kotlin {
+    sourceSets.commonTest.dependencies {
+        implementation(projects.core.testing)
+    }
+
     androidLibrary {
         androidResources {
             enable = true

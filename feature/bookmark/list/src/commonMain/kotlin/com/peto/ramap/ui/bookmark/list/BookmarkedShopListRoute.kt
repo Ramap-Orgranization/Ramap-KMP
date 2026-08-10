@@ -23,7 +23,7 @@ import com.peto.ramap.ui.base.ObserveAsEvents
 import com.peto.ramap.ui.bookmark.list.contract.BookmarkedShopListIntent
 import com.peto.ramap.ui.bookmark.list.contract.BookmarkedShopListSideEffect
 import com.peto.ramap.ui.bookmark.list.contract.BookmarkedShopListUiState
-import com.peto.ramap.ui.resource.category.CategoryResourceMapper
+import com.peto.ramap.designsystem.resource.category.CategoryResourceMapper
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject

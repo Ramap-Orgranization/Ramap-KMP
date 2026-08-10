@@ -32,7 +32,7 @@ import com.peto.ramap.ui.main.event.list.contract.EventsIntent
 import com.peto.ramap.ui.main.event.list.contract.EventsSideEffect
 import com.peto.ramap.ui.main.event.list.contract.EventsUiState
 import com.peto.ramap.ui.main.event.list.preview.EventsPreviewParameterProvider
-import com.peto.ramap.ui.resource.event.ShopEventResourceMapper
+import com.peto.ramap.designsystem.resource.event.ShopEventResourceMapper
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel

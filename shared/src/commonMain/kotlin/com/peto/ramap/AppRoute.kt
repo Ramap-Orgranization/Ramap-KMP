@@ -36,7 +36,7 @@ import com.peto.ramap.ui.main.event.EventDetailRoute
 import com.peto.ramap.ui.main.event.list.EventsRoute
 import com.peto.ramap.ui.main.map.MapRoute
 import com.peto.ramap.ui.main.map.MapViewModel
-import com.peto.ramap.ui.main.map.ShopDetailRoute
+import com.peto.ramap.ui.main.map.ShopDetailHost
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnMapTabExited
 import com.peto.ramap.ui.main.my.MyTabRoute
 import com.peto.ramap.ui.main.ranking.RankingRoute
@@ -119,7 +119,7 @@ internal fun AppRoute(
                 onShowShopOnMap = { navigationState.showMap() },
                 onEventNavigate = { event -> navigationState.showEvent(event.id) },
                 shopDetailContent = { shopId, onDismiss, onShowOnMap, onEventNavigate ->
-                    ShopDetailRoute(
+                    ShopDetailHost(
                         shopId = shopId,
                         viewModel = mapViewModel,
                         onDismiss = onDismiss,

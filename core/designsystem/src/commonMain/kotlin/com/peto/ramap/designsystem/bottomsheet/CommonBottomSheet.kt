@@ -45,6 +45,7 @@ import androidx.navigationevent.compose.rememberNavigationEventState
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
 import kotlinx.coroutines.delay
+import kotlin.time.Duration.Companion.milliseconds
 
 @Composable
 fun CommonBottomSheet(
@@ -55,6 +56,8 @@ fun CommonBottomSheet(
     config: CommonBottomSheetConfig = CommonBottomSheetConfig(),
     content: @Composable ColumnScope.() -> Unit,
 ) {
+    if (!visible) return
+
     val focusManager = LocalFocusManager.current
     val density = LocalDensity.current
     val isImeVisible = WindowInsets.ime.getBottom(density) > 0
@@ -69,7 +72,7 @@ fun CommonBottomSheet(
             internalVisible = true
         } else {
             internalVisible = false
-            delay(EXIT_ANIMATION_DURATION_MILLIS.toLong())
+            delay(EXIT_ANIMATION_DURATION_MILLIS.toLong().milliseconds)
             isRendered = false
         }
     }

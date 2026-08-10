@@ -28,7 +28,7 @@ import com.peto.ramap.ui.base.ObserveAsEvents
 import com.peto.ramap.ui.hidden.contract.HiddenShopListIntent
 import com.peto.ramap.ui.hidden.contract.HiddenShopListSideEffect
 import com.peto.ramap.ui.hidden.contract.HiddenShopListUiState
-import com.peto.ramap.ui.resource.category.CategoryResourceMapper
+import com.peto.ramap.designsystem.resource.category.CategoryResourceMapper
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
