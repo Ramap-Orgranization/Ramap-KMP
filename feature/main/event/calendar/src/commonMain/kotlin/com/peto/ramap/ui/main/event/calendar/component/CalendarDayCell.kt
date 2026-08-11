@@ -1,7 +1,6 @@
 package com.peto.ramap.ui.main.event.calendar.component
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -84,10 +83,12 @@ internal fun CalendarDayCell(
                 }
                 if (!hasNotification && events.isNotEmpty()) {
                     EventDot(color = InstagramColor.Orange)
-                    if (events.size > 1) EventDot(
-                        color = InstagramColor.Pink,
-                        modifier = Modifier.padding(start = 2.dp),
-                    )
+                    if (events.size > 1) {
+                        EventDot(
+                            color = InstagramColor.Pink,
+                            modifier = Modifier.padding(start = 2.dp),
+                        )
+                    }
                 }
             }
         }
