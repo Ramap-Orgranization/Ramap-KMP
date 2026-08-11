@@ -120,7 +120,7 @@ class EventDetailViewModel(
                 )
             },
             request = {
-                ramenShopRepository.fetchActiveEvent(eventId)
+                ramenShopRepository.fetchEvent(eventId)
             },
             onSuccess = { event ->
                 handleLoadedEvent(
