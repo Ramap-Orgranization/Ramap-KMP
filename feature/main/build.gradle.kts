@@ -4,7 +4,8 @@ plugins {
 
 kotlin {
     sourceSets.commonMain.dependencies {
-        api(projects.feature.main.events)
+        api(projects.feature.main.event.list)
+        api(projects.feature.main.event.detail)
         api(projects.feature.main.map)
         api(projects.feature.main.ranking)
         api(projects.feature.main.my)
