@@ -129,7 +129,7 @@ internal fun EventsScreen(
                             stringResource(ShopEventResourceMapper.typeLabel(ShopEventType.SUMMER_LIMITED))
                         LazyColumn(
                             modifier = Modifier.fillMaxSize(),
-                            contentPadding = PaddingValues(bottom = 88.dp),
+                            contentPadding = PaddingValues(bottom = 5.dp),
                             verticalArrangement = Arrangement.spacedBy(12.dp),
                         ) {
                             eventSection(
