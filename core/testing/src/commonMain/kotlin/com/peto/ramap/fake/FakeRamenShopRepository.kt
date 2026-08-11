@@ -2,6 +2,7 @@ package com.peto.ramap.fake
 
 import com.peto.ramap.core.result.RamapError
 import com.peto.ramap.core.result.RamapResult
+import com.peto.ramap.domain.model.event.CalendarEventPage
 import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.model.shop.MapBounds
 import com.peto.ramap.domain.model.shop.RamenShops
@@ -16,6 +17,8 @@ class FakeRamenShopRepository(
     var error: RamapError? = null,
     var activeEvent: ShopEvent? = null,
     private val activeEvents: List<ShopEvent> = emptyList(),
+    private val calendarEvents: List<ShopEvent> = emptyList(),
+    private val calendarEventPage: CalendarEventPage? = null,
     var activeEventError: RamapError? = null,
     var activeEventsError: RamapError? = null,
     var activeEventsDelayMillis: Long = 0,
@@ -30,6 +33,8 @@ class FakeRamenShopRepository(
     var activeEventsRequestCount = 0
         private set
 
+    val requestedCalendarEventPageMonths = mutableListOf<String>()
+
     override suspend fun fetchActiveEvents(): RamapResult<List<ShopEvent>> {
         activeEventsRequestCount += 1
         delay(activeEventsDelayMillis)
@@ -39,6 +44,39 @@ class FakeRamenShopRepository(
     override suspend fun fetchActiveEvent(eventId: String): RamapResult<ShopEvent?> =
         (activeEventError ?: error)?.let { RamapResult.Error(it) }
             ?: RamapResult.Success(activeEvents.firstOrNull { it.id == eventId } ?: activeEvent)
+
+    override suspend fun fetchCalendarEvents(
+        startDate: String,
+        endDate: String,
+    ): RamapResult<List<ShopEvent>> = error?.let { RamapResult.Error(it) } ?: RamapResult.Success(calendarEvents)
+
+    override suspend fun fetchCalendarEventPage(monthStart: String): RamapResult<CalendarEventPage> {
+        requestedCalendarEventPageMonths += monthStart
+        return error?.let { RamapResult.Error(it) }
+            ?: RamapResult.Success(
+                calendarEventPage
+                    ?: CalendarEventPage(
+                        events = calendarEvents,
+                        hasPrevious = false,
+                        hasNext = false,
+                        notificationDates = emptyList(),
+                    ),
+            )
+    }
+
+    val invalidatedCalendarMonthStarts = mutableListOf<String>()
+
+    override fun invalidateCalendarEventPage(monthStart: String) {
+        invalidatedCalendarMonthStarts += monthStart
+    }
+
+    override suspend fun fetchEvent(eventId: String): RamapResult<ShopEvent?> =
+        (activeEventError ?: error)?.let { RamapResult.Error(it) }
+            ?: RamapResult.Success(
+                calendarEvents.firstOrNull { it.id == eventId }
+                    ?: activeEvents.firstOrNull { it.id == eventId }
+                    ?: activeEvent,
+            )
 
     val requestedBoundsHistory = mutableListOf<MapBounds>()
     val requestedShopIdsHistory = mutableListOf<Set<String>>()

@@ -2,6 +2,7 @@ package com.peto.ramap.data.repository
 
 import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.core.result.getOrThrow
+import com.peto.ramap.data.model.CalendarEventPageResponse
 import com.peto.ramap.data.model.ShopEventParticipantResponse
 import com.peto.ramap.data.model.ShopEventResponse
 import com.peto.ramap.domain.model.shop.Category
@@ -13,6 +14,7 @@ import com.peto.ramap.fake.FakeRamenShopDataSource
 import com.peto.ramap.fixture.BOUNDS_FIXTURE
 import com.peto.ramap.fixture.ramenShopResponseFixture
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.LocalDate
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -48,6 +50,69 @@ class DefaultRamenShopRepositoryTest {
             val events = repository.fetchActiveEvents().getOrThrow()
 
             assertEquals(listOf("today", "upcoming"), events.map { it.id })
+        }
+
+    @Test
+    fun `종료된 이벤트도 캘린더 이벤트 조회와 상세 조회에 포함한다`() =
+        runTest {
+            val repository =
+                DefaultRamenShopRepository(
+                    FakeRamenShopDataSource(
+                        calendarEventsResponses =
+                            listOf(
+                                shopEventResponse().copy(
+                                    id = "ended-event",
+                                    startDate = "2026-01-01",
+                                    endDate = "2026-01-02",
+                                ),
+                            ),
+                    ),
+                )
+
+            val events = repository.fetchCalendarEvents("2026-01-01", "2026-01-31").getOrThrow()
+            val event = repository.fetchEvent("ended-event").getOrThrow()
+
+            assertEquals(listOf("ended-event"), events.map { it.id })
+            assertEquals("ended-event", event?.id)
+        }
+
+    @Test
+    fun `캘린더 페이지 응답은 이벤트와 인접 월 경계를 매핑한다`() =
+        runTest {
+            val repository =
+                DefaultRamenShopRepository(
+                    FakeRamenShopDataSource(
+                        calendarEventPageResponse =
+                            CalendarEventPageResponse(
+                                events = listOf(shopEventResponse()),
+                                hasPrevious = true,
+                                hasNext = false,
+                                notificationDates = listOf("2026-07-15", "invalid-date"),
+                            ),
+                    ),
+                )
+
+            val page = repository.fetchCalendarEventPage("2026-07-01").getOrThrow()
+
+            assertEquals(listOf("event"), page.events.map { it.id })
+            assertEquals(true, page.hasPrevious)
+            assertEquals(false, page.hasNext)
+            assertEquals(listOf(LocalDate(2026, 7, 15)), page.notificationDates)
+        }
+
+    @Test
+    fun `캘린더 페이지는 월별로 캐시하고 무효화하면 재조회한다`() =
+        runTest {
+            val dataSource = FakeRamenShopDataSource()
+            val repository = DefaultRamenShopRepository(dataSource)
+
+            repository.fetchCalendarEventPage("2026-07-01")
+            repository.fetchCalendarEventPage("2026-07-01")
+            assertEquals(1, dataSource.calendarEventPageRequestCount)
+
+            repository.invalidateCalendarEventPage("2026-07-01")
+            repository.fetchCalendarEventPage("2026-07-01")
+            assertEquals(2, dataSource.calendarEventPageRequestCount)
         }
 
     @Test

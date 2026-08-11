@@ -23,6 +23,7 @@ fun NavigationRouter(
     mapScreen: @Composable (ScreenRoutes.TabRoutes) -> Unit,
     rankingScreen: @Composable () -> Unit,
     eventListScreen: @Composable () -> Unit,
+    eventCalendarScreen: @Composable () -> Unit,
     myScreen: @Composable () -> Unit,
     accountSettingsScreen: @Composable () -> Unit,
     informationScreen: @Composable () -> Unit,
@@ -50,6 +51,13 @@ fun NavigationRouter(
                     selectedTab = TabStatus.EVENT,
                     onTabSelected = onTabSelected,
                     content = eventListScreen,
+                )
+            }
+            entry<ScreenRoutes.EventCalendarRoutes> {
+                BottonNavigationTabScreen(
+                    selectedTab = TabStatus.EVENT,
+                    onTabSelected = onTabSelected,
+                    content = eventCalendarScreen,
                 )
             }
             entry<ScreenRoutes.RankingTabRoutes> {

@@ -7,5 +7,6 @@ kotlin {
         api(projects.core.analytics)
         api(projects.domain)
         api(libs.kotlinx.coroutines.test)
+        implementation(libs.kotlinx.datetime)
     }
 }

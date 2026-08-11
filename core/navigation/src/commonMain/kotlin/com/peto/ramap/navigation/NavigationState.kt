@@ -61,8 +61,13 @@ class NavigationState(
         currentBackStack.add(ScreenRoutes.EventDetailRoutes(eventId))
     }
 
+    fun showEventCalendar() = showOnce(ScreenRoutes.EventCalendarRoutes)
+
     fun showEventRoot() {
-        if (currentBackStack.lastOrNull() is ScreenRoutes.EventDetailRoutes) {
+        if (
+            currentBackStack.lastOrNull() is ScreenRoutes.EventDetailRoutes ||
+            currentBackStack.lastOrNull() is ScreenRoutes.EventCalendarRoutes
+        ) {
             currentBackStack.removeLastOrNull()
         }
         val eventBackStack = backStacks.getValue(TabStatus.EVENT)
