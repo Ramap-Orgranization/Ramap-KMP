@@ -5,6 +5,7 @@ import com.peto.ramap.domain.model.event.groupShopEventsByDate
 import com.peto.ramap.ui.loading.LoadableState
 import com.peto.ramap.ui.main.event.calendar.model.CalendarDayEvents
 import com.peto.ramap.ui.main.event.calendar.model.CalendarMonth
+import kotlinx.datetime.LocalDate
 import com.peto.ramap.ui.loading.LoadState as TaskLoadState
 
 data class EventCalendarUiState(
@@ -14,6 +15,7 @@ data class EventCalendarUiState(
     override val loadState: TaskLoadState = TaskLoadState(),
     val hasPreviousMonthEvents: Boolean = false,
     val hasNextMonthEvents: Boolean = false,
+    val notificationDates: List<LocalDate> = emptyList(),
 ) : LoadableState<EventCalendarUiState> {
     val eventDays: List<CalendarDayEvents>
         get() =

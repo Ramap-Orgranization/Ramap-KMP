@@ -275,6 +275,7 @@
     <string name="event_calendar_date_format">%1$d.%2$s.%3$s</string>
     <string name="event_calendar_legend_single">이벤트 1건</string>
     <string name="event_calendar_legend_multiple">이벤트 2건 이상</string>
+    <string name="event_calendar_notification">알림 예정</string>
     <string name="event_calendar_weekday_sunday">일</string>
     <string name="event_calendar_weekday_monday">월</string>
     <string name="event_calendar_weekday_tuesday">화</string>

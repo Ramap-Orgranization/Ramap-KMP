@@ -14,6 +14,7 @@ import com.peto.ramap.fake.FakeRamenShopDataSource
 import com.peto.ramap.fixture.BOUNDS_FIXTURE
 import com.peto.ramap.fixture.ramenShopResponseFixture
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.LocalDate
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -86,6 +87,7 @@ class DefaultRamenShopRepositoryTest {
                                 events = listOf(shopEventResponse()),
                                 hasPrevious = true,
                                 hasNext = false,
+                                notificationDates = listOf("2026-07-15", "invalid-date"),
                             ),
                     ),
                 )
@@ -95,6 +97,7 @@ class DefaultRamenShopRepositoryTest {
             assertEquals(listOf("event"), page.events.map { it.id })
             assertEquals(true, page.hasPrevious)
             assertEquals(false, page.hasNext)
+            assertEquals(listOf(LocalDate(2026, 7, 15)), page.notificationDates)
         }
 
     @Test

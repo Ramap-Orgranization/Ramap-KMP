@@ -10,6 +10,7 @@ import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.domain.model.shop.SearchQuery
 import com.peto.ramap.domain.repository.RamenShopRepository
 import com.peto.ramap.network.execute.invokeRequest
+import kotlinx.datetime.LocalDate
 
 internal class DefaultRamenShopRepository(
     private val dataSource: RamenShopDataSource,
@@ -42,6 +43,7 @@ internal class DefaultRamenShopRepository(
                     events = page.events.mapNotNull { it.toDomain() },
                     hasPrevious = page.hasPrevious,
                     hasNext = page.hasNext,
+                    notificationDates = page.notificationDates.mapNotNull { parseDate(it) },
                 )
             }
         if (result is RamapResult.Success) {
@@ -53,6 +55,8 @@ internal class DefaultRamenShopRepository(
     override fun invalidateCalendarEventPage(monthStart: String) {
         calendarEventPageCache.remove(monthStart)
     }
+
+    private fun parseDate(value: String): LocalDate? = runCatching { LocalDate.parse(value) }.getOrNull()
 
     override suspend fun fetchEvent(eventId: String): RamapResult<ShopEvent?> =
         invokeRequest {

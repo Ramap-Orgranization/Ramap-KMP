@@ -44,6 +44,7 @@ class EventCalendarViewModel(
             copy(
                 month = month,
                 events = emptyList(),
+                notificationDates = emptyList(),
                 hasPreviousMonthEvents = false,
                 hasNextMonthEvents = false,
                 showError = false,
@@ -67,6 +68,7 @@ class EventCalendarViewModel(
                         events = page.events,
                         hasPreviousMonthEvents = page.hasPrevious,
                         hasNextMonthEvents = page.hasNext,
+                        notificationDates = page.notificationDates,
                         showError = false,
                     )
                 }

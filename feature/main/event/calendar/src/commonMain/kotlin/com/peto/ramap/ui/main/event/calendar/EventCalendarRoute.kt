@@ -29,6 +29,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.peto.ramap.designsystem.component.LoadErrorContent
@@ -39,6 +41,7 @@ import com.peto.ramap.extension.noRippleClickable
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
+import com.peto.ramap.theme.RamapTheme
 import com.peto.ramap.ui.main.event.calendar.component.CalendarDayCell
 import com.peto.ramap.ui.main.event.calendar.component.CalendarEventsBottomSheet
 import com.peto.ramap.ui.main.event.calendar.component.CalendarLegend
@@ -46,6 +49,7 @@ import com.peto.ramap.ui.main.event.calendar.contract.EventCalendarIntent
 import com.peto.ramap.ui.main.event.calendar.contract.EventCalendarUiState
 import com.peto.ramap.ui.main.event.calendar.model.CalendarDaySelection
 import com.peto.ramap.ui.main.event.calendar.model.CalendarMonth
+import com.peto.ramap.ui.main.event.calendar.preview.EventCalendarPreviewParameterProvider
 import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.LocalDate
 import org.jetbrains.compose.resources.painterResource
@@ -158,6 +162,7 @@ internal fun EventCalendarScreen(
                         CalendarGrid(
                             month = uiState.month,
                             events = uiState.events,
+                            notificationDates = uiState.notificationDates,
                             hasPreviousMonthEvents = uiState.hasPreviousMonthEvents,
                             hasNextMonthEvents = uiState.hasNextMonthEvents,
                             onPreviousMonthClick = onPreviousMonthClick,
@@ -254,6 +259,7 @@ private fun CalendarTopBar(
 private fun CalendarGrid(
     month: CalendarMonth,
     events: List<ShopEvent>,
+    notificationDates: List<LocalDate>,
     hasPreviousMonthEvents: Boolean,
     hasNextMonthEvents: Boolean,
     onPreviousMonthClick: () -> Unit,
@@ -310,6 +316,7 @@ private fun CalendarGrid(
                             CalendarDayCell(
                                 date = it,
                                 events = events.filter { event -> event.occursOn(it) },
+                                hasNotification = it in notificationDates,
                                 onSingleEventClick = onSingleEventClick,
                                 onMultipleEventsClick = onMultipleEventsClick,
                             )
@@ -337,3 +344,20 @@ private fun weekdayLabel(dayOfWeek: DayOfWeek): String =
             DayOfWeek.SATURDAY -> Res.string.event_calendar_weekday_saturday
         },
     )
+
+@Preview(showBackground = true)
+@Composable
+private fun EventCalendarRoutePreview(
+    @PreviewParameter(EventCalendarPreviewParameterProvider::class) uiState: EventCalendarUiState,
+) {
+    RamapTheme {
+        EventCalendarScreen(
+            uiState = uiState,
+            onListClick = {},
+            onPreviousMonthClick = {},
+            onNextMonthClick = {},
+            onRetryClick = {},
+            onEventClick = {},
+        )
+    }
+}

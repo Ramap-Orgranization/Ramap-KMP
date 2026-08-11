@@ -59,6 +59,7 @@ class FakeRamenShopRepository(
                         events = calendarEvents,
                         hasPrevious = false,
                         hasNext = false,
+                        notificationDates = emptyList(),
                     ),
             )
     }
