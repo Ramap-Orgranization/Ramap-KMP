@@ -1,10 +1,44 @@
 package com.peto.ramap.domain.model.event
 
+import kotlinx.datetime.LocalDate
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 class ShopEventTest {
+    @Test
+    fun occursOnUsesInclusiveRangeAndRejectsInvalidDates() {
+        val event = event(startDate = "2024-02-28", endDate = "2024-03-01")
+
+        assertTrue(event.occursOn(LocalDate(2024, 2, 28)))
+        assertTrue(event.occursOn(LocalDate(2024, 3, 1)))
+        assertFalse(event.occursOn(LocalDate(2024, 3, 2)))
+        assertFalse(event(startDate = "2024-02-30", endDate = null).occursOn(LocalDate(2024, 2, 29)))
+    }
+
+    @Test
+    fun groupShopEventsByDateKeepsBoundariesAndOmitsEmptyDates() {
+        val first = event(startDate = "2024-02-28", endDate = "2024-03-01")
+        val second = event(startDate = "2024-03-01", endDate = "2024-03-01")
+
+        val grouped =
+            groupShopEventsByDate(
+                dates =
+                    listOf(
+                        LocalDate(2024, 2, 27),
+                        LocalDate(2024, 2, 28),
+                        LocalDate(2024, 3, 1),
+                    ),
+                events = listOf(first, second),
+            )
+
+        assertFalse(grouped.containsKey(LocalDate(2024, 2, 27)))
+        assertEquals(listOf(first), grouped[LocalDate(2024, 2, 28)])
+        assertEquals(listOf(first, second), grouped[LocalDate(2024, 3, 1)])
+    }
+
     @Test
     fun findsRegisteredPartnerForSingleUpcomingCollaboration() {
         assertEquals(
@@ -49,7 +83,7 @@ class ShopEventTest {
 
     private fun event(
         startDate: String = "2026-07-15",
-        endDate: String = "2026-07-15",
+        endDate: String? = "2026-07-15",
         isVenue: Boolean = true,
         venueShopName: String = "요아케",
         collaboratorShopId: String? = null,

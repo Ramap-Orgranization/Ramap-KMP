@@ -1,5 +1,7 @@
 package com.peto.ramap.domain.model.event
 
+import kotlinx.datetime.LocalDate
+
 data class ShopEvent(
     val id: String,
     val type: ShopEventType,
@@ -26,6 +28,12 @@ data class ShopEvent(
     val activeEventCount: Int = 1,
     val collaborationPartnerCount: Int? = null,
 ) {
+    fun occursOn(date: LocalDate): Boolean {
+        val start = runCatching { LocalDate.parse(startDate) }.getOrNull() ?: return false
+        val end = runCatching { LocalDate.parse(endDate ?: startDate) }.getOrNull() ?: return false
+        return start <= date && date <= end
+    }
+
     val upcomingCollaborationPartnerName: String?
         get() {
             if (
