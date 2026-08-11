@@ -11,11 +11,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 
 @Composable
-internal fun EventDot(color: Color) {
+internal fun EventDot(
+    color: Color,
+    modifier: Modifier = Modifier,
+) {
     Box(
         modifier =
-            Modifier
-                .size(5.dp)
+            modifier
+                .size(7.dp)
                 .clip(CircleShape)
                 .background(color),
     )

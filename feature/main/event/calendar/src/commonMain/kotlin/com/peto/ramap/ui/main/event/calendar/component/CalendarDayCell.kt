@@ -58,7 +58,7 @@ internal fun CalendarDayCell(
         Box(
             modifier =
                 Modifier
-                    .size(40.dp)
+                    .size(30.dp)
                     .clip(CircleShape)
                     .background(if (isToday) CommonColor.Black else CommonColor.White),
             contentAlignment = Alignment.Center,
@@ -84,7 +84,10 @@ internal fun CalendarDayCell(
                 }
                 if (!hasNotification && events.isNotEmpty()) {
                     EventDot(color = InstagramColor.Orange)
-                    if (events.size > 1) EventDot(color = InstagramColor.Pink)
+                    if (events.size > 1) EventDot(
+                        color = InstagramColor.Pink,
+                        modifier = Modifier.padding(start = 2.dp),
+                    )
                 }
             }
         }
