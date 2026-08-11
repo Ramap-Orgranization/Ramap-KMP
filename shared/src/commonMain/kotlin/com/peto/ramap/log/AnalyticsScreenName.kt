@@ -12,6 +12,7 @@ val ScreenRoutes.analyticsScreenName: String
         when (this) {
             is ScreenRoutes.TabRoutes -> "map"
             is ScreenRoutes.EventTabRoutes -> "event_list"
+            is ScreenRoutes.EventCalendarRoutes -> "event_calendar"
             is ScreenRoutes.RankingTabRoutes -> "ranking"
             is ScreenRoutes.MyTabRoutes -> "my"
             is ScreenRoutes.AccountSettingsRoutes -> "account_settings"
