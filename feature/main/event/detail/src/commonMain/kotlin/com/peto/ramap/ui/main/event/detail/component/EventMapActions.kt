@@ -1,4 +1,4 @@
-package com.peto.ramap.ui.main.event.component
+package com.peto.ramap.ui.main.event.detail.component
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column

@@ -1,4 +1,4 @@
-package com.peto.ramap.ui.event.list
+package com.peto.ramap.ui.main.event.list
 
 import app.cash.turbine.test
 import com.peto.ramap.core.result.RamapError

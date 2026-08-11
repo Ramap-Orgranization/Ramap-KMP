@@ -1,4 +1,4 @@
-package com.peto.ramap.ui.event.list
+package com.peto.ramap.ui.main.event.list
 
 import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.model.event.ShopEventType

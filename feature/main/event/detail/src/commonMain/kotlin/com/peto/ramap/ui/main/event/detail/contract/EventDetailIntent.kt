@@ -1,4 +1,4 @@
-package com.peto.ramap.ui.main.event.contract
+package com.peto.ramap.ui.main.event.detail.contract
 
 import com.peto.ramap.ui.base.Intent
 

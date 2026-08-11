@@ -12,7 +12,7 @@ import com.peto.ramap.ui.account.di.accountModule
 import com.peto.ramap.ui.bookmark.importation.di.importationModule
 import com.peto.ramap.ui.bookmark.list.di.bookmarkListModule
 import com.peto.ramap.ui.hidden.di.hiddenModule
-import com.peto.ramap.ui.main.event.di.eventDetailModule
+import com.peto.ramap.ui.main.event.detail.di.eventDetailModule
 import com.peto.ramap.ui.main.event.list.di.eventsModule
 import com.peto.ramap.ui.main.map.di.mapModule
 import com.peto.ramap.ui.main.my.di.settingsModule

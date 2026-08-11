@@ -1,4 +1,4 @@
-package com.peto.ramap.ui.main.event
+package com.peto.ramap.ui.main.event.detail
 
 import app.cash.turbine.test
 import com.peto.ramap.core.result.RamapError
@@ -11,14 +11,14 @@ import com.peto.ramap.fake.FakeAnalyticsTracker
 import com.peto.ramap.fake.FakeLoginRepository
 import com.peto.ramap.fake.FakeNotificationSettingsRepository
 import com.peto.ramap.fake.FakeRamenShopRepository
-import com.peto.ramap.ui.main.event.contract.EventDetailIntent.OnEntered
-import com.peto.ramap.ui.main.event.contract.EventDetailIntent.OnNotificationChanged
-import com.peto.ramap.ui.main.event.contract.EventDetailIntent.OnNotificationPermissionGranted
-import com.peto.ramap.ui.main.event.contract.EventDetailIntent.OnRetry
-import com.peto.ramap.ui.main.event.contract.EventDetailSideEffect.EventUnavailable
-import com.peto.ramap.ui.main.event.contract.EventDetailSideEffect.RequestNotificationPermission
-import com.peto.ramap.ui.main.event.contract.EventDetailSideEffect.ShowToast
-import com.peto.ramap.ui.main.event.log.EventDetailAnalytics
+import com.peto.ramap.ui.main.event.detail.contract.EventDetailIntent.OnEntered
+import com.peto.ramap.ui.main.event.detail.contract.EventDetailIntent.OnNotificationChanged
+import com.peto.ramap.ui.main.event.detail.contract.EventDetailIntent.OnNotificationPermissionGranted
+import com.peto.ramap.ui.main.event.detail.contract.EventDetailIntent.OnRetry
+import com.peto.ramap.ui.main.event.detail.contract.EventDetailSideEffect.EventUnavailable
+import com.peto.ramap.ui.main.event.detail.contract.EventDetailSideEffect.RequestNotificationPermission
+import com.peto.ramap.ui.main.event.detail.contract.EventDetailSideEffect.ShowToast
+import com.peto.ramap.ui.main.event.detail.log.EventDetailAnalytics
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runCurrent
 import ramap.shared.generated.resources.Res

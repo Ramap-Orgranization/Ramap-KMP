@@ -1,4 +1,4 @@
-package com.peto.ramap.ui.main.event.component
+package com.peto.ramap.ui.main.event.detail.component
 
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Icon
@@ -10,7 +10,7 @@ import androidx.compose.ui.unit.dp
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.InstagramColor
 import com.peto.ramap.theme.RamapTheme
-import com.peto.ramap.ui.main.event.contract.EventDetailUiState
+import com.peto.ramap.ui.main.event.detail.contract.EventDetailUiState
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res

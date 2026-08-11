@@ -1,11 +1,11 @@
-package com.peto.ramap.ui.main.event.log
+package com.peto.ramap.ui.main.event.detail.log
 
 import com.peto.ramap.analytics.AnalyticsTracker
-import com.peto.ramap.ui.main.event.log.event.EventExternalLinkSelected
-import com.peto.ramap.ui.main.event.log.event.EventExternalLinkSource
-import com.peto.ramap.ui.main.event.log.event.EventNotificationToggled
-import com.peto.ramap.ui.main.event.log.event.EventShopSelected
-import com.peto.ramap.ui.main.event.log.event.EventShopSource
+import com.peto.ramap.ui.main.event.detail.log.event.EventExternalLinkSelected
+import com.peto.ramap.ui.main.event.detail.log.event.EventExternalLinkSource
+import com.peto.ramap.ui.main.event.detail.log.event.EventNotificationToggled
+import com.peto.ramap.ui.main.event.detail.log.event.EventShopSelected
+import com.peto.ramap.ui.main.event.detail.log.event.EventShopSource
 
 class EventDetailAnalytics(
     private val analyticsTracker: AnalyticsTracker,
