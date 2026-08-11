@@ -72,15 +72,13 @@ internal fun CalendarDayCell(
         }
         if (events.isNotEmpty() || hasNotification) {
             Row(
-                modifier = Modifier.padding(top = 3.dp),
-                horizontalArrangement = Arrangement.spacedBy(2.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 if (hasNotification) {
                     Icon(
                         painter = painterResource(Res.drawable.ic_notification),
                         contentDescription = stringResource(Res.string.event_calendar_notification),
-                        modifier = Modifier.size(10.dp),
+                        modifier = Modifier.size(15.dp),
                         tint = ChromaticColor.Pink400,
                     )
                 }
