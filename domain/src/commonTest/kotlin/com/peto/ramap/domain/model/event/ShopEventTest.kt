@@ -9,7 +9,7 @@ import kotlin.test.assertTrue
 
 class ShopEventTest {
     @Test
-    fun occursOnUsesInclusiveRangeAndRejectsInvalidDates() {
+    fun `이벤트 기간의 양 끝 날짜를 포함하고 잘못된 날짜를 거부한다`() {
         val event = event(startDate = "2024-02-28", endDate = "2024-03-01")
 
         assertTrue(event.occursOn(LocalDate(2024, 2, 28)))
@@ -19,7 +19,7 @@ class ShopEventTest {
     }
 
     @Test
-    fun groupShopEventsByDateKeepsBoundariesAndOmitsEmptyDates() {
+    fun `이벤트를 날짜별로 묶고 빈 날짜를 제외한다`() {
         val first = event(startDate = "2024-02-28", endDate = "2024-03-01")
         val second = event(startDate = "2024-03-01", endDate = "2024-03-01")
 
@@ -40,7 +40,7 @@ class ShopEventTest {
     }
 
     @Test
-    fun findsRegisteredPartnerForSingleUpcomingCollaboration() {
+    fun `다가오는 단일 콜라보의 등록된 상대 매장을 찾는다`() {
         assertEquals(
             "라멘롱시즌",
             event(
@@ -60,7 +60,7 @@ class ShopEventTest {
     }
 
     @Test
-    fun hidesPartnerWhenMultipleEventsExistOrPartnerIsExternal() {
+    fun `이벤트가 여러 개이거나 외부 상대면 상대 매장을 숨긴다`() {
         assertNull(
             event(
                 collaboratorShopId = "partner",
