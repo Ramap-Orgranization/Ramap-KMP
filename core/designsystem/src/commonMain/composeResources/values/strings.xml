@@ -263,6 +263,25 @@
     <!-- 공통 상태 및 피드백 -->
     <string name="data_load_failure_message">정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.</string>
     <string name="event_detail_load_failure_title">이벤트를 불러오지 못했어요</string>
+    <string name="event_calendar_open">이벤트 캘린더 열기</string>
+    <string name="event_list_open">이벤트 목록 보기</string>
+    <string name="event_calendar_title">이벤트 캘린더</string>
+    <string name="event_calendar_previous_month">이전 달</string>
+    <string name="event_calendar_next_month">다음 달</string>
+    <string name="event_calendar_event_count">%1$d개의 이벤트</string>
+    <string name="event_calendar_events_for_date">%1$s, %2$d개 이벤트</string>
+    <string name="event_calendar_month_format">%1$d년 %2$d월</string>
+    <string name="event_calendar_month_header">%1$d.%2$s</string>
+    <string name="event_calendar_date_format">%1$d.%2$s.%3$s</string>
+    <string name="event_calendar_legend_single">이벤트 1건</string>
+    <string name="event_calendar_legend_multiple">이벤트 2건 이상</string>
+    <string name="event_calendar_weekday_sunday">일</string>
+    <string name="event_calendar_weekday_monday">월</string>
+    <string name="event_calendar_weekday_tuesday">화</string>
+    <string name="event_calendar_weekday_wednesday">수</string>
+    <string name="event_calendar_weekday_thursday">목</string>
+    <string name="event_calendar_weekday_friday">금</string>
+    <string name="event_calendar_weekday_saturday">토</string>
     <string name="event_notification_load_failure_message">알림 상태를 확인하지 못했어요. 잠시 후 다시 시도해 주세요.</string>
     <string name="event_notification_update_failure_message">알림 설정을 저장하지 못했어요. 다시 시도해 주세요.</string>
     <string name="retry_action">다시 시도</string>

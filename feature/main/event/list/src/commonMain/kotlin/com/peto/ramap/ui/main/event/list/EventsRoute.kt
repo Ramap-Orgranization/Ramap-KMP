@@ -2,11 +2,15 @@ package com.peto.ramap.ui.main.event.list
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
@@ -33,18 +37,22 @@ import com.peto.ramap.ui.main.event.list.contract.EventsIntent
 import com.peto.ramap.ui.main.event.list.contract.EventsSideEffect
 import com.peto.ramap.ui.main.event.list.contract.EventsUiState
 import com.peto.ramap.ui.main.event.list.preview.EventsPreviewParameterProvider
+import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 import ramap.shared.generated.resources.Res
+import ramap.shared.generated.resources.event_calendar_open
 import ramap.shared.generated.resources.event_list_error_description
 import ramap.shared.generated.resources.event_list_error_title
 import ramap.shared.generated.resources.event_list_ongoing_section
 import ramap.shared.generated.resources.event_list_upcoming_section
+import ramap.shared.generated.resources.ic_event
 import ramap.shared.generated.resources.laduck_error_crying
 
 @Composable
 fun EventsRoute(
+    onCalendarClick: () -> Unit,
     onEventClick: (ShopEvent) -> Unit,
     toastManager: ToastManager = koinInject(),
     viewModel: EventsViewModel = koinViewModel(),
@@ -57,6 +65,7 @@ fun EventsRoute(
     }
     EventsScreen(
         uiState = uiState,
+        onCalendarClick = onCalendarClick,
         onEventClick = { event ->
             viewModel.dispatch(EventsIntent.OnEventClicked(event))
             onEventClick(event)
@@ -69,6 +78,7 @@ fun EventsRoute(
 @Composable
 internal fun EventsScreen(
     uiState: EventsUiState,
+    onCalendarClick: () -> Unit,
     onEventClick: (ShopEvent) -> Unit,
     onRefresh: () -> Unit,
     onRetryClick: () -> Unit,
@@ -81,73 +91,85 @@ internal fun EventsScreen(
                 .background(CommonColor.White)
                 .statusBarsPadding(),
     ) {
-        PullToRefreshBox(
-            isRefreshing = uiState.isRefreshing,
-            onRefresh = onRefresh,
-            modifier = Modifier.fillMaxSize(),
-            state = pullToRefreshState,
-            indicator = {
-                PullToRefreshDefaults.Indicator(
-                    state = pullToRefreshState,
-                    isRefreshing = uiState.isRefreshing,
-                    modifier =
-                        Modifier
-                            .align(Alignment.TopCenter),
-                    containerColor = CommonColor.White,
-                    color = CommonColor.Black,
-                )
-            },
-        ) {
-            when {
-                uiState.isLoading -> RamenLoadingIndicator(modifier = Modifier.fillMaxSize())
-
-                uiState.showError ->
-                    LoadErrorContent(
-                        image = Res.drawable.laduck_error_crying,
-                        title = stringResource(Res.string.event_list_error_title),
-                        description = stringResource(Res.string.event_list_error_description),
-                        onRetry = onRetryClick,
-                        modifier = Modifier.fillMaxSize(),
+        Box(modifier = Modifier.fillMaxSize()) {
+            PullToRefreshBox(
+                isRefreshing = uiState.isRefreshing,
+                onRefresh = onRefresh,
+                modifier = Modifier.fillMaxSize(),
+                state = pullToRefreshState,
+                indicator = {
+                    PullToRefreshDefaults.Indicator(
+                        state = pullToRefreshState,
+                        isRefreshing = uiState.isRefreshing,
+                        modifier = Modifier.align(Alignment.TopCenter),
+                        containerColor = CommonColor.White,
+                        color = CommonColor.Black,
                     )
+                },
+            ) {
+                when {
+                    uiState.isLoading -> RamenLoadingIndicator(modifier = Modifier.fillMaxSize())
 
-                uiState.events.isEmpty() -> EventListEmptyContent()
+                    uiState.showError ->
+                        LoadErrorContent(
+                            image = Res.drawable.laduck_error_crying,
+                            title = stringResource(Res.string.event_list_error_title),
+                            description = stringResource(Res.string.event_list_error_description),
+                            onRetry = onRetryClick,
+                            modifier = Modifier.fillMaxSize(),
+                        )
 
-                else -> {
-                    val (ongoingEvents, upcomingEvents) = partitionBySchedule(uiState.events)
-                    val ongoingTitle = stringResource(Res.string.event_list_ongoing_section)
-                    val upcomingTitle = stringResource(Res.string.event_list_upcoming_section)
-                    val summerLimitedTitle =
-                        stringResource(ShopEventResourceMapper.typeLabel(ShopEventType.SUMMER_LIMITED))
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize().padding(bottom = 5.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
-                    ) {
-                        eventSection(
-                            scope = this,
-                            title = summerLimitedTitle,
-                            events = uiState.summerLimitedEvents,
-                            isOngoingSection = true,
-                            horizontalContentPadding = 15.dp,
-                            onEventClick = onEventClick,
-                        )
-                        eventSection(
-                            scope = this,
-                            title = ongoingTitle,
-                            events = ongoingEvents,
-                            isOngoingSection = true,
-                            horizontalContentPadding = 15.dp,
-                            onEventClick = onEventClick,
-                        )
-                        eventSection(
-                            scope = this,
-                            title = upcomingTitle,
-                            events = upcomingEvents,
-                            isOngoingSection = false,
-                            horizontalContentPadding = 15.dp,
-                            onEventClick = onEventClick,
-                        )
+                    uiState.events.isEmpty() -> EventListEmptyContent()
+
+                    else -> {
+                        val (ongoingEvents, upcomingEvents) = partitionBySchedule(uiState.events)
+                        val ongoingTitle = stringResource(Res.string.event_list_ongoing_section)
+                        val upcomingTitle = stringResource(Res.string.event_list_upcoming_section)
+                        val summerLimitedTitle =
+                            stringResource(ShopEventResourceMapper.typeLabel(ShopEventType.SUMMER_LIMITED))
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(bottom = 88.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            eventSection(
+                                scope = this,
+                                title = summerLimitedTitle,
+                                events = uiState.summerLimitedEvents,
+                                isOngoingSection = true,
+                                horizontalContentPadding = 15.dp,
+                                onEventClick = onEventClick,
+                            )
+                            eventSection(
+                                scope = this,
+                                title = ongoingTitle,
+                                events = ongoingEvents,
+                                isOngoingSection = true,
+                                horizontalContentPadding = 15.dp,
+                                onEventClick = onEventClick,
+                            )
+                            eventSection(
+                                scope = this,
+                                title = upcomingTitle,
+                                events = upcomingEvents,
+                                isOngoingSection = false,
+                                horizontalContentPadding = 15.dp,
+                                onEventClick = onEventClick,
+                            )
+                        }
                     }
                 }
+            }
+            FloatingActionButton(
+                onClick = onCalendarClick,
+                modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp),
+                containerColor = CommonColor.Black,
+                contentColor = CommonColor.White,
+            ) {
+                Icon(
+                    painter = painterResource(Res.drawable.ic_event),
+                    contentDescription = stringResource(Res.string.event_calendar_open),
+                )
             }
         }
     }
@@ -166,6 +188,7 @@ private fun EventsRoutePreview(
     RamapTheme {
         EventsScreen(
             uiState = uiState,
+            onCalendarClick = {},
             onEventClick = {},
             onRefresh = {},
             onRetryClick = {},
