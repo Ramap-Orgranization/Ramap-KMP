@@ -27,12 +27,12 @@ import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.model.event.ShopEventType
 import com.peto.ramap.theme.AppTextStyle
-import com.peto.ramap.theme.ChromaticColor
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
+import ramap.shared.generated.resources.event_status_cancelled
 import ramap.shared.generated.resources.event_type_collab
 import ramap.shared.generated.resources.event_type_limited_menu
 import ramap.shared.generated.resources.event_type_popup
@@ -47,6 +47,7 @@ fun EventCard(
     modifier: Modifier = Modifier.fillMaxWidth(),
     actionLabel: String? = null,
     onAction: (() -> Unit)? = null,
+    isCancelled: Boolean = event.isCancelledToday,
 ) {
     val cardShape = RoundedCornerShape(16.dp)
 
@@ -67,7 +68,7 @@ fun EventCard(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 RemoteShopImage(
-                    url = event.venueProfileImageUrl,
+                    url = event.venueShop.instagramProfileImageUrl,
                     modifier =
                         Modifier
                             .size(44.dp)
@@ -75,12 +76,15 @@ fun EventCard(
                             .clip(CircleShape),
                 )
                 AppText(
-                    text = event.venueShopName,
+                    text = event.venueShop.name,
                     style = AppTextStyle.B1,
                     color = GrayColor.C400,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
+            }
+            if (isCancelled) {
+                EventTag(stringResource(Res.string.event_status_cancelled))
             }
             EventTag(eventTypeLabel(event.type))
             if (actionLabel != null && onAction != null) {
@@ -117,7 +121,7 @@ private fun EventTag(text: String) {
         text = text,
         modifier =
             Modifier
-                .background(ChromaticColor.Yellow400, RoundedCornerShape(10.dp))
+                .border(1.dp, GrayColor.C100, RoundedCornerShape(10.dp))
                 .padding(horizontal = 8.dp, vertical = 3.dp),
         style = AppTextStyle.C2,
         color = GrayColor.C500,

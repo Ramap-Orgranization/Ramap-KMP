@@ -5,6 +5,7 @@ import com.peto.ramap.analytics.common.login.LoginAnalytics
 import com.peto.ramap.core.result.RamapError
 import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.coroutinesTest
+import com.peto.ramap.designsystem.shop.model.ShopDetailSheetUiState
 import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.auth.LoginSessionState
@@ -71,7 +72,6 @@ import com.peto.ramap.ui.main.map.contract.MapUiState
 import com.peto.ramap.ui.main.map.log.MapAnalytics
 import com.peto.ramap.ui.main.map.model.CameraPosition
 import com.peto.ramap.ui.main.map.model.LocationFocusStatus
-import com.peto.ramap.ui.main.map.model.ShopDetailUiState
 import com.peto.ramap.ui.main.map.search.SearchResultGuide
 import com.peto.ramap.ui.main.map.search.SearchUiModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -453,7 +453,7 @@ class MapViewModelTest {
             runCurrent()
 
             assertEquals(
-                ShopDetailUiState.Error(shop.id, shop),
+                ShopDetailSheetUiState.Error(shop.id, shop),
                 viewModel.uiState.value.shopDetailState,
             )
             assertEquals(shop, viewModel.uiState.value.selectedShop)
@@ -465,7 +465,7 @@ class MapViewModelTest {
             viewModel.dispatch(OnShopDetailDismissed)
             runCurrent()
 
-            assertEquals(ShopDetailUiState.Closed, viewModel.uiState.value.shopDetailState)
+            assertEquals(ShopDetailSheetUiState.Closed, viewModel.uiState.value.shopDetailState)
             assertEquals(null, viewModel.uiState.value.selectedShop)
             assertEquals(false, viewModel.uiState.value.hasShopDetailLoadFailed)
             assertEquals(false, viewModel.uiState.value.showBottomSheet)
@@ -710,7 +710,7 @@ class MapViewModelTest {
             runCurrent()
 
             assertEquals(
-                ShopDetailUiState.Loading(shop.id, shop = null),
+                ShopDetailSheetUiState.Loading(shop.id, shop = null),
                 viewModel.uiState.value.shopDetailState,
             )
             assertEquals(true, viewModel.uiState.value.isShopDetailLoading)
@@ -820,7 +820,7 @@ class MapViewModelTest {
             runCurrent()
 
             assertEquals(
-                ShopDetailUiState.Error(shopId, shop = null),
+                ShopDetailSheetUiState.Error(shopId, shop = null),
                 viewModel.uiState.value.shopDetailState,
             )
             assertEquals(true, viewModel.uiState.value.hasShopDetailLoadFailed)
@@ -829,7 +829,7 @@ class MapViewModelTest {
             viewModel.dispatch(OnRequestedShopDismissed)
             runCurrent()
 
-            assertEquals(ShopDetailUiState.Closed, viewModel.uiState.value.shopDetailState)
+            assertEquals(ShopDetailSheetUiState.Closed, viewModel.uiState.value.shopDetailState)
             assertEquals(false, viewModel.uiState.value.hasShopDetailLoadFailed)
             assertEquals(false, viewModel.uiState.value.showBottomSheet)
         }
@@ -1358,7 +1358,7 @@ class MapViewModelTest {
             )
         val uiState =
             MapUiState(
-                shopDetailState = ShopDetailUiState.Loading(hiddenShop.id, hiddenShop),
+                shopDetailState = ShopDetailSheetUiState.Loading(hiddenShop.id, hiddenShop),
                 hiddenShopIds = setOf(hiddenShop.id),
                 isBookmarkedView = true,
             )
@@ -1956,7 +1956,7 @@ class MapViewModelTest {
                         input = "오레노",
                         results = RamenShops(listOf(selectedShop, otherShop).associateBy { it.id }),
                     ),
-                shopDetailState = ShopDetailUiState.Loading(selectedShop.id, selectedShop),
+                shopDetailState = ShopDetailSheetUiState.Loading(selectedShop.id, selectedShop),
             )
 
         assertEquals(RamenShops(listOf(selectedShop)), uiState.focusShops)

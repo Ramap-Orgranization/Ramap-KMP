@@ -126,6 +126,17 @@ class NavigationStateTest {
     }
 
     @Test
+    fun `이벤트 캘린더에서 상세를 열고 뒤로 가면 캘린더로 돌아간다`() {
+        val navigationState = navigationState(selectedTab = TabStatus.EVENT)
+
+        navigationState.showEventCalendar()
+        navigationState.showEvent("event-id")
+        navigationState.pop()
+
+        assertEquals(ScreenRoutes.EventCalendarRoutes, navigationState.currentRoute)
+    }
+
+    @Test
     fun `이용 불가 이벤트에서 이벤트 루트로 이동하면 실패한 상세 경로를 제거한다`() {
         val navigationState = navigationState(selectedTab = TabStatus.EVENT)
         navigationState.showEvent("missing-event")
@@ -320,6 +331,10 @@ class NavigationStateTest {
         navigationState.showBookmarkedShops()
         assertEquals(ScreenRoutes.BookmarkedShopListRoutes, navigationState.currentRoute)
         navigationState.showImportation()
+        assertEquals(ScreenRoutes.ImportationRoutes, navigationState.currentRoute)
+        navigationState.showImportationGuide()
+        assertEquals(ScreenRoutes.ImportationGuideRoutes, navigationState.currentRoute)
+        navigationState.pop()
         assertEquals(ScreenRoutes.ImportationRoutes, navigationState.currentRoute)
         navigationState.pop()
         assertEquals(ScreenRoutes.BookmarkedShopListRoutes, navigationState.currentRoute)

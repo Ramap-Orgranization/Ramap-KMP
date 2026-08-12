@@ -23,6 +23,7 @@ fun NavigationRouter(
     mapScreen: @Composable (ScreenRoutes.TabRoutes) -> Unit,
     rankingScreen: @Composable () -> Unit,
     eventListScreen: @Composable () -> Unit,
+    eventCalendarScreen: @Composable () -> Unit,
     myScreen: @Composable () -> Unit,
     accountSettingsScreen: @Composable () -> Unit,
     informationScreen: @Composable () -> Unit,
@@ -32,6 +33,7 @@ fun NavigationRouter(
     subscribedShopsScreen: @Composable () -> Unit,
     bookmarkedShopsScreen: @Composable () -> Unit,
     importationScreen: @Composable () -> Unit,
+    importationGuideScreen: @Composable () -> Unit,
     eventScreen: @Composable (ScreenRoutes.EventDetailRoutes) -> Unit,
 ) {
     val onTabSelected: (TabStatus) -> Unit = navigationState::selectTopLevelTab
@@ -49,6 +51,13 @@ fun NavigationRouter(
                     selectedTab = TabStatus.EVENT,
                     onTabSelected = onTabSelected,
                     content = eventListScreen,
+                )
+            }
+            entry<ScreenRoutes.EventCalendarRoutes> {
+                BottonNavigationTabScreen(
+                    selectedTab = TabStatus.EVENT,
+                    onTabSelected = onTabSelected,
+                    content = eventCalendarScreen,
                 )
             }
             entry<ScreenRoutes.RankingTabRoutes> {
@@ -82,6 +91,9 @@ fun NavigationRouter(
             }
             entry<ScreenRoutes.ImportationRoutes> {
                 FullScreen(importationScreen)
+            }
+            entry<ScreenRoutes.ImportationGuideRoutes> {
+                FullScreen(importationGuideScreen)
             }
             entry<ScreenRoutes.EventDetailRoutes> { route ->
                 FullScreen { (eventScreen(route)) }

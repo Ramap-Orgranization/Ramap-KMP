@@ -2,6 +2,7 @@ package com.peto.ramap.data.repository
 
 import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.data.datasource.shop.RamenShopDataSource
+import com.peto.ramap.domain.model.event.CalendarEventPage
 import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.model.event.ShopEventType
 import com.peto.ramap.domain.model.shop.MapBounds
@@ -9,16 +10,57 @@ import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.domain.model.shop.SearchQuery
 import com.peto.ramap.domain.repository.RamenShopRepository
 import com.peto.ramap.network.execute.invokeRequest
+import kotlinx.datetime.LocalDate
 
 internal class DefaultRamenShopRepository(
     private val dataSource: RamenShopDataSource,
 ) : RamenShopRepository {
+    private val calendarEventPageCache = mutableMapOf<String, CalendarEventPage>()
+
     override suspend fun fetchActiveEvent(eventId: String): RamapResult<ShopEvent?> =
         invokeRequest { dataSource.fetchActiveEvent(eventId)?.toDomain() }
 
     override suspend fun fetchActiveEvents(): RamapResult<List<ShopEvent>> =
         invokeRequest {
             dataSource.fetchActiveEvents().mapNotNull { it.toDomain() }
+        }
+
+    override suspend fun fetchCalendarEvents(
+        startDate: String,
+        endDate: String,
+    ): RamapResult<List<ShopEvent>> =
+        invokeRequest {
+            dataSource.fetchCalendarEvents(startDate, endDate).mapNotNull { it.toDomain() }
+        }
+
+    override suspend fun fetchCalendarEventPage(monthStart: String): RamapResult<CalendarEventPage> {
+        calendarEventPageCache[monthStart]?.let { return RamapResult.Success(it) }
+
+        val result =
+            invokeRequest {
+                val page = dataSource.fetchCalendarEventPage(monthStart)
+                CalendarEventPage(
+                    events = page.events.mapNotNull { it.toDomain() },
+                    hasPrevious = page.hasPrevious,
+                    hasNext = page.hasNext,
+                    notificationDates = page.notificationDates.mapNotNull { parseDate(it) },
+                )
+            }
+        if (result is RamapResult.Success) {
+            calendarEventPageCache[monthStart] = result.data
+        }
+        return result
+    }
+
+    override fun invalidateCalendarEventPage(monthStart: String) {
+        calendarEventPageCache.remove(monthStart)
+    }
+
+    private fun parseDate(value: String): LocalDate? = runCatching { LocalDate.parse(value) }.getOrNull()
+
+    override suspend fun fetchEvent(eventId: String): RamapResult<ShopEvent?> =
+        invokeRequest {
+            dataSource.fetchEvent(eventId)?.toDomain()
         }
 
     override suspend fun fetchActiveShopEvent(shopId: String): RamapResult<ShopEvent?> =

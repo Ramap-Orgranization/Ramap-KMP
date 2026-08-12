@@ -9,6 +9,7 @@ kotlin {
             dependencies {
                 api(projects.core.common)
                 api(libs.kotlinx.coroutines.core)
+                implementation(libs.kotlinx.datetime)
             }
         }
     }

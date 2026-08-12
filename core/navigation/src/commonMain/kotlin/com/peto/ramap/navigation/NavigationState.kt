@@ -54,13 +54,20 @@ class NavigationState(
 
     fun showImportation() = showOnce(ScreenRoutes.ImportationRoutes)
 
+    fun showImportationGuide() = showOnce(ScreenRoutes.ImportationGuideRoutes)
+
     fun showEvent(eventId: String) {
         if (currentRoute == ScreenRoutes.EventDetailRoutes(eventId)) return
         currentBackStack.add(ScreenRoutes.EventDetailRoutes(eventId))
     }
 
+    fun showEventCalendar() = showOnce(ScreenRoutes.EventCalendarRoutes)
+
     fun showEventRoot() {
-        if (currentBackStack.lastOrNull() is ScreenRoutes.EventDetailRoutes) {
+        if (
+            currentBackStack.lastOrNull() is ScreenRoutes.EventDetailRoutes ||
+            currentBackStack.lastOrNull() is ScreenRoutes.EventCalendarRoutes
+        ) {
             currentBackStack.removeLastOrNull()
         }
         val eventBackStack = backStacks.getValue(TabStatus.EVENT)
@@ -112,12 +119,14 @@ class NavigationState(
         shopId: String,
         source: NavigationSource? = null,
         returnTab: TabStatus? = null,
+        showShopDetail: Boolean = true,
     ) {
         lastNavigationSource = source
         val mapRoute =
             ScreenRoutes.TabRoutes(
                 shopId = shopId,
                 returnTab = returnTab,
+                showShopDetail = showShopDetail,
             )
         val mapBackStack = backStacks.getValue(TabStatus.MAP)
         val isRequestedShopAlreadyShown =

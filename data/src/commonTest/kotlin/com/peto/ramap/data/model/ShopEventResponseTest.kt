@@ -1,6 +1,7 @@
 package com.peto.ramap.data.model
 
 import com.peto.ramap.domain.model.event.ShopEventType
+import com.peto.ramap.fixture.ramenShopResponseFixture
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -20,6 +21,29 @@ class ShopEventResponseTest {
         assertEquals(null, event?.endDate)
     }
 
+    @Test
+    fun `모든 협업 매장과 외부 참여자를 도메인 이벤트로 변환한다`() {
+        val event =
+            response(eventType = "collab")
+                .copy(
+                    collaboratorShops =
+                        listOf(
+                            ramenShopResponseFixture(id = "partner-1"),
+                            ramenShopResponseFixture(id = "partner-2"),
+                        ),
+                    externalParticipants =
+                        listOf(
+                            ExternalParticipantResponse(
+                                name = "외부 셰프",
+                                instagramUrl = "https://instagram.com/external",
+                            ),
+                        ),
+                ).toDomain()
+
+        assertEquals(listOf("partner-1", "partner-2"), event?.collaboratorShops?.map { it.id })
+        assertEquals("외부 셰프", event?.externalParticipants?.single()?.name)
+    }
+
     private fun response(
         eventType: String,
         endDate: String? = "2026-07-29",
@@ -33,9 +57,6 @@ class ShopEventResponseTest {
         sourceUrl = "https://instagram.com/p/event",
         isToday = false,
         isVenue = true,
-        venueShopId = "shop",
-        venueShopName = "566라멘",
-        venueAddress = "서울",
-        venueProfileImageUrl = null,
+        venueShop = ramenShopResponseFixture(id = "shop", name = "566라멘"),
     )
 }

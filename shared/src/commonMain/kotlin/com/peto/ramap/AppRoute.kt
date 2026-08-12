@@ -1,15 +1,10 @@
 package com.peto.ramap
 
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
-import androidx.compose.ui.Modifier
 import com.peto.ramap.deeplink.DeepLinkEntryPoint
 import com.peto.ramap.deeplink.DeepLinkEvent
 import com.peto.ramap.designsystem.toast.ToastManager
@@ -34,14 +29,16 @@ import com.peto.ramap.notification.NotificationDeepLinkParser
 import com.peto.ramap.notification.NotificationLaunchDispatcher
 import com.peto.ramap.ui.account.AccountSettingsRoute
 import com.peto.ramap.ui.account.InformationRoute
+import com.peto.ramap.ui.bookmark.importation.ImportationGuideRoute
 import com.peto.ramap.ui.bookmark.importation.ImportationRoute
 import com.peto.ramap.ui.bookmark.list.BookmarkedShopListRoute
 import com.peto.ramap.ui.hidden.HiddenShopListRoute
-import com.peto.ramap.ui.main.event.EventDetailRoute
+import com.peto.ramap.ui.main.event.calendar.EventCalendarRoute
+import com.peto.ramap.ui.main.event.detail.EventDetailRoute
 import com.peto.ramap.ui.main.event.list.EventsRoute
 import com.peto.ramap.ui.main.map.MapRoute
 import com.peto.ramap.ui.main.map.MapViewModel
-import com.peto.ramap.ui.main.map.ShopDetailRoute
+import com.peto.ramap.ui.main.map.ShopDetailHost
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnMapTabExited
 import com.peto.ramap.ui.main.my.MyTabRoute
 import com.peto.ramap.ui.main.ranking.RankingRoute
@@ -114,41 +111,25 @@ internal fun AppRoute(
                     navigationState.showEvent(event.id)
                 },
                 requestedShopId = route.shopId,
+                showShopDetail = route.showShopDetail,
                 viewModel = mapViewModel,
             )
         },
         rankingScreen = {
-            var rankingDetailShopId by rememberSaveable { mutableStateOf<String?>(null) }
-            Box(modifier = Modifier.fillMaxSize()) {
-                RankingRoute(
-                    onShopClick = { shopId ->
-                        rankingDetailShopId = shopId
-                    },
-                    onFindShopClick = {
-                        rankingDetailShopId = null
-                        navigationState.showMap()
-                    },
-                )
-                rankingDetailShopId?.let { shopId ->
-                    ShopDetailRoute(
+            RankingRoute(
+                onFindShopClick = navigationState::showMap,
+                onShowShopOnMap = { navigationState.showMap() },
+                onEventNavigate = { event -> navigationState.showEvent(event.id) },
+                shopDetailContent = { shopId, onDismiss, onShowOnMap, onEventNavigate ->
+                    ShopDetailHost(
                         shopId = shopId,
                         viewModel = mapViewModel,
-                        onDismiss = { rankingDetailShopId = null },
-                        onShowOnMap = { selectedShopId ->
-                            rankingDetailShopId = null
-                            navigationState.showShopOnMap(
-                                shopId = selectedShopId,
-                                source = NavigationSource.RANKING,
-                                returnTab = TabStatus.RANKING,
-                            )
-                        },
-                        onEventNavigate = { event ->
-                            rankingDetailShopId = null
-                            navigationState.showEvent(event.id)
-                        },
+                        onDismiss = onDismiss,
+                        onShowOnMap = onShowOnMap,
+                        onEventNavigate = { event -> onEventNavigate(event) },
                     )
-                }
-            }
+                },
+            )
         },
         myScreen = {
             MyTabRoute(
@@ -181,9 +162,16 @@ internal fun AppRoute(
         },
         eventListScreen = {
             EventsRoute(
+                onCalendarClick = navigationState::showEventCalendar,
                 onEventClick = { event ->
                     navigationState.showEvent(event.id)
                 },
+            )
+        },
+        eventCalendarScreen = {
+            EventCalendarRoute(
+                onBack = navigationState::pop,
+                onEventClick = navigationState::showEvent,
             )
         },
         hiddenScreen = {
@@ -232,8 +220,12 @@ internal fun AppRoute(
         importationScreen = {
             ImportationRoute(
                 onBack = navigationState::pop,
+                onGuideNavigate = navigationState::showImportationGuide,
                 onImportCompleted = navigationState::pop,
             )
+        },
+        importationGuideScreen = {
+            ImportationGuideRoute(onBack = navigationState::pop)
         },
         eventScreen = { route ->
             EventDetailRoute(
@@ -253,6 +245,16 @@ internal fun AppRoute(
                     navigationState.showShopOnMap(
                         shopId = shopId,
                         source = NavigationSource.EVENT_DETAIL,
+                    )
+                },
+                onEventNavigate = { event -> navigationState.showEvent(event.id) },
+                shopDetailContent = { shopId, onDismiss, onShowOnMap, onEventNavigate ->
+                    ShopDetailHost(
+                        shopId = shopId,
+                        viewModel = mapViewModel,
+                        onDismiss = onDismiss,
+                        onShowOnMap = onShowOnMap,
+                        onEventNavigate = onEventNavigate,
                     )
                 },
             )

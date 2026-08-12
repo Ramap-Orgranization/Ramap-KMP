@@ -12,6 +12,7 @@ val ScreenRoutes.analyticsScreenName: String
         when (this) {
             is ScreenRoutes.TabRoutes -> "map"
             is ScreenRoutes.EventTabRoutes -> "event_list"
+            is ScreenRoutes.EventCalendarRoutes -> "event_calendar"
             is ScreenRoutes.RankingTabRoutes -> "ranking"
             is ScreenRoutes.MyTabRoutes -> "my"
             is ScreenRoutes.AccountSettingsRoutes -> "account_settings"
@@ -22,5 +23,6 @@ val ScreenRoutes.analyticsScreenName: String
             is ScreenRoutes.SubscribedShopListRoutes -> "subscribed_shop_list"
             is ScreenRoutes.BookmarkedShopListRoutes -> "bookmarked_shop_list"
             is ScreenRoutes.ImportationRoutes -> "importation"
+            is ScreenRoutes.ImportationGuideRoutes -> "importation_guide"
             is ScreenRoutes.EventDetailRoutes -> "event_detail"
         }

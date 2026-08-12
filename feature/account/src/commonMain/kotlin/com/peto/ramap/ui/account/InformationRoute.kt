@@ -29,7 +29,9 @@ fun InformationRoute(
     versionProvider: AppVersionProvider = koinInject(),
 ) {
     SettingsPage(Res.string.settings_information_menu, onBack) {
-        SectionCard {
+        SectionCard(
+            modifier = Modifier.padding(horizontal = 10.dp),
+        ) {
             AppText(
                 text = stringResource(Res.string.privacy_policy_menu),
                 style = AppTextStyle.B1,

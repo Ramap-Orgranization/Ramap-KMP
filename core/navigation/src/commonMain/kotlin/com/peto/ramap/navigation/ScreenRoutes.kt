@@ -8,10 +8,14 @@ sealed interface ScreenRoutes : NavKey {
     data class TabRoutes(
         val shopId: String? = null,
         val returnTab: TabStatus? = null,
+        val showShopDetail: Boolean = true,
     ) : ScreenRoutes
 
     @Serializable
     data object EventTabRoutes : ScreenRoutes
+
+    @Serializable
+    data object EventCalendarRoutes : ScreenRoutes
 
     @Serializable
     data object RankingTabRoutes : ScreenRoutes
@@ -42,6 +46,9 @@ sealed interface ScreenRoutes : NavKey {
 
     @Serializable
     data object ImportationRoutes : ScreenRoutes
+
+    @Serializable
+    data object ImportationGuideRoutes : ScreenRoutes
 
     @Serializable
     data class EventDetailRoutes(

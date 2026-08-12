@@ -61,6 +61,7 @@ private fun navKeySerializersModule(): SerializersModule =
         polymorphic(NavKey::class) {
             subclass(ScreenRoutes.TabRoutes::class)
             subclass(ScreenRoutes.EventTabRoutes::class)
+            subclass(ScreenRoutes.EventCalendarRoutes::class)
             subclass(ScreenRoutes.RankingTabRoutes::class)
             subclass(ScreenRoutes.MyTabRoutes::class)
             subclass(ScreenRoutes.AccountSettingsRoutes::class)
@@ -71,6 +72,7 @@ private fun navKeySerializersModule(): SerializersModule =
             subclass(ScreenRoutes.SubscribedShopListRoutes::class)
             subclass(ScreenRoutes.BookmarkedShopListRoutes::class)
             subclass(ScreenRoutes.ImportationRoutes::class)
+            subclass(ScreenRoutes.ImportationGuideRoutes::class)
             subclass(ScreenRoutes.EventDetailRoutes::class)
         }
     }

@@ -16,20 +16,20 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.peto.ramap.designsystem.card.EventCard
 import com.peto.ramap.designsystem.card.SectionCard
-import com.peto.ramap.designsystem.component.RamenShopSearchResultList
+import com.peto.ramap.designsystem.component.RamenShopSummaries
 import com.peto.ramap.designsystem.component.SettingsListPage
 import com.peto.ramap.designsystem.component.ShopListCount
 import com.peto.ramap.designsystem.component.ShopListEmptyContent
 import com.peto.ramap.designsystem.dialog.CommonDialog
+import com.peto.ramap.designsystem.resource.category.CategoryResourceMapper
 import com.peto.ramap.designsystem.text.AppText
+import com.peto.ramap.designsystem.text.eventDateText
 import com.peto.ramap.designsystem.toast.ToastManager
 import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.ui.base.ObserveAsEvents
-import com.peto.ramap.ui.component.eventDateText
-import com.peto.ramap.ui.resource.category.CategoryResourceMapper
 import com.peto.ramap.ui.subscribed.contract.SubscribedShopListIntent
 import com.peto.ramap.ui.subscribed.contract.SubscribedShopListSideEffect
 import com.peto.ramap.ui.subscribed.contract.SubscribedShopListUiState
@@ -159,16 +159,13 @@ private fun SubscribedShopListContent(
             }
 
             if (uiState.shops.isNotEmpty()) {
-                RamenShopSearchResultList(
+                RamenShopSummaries(
                     shops = uiState.shops,
                     onShopClick = onShopOpen,
                     categoryLabel = { category -> stringResource(CategoryResourceMapper.label(category)) },
                     itemActionLabel = { stringResource(Res.string.notification_removal_confirm_action) },
                     onItemAction = {
                         onRemovalRequested(SubscribedRemovalTarget.Shop(it.id))
-                    },
-                    itemModifier = {
-                        Modifier.padding(horizontal = 24.dp, vertical = 6.dp)
                     },
                 )
             }

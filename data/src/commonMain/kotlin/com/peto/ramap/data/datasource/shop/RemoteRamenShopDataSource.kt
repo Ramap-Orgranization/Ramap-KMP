@@ -1,13 +1,17 @@
 package com.peto.ramap.data.datasource.shop
 
+import com.peto.ramap.data.model.CalendarEventPageResponse
 import com.peto.ramap.data.model.RamenShopResponse
 import com.peto.ramap.data.model.ShopEventParticipantResponse
 import com.peto.ramap.data.model.ShopEventResponse
 import com.peto.ramap.domain.model.shop.MapBounds
 import com.peto.ramap.domain.model.shop.SearchQuery
-import com.peto.ramap.network.config.RamapSecrets
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.from
+import io.github.jan.supabase.postgrest.postgrest
+import io.github.jan.supabase.postgrest.query.filter.FilterOperator
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 
 internal class RemoteRamenShopDataSource(
     private val client: SupabaseClient,
@@ -17,7 +21,6 @@ internal class RemoteRamenShopDataSource(
             .from(ACTIVE_EVENTS_VIEW)
             .select()
             .decodeList<ShopEventResponse>()
-            .map(::resolveProfileImageUrl)
 
     override suspend fun fetchActiveEvent(eventId: String): ShopEventResponse? =
         client
@@ -26,7 +29,38 @@ internal class RemoteRamenShopDataSource(
                 filter { eq(COLUMN_ID, eventId) }
                 limit(1)
             }.decodeSingleOrNull<ShopEventResponse>()
-            ?.let(::resolveProfileImageUrl)
+
+    override suspend fun fetchCalendarEvents(
+        startDate: String,
+        endDate: String,
+    ): List<ShopEventResponse> =
+        client
+            .from(CALENDAR_EVENTS_VIEW)
+            .select {
+                filter {
+                    lte(COLUMN_START_DATE, endDate)
+                    or {
+                        filter(COLUMN_END_DATE, FilterOperator.IS, null)
+                        gte(COLUMN_END_DATE, startDate)
+                    }
+                }
+            }.decodeList<ShopEventResponse>()
+
+    override suspend fun fetchCalendarEventPage(monthStart: String): CalendarEventPageResponse =
+        client.postgrest
+            .rpc(
+                function = FETCH_CALENDAR_EVENT_PAGE_RPC,
+                parameters = buildJsonObject { put(REQUESTED_MONTH_PARAMETER, monthStart) },
+            ).decodeList<CalendarEventPageResponse>()
+            .single()
+
+    override suspend fun fetchEvent(eventId: String): ShopEventResponse? =
+        client
+            .from(CALENDAR_EVENTS_VIEW)
+            .select {
+                filter { eq(COLUMN_ID, eventId) }
+                limit(1)
+            }.decodeSingleOrNull<ShopEventResponse>()
 
     override suspend fun fetchActiveShopEvents(shopId: String): List<ShopEventResponse> =
         client
@@ -34,7 +68,6 @@ internal class RemoteRamenShopDataSource(
             .select {
                 filter { eq(COLUMN_SHOP_CONTEXT_ID, shopId) }
             }.decodeList<ShopEventResponse>()
-            .map(::resolveProfileImageUrl)
 
     override suspend fun fetchShopEventParticipants(eventId: String): List<ShopEventParticipantResponse> =
         client
@@ -103,24 +136,20 @@ internal class RemoteRamenShopDataSource(
             }.decodeList()
     }
 
-    private fun resolveProfileImageUrl(event: ShopEventResponse): ShopEventResponse =
-        event.copy(
-            venueProfileImageUrl =
-                event.venueProfileImageUrl?.let { path ->
-                    "${RamapSecrets.supabaseUrl}/storage/v1/object/public/$PROFILE_BUCKET/$path"
-                },
-        )
-
     companion object {
         private const val TABLE_NAME = "shops"
         private const val EVENT_VIEW = "active_shop_events"
         private const val ACTIVE_EVENTS_VIEW = "active_events"
-        private const val PROFILE_BUCKET = "shop-profile-images"
+        private const val CALENDAR_EVENTS_VIEW = "calendar_events"
+        private const val FETCH_CALENDAR_EVENT_PAGE_RPC = "fetch_calendar_event_page"
+        private const val REQUESTED_MONTH_PARAMETER = "requested_month"
         private const val EVENT_PARTICIPANT_TABLE = "shop_event_participants"
         private const val COLUMN_SHOP_CONTEXT_ID = "shop_context_id"
         private const val COLUMN_EVENT_ID = "event_id"
 
         private const val COLUMN_ID = "id"
+        private const val COLUMN_START_DATE = "start_date"
+        private const val COLUMN_END_DATE = "end_date"
         private const val COLUMN_LAT = "lat"
         private const val COLUMN_LNG = "lng"
     }

@@ -13,6 +13,7 @@ data class CommonBottomSheetConfig(
     val scrimColor: Color = DimmedColor.D020,
     val shape: Shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
     val showHandle: Boolean = true,
+    val isDraggable: Boolean = false,
     val handleTopPadding: Dp = 11.dp,
     val handleBottomPadding: Dp = 11.dp,
     val maxHeightFraction: Float = 0.8f,
