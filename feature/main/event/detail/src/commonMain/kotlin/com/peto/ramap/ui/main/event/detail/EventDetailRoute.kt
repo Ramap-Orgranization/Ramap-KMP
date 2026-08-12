@@ -129,6 +129,7 @@ fun EventDetailRoute(
                         type = ToastType.ERROR,
                     ),
                 )
+
             RequestNotificationPermission ->
                 coroutineScope.launch {
                     if (requestNotificationPermission()) {
@@ -296,9 +297,7 @@ private fun EventDetailContent(
         AppText("🍜 ${event.title}", style = AppTextStyle.H1, color = GrayColor.C500)
         SectionCard(title = stringResource(Res.string.event_venue)) {
             Column(
-                modifier =
-                    Modifier
-                        .padding(vertical = 12.dp, horizontal = 15.dp),
+                modifier = Modifier.padding(vertical = 12.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 RamenShopSummary(
@@ -310,46 +309,57 @@ private fun EventDetailContent(
                 )
                 if (event.collaboratorShops.isNotEmpty()) {
                     EventSection(
-                        stringResource(ShopEventResourceMapper.collaboratorLabel(event)),
-                    ) {
-                        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                            event.collaboratorShops.forEach { shop ->
-                                RamenShopSummary(
-                                    shop = shop,
-                                    onClick = { onCollaboratorShopClick(shop.id) },
-                                    categoryLabel = { category ->
-                                        stringResource(CategoryResourceMapper.label(category))
-                                    },
-                                )
+                        title = stringResource(ShopEventResourceMapper.collaboratorLabel(event)),
+                        content = {
+                            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                                event.collaboratorShops.forEach { shop ->
+                                    RamenShopSummary(
+                                        shop = shop,
+                                        onClick = { onCollaboratorShopClick(shop.id) },
+                                        categoryLabel = { category ->
+                                            stringResource(CategoryResourceMapper.label(category))
+                                        },
+                                    )
+                                }
                             }
-                        }
-                    }
+                        },
+                    )
                 }
 
                 event.externalParticipants.forEach { participant ->
-                    participant.name?.takeIf(String::isNotBlank)?.let { name ->
-                        EventSection(stringResource(ShopEventResourceMapper.collaboratorLabel(event))) {
-                            EventVenueLink(
-                                title = name,
-                                onClick =
-                                    participant.instagramUrl?.let { url ->
-                                        { onCollaboratorInstagramClick(url) }
-                                    },
-                            )
-                        }
+                    participant.name?.let { name ->
+                        EventSection(
+                            title = stringResource(ShopEventResourceMapper.collaboratorLabel(event)),
+                            content = {
+                                EventVenueLink(
+                                    title = name,
+                                    modifier = Modifier.padding(horizontal = 15.dp),
+                                    onClick =
+                                        participant.instagramUrl?.let { url ->
+                                            { onCollaboratorInstagramClick(url) }
+                                        },
+                                )
+                            },
+                        )
                     }
                 }
 
-                EventSection(stringResource(Res.string.event_date)) {
-                    EventValue(eventDateText(event.startDate, event.endDate))
-                }
+                EventSection(
+                    title = stringResource(Res.string.event_date),
+                    content = {
+                        EventValue(
+                            eventDateText(event.startDate, event.endDate),
+                            modifier = Modifier.padding(horizontal = 15.dp),
+                        )
+                    },
+                )
             }
         }
         event.description.takeIf(String::isNotBlank)?.let { content ->
             SectionCard(title = stringResource(Res.string.event_content)) {
                 EventValue(
                     content,
-                    Modifier.padding(horizontal = 20.dp, vertical = 10.dp),
+                    Modifier.padding(horizontal = 15.dp, vertical = 10.dp),
                 )
             }
         }
@@ -401,9 +411,18 @@ private val INSTAGRAM_GRADIENT =
 private fun EventSection(
     title: String,
     content: @Composable () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        AppText(title, style = AppTextStyle.T2, color = GrayColor.C500)
+    Column(
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = modifier,
+    ) {
+        AppText(
+            text = title,
+            style = AppTextStyle.T2,
+            color = GrayColor.C500,
+            modifier = Modifier.padding(start = 15.dp),
+        )
         content()
     }
 }
@@ -418,10 +437,11 @@ private fun EventValue(
 private fun EventVenueLink(
     title: String,
     onClick: (() -> Unit)?,
+    modifier: Modifier = Modifier,
 ) {
     Row(
         modifier =
-            Modifier
+            modifier
                 .fillMaxWidth()
                 .then(if (onClick == null) Modifier else Modifier.noRippleClickable(onClick = onClick)),
         horizontalArrangement = Arrangement.SpaceBetween,
