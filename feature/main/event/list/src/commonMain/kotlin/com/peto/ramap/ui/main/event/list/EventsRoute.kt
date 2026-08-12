@@ -16,6 +16,9 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
@@ -28,9 +31,11 @@ import com.peto.ramap.designsystem.resource.event.ShopEventResourceMapper
 import com.peto.ramap.designsystem.toast.ToastManager
 import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.model.event.ShopEventType
+import com.peto.ramap.domain.model.event.ShopEvents
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.RamapTheme
 import com.peto.ramap.ui.base.ObserveAsEvents
+import com.peto.ramap.ui.main.event.list.component.EventListBottomSheet
 import com.peto.ramap.ui.main.event.list.component.EventListEmptyContent
 import com.peto.ramap.ui.main.event.list.component.eventSection
 import com.peto.ramap.ui.main.event.list.contract.EventsIntent
@@ -83,6 +88,7 @@ internal fun EventsScreen(
     onRefresh: () -> Unit,
     onRetryClick: () -> Unit,
 ) {
+    var selectedEventGroup by remember { mutableStateOf<ShopEvents?>(null) }
     val pullToRefreshState = rememberPullToRefreshState()
     Column(
         modifier =
@@ -119,10 +125,11 @@ internal fun EventsScreen(
                             modifier = Modifier.fillMaxSize(),
                         )
 
-                    uiState.events.isEmpty() -> EventListEmptyContent()
+                    uiState.ongoingEvents.isEmpty() &&
+                        uiState.upcomingEvents.isEmpty() &&
+                        uiState.summerLimitedEvents.isEmpty() -> EventListEmptyContent()
 
                     else -> {
-                        val (ongoingEvents, upcomingEvents) = partitionBySchedule(uiState.events)
                         val ongoingTitle = stringResource(Res.string.event_list_ongoing_section)
                         val upcomingTitle = stringResource(Res.string.event_list_upcoming_section)
                         val summerLimitedTitle =
@@ -139,22 +146,25 @@ internal fun EventsScreen(
                                 isOngoingSection = true,
                                 horizontalContentPadding = 15.dp,
                                 onEventClick = onEventClick,
+                                onEventGroupClick = { selectedEventGroup = it },
                             )
                             eventSection(
                                 scope = this,
                                 title = ongoingTitle,
-                                events = ongoingEvents,
+                                events = uiState.ongoingEvents,
                                 isOngoingSection = true,
                                 horizontalContentPadding = 15.dp,
                                 onEventClick = onEventClick,
+                                onEventGroupClick = { selectedEventGroup = it },
                             )
                             eventSection(
                                 scope = this,
                                 title = upcomingTitle,
-                                events = upcomingEvents,
+                                events = uiState.upcomingEvents,
                                 isOngoingSection = false,
                                 horizontalContentPadding = 15.dp,
                                 onEventClick = onEventClick,
+                                onEventGroupClick = { selectedEventGroup = it },
                             )
                         }
                     }
@@ -171,14 +181,19 @@ internal fun EventsScreen(
                     contentDescription = stringResource(Res.string.event_calendar_open),
                 )
             }
+            selectedEventGroup?.let { eventGroup ->
+                EventListBottomSheet(
+                    events = eventGroup,
+                    onDismiss = { selectedEventGroup = null },
+                    onEventClick = { event ->
+                        selectedEventGroup = null
+                        onEventClick(event)
+                    },
+                )
+            }
         }
     }
 }
-
-internal fun partitionBySchedule(events: List<ShopEvent>): Pair<List<ShopEvent>, List<ShopEvent>> =
-    events
-        .filterNot { it.type == ShopEventType.SUMMER_LIMITED && it.isToday }
-        .partition(ShopEvent::isToday)
 
 @Preview(showBackground = true)
 @Composable

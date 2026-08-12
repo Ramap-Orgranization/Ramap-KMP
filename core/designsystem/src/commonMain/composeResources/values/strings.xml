@@ -72,6 +72,7 @@
     <string name="event_list_refresh_failure_message">이벤트를 새로고침하지 못했어요</string>
     <string name="event_list_ongoing_section">🔖 오늘 진행 중</string>
     <string name="event_list_upcoming_section">진행 예정</string>
+    <string name="event_list_additional_events">+%1$d</string>
 
     <!-- 이벤트 공통 정보 -->
     <string name="event_status_today">오늘 진행</string>
