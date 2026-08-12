@@ -12,6 +12,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.theme.AppTextStyle
+import com.peto.ramap.theme.ChromaticColor
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.InstagramColor
 import com.peto.ramap.theme.RamapTheme
@@ -68,9 +69,9 @@ private fun CalendarLegendItem(
     ) {
         Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
             EventDot(color = InstagramColor.Orange)
-            if (dots > 1) EventDot(color = InstagramColor.Pink)
+            if (dots > 1) EventDot(color = ChromaticColor.Purple400)
         }
-        AppText(text = label, style = AppTextStyle.C2, color = GrayColor.C400)
+        AppText(text = label, style = AppTextStyle.B4, color = GrayColor.C400)
     }
 }
 

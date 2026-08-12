@@ -50,6 +50,7 @@ import com.peto.ramap.ui.main.event.calendar.contract.EventCalendarUiState
 import com.peto.ramap.ui.main.event.calendar.model.CalendarDaySelection
 import com.peto.ramap.ui.main.event.calendar.model.CalendarMonth
 import com.peto.ramap.ui.main.event.calendar.preview.EventCalendarPreviewParameterProvider
+import com.peto.ramap.ui.main.event.calendar.resource.EventCalendarResourceMapper
 import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.LocalDate
 import org.jetbrains.compose.resources.painterResource
@@ -59,13 +60,6 @@ import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.event_calendar_month_header
 import ramap.shared.generated.resources.event_calendar_next_month
 import ramap.shared.generated.resources.event_calendar_previous_month
-import ramap.shared.generated.resources.event_calendar_weekday_friday
-import ramap.shared.generated.resources.event_calendar_weekday_monday
-import ramap.shared.generated.resources.event_calendar_weekday_saturday
-import ramap.shared.generated.resources.event_calendar_weekday_sunday
-import ramap.shared.generated.resources.event_calendar_weekday_thursday
-import ramap.shared.generated.resources.event_calendar_weekday_tuesday
-import ramap.shared.generated.resources.event_calendar_weekday_wednesday
 import ramap.shared.generated.resources.event_list_error_description
 import ramap.shared.generated.resources.event_list_error_title
 import ramap.shared.generated.resources.event_list_open
@@ -129,16 +123,7 @@ internal fun EventCalendarScreen(
             Column(modifier = Modifier.fillMaxSize()) {
                 when {
                     uiState.isLoading ->
-                        Column(modifier = Modifier.fillMaxSize()) {
-                            CalendarTopBar(
-                                month = uiState.month,
-                                hasPreviousMonthEvents = uiState.hasPreviousMonthEvents,
-                                hasNextMonthEvents = uiState.hasNextMonthEvents,
-                                onPreviousMonthClick = onPreviousMonthClick,
-                                onNextMonthClick = onNextMonthClick,
-                            )
-                            RamenLoadingIndicator(modifier = Modifier.fillMaxSize())
-                        }
+                        RamenLoadingIndicator(modifier = Modifier.fillMaxSize())
 
                     uiState.showError ->
                         Column(modifier = Modifier.fillMaxSize()) {
@@ -227,7 +212,10 @@ private fun CalendarTopBar(
                 Modifier
                     .size(36.dp)
                     .padding(6.dp)
-                    .noRippleClickable(enabled = hasPreviousMonthEvents, onClick = onPreviousMonthClick),
+                    .noRippleClickable(
+                        enabled = hasPreviousMonthEvents,
+                        onClick = onPreviousMonthClick,
+                    ),
             tint = if (hasPreviousMonthEvents) GrayColor.C500 else GrayColor.C200,
         )
         AppText(
@@ -277,11 +265,10 @@ private fun CalendarGrid(
                 .padding(horizontal = 16.dp, vertical = 12.dp)
                 .border(1.dp, GrayColor.C100, cardShape)
                 .clip(cardShape)
-                .padding(16.dp),
+                .padding(top = 16.dp)
+                .padding(horizontal = 16.dp),
     ) {
         CalendarLegend()
-
-        Spacer(Modifier.height(8.dp))
 
         CalendarTopBar(
             month = month,
@@ -296,7 +283,7 @@ private fun CalendarGrid(
         Row(modifier = Modifier.fillMaxWidth()) {
             DayOfWeek.entries.forEach { dayOfWeek ->
                 AppText(
-                    text = weekdayLabel(dayOfWeek),
+                    text = stringResource(EventCalendarResourceMapper.weekdayLabel(dayOfWeek)),
                     modifier = Modifier.weight(1f),
                     style = AppTextStyle.B3,
                     color = GrayColor.C400,
@@ -330,20 +317,6 @@ private fun CalendarGrid(
 }
 
 private fun daysWithLeadingEmptyCells(month: CalendarMonth): List<LocalDate?> = List(month.leadingEmptyCellCount()) { null } + month.days()
-
-@Composable
-private fun weekdayLabel(dayOfWeek: DayOfWeek): String =
-    stringResource(
-        when (dayOfWeek) {
-            DayOfWeek.SUNDAY -> Res.string.event_calendar_weekday_sunday
-            DayOfWeek.MONDAY -> Res.string.event_calendar_weekday_monday
-            DayOfWeek.TUESDAY -> Res.string.event_calendar_weekday_tuesday
-            DayOfWeek.WEDNESDAY -> Res.string.event_calendar_weekday_wednesday
-            DayOfWeek.THURSDAY -> Res.string.event_calendar_weekday_thursday
-            DayOfWeek.FRIDAY -> Res.string.event_calendar_weekday_friday
-            DayOfWeek.SATURDAY -> Res.string.event_calendar_weekday_saturday
-        },
-    )
 
 @Preview(showBackground = true)
 @Composable

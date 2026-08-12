@@ -19,24 +19,21 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.peto.ramap.designsystem.image.RemoteShopImage
+import com.peto.ramap.designsystem.resource.event.ShopEventResourceMapper
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.domain.model.event.ShopEvent
-import com.peto.ramap.domain.model.event.ShopEventType
 import com.peto.ramap.theme.AppTextStyle
+import com.peto.ramap.theme.ChromaticColor
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
+import com.peto.ramap.theme.SystemColor
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.event_status_cancelled
-import ramap.shared.generated.resources.event_type_collab
-import ramap.shared.generated.resources.event_type_limited_menu
-import ramap.shared.generated.resources.event_type_popup
-import ramap.shared.generated.resources.event_type_summer_limited
 import ramap.shared.generated.resources.ic_close
 
 @Composable
@@ -84,17 +81,14 @@ fun EventCard(
                 )
             }
             if (isCancelled) {
-                EventTag(stringResource(Res.string.event_status_cancelled))
+                EventTag(
+                    text = stringResource(Res.string.event_status_cancelled),
+                    isCancelled = true,
+                )
             }
-            EventTag(eventTypeLabel(event.type))
+            EventTag(stringResource(ShopEventResourceMapper.typeLabel(event.type)))
             if (actionLabel != null && onAction != null) {
-                IconButton(
-                    onClick = onAction,
-                    modifier =
-                        Modifier.semantics {
-                            contentDescription = "${event.title} $actionLabel"
-                        },
-                ) {
+                IconButton(onClick = onAction) {
                     Icon(
                         painter = painterResource(Res.drawable.ic_close),
                         contentDescription = null,
@@ -116,25 +110,19 @@ fun EventCard(
 }
 
 @Composable
-private fun EventTag(text: String) {
+private fun EventTag(
+    text: String,
+    isCancelled: Boolean = false,
+) {
     AppText(
         text = text,
         modifier =
             Modifier
-                .border(1.dp, GrayColor.C100, RoundedCornerShape(10.dp))
-                .padding(horizontal = 8.dp, vertical = 3.dp),
+                .background(
+                    if (isCancelled) SystemColor.Warning else ChromaticColor.Yellow400,
+                    RoundedCornerShape(10.dp),
+                ).padding(horizontal = 8.dp, vertical = 3.dp),
         style = AppTextStyle.C2,
-        color = GrayColor.C500,
+        color = if (isCancelled) CommonColor.White else GrayColor.C500,
     )
 }
-
-@Composable
-private fun eventTypeLabel(type: ShopEventType): String =
-    stringResource(
-        when (type) {
-            ShopEventType.COLLAB -> Res.string.event_type_collab
-            ShopEventType.POPUP -> Res.string.event_type_popup
-            ShopEventType.LIMITED_MENU -> Res.string.event_type_limited_menu
-            ShopEventType.SUMMER_LIMITED -> Res.string.event_type_summer_limited
-        },
-    )

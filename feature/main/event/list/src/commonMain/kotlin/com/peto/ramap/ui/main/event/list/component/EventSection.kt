@@ -159,7 +159,7 @@ private fun OngoingEventShopItem(
                     modifier =
                         Modifier
                             .align(Alignment.TopEnd)
-                            .background(InstagramColor.Pink, CircleShape)
+                            .background(InstagramColor.Blue, CircleShape)
                             .padding(4.dp),
                     style = AppTextStyle.C2,
                     color = CommonColor.White,

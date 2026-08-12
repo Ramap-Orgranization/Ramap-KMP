@@ -25,7 +25,6 @@ import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.InstagramColor
 import com.peto.ramap.theme.RamapTheme
-import com.peto.ramap.theme.SystemColor
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.todayIn
@@ -65,7 +64,7 @@ internal fun CalendarDayCell(
         ) {
             AppText(
                 text = date.day.toString(),
-                style = AppTextStyle.B3,
+                style = AppTextStyle.B1,
                 color = if (isToday) CommonColor.White else GrayColor.C500,
                 textAlign = TextAlign.Center,
             )
@@ -79,21 +78,14 @@ internal fun CalendarDayCell(
                         painter = painterResource(Res.drawable.ic_notification),
                         contentDescription = stringResource(Res.string.event_calendar_notification),
                         modifier = Modifier.size(15.dp),
-                        tint = ChromaticColor.Pink400,
+                        tint = GrayColor.C400,
                     )
                 }
                 if (!hasNotification && events.isNotEmpty()) {
-                    EventDot(
-                        color =
-                            if (events.any { it.isCancelledOn(date) }) {
-                                SystemColor.Warning
-                            } else {
-                                InstagramColor.Orange
-                            },
-                    )
+                    EventDot(color = InstagramColor.Orange)
                     if (events.size > 1) {
                         EventDot(
-                            color = InstagramColor.Pink,
+                            color = ChromaticColor.Purple400,
                             modifier = Modifier.padding(start = 2.dp),
                         )
                     }
