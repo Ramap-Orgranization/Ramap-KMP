@@ -46,6 +46,7 @@ class EventCalendarPreviewParameterProvider : PreviewParameterProvider<EventCale
                 collaboratorInstagramUrl = null,
                 waitingMethod = null,
                 waitingUrl = null,
+                cancelledDates = listOf(LocalDate(2026, 8, 19)),
             )
     }
 }

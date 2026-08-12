@@ -78,6 +78,7 @@ internal fun CalendarEventsBottomSheet(
                     EventCard(
                         event = event,
                         dateText = eventDateText(event.startDate, event.endDate),
+                        isCancelled = event.isCancelledOn(day.date),
                         onClick = { onEventClick(event) },
                     )
                 }

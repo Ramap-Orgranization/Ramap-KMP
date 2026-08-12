@@ -40,6 +40,20 @@ class ShopEventTest {
     }
 
     @Test
+    fun `취소된 날짜만 취소 상태로 판정한다`() {
+        val event =
+            event(
+                startDate = "2024-02-28",
+                endDate = "2024-03-01",
+                cancelledDates = listOf(LocalDate(2024, 3, 1)),
+            )
+
+        assertFalse(event.isCancelledOn(LocalDate(2024, 2, 28)))
+        assertTrue(event.isCancelledOn(LocalDate(2024, 3, 1)))
+        assertFalse(event.isCancelledOn(LocalDate(2024, 3, 2)))
+    }
+
+    @Test
     fun `다가오는 단일 콜라보의 등록된 상대 매장을 찾는다`() {
         assertEquals(
             "라멘롱시즌",
@@ -90,6 +104,7 @@ class ShopEventTest {
         collaboratorName: String? = null,
         activeEventCount: Int = 1,
         collaborationPartnerCount: Int? = null,
+        cancelledDates: List<LocalDate> = emptyList(),
     ) = ShopEvent(
         id = "event",
         type = ShopEventType.COLLAB,
@@ -110,5 +125,6 @@ class ShopEventTest {
         waitingUrl = null,
         activeEventCount = activeEventCount,
         collaborationPartnerCount = collaborationPartnerCount,
+        cancelledDates = cancelledDates,
     )
 }

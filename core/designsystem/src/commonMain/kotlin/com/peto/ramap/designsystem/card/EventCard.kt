@@ -33,6 +33,7 @@ import com.peto.ramap.theme.GrayColor
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
+import ramap.shared.generated.resources.event_status_cancelled
 import ramap.shared.generated.resources.event_type_collab
 import ramap.shared.generated.resources.event_type_limited_menu
 import ramap.shared.generated.resources.event_type_popup
@@ -47,6 +48,7 @@ fun EventCard(
     modifier: Modifier = Modifier.fillMaxWidth(),
     actionLabel: String? = null,
     onAction: (() -> Unit)? = null,
+    isCancelled: Boolean = event.isCancelledToday,
 ) {
     val cardShape = RoundedCornerShape(16.dp)
 
@@ -81,6 +83,9 @@ fun EventCard(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
+            }
+            if (isCancelled) {
+                EventTag(stringResource(Res.string.event_status_cancelled))
             }
             EventTag(eventTypeLabel(event.type))
             if (actionLabel != null && onAction != null) {
