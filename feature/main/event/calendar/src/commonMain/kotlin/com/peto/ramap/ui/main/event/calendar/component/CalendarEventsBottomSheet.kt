@@ -18,6 +18,7 @@ import androidx.compose.ui.unit.dp
 import com.peto.ramap.designsystem.bottomsheet.CommonBottomSheet
 import com.peto.ramap.designsystem.bottomsheet.CommonBottomSheetConfig
 import com.peto.ramap.designsystem.card.EventCard
+import com.peto.ramap.designsystem.card.EventShopGroupCard
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.designsystem.text.eventDateText
 import com.peto.ramap.domain.model.event.ShopEvent
@@ -74,13 +75,23 @@ internal fun CalendarEventsBottomSheet(
                 color = GrayColor.C500,
             )
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                day.events.forEach { event ->
-                    EventCard(
-                        event = event,
-                        dateText = eventDateText(event.startDate, event.endDate),
-                        isCancelled = event.isCancelledOn(day.date),
-                        onClick = { onEventClick(event) },
-                    )
+                ShopEvents.groupByVenue(day.events).forEach { eventGroup ->
+                    if (eventGroup.hasMultipleEvents) {
+                        EventShopGroupCard(
+                            eventGroup = eventGroup,
+                            onEventClick = onEventClick,
+                            isCancelled = { event -> event.isCancelledOn(day.date) },
+                            showHeaderCancelledBadge = false,
+                        )
+                    } else {
+                        val event = eventGroup.representativeEvent
+                        EventCard(
+                            event = event,
+                            dateText = eventDateText(event.startDate, event.endDate),
+                            isCancelled = event.isCancelledOn(day.date),
+                            onClick = { onEventClick(event) },
+                        )
+                    }
                 }
             }
         }
