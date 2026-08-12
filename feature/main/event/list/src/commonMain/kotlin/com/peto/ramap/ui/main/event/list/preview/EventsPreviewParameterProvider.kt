@@ -3,53 +3,110 @@ package com.peto.ramap.ui.main.event.list.preview
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.model.event.ShopEventType
+import com.peto.ramap.domain.model.event.ShopEvents
 import com.peto.ramap.ui.main.event.list.contract.EventsUiState
 
 class EventsPreviewParameterProvider : PreviewParameterProvider<EventsUiState> {
     override val values: Sequence<EventsUiState> =
         sequenceOf(
             EventsUiState(
-                events =
+                ongoingEvents =
                     listOf(
-                        previewEvent(
-                            id = "ongoing-1",
-                            title = "오늘 진행 중인 라멘 이벤트",
-                            type = ShopEventType.POPUP,
-                            isToday = true,
+                        ShopEvents(
+                            listOf(
+                                previewEvent(
+                                    id = "ongoing-1",
+                                    title = "오늘 진행 중인 라멘 이벤트",
+                                    type = ShopEventType.POPUP,
+                                    isToday = true,
+                                ),
+                                previewEvent(
+                                    id = "ongoing-2",
+                                    title = "또 다른 진행 중인 라멘 이벤트",
+                                    type = ShopEventType.COLLAB,
+                                    isToday = true,
+                                ),
+                            ),
                         ),
-                        previewEvent(
-                            id = "ongoing-2",
-                            title = "또 다른 진행 중인 라멘 이벤트",
-                            type = ShopEventType.COLLAB,
-                            isToday = true,
-                        ),
-                        previewEvent(
-                            id = "upcoming-1",
-                            title = "다음 주 예정된 라멘 이벤트",
-                            type = ShopEventType.POPUP,
-                            isToday = false,
+                    ),
+                upcomingEvents =
+                    listOf(
+                        ShopEvents(
+                            listOf(
+                                previewEvent(
+                                    id = "upcoming-1",
+                                    title = "다음 주 예정된 라멘 이벤트",
+                                    type = ShopEventType.POPUP,
+                                    isToday = false,
+                                ),
+                            ),
                         ),
                     ),
             ),
             EventsUiState(
-                events =
+                summerLimitedEvents =
                     listOf(
-                        previewEvent(
-                            id = "ongoing-2",
-                            title = "오늘 진행 중인 라멘 이벤트",
-                            type = ShopEventType.SUMMER_LIMITED,
-                            isToday = true,
+                        ShopEvents(
+                            listOf(
+                                previewEvent(
+                                    id = "ongoing-2",
+                                    title = "오늘 진행 중인 라멘 이벤트",
+                                    type = ShopEventType.SUMMER_LIMITED,
+                                    isToday = true,
+                                ),
+                            ),
                         ),
                     ),
             ),
             EventsUiState(
-                events =
+                upcomingEvents =
                     listOf(
-                        previewEvent(
-                            id = "upcoming-2",
-                            title = "다음 주 예정된 라멘 이벤트",
-                            type = ShopEventType.POPUP,
-                            isToday = false,
+                        ShopEvents(
+                            listOf(
+                                previewEvent(
+                                    id = "upcoming-2",
+                                    title = "다음 주 예정된 라멘 이벤트",
+                                    type = ShopEventType.POPUP,
+                                    isToday = false,
+                                ),
+                            ),
+                        ),
+                    ),
+            ),
+            EventsUiState(
+                upcomingEvents =
+                    listOf(
+                        ShopEvents(
+                            listOf(
+                                previewEvent(
+                                    id = "upcoming-multiple-1",
+                                    title = "규코츠라멘 이벤트",
+                                    type = ShopEventType.POPUP,
+                                    isToday = false,
+                                    venueShopId = "preview-shop-1",
+                                    venueShopName = "토리하나",
+                                ),
+                                previewEvent(
+                                    id = "upcoming-multiple-2",
+                                    title = "치킨멘 이벤트",
+                                    type = ShopEventType.LIMITED_MENU,
+                                    isToday = false,
+                                    venueShopId = "preview-shop-1",
+                                    venueShopName = "토리하나",
+                                ),
+                            ),
+                        ),
+                        ShopEvents(
+                            listOf(
+                                previewEvent(
+                                    id = "upcoming-multiple-3",
+                                    title = "냉라멘 이벤트",
+                                    type = ShopEventType.LIMITED_MENU,
+                                    isToday = false,
+                                    venueShopId = "preview-shop-2",
+                                    venueShopName = "니시무라멘 연남본점",
+                                ),
+                            ),
                         ),
                     ),
             ),
@@ -61,6 +118,8 @@ class EventsPreviewParameterProvider : PreviewParameterProvider<EventsUiState> {
         title: String,
         type: ShopEventType,
         isToday: Boolean,
+        venueShopId: String = "preview-shop",
+        venueShopName: String = "라멘 프리뷰 매장",
     ) = ShopEvent(
         id = id,
         type = type,
@@ -71,8 +130,8 @@ class EventsPreviewParameterProvider : PreviewParameterProvider<EventsUiState> {
         sourceUrl = "https://instagram.com/event",
         isToday = isToday,
         isVenue = true,
-        venueShopId = "preview-shop",
-        venueShopName = "라멘 프리뷰 매장",
+        venueShopId = venueShopId,
+        venueShopName = venueShopName,
         venueAddress = "서울 마포구",
         collaboratorShopId = null,
         collaboratorName = null,

@@ -2,9 +2,11 @@ package com.peto.ramap.ui.main.event.list
 
 import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.model.event.ShopEventType
-import com.peto.ramap.ui.main.event.list.partitionBySchedule
+import com.peto.ramap.domain.model.event.ShopEvents
+import com.peto.ramap.ui.main.event.list.contract.partitionBySchedule
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 class EventListGroupingTest {
     @Test
@@ -47,10 +49,39 @@ class EventListGroupingTest {
         assertEquals(listOf(upcomingSummerLimited, upcoming), upcomingEvents)
     }
 
+    @Test
+    fun `모든 매장을 유지하고 같은 매장 이벤트 개수를 계산한다`() {
+        val firstShopFirst = event(id = "first-shop-first", isToday = false, venueShopId = "first-shop")
+        val secondShop = event(id = "second-shop", isToday = false, venueShopId = "second-shop")
+        val firstShopSecond = event(id = "first-shop-second", isToday = false, venueShopId = "first-shop")
+        val thirdShop = event(id = "third-shop", isToday = false, venueShopId = "third-shop")
+        val fourthShop = event(id = "fourth-shop", isToday = false, venueShopId = "fourth-shop")
+        val firstShopThird = event(id = "first-shop-third", isToday = false, venueShopId = "first-shop")
+
+        val groups =
+            ShopEvents.groupByVenue(
+                listOf(
+                    firstShopFirst,
+                    secondShop,
+                    firstShopSecond,
+                    thirdShop,
+                    fourthShop,
+                    firstShopThird,
+                ),
+            )
+
+        assertEquals(4, groups.size)
+        assertEquals(listOf(firstShopFirst, firstShopSecond, firstShopThird), groups.first())
+        assertEquals(firstShopFirst, groups.first().representativeEvent)
+        assertEquals(3, groups.first().eventCount)
+        assertTrue(groups.first().hasMultipleEvents)
+    }
+
     private fun event(
         id: String,
         isToday: Boolean,
         type: ShopEventType = ShopEventType.POPUP,
+        venueShopId: String = "shop",
     ) = ShopEvent(
         id = id,
         type = type,
@@ -61,7 +92,7 @@ class EventListGroupingTest {
         sourceUrl = "https://instagram.com/event",
         isToday = isToday,
         isVenue = true,
-        venueShopId = "shop",
+        venueShopId = venueShopId,
         venueShopName = "매장",
         venueAddress = "서울",
         collaboratorShopId = null,

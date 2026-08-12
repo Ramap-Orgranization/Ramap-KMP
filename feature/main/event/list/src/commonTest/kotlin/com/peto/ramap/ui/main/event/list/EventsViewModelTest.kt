@@ -7,9 +7,9 @@ import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.model.event.ShopEventType
+import com.peto.ramap.domain.model.event.ShopEvents
 import com.peto.ramap.fake.FakeAnalyticsTracker
 import com.peto.ramap.fake.FakeRamenShopRepository
-import com.peto.ramap.ui.main.event.list.EventsViewModel
 import com.peto.ramap.ui.main.event.list.contract.EventsIntent
 import com.peto.ramap.ui.main.event.list.contract.EventsSideEffect
 import com.peto.ramap.ui.main.event.list.log.EventsAnalytics
@@ -35,7 +35,13 @@ class EventsViewModelTest {
 
             runCurrent()
 
-            assertEquals(listOf(event), viewModel.uiState.value.events)
+            assertEquals(
+                ShopEvents(listOf(event)),
+                viewModel.uiState
+                    .value
+                    .upcomingEvents
+                    .single(),
+            )
             assertFalse(viewModel.uiState.value.isLoading)
             assertEquals(1, repository.activeEventsRequestCount)
         }
@@ -53,7 +59,13 @@ class EventsViewModelTest {
             runCurrent()
 
             assertEquals(2, repository.activeEventsRequestCount)
-            assertEquals(listOf(event), viewModel.uiState.value.events)
+            assertEquals(
+                ShopEvents(listOf(event)),
+                viewModel.uiState
+                    .value
+                    .upcomingEvents
+                    .single(),
+            )
             assertTrue(viewModel.uiState.value.isRefreshing)
 
             advanceTimeBy(1_000)
@@ -127,7 +139,13 @@ class EventsViewModelTest {
             advanceTimeBy(1_000)
             runCurrent()
 
-            assertEquals(listOf(event), viewModel.uiState.value.events)
+            assertEquals(
+                ShopEvents(listOf(event)),
+                viewModel.uiState
+                    .value
+                    .upcomingEvents
+                    .single(),
+            )
             assertFalse(viewModel.uiState.value.showError)
             assertFalse(viewModel.uiState.value.isLoading)
         }
@@ -145,7 +163,13 @@ class EventsViewModelTest {
                 viewModel.dispatch(EventsIntent.OnEventsRefreshed)
                 runCurrent()
 
-                assertEquals(listOf(event), viewModel.uiState.value.events)
+                assertEquals(
+                    ShopEvents(listOf(event)),
+                    viewModel.uiState
+                        .value
+                        .upcomingEvents
+                        .single(),
+                )
                 assertFalse(viewModel.uiState.value.isRefreshing)
                 assertEquals(
                     EventsSideEffect.ShowEventsToast(
