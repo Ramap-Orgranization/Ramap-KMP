@@ -95,7 +95,7 @@ fun CommonBottomSheet(
     BoxWithConstraints(
         modifier = Modifier.fillMaxSize().then(modifier),
     ) {
-        val sheetMaxHeight = config.maxHeight ?: maxHeight * config.maxHeightFraction
+        val sheetMaxHeight = config.maxHeight ?: (maxHeight * config.maxHeightFraction)
 
         BottomSheetScrim(
             config = config,
@@ -205,7 +205,7 @@ private fun BottomSheetContent(
                 } else {
                     Spacer(Modifier.height(config.handleTopPadding + config.handleBottomPadding))
                 }
-                content(Modifier)
+                content(if (config.isContentDraggable) dragModifier else Modifier)
             }
         }
     }
