@@ -6,7 +6,6 @@ import com.peto.ramap.data.model.ShopEventParticipantResponse
 import com.peto.ramap.data.model.ShopEventResponse
 import com.peto.ramap.domain.model.shop.MapBounds
 import com.peto.ramap.domain.model.shop.SearchQuery
-import com.peto.ramap.network.config.RamapSecrets
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.postgrest
@@ -22,7 +21,6 @@ internal class RemoteRamenShopDataSource(
             .from(ACTIVE_EVENTS_VIEW)
             .select()
             .decodeList<ShopEventResponse>()
-            .map(::resolveProfileImageUrl)
 
     override suspend fun fetchActiveEvent(eventId: String): ShopEventResponse? =
         client
@@ -31,7 +29,6 @@ internal class RemoteRamenShopDataSource(
                 filter { eq(COLUMN_ID, eventId) }
                 limit(1)
             }.decodeSingleOrNull<ShopEventResponse>()
-            ?.let(::resolveProfileImageUrl)
 
     override suspend fun fetchCalendarEvents(
         startDate: String,
@@ -48,7 +45,6 @@ internal class RemoteRamenShopDataSource(
                     }
                 }
             }.decodeList<ShopEventResponse>()
-            .map(::resolveProfileImageUrl)
 
     override suspend fun fetchCalendarEventPage(monthStart: String): CalendarEventPageResponse =
         client.postgrest
@@ -57,9 +53,6 @@ internal class RemoteRamenShopDataSource(
                 parameters = buildJsonObject { put(REQUESTED_MONTH_PARAMETER, monthStart) },
             ).decodeList<CalendarEventPageResponse>()
             .single()
-            .let { page ->
-                page.copy(events = page.events.map(::resolveProfileImageUrl))
-            }
 
     override suspend fun fetchEvent(eventId: String): ShopEventResponse? =
         client
@@ -68,7 +61,6 @@ internal class RemoteRamenShopDataSource(
                 filter { eq(COLUMN_ID, eventId) }
                 limit(1)
             }.decodeSingleOrNull<ShopEventResponse>()
-            ?.let(::resolveProfileImageUrl)
 
     override suspend fun fetchActiveShopEvents(shopId: String): List<ShopEventResponse> =
         client
@@ -76,7 +68,6 @@ internal class RemoteRamenShopDataSource(
             .select {
                 filter { eq(COLUMN_SHOP_CONTEXT_ID, shopId) }
             }.decodeList<ShopEventResponse>()
-            .map(::resolveProfileImageUrl)
 
     override suspend fun fetchShopEventParticipants(eventId: String): List<ShopEventParticipantResponse> =
         client
@@ -145,14 +136,6 @@ internal class RemoteRamenShopDataSource(
             }.decodeList()
     }
 
-    private fun resolveProfileImageUrl(event: ShopEventResponse): ShopEventResponse =
-        event.copy(
-            venueProfileImageUrl =
-                event.venueProfileImageUrl?.let { path ->
-                    "${RamapSecrets.supabaseUrl}/storage/v1/object/public/$PROFILE_BUCKET/$path"
-                },
-        )
-
     companion object {
         private const val TABLE_NAME = "shops"
         private const val EVENT_VIEW = "active_shop_events"
@@ -160,7 +143,6 @@ internal class RemoteRamenShopDataSource(
         private const val CALENDAR_EVENTS_VIEW = "calendar_events"
         private const val FETCH_CALENDAR_EVENT_PAGE_RPC = "fetch_calendar_event_page"
         private const val REQUESTED_MONTH_PARAMETER = "requested_month"
-        private const val PROFILE_BUCKET = "shop-profile-images"
         private const val EVENT_PARTICIPANT_TABLE = "shop_event_participants"
         private const val COLUMN_SHOP_CONTEXT_ID = "shop_context_id"
         private const val COLUMN_EVENT_ID = "event_id"

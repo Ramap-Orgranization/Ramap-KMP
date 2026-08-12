@@ -4,6 +4,9 @@ import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.model.event.ShopEventType
 import com.peto.ramap.domain.model.event.ShopEvents
+import com.peto.ramap.domain.model.shop.Location
+import com.peto.ramap.domain.model.shop.MenuCategories
+import com.peto.ramap.domain.model.shop.RamenShop
 
 class EventSectionPreviewParameterProvider : PreviewParameterProvider<List<ShopEvents>> {
     override val values: Sequence<List<ShopEvents>> =
@@ -64,14 +67,28 @@ class EventSectionPreviewParameterProvider : PreviewParameterProvider<List<ShopE
         sourceUrl = "https://instagram.com/event",
         isToday = true,
         isVenue = true,
-        venueShopId = "preview-shop",
-        venueShopName = "라멘 프리뷰 매장",
-        venueAddress = "서울 마포구",
-        collaboratorShopId = null,
-        collaboratorName = null,
-        collaboratorInstagramUrl = null,
+        venueShop = previewShop,
         waitingMethod = null,
         waitingUrl = null,
         isCancelledToday = isCancelledToday,
     )
+
+    private companion object {
+        val previewShop =
+            RamenShop(
+                id = "preview-shop",
+                kakaoPlaceId = null,
+                name = "라멘 프리뷰 매장",
+                address = "서울 마포구",
+                location = Location(37.5, 127.0),
+                kakaoPlaceUrl = null,
+                naverPlaceUrl = null,
+                phone = null,
+                instagramUrl = null,
+                menuCategories = MenuCategories(emptyList()),
+                isVisible = true,
+                createdAt = "",
+                updatedAt = "",
+            )
+    }
 }

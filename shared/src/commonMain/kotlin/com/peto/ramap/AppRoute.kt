@@ -247,6 +247,16 @@ internal fun AppRoute(
                         source = NavigationSource.EVENT_DETAIL,
                     )
                 },
+                onEventNavigate = { event -> navigationState.showEvent(event.id) },
+                shopDetailContent = { shopId, onDismiss, onShowOnMap, onEventNavigate ->
+                    ShopDetailHost(
+                        shopId = shopId,
+                        viewModel = mapViewModel,
+                        onDismiss = onDismiss,
+                        onShowOnMap = onShowOnMap,
+                        onEventNavigate = onEventNavigate,
+                    )
+                },
             )
         },
     )

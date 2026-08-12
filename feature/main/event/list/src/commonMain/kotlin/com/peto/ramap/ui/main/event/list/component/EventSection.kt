@@ -39,6 +39,9 @@ import com.peto.ramap.designsystem.text.eventDateText
 import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.model.event.ShopEventType
 import com.peto.ramap.domain.model.event.ShopEvents
+import com.peto.ramap.domain.model.shop.Location
+import com.peto.ramap.domain.model.shop.MenuCategories
+import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.extension.noRippleClickable
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.ChromaticColor
@@ -304,15 +307,24 @@ private fun OngoingEventShopItemPreview() {
                             sourceUrl = "https://instagram.com/event",
                             isToday = true,
                             isVenue = true,
-                            venueShopId = "preview-shop",
-                            venueShopName = "무진장이름이긴매장입니다.",
-                            venueAddress = "서울 마포구",
-                            collaboratorShopId = null,
-                            collaboratorName = null,
-                            collaboratorInstagramUrl = null,
+                            venueShop =
+                                RamenShop(
+                                    id = "preview-shop",
+                                    kakaoPlaceId = null,
+                                    name = "무진장이름이긴매장입니다.",
+                                    address = "서울 마포구",
+                                    location = Location(37.5, 127.0),
+                                    kakaoPlaceUrl = null,
+                                    naverPlaceUrl = null,
+                                    phone = null,
+                                    instagramUrl = null,
+                                    menuCategories = MenuCategories(emptyList()),
+                                    isVisible = true,
+                                    createdAt = "",
+                                    updatedAt = "",
+                                ),
                             waitingMethod = null,
                             waitingUrl = null,
-                            venueProfileImageUrl = null,
                         ),
                     ),
                 ),

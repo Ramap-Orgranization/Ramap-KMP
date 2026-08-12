@@ -27,7 +27,6 @@ import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.model.event.ShopEventType
 import com.peto.ramap.theme.AppTextStyle
-import com.peto.ramap.theme.ChromaticColor
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
 import org.jetbrains.compose.resources.painterResource
@@ -69,7 +68,7 @@ fun EventCard(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 RemoteShopImage(
-                    url = event.venueProfileImageUrl,
+                    url = event.venueShop.instagramProfileImageUrl,
                     modifier =
                         Modifier
                             .size(44.dp)
@@ -77,7 +76,7 @@ fun EventCard(
                             .clip(CircleShape),
                 )
                 AppText(
-                    text = event.venueShopName,
+                    text = event.venueShop.name,
                     style = AppTextStyle.B1,
                     color = GrayColor.C400,
                     maxLines = 1,
@@ -122,7 +121,7 @@ private fun EventTag(text: String) {
         text = text,
         modifier =
             Modifier
-                .background(ChromaticColor.Yellow400, RoundedCornerShape(10.dp))
+                .border(1.dp, GrayColor.C100, RoundedCornerShape(10.dp))
                 .padding(horizontal = 8.dp, vertical = 3.dp),
         style = AppTextStyle.C2,
         color = GrayColor.C500,
