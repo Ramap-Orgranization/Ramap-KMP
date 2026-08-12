@@ -48,7 +48,7 @@ internal class NaverCameraController {
     ) {
         if (requestKey == 0L || requestKey == lastPlaceFocusKey) return
         lastPlaceFocusKey = requestKey
-        naverMap.locationTrackingMode = LocationTrackingMode.NoFollow
+        naverMap.locationTrackingMode = LocationTrackingMode.None
         naverMap.moveCamera(
             CameraUpdate.scrollAndZoomTo(
                 LatLng(location.lat, location.lng),
@@ -81,7 +81,7 @@ internal class NaverCameraController {
         shops: RamenShops,
         currentLocation: Location?,
     ) {
-        naverMap.locationTrackingMode = LocationTrackingMode.NoFollow
+        naverMap.locationTrackingMode = LocationTrackingMode.None
         when {
             shops.size == 1 -> moveToShop(naverMap, shops.values.first())
             currentLocation != null -> moveToNearestShop(naverMap, shops, currentLocation)
