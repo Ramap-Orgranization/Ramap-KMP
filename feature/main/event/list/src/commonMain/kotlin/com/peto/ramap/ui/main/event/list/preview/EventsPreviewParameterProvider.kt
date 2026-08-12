@@ -44,6 +44,23 @@ class EventsPreviewParameterProvider : PreviewParameterProvider<EventsUiState> {
                     ),
             ),
             EventsUiState(
+                ongoingEvents =
+                    listOf(
+                        ShopEvents(
+                            listOf(
+                                previewEvent(
+                                    id = "cancelled-today",
+                                    title = "오늘 취소된 토리하나 규코츠 이벤트",
+                                    type = ShopEventType.POPUP,
+                                    isToday = true,
+                                    isCancelledToday = true,
+                                    venueShopName = "토리하나",
+                                ),
+                            ),
+                        ),
+                    ),
+            ),
+            EventsUiState(
                 summerLimitedEvents =
                     listOf(
                         ShopEvents(
@@ -120,6 +137,7 @@ class EventsPreviewParameterProvider : PreviewParameterProvider<EventsUiState> {
         isToday: Boolean,
         venueShopId: String = "preview-shop",
         venueShopName: String = "라멘 프리뷰 매장",
+        isCancelledToday: Boolean = false,
     ) = ShopEvent(
         id = id,
         type = type,
@@ -138,5 +156,6 @@ class EventsPreviewParameterProvider : PreviewParameterProvider<EventsUiState> {
         collaboratorInstagramUrl = null,
         waitingMethod = null,
         waitingUrl = null,
+        isCancelledToday = isCancelledToday,
     )
 }

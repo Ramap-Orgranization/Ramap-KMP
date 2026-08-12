@@ -5,6 +5,7 @@ import com.peto.ramap.designsystem.resource.event.ShopEventResourceMapper
 import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.model.event.ShopEventType
 import ramap.shared.generated.resources.Res
+import ramap.shared.generated.resources.event_status_cancelled
 import ramap.shared.generated.resources.event_status_today
 import ramap.shared.generated.resources.event_status_upcoming
 import ramap.shared.generated.resources.event_type_collab
@@ -23,6 +24,10 @@ class ShopEventResourceMapperTest {
     fun `이벤트 상태와 타입을 리소스로 매핑한다`() {
         assertEquals(Res.string.event_status_today, ShopEventResourceMapper.dateLabel(event(isToday = true)))
         assertEquals(Res.string.event_status_upcoming, ShopEventResourceMapper.dateLabel(event(isToday = false)))
+        assertEquals(
+            Res.string.event_status_cancelled,
+            ShopEventResourceMapper.dateLabel(event(isToday = true, isCancelledToday = true)),
+        )
         assertEquals(Res.string.event_type_collab, ShopEventResourceMapper.typeLabel(ShopEventType.COLLAB))
         assertEquals(Res.string.event_type_popup, ShopEventResourceMapper.typeLabel(ShopEventType.POPUP))
         assertEquals(
@@ -87,6 +92,7 @@ class ShopEventResourceMapperTest {
         collaboratorName: String? = null,
         activeEventCount: Int = 1,
         collaborationPartnerCount: Int? = null,
+        isCancelledToday: Boolean = false,
     ) = ShopEvent(
         id = "event-id",
         type = type,
@@ -107,6 +113,7 @@ class ShopEventResourceMapperTest {
         waitingUrl = null,
         activeEventCount = activeEventCount,
         collaborationPartnerCount = collaborationPartnerCount,
+        isCancelledToday = isCancelledToday,
     )
 
     private companion object {

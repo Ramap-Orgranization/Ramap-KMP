@@ -2,6 +2,7 @@ package com.peto.ramap.data.model
 
 import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.model.event.ShopEventType
+import kotlinx.datetime.LocalDate
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -29,6 +30,8 @@ internal data class ShopEventResponse(
     @SerialName("waiting_method") val waitingMethod: String? = null,
     @SerialName("waiting_url") val waitingUrl: String? = null,
     @SerialName("venue_profile_image_url") val venueProfileImageUrl: String? = null,
+    @SerialName("cancelled_dates") val cancelledDates: List<String> = emptyList(),
+    @SerialName("is_cancelled_today") val isCancelledToday: Boolean = false,
 ) {
     fun toDomain(): ShopEvent? {
         val type = runCatching { ShopEventType.valueOf(eventType.uppercase()) }.getOrNull() ?: return null
@@ -55,6 +58,8 @@ internal data class ShopEventResponse(
             waitingMethod,
             waitingUrl,
             venueProfileImageUrl,
+            cancelledDates.mapNotNull { runCatching { LocalDate.parse(it) }.getOrNull() },
+            isCancelledToday,
         )
     }
 }

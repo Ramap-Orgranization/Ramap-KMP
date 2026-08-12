@@ -35,12 +35,25 @@ class EventSectionPreviewParameterProvider : PreviewParameterProvider<List<ShopE
                     ),
                 ),
             ),
+            listOf(
+                ShopEvents(
+                    listOf(
+                        previewEvent(
+                            id = "cancelled-today",
+                            title = "오늘 취소된 토리하나 이벤트",
+                            type = ShopEventType.POPUP,
+                            isCancelledToday = true,
+                        ),
+                    ),
+                ),
+            ),
         )
 
     private fun previewEvent(
         id: String,
         title: String,
         type: ShopEventType,
+        isCancelledToday: Boolean = false,
     ) = ShopEvent(
         id = id,
         type = type,
@@ -59,5 +72,6 @@ class EventSectionPreviewParameterProvider : PreviewParameterProvider<List<ShopE
         collaboratorInstagramUrl = null,
         waitingMethod = null,
         waitingUrl = null,
+        isCancelledToday = isCancelledToday,
     )
 }

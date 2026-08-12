@@ -46,11 +46,13 @@ import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.InstagramColor
 import com.peto.ramap.theme.RamapTheme
+import com.peto.ramap.theme.SystemColor
 import com.peto.ramap.ui.main.event.list.preview.EventSectionPreviewParameterProvider
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.event_list_additional_events
 import ramap.shared.generated.resources.event_list_ongoing_section
+import ramap.shared.generated.resources.event_status_cancelled
 
 internal fun eventSection(
     scope: LazyListScope,
@@ -132,6 +134,18 @@ private fun OngoingEventShopItem(
                 url = event.venueProfileImageUrl,
                 modifier = Modifier.size(68.dp),
             )
+            if (eventGroup.any(ShopEvent::isCancelledToday)) {
+                AppText(
+                    text = stringResource(Res.string.event_status_cancelled),
+                    modifier =
+                        Modifier
+                            .align(Alignment.BottomStart)
+                            .background(SystemColor.Warning, RoundedCornerShape(8.dp))
+                            .padding(horizontal = 4.dp, vertical = 2.dp),
+                    style = AppTextStyle.C2,
+                    color = CommonColor.White,
+                )
+            }
             if (eventGroup.hasMultipleEvents) {
                 AppText(
                     text =
@@ -194,6 +208,18 @@ internal fun EventShopCard(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
+            if (eventGroup.any(ShopEvent::isCancelledToday)) {
+                AppText(
+                    text = stringResource(Res.string.event_status_cancelled),
+                    modifier =
+                        Modifier
+                            .background(SystemColor.Warning, RoundedCornerShape(10.dp))
+                            .padding(horizontal = 8.dp, vertical = 3.dp),
+                    style = AppTextStyle.C2,
+                    color = CommonColor.White,
+                    maxLines = 1,
+                )
+            }
         }
         eventGroup.forEachIndexed { index, event ->
             if (index > 0) {
@@ -228,6 +254,18 @@ private fun EventShopRow(
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
             )
+            if (event.isCancelledToday) {
+                AppText(
+                    text = stringResource(Res.string.event_status_cancelled),
+                    modifier =
+                        Modifier
+                            .background(SystemColor.Warning, RoundedCornerShape(10.dp))
+                            .padding(horizontal = 8.dp, vertical = 3.dp),
+                    style = AppTextStyle.C2,
+                    color = CommonColor.White,
+                    maxLines = 1,
+                )
+            }
             AppText(
                 text = stringResource(ShopEventResourceMapper.typeLabel(event.type)),
                 modifier =

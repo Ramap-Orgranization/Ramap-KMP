@@ -25,6 +25,7 @@ import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.InstagramColor
 import com.peto.ramap.theme.RamapTheme
+import com.peto.ramap.theme.SystemColor
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.todayIn
@@ -82,7 +83,14 @@ internal fun CalendarDayCell(
                     )
                 }
                 if (!hasNotification && events.isNotEmpty()) {
-                    EventDot(color = InstagramColor.Orange)
+                    EventDot(
+                        color =
+                            if (events.any { it.isCancelledOn(date) }) {
+                                SystemColor.Warning
+                            } else {
+                                InstagramColor.Orange
+                            },
+                    )
                     if (events.size > 1) {
                         EventDot(
                             color = InstagramColor.Pink,

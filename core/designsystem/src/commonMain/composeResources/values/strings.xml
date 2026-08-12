@@ -77,6 +77,8 @@
     <!-- 이벤트 공통 정보 -->
     <string name="event_status_today">오늘 진행</string>
     <string name="event_status_upcoming">진행 예정</string>
+    <string name="event_status_cancelled">오늘 취소</string>
+    <string name="event_cancelled_notice">오늘은 이벤트가 취소됐어요</string>
     <string name="event_type_collab">🤝 콜라보</string>
     <string name="event_type_popup">🎪 팝업</string>
     <string name="event_type_limited_menu">🛎️ 한정 메뉴</string>

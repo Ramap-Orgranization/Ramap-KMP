@@ -27,12 +27,16 @@ data class ShopEvent(
     val venueProfileImageUrl: String? = null,
     val activeEventCount: Int = 1,
     val collaborationPartnerCount: Int? = null,
+    val cancelledDates: List<LocalDate> = emptyList(),
+    val isCancelledToday: Boolean = false,
 ) {
     fun occursOn(date: LocalDate): Boolean {
         val start = runCatching { LocalDate.parse(startDate) }.getOrNull() ?: return false
         val end = runCatching { LocalDate.parse(endDate ?: startDate) }.getOrNull() ?: return false
         return start <= date && date <= end
     }
+
+    fun isCancelledOn(date: LocalDate): Boolean = occursOn(date) && date in cancelledDates
 
     val upcomingCollaborationPartnerName: String?
         get() {
