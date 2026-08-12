@@ -26,7 +26,6 @@ import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.peto.ramap.designsystem.component.LoadErrorContent
-import com.peto.ramap.designsystem.indicator.RamenLoadingIndicator
 import com.peto.ramap.designsystem.resource.event.ShopEventResourceMapper
 import com.peto.ramap.designsystem.toast.ToastManager
 import com.peto.ramap.domain.model.event.ShopEvent
@@ -37,6 +36,7 @@ import com.peto.ramap.theme.RamapTheme
 import com.peto.ramap.ui.base.ObserveAsEvents
 import com.peto.ramap.ui.main.event.list.component.EventListBottomSheet
 import com.peto.ramap.ui.main.event.list.component.EventListEmptyContent
+import com.peto.ramap.ui.main.event.list.component.EventListSkeleton
 import com.peto.ramap.ui.main.event.list.component.eventSection
 import com.peto.ramap.ui.main.event.list.contract.EventsIntent
 import com.peto.ramap.ui.main.event.list.contract.EventsSideEffect
@@ -114,7 +114,7 @@ internal fun EventsScreen(
                 },
             ) {
                 when {
-                    uiState.isLoading -> RamenLoadingIndicator(modifier = Modifier.fillMaxSize())
+                    uiState.isLoading -> EventListSkeleton(modifier = Modifier.fillMaxSize())
 
                     uiState.showError ->
                         LoadErrorContent(

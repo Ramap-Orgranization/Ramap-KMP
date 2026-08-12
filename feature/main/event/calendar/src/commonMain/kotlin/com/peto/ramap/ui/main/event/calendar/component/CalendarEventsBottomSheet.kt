@@ -22,6 +22,7 @@ import com.peto.ramap.designsystem.card.EventShopGroupCard
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.designsystem.text.eventDateText
 import com.peto.ramap.domain.model.event.ShopEvent
+import com.peto.ramap.domain.model.event.ShopEvents
 import com.peto.ramap.extension.noRippleClickable
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.GrayColor

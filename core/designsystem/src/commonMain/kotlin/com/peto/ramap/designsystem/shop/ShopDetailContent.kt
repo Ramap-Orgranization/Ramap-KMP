@@ -85,7 +85,12 @@ fun ShopDetailContent(
             visible = visible,
             onDismissRequest = onDismissRequest,
             isBackEnabled = isBackEnabled,
-            config = CommonBottomSheetConfig(maxHeight = maxHeight, isDraggable = true),
+            config =
+                CommonBottomSheetConfig(
+                    maxHeight = maxHeight,
+                    isDraggable = true,
+                    isContentDraggable = true,
+                ),
         ) { dragModifier ->
             when (state) {
                 is ShopDetailSheetUiState.Loading ->
