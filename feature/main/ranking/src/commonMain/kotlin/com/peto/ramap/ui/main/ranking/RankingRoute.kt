@@ -23,7 +23,6 @@ import com.peto.ramap.designsystem.bottomsheet.CommonBottomSheet
 import com.peto.ramap.designsystem.button.login.LoginButton
 import com.peto.ramap.designsystem.dialog.LoginGuideDialog
 import com.peto.ramap.designsystem.toast.ToastManager
-import com.peto.ramap.domain.model.auth.supportedLoginTypes
 import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.model.rank.RankedShops
 import com.peto.ramap.domain.model.rank.ShopRanking
@@ -70,16 +69,10 @@ fun RankingRoute(
     var showLoginGuideDialog by remember {
         mutableStateOf(false)
     }
-    val loginTypes = supportedLoginTypes()
-
     ObserveAsEvents(viewModel.sideEffect) { sideEffect ->
         when (sideEffect) {
             RankingSideEffect.ShowLoginGuide -> {
-                if (loginTypes.size == 1) {
-                    viewModel.dispatch(RankingIntent.OnLoginTypeSelected(loginTypes.single()))
-                } else {
-                    showLoginGuideDialog = true
-                }
+                showLoginGuideDialog = true
             }
 
             is RankingSideEffect.ShowToast -> {
