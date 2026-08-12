@@ -205,7 +205,7 @@ private fun BottomSheetContent(
                 } else {
                     Spacer(Modifier.height(config.handleTopPadding + config.handleBottomPadding))
                 }
-                content(dragModifier)
+                content(Modifier)
             }
         }
     }
