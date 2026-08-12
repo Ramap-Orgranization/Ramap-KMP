@@ -23,7 +23,7 @@ object DimmedColor {
 
 object SystemColor {
     val Success = Color(0xFF1ED45A)
-    val Warning = Color(0xFFFF6363)
+    val Warning = Color(0xFFF82424)
 }
 
 object ChromaticColor {

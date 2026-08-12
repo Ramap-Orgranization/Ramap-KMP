@@ -29,32 +29,8 @@ data class ShopEvent(
     val venueShopName: String
         get() = venueShop.name
 
-    val venueAddress: String
-        get() = venueShop.address
-
-    val venueKakaoPlaceUrl: String?
-        get() = venueShop.kakaoPlaceUrl
-
-    val venueNaverPlaceUrl: String?
-        get() = venueShop.naverPlaceUrl
-
-    val venueLatitude: Double
-        get() = venueShop.location.lat
-
-    val venueLongitude: Double
-        get() = venueShop.location.lng
-
     val venueProfileImageUrl: String?
         get() = venueShop.instagramProfileImageUrl
-
-    val collaboratorShopId: String?
-        get() = collaboratorShops.singleOrNull()?.id
-
-    val collaboratorName: String?
-        get() = collaboratorShops.singleOrNull()?.name ?: externalParticipants.singleOrNull()?.name
-
-    val collaboratorInstagramUrl: String?
-        get() = externalParticipants.singleOrNull()?.instagramUrl
 
     fun occursOn(date: LocalDate): Boolean {
         val start = runCatching { LocalDate.parse(startDate) }.getOrNull() ?: return false

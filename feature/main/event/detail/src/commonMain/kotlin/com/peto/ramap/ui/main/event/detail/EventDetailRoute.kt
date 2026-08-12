@@ -291,7 +291,10 @@ private fun EventDetailContent(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier.padding(top = 5.dp),
         ) {
-            EventTag(text = stringResource(ShopEventResourceMapper.dateLabel(event)))
+            EventTag(
+                text = stringResource(ShopEventResourceMapper.dateLabel(event)),
+                isCancelledToday = event.isCancelledToday,
+            )
             EventTag(stringResource(ShopEventResourceMapper.typeLabel(event.type)))
         }
         AppText("🍜 ${event.title}", style = AppTextStyle.H1, color = GrayColor.C500)
