@@ -12,7 +12,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.peto.ramap.designsystem.component.RamenShopSearchResultList
+import com.peto.ramap.designsystem.component.RamenShopSummaries
 import com.peto.ramap.designsystem.component.SettingsListPage
 import com.peto.ramap.designsystem.component.ShopListCount
 import com.peto.ramap.designsystem.component.ShopListEmptyContent
@@ -113,15 +113,12 @@ private fun BookmarkedShopListContent(
             modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
         ) {
             ShopListCount(count = uiState.shops.size)
-            RamenShopSearchResultList(
+            RamenShopSummaries(
                 shops = uiState.shops,
                 onShopClick = onShopOpen,
                 categoryLabel = { stringResource(CategoryResourceMapper.label(it)) },
                 itemActionLabel = { stringResource(Res.string.bookmark_removal_confirm_action) },
                 onItemAction = onRemovalRequested,
-                itemModifier = {
-                    Modifier.padding(horizontal = 24.dp, vertical = 6.dp)
-                },
             )
         }
     }

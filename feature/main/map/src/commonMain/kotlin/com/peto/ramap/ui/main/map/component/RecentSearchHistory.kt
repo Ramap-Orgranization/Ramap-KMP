@@ -18,7 +18,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.peto.ramap.designsystem.component.RamenShopSearchResultList
+import com.peto.ramap.designsystem.component.RamenShopSummaries
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.domain.model.shop.Category
 import com.peto.ramap.domain.model.shop.Location
@@ -103,11 +103,10 @@ internal fun RecentSearchHistory(
                 title = stringResource(Res.string.recent_viewed_shops_title),
                 modifier = Modifier.padding(top = 10.dp),
             )
-            RamenShopSearchResultList(
+            RamenShopSummaries(
                 shops = viewedShops,
                 onShopClick = { onViewedShopSelected(it.id) },
                 categoryLabel = categoryLabel,
-                itemModifier = { Modifier.padding(horizontal = 6.dp, vertical = 8.dp) },
             )
         }
     }

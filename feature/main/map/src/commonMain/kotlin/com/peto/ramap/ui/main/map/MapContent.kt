@@ -34,7 +34,7 @@ import androidx.navigationevent.compose.NavigationBackHandler
 import androidx.navigationevent.compose.rememberNavigationEventState
 import com.peto.ramap.analytics.AnalyticsSource
 import com.peto.ramap.designsystem.button.AppButton
-import com.peto.ramap.designsystem.component.RamenShopSearchResultList
+import com.peto.ramap.designsystem.component.RamenShopSummaries
 import com.peto.ramap.designsystem.indicator.RamenLoadingIndicator
 import com.peto.ramap.designsystem.resource.category.CategoryResourceMapper
 import com.peto.ramap.designsystem.resource.wating.toUiModel
@@ -245,7 +245,7 @@ internal fun MapContent(
                             SearchResultGuide(guide = searchResultGuide)
 
                         else ->
-                            RamenShopSearchResultList(
+                            RamenShopSummaries(
                                 shops = uiState.searchResultShops,
                                 onShopClick = {
                                     onShopSelected(

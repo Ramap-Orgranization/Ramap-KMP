@@ -2,7 +2,6 @@ package com.peto.ramap.ui.hidden
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
@@ -12,9 +11,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.peto.ramap.designsystem.component.RamenShopSearchResultList
+import com.peto.ramap.designsystem.component.RamenShopSummaries
 import com.peto.ramap.designsystem.component.SettingsListPage
 import com.peto.ramap.designsystem.component.ShopListCount
 import com.peto.ramap.designsystem.component.ShopListEmptyContent
@@ -125,15 +123,12 @@ private fun HiddenShopListContent(
             modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
         ) {
             ShopListCount(count = uiState.shops.size)
-            RamenShopSearchResultList(
+            RamenShopSummaries(
                 shops = uiState.shops,
                 onShopClick = onShopOpen,
                 categoryLabel = { category -> stringResource(CategoryResourceMapper.label(category)) },
                 itemActionLabel = { stringResource(Res.string.unhide_shop_confirm_action) },
                 onItemAction = onUnhideRequested,
-                itemModifier = {
-                    Modifier.padding(horizontal = 24.dp, vertical = 6.dp)
-                },
             )
         }
     }
