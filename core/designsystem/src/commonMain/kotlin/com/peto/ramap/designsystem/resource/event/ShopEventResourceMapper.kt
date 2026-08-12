@@ -44,7 +44,7 @@ object ShopEventResourceMapper {
         }
 
     fun collaboratorLabel(event: ShopEvent): StringResource =
-        if (event.collaboratorShopId.isNullOrBlank()) {
+        if (event.collaboratorShops.isEmpty()) {
             Res.string.event_collaborator_person
         } else {
             Res.string.event_collaborator_shop
@@ -111,6 +111,6 @@ object ShopEventResourceMapper {
             } else {
                 Res.string.shop_event_notice_participant_upcoming
             }
-        return UiText(resource, listOf(event.venueShopName))
+        return UiText(resource, listOf(event.venueShop.name))
     }
 }

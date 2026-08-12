@@ -3,6 +3,7 @@ package com.peto.ramap.ui.main.event.list
 import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.model.event.ShopEventType
 import com.peto.ramap.domain.model.event.ShopEvents
+import com.peto.ramap.fixture.ramenShopFixture
 import com.peto.ramap.ui.main.event.list.contract.EventsUiState
 import com.peto.ramap.ui.main.event.list.contract.mapEventsToUiState
 import com.peto.ramap.ui.main.event.list.contract.partitionBySchedule
@@ -108,12 +109,7 @@ class EventListGroupingTest {
         sourceUrl = "https://instagram.com/event",
         isToday = isToday,
         isVenue = true,
-        venueShopId = venueShopId,
-        venueShopName = "매장",
-        venueAddress = "서울",
-        collaboratorShopId = null,
-        collaboratorName = null,
-        collaboratorInstagramUrl = null,
+        venueShop = ramenShopFixture(id = venueShopId, name = "매장", address = "서울"),
         waitingMethod = null,
         waitingUrl = null,
     )

@@ -4,6 +4,9 @@ import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.model.event.ShopEventType
 import com.peto.ramap.domain.model.event.ShopEvents
+import com.peto.ramap.domain.model.shop.Location
+import com.peto.ramap.domain.model.shop.MenuCategories
+import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.ui.main.event.list.contract.EventsUiState
 
 class EventsPreviewParameterProvider : PreviewParameterProvider<EventsUiState> {
@@ -44,6 +47,21 @@ class EventsPreviewParameterProvider : PreviewParameterProvider<EventsUiState> {
                     ),
             ),
             EventsUiState(
+                summerLimitedEvents =
+                    listOf(
+                        ShopEvents(
+                            listOf(
+                                previewEvent(
+                                    id = "ongoing-2",
+                                    title = "오늘 진행 중인 라멘 이벤트",
+                                    type = ShopEventType.SUMMER_LIMITED,
+                                    isToday = true,
+                                ),
+                            ),
+                        ),
+                    ),
+            ),
+            EventsUiState(
                 ongoingEvents =
                     listOf(
                         ShopEvents(
@@ -55,21 +73,6 @@ class EventsPreviewParameterProvider : PreviewParameterProvider<EventsUiState> {
                                     isToday = true,
                                     isCancelledToday = true,
                                     venueShopName = "토리하나",
-                                ),
-                            ),
-                        ),
-                    ),
-            ),
-            EventsUiState(
-                summerLimitedEvents =
-                    listOf(
-                        ShopEvents(
-                            listOf(
-                                previewEvent(
-                                    id = "ongoing-2",
-                                    title = "오늘 진행 중인 라멘 이벤트",
-                                    type = ShopEventType.SUMMER_LIMITED,
-                                    isToday = true,
                                 ),
                             ),
                         ),
@@ -148,14 +151,28 @@ class EventsPreviewParameterProvider : PreviewParameterProvider<EventsUiState> {
         sourceUrl = "https://instagram.com/event",
         isToday = isToday,
         isVenue = true,
-        venueShopId = venueShopId,
-        venueShopName = venueShopName,
-        venueAddress = "서울 마포구",
-        collaboratorShopId = null,
-        collaboratorName = null,
-        collaboratorInstagramUrl = null,
+        venueShop = previewShop(venueShopId, venueShopName),
         waitingMethod = null,
         waitingUrl = null,
         isCancelledToday = isCancelledToday,
+    )
+
+    private fun previewShop(
+        id: String,
+        name: String,
+    ) = RamenShop(
+        id = id,
+        kakaoPlaceId = null,
+        name = name,
+        address = "서울 마포구",
+        location = Location(37.5, 127.0),
+        kakaoPlaceUrl = null,
+        naverPlaceUrl = null,
+        phone = null,
+        instagramUrl = null,
+        menuCategories = MenuCategories(emptyList()),
+        isVisible = true,
+        createdAt = "",
+        updatedAt = "",
     )
 }

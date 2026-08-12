@@ -14,23 +14,28 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.peto.ramap.designsystem.button.AppButton
 import com.peto.ramap.designsystem.card.SectionCard
 import com.peto.ramap.designsystem.component.LoadErrorContent
+import com.peto.ramap.designsystem.component.RamenShopSummary
 import com.peto.ramap.designsystem.indicator.RamenLoadingIndicator
+import com.peto.ramap.designsystem.resource.category.CategoryResourceMapper
 import com.peto.ramap.designsystem.resource.event.ShopEventResourceMapper
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.designsystem.text.eventDateText
@@ -40,7 +45,6 @@ import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.designsystem.topbar.CommonTopBar
 import com.peto.ramap.domain.model.event.ShopEvent
-import com.peto.ramap.domain.model.event.ShopEventType
 import com.peto.ramap.extension.noRippleClickable
 import com.peto.ramap.platform.AppSettingsOpener
 import com.peto.ramap.platform.ExternalUriOpener
@@ -51,7 +55,6 @@ import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.InstagramColor
 import com.peto.ramap.theme.RamapTheme
 import com.peto.ramap.ui.base.ObserveAsEvents
-import com.peto.ramap.ui.main.event.detail.component.EventMapActions
 import com.peto.ramap.ui.main.event.detail.component.EventNotificationButton
 import com.peto.ramap.ui.main.event.detail.component.EventTag
 import com.peto.ramap.ui.main.event.detail.contract.EventDetailIntent.OnCollaboratorInstagramSelected
@@ -67,6 +70,7 @@ import com.peto.ramap.ui.main.event.detail.contract.EventDetailSideEffect.EventU
 import com.peto.ramap.ui.main.event.detail.contract.EventDetailSideEffect.RequestNotificationPermission
 import com.peto.ramap.ui.main.event.detail.contract.EventDetailSideEffect.ShowToast
 import com.peto.ramap.ui.main.event.detail.contract.EventDetailUiState
+import com.peto.ramap.ui.main.event.detail.preview.EventDetailPreviewParameterProvider
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
@@ -95,6 +99,14 @@ fun EventDetailRoute(
     onBack: () -> Unit,
     onUnavailable: () -> Unit,
     onShopClick: (String) -> Unit,
+    onEventNavigate: (ShopEvent) -> Unit = {},
+    shopDetailContent:
+        @Composable (
+            String,
+            () -> Unit,
+            (String) -> Unit,
+            (ShopEvent) -> Unit,
+        ) -> Unit = { _, _, _, _ -> },
     toastManager: ToastManager = koinInject(),
     appSettingsOpener: AppSettingsOpener = koinInject(),
     requestNotificationPermission: suspend () -> Boolean = NotificationPermissionRequester::request,
@@ -102,6 +114,7 @@ fun EventDetailRoute(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val coroutineScope = rememberCoroutineScope()
+    var selectedShopId by rememberSaveable(eventId) { mutableStateOf<String?>(null) }
     LaunchedEffect(eventId) {
         viewModel.dispatch(OnEntered(eventId))
     }
@@ -116,6 +129,7 @@ fun EventDetailRoute(
                         type = ToastType.ERROR,
                     ),
                 )
+
             RequestNotificationPermission ->
                 coroutineScope.launch {
                     if (requestNotificationPermission()) {
@@ -136,42 +150,51 @@ fun EventDetailRoute(
                 }
         }
     }
-    EventDetailScreen(
-        uiState = uiState,
-        onBack = onBack,
-        onVenueShopClick = { shopId ->
-            viewModel.dispatch(
-                OnVenueShopSelected(shopId),
+    Box(modifier = Modifier.fillMaxSize()) {
+        EventDetailScreen(
+            uiState = uiState,
+            onBack = onBack,
+            onVenueShopClick = { shopId ->
+                viewModel.dispatch(OnVenueShopSelected(shopId))
+                selectedShopId = shopId
+            },
+            onCollaboratorShopClick = { shopId ->
+                viewModel.dispatch(OnCollaboratorShopSelected(shopId))
+                selectedShopId = shopId
+            },
+            onCollaboratorInstagramClick = { url ->
+                viewModel.dispatch(OnCollaboratorInstagramSelected)
+                ExternalUriOpener.open(url)
+            },
+            onWaitingLinkClick = { url ->
+                viewModel.dispatch(OnWaitingLinkSelected)
+                ExternalUriOpener.open(url)
+            },
+            onSourceLinkClick = { url ->
+                viewModel.dispatch(OnSourceLinkSelected)
+                ExternalUriOpener.open(url)
+            },
+            onNotificationChanged = { enabled ->
+                viewModel.dispatch(OnNotificationChanged(enabled))
+            },
+            onRetry = { viewModel.dispatch(OnRetry) },
+        )
+
+        selectedShopId?.let { shopId ->
+            shopDetailContent(
+                shopId,
+                { selectedShopId = null },
+                {
+                    selectedShopId = null
+                    onShopClick(it)
+                },
+                { event ->
+                    selectedShopId = null
+                    onEventNavigate(event)
+                },
             )
-            onShopClick(shopId)
-        },
-        onCollaboratorShopClick = { shopId ->
-            viewModel.dispatch(
-                OnCollaboratorShopSelected(shopId),
-            )
-            onShopClick(shopId)
-        },
-        onCollaboratorInstagramClick = { url ->
-            viewModel.dispatch(
-                OnCollaboratorInstagramSelected,
-            )
-            ExternalUriOpener.open(url)
-        },
-        onWaitingLinkClick = { url ->
-            viewModel.dispatch(OnWaitingLinkSelected)
-            ExternalUriOpener.open(url)
-        },
-        onSourceLinkClick = { url ->
-            viewModel.dispatch(OnSourceLinkSelected)
-            ExternalUriOpener.open(url)
-        },
-        onNotificationChanged = { enabled ->
-            viewModel.dispatch(
-                OnNotificationChanged(enabled),
-            )
-        },
-        onRetry = { viewModel.dispatch(OnRetry) },
-    )
+        }
+    }
 }
 
 @Composable
@@ -264,75 +287,79 @@ private fun EventDetailContent(
                 .verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(15.dp),
     ) {
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            EventTag(stringResource(ShopEventResourceMapper.dateLabel(event)))
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.padding(top = 5.dp),
+        ) {
+            EventTag(text = stringResource(ShopEventResourceMapper.dateLabel(event)))
             EventTag(stringResource(ShopEventResourceMapper.typeLabel(event.type)))
         }
-        AppText(event.title, style = AppTextStyle.H1, color = GrayColor.C500)
+        AppText("🍜 ${event.title}", style = AppTextStyle.H1, color = GrayColor.C500)
         SectionCard(title = stringResource(Res.string.event_venue)) {
             Column(
-                modifier =
-                    Modifier
-                        .padding(vertical = 12.dp, horizontal = 15.dp),
+                modifier = Modifier.padding(vertical = 12.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                EventVenueLink(
-                    title = event.venueShopName,
-                    onClick = { onVenueShopClick(event.venueShopId) },
-                )
-                EventMapActions(
-                    event = event,
-                    onKakaoClick = { url -> ExternalUriOpener.open(url) },
-                    onNaverClick = { url -> ExternalUriOpener.open(url) },
-                    onAppleClick = { latitude, longitude ->
-                        ExternalUriOpener.openAppleMaps(
-                            name = event.venueShopName,
-                            address = event.venueAddress,
-                            latitude = latitude,
-                            longitude = longitude,
-                        )
+                RamenShopSummary(
+                    shop = event.venueShop,
+                    onClick = { onVenueShopClick(event.venueShop.id) },
+                    categoryLabel = { category ->
+                        stringResource(CategoryResourceMapper.label(category))
                     },
                 )
-                event.collaboratorName?.takeIf(String::isNotBlank)?.let { name ->
-                    val hasCollaboratorLink =
-                        !event.collaboratorShopId.isNullOrBlank() ||
-                            !event.collaboratorInstagramUrl.isNullOrBlank()
+                if (event.collaboratorShops.isNotEmpty()) {
                     EventSection(
-                        stringResource(ShopEventResourceMapper.collaboratorLabel(event)),
-                    ) {
-                        EventVenueLink(
-                            title = name,
-                            onClick =
-                                if (hasCollaboratorLink) {
-                                    {
-                                        val collaboratorShopId = event.collaboratorShopId
-                                        if (!collaboratorShopId.isNullOrBlank()) {
-                                            onCollaboratorShopClick(collaboratorShopId)
-                                        } else {
-                                            event.collaboratorInstagramUrl?.let {
-                                                onCollaboratorInstagramClick(it)
-                                            }
-                                        }
-                                    }
-                                } else {
-                                    null
-                                },
+                        title = stringResource(ShopEventResourceMapper.collaboratorLabel(event)),
+                        content = {
+                            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                                event.collaboratorShops.forEach { shop ->
+                                    RamenShopSummary(
+                                        shop = shop,
+                                        onClick = { onCollaboratorShopClick(shop.id) },
+                                        categoryLabel = { category ->
+                                            stringResource(CategoryResourceMapper.label(category))
+                                        },
+                                    )
+                                }
+                            }
+                        },
+                    )
+                }
+
+                event.externalParticipants.forEach { participant ->
+                    participant.name?.let { name ->
+                        EventSection(
+                            title = stringResource(ShopEventResourceMapper.collaboratorLabel(event)),
+                            content = {
+                                EventVenueLink(
+                                    title = name,
+                                    modifier = Modifier.padding(horizontal = 15.dp),
+                                    onClick =
+                                        participant.instagramUrl?.let { url ->
+                                            { onCollaboratorInstagramClick(url) }
+                                        },
+                                )
+                            },
                         )
                     }
                 }
 
-                HorizontalDivider(thickness = 1.dp, color = GrayColor.C100)
-
-                EventSection(stringResource(Res.string.event_date)) {
-                    EventValue(eventDateText(event.startDate, event.endDate))
-                }
+                EventSection(
+                    title = stringResource(Res.string.event_date),
+                    content = {
+                        EventValue(
+                            eventDateText(event.startDate, event.endDate),
+                            modifier = Modifier.padding(horizontal = 15.dp),
+                        )
+                    },
+                )
             }
         }
         event.description.takeIf(String::isNotBlank)?.let { content ->
             SectionCard(title = stringResource(Res.string.event_content)) {
                 EventValue(
                     content,
-                    Modifier.padding(horizontal = 20.dp, vertical = 10.dp),
+                    Modifier.padding(horizontal = 15.dp, vertical = 10.dp),
                 )
             }
         }
@@ -384,9 +411,18 @@ private val INSTAGRAM_GRADIENT =
 private fun EventSection(
     title: String,
     content: @Composable () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        AppText(title, style = AppTextStyle.T2, color = GrayColor.C500)
+    Column(
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = modifier,
+    ) {
+        AppText(
+            text = title,
+            style = AppTextStyle.T2,
+            color = GrayColor.C500,
+            modifier = Modifier.padding(start = 15.dp),
+        )
         content()
     }
 }
@@ -401,10 +437,11 @@ private fun EventValue(
 private fun EventVenueLink(
     title: String,
     onClick: (() -> Unit)?,
+    modifier: Modifier = Modifier,
 ) {
     Row(
         modifier =
-            Modifier
+            modifier
                 .fillMaxWidth()
                 .then(if (onClick == null) Modifier else Modifier.noRippleClickable(onClick = onClick)),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -426,39 +463,20 @@ private fun EventVenueLink(
     }
 }
 
-@Preview(showBackground = true)
+@Preview(name = "이벤트 상세 전체 상태", showBackground = true)
 @Composable
-private fun EventDetailRoutePreview() {
-    val sampleEvent =
-        ShopEvent(
-            id = "1",
-            type = ShopEventType.COLLAB,
-            title = "라멘 팝업 이벤트",
-            description = "맛있는 라멘 팝업 이벤트입니다. 많은 참여 부탁드립니다.",
-            startDate = "2026-07-28",
-            endDate = "2026-07-30",
-            sourceUrl = "https://www.instagram.com/ramap_official/",
-            isToday = true,
-            isVenue = true,
-            venueShopId = "shop1",
-            venueShopName = "이리에 라멘",
-            venueAddress = "서울시 마포구",
-            collaboratorShopId = "shop2",
-            collaboratorName = "콜라보 샵",
-            collaboratorInstagramUrl = "https://www.instagram.com/collab_shop/",
-            waitingMethod = "현장 대기",
-            waitingUrl = "https://catchtable.co.kr/",
-        )
+private fun EventDetailRoutePreview(
+    @PreviewParameter(EventDetailPreviewParameterProvider::class)
+    uiState: EventDetailUiState,
+) {
+    EventDetailScreenPreview(uiState)
+}
 
+@Composable
+private fun EventDetailScreenPreview(uiState: EventDetailUiState) {
     RamapTheme {
         EventDetailScreen(
-            uiState =
-                EventDetailUiState(
-                    event = sampleEvent,
-                    isNotificationVisible = true,
-                    canChangeNotification = true,
-                    isNotificationEnabled = false,
-                ),
+            uiState = uiState,
             onBack = {},
             onVenueShopClick = {},
             onCollaboratorShopClick = {},

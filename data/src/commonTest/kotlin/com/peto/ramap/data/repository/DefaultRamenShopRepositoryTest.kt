@@ -301,10 +301,7 @@ class DefaultRamenShopRepositoryTest {
             sourceUrl = "https://instagram.com/p/event",
             isToday = false,
             isVenue = true,
-            venueShopId = "venue-shop",
-            venueShopName = "요아케",
-            venueAddress = "서울",
-            collaboratorShopId = "partner-shop",
-            collaboratorName = "라멘롱시즌",
+            venueShop = ramenShopResponseFixture(id = "venue-shop", name = "요아케"),
+            collaboratorShops = listOf(ramenShopResponseFixture(id = "partner-shop", name = "라멘롱시즌")),
         )
 }

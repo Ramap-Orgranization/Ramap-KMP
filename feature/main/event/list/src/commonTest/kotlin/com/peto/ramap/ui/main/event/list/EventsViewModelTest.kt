@@ -10,6 +10,7 @@ import com.peto.ramap.domain.model.event.ShopEventType
 import com.peto.ramap.domain.model.event.ShopEvents
 import com.peto.ramap.fake.FakeAnalyticsTracker
 import com.peto.ramap.fake.FakeRamenShopRepository
+import com.peto.ramap.fixture.ramenShopFixture
 import com.peto.ramap.ui.main.event.list.contract.EventsIntent
 import com.peto.ramap.ui.main.event.list.contract.EventsSideEffect
 import com.peto.ramap.ui.main.event.list.log.EventsAnalytics
@@ -194,12 +195,7 @@ class EventsViewModelTest {
             sourceUrl = "https://instagram.com/event",
             isToday = false,
             isVenue = true,
-            venueShopId = "shop",
-            venueShopName = "매장",
-            venueAddress = "서울",
-            collaboratorShopId = null,
-            collaboratorName = null,
-            collaboratorInstagramUrl = null,
+            venueShop = ramenShopFixture(id = "shop", name = "매장", address = "서울"),
             waitingMethod = null,
             waitingUrl = null,
         )

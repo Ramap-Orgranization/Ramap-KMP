@@ -11,6 +11,7 @@ import com.peto.ramap.fake.FakeAnalyticsTracker
 import com.peto.ramap.fake.FakeLoginRepository
 import com.peto.ramap.fake.FakeNotificationSettingsRepository
 import com.peto.ramap.fake.FakeRamenShopRepository
+import com.peto.ramap.fixture.ramenShopFixture
 import com.peto.ramap.ui.main.event.detail.contract.EventDetailIntent.OnEntered
 import com.peto.ramap.ui.main.event.detail.contract.EventDetailIntent.OnNotificationChanged
 import com.peto.ramap.ui.main.event.detail.contract.EventDetailIntent.OnNotificationPermissionGranted
@@ -275,12 +276,7 @@ class EventDetailViewModelTest {
                 sourceUrl = "https://instagram.com/event",
                 isToday = false,
                 isVenue = true,
-                venueShopId = "shop",
-                venueShopName = "매장",
-                venueAddress = "서울",
-                collaboratorShopId = null,
-                collaboratorName = null,
-                collaboratorInstagramUrl = null,
+                venueShop = ramenShopFixture(id = "shop", name = "매장", address = "서울"),
                 waitingMethod = null,
                 waitingUrl = null,
             )

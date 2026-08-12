@@ -4,6 +4,9 @@ import com.peto.ramap.designsystem.resource.UiText
 import com.peto.ramap.designsystem.resource.event.ShopEventResourceMapper
 import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.model.event.ShopEventType
+import com.peto.ramap.domain.model.shop.Location
+import com.peto.ramap.domain.model.shop.MenuCategories
+import com.peto.ramap.domain.model.shop.RamenShop
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.event_status_cancelled
 import ramap.shared.generated.resources.event_status_today
@@ -103,12 +106,22 @@ class ShopEventResourceMapperTest {
         sourceUrl = "https://example.com/event",
         isToday = isToday,
         isVenue = isVenue,
-        venueShopId = "venue-id",
-        venueShopName = VENUE_NAME,
-        venueAddress = "address",
-        collaboratorShopId = collaboratorShopId,
-        collaboratorName = collaboratorName,
-        collaboratorInstagramUrl = null,
+        venueShop = shop("venue-id", VENUE_NAME),
+        collaboratorShops =
+            collaboratorShopId
+                ?.let { listOf(shop(it, collaboratorName.orEmpty())) }
+                .orEmpty(),
+        externalParticipants =
+            if (collaboratorShopId == null && collaboratorName != null) {
+                listOf(
+                    com.peto.ramap.domain.model.event.ExternalParticipant(
+                        collaboratorName,
+                        null,
+                    ),
+                )
+            } else {
+                emptyList()
+            },
         waitingMethod = null,
         waitingUrl = null,
         activeEventCount = activeEventCount,
@@ -120,4 +133,24 @@ class ShopEventResourceMapperTest {
         const val VENUE_NAME = "행사 매장"
         const val PARTNER_NAME = "협업 매장"
     }
+
+    private fun shop(
+        id: String,
+        name: String,
+    ): RamenShop =
+        RamenShop(
+            id = id,
+            kakaoPlaceId = null,
+            name = name,
+            address = "address",
+            location = Location(37.5, 127.0),
+            kakaoPlaceUrl = null,
+            naverPlaceUrl = null,
+            phone = null,
+            instagramUrl = null,
+            menuCategories = MenuCategories(emptyList()),
+            isVisible = true,
+            createdAt = "",
+            updatedAt = "",
+        )
 }

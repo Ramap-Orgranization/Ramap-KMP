@@ -352,12 +352,7 @@ class SubscribedShopListViewModelTest {
             sourceUrl = "https://instagram.com/event",
             isToday = false,
             isVenue = true,
-            venueShopId = "shop",
-            venueShopName = "매장",
-            venueAddress = "서울",
-            collaboratorShopId = null,
-            collaboratorName = null,
-            collaboratorInstagramUrl = null,
+            venueShop = ramenShopFixture(id = "shop", name = "매장", address = "서울"),
             waitingMethod = null,
             waitingUrl = null,
         )

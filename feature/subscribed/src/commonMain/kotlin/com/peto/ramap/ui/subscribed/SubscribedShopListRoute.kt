@@ -16,7 +16,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.peto.ramap.designsystem.card.EventCard
 import com.peto.ramap.designsystem.card.SectionCard
-import com.peto.ramap.designsystem.component.RamenShopSearchResultList
+import com.peto.ramap.designsystem.component.RamenShopSummaries
 import com.peto.ramap.designsystem.component.SettingsListPage
 import com.peto.ramap.designsystem.component.ShopListCount
 import com.peto.ramap.designsystem.component.ShopListEmptyContent
@@ -159,16 +159,13 @@ private fun SubscribedShopListContent(
             }
 
             if (uiState.shops.isNotEmpty()) {
-                RamenShopSearchResultList(
+                RamenShopSummaries(
                     shops = uiState.shops,
                     onShopClick = onShopOpen,
                     categoryLabel = { category -> stringResource(CategoryResourceMapper.label(category)) },
                     itemActionLabel = { stringResource(Res.string.notification_removal_confirm_action) },
                     onItemAction = {
                         onRemovalRequested(SubscribedRemovalTarget.Shop(it.id))
-                    },
-                    itemModifier = {
-                        Modifier.padding(horizontal = 24.dp, vertical = 6.dp)
                     },
                 )
             }

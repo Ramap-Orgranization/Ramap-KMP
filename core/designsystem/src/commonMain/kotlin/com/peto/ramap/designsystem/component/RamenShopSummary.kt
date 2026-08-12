@@ -16,62 +16,23 @@ import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.peto.ramap.designsystem.image.RemoteShopImage
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.domain.model.shop.Category
-import com.peto.ramap.domain.model.shop.Location
-import com.peto.ramap.domain.model.shop.MenuCategories
 import com.peto.ramap.domain.model.shop.RamenShop
-import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.extension.noRippleClickable
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
-import com.peto.ramap.theme.RamapTheme
 import org.jetbrains.compose.resources.painterResource
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.ic_close
 
-@Composable
-fun RamenShopSearchResultList(
-    shops: RamenShops,
-    onShopClick: (RamenShop) -> Unit,
-    categoryLabel: @Composable (Category) -> String,
-    modifier: Modifier = Modifier,
-    itemModifier: (RamenShop) -> Modifier = {
-        Modifier.padding(
-            horizontal = 12.dp,
-            vertical = 6.dp,
-        )
-    },
-    itemActionLabel: (@Composable (RamenShop) -> String)? = null,
-    onItemAction: ((RamenShop) -> Unit)? = null,
-) {
-    Column(
-        modifier =
-            modifier
-                .fillMaxWidth(),
-    ) {
-        shops.values.forEach { shop ->
-            RamenShopSearchResultItem(
-                shop = shop,
-                onClick = { onShopClick(shop) },
-                categoryLabel = categoryLabel,
-                modifier = itemModifier(shop),
-                actionLabel = itemActionLabel?.invoke(shop),
-                onAction = onItemAction?.let { action -> { action(shop) } },
-            )
-        }
-    }
-}
-
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun RamenShopSearchResultItem(
+fun RamenShopSummary(
     shop: RamenShop,
     onClick: (() -> Unit)?,
     categoryLabel: @Composable (Category) -> String,
@@ -85,7 +46,8 @@ private fun RamenShopSearchResultItem(
             modifier
                 .fillMaxWidth()
                 .then(if (onClick != null) Modifier.noRippleClickable(onClick = onClick) else Modifier)
-                .background(CommonColor.White),
+                .background(CommonColor.White)
+                .padding(horizontal = 15.dp, vertical = 5.dp),
     ) {
         Row(
             modifier =
@@ -126,7 +88,7 @@ private fun RamenShopSearchResultItem(
             }
         }
 
-        SearchResultItemAction(
+        RamenShopSummaryAction(
             actionLabel = actionLabel,
             onAction = onAction,
         )
@@ -134,7 +96,7 @@ private fun RamenShopSearchResultItem(
 }
 
 @Composable
-private fun BoxScope.SearchResultItemAction(
+private fun BoxScope.RamenShopSummaryAction(
     actionLabel: String?,
     onAction: (() -> Unit)?,
 ) {
@@ -152,57 +114,5 @@ private fun BoxScope.SearchResultItemAction(
                 tint = GrayColor.C400,
             )
         }
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-private fun RamenShopSearchResultListPreview() {
-    RamapTheme {
-        RamenShopSearchResultList(
-            shops =
-                RamenShops(
-                    listOf(
-                        RamenShop(
-                            id = "1",
-                            kakaoPlaceId = null,
-                            name = "멘야 하나비",
-                            address = "서울 강남구 테헤란로 123",
-                            location = Location(lat = 37.5, lng = 127.0),
-                            kakaoPlaceUrl = null,
-                            phone = null,
-                            instagramUrl = null,
-                            instagramProfileImageUrl = null,
-                            menuCategories =
-                                MenuCategories(
-                                    listOf(
-                                        Category.TONKOTSU,
-                                        Category.TSUKEMEN,
-                                    ),
-                                ),
-                            isVisible = true,
-                            createdAt = "",
-                            updatedAt = "",
-                        ),
-                        RamenShop(
-                            id = "2",
-                            kakaoPlaceId = null,
-                            name = "라멘 지로",
-                            address = "서울 마포구 양화로 45",
-                            location = Location(lat = 37.55, lng = 126.9),
-                            kakaoPlaceUrl = null,
-                            phone = null,
-                            instagramUrl = null,
-                            instagramProfileImageUrl = null,
-                            menuCategories = MenuCategories(emptyList()),
-                            isVisible = true,
-                            createdAt = "",
-                            updatedAt = "",
-                        ),
-                    ),
-                ),
-            onShopClick = {},
-            categoryLabel = { category -> category.name },
-        )
     }
 }

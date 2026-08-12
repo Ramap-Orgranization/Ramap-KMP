@@ -1,5 +1,8 @@
 package com.peto.ramap.domain.model.event
 
+import com.peto.ramap.domain.model.shop.Location
+import com.peto.ramap.domain.model.shop.MenuCategories
+import com.peto.ramap.domain.model.shop.RamenShop
 import kotlinx.datetime.LocalDate
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -115,16 +118,41 @@ class ShopEventTest {
         sourceUrl = "https://instagram.com/p/event",
         isToday = false,
         isVenue = isVenue,
-        venueShopId = "shop",
-        venueShopName = venueShopName,
-        venueAddress = "address",
-        collaboratorShopId = collaboratorShopId,
-        collaboratorName = collaboratorName,
-        collaboratorInstagramUrl = null,
+        venueShop = shop("shop", venueShopName),
+        collaboratorShops =
+            collaboratorShopId
+                ?.let { listOf(shop(it, collaboratorName.orEmpty())) }
+                .orEmpty(),
+        externalParticipants =
+            if (collaboratorShopId == null && collaboratorName != null) {
+                listOf(ExternalParticipant(collaboratorName, null))
+            } else {
+                emptyList()
+            },
         waitingMethod = null,
         waitingUrl = null,
         activeEventCount = activeEventCount,
         collaborationPartnerCount = collaborationPartnerCount,
         cancelledDates = cancelledDates,
     )
+
+    private fun shop(
+        id: String,
+        name: String,
+    ): RamenShop =
+        RamenShop(
+            id = id,
+            kakaoPlaceId = null,
+            name = name,
+            address = "address",
+            location = Location(37.5, 127.0),
+            kakaoPlaceUrl = null,
+            naverPlaceUrl = null,
+            phone = null,
+            instagramUrl = null,
+            menuCategories = MenuCategories(emptyList()),
+            isVisible = true,
+            createdAt = "",
+            updatedAt = "",
+        )
 }
