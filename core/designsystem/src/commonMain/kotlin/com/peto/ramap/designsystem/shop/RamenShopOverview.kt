@@ -1,7 +1,6 @@
 package com.peto.ramap.designsystem.shop
 
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -45,7 +44,6 @@ import com.peto.ramap.domain.model.shop.BusinessHours
 import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.extension.noRippleClickable
 import com.peto.ramap.theme.AppTextStyle
-import com.peto.ramap.theme.ChromaticColor
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.InstagramColor
@@ -549,11 +547,7 @@ private fun BusinessHoursCardRow(
                             text = value.format(),
                             modifier =
                                 Modifier
-                                    .padding(top = 4.dp)
-                                    .background(
-                                        color = ChromaticColor.Orange400.copy(alpha = 0.2f),
-                                        shape = RoundedCornerShape(4.dp),
-                                    ).padding(horizontal = 5.dp, vertical = 2.dp),
+                                    .padding(top = 4.dp),
                             style = AppTextStyle.C2,
                             color = InstagramColor.Orange,
                         )
