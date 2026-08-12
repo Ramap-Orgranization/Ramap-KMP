@@ -46,12 +46,12 @@ internal fun CalendarLegend() {
             Icon(
                 painter = painterResource(Res.drawable.ic_notification),
                 contentDescription = null,
-                modifier = Modifier.size(12.dp),
+                modifier = Modifier.size(14.dp),
                 tint = GrayColor.C400,
             )
             AppText(
                 text = stringResource(Res.string.event_calendar_notification),
-                style = AppTextStyle.C2,
+                style = AppTextStyle.B4,
                 color = GrayColor.C400,
             )
         }
