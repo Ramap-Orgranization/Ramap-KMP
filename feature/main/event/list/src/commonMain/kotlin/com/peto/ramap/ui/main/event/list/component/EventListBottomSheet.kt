@@ -7,6 +7,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.dp
 import com.peto.ramap.designsystem.bottomsheet.CommonBottomSheet
 import com.peto.ramap.designsystem.bottomsheet.CommonBottomSheetConfig
+import com.peto.ramap.designsystem.card.EventShopGroupCard
 import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.model.event.ShopEvents
 
@@ -25,7 +26,7 @@ internal fun EventListBottomSheet(
             modifier = modifier.padding(horizontal = 20.dp).padding(bottom = 5.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            EventShopCard(
+            EventShopGroupCard(
                 eventGroup = events,
                 onEventClick = onEventClick,
             )
