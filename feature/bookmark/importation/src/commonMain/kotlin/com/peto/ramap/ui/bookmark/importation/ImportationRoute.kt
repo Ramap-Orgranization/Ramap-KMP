@@ -24,7 +24,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.peto.ramap.designsystem.button.AppButton
-import com.peto.ramap.designsystem.component.RamenShopSearchResultList
+import com.peto.ramap.designsystem.component.RamenShopSummaries
 import com.peto.ramap.designsystem.component.SettingsListPage
 import com.peto.ramap.designsystem.resource.category.CategoryResourceMapper
 import com.peto.ramap.designsystem.text.AppText
@@ -270,13 +270,12 @@ private fun ImportationPreview(
             )
         }
 
-        RamenShopSearchResultList(
+        RamenShopSummaries(
             shops = uiState.candidates,
             onShopClick = {},
             categoryLabel = { category -> stringResource(CategoryResourceMapper.label(category)) },
             itemActionLabel = { stringResource(Res.string.importation_remove_candidate) },
             onItemAction = { shop -> onCandidateRemove(shop.id) },
-            itemModifier = { Modifier.padding(vertical = 4.dp) },
         )
     }
 }
