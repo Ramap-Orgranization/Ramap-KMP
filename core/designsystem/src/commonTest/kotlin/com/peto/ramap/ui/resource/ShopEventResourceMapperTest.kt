@@ -116,7 +116,7 @@ class ShopEventResourceMapperTest {
                 listOf(
                     com.peto.ramap.domain.model.event.ExternalParticipant(
                         collaboratorName,
-                        null,
+                        "",
                     ),
                 )
             } else {

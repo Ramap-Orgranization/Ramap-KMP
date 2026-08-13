@@ -125,7 +125,7 @@ class ShopEventTest {
                 .orEmpty(),
         externalParticipants =
             if (collaboratorShopId == null && collaboratorName != null) {
-                listOf(ExternalParticipant(collaboratorName, null))
+                listOf(ExternalParticipant(collaboratorName, ""))
             } else {
                 emptyList()
             },
