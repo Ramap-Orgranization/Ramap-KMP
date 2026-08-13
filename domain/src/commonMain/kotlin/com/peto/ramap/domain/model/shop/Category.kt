@@ -4,6 +4,7 @@ enum class Category(
     val id: String,
 ) {
     TONKOTSU("tonkotsu"),
+    NIBOSHI_GYOKAI("niboshi_gyokai"),
     SHOYU("shoyu"),
     SHIO("shio"),
     TORI("tori"),
@@ -14,7 +15,6 @@ enum class Category(
     ABURASOBA("aburasoba"),
     MISO("miso"),
     CHANKE("chanke"),
-    NIBOSHI_GYOKAI("niboshi_gyokai"),
     HIYASHI("hiyashi"),
     TOMATO("tomato"),
     ;
