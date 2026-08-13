@@ -84,7 +84,7 @@
     <string name="event_type_limited_menu">🛎️ 한정 메뉴</string>
     <string name="event_type_summer_limited">⛱️ 여름 한정</string>
     <string name="event_venue">행사 장소</string>
-    <string name="event_collaborator_shop">콜라보 매장</string>
+    <string name="event_collaborator_shop">콜라보</string>
     <string name="event_collaborator_person">함께하는 사람</string>
     <string name="event_date">날짜</string>
     <string name="event_date_end_unknown">%1$s년 %2$d월 %3$d일 ~ 종료일 미정</string>

@@ -6,11 +6,13 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -22,6 +24,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -88,6 +91,7 @@ import ramap.shared.generated.resources.event_venue
 import ramap.shared.generated.resources.event_waiting
 import ramap.shared.generated.resources.event_waiting_action
 import ramap.shared.generated.resources.ic_arrow3_left
+import ramap.shared.generated.resources.instagram_icon
 import ramap.shared.generated.resources.laduck_error_crying
 import ramap.shared.generated.resources.location_permission_settings_action
 import ramap.shared.generated.resources.navigation_back
@@ -243,11 +247,11 @@ internal fun EventDetailScreen(
                     .fillMaxSize()
                     .padding(innerPadding),
         ) {
-            val event = uiState.event
             when {
                 uiState.event != null ->
                     EventDetailContent(
-                        event = event,
+                        event = uiState.event,
+                        hasCollaborators = uiState.hasCollaborators,
                         onVenueShopClick = onVenueShopClick,
                         onCollaboratorShopClick = onCollaboratorShopClick,
                         onCollaboratorInstagramClick = onCollaboratorInstagramClick,
@@ -273,6 +277,7 @@ internal fun EventDetailScreen(
 @Composable
 private fun EventDetailContent(
     event: ShopEvent,
+    hasCollaborators: Boolean,
     onVenueShopClick: (String) -> Unit,
     onCollaboratorShopClick: (String) -> Unit,
     onCollaboratorInstagramClick: (String) -> Unit,
@@ -298,21 +303,26 @@ private fun EventDetailContent(
             EventTag(stringResource(ShopEventResourceMapper.typeLabel(event.type)))
         }
         AppText("🍜 ${event.title}", style = AppTextStyle.H1, color = GrayColor.C500)
-        SectionCard(title = stringResource(Res.string.event_venue)) {
+        SectionCard {
             Column(
-                modifier = Modifier.padding(vertical = 12.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
+                modifier = Modifier.padding(bottom = 4.dp),
             ) {
-                RamenShopSummary(
-                    shop = event.venueShop,
-                    onClick = { onVenueShopClick(event.venueShop.id) },
-                    categoryLabel = { category ->
-                        stringResource(CategoryResourceMapper.label(category))
+                EventInfoRow(
+                    label = stringResource(Res.string.event_venue),
+                    content = {
+                        RamenShopSummary(
+                            shop = event.venueShop,
+                            onClick = { onVenueShopClick(event.venueShop.id) },
+                            categoryLabel = { category ->
+                                stringResource(CategoryResourceMapper.label(category))
+                            },
+                            modifier = Modifier.padding(vertical = 5.dp),
+                        )
                     },
                 )
-                if (event.collaboratorShops.isNotEmpty()) {
-                    EventSection(
-                        title = stringResource(ShopEventResourceMapper.collaboratorLabel(event)),
+                if (hasCollaborators) {
+                    EventInfoRow(
+                        label = stringResource(ShopEventResourceMapper.collaboratorLabel(event)),
                         content = {
                             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                                 event.collaboratorShops.forEach { shop ->
@@ -324,49 +334,39 @@ private fun EventDetailContent(
                                         },
                                     )
                                 }
+                                event.externalParticipants.forEach { participant ->
+                                    EventVenueLink(
+                                        title = participant.name,
+                                        modifier =
+                                            Modifier
+                                                .padding(bottom = 5.dp)
+                                                .padding(horizontal = 15.dp),
+                                        onClick = {
+                                            onCollaboratorInstagramClick(participant.instagramUrl)
+                                        },
+                                    )
+                                }
                             }
                         },
                     )
                 }
 
-                event.externalParticipants.forEach { participant ->
-                    participant.name?.let { name ->
-                        EventSection(
-                            title = stringResource(ShopEventResourceMapper.collaboratorLabel(event)),
-                            content = {
-                                EventVenueLink(
-                                    title = name,
-                                    modifier = Modifier.padding(horizontal = 15.dp),
-                                    onClick =
-                                        participant.instagramUrl?.let { url ->
-                                            { onCollaboratorInstagramClick(url) }
-                                        },
-                                )
-                            },
-                        )
-                    }
-                }
-
-                EventSection(
-                    title = stringResource(Res.string.event_date),
+                EventInfoRow(
+                    label = stringResource(Res.string.event_date),
                     content = {
                         EventValue(
-                            eventDateText(event.startDate, event.endDate),
-                            modifier = Modifier.padding(horizontal = 15.dp),
+                            value = eventDateText(event.startDate, event.endDate),
+                            modifier = Modifier.fillMaxWidth(),
+                            textAlign = TextAlign.Center,
                         )
                     },
                 )
             }
         }
-        event.description.takeIf(String::isNotBlank)?.let { content ->
-            SectionCard(title = stringResource(Res.string.event_content)) {
-                EventValue(
-                    content,
-                    Modifier.padding(horizontal = 15.dp, vertical = 10.dp),
-                )
-            }
+        SectionCard(title = stringResource(Res.string.event_content)) {
+            EventValue(event.description, Modifier.padding(horizontal = 15.dp, vertical = 10.dp))
         }
-        event.waitingMethod?.takeIf(String::isNotBlank)?.let { waiting ->
+        event.waitingMethod?.let { waiting ->
             SectionCard(title = stringResource(Res.string.event_waiting)) {
                 Column(modifier = Modifier.padding(horizontal = 20.dp).padding(vertical = 10.dp)) {
                     EventValue(waiting)
@@ -399,6 +399,36 @@ private fun EventDetailContent(
     }
 }
 
+@Composable
+private fun EventInfoRow(
+    label: String,
+    content: @Composable () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier =
+            modifier
+                .fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Box(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .background(GrayColor.C100),
+            contentAlignment = Alignment.Center,
+        ) {
+            AppText(
+                text = label,
+                modifier = Modifier.padding(vertical = 4.dp),
+                style = AppTextStyle.T3,
+                color = GrayColor.C500,
+            )
+        }
+        content()
+    }
+}
+
 private val INSTAGRAM_GRADIENT =
     Brush.horizontalGradient(
         listOf(
@@ -411,58 +441,43 @@ private val INSTAGRAM_GRADIENT =
     )
 
 @Composable
-private fun EventSection(
-    title: String,
-    content: @Composable () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Column(
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-        modifier = modifier,
-    ) {
-        AppText(
-            text = title,
-            style = AppTextStyle.T2,
-            color = GrayColor.C500,
-            modifier = Modifier.padding(start = 15.dp),
-        )
-        content()
-    }
-}
-
-@Composable
 private fun EventValue(
     value: String,
     modifier: Modifier = Modifier,
-) = AppText(value, modifier = modifier, style = AppTextStyle.B2, color = GrayColor.C500)
+    textAlign: TextAlign? = null,
+) = AppText(
+    value,
+    modifier = modifier,
+    style = AppTextStyle.B2,
+    color = GrayColor.C500,
+    textAlign = textAlign,
+)
 
 @Composable
 private fun EventVenueLink(
     title: String,
-    onClick: (() -> Unit)?,
+    onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Row(
         modifier =
             modifier
-                .fillMaxWidth()
-                .then(if (onClick == null) Modifier else Modifier.noRippleClickable(onClick = onClick)),
-        horizontalArrangement = Arrangement.SpaceBetween,
+                .then(Modifier.noRippleClickable(onClick = onClick)),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
+        Image(
+            painter = painterResource(Res.drawable.instagram_icon),
+            contentDescription = null,
+            modifier = Modifier.size(20.dp),
+        )
+
+        Spacer(Modifier.width(5.dp))
+
         AppText(
             text = title,
-            style = AppTextStyle.T2,
+            style = AppTextStyle.B1,
             color = GrayColor.C500,
-            modifier = Modifier.weight(1f),
         )
-        if (onClick != null) {
-            AppText(
-                ">",
-                style = AppTextStyle.T2,
-                color = GrayColor.C400,
-                textAlign = TextAlign.End,
-            )
-        }
     }
 }
 
