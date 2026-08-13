@@ -21,5 +21,11 @@ data class EventDetailUiState(
     val isNotificationLoading: Boolean
         get() = loadState.isLoading(EventDetailLoadKey.Notification)
 
+    val hasCollaborators: Boolean
+        get() =
+            event?.let {
+                it.collaboratorShops.isNotEmpty() || it.externalParticipants.isNotEmpty()
+            } == true
+
     override fun withLoadingState(loadState: LoadState): EventDetailUiState = copy(loadState = loadState)
 }

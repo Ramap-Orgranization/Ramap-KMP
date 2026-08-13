@@ -7,7 +7,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 internal data class ExternalParticipantResponse(
     val name: String,
-    @SerialName("instagram_url") val instagramUrl: String? = null,
+    @SerialName("instagram_url") val instagramUrl: String,
 ) {
     fun toDomain(): ExternalParticipant =
         ExternalParticipant(

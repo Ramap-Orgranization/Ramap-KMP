@@ -8,9 +8,8 @@ internal fun mapEventsToUiState(
     state: EventsUiState,
     events: List<ShopEvent>,
 ): EventsUiState {
-    val sortedEvents = events.sortedByDescending(ShopEvent::startDate)
-    val summerLimitedEvents = sortedEvents.filter { it.type == ShopEventType.SUMMER_LIMITED && it.isToday }
-    val (ongoingEvents, upcomingEvents) = partitionBySchedule(sortedEvents)
+    val summerLimitedEvents = events.filter { it.type == ShopEventType.SUMMER_LIMITED && it.isToday }
+    val (ongoingEvents, upcomingEvents) = partitionBySchedule(events)
 
     return state.copy(
         ongoingEvents = ShopEvents.groupByVenue(ongoingEvents),

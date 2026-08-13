@@ -11,6 +11,7 @@ import androidx.compose.ui.unit.dp
 import com.peto.ramap.designsystem.component.CategoryFilterChip
 import com.peto.ramap.designsystem.resource.category.CategoryResourceMapper
 import com.peto.ramap.domain.model.shop.Category
+import com.peto.ramap.theme.AppTextStyle
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
@@ -31,6 +32,7 @@ internal fun MenuCategoryFilterRow(
                 label = stringResource(CategoryResourceMapper.label(category)),
                 selected = category in selectedCategories,
                 onClick = { onCategoryClick(category) },
+                style = AppTextStyle.B4,
             )
         }
     }

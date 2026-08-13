@@ -81,14 +81,14 @@ class EventListGroupingTest {
     }
 
     @Test
-    fun `이벤트 시작일이 최신인 순서로 목록을 정렬한다`() {
-        val olderEvent = event(id = "older", isToday = false, startDate = "2026-08-01")
-        val newerEvent = event(id = "newer", isToday = false, startDate = "2026-08-10")
+    fun `조회된 최신 등록순을 유지한다`() {
+        val newestEvent = event(id = "newest", isToday = false, startDate = "2026-08-01")
+        val olderEvent = event(id = "older", isToday = false, startDate = "2026-08-10")
 
-        val state = mapEventsToUiState(EventsUiState(), listOf(olderEvent, newerEvent))
+        val state = mapEventsToUiState(EventsUiState(), listOf(newestEvent, olderEvent))
 
         assertEquals(
-            listOf(newerEvent, olderEvent),
+            listOf(newestEvent, olderEvent),
             state.upcomingEvents.flatten(),
         )
     }
