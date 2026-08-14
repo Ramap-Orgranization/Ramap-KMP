@@ -3,6 +3,7 @@ package com.peto.ramap.ui.main.map
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -11,12 +12,16 @@ import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.Surface
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -25,6 +30,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
@@ -39,6 +45,7 @@ import com.peto.ramap.designsystem.indicator.RamenLoadingIndicator
 import com.peto.ramap.designsystem.resource.category.CategoryResourceMapper
 import com.peto.ramap.designsystem.resource.wating.toUiModel
 import com.peto.ramap.designsystem.shop.ShopDetailContent
+import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.model.place.PlaceSearchResult
 import com.peto.ramap.domain.model.report.ShopInformationField
@@ -47,8 +54,10 @@ import com.peto.ramap.domain.model.shop.Location
 import com.peto.ramap.domain.model.shop.MapBounds
 import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.platform.ExternalUriOpener
+import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
+import com.peto.ramap.theme.SystemColor
 import com.peto.ramap.ui.main.map.component.MapCircleIconButton
 import com.peto.ramap.ui.main.map.component.MenuCategoryFilterRow
 import com.peto.ramap.ui.main.map.component.RecentSearchHistory
@@ -88,6 +97,7 @@ internal fun MapContent(
     onInitialLocationFocusConsumed: () -> Unit,
     onSelectedShopFocusConsumed: () -> Unit,
     onCategoryFilterToggled: (Category) -> Unit,
+    onOpenFilterToggled: () -> Unit,
     onViewportLoadRetry: () -> Unit,
     onBookmarkToggled: (RamenShop) -> Unit,
     onShopNotificationToggled: (RamenShop) -> Unit,
@@ -184,6 +194,11 @@ internal fun MapContent(
                 )
 
                 if (!isSearchFocused) {
+                    OpenFilterButton(
+                        isActive = uiState.filters.isOpenSelected,
+                        onClick = onOpenFilterToggled,
+                        modifier = Modifier.padding(top = 5.dp),
+                    )
                     BookmarkedFilterButton(
                         isActive = uiState.isBookmarkedView,
                         onClick = onBookmarkedShopsToggle,
@@ -210,7 +225,7 @@ internal fun MapContent(
                 )
             } else {
                 MenuCategoryFilterRow(
-                    selectedCategories = uiState.filters,
+                    selectedFilter = uiState.filters,
                     onCategoryClick = onCategoryFilterToggled,
                 )
 
@@ -309,6 +324,45 @@ internal fun MapContent(
 
         if (uiState.isSearchLoading) {
             RamenLoadingIndicator(modifier = Modifier.align(Alignment.Center))
+        }
+    }
+}
+
+@Composable
+private fun OpenFilterButton(
+    isActive: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        modifier =
+            modifier
+                .size(48.dp)
+                .shadow(
+                    elevation = 6.dp,
+                    shape = CircleShape,
+                    clip = false,
+                ),
+        color = if (isActive) GrayColor.C500 else CommonColor.White,
+        shape = CircleShape,
+        onClick = onClick,
+    ) {
+        Box(contentAlignment = Alignment.Center) {
+            Box {
+                AppText(
+                    text = "OPEN",
+                    style = AppTextStyle.C3,
+                    color = if (isActive) CommonColor.White else GrayColor.C500,
+                )
+                Box(
+                    modifier =
+                        Modifier
+                            .align(Alignment.TopEnd)
+                            .offset(x = 3.dp, y = (-5).dp)
+                            .size(5.dp)
+                            .background(SystemColor.Warning, CircleShape),
+                )
+            }
         }
     }
 }

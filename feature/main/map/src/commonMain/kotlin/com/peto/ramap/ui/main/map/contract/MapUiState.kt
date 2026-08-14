@@ -257,7 +257,7 @@ data class MapUiState(
                 shops.filterByShopIds(bookmarkedShopIds)
             } else {
                 shops.filterNotHidden(hiddenShopIds)
-            }.filterByCategory(filters)
+            }.filterBy(filters)
 
     /**
      * 북마크 보기 여부와 카테고리 필터가 적용된 검색 결과 목록.
@@ -268,7 +268,7 @@ data class MapUiState(
                 search.results.filterByShopIds(bookmarkedShopIds)
             } else {
                 search.results
-            }.filterByCategory(filters)
+            }.filterBy(filters)
 
     /**
      * 숨김 매장의 표시 상태까지 반영한 검색 결과 목록.

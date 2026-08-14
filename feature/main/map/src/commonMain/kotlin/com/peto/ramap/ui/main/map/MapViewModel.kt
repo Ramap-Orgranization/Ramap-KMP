@@ -49,6 +49,7 @@ import com.peto.ramap.ui.main.map.contract.MapIntent.OnLocationPermissionBlocked
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnLoginTypeSelected
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnMapTabExited
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnMyLocationChanged
+import com.peto.ramap.ui.main.map.contract.MapIntent.OnOpenFilterToggled
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnQueryChanged
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnRecentSearchDeleted
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnRecentSearchSelected
@@ -238,6 +239,7 @@ class MapViewModel(
             }
 
             is OnCategoryFilterToggled -> toggleCategoryFilter(intent.category)
+            OnOpenFilterToggled -> toggleOpenFilter()
             else -> return false
         }
         return true
@@ -473,6 +475,11 @@ class MapViewModel(
             }
         mapAnalytics.logCategoryFilterToggled(category, category !in currentFilter)
         updateFilter(nextFilter)
+    }
+
+    private fun toggleOpenFilter() {
+        val filter = currentState.filters
+        updateFilter(filter.copy(isOpenSelected = !filter.isOpenSelected))
     }
 
     private suspend fun updatePersonalization(personalization: ShopPersonalization) {
@@ -802,7 +809,7 @@ class MapViewModel(
                 filters = filter,
                 shopDetailState =
                     shopDetailState.takeIf {
-                        selectedShop?.menuCategories?.matches(filter) ?: true
+                        selectedShop?.isOpened(filter) ?: true
                     } ?: ShopDetailSheetUiState.Closed,
             )
         }

@@ -1,5 +1,9 @@
 package com.peto.ramap.domain.model.shop
 
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
+import kotlin.time.Clock
+
 data class RamenShops(
     private val shops: Map<String, RamenShop>,
 ) : Map<String, RamenShop> by shops {
@@ -17,12 +21,18 @@ data class RamenShops(
      * [filter]에 포함된 메뉴 카테고리와 일치하는 가게만 남긴 [RamenShops]를 반환한다.
      */
     fun filterByCategory(filter: RamenShopFilter): RamenShops {
-        if (filter.isEmpty()) return this
+        if (!filter.hasCategoryFilter) return this
         return RamenShops(
             shops.filterValues { shop ->
                 shop.menuCategories.matches(filter)
             },
         )
+    }
+
+    fun filterBy(filter: RamenShopFilter): RamenShops {
+        if (filter.isEmpty()) return this
+        val now = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
+        return RamenShops(shops.filterValues { shop -> shop.isOpened(filter) })
     }
 
     /**

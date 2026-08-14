@@ -15,6 +15,7 @@ enum class AppTextStyle {
     B4,
     C1,
     C2,
+    C3,
     L1,
     L2,
     L3,

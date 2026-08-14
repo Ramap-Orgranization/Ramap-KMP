@@ -51,6 +51,7 @@ import com.peto.ramap.ui.main.map.contract.MapIntent.OnInitialLocationFocusConsu
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnLoginTypeSelected
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnMapTabExited
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnMyLocationChanged
+import com.peto.ramap.ui.main.map.contract.MapIntent.OnOpenFilterToggled
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnQueryChanged
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnRequestedShopDismissed
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnSearchResultsDismissed
@@ -2188,6 +2189,20 @@ class MapViewModelTest {
             viewModel.dispatch(OnShopSelected(shop))
             runCurrent()
             viewModel.dispatch(OnCategoryFilterToggled(Category.MAZESOBA))
+            runCurrent()
+
+            assertEquals(null, viewModel.uiState.value.selectedShop)
+        }
+
+    @Test
+    fun `영업시간 필터와 맞지 않는 선택 매장은 닫는다`() =
+        coroutinesTest {
+            val shop = ramenShopFixture(id = "regular-shop")
+            val viewModel = mapViewModel()
+
+            viewModel.dispatch(OnShopSelected(shop))
+            runCurrent()
+            viewModel.dispatch(OnOpenFilterToggled)
             runCurrent()
 
             assertEquals(null, viewModel.uiState.value.selectedShop)

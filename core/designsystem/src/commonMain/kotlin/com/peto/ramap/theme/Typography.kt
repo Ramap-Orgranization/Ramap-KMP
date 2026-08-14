@@ -23,6 +23,7 @@ data class AppTypography(
     val b4: TextStyle,
     val c1: TextStyle,
     val c2: TextStyle,
+    val c3: TextStyle,
     val l1: TextStyle,
     val l2: TextStyle,
     val l3: TextStyle,
@@ -146,6 +147,14 @@ internal fun provideAppTypography(): AppTypography {
                 lineHeight = lineHeightPercent(11f, 150f),
                 letterSpacing = letterSpacingPercent(11f, -2.5f),
             ),
+        c3 =
+            TextStyle(
+                fontFamily = satoshiFamily,
+                fontWeight = FontWeight.ExtraBold,
+                fontSize = 9.sp,
+                lineHeight = lineHeightPercent(10f, 150f),
+                letterSpacing = letterSpacingPercent(10f, -2.5f),
+            ),
         l1 =
             TextStyle(
                 fontFamily = laundryGothicFamily,
@@ -189,6 +198,7 @@ internal fun AppTextStyle.toTextStyle(typography: AppTypography): TextStyle =
         AppTextStyle.B4 -> typography.b4
         AppTextStyle.C1 -> typography.c1
         AppTextStyle.C2 -> typography.c2
+        AppTextStyle.C3 -> typography.c3
         AppTextStyle.L1 -> typography.l1
         AppTextStyle.L2 -> typography.l2
         AppTextStyle.L3 -> typography.l3
