@@ -1,5 +1,8 @@
 package com.peto.ramap.domain.model.shop
 
+import com.peto.ramap.domain.model.businesshour.BreakTime
+import com.peto.ramap.domain.model.businesshour.BusinessHours
+import com.peto.ramap.domain.model.businesshour.BusinessHoursDay
 import com.peto.ramap.fixture.ramenShopFixture
 import kotlinx.datetime.LocalDateTime
 import kotlin.test.Test
@@ -119,8 +122,27 @@ class RamenShopsTest {
             ramenShopFixture(id = "break-time").copy(
                 businessHoursDetails =
                     BusinessHours(
-                        weekly = mapOf("mon" to BusinessHoursDay(false, "11:00", "22:00", false, null)),
-                        breakTimes = mapOf("mon" to listOf(BusinessHoursBreakTime("15:00", "17:00"))),
+                        weekly =
+                            mapOf(
+                                "mon" to
+                                    BusinessHoursDay(
+                                        false,
+                                        "11:00",
+                                        "22:00",
+                                        false,
+                                        null,
+                                    ),
+                            ),
+                        breakTimes =
+                            mapOf(
+                                "mon" to
+                                    listOf(
+                                        BreakTime(
+                                            "15:00",
+                                            "17:00",
+                                        ),
+                                    ),
+                            ),
                         lastOrders = emptyMap(),
                         notice = null,
                     ),
@@ -129,7 +151,17 @@ class RamenShopsTest {
             ramenShopFixture(id = "closed-shop", menuCategories = listOf(Category.JIRO)).copy(
                 businessHoursDetails =
                     BusinessHours(
-                        weekly = mapOf("mon" to BusinessHoursDay(true, "11:00", "01:00", true, null)),
+                        weekly =
+                            mapOf(
+                                "mon" to
+                                    BusinessHoursDay(
+                                        true,
+                                        "11:00",
+                                        "01:00",
+                                        true,
+                                        null,
+                                    ),
+                            ),
                         breakTimes = emptyMap(),
                         lastOrders = emptyMap(),
                         notice = null,
@@ -151,8 +183,27 @@ class RamenShopsTest {
             ramenShopFixture().copy(
                 businessHoursDetails =
                     BusinessHours(
-                        weekly = mapOf("mon" to BusinessHoursDay(false, "11:00", "22:00", false, null)),
-                        breakTimes = mapOf("mon" to listOf(BusinessHoursBreakTime("15:00", "17:00"))),
+                        weekly =
+                            mapOf(
+                                "mon" to
+                                    BusinessHoursDay(
+                                        false,
+                                        "11:00",
+                                        "22:00",
+                                        false,
+                                        null,
+                                    ),
+                            ),
+                        breakTimes =
+                            mapOf(
+                                "mon" to
+                                    listOf(
+                                        BreakTime(
+                                            "15:00",
+                                            "17:00",
+                                        ),
+                                    ),
+                            ),
                         lastOrders = emptyMap(),
                         notice = null,
                     ),
@@ -173,7 +224,17 @@ class RamenShopsTest {
             ramenShopFixture().copy(
                 businessHoursDetails =
                     BusinessHours(
-                        weekly = mapOf("sun" to BusinessHoursDay(false, "20:00", "01:00", true, null)),
+                        weekly =
+                            mapOf(
+                                "sun" to
+                                    BusinessHoursDay(
+                                        false,
+                                        "20:00",
+                                        "01:00",
+                                        true,
+                                        null,
+                                    ),
+                            ),
                         breakTimes = emptyMap(),
                         lastOrders = emptyMap(),
                         notice = null,
@@ -197,7 +258,17 @@ class RamenShopsTest {
                 ramenShopFixture(id = "closed").copy(
                     businessHoursDetails =
                         BusinessHours(
-                            weekly = mapOf("mon" to BusinessHoursDay(true, "11:00", "22:00", false, null)),
+                            weekly =
+                                mapOf(
+                                    "mon" to
+                                        BusinessHoursDay(
+                                            true,
+                                            "11:00",
+                                            "22:00",
+                                            false,
+                                            null,
+                                        ),
+                                ),
                             breakTimes = emptyMap(),
                             lastOrders = emptyMap(),
                             notice = null,
@@ -207,7 +278,17 @@ class RamenShopsTest {
                 ramenShopFixture(id = "invalid").copy(
                     businessHoursDetails =
                         BusinessHours(
-                            weekly = mapOf("mon" to BusinessHoursDay(false, "bad", "22:00", false, null)),
+                            weekly =
+                                mapOf(
+                                    "mon" to
+                                        BusinessHoursDay(
+                                            false,
+                                            "bad",
+                                            "22:00",
+                                            false,
+                                            null,
+                                        ),
+                                ),
                             breakTimes = emptyMap(),
                             lastOrders = emptyMap(),
                             notice = null,
@@ -230,7 +311,17 @@ class RamenShopsTest {
             ramenShopFixture(menuCategories = listOf(Category.JIRO)).copy(
                 businessHoursDetails =
                     BusinessHours(
-                        weekly = mapOf("mon" to BusinessHoursDay(false, "20:00", "01:00", true, null)),
+                        weekly =
+                            mapOf(
+                                "mon" to
+                                    BusinessHoursDay(
+                                        false,
+                                        "20:00",
+                                        "01:00",
+                                        true,
+                                        null,
+                                    ),
+                            ),
                         breakTimes = emptyMap(),
                         lastOrders = emptyMap(),
                         notice = null,

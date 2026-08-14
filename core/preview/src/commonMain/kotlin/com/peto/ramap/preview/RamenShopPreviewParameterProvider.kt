@@ -1,9 +1,9 @@
 package com.peto.ramap.preview
 
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
-import com.peto.ramap.domain.model.shop.BusinessHours
-import com.peto.ramap.domain.model.shop.BusinessHoursBreakTime
-import com.peto.ramap.domain.model.shop.BusinessHoursDay
+import com.peto.ramap.domain.model.businesshour.BreakTime
+import com.peto.ramap.domain.model.businesshour.BusinessHours
+import com.peto.ramap.domain.model.businesshour.BusinessHoursDay
 import com.peto.ramap.domain.model.shop.Category
 import com.peto.ramap.domain.model.shop.Location
 import com.peto.ramap.domain.model.shop.MenuCategories
@@ -33,7 +33,7 @@ class RamenShopPreviewParameterProvider : PreviewParameterProvider<RamenShop> {
                                 "mon" to BusinessHoursDay(false, "11:00", "21:00", false, null),
                                 "sun" to BusinessHoursDay(true, null, null, false, null),
                             ),
-                        breakTimes = mapOf("mon" to listOf(BusinessHoursBreakTime("14:00", "15:00"))),
+                        breakTimes = mapOf("mon" to listOf(BreakTime("14:00", "15:00"))),
                         lastOrders = emptyMap(),
                         notice = "재료 소진 시 조기 마감될 수 있습니다.",
                     ),
