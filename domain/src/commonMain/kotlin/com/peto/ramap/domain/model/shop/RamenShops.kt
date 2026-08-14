@@ -1,9 +1,6 @@
 package com.peto.ramap.domain.model.shop
 
 import kotlinx.datetime.LocalDateTime
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toLocalDateTime
-import kotlin.time.Clock
 
 data class RamenShops(
     private val shops: Map<String, RamenShop>,
@@ -30,10 +27,12 @@ data class RamenShops(
         )
     }
 
-    fun filterBy(
+    /**
+     * [filter] 조건에 맞고 [currentDateTime] 기준으로 영업 중인 매장만 남긴 목록을 반환한다.
+     */
+    fun filterByOpenStatus(
         filter: RamenShopFilter,
-        currentDateTime: LocalDateTime =
-            Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()),
+        currentDateTime: LocalDateTime,
     ): RamenShops {
         if (filter.isEmpty()) return this
         return RamenShops(shops.filterValues { shop -> shop.isOpened(filter, currentDateTime) })

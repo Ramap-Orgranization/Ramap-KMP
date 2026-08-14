@@ -82,6 +82,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 import org.jetbrains.compose.resources.StringResource
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.apple_login_failure_message
@@ -99,6 +101,7 @@ import ramap.shared.generated.resources.search_result_empty_message
 import ramap.shared.generated.resources.search_result_hidden_only_message
 import ramap.shared.generated.resources.shop_information_report_failure_message
 import ramap.shared.generated.resources.shop_information_report_success_message
+import kotlin.time.Clock
 import kotlin.time.Duration.Companion.milliseconds
 
 class MapViewModel(
@@ -797,7 +800,11 @@ class MapViewModel(
                 shopDetailState =
                     shopDetailState.takeIf {
                         selectedShop?.let { shop ->
-                            currentState.shops.filterBy(filter).containsKey(shop.id)
+                            currentState.shops
+                                .filterByOpenStatus(
+                                    filter,
+                                    Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()),
+                                ).containsKey(shop.id)
                         } ?: true
                     } ?: ShopDetailSheetUiState.Closed,
             )

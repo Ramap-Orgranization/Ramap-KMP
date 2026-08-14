@@ -169,7 +169,7 @@ class RamenShopsTest {
             )
 
         val result =
-            RamenShops(listOf(openShop, closedShop)).filterBy(
+            RamenShops(listOf(openShop, closedShop)).filterByOpenStatus(
                 RamenShopFilter(isOpenSelected = true),
                 LocalDateTime(2026, 8, 10, 12, 0),
             )
@@ -212,10 +212,10 @@ class RamenShopsTest {
 
         assertEquals(
             setOf("shop-1"),
-            RamenShops(listOf(shop)).filterBy(filter, LocalDateTime(2026, 8, 10, 12, 0)).keys,
+            RamenShops(listOf(shop)).filterByOpenStatus(filter, LocalDateTime(2026, 8, 10, 12, 0)).keys,
         )
-        assertTrue(RamenShops(listOf(shop)).filterBy(filter, LocalDateTime(2026, 8, 10, 16, 0)).isEmpty())
-        assertTrue(RamenShops(listOf(shop)).filterBy(filter, LocalDateTime(2026, 8, 10, 23, 0)).isEmpty())
+        assertTrue(RamenShops(listOf(shop)).filterByOpenStatus(filter, LocalDateTime(2026, 8, 10, 16, 0)).isEmpty())
+        assertTrue(RamenShops(listOf(shop)).filterByOpenStatus(filter, LocalDateTime(2026, 8, 10, 23, 0)).isEmpty())
     }
 
     @Test
@@ -244,7 +244,7 @@ class RamenShopsTest {
         assertEquals(
             setOf("shop-1"),
             RamenShops(listOf(shop))
-                .filterBy(
+                .filterByOpenStatus(
                     RamenShopFilter(isOpenSelected = true),
                     LocalDateTime(2026, 8, 10, 0, 30),
                 ).keys,
@@ -298,7 +298,7 @@ class RamenShopsTest {
 
         assertTrue(
             RamenShops(shops)
-                .filterBy(
+                .filterByOpenStatus(
                     RamenShopFilter(isOpenSelected = true),
                     LocalDateTime(2026, 8, 10, 12, 0),
                 ).isEmpty(),
@@ -329,7 +329,7 @@ class RamenShopsTest {
             )
 
         val result =
-            RamenShops(listOf(shop)).filterBy(
+            RamenShops(listOf(shop)).filterByOpenStatus(
                 RamenShopFilter(setOf(Category.JIRO), isOpenSelected = true),
                 LocalDateTime(2026, 8, 10, 20, 30),
             )

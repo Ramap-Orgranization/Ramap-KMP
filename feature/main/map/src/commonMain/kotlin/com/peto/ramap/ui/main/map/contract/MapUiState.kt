@@ -15,6 +15,9 @@ import com.peto.ramap.ui.main.map.model.CameraPosition
 import com.peto.ramap.ui.main.map.model.LocationFocusStatus
 import com.peto.ramap.ui.main.map.search.SearchResultGuide
 import com.peto.ramap.ui.main.map.search.SearchUiModel
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
+import kotlin.time.Clock
 
 data class MapUiState(
     val shopDetailState: ShopDetailSheetUiState = ShopDetailSheetUiState.Closed,
@@ -229,7 +232,10 @@ data class MapUiState(
                 shops.filterByShopIds(bookmarkedShopIds)
             } else {
                 shops.filterNotHidden(hiddenShopIds)
-            }.filterBy(filters)
+            }.filterByOpenStatus(
+                filters,
+                Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()),
+            )
 
     /**
      * 북마크 보기 여부와 카테고리 필터가 적용된 검색 결과 목록.
@@ -240,7 +246,10 @@ data class MapUiState(
                 search.results.filterByShopIds(bookmarkedShopIds)
             } else {
                 search.results
-            }.filterBy(filters)
+            }.filterByOpenStatus(
+                filters,
+                Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()),
+            )
 
     /**
      * 숨김 매장의 표시 상태까지 반영한 검색 결과 목록.
