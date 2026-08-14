@@ -23,9 +23,9 @@ import ramap.shared.generated.resources.event_list_empty
 import ramap.shared.generated.resources.laduck_loading_walking
 
 @Composable
-internal fun EventListEmptyContent() {
+internal fun EventListEmptyContent(modifier: Modifier = Modifier) {
     Box(
-        modifier = Modifier.fillMaxSize().padding(24.dp),
+        modifier = modifier.fillMaxSize().padding(24.dp),
         contentAlignment = Alignment.Center,
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {

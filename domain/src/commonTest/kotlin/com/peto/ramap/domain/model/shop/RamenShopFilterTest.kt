@@ -85,4 +85,11 @@ class RamenShopFilterTest {
         // then
         assertEquals(filter, result)
     }
+
+    @Test
+    fun `영업시간 필터가 선택되면 카테고리가 없어도 비어있지 않다`() {
+        val filter = RamenShopFilter(isOpenSelected = true)
+
+        assertFalse(filter.isEmpty())
+    }
 }

@@ -120,9 +120,8 @@ internal class MapSearchController(
     ): MapSearchResult {
         val mapLocations = selectMapLocations(places)
         val registeredShopIds = collectRegisteredShopIds(places)
-        val shopsById = fetchRegisteredShops(registeredShopIds)
         val fetchedShops =
-            when (shopsById) {
+            when (val shopsById = fetchRegisteredShops(registeredShopIds)) {
                 is RamapResult.Success -> shopsById.data
                 is RamapResult.Error -> return MapSearchResult.Failed(shopsById.error)
             }

@@ -32,15 +32,15 @@ import com.peto.ramap.theme.GrayColor
 
 @Composable
 fun CommonDialog(
-    modifier: Modifier = Modifier,
     visible: Boolean,
     confirmText: String,
+    onDismissRequest: () -> Unit,
+    onConfirm: () -> Unit,
+    modifier: Modifier = Modifier,
     dismissText: String? = null,
     confirmEnabled: Boolean = true,
-    onDismissRequest: () -> Unit,
-    content: @Composable ColumnScope.() -> Unit,
-    onConfirm: () -> Unit,
     onDismiss: (() -> Unit)? = null,
+    content: @Composable ColumnScope.() -> Unit,
 ) {
     if (!visible) return
 

@@ -22,8 +22,8 @@ fun LoadErrorContent(
     image: DrawableResource,
     title: String,
     description: String,
-    onRetry: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
+    onRetry: (() -> Unit)? = null,
     compact: Boolean = false,
 ) {
     Column(

@@ -81,6 +81,8 @@ sealed interface MapIntent : Intent {
         val category: Category,
     ) : MapIntent
 
+    data object OnOpenFilterToggled : MapIntent
+
     data class OnBookmarkToggled(
         val shop: RamenShop,
     ) : MapIntent

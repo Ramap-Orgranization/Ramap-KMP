@@ -24,11 +24,11 @@ import com.peto.ramap.domain.model.rank.RankedShop
 import com.peto.ramap.domain.model.rank.ShopRanking
 import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.extension.noRippleClickable
+import com.peto.ramap.preview.RamenShopPreviewParameterProvider
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.InstagramColor
 import com.peto.ramap.theme.RamapTheme
-import com.peto.ramap.ui.preview.RamenShopPreviewParameterProvider
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res

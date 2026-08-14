@@ -1,6 +1,5 @@
 package com.peto.ramap.ui.main.map
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -14,10 +13,14 @@ import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.BottomSheetDefaults
+import androidx.compose.material3.BottomSheetScaffold
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material3.SheetValue
+import androidx.compose.material3.rememberBottomSheetScaffoldState
+import androidx.compose.material3.rememberStandardBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -25,9 +28,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
 import androidx.navigationevent.NavigationEventInfo
 import androidx.navigationevent.compose.NavigationBackHandler
@@ -46,22 +51,22 @@ import com.peto.ramap.domain.model.shop.Category
 import com.peto.ramap.domain.model.shop.Location
 import com.peto.ramap.domain.model.shop.MapBounds
 import com.peto.ramap.domain.model.shop.RamenShop
+import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.platform.ExternalUriOpener
+import com.peto.ramap.preview.RamenShopsPreviewParameterProvider
 import com.peto.ramap.theme.CommonColor
-import com.peto.ramap.theme.GrayColor
-import com.peto.ramap.ui.main.map.component.MapCircleIconButton
+import com.peto.ramap.theme.RamapTheme
+import com.peto.ramap.ui.main.map.component.BookmarkedFilterButton
 import com.peto.ramap.ui.main.map.component.MenuCategoryFilterRow
+import com.peto.ramap.ui.main.map.component.OpenFilterButton
 import com.peto.ramap.ui.main.map.component.RecentSearchHistory
 import com.peto.ramap.ui.main.map.component.SearchBar
 import com.peto.ramap.ui.main.map.component.SearchResultGuide
 import com.peto.ramap.ui.main.map.component.SearchResultList
 import com.peto.ramap.ui.main.map.contract.MapUiState
 import com.peto.ramap.ui.main.map.model.CameraPosition
-import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
-import ramap.shared.generated.resources.bookmarked_shops_toggle
-import ramap.shared.generated.resources.ic_kid_star
 import ramap.shared.generated.resources.retry_action
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -88,6 +93,7 @@ internal fun MapContent(
     onInitialLocationFocusConsumed: () -> Unit,
     onSelectedShopFocusConsumed: () -> Unit,
     onCategoryFilterToggled: (Category) -> Unit,
+    onOpenFilterToggled: () -> Unit,
     onViewportLoadRetry: () -> Unit,
     onBookmarkToggled: (RamenShop) -> Unit,
     onShopNotificationToggled: (RamenShop) -> Unit,
@@ -106,7 +112,14 @@ internal fun MapContent(
     val isImeVisible = WindowInsets.ime.getBottom(density) > 0
     var isSearchFocused by remember { mutableStateOf(false) }
 
-    val searchResultSheetState = rememberModalBottomSheetState()
+    val searchResultSheetState =
+        rememberStandardBottomSheetState(
+            initialValue = SheetValue.Expanded,
+        )
+    val searchResultScaffoldState =
+        rememberBottomSheetScaffoldState(
+            bottomSheetState = searchResultSheetState,
+        )
 
     val backEventState =
         rememberNavigationEventState<NavigationEventInfo>(
@@ -184,6 +197,11 @@ internal fun MapContent(
                 )
 
                 if (!isSearchFocused) {
+                    OpenFilterButton(
+                        isActive = uiState.filters.isOpenSelected,
+                        onClick = onOpenFilterToggled,
+                        modifier = Modifier.padding(top = 5.dp),
+                    )
                     BookmarkedFilterButton(
                         isActive = uiState.isBookmarkedView,
                         onClick = onBookmarkedShopsToggle,
@@ -206,11 +224,14 @@ internal fun MapContent(
                     categoryLabel = { category ->
                         stringResource(CategoryResourceMapper.label(category))
                     },
-                    modifier = Modifier.weight(1f).verticalScroll(rememberScrollState()),
+                    modifier =
+                        Modifier
+                            .weight(1f)
+                            .verticalScroll(rememberScrollState()),
                 )
             } else {
                 MenuCategoryFilterRow(
-                    selectedCategories = uiState.filters,
+                    selectedFilter = uiState.filters,
                     onCategoryClick = onCategoryFilterToggled,
                 )
 
@@ -228,40 +249,46 @@ internal fun MapContent(
         }
 
         if (!isSearchFocused && uiState.showSearchResults) {
-            ModalBottomSheet(
-                onDismissRequest = onSearchResultsDismissed,
-                sheetState = searchResultSheetState,
-                containerColor = CommonColor.White,
-            ) {
-                Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
-                    val searchResultGuide = uiState.searchResultGuide
-                    when {
-                        uiState.placeSearchResults.isNotEmpty() ->
-                            SearchResultList(
-                                places = uiState.placeSearchResults,
-                                onPlaceClick = onPlaceSelected,
-                            )
+            BottomSheetScaffold(
+                scaffoldState = searchResultScaffoldState,
+                sheetPeekHeight = BottomSheetDefaults.SheetPeekHeight,
+                containerColor = Color.Transparent,
+                sheetContainerColor = CommonColor.White,
+                sheetShape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
+                sheetContent = {
+                    Column(
+                        modifier = Modifier.verticalScroll(rememberScrollState()),
+                    ) {
+                        val searchResultGuide = uiState.searchResultGuide
+                        when {
+                            uiState.placeSearchResults.isNotEmpty() ->
+                                SearchResultList(
+                                    places = uiState.placeSearchResults,
+                                    onPlaceClick = onPlaceSelected,
+                                )
 
-                        searchResultGuide != null ->
-                            SearchResultGuide(guide = searchResultGuide)
+                            searchResultGuide != null ->
+                                SearchResultGuide(guide = searchResultGuide)
 
-                        else ->
-                            RamenShopSummaries(
-                                shops = uiState.searchResultShops,
-                                onShopClick = {
-                                    onShopSelected(
-                                        it,
-                                        true,
-                                        AnalyticsSource.SEARCH_RESULT,
-                                    )
-                                },
-                                categoryLabel = { category ->
-                                    stringResource(CategoryResourceMapper.label(category))
-                                },
-                            )
+                            else ->
+                                RamenShopSummaries(
+                                    shops = uiState.searchResultShops,
+                                    onShopClick = {
+                                        onShopSelected(
+                                            it,
+                                            true,
+                                            AnalyticsSource.SEARCH_RESULT,
+                                        )
+                                    },
+                                    categoryLabel = { category ->
+                                        stringResource(CategoryResourceMapper.label(category))
+                                    },
+                                )
+                        }
                     }
-                }
-            }
+                },
+                content = {},
+            )
         }
 
         ShopDetailContent(
@@ -313,24 +340,45 @@ internal fun MapContent(
     }
 }
 
+@Preview(showBackground = true)
 @Composable
-private fun BookmarkedFilterButton(
-    isActive: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
+private fun MapContentPreview(
+    @PreviewParameter(RamenShopsPreviewParameterProvider::class) shops: RamenShops,
 ) {
-    MapCircleIconButton(
-        isActive = isActive,
-        onClick = onClick,
-        modifier = modifier,
-    ) {
-        Image(
-            painter = painterResource(Res.drawable.ic_kid_star),
-            contentDescription = stringResource(Res.string.bookmarked_shops_toggle),
-            colorFilter =
-                ColorFilter.tint(
-                    if (isActive) CommonColor.White else GrayColor.C500,
-                ),
+    RamapTheme {
+        MapContent(
+            uiState = MapUiState(shops = shops, recentSearches = listOf("멘야 하나비", "라멘 트럭")),
+            isBackEnabled = true,
+            onBoundsChanged = {},
+            onCameraPositionChanged = {},
+            onMyLocationChanged = {},
+            onLocationPermissionBlocked = {},
+            onCurrentLocationTimeout = {},
+            onShopSelected = { _, _, _ -> },
+            onPlaceSelected = {},
+            onShopDetailDismissed = {},
+            onShopDetailRetry = {},
+            onRequestedShopDismissed = {},
+            onQueryChanged = {},
+            onRecentSearchSelected = {},
+            onRecentSearchDeleted = {},
+            onRecentSearchesCleared = {},
+            onRecentlyViewedShopSelected = {},
+            onSearchResultsDismissed = {},
+            onInitialLocationFocusConsumed = {},
+            onSelectedShopFocusConsumed = {},
+            onCategoryFilterToggled = {},
+            onOpenFilterToggled = {},
+            onViewportLoadRetry = {},
+            onBookmarkToggled = {},
+            onShopNotificationToggled = {},
+            onHiddenToggled = {},
+            onShopShareClick = {},
+            onShopMapLinkClick = { _, _ -> },
+            onEventClick = {},
+            onReportSubmit = { _, _ -> },
+            onBookmarkedShopsToggle = {},
+            showShopDetail = false,
         )
     }
 }

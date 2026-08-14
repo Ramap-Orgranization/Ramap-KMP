@@ -31,6 +31,7 @@ import com.peto.ramap.domain.model.shop.AdministrativeArea
 import com.peto.ramap.domain.model.shop.AreaFilter
 import com.peto.ramap.domain.model.shop.Category
 import com.peto.ramap.domain.model.shop.RamenShop
+import com.peto.ramap.preview.RamenShopPreviewParameterProvider
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.RamapTheme
 import com.peto.ramap.ui.base.ObserveAsEvents
@@ -39,7 +40,6 @@ import com.peto.ramap.ui.main.ranking.component.RankingFilters
 import com.peto.ramap.ui.main.ranking.contract.RankingIntent
 import com.peto.ramap.ui.main.ranking.contract.RankingSideEffect
 import com.peto.ramap.ui.main.ranking.contract.RankingUiState
-import com.peto.ramap.ui.preview.RamenShopPreviewParameterProvider
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 

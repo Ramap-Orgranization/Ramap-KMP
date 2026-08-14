@@ -31,13 +31,12 @@ import ramap.shared.generated.resources.navigation_back
 fun SettingsPage(
     title: StringResource,
     onBack: () -> Unit,
+    modifier: Modifier = Modifier,
     showLoading: Boolean = false,
     content: @Composable () -> Unit,
 ) {
     Box(
-        modifier =
-            Modifier
-                .fillMaxSize(),
+        modifier = modifier.fillMaxSize(),
     ) {
         Column(
             modifier =

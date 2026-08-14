@@ -11,12 +11,13 @@ import androidx.compose.ui.unit.dp
 import com.peto.ramap.designsystem.component.CategoryFilterChip
 import com.peto.ramap.designsystem.resource.category.CategoryResourceMapper
 import com.peto.ramap.domain.model.shop.Category
+import com.peto.ramap.domain.model.shop.RamenShopFilter
 import com.peto.ramap.theme.AppTextStyle
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
 internal fun MenuCategoryFilterRow(
-    selectedCategories: Set<Category>,
+    selectedFilter: RamenShopFilter,
     onCategoryClick: (Category) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -30,7 +31,7 @@ internal fun MenuCategoryFilterRow(
         Category.entries.forEach { category ->
             CategoryFilterChip(
                 label = stringResource(CategoryResourceMapper.label(category)),
-                selected = category in selectedCategories,
+                selected = category in selectedFilter,
                 onClick = { onCategoryClick(category) },
                 style = AppTextStyle.B4,
             )

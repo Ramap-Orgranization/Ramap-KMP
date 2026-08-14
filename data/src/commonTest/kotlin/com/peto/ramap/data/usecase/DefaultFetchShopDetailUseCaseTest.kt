@@ -48,7 +48,7 @@ class DefaultFetchShopDetailUseCaseTest {
         }
 
     @Test
-    fun `상세 조회 실패는 캐시하지 않고 한 번 재시도한다`() =
+    fun `상세 조회 실패는 캐시하지 않고 한 번만 요청한다`() =
         runTest {
             val shop = ramenShopFixture()
             val ramenShopRepository =
@@ -65,7 +65,7 @@ class DefaultFetchShopDetailUseCaseTest {
 
             assertIs<RamapResult.Error>(result)
             assertEquals(
-                listOf(setOf(shop.id), setOf(shop.id)),
+                listOf(setOf(shop.id)),
                 ramenShopRepository.requestedShopIdsHistory,
             )
             assertIs<ShopDetailCacheLookup.Miss>(useCase.findCached(shop.id))

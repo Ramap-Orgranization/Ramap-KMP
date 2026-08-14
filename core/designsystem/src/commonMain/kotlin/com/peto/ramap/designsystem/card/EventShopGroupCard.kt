@@ -36,7 +36,7 @@ import ramap.shared.generated.resources.event_status_cancelled
 fun EventShopGroupCard(
     eventGroup: ShopEvents,
     onEventClick: (ShopEvent) -> Unit,
-    modifier: Modifier = Modifier.fillMaxWidth(),
+    modifier: Modifier = Modifier,
     isCancelled: (ShopEvent) -> Boolean = ShopEvent::isCancelledToday,
     showHeaderCancelledBadge: Boolean = true,
 ) {
@@ -45,6 +45,7 @@ fun EventShopGroupCard(
     Column(
         modifier =
             modifier
+                .fillMaxWidth()
                 .clip(cardShape)
                 .background(CommonColor.White)
                 .border(1.dp, GrayColor.C100, cardShape)

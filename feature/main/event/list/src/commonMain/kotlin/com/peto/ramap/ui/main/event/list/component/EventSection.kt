@@ -32,11 +32,7 @@ import com.peto.ramap.designsystem.card.EventShopGroupCard
 import com.peto.ramap.designsystem.image.RemoteShopImage
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.domain.model.event.ShopEvent
-import com.peto.ramap.domain.model.event.ShopEventType
 import com.peto.ramap.domain.model.event.ShopEvents
-import com.peto.ramap.domain.model.shop.Location
-import com.peto.ramap.domain.model.shop.MenuCategories
-import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.extension.noRippleClickable
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.CommonColor
@@ -174,43 +170,12 @@ private fun OngoingEventShopItem(
 
 @Preview(showBackground = true)
 @Composable
-private fun OngoingEventShopItemPreview() {
+private fun OngoingEventShopItemPreview(
+    @PreviewParameter(EventSectionPreviewParameterProvider::class) eventGroups: List<ShopEvents>,
+) {
     RamapTheme {
         OngoingEventShopItem(
-            eventGroup =
-                ShopEvents(
-                    listOf(
-                        ShopEvent(
-                            id = "ongoing-1",
-                            type = ShopEventType.POPUP,
-                            title = "오늘 진행 중인 라멘 이벤트",
-                            description = "이벤트 설명",
-                            startDate = "2026-07-29",
-                            endDate = "2026-07-31",
-                            sourceUrl = "https://instagram.com/event",
-                            isToday = true,
-                            isVenue = true,
-                            venueShop =
-                                RamenShop(
-                                    id = "preview-shop",
-                                    kakaoPlaceId = null,
-                                    name = "무진장이름이긴매장입니다.",
-                                    address = "서울 마포구",
-                                    location = Location(37.5, 127.0),
-                                    kakaoPlaceUrl = null,
-                                    naverPlaceUrl = null,
-                                    phone = null,
-                                    instagramUrl = null,
-                                    menuCategories = MenuCategories(emptyList()),
-                                    isVisible = true,
-                                    createdAt = "",
-                                    updatedAt = "",
-                                ),
-                            waitingMethod = null,
-                            waitingUrl = null,
-                        ),
-                    ),
-                ),
+            eventGroup = eventGroups.first(),
             onClick = {},
         )
     }

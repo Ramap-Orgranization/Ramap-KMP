@@ -54,8 +54,8 @@ import kotlin.time.Duration.Companion.milliseconds
 fun CommonBottomSheet(
     visible: Boolean,
     onDismissRequest: () -> Unit,
-    isBackEnabled: Boolean = true,
     modifier: Modifier = Modifier,
+    isBackEnabled: Boolean = true,
     config: CommonBottomSheetConfig = CommonBottomSheetConfig(),
     content: @Composable ColumnScope.(Modifier) -> Unit,
 ) {

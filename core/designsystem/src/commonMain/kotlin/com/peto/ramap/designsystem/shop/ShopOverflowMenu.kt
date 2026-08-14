@@ -72,7 +72,7 @@ internal fun ShopOverflowMenu(
             ShopOverflowMenuItem(
                 text = stringResource(Res.string.share_shop_action),
                 icon = Res.drawable.ic_share,
-                isActive = null,
+                isActive = false,
                 onClick = {
                     isExpanded = false
                     onShareClick()

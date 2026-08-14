@@ -49,6 +49,7 @@ import com.peto.ramap.ui.main.map.contract.MapIntent.OnLocationPermissionBlocked
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnLoginTypeSelected
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnMapTabExited
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnMyLocationChanged
+import com.peto.ramap.ui.main.map.contract.MapIntent.OnOpenFilterToggled
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnQueryChanged
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnRecentSearchDeleted
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnRecentSearchSelected
@@ -81,6 +82,8 @@ import com.peto.ramap.ui.main.map.search.MapSearchResult
 import com.peto.ramap.ui.main.map.viewport.ViewportLoadResult
 import com.peto.ramap.ui.main.map.viewport.ViewportShopLoader
 import com.peto.ramap.ui.task.TaskPolicy
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -100,6 +103,7 @@ import ramap.shared.generated.resources.personalization_update_failure_message
 import ramap.shared.generated.resources.search_result_empty_message
 import ramap.shared.generated.resources.shop_information_report_failure_message
 import ramap.shared.generated.resources.shop_information_report_success_message
+import kotlin.time.Duration.Companion.milliseconds
 
 class MapViewModel(
     private val ramenShopRepository: RamenShopRepository,
@@ -120,6 +124,7 @@ class MapViewModel(
         )
     private val viewportShopLoader = ViewportShopLoader(ramenShopRepository, viewModelScope)
     private var pendingMapAction: PendingMapAction? = null
+    private var openFilterRefreshJob: Job? = null
 
     init {
         viewModelScope.launch { observeSessionState() }
@@ -238,6 +243,7 @@ class MapViewModel(
             }
 
             is OnCategoryFilterToggled -> toggleCategoryFilter(intent.category)
+            OnOpenFilterToggled -> toggleOpenFilter()
             else -> return false
         }
         return true
@@ -344,7 +350,7 @@ class MapViewModel(
         reduce {
             copy(
                 shopDetailState = ShopDetailSheetUiState.Closed,
-                search = if (search.results.size == 1) search.reset() else search,
+                search = if (search.results.size == 1) search.dismissResults() else search,
             )
         }
     }
@@ -404,7 +410,7 @@ class MapViewModel(
     }
 
     private fun dismissSearchResults() {
-        reduce { copy(search = search.reset()) }
+        reduce { copy(search = search.dismissResults()) }
     }
 
     private fun selectPlace(place: PlaceSearchResult) {
@@ -473,6 +479,11 @@ class MapViewModel(
             }
         mapAnalytics.logCategoryFilterToggled(category, category !in currentFilter)
         updateFilter(nextFilter)
+    }
+
+    private fun toggleOpenFilter() {
+        val filter = currentState.filters
+        updateFilter(filter.copy(isOpenSelected = !filter.isOpenSelected))
     }
 
     private suspend fun updatePersonalization(personalization: ShopPersonalization) {
@@ -802,11 +813,41 @@ class MapViewModel(
                 filters = filter,
                 shopDetailState =
                     shopDetailState.takeIf {
-                        selectedShop?.menuCategories?.matches(filter) ?: true
+                        selectedShop?.isOpened(filter) ?: true
                     } ?: ShopDetailSheetUiState.Closed,
             )
         }
+        updateOpenFilterRefreshJob(filter.isOpenSelected)
         showEmptyFilterResultMessageIfNeeded()
+    }
+
+    private fun updateOpenFilterRefreshJob(isEnabled: Boolean) {
+        if (!isEnabled) {
+            openFilterRefreshJob?.cancel()
+            openFilterRefreshJob = null
+            return
+        }
+        if (openFilterRefreshJob?.isActive == true) return
+
+        openFilterRefreshJob =
+            viewModelScope.launch {
+                while (true) {
+                    delay(OPEN_FILTER_REFRESH_INTERVAL_MILLIS.milliseconds)
+                    refreshOpenFilter()
+                }
+            }
+    }
+
+    private fun refreshOpenFilter() {
+        reduce {
+            copy(
+                openFilterRefreshVersion = openFilterRefreshVersion + 1,
+                shopDetailState =
+                    shopDetailState.takeIf {
+                        selectedShop?.isOpened(filters) ?: true
+                    } ?: ShopDetailSheetUiState.Closed,
+            )
+        }
     }
 
     private fun showEmptyFilterResultMessageIfNeeded() {
@@ -1127,5 +1168,6 @@ class MapViewModel(
         private const val SHOP_REPORT_TASK_KEY = "map-shop-report"
         private const val SIGN_IN_TASK_KEY = "map-sign-in"
         private const val PERSONALIZED_SHOPS_TASK_KEY = "map-personalized-shops"
+        private const val OPEN_FILTER_REFRESH_INTERVAL_MILLIS = 60_000L
     }
 }
