@@ -31,4 +31,19 @@ class SettingsMenuTest {
             visibleSettingsMenus(isLoggedIn = true),
         )
     }
+
+    @Test
+    fun `알림을 지원하지 않는 플랫폼에서는 알림 설정 메뉴를 노출하지 않는다`() {
+        assertEquals(
+            listOf(
+                SettingsMenu.ACCOUNT,
+                SettingsMenu.INFORMATION,
+                SettingsMenu.REPORT,
+                SettingsMenu.HIDDEN_SHOPS,
+                SettingsMenu.SUBSCRIBED_SHOPS,
+                SettingsMenu.BOOKMARKED_SHOPS,
+            ),
+            visibleSettingsMenus(isLoggedIn = true, isNotificationSupported = false),
+        )
+    }
 }

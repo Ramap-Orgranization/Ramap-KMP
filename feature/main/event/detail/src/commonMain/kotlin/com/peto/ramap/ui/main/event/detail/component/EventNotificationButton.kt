@@ -7,6 +7,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.peto.ramap.platform.NotificationPermissionRequester
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.InstagramColor
 import com.peto.ramap.theme.RamapTheme
@@ -25,7 +26,7 @@ internal fun EventNotificationButton(
     onNotificationChanged: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    if (!uiState.isNotificationVisible) return
+    if (!NotificationPermissionRequester.isSupported || !uiState.isNotificationVisible) return
     IconButton(
         enabled = uiState.canChangeNotification && !uiState.isNotificationLoading,
         onClick = { onNotificationChanged(!uiState.isNotificationEnabled) },

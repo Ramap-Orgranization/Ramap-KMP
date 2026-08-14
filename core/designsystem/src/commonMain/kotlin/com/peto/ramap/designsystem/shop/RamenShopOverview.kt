@@ -95,6 +95,7 @@ fun RamenShopOverview(
     waitingSystem: WaitingSystemUiModel? = null,
     isBookmarked: Boolean = false,
     isNotificationEnabled: Boolean = false,
+    showNotificationActions: Boolean = true,
     isHidden: Boolean = false,
     onBookmarkClick: () -> Unit = {},
     onNotificationClick: () -> Unit = {},
@@ -167,6 +168,7 @@ fun RamenShopOverview(
                         shopId = shop.id,
                         isBookmarked = isBookmarked,
                         isNotificationEnabled = isNotificationEnabled,
+                        showNotificationActions = showNotificationActions,
                         isHidden = isHidden,
                         onBookmarkClick = onBookmarkClick,
                         onNotificationClick = onNotificationClick,
@@ -291,6 +293,7 @@ private fun ShopOverflowMenu(
     shopId: String,
     isBookmarked: Boolean,
     isNotificationEnabled: Boolean,
+    showNotificationActions: Boolean,
     isHidden: Boolean,
     onBookmarkClick: () -> Unit,
     onNotificationClick: () -> Unit,
@@ -337,19 +340,19 @@ private fun ShopOverflowMenu(
                         onBookmarkClick()
                     },
                 )
-                ShopOverflowMenuItem(
-                    text = stringResource(Res.string.event_notification_action),
-                    icon =
-                        if (isNotificationEnabled) {
-                            Res.drawable.ic_notification_filled
-                        } else {
-                            Res.drawable.ic_notification
-                        },
-                    isActive = isNotificationEnabled,
-                    onClick = {
-                        onNotificationClick()
-                    },
-                )
+                if (showNotificationActions) {
+                    ShopOverflowMenuItem(
+                        text = stringResource(Res.string.event_notification_action),
+                        icon =
+                            if (isNotificationEnabled) {
+                                Res.drawable.ic_notification_filled
+                            } else {
+                                Res.drawable.ic_notification
+                            },
+                        isActive = isNotificationEnabled,
+                        onClick = onNotificationClick,
+                    )
+                }
             }
             ShopOverflowMenuItem(
                 text = stringResource(Res.string.hide_shop_action),

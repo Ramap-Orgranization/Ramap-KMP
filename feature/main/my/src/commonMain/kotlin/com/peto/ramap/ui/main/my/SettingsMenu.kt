@@ -10,7 +10,10 @@ internal enum class SettingsMenu {
     BOOKMARKED_SHOPS,
 }
 
-internal fun visibleSettingsMenus(isLoggedIn: Boolean): List<SettingsMenu> {
+internal fun visibleSettingsMenus(
+    isLoggedIn: Boolean,
+    isNotificationSupported: Boolean = true,
+): List<SettingsMenu> {
     val commonMenus =
         listOf(
             SettingsMenu.ACCOUNT,
@@ -19,15 +22,20 @@ internal fun visibleSettingsMenus(isLoggedIn: Boolean): List<SettingsMenu> {
         )
     if (!isLoggedIn) return commonMenus
 
-    return listOf(
-        SettingsMenu.ACCOUNT,
-        SettingsMenu.INFORMATION,
-        SettingsMenu.NOTIFICATION,
-        SettingsMenu.REPORT,
-    ) +
+    val loggedInMenus =
         listOf(
-            SettingsMenu.HIDDEN_SHOPS,
-            SettingsMenu.SUBSCRIBED_SHOPS,
-            SettingsMenu.BOOKMARKED_SHOPS,
-        )
+            SettingsMenu.ACCOUNT,
+            SettingsMenu.INFORMATION,
+            SettingsMenu.REPORT,
+        ) +
+            listOf(
+                SettingsMenu.HIDDEN_SHOPS,
+                SettingsMenu.SUBSCRIBED_SHOPS,
+                SettingsMenu.BOOKMARKED_SHOPS,
+            )
+    return if (isNotificationSupported) {
+        loggedInMenus.toMutableList().apply { add(2, SettingsMenu.NOTIFICATION) }
+    } else {
+        loggedInMenus
+    }
 }

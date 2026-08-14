@@ -10,6 +10,8 @@ import java.lang.ref.WeakReference
 import kotlin.coroutines.resume
 
 actual object NotificationPermissionRequester {
+    actual val isSupported = true
+
     private var activityReference = WeakReference<Activity>(null)
     private var permissionContinuation: kotlin.coroutines.Continuation<Boolean>? = null
 

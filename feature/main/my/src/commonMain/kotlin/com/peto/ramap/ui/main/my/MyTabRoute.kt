@@ -23,6 +23,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.designsystem.topbar.CommonTopBar
 import com.peto.ramap.extension.noRippleClickable
+import com.peto.ramap.platform.NotificationPermissionRequester
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.GrayColor
 import org.jetbrains.compose.resources.StringResource
@@ -53,6 +54,7 @@ fun MyTabRoute(
 
     MyContent(
         isLoggedIn = uiState.isLoggedIn,
+        isNotificationSupported = NotificationPermissionRequester.isSupported,
         onAccountClick = onAccountNavigate,
         onInformationClick = onInformationNavigate,
         onNotificationSettingsClick = onNotificationSettingsNavigate,
@@ -66,6 +68,7 @@ fun MyTabRoute(
 @Composable
 internal fun MyContent(
     isLoggedIn: Boolean,
+    isNotificationSupported: Boolean = true,
     onAccountClick: () -> Unit,
     onInformationClick: () -> Unit,
     onNotificationSettingsClick: () -> Unit,
@@ -93,7 +96,7 @@ internal fun MyContent(
                     .border(width = 1.dp, color = GrayColor.C200, shape = RoundedCornerShape(20.dp))
                     .clip(RoundedCornerShape(20.dp)),
         ) {
-            visibleSettingsMenus(isLoggedIn).forEachIndexed { index, menu ->
+            visibleSettingsMenus(isLoggedIn, isNotificationSupported).forEachIndexed { index, menu ->
                 if (index > 0) {
                     HorizontalDivider(thickness = 1.dp, color = GrayColor.C200)
                 }

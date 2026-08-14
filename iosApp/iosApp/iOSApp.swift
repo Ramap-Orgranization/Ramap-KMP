@@ -4,84 +4,17 @@ import NMapsMap
 import KakaoSDKAuth
 import KakaoSDKCommon
 import KakaoSDKUser
-import UserNotifications
 import FirebaseCore
-import FirebaseMessaging
 import AuthenticationServices
 import CryptoKit
 import Security
 
-final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate, MessagingDelegate {
+final class AppDelegate: NSObject, UIApplicationDelegate {
     func application(
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
     ) -> Bool {
-        UNUserNotificationCenter.current().delegate = self
-        if FirebaseApp.app() != nil {
-            Messaging.messaging().delegate = self
-            refreshFirebaseMessagingToken()
-            registerForRemoteNotificationsIfAuthorized(application)
-        }
         return true
-    }
-
-    func application(
-        _ application: UIApplication,
-        didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data
-    ) {
-        Messaging.messaging().apnsToken = deviceToken
-        refreshFirebaseMessagingToken()
-    }
-
-    func application(
-        _ application: UIApplication,
-        didFailToRegisterForRemoteNotificationsWithError error: Error
-    ) {
-        print("Remote notification registration failed: \(error.localizedDescription)")
-    }
-
-    func messaging(_ messaging: Messaging, didReceiveRegistrationToken fcmToken: String?) {
-        trackFirebaseMessagingToken(fcmToken)
-    }
-
-    func userNotificationCenter(
-        _ center: UNUserNotificationCenter,
-        didReceive response: UNNotificationResponse,
-        withCompletionHandler completionHandler: @escaping () -> Void
-    ) {
-        let deepLink = response.notification.request.content.userInfo["deep_link"] as? String
-        NotificationLaunchBridgeKt.dispatchNotificationDeepLink(deepLink: deepLink)
-        completionHandler()
-    }
-
-    private func refreshFirebaseMessagingToken() {
-        Messaging.messaging().token { token, error in
-            if let error {
-                print("Firebase messaging token refresh failed: \(error.localizedDescription)")
-                return
-            }
-            self.trackFirebaseMessagingToken(token)
-        }
-    }
-
-    private func registerForRemoteNotificationsIfAuthorized(_ application: UIApplication) {
-        UNUserNotificationCenter.current().getNotificationSettings { settings in
-            switch settings.authorizationStatus {
-            case .authorized, .provisional, .ephemeral:
-                DispatchQueue.main.async {
-                    application.registerForRemoteNotifications()
-                }
-            default:
-                break
-            }
-        }
-    }
-
-    private func trackFirebaseMessagingToken(_ token: String?) {
-        guard let token, !token.isEmpty else {
-            return
-        }
-        IosPushNotificationBridgeKt.trackIosPushToken(token: token)
     }
 }
 
@@ -99,13 +32,6 @@ struct iOSApp: App {
         NMFAuthManager.shared().ncpKeyId = RamapSecrets.shared.naverMapNcpKeyId
         KakaoSDK.initSDK(appKey: RamapSecrets.shared.kakaoNativeAppKey)
         KoinInitializerKt.doInitKoin(appDeclaration: { _ in })
-        NotificationCenter.default.addObserver(
-            forName: Notification.Name("NotificationPermissionGranted"),
-            object: nil,
-            queue: .main
-        ) { _ in
-            UIApplication.shared.registerForRemoteNotifications()
-        }
         NotificationCenter.default.addObserver(
             forName: Notification.Name("KakaoLoginRequest"),
             object: nil,
