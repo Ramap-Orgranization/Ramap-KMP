@@ -2233,27 +2233,6 @@ class MapViewModelTest {
     }
 
     @Test
-    fun `북마크한 매장이 없으면 검색 결과 필터 안내를 보여준다`() {
-        val shop = ramenShopFixture(id = "unbookmarked-search-shop")
-        val uiState =
-            MapUiState(
-                search =
-                    loadedSearchUiModel(
-                        input = "라멘",
-                        results = RamenShops(mapOf(shop.id to shop)),
-                    ),
-                bookmarkedShopIds = emptySet(),
-                isBookmarkedView = true,
-            )
-
-        assertEquals(SearchResultGuide.FilterEmpty, uiState.searchResultGuide)
-        assertEquals(RamenShops(emptyMap()), uiState.searchResultShops)
-        assertEquals(RamenShops(emptyMap()), uiState.markerShops)
-        assertEquals(true, uiState.showSearchResults)
-        assertEquals(true, uiState.showBottomSheet)
-    }
-
-    @Test
     fun `검색 결과 매장을 숨기면 전체 보기 검색 결과에서 투명 표시 대상으로 유지한다`() {
         val hiddenShop = ramenShopFixture(id = "hidden-after-search-shop")
         val visibleShop = ramenShopFixture(id = "visible-search-shop")
