@@ -1,4 +1,4 @@
-package com.peto.ramap.designsystem.shop
+package com.peto.ramap.designsystem.dialog
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -23,7 +23,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.peto.ramap.designsystem.dialog.CommonDialog
 import com.peto.ramap.designsystem.shop.model.RamenShopUiModel
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.domain.model.report.ShopInformationField

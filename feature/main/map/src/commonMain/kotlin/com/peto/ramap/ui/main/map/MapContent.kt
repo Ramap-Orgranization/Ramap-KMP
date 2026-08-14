@@ -91,6 +91,7 @@ internal fun MapContent(
     onViewportLoadRetry: () -> Unit,
     onBookmarkToggled: (RamenShop) -> Unit,
     onShopNotificationToggled: (RamenShop) -> Unit,
+    showNotificationActions: Boolean = true,
     onHiddenToggled: (RamenShop) -> Unit,
     onShopShareClick: (RamenShop) -> Unit,
     onShopMapLinkClick: (RamenShop, String) -> Unit,
@@ -272,6 +273,7 @@ internal fun MapContent(
             waitingSystem = selectedShop?.let { uiState.shopWaiting[it.id].toUiModel() },
             isBookmarked = selectedShop?.id in uiState.bookmarkedShopIds,
             isNotificationEnabled = selectedShop?.id in uiState.notificationShopIds,
+            showNotificationActions = showNotificationActions,
             isHidden = selectedShop?.id in uiState.hiddenShopIds,
             isLoggedIn = uiState.isLoggedIn,
             onDismissRequest = {

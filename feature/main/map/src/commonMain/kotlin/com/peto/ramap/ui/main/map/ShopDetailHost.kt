@@ -58,6 +58,7 @@ fun ShopDetailHost(
                 waitingSystem = uiState.selectedShop?.let { uiState.shopWaiting[it.id].toUiModel() },
                 isBookmarked = uiState.selectedShop?.id in uiState.bookmarkedShopIds,
                 isNotificationEnabled = uiState.selectedShop?.id in uiState.notificationShopIds,
+                showNotificationActions = NotificationPermissionRequester.isSupported,
                 isHidden = uiState.selectedShop?.id in uiState.hiddenShopIds,
                 isLoggedIn = uiState.isLoggedIn,
                 onDismissRequest = {

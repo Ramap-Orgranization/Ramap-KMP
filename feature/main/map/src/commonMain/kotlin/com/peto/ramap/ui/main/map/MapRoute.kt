@@ -89,6 +89,7 @@ fun MapRoute(
     ) { onShopNotificationToggled ->
         MapContent(
             uiState = uiState,
+            showNotificationActions = NotificationPermissionRequester.isSupported,
             isBackEnabled = isBackEnabled,
             onBoundsChanged = { viewModel.dispatch(OnBoundsChanged(it)) },
             onCameraPositionChanged = { viewModel.dispatch(OnCameraPositionChanged(it)) },

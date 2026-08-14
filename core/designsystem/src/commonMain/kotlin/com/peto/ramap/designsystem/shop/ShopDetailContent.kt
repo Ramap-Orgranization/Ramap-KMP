@@ -17,6 +17,7 @@ import com.peto.ramap.designsystem.bottomsheet.CommonBottomSheetConfig
 import com.peto.ramap.designsystem.button.AppButton
 import com.peto.ramap.designsystem.component.LoadErrorContent
 import com.peto.ramap.designsystem.dialog.CommonDialog
+import com.peto.ramap.designsystem.dialog.ReportDialog
 import com.peto.ramap.designsystem.indicator.RamenLoadingIndicator
 import com.peto.ramap.designsystem.resource.wating.WaitingSystemUiModel
 import com.peto.ramap.designsystem.shop.model.RamenShopUiModel
@@ -48,6 +49,7 @@ fun ShopDetailContent(
     waitingSystem: WaitingSystemUiModel? = null,
     isBookmarked: Boolean = false,
     isNotificationEnabled: Boolean = false,
+    showNotificationActions: Boolean = true,
     isHidden: Boolean = false,
     isLoggedIn: Boolean = false,
     onDismissRequest: () -> Unit,
@@ -109,6 +111,7 @@ fun ShopDetailContent(
                         waitingSystem = waitingSystem,
                         isBookmarked = isBookmarked,
                         isNotificationEnabled = isNotificationEnabled,
+                        showNotificationActions = showNotificationActions,
                         isHidden = isHidden,
                         onBookmarkClick = { onBookmarkToggled(shop) },
                         onNotificationClick = { onShopNotificationToggled(shop) },
