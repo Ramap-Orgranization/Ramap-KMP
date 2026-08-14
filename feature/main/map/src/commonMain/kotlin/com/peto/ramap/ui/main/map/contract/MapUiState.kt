@@ -1,7 +1,6 @@
 package com.peto.ramap.ui.main.map.contract
 
 import com.peto.ramap.designsystem.shop.model.ShopDetailSheetUiState
-import com.peto.ramap.domain.model.place.PlaceSearchResults
 import com.peto.ramap.domain.model.shop.Location
 import com.peto.ramap.domain.model.shop.MapBounds
 import com.peto.ramap.domain.model.shop.RamenShop
@@ -9,7 +8,6 @@ import com.peto.ramap.domain.model.shop.RamenShopFilter
 import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.domain.model.shop.WaitingSystem
 import com.peto.ramap.domain.usecase.ShopDetail
-import com.peto.ramap.ui.base.State
 import com.peto.ramap.ui.loading.LoadState
 import com.peto.ramap.ui.loading.LoadableState
 import com.peto.ramap.ui.main.map.config.DefaultMapConfig
@@ -80,8 +78,7 @@ data class MapUiState(
      * 현재 사용자의 로그인 여부.
      */
     val isLoggedIn: Boolean = false,
-) : State,
-    LoadableState<MapUiState> {
+) : LoadableState<MapUiState> {
     val selectedShop: RamenShop?
         get() =
             when (val state = shopDetailState) {
@@ -112,10 +109,15 @@ data class MapUiState(
      * 현재 위치와 가까운 매장을 먼저 표시한다.
      */
     val searchResultShops: RamenShops
-        get() = displaySearchResults.nearestFirstTo(currentLocation)
+        get() =
+            if (search.hasLoadedResultsForInput) {
+                displaySearchResults.nearestFirstTo(currentLocation)
+            } else {
+                RamenShops(emptyMap())
+            }
 
-    val placeSearchResults: PlaceSearchResults
-        get() = search.placeResults.nearestFirstTo(cameraPosition?.center ?: defaultCameraCenter)
+    val hasSearchResult: Boolean
+        get() = searchResultShops.isNotEmpty()
 
     /**
      * 검색 결과 대신 사용자에게 안내할 메시지 상태.
@@ -125,19 +127,18 @@ data class MapUiState(
      */
     val searchResultGuide: SearchResultGuide?
         get() {
-            if (!hasLoadedSearchResultsForCurrentQuery) return null
-            if (placeSearchResults.isNotEmpty()) return null
-            if (search.results.isEmpty()) return SearchResultGuide.SEARCH_EMPTY
+            if (!search.hasLoadedResultsForInput) return null
+            if (search.results.isEmpty()) return SearchResultGuide.SearchEmpty
             if (
                 displaySearchResults.isNotEmpty() &&
                 displaySearchResults.values.all { !it.isVisible }
             ) {
-                return SearchResultGuide.HIDDEN_ONLY
+                return SearchResultGuide.HiddenOnly
             }
             if (displaySearchResults.isEmpty() && filters.isNotEmpty()) {
-                return SearchResultGuide.QUERY_AND_FILTER_EMPTY
+                return SearchResultGuide.QueryAndFilterEmpty
             }
-            if (displaySearchResults.isEmpty()) return SearchResultGuide.FILTER_EMPTY
+            if (displaySearchResults.isEmpty()) return SearchResultGuide.FilterEmpty
 
             return null
         }
@@ -155,7 +156,7 @@ data class MapUiState(
                     ?.let { shop -> mapOf(shop.id to shop) }
                     .orEmpty()
 
-            return if (hasLoadedSearchResultsForCurrentQuery) {
+            return if (search.hasLoadedResultsForInput) {
                 RamenShops(displaySearchResults + selectedMarkerShop)
             } else {
                 RamenShops(displayFilteredShops + selectedMarkerShop)
@@ -164,24 +165,9 @@ data class MapUiState(
 
     /**
      * 검색 결과 리스트 바텀시트를 보여줄지 여부.
-     *
-     * 매장 상세가 열려 있지 않고 검색어가 있으며, 선택 가능한 검색 결과가 여러 개이거나
-     * 빈 검색 결과를 제외한 안내가 있을 때만 리스트를 노출한다.
      */
     val showSearchResults: Boolean
-        get() =
-            selectedShop == null &&
-                !search.isResultsDismissed &&
-                search.input.isNotBlank() &&
-                (
-                    (
-                        searchResultGuide != null &&
-                            searchResultGuide != SearchResultGuide.SEARCH_EMPTY &&
-                            searchResultGuide != SearchResultGuide.HIDDEN_ONLY
-                    ) ||
-                        searchResultShops.size > 1 ||
-                        placeSearchResults.size > 1
-                )
+        get() = searchResultShops.size > 1
 
     /**
      * 지도 화면의 바텀시트를 열지 여부.
@@ -189,7 +175,7 @@ data class MapUiState(
      * 선택 매장 상세 또는 다중 검색 결과 리스트 중 하나라도 표시할 내용이 있으면 true가 된다.
      */
     val showBottomSheet: Boolean
-        get() = selectedShop != null || showSearchResults || hasShopDetailLoadFailed
+        get() = selectedShop != null
 
     /**
      * 지도 카메라가 포커스해야 할 매장 목록.
@@ -218,12 +204,6 @@ data class MapUiState(
     val focusRequestKey: Long
         get() = search.focusRequestKey
 
-    val placeFocusLocation: Location?
-        get() = search.placeFocusLocation
-
-    val placeFocusRequestKey: Long
-        get() = search.placeFocusRequestKey
-
     val initialFocusLocation: Location?
         get() = (locationFocusStatus as? LocationFocusStatus.Pending)?.location
 
@@ -239,14 +219,6 @@ data class MapUiState(
                 search.input.isNotBlank() &&
                 searchResultShops.isNotEmpty() &&
                 !search.isResultFocusConsumed
-
-    /**
-     * 현재 입력된 검색어에 대한 검색 결과가 로드되어 있는지 여부.
-     */
-    private val hasLoadedSearchResultsForCurrentQuery: Boolean
-        get() {
-            return search.hasLoadedResultsForInput
-        }
 
     /**
      * 북마크 보기 여부와 카테고리 필터가 적용된 전체 매장 목록.
@@ -281,10 +253,4 @@ data class MapUiState(
      */
     private val displayFilteredShops: RamenShops
         get() = filteredShops.markHidden(hiddenShopIds)
-
-    private val defaultCameraCenter =
-        Location(
-            lat = DefaultMapConfig.LATITUDE,
-            lng = DefaultMapConfig.LONGITUDE,
-        )
 }

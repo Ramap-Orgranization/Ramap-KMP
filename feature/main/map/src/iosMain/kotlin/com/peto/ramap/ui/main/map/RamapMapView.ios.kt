@@ -41,8 +41,6 @@ internal actual fun RamapMapView(
     focusNearestToCurrentLocation: Boolean,
     focusRequestKey: Long,
     initialFocusLocation: Location?,
-    placeFocusLocation: Location?,
-    placeFocusRequestKey: Long,
     shouldBootstrapInitialLocationFocus: Boolean,
     selectedShopId: String?,
     cameraPosition: CameraPosition?,
@@ -105,10 +103,6 @@ internal actual fun RamapMapView(
                 controller.updateShops(shops)
                 controller.updateInitialLocationFocus(
                     location = initialFocusLocation,
-                )
-                controller.updatePlaceFocus(
-                    location = placeFocusLocation,
-                    requestKey = placeFocusRequestKey,
                 )
                 val didMoveCamera =
                     controller.updateFocus(

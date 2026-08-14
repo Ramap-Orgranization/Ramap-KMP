@@ -13,7 +13,6 @@ import com.peto.ramap.designsystem.toast.model.ToastAction
 import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.auth.LoginType
-import com.peto.ramap.domain.model.auth.supportedLoginTypes
 import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.navigation.deeplink.ShopShareLinkFactory
 import com.peto.ramap.platform.AppSettingsOpener
@@ -48,16 +47,10 @@ internal fun MapInteractionHost(
     val coroutineScope = rememberCoroutineScope()
     var showLoginGuideDialog by remember { mutableStateOf(false) }
     val shareChooserTitle = stringResource(Res.string.share_shop_chooser_title)
-    val loginTypes = supportedLoginTypes()
-
     ObserveAsEvents(sideEffect) { effect ->
         when (effect) {
             MapSideEffect.ShowLoginGuide -> {
-                if (loginTypes.size == 1) {
-                    onLoginTypeSelected(loginTypes.single())
-                } else {
-                    showLoginGuideDialog = true
-                }
+                showLoginGuideDialog = true
             }
             is MapSideEffect.ShowToast ->
                 toastManager.show(

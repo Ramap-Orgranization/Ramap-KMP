@@ -25,6 +25,7 @@ kotlin {
         implementation(libs.koin.compose.viewmodel)
         implementation(libs.compose.material3)
         implementation(libs.compose.components.resources)
+        implementation(libs.kotlinx.datetime)
     }
     sourceSets.commonMain {
         dependencies {

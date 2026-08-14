@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.sp
 import com.peto.ramap.designsystem.component.RamenShopSummaries
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.domain.model.shop.Category
+import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.extension.noRippleClickable
 import com.peto.ramap.preview.RamenShopsPreviewParameterProvider
@@ -45,7 +46,7 @@ internal fun RecentSearchHistory(
     onSearchSelected: (String) -> Unit,
     onSearchDeleted: (String) -> Unit,
     onSearchesCleared: () -> Unit,
-    onViewedShopSelected: (String) -> Unit,
+    onViewedShopSelected: (RamenShop) -> Unit,
     categoryLabel: @Composable (Category) -> String,
     modifier: Modifier = Modifier,
 ) {
@@ -66,7 +67,7 @@ internal fun RecentSearchHistory(
                     modifier =
                         Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 5.dp)
+                            .padding(horizontal = 8.dp)
                             .noRippleClickable { onSearchSelected(query) },
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
@@ -81,7 +82,10 @@ internal fun RecentSearchHistory(
                     )
                     AppText(
                         text = query,
-                        modifier = Modifier.weight(1f).padding(horizontal = 5.dp),
+                        modifier =
+                            Modifier
+                                .weight(1f)
+                                .padding(horizontal = 5.dp),
                         style = AppTextStyle.B2,
                         color = GrayColor.C500,
                         maxLines = 1,
@@ -100,12 +104,13 @@ internal fun RecentSearchHistory(
         if (viewedShops.isNotEmpty()) {
             HistoryHeader(
                 title = stringResource(Res.string.recent_viewed_shops_title),
-                modifier = Modifier.padding(top = 10.dp),
+                modifier = Modifier.padding(top = 5.dp),
             )
             RamenShopSummaries(
                 shops = viewedShops,
-                onShopClick = { onViewedShopSelected(it.id) },
+                onShopClick = onViewedShopSelected,
                 categoryLabel = categoryLabel,
+                modifier = Modifier.padding(top = 5.dp),
             )
         }
     }

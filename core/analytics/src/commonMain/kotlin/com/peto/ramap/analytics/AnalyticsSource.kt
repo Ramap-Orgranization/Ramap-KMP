@@ -8,4 +8,5 @@ enum class AnalyticsSource(
     ACCOUNT("account"),
     MARKER("marker"),
     SEARCH_RESULT("search_result"),
+    RECENTLY_VIEWED("recently_viewed"),
 }

@@ -10,14 +10,11 @@ import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.auth.LoginSessionState
 import com.peto.ramap.domain.model.auth.LoginType
+import com.peto.ramap.domain.model.businesshour.BusinessHours
+import com.peto.ramap.domain.model.businesshour.BusinessHoursDay
 import com.peto.ramap.domain.model.personalization.ShopPersonalization
-import com.peto.ramap.domain.model.place.PlaceSearchResult
-import com.peto.ramap.domain.model.place.PlaceSearchResultKind
-import com.peto.ramap.domain.model.place.PlaceSearchResults
 import com.peto.ramap.domain.model.report.ShopInformationField
 import com.peto.ramap.domain.model.report.ShopInformationReport
-import com.peto.ramap.domain.model.shop.BusinessHours
-import com.peto.ramap.domain.model.shop.BusinessHoursDay
 import com.peto.ramap.domain.model.shop.Category
 import com.peto.ramap.domain.model.shop.Location
 import com.peto.ramap.domain.model.shop.RamenShopFilter
@@ -33,7 +30,6 @@ import com.peto.ramap.fake.FakeCrashReporter
 import com.peto.ramap.fake.FakeLoginRepository
 import com.peto.ramap.fake.FakeNotificationSettingsRepository
 import com.peto.ramap.fake.FakePersonalizationRepository
-import com.peto.ramap.fake.FakePlaceSearchRepository
 import com.peto.ramap.fake.FakeRamenShopRepository
 import com.peto.ramap.fake.FakeShopReportRepository
 import com.peto.ramap.fake.FakeShopWaitingSystemRepository
@@ -57,7 +53,6 @@ import com.peto.ramap.ui.main.map.contract.MapIntent.OnOpenFilterToggled
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnQueryChanged
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnRequestedShopDismissed
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnSearchResultsDismissed
-import com.peto.ramap.ui.main.map.contract.MapIntent.OnSearchedShopSelected
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnSelectedShopFocusConsumed
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopDetailDismissed
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopDetailRetry
@@ -85,7 +80,6 @@ import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.withContext
 import org.jetbrains.compose.resources.StringResource
 import ramap.shared.generated.resources.Res
-import ramap.shared.generated.resources.data_load_failure_message
 import ramap.shared.generated.resources.filter_empty_visible_result_message
 import ramap.shared.generated.resources.hidden_shop_notification_unavailable_message
 import ramap.shared.generated.resources.hidden_shop_search_result_message
@@ -137,7 +131,7 @@ class MapViewModelTest {
         coroutinesTest {
             val viewModel =
                 mapViewModel(
-                    placeSearchRepository = FakePlaceSearchRepository(delayMillis = 1_000),
+                    ramenShopRepository = FakeRamenShopRepository(searchDelayMillis = 1_000),
                 )
 
             viewModel.dispatch(OnQueryChanged("라멘"))
@@ -1278,7 +1272,7 @@ class MapViewModelTest {
                 assertEquals(false, viewModel.uiState.value.showBottomSheet)
                 assertEquals(false, viewModel.uiState.value.showSearchResults)
                 assertEquals(
-                    SearchResultGuide.HIDDEN_ONLY,
+                    SearchResultGuide.HiddenOnly,
                     viewModel.uiState.value.searchResultGuide,
                 )
                 assertEquals(searchShops, viewModel.uiState.value.search.results)
@@ -1393,7 +1387,7 @@ class MapViewModelTest {
 
         assertEquals(RamenShops(listOf(displayShop)), uiState.searchResultShops)
         assertEquals(RamenShops(mapOf(displayShop.id to displayShop)), uiState.markerShops)
-        assertEquals(SearchResultGuide.HIDDEN_ONLY, uiState.searchResultGuide)
+        assertEquals(SearchResultGuide.HiddenOnly, uiState.searchResultGuide)
         assertEquals(RamenShops(listOf(displayShop)), uiState.focusShops)
     }
 
@@ -1474,11 +1468,7 @@ class MapViewModelTest {
         coroutinesTest {
             val viewModel =
                 mapViewModel(
-                    placeSearchRepository =
-                        FakePlaceSearchRepository(
-                            results = PlaceSearchResults(emptyList()),
-                            delayMillis = 1_000,
-                        ),
+                    ramenShopRepository = FakeRamenShopRepository(searchDelayMillis = 1_000),
                 )
 
             viewModel.dispatch(OnQueryChanged("라멘"))
@@ -1505,12 +1495,8 @@ class MapViewModelTest {
     @Test
     fun `검색 중 새 검색어를 입력하면 이전 결과를 무시하고 검색 로딩을 유지한다`() =
         coroutinesTest {
-            val placeSearchRepository =
-                FakePlaceSearchRepository(
-                    results = PlaceSearchResults(listOf(placeFixture())),
-                    delayMillis = 1_000,
-                )
-            val viewModel = mapViewModel(placeSearchRepository = placeSearchRepository)
+            val ramenShopRepository = FakeRamenShopRepository(searchDelayMillis = 1_000)
+            val viewModel = mapViewModel(ramenShopRepository = ramenShopRepository)
 
             viewModel.dispatch(OnQueryChanged("이전 검색"))
             runCurrent()
@@ -1522,10 +1508,6 @@ class MapViewModelTest {
             runCurrent()
 
             assertEquals("새 검색", viewModel.uiState.value.search.input)
-            assertEquals(
-                PlaceSearchResults(emptyList()),
-                viewModel.uiState.value.placeSearchResults,
-            )
             assertEquals(true, viewModel.uiState.value.isSearchLoading)
 
             advanceTimeBy(500)
@@ -1534,7 +1516,7 @@ class MapViewModelTest {
             assertEquals(false, viewModel.uiState.value.isSearchLoading)
             assertEquals(
                 listOf(SearchQuery("이전 검색"), SearchQuery("새 검색")),
-                placeSearchRepository.requests.map { it.first },
+                ramenShopRepository.requestedSearchQueries,
             )
         }
 
@@ -1684,7 +1666,7 @@ class MapViewModelTest {
             )
             assertEquals(RamenShops(emptyMap()), viewModel.uiState.value.focusShops)
             assertEquals(false, viewModel.uiState.value.showBottomSheet)
-            assertEquals(SearchResultGuide.HIDDEN_ONLY, viewModel.uiState.value.searchResultGuide)
+            assertEquals(SearchResultGuide.HiddenOnly, viewModel.uiState.value.searchResultGuide)
         }
 
     @Test
@@ -2358,7 +2340,7 @@ class MapViewModelTest {
                     ),
             )
 
-        assertEquals(SearchResultGuide.SEARCH_EMPTY, uiState.searchResultGuide)
+        assertEquals(SearchResultGuide.SearchEmpty, uiState.searchResultGuide)
         assertEquals(false, uiState.showSearchResults)
         assertEquals(false, uiState.showBottomSheet)
     }
@@ -2380,7 +2362,7 @@ class MapViewModelTest {
                 filters = RamenShopFilter(setOf(Category.MAZESOBA)),
             )
 
-        assertEquals(SearchResultGuide.QUERY_AND_FILTER_EMPTY, uiState.searchResultGuide)
+        assertEquals(SearchResultGuide.QueryAndFilterEmpty, uiState.searchResultGuide)
         assertEquals(true, uiState.showSearchResults)
         assertEquals(true, uiState.showBottomSheet)
     }
@@ -2426,7 +2408,7 @@ class MapViewModelTest {
                 isBookmarkedView = true,
             )
 
-        assertEquals(SearchResultGuide.FILTER_EMPTY, uiState.searchResultGuide)
+        assertEquals(SearchResultGuide.FilterEmpty, uiState.searchResultGuide)
         assertEquals(RamenShops(emptyMap()), uiState.searchResultShops)
         assertEquals(RamenShops(emptyMap()), uiState.markerShops)
         assertEquals(true, uiState.showSearchResults)
@@ -2493,6 +2475,44 @@ class MapViewModelTest {
         assertEquals(RamenShops(listOf(selectedShop, otherShop)), uiState.searchResultShops)
         assertEquals(RamenShops(emptyMap()), uiState.focusShops)
         assertEquals(false, uiState.shouldFocusNearestSearchResult)
+    }
+
+    @Test
+    fun `새 검색 결과가 로드되기 전에는 이전 검색 결과를 표시하지 않는다`() {
+        val previousResults =
+            RamenShops(
+                listOf(
+                    ramenShopFixture(id = "previous-shop-1"),
+                    ramenShopFixture(id = "previous-shop-2"),
+                ),
+            )
+        val uiState =
+            MapUiState(
+                search = loadedSearchUiModel(input = "이전검색", results = previousResults).updateInput("새검색"),
+            )
+
+        assertEquals(RamenShops(emptyMap()), uiState.searchResultShops)
+        assertEquals(RamenShops(emptyMap()), uiState.focusShops)
+        assertEquals(false, uiState.showSearchResults)
+    }
+
+    @Test
+    fun `숨김 매장만 여러 개면 검색 결과 대신 숨김 안내를 표시한다`() {
+        val hiddenResults =
+            RamenShops(
+                listOf(
+                    ramenShopFixture(id = "hidden-shop-1", isVisible = false),
+                    ramenShopFixture(id = "hidden-shop-2", isVisible = false),
+                ),
+            )
+        val uiState =
+            MapUiState(
+                search = loadedSearchUiModel(input = "숨김검색", results = hiddenResults),
+            )
+
+        assertEquals(SearchResultGuide.HiddenOnly, uiState.searchResultGuide)
+        assertEquals(false, uiState.showSearchResults)
+        assertEquals(false, uiState.showBottomSheet)
     }
 
     @Test
@@ -2615,7 +2635,7 @@ class MapViewModelTest {
                 assertEquals(false, viewModel.uiState.value.showBottomSheet)
                 assertEquals(false, viewModel.uiState.value.showSearchResults)
                 assertEquals(
-                    SearchResultGuide.HIDDEN_ONLY,
+                    SearchResultGuide.HiddenOnly,
                     viewModel.uiState.value.searchResultGuide,
                 )
                 assertEquals(
@@ -2636,274 +2656,20 @@ class MapViewModelTest {
         }
 
     @Test
-    fun `매장 검색이 성공하고 결과가 있으면 장소 검색을 호출하지 않는다`() =
-        coroutinesTest {
-            val shop = ramenShopFixture(id = "shop-result")
-            val placeSearchRepository =
-                FakePlaceSearchRepository(results = PlaceSearchResults(listOf(placeFixture())))
-            val viewModel =
-                mapViewModel(
-                    ramenShopRepository =
-                        FakeRamenShopRepository(
-                            searchResult =
-                                RamenShops(
-                                    listOf(
-                                        shop,
-                                    ),
-                                ),
-                        ),
-                    placeSearchRepository = placeSearchRepository,
-                )
-
-            viewModel.dispatch(OnQueryChanged("라멘"))
-            advanceTimeBy(300)
-            runCurrent()
-
-            assertEquals(emptyList(), placeSearchRepository.requests)
-            assertEquals(shop, viewModel.uiState.value.selectedShop)
-        }
-
-    @Test
-    fun `매장과 검증된 장소 검색 결과가 없으면 빈 결과를 표시한다`() =
+    fun `매장 검색 결과가 없으면 외부 장소 검색 없이 빈 결과를 표시한다`() =
         coroutinesTest {
             val ramenShopRepository = FakeRamenShopRepository()
-            val chickenPlace = placeFixture(name = "테스트 치킨")
-            val viewModel =
-                mapViewModel(
-                    ramenShopRepository = ramenShopRepository,
-                    placeSearchRepository =
-                        FakePlaceSearchRepository(
-                            results = PlaceSearchResults(listOf(chickenPlace)),
-                        ),
-                )
+            val viewModel = mapViewModel(ramenShopRepository = ramenShopRepository)
 
-            viewModel.dispatch(OnQueryChanged("치킨"))
+            viewModel.dispatch(OnQueryChanged("강남구"))
             advanceTimeBy(300)
             runCurrent()
 
-            assertEquals(
-                listOf(SearchQuery("치킨")),
-                ramenShopRepository.requestedSearchQueries,
-            )
+            assertEquals(listOf(SearchQuery("강남구")), ramenShopRepository.requestedSearchQueries)
             assertEquals(RamenShops(emptyMap()), viewModel.uiState.value.searchResultShops)
             assertEquals("", viewModel.uiState.value.search.input)
             assertEquals(null, viewModel.uiState.value.searchResultGuide)
             assertEquals(false, viewModel.uiState.value.showSearchResults)
-            assertEquals(null, viewModel.uiState.value.placeFocusLocation)
-        }
-
-    @Test
-    fun `지역과 사업장이 섞인 검색어는 외부 사업장을 지도 위치로 허용하지 않는다`() =
-        coroutinesTest {
-            val viewModel =
-                mapViewModel(
-                    placeSearchRepository =
-                        FakePlaceSearchRepository(
-                            results = PlaceSearchResults(listOf(placeFixture(name = "강남역 치킨"))),
-                        ),
-                )
-
-            viewModel.dispatch(OnQueryChanged("강남역 치킨"))
-            advanceTimeBy(300)
-            runCurrent()
-
-            assertEquals("", viewModel.uiState.value.search.input)
-            assertEquals(null, viewModel.uiState.value.searchResultGuide)
-            assertEquals(null, viewModel.uiState.value.placeFocusLocation)
-        }
-
-    @Test
-    fun `서버가 등록 매장으로 검증한 결과는 매장 상세 흐름으로 연결한다`() =
-        coroutinesTest {
-            val shop = ramenShopFixture(id = "shop-1", name = "멘야 테스트")
-            val registeredPlace =
-                placeFixture(
-                    name = shop.name,
-                    kind = PlaceSearchResultKind.REGISTERED_SHOP,
-                    shopId = shop.id,
-                )
-            val viewModel =
-                mapViewModel(
-                    ramenShopRepository =
-                        FakeRamenShopRepository(
-                            fetchByIdsResult = RamenShops(listOf(shop)),
-                        ),
-                    placeSearchRepository =
-                        FakePlaceSearchRepository(
-                            results = PlaceSearchResults(listOf(registeredPlace)),
-                        ),
-                )
-
-            viewModel.dispatch(OnQueryChanged("라멘"))
-            advanceTimeBy(300)
-            runCurrent()
-
-            assertEquals(shop, viewModel.uiState.value.selectedShop)
-            assertEquals(null, viewModel.uiState.value.placeFocusLocation)
-        }
-
-    @Test
-    fun `매장 검색 결과가 없고 지도 위치가 하나면 해당 위치로 포커스를 요청한다`() =
-        coroutinesTest {
-            val location = Location(37.432, 127.129)
-            val center = Location(37.4, 127.1)
-            val place =
-                PlaceSearchResult(
-                    name = "모란역",
-                    address = "경기도 성남시 중원구 성남동",
-                    location = location,
-                    kind = PlaceSearchResultKind.MAP_LOCATION,
-                )
-            val placeSearchRepository =
-                FakePlaceSearchRepository(results = PlaceSearchResults(listOf(place)))
-            val viewModel = mapViewModel(placeSearchRepository = placeSearchRepository)
-            viewModel.dispatch(OnCameraPositionChanged(CameraPosition(center, zoom = 13.0)))
-
-            viewModel.dispatch(OnQueryChanged("모란역"))
-            advanceTimeBy(300)
-            runCurrent()
-
-            assertEquals(listOf(SearchQuery("모란역") to center), placeSearchRepository.requests)
-            assertEquals(location, viewModel.uiState.value.placeFocusLocation)
-            assertEquals(1L, viewModel.uiState.value.placeFocusRequestKey)
-            assertEquals(
-                PlaceSearchResults(emptyList()),
-                viewModel.uiState.value.placeSearchResults,
-            )
-        }
-
-    @Test
-    fun `여러 지도 위치 결과는 현재 카메라 중심에서 가까운 순서로 노출한다`() =
-        coroutinesTest {
-            val farPlace =
-                placeFixture(
-                    name = "먼 곳",
-                    location = Location(37.8, 127.4),
-                    kind = PlaceSearchResultKind.MAP_LOCATION,
-                )
-            val nearPlace =
-                placeFixture(
-                    name = "가까운 곳",
-                    location = Location(37.501, 127.001),
-                    kind = PlaceSearchResultKind.MAP_LOCATION,
-                )
-            val viewModel =
-                mapViewModel(
-                    placeSearchRepository =
-                        FakePlaceSearchRepository(
-                            results = PlaceSearchResults(listOf(farPlace, nearPlace)),
-                        ),
-                )
-            viewModel.dispatch(
-                OnCameraPositionChanged(
-                    CameraPosition(Location(37.5, 127.0), zoom = 13.0),
-                ),
-            )
-
-            viewModel.dispatch(OnQueryChanged("라멘"))
-            advanceTimeBy(300)
-            runCurrent()
-
-            assertEquals(
-                PlaceSearchResults(listOf(nearPlace, farPlace)),
-                viewModel.uiState.value.placeSearchResults,
-            )
-            assertEquals(true, viewModel.uiState.value.showSearchResults)
-
-            viewModel.dispatch(OnSearchedShopSelected(farPlace))
-            runCurrent()
-
-            assertEquals(false, viewModel.uiState.value.showSearchResults)
-            assertEquals(farPlace.location, viewModel.uiState.value.placeFocusLocation)
-        }
-
-    @Test
-    fun `장소 검색 중 검색어를 지우면 늦은 결과를 무시한다`() =
-        coroutinesTest {
-            val placeSearchRepository =
-                FakePlaceSearchRepository(
-                    results = PlaceSearchResults(listOf(placeFixture())),
-                    delayMillis = 1_000,
-                )
-            val viewModel = mapViewModel(placeSearchRepository = placeSearchRepository)
-
-            viewModel.dispatch(OnQueryChanged("라멘"))
-            advanceTimeBy(300)
-            runCurrent()
-            assertEquals(true, viewModel.uiState.value.isSearchLoading)
-
-            viewModel.dispatch(OnQueryChanged(""))
-            runCurrent()
-            assertEquals(false, viewModel.uiState.value.isSearchLoading)
-
-            advanceTimeBy(1_000)
-            runCurrent()
-
-            assertEquals("", viewModel.uiState.value.search.input)
-            assertEquals(
-                PlaceSearchResults(emptyList()),
-                viewModel.uiState.value.placeSearchResults,
-            )
-            assertEquals(null, viewModel.uiState.value.placeFocusLocation)
-        }
-
-    @Test
-    fun `매장 검색 오류는 장소 검색으로 폴백하지 않는다`() =
-        coroutinesTest {
-            val placeSearchRepository =
-                FakePlaceSearchRepository(results = PlaceSearchResults(listOf(placeFixture())))
-            val viewModel =
-                mapViewModel(
-                    ramenShopRepository =
-                        FakeRamenShopRepository(
-                            error = RamapError.Network(IllegalStateException("shop failed")),
-                        ),
-                    placeSearchRepository = placeSearchRepository,
-                )
-
-            viewModel.sideEffect.test {
-                viewModel.dispatch(OnQueryChanged("라멘"))
-                advanceTimeBy(300)
-                runCurrent()
-
-                assertEquals(emptyList(), placeSearchRepository.requests)
-                assertEquals(
-                    ShowToast(ToastData(Res.string.data_load_failure_message, ToastType.ERROR)),
-                    awaitItem(),
-                )
-            }
-        }
-
-    @Test
-    fun `장소 검색 오류는 빈 검색 결과로 안내한다`() =
-        coroutinesTest {
-            val viewModel =
-                mapViewModel(
-                    placeSearchRepository =
-                        FakePlaceSearchRepository(
-                            error = RamapError.Network(IllegalStateException("place failed")),
-                        ),
-                )
-
-            viewModel.sideEffect.test {
-                viewModel.dispatch(OnQueryChanged("라멘"))
-                advanceTimeBy(300)
-                runCurrent()
-
-                assertEquals(
-                    showToastSideEffect(Res.string.search_result_empty_message),
-                    awaitItem(),
-                )
-                assertEquals("", viewModel.uiState.value.search.input)
-                assertEquals(null, viewModel.uiState.value.searchResultGuide)
-                assertEquals(false, viewModel.uiState.value.showSearchResults)
-                assertEquals(false, viewModel.uiState.value.showBottomSheet)
-                assertEquals(
-                    PlaceSearchResults(emptyList()),
-                    viewModel.uiState.value.placeSearchResults,
-                )
-                assertEquals(null, viewModel.uiState.value.placeFocusLocation)
-            }
         }
 }
 
@@ -2917,20 +2683,6 @@ private fun loadedSearchUiModel(
             query = SearchQuery(input).normalizeShopSearchQuery(),
             results = results,
         ).consumeResultFocus(isResultFocusConsumed)
-
-private fun placeFixture(
-    name: String = "지역 라멘",
-    location: Location = Location(37.5, 127.0),
-    kind: PlaceSearchResultKind = PlaceSearchResultKind.UNCLASSIFIED,
-    shopId: String? = null,
-): PlaceSearchResult =
-    PlaceSearchResult(
-        name = name,
-        address = "서울시 테스트로 1",
-        location = location,
-        kind = kind,
-        shopId = shopId,
-    )
 
 private fun showToastSideEffect(message: StringResource): ShowToast =
     ShowToast(
@@ -2947,13 +2699,11 @@ private fun mapViewModel(
     loginRepository: FakeLoginRepository = FakeLoginRepository(),
     shopReportRepository: ShopReportRepository = FakeShopReportRepository(),
     notificationSettingsRepository: FakeNotificationSettingsRepository = FakeNotificationSettingsRepository(),
-    placeSearchRepository: FakePlaceSearchRepository = FakePlaceSearchRepository(),
 ): MapViewModel =
     MapViewModel(
         ramenShopRepository,
         loginRepository,
         CurrentLocationStore(),
-        placeSearchRepository,
         shopReportRepository,
         personalizationRepository,
         FakeFetchShopDetailUseCase(
