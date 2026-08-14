@@ -98,7 +98,7 @@ fun ShopDetailContent(
                 is ShopDetailSheetUiState.Loading ->
                     RamenLoadingIndicator(
                         modifier =
-                            Modifier
+                            dragModifier
                                 .fillMaxWidth()
                                 .heightIn(min = 240.dp),
                     )
