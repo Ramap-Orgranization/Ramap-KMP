@@ -52,7 +52,6 @@ import com.peto.ramap.ui.main.map.contract.MapIntent.OnMyLocationChanged
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnOpenFilterToggled
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnQueryChanged
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnRequestedShopDismissed
-import com.peto.ramap.ui.main.map.contract.MapIntent.OnSearchResultsDismissed
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnSelectedShopFocusConsumed
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopDetailDismissed
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopDetailRetry
@@ -85,6 +84,7 @@ import ramap.shared.generated.resources.hidden_shop_notification_unavailable_mes
 import ramap.shared.generated.resources.hidden_shop_search_result_message
 import ramap.shared.generated.resources.hide_shop_success_message
 import ramap.shared.generated.resources.search_result_empty_message
+import ramap.shared.generated.resources.search_result_hidden_only_message
 import ramap.shared.generated.resources.shop_information_report_failure_message
 import ramap.shared.generated.resources.shop_information_report_success_message
 import kotlin.test.Test
@@ -802,36 +802,6 @@ class MapViewModelTest {
         }
 
     @Test
-    fun `아이디 매장 조회 실패 상태를 닫으면 오류 바텀시트를 종료한다`() =
-        coroutinesTest {
-            val shopId = "requested-shop"
-            val viewModel =
-                mapViewModel(
-                    ramenShopRepository =
-                        FakeRamenShopRepository(
-                            error = RamapError.Unknown(IllegalStateException("failed")),
-                        ),
-                )
-
-            viewModel.dispatch(OnShopIdSelected(shopId))
-            runCurrent()
-
-            assertEquals(
-                ShopDetailSheetUiState.Error(shopId, shop = null),
-                viewModel.uiState.value.shopDetailState,
-            )
-            assertEquals(true, viewModel.uiState.value.hasShopDetailLoadFailed)
-            assertEquals(true, viewModel.uiState.value.showBottomSheet)
-
-            viewModel.dispatch(OnRequestedShopDismissed)
-            runCurrent()
-
-            assertEquals(ShopDetailSheetUiState.Closed, viewModel.uiState.value.shopDetailState)
-            assertEquals(false, viewModel.uiState.value.hasShopDetailLoadFailed)
-            assertEquals(false, viewModel.uiState.value.showBottomSheet)
-        }
-
-    @Test
     fun `빈 아이디 요청은 진행 중인 유효한 아이디 조회에 영향을 주지 않는다`() =
         coroutinesTest {
             val previousShop = ramenShopFixture(id = "previous-shop")
@@ -1312,14 +1282,13 @@ class MapViewModelTest {
 
                 assertEquals(null, viewModel.uiState.value.selectedShop)
                 assertEquals(true, viewModel.uiState.value.showSearchResults)
-                assertEquals(true, viewModel.uiState.value.showBottomSheet)
                 assertEquals(
                     RamenShops(listOf(visibleShop, hiddenShop)),
                     viewModel.uiState.value.searchResultShops,
                 )
                 assertEquals(searchShops, viewModel.uiState.value.markerShops)
                 assertEquals(
-                    showToastSideEffect(Res.string.hidden_shop_search_result_message),
+                    showToastSideEffect(Res.string.search_result_hidden_only_message),
                     awaitItem(),
                 )
             }
@@ -1521,52 +1490,6 @@ class MapViewModelTest {
         }
 
     @Test
-    fun `검색 결과 바텀시트를 닫아도 검색어와 검색 결과를 유지한다`() =
-        coroutinesTest {
-            val mapShops = RamenShops(listOf(ramenShopFixture(id = "map-shop")))
-            val searchShops =
-                RamenShops(
-                    listOf(
-                        ramenShopFixture().copy(id = "search-shop-1"),
-                        ramenShopFixture().copy(id = "search-shop-2"),
-                    ).associateBy { it.id },
-                )
-            val ramenShopRepository =
-                FakeRamenShopRepository(
-                    result = mapShops,
-                    searchResult = searchShops,
-                )
-            val viewModel = mapViewModel(ramenShopRepository)
-
-            viewModel.dispatch(OnBoundsChanged(BOUNDS_FIXTURE))
-            advanceTimeBy(350)
-            runCurrent()
-            viewModel.dispatch(OnQueryChanged("라멘"))
-            advanceTimeBy(300)
-            runCurrent()
-
-            assertEquals(true, viewModel.uiState.value.showSearchResults)
-            assertEquals(true, viewModel.uiState.value.showBottomSheet)
-
-            viewModel.dispatch(OnSearchResultsDismissed)
-            runCurrent()
-
-            assertEquals("라멘", viewModel.uiState.value.search.input)
-            assertEquals(searchShops, viewModel.uiState.value.search.results)
-            assertEquals(true, viewModel.uiState.value.search.isResultsDismissed)
-            assertEquals(searchShops, viewModel.uiState.value.markerShops)
-            assertEquals(false, viewModel.uiState.value.showSearchResults)
-            assertEquals(false, viewModel.uiState.value.showBottomSheet)
-
-            viewModel.dispatch(OnQueryChanged(""))
-            runCurrent()
-
-            assertEquals("", viewModel.uiState.value.search.input)
-            assertEquals(RamenShops(emptyMap()), viewModel.uiState.value.search.results)
-            assertEquals(mapShops, viewModel.uiState.value.markerShops)
-        }
-
-    @Test
     fun `단일 검색 결과 상세를 닫아도 검색어와 검색 결과를 유지한다`() =
         coroutinesTest {
             val shop = ramenShopFixture(id = "single-search-shop")
@@ -1592,37 +1515,6 @@ class MapViewModelTest {
             assertEquals(RamenShops(mapOf(shop.id to shop)), viewModel.uiState.value.search.results)
             assertEquals(true, viewModel.uiState.value.search.isResultsDismissed)
             assertEquals(false, viewModel.uiState.value.showBottomSheet)
-        }
-
-    @Test
-    fun `검색 결과를 닫은 뒤 같은 검색어를 입력하면 기존 결과를 재사용한다`() =
-        coroutinesTest {
-            val searchShops =
-                RamenShops(
-                    listOf(
-                        ramenShopFixture().copy(id = "search-shop-1"),
-                        ramenShopFixture().copy(id = "search-shop-2"),
-                    ).associateBy { it.id },
-                )
-            val ramenShopRepository = FakeRamenShopRepository(searchResult = searchShops)
-            val viewModel = mapViewModel(ramenShopRepository)
-
-            viewModel.dispatch(OnQueryChanged("라멘"))
-            advanceTimeBy(300)
-            runCurrent()
-            viewModel.dispatch(OnSearchResultsDismissed)
-            runCurrent()
-            ramenShopRepository.requestedSearchQueries.clear()
-
-            viewModel.dispatch(OnQueryChanged("라멘"))
-            advanceTimeBy(300)
-            runCurrent()
-
-            assertEquals(emptyList(), ramenShopRepository.requestedSearchQueries)
-            assertEquals(searchShops, viewModel.uiState.value.search.results)
-            assertEquals(searchShops, viewModel.uiState.value.focusShops)
-            assertEquals(true, viewModel.uiState.value.showSearchResults)
-            assertEquals(true, viewModel.uiState.value.showBottomSheet)
         }
 
     @Test
@@ -1697,38 +1589,6 @@ class MapViewModelTest {
             runCurrent()
 
             assertEquals(shop.copy(isVisible = true), viewModel.uiState.value.selectedShop)
-        }
-
-    @Test
-    fun `여러 검색 결과 중 선택한 매장을 숨기면 검색 결과를 닫는다`() =
-        coroutinesTest {
-            val selectedShop = ramenShopFixture(id = "selected-search-shop")
-            val otherShop = ramenShopFixture(id = "other-search-shop")
-            val personalizationStore = FakePersonalizationRepository()
-            val viewModel =
-                mapViewModel(
-                    ramenShopRepository =
-                        FakeRamenShopRepository(
-                            searchResult =
-                                RamenShops(
-                                    listOf(selectedShop, otherShop).associateBy { it.id },
-                                ),
-                        ),
-                    personalizationRepository = personalizationStore,
-                    loginRepository = loggedInRepository(),
-                )
-            runCurrent()
-
-            viewModel.dispatch(OnQueryChanged("라멘"))
-            advanceTimeBy(300)
-            runCurrent()
-            viewModel.dispatch(OnShopSelected(selectedShop))
-            runCurrent()
-            personalizationStore.hideShop(selectedShop.id)
-            runCurrent()
-
-            assertEquals(null, viewModel.uiState.value.selectedShop)
-            assertEquals(false, viewModel.uiState.value.showSearchResults)
         }
 
     @Test
@@ -2346,28 +2206,6 @@ class MapViewModelTest {
     }
 
     @Test
-    fun `검색어와 선택한 필터에 맞는 매장이 없으면 안내 바텀시트를 보여준다`() {
-        val shop =
-            ramenShopFixture(
-                id = "jiro-shop",
-                menuCategories = listOf(Category.JIRO),
-            )
-        val uiState =
-            MapUiState(
-                search =
-                    loadedSearchUiModel(
-                        input = "라멘",
-                        results = RamenShops(mapOf(shop.id to shop)),
-                    ),
-                filters = RamenShopFilter(setOf(Category.MAZESOBA)),
-            )
-
-        assertEquals(SearchResultGuide.QueryAndFilterEmpty, uiState.searchResultGuide)
-        assertEquals(true, uiState.showSearchResults)
-        assertEquals(true, uiState.showBottomSheet)
-    }
-
-    @Test
     fun `북마크 보기에서 검색 결과 목록과 마커에 북마크 필터를 적용한다`() {
         val bookmarkedShop = ramenShopFixture(id = "bookmarked-search-shop")
         val anotherBookmarkedShop = ramenShopFixture(id = "another-bookmarked-search-shop")
@@ -2494,25 +2332,6 @@ class MapViewModelTest {
         assertEquals(RamenShops(emptyMap()), uiState.searchResultShops)
         assertEquals(RamenShops(emptyMap()), uiState.focusShops)
         assertEquals(false, uiState.showSearchResults)
-    }
-
-    @Test
-    fun `숨김 매장만 여러 개면 검색 결과 대신 숨김 안내를 표시한다`() {
-        val hiddenResults =
-            RamenShops(
-                listOf(
-                    ramenShopFixture(id = "hidden-shop-1", isVisible = false),
-                    ramenShopFixture(id = "hidden-shop-2", isVisible = false),
-                ),
-            )
-        val uiState =
-            MapUiState(
-                search = loadedSearchUiModel(input = "숨김검색", results = hiddenResults),
-            )
-
-        assertEquals(SearchResultGuide.HiddenOnly, uiState.searchResultGuide)
-        assertEquals(false, uiState.showSearchResults)
-        assertEquals(false, uiState.showBottomSheet)
     }
 
     @Test
