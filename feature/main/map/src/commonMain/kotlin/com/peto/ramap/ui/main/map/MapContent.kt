@@ -354,14 +354,14 @@ private fun OpenFilterButton(
             Box {
                 AppText(
                     text = "OPEN",
-                    style = AppTextStyle.C3,
+                    style = AppTextStyle.B3,
                     color = if (isActive) CommonColor.White else GrayColor.C500,
                 )
                 Box(
                     modifier =
                         Modifier
                             .align(Alignment.TopEnd)
-                            .offset(x = 3.dp, y = (-5).dp)
+                            .offset(y = (-8).dp)
                             .size(5.dp)
                             .background(SystemColor.Warning, CircleShape),
                 )
