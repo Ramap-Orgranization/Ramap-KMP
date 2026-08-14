@@ -221,7 +221,10 @@ internal fun MapContent(
                     categoryLabel = { category ->
                         stringResource(CategoryResourceMapper.label(category))
                     },
-                    modifier = Modifier.weight(1f).verticalScroll(rememberScrollState()),
+                    modifier =
+                        Modifier
+                            .weight(1f)
+                            .verticalScroll(rememberScrollState()),
                 )
             } else {
                 MenuCategoryFilterRow(

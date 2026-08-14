@@ -47,7 +47,7 @@ fun RamenShopSummary(
                 .fillMaxWidth()
                 .then(if (onClick != null) Modifier.noRippleClickable(onClick = onClick) else Modifier)
                 .background(CommonColor.White)
-                .padding(horizontal = 15.dp, vertical = 5.dp),
+                .padding(horizontal = 8.dp, vertical = 5.dp),
     ) {
         Row(
             modifier =

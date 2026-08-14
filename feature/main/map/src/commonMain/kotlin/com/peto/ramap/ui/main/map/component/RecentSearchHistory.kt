@@ -120,7 +120,10 @@ private fun HistoryHeader(
     modifier: Modifier = Modifier,
 ) {
     Row(
-        modifier = modifier.fillMaxWidth().padding(start = 8.dp, end = 8.dp),
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .padding(start = 8.dp, end = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {

@@ -1,6 +1,7 @@
 package com.peto.ramap.ui.main.map.component
 
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -80,7 +81,8 @@ internal fun SearchBar(
                     elevation = 10.dp,
                     shape = RoundedCornerShape(28.dp),
                     clip = false,
-                ).onFocusChanged { onFocusChanged(it.isFocused) },
+                ).padding(bottom = 5.dp)
+                .onFocusChanged { onFocusChanged(it.isFocused) },
         shape = RoundedCornerShape(28.dp),
         singleLine = true,
         leadingIcon = {
