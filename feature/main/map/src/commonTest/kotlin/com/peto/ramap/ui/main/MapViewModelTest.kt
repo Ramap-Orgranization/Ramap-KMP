@@ -2206,6 +2206,33 @@ class MapViewModelTest {
             runCurrent()
 
             assertEquals(null, viewModel.uiState.value.selectedShop)
+
+            viewModel.dispatch(OnOpenFilterToggled)
+            runCurrent()
+        }
+
+    @Test
+    fun `영업중 필터가 켜져 있으면 주기적으로 목록을 갱신한다`() =
+        coroutinesTest {
+            val viewModel = mapViewModel()
+
+            viewModel.dispatch(OnOpenFilterToggled)
+            runCurrent()
+            val initialVersion = viewModel.uiState.value.openFilterRefreshVersion
+
+            advanceTimeBy(60_000)
+            runCurrent()
+
+            assertEquals(initialVersion + 1, viewModel.uiState.value.openFilterRefreshVersion)
+
+            viewModel.dispatch(OnOpenFilterToggled)
+            runCurrent()
+            val disabledVersion = viewModel.uiState.value.openFilterRefreshVersion
+
+            advanceTimeBy(60_000)
+            runCurrent()
+
+            assertEquals(disabledVersion, viewModel.uiState.value.openFilterRefreshVersion)
         }
 
     @Test
