@@ -34,12 +34,13 @@ fun SettingsListPage(
     errorImage: DrawableResource,
     errorDescription: StringResource,
     onRetry: () -> Unit,
+    modifier: Modifier = Modifier,
     topBarAction: @Composable () -> Unit = {},
     content: @Composable () -> Unit,
 ) {
     Column(
         modifier =
-            Modifier
+            modifier
                 .fillMaxSize()
                 .padding(top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()),
         verticalArrangement = Arrangement.spacedBy(16.dp),

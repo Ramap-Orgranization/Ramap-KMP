@@ -20,6 +20,7 @@ import com.peto.ramap.domain.model.rank.RankingCursor
 import com.peto.ramap.domain.model.rank.ShopRanking
 import com.peto.ramap.domain.model.rank.ShopRankings
 import com.peto.ramap.domain.model.shop.RamenShop
+import com.peto.ramap.preview.RamenShopPreviewParameterProvider
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.RamapTheme
 import com.peto.ramap.ui.loading.LoadState
@@ -29,7 +30,6 @@ import com.peto.ramap.ui.main.ranking.component.RankingRow
 import com.peto.ramap.ui.main.ranking.component.RankingSkeleton
 import com.peto.ramap.ui.main.ranking.contract.RankingLoadKey
 import com.peto.ramap.ui.main.ranking.contract.RankingUiState
-import com.peto.ramap.ui.preview.RamenShopPreviewParameterProvider
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.laduck_error_crying

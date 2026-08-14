@@ -5,11 +5,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.PreviewParameter
 import com.peto.ramap.domain.model.shop.Category
-import com.peto.ramap.domain.model.shop.Location
-import com.peto.ramap.domain.model.shop.MenuCategories
 import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.domain.model.shop.RamenShops
+import com.peto.ramap.preview.RamenShopsPreviewParameterProvider
 import com.peto.ramap.theme.RamapTheme
 
 @Composable
@@ -40,50 +40,12 @@ fun RamenShopSummaries(
 
 @Preview(showBackground = true)
 @Composable
-private fun RamenShopSummariesPreview() {
+private fun RamenShopSummariesPreview(
+    @PreviewParameter(RamenShopsPreviewParameterProvider::class) shops: RamenShops,
+) {
     RamapTheme {
         RamenShopSummaries(
-            shops =
-                RamenShops(
-                    listOf(
-                        RamenShop(
-                            id = "1",
-                            kakaoPlaceId = null,
-                            name = "멘야 하나비",
-                            address = "서울 강남구 테헤란로 123",
-                            location = Location(lat = 37.5, lng = 127.0),
-                            kakaoPlaceUrl = null,
-                            phone = null,
-                            instagramUrl = null,
-                            instagramProfileImageUrl = null,
-                            menuCategories =
-                                MenuCategories(
-                                    listOf(
-                                        Category.TONKOTSU,
-                                        Category.TSUKEMEN,
-                                    ),
-                                ),
-                            isVisible = true,
-                            createdAt = "",
-                            updatedAt = "",
-                        ),
-                        RamenShop(
-                            id = "2",
-                            kakaoPlaceId = null,
-                            name = "라멘 지로",
-                            address = "서울 마포구 양화로 45",
-                            location = Location(lat = 37.55, lng = 126.9),
-                            kakaoPlaceUrl = null,
-                            phone = null,
-                            instagramUrl = null,
-                            instagramProfileImageUrl = null,
-                            menuCategories = MenuCategories(emptyList()),
-                            isVisible = true,
-                            createdAt = "",
-                            updatedAt = "",
-                        ),
-                    ),
-                ),
+            shops = shops,
             onShopClick = {},
             categoryLabel = { category -> category.name },
         )

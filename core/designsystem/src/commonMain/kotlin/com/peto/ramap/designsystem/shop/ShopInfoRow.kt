@@ -19,10 +19,10 @@ import com.peto.ramap.theme.RamapTheme
 internal fun ShopInfoRow(
     label: String,
     value: String,
-    onClick: (() -> Unit)? = null,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit,
     onClickLabel: String? = null,
     showBusinessHoursNotice: Boolean = false,
-    modifier: Modifier = Modifier,
 ) {
     Row(
         modifier = modifier.fillMaxWidth(),
@@ -47,19 +47,13 @@ internal fun ShopInfoRow(
             modifier =
                 Modifier
                     .weight(1f)
-                    .then(
-                        if (onClick == null) {
-                            Modifier
-                        } else {
-                            Modifier.noRippleClickable(
-                                onClick = onClick,
-                                onClickLabel = onClickLabel,
-                            )
-                        },
+                    .noRippleClickable(
+                        onClick = onClick,
+                        onClickLabel = onClickLabel,
                     ),
             style = AppTextStyle.B2,
             color = GrayColor.C500,
-            textDecoration = if (onClick == null) null else TextDecoration.Underline,
+            textDecoration = TextDecoration.Underline,
         )
     }
 }

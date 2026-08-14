@@ -17,6 +17,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
 import com.peto.ramap.designsystem.component.MenuCategoryLabels
 import com.peto.ramap.designsystem.image.RemoteShopImage
@@ -26,15 +27,10 @@ import com.peto.ramap.designsystem.resource.format
 import com.peto.ramap.designsystem.resource.wating.WaitingSystemUiModel
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.domain.model.event.ShopEvent
-import com.peto.ramap.domain.model.event.ShopEventType
-import com.peto.ramap.domain.model.shop.BusinessHours
-import com.peto.ramap.domain.model.shop.BusinessHoursBreakTime
-import com.peto.ramap.domain.model.shop.BusinessHoursDay
-import com.peto.ramap.domain.model.shop.Category
-import com.peto.ramap.domain.model.shop.Location
-import com.peto.ramap.domain.model.shop.MenuCategories
 import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.extension.noRippleClickable
+import com.peto.ramap.preview.RamenShopPreviewParameterProvider
+import com.peto.ramap.preview.ShopEventPreviewParameterProvider
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.RamapTheme
@@ -66,20 +62,20 @@ fun RamenShopOverview(
     isNotificationEnabled: Boolean = false,
     showNotificationActions: Boolean = true,
     isHidden: Boolean = false,
-    onBookmarkClick: () -> Unit = {},
-    onNotificationClick: () -> Unit = {},
-    onHiddenClick: () -> Unit = {},
-    onReportClick: () -> Unit = {},
-    onShareClick: () -> Unit = {},
-    onMapLinkClick: (String) -> Unit = {},
-    onPhoneClick: (String) -> Unit = {},
-    onWaitingClick: (String) -> Unit = {},
-    shouldShowExternalLink: (String) -> Boolean = { true },
-    onExternalLinkClick: (String) -> Unit = {},
+    onBookmarkClick: () -> Unit,
+    onNotificationClick: () -> Unit,
+    onHiddenClick: () -> Unit,
+    onReportClick: () -> Unit,
+    onShareClick: () -> Unit,
+    onMapLinkClick: (String) -> Unit,
+    onPhoneClick: (String) -> Unit,
+    onWaitingClick: (String) -> Unit,
+    shouldShowExternalLink: (String) -> Boolean,
+    onExternalLinkClick: (String) -> Unit,
     isAppleMapsAvailable: Boolean = false,
-    onAppleMapsClick: (RamenShop) -> Unit = {},
+    onAppleMapsClick: (RamenShop) -> Unit,
     event: ShopEvent? = null,
-    onEventClick: (ShopEvent) -> Unit = {},
+    onEventClick: (ShopEvent) -> Unit,
 ) {
     val clipboardManager = LocalClipboardManager.current
 
@@ -268,56 +264,12 @@ fun RamenShopOverview(
 
 @Preview(showBackground = true)
 @Composable
-private fun RamenShopOverviewPreview() {
+private fun RamenShopOverviewPreview(
+    @PreviewParameter(RamenShopPreviewParameterProvider::class) shop: RamenShop,
+) {
     RamapTheme {
         RamenShopOverview(
-            shop =
-                RamenShop(
-                    id = "1",
-                    kakaoPlaceId = null,
-                    name = "멘야 하나비",
-                    address = "서울 강남구 테헤란로 123",
-                    location = Location(lat = 37.5, lng = 127.0),
-                    kakaoPlaceUrl = "https://place.map.kakao.com/123",
-                    naverPlaceUrl = "https://map.naver.com/v5/entry/place/123",
-                    phone = "02-123-4567",
-                    instagramUrl = "https://instagram.com/menyahana_bi",
-                    menuCategories =
-                        MenuCategories(
-                            listOf(
-                                Category.TONKOTSU,
-                                Category.TSUKEMEN,
-                            ),
-                        ),
-                    isVisible = true,
-                    createdAt = "",
-                    updatedAt = "",
-                    instagramProfileImageUrl = null,
-                    businessHoursDetails =
-                        BusinessHours(
-                            weekly =
-                                mapOf(
-                                    "mon" to BusinessHoursDay(false, "11:00", "21:00", false, null),
-                                    "tue" to BusinessHoursDay(false, "11:00", "21:00", false, null),
-                                    "wed" to BusinessHoursDay(false, "11:00", "21:00", false, null),
-                                    "thu" to BusinessHoursDay(false, "11:00", "21:00", false, null),
-                                    "fri" to BusinessHoursDay(false, "11:00", "21:00", false, null),
-                                    "sat" to BusinessHoursDay(false, "11:00", "21:00", false, null),
-                                    "sun" to BusinessHoursDay(true, null, null, false, null),
-                                ),
-                            breakTimes =
-                                mapOf(
-                                    "mon" to listOf(BusinessHoursBreakTime("14:00", "15:00")),
-                                    "tue" to listOf(BusinessHoursBreakTime("14:00", "15:00")),
-                                    "wed" to listOf(BusinessHoursBreakTime("14:00", "15:00")),
-                                    "thu" to listOf(BusinessHoursBreakTime("14:00", "15:00")),
-                                    "fri" to listOf(BusinessHoursBreakTime("14:00", "15:00")),
-                                    "sat" to listOf(BusinessHoursBreakTime("14:00", "15:00")),
-                                ),
-                            lastOrders = emptyMap(),
-                            notice = "재료 소진 시 조기 마감될 수 있습니다.",
-                        ),
-                ),
+            shop = shop,
             dragAreaModifier = Modifier,
             waitingSystem = null,
             isBookmarked = false,
@@ -343,29 +295,10 @@ private fun RamenShopOverviewPreview() {
 
 @Preview(showBackground = true)
 @Composable
-private fun RamenShopOverviewWithEventPreview() {
-    val shop =
-        RamenShop(
-            id = "1",
-            kakaoPlaceId = null,
-            name = "멘야 하나비",
-            address = "서울 강남구 테헤란로 123",
-            location = Location(lat = 37.5, lng = 127.0),
-            kakaoPlaceUrl = "https://place.map.kakao.com/123",
-            naverPlaceUrl = "https://map.naver.com/v5/entry/place/123",
-            phone = "02-123-4567",
-            instagramUrl = "https://instagram.com/menyahana_bi",
-            menuCategories =
-                MenuCategories(
-                    listOf(
-                        Category.TONKOTSU,
-                        Category.TSUKEMEN,
-                    ),
-                ),
-            isVisible = true,
-            createdAt = "",
-            updatedAt = "",
-        )
+private fun RamenShopOverviewWithEventPreview(
+    @PreviewParameter(RamenShopPreviewParameterProvider::class) shop: RamenShop,
+    @PreviewParameter(ShopEventPreviewParameterProvider::class) event: ShopEvent,
+) {
     RamapTheme {
         RamenShopOverview(
             shop = shop,
@@ -386,24 +319,7 @@ private fun RamenShopOverviewWithEventPreview() {
             onExternalLinkClick = {},
             isAppleMapsAvailable = false,
             onAppleMapsClick = {},
-            event =
-                ShopEvent(
-                    id = "event-1",
-                    type = ShopEventType.POPUP,
-                    title = "셰프 초청 팝업",
-                    description = "특별한 팝업 이벤트입니다.",
-                    startDate = "2026-08-12",
-                    endDate = "2026-08-16",
-                    sourceUrl = "https://www.instagram.com/ramap_official/",
-                    isToday = true,
-                    isVenue = true,
-                    venueShop = shop,
-                    collaboratorShops = emptyList(),
-                    externalParticipants = emptyList(),
-                    waitingMethod = "현장 대기",
-                    waitingUrl = "https://catchtable.co.kr/",
-                    isCancelledToday = false,
-                ),
+            event = event,
             onEventClick = {},
         )
     }

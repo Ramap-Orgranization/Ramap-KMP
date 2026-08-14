@@ -34,7 +34,7 @@ import ramap.shared.generated.resources.ic_close
 @Composable
 fun RamenShopSummary(
     shop: RamenShop,
-    onClick: (() -> Unit)?,
+    onClick: () -> Unit,
     categoryLabel: @Composable (Category) -> String,
     modifier: Modifier = Modifier,
     leadingContent: @Composable () -> Unit = {},
@@ -45,7 +45,7 @@ fun RamenShopSummary(
         modifier =
             modifier
                 .fillMaxWidth()
-                .then(if (onClick != null) Modifier.noRippleClickable(onClick = onClick) else Modifier)
+                .noRippleClickable(onClick = onClick)
                 .background(CommonColor.White)
                 .padding(horizontal = 8.dp, vertical = 5.dp),
     ) {

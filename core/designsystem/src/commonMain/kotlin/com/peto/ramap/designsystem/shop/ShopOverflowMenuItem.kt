@@ -22,7 +22,7 @@ import ramap.shared.generated.resources.ic_share
 internal fun ShopOverflowMenuItem(
     text: String,
     icon: DrawableResource,
-    isActive: Boolean?,
+    isActive: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -43,7 +43,7 @@ internal fun ShopOverflowMenuItem(
                 colorFilter =
                     ColorFilter.tint(
                         when {
-                            isActive == true -> InstagramColor.Pink
+                            isActive -> InstagramColor.Pink
                             else -> GrayColor.C300
                         },
                     ),

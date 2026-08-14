@@ -16,16 +16,15 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.peto.ramap.designsystem.component.RamenShopSummaries
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.domain.model.shop.Category
-import com.peto.ramap.domain.model.shop.Location
-import com.peto.ramap.domain.model.shop.MenuCategories
-import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.extension.noRippleClickable
+import com.peto.ramap.preview.RamenShopsPreviewParameterProvider
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.RamapTheme
@@ -138,45 +137,13 @@ private fun HistoryHeader(
 
 @Preview(showBackground = true)
 @Composable
-private fun RecentSearchHistoryPreview() {
+private fun RecentSearchHistoryPreview(
+    @PreviewParameter(RamenShopsPreviewParameterProvider::class) viewedShops: RamenShops,
+) {
     RamapTheme {
         RecentSearchHistory(
             searches = listOf("돈코츠 라멘", "이에케 라멘", "마제소바"),
-            viewedShops =
-                RamenShops(
-                    listOf(
-                        RamenShop(
-                            id = "1",
-                            kakaoPlaceId = null,
-                            name = "멘야 하나비",
-                            address = "서울 강남구 테헤란로 123",
-                            location = Location(lat = 37.5, lng = 127.0),
-                            kakaoPlaceUrl = null,
-                            phone = null,
-                            instagramUrl = null,
-                            instagramProfileImageUrl = null,
-                            menuCategories = MenuCategories(listOf(Category.MAZESOBA)),
-                            isVisible = true,
-                            createdAt = "",
-                            updatedAt = "",
-                        ),
-                        RamenShop(
-                            id = "2",
-                            kakaoPlaceId = null,
-                            name = "하쿠텐 라멘",
-                            address = "서울 마포구 연남동 123",
-                            location = Location(lat = 37.56, lng = 126.92),
-                            kakaoPlaceUrl = null,
-                            phone = null,
-                            instagramUrl = null,
-                            instagramProfileImageUrl = null,
-                            menuCategories = MenuCategories(listOf(Category.IEKEI)),
-                            isVisible = true,
-                            createdAt = "",
-                            updatedAt = "",
-                        ),
-                    ),
-                ),
+            viewedShops = viewedShops,
             onSearchSelected = {},
             onSearchDeleted = {},
             onSearchesCleared = {},

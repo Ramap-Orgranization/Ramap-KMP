@@ -24,9 +24,12 @@ import ramap.shared.generated.resources.ranking_empty_description
 import ramap.shared.generated.resources.ranking_empty_title
 
 @Composable
-internal fun RankingEmptyContent(onFindShopClick: () -> Unit) {
+internal fun RankingEmptyContent(
+    onFindShopClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     Column(
-        modifier = Modifier.fillMaxSize().padding(24.dp),
+        modifier = modifier.fillMaxSize().padding(24.dp),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {

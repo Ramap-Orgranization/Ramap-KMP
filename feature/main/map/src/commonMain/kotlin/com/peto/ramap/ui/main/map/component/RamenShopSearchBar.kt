@@ -45,8 +45,8 @@ internal fun SearchBar(
     query: String,
     onQueryChange: (String) -> Unit,
     onFocusChanged: (Boolean) -> Unit,
-    isSearchMode: Boolean = false,
     modifier: Modifier = Modifier,
+    isSearchMode: Boolean = false,
 ) {
     val focusManager = LocalFocusManager.current
     val searchIconDescription = stringResource(Res.string.search_bar_search_icon)

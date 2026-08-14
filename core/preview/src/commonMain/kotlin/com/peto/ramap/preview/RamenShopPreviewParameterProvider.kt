@@ -1,6 +1,9 @@
-package com.peto.ramap.ui.preview
+package com.peto.ramap.preview
 
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
+import com.peto.ramap.domain.model.shop.BusinessHours
+import com.peto.ramap.domain.model.shop.BusinessHoursBreakTime
+import com.peto.ramap.domain.model.shop.BusinessHoursDay
 import com.peto.ramap.domain.model.shop.Category
 import com.peto.ramap.domain.model.shop.Location
 import com.peto.ramap.domain.model.shop.MenuCategories
@@ -15,19 +18,25 @@ class RamenShopPreviewParameterProvider : PreviewParameterProvider<RamenShop> {
                 name = "멘야 하나비",
                 address = "서울 강남구 테헤란로 123",
                 location = Location(lat = 37.5, lng = 127.0),
-                kakaoPlaceUrl = null,
-                phone = null,
-                instagramUrl = null,
-                menuCategories =
-                    MenuCategories(
-                        listOf(
-                            Category.TONKOTSU,
-                            Category.TSUKEMEN,
-                        ),
-                    ),
+                kakaoPlaceUrl = "https://place.map.kakao.com/123",
+                naverPlaceUrl = "https://map.naver.com/v5/entry/place/123",
+                phone = "02-123-4567",
+                instagramUrl = "https://instagram.com/menyahana_bi",
+                menuCategories = MenuCategories(listOf(Category.TONKOTSU, Category.TSUKEMEN)),
                 isVisible = true,
                 createdAt = "",
                 updatedAt = "",
+                businessHoursDetails =
+                    BusinessHours(
+                        weekly =
+                            mapOf(
+                                "mon" to BusinessHoursDay(false, "11:00", "21:00", false, null),
+                                "sun" to BusinessHoursDay(true, null, null, false, null),
+                            ),
+                        breakTimes = mapOf("mon" to listOf(BusinessHoursBreakTime("14:00", "15:00"))),
+                        lastOrders = emptyMap(),
+                        notice = "재료 소진 시 조기 마감될 수 있습니다.",
+                    ),
             ),
             RamenShop(
                 id = "2",

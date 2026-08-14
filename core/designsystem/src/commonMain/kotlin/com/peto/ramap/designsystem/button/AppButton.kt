@@ -28,6 +28,7 @@ import org.jetbrains.compose.resources.painterResource
 @Composable
 fun AppButton(
     text: String,
+    onClick: () -> Unit,
     modifier: Modifier = Modifier,
     textColor: Color = CommonColor.White,
     textStyle: AppTextStyle = AppTextStyle.T2,
@@ -36,7 +37,6 @@ fun AppButton(
     cornerRadius: Dp = 12.dp,
     border: BorderStroke? = null,
     icon: DrawableResource? = null,
-    onClick: () -> Unit = {},
 ) {
     Surface(
         modifier = modifier.height(52.dp),
