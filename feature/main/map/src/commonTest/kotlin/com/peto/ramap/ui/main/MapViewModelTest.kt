@@ -2176,17 +2176,35 @@ class MapViewModelTest {
                     id = "jiro-shop",
                     menuCategories = listOf(Category.JIRO),
                 )
+            val mapShop =
+                ramenShopFixture(
+                    id = "mazesoba-map-shop",
+                    menuCategories = listOf(Category.MAZESOBA),
+                )
             val searchShops = RamenShops(listOf(shop).associateBy { it.id })
-            val ramenShopRepository = FakeRamenShopRepository(searchResult = searchShops)
+            val ramenShopRepository =
+                FakeRamenShopRepository(
+                    result = RamenShops(mapOf(mapShop.id to mapShop)),
+                    searchResult = searchShops,
+                )
             val viewModel = mapViewModel(ramenShopRepository)
 
-            viewModel.dispatch(OnCategoryFilterToggled(Category.MAZESOBA))
-            viewModel.dispatch(OnQueryChanged("라멘"))
-            advanceTimeBy(300)
-            runCurrent()
+            viewModel.sideEffect.test {
+                viewModel.dispatch(OnBoundsChanged(BOUNDS_FIXTURE))
+                advanceTimeBy(350)
+                runCurrent()
+                viewModel.dispatch(OnCategoryFilterToggled(Category.MAZESOBA))
+                viewModel.dispatch(OnQueryChanged("라멘"))
+                advanceTimeBy(300)
+                runCurrent()
 
-            assertEquals(null, viewModel.uiState.value.selectedShop)
-            assertEquals(RamenShops(emptyMap()), viewModel.uiState.value.searchResultShops)
+                assertEquals(null, viewModel.uiState.value.selectedShop)
+                assertEquals(RamenShops(emptyMap()), viewModel.uiState.value.searchResultShops)
+                assertEquals(
+                    showToastSideEffect(Res.string.filter_empty_visible_result_message),
+                    awaitItem(),
+                )
+            }
         }
 
     @Test

@@ -830,7 +830,11 @@ class MapViewModel(
                 shopDetailState =
                     shopDetailState.takeIf {
                         selectedShop?.let { shop ->
-                            currentState.shops.filterBy(filters).containsKey(shop.id)
+                            currentState.shops
+                                .filterByOpenStatus(
+                                    filters,
+                                    Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()),
+                                ).containsKey(shop.id)
                         } ?: true
                     } ?: ShopDetailSheetUiState.Closed,
             )
@@ -863,6 +867,11 @@ class MapViewModel(
     private fun handleLoadedSearchResult(result: MapSearchResult.Loaded) {
         reduceSearchResult(result.query, result.shops)
         val searchResultShops = currentState.searchResultShops
+        // 검색시 필터 적용으로 인해 검색 결과가 없을 때
+        if (searchResultShops.isEmpty() && currentState.filters.isNotEmpty()) {
+            showToast(Res.string.filter_empty_visible_result_message)
+        }
+        // 검색 결과에 숨김 매장이 포함되어 있을 때
         if (searchResultShops.size > 1 && searchResultShops.values.any { !it.isVisible }) {
             showToast(Res.string.search_result_hidden_only_message)
         }
@@ -870,6 +879,7 @@ class MapViewModel(
             handleSingleSearchResult(searchResultShops.singleShopOrNull())
             return
         }
+        // 검색 결과가 전혀 없을 때
         showToast(Res.string.search_result_empty_message)
         reduce { copy(search = search.reset()) }
     }
