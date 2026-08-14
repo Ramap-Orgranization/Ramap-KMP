@@ -1,5 +1,6 @@
 package com.peto.ramap.domain.model.shop
 
+import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import kotlin.time.Clock
@@ -29,10 +30,13 @@ data class RamenShops(
         )
     }
 
-    fun filterBy(filter: RamenShopFilter): RamenShops {
+    fun filterBy(
+        filter: RamenShopFilter,
+        currentDateTime: LocalDateTime =
+            Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()),
+    ): RamenShops {
         if (filter.isEmpty()) return this
-        val now = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
-        return RamenShops(shops.filterValues { shop -> shop.isOpened(filter) })
+        return RamenShops(shops.filterValues { shop -> shop.isOpened(filter, currentDateTime) })
     }
 
     /**

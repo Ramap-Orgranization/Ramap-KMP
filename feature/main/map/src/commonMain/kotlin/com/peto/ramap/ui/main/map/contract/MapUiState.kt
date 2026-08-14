@@ -120,13 +120,12 @@ data class MapUiState(
     /**
      * 검색 결과 대신 사용자에게 안내할 메시지 상태.
      *
-     * 현재 검색어에 대한 결과가 로드된 뒤, 전체 보기 화면에서만 안내를 판단한다.
+     * 현재 검색어에 대한 결과가 로드된 뒤, 현재 보기 모드에서 안내를 판단한다.
      * 검색 결과가 없거나 필터 적용 후 표시할 매장이 없을 때 적절한 [SearchResultGuide]를 반환한다.
      */
     val searchResultGuide: SearchResultGuide?
         get() {
             if (!hasLoadedSearchResultsForCurrentQuery) return null
-            if (isBookmarkedView) return null
             if (placeSearchResults.isNotEmpty()) return null
             if (search.results.isEmpty()) return SearchResultGuide.SEARCH_EMPTY
             if (
@@ -147,7 +146,7 @@ data class MapUiState(
      * 지도 마커로 렌더링할 매장 목록.
      *
      * 검색어가 없거나 현재 입력값에 대한 검색 결과가 아직 도착하지 않았으면 [shops]를 유지한다.
-     * 현재 입력값에 대응하는 검색 결과가 도착한 뒤에는 지도 영역 매장과 검색 결과를 함께 보여준다.
+     * 현재 입력값에 대응하는 검색 결과가 도착한 뒤에는 검색 결과 매장만 보여준다.
      */
     val markerShops: RamenShops
         get() {
@@ -157,7 +156,7 @@ data class MapUiState(
                     .orEmpty()
 
             return if (hasLoadedSearchResultsForCurrentQuery) {
-                RamenShops(displayFilteredShops + displaySearchResults + selectedMarkerShop)
+                RamenShops(displaySearchResults + selectedMarkerShop)
             } else {
                 RamenShops(displayFilteredShops + selectedMarkerShop)
             }
@@ -173,7 +172,6 @@ data class MapUiState(
         get() =
             selectedShop == null &&
                 !search.isResultsDismissed &&
-                !isBookmarkedView &&
                 search.input.isNotBlank() &&
                 (
                     (

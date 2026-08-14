@@ -1,6 +1,7 @@
 package com.peto.ramap.domain.model.shop
 
 import com.peto.ramap.fixture.ramenShopFixture
+import kotlinx.datetime.LocalDateTime
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -138,6 +139,7 @@ class RamenShopsTest {
         val result =
             RamenShops(listOf(openShop, closedShop)).filterBy(
                 RamenShopFilter(isOpenSelected = true),
+                LocalDateTime(2026, 8, 10, 12, 0),
             )
 
         assertEquals(setOf("break-time"), result.keys)
@@ -159,10 +161,10 @@ class RamenShopsTest {
 
         assertEquals(
             setOf("shop-1"),
-            RamenShops(listOf(shop)).filterBy(filter).keys,
+            RamenShops(listOf(shop)).filterBy(filter, LocalDateTime(2026, 8, 10, 12, 0)).keys,
         )
-        assertTrue(RamenShops(listOf(shop)).filterBy(filter).isEmpty())
-        assertTrue(RamenShops(listOf(shop)).filterBy(filter).isEmpty())
+        assertTrue(RamenShops(listOf(shop)).filterBy(filter, LocalDateTime(2026, 8, 10, 16, 0)).isEmpty())
+        assertTrue(RamenShops(listOf(shop)).filterBy(filter, LocalDateTime(2026, 8, 10, 23, 0)).isEmpty())
     }
 
     @Test
@@ -183,6 +185,7 @@ class RamenShopsTest {
             RamenShops(listOf(shop))
                 .filterBy(
                     RamenShopFilter(isOpenSelected = true),
+                    LocalDateTime(2026, 8, 10, 0, 30),
                 ).keys,
         )
     }
@@ -216,6 +219,7 @@ class RamenShopsTest {
             RamenShops(shops)
                 .filterBy(
                     RamenShopFilter(isOpenSelected = true),
+                    LocalDateTime(2026, 8, 10, 12, 0),
                 ).isEmpty(),
         )
     }
@@ -236,6 +240,7 @@ class RamenShopsTest {
         val result =
             RamenShops(listOf(shop)).filterBy(
                 RamenShopFilter(setOf(Category.JIRO), isOpenSelected = true),
+                LocalDateTime(2026, 8, 10, 20, 30),
             )
 
         assertEquals(setOf("shop-1"), result.keys)

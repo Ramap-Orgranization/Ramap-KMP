@@ -27,11 +27,13 @@ data class RamenShop(
     val hasCategory: Boolean
         get() = menuCategories.hasCategory
 
-    fun isOpened(filter: RamenShopFilter): Boolean {
-        val now = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
-        return (!filter.hasCategoryFilter || menuCategories.any { it in filter }) &&
-            (!filter.isOpenSelected || isOpenAt(now))
-    }
+    fun isOpened(
+        filter: RamenShopFilter,
+        currentDateTime: LocalDateTime =
+            Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()),
+    ): Boolean =
+        (!filter.hasCategoryFilter || menuCategories.any { it in filter }) &&
+            (!filter.isOpenSelected || isOpenAt(currentDateTime))
 
     fun isOpenAt(currentDateTime: LocalDateTime): Boolean {
         val businessHours = businessHoursDetails ?: return false
