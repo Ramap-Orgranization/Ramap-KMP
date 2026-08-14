@@ -96,6 +96,7 @@ import ramap.shared.generated.resources.location_permission_settings_action
 import ramap.shared.generated.resources.login_success_message
 import ramap.shared.generated.resources.personalization_update_failure_message
 import ramap.shared.generated.resources.search_result_empty_message
+import ramap.shared.generated.resources.search_result_hidden_only_message
 import ramap.shared.generated.resources.shop_information_report_failure_message
 import ramap.shared.generated.resources.shop_information_report_success_message
 import kotlin.time.Duration.Companion.milliseconds
@@ -863,7 +864,7 @@ class MapViewModel(
         reduceSearchResult(result.query, result.shops)
         val searchResultShops = currentState.searchResultShops
         if (searchResultShops.size > 1 && searchResultShops.values.any { !it.isVisible }) {
-            showToast(Res.string.hidden_shop_search_result_message)
+            showToast(Res.string.search_result_hidden_only_message)
         }
         if (result.shops.isNotEmpty()) {
             handleSingleSearchResult(searchResultShops.singleShopOrNull())

@@ -12,6 +12,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
@@ -29,6 +30,7 @@ import com.peto.ramap.theme.ChromaticColor
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.RamapTheme
 import com.peto.ramap.theme.SystemColor
+import com.peto.ramap.ui.main.map.config.MapInteractionConfig
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
@@ -76,6 +78,7 @@ private fun SearchResultItem(
         modifier =
             modifier
                 .fillMaxWidth()
+                .alpha(if (shop.isVisible) 1f else MapInteractionConfig.HIDDEN_SHOP_ALPHA)
                 .clickable(onClick = onClick)
                 .padding(horizontal = 15.dp),
         verticalArrangement = Arrangement.spacedBy(2.dp),
