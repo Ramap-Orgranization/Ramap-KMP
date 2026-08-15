@@ -2,6 +2,7 @@ package com.peto.ramap.data.repository
 
 import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.data.datasource.shop.RamenShopDataSource
+import com.peto.ramap.data.model.ShopEventResponse
 import com.peto.ramap.domain.model.event.CalendarEventPage
 import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.model.event.ShopEventType
@@ -11,6 +12,9 @@ import com.peto.ramap.domain.model.shop.SearchQuery
 import com.peto.ramap.domain.repository.RamenShopRepository
 import com.peto.ramap.network.execute.invokeRequest
 import kotlinx.datetime.LocalDate
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.todayIn
+import kotlin.time.Clock
 
 internal class DefaultRamenShopRepository(
     private val dataSource: RamenShopDataSource,
@@ -18,11 +22,16 @@ internal class DefaultRamenShopRepository(
     private val calendarEventPageCache = mutableMapOf<String, CalendarEventPage>()
 
     override suspend fun fetchActiveEvent(eventId: String): RamapResult<ShopEvent?> =
-        invokeRequest { dataSource.fetchActiveEvent(eventId)?.toDomain() }
+        invokeRequest {
+            dataSource.fetchActiveEvent(eventId)?.let(::toDomain)?.takeIf(::isVisibleInActiveEvents)
+        }
 
     override suspend fun fetchActiveEvents(): RamapResult<List<ShopEvent>> =
         invokeRequest {
-            dataSource.fetchActiveEvents().mapNotNull { it.toDomain() }
+            dataSource
+                .fetchActiveEvents()
+                .mapNotNull(::toDomain)
+                .filter(::isVisibleInActiveEvents)
         }
 
     override suspend fun fetchCalendarEvents(
@@ -30,7 +39,7 @@ internal class DefaultRamenShopRepository(
         endDate: String,
     ): RamapResult<List<ShopEvent>> =
         invokeRequest {
-            dataSource.fetchCalendarEvents(startDate, endDate).mapNotNull { it.toDomain() }
+            dataSource.fetchCalendarEvents(startDate, endDate).mapNotNull(::toDomain)
         }
 
     override suspend fun fetchCalendarEventPage(monthStart: String): RamapResult<CalendarEventPage> {
@@ -40,7 +49,7 @@ internal class DefaultRamenShopRepository(
             invokeRequest {
                 val page = dataSource.fetchCalendarEventPage(monthStart)
                 CalendarEventPage(
-                    events = page.events.mapNotNull { it.toDomain() },
+                    events = page.events.mapNotNull(::toDomain),
                     hasPrevious = page.hasPrevious,
                     hasNext = page.hasNext,
                     notificationDates = page.notificationDates.mapNotNull { parseDate(it) },
@@ -60,13 +69,17 @@ internal class DefaultRamenShopRepository(
 
     override suspend fun fetchEvent(eventId: String): RamapResult<ShopEvent?> =
         invokeRequest {
-            dataSource.fetchEvent(eventId)?.toDomain()
+            dataSource.fetchEvent(eventId)?.let(::toDomain)
         }
 
     override suspend fun fetchActiveShopEvent(shopId: String): RamapResult<ShopEvent?> =
         invokeRequest {
-            val events = dataSource.fetchActiveShopEvents(shopId)
-            val event = events.firstOrNull()?.toDomain() ?: return@invokeRequest null
+            val events =
+                dataSource
+                    .fetchActiveShopEvents(shopId)
+                    .mapNotNull(::toDomain)
+                    .filter(::isVisibleInActiveEvents)
+            val event = events.firstOrNull() ?: return@invokeRequest null
             if (events.size != 1 || event.type != ShopEventType.COLLAB || event.isToday) {
                 return@invokeRequest event.copy(activeEventCount = events.size)
             }
@@ -79,6 +92,20 @@ internal class DefaultRamenShopRepository(
                 }
             event.copy(activeEventCount = 1, collaborationPartnerCount = partnerCount)
         }
+
+    private fun toDomain(response: ShopEventResponse): ShopEvent? {
+        val event = response.toDomain() ?: return null
+        if (event.type != ShopEventType.STORE_RENEWAL) return event
+        return event.copy(isToday = event.startDate == today().toString())
+    }
+
+    private fun isVisibleInActiveEvents(event: ShopEvent): Boolean {
+        if (event.type != ShopEventType.STORE_RENEWAL) return true
+        val startDate = parseDate(event.startDate) ?: return false
+        return startDate >= today()
+    }
+
+    private fun today(): LocalDate = Clock.System.todayIn(TimeZone.of(SEOUL_TIME_ZONE))
 
     override suspend fun fetchRamenShops(bounds: MapBounds): RamapResult<RamenShops> =
         invokeRequest {
@@ -112,4 +139,8 @@ internal class DefaultRamenShopRepository(
                     .associateBy { it.id },
             )
         }
+
+    private companion object {
+        const val SEOUL_TIME_ZONE = "Asia/Seoul"
+    }
 }

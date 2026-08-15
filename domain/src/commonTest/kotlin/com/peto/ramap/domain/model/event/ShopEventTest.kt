@@ -22,6 +22,27 @@ class ShopEventTest {
     }
 
     @Test
+    fun `매장 리뉴얼은 종료일과 관계없이 시작일 하루만 발생한다`() {
+        val renewal =
+            event(
+                type = ShopEventType.STORE_RENEWAL,
+                startDate = "2024-02-28",
+                endDate = null,
+            )
+
+        assertTrue(renewal.occursOn(LocalDate(2024, 2, 28)))
+        assertFalse(renewal.occursOn(LocalDate(2024, 2, 29)))
+        assertFalse(renewal.occursOn(LocalDate(2024, 3, 1)))
+    }
+
+    @Test
+    fun `도메인 이미지 노출 목록은 최대 다섯 장으로 제한한다`() {
+        val event = event(imageUrls = (1..6).map { "image-$it" })
+
+        assertEquals((1..5).map { "image-$it" }, event.displayImageUrls)
+    }
+
+    @Test
     fun `이벤트를 날짜별로 묶고 빈 날짜를 제외한다`() {
         val first = event(startDate = "2024-02-28", endDate = "2024-03-01")
         val second = event(startDate = "2024-03-01", endDate = "2024-03-01")
@@ -99,6 +120,7 @@ class ShopEventTest {
     }
 
     private fun event(
+        type: ShopEventType = ShopEventType.COLLAB,
         startDate: String = "2026-07-15",
         endDate: String? = "2026-07-15",
         isVenue: Boolean = true,
@@ -108,9 +130,10 @@ class ShopEventTest {
         activeEventCount: Int = 1,
         collaborationPartnerCount: Int? = null,
         cancelledDates: List<LocalDate> = emptyList(),
+        imageUrls: List<String> = emptyList(),
     ) = ShopEvent(
         id = "event",
-        type = ShopEventType.COLLAB,
+        type = type,
         title = "title",
         description = "description",
         startDate = startDate,
@@ -134,6 +157,7 @@ class ShopEventTest {
         activeEventCount = activeEventCount,
         collaborationPartnerCount = collaborationPartnerCount,
         cancelledDates = cancelledDates,
+        imageUrls = imageUrls,
     )
 
     private fun shop(

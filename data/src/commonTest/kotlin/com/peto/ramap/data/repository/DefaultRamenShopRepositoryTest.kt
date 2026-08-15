@@ -14,9 +14,15 @@ import com.peto.ramap.fake.FakeRamenShopDataSource
 import com.peto.ramap.fixture.BOUNDS_FIXTURE
 import com.peto.ramap.fixture.ramenShopResponseFixture
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.minus
+import kotlinx.datetime.plus
+import kotlinx.datetime.todayIn
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.time.Clock
 
 class DefaultRamenShopRepositoryTest {
     @Test
@@ -50,6 +56,44 @@ class DefaultRamenShopRepositoryTest {
             val events = repository.fetchActiveEvents().getOrThrow()
 
             assertEquals(listOf("today", "upcoming"), events.map { it.id })
+        }
+
+    @Test
+    fun `활성 매장 리뉴얼은 시작 전과 시작일만 노출하고 다음 날에는 제외한다`() =
+        runTest {
+            val today = Clock.System.todayIn(TimeZone.of("Asia/Seoul"))
+            val repository =
+                DefaultRamenShopRepository(
+                    FakeRamenShopDataSource(
+                        activeEventsResponses =
+                            listOf(
+                                shopEventResponse(
+                                    id = "past-renewal",
+                                    eventType = "store_renewal",
+                                    startDate = today.minus(1, DateTimeUnit.DAY).toString(),
+                                    endDate = null,
+                                ),
+                                shopEventResponse(
+                                    id = "today-renewal",
+                                    eventType = "store_renewal",
+                                    startDate = today.toString(),
+                                    endDate = null,
+                                ),
+                                shopEventResponse(
+                                    id = "upcoming-renewal",
+                                    eventType = "store_renewal",
+                                    startDate = today.plus(1, DateTimeUnit.DAY).toString(),
+                                    endDate = null,
+                                ),
+                            ),
+                    ),
+                )
+
+            val events = repository.fetchActiveEvents().getOrThrow()
+
+            assertEquals(listOf("today-renewal", "upcoming-renewal"), events.map { it.id })
+            assertEquals(true, events.first().isToday)
+            assertEquals(false, events.last().isToday)
         }
 
     @Test
@@ -290,18 +334,22 @@ class DefaultRamenShopRepositoryTest {
             assertEquals(emptyMap(), result.toMap())
         }
 
-    private fun shopEventResponse() =
-        ShopEventResponse(
-            id = "event",
-            eventType = "collab",
-            title = "콜라보",
-            description = "설명",
-            startDate = "2026-07-15",
-            endDate = "2026-07-15",
-            sourceUrl = "https://instagram.com/p/event",
-            isToday = false,
-            isVenue = true,
-            venueShop = ramenShopResponseFixture(id = "venue-shop", name = "요아케"),
-            collaboratorShops = listOf(ramenShopResponseFixture(id = "partner-shop", name = "라멘롱시즌")),
-        )
+    private fun shopEventResponse(
+        id: String = "event",
+        eventType: String = "collab",
+        startDate: String = "2026-07-15",
+        endDate: String? = "2026-07-15",
+    ) = ShopEventResponse(
+        id = id,
+        eventType = eventType,
+        title = "콜라보",
+        description = "설명",
+        startDate = startDate,
+        endDate = endDate,
+        sourceUrl = "https://instagram.com/p/event",
+        isToday = false,
+        isVenue = true,
+        venueShop = ramenShopResponseFixture(id = "venue-shop", name = "요아케"),
+        collaboratorShops = listOf(ramenShopResponseFixture(id = "partner-shop", name = "라멘롱시즌")),
+    )
 }
