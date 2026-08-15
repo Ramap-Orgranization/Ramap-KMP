@@ -1,6 +1,8 @@
-package com.peto.ramap.network
+package com.peto.ramap.data.datasource.geocoder
 
 import com.peto.ramap.core.result.RamapResult
+import com.peto.ramap.data.model.ReverseGeocodeRequest
+import com.peto.ramap.data.model.ReverseGeocodeResponse
 import com.peto.ramap.domain.model.shop.Location
 import com.peto.ramap.domain.repository.ReverseGeocoder
 import com.peto.ramap.network.execute.invokeRequest

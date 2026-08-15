@@ -1,4 +1,4 @@
-package com.peto.ramap.network
+package com.peto.ramap.data.model
 
 import kotlinx.serialization.Serializable
 
