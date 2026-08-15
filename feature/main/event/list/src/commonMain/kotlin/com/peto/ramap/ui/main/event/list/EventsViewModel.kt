@@ -10,6 +10,7 @@ import com.peto.ramap.ui.main.event.list.contract.EventsLoadKey
 import com.peto.ramap.ui.main.event.list.contract.EventsSideEffect
 import com.peto.ramap.ui.main.event.list.contract.EventsUiState
 import com.peto.ramap.ui.main.event.list.contract.mapEventsToUiState
+import com.peto.ramap.ui.main.event.list.contract.selectEventFilter
 import com.peto.ramap.ui.main.event.list.log.EventsAnalytics
 import com.peto.ramap.ui.task.TaskPolicy
 import kotlinx.coroutines.launch
@@ -29,6 +30,7 @@ class EventsViewModel(
         when (intent) {
             EventsIntent.OnEventsRefreshed -> refreshEvents()
             EventsIntent.OnEventsRetried -> loadEvents()
+            is EventsIntent.OnFilterSelected -> reduce { selectEventFilter(this, intent.filter) }
             is EventsIntent.OnEventClicked -> eventsAnalytics.logEventSelected(intent.event)
         }
     }

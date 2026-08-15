@@ -1,5 +1,6 @@
 package com.peto.ramap.ui.main.event.list
 
+import com.peto.ramap.domain.model.event.EventFilter
 import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.model.event.ShopEventType
 import com.peto.ramap.domain.model.event.ShopEvents
@@ -7,6 +8,7 @@ import com.peto.ramap.fixture.ramenShopFixture
 import com.peto.ramap.ui.main.event.list.contract.EventsUiState
 import com.peto.ramap.ui.main.event.list.contract.mapEventsToUiState
 import com.peto.ramap.ui.main.event.list.contract.partitionBySchedule
+import com.peto.ramap.ui.main.event.list.contract.selectEventFilter
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -27,7 +29,7 @@ class EventListGroupingTest {
     }
 
     @Test
-    fun `진행 중인 여름 한정 이벤트만 별도 목록으로 제외하고 예정된 여름 한정 이벤트는 예정 목록에 포함한다`() {
+    fun `여름 한정 이벤트도 오늘 진행 중과 예정 목록에 함께 포함한다`() {
         val ongoingSummerLimited =
             event(
                 id = "ongoing-summer-limited",
@@ -48,8 +50,28 @@ class EventListGroupingTest {
                 listOf(ongoingSummerLimited, upcomingSummerLimited, ongoing, upcoming),
             )
 
-        assertEquals(listOf(ongoing), ongoingEvents)
+        assertEquals(listOf(ongoingSummerLimited, ongoing), ongoingEvents)
         assertEquals(listOf(upcomingSummerLimited, upcoming), upcomingEvents)
+    }
+
+    @Test
+    fun `이벤트 필터는 최초 응답을 다시 조회하지 않고 타입별 오늘과 예정 목록을 만든다`() {
+        val events =
+            listOf(
+                event("summer-today", true, ShopEventType.SUMMER_LIMITED),
+                event("summer-upcoming", false, ShopEventType.SUMMER_LIMITED),
+                event("event-today", true, ShopEventType.POPUP),
+                event("renewal-upcoming", false, ShopEventType.STORE_RENEWAL),
+            )
+        val state = mapEventsToUiState(EventsUiState(), events)
+
+        val summerState = selectEventFilter(state, EventFilter.SUMMER_LIMITED)
+        assertEquals(listOf("summer-today"), summerState.ongoingEvents.flatten().map { it.id })
+        assertEquals(listOf("summer-upcoming"), summerState.upcomingEvents.flatten().map { it.id })
+
+        val renewalState = selectEventFilter(state, EventFilter.STORE_RENEWAL)
+        assertEquals(emptyList(), renewalState.ongoingEvents)
+        assertEquals(listOf("renewal-upcoming"), renewalState.upcomingEvents.flatten().map { it.id })
     }
 
     @Test

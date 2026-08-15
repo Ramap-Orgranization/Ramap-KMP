@@ -47,7 +47,7 @@ class EventsPreviewParameterProvider : PreviewParameterProvider<EventsUiState> {
                     ),
             ),
             EventsUiState(
-                summerLimitedEvents =
+                ongoingEvents =
                     listOf(
                         ShopEvents(
                             listOf(

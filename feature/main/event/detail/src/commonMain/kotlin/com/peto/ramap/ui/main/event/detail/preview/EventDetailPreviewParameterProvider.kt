@@ -23,6 +23,11 @@ class EventDetailPreviewParameterProvider : PreviewParameterProvider<EventDetail
                         collaboratorShops = listOf(previewShop("shop2", "콜라보 샵")),
                         waitingMethod = "현장 대기",
                         waitingUrl = "https://catchtable.co.kr/",
+                        imageUrls =
+                            listOf(
+                                "https://example.com/event-image-1.png",
+                                "https://example.com/event-image-2.png",
+                            ),
                     ),
                 isNotificationVisible = true,
                 canChangeNotification = true,
@@ -54,6 +59,7 @@ class EventDetailPreviewParameterProvider : PreviewParameterProvider<EventDetail
                         isToday = false,
                         waitingMethod = null,
                         waitingUrl = null,
+                        imageUrls = listOf("https://example.com/event-image.png"),
                     ),
             ),
             EventDetailUiState(
@@ -84,6 +90,7 @@ class EventDetailPreviewParameterProvider : PreviewParameterProvider<EventDetail
         waitingMethod: String? = "현장 대기",
         waitingUrl: String? = "https://catchtable.co.kr/",
         isCancelledToday: Boolean = false,
+        imageUrls: List<String> = emptyList(),
     ) = ShopEvent(
         id = type.name,
         type = type,
@@ -100,6 +107,7 @@ class EventDetailPreviewParameterProvider : PreviewParameterProvider<EventDetail
         waitingMethod = waitingMethod,
         waitingUrl = waitingUrl,
         isCancelledToday = isCancelledToday,
+        imageUrls = imageUrls,
     )
 
     private fun previewShop(

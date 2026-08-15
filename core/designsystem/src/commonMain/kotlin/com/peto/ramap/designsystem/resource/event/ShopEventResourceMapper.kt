@@ -14,6 +14,7 @@ import ramap.shared.generated.resources.event_status_upcoming
 import ramap.shared.generated.resources.event_type_collab
 import ramap.shared.generated.resources.event_type_limited_menu
 import ramap.shared.generated.resources.event_type_popup
+import ramap.shared.generated.resources.event_type_store_renewal
 import ramap.shared.generated.resources.event_type_summer_limited
 import ramap.shared.generated.resources.shop_event_notice_collab_participant_today
 import ramap.shared.generated.resources.shop_event_notice_collab_participant_upcoming
@@ -26,6 +27,8 @@ import ramap.shared.generated.resources.shop_event_notice_participant_today
 import ramap.shared.generated.resources.shop_event_notice_participant_upcoming
 import ramap.shared.generated.resources.shop_event_notice_popup_today
 import ramap.shared.generated.resources.shop_event_notice_popup_upcoming
+import ramap.shared.generated.resources.shop_event_notice_store_renewal_today
+import ramap.shared.generated.resources.shop_event_notice_store_renewal_upcoming
 
 object ShopEventResourceMapper {
     fun dateLabel(event: ShopEvent): StringResource =
@@ -41,6 +44,7 @@ object ShopEventResourceMapper {
             ShopEventType.POPUP -> Res.string.event_type_popup
             ShopEventType.LIMITED_MENU -> Res.string.event_type_limited_menu
             ShopEventType.SUMMER_LIMITED -> Res.string.event_type_summer_limited
+            ShopEventType.STORE_RENEWAL -> Res.string.event_type_store_renewal
         }
 
     fun collaboratorLabel(event: ShopEvent): StringResource =
@@ -93,6 +97,13 @@ object ShopEventResourceMapper {
                         Res.string.shop_event_notice_limited_menu_today
                     } else {
                         Res.string.shop_event_notice_limited_menu_upcoming
+                    }
+
+                ShopEventType.STORE_RENEWAL ->
+                    if (event.isToday) {
+                        Res.string.shop_event_notice_store_renewal_today
+                    } else {
+                        Res.string.shop_event_notice_store_renewal_upcoming
                     }
             }
         return UiText(resource)
