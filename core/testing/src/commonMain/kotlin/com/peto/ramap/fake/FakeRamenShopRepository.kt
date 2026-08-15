@@ -19,6 +19,7 @@ class FakeRamenShopRepository(
     private val activeEvents: List<ShopEvent> = emptyList(),
     private val calendarEvents: List<ShopEvent> = emptyList(),
     private val calendarEventPage: CalendarEventPage? = null,
+    private val searchDelayMillis: Long = 0,
     var activeEventError: RamapError? = null,
     var activeEventsError: RamapError? = null,
     var activeEventsDelayMillis: Long = 0,
@@ -100,6 +101,7 @@ class FakeRamenShopRepository(
     ): RamapResult<RamenShops> {
         requestedSearchQueries += query
         requestedSearchLimits += limit
+        delay(searchDelayMillis)
         return error?.let { RamapResult.Error(it) } ?: RamapResult.Success(searchResult)
     }
 }

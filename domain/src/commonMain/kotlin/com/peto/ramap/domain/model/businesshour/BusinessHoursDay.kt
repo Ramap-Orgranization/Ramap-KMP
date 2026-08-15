@@ -1,4 +1,4 @@
-package com.peto.ramap.domain.model.shop
+package com.peto.ramap.domain.model.businesshour
 
 data class BusinessHoursDay(
     val closed: Boolean,

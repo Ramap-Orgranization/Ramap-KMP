@@ -54,8 +54,6 @@ internal actual fun RamapMapView(
     focusNearestToCurrentLocation: Boolean,
     focusRequestKey: Long,
     initialFocusLocation: Location?,
-    placeFocusLocation: Location?,
-    placeFocusRequestKey: Long,
     shouldBootstrapInitialLocationFocus: Boolean,
     selectedShopId: String?,
     cameraPosition: CameraPosition?,
@@ -155,20 +153,6 @@ internal actual fun RamapMapView(
         )
         map.locationTrackingMode = LocationTrackingMode.NoFollow
         onInitialFocusConsumed()
-    }
-
-    LaunchedEffect(
-        naverMap,
-        placeFocusLocation,
-        placeFocusRequestKey,
-    ) {
-        val map = naverMap ?: return@LaunchedEffect
-        val location = placeFocusLocation ?: return@LaunchedEffect
-        cameraController.focusPlace(
-            naverMap = map,
-            location = location,
-            requestKey = placeFocusRequestKey,
-        )
     }
 
     LaunchedEffect(

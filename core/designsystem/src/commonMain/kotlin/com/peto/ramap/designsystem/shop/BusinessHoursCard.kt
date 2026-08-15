@@ -13,7 +13,7 @@ import androidx.compose.ui.unit.dp
 import com.peto.ramap.designsystem.card.SectionCard
 import com.peto.ramap.designsystem.resource.businesshours.BusinessHoursResourceMapper
 import com.peto.ramap.designsystem.text.AppText
-import com.peto.ramap.domain.model.shop.BusinessHours
+import com.peto.ramap.domain.model.businesshour.BusinessHours
 import com.peto.ramap.preview.BusinessHoursPreviewParameterProvider
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.GrayColor

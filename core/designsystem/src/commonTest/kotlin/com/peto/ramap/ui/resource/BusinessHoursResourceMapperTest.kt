@@ -1,9 +1,9 @@
 package com.peto.ramap.ui.resource
 
 import com.peto.ramap.designsystem.resource.businesshours.BusinessHoursResourceMapper
-import com.peto.ramap.domain.model.shop.BusinessHours
-import com.peto.ramap.domain.model.shop.BusinessHoursBreakTime
-import com.peto.ramap.domain.model.shop.BusinessHoursDay
+import com.peto.ramap.domain.model.businesshour.BreakTime
+import com.peto.ramap.domain.model.businesshour.BusinessHours
+import com.peto.ramap.domain.model.businesshour.BusinessHoursDay
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.shop_detail_business_hours_break_time_format
 import ramap.shared.generated.resources.shop_detail_business_hours_closed
@@ -45,8 +45,8 @@ class BusinessHoursResourceMapperTest {
         val days = mapOf("mon" to openDay(), "tue" to openDay())
         val breakTimes =
             mapOf(
-                "mon" to listOf(BusinessHoursBreakTime("14:00", "15:00")),
-                "tue" to listOf(BusinessHoursBreakTime("15:00", "16:00")),
+                "mon" to listOf(BreakTime("14:00", "15:00")),
+                "tue" to listOf(BreakTime("15:00", "16:00")),
             )
         val lines = BusinessHoursResourceMapper.all(businessHours(days = days, breakTimes = breakTimes))
 
@@ -68,7 +68,7 @@ class BusinessHoursResourceMapperTest {
 
     private fun businessHours(
         days: Map<String, BusinessHoursDay>,
-        breakTimes: Map<String, List<BusinessHoursBreakTime>> = emptyMap(),
+        breakTimes: Map<String, List<BreakTime>> = emptyMap(),
     ) = BusinessHours(
         weekly = days,
         breakTimes = breakTimes,

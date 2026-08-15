@@ -25,11 +25,11 @@ internal fun SearchResultGuide(
 ) {
     val message =
         when (guide) {
-            SearchResultGuide.SEARCH_EMPTY -> stringResource(Res.string.search_result_empty_message)
-            SearchResultGuide.FILTER_EMPTY -> stringResource(Res.string.search_result_filter_empty_message)
-            SearchResultGuide.QUERY_AND_FILTER_EMPTY ->
+            SearchResultGuide.SearchEmpty -> stringResource(Res.string.search_result_empty_message)
+            SearchResultGuide.FilterEmpty -> stringResource(Res.string.search_result_filter_empty_message)
+            SearchResultGuide.QueryAndFilterEmpty ->
                 stringResource(Res.string.search_result_query_filter_empty_message)
-            SearchResultGuide.HIDDEN_ONLY -> stringResource(Res.string.search_result_hidden_only_message)
+            SearchResultGuide.HiddenOnly -> stringResource(Res.string.search_result_hidden_only_message)
         }
 
     Box(

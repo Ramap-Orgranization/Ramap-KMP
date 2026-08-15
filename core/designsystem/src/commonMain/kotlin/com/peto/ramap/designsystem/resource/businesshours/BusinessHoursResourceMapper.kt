@@ -1,8 +1,8 @@
 package com.peto.ramap.designsystem.resource.businesshours
 
 import com.peto.ramap.designsystem.resource.UiText
-import com.peto.ramap.domain.model.shop.BusinessHours
-import com.peto.ramap.domain.model.shop.BusinessHoursDay
+import com.peto.ramap.domain.model.businesshour.BusinessHours
+import com.peto.ramap.domain.model.businesshour.BusinessHoursDay
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.shop_detail_business_hours_break_time_format
 import ramap.shared.generated.resources.shop_detail_business_hours_closed

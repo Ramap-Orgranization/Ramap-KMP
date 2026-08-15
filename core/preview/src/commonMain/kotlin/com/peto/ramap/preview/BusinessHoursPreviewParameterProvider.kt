@@ -1,8 +1,8 @@
 package com.peto.ramap.preview
 
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
-import com.peto.ramap.domain.model.shop.BusinessHours
-import com.peto.ramap.domain.model.shop.BusinessHoursDay
+import com.peto.ramap.domain.model.businesshour.BusinessHours
+import com.peto.ramap.domain.model.businesshour.BusinessHoursDay
 
 class BusinessHoursPreviewParameterProvider : PreviewParameterProvider<BusinessHours> {
     override val values: Sequence<BusinessHours> =
