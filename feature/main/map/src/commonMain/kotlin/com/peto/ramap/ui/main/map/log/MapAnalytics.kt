@@ -6,11 +6,9 @@ import com.peto.ramap.analytics.common.CategoryFilterToggled
 import com.peto.ramap.analytics.common.deeplink.ShareLinkClicked
 import com.peto.ramap.analytics.common.shop.BookmarkToggled
 import com.peto.ramap.analytics.common.shop.ShopSelected
-import com.peto.ramap.domain.model.place.PlaceSearchResult
 import com.peto.ramap.domain.model.shop.Category
 import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.ui.main.map.log.event.HiddenShopToggled
-import com.peto.ramap.ui.main.map.log.event.SearchResultSelected
 import com.peto.ramap.ui.main.map.log.event.ShopMapLinkOpened
 import com.peto.ramap.ui.main.map.log.event.SubscribedToggled
 import com.peto.ramap.ui.main.map.log.event.ViewportLoadFailed
@@ -52,10 +50,6 @@ class MapAnalytics(
                 source = source,
             ),
         )
-    }
-
-    fun logSearchResultSelected(shop: PlaceSearchResult) {
-        analyticsTracker.logEvent(SearchResultSelected(shopName = shop.name))
     }
 
     fun logCategoryFilterToggled(

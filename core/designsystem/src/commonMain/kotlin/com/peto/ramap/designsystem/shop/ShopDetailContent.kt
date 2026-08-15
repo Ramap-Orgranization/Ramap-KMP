@@ -17,6 +17,7 @@ import com.peto.ramap.designsystem.bottomsheet.CommonBottomSheetConfig
 import com.peto.ramap.designsystem.button.AppButton
 import com.peto.ramap.designsystem.component.LoadErrorContent
 import com.peto.ramap.designsystem.dialog.CommonDialog
+import com.peto.ramap.designsystem.dialog.ReportDialog
 import com.peto.ramap.designsystem.indicator.RamenLoadingIndicator
 import com.peto.ramap.designsystem.resource.wating.WaitingSystemUiModel
 import com.peto.ramap.designsystem.shop.model.RamenShopUiModel
@@ -97,7 +98,7 @@ fun ShopDetailContent(
                 is ShopDetailSheetUiState.Loading ->
                     RamenLoadingIndicator(
                         modifier =
-                            Modifier
+                            dragModifier
                                 .fillMaxWidth()
                                 .heightIn(min = 240.dp),
                     )

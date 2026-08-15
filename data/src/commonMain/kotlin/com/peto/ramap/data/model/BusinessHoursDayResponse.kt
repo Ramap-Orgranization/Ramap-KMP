@@ -1,6 +1,6 @@
 package com.peto.ramap.data.model
 
-import com.peto.ramap.domain.model.shop.BusinessHoursDay
+import com.peto.ramap.domain.model.businesshour.BusinessHoursDay
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 

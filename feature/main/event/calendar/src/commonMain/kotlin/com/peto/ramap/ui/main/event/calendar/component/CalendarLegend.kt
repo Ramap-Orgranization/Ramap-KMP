@@ -25,9 +25,9 @@ import ramap.shared.generated.resources.event_calendar_notification
 import ramap.shared.generated.resources.ic_notification
 
 @Composable
-internal fun CalendarLegend() {
+internal fun CalendarLegend(modifier: Modifier = Modifier) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterHorizontally),
         verticalAlignment = Alignment.CenterVertically,
     ) {

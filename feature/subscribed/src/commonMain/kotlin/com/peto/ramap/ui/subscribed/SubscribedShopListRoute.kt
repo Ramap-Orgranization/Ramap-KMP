@@ -167,6 +167,7 @@ private fun SubscribedShopListContent(
                     onItemAction = {
                         onRemovalRequested(SubscribedRemovalTarget.Shop(it.id))
                     },
+                    modifier = Modifier.padding(horizontal = 15.dp),
                 )
             }
         }

@@ -1,6 +1,10 @@
 package com.peto.ramap.domain.model.shop
 
+import com.peto.ramap.domain.model.businesshour.BreakTime
+import com.peto.ramap.domain.model.businesshour.BusinessHours
+import com.peto.ramap.domain.model.businesshour.BusinessHoursDay
 import com.peto.ramap.fixture.ramenShopFixture
+import kotlinx.datetime.LocalDateTime
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -110,6 +114,227 @@ class RamenShopsTest {
         // then
         assertTrue("1" in result.keys)
         assertFalse("2" in result.keys)
+    }
+
+    @Test
+    fun `영업중 필터는 현재 영업중인 매장만 반환한다`() {
+        val openShop =
+            ramenShopFixture(id = "break-time").copy(
+                businessHoursDetails =
+                    BusinessHours(
+                        weekly =
+                            mapOf(
+                                "mon" to
+                                    BusinessHoursDay(
+                                        false,
+                                        "11:00",
+                                        "22:00",
+                                        false,
+                                        null,
+                                    ),
+                            ),
+                        breakTimes =
+                            mapOf(
+                                "mon" to
+                                    listOf(
+                                        BreakTime(
+                                            "15:00",
+                                            "17:00",
+                                        ),
+                                    ),
+                            ),
+                        lastOrders = emptyMap(),
+                        notice = null,
+                    ),
+            )
+        val closedShop =
+            ramenShopFixture(id = "closed-shop", menuCategories = listOf(Category.JIRO)).copy(
+                businessHoursDetails =
+                    BusinessHours(
+                        weekly =
+                            mapOf(
+                                "mon" to
+                                    BusinessHoursDay(
+                                        true,
+                                        "11:00",
+                                        "01:00",
+                                        true,
+                                        null,
+                                    ),
+                            ),
+                        breakTimes = emptyMap(),
+                        lastOrders = emptyMap(),
+                        notice = null,
+                    ),
+            )
+
+        val result =
+            RamenShops(listOf(openShop, closedShop)).filterByOpenStatus(
+                RamenShopFilter(isOpenSelected = true),
+                LocalDateTime(2026, 8, 10, 12, 0),
+            )
+
+        assertEquals(setOf("break-time"), result.keys)
+    }
+
+    @Test
+    fun `영업중 필터는 브레이크타임과 영업 종료 후 매장을 제외한다`() {
+        val shop =
+            ramenShopFixture().copy(
+                businessHoursDetails =
+                    BusinessHours(
+                        weekly =
+                            mapOf(
+                                "mon" to
+                                    BusinessHoursDay(
+                                        false,
+                                        "11:00",
+                                        "22:00",
+                                        false,
+                                        null,
+                                    ),
+                            ),
+                        breakTimes =
+                            mapOf(
+                                "mon" to
+                                    listOf(
+                                        BreakTime(
+                                            "15:00",
+                                            "17:00",
+                                        ),
+                                    ),
+                            ),
+                        lastOrders = emptyMap(),
+                        notice = null,
+                    ),
+            )
+        val filter = RamenShopFilter(isOpenSelected = true)
+
+        assertEquals(
+            setOf("shop-1"),
+            RamenShops(listOf(shop)).filterByOpenStatus(filter, LocalDateTime(2026, 8, 10, 12, 0)).keys,
+        )
+        assertTrue(RamenShops(listOf(shop)).filterByOpenStatus(filter, LocalDateTime(2026, 8, 10, 16, 0)).isEmpty())
+        assertTrue(RamenShops(listOf(shop)).filterByOpenStatus(filter, LocalDateTime(2026, 8, 10, 23, 0)).isEmpty())
+    }
+
+    @Test
+    fun `전날 심야 영업은 자정 이후에도 영업중으로 판정한다`() {
+        val shop =
+            ramenShopFixture().copy(
+                businessHoursDetails =
+                    BusinessHours(
+                        weekly =
+                            mapOf(
+                                "sun" to
+                                    BusinessHoursDay(
+                                        false,
+                                        "20:00",
+                                        "01:00",
+                                        true,
+                                        null,
+                                    ),
+                            ),
+                        breakTimes = emptyMap(),
+                        lastOrders = emptyMap(),
+                        notice = null,
+                    ),
+            )
+
+        assertEquals(
+            setOf("shop-1"),
+            RamenShops(listOf(shop))
+                .filterByOpenStatus(
+                    RamenShopFilter(isOpenSelected = true),
+                    LocalDateTime(2026, 8, 10, 0, 30),
+                ).keys,
+        )
+    }
+
+    @Test
+    fun `closed null 파싱 불가 영업시간은 영업중이 아니다`() {
+        val shops =
+            listOf(
+                ramenShopFixture(id = "closed").copy(
+                    businessHoursDetails =
+                        BusinessHours(
+                            weekly =
+                                mapOf(
+                                    "mon" to
+                                        BusinessHoursDay(
+                                            true,
+                                            "11:00",
+                                            "22:00",
+                                            false,
+                                            null,
+                                        ),
+                                ),
+                            breakTimes = emptyMap(),
+                            lastOrders = emptyMap(),
+                            notice = null,
+                        ),
+                ),
+                ramenShopFixture(id = "null").copy(businessHoursDetails = null),
+                ramenShopFixture(id = "invalid").copy(
+                    businessHoursDetails =
+                        BusinessHours(
+                            weekly =
+                                mapOf(
+                                    "mon" to
+                                        BusinessHoursDay(
+                                            false,
+                                            "bad",
+                                            "22:00",
+                                            false,
+                                            null,
+                                        ),
+                                ),
+                            breakTimes = emptyMap(),
+                            lastOrders = emptyMap(),
+                            notice = null,
+                        ),
+                ),
+            )
+
+        assertTrue(
+            RamenShops(shops)
+                .filterByOpenStatus(
+                    RamenShopFilter(isOpenSelected = true),
+                    LocalDateTime(2026, 8, 10, 12, 0),
+                ).isEmpty(),
+        )
+    }
+
+    @Test
+    fun `영업중과 카테고리 필터는 AND로 적용한다`() {
+        val shop =
+            ramenShopFixture(menuCategories = listOf(Category.JIRO)).copy(
+                businessHoursDetails =
+                    BusinessHours(
+                        weekly =
+                            mapOf(
+                                "mon" to
+                                    BusinessHoursDay(
+                                        false,
+                                        "20:00",
+                                        "01:00",
+                                        true,
+                                        null,
+                                    ),
+                            ),
+                        breakTimes = emptyMap(),
+                        lastOrders = emptyMap(),
+                        notice = null,
+                    ),
+            )
+
+        val result =
+            RamenShops(listOf(shop)).filterByOpenStatus(
+                RamenShopFilter(setOf(Category.JIRO), isOpenSelected = true),
+                LocalDateTime(2026, 8, 10, 20, 30),
+            )
+
+        assertEquals(setOf("shop-1"), result.keys)
     }
 
     @Test

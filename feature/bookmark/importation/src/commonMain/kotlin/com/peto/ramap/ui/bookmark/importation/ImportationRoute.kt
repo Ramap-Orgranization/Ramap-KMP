@@ -20,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -32,6 +33,7 @@ import com.peto.ramap.designsystem.toast.ToastManager
 import com.peto.ramap.domain.model.importation.ImportationPreview
 import com.peto.ramap.domain.model.importation.ImportationProvider
 import com.peto.ramap.domain.model.shop.RamenShops
+import com.peto.ramap.preview.RamenShopsPreviewParameterProvider
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
@@ -41,7 +43,6 @@ import com.peto.ramap.ui.base.ObserveAsEvents
 import com.peto.ramap.ui.bookmark.importation.contract.ImportationIntent
 import com.peto.ramap.ui.bookmark.importation.contract.ImportationSideEffect
 import com.peto.ramap.ui.bookmark.importation.contract.ImportationUiState
-import com.peto.ramap.ui.preview.RamenShopPreviewParameterProvider
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
@@ -298,8 +299,9 @@ private fun ImportationStat(
 
 @Composable
 @Preview(showBackground = true)
-private fun ImportationScreenPreview() {
-    val samples = RamenShopPreviewParameterProvider().ramenShopPreviewSamples
+private fun ImportationScreenPreview(
+    @PreviewParameter(RamenShopsPreviewParameterProvider::class) shops: RamenShops,
+) {
     RamapTheme {
         ImportationScreen(
             uiState =
@@ -309,10 +311,10 @@ private fun ImportationScreenPreview() {
                         ImportationPreview(
                             provider = ImportationProvider.KAKAO,
                             totalPlaceCount = 10,
-                            matchedShopIds = samples.map { it.id }.toSet(),
+                            matchedShopIds = shops.values.map { it.id }.toSet(),
                             unmatchedPlaceNames = listOf("모르는 라멘집 1", "모르는 라멘집 2"),
                         ),
-                    candidates = RamenShops(samples),
+                    candidates = shops,
                     alreadyBookmarkedCount = 1,
                     hiddenCount = 1,
                 ),

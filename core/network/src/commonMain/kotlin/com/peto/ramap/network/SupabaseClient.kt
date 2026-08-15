@@ -7,6 +7,7 @@ import io.github.jan.supabase.auth.FlowType
 import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.functions.Functions
 import io.github.jan.supabase.postgrest.Postgrest
+import kotlin.time.Duration.Companion.seconds
 
 @OptIn(SupabaseInternal::class)
 val supabaseClient =
@@ -14,6 +15,7 @@ val supabaseClient =
         supabaseUrl = RamapSecrets.supabaseUrl,
         supabaseKey = RamapSecrets.supabaseAnonKey,
     ) {
+        requestTimeout = 10.seconds
         install(Postgrest)
         install(Functions)
         install(Auth) {

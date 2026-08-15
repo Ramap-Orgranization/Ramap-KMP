@@ -1,6 +1,6 @@
 package com.peto.ramap.data.model
 
-import com.peto.ramap.domain.model.shop.BusinessHours
+import com.peto.ramap.domain.model.businesshour.BusinessHours
 import com.peto.ramap.domain.model.shop.Category
 import com.peto.ramap.domain.model.shop.Location
 import com.peto.ramap.domain.model.shop.MenuCategories

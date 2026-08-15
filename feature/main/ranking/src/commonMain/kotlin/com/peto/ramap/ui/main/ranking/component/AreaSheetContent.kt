@@ -42,8 +42,9 @@ internal fun AreaSheetContent(
     isLoadingDistricts: Boolean,
     onAdministrativeAreaSelected: (AdministrativeArea) -> Unit,
     onAreaFilterSelected: (AreaFilter) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
-    Row(modifier = Modifier.fillMaxWidth().height(AREA_LIST_HEIGHT)) {
+    Row(modifier = modifier.fillMaxWidth().height(AREA_LIST_HEIGHT)) {
         AdministrativeAreaOptions(
             areaSelectionArea = areaSelectionArea,
             onAdministrativeAreaSelected = onAdministrativeAreaSelected,

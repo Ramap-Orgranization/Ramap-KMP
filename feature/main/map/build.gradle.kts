@@ -25,10 +25,12 @@ kotlin {
         implementation(libs.koin.compose.viewmodel)
         implementation(libs.compose.material3)
         implementation(libs.compose.components.resources)
+        implementation(libs.kotlinx.datetime)
     }
     sourceSets.commonMain {
         dependencies {
             implementation(projects.core.analytics)
+            implementation(projects.core.preview)
             implementation(projects.core.ui)
             implementation(libs.navigation.event.compose)
             implementation(libs.coil.compose)

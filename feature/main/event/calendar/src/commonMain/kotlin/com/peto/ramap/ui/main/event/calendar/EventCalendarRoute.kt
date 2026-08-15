@@ -94,7 +94,7 @@ internal fun EventCalendarScreen(
     onNextMonthClick: () -> Unit,
     onRetryClick: () -> Unit,
     onEventClick: (ShopEvent) -> Unit,
-    onRefresh: () -> Unit = {},
+    onRefresh: () -> Unit,
 ) {
     var selectedDay by remember { mutableStateOf<CalendarDaySelection?>(null) }
     val pullToRefreshState = rememberPullToRefreshState()
@@ -331,6 +331,7 @@ private fun EventCalendarRoutePreview(
             onNextMonthClick = {},
             onRetryClick = {},
             onEventClick = {},
+            onRefresh = {},
         )
     }
 }

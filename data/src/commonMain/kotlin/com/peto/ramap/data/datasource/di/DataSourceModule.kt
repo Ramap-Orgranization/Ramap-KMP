@@ -1,5 +1,6 @@
 package com.peto.ramap.data.datasource.di
 
+import com.peto.ramap.data.datasource.geocoder.SupabaseReverseGeocoder
 import com.peto.ramap.data.datasource.importation.ImportationDataSource
 import com.peto.ramap.data.datasource.importation.KakaoImportationDataSource
 import com.peto.ramap.data.datasource.importation.NaverImportationDataSource
@@ -18,6 +19,7 @@ import com.peto.ramap.data.datasource.shop.RamenShopDataSource
 import com.peto.ramap.data.datasource.shop.RemoteRamenShopDataSource
 import com.peto.ramap.data.datasource.waiting.RemoteShopWaitingSystemDataSource
 import com.peto.ramap.data.datasource.waiting.ShopWaitingSystemDataSource
+import com.peto.ramap.domain.repository.ReverseGeocoder
 import io.github.jan.supabase.SupabaseClient
 import io.ktor.client.HttpClient
 import org.koin.dsl.module
@@ -48,4 +50,5 @@ val dataSourceModule =
         single<ShopReportDataSource> {
             RemoteShopReportDataSource(get<SupabaseClient>())
         }
+        single<ReverseGeocoder> { SupabaseReverseGeocoder(get()) }
     }

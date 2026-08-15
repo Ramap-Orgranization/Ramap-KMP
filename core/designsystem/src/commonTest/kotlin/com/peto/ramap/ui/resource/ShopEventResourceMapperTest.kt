@@ -86,7 +86,6 @@ class ShopEventResourceMapperTest {
         )
     }
 
-    @Suppress("LongParameterList")
     private fun event(
         type: ShopEventType = ShopEventType.POPUP,
         isToday: Boolean = false,

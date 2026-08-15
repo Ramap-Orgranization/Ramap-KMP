@@ -41,7 +41,7 @@ import com.peto.ramap.ui.main.map.config.DefaultMapConfig
 import com.peto.ramap.ui.main.map.config.MapInteractionConfig
 import com.peto.ramap.ui.main.map.config.MarkerConfig
 import com.peto.ramap.ui.main.map.model.CameraPosition
-import com.peto.ramap.ui.main.map.model.CurrentLocationRequestState
+import com.peto.ramap.ui.main.map.model.location.CurrentLocationRequestState
 import kotlinx.coroutines.delay
 import org.jetbrains.compose.resources.painterResource
 import ramap.shared.generated.resources.Res
@@ -54,8 +54,6 @@ internal actual fun RamapMapView(
     focusNearestToCurrentLocation: Boolean,
     focusRequestKey: Long,
     initialFocusLocation: Location?,
-    placeFocusLocation: Location?,
-    placeFocusRequestKey: Long,
     shouldBootstrapInitialLocationFocus: Boolean,
     selectedShopId: String?,
     cameraPosition: CameraPosition?,
@@ -155,20 +153,6 @@ internal actual fun RamapMapView(
         )
         map.locationTrackingMode = LocationTrackingMode.NoFollow
         onInitialFocusConsumed()
-    }
-
-    LaunchedEffect(
-        naverMap,
-        placeFocusLocation,
-        placeFocusRequestKey,
-    ) {
-        val map = naverMap ?: return@LaunchedEffect
-        val location = placeFocusLocation ?: return@LaunchedEffect
-        cameraController.focusPlace(
-            naverMap = map,
-            location = location,
-            requestKey = placeFocusRequestKey,
-        )
     }
 
     LaunchedEffect(

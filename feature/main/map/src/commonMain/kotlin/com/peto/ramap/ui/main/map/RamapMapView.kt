@@ -15,8 +15,6 @@ internal expect fun RamapMapView(
     focusNearestToCurrentLocation: Boolean,
     focusRequestKey: Long,
     initialFocusLocation: Location?,
-    placeFocusLocation: Location?,
-    placeFocusRequestKey: Long,
     shouldBootstrapInitialLocationFocus: Boolean,
     selectedShopId: String?,
     cameraPosition: CameraPosition?,

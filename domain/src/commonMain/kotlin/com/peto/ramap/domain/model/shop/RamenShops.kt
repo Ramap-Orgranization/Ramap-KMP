@@ -1,5 +1,7 @@
 package com.peto.ramap.domain.model.shop
 
+import kotlinx.datetime.LocalDateTime
+
 data class RamenShops(
     private val shops: Map<String, RamenShop>,
 ) : Map<String, RamenShop> by shops {
@@ -17,12 +19,23 @@ data class RamenShops(
      * [filter]에 포함된 메뉴 카테고리와 일치하는 가게만 남긴 [RamenShops]를 반환한다.
      */
     fun filterByCategory(filter: RamenShopFilter): RamenShops {
-        if (filter.isEmpty()) return this
+        if (!filter.hasCategoryFilter) return this
         return RamenShops(
             shops.filterValues { shop ->
                 shop.menuCategories.matches(filter)
             },
         )
+    }
+
+    /**
+     * [filter] 조건에 맞고 [currentDateTime] 기준으로 영업 중인 매장만 남긴 목록을 반환한다.
+     */
+    fun filterByOpenStatus(
+        filter: RamenShopFilter,
+        currentDateTime: LocalDateTime,
+    ): RamenShops {
+        if (filter.isEmpty()) return this
+        return RamenShops(shops.filterValues { shop -> shop.isOpened(filter, currentDateTime) })
     }
 
     /**

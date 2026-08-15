@@ -41,7 +41,7 @@ fun EventCard(
     event: ShopEvent,
     dateText: String,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier.fillMaxWidth(),
+    modifier: Modifier = Modifier,
     actionLabel: String? = null,
     onAction: (() -> Unit)? = null,
     isCancelled: Boolean = event.isCancelledToday,
@@ -51,6 +51,7 @@ fun EventCard(
     Column(
         modifier =
             modifier
+                .fillMaxWidth()
                 .clip(cardShape)
                 .background(CommonColor.White)
                 .border(1.dp, GrayColor.C100, cardShape)

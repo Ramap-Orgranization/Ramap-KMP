@@ -356,7 +356,10 @@ private fun EventDetailContent(
                     content = {
                         EventValue(
                             value = eventDateText(event.startDate, event.endDate),
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .padding(bottom = 5.dp),
                             textAlign = TextAlign.Center,
                         )
                     },

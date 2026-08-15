@@ -2,7 +2,6 @@ package com.peto.ramap.data.usecase
 
 import com.peto.ramap.core.result.RamapError
 import com.peto.ramap.core.result.RamapResult
-import com.peto.ramap.core.result.retryOnce
 import com.peto.ramap.domain.repository.RamenShopRepository
 import com.peto.ramap.domain.repository.ShopWaitingSystemRepository
 import com.peto.ramap.domain.usecase.FetchShopDetailUseCase
@@ -28,7 +27,7 @@ internal class DefaultFetchShopDetailUseCase(
         val cached = cache[shopId]
         if (cached != null) return revalidateEvent(cached)
 
-        val result = retryOnce { loadFresh(shopId) }
+        val result = loadFresh(shopId)
         if (result is RamapResult.Success) cache[result.data.shop.id] = result.data
         return result
     }

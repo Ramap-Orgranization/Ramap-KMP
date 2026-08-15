@@ -13,8 +13,6 @@ import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.auth.LoginSessionState
 import com.peto.ramap.domain.model.auth.LoginType
 import com.peto.ramap.domain.model.personalization.ShopPersonalization
-import com.peto.ramap.domain.model.place.PlaceSearchResult
-import com.peto.ramap.domain.model.place.PlaceSearchResults
 import com.peto.ramap.domain.model.report.ShopInformationField
 import com.peto.ramap.domain.model.report.ShopInformationReport
 import com.peto.ramap.domain.model.shop.Category
@@ -25,7 +23,6 @@ import com.peto.ramap.domain.model.shop.RamenShopFilter
 import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.domain.model.shop.SearchQuery
 import com.peto.ramap.domain.repository.LoginRepository
-import com.peto.ramap.domain.repository.PlaceSearchRepository
 import com.peto.ramap.domain.repository.RamenShopRepository
 import com.peto.ramap.domain.repository.ShopReportRepository
 import com.peto.ramap.domain.store.PersonalizationBootstrapState
@@ -33,10 +30,9 @@ import com.peto.ramap.domain.store.ShopPersonalizationStore
 import com.peto.ramap.domain.usecase.FetchShopDetailUseCase
 import com.peto.ramap.domain.usecase.ShopDetail
 import com.peto.ramap.domain.usecase.ShopDetailCacheLookup
-import com.peto.ramap.platform.MapSearchHistoryStorage
+import com.peto.ramap.platform.storage.SearchHistoryStorage
 import com.peto.ramap.ui.base.BaseViewModel
 import com.peto.ramap.ui.location.CurrentLocationStore
-import com.peto.ramap.ui.main.map.config.DefaultMapConfig
 import com.peto.ramap.ui.main.map.contract.MapIntent
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnBookmarkToggled
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnBookmarkedShopsToggled
@@ -49,13 +45,13 @@ import com.peto.ramap.ui.main.map.contract.MapIntent.OnLocationPermissionBlocked
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnLoginTypeSelected
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnMapTabExited
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnMyLocationChanged
+import com.peto.ramap.ui.main.map.contract.MapIntent.OnOpenFilterToggled
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnQueryChanged
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnRecentSearchDeleted
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnRecentSearchSelected
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnRecentSearchesCleared
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnRequestedShopDismissed
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnSearchResultsDismissed
-import com.peto.ramap.ui.main.map.contract.MapIntent.OnSearchedShopSelected
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnSelectedShopFocusConsumed
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopDetailDismissed
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopDetailRetry
@@ -74,16 +70,18 @@ import com.peto.ramap.ui.main.map.contract.MapSideEffect.ShowToast
 import com.peto.ramap.ui.main.map.contract.MapUiState
 import com.peto.ramap.ui.main.map.log.MapAnalytics
 import com.peto.ramap.ui.main.map.model.CameraPosition
-import com.peto.ramap.ui.main.map.model.LocationFocusStatus
 import com.peto.ramap.ui.main.map.model.PendingMapAction
-import com.peto.ramap.ui.main.map.search.MapSearchController
-import com.peto.ramap.ui.main.map.search.MapSearchResult
+import com.peto.ramap.ui.main.map.model.location.LocationFocusStatus
 import com.peto.ramap.ui.main.map.viewport.ViewportLoadResult
 import com.peto.ramap.ui.main.map.viewport.ViewportShopLoader
 import com.peto.ramap.ui.task.TaskPolicy
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 import org.jetbrains.compose.resources.StringResource
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.apple_login_failure_message
@@ -98,28 +96,26 @@ import ramap.shared.generated.resources.location_permission_settings_action
 import ramap.shared.generated.resources.login_success_message
 import ramap.shared.generated.resources.personalization_update_failure_message
 import ramap.shared.generated.resources.search_result_empty_message
+import ramap.shared.generated.resources.search_result_hidden_only_message
 import ramap.shared.generated.resources.shop_information_report_failure_message
 import ramap.shared.generated.resources.shop_information_report_success_message
+import kotlin.time.Clock
+import kotlin.time.Duration.Companion.milliseconds
 
 class MapViewModel(
     private val ramenShopRepository: RamenShopRepository,
     private val loginRepository: LoginRepository,
     private val currentLocationStore: CurrentLocationStore,
-    private val placeSearchRepository: PlaceSearchRepository,
     private val shopReportRepository: ShopReportRepository,
     private val personalizationStore: ShopPersonalizationStore,
     private val fetchShopDetailUseCase: FetchShopDetailUseCase,
-    private val mapSearchHistoryStorage: MapSearchHistoryStorage,
+    private val mapSearchHistoryStorage: SearchHistoryStorage,
     private val mapAnalytics: MapAnalytics,
     private val loginAnalytics: LoginAnalytics,
 ) : BaseViewModel<MapUiState, MapIntent, MapSideEffect>(initialState = MapUiState()) {
-    private val searchController =
-        MapSearchController(
-            ramenShopRepository = ramenShopRepository,
-            placeSearchRepository = placeSearchRepository,
-        )
     private val viewportShopLoader = ViewportShopLoader(ramenShopRepository, viewModelScope)
     private var pendingMapAction: PendingMapAction? = null
+    private var openFilterRefreshJob: Job? = null
 
     init {
         viewModelScope.launch { observeSessionState() }
@@ -206,7 +202,12 @@ class MapViewModel(
 
             is OnShopIdSelected -> selectShop(intent.shopId)
             is OnShopShareClicked -> shareShop(intent.shop)
-            is OnShopMapLinkClicked -> mapAnalytics.logShopMapLinkOpened(intent.shop, intent.mapProvider)
+            is OnShopMapLinkClicked ->
+                mapAnalytics.logShopMapLinkOpened(
+                    intent.shop,
+                    intent.mapProvider,
+                )
+
             OnRequestedShopDismissed -> dismissRequestedShopLoad()
             is OnShopDetailDismissed -> dismissShopDetail()
             OnShopDetailRetry -> retryShopDetailLoad()
@@ -217,12 +218,7 @@ class MapViewModel(
 
     private fun shareShop(shop: RamenShop) {
         mapAnalytics.logShopShared(shop)
-        trySideEffect(
-            ShareShop(
-                shopId = shop.id,
-                shopName = shop.name,
-            ),
-        )
+        trySideEffect(ShareShop(shop.id, shop.name))
     }
 
     private suspend fun handleSearchIntent(intent: MapIntent): Boolean {
@@ -232,12 +228,8 @@ class MapViewModel(
             is OnRecentSearchSelected -> updateQuery(intent.query)
             is OnRecentSearchDeleted -> mapSearchHistoryStorage.removeRecentSearch(intent.query)
             OnRecentSearchesCleared -> mapSearchHistoryStorage.clearRecentSearches()
-            is OnSearchedShopSelected -> {
-                mapAnalytics.logSearchResultSelected(intent.place)
-                selectPlace(intent.place)
-            }
-
             is OnCategoryFilterToggled -> toggleCategoryFilter(intent.category)
+            OnOpenFilterToggled -> toggleOpenFilter()
             else -> return false
         }
         return true
@@ -268,6 +260,7 @@ class MapViewModel(
                     LoginType.APPLE -> signInWithApple()
                 }
             }
+
             OnLocationPermissionBlocked -> showLocationPermissionBlockedToast()
 
             else -> error("Unhandled map intent: $intent")
@@ -344,7 +337,7 @@ class MapViewModel(
         reduce {
             copy(
                 shopDetailState = ShopDetailSheetUiState.Closed,
-                search = if (search.results.size == 1) search.reset() else search,
+                search = if (search.results.size == 1) search.dismissResults() else search,
             )
         }
     }
@@ -404,47 +397,41 @@ class MapViewModel(
     }
 
     private fun dismissSearchResults() {
-        reduce { copy(search = search.reset()) }
-    }
-
-    private fun selectPlace(place: PlaceSearchResult) {
-        reduce {
-            copy(
-                search = search.selectPlace(place),
-                shopDetailState = ShopDetailSheetUiState.Closed,
-            )
-        }
+        reduce { copy(search = search.dismissResults()) }
     }
 
     private fun updateQuery(query: String) {
         val normalizedQuery = SearchQuery(query).normalizeShopSearchQuery()
-        val canReuseSearchResults = canReuseSearchResults(normalizedQuery)
         updateSearchInput(query)
 
         if (normalizedQuery.value.length !in SEARCH_QUERY_LENGTH) {
-            cancelTask(SEARCH_TASK_KEY)
-            clearSearchResults()
+            clearSearchResultsForInvalidQuery()
             return
         }
 
         recordRecentSearch(normalizedQuery.value)
+        searchShops(normalizedQuery)
+    }
 
-        if (canReuseSearchResults) {
+    private fun clearSearchResultsForInvalidQuery() {
+        cancelTask(SEARCH_TASK_KEY)
+        clearSearchResults()
+    }
+
+    private fun searchShops(query: SearchQuery) {
+        if (canReuseSearchResults(query)) {
             cancelTask(SEARCH_TASK_KEY)
             handleSingleSearchResult(currentState.searchResultShops.singleShopOrNull())
             return
         }
 
-        val searchCenter =
-            currentState.cameraPosition?.center
-                ?: Location(DefaultMapConfig.LATITUDE, DefaultMapConfig.LONGITUDE)
         launchTask(
             taskKey = SEARCH_TASK_KEY,
             loadKey = MapLoadKey.Search,
             policy = TaskPolicy.CancelPrevious,
         ) {
-            val result = searchController.search(normalizedQuery, searchCenter)
-            handleSearchResult(result)
+            val result = ramenShopRepository.searchRamenShops(query, SEARCH_RESULT_LIMIT)
+            handleSearchResult(query, result)
         }
     }
 
@@ -473,6 +460,11 @@ class MapViewModel(
             }
         mapAnalytics.logCategoryFilterToggled(category, category !in currentFilter)
         updateFilter(nextFilter)
+    }
+
+    private fun toggleOpenFilter() {
+        val filter = currentState.filters
+        updateFilter(filter.copy(isOpenSelected = !filter.isOpenSelected))
     }
 
     private suspend fun updatePersonalization(personalization: ShopPersonalization) {
@@ -567,20 +559,21 @@ class MapViewModel(
     }
 
     private fun toggleBookmark(shop: RamenShop) {
-        val wasBookmarked = shop.id in currentState.bookmarkedShopIds
-        val enabled = !wasBookmarked
-        if (!currentState.isLoggedIn) {
-            pendingMapAction = PendingMapAction.ToggleBookmark(shop)
-            if (!isLoggedInOrShowGuide()) return
-        }
+        executeLoginRequiredAction(PendingMapAction.ToggleBookmark(shop))
+    }
 
-        mapAnalytics.logBookmarkToggled(shop, enabled)
+    private fun updateBookmark(shop: RamenShop) {
+        val wasBookmarked = shop.id in currentState.bookmarkedShopIds
+
+        mapAnalytics.logBookmarkToggled(shop, !wasBookmarked)
         postBookmark(shop.id, wasBookmarked)
     }
 
     private fun toggleShopSubscribed(shop: RamenShop) {
-        if (!isLoggedInOrShowGuide()) return
+        executeLoginRequiredAction(PendingMapAction.ToggleShopNotification(shop))
+    }
 
+    private fun updateShopNotification(shop: RamenShop) {
         val isHiddenShop = shop.id in currentState.hiddenShopIds
 
         if (isHiddenShop) {
@@ -631,8 +624,10 @@ class MapViewModel(
     }
 
     private fun toggleHidden(shop: RamenShop) {
-        if (!isLoggedInOrShowGuide()) return
+        executeLoginRequiredAction(PendingMapAction.ToggleHidden(shop))
+    }
 
+    private fun updateHiddenShop(shop: RamenShop) {
         val wasHidden = shop.id in currentState.hiddenShopIds
         mapAnalytics.logHiddenToggled(shop, !wasHidden)
 
@@ -671,8 +666,10 @@ class MapViewModel(
     }
 
     private fun toggleBookmarkedView() {
-        if (!isLoggedInOrShowGuide()) return
+        executeLoginRequiredAction(PendingMapAction.ToggleBookmarkedShops)
+    }
 
+    private fun updateBookmarkedView() {
         val enabled = !currentState.isBookmarkedView
 
         reduce {
@@ -706,6 +703,24 @@ class MapViewModel(
 
         trySideEffect(ShowLoginGuide)
         return false
+    }
+
+    private fun executeLoginRequiredAction(action: PendingMapAction) {
+        if (currentState.isLoggedIn) {
+            performPendingAction(action)
+            return
+        }
+        pendingMapAction = action
+        isLoggedInOrShowGuide()
+    }
+
+    private fun performPendingAction(action: PendingMapAction) {
+        when (action) {
+            is PendingMapAction.ToggleBookmark -> updateBookmark(action.shop)
+            is PendingMapAction.ToggleShopNotification -> updateShopNotification(action.shop)
+            is PendingMapAction.ToggleHidden -> updateHiddenShop(action.shop)
+            PendingMapAction.ToggleBookmarkedShops -> updateBookmarkedView()
+        }
     }
 
     private fun submitShopInformationReport(
@@ -753,7 +768,7 @@ class MapViewModel(
             onSuccess = {
                 loginAnalytics.logLoginSucceeded(AnalyticsSource.MAP)
                 showToast(Res.string.login_success_message)
-                resumePendingBookmark()
+                resumePendingAction()
             },
             onError = {
                 loginAnalytics.logLoginFailed(AnalyticsSource.MAP)
@@ -771,7 +786,7 @@ class MapViewModel(
             onSuccess = {
                 loginAnalytics.logLoginSucceeded(AnalyticsSource.MAP, LoginMethod.APPLE)
                 showToast(Res.string.login_success_message)
-                resumePendingBookmark()
+                resumePendingAction()
             },
             onError = {
                 loginAnalytics.logLoginFailed(AnalyticsSource.MAP, LoginMethod.APPLE)
@@ -788,12 +803,10 @@ class MapViewModel(
         showToast(Res.string.apple_login_failure_message, ToastType.ERROR)
     }
 
-    private fun resumePendingBookmark() {
-        val pending = pendingMapAction as? PendingMapAction.ToggleBookmark ?: return
+    private fun resumePendingAction() {
+        val pending = pendingMapAction ?: return
         pendingMapAction = null
-        val wasBookmarked = pending.shop.id in currentState.bookmarkedShopIds
-        mapAnalytics.logBookmarkToggled(pending.shop, !wasBookmarked)
-        postBookmark(pending.shop.id, wasBookmarked)
+        performPendingAction(pending)
     }
 
     private fun updateFilter(filter: RamenShopFilter) {
@@ -802,11 +815,57 @@ class MapViewModel(
                 filters = filter,
                 shopDetailState =
                     shopDetailState.takeIf {
-                        selectedShop?.menuCategories?.matches(filter) ?: true
+                        selectedShop?.let { shop ->
+                            currentState.shops
+                                .filterByOpenStatus(
+                                    filter,
+                                    Clock.System
+                                        .now()
+                                        .toLocalDateTime(TimeZone.currentSystemDefault()),
+                                ).containsKey(shop.id)
+                        } ?: true
                     } ?: ShopDetailSheetUiState.Closed,
             )
         }
+        updateOpenFilterRefreshJob(filter.isOpenSelected)
         showEmptyFilterResultMessageIfNeeded()
+    }
+
+    private fun updateOpenFilterRefreshJob(isEnabled: Boolean) {
+        if (!isEnabled) {
+            openFilterRefreshJob?.cancel()
+            openFilterRefreshJob = null
+            return
+        }
+        if (openFilterRefreshJob?.isActive == true) return
+
+        openFilterRefreshJob =
+            viewModelScope.launch {
+                while (true) {
+                    delay(OPEN_FILTER_REFRESH_INTERVAL_MILLIS.milliseconds)
+                    refreshOpenFilter()
+                }
+            }
+    }
+
+    private fun refreshOpenFilter() {
+        reduce {
+            copy(
+                openFilterRefreshVersion = openFilterRefreshVersion + 1,
+                shopDetailState =
+                    shopDetailState.takeIf {
+                        selectedShop?.let { shop ->
+                            currentState.shops
+                                .filterByOpenStatus(
+                                    filters,
+                                    Clock.System
+                                        .now()
+                                        .toLocalDateTime(TimeZone.currentSystemDefault()),
+                                ).containsKey(shop.id)
+                        } ?: true
+                    } ?: ShopDetailSheetUiState.Closed,
+            )
+        }
     }
 
     private fun showEmptyFilterResultMessageIfNeeded() {
@@ -824,41 +883,42 @@ class MapViewModel(
         }
     }
 
-    private suspend fun handleSearchResult(result: MapSearchResult) {
+    private fun handleSearchResult(
+        query: SearchQuery,
+        result: RamapResult<RamenShops>,
+    ) {
         when (result) {
-            MapSearchResult.Cleared -> clearSearchResults()
-            is MapSearchResult.Loaded -> handleLoadedSearchResult(result)
-            is MapSearchResult.Failed -> handleFailedSearchResult(result)
+            is RamapResult.Success -> handleLoadedSearchResult(query, result.data)
+            is RamapResult.Error -> handleFailedSearchResult(result.error)
         }
     }
 
-    private suspend fun handleLoadedSearchResult(result: MapSearchResult.Loaded) {
-        reduceSearchResult(result.query, result.shops)
+    private fun handleLoadedSearchResult(
+        query: SearchQuery,
+        shops: RamenShops,
+    ) {
+        reduceSearchResult(query, shops)
         val searchResultShops = currentState.searchResultShops
-        if (searchResultShops.size > 1 && searchResultShops.values.any { !it.isVisible }) {
-            showToast(Res.string.hidden_shop_search_result_message)
+        // 검색시 필터 적용으로 인해 검색 결과가 없을 때
+        if (searchResultShops.isEmpty() && currentState.filters.isNotEmpty()) {
+            showToast(Res.string.filter_empty_visible_result_message)
         }
-        if (result.shops.isNotEmpty()) {
+        // 검색 결과에 숨김 매장이 포함되어 있을 때
+        if (searchResultShops.size > 1 && searchResultShops.values.any { !it.isVisible }) {
+            showToast(Res.string.search_result_hidden_only_message)
+        }
+        if (shops.isNotEmpty()) {
             handleSingleSearchResult(searchResultShops.singleShopOrNull())
             return
         }
-        handlePlaceSearchSuccess(result.places)
+        // 검색 결과가 전혀 없을 때
+        showToast(Res.string.search_result_empty_message)
+        reduce { copy(search = search.reset()) }
     }
 
-    private fun handleFailedSearchResult(result: MapSearchResult.Failed) {
-        handleError(result.error)
+    private fun handleFailedSearchResult(error: RamapError) {
+        handleError(error)
         showDataLoadFailure()
-    }
-
-    private fun handlePlaceSearchSuccess(results: PlaceSearchResults) {
-        reduce { copy(search = search.updatePlaceResults(results)) }
-        when (results.size) {
-            0 -> {
-                showToast(Res.string.search_result_empty_message)
-                reduce { copy(search = search.reset()) }
-            }
-            1 -> selectPlace(results.single())
-        }
     }
 
     private fun showDataLoadFailure() {
@@ -877,14 +937,7 @@ class MapViewModel(
         messageResource: StringResource,
         type: ToastType = ToastType.DEFAULT,
     ) {
-        trySideEffect(
-            ShowToast(
-                ToastData(
-                    message = messageResource,
-                    type = type,
-                ),
-            ),
-        )
+        trySideEffect(ShowToast(ToastData(messageResource, type)))
     }
 
     private fun showLocationPermissionBlockedToast() {
@@ -1122,10 +1175,12 @@ class MapViewModel(
 
     companion object {
         private val SEARCH_QUERY_LENGTH = 2..15
+        private const val SEARCH_RESULT_LIMIT = 50
         private const val SEARCH_TASK_KEY = "map-search"
         private const val SHOP_DETAIL_TASK_KEY = "map-shop-detail"
         private const val SHOP_REPORT_TASK_KEY = "map-shop-report"
         private const val SIGN_IN_TASK_KEY = "map-sign-in"
         private const val PERSONALIZED_SHOPS_TASK_KEY = "map-personalized-shops"
+        private const val OPEN_FILTER_REFRESH_INTERVAL_MILLIS = 60_000L
     }
 }

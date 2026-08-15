@@ -74,7 +74,7 @@ class EventListGroupingTest {
             )
 
         assertEquals(4, groups.size)
-        assertEquals(listOf(firstShopFirst, firstShopSecond, firstShopThird), groups.first())
+        assertEquals(listOf(firstShopFirst, firstShopSecond, firstShopThird), groups.first().toList())
         assertEquals(firstShopFirst, groups.first().representativeEvent)
         assertEquals(3, groups.first().eventCount)
         assertTrue(groups.first().hasMultipleEvents)

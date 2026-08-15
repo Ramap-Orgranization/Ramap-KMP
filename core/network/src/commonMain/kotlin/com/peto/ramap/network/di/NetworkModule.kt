@@ -1,7 +1,5 @@
 package com.peto.ramap.network.di
 
-import com.peto.ramap.domain.repository.ReverseGeocoder
-import com.peto.ramap.network.SupabaseReverseGeocoder
 import com.peto.ramap.network.client.importation.ImportationFunctionClient
 import com.peto.ramap.network.supabaseClient
 import io.github.jan.supabase.SupabaseClient
@@ -17,11 +15,9 @@ val networkModule =
         single { supabaseClient }
         single {
             HttpClient {
-                followRedirects = false
                 install(ContentNegotiation) {
                     json(Json { ignoreUnknownKeys = true })
                 }
             }
         }
-        single<ReverseGeocoder> { SupabaseReverseGeocoder(get()) }
     }
