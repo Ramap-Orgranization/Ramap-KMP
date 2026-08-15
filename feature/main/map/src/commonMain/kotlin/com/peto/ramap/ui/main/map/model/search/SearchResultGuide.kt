@@ -1,4 +1,4 @@
-package com.peto.ramap.ui.main.map.search
+package com.peto.ramap.ui.main.map.model.search
 
 sealed interface SearchResultGuide {
     data object SearchEmpty : SearchResultGuide

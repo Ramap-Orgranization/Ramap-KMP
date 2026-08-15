@@ -1,4 +1,4 @@
-package com.peto.ramap.ui.main.map.model
+package com.peto.ramap.ui.main.map.model.location
 
 import com.peto.ramap.domain.model.shop.Location
 

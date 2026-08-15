@@ -8,12 +8,12 @@ import com.peto.ramap.platform.AppSettingsOpener
 import com.peto.ramap.platform.AppVersionProvider
 import com.peto.ramap.platform.IosAppSettingsOpener
 import com.peto.ramap.platform.IosAppVersionProvider
-import com.peto.ramap.platform.MapSearchHistoryStorage
 import com.peto.ramap.platform.createMapSearchHistoryStorage
 import com.peto.ramap.platform.location.CurrentLocationProvider
 import com.peto.ramap.platform.location.IosCurrentLocationProvider
 import com.peto.ramap.platform.network.IosNetworkConnectivityObserver
 import com.peto.ramap.platform.network.NetworkConnectivityObserver
+import com.peto.ramap.platform.storage.SearchHistoryStorage
 import org.koin.dsl.module
 
 actual val platformModule =
@@ -22,7 +22,7 @@ actual val platformModule =
             IosAppSettingsOpener()
         }
         single<AppVersionProvider> { IosAppVersionProvider() }
-        single<MapSearchHistoryStorage> { createMapSearchHistoryStorage() }
+        single<SearchHistoryStorage> { createMapSearchHistoryStorage() }
         single<NetworkConnectivityObserver> { IosNetworkConnectivityObserver() }
         single<CurrentLocationProvider> { IosCurrentLocationProvider() }
         single<AnalyticsTracker> { FirebaseAnalyticsTracker() }

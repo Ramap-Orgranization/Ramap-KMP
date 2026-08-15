@@ -10,7 +10,7 @@ import androidx.compose.ui.unit.dp
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.GrayColor
-import com.peto.ramap.ui.main.map.search.SearchResultGuide
+import com.peto.ramap.ui.main.map.model.search.SearchResultGuide
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.search_result_empty_message

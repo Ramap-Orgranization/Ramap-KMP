@@ -12,9 +12,9 @@ import com.peto.ramap.ui.loading.LoadState
 import com.peto.ramap.ui.loading.LoadableState
 import com.peto.ramap.ui.main.map.config.DefaultMapConfig
 import com.peto.ramap.ui.main.map.model.CameraPosition
-import com.peto.ramap.ui.main.map.model.LocationFocusStatus
-import com.peto.ramap.ui.main.map.search.SearchResultGuide
-import com.peto.ramap.ui.main.map.search.SearchUiModel
+import com.peto.ramap.ui.main.map.model.location.LocationFocusStatus
+import com.peto.ramap.ui.main.map.model.search.SearchResultGuide
+import com.peto.ramap.ui.main.map.model.search.SearchUiModel
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import kotlin.time.Clock

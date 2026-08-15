@@ -1,4 +1,4 @@
-package com.peto.ramap.platform
+package com.peto.ramap.platform.storage
 
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
@@ -12,22 +12,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 
-interface MapSearchHistoryStorage {
-    val recentSearches: StateFlow<List<String>>
-    val recentlyViewedShopIds: StateFlow<List<String>>
-
-    suspend fun addRecentSearch(query: String)
-
-    suspend fun removeRecentSearch(query: String)
-
-    suspend fun clearRecentSearches()
-
-    suspend fun addRecentlyViewedShop(shopId: String)
-}
-
-class DefaultMapSearchHistoryStorage(
+class DefaultSearchHistoryStorage(
     private val dataStore: DataStore<Preferences>,
-) : MapSearchHistoryStorage {
+) : SearchHistoryStorage {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     override val recentSearches: StateFlow<List<String>> =
@@ -47,7 +34,8 @@ class DefaultMapSearchHistoryStorage(
 
     override suspend fun removeRecentSearch(query: String) {
         dataStore.edit { preferences ->
-            preferences[RECENT_SEARCHES_KEY] = preferences[RECENT_SEARCHES_KEY].decode().filterNot { it == query }.encode()
+            preferences[RECENT_SEARCHES_KEY] =
+                preferences[RECENT_SEARCHES_KEY].decode().filterNot { it == query }.encode()
         }
     }
 
@@ -63,7 +51,12 @@ class DefaultMapSearchHistoryStorage(
     ) {
         if (value.isBlank()) return
         dataStore.edit { preferences ->
-            preferences[key] = (listOf(value) + preferences[key].decode().filterNot { it == value }.take(MAX_HISTORY_SIZE - 1)).encode()
+            val currentHistory = preferences[key].decode()
+            val remainingHistory =
+                currentHistory.filterNot { it == value }.take(MAX_HISTORY_SIZE - 1)
+            val updatedHistory = listOf(value) + remainingHistory
+
+            preferences[key] = updatedHistory.encode()
         }
     }
 

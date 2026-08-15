@@ -1,10 +1,10 @@
 package com.peto.ramap.ui.main
 
-import com.peto.ramap.platform.MapSearchHistoryStorage
+import com.peto.ramap.platform.storage.SearchHistoryStorage
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
-internal class FakeMapSearchHistoryStorage : MapSearchHistoryStorage {
+internal class FakeMapSearchHistoryStorage : SearchHistoryStorage {
     private val searches = MutableStateFlow(emptyList<String>())
     private val viewedShopIds = MutableStateFlow(emptyList<String>())
 

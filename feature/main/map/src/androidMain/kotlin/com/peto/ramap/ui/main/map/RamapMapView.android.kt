@@ -41,7 +41,7 @@ import com.peto.ramap.ui.main.map.config.DefaultMapConfig
 import com.peto.ramap.ui.main.map.config.MapInteractionConfig
 import com.peto.ramap.ui.main.map.config.MarkerConfig
 import com.peto.ramap.ui.main.map.model.CameraPosition
-import com.peto.ramap.ui.main.map.model.CurrentLocationRequestState
+import com.peto.ramap.ui.main.map.model.location.CurrentLocationRequestState
 import kotlinx.coroutines.delay
 import org.jetbrains.compose.resources.painterResource
 import ramap.shared.generated.resources.Res

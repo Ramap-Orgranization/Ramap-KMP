@@ -68,9 +68,9 @@ import com.peto.ramap.ui.main.map.contract.MapSideEffect.ShowToast
 import com.peto.ramap.ui.main.map.contract.MapUiState
 import com.peto.ramap.ui.main.map.log.MapAnalytics
 import com.peto.ramap.ui.main.map.model.CameraPosition
-import com.peto.ramap.ui.main.map.model.LocationFocusStatus
-import com.peto.ramap.ui.main.map.search.SearchResultGuide
-import com.peto.ramap.ui.main.map.search.SearchUiModel
+import com.peto.ramap.ui.main.map.model.location.LocationFocusStatus
+import com.peto.ramap.ui.main.map.model.search.SearchResultGuide
+import com.peto.ramap.ui.main.map.model.search.SearchUiModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.delay

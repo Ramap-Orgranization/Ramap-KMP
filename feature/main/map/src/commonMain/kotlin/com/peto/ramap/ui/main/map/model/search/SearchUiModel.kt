@@ -1,4 +1,4 @@
-package com.peto.ramap.ui.main.map.search
+package com.peto.ramap.ui.main.map.model.search
 
 import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.domain.model.shop.SearchQuery

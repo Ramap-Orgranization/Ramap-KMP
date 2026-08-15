@@ -28,7 +28,7 @@ internal class ViewportShopLoader(
     /** 현재 예약되었거나 실행 중인 영역 조회 작업. */
     private var job: Job? = null
 
-    /** 최신 영역 조회 요청을 식별하는 단조 증가 ID. */
+    /** 최신 영역 조회 요청을 식별하는 ID. */
     private var requestId = 0L
 
     /** 마지막으로 조회에 성공한, 미리 불러오기 영역이 반영된 지도 범위. */
@@ -95,7 +95,7 @@ internal class ViewportShopLoader(
     ) {
         val expandedBounds = bounds.expandBy(PREFETCH_RATIO)
         val result = repository.fetchRamenShops(expandedBounds)
-        deliverIfCurrent(currentRequestId, expandedBounds, result, onResult)
+        applyResult(currentRequestId, expandedBounds, result, onResult)
     }
 
     /**
@@ -103,7 +103,7 @@ internal class ViewportShopLoader(
      *
      * 성공한 경우에만 [lastLoadedBounds]를 갱신하고, 성공과 실패 모두 최신 요청의 콜백으로 전달한다.
      */
-    private suspend fun deliverIfCurrent(
+    private suspend fun applyResult(
         currentRequestId: Long,
         expandedBounds: MapBounds,
         result: RamapResult<RamenShops>,
