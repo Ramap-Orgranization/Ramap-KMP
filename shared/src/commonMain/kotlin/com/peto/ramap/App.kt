@@ -18,9 +18,11 @@ import com.peto.ramap.designsystem.indicator.RamenLoadingIndicator
 import com.peto.ramap.designsystem.toast.ToastHost
 import com.peto.ramap.designsystem.toast.ToastManager
 import com.peto.ramap.domain.model.auth.LoginSessionState
+import com.peto.ramap.domain.repository.AppUpdateRepository
 import com.peto.ramap.domain.repository.LoginRepository
 import com.peto.ramap.domain.store.PersonalizationBootstrapState
 import com.peto.ramap.domain.store.ShopPersonalizationStore
+import com.peto.ramap.platform.AppVersionProvider
 import com.peto.ramap.platform.network.NetworkConnectivityObserver
 import com.peto.ramap.platform.network.NetworkConnectivityStatus
 import com.peto.ramap.theme.RamapTheme
@@ -41,10 +43,32 @@ import ramap.shared.generated.resources.personalization_load_failure_title
 
 @Composable
 fun App(
+    appUpdateRepository: AppUpdateRepository = koinInject(),
+    appVersionProvider: AppVersionProvider = koinInject(),
     loginRepository: LoginRepository = koinInject(),
     personalizationStore: ShopPersonalizationStore = koinInject(),
     toastManager: ToastManager = koinInject(),
     onExitRequested: (() -> Unit)? = null,
+) {
+    AppUpdateGate(
+        appUpdateRepository = appUpdateRepository,
+        appVersionProvider = appVersionProvider,
+    ) {
+        AppContent(
+            loginRepository = loginRepository,
+            personalizationStore = personalizationStore,
+            toastManager = toastManager,
+            onExitRequested = onExitRequested,
+        )
+    }
+}
+
+@Composable
+private fun AppContent(
+    loginRepository: LoginRepository,
+    personalizationStore: ShopPersonalizationStore,
+    toastManager: ToastManager,
+    onExitRequested: (() -> Unit)?,
 ) {
     val retryRequests = remember { MutableSharedFlow<Unit>(extraBufferCapacity = 1) }
     val networkConnectivityObserver: NetworkConnectivityObserver = koinInject()
