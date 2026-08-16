@@ -59,7 +59,7 @@ class DefaultRamenShopRepositoryTest {
         }
 
     @Test
-    fun `활성 매장 리뉴얼은 시작 전과 시작일만 노출하고 다음 날에는 제외한다`() =
+    fun `활성 매장 리뉴얼은 시작일부터 한 달간 노출한다`() =
         runTest {
             val today = Clock.System.todayIn(TimeZone.of("Asia/Seoul"))
             val repository =
@@ -68,9 +68,13 @@ class DefaultRamenShopRepositoryTest {
                         activeEventsResponses =
                             listOf(
                                 shopEventResponse(
-                                    id = "past-renewal",
+                                    id = "within-one-month-renewal",
                                     eventType = "store_renewal",
-                                    startDate = today.minus(1, DateTimeUnit.DAY).toString(),
+                                    startDate =
+                                        today
+                                            .minus(1, DateTimeUnit.MONTH)
+                                            .plus(1, DateTimeUnit.DAY)
+                                            .toString(),
                                     endDate = null,
                                 ),
                                 shopEventResponse(
@@ -85,14 +89,24 @@ class DefaultRamenShopRepositoryTest {
                                     startDate = today.plus(1, DateTimeUnit.DAY).toString(),
                                     endDate = null,
                                 ),
+                                shopEventResponse(
+                                    id = "expired-renewal",
+                                    eventType = "store_renewal",
+                                    startDate = today.minus(1, DateTimeUnit.MONTH).toString(),
+                                    endDate = null,
+                                ),
                             ),
                     ),
                 )
 
             val events = repository.fetchActiveEvents().getOrThrow()
 
-            assertEquals(listOf("today-renewal", "upcoming-renewal"), events.map { it.id })
+            assertEquals(
+                listOf("within-one-month-renewal", "today-renewal", "upcoming-renewal"),
+                events.map { it.id },
+            )
             assertEquals(true, events.first().isToday)
+            assertEquals(true, events[1].isToday)
             assertEquals(false, events.last().isToday)
         }
 

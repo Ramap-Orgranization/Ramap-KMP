@@ -22,7 +22,7 @@ class ShopEventTest {
     }
 
     @Test
-    fun `매장 리뉴얼은 종료일과 관계없이 시작일 하루만 발생한다`() {
+    fun `매장 리뉴얼은 시작일부터 한 달간 진행한다`() {
         val renewal =
             event(
                 type = ShopEventType.STORE_RENEWAL,
@@ -31,8 +31,10 @@ class ShopEventTest {
             )
 
         assertTrue(renewal.occursOn(LocalDate(2024, 2, 28)))
-        assertFalse(renewal.occursOn(LocalDate(2024, 2, 29)))
-        assertFalse(renewal.occursOn(LocalDate(2024, 3, 1)))
+        assertTrue(renewal.occursOn(LocalDate(2024, 2, 29)))
+        assertTrue(renewal.occursOn(LocalDate(2024, 3, 1)))
+        assertFalse(renewal.occursOn(LocalDate(2024, 3, 28)))
+        assertEquals("2024-03-27", renewal.displayEndDate)
     }
 
     @Test

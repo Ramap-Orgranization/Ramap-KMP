@@ -11,8 +11,10 @@ import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.domain.model.shop.SearchQuery
 import com.peto.ramap.domain.repository.RamenShopRepository
 import com.peto.ramap.network.execute.invokeRequest
+import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
+import kotlinx.datetime.plus
 import kotlinx.datetime.todayIn
 import kotlin.time.Clock
 
@@ -96,13 +98,13 @@ internal class DefaultRamenShopRepository(
     private fun toDomain(response: ShopEventResponse): ShopEvent? {
         val event = response.toDomain() ?: return null
         if (event.type != ShopEventType.STORE_RENEWAL) return event
-        return event.copy(isToday = event.startDate == today().toString())
+        return event.copy(isToday = event.occursOn(today()))
     }
 
     private fun isVisibleInActiveEvents(event: ShopEvent): Boolean {
         if (event.type != ShopEventType.STORE_RENEWAL) return true
         val startDate = parseDate(event.startDate) ?: return false
-        return startDate >= today()
+        return today() < startDate.plus(1, DateTimeUnit.MONTH)
     }
 
     private fun today(): LocalDate = Clock.System.todayIn(TimeZone.of(SEOUL_TIME_ZONE))

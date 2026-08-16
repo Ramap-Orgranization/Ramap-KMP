@@ -143,7 +143,7 @@ private fun SubscribedShopListContent(
                     uiState.subscribedEvents.forEach { event ->
                         EventCard(
                             event = event,
-                            dateText = eventDateText(event.startDate, event.endDate),
+                            dateText = eventDateText(event.startDate, event.displayEndDate),
                             onClick = { onEventOpen(event) },
                             actionLabel = stringResource(Res.string.notification_removal_confirm_action),
                             onAction = {
