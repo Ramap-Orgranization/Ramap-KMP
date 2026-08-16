@@ -109,12 +109,12 @@ fun EventDetailRoute(
     onShopClick: (String) -> Unit,
     onEventNavigate: (ShopEvent) -> Unit = {},
     shopDetailContent:
-        @Composable (
-            String,
-            () -> Unit,
-            (String) -> Unit,
-            (ShopEvent) -> Unit,
-        ) -> Unit = { _, _, _, _ -> },
+    @Composable (
+        String,
+        () -> Unit,
+        (String) -> Unit,
+        (ShopEvent) -> Unit,
+    ) -> Unit = { _, _, _, _ -> },
     toastManager: ToastManager = koinInject(),
     appSettingsOpener: AppSettingsOpener = koinInject(),
     requestNotificationPermission: suspend () -> Boolean = NotificationPermissionRequester::request,
@@ -311,15 +311,16 @@ private fun EventDetailContent(
             EventTag(stringResource(ShopEventResourceMapper.typeLabel(event.type)))
         }
         AppText("🍜 ${event.title}", style = AppTextStyle.H1, color = GrayColor.C500)
-        event.cancellationReason
-            ?.takeIf(String::isNotBlank)
-            ?.let { reason ->
-                EventCancellationNotice(
-                    reason = reason,
-                    modifier = Modifier.padding(top = 16.dp),
-                )
-            }
+
+        event.cancellationReason?.let { reason ->
+            EventCancellationNotice(
+                reason = reason,
+                modifier = Modifier.padding(top = 16.dp),
+            )
+        }
+
         EventImages(event.displayImageUrls)
+
         SectionCard {
             Column(
                 modifier = Modifier.padding(bottom = 4.dp),
@@ -382,11 +383,7 @@ private fun EventDetailContent(
                             value =
                                 eventDateText(
                                     event.startDate,
-                                    if (event.type == ShopEventType.STORE_RENEWAL) {
-                                        event.startDate
-                                    } else {
-                                        event.endDate
-                                    },
+                                    event.displayEndDate,
                                 ),
                             modifier =
                                 Modifier
@@ -400,7 +397,11 @@ private fun EventDetailContent(
         }
         if (event.description.isNotBlank()) {
             SectionCard(title = stringResource(Res.string.event_content)) {
-                EventValue(event.description, Modifier.padding(horizontal = 15.dp, vertical = 10.dp))
+                EventValue(
+                    value = event.description,
+                    modifier = Modifier
+                        .padding(horizontal = 15.dp, vertical = 10.dp)
+                )
             }
         }
         event.waitingMethod?.let { waiting ->
