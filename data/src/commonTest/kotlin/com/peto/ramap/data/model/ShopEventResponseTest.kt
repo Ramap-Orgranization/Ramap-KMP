@@ -2,6 +2,7 @@ package com.peto.ramap.data.model
 
 import com.peto.ramap.domain.model.event.ShopEventType
 import com.peto.ramap.fixture.ramenShopResponseFixture
+import kotlinx.datetime.LocalDate
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -65,6 +66,32 @@ class ShopEventResponseTest {
     }
 
     @Test
+    fun `품절 날짜와 오늘 품절 상태를 도메인 이벤트로 변환한다`() {
+        val event =
+            response(eventType = "limited_menu")
+                .copy(
+                    soldOutDates = listOf("2026-07-29"),
+                    isSoldOutToday = true,
+                ).toDomain()
+
+        assertEquals(listOf(LocalDate(2026, 7, 29)), event?.soldOutDates)
+        assertEquals(true, event?.isSoldOutToday)
+    }
+
+    @Test
+    fun `취소 사유와 선택적 출처 URL을 도메인 이벤트로 변환한다`() {
+        val event =
+            response(eventType = "limited_menu")
+                .copy(
+                    cancellationReason = "연휴 기간중 판매가 어렵습니다🙏",
+                    cancellationSourceUrl = "https://www.instagram.com/p/cancellation/",
+                ).toDomain()
+
+        assertEquals("연휴 기간중 판매가 어렵습니다🙏", event?.cancellationReason)
+        assertEquals("https://www.instagram.com/p/cancellation/", event?.cancellationSourceUrl)
+    }
+
+    @Test
     fun `모든 협업 매장과 외부 참여자를 도메인 이벤트로 변환한다`() {
         val event =
             response(eventType = "collab")
@@ -91,6 +118,10 @@ class ShopEventResponseTest {
         eventType: String,
         endDate: String? = "2026-07-29",
         imagePaths: List<String> = emptyList(),
+        soldOutDates: List<String> = emptyList(),
+        isSoldOutToday: Boolean = false,
+        cancellationReason: String? = null,
+        cancellationSourceUrl: String? = null,
     ) = ShopEventResponse(
         id = "event",
         eventType = eventType,
@@ -103,5 +134,9 @@ class ShopEventResponseTest {
         isVenue = true,
         venueShop = ramenShopResponseFixture(id = "shop", name = "566라멘"),
         imagePaths = imagePaths,
+        soldOutDates = soldOutDates,
+        isSoldOutToday = isSoldOutToday,
+        cancellationReason = cancellationReason,
+        cancellationSourceUrl = cancellationSourceUrl,
     )
 }
