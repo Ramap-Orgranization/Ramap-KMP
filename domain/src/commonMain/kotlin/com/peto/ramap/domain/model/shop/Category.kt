@@ -15,7 +15,6 @@ enum class Category(
     ABURASOBA("aburasoba"),
     MISO("miso"),
     CHANKE("chanke"),
-    HIYASHI("hiyashi"),
     TOMATO("tomato"),
     ;
 
