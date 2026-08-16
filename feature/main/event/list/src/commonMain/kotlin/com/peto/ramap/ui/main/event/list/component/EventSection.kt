@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -64,7 +65,7 @@ internal fun eventSection(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .padding(top = 8.dp, start = 15.dp),
+                    .padding(start = 15.dp),
             style = AppTextStyle.H3,
             color = GrayColor.C500,
         )
@@ -73,7 +74,7 @@ internal fun eventSection(
         scope.item(key = "$title-events") {
             LazyRow(
                 contentPadding = PaddingValues(horizontal = horizontalContentPadding),
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
             ) {
                 items(
                     items = events,
@@ -158,7 +159,7 @@ private fun OngoingEventShopItem(
         }
         AppText(
             text = event.venueShopName,
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().height(36.dp),
             style = AppTextStyle.B3,
             color = GrayColor.C500,
             textAlign = TextAlign.Center,
@@ -192,7 +193,7 @@ private fun EventSectionPreview(
         Box {
             LazyColumn(
                 contentPadding = PaddingValues(vertical = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 eventSection(
                     scope = this,

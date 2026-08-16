@@ -238,9 +238,9 @@ class MapViewModel(
     private fun handlePersonalizationIntent(intent: MapIntent): Boolean {
         when (intent) {
             OnBookmarkedShopsToggled -> toggleBookmarkedView()
-            is OnBookmarkToggled -> toggleBookmark(intent.shop)
-            is OnShopNotificationToggled -> toggleShopSubscribed(intent.shop)
-            is OnHiddenToggled -> toggleHidden(intent.shop)
+            is OnBookmarkToggled -> toggleBookmark(intent.shop, intent.source)
+            is OnShopNotificationToggled -> toggleShopSubscribed(intent.shop, intent.source)
+            is OnHiddenToggled -> toggleHidden(intent.shop, intent.source)
             is OnShopReportSubmitted ->
                 submitShopInformationReport(
                     wrongFields = intent.wrongFields,
@@ -558,22 +558,34 @@ class MapViewModel(
         reduce { copy(shops = RamenShops(shops + result)) }
     }
 
-    private fun toggleBookmark(shop: RamenShop) {
-        executeLoginRequiredAction(PendingMapAction.ToggleBookmark(shop))
+    private fun toggleBookmark(
+        shop: RamenShop,
+        source: AnalyticsSource,
+    ) {
+        executeLoginRequiredAction(PendingMapAction.ToggleBookmark(shop, source))
     }
 
-    private fun updateBookmark(shop: RamenShop) {
+    private fun updateBookmark(
+        shop: RamenShop,
+        source: AnalyticsSource,
+    ) {
         val wasBookmarked = shop.id in currentState.bookmarkedShopIds
 
-        mapAnalytics.logBookmarkToggled(shop, !wasBookmarked)
+        mapAnalytics.logBookmarkToggled(shop, !wasBookmarked, source)
         postBookmark(shop.id, wasBookmarked)
     }
 
-    private fun toggleShopSubscribed(shop: RamenShop) {
-        executeLoginRequiredAction(PendingMapAction.ToggleShopNotification(shop))
+    private fun toggleShopSubscribed(
+        shop: RamenShop,
+        source: AnalyticsSource,
+    ) {
+        executeLoginRequiredAction(PendingMapAction.ToggleShopNotification(shop, source))
     }
 
-    private fun updateShopNotification(shop: RamenShop) {
+    private fun updateShopNotification(
+        shop: RamenShop,
+        source: AnalyticsSource,
+    ) {
         val isHiddenShop = shop.id in currentState.hiddenShopIds
 
         if (isHiddenShop) {
@@ -584,7 +596,7 @@ class MapViewModel(
         val wasEnabled = shop.id in currentState.notificationShopIds
         val enabled = !wasEnabled
 
-        mapAnalytics.logShopSubscribed(shop, enabled)
+        mapAnalytics.logShopSubscribed(shop, enabled, source)
 
         postShopNotification(shop.id, wasEnabled)
     }
@@ -623,13 +635,19 @@ class MapViewModel(
         if (!wasBookmarked) loadPersonalizedShops(setOf(shopId))
     }
 
-    private fun toggleHidden(shop: RamenShop) {
-        executeLoginRequiredAction(PendingMapAction.ToggleHidden(shop))
+    private fun toggleHidden(
+        shop: RamenShop,
+        source: AnalyticsSource,
+    ) {
+        executeLoginRequiredAction(PendingMapAction.ToggleHidden(shop, source))
     }
 
-    private fun updateHiddenShop(shop: RamenShop) {
+    private fun updateHiddenShop(
+        shop: RamenShop,
+        source: AnalyticsSource,
+    ) {
         val wasHidden = shop.id in currentState.hiddenShopIds
-        mapAnalytics.logHiddenToggled(shop, !wasHidden)
+        mapAnalytics.logHiddenToggled(shop, !wasHidden, source)
 
         if (wasHidden) {
             unhideShop(shop)
@@ -716,9 +734,9 @@ class MapViewModel(
 
     private fun performPendingAction(action: PendingMapAction) {
         when (action) {
-            is PendingMapAction.ToggleBookmark -> updateBookmark(action.shop)
-            is PendingMapAction.ToggleShopNotification -> updateShopNotification(action.shop)
-            is PendingMapAction.ToggleHidden -> updateHiddenShop(action.shop)
+            is PendingMapAction.ToggleBookmark -> updateBookmark(action.shop, action.source)
+            is PendingMapAction.ToggleShopNotification -> updateShopNotification(action.shop, action.source)
+            is PendingMapAction.ToggleHidden -> updateHiddenShop(action.shop, action.source)
             PendingMapAction.ToggleBookmarkedShops -> updateBookmarkedView()
         }
     }

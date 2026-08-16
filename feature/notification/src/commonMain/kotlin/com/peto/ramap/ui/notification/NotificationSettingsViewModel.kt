@@ -1,5 +1,8 @@
 package com.peto.ramap.ui.notification
 
+import com.peto.ramap.analytics.AnalyticsSource
+import com.peto.ramap.analytics.AnalyticsTracker
+import com.peto.ramap.analytics.common.event.EventNotificationToggled
 import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.repository.NotificationSettingsRepository
@@ -16,6 +19,7 @@ import ramap.shared.generated.resources.personalization_update_failure_message
 
 class NotificationSettingsViewModel(
     private val notificationRepository: NotificationSettingsRepository,
+    private val analyticsTracker: AnalyticsTracker,
 ) : BaseViewModel<NotificationSettingsUiState, NotificationSettingsIntent, NotificationSettingsSideEffect>(
         initialState = NotificationSettingsUiState(),
     ) {
@@ -46,6 +50,13 @@ class NotificationSettingsViewModel(
 
     private fun updateEnabled(enabled: Boolean) {
         val previous = currentState.areEnabled
+        analyticsTracker.logEvent(
+            EventNotificationToggled(
+                eventId = null,
+                enabled = enabled,
+                source = AnalyticsSource.NOTIFICATION_SETTINGS,
+            ),
+        )
         launchResultTask(
             taskKey = UPDATE_SETTINGS_TASK_KEY,
             loadKey = NotificationSettingsLoadKey.UPDATE,

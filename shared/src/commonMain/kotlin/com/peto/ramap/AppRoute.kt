@@ -5,6 +5,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
+import com.peto.ramap.analytics.AnalyticsSource
 import com.peto.ramap.deeplink.DeepLinkEntryPoint
 import com.peto.ramap.deeplink.DeepLinkEvent
 import com.peto.ramap.designsystem.toast.ToastManager
@@ -112,6 +113,15 @@ internal fun AppRoute(
                 },
                 requestedShopId = route.shopId,
                 showShopDetail = route.showShopDetail,
+                originSource =
+                    when (route.source) {
+                        NavigationSource.BOOKMARKED_SHOPS -> AnalyticsSource.BOOKMARKED_SHOPS
+                        NavigationSource.EVENT_DETAIL -> AnalyticsSource.EVENT_DETAIL
+                        NavigationSource.HIDDEN_SHOPS -> AnalyticsSource.HIDDEN_SHOPS
+                        NavigationSource.RANKING -> AnalyticsSource.RANKING
+                        NavigationSource.SUBSCRIBED_SHOPS -> AnalyticsSource.SUBSCRIBED_SHOPS
+                        NavigationSource.SHARED_LINK, null -> AnalyticsSource.MAP
+                    },
                 viewModel = mapViewModel,
             )
         },
@@ -127,6 +137,7 @@ internal fun AppRoute(
                         onDismiss = onDismiss,
                         onShowOnMap = onShowOnMap,
                         onEventNavigate = { event -> onEventNavigate(event) },
+                        originSource = AnalyticsSource.RANKING,
                     )
                 },
             )
@@ -255,6 +266,7 @@ internal fun AppRoute(
                         onDismiss = onDismiss,
                         onShowOnMap = onShowOnMap,
                         onEventNavigate = onEventNavigate,
+                        originSource = AnalyticsSource.EVENT_DETAIL,
                     )
                 },
             )

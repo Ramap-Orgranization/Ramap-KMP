@@ -80,14 +80,17 @@ sealed interface MapIntent : Intent {
 
     data class OnBookmarkToggled(
         val shop: RamenShop,
+        val source: AnalyticsSource = AnalyticsSource.MAP,
     ) : MapIntent
 
     data class OnShopNotificationToggled(
         val shop: RamenShop,
+        val source: AnalyticsSource = AnalyticsSource.MAP,
     ) : MapIntent
 
     data class OnHiddenToggled(
         val shop: RamenShop,
+        val source: AnalyticsSource = AnalyticsSource.MAP,
     ) : MapIntent
 
     data class OnShopReportSubmitted(

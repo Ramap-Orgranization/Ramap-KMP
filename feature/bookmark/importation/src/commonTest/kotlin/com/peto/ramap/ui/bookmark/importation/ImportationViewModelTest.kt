@@ -1,6 +1,8 @@
 package com.peto.ramap.ui.bookmark.importation
 
 import app.cash.turbine.test
+import com.peto.ramap.analytics.AnalyticsSource
+import com.peto.ramap.analytics.common.shop.BookmarkToggled
 import com.peto.ramap.core.result.RamapError
 import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.coroutinesTest
@@ -115,6 +117,7 @@ class ImportationViewModelTest {
             val removedShop = ramenShopFixture(id = "removed-shop")
             val remainingShop = ramenShopFixture(id = "remaining-shop")
             val personalizationRepository = FakePersonalizationRepository()
+            val analyticsTracker = FakeAnalyticsTracker()
             val preview = importationPreview(setOf(removedShop.id, remainingShop.id))
             val viewModel =
                 ImportationViewModel(
@@ -122,7 +125,7 @@ class ImportationViewModelTest {
                     ramenShopRepository =
                         FakeRamenShopRepository(fetchByIdsResult = RamenShops(listOf(removedShop, remainingShop))),
                     importationRepository = importationRepository(RamapResult.Success(preview)),
-                    importationAnalytics = ImportationAnalytics(FakeAnalyticsTracker()),
+                    importationAnalytics = ImportationAnalytics(analyticsTracker),
                 )
 
             viewModel.dispatch(ImportationIntent.UrlChanged("https://naver.me/example"))
@@ -145,6 +148,15 @@ class ImportationViewModelTest {
                 assertEquals(
                     RamapResult.Success(ShopPersonalization(bookmarkedShopIds = setOf(remainingShop.id))),
                     personalizationRepository.fetchPersonalization(),
+                )
+                assertEquals(
+                    BookmarkToggled(
+                        shopId = remainingShop.id,
+                        shopName = remainingShop.name,
+                        enabled = true,
+                        source = AnalyticsSource.IMPORTATION,
+                    ),
+                    analyticsTracker.events.single(),
                 )
             }
         }

@@ -1,5 +1,7 @@
 package com.peto.ramap.ui.hidden
 
+import com.peto.ramap.analytics.AnalyticsSource
+import com.peto.ramap.analytics.common.shop.HiddenShopToggled
 import com.peto.ramap.core.result.RamapError
 import com.peto.ramap.coroutinesTest
 import com.peto.ramap.domain.model.personalization.ShopPersonalization
@@ -94,6 +96,7 @@ class HiddenShopListViewModelTest {
     fun `숨긴 매장 해제 성공시 목록에서 즉시 제거한다`() =
         coroutinesTest {
             val shop = ramenShopFixture(id = "hidden-shop")
+            val analyticsTracker = FakeAnalyticsTracker()
             val viewModel =
                 HiddenShopListViewModel(
                     personalizationStore =
@@ -101,7 +104,7 @@ class HiddenShopListViewModelTest {
                             ShopPersonalization(hiddenShopIds = setOf(shop.id)),
                         ),
                     ramenShopRepository = FakeRamenShopRepository(fetchByIdsResult = RamenShops(listOf(shop))),
-                    analyticsTracker = FakeAnalyticsTracker(),
+                    analyticsTracker = analyticsTracker,
                 )
             runCurrent()
 
@@ -110,5 +113,14 @@ class HiddenShopListViewModelTest {
 
             assertEquals(RamenShops(emptyMap()), viewModel.uiState.value.shops)
             assertTrue(!viewModel.uiState.value.isOverlayLoading)
+            assertEquals(
+                HiddenShopToggled(
+                    shopId = shop.id,
+                    shopName = shop.name,
+                    enabled = false,
+                    source = AnalyticsSource.HIDDEN_SHOPS,
+                ),
+                analyticsTracker.events.single(),
+            )
         }
 }

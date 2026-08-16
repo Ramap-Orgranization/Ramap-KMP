@@ -1,10 +1,13 @@
 package com.peto.ramap.ui.notification
 
 import app.cash.turbine.test
+import com.peto.ramap.analytics.AnalyticsSource
+import com.peto.ramap.analytics.common.event.EventNotificationToggled
 import com.peto.ramap.core.result.RamapError
 import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.coroutinesTest
 import com.peto.ramap.domain.repository.NotificationSettingsRepository
+import com.peto.ramap.fake.FakeAnalyticsTracker
 import com.peto.ramap.fake.FakeNotificationSettingsRepository
 import com.peto.ramap.ui.notification.contract.NotificationSettingsIntent
 import com.peto.ramap.ui.notification.contract.NotificationSettingsLoadKey
@@ -27,6 +30,7 @@ class NotificationSettingsViewModelTest {
             val viewModel =
                 NotificationSettingsViewModel(
                     FakeNotificationSettingsRepository(enabled = true),
+                    FakeAnalyticsTracker(),
                 )
 
             runCurrent()
@@ -45,7 +49,7 @@ class NotificationSettingsViewModelTest {
                 FakeNotificationSettingsRepository().apply {
                     fetchEnabledError = RamapError.Unknown(IllegalStateException("failure"))
                 }
-            val viewModel = NotificationSettingsViewModel(repository)
+            val viewModel = NotificationSettingsViewModel(repository, FakeAnalyticsTracker())
 
             runCurrent()
 
@@ -60,7 +64,8 @@ class NotificationSettingsViewModelTest {
     fun `알림 토글을 끄면 저장소 상태를 갱신한다`() =
         coroutinesTest {
             val repository = FakeNotificationSettingsRepository(enabled = true)
-            val viewModel = NotificationSettingsViewModel(repository)
+            val analyticsTracker = FakeAnalyticsTracker()
+            val viewModel = NotificationSettingsViewModel(repository, analyticsTracker)
             runCurrent()
 
             viewModel.dispatch(NotificationSettingsIntent.OnEventNotificationsEnabledChanged(false))
@@ -68,6 +73,14 @@ class NotificationSettingsViewModelTest {
 
             assertFalse(viewModel.uiState.value.areEnabled)
             assertEquals(listOf(false), repository.enabledUpdates)
+            assertEquals(
+                EventNotificationToggled(
+                    eventId = null,
+                    enabled = false,
+                    source = AnalyticsSource.NOTIFICATION_SETTINGS,
+                ),
+                analyticsTracker.events.single(),
+            )
         }
 
     @Test
@@ -83,7 +96,7 @@ class NotificationSettingsViewModelTest {
                         return if (enabled) firstResult.await() else RamapResult.Success(Unit)
                     }
                 }
-            val viewModel = NotificationSettingsViewModel(repository)
+            val viewModel = NotificationSettingsViewModel(repository, FakeAnalyticsTracker())
             runCurrent()
 
             viewModel.dispatch(NotificationSettingsIntent.OnEventNotificationsEnabledChanged(true))
@@ -110,7 +123,7 @@ class NotificationSettingsViewModelTest {
                     override suspend fun updateEventNotificationsEnabled(enabled: Boolean): RamapResult<Unit> =
                         RamapResult.Error(RamapError.Unknown(IllegalStateException("failure")))
                 }
-            val viewModel = NotificationSettingsViewModel(repository)
+            val viewModel = NotificationSettingsViewModel(repository, FakeAnalyticsTracker())
             runCurrent()
 
             viewModel.sideEffect.test {
