@@ -78,6 +78,20 @@ class ShopEventTest {
     }
 
     @Test
+    fun `품절된 날짜만 품절 상태로 판정한다`() {
+        val event =
+            event(
+                startDate = "2024-02-28",
+                endDate = "2024-03-01",
+                soldOutDates = listOf(LocalDate(2024, 3, 1)),
+            )
+
+        assertFalse(event.isSoldOutOn(LocalDate(2024, 2, 28)))
+        assertTrue(event.isSoldOutOn(LocalDate(2024, 3, 1)))
+        assertFalse(event.isSoldOutOn(LocalDate(2024, 3, 2)))
+    }
+
+    @Test
     fun `다가오는 단일 콜라보의 등록된 상대 매장을 찾는다`() {
         assertEquals(
             "라멘롱시즌",
@@ -130,6 +144,7 @@ class ShopEventTest {
         activeEventCount: Int = 1,
         collaborationPartnerCount: Int? = null,
         cancelledDates: List<LocalDate> = emptyList(),
+        soldOutDates: List<LocalDate> = emptyList(),
         imageUrls: List<String> = emptyList(),
     ) = ShopEvent(
         id = "event",
@@ -157,6 +172,7 @@ class ShopEventTest {
         activeEventCount = activeEventCount,
         collaborationPartnerCount = collaborationPartnerCount,
         cancelledDates = cancelledDates,
+        soldOutDates = soldOutDates,
         imageUrls = imageUrls,
     )
 

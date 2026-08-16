@@ -20,6 +20,7 @@ class MainActivity : ComponentActivity() {
         super.onResume()
         KakaoLoginActivityProvider.attach(this)
         ExternalUriOpener.attach(this)
+        ExternalUriOpener.resumeAppUpdate()
         NotificationPermissionRequester.attach(this)
         ShareLauncher.attach(this)
     }

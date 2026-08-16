@@ -39,6 +39,8 @@ fun CommonDialog(
     modifier: Modifier = Modifier,
     dismissText: String? = null,
     confirmEnabled: Boolean = true,
+    dismissOnBackPress: Boolean = true,
+    dismissOnClickOutside: Boolean = true,
     onDismiss: (() -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
@@ -46,7 +48,12 @@ fun CommonDialog(
 
     Dialog(
         onDismissRequest = onDismissRequest,
-        properties = DialogProperties(usePlatformDefaultWidth = false),
+        properties =
+            DialogProperties(
+                usePlatformDefaultWidth = false,
+                dismissOnBackPress = dismissOnBackPress,
+                dismissOnClickOutside = dismissOnClickOutside,
+            ),
     ) {
         Box(
             modifier =

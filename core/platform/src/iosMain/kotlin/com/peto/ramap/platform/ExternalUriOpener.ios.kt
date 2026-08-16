@@ -18,6 +18,10 @@ actual object ExternalUriOpener {
         )
     }
 
+    actual fun startAppUpdate(uri: String) = open(uri)
+
+    actual fun resumeAppUpdate() = Unit
+
     actual fun isSupportedWebUri(uri: String): Boolean {
         val normalizedUri = uri.trim().lowercase()
         return normalizedUri.startsWith("https://") || normalizedUri.startsWith("http://")

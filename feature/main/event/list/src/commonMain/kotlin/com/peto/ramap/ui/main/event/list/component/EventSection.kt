@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -30,6 +31,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.peto.ramap.designsystem.card.EventShopGroupCard
 import com.peto.ramap.designsystem.image.RemoteShopImage
+import com.peto.ramap.designsystem.resource.event.ShopEventResourceMapper
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.model.event.ShopEvents
@@ -45,7 +47,6 @@ import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.event_list_additional_events
 import ramap.shared.generated.resources.event_list_ongoing_section
-import ramap.shared.generated.resources.event_status_cancelled
 
 internal fun eventSection(
     scope: LazyListScope,
@@ -64,7 +65,7 @@ internal fun eventSection(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .padding(top = 8.dp, start = 15.dp),
+                    .padding(start = 15.dp),
             style = AppTextStyle.H3,
             color = GrayColor.C500,
         )
@@ -73,7 +74,7 @@ internal fun eventSection(
         scope.item(key = "$title-events") {
             LazyRow(
                 contentPadding = PaddingValues(horizontal = horizontalContentPadding),
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
             ) {
                 items(
                     items = events,
@@ -127,18 +128,22 @@ private fun OngoingEventShopItem(
                 url = event.venueProfileImageUrl,
                 modifier = Modifier.size(68.dp),
             )
-            if (eventGroup.any(ShopEvent::isCancelledToday)) {
-                AppText(
-                    text = stringResource(Res.string.event_status_cancelled),
-                    modifier =
-                        Modifier
-                            .align(Alignment.BottomStart)
-                            .background(SystemColor.Warning, RoundedCornerShape(8.dp))
-                            .padding(horizontal = 4.dp, vertical = 2.dp),
-                    style = AppTextStyle.C2,
-                    color = CommonColor.White,
-                )
-            }
+            ShopEventResourceMapper
+                .statusLabel(
+                    isCancelled = eventGroup.any(ShopEvent::isCancelledToday),
+                    isSoldOut = eventGroup.any(ShopEvent::isSoldOutToday),
+                )?.let { statusLabel ->
+                    AppText(
+                        text = stringResource(statusLabel),
+                        modifier =
+                            Modifier
+                                .align(Alignment.BottomStart)
+                                .background(SystemColor.Warning, RoundedCornerShape(8.dp))
+                                .padding(horizontal = 4.dp, vertical = 2.dp),
+                        style = AppTextStyle.C2,
+                        color = CommonColor.White,
+                    )
+                }
             if (eventGroup.hasMultipleEvents) {
                 AppText(
                     text =
@@ -158,7 +163,7 @@ private fun OngoingEventShopItem(
         }
         AppText(
             text = event.venueShopName,
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().height(36.dp),
             style = AppTextStyle.B3,
             color = GrayColor.C500,
             textAlign = TextAlign.Center,
@@ -192,7 +197,7 @@ private fun EventSectionPreview(
         Box {
             LazyColumn(
                 contentPadding = PaddingValues(vertical = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 eventSection(
                     scope = this,

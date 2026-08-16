@@ -25,7 +25,11 @@ internal data class ShopEventResponse(
     @SerialName("waiting_url") val waitingUrl: String? = null,
     @SerialName("cancelled_dates") val cancelledDates: List<String> = emptyList(),
     @SerialName("is_cancelled_today") val isCancelledToday: Boolean = false,
+    @SerialName("cancellation_reason") val cancellationReason: String? = null,
+    @SerialName("cancellation_source_url") val cancellationSourceUrl: String? = null,
     @SerialName("image_paths") val imagePaths: List<String> = emptyList(),
+    @SerialName("sold_out_dates") val soldOutDates: List<String> = emptyList(),
+    @SerialName("is_sold_out_today") val isSoldOutToday: Boolean = false,
 ) {
     fun toDomain(): ShopEvent? {
         val type = runCatching { ShopEventType.valueOf(eventType.uppercase()) }.getOrNull() ?: return null
@@ -46,6 +50,10 @@ internal data class ShopEventResponse(
             waitingUrl = waitingUrl,
             cancelledDates = cancelledDates.mapNotNull { runCatching { LocalDate.parse(it) }.getOrNull() },
             isCancelledToday = isCancelledToday,
+            cancellationReason = cancellationReason,
+            cancellationSourceUrl = cancellationSourceUrl,
+            soldOutDates = soldOutDates.mapNotNull { runCatching { LocalDate.parse(it) }.getOrNull() },
+            isSoldOutToday = isSoldOutToday,
             imageUrls = imagePaths.mapNotNull(::toPublicEventImageUrl).take(ShopEvent.MAX_IMAGE_COUNT),
         )
     }

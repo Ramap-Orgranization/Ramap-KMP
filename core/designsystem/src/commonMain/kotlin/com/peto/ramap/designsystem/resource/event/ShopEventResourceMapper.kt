@@ -8,7 +8,9 @@ import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.event_cancelled_notice
 import ramap.shared.generated.resources.event_collaborator_person
 import ramap.shared.generated.resources.event_collaborator_shop
+import ramap.shared.generated.resources.event_sold_out_notice
 import ramap.shared.generated.resources.event_status_cancelled
+import ramap.shared.generated.resources.event_status_sold_out
 import ramap.shared.generated.resources.event_status_today
 import ramap.shared.generated.resources.event_status_upcoming
 import ramap.shared.generated.resources.event_type_collab
@@ -32,10 +34,22 @@ import ramap.shared.generated.resources.shop_event_notice_store_renewal_upcoming
 
 object ShopEventResourceMapper {
     fun dateLabel(event: ShopEvent): StringResource =
+        statusLabel(event) ?: if (event.isToday) Res.string.event_status_today else Res.string.event_status_upcoming
+
+    fun statusLabel(event: ShopEvent): StringResource? =
+        statusLabel(
+            isCancelled = event.isCancelledToday,
+            isSoldOut = event.isSoldOutToday,
+        )
+
+    fun statusLabel(
+        isCancelled: Boolean,
+        isSoldOut: Boolean,
+    ): StringResource? =
         when {
-            event.isCancelledToday -> Res.string.event_status_cancelled
-            event.isToday -> Res.string.event_status_today
-            else -> Res.string.event_status_upcoming
+            isCancelled -> Res.string.event_status_cancelled
+            isSoldOut -> Res.string.event_status_sold_out
+            else -> null
         }
 
     fun typeLabel(type: ShopEventType): StringResource =
@@ -57,6 +71,9 @@ object ShopEventResourceMapper {
     fun notice(event: ShopEvent): UiText {
         if (event.isCancelledToday) {
             return UiText(Res.string.event_cancelled_notice)
+        }
+        if (event.isSoldOutToday) {
+            return UiText(Res.string.event_sold_out_notice)
         }
         event.upcomingCollaborationPartnerName?.let { partnerName ->
             return UiText(

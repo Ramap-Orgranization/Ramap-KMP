@@ -1,6 +1,8 @@
 package com.peto.ramap.ui.main.event.detail
 
 import app.cash.turbine.test
+import com.peto.ramap.analytics.AnalyticsSource
+import com.peto.ramap.analytics.common.event.EventNotificationToggled
 import com.peto.ramap.core.result.RamapError
 import com.peto.ramap.coroutinesTest
 import com.peto.ramap.domain.model.auth.LoginSessionState
@@ -162,11 +164,12 @@ class EventDetailViewModelTest {
     @Test
     fun `이벤트 알림을 비활성화하면 권한 요청 없이 저장한다`() =
         coroutinesTest {
+            val analyticsTracker = FakeAnalyticsTracker()
             val repository =
                 FakeNotificationSettingsRepository(
                     eventOverrides = mutableListOf(EventNotificationOverride(EVENT.id, true)),
                 )
-            val viewModel = eventDetailViewModel(repository)
+            val viewModel = eventDetailViewModel(repository, analyticsTracker = analyticsTracker)
             viewModel.dispatch(OnEntered(EVENT.id))
             runCurrent()
 
@@ -175,6 +178,14 @@ class EventDetailViewModelTest {
 
             assertFalse(viewModel.uiState.value.isNotificationEnabled)
             assertEquals(listOf(EVENT.id to false), repository.eventNotificationUpdates)
+            assertEquals(
+                EventNotificationToggled(
+                    eventId = EVENT.id,
+                    enabled = false,
+                    source = AnalyticsSource.EVENT_DETAIL,
+                ),
+                analyticsTracker.events.single(),
+            )
         }
 
     @Test
@@ -256,12 +267,13 @@ class EventDetailViewModelTest {
     private fun eventDetailViewModel(
         repository: FakeNotificationSettingsRepository,
         ramenShopRepository: FakeRamenShopRepository = FakeRamenShopRepository(activeEvent = EVENT),
+        analyticsTracker: FakeAnalyticsTracker = FakeAnalyticsTracker(),
     ): EventDetailViewModel =
         EventDetailViewModel(
             ramenShopRepository = ramenShopRepository,
             loginRepository = FakeLoginRepository(LoginSessionState.AUTHENTICATED),
             notificationRepository = repository,
-            eventDetailAnalytics = EventDetailAnalytics(FakeAnalyticsTracker()),
+            eventDetailAnalytics = EventDetailAnalytics(analyticsTracker),
         )
 
     private companion object {

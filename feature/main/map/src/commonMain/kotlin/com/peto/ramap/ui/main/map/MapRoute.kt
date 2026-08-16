@@ -8,6 +8,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.peto.ramap.analytics.AnalyticsSource
 import com.peto.ramap.designsystem.toast.ToastManager
 import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
@@ -56,6 +57,7 @@ fun MapRoute(
     onEventNavigate: (ShopEvent) -> Unit = {},
     requestedShopId: String? = null,
     showShopDetail: Boolean = true,
+    originSource: AnalyticsSource = AnalyticsSource.MAP,
     toastManager: ToastManager = koinInject(),
     appSettingsOpener: AppSettingsOpener = koinInject(),
     shopShareLinkFactory: ShopShareLinkFactory = koinInject(),
@@ -65,6 +67,7 @@ fun MapRoute(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val coroutineScope = rememberCoroutineScope()
     var shouldShowShopDetail by remember(requestedShopId, showShopDetail) { mutableStateOf(showShopDetail) }
+    var detailSource by remember(requestedShopId, originSource) { mutableStateOf(originSource) }
 
     LaunchedEffect(requestedShopId) {
         if (requestedShopId == null) {
@@ -83,7 +86,7 @@ fun MapRoute(
         appSettingsOpener = appSettingsOpener,
         shopShareLinkFactory = shopShareLinkFactory,
         requestNotificationPermission = requestNotificationPermission,
-        onNotificationToggled = { viewModel.dispatch(OnShopNotificationToggled(it)) },
+        onNotificationToggled = { viewModel.dispatch(OnShopNotificationToggled(it, detailSource)) },
         onLoginTypeSelected = { viewModel.dispatch(OnLoginTypeSelected(it)) },
         onLoginDismissed = { viewModel.dispatch(OnLoginSelectionDismissed) },
     ) { onShopNotificationToggled ->
@@ -107,9 +110,11 @@ fun MapRoute(
             },
             onShopSelected = { shop, shouldFocus, source ->
                 shouldShowShopDetail = true
+                detailSource = AnalyticsSource.MAP
                 viewModel.dispatch(OnShopSelected(shop, shouldFocus, source))
             },
             onShopDetailDismissed = {
+                detailSource = AnalyticsSource.MAP
                 viewModel.dispatch(OnShopDetailDismissed)
                 onDetailDismissed()
             },
@@ -134,9 +139,9 @@ fun MapRoute(
             onCategoryFilterToggled = { viewModel.dispatch(OnCategoryFilterToggled(it)) },
             onOpenFilterToggled = { viewModel.dispatch(OnOpenFilterToggled) },
             onViewportLoadRetry = { viewModel.dispatch(OnViewportLoadRetry) },
-            onBookmarkToggled = { viewModel.dispatch(OnBookmarkToggled(it)) },
+            onBookmarkToggled = { viewModel.dispatch(OnBookmarkToggled(it, detailSource)) },
             onShopNotificationToggled = onShopNotificationToggled,
-            onHiddenToggled = { viewModel.dispatch(OnHiddenToggled(it)) },
+            onHiddenToggled = { viewModel.dispatch(OnHiddenToggled(it, detailSource)) },
             onShopShareClick = { viewModel.dispatch(OnShopShareClicked(it)) },
             onShopMapLinkClick = { shop, provider -> viewModel.dispatch(OnShopMapLinkClicked(shop, provider)) },
             onReportSubmit = { wrongFields, description ->

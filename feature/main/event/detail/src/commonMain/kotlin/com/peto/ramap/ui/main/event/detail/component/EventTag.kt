@@ -20,18 +20,18 @@ import com.peto.ramap.theme.SystemColor
 @Composable
 internal fun EventTag(
     text: String,
-    isCancelledToday: Boolean = false,
+    isStatus: Boolean = false,
 ) {
     AppText(
         text,
         modifier =
             Modifier
                 .background(
-                    if (isCancelledToday) SystemColor.Warning else ChromaticColor.Yellow400,
+                    if (isStatus) SystemColor.Warning else ChromaticColor.Yellow400,
                     RoundedCornerShape(999.dp),
                 ).padding(horizontal = 10.dp, vertical = 4.dp),
         style = AppTextStyle.T3,
-        color = if (isCancelledToday) CommonColor.White else GrayColor.C500,
+        color = if (isStatus) CommonColor.White else GrayColor.C500,
     )
 }
 
@@ -42,7 +42,7 @@ private fun EventTagPreview() {
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             EventTag(text = "팝업스토어")
 
-            EventTag(text = "콜라보", isCancelledToday = true)
+            EventTag(text = "콜라보", isStatus = true)
         }
     }
 }

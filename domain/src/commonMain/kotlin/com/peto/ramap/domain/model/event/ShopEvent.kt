@@ -22,6 +22,10 @@ data class ShopEvent(
     val collaborationPartnerCount: Int? = null,
     val cancelledDates: List<LocalDate> = emptyList(),
     val isCancelledToday: Boolean = false,
+    val cancellationReason: String? = null,
+    val cancellationSourceUrl: String? = null,
+    val soldOutDates: List<LocalDate> = emptyList(),
+    val isSoldOutToday: Boolean = false,
     val imageUrls: List<String> = emptyList(),
 ) {
     val venueShopId: String
@@ -44,6 +48,8 @@ data class ShopEvent(
         get() = imageUrls.take(MAX_IMAGE_COUNT)
 
     fun isCancelledOn(date: LocalDate): Boolean = occursOn(date) && date in cancelledDates
+
+    fun isSoldOutOn(date: LocalDate): Boolean = occursOn(date) && date in soldOutDates
 
     val upcomingCollaborationPartnerName: String?
         get() {

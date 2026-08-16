@@ -1,6 +1,9 @@
 package com.peto.ramap.ui.subscribed
 
 import app.cash.turbine.test
+import com.peto.ramap.analytics.AnalyticsSource
+import com.peto.ramap.analytics.common.event.EventNotificationToggled
+import com.peto.ramap.analytics.common.shop.SubscribedToggled
 import com.peto.ramap.core.result.RamapError
 import com.peto.ramap.coroutinesTest
 import com.peto.ramap.designsystem.toast.model.ToastData
@@ -11,6 +14,7 @@ import com.peto.ramap.domain.model.notification.EventNotificationOverride
 import com.peto.ramap.domain.model.personalization.ShopPersonalization
 import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.domain.store.PersonalizationBootstrapState
+import com.peto.ramap.fake.FakeAnalyticsTracker
 import com.peto.ramap.fake.FakeNotificationSettingsRepository
 import com.peto.ramap.fake.FakePersonalizationRepository
 import com.peto.ramap.fake.FakeRamenShopRepository
@@ -42,6 +46,7 @@ class SubscribedShopListViewModelTest {
                         FakeNotificationSettingsRepository(shopIds = mutableSetOf(shop.id)),
                     ramenShopRepository =
                         FakeRamenShopRepository(fetchByIdsResult = RamenShops(listOf(shop))),
+                    analyticsTracker = FakeAnalyticsTracker(),
                 )
 
             runCurrent()
@@ -66,6 +71,7 @@ class SubscribedShopListViewModelTest {
                     personalizationStore = personalizationRepository,
                     notificationRepository = FakeNotificationSettingsRepository(),
                     ramenShopRepository = ramenShopRepository,
+                    analyticsTracker = FakeAnalyticsTracker(),
                 )
             runCurrent()
 
@@ -95,6 +101,7 @@ class SubscribedShopListViewModelTest {
                                 mutableListOf(EventNotificationOverride(event.id, true)),
                         ),
                     ramenShopRepository = FakeRamenShopRepository(activeEvents = listOf(event)),
+                    analyticsTracker = FakeAnalyticsTracker(),
                 )
 
             runCurrent()
@@ -120,6 +127,7 @@ class SubscribedShopListViewModelTest {
                         ),
                     ramenShopRepository =
                         FakeRamenShopRepository(activeEvents = listOf(disabledEvent)),
+                    analyticsTracker = FakeAnalyticsTracker(),
                 )
 
             runCurrent()
@@ -136,6 +144,7 @@ class SubscribedShopListViewModelTest {
         coroutinesTest {
             val shop = ramenShopFixture(id = "subscribed-shop")
             val repository = FakeNotificationSettingsRepository(shopIds = mutableSetOf(shop.id))
+            val analyticsTracker = FakeAnalyticsTracker()
             val personalizationStore =
                 FakePersonalizationRepository(
                     ShopPersonalization(notificationShopIds = setOf(shop.id)),
@@ -146,6 +155,7 @@ class SubscribedShopListViewModelTest {
                     notificationRepository = repository,
                     ramenShopRepository =
                         FakeRamenShopRepository(fetchByIdsResult = RamenShops(listOf(shop))),
+                    analyticsTracker = analyticsTracker,
                 )
             runCurrent()
 
@@ -163,6 +173,15 @@ class SubscribedShopListViewModelTest {
                     .value
                     .notificationShopIds
                     .isEmpty(),
+            )
+            assertEquals(
+                SubscribedToggled(
+                    shopId = shop.id,
+                    shopName = shop.name,
+                    enabled = false,
+                    source = AnalyticsSource.SUBSCRIBED_SHOPS,
+                ),
+                analyticsTracker.events.single(),
             )
         }
 
@@ -188,6 +207,7 @@ class SubscribedShopListViewModelTest {
                     notificationRepository = repository,
                     ramenShopRepository =
                         FakeRamenShopRepository(fetchByIdsResult = RamenShops(listOf(shop))),
+                    analyticsTracker = FakeAnalyticsTracker(),
                 )
             runCurrent()
 
@@ -220,11 +240,13 @@ class SubscribedShopListViewModelTest {
                 FakeNotificationSettingsRepository(
                     eventOverrides = mutableListOf(EventNotificationOverride(event.id, true)),
                 )
+            val analyticsTracker = FakeAnalyticsTracker()
             val viewModel =
                 SubscribedShopListViewModel(
                     personalizationStore = FakePersonalizationRepository(),
                     notificationRepository = repository,
                     ramenShopRepository = FakeRamenShopRepository(activeEvents = listOf(event)),
+                    analyticsTracker = analyticsTracker,
                 )
             runCurrent()
 
@@ -241,6 +263,14 @@ class SubscribedShopListViewModelTest {
             )
             assertTrue(repository.eventOverrides.isEmpty())
             assertEquals(listOf(event.id), repository.clearedEventNotificationIds)
+            assertEquals(
+                EventNotificationToggled(
+                    eventId = event.id,
+                    enabled = false,
+                    source = AnalyticsSource.SUBSCRIBED_SHOPS,
+                ),
+                analyticsTracker.events.single(),
+            )
         }
 
     @Test
@@ -258,6 +288,7 @@ class SubscribedShopListViewModelTest {
                     personalizationStore = FakePersonalizationRepository(),
                     notificationRepository = repository,
                     ramenShopRepository = FakeRamenShopRepository(activeEvents = listOf(event)),
+                    analyticsTracker = FakeAnalyticsTracker(),
                 )
             runCurrent()
 
@@ -294,6 +325,7 @@ class SubscribedShopListViewModelTest {
                     personalizationStore = FakePersonalizationRepository(),
                     notificationRepository = repository,
                     ramenShopRepository = FakeRamenShopRepository(),
+                    analyticsTracker = FakeAnalyticsTracker(),
                 )
 
             runCurrent()
@@ -327,6 +359,7 @@ class SubscribedShopListViewModelTest {
                         ),
                     ramenShopRepository =
                         FakeRamenShopRepository(activeEventError = failure()),
+                    analyticsTracker = FakeAnalyticsTracker(),
                 )
 
             runCurrent()

@@ -1,6 +1,10 @@
 package com.peto.ramap.ui.subscribed
 
 import androidx.lifecycle.viewModelScope
+import com.peto.ramap.analytics.AnalyticsSource
+import com.peto.ramap.analytics.AnalyticsTracker
+import com.peto.ramap.analytics.common.event.EventNotificationToggled
+import com.peto.ramap.analytics.common.shop.SubscribedToggled
 import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
@@ -32,6 +36,7 @@ class SubscribedShopListViewModel(
     private val notificationRepository: NotificationSettingsRepository,
     private val ramenShopRepository: RamenShopRepository,
     private val personalizationStore: ShopPersonalizationStore,
+    private val analyticsTracker: AnalyticsTracker,
 ) : BaseViewModel<SubscribedShopListUiState, SubscribedShopListIntent, SubscribedShopListSideEffect>(
         initialState = SubscribedShopListUiState(),
     ) {
@@ -187,6 +192,7 @@ class SubscribedShopListViewModel(
     }
 
     private fun confirmRemoval(target: SubscribedRemovalTarget) {
+        logRemoval(target)
         launchResultTask(
             taskKey = REMOVE_SUBSCRIPTION_TASK_KEY,
             loadKey = SubscribedShopLoadKey.REMOVE,
@@ -203,6 +209,32 @@ class SubscribedShopListViewModel(
             onSuccess = { removeTargetFromState(target) },
             onError = { handleRemovalFailure() },
         )
+    }
+
+    private fun logRemoval(target: SubscribedRemovalTarget) {
+        when (target) {
+            is SubscribedRemovalTarget.Shop -> {
+                currentState.shops[target.shopId]?.let { shop ->
+                    analyticsTracker.logEvent(
+                        SubscribedToggled(
+                            shopId = shop.id,
+                            shopName = shop.name,
+                            enabled = false,
+                            source = AnalyticsSource.SUBSCRIBED_SHOPS,
+                        ),
+                    )
+                }
+            }
+
+            is SubscribedRemovalTarget.EventOverride ->
+                analyticsTracker.logEvent(
+                    EventNotificationToggled(
+                        eventId = target.eventId,
+                        enabled = false,
+                        source = AnalyticsSource.SUBSCRIBED_SHOPS,
+                    ),
+                )
+        }
     }
 
     private fun removeTargetFromState(target: SubscribedRemovalTarget) {

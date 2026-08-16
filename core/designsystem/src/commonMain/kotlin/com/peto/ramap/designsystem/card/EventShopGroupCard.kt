@@ -29,8 +29,6 @@ import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.SystemColor
 import org.jetbrains.compose.resources.stringResource
-import ramap.shared.generated.resources.Res
-import ramap.shared.generated.resources.event_status_cancelled
 
 @Composable
 fun EventShopGroupCard(
@@ -38,6 +36,7 @@ fun EventShopGroupCard(
     onEventClick: (ShopEvent) -> Unit,
     modifier: Modifier = Modifier,
     isCancelled: (ShopEvent) -> Boolean = ShopEvent::isCancelledToday,
+    isSoldOut: (ShopEvent) -> Boolean = ShopEvent::isSoldOutToday,
     showHeaderCancelledBadge: Boolean = true,
 ) {
     val shop = eventGroup.representativeEvent
@@ -65,8 +64,14 @@ fun EventShopGroupCard(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
-            if (showHeaderCancelledBadge && eventGroup.any(isCancelled)) {
-                CancelledEventTag()
+            if (showHeaderCancelledBadge) {
+                ShopEventResourceMapper
+                    .statusLabel(
+                        isCancelled = eventGroup.any(isCancelled),
+                        isSoldOut = eventGroup.any(isSoldOut),
+                    )?.let { statusLabel ->
+                        EventStatusTag(stringResource(statusLabel))
+                    }
             }
         }
         eventGroup.forEachIndexed { index, event ->
@@ -89,9 +94,9 @@ fun EventShopGroupCard(
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
                     )
-                    if (isCancelled(event)) {
-                        CancelledEventTag()
-                    }
+                    ShopEventResourceMapper
+                        .statusLabel(isCancelled(event), isSoldOut(event))
+                        ?.let { statusLabel -> EventStatusTag(stringResource(statusLabel)) }
                     AppText(
                         text = stringResource(ShopEventResourceMapper.typeLabel(event.type)),
                         modifier =
@@ -115,9 +120,9 @@ fun EventShopGroupCard(
 }
 
 @Composable
-private fun CancelledEventTag() {
+private fun EventStatusTag(text: String) {
     AppText(
-        text = stringResource(Res.string.event_status_cancelled),
+        text = text,
         modifier =
             Modifier
                 .background(SystemColor.Warning, RoundedCornerShape(10.dp))

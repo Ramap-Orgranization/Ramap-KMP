@@ -15,6 +15,7 @@ kotlin {
         implementation(libs.androidx.activity)
         implementation(libs.androidx.activity.compose)
         implementation(libs.androidx.core)
+        implementation(libs.play.app.update)
         implementation(libs.play.services.location)
     }
 }

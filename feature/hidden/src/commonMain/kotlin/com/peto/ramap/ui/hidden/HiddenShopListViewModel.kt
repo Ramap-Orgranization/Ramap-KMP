@@ -1,7 +1,9 @@
 package com.peto.ramap.ui.hidden
 
 import androidx.lifecycle.viewModelScope
+import com.peto.ramap.analytics.AnalyticsSource
 import com.peto.ramap.analytics.AnalyticsTracker
+import com.peto.ramap.analytics.common.shop.HiddenShopToggled
 import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.shop.RamenShops
@@ -140,6 +142,16 @@ class HiddenShopListViewModel(
     }
 
     private fun unhideShop(shopId: String) {
+        currentState.shops[shopId]?.let { shop ->
+            analyticsTracker.logEvent(
+                HiddenShopToggled(
+                    shopId = shop.id,
+                    shopName = shop.name,
+                    enabled = false,
+                    source = AnalyticsSource.HIDDEN_SHOPS,
+                ),
+            )
+        }
         launchResultTask(
             taskKey = UNHIDE_SHOP_TASK_KEY,
             loadKey = HiddenShopLoadKey.UNHIDE,

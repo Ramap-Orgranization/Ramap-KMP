@@ -86,7 +86,10 @@
     <string name="event_status_today">오늘 진행</string>
     <string name="event_status_upcoming">진행 예정</string>
     <string name="event_status_cancelled">취소</string>
+    <string name="event_status_sold_out">품절</string>
+    <string name="event_cancellation_notice_title">취소 공지</string>
     <string name="event_cancelled_notice">오늘은 이벤트가 취소됐어요</string>
+    <string name="event_sold_out_notice">오늘은 이벤트 메뉴가 품절됐어요</string>
     <string name="event_type_collab">🤝 콜라보</string>
     <string name="event_type_popup">🎪 팝업</string>
     <string name="event_type_limited_menu">🛎️ 한정 메뉴</string>
@@ -137,7 +140,6 @@
     <string name="menu_category_jiro">지로계</string>
     <string name="menu_category_niboshi_gyokai">교카이</string>
     <string name="menu_category_iekei">이에케</string>
-    <string name="menu_category_hiyashi">히야시</string>
     <string name="menu_category_tomato">토마토라멘</string>
     <string name="menu_category_separator">·</string>
     <string name="map_filter_open">영업중</string>
@@ -224,6 +226,11 @@
     <string name="importation_error_personalization">저장 정보를 불러온 뒤 다시 시도해주세요</string>
     <string name="importation_error_analyze">목록을 불러오지 못했어요. 링크를 확인해주세요</string>
     <string name="importation_error_confirm">저장 추가에 실패했어요</string>
+
+    <!-- 앱 업데이트 -->
+    <string name="app_update_title">업데이트가 필요해요</string>
+    <string name="app_update_description">최신 버전으로 업데이트한 후 이용해주세요.</string>
+    <string name="app_update_action">업데이트하기</string>
 
     <!-- 알림 설정한 매장 화면 -->
     <string name="subscribed_shops_empty_title">알림을 설정한 매장이 없어요</string>

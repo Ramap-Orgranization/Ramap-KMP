@@ -5,12 +5,12 @@ import com.peto.ramap.analytics.AnalyticsTracker
 import com.peto.ramap.analytics.common.CategoryFilterToggled
 import com.peto.ramap.analytics.common.deeplink.ShareLinkClicked
 import com.peto.ramap.analytics.common.shop.BookmarkToggled
+import com.peto.ramap.analytics.common.shop.HiddenShopToggled
 import com.peto.ramap.analytics.common.shop.ShopSelected
+import com.peto.ramap.analytics.common.shop.SubscribedToggled
 import com.peto.ramap.domain.model.shop.Category
 import com.peto.ramap.domain.model.shop.RamenShop
-import com.peto.ramap.ui.main.map.log.event.HiddenShopToggled
 import com.peto.ramap.ui.main.map.log.event.ShopMapLinkOpened
-import com.peto.ramap.ui.main.map.log.event.SubscribedToggled
 import com.peto.ramap.ui.main.map.log.event.ViewportLoadFailed
 
 class MapAnalytics(
@@ -68,13 +68,14 @@ class MapAnalytics(
     fun logShopSubscribed(
         shop: RamenShop,
         enabled: Boolean,
+        source: AnalyticsSource = AnalyticsSource.MAP,
     ) {
         analyticsTracker.logEvent(
             SubscribedToggled(
                 shopId = shop.id,
                 shopName = shop.name,
                 enabled = enabled,
-                source = AnalyticsSource.MAP,
+                source = source,
             ),
         )
     }
@@ -82,13 +83,14 @@ class MapAnalytics(
     fun logHiddenToggled(
         shop: RamenShop,
         enabled: Boolean,
+        source: AnalyticsSource = AnalyticsSource.MAP,
     ) {
         analyticsTracker.logEvent(
             HiddenShopToggled(
                 shopId = shop.id,
                 shopName = shop.name,
                 enabled = enabled,
-                source = AnalyticsSource.MAP,
+                source = source,
             ),
         )
     }
@@ -96,13 +98,14 @@ class MapAnalytics(
     fun logBookmarkToggled(
         shop: RamenShop,
         enabled: Boolean,
+        source: AnalyticsSource = AnalyticsSource.MAP,
     ) {
         analyticsTracker.logEvent(
             BookmarkToggled(
                 shopId = shop.id,
                 shopName = shop.name,
                 enabled = enabled,
-                source = AnalyticsSource.MAP,
+                source = source,
             ),
         )
     }
