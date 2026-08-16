@@ -110,7 +110,7 @@ fun EventShopGroupCard(
                     )
                 }
                 AppText(
-                    text = eventDateText(event.startDate, event.endDate),
+                    text = eventDateText(event.startDate, event.displayEndDate),
                     style = AppTextStyle.B4,
                     color = GrayColor.C400,
                 )

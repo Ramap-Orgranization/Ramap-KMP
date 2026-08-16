@@ -89,7 +89,7 @@ internal fun CalendarEventsBottomSheet(
                         val event = eventGroup.representativeEvent
                         EventCard(
                             event = event,
-                            dateText = eventDateText(event.startDate, event.endDate),
+                            dateText = eventDateText(event.startDate, event.displayEndDate),
                             isCancelled = event.isCancelledOn(day.date),
                             isSoldOut = event.isSoldOutOn(day.date),
                             onClick = { onEventClick(event) },
