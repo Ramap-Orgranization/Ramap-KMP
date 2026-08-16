@@ -17,6 +17,8 @@ import com.peto.ramap.data.datasource.report.RemoteShopReportDataSource
 import com.peto.ramap.data.datasource.report.ShopReportDataSource
 import com.peto.ramap.data.datasource.shop.RamenShopDataSource
 import com.peto.ramap.data.datasource.shop.RemoteRamenShopDataSource
+import com.peto.ramap.data.datasource.update.AppUpdatePolicyDataSource
+import com.peto.ramap.data.datasource.update.RemoteAppUpdatePolicyDataSource
 import com.peto.ramap.data.datasource.waiting.RemoteShopWaitingSystemDataSource
 import com.peto.ramap.data.datasource.waiting.ShopWaitingSystemDataSource
 import com.peto.ramap.domain.repository.ReverseGeocoder
@@ -51,4 +53,7 @@ val dataSourceModule =
             RemoteShopReportDataSource(get<SupabaseClient>())
         }
         single<ReverseGeocoder> { SupabaseReverseGeocoder(get()) }
+        single<AppUpdatePolicyDataSource> {
+            RemoteAppUpdatePolicyDataSource(get<SupabaseClient>())
+        }
     }
