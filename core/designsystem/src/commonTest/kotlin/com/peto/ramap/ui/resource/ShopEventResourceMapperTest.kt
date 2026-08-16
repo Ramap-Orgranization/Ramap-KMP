@@ -9,6 +9,7 @@ import com.peto.ramap.domain.model.shop.MenuCategories
 import com.peto.ramap.domain.model.shop.RamenShop
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.event_status_cancelled
+import ramap.shared.generated.resources.event_status_sold_out
 import ramap.shared.generated.resources.event_status_today
 import ramap.shared.generated.resources.event_status_upcoming
 import ramap.shared.generated.resources.event_type_collab
@@ -32,6 +33,10 @@ class ShopEventResourceMapperTest {
         assertEquals(
             Res.string.event_status_cancelled,
             ShopEventResourceMapper.dateLabel(event(isToday = true, isCancelledToday = true)),
+        )
+        assertEquals(
+            Res.string.event_status_sold_out,
+            ShopEventResourceMapper.dateLabel(event(isToday = true, isSoldOutToday = true)),
         )
         assertEquals(Res.string.event_type_collab, ShopEventResourceMapper.typeLabel(ShopEventType.COLLAB))
         assertEquals(Res.string.event_type_popup, ShopEventResourceMapper.typeLabel(ShopEventType.POPUP))
@@ -111,6 +116,7 @@ class ShopEventResourceMapperTest {
         activeEventCount: Int = 1,
         collaborationPartnerCount: Int? = null,
         isCancelledToday: Boolean = false,
+        isSoldOutToday: Boolean = false,
     ) = ShopEvent(
         id = "event-id",
         type = type,
@@ -142,6 +148,7 @@ class ShopEventResourceMapperTest {
         activeEventCount = activeEventCount,
         collaborationPartnerCount = collaborationPartnerCount,
         isCancelledToday = isCancelledToday,
+        isSoldOutToday = isSoldOutToday,
     )
 
     private companion object {

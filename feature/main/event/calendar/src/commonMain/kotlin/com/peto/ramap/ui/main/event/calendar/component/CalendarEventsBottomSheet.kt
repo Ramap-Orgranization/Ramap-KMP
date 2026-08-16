@@ -82,6 +82,7 @@ internal fun CalendarEventsBottomSheet(
                             eventGroup = eventGroup,
                             onEventClick = onEventClick,
                             isCancelled = { event -> event.isCancelledOn(day.date) },
+                            isSoldOut = { event -> event.isSoldOutOn(day.date) },
                             showHeaderCancelledBadge = false,
                         )
                     } else {
@@ -90,6 +91,7 @@ internal fun CalendarEventsBottomSheet(
                             event = event,
                             dateText = eventDateText(event.startDate, event.endDate),
                             isCancelled = event.isCancelledOn(day.date),
+                            isSoldOut = event.isSoldOutOn(day.date),
                             onClick = { onEventClick(event) },
                         )
                     }
