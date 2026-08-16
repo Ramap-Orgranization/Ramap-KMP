@@ -85,6 +85,7 @@ class EventDetailPreviewParameterProvider : PreviewParameterProvider<EventDetail
                         type = ShopEventType.SUMMER_LIMITED,
                         title = "냉유자 츠케멘",
                         isCancelledToday = true,
+                        cancellationReason = "이용 확인 부탁드립니다. 연휴 기간중 냉유자츠케멘의 판매가 어렵습니다🙏",
                     ),
                 isNotificationVisible = true,
                 canChangeNotification = true,
@@ -107,6 +108,7 @@ class EventDetailPreviewParameterProvider : PreviewParameterProvider<EventDetail
         waitingMethod: String? = "현장 대기",
         waitingUrl: String? = "https://catchtable.co.kr/",
         isCancelledToday: Boolean = false,
+        cancellationReason: String? = null,
         imageUrls: List<String> = emptyList(),
     ) = ShopEvent(
         id = type.name,
@@ -124,6 +126,7 @@ class EventDetailPreviewParameterProvider : PreviewParameterProvider<EventDetail
         waitingMethod = waitingMethod,
         waitingUrl = waitingUrl,
         isCancelledToday = isCancelledToday,
+        cancellationReason = cancellationReason,
         imageUrls = imageUrls,
     )
 

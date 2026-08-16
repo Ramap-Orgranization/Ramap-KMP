@@ -33,7 +33,6 @@ import com.peto.ramap.theme.SystemColor
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
-import ramap.shared.generated.resources.event_status_cancelled
 import ramap.shared.generated.resources.ic_close
 
 @Composable
@@ -45,6 +44,7 @@ fun EventCard(
     actionLabel: String? = null,
     onAction: (() -> Unit)? = null,
     isCancelled: Boolean = event.isCancelledToday,
+    isSoldOut: Boolean = event.isSoldOutToday,
 ) {
     val cardShape = RoundedCornerShape(16.dp)
 
@@ -81,10 +81,10 @@ fun EventCard(
                     overflow = TextOverflow.Ellipsis,
                 )
             }
-            if (isCancelled) {
+            ShopEventResourceMapper.statusLabel(isCancelled, isSoldOut)?.let { statusLabel ->
                 EventTag(
-                    text = stringResource(Res.string.event_status_cancelled),
-                    isCancelled = true,
+                    text = stringResource(statusLabel),
+                    isStatus = true,
                 )
             }
             EventTag(stringResource(ShopEventResourceMapper.typeLabel(event.type)))
@@ -113,17 +113,17 @@ fun EventCard(
 @Composable
 private fun EventTag(
     text: String,
-    isCancelled: Boolean = false,
+    isStatus: Boolean = false,
 ) {
     AppText(
         text = text,
         modifier =
             Modifier
                 .background(
-                    if (isCancelled) SystemColor.Warning else ChromaticColor.Yellow400,
+                    if (isStatus) SystemColor.Warning else ChromaticColor.Yellow400,
                     RoundedCornerShape(10.dp),
                 ).padding(horizontal = 8.dp, vertical = 3.dp),
         style = AppTextStyle.C2,
-        color = if (isCancelled) CommonColor.White else GrayColor.C500,
+        color = if (isStatus) CommonColor.White else GrayColor.C500,
     )
 }

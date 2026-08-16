@@ -86,7 +86,10 @@
     <string name="event_status_today">오늘 진행</string>
     <string name="event_status_upcoming">진행 예정</string>
     <string name="event_status_cancelled">취소</string>
+    <string name="event_status_sold_out">품절</string>
+    <string name="event_cancellation_notice_title">취소 공지</string>
     <string name="event_cancelled_notice">오늘은 이벤트가 취소됐어요</string>
+    <string name="event_sold_out_notice">오늘은 이벤트 메뉴가 품절됐어요</string>
     <string name="event_type_collab">🤝 콜라보</string>
     <string name="event_type_popup">🎪 팝업</string>
     <string name="event_type_limited_menu">🛎️ 한정 메뉴</string>

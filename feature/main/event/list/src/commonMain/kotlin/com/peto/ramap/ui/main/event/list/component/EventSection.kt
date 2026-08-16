@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.peto.ramap.designsystem.card.EventShopGroupCard
 import com.peto.ramap.designsystem.image.RemoteShopImage
+import com.peto.ramap.designsystem.resource.event.ShopEventResourceMapper
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.model.event.ShopEvents
@@ -46,7 +47,6 @@ import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.event_list_additional_events
 import ramap.shared.generated.resources.event_list_ongoing_section
-import ramap.shared.generated.resources.event_status_cancelled
 
 internal fun eventSection(
     scope: LazyListScope,
@@ -128,18 +128,22 @@ private fun OngoingEventShopItem(
                 url = event.venueProfileImageUrl,
                 modifier = Modifier.size(68.dp),
             )
-            if (eventGroup.any(ShopEvent::isCancelledToday)) {
-                AppText(
-                    text = stringResource(Res.string.event_status_cancelled),
-                    modifier =
-                        Modifier
-                            .align(Alignment.BottomStart)
-                            .background(SystemColor.Warning, RoundedCornerShape(8.dp))
-                            .padding(horizontal = 4.dp, vertical = 2.dp),
-                    style = AppTextStyle.C2,
-                    color = CommonColor.White,
-                )
-            }
+            ShopEventResourceMapper
+                .statusLabel(
+                    isCancelled = eventGroup.any(ShopEvent::isCancelledToday),
+                    isSoldOut = eventGroup.any(ShopEvent::isSoldOutToday),
+                )?.let { statusLabel ->
+                    AppText(
+                        text = stringResource(statusLabel),
+                        modifier =
+                            Modifier
+                                .align(Alignment.BottomStart)
+                                .background(SystemColor.Warning, RoundedCornerShape(8.dp))
+                                .padding(horizontal = 4.dp, vertical = 2.dp),
+                        style = AppTextStyle.C2,
+                        color = CommonColor.White,
+                    )
+                }
             if (eventGroup.hasMultipleEvents) {
                 AppText(
                     text =

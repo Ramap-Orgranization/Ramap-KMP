@@ -59,6 +59,7 @@ import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.InstagramColor
 import com.peto.ramap.theme.RamapTheme
 import com.peto.ramap.ui.base.ObserveAsEvents
+import com.peto.ramap.ui.main.event.detail.component.EventCancellationNotice
 import com.peto.ramap.ui.main.event.detail.component.EventImages
 import com.peto.ramap.ui.main.event.detail.component.EventNotificationButton
 import com.peto.ramap.ui.main.event.detail.component.EventTag
@@ -305,11 +306,19 @@ private fun EventDetailContent(
         ) {
             EventTag(
                 text = stringResource(ShopEventResourceMapper.dateLabel(event)),
-                isCancelledToday = event.isCancelledToday,
+                isStatus = ShopEventResourceMapper.statusLabel(event) != null,
             )
             EventTag(stringResource(ShopEventResourceMapper.typeLabel(event.type)))
         }
         AppText("🍜 ${event.title}", style = AppTextStyle.H1, color = GrayColor.C500)
+        event.cancellationReason
+            ?.takeIf(String::isNotBlank)
+            ?.let { reason ->
+                EventCancellationNotice(
+                    reason = reason,
+                    modifier = Modifier.padding(top = 16.dp),
+                )
+            }
         EventImages(event.displayImageUrls)
         SectionCard {
             Column(
