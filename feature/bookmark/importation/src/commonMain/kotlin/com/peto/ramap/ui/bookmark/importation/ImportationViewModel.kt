@@ -113,6 +113,7 @@ class ImportationViewModel(
         val shopIds = currentState.candidates.keys
         if (shopIds.isEmpty()) return
 
+        importationAnalytics.logBookmarksAdded(currentState.candidates)
         launchResultTask(
             taskKey = CONFIRM_TASK_KEY,
             loadKey = ImportationLoadKey.CONFIRM,

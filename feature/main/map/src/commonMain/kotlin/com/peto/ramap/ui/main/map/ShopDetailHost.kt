@@ -7,6 +7,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.peto.ramap.analytics.AnalyticsSource
 import com.peto.ramap.designsystem.resource.wating.toUiModel
 import com.peto.ramap.designsystem.shop.ShopDetailContent
 import com.peto.ramap.designsystem.toast.ToastManager
@@ -25,6 +26,7 @@ fun ShopDetailHost(
     onDismiss: () -> Unit,
     onShowOnMap: (String) -> Unit,
     onEventNavigate: (ShopEvent) -> Unit = {},
+    originSource: AnalyticsSource = AnalyticsSource.MAP,
     toastManager: ToastManager = koinInject(),
     appSettingsOpener: AppSettingsOpener = koinInject(),
     shopShareLinkFactory: ShopShareLinkFactory = koinInject(),
@@ -45,7 +47,9 @@ fun ShopDetailHost(
         appSettingsOpener = appSettingsOpener,
         shopShareLinkFactory = shopShareLinkFactory,
         requestNotificationPermission = requestNotificationPermission,
-        onNotificationToggled = { viewModel.dispatch(MapIntent.OnShopNotificationToggled(it)) },
+        onNotificationToggled = {
+            viewModel.dispatch(MapIntent.OnShopNotificationToggled(it, originSource))
+        },
         onLoginTypeSelected = { viewModel.dispatch(MapIntent.OnLoginTypeSelected(it)) },
         onLoginDismissed = { viewModel.dispatch(MapIntent.OnLoginSelectionDismissed) },
     ) { onShopNotificationToggled ->
@@ -66,9 +70,13 @@ fun ShopDetailHost(
                     onDismiss()
                 },
                 onRetry = { viewModel.dispatch(MapIntent.OnShopDetailRetry) },
-                onBookmarkToggled = { viewModel.dispatch(MapIntent.OnBookmarkToggled(it)) },
+                onBookmarkToggled = {
+                    viewModel.dispatch(MapIntent.OnBookmarkToggled(it, originSource))
+                },
                 onShopNotificationToggled = onShopNotificationToggled,
-                onHiddenToggled = { viewModel.dispatch(MapIntent.OnHiddenToggled(it)) },
+                onHiddenToggled = {
+                    viewModel.dispatch(MapIntent.OnHiddenToggled(it, originSource))
+                },
                 onShopShareClick = { viewModel.dispatch(MapIntent.OnShopShareClicked(it)) },
                 onShopMapLinkClick = { shop, provider ->
                     viewModel.dispatch(MapIntent.OnShopMapLinkClicked(shop, provider))

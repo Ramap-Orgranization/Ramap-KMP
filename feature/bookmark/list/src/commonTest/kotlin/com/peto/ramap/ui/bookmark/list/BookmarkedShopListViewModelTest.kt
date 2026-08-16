@@ -1,6 +1,8 @@
 package com.peto.ramap.ui.bookmark.list
 
 import app.cash.turbine.test
+import com.peto.ramap.analytics.AnalyticsSource
+import com.peto.ramap.analytics.common.shop.BookmarkToggled
 import com.peto.ramap.core.result.RamapError
 import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.coroutinesTest
@@ -11,6 +13,7 @@ import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.domain.repository.RamenShopRepository
 import com.peto.ramap.domain.store.ShopPersonalizationStore
+import com.peto.ramap.fake.FakeAnalyticsTracker
 import com.peto.ramap.fake.FakePersonalizationRepository
 import com.peto.ramap.fake.FakeRamenShopRepository
 import com.peto.ramap.fixture.ramenShopFixture
@@ -42,6 +45,7 @@ class BookmarkedShopListViewModelTest {
                         FakeRamenShopRepository(
                             fetchByIdsResult = RamenShops(listOf(shop)),
                         ),
+                    analyticsTracker = FakeAnalyticsTracker(),
                 )
 
             runCurrent()
@@ -58,6 +62,7 @@ class BookmarkedShopListViewModelTest {
                 BookmarkedShopListViewModel(
                     personalizationStore = FakePersonalizationRepository(),
                     ramenShopRepository = ramenShopRepository,
+                    analyticsTracker = FakeAnalyticsTracker(),
                 )
 
             runCurrent()
@@ -81,6 +86,7 @@ class BookmarkedShopListViewModelTest {
                         FakeRamenShopRepository(
                             error = RamapError.Unknown(IllegalStateException("failure")),
                         ),
+                    analyticsTracker = FakeAnalyticsTracker(),
                 )
 
             runCurrent()
@@ -105,6 +111,7 @@ class BookmarkedShopListViewModelTest {
                             ShopPersonalization(bookmarkedShopIds = setOf(shop.id)),
                         ),
                     ramenShopRepository = ramenShopRepository,
+                    analyticsTracker = FakeAnalyticsTracker(),
                 )
             runCurrent()
 
@@ -146,6 +153,7 @@ class BookmarkedShopListViewModelTest {
                 BookmarkedShopListViewModel(
                     personalizationStore = personalizationRepository,
                     ramenShopRepository = ramenShopRepository,
+                    analyticsTracker = FakeAnalyticsTracker(),
                 )
             runCurrent()
 
@@ -181,6 +189,7 @@ class BookmarkedShopListViewModelTest {
                 BookmarkedShopListViewModel(
                     personalizationStore = personalizationRepository,
                     ramenShopRepository = ramenShopRepository,
+                    analyticsTracker = FakeAnalyticsTracker(),
                 )
             runCurrent()
 
@@ -226,6 +235,7 @@ class BookmarkedShopListViewModelTest {
                 BookmarkedShopListViewModel(
                     personalizationStore = personalizationRepository,
                     ramenShopRepository = ramenShopRepository,
+                    analyticsTracker = FakeAnalyticsTracker(),
                 )
             runCurrent()
 
@@ -266,6 +276,7 @@ class BookmarkedShopListViewModelTest {
                 BookmarkedShopListViewModel(
                     personalizationStore = personalizationRepository,
                     ramenShopRepository = ramenShopRepository,
+                    analyticsTracker = FakeAnalyticsTracker(),
                 )
             runCurrent()
 
@@ -291,7 +302,8 @@ class BookmarkedShopListViewModelTest {
                 FakePersonalizationRepository(
                     ShopPersonalization(bookmarkedShopIds = setOf(shop.id)),
                 )
-            val viewModel = bookmarkedShopListViewModel(shop, repository)
+            val analyticsTracker = FakeAnalyticsTracker()
+            val viewModel = bookmarkedShopListViewModel(shop, repository, analyticsTracker)
             runCurrent()
 
             viewModel.sideEffect.test {
@@ -311,6 +323,15 @@ class BookmarkedShopListViewModelTest {
                 assertEquals(
                     RamapResult.Success(ShopPersonalization()),
                     repository.fetchPersonalization(),
+                )
+                assertEquals(
+                    BookmarkToggled(
+                        shopId = shop.id,
+                        shopName = shop.name,
+                        enabled = false,
+                        source = AnalyticsSource.BOOKMARKED_SHOPS,
+                    ),
+                    analyticsTracker.events.single(),
                 )
             }
         }
@@ -355,10 +376,12 @@ private fun bookmarkedShopListViewModel(
         FakePersonalizationRepository(
             ShopPersonalization(bookmarkedShopIds = setOf(shop.id)),
         ),
+    analyticsTracker: FakeAnalyticsTracker = FakeAnalyticsTracker(),
 ) = BookmarkedShopListViewModel(
     personalizationStore = personalizationRepository,
     ramenShopRepository =
         FakeRamenShopRepository(
             fetchByIdsResult = RamenShops(listOf(shop)),
         ),
+    analyticsTracker = analyticsTracker,
 )

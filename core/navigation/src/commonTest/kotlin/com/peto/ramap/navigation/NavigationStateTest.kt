@@ -190,7 +190,13 @@ class NavigationStateTest {
             source = NavigationSource.RANKING,
         )
 
-        assertEquals(NavigationSource.RANKING, navigationState.lastNavigationSource)
+        assertEquals(
+            ScreenRoutes.TabRoutes(
+                shopId = "shop-id",
+                source = NavigationSource.RANKING,
+            ),
+            navigationState.currentRoute,
+        )
         assertEquals("ranking", NavigationSource.RANKING.value)
     }
 

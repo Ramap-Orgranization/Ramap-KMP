@@ -1,9 +1,9 @@
-package com.peto.ramap.ui.main.map.log.event
+package com.peto.ramap.analytics.common.shop
 
 import com.peto.ramap.analytics.AnalyticsEvent
 import com.peto.ramap.analytics.AnalyticsSource
 
-internal data class HiddenShopToggled(
+data class HiddenShopToggled(
     val shopId: String,
     val shopName: String,
     val enabled: Boolean,
