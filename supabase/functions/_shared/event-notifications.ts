@@ -3,7 +3,7 @@ import type { SupabaseClient } from "npm:@supabase/supabase-js@2.55.0";
 import { JWT } from "npm:google-auth-library@10.2.1";
 
 export type NotificationType = "new_event" | "day_before" | "event_day";
-export type EventType = "collab" | "popup" | "limited_menu" | "summer_limited";
+export type EventType = "collab" | "popup" | "limited_menu" | "summer_limited" | "store_renewal";
 export type ShopEvent = {
   id: string;
   shop_id: string;
@@ -38,6 +38,11 @@ const TITLES: Record<EventType, Record<NotificationType, string>> = {
     new_event: "새 여름 한정 메뉴가 등록됐어요",
     day_before: "내일 여름 한정 메뉴가 시작돼요",
     event_day: "오늘 여름 한정 메뉴가 시작돼요",
+  },
+  store_renewal: {
+    new_event: "새 매장 리뉴얼이 등록됐어요",
+    day_before: "내일 매장 리뉴얼이 시작돼요",
+    event_day: "오늘 매장 리뉴얼이 시작돼요",
   },
 };
 

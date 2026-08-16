@@ -15,7 +15,9 @@ kotlin {
         implementation(projects.core.designsystem)
         implementation(projects.core.platform)
         implementation(libs.koin.compose.viewmodel)
+        implementation(libs.compose.foundation)
         implementation(libs.compose.material3)
         implementation(libs.compose.components.resources)
+        implementation(libs.coil.compose)
     }
 }

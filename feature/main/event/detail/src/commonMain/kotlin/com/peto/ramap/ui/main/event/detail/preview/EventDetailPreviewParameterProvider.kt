@@ -23,6 +23,13 @@ class EventDetailPreviewParameterProvider : PreviewParameterProvider<EventDetail
                         collaboratorShops = listOf(previewShop("shop2", "콜라보 샵")),
                         waitingMethod = "현장 대기",
                         waitingUrl = "https://catchtable.co.kr/",
+                        imageUrls =
+                            listOf(
+                                "https://picsum.photos",
+                                "https://picsum.photos",
+                                "https://picsum.photos",
+                                "https://picsum.photos",
+                            ),
                     ),
                 isNotificationVisible = true,
                 canChangeNotification = true,
@@ -36,11 +43,26 @@ class EventDetailPreviewParameterProvider : PreviewParameterProvider<EventDetail
                             listOf(
                                 ExternalParticipant(
                                     name = "게스트 셰프",
-                                    instagramUrl = "https://www.instagram.com/guest_chef/",
+                                    instagramUrl = "https://picsum.photos",
                                 ),
                             ),
                         waitingMethod = null,
                         waitingUrl = null,
+                    ),
+            ),
+            EventDetailUiState(
+                event =
+                    previewEvent(
+                        type = ShopEventType.STORE_RENEWAL,
+                        title = "이리에 라멘 리뉴얼 오픈",
+                        description = "",
+                        endDate = null,
+                        imageUrls =
+                            listOf(
+                                "https://picsum.photos",
+                                "https://picsum.photos",
+                                "https://picsum.photos",
+                            ),
                     ),
             ),
             EventDetailUiState(
@@ -54,6 +76,7 @@ class EventDetailPreviewParameterProvider : PreviewParameterProvider<EventDetail
                         isToday = false,
                         waitingMethod = null,
                         waitingUrl = null,
+                        imageUrls = listOf("https://picsum.photos"),
                     ),
             ),
             EventDetailUiState(
@@ -84,6 +107,7 @@ class EventDetailPreviewParameterProvider : PreviewParameterProvider<EventDetail
         waitingMethod: String? = "현장 대기",
         waitingUrl: String? = "https://catchtable.co.kr/",
         isCancelledToday: Boolean = false,
+        imageUrls: List<String> = emptyList(),
     ) = ShopEvent(
         id = type.name,
         type = type,
@@ -100,6 +124,7 @@ class EventDetailPreviewParameterProvider : PreviewParameterProvider<EventDetail
         waitingMethod = waitingMethod,
         waitingUrl = waitingUrl,
         isCancelledToday = isCancelledToday,
+        imageUrls = imageUrls,
     )
 
     private fun previewShop(

@@ -48,6 +48,7 @@ import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.designsystem.topbar.CommonTopBar
 import com.peto.ramap.domain.model.event.ShopEvent
+import com.peto.ramap.domain.model.event.ShopEventType
 import com.peto.ramap.extension.noRippleClickable
 import com.peto.ramap.platform.AppSettingsOpener
 import com.peto.ramap.platform.ExternalUriOpener
@@ -58,6 +59,7 @@ import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.InstagramColor
 import com.peto.ramap.theme.RamapTheme
 import com.peto.ramap.ui.base.ObserveAsEvents
+import com.peto.ramap.ui.main.event.detail.component.EventImages
 import com.peto.ramap.ui.main.event.detail.component.EventNotificationButton
 import com.peto.ramap.ui.main.event.detail.component.EventTag
 import com.peto.ramap.ui.main.event.detail.contract.EventDetailIntent.OnCollaboratorInstagramSelected
@@ -87,6 +89,7 @@ import ramap.shared.generated.resources.event_date
 import ramap.shared.generated.resources.event_detail_load_failure_title
 import ramap.shared.generated.resources.event_detail_title
 import ramap.shared.generated.resources.event_instagram_action
+import ramap.shared.generated.resources.event_store_renewal_venue
 import ramap.shared.generated.resources.event_venue
 import ramap.shared.generated.resources.event_waiting
 import ramap.shared.generated.resources.event_waiting_action
@@ -233,10 +236,14 @@ internal fun EventDetailScreen(
                     )
                 },
                 right = {
-                    EventNotificationButton(
-                        uiState = uiState,
-                        onNotificationChanged = onNotificationChanged,
-                    )
+                    uiState.event
+                        ?.takeIf { event -> !event.isToday }
+                        ?.let {
+                            EventNotificationButton(
+                                uiState = uiState,
+                                onNotificationChanged = onNotificationChanged,
+                            )
+                        }
                 },
             )
         },
@@ -303,12 +310,20 @@ private fun EventDetailContent(
             EventTag(stringResource(ShopEventResourceMapper.typeLabel(event.type)))
         }
         AppText("🍜 ${event.title}", style = AppTextStyle.H1, color = GrayColor.C500)
+        EventImages(event.displayImageUrls)
         SectionCard {
             Column(
                 modifier = Modifier.padding(bottom = 4.dp),
             ) {
                 EventInfoRow(
-                    label = stringResource(Res.string.event_venue),
+                    label =
+                        stringResource(
+                            if (event.type == ShopEventType.STORE_RENEWAL) {
+                                Res.string.event_store_renewal_venue
+                            } else {
+                                Res.string.event_venue
+                            },
+                        ),
                     content = {
                         RamenShopSummary(
                             shop = event.venueShop,
@@ -355,7 +370,15 @@ private fun EventDetailContent(
                     label = stringResource(Res.string.event_date),
                     content = {
                         EventValue(
-                            value = eventDateText(event.startDate, event.endDate),
+                            value =
+                                eventDateText(
+                                    event.startDate,
+                                    if (event.type == ShopEventType.STORE_RENEWAL) {
+                                        event.startDate
+                                    } else {
+                                        event.endDate
+                                    },
+                                ),
                             modifier =
                                 Modifier
                                     .fillMaxWidth()
@@ -366,8 +389,10 @@ private fun EventDetailContent(
                 )
             }
         }
-        SectionCard(title = stringResource(Res.string.event_content)) {
-            EventValue(event.description, Modifier.padding(horizontal = 15.dp, vertical = 10.dp))
+        if (event.description.isNotBlank()) {
+            SectionCard(title = stringResource(Res.string.event_content)) {
+                EventValue(event.description, Modifier.padding(horizontal = 15.dp, vertical = 10.dp))
+            }
         }
         event.waitingMethod?.let { waiting ->
             SectionCard(title = stringResource(Res.string.event_waiting)) {

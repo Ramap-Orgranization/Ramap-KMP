@@ -5,4 +5,5 @@ enum class ShopEventType {
     POPUP,
     LIMITED_MENU,
     SUMMER_LIMITED,
+    STORE_RENEWAL,
 }

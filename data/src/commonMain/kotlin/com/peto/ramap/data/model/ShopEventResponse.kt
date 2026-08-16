@@ -2,6 +2,7 @@ package com.peto.ramap.data.model
 
 import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.model.event.ShopEventType
+import com.peto.ramap.network.config.RamapSecrets
 import kotlinx.datetime.LocalDate
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -24,6 +25,7 @@ internal data class ShopEventResponse(
     @SerialName("waiting_url") val waitingUrl: String? = null,
     @SerialName("cancelled_dates") val cancelledDates: List<String> = emptyList(),
     @SerialName("is_cancelled_today") val isCancelledToday: Boolean = false,
+    @SerialName("image_paths") val imagePaths: List<String> = emptyList(),
 ) {
     fun toDomain(): ShopEvent? {
         val type = runCatching { ShopEventType.valueOf(eventType.uppercase()) }.getOrNull() ?: return null
@@ -33,7 +35,7 @@ internal data class ShopEventResponse(
             title = title,
             description = description,
             startDate = startDate,
-            endDate = endDate,
+            endDate = if (type == ShopEventType.STORE_RENEWAL) null else endDate,
             sourceUrl = sourceUrl,
             isToday = isToday,
             isVenue = isVenue,
@@ -44,6 +46,30 @@ internal data class ShopEventResponse(
             waitingUrl = waitingUrl,
             cancelledDates = cancelledDates.mapNotNull { runCatching { LocalDate.parse(it) }.getOrNull() },
             isCancelledToday = isCancelledToday,
+            imageUrls = imagePaths.mapNotNull(::toPublicEventImageUrl).take(ShopEvent.MAX_IMAGE_COUNT),
         )
+    }
+
+    private fun toPublicEventImageUrl(path: String): String? {
+        val normalizedPath = path.trim()
+        if (
+            normalizedPath.isBlank() ||
+            normalizedPath.startsWith('/') ||
+            normalizedPath.contains("..") ||
+            normalizedPath.contains('\\') ||
+            normalizedPath.contains("://") ||
+            normalizedPath.contains('?') ||
+            normalizedPath.contains('#')
+        ) {
+            return null
+        }
+        val baseUrl = RamapSecrets.supabaseUrl.trimEnd('/')
+        if (baseUrl.isBlank()) return null
+        return "$baseUrl$STORAGE_PUBLIC_PATH$EVENT_IMAGE_BUCKET/$normalizedPath"
+    }
+
+    private companion object {
+        const val EVENT_IMAGE_BUCKET = "event-images"
+        const val STORAGE_PUBLIC_PATH = "/storage/v1/object/public/"
     }
 }

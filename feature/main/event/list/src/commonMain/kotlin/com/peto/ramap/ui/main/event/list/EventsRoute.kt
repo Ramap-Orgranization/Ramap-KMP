@@ -26,14 +26,14 @@ import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.peto.ramap.designsystem.component.LoadErrorContent
-import com.peto.ramap.designsystem.resource.event.ShopEventResourceMapper
 import com.peto.ramap.designsystem.toast.ToastManager
+import com.peto.ramap.domain.model.event.EventFilter
 import com.peto.ramap.domain.model.event.ShopEvent
-import com.peto.ramap.domain.model.event.ShopEventType
 import com.peto.ramap.domain.model.event.ShopEvents
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.RamapTheme
 import com.peto.ramap.ui.base.ObserveAsEvents
+import com.peto.ramap.ui.main.event.list.component.EventFilters
 import com.peto.ramap.ui.main.event.list.component.EventListBottomSheet
 import com.peto.ramap.ui.main.event.list.component.EventListEmptyContent
 import com.peto.ramap.ui.main.event.list.component.EventListSkeleton
@@ -77,6 +77,7 @@ fun EventsRoute(
         },
         onRefresh = { viewModel.dispatch(EventsIntent.OnEventsRefreshed) },
         onRetryClick = { viewModel.dispatch(EventsIntent.OnEventsRetried) },
+        onFilterSelected = { filter -> viewModel.dispatch(EventsIntent.OnFilterSelected(filter)) },
     )
 }
 
@@ -87,6 +88,7 @@ internal fun EventsScreen(
     onEventClick: (ShopEvent) -> Unit,
     onRefresh: () -> Unit,
     onRetryClick: () -> Unit,
+    onFilterSelected: (EventFilter) -> Unit,
 ) {
     var selectedEventGroup by remember { mutableStateOf<ShopEvents?>(null) }
     val pullToRefreshState = rememberPullToRefreshState()
@@ -97,7 +99,7 @@ internal fun EventsScreen(
                 .background(CommonColor.White)
                 .statusBarsPadding(),
     ) {
-        Box(modifier = Modifier.fillMaxSize()) {
+        Box(modifier = Modifier.fillMaxSize().weight(1f)) {
             PullToRefreshBox(
                 isRefreshing = uiState.isRefreshing,
                 onRefresh = onRefresh,
@@ -126,28 +128,24 @@ internal fun EventsScreen(
                         )
 
                     uiState.ongoingEvents.isEmpty() &&
-                        uiState.upcomingEvents.isEmpty() &&
-                        uiState.summerLimitedEvents.isEmpty() -> EventListEmptyContent()
+                        uiState.upcomingEvents.isEmpty() -> EventListEmptyContent()
 
                     else -> {
                         val ongoingTitle = stringResource(Res.string.event_list_ongoing_section)
                         val upcomingTitle = stringResource(Res.string.event_list_upcoming_section)
-                        val summerLimitedTitle =
-                            stringResource(ShopEventResourceMapper.typeLabel(ShopEventType.SUMMER_LIMITED))
                         LazyColumn(
                             modifier = Modifier.fillMaxSize(),
                             contentPadding = PaddingValues(bottom = 5.dp),
                             verticalArrangement = Arrangement.spacedBy(12.dp),
                         ) {
-                            eventSection(
-                                scope = this,
-                                title = summerLimitedTitle,
-                                events = uiState.summerLimitedEvents,
-                                isOngoingSection = true,
-                                horizontalContentPadding = 15.dp,
-                                onEventClick = onEventClick,
-                                onEventGroupClick = { selectedEventGroup = it },
-                            )
+                            item {
+                                EventFilters(
+                                    selectedFilter = uiState.selectedFilter,
+                                    onFilterSelected = onFilterSelected,
+                                    modifier = Modifier.padding(top = 5.dp),
+                                )
+                            }
+
                             eventSection(
                                 scope = this,
                                 title = ongoingTitle,
@@ -207,6 +205,7 @@ private fun EventsRoutePreview(
             onEventClick = {},
             onRefresh = {},
             onRetryClick = {},
+            onFilterSelected = {},
         )
     }
 }

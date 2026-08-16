@@ -14,11 +14,13 @@ import ramap.shared.generated.resources.event_status_upcoming
 import ramap.shared.generated.resources.event_type_collab
 import ramap.shared.generated.resources.event_type_limited_menu
 import ramap.shared.generated.resources.event_type_popup
+import ramap.shared.generated.resources.event_type_store_renewal
 import ramap.shared.generated.resources.event_type_summer_limited
 import ramap.shared.generated.resources.shop_event_notice_collab_participant_today
 import ramap.shared.generated.resources.shop_event_notice_collab_upcoming_with_shop
 import ramap.shared.generated.resources.shop_event_notice_limited_menu_upcoming
 import ramap.shared.generated.resources.shop_event_notice_participant_today
+import ramap.shared.generated.resources.shop_event_notice_store_renewal_today
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -40,6 +42,10 @@ class ShopEventResourceMapperTest {
         assertEquals(
             Res.string.event_type_summer_limited,
             ShopEventResourceMapper.typeLabel(ShopEventType.SUMMER_LIMITED),
+        )
+        assertEquals(
+            Res.string.event_type_store_renewal,
+            ShopEventResourceMapper.typeLabel(ShopEventType.STORE_RENEWAL),
         )
     }
 
@@ -83,6 +89,16 @@ class ShopEventResourceMapperTest {
         assertEquals(
             UiText(Res.string.shop_event_notice_collab_upcoming_with_shop, listOf(PARTNER_NAME)),
             notice,
+        )
+    }
+
+    @Test
+    fun `매장 리뉴얼 안내 문구와 타입을 매핑한다`() {
+        assertEquals(
+            UiText(Res.string.shop_event_notice_store_renewal_today),
+            ShopEventResourceMapper.notice(
+                event(type = ShopEventType.STORE_RENEWAL, isToday = true),
+            ),
         )
     }
 

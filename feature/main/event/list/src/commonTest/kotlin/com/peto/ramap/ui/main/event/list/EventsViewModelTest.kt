@@ -5,6 +5,7 @@ import com.peto.ramap.core.result.RamapError
 import com.peto.ramap.coroutinesTest
 import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
+import com.peto.ramap.domain.model.event.EventFilter
 import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.model.event.ShopEventType
 import com.peto.ramap.domain.model.event.ShopEvents
@@ -184,19 +185,73 @@ class EventsViewModelTest {
             }
         }
 
-    private fun event() =
-        ShopEvent(
-            id = "event",
-            type = ShopEventType.POPUP,
-            title = "팝업",
-            description = "설명",
-            startDate = "2026-07-15",
-            endDate = "2026-07-16",
-            sourceUrl = "https://instagram.com/event",
-            isToday = false,
-            isVenue = true,
-            venueShop = ramenShopFixture(id = "shop", name = "매장", address = "서울"),
-            waitingMethod = null,
-            waitingUrl = null,
-        )
+    @Test
+    fun `필터 변경은 최초 응답을 사용하고 repository를 다시 호출하지 않는다`() =
+        coroutinesTest {
+            val repository =
+                FakeRamenShopRepository(
+                    activeEvents =
+                        listOf(
+                            event("summer-today", ShopEventType.SUMMER_LIMITED, isToday = true),
+                            event("summer-upcoming", ShopEventType.SUMMER_LIMITED),
+                            event("renewal-today", ShopEventType.STORE_RENEWAL, isToday = true),
+                            event("renewal-upcoming", ShopEventType.STORE_RENEWAL),
+                        ),
+                )
+            val viewModel = EventsViewModel(repository, EventsAnalytics(FakeAnalyticsTracker()))
+            runCurrent()
+
+            viewModel.dispatch(EventsIntent.OnFilterSelected(EventFilter.SUMMER_LIMITED))
+            runCurrent()
+
+            assertEquals(1, repository.activeEventsRequestCount)
+            assertEquals(
+                listOf("summer-today"),
+                viewModel.uiState.value.ongoingEvents
+                    .flatten()
+                    .map { it.id },
+            )
+            assertEquals(
+                listOf("summer-upcoming"),
+                viewModel.uiState.value.upcomingEvents
+                    .flatten()
+                    .map { it.id },
+            )
+
+            viewModel.dispatch(EventsIntent.OnFilterSelected(EventFilter.STORE_RENEWAL))
+            runCurrent()
+
+            assertEquals(1, repository.activeEventsRequestCount)
+            assertEquals(
+                listOf("renewal-today"),
+                viewModel.uiState.value.ongoingEvents
+                    .flatten()
+                    .map { it.id },
+            )
+            assertEquals(
+                listOf("renewal-upcoming"),
+                viewModel.uiState.value.upcomingEvents
+                    .flatten()
+                    .map { it.id },
+            )
+        }
+
+    private fun event(
+        id: String = "event",
+        type: ShopEventType = ShopEventType.POPUP,
+        isToday: Boolean = false,
+    ) = ShopEvent(
+        id = id,
+        type = type,
+        title = "팝업",
+        description = "설명",
+        startDate = "2026-07-15",
+        endDate = "2026-07-16",
+        sourceUrl = "https://instagram.com/event",
+        isToday = isToday,
+        isVenue = true,
+        venueShop = ramenShopFixture(id = "shop", name = "매장", address = "서울"),
+        waitingMethod = null,
+        waitingUrl = null,
+    )
 }
