@@ -22,6 +22,7 @@ import ramap.shared.generated.resources.shop_event_notice_collab_upcoming_with_s
 import ramap.shared.generated.resources.shop_event_notice_limited_menu_upcoming
 import ramap.shared.generated.resources.shop_event_notice_participant_today
 import ramap.shared.generated.resources.shop_event_notice_store_renewal_today
+import ramap.shared.generated.resources.shop_event_notice_store_renewal_upcoming
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -102,7 +103,19 @@ class ShopEventResourceMapperTest {
         assertEquals(
             UiText(Res.string.shop_event_notice_store_renewal_today),
             ShopEventResourceMapper.notice(
+                event(type = ShopEventType.STORE_RENEWAL, isToday = true, isStartDateToday = true),
+            ),
+        )
+        assertEquals(
+            null,
+            ShopEventResourceMapper.notice(
                 event(type = ShopEventType.STORE_RENEWAL, isToday = true),
+            ),
+        )
+        assertEquals(
+            UiText(Res.string.shop_event_notice_store_renewal_upcoming),
+            ShopEventResourceMapper.notice(
+                event(type = ShopEventType.STORE_RENEWAL, isToday = false),
             ),
         )
     }
@@ -117,6 +130,7 @@ class ShopEventResourceMapperTest {
         collaborationPartnerCount: Int? = null,
         isCancelledToday: Boolean = false,
         isSoldOutToday: Boolean = false,
+        isStartDateToday: Boolean = false,
     ) = ShopEvent(
         id = "event-id",
         type = type,
@@ -149,6 +163,7 @@ class ShopEventResourceMapperTest {
         collaborationPartnerCount = collaborationPartnerCount,
         isCancelledToday = isCancelledToday,
         isSoldOutToday = isSoldOutToday,
+        isStartDateToday = isStartDateToday,
     )
 
     private companion object {

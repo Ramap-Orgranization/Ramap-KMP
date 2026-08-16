@@ -109,12 +109,12 @@ fun EventDetailRoute(
     onShopClick: (String) -> Unit,
     onEventNavigate: (ShopEvent) -> Unit = {},
     shopDetailContent:
-    @Composable (
-        String,
-        () -> Unit,
-        (String) -> Unit,
-        (ShopEvent) -> Unit,
-    ) -> Unit = { _, _, _, _ -> },
+        @Composable (
+            String,
+            () -> Unit,
+            (String) -> Unit,
+            (ShopEvent) -> Unit,
+        ) -> Unit = { _, _, _, _ -> },
     toastManager: ToastManager = koinInject(),
     appSettingsOpener: AppSettingsOpener = koinInject(),
     requestNotificationPermission: suspend () -> Boolean = NotificationPermissionRequester::request,
@@ -399,8 +399,9 @@ private fun EventDetailContent(
             SectionCard(title = stringResource(Res.string.event_content)) {
                 EventValue(
                     value = event.description,
-                    modifier = Modifier
-                        .padding(horizontal = 15.dp, vertical = 10.dp)
+                    modifier =
+                        Modifier
+                            .padding(horizontal = 15.dp, vertical = 10.dp),
                 )
             }
         }

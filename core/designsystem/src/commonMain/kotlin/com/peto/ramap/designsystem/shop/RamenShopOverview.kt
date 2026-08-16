@@ -90,17 +90,19 @@ fun RamenShopOverview(
             modifier = dragAreaModifier,
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            event?.let {
-                AppText(
-                    text = ShopEventResourceMapper.notice(it).format(),
-                    modifier =
-                        Modifier
-                            .padding(top = 5.dp)
-                            .padding(horizontal = 24.dp)
-                            .noRippleClickable { onEventClick(it) },
-                    style = AppTextStyle.B1,
-                    color = SystemColor.Warning,
-                )
+            event?.let { shopEvent ->
+                ShopEventResourceMapper.notice(shopEvent)?.let { notice ->
+                    AppText(
+                        text = notice.format(),
+                        modifier =
+                            Modifier
+                                .padding(top = 5.dp)
+                                .padding(horizontal = 24.dp)
+                                .noRippleClickable { onEventClick(shopEvent) },
+                        style = AppTextStyle.B1,
+                        color = SystemColor.Warning,
+                    )
+                }
             }
             Column {
                 Row(
