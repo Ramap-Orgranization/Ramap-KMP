@@ -30,6 +30,7 @@ data class ShopEvent(
     val soldOutDates: List<LocalDate> = emptyList(),
     val isSoldOutToday: Boolean = false,
     val imageUrls: List<String> = emptyList(),
+    val isStartDateToday: Boolean = false,
 ) {
     val venueShopId: String
         get() = venueShop.id
@@ -60,8 +61,7 @@ data class ShopEvent(
 
     private fun parseStartDate(): LocalDate? = runCatching { LocalDate.parse(startDate) }.getOrNull()
 
-    private fun renewalEndDate(start: LocalDate): LocalDate =
-        start.plus(1, DateTimeUnit.MONTH).minus(1, DateTimeUnit.DAY)
+    private fun renewalEndDate(start: LocalDate): LocalDate = start.plus(1, DateTimeUnit.MONTH).minus(1, DateTimeUnit.DAY)
 
     val displayImageUrls: List<String>
         get() = imageUrls.take(MAX_IMAGE_COUNT)

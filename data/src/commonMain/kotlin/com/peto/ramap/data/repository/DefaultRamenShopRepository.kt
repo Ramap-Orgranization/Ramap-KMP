@@ -98,7 +98,11 @@ internal class DefaultRamenShopRepository(
     private fun toDomain(response: ShopEventResponse): ShopEvent? {
         val event = response.toDomain() ?: return null
         if (event.type != ShopEventType.STORE_RENEWAL) return event
-        return event.copy(isToday = event.occursOn(today()))
+        val today = today()
+        return event.copy(
+            isToday = event.occursOn(today),
+            isStartDateToday = event.startDate == today.toString(),
+        )
     }
 
     private fun isVisibleInActiveEvents(event: ShopEvent): Boolean {

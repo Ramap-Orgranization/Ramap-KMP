@@ -108,6 +108,9 @@ class DefaultRamenShopRepositoryTest {
             assertEquals(true, events.first().isToday)
             assertEquals(true, events[1].isToday)
             assertEquals(false, events.last().isToday)
+            assertEquals(false, events.first().isStartDateToday)
+            assertEquals(true, events[1].isStartDateToday)
+            assertEquals(false, events.last().isStartDateToday)
         }
 
     @Test
