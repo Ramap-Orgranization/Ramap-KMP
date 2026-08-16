@@ -188,7 +188,7 @@ internal fun RankingScreen(
                 },
                 onCategoryToggled = onCategoryToggled,
                 onAllCategoriesSelected = onAllCategoriesSelected,
-                modifier = Modifier.padding(top = 20.dp),
+                modifier = Modifier.padding(top = 5.dp),
             )
 
             RankingContent(

@@ -25,8 +25,10 @@ class EventDetailPreviewParameterProvider : PreviewParameterProvider<EventDetail
                         waitingUrl = "https://catchtable.co.kr/",
                         imageUrls =
                             listOf(
-                                "https://example.com/event-image-1.png",
-                                "https://example.com/event-image-2.png",
+                                "https://picsum.photos",
+                                "https://picsum.photos",
+                                "https://picsum.photos",
+                                "https://picsum.photos",
                             ),
                     ),
                 isNotificationVisible = true,
@@ -41,11 +43,26 @@ class EventDetailPreviewParameterProvider : PreviewParameterProvider<EventDetail
                             listOf(
                                 ExternalParticipant(
                                     name = "게스트 셰프",
-                                    instagramUrl = "https://www.instagram.com/guest_chef/",
+                                    instagramUrl = "https://picsum.photos",
                                 ),
                             ),
                         waitingMethod = null,
                         waitingUrl = null,
+                    ),
+            ),
+            EventDetailUiState(
+                event =
+                    previewEvent(
+                        type = ShopEventType.STORE_RENEWAL,
+                        title = "이리에 라멘 리뉴얼 오픈",
+                        description = "",
+                        endDate = null,
+                        imageUrls =
+                            listOf(
+                                "https://picsum.photos",
+                                "https://picsum.photos",
+                                "https://picsum.photos",
+                            ),
                     ),
             ),
             EventDetailUiState(
@@ -59,7 +76,7 @@ class EventDetailPreviewParameterProvider : PreviewParameterProvider<EventDetail
                         isToday = false,
                         waitingMethod = null,
                         waitingUrl = null,
-                        imageUrls = listOf("https://example.com/event-image.png"),
+                        imageUrls = listOf("https://picsum.photos"),
                     ),
             ),
             EventDetailUiState(

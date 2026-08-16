@@ -99,11 +99,6 @@ internal fun EventsScreen(
                 .background(CommonColor.White)
                 .statusBarsPadding(),
     ) {
-        EventFilters(
-            selectedFilter = uiState.selectedFilter,
-            onFilterSelected = onFilterSelected,
-            modifier = Modifier.padding(top = 12.dp),
-        )
         Box(modifier = Modifier.fillMaxSize().weight(1f)) {
             PullToRefreshBox(
                 isRefreshing = uiState.isRefreshing,
@@ -143,6 +138,14 @@ internal fun EventsScreen(
                             contentPadding = PaddingValues(bottom = 5.dp),
                             verticalArrangement = Arrangement.spacedBy(12.dp),
                         ) {
+                            item {
+                                EventFilters(
+                                    selectedFilter = uiState.selectedFilter,
+                                    onFilterSelected = onFilterSelected,
+                                    modifier = Modifier.padding(top = 5.dp),
+                                )
+                            }
+
                             eventSection(
                                 scope = this,
                                 title = ongoingTitle,
