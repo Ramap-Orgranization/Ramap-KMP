@@ -31,10 +31,8 @@ class ShopEventTest {
             )
 
         assertTrue(renewal.occursOn(LocalDate(2024, 2, 28)))
-        assertTrue(renewal.occursOn(LocalDate(2024, 2, 29)))
-        assertTrue(renewal.occursOn(LocalDate(2024, 3, 1)))
-        assertFalse(renewal.occursOn(LocalDate(2024, 3, 28)))
-        assertEquals("2024-03-27", renewal.displayEndDate)
+        assertFalse(renewal.occursOn(LocalDate(2024, 2, 29)))
+        assertFalse(renewal.occursOn(LocalDate(2024, 3, 1)))
     }
 
     @Test

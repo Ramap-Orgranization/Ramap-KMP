@@ -100,9 +100,17 @@ internal class DefaultRamenShopRepository(
         if (event.type != ShopEventType.STORE_RENEWAL) return event
         val today = today()
         return event.copy(
-            isToday = event.occursOn(today),
+            isToday = isRenewalOngoingOn(event.startDate, today),
             isStartDateToday = event.startDate == today.toString(),
         )
+    }
+
+    private fun isRenewalOngoingOn(
+        startDate: String,
+        today: LocalDate,
+    ): Boolean {
+        val start = parseDate(startDate) ?: return false
+        return today >= start && today < start.plus(1, DateTimeUnit.MONTH)
     }
 
     private fun isVisibleInActiveEvents(event: ShopEvent): Boolean {

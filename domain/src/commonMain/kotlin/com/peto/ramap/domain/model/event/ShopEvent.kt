@@ -1,10 +1,7 @@
 package com.peto.ramap.domain.model.event
 
 import com.peto.ramap.domain.model.shop.RamenShop
-import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
-import kotlinx.datetime.minus
-import kotlinx.datetime.plus
 
 data class ShopEvent(
     val id: String,
@@ -41,27 +38,12 @@ data class ShopEvent(
     val venueProfileImageUrl: String?
         get() = venueShop.instagramProfileImageUrl
 
-    val displayEndDate: String?
-        get() {
-            if (type != ShopEventType.STORE_RENEWAL) return endDate
-            val start = parseStartDate() ?: return endDate
-            return renewalEndDate(start).toString()
-        }
-
     fun occursOn(date: LocalDate): Boolean {
-        val start = parseStartDate() ?: return false
-        val end =
-            if (type == ShopEventType.STORE_RENEWAL) {
-                renewalEndDate(start)
-            } else {
-                runCatching { LocalDate.parse(endDate ?: startDate) }.getOrNull() ?: return false
-            }
+        val start = runCatching { LocalDate.parse(startDate) }.getOrNull() ?: return false
+        if (type == ShopEventType.STORE_RENEWAL) return date == start
+        val end = runCatching { LocalDate.parse(endDate ?: startDate) }.getOrNull() ?: return false
         return date in start..end
     }
-
-    private fun parseStartDate(): LocalDate? = runCatching { LocalDate.parse(startDate) }.getOrNull()
-
-    private fun renewalEndDate(start: LocalDate): LocalDate = start.plus(1, DateTimeUnit.MONTH).minus(1, DateTimeUnit.DAY)
 
     val displayImageUrls: List<String>
         get() = imageUrls.take(MAX_IMAGE_COUNT)

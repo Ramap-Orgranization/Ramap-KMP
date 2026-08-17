@@ -22,6 +22,7 @@ import com.peto.ramap.designsystem.card.EventShopGroupCard
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.designsystem.text.eventDateText
 import com.peto.ramap.domain.model.event.ShopEvent
+import com.peto.ramap.domain.model.event.ShopEventType
 import com.peto.ramap.domain.model.event.ShopEvents
 import com.peto.ramap.extension.noRippleClickable
 import com.peto.ramap.theme.AppTextStyle
@@ -89,7 +90,15 @@ internal fun CalendarEventsBottomSheet(
                         val event = eventGroup.representativeEvent
                         EventCard(
                             event = event,
-                            dateText = eventDateText(event.startDate, event.displayEndDate),
+                            dateText =
+                                eventDateText(
+                                    event.startDate,
+                                    if (event.type == ShopEventType.STORE_RENEWAL) {
+                                        event.startDate
+                                    } else {
+                                        event.endDate
+                                    },
+                                ),
                             isCancelled = event.isCancelledOn(day.date),
                             isSoldOut = event.isSoldOutOn(day.date),
                             onClick = { onEventClick(event) },

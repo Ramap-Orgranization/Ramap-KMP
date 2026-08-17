@@ -26,6 +26,7 @@ import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.designsystem.text.eventDateText
 import com.peto.ramap.designsystem.toast.ToastManager
 import com.peto.ramap.domain.model.event.ShopEvent
+import com.peto.ramap.domain.model.event.ShopEventType
 import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.GrayColor
@@ -143,7 +144,15 @@ private fun SubscribedShopListContent(
                     uiState.subscribedEvents.forEach { event ->
                         EventCard(
                             event = event,
-                            dateText = eventDateText(event.startDate, event.displayEndDate),
+                            dateText =
+                                eventDateText(
+                                    event.startDate,
+                                    if (event.type == ShopEventType.STORE_RENEWAL) {
+                                        event.startDate
+                                    } else {
+                                        event.endDate
+                                    },
+                                ),
                             onClick = { onEventOpen(event) },
                             actionLabel = stringResource(Res.string.notification_removal_confirm_action),
                             onAction = {
