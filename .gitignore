@@ -46,5 +46,5 @@ AGENTS.md
 /marketing
 tools
 /trace_processor
-iosApp/Configuration/Secrets.xcconfig
+/artifacts
 iosApp/iosApp/GoogleService-Info-Release.plist
