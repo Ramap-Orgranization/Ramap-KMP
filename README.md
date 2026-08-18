@@ -1,6 +1,5 @@
-
 <p align="center">
-<a href="https://www.instagram.com/ramap_official/">Instagram</a> ·
+<a href="https://www.instagram.com/ramap_official_kr/">Instagram</a> ·
 <a href="https://ramap-orgranization.github.io/Ramap-Landing-Page/">랜딩 페이지</a> ·
 <a href="https://play.google.com/store/apps/details?id=com.peto.ramap">Android 다운로드</a> ·
 <a href="https://apps.apple.com/kr/app/%EB%9D%BC%EB%A7%B5/id6797046935">iOS 다운로드</a>
