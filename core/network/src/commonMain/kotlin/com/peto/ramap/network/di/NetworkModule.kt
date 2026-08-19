@@ -15,6 +15,7 @@ val networkModule =
         single { supabaseClient }
         single {
             HttpClient {
+                followRedirects = false
                 install(ContentNegotiation) {
                     json(Json { ignoreUnknownKeys = true })
                 }

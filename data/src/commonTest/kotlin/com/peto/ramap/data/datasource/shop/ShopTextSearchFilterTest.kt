@@ -10,7 +10,7 @@ class ShopTextSearchFilterTest {
 
         assertEquals("%라멘%", filter.pattern)
         assertEquals(
-            listOf("name", "address", "phone", "business_hours_notice"),
+            listOf("name", "address", "phone", "business_hours_notice", "kakao_place_id", "naver_place_url"),
             filter.columns,
         )
     }

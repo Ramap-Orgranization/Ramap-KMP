@@ -32,6 +32,22 @@ object PlaceReportTextParser {
         return sameUrl || sameName || sameAddress
     }
 
+    fun matchesResolvedPlace(
+        place: ResolvedPlaceLink,
+        shop: RamenShop,
+    ): Boolean {
+        val sameKakaoPlace =
+            place.provider == PlaceLinkProvider.KAKAO &&
+                place.placeId != null &&
+                place.placeId == shop.kakaoPlaceId
+        val sameNaverPlace =
+            place.provider == PlaceLinkProvider.NAVER &&
+                place.placeId != null &&
+                shop.naverPlaceUrl?.contains("/entry/place/${place.placeId}") == true
+        val sameName = place.name?.equals(shop.name, ignoreCase = true) == true
+        return sameKakaoPlace || sameNaverPlace || sameName
+    }
+
     private fun isSupportedUrl(url: String): Boolean {
         val value = url.trim().lowercase()
         val host =

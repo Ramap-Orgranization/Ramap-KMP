@@ -7,6 +7,7 @@ import com.peto.ramap.domain.model.report.PlaceReportTextParser
 import com.peto.ramap.domain.model.report.UnregisteredPlaceReport
 import com.peto.ramap.domain.model.shop.Location
 import com.peto.ramap.domain.model.shop.SearchQuery
+import com.peto.ramap.domain.repository.PlaceLinkResolver
 import com.peto.ramap.domain.repository.RamenShopRepository
 import com.peto.ramap.domain.repository.ReverseGeocoder
 import com.peto.ramap.domain.repository.ShopReportRepository
@@ -40,6 +41,7 @@ import kotlin.time.Duration.Companion.milliseconds
 
 class PlaceReportViewModel(
     private val ramenShopRepository: RamenShopRepository,
+    private val placeLinkResolver: PlaceLinkResolver,
     private val reportRepository: ShopReportRepository,
     private val currentLocationStore: CurrentLocationStore,
     private val reverseGeocoder: ReverseGeocoder,
@@ -134,7 +136,7 @@ class PlaceReportViewModel(
 
     private suspend fun processPlaceReport(placeUrl: String) {
         val extractedPlaceUrl = extractSupportedPlaceUrl(placeUrl) ?: return
-        val existingShop = findExistingShop(placeUrl) ?: return
+        val existingShop = findExistingShop(placeUrl, extractedPlaceUrl) ?: return
         if (existingShop) {
             showToast(Res.string.place_report_existing_shop_message)
             return
@@ -157,18 +159,31 @@ class PlaceReportViewModel(
         }
     }
 
-    private suspend fun findExistingShop(placeUrl: String): Boolean? {
-        val placeName = PlaceReportTextParser.extractSharedPlaceName(placeUrl) ?: return false
+    private suspend fun findExistingShop(
+        placeUrl: String,
+        extractedPlaceUrl: String,
+    ): Boolean? {
+        val placeName = PlaceReportTextParser.extractSharedPlaceName(placeUrl)
+        val resolvedPlace =
+            if (placeName == null) {
+                placeLinkResolver.resolve(extractedPlaceUrl)
+            } else {
+                null
+            }
+        val searchQuery = placeName ?: resolvedPlace?.name ?: resolvedPlace?.placeId ?: return false
         var existingShop: Boolean? = null
         handleResult(
             result =
                 ramenShopRepository.searchRamenShops(
-                    query = SearchQuery(placeName),
+                    query = SearchQuery(searchQuery),
                     limit = SEARCH_RESULT_LIMIT,
                 ),
             onSuccess = { shops ->
                 existingShop =
-                    shops.values.any { PlaceReportTextParser.matchesSharedPlace(placeUrl, it) }
+                    shops.values.any { shop ->
+                        PlaceReportTextParser.matchesSharedPlace(placeUrl, shop) ||
+                            (resolvedPlace != null && PlaceReportTextParser.matchesResolvedPlace(resolvedPlace, shop))
+                    }
             },
             onError = { showToast(Res.string.place_report_failure_message, ToastType.ERROR) },
         )

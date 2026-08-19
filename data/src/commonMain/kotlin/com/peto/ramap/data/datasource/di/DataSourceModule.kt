@@ -13,6 +13,7 @@ import com.peto.ramap.data.datasource.place.PlaceSearchDataSource
 import com.peto.ramap.data.datasource.place.RemotePlaceSearchDataSource
 import com.peto.ramap.data.datasource.ranking.RemoteShopRankingDataSource
 import com.peto.ramap.data.datasource.ranking.ShopRankingDataSource
+import com.peto.ramap.data.datasource.report.RemotePlaceLinkResolver
 import com.peto.ramap.data.datasource.report.RemoteShopReportDataSource
 import com.peto.ramap.data.datasource.report.ShopReportDataSource
 import com.peto.ramap.data.datasource.shop.RamenShopDataSource
@@ -21,6 +22,7 @@ import com.peto.ramap.data.datasource.update.AppUpdatePolicyDataSource
 import com.peto.ramap.data.datasource.update.RemoteAppUpdatePolicyDataSource
 import com.peto.ramap.data.datasource.waiting.RemoteShopWaitingSystemDataSource
 import com.peto.ramap.data.datasource.waiting.ShopWaitingSystemDataSource
+import com.peto.ramap.domain.repository.PlaceLinkResolver
 import com.peto.ramap.domain.repository.ReverseGeocoder
 import io.github.jan.supabase.SupabaseClient
 import io.ktor.client.HttpClient
@@ -52,6 +54,7 @@ val dataSourceModule =
         single<ShopReportDataSource> {
             RemoteShopReportDataSource(get<SupabaseClient>())
         }
+        single<PlaceLinkResolver> { RemotePlaceLinkResolver(get<HttpClient>()) }
         single<ReverseGeocoder> { SupabaseReverseGeocoder(get()) }
         single<AppUpdatePolicyDataSource> {
             RemoteAppUpdatePolicyDataSource(get<SupabaseClient>())

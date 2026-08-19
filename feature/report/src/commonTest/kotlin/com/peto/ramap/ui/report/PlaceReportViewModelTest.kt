@@ -6,10 +6,15 @@ import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.coroutinesTest
 import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
+import com.peto.ramap.domain.model.report.PlaceLinkProvider
+import com.peto.ramap.domain.model.report.ResolvedPlaceLink
 import com.peto.ramap.domain.model.shop.Location
+import com.peto.ramap.domain.model.shop.RamenShops
+import com.peto.ramap.domain.repository.PlaceLinkResolver
 import com.peto.ramap.domain.repository.ReverseGeocoder
 import com.peto.ramap.fake.FakeRamenShopRepository
 import com.peto.ramap.fake.FakeShopReportRepository
+import com.peto.ramap.fixture.ramenShopFixture
 import com.peto.ramap.platform.location.CurrentLocationProvider
 import com.peto.ramap.platform.location.PlatformLocation
 import com.peto.ramap.platform.permission.PermissionStatus
@@ -39,6 +44,60 @@ class PlaceReportViewModelTest {
         assertFalse(PlaceReportUiState(placeUrl = " \t\n").canSubmitPlaceUrl)
         assertTrue(PlaceReportUiState(placeUrl = "ㅗㅗ").canSubmitPlaceUrl)
     }
+
+    @Test
+    fun `URL만 입력해도 해석된 카카오 장소 ID가 기존 매장과 같으면 제보하지 않는다`() =
+        coroutinesTest {
+            val reportRepository = FakeShopReportRepository()
+            val shop =
+                ramenShopFixture(kakaoPlaceId = "1521564391", name = "멘코지")
+            val viewModel =
+                placeReportViewModel(
+                    ramenShopRepository =
+                        FakeRamenShopRepository(
+                            searchResult =
+                                RamenShops(mapOf(shop.id to shop)),
+                        ),
+                    reportRepository = reportRepository,
+                    placeLinkResolver =
+                        PlaceLinkResolver {
+                            ResolvedPlaceLink(PlaceLinkProvider.KAKAO, placeId = "1521564391")
+                        },
+                )
+
+            viewModel.dispatch(PlaceReportIntent.OnPlaceUrlChanged("https://kko.to/2lSFVyW1b2"))
+            viewModel.dispatch(PlaceReportIntent.OnPlaceReportSubmit)
+            runCurrent()
+
+            assertEquals(0, reportRepository.placeReports.size)
+        }
+
+    @Test
+    fun `URL만 입력해도 해석된 네이버 장소명이 기존 매장과 같으면 제보하지 않는다`() =
+        coroutinesTest {
+            val reportRepository = FakeShopReportRepository()
+            val shop =
+                ramenShopFixture(name = "라멘야 시마")
+            val viewModel =
+                placeReportViewModel(
+                    ramenShopRepository =
+                        FakeRamenShopRepository(
+                            searchResult =
+                                RamenShops(mapOf(shop.id to shop)),
+                        ),
+                    reportRepository = reportRepository,
+                    placeLinkResolver =
+                        PlaceLinkResolver {
+                            ResolvedPlaceLink(PlaceLinkProvider.NAVER, name = "라멘야 시마")
+                        },
+                )
+
+            viewModel.dispatch(PlaceReportIntent.OnPlaceUrlChanged("https://naver.me/5MvGvjXa"))
+            viewModel.dispatch(PlaceReportIntent.OnPlaceReportSubmit)
+            runCurrent()
+
+            assertEquals(0, reportRepository.placeReports.size)
+        }
 
     @Test
     fun `지원하지 않는 장소 URL을 제출하면 에러 토스트를 보여준다`() =
@@ -322,12 +381,14 @@ class PlaceReportViewModelTest {
 
 private fun placeReportViewModel(
     ramenShopRepository: FakeRamenShopRepository = FakeRamenShopRepository(),
+    placeLinkResolver: PlaceLinkResolver = PlaceLinkResolver { null },
     currentLocationStore: CurrentLocationStore = CurrentLocationStore(),
     reverseGeocoder: ReverseGeocoder = ReverseGeocoder { RamapResult.Success("") },
     reportRepository: FakeShopReportRepository = FakeShopReportRepository(),
     currentLocationProvider: CurrentLocationProvider = CurrentLocationProvider { null },
 ) = PlaceReportViewModel(
     ramenShopRepository = ramenShopRepository,
+    placeLinkResolver = placeLinkResolver,
     reportRepository = reportRepository,
     currentLocationStore = currentLocationStore,
     reverseGeocoder = reverseGeocoder,

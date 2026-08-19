@@ -46,4 +46,19 @@ class UnregisteredPlaceReportTest {
 
         assertTrue(PlaceReportTextParser.matchesSharedPlace(content, shop))
     }
+
+    @Test
+    fun `해석된 카카오 장소 ID가 기존 매장과 같으면 일치한다`() {
+        val shop =
+            com.peto.ramap.fixture
+                .ramenShopFixture()
+                .copy(kakaoPlaceId = "1521564391")
+
+        assertTrue(
+            PlaceReportTextParser.matchesResolvedPlace(
+                ResolvedPlaceLink(PlaceLinkProvider.KAKAO, placeId = "1521564391"),
+                shop,
+            ),
+        )
+    }
 }
