@@ -5,6 +5,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -53,6 +55,7 @@ internal fun eventSection(
     title: String,
     events: List<ShopEvents>,
     isOngoingSection: Boolean,
+    useHorizontalScroll: Boolean = true,
     horizontalContentPadding: Dp,
     onEventClick: (ShopEvent) -> Unit,
     onEventGroupClick: (ShopEvents) -> Unit,
@@ -72,24 +75,58 @@ internal fun eventSection(
     }
     if (isOngoingSection) {
         scope.item(key = "$title-events") {
-            LazyRow(
-                contentPadding = PaddingValues(horizontal = horizontalContentPadding),
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-            ) {
-                items(
-                    items = events,
-                    key = { eventGroup -> eventGroup.representativeEvent.venueShopId },
-                ) { eventGroup ->
-                    OngoingEventShopItem(
-                        eventGroup = eventGroup,
-                        onClick = {
-                            if (eventGroup.hasMultipleEvents) {
-                                onEventGroupClick(eventGroup)
-                            } else {
-                                onEventClick(eventGroup.representativeEvent)
+            if (useHorizontalScroll) {
+                LazyRow(
+                    contentPadding = PaddingValues(horizontal = horizontalContentPadding),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    items(
+                        items = events,
+                        key = { eventGroup -> eventGroup.representativeEvent.venueShopId },
+                    ) { eventGroup ->
+                        OngoingEventShopItem(
+                            eventGroup = eventGroup,
+                            onClick = {
+                                if (eventGroup.hasMultipleEvents) {
+                                    onEventGroupClick(eventGroup)
+                                } else {
+                                    onEventClick(eventGroup.representativeEvent)
+                                }
+                            },
+                        )
+                    }
+                }
+            } else {
+                Column(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = horizontalContentPadding),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    events.chunked(4).forEach { rowEvents ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        ) {
+                            rowEvents.forEach { eventGroup ->
+                                OngoingEventShopItem(
+                                    eventGroup = eventGroup,
+                                    modifier = Modifier.weight(1f),
+                                    onClick = {
+                                        if (eventGroup.hasMultipleEvents) {
+                                            onEventGroupClick(eventGroup)
+                                        } else {
+                                            onEventClick(eventGroup.representativeEvent)
+                                        }
+                                    },
+                                )
                             }
-                        },
-                    )
+                            repeat(4 - rowEvents.size) {
+                                Spacer(Modifier.weight(1f))
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -110,13 +147,13 @@ internal fun eventSection(
 @Composable
 private fun OngoingEventShopItem(
     eventGroup: ShopEvents,
+    modifier: Modifier = Modifier.width(72.dp),
     onClick: () -> Unit,
 ) {
     val event = eventGroup.representativeEvent
     Column(
         modifier =
-            Modifier
-                .width(72.dp)
+            modifier
                 .noRippleClickable(onClick = onClick),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(6.dp),

@@ -313,10 +313,7 @@ private fun EventDetailContent(
         AppText("🍜 ${event.title}", style = AppTextStyle.H1, color = GrayColor.C500)
 
         event.cancellationReason?.let { reason ->
-            EventCancellationNotice(
-                reason = reason,
-                modifier = Modifier.padding(top = 16.dp),
-            )
+            EventCancellationNotice(reason)
         }
 
         EventImages(event.displayImageUrls)

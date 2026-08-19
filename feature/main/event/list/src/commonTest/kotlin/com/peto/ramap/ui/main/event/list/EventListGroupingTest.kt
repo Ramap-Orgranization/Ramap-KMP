@@ -55,6 +55,17 @@ class EventListGroupingTest {
     }
 
     @Test
+    fun `오늘 취소된 이벤트는 진행 중 목록에서 제외하고 취소가 끝나면 다시 노출한다`() {
+        val cancelledToday = event(id = "cancelled-today", isToday = true).copy(isCancelledToday = true)
+        val ongoing = event(id = "ongoing", isToday = true)
+
+        val (ongoingEvents, upcomingEvents) = partitionBySchedule(listOf(cancelledToday, ongoing))
+
+        assertEquals(listOf(ongoing), ongoingEvents)
+        assertEquals(emptyList(), upcomingEvents)
+    }
+
+    @Test
     fun `이벤트 필터는 최초 응답을 다시 조회하지 않고 타입별 오늘과 예정 목록을 만든다`() {
         val events =
             listOf(
