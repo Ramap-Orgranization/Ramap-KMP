@@ -3,6 +3,7 @@ package com.peto.ramap.network.execute
 import co.touchlab.kermit.Logger
 import com.peto.ramap.core.result.RamapError
 import com.peto.ramap.core.result.RamapResult
+import io.github.jan.supabase.exceptions.RestException
 import io.ktor.client.plugins.HttpRequestTimeoutException
 import io.ktor.client.plugins.ResponseException
 import kotlinx.coroutines.CancellationException
@@ -17,6 +18,11 @@ suspend inline fun <T> invokeRequest(crossinline call: suspend () -> T): RamapRe
         RamapResult.Success(call())
     } catch (exception: CancellationException) {
         throw exception
+    } catch (exception: RestException) {
+        networkLogger.d(exception) {
+            "supabase response exception status=${exception.response.status.value}, message=${exception.message}"
+        }
+        RamapResult.Error(RamapError.Http(exception.response.status.value, exception))
     } catch (exception: ResponseException) {
         networkLogger.d(exception) {
             "response exception status=${exception.response.status.value}, message=${exception.message}"
