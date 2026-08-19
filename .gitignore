@@ -45,6 +45,16 @@ AGENTS.md
 /distribution/
 /marketing
 tools
+!tools/
+tools/*
+!tools/instagram-collector/
+!tools/instagram-collector/**
+!tools/instagram-review/
+!tools/instagram-review/**
+tools/instagram-collector/**/__pycache__/
+tools/instagram-collector/**/*.pyc
+tools/instagram-review/**/__pycache__/
+tools/instagram-review/**/*.pyc
 /trace_processor
 /artifacts
 iosApp/iosApp/GoogleService-Info-Release.plist
