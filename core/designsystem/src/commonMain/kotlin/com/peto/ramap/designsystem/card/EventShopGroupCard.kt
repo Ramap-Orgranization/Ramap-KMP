@@ -65,11 +65,11 @@ fun EventShopGroupCard(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
-            if (showHeaderCancelledBadge) {
+            if (showHeaderCancelledBadge && eventGroup.any(isCancelled)) {
                 ShopEventResourceMapper
                     .statusLabel(
-                        isCancelled = eventGroup.any(isCancelled),
-                        isSoldOut = eventGroup.any(isSoldOut),
+                        isCancelled = true,
+                        isSoldOut = false,
                     )?.let { statusLabel ->
                         EventStatusTag(stringResource(statusLabel))
                     }
