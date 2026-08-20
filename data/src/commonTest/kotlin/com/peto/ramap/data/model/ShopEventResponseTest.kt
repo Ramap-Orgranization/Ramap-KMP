@@ -15,6 +15,13 @@ class ShopEventResponseTest {
     }
 
     @Test
+    fun `신메뉴 타입을 도메인 이벤트로 변환한다`() {
+        val event = response(eventType = "new_menu").toDomain()
+
+        assertEquals(ShopEventType.NEW_MENU, event?.type)
+    }
+
+    @Test
     fun `종료일이 없으면 도메인 이벤트에도 종료일 미정으로 변환한다`() {
         val event =
             response(eventType = "limited_menu", endDate = null).toDomain()
