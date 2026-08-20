@@ -9,7 +9,7 @@ import com.peto.ramap.ui.loading.LoadState as TaskLoadState
 
 data class EventsUiState(
     val loadedEvents: List<ShopEvent> = emptyList(),
-    val selectedFilter: EventFilter = EventFilter.ALL,
+    val selectedFilter: EventFilter = EventFilter.EVENT,
     val ongoingEvents: List<ShopEvents> = emptyList(),
     val upcomingEvents: List<ShopEvents> = emptyList(),
     val showError: Boolean = false,

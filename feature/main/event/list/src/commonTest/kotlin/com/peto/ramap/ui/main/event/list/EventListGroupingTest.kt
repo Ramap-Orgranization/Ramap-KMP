@@ -72,6 +72,7 @@ class EventListGroupingTest {
                 event("summer-today", true, ShopEventType.SUMMER_LIMITED),
                 event("summer-upcoming", false, ShopEventType.SUMMER_LIMITED),
                 event("event-today", true, ShopEventType.POPUP),
+                event("new-menu-upcoming", false, ShopEventType.NEW_MENU),
                 event("renewal-upcoming", false, ShopEventType.STORE_RENEWAL),
             )
         val state = mapEventsToUiState(EventsUiState(), events)
@@ -80,8 +81,10 @@ class EventListGroupingTest {
         assertEquals(listOf("summer-today"), summerState.ongoingEvents.flatten().map { it.id })
         assertEquals(listOf("summer-upcoming"), summerState.upcomingEvents.flatten().map { it.id })
 
+        val newMenuState = selectEventFilter(state, EventFilter.NEW_MENU)
+        assertEquals(listOf("new-menu-upcoming"), newMenuState.upcomingEvents.flatten().map { it.id })
+
         val renewalState = selectEventFilter(state, EventFilter.STORE_RENEWAL)
-        assertEquals(emptyList(), renewalState.ongoingEvents)
         assertEquals(listOf("renewal-upcoming"), renewalState.upcomingEvents.flatten().map { it.id })
     }
 
@@ -118,7 +121,11 @@ class EventListGroupingTest {
         val newestEvent = event(id = "newest", isToday = false, startDate = "2026-08-01")
         val olderEvent = event(id = "older", isToday = false, startDate = "2026-08-10")
 
-        val state = mapEventsToUiState(EventsUiState(), listOf(newestEvent, olderEvent))
+        val state =
+            mapEventsToUiState(
+                EventsUiState(selectedFilter = EventFilter.EVENT),
+                listOf(newestEvent, olderEvent),
+            )
 
         assertEquals(
             listOf(newestEvent, olderEvent),

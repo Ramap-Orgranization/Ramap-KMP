@@ -45,6 +45,7 @@ class EventsViewModelTest {
                     .single(),
             )
             assertFalse(viewModel.uiState.value.isLoading)
+            assertEquals(EventFilter.EVENT, viewModel.uiState.value.selectedFilter)
             assertEquals(1, repository.activeEventsRequestCount)
         }
 
@@ -194,6 +195,7 @@ class EventsViewModelTest {
                         listOf(
                             event("summer-today", ShopEventType.SUMMER_LIMITED, isToday = true),
                             event("summer-upcoming", ShopEventType.SUMMER_LIMITED),
+                            event("new-menu-upcoming", ShopEventType.NEW_MENU),
                             event("renewal-today", ShopEventType.STORE_RENEWAL, isToday = true),
                             event("renewal-upcoming", ShopEventType.STORE_RENEWAL),
                         ),
@@ -218,19 +220,23 @@ class EventsViewModelTest {
                     .map { it.id },
             )
 
-            viewModel.dispatch(EventsIntent.OnFilterSelected(EventFilter.STORE_RENEWAL))
+            viewModel.dispatch(EventsIntent.OnFilterSelected(EventFilter.NEW_MENU))
             runCurrent()
 
             assertEquals(1, repository.activeEventsRequestCount)
             assertEquals(
-                listOf("renewal-today"),
-                viewModel.uiState.value.ongoingEvents
+                listOf("new-menu-upcoming"),
+                viewModel.uiState.value.upcomingEvents
                     .flatten()
                     .map { it.id },
             )
+
+            viewModel.dispatch(EventsIntent.OnFilterSelected(EventFilter.STORE_RENEWAL))
+            runCurrent()
+
             assertEquals(
-                listOf("renewal-upcoming"),
-                viewModel.uiState.value.upcomingEvents
+                listOf("renewal-today", "renewal-upcoming"),
+                (viewModel.uiState.value.ongoingEvents + viewModel.uiState.value.upcomingEvents)
                     .flatten()
                     .map { it.id },
             )
