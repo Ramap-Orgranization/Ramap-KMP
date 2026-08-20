@@ -48,6 +48,7 @@ import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.event_calendar_open
+import ramap.shared.generated.resources.event_filter_summer_limited
 import ramap.shared.generated.resources.event_list_error_description
 import ramap.shared.generated.resources.event_list_error_title
 import ramap.shared.generated.resources.event_list_ongoing_section
@@ -128,6 +129,7 @@ internal fun EventsScreen(
                         )
 
                     else -> {
+                        val summerLimitedTitle = stringResource(Res.string.event_filter_summer_limited)
                         val ongoingTitle = stringResource(Res.string.event_list_ongoing_section)
                         val upcomingTitle = stringResource(Res.string.event_list_upcoming_section)
                         LazyColumn(
@@ -143,11 +145,21 @@ internal fun EventsScreen(
                                 )
                             }
 
-                            if (uiState.ongoingEvents.isEmpty() && uiState.upcomingEvents.isEmpty()) {
+                            if (uiState.isEmpty) {
                                 item {
                                     EventListEmptyContent(modifier = Modifier.fillMaxSize())
                                 }
                             } else {
+                                eventSection(
+                                    scope = this,
+                                    title = summerLimitedTitle,
+                                    events = uiState.summerLimitedEvents,
+                                    isOngoingSection = true,
+                                    useHorizontalScroll = uiState.upcomingEvents.isNotEmpty(),
+                                    horizontalContentPadding = 15.dp,
+                                    onEventClick = onEventClick,
+                                    onEventGroupClick = { selectedEventGroup = it },
+                                )
                                 eventSection(
                                     scope = this,
                                     title = ongoingTitle,

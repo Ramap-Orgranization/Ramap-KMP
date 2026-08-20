@@ -203,13 +203,10 @@ class EventsViewModelTest {
             val viewModel = EventsViewModel(repository, EventsAnalytics(FakeAnalyticsTracker()))
             runCurrent()
 
-            viewModel.dispatch(EventsIntent.OnFilterSelected(EventFilter.SUMMER_LIMITED))
-            runCurrent()
-
             assertEquals(1, repository.activeEventsRequestCount)
             assertEquals(
                 listOf("summer-today"),
-                viewModel.uiState.value.ongoingEvents
+                viewModel.uiState.value.summerLimitedEvents
                     .flatten()
                     .map { it.id },
             )

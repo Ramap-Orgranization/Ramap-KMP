@@ -6,12 +6,10 @@ import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.event_filter_event
 import ramap.shared.generated.resources.event_filter_new_menu
 import ramap.shared.generated.resources.event_filter_store_renewal
-import ramap.shared.generated.resources.event_filter_summer_limited
 
 object EventFilterResourceMapper {
     fun label(filter: EventFilter): StringResource =
         when (filter) {
-            EventFilter.SUMMER_LIMITED -> Res.string.event_filter_summer_limited
             EventFilter.EVENT -> Res.string.event_filter_event
             EventFilter.NEW_MENU -> Res.string.event_filter_new_menu
             EventFilter.STORE_RENEWAL -> Res.string.event_filter_store_renewal
