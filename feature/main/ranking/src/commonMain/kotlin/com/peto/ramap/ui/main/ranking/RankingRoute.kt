@@ -10,6 +10,7 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -61,6 +62,10 @@ fun RankingRoute(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val listState = rememberLazyListState()
     var rankingDetailShopId by rememberSaveable { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(uiState.areaFilter, uiState.selectedCategories) {
+        listState.scrollToItem(0)
+    }
 
     DisposableEffect(Unit) {
         onDispose { rankingDetailShopId = null }
