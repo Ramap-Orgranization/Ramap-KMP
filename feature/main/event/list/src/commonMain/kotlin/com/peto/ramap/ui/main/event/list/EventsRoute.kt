@@ -48,11 +48,12 @@ import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.event_calendar_open
+import ramap.shared.generated.resources.event_filter_summer_limited
 import ramap.shared.generated.resources.event_list_error_description
 import ramap.shared.generated.resources.event_list_error_title
 import ramap.shared.generated.resources.event_list_ongoing_section
 import ramap.shared.generated.resources.event_list_upcoming_section
-import ramap.shared.generated.resources.ic_event
+import ramap.shared.generated.resources.ic_event_calendar
 import ramap.shared.generated.resources.laduck_error_crying
 
 @Composable
@@ -127,10 +128,8 @@ internal fun EventsScreen(
                             modifier = Modifier.fillMaxSize(),
                         )
 
-                    uiState.ongoingEvents.isEmpty() &&
-                        uiState.upcomingEvents.isEmpty() -> EventListEmptyContent()
-
                     else -> {
+                        val summerLimitedTitle = stringResource(Res.string.event_filter_summer_limited)
                         val ongoingTitle = stringResource(Res.string.event_list_ongoing_section)
                         val upcomingTitle = stringResource(Res.string.event_list_upcoming_section)
                         LazyColumn(
@@ -146,25 +145,41 @@ internal fun EventsScreen(
                                 )
                             }
 
-                            eventSection(
-                                scope = this,
-                                title = ongoingTitle,
-                                events = uiState.ongoingEvents,
-                                isOngoingSection = true,
-                                useHorizontalScroll = uiState.upcomingEvents.isNotEmpty(),
-                                horizontalContentPadding = 15.dp,
-                                onEventClick = onEventClick,
-                                onEventGroupClick = { selectedEventGroup = it },
-                            )
-                            eventSection(
-                                scope = this,
-                                title = upcomingTitle,
-                                events = uiState.upcomingEvents,
-                                isOngoingSection = false,
-                                horizontalContentPadding = 15.dp,
-                                onEventClick = onEventClick,
-                                onEventGroupClick = { selectedEventGroup = it },
-                            )
+                            if (uiState.isEmpty) {
+                                item {
+                                    EventListEmptyContent(modifier = Modifier.fillMaxSize())
+                                }
+                            } else {
+                                eventSection(
+                                    scope = this,
+                                    title = summerLimitedTitle,
+                                    events = uiState.summerLimitedEvents,
+                                    isOngoingSection = true,
+                                    useHorizontalScroll = uiState.upcomingEvents.isNotEmpty(),
+                                    horizontalContentPadding = 15.dp,
+                                    onEventClick = onEventClick,
+                                    onEventGroupClick = { selectedEventGroup = it },
+                                )
+                                eventSection(
+                                    scope = this,
+                                    title = ongoingTitle,
+                                    events = uiState.ongoingEvents,
+                                    isOngoingSection = true,
+                                    useHorizontalScroll = uiState.upcomingEvents.isNotEmpty(),
+                                    horizontalContentPadding = 15.dp,
+                                    onEventClick = onEventClick,
+                                    onEventGroupClick = { selectedEventGroup = it },
+                                )
+                                eventSection(
+                                    scope = this,
+                                    title = upcomingTitle,
+                                    events = uiState.upcomingEvents,
+                                    isOngoingSection = false,
+                                    horizontalContentPadding = 15.dp,
+                                    onEventClick = onEventClick,
+                                    onEventGroupClick = { selectedEventGroup = it },
+                                )
+                            }
                         }
                     }
                 }
@@ -176,7 +191,7 @@ internal fun EventsScreen(
                 contentColor = CommonColor.White,
             ) {
                 Icon(
-                    painter = painterResource(Res.drawable.ic_event),
+                    painter = painterResource(Res.drawable.ic_event_calendar),
                     contentDescription = stringResource(Res.string.event_calendar_open),
                 )
             }

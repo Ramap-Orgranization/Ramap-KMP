@@ -66,23 +66,38 @@ class EventListGroupingTest {
     }
 
     @Test
-    fun `이벤트 필터는 최초 응답을 다시 조회하지 않고 타입별 오늘과 예정 목록을 만든다`() {
+    fun `이벤트 탭은 여름 한정을 진행 중 목록 위 별도 그룹으로 표시한다`() {
         val events =
             listOf(
                 event("summer-today", true, ShopEventType.SUMMER_LIMITED),
                 event("summer-upcoming", false, ShopEventType.SUMMER_LIMITED),
                 event("event-today", true, ShopEventType.POPUP),
+                event("new-menu-upcoming", false, ShopEventType.NEW_MENU),
                 event("renewal-upcoming", false, ShopEventType.STORE_RENEWAL),
             )
         val state = mapEventsToUiState(EventsUiState(), events)
 
-        val summerState = selectEventFilter(state, EventFilter.SUMMER_LIMITED)
-        assertEquals(listOf("summer-today"), summerState.ongoingEvents.flatten().map { it.id })
-        assertEquals(listOf("summer-upcoming"), summerState.upcomingEvents.flatten().map { it.id })
+        assertEquals(listOf("summer-today"), state.summerLimitedEvents.flatten().map { it.id })
+        assertEquals(listOf("event-today"), state.ongoingEvents.flatten().map { it.id })
+        assertEquals(
+            listOf("summer-upcoming"),
+            state.upcomingEvents.flatten().map { it.id },
+        )
+
+        val newMenuState = selectEventFilter(state, EventFilter.NEW_MENU)
+        assertEquals(listOf("new-menu-upcoming"), newMenuState.upcomingEvents.flatten().map { it.id })
 
         val renewalState = selectEventFilter(state, EventFilter.STORE_RENEWAL)
-        assertEquals(emptyList(), renewalState.ongoingEvents)
         assertEquals(listOf("renewal-upcoming"), renewalState.upcomingEvents.flatten().map { it.id })
+    }
+
+    @Test
+    fun `이벤트 목록이 모두 비어 있을 때만 빈 상태다`() {
+        assertTrue(EventsUiState().isEmpty)
+        assertEquals(
+            false,
+            EventsUiState(ongoingEvents = listOf(ShopEvents(listOf(event("ongoing", true))))).isEmpty,
+        )
     }
 
     @Test
@@ -118,7 +133,11 @@ class EventListGroupingTest {
         val newestEvent = event(id = "newest", isToday = false, startDate = "2026-08-01")
         val olderEvent = event(id = "older", isToday = false, startDate = "2026-08-10")
 
-        val state = mapEventsToUiState(EventsUiState(), listOf(newestEvent, olderEvent))
+        val state =
+            mapEventsToUiState(
+                EventsUiState(selectedFilter = EventFilter.EVENT),
+                listOf(newestEvent, olderEvent),
+            )
 
         assertEquals(
             listOf(newestEvent, olderEvent),

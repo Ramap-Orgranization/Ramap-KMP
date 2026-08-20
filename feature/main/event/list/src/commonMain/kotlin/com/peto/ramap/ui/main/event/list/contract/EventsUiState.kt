@@ -9,7 +9,8 @@ import com.peto.ramap.ui.loading.LoadState as TaskLoadState
 
 data class EventsUiState(
     val loadedEvents: List<ShopEvent> = emptyList(),
-    val selectedFilter: EventFilter = EventFilter.ALL,
+    val selectedFilter: EventFilter = EventFilter.EVENT,
+    val summerLimitedEvents: List<ShopEvents> = emptyList(),
     val ongoingEvents: List<ShopEvents> = emptyList(),
     val upcomingEvents: List<ShopEvents> = emptyList(),
     val showError: Boolean = false,
@@ -21,6 +22,12 @@ data class EventsUiState(
 
     val isRefreshing: Boolean
         get() = loadState.isLoading(EventsLoadKey.Refresh)
+
+    val isEmpty: Boolean
+        get() =
+            summerLimitedEvents.isEmpty() &&
+                ongoingEvents.isEmpty() &&
+                upcomingEvents.isEmpty()
 
     override fun withLoadingState(loadState: TaskLoadState): EventsUiState = copy(loadState = loadState)
 }

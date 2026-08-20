@@ -16,11 +16,14 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.PrimaryTabRow
+import androidx.compose.material3.Tab
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.peto.ramap.designsystem.component.Skeleton
+import com.peto.ramap.domain.model.event.EventFilter
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.RamapTheme
 
@@ -32,6 +35,23 @@ internal fun EventListSkeleton(modifier: Modifier = Modifier) {
         verticalArrangement = Arrangement.spacedBy(12.dp),
         userScrollEnabled = false,
     ) {
+        item {
+            PrimaryTabRow(
+                selectedTabIndex = EventFilter.entries.indexOf(EventFilter.EVENT),
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                repeat(EventFilter.entries.size) { index ->
+                    Tab(
+                        selected = index == EventFilter.entries.indexOf(EventFilter.EVENT),
+                        onClick = {},
+                        enabled = false,
+                        text = {
+                            Skeleton(modifier = Modifier.width(48.dp).height(16.dp))
+                        },
+                    )
+                }
+            }
+        }
         item { EventSectionTitleSkeleton() }
         item { OngoingEventsSkeleton() }
         item { EventSectionTitleSkeleton() }

@@ -14,12 +14,14 @@ import ramap.shared.generated.resources.event_status_today
 import ramap.shared.generated.resources.event_status_upcoming
 import ramap.shared.generated.resources.event_type_collab
 import ramap.shared.generated.resources.event_type_limited_menu
+import ramap.shared.generated.resources.event_type_new_menu
 import ramap.shared.generated.resources.event_type_popup
 import ramap.shared.generated.resources.event_type_store_renewal
 import ramap.shared.generated.resources.event_type_summer_limited
 import ramap.shared.generated.resources.shop_event_notice_collab_participant_today
 import ramap.shared.generated.resources.shop_event_notice_collab_upcoming_with_shop
 import ramap.shared.generated.resources.shop_event_notice_limited_menu_upcoming
+import ramap.shared.generated.resources.shop_event_notice_new_menu_today
 import ramap.shared.generated.resources.shop_event_notice_participant_today
 import ramap.shared.generated.resources.shop_event_notice_store_renewal_today
 import ramap.shared.generated.resources.shop_event_notice_store_renewal_upcoming
@@ -48,6 +50,10 @@ class ShopEventResourceMapperTest {
         assertEquals(
             Res.string.event_type_summer_limited,
             ShopEventResourceMapper.typeLabel(ShopEventType.SUMMER_LIMITED),
+        )
+        assertEquals(
+            Res.string.event_type_new_menu,
+            ShopEventResourceMapper.typeLabel(ShopEventType.NEW_MENU),
         )
         assertEquals(
             Res.string.event_type_store_renewal,
@@ -116,6 +122,16 @@ class ShopEventResourceMapperTest {
             UiText(Res.string.shop_event_notice_store_renewal_upcoming),
             ShopEventResourceMapper.notice(
                 event(type = ShopEventType.STORE_RENEWAL, isToday = false),
+            ),
+        )
+    }
+
+    @Test
+    fun `신메뉴 안내 문구와 타입을 매핑한다`() {
+        assertEquals(
+            UiText(Res.string.shop_event_notice_new_menu_today),
+            ShopEventResourceMapper.notice(
+                event(type = ShopEventType.NEW_MENU, isToday = true),
             ),
         )
     }
