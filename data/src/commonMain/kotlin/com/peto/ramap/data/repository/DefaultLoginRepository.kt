@@ -1,5 +1,6 @@
 package com.peto.ramap.data.repository
 
+import co.touchlab.kermit.Logger
 import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.data.auth.loginWithApple
 import com.peto.ramap.data.auth.loginWithKakao
@@ -26,6 +27,8 @@ import kotlinx.coroutines.flow.map
 internal class DefaultLoginRepository(
     private val supabaseClient: SupabaseClient,
 ) : LoginRepository {
+    private val logger = Logger.withTag("LoginRepository")
+
     /**
      * 앱이 Supabase 구현을 알지 않고 인증 여부에 반응할 수 있도록 세션 상태를 변환합니다.
      */
@@ -47,27 +50,36 @@ internal class DefaultLoginRepository(
     override fun currentUserEmail(): String? = supabaseClient.auth.currentUserOrNull()?.email
 
     /** 플랫폼 카카오 SDK로 로그인한 뒤 Supabase 세션을 생성합니다. */
-    override suspend fun signIn(type: LoginType): RamapResult<Unit> =
-        invokeRequest {
-            when (type) {
-                LoginType.KAKAO -> {
-                    val token = loginWithKakao()
-                    supabaseClient.auth.signInWith(IDToken) {
-                        idToken = token.idToken
-                        provider = Kakao
-                        accessToken = token.accessToken
+    override suspend fun signIn(type: LoginType): RamapResult<Unit> {
+        val result =
+            invokeRequest {
+                when (type) {
+                    LoginType.KAKAO -> {
+                        val token = loginWithKakao()
+                        supabaseClient.auth.signInWith(IDToken) {
+                            idToken = token.idToken
+                            provider = Kakao
+                            accessToken = token.accessToken
+                        }
                     }
-                }
-                LoginType.APPLE -> {
-                    val token = loginWithApple()
-                    supabaseClient.auth.signInWith(IDToken) {
-                        idToken = token.idToken
-                        provider = Apple
-                        nonce = token.nonce
+                    LoginType.APPLE -> {
+                        val token = loginWithApple()
+                        supabaseClient.auth.signInWith(IDToken) {
+                            idToken = token.idToken
+                            provider = Apple
+                            nonce = token.nonce
+                        }
                     }
                 }
             }
+
+        if (result is RamapResult.Error) {
+            logger.e(result.error.cause) {
+                "sign-in failed type=${type.name}, cause=${result.error.cause?.message}"
+            }
         }
+        return result
+    }
 
     override suspend fun signOut(): RamapResult<Unit> =
         invokeRequest {
