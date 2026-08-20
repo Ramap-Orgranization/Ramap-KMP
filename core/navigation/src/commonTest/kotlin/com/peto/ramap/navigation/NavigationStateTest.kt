@@ -24,7 +24,7 @@ class NavigationStateTest {
         navigationState.showShopOnMap("shop")
 
         assertEquals(TabStatus.MAP, navigationState.selectedTab)
-        assertEquals(ScreenRoutes.TabRoutes("shop"), navigationState.currentRoute)
+        assertEquals(ScreenRoutes.MapRoutes("shop"), navigationState.currentRoute)
         assertEquals(
             listOf(ScreenRoutes.RankingTabRoutes),
             navigationState.backStacks.getValue(TabStatus.RANKING).toList(),
@@ -57,7 +57,7 @@ class NavigationStateTest {
     }
 
     @Test
-    fun `탭을 전환해도 각 탭의 중첩 경로를 유지한다`() {
+    fun `이벤트 탭을 떠나면 이벤트 스택을 초기화하고 다른 탭 스택은 유지한다`() {
         val navigationState = navigationState()
 
         navigationState.selectTopLevelTab(TabStatus.EVENT)
@@ -66,9 +66,8 @@ class NavigationStateTest {
         navigationState.showNotificationSettings()
         navigationState.selectTopLevelTab(TabStatus.EVENT)
 
-        assertEquals(ScreenRoutes.EventDetailRoutes("event-id"), navigationState.currentRoute)
         assertEquals(
-            listOf(ScreenRoutes.EventTabRoutes, ScreenRoutes.EventDetailRoutes("event-id")),
+            listOf(ScreenRoutes.EventTabRoutes(1)),
             navigationState.backStacks.getValue(TabStatus.EVENT).toList(),
         )
 
@@ -85,7 +84,7 @@ class NavigationStateTest {
         navigationState.pop()
 
         assertEquals(TabStatus.EVENT, navigationState.selectedTab)
-        assertEquals(ScreenRoutes.EventTabRoutes, navigationState.currentRoute)
+        assertEquals(ScreenRoutes.EventTabRoutes(), navigationState.currentRoute)
         assertTrue(navigationState.canNavigateBack)
     }
 
@@ -111,7 +110,7 @@ class NavigationStateTest {
         navigationState.pop()
 
         assertEquals(TabStatus.MAP, navigationState.selectedTab)
-        assertEquals(ScreenRoutes.TabRoutes(), navigationState.currentRoute)
+        assertEquals(ScreenRoutes.MapRoutes(), navigationState.currentRoute)
     }
 
     @Test
@@ -145,7 +144,7 @@ class NavigationStateTest {
 
         assertEquals(TabStatus.EVENT, navigationState.selectedTab)
         assertEquals(
-            listOf(ScreenRoutes.EventTabRoutes),
+            listOf(ScreenRoutes.EventTabRoutes(1)),
             navigationState.backStacks.getValue(TabStatus.EVENT).toList(),
         )
     }
@@ -166,17 +165,17 @@ class NavigationStateTest {
     }
 
     @Test
-    fun `지도에서 매장을 열면 지도 스택만 교체하고 지도 탭을 선택한다`() {
+    fun `이벤트에서 매장을 열면 지도 스택을 교체하고 이벤트 스택을 초기화한다`() {
         val navigationState = navigationState(selectedTab = TabStatus.EVENT)
         navigationState.showEvent("event-id")
 
         navigationState.showShopOnMap("shop-id")
 
         assertEquals(TabStatus.MAP, navigationState.selectedTab)
-        assertEquals(ScreenRoutes.TabRoutes("shop-id"), navigationState.currentRoute)
+        assertEquals(ScreenRoutes.MapRoutes("shop-id"), navigationState.currentRoute)
         assertEquals(1, navigationState.currentBackStack.size)
         assertEquals(
-            ScreenRoutes.EventDetailRoutes("event-id"),
+            ScreenRoutes.EventTabRoutes(1),
             navigationState.backStacks.getValue(TabStatus.EVENT).last(),
         )
     }
@@ -191,7 +190,7 @@ class NavigationStateTest {
         )
 
         assertEquals(
-            ScreenRoutes.TabRoutes(
+            ScreenRoutes.MapRoutes(
                 shopId = "shop-id",
                 source = NavigationSource.RANKING,
             ),
@@ -210,7 +209,7 @@ class NavigationStateTest {
 
         assertEquals(TabStatus.MAP, navigationState.selectedTab)
         assertEquals(
-            listOf(ScreenRoutes.TabRoutes()),
+            listOf(ScreenRoutes.MapRoutes()),
             navigationState.backStacks.getValue(TabStatus.MAP).toList(),
         )
     }
@@ -252,12 +251,12 @@ class NavigationStateTest {
         val navigationState = navigationState(selectedTab = TabStatus.RANKING)
 
         navigationState.showShopOnMap("shop-id")
-        assertEquals(ScreenRoutes.TabRoutes("shop-id"), navigationState.currentRoute)
+        assertEquals(ScreenRoutes.MapRoutes("shop-id"), navigationState.currentRoute)
 
         navigationState.selectTopLevelTab(TabStatus.EVENT)
         navigationState.selectTopLevelTab(TabStatus.MAP)
 
-        assertEquals(ScreenRoutes.TabRoutes(), navigationState.currentRoute)
+        assertEquals(ScreenRoutes.MapRoutes(), navigationState.currentRoute)
     }
 
     @Test
@@ -271,7 +270,7 @@ class NavigationStateTest {
 
         assertTrue(navigationState.canNavigateBack)
         assertEquals(
-            ScreenRoutes.TabRoutes("shop-id", TabStatus.RANKING),
+            ScreenRoutes.MapRoutes("shop-id", TabStatus.RANKING),
             navigationState.currentRoute,
         )
 
@@ -279,7 +278,7 @@ class NavigationStateTest {
 
         assertEquals(TabStatus.RANKING, navigationState.selectedTab)
         assertEquals(ScreenRoutes.RankingTabRoutes, navigationState.currentRoute)
-        assertEquals(ScreenRoutes.TabRoutes(), navigationState.backStacks.getValue(TabStatus.MAP).single())
+        assertEquals(ScreenRoutes.MapRoutes(), navigationState.backStacks.getValue(TabStatus.MAP).single())
     }
 
     @Test
@@ -293,7 +292,7 @@ class NavigationStateTest {
         navigationState.consumeMapReturnOrigin()
 
         assertEquals(TabStatus.MAP, navigationState.selectedTab)
-        assertEquals(ScreenRoutes.TabRoutes(), navigationState.currentRoute)
+        assertEquals(ScreenRoutes.MapRoutes(), navigationState.currentRoute)
         assertFalse(navigationState.canNavigateBack)
     }
 
@@ -355,9 +354,9 @@ class NavigationStateTest {
             selectedTabState = mutableStateOf(selectedTab),
             backStacks =
                 mapOf(
-                    TabStatus.MAP to NavBackStack<NavKey>(ScreenRoutes.TabRoutes()),
+                    TabStatus.MAP to NavBackStack<NavKey>(ScreenRoutes.MapRoutes()),
                     TabStatus.RANKING to rankingBackStack,
-                    TabStatus.EVENT to NavBackStack<NavKey>(ScreenRoutes.EventTabRoutes),
+                    TabStatus.EVENT to NavBackStack<NavKey>(ScreenRoutes.EventTabRoutes()),
                     TabStatus.MY to NavBackStack<NavKey>(ScreenRoutes.MyTabRoutes),
                 ),
             onMapTabExited = onMapTabExited,

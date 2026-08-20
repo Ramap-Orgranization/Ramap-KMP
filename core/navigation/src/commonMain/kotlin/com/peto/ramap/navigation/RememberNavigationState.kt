@@ -22,9 +22,9 @@ fun rememberNavigationState(onMapTabExited: () -> Unit = {}): NavigationState {
             mutableStateOf(TabStatus.MAP)
         }
     val mapBackStack =
-        rememberNavBackStack(configuration = navigationConfiguration, ScreenRoutes.TabRoutes())
+        rememberNavBackStack(configuration = navigationConfiguration, ScreenRoutes.MapRoutes())
     val eventBackStack =
-        rememberNavBackStack(configuration = navigationConfiguration, ScreenRoutes.EventTabRoutes)
+        rememberNavBackStack(configuration = navigationConfiguration, ScreenRoutes.EventTabRoutes())
     val rankingBackStack =
         rememberNavBackStack(configuration = navigationConfiguration, ScreenRoutes.RankingTabRoutes)
     val myBackStack =
@@ -59,7 +59,7 @@ private fun rememberNavigationConfiguration(): SavedStateConfiguration =
 private fun navKeySerializersModule(): SerializersModule =
     SerializersModule {
         polymorphic(NavKey::class) {
-            subclass(ScreenRoutes.TabRoutes::class)
+            subclass(ScreenRoutes.MapRoutes::class)
             subclass(ScreenRoutes.EventTabRoutes::class)
             subclass(ScreenRoutes.EventCalendarRoutes::class)
             subclass(ScreenRoutes.RankingTabRoutes::class)

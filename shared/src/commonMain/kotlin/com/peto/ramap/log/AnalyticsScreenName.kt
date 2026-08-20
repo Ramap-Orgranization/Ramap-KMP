@@ -10,7 +10,7 @@ import com.peto.ramap.navigation.ScreenRoutes
 val ScreenRoutes.analyticsScreenName: String
     get() =
         when (this) {
-            is ScreenRoutes.TabRoutes -> "map"
+            is ScreenRoutes.MapRoutes -> "map"
             is ScreenRoutes.EventTabRoutes -> "event_list"
             is ScreenRoutes.EventCalendarRoutes -> "event_calendar"
             is ScreenRoutes.RankingTabRoutes -> "ranking"

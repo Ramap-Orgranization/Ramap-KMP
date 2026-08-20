@@ -5,7 +5,7 @@ import kotlinx.serialization.Serializable
 
 sealed interface ScreenRoutes : NavKey {
     @Serializable
-    data class TabRoutes(
+    data class MapRoutes(
         val shopId: String? = null,
         val returnTab: TabStatus? = null,
         val showShopDetail: Boolean = true,
@@ -13,7 +13,9 @@ sealed interface ScreenRoutes : NavKey {
     ) : ScreenRoutes
 
     @Serializable
-    data object EventTabRoutes : ScreenRoutes
+    data class EventTabRoutes(
+        val instanceId: Int = 0,
+    ) : ScreenRoutes
 
     @Serializable
     data object EventCalendarRoutes : ScreenRoutes
