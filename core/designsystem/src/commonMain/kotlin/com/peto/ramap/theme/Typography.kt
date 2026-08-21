@@ -12,6 +12,7 @@ data class AppTypography(
     val h1: TextStyle,
     val h2: TextStyle,
     val h3: TextStyle,
+    val h4: TextStyle,
     val h3Brand: TextStyle,
     val h4Brand: TextStyle,
     val t1: TextStyle,
@@ -58,6 +59,14 @@ internal fun provideAppTypography(): AppTypography {
                 fontSize = 22.sp,
                 lineHeight = lineHeightPercent(22f, 140f),
                 letterSpacing = letterSpacingPercent(22f, -1f),
+            ),
+        h4 =
+            TextStyle(
+                fontFamily = satoshiFamily,
+                fontWeight = FontWeight.Bold,
+                fontSize = 18.sp,
+                lineHeight = lineHeightPercent(18f, 140f),
+                letterSpacing = letterSpacingPercent(18f, -2f),
             ),
         h3Brand =
             TextStyle(
@@ -187,6 +196,7 @@ internal fun AppTextStyle.toTextStyle(typography: AppTypography): TextStyle =
         AppTextStyle.H1 -> typography.h1
         AppTextStyle.H2 -> typography.h2
         AppTextStyle.H3 -> typography.h3
+        AppTextStyle.H4 -> typography.h4
         AppTextStyle.H3Brand -> typography.h3Brand
         AppTextStyle.H4Brand -> typography.h4Brand
         AppTextStyle.T1 -> typography.t1

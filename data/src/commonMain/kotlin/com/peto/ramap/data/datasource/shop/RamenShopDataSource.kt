@@ -8,6 +8,8 @@ import com.peto.ramap.domain.model.shop.MapBounds
 import com.peto.ramap.domain.model.shop.SearchQuery
 
 internal interface RamenShopDataSource {
+    suspend fun fetchShopLikeCount(shopId: String): Long
+
     suspend fun fetchRamenShops(bounds: MapBounds): List<RamenShopResponse>
 
     suspend fun fetchRamenShopsByIds(shopIds: Set<String>): List<RamenShopResponse>

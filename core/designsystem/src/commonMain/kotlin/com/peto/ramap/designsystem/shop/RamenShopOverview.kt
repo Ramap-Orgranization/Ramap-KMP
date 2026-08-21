@@ -1,5 +1,6 @@
 package com.peto.ramap.designsystem.shop
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -14,6 +15,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.tooling.preview.Preview
@@ -39,9 +41,11 @@ import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.RamapTheme
 import com.peto.ramap.theme.SystemColor
+import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.apple_maps_icon
+import ramap.shared.generated.resources.ic_kid_star_filled
 import ramap.shared.generated.resources.ic_report
 import ramap.shared.generated.resources.instagram_icon
 import ramap.shared.generated.resources.kakao_map_icon
@@ -59,6 +63,7 @@ import ramap.shared.generated.resources.shop_detail_link_report
 @Composable
 fun RamenShopOverview(
     shop: RamenShop,
+    likeCount: Long = 0L,
     modifier: Modifier = Modifier,
     dragAreaModifier: Modifier = Modifier,
     waitingSystem: WaitingSystemUiModel? = null,
@@ -129,9 +134,9 @@ fun RamenShopOverview(
                     modifier =
                         Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 24.dp),
+                            .padding(horizontal = 20.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalAlignment = Alignment.Top,
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
                     RemoteShopImage(
                         url = shop.instagramProfileImageUrl,
@@ -142,18 +147,30 @@ fun RamenShopOverview(
                                     width = 1.dp,
                                     color = GrayColor.C100,
                                     shape = RoundedCornerShape(999.dp),
-                                ).size(40.dp)
+                                ).size(50.dp)
                                 .clip(CircleShape),
                     )
-                    AppText(
-                        text = shop.name,
-                        modifier =
-                            Modifier
-                                .weight(1f)
-                                .padding(top = 5.dp),
-                        style = AppTextStyle.H3,
-                        color = GrayColor.C500,
-                    )
+                    Column(modifier = Modifier.weight(1f)) {
+                        AppText(
+                            text = shop.name,
+                            style = AppTextStyle.H4,
+                            color = GrayColor.C500,
+                        )
+                        Row {
+                            Image(
+                                painter = painterResource(Res.drawable.ic_kid_star_filled),
+                                contentDescription = null,
+                                modifier = Modifier.size(15.dp),
+                                colorFilter = ColorFilter.tint(GrayColor.C400),
+                            )
+                            AppText(
+                                text = "$likeCount",
+                                style = AppTextStyle.B1,
+                                color = GrayColor.C400,
+                            )
+                        }
+                    }
+
                     ShopOverflowMenu(
                         shopId = shop.id,
                         isBookmarked = isBookmarked,
@@ -180,12 +197,12 @@ fun RamenShopOverview(
                     modifier =
                         Modifier
                             .padding(top = 10.dp)
-                            .padding(horizontal = 24.dp),
+                            .padding(horizontal = 20.dp),
                 )
             }
             Column(
                 verticalArrangement = Arrangement.spacedBy(10.dp),
-                modifier = Modifier.padding(horizontal = 24.dp),
+                modifier = Modifier.padding(horizontal = 20.dp),
             ) {
                 ShopInfoRow(
                     label = stringResource(Res.string.shop_detail_label_address),
@@ -206,7 +223,7 @@ fun RamenShopOverview(
 
         Column(
             verticalArrangement = Arrangement.spacedBy(10.dp),
-            modifier = Modifier.padding(horizontal = 24.dp),
+            modifier = Modifier.padding(horizontal = 20.dp),
         ) {
             shop.businessHoursDetails?.let { businessHours ->
                 BusinessHoursCard(
@@ -232,7 +249,7 @@ fun RamenShopOverview(
 
         Column(
             verticalArrangement = Arrangement.spacedBy(10.dp),
-            modifier = Modifier.padding(horizontal = 24.dp),
+            modifier = Modifier.padding(horizontal = 20.dp),
         ) {
             shop.instagramUrl?.takeIf(shouldShowExternalLink)?.let { instagramUrl ->
                 ShopLinkRow(

@@ -4,6 +4,7 @@ enum class AppTextStyle {
     H1,
     H2,
     H3,
+    H4,
     H3Brand,
     H4Brand,
     T1,

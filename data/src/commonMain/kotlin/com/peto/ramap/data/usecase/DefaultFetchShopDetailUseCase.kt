@@ -65,6 +65,7 @@ internal class DefaultFetchShopDetailUseCase(
     private suspend fun loadFresh(shopId: String): RamapResult<ShopDetail> =
         coroutineScope {
             val shopResult = async { ramenShopRepository.fetchRamenShops(setOf(shopId)) }
+            val likeCountResult = async { ramenShopRepository.fetchShopLikeCount(shopId) }
             val waitingResult = async { waitingSystemRepository.fetchShopWaitingSystem(shopId) }
             val eventResult = async { ramenShopRepository.fetchActiveShopEvent(shopId) }
             val noticeResult = async { operatingNoticeRepository.fetchActiveShopOperatingNotice(shopId) }
@@ -95,6 +96,7 @@ internal class DefaultFetchShopDetailUseCase(
                             RamapResult.Success(
                                 ShopDetail(
                                     shop = shop,
+                                    likeCount = (likeCountResult.await() as? RamapResult.Success)?.data ?: 0L,
                                     waitingSystem = waiting.data,
                                     event = activeEvent,
                                     operatingNotice = activeNotice,

@@ -24,6 +24,11 @@ internal class DefaultRamenShopRepository(
 ) : RamenShopRepository {
     private val calendarEventPageCache = mutableMapOf<String, CalendarEventPage>()
 
+    override suspend fun fetchShopLikeCount(shopId: String): RamapResult<Long> =
+        invokeRequest {
+            dataSource.fetchShopLikeCount(shopId)
+        }
+
     override suspend fun fetchActiveEvent(eventId: String): RamapResult<ShopEvent?> =
         invokeRequest {
             dataSource.fetchActiveEvent(eventId)?.let(::toDomain)?.takeIf(::isVisibleInActiveEvents)

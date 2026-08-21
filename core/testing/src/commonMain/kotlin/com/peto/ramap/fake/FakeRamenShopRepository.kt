@@ -23,8 +23,13 @@ class FakeRamenShopRepository(
     var activeEventError: RamapError? = null,
     var activeEventsError: RamapError? = null,
     var activeEventsDelayMillis: Long = 0,
+    private val shopLikeCount: Long = 0L,
+    var shopLikeCountError: RamapError? = null,
 ) : RamenShopRepository {
     val requestedActiveEventShopIds = mutableListOf<String>()
+
+    override suspend fun fetchShopLikeCount(shopId: String): RamapResult<Long> =
+        shopLikeCountError?.let { RamapResult.Error(it) } ?: RamapResult.Success(shopLikeCount)
 
     override suspend fun fetchActiveShopEvent(shopId: String): RamapResult<ShopEvent?> {
         requestedActiveEventShopIds += shopId

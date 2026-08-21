@@ -4,11 +4,13 @@ import com.peto.ramap.data.model.CalendarEventPageResponse
 import com.peto.ramap.data.model.RamenShopResponse
 import com.peto.ramap.data.model.ShopEventParticipantResponse
 import com.peto.ramap.data.model.ShopEventResponse
+import com.peto.ramap.data.model.ShopLikeCountResponse
 import com.peto.ramap.domain.model.shop.MapBounds
 import com.peto.ramap.domain.model.shop.SearchQuery
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.postgrest
+import io.github.jan.supabase.postgrest.query.Columns
 import io.github.jan.supabase.postgrest.query.filter.FilterOperator
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
@@ -16,6 +18,16 @@ import kotlinx.serialization.json.put
 internal class RemoteRamenShopDataSource(
     private val client: SupabaseClient,
 ) : RamenShopDataSource {
+    override suspend fun fetchShopLikeCount(shopId: String): Long =
+        client
+            .from(SHOP_BOOKMARK_COUNTS_VIEW)
+            .select(columns = Columns.list(COLUMN_SHOP_ID, COLUMN_LIKE_COUNT)) {
+                filter { eq(COLUMN_SHOP_ID, shopId) }
+                limit(1)
+            }.decodeSingleOrNull<ShopLikeCountResponse>()
+            ?.likeCount
+            ?: 0L
+
     override suspend fun fetchActiveEvents(): List<ShopEventResponse> =
         client
             .from(ACTIVE_EVENTS_VIEW)
@@ -138,6 +150,7 @@ internal class RemoteRamenShopDataSource(
 
     companion object {
         private const val TABLE_NAME = "shops"
+        private const val SHOP_BOOKMARK_COUNTS_VIEW = "shop_bookmark_counts"
         private const val EVENT_VIEW = "active_shop_events"
         private const val ACTIVE_EVENTS_VIEW = "active_events"
         private const val CALENDAR_EVENTS_VIEW = "calendar_events"
@@ -148,6 +161,8 @@ internal class RemoteRamenShopDataSource(
         private const val COLUMN_EVENT_ID = "event_id"
 
         private const val COLUMN_ID = "id"
+        private const val COLUMN_SHOP_ID = "shop_id"
+        private const val COLUMN_LIKE_COUNT = "like_count"
         private const val COLUMN_START_DATE = "start_date"
         private const val COLUMN_END_DATE = "end_date"
         private const val COLUMN_LAT = "lat"

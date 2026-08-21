@@ -19,6 +19,8 @@ internal class FakeRamenShopDataSource(
     private val participantResponses: List<ShopEventParticipantResponse> = emptyList(),
     private val error: Throwable? = null,
 ) : RamenShopDataSource {
+    override suspend fun fetchShopLikeCount(shopId: String): Long = 0L
+
     override suspend fun fetchActiveShopEvents(shopId: String): List<ShopEventResponse> = activeEventResponses
 
     override suspend fun fetchActiveEvents(): List<ShopEventResponse> = activeEventsResponses

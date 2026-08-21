@@ -109,6 +109,7 @@ fun ShopDetailContent(
                     val shop = state.detail.shop
                     RamenShopOverview(
                         shop = shop,
+                        likeCount = state.detail.likeCount,
                         dragAreaModifier = dragModifier,
                         waitingSystem = waitingSystem,
                         isBookmarked = isBookmarked,

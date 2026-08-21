@@ -26,6 +26,7 @@ class DefaultFetchShopDetailUseCaseTest {
             val ramenShopRepository =
                 FakeRamenShopRepository(
                     fetchByIdsResult = RamenShops(mapOf(shop.id to shop)),
+                    shopLikeCount = 7L,
                 )
             val waitingRepository =
                 FakeShopWaitingSystemRepository(waitingSystemFixture(shop.id))
@@ -47,6 +48,7 @@ class DefaultFetchShopDetailUseCaseTest {
             assertEquals(listOf(shop.id, shop.id), ramenShopRepository.requestedActiveEventShopIds)
             val lookup = assertIs<ShopDetailCacheLookup.Hit>(useCase.findCached(shop.id))
             assertEquals(shop.id, lookup.detail.shop.id)
+            assertEquals(7L, lookup.detail.likeCount)
         }
 
     @Test
@@ -94,6 +96,26 @@ class DefaultFetchShopDetailUseCaseTest {
 
             val detail = assertIs<ShopDetail>(assertIs<RamapResult.Success<*>>(result).data)
             assertNull(detail.event)
+        }
+
+    @Test
+    fun `좋아요 수 조회 실패는 상세 조회를 실패시키지 않고 0개로 표시한다`() =
+        runTest {
+            val shop = ramenShopFixture()
+            val useCase =
+                DefaultFetchShopDetailUseCase(
+                    FakeRamenShopRepository(
+                        fetchByIdsResult = RamenShops(mapOf(shop.id to shop)),
+                        shopLikeCountError = RamapError.Unknown(IllegalStateException("failed")),
+                    ),
+                    FakeShopWaitingSystemRepository(),
+                    FakeOperatingNoticeRepository(),
+                )
+
+            val result = useCase(shop.id)
+
+            val detail = assertIs<ShopDetail>(assertIs<RamapResult.Success<*>>(result).data)
+            assertEquals(0L, detail.likeCount)
         }
 
     @Test

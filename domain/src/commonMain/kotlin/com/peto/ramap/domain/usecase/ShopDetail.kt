@@ -7,6 +7,7 @@ import com.peto.ramap.domain.model.shop.WaitingSystem
 
 data class ShopDetail(
     val shop: RamenShop,
+    val likeCount: Long,
     val waitingSystem: WaitingSystem?,
     val event: ShopEvent?,
     val operatingNotice: OperatingNotice?,

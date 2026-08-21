@@ -38,6 +38,7 @@ internal class FakeFetchShopDetailUseCase(
     private suspend fun fetchDetail(shopId: String): RamapResult<ShopDetail> =
         coroutineScope {
             val shopsResult = async { ramenShopRepository.fetchRamenShops(setOf(shopId)) }
+            val likeCountResult = async { ramenShopRepository.fetchShopLikeCount(shopId) }
             val waitingResult = async { waitingSystemRepository.fetchShopWaitingSystem(shopId) }
             val eventResult = async { ramenShopRepository.fetchActiveShopEvent(shopId) }
             val noticeResult = async { operatingNoticeRepository.fetchActiveShopOperatingNotice(shopId) }
@@ -56,6 +57,7 @@ internal class FakeFetchShopDetailUseCase(
                             RamapResult.Success(
                                 ShopDetail(
                                     shop = shop,
+                                    likeCount = (likeCountResult.await() as? RamapResult.Success)?.data ?: 0L,
                                     waitingSystem = waiting.data,
                                     event = (event as? RamapResult.Success)?.data,
                                     operatingNotice = (notice as? RamapResult.Success)?.data,
