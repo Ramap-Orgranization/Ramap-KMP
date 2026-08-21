@@ -3,6 +3,7 @@ package com.peto.ramap.ui.main
 import com.peto.ramap.core.result.RamapError
 import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.core.result.retryOnce
+import com.peto.ramap.domain.repository.OperatingNoticeRepository
 import com.peto.ramap.domain.repository.RamenShopRepository
 import com.peto.ramap.domain.repository.ShopWaitingSystemRepository
 import com.peto.ramap.domain.usecase.FetchShopDetailUseCase
@@ -14,6 +15,7 @@ import kotlinx.coroutines.coroutineScope
 internal class FakeFetchShopDetailUseCase(
     private val ramenShopRepository: RamenShopRepository,
     private val waitingSystemRepository: ShopWaitingSystemRepository,
+    private val operatingNoticeRepository: OperatingNoticeRepository,
 ) : FetchShopDetailUseCase {
     private val cache = mutableMapOf<String, ShopDetail>()
 
@@ -38,6 +40,7 @@ internal class FakeFetchShopDetailUseCase(
             val shopsResult = async { ramenShopRepository.fetchRamenShops(setOf(shopId)) }
             val waitingResult = async { waitingSystemRepository.fetchShopWaitingSystem(shopId) }
             val eventResult = async { ramenShopRepository.fetchActiveShopEvent(shopId) }
+            val noticeResult = async { operatingNoticeRepository.fetchActiveShopOperatingNotice(shopId) }
 
             when (val shops = shopsResult.await()) {
                 is RamapResult.Error -> shops
@@ -49,11 +52,13 @@ internal class FakeFetchShopDetailUseCase(
                         is RamapResult.Error -> waiting
                         is RamapResult.Success -> {
                             val event = eventResult.await()
+                            val notice = noticeResult.await()
                             RamapResult.Success(
                                 ShopDetail(
                                     shop = shop,
                                     waitingSystem = waiting.data,
                                     event = (event as? RamapResult.Success)?.data,
+                                    operatingNotice = (notice as? RamapResult.Success)?.data,
                                 ),
                             )
                         }

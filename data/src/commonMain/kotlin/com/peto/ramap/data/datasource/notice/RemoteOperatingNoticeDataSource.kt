@@ -21,8 +21,25 @@ internal class RemoteOperatingNoticeDataSource(
                 }
             }.decodeList()
 
+    override suspend fun fetchApprovedShopOperatingNotices(
+        shopId: String,
+        today: LocalDate,
+    ): List<OperatingNoticeResponse> =
+        client
+            .from(TABLE_NAME)
+            .select {
+                filter {
+                    eq(COLUMN_SHOP_ID, shopId)
+                    or {
+                        filter(COLUMN_END_DATE, FilterOperator.IS, null)
+                        gte(COLUMN_END_DATE, today.toString())
+                    }
+                }
+            }.decodeList()
+
     private companion object {
         const val TABLE_NAME = "shop_operating_notices"
         const val COLUMN_END_DATE = "end_date"
+        const val COLUMN_SHOP_ID = "shop_id"
     }
 }

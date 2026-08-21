@@ -24,6 +24,7 @@ import com.peto.ramap.designsystem.shop.model.RamenShopUiModel
 import com.peto.ramap.designsystem.shop.model.ShopDetailSheetUiState
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.domain.model.event.ShopEvent
+import com.peto.ramap.domain.model.notice.OperatingNotice
 import com.peto.ramap.domain.model.report.ShopInformationField
 import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.theme.AppTextStyle
@@ -60,6 +61,7 @@ fun ShopDetailContent(
     onShopShareClick: (RamenShop) -> Unit,
     onShopMapLinkClick: (RamenShop, String) -> Unit,
     onEventClick: (ShopEvent) -> Unit,
+    onOperatingNoticeClick: (OperatingNotice) -> Unit = {},
     onReportSubmit: (Set<ShopInformationField>, String) -> Unit,
     onShowOnMap: ((String) -> Unit)? = null,
     onPhoneClick: (String) -> Unit = {},
@@ -132,6 +134,8 @@ fun ShopDetailContent(
                         onAppleMapsClick = onAppleMapsClick,
                         event = state.detail.event,
                         onEventClick = onEventClick,
+                        operatingNotice = state.detail.operatingNotice,
+                        onOperatingNoticeClick = onOperatingNoticeClick,
                         onReportClick = { showReportDialog = true },
                     )
                     onShowOnMap?.let { showOnMap ->

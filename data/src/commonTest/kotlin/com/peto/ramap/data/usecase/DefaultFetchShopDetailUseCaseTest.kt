@@ -7,6 +7,7 @@ import com.peto.ramap.domain.model.event.ShopEventType
 import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.domain.usecase.ShopDetail
 import com.peto.ramap.domain.usecase.ShopDetailCacheLookup
+import com.peto.ramap.fake.FakeOperatingNoticeRepository
 import com.peto.ramap.fake.FakeRamenShopRepository
 import com.peto.ramap.fake.FakeShopWaitingSystemRepository
 import com.peto.ramap.fixture.ramenShopFixture
@@ -32,6 +33,7 @@ class DefaultFetchShopDetailUseCaseTest {
                 DefaultFetchShopDetailUseCase(
                     ramenShopRepository,
                     waitingRepository,
+                    FakeOperatingNoticeRepository(),
                 )
 
             useCase(shop.id)
@@ -59,6 +61,7 @@ class DefaultFetchShopDetailUseCaseTest {
                 DefaultFetchShopDetailUseCase(
                     ramenShopRepository,
                     FakeShopWaitingSystemRepository(),
+                    FakeOperatingNoticeRepository(),
                 )
 
             val result = useCase(shop.id)
@@ -84,6 +87,7 @@ class DefaultFetchShopDetailUseCaseTest {
                 DefaultFetchShopDetailUseCase(
                     ramenShopRepository,
                     FakeShopWaitingSystemRepository(),
+                    FakeOperatingNoticeRepository(),
                 )
 
             val result = useCase(shop.id)
@@ -104,6 +108,7 @@ class DefaultFetchShopDetailUseCaseTest {
                 DefaultFetchShopDetailUseCase(
                     ramenShopRepository,
                     FakeShopWaitingSystemRepository(),
+                    FakeOperatingNoticeRepository(),
                 )
 
             // 최초 조회: 이벤트 없음 (null)
@@ -132,6 +137,7 @@ class DefaultFetchShopDetailUseCaseTest {
                 DefaultFetchShopDetailUseCase(
                     ramenShopRepository,
                     FakeShopWaitingSystemRepository(),
+                    FakeOperatingNoticeRepository(),
                 )
 
             val firstResult = assertIs<RamapResult.Success<ShopDetail>>(useCase(shop.id))

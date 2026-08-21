@@ -2,6 +2,7 @@ package com.peto.ramap.data.usecase
 
 import com.peto.ramap.core.result.RamapError
 import com.peto.ramap.core.result.RamapResult
+import com.peto.ramap.domain.repository.OperatingNoticeRepository
 import com.peto.ramap.domain.repository.RamenShopRepository
 import com.peto.ramap.domain.repository.ShopWaitingSystemRepository
 import com.peto.ramap.domain.usecase.FetchShopDetailUseCase
@@ -13,6 +14,7 @@ import kotlinx.coroutines.coroutineScope
 internal class DefaultFetchShopDetailUseCase(
     private val ramenShopRepository: RamenShopRepository,
     private val waitingSystemRepository: ShopWaitingSystemRepository,
+    private val operatingNoticeRepository: OperatingNoticeRepository,
 ) : FetchShopDetailUseCase {
     private val cache = mutableMapOf<String, ShopDetail>()
 
@@ -42,11 +44,20 @@ internal class DefaultFetchShopDetailUseCase(
      */
     private suspend fun revalidateEvent(cached: ShopDetail): RamapResult<ShopDetail> {
         val eventResult = ramenShopRepository.fetchActiveShopEvent(cached.shop.id)
+        val noticeResult = operatingNoticeRepository.fetchActiveShopOperatingNotice(cached.shop.id)
         val updated =
-            when (eventResult) {
-                is RamapResult.Success -> cached.copy(event = eventResult.data)
-                is RamapResult.Error -> cached
-            }
+            cached.copy(
+                event =
+                    when (eventResult) {
+                        is RamapResult.Success -> eventResult.data
+                        is RamapResult.Error -> cached.event
+                    },
+                operatingNotice =
+                    when (noticeResult) {
+                        is RamapResult.Success -> noticeResult.data
+                        is RamapResult.Error -> cached.operatingNotice
+                    },
+            )
         cache[cached.shop.id] = updated
         return RamapResult.Success(updated)
     }
@@ -56,6 +67,7 @@ internal class DefaultFetchShopDetailUseCase(
             val shopResult = async { ramenShopRepository.fetchRamenShops(setOf(shopId)) }
             val waitingResult = async { waitingSystemRepository.fetchShopWaitingSystem(shopId) }
             val eventResult = async { ramenShopRepository.fetchActiveShopEvent(shopId) }
+            val noticeResult = async { operatingNoticeRepository.fetchActiveShopOperatingNotice(shopId) }
 
             when (val shops = shopResult.await()) {
                 is RamapResult.Error -> shops
@@ -73,11 +85,19 @@ internal class DefaultFetchShopDetailUseCase(
                                 } else {
                                     null
                                 }
+                            val notice = noticeResult.await()
+                            val activeNotice =
+                                if (notice is RamapResult.Success) {
+                                    notice.data
+                                } else {
+                                    null
+                                }
                             RamapResult.Success(
                                 ShopDetail(
                                     shop = shop,
                                     waitingSystem = waiting.data,
                                     event = activeEvent,
+                                    operatingNotice = activeNotice,
                                 ),
                             )
                         }

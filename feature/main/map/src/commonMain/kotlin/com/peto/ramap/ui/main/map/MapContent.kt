@@ -21,9 +21,11 @@ import androidx.navigationevent.compose.NavigationBackHandler
 import androidx.navigationevent.compose.rememberNavigationEventState
 import com.peto.ramap.analytics.AnalyticsSource
 import com.peto.ramap.designsystem.indicator.RamenLoadingIndicator
+import com.peto.ramap.designsystem.notice.OperatingNoticeBottomSheet
 import com.peto.ramap.designsystem.resource.wating.toUiModel
 import com.peto.ramap.designsystem.shop.ShopDetailContent
 import com.peto.ramap.domain.model.event.ShopEvent
+import com.peto.ramap.domain.model.notice.OperatingNotice
 import com.peto.ramap.domain.model.report.ShopInformationField
 import com.peto.ramap.domain.model.shop.Category
 import com.peto.ramap.domain.model.shop.Location
@@ -68,6 +70,7 @@ internal fun MapContent(
     onShopShareClick: (RamenShop) -> Unit,
     onShopMapLinkClick: (RamenShop, String) -> Unit,
     onEventClick: (ShopEvent) -> Unit,
+    onOperatingNoticeNavigate: (OperatingNotice) -> Unit = {},
     onReportSubmit: (Set<ShopInformationField>, String) -> Unit,
     onBookmarkedShopsToggle: () -> Unit,
     showShopDetail: Boolean,
@@ -77,6 +80,7 @@ internal fun MapContent(
     val density = LocalDensity.current
     val isImeVisible = WindowInsets.ime.getBottom(density) > 0
     var isSearchFocused by remember { mutableStateOf(false) }
+    var selectedNotice by remember { mutableStateOf<OperatingNotice?>(null) }
 
     val backEventState =
         rememberNavigationEventState<NavigationEventInfo>(
@@ -173,11 +177,27 @@ internal fun MapContent(
                 )
             },
             onEventClick = onEventClick,
+            onOperatingNoticeClick = { selectedNotice = it },
             onReportSubmit = onReportSubmit,
         )
 
         if ((uiState.isShopDetailLoading && selectedShop == null) || uiState.isSearchLoading) {
             RamenLoadingIndicator(modifier = Modifier.align(Alignment.Center))
+        }
+
+        selectedNotice?.let { notice ->
+            OperatingNoticeBottomSheet(
+                notice = notice,
+                isSourceUrlSupported = ExternalUriOpener::isSupportedWebUri,
+                onSourceClick = ExternalUriOpener::open,
+                onShopClick = {
+                    if (it != selectedShop?.id) {
+                        onOperatingNoticeNavigate(notice)
+                    }
+                    selectedNotice = null
+                },
+                onDismiss = { selectedNotice = null },
+            )
         }
     }
 }
