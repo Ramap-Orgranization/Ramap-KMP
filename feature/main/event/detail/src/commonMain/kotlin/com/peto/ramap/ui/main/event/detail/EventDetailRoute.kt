@@ -33,6 +33,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.peto.ramap.designsystem.badge.NewsBadge
 import com.peto.ramap.designsystem.button.AppButton
 import com.peto.ramap.designsystem.card.SectionCard
 import com.peto.ramap.designsystem.component.LoadErrorContent
@@ -62,7 +63,6 @@ import com.peto.ramap.ui.base.ObserveAsEvents
 import com.peto.ramap.ui.main.event.detail.component.EventCancellationNotice
 import com.peto.ramap.ui.main.event.detail.component.EventImages
 import com.peto.ramap.ui.main.event.detail.component.EventNotificationButton
-import com.peto.ramap.ui.main.event.detail.component.EventTag
 import com.peto.ramap.ui.main.event.detail.contract.EventDetailIntent.OnCollaboratorInstagramSelected
 import com.peto.ramap.ui.main.event.detail.contract.EventDetailIntent.OnCollaboratorShopSelected
 import com.peto.ramap.ui.main.event.detail.contract.EventDetailIntent.OnEntered
@@ -304,11 +304,13 @@ private fun EventDetailContent(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier.padding(top = 5.dp),
         ) {
-            EventTag(
+            NewsBadge(
                 text = stringResource(ShopEventResourceMapper.dateLabel(event)),
                 isStatus = ShopEventResourceMapper.statusLabel(event) != null,
             )
-            EventTag(stringResource(ShopEventResourceMapper.typeLabel(event.type)))
+            NewsBadge(
+                text = stringResource(ShopEventResourceMapper.typeLabel(event.type)),
+            )
         }
         AppText("🍜 ${event.title}", style = AppTextStyle.H1, color = GrayColor.C500)
 

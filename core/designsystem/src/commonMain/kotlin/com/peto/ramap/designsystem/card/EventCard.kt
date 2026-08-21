@@ -21,15 +21,14 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.peto.ramap.designsystem.badge.NewsBadge
 import com.peto.ramap.designsystem.image.RemoteShopImage
 import com.peto.ramap.designsystem.resource.event.ShopEventResourceMapper
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.theme.AppTextStyle
-import com.peto.ramap.theme.ChromaticColor
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
-import com.peto.ramap.theme.SystemColor
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
@@ -82,12 +81,12 @@ fun EventCard(
                 )
             }
             ShopEventResourceMapper.statusLabel(isCancelled, isSoldOut)?.let { statusLabel ->
-                EventTag(
+                NewsBadge(
                     text = stringResource(statusLabel),
                     isStatus = true,
                 )
             }
-            EventTag(stringResource(ShopEventResourceMapper.typeLabel(event.type)))
+            NewsBadge(stringResource(ShopEventResourceMapper.typeLabel(event.type)))
             if (actionLabel != null && onAction != null) {
                 IconButton(onClick = onAction) {
                     Icon(
@@ -108,22 +107,4 @@ fun EventCard(
         HorizontalDivider(thickness = 1.dp, color = GrayColor.C100)
         AppText(dateText, style = AppTextStyle.B4, color = GrayColor.C400)
     }
-}
-
-@Composable
-private fun EventTag(
-    text: String,
-    isStatus: Boolean = false,
-) {
-    AppText(
-        text = text,
-        modifier =
-            Modifier
-                .background(
-                    if (isStatus) SystemColor.Warning else ChromaticColor.Yellow400,
-                    RoundedCornerShape(10.dp),
-                ).padding(horizontal = 8.dp, vertical = 3.dp),
-        style = AppTextStyle.C2,
-        color = if (isStatus) CommonColor.White else GrayColor.C500,
-    )
 }
