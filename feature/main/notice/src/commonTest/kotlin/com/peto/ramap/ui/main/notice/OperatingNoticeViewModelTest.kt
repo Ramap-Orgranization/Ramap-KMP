@@ -114,5 +114,9 @@ class OperatingNoticeViewModelTest {
             if (delayMillis > 0) kotlinx.coroutines.delay(delayMillis)
             return error?.let { RamapResult.Error(it) } ?: RamapResult.Success(notices)
         }
+
+        override suspend fun fetchActiveShopOperatingNotice(shopId: String): RamapResult<OperatingNotice?> {
+            TODO("Not yet implemented")
+        }
     }
 }

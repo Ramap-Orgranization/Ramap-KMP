@@ -25,7 +25,8 @@ class NavigationState(
     val canNavigateBack: Boolean
         get() =
             currentBackStack.size > 1 ||
-                requestedMapReturnTab() != null
+                requestedMapReturnTab() != null ||
+                selectedTab != TabStatus.MAP
 
     fun showHiddenShops() {
         if (currentRoute != ScreenRoutes.HiddenShopListRoutes) {
