@@ -14,37 +14,19 @@ class EventsPreviewParameterProvider : PreviewParameterProvider<EventsUiState> {
         sequenceOf(
             EventsUiState(
                 ongoingEvents =
-                    listOf(
+                    (1..5).map { index ->
                         ShopEvents(
                             listOf(
                                 previewEvent(
-                                    id = "ongoing-1",
-                                    title = "오늘 진행 중인 라멘 이벤트",
-                                    type = ShopEventType.POPUP,
+                                    id = "ongoing-$index",
+                                    title = "진행 중인 라멘 이벤트 $index",
+                                    type = if (index % 2 == 0) ShopEventType.COLLAB else ShopEventType.POPUP,
                                     isToday = true,
-                                ),
-                                previewEvent(
-                                    id = "ongoing-2",
-                                    title = "또 다른 진행 중인 라멘 이벤트",
-                                    type = ShopEventType.COLLAB,
-                                    isToday = true,
+                                    venueShopName = "라멘 프리뷰 매장 $index",
                                 ),
                             ),
-                        ),
-                    ),
-                upcomingEvents =
-                    listOf(
-                        ShopEvents(
-                            listOf(
-                                previewEvent(
-                                    id = "upcoming-1",
-                                    title = "다음 주 예정된 라멘 이벤트",
-                                    type = ShopEventType.POPUP,
-                                    isToday = false,
-                                ),
-                            ),
-                        ),
-                    ),
+                        )
+                    },
             ),
             EventsUiState(
                 ongoingEvents =
