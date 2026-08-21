@@ -16,6 +16,7 @@ import com.peto.ramap.domain.model.notice.OperatingNotice
 import com.peto.ramap.preview.OperatingNoticePreviewParameterProvider
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.RamapTheme
+import com.peto.ramap.theme.SystemColor
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
@@ -33,7 +34,8 @@ internal fun OngoingOperatingNoticeShop(
             NewsBadge(
                 text = stringResource(ShopOperatingNoticeResourceMapper.typeLabel(notice.type)),
                 modifier = Modifier.align(Alignment.BottomStart),
-                isStatus = true,
+                containerColor = SystemColor.Warning,
+                contentColor = CommonColor.White,
             )
         },
     )

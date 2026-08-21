@@ -3,7 +3,6 @@ package com.peto.ramap.ui.main.notice.component
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
@@ -23,9 +22,7 @@ import com.peto.ramap.designsystem.component.Skeleton
 import com.peto.ramap.theme.RamapTheme
 
 @Composable
-internal fun OperatingNoticeSkeleton(
-    modifier: Modifier = Modifier
-) {
+internal fun OperatingNoticeSkeleton(modifier: Modifier = Modifier) {
     LazyColumn(
         modifier = modifier,
         contentPadding = PaddingValues(vertical = 16.dp),

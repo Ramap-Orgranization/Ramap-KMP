@@ -76,7 +76,11 @@ internal fun OperatingNoticeScreen(
         onBackCompleted = onBack,
     )
     Column(
-        modifier = Modifier.fillMaxSize().background(CommonColor.White).statusBarsPadding(),
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .background(CommonColor.White)
+                .statusBarsPadding(),
     ) {
         Box(modifier = Modifier.fillMaxSize().weight(1f)) {
             PullToRefreshBox(
@@ -166,19 +170,21 @@ internal fun OperatingNoticeScreen(
                         }
                 }
             }
-            FloatingActionButton(
-                onClick = onEventListClick,
-                modifier =
-                    Modifier
-                        .align(Alignment.BottomEnd)
-                        .padding(20.dp),
-                shape = CircleShape,
-                containerColor = CommonColor.White,
-            ) {
-                Image(
-                    painter = painterResource(Res.drawable.ic_event_fab),
-                    contentDescription = stringResource(Res.string.event_list_open),
-                )
+            if (selectedNotice == null) {
+                FloatingActionButton(
+                    onClick = onEventListClick,
+                    modifier =
+                        Modifier
+                            .align(Alignment.BottomEnd)
+                            .padding(20.dp),
+                    shape = CircleShape,
+                    containerColor = CommonColor.White,
+                ) {
+                    Image(
+                        painter = painterResource(Res.drawable.ic_event_fab),
+                        contentDescription = stringResource(Res.string.event_list_open),
+                    )
+                }
             }
         }
     }

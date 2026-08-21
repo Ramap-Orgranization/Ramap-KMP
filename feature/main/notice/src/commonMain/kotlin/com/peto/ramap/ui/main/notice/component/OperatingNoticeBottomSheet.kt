@@ -23,9 +23,10 @@ internal fun OperatingNoticeBottomSheet(
         config = CommonBottomSheetConfig(isDraggable = true),
     ) { modifier ->
         Column(
-            modifier = modifier
-                .padding(horizontal = 5.dp)
-                .padding(bottom = 20.dp),
+            modifier =
+                modifier
+                    .padding(horizontal = 5.dp)
+                    .padding(bottom = 20.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             OperatingNoticeCard(
