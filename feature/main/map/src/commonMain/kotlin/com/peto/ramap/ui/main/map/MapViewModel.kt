@@ -115,6 +115,7 @@ class MapViewModel(
 ) : BaseViewModel<MapUiState, MapIntent, MapSideEffect>(initialState = MapUiState()) {
     private val viewportShopLoader = ViewportShopLoader(ramenShopRepository, viewModelScope)
     private var pendingMapAction: PendingMapAction? = null
+    private var observedBookmarkedShopIds: Set<String>? = null
     private var openFilterRefreshJob: Job? = null
 
     init {
@@ -148,6 +149,8 @@ class MapViewModel(
                     ?: return@collectLatest
             if (!currentState.isLoggedIn) return@collectLatest
             updatePersonalization(personalization)
+            synchronizeShopDetailLikeCounts(personalization.bookmarkedShopIds)
+            resumePendingAction()
         }
     }
 
@@ -275,6 +278,7 @@ class MapViewModel(
     }
 
     private fun updateAuthState(isAuthenticated: Boolean) {
+        if (!isAuthenticated) observedBookmarkedShopIds = null
         reduce {
             copy(
                 isLoggedIn = isAuthenticated,
@@ -562,17 +566,24 @@ class MapViewModel(
         shop: RamenShop,
         source: AnalyticsSource,
     ) {
-        executeLoginRequiredAction(PendingMapAction.ToggleBookmark(shop, source))
+        executeLoginRequiredAction(
+            PendingMapAction.ToggleBookmark(
+                shop = shop,
+                source = source,
+                enabled = !currentState.isLoggedIn || shop.id !in currentState.bookmarkedShopIds,
+            ),
+        )
     }
 
     private fun updateBookmark(
         shop: RamenShop,
         source: AnalyticsSource,
+        enabled: Boolean = shop.id !in currentState.bookmarkedShopIds,
     ) {
-        val wasBookmarked = shop.id in currentState.bookmarkedShopIds
+        if ((shop.id in currentState.bookmarkedShopIds) == enabled) return
 
-        mapAnalytics.logBookmarkToggled(shop, !wasBookmarked, source)
-        postBookmark(shop.id, wasBookmarked)
+        mapAnalytics.logBookmarkToggled(shop, enabled, source)
+        postBookmark(shop.id, enabled)
     }
 
     private fun toggleShopSubscribed(
@@ -616,16 +627,50 @@ class MapViewModel(
 
     private fun postBookmark(
         shopId: String,
-        isBookmarked: Boolean,
+        enabled: Boolean,
     ) {
-        val enabled = !isBookmarked
         launchResultTask(
             taskKey = bookmarkTaskKey(shopId),
             policy = TaskPolicy.IgnoreNew,
             request = { personalizationStore.updateBookmark(shopId, enabled) },
-            onSuccess = { loadBookmarkedShopIfNeeded(shopId, isBookmarked) },
+            onSuccess = { loadBookmarkedShopIfNeeded(shopId, wasBookmarked = !enabled) },
             onError = { showPersonalizationUpdateFailure() },
         )
+    }
+
+    private fun synchronizeShopDetailLikeCounts(bookmarkedShopIds: Set<String>) {
+        val previousShopIds = observedBookmarkedShopIds
+        observedBookmarkedShopIds = bookmarkedShopIds
+        if (previousShopIds == null) return
+
+        for (shopId in bookmarkedShopIds - previousShopIds) {
+            updateShopDetailLikeCount(shopId, enabled = true)
+        }
+        for (shopId in previousShopIds - bookmarkedShopIds) {
+            updateShopDetailLikeCount(shopId, enabled = false)
+        }
+    }
+
+    private fun updateShopDetailLikeCount(
+        shopId: String,
+        enabled: Boolean,
+    ) {
+        fetchShopDetailUseCase.updateCachedLikeCount(shopId, enabled)
+        val detailState = currentState.shopDetailState as? ShopDetailSheetUiState.Content ?: return
+        if (detailState.detail.shop.id != shopId) return
+
+        val likeCountDelta = if (enabled) 1L else -1L
+        reduce {
+            copy(
+                shopDetailState =
+                    detailState.copy(
+                        detail =
+                            detailState.detail.copy(
+                                likeCount = (detailState.detail.likeCount + likeCountDelta).coerceAtLeast(0L),
+                            ),
+                    ),
+            )
+        }
     }
 
     private suspend fun loadBookmarkedShopIfNeeded(
@@ -734,7 +779,7 @@ class MapViewModel(
 
     private fun performPendingAction(action: PendingMapAction) {
         when (action) {
-            is PendingMapAction.ToggleBookmark -> updateBookmark(action.shop, action.source)
+            is PendingMapAction.ToggleBookmark -> updateBookmark(action.shop, action.source, action.enabled)
             is PendingMapAction.ToggleShopNotification -> updateShopNotification(action.shop, action.source)
             is PendingMapAction.ToggleHidden -> updateHiddenShop(action.shop, action.source)
             PendingMapAction.ToggleBookmarkedShops -> updateBookmarkedView()
@@ -786,7 +831,6 @@ class MapViewModel(
             onSuccess = {
                 loginAnalytics.logLoginSucceeded(AnalyticsSource.MAP)
                 showToast(Res.string.login_success_message)
-                resumePendingAction()
             },
             onError = {
                 loginAnalytics.logLoginFailed(AnalyticsSource.MAP)
@@ -804,7 +848,6 @@ class MapViewModel(
             onSuccess = {
                 loginAnalytics.logLoginSucceeded(AnalyticsSource.MAP, LoginMethod.APPLE)
                 showToast(Res.string.login_success_message)
-                resumePendingAction()
             },
             onError = {
                 loginAnalytics.logLoginFailed(AnalyticsSource.MAP, LoginMethod.APPLE)

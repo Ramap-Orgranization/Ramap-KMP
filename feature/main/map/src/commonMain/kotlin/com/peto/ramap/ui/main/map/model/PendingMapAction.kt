@@ -7,6 +7,7 @@ sealed interface PendingMapAction {
     data class ToggleBookmark(
         val shop: RamenShop,
         val source: AnalyticsSource,
+        val enabled: Boolean,
     ) : PendingMapAction
 
     data class ToggleShopNotification(

@@ -39,6 +39,16 @@ internal class DefaultFetchShopDetailUseCase(
             ?.let(ShopDetailCacheLookup::Hit)
             ?: ShopDetailCacheLookup.Miss
 
+    override fun updateCachedLikeCount(
+        shopId: String,
+        enabled: Boolean,
+    ) {
+        val likeCountDelta = if (enabled) 1L else -1L
+        cache[shopId]?.let { detail ->
+            cache[shopId] = detail.copy(likeCount = (detail.likeCount + likeCountDelta).coerceAtLeast(0L))
+        }
+    }
+
     /**
      * 캐시된 매장·웨이팅은 유지하고 이벤트만 새로 조회해 상세를 갱신한다.
      */

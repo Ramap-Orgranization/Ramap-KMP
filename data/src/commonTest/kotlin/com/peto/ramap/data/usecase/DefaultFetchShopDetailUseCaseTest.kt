@@ -52,6 +52,27 @@ class DefaultFetchShopDetailUseCaseTest {
         }
 
     @Test
+    fun `캐시된 상세의 좋아요 수를 저장 상태 변경에 맞춰 갱신한다`() =
+        runTest {
+            val shop = ramenShopFixture()
+            val useCase =
+                DefaultFetchShopDetailUseCase(
+                    FakeRamenShopRepository(
+                        fetchByIdsResult = RamenShops(mapOf(shop.id to shop)),
+                        shopLikeCount = 1L,
+                    ),
+                    FakeShopWaitingSystemRepository(),
+                    FakeOperatingNoticeRepository(),
+                )
+            useCase(shop.id)
+
+            useCase.updateCachedLikeCount(shop.id, enabled = false)
+            useCase.updateCachedLikeCount(shop.id, enabled = false)
+
+            assertEquals(0L, assertIs<ShopDetailCacheLookup.Hit>(useCase.findCached(shop.id)).detail.likeCount)
+        }
+
+    @Test
     fun `상세 조회 실패는 캐시하지 않고 한 번만 요청한다`() =
         runTest {
             val shop = ramenShopFixture()

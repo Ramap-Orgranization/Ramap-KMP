@@ -156,7 +156,10 @@ fun RamenShopOverview(
                             style = AppTextStyle.H4,
                             color = GrayColor.C500,
                         )
-                        Row {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(5.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
                             Image(
                                 painter = painterResource(Res.drawable.ic_kid_star_filled),
                                 contentDescription = null,

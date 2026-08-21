@@ -601,7 +601,7 @@ class RankingViewModelTest {
         }
 
     @Test
-    fun `Apple 로그인 성공 후 대기 중인 좋아요 요청을 재개한다`() =
+    fun `개인화 상태를 동기화한 뒤 대기 중인 좋아요 요청을 재개한다`() =
         coroutinesTest {
             val shop = ramenShop()
             val personalizationStore = FakePersonalizationRepository()
@@ -616,9 +616,76 @@ class RankingViewModelTest {
             runCurrent()
             viewModel.dispatch(RankingIntent.OnLoginTypeSelected(LoginType.APPLE))
             runCurrent()
+            loginRepository.updateSessionState(LoginSessionState.AUTHENTICATED)
+            personalizationStore.updateBookmarkedShopIds(setOf("existing-shop"))
+            runCurrent()
 
             assertEquals(1, loginRepository.signInWithAppleCallCount)
             assertEquals(listOf(shop.id to true), personalizationStore.bookmarkUpdateRequests)
+        }
+
+    @Test
+    fun `로그아웃 후 로그인하면 기존 저장 매장의 좋아요 수를 다시 더하지 않는다`() =
+        coroutinesTest {
+            val shop = ramenShop()
+            val personalizationStore =
+                FakePersonalizationRepository(
+                    ShopPersonalization(bookmarkedShopIds = setOf(shop.id)),
+                )
+            val loginRepository = FakeLoginRepository(LoginSessionState.AUTHENTICATED)
+            val viewModel =
+                rankingViewModel(
+                    repository = FakeShopRankingRepository(pageOf(shopRanking(likeCount = 3))),
+                    personalizationStore = personalizationStore,
+                    loginRepository = loginRepository,
+                )
+            runCurrent()
+
+            loginRepository.updateSessionState(LoginSessionState.NOT_AUTHENTICATED)
+            personalizationStore.clear()
+            runCurrent()
+            viewModel.dispatch(RankingIntent.OnBookmarkChanged(shop, enabled = true))
+            runCurrent()
+            loginRepository.updateSessionState(LoginSessionState.AUTHENTICATED)
+            personalizationStore.updateBookmarkedShopIds(setOf(shop.id))
+            runCurrent()
+
+            assertEquals(emptyList(), personalizationStore.bookmarkUpdateRequests)
+            assertEquals(
+                3L,
+                viewModel.uiState.value
+                    .displayedLikeCount(viewModel.uiState.value.shops[0]),
+            )
+        }
+
+    @Test
+    fun `로그아웃으로 개인화 상태가 초기화돼도 랭킹 좋아요 수를 낮추지 않는다`() =
+        coroutinesTest {
+            val shop = ramenShop()
+            val personalizationStore =
+                FakePersonalizationRepository(
+                    ShopPersonalization(bookmarkedShopIds = setOf(shop.id)),
+                )
+            val loginRepository = FakeLoginRepository(LoginSessionState.AUTHENTICATED)
+            val viewModel =
+                rankingViewModel(
+                    repository = FakeShopRankingRepository(pageOf(shopRanking(likeCount = 3))),
+                    personalizationStore = personalizationStore,
+                    loginRepository = loginRepository,
+                )
+            runCurrent()
+
+            loginRepository.updateSessionState(LoginSessionState.NOT_AUTHENTICATED)
+            personalizationStore.clear()
+            runCurrent()
+            viewModel.dispatch(RankingIntent.OnRefreshed)
+            runCurrent()
+
+            assertEquals(
+                3L,
+                viewModel.uiState.value
+                    .displayedLikeCount(viewModel.uiState.value.shops[0]),
+            )
         }
 
     @Test

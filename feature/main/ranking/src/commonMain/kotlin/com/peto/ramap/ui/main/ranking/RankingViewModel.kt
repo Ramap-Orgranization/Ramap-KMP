@@ -50,6 +50,7 @@ class RankingViewModel(
     private var pendingBookmarkRequest: Pair<RamenShop, Boolean>? = null
 
     init {
+        observeSessionState()
         observePersonalization()
         loadFirstPage()
     }
@@ -97,10 +98,26 @@ class RankingViewModel(
                 val personalization =
                     (state as? PersonalizationBootstrapState.Success)?.value
                         ?: return@collectLatest
+                if (!loginRepository.hasSession()) return@collectLatest
                 synchronizeLikeCounts(personalization.bookmarkedShopIds)
                 reduce {
                     copy(
                         bookmarkedShopIds = personalization.bookmarkedShopIds,
+                    )
+                }
+                resumePendingBookmark()
+            }
+        }
+    }
+
+    private fun observeSessionState() {
+        viewModelScope.launch {
+            loginRepository.sessionState.collectLatest {
+                observedBookmarkedShopIds = null
+                reduce {
+                    copy(
+                        bookmarkedShopIds = emptySet(),
+                        bookmarkLikeCountDeltas = emptyMap(),
                     )
                 }
             }
@@ -438,7 +455,6 @@ class RankingViewModel(
             onSuccess = {
                 loginAnalytics.logLoginSucceeded(AnalyticsSource.RANKING)
                 showToast(Res.string.login_success_message, ToastType.SUCCESS)
-                resumePendingBookmark()
             },
             onError = { handleKakaoLoginFailure() },
         )
@@ -454,7 +470,6 @@ class RankingViewModel(
             onSuccess = {
                 loginAnalytics.logLoginSucceeded(AnalyticsSource.RANKING, LoginMethod.APPLE)
                 showToast(Res.string.login_success_message, ToastType.SUCCESS)
-                resumePendingBookmark()
             },
             onError = {
                 loginAnalytics.logLoginFailed(AnalyticsSource.RANKING, LoginMethod.APPLE)

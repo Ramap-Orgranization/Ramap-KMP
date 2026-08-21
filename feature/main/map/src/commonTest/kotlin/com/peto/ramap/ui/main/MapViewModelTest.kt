@@ -2347,6 +2347,221 @@ class MapViewModelTest {
         }
 
     @Test
+    fun `매장 상세에서 북마크를 저장하거나 해제하면 좋아요 수를 갱신한다`() =
+        coroutinesTest {
+            val shop = ramenShopFixture()
+            val viewModel =
+                mapViewModel(
+                    ramenShopRepository =
+                        FakeRamenShopRepository(
+                            fetchByIdsResult = RamenShops(mapOf(shop.id to shop)),
+                            shopLikeCount = 3L,
+                        ),
+                    loginRepository = loggedInRepository(),
+                )
+
+            viewModel.dispatch(OnShopSelected(shop))
+            runCurrent()
+            assertEquals(
+                3L,
+                viewModel.uiState.value
+                    .shopDetail
+                    ?.likeCount,
+            )
+
+            viewModel.dispatch(OnBookmarkToggled(shop))
+            runCurrent()
+            assertEquals(
+                4L,
+                viewModel.uiState.value
+                    .shopDetail
+                    ?.likeCount,
+            )
+
+            viewModel.dispatch(OnBookmarkToggled(shop))
+            runCurrent()
+            assertEquals(
+                3L,
+                viewModel.uiState.value
+                    .shopDetail
+                    ?.likeCount,
+            )
+        }
+
+    @Test
+    fun `다른 화면에서 저장을 해제하면 열린 상세와 캐시의 좋아요 수를 갱신한다`() =
+        coroutinesTest {
+            val shop = ramenShopFixture()
+            val personalizationRepository =
+                FakePersonalizationRepository(
+                    ShopPersonalization(bookmarkedShopIds = setOf(shop.id)),
+                )
+            val viewModel =
+                mapViewModel(
+                    ramenShopRepository =
+                        FakeRamenShopRepository(
+                            fetchByIdsResult = RamenShops(mapOf(shop.id to shop)),
+                            shopLikeCount = 3L,
+                        ),
+                    personalizationRepository = personalizationRepository,
+                    loginRepository = loggedInRepository(),
+                )
+
+            runCurrent()
+            viewModel.dispatch(OnShopSelected(shop))
+            runCurrent()
+            personalizationRepository.updateBookmark(shop.id, enabled = false)
+            runCurrent()
+
+            assertEquals(
+                2L,
+                viewModel.uiState.value.shopDetail
+                    ?.likeCount,
+            )
+
+            viewModel.dispatch(OnShopDetailDismissed)
+            viewModel.dispatch(OnShopSelected(shop))
+            runCurrent()
+
+            assertEquals(
+                2L,
+                viewModel.uiState.value.shopDetail
+                    ?.likeCount,
+            )
+        }
+
+    @Test
+    fun `가져오기로 저장하면 열린 상세와 캐시의 좋아요 수를 갱신한다`() =
+        coroutinesTest {
+            val shop = ramenShopFixture()
+            val personalizationRepository = FakePersonalizationRepository()
+            val viewModel =
+                mapViewModel(
+                    ramenShopRepository =
+                        FakeRamenShopRepository(
+                            fetchByIdsResult = RamenShops(mapOf(shop.id to shop)),
+                            shopLikeCount = 3L,
+                        ),
+                    personalizationRepository = personalizationRepository,
+                    loginRepository = loggedInRepository(),
+                )
+
+            runCurrent()
+            viewModel.dispatch(OnShopSelected(shop))
+            runCurrent()
+            personalizationRepository.addBookmarks(setOf(shop.id))
+            runCurrent()
+
+            assertEquals(
+                4L,
+                viewModel.uiState.value.shopDetail
+                    ?.likeCount,
+            )
+
+            viewModel.dispatch(OnShopDetailDismissed)
+            viewModel.dispatch(OnShopSelected(shop))
+            runCurrent()
+
+            assertEquals(
+                4L,
+                viewModel.uiState.value.shopDetail
+                    ?.likeCount,
+            )
+        }
+
+    @Test
+    fun `숨김으로 저장이 해제되면 상세 캐시의 좋아요 수를 갱신한다`() =
+        coroutinesTest {
+            val shop = ramenShopFixture()
+            val personalizationRepository =
+                FakePersonalizationRepository(
+                    ShopPersonalization(bookmarkedShopIds = setOf(shop.id)),
+                )
+            val viewModel =
+                mapViewModel(
+                    ramenShopRepository =
+                        FakeRamenShopRepository(
+                            fetchByIdsResult = RamenShops(mapOf(shop.id to shop)),
+                            shopLikeCount = 3L,
+                        ),
+                    personalizationRepository = personalizationRepository,
+                    loginRepository = loggedInRepository(),
+                )
+
+            runCurrent()
+            viewModel.dispatch(OnShopSelected(shop))
+            runCurrent()
+            personalizationRepository.hideShop(shop.id)
+            runCurrent()
+            personalizationRepository.unhideShop(shop.id)
+            runCurrent()
+            viewModel.dispatch(OnShopSelected(shop))
+            runCurrent()
+
+            assertEquals(
+                2L,
+                viewModel.uiState.value.shopDetail
+                    ?.likeCount,
+            )
+        }
+
+    @Test
+    fun `로그아웃 후 로그인하면 이미 저장된 매장을 다시 저장하지 않는다`() =
+        coroutinesTest {
+            val shop = ramenShopFixture()
+            val loginRepository = FakeLoginRepository(LoginSessionState.AUTHENTICATED)
+            val personalizationRepository = FakePersonalizationRepository()
+            val viewModel =
+                mapViewModel(
+                    ramenShopRepository =
+                        FakeRamenShopRepository(
+                            fetchByIdsResult = RamenShops(mapOf(shop.id to shop)),
+                        ),
+                    personalizationRepository = personalizationRepository,
+                    loginRepository = loginRepository,
+                )
+
+            runCurrent()
+            viewModel.dispatch(OnShopSelected(shop))
+            runCurrent()
+            viewModel.dispatch(OnBookmarkToggled(shop))
+            runCurrent()
+            assertEquals(
+                1L,
+                viewModel.uiState.value
+                    .shopDetail
+                    ?.likeCount,
+            )
+
+            loginRepository.updateSessionState(LoginSessionState.NOT_AUTHENTICATED)
+            personalizationRepository.clear()
+            runCurrent()
+
+            viewModel.dispatch(OnShopDetailDismissed)
+            runCurrent()
+            viewModel.dispatch(OnShopSelected(shop))
+            runCurrent()
+
+            viewModel.dispatch(OnBookmarkToggled(shop))
+            runCurrent()
+            viewModel.dispatch(OnLoginTypeSelected(LoginType.APPLE))
+            runCurrent()
+
+            loginRepository.updateSessionState(LoginSessionState.AUTHENTICATED)
+            runCurrent()
+            personalizationRepository.updateBookmarkedShopIds(setOf(shop.id))
+            runCurrent()
+
+            assertEquals(listOf(shop.id to true), personalizationRepository.bookmarkUpdateRequests)
+            assertEquals(
+                1L,
+                viewModel.uiState.value
+                    .shopDetail
+                    ?.likeCount,
+            )
+        }
+
+    @Test
     fun `Apple 로그인 성공 후 대기 중인 북마크 요청을 재개한다`() =
         coroutinesTest {
             val shop = ramenShopFixture()
@@ -2361,6 +2576,9 @@ class MapViewModelTest {
             viewModel.dispatch(OnBookmarkToggled(shop))
             runCurrent()
             viewModel.dispatch(OnLoginTypeSelected(LoginType.APPLE))
+            runCurrent()
+            loginRepository.updateSessionState(LoginSessionState.AUTHENTICATED)
+            personalizationRepository.updateBookmarkedShopIds(setOf("existing-shop"))
             runCurrent()
 
             assertEquals(1, loginRepository.signInWithAppleCallCount)

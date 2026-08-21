@@ -35,6 +35,16 @@ internal class FakeFetchShopDetailUseCase(
             ?.let(ShopDetailCacheLookup::Hit)
             ?: ShopDetailCacheLookup.Miss
 
+    override fun updateCachedLikeCount(
+        shopId: String,
+        enabled: Boolean,
+    ) {
+        val likeCountDelta = if (enabled) 1L else -1L
+        cache[shopId]?.let { detail ->
+            cache[shopId] = detail.copy(likeCount = (detail.likeCount + likeCountDelta).coerceAtLeast(0L))
+        }
+    }
+
     private suspend fun fetchDetail(shopId: String): RamapResult<ShopDetail> =
         coroutineScope {
             val shopsResult = async { ramenShopRepository.fetchRamenShops(setOf(shopId)) }
