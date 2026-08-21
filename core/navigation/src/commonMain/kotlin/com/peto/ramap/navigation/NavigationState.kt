@@ -25,7 +25,6 @@ class NavigationState(
     val canNavigateBack: Boolean
         get() =
             currentBackStack.size > 1 ||
-                selectedTab != TabStatus.MAP ||
                 requestedMapReturnTab() != null
 
     fun showHiddenShops() {
@@ -60,6 +59,8 @@ class NavigationState(
     }
 
     fun showEventCalendar() = showOnce(ScreenRoutes.EventCalendarRoutes)
+
+    fun showOperatingNotice() = showOnce(ScreenRoutes.OperatingNoticeRoutes)
 
     fun showEventRoot() {
         if (
