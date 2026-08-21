@@ -157,20 +157,9 @@ internal fun OperatingNoticeScreen(
                                     }
                                 }
                             }
-
-                            selectedNotice?.let { notice ->
-                                OperatingNoticeBottomSheet(
-                                    notice = notice,
-                                    isSourceUrlSupported = isSourceUrlSupported,
-                                    onSourceClick = onSourceClick,
-                                    onShopClick = onShopClick,
-                                    onDismiss = { selectedNotice = null },
-                                )
-                            }
                         }
                 }
             }
-            if (selectedNotice == null) {
                 FloatingActionButton(
                     onClick = onEventListClick,
                     modifier =
@@ -185,8 +174,16 @@ internal fun OperatingNoticeScreen(
                         contentDescription = stringResource(Res.string.event_list_open),
                     )
                 }
-            }
         }
+    }
+    selectedNotice?.let { notice ->
+        OperatingNoticeBottomSheet(
+            notice = notice,
+            isSourceUrlSupported = isSourceUrlSupported,
+            onSourceClick = onSourceClick,
+            onShopClick = onShopClick,
+            onDismiss = { selectedNotice = null },
+        )
     }
 }
 
