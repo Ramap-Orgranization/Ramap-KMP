@@ -12,4 +12,5 @@ enum class NavigationSource(
     BOOKMARKED_SHOPS("bookmarked_shops"),
     EVENT_DETAIL("event_detail"),
     SHARED_LINK("shared_link"),
+    OPERATING_NOTICE("operating_notice"),
 }

@@ -33,6 +33,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.peto.ramap.designsystem.badge.NewsBadge
 import com.peto.ramap.designsystem.button.AppButton
 import com.peto.ramap.designsystem.card.SectionCard
 import com.peto.ramap.designsystem.component.LoadErrorContent
@@ -54,15 +55,16 @@ import com.peto.ramap.platform.AppSettingsOpener
 import com.peto.ramap.platform.ExternalUriOpener
 import com.peto.ramap.platform.NotificationPermissionRequester
 import com.peto.ramap.theme.AppTextStyle
+import com.peto.ramap.theme.ChromaticColor
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.InstagramColor
 import com.peto.ramap.theme.RamapTheme
+import com.peto.ramap.theme.SystemColor
 import com.peto.ramap.ui.base.ObserveAsEvents
 import com.peto.ramap.ui.main.event.detail.component.EventCancellationNotice
 import com.peto.ramap.ui.main.event.detail.component.EventImages
 import com.peto.ramap.ui.main.event.detail.component.EventNotificationButton
-import com.peto.ramap.ui.main.event.detail.component.EventTag
 import com.peto.ramap.ui.main.event.detail.contract.EventDetailIntent.OnCollaboratorInstagramSelected
 import com.peto.ramap.ui.main.event.detail.contract.EventDetailIntent.OnCollaboratorShopSelected
 import com.peto.ramap.ui.main.event.detail.contract.EventDetailIntent.OnEntered
@@ -304,11 +306,17 @@ private fun EventDetailContent(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier.padding(top = 5.dp),
         ) {
-            EventTag(
+            val isStatus = ShopEventResourceMapper.statusLabel(event) != null
+            NewsBadge(
                 text = stringResource(ShopEventResourceMapper.dateLabel(event)),
-                isStatus = ShopEventResourceMapper.statusLabel(event) != null,
+                containerColor = if (isStatus) SystemColor.Warning else ChromaticColor.Yellow400,
+                contentColor = if (isStatus) CommonColor.White else GrayColor.C500,
+                textStyle = AppTextStyle.T3,
             )
-            EventTag(stringResource(ShopEventResourceMapper.typeLabel(event.type)))
+            NewsBadge(
+                text = stringResource(ShopEventResourceMapper.typeLabel(event.type)),
+                textStyle = AppTextStyle.T3,
+            )
         }
         AppText("🍜 ${event.title}", style = AppTextStyle.H1, color = GrayColor.C500)
 

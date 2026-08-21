@@ -9,6 +9,7 @@ import com.peto.ramap.domain.model.event.EventFilter
 import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.model.event.ShopEventType
 import com.peto.ramap.domain.model.event.ShopEvents
+import com.peto.ramap.domain.repository.RamenShopRepository
 import com.peto.ramap.fake.FakeAnalyticsTracker
 import com.peto.ramap.fake.FakeRamenShopRepository
 import com.peto.ramap.fixture.ramenShopFixture
@@ -33,7 +34,7 @@ class EventsViewModelTest {
         coroutinesTest {
             val event = event()
             val repository = FakeRamenShopRepository(activeEvents = listOf(event))
-            val viewModel = EventsViewModel(repository, EventsAnalytics(FakeAnalyticsTracker()))
+            val viewModel = eventsViewModel(repository)
 
             runCurrent()
 
@@ -54,7 +55,7 @@ class EventsViewModelTest {
         coroutinesTest {
             val event = event()
             val repository = FakeRamenShopRepository(activeEvents = listOf(event))
-            val viewModel = EventsViewModel(repository, EventsAnalytics(FakeAnalyticsTracker()))
+            val viewModel = eventsViewModel(repository)
             runCurrent()
             repository.activeEventsDelayMillis = 1_000
 
@@ -81,7 +82,7 @@ class EventsViewModelTest {
     fun `연속 새로고침은 이전 요청을 교체하고 마지막 요청이 끝날 때 로딩을 해제한다`() =
         coroutinesTest {
             val repository = FakeRamenShopRepository(activeEventsDelayMillis = 1_000)
-            val viewModel = EventsViewModel(repository, EventsAnalytics(FakeAnalyticsTracker()))
+            val viewModel = eventsViewModel(repository)
             runCurrent()
 
             viewModel.dispatch(EventsIntent.OnEventsRefreshed)
@@ -102,9 +103,8 @@ class EventsViewModelTest {
     fun `이벤트 조회 실패 후 재시도해도 오류 상태를 표시한다`() =
         coroutinesTest {
             val viewModel =
-                EventsViewModel(
+                eventsViewModel(
                     FakeRamenShopRepository(error = RamapError.Unknown(IllegalStateException("failure"))),
-                    EventsAnalytics(FakeAnalyticsTracker()),
                 )
             runCurrent()
 
@@ -124,7 +124,7 @@ class EventsViewModelTest {
                     activeEvents = listOf(event),
                     activeEventsError = RamapError.Network(IllegalStateException("offline")),
                 )
-            val viewModel = EventsViewModel(repository, EventsAnalytics(FakeAnalyticsTracker()))
+            val viewModel = eventsViewModel(repository)
             runCurrent()
 
             assertTrue(viewModel.uiState.value.showError)
@@ -158,7 +158,7 @@ class EventsViewModelTest {
         coroutinesTest {
             val event = event()
             val repository = FakeRamenShopRepository(activeEvents = listOf(event))
-            val viewModel = EventsViewModel(repository, EventsAnalytics(FakeAnalyticsTracker()))
+            val viewModel = eventsViewModel(repository)
             runCurrent()
             repository.activeEventsError = RamapError.Unknown(IllegalStateException("failure"))
 
@@ -200,7 +200,7 @@ class EventsViewModelTest {
                             event("renewal-upcoming", ShopEventType.STORE_RENEWAL),
                         ),
                 )
-            val viewModel = EventsViewModel(repository, EventsAnalytics(FakeAnalyticsTracker()))
+            val viewModel = eventsViewModel(repository)
             runCurrent()
 
             assertEquals(1, repository.activeEventsRequestCount)
@@ -238,6 +238,12 @@ class EventsViewModelTest {
                     .map { it.id },
             )
         }
+
+    private fun eventsViewModel(ramenShopRepository: RamenShopRepository): EventsViewModel =
+        EventsViewModel(
+            ramenShopRepository,
+            EventsAnalytics(FakeAnalyticsTracker()),
+        )
 
     private fun event(
         id: String = "event",

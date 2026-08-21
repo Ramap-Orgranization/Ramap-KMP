@@ -17,6 +17,7 @@ import com.peto.ramap.ui.main.event.detail.di.eventDetailModule
 import com.peto.ramap.ui.main.event.list.di.eventsModule
 import com.peto.ramap.ui.main.map.di.mapModule
 import com.peto.ramap.ui.main.my.di.settingsModule
+import com.peto.ramap.ui.main.notice.di.noticeModule
 import com.peto.ramap.ui.main.ranking.di.rankingModule
 import com.peto.ramap.ui.notification.di.notificationSettingsModule
 import com.peto.ramap.ui.report.di.reportModule
@@ -35,6 +36,7 @@ internal val appModule =
             eventDetailModule,
             eventCalendarModule,
             eventsModule,
+            noticeModule,
             hiddenModule,
             mapModule,
             importationModule,

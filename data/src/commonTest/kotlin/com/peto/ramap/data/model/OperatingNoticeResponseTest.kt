@@ -53,7 +53,6 @@ class OperatingNoticeResponseTest {
         id = "notice",
         shopId = "shop",
         noticeType = noticeType,
-        title = "임시 휴무",
         description = "내부 사정으로 쉽니다.",
         startDate = startDate,
         endDate = endDate,

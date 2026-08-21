@@ -1,5 +1,6 @@
 package com.peto.ramap.ui.main.event.list
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -9,8 +10,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.Icon
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
@@ -47,19 +48,21 @@ import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 import ramap.shared.generated.resources.Res
-import ramap.shared.generated.resources.event_calendar_open
 import ramap.shared.generated.resources.event_filter_summer_limited
 import ramap.shared.generated.resources.event_list_error_description
 import ramap.shared.generated.resources.event_list_error_title
 import ramap.shared.generated.resources.event_list_ongoing_section
 import ramap.shared.generated.resources.event_list_upcoming_section
-import ramap.shared.generated.resources.ic_event_calendar
+import ramap.shared.generated.resources.ic_operating_notice_fab
 import ramap.shared.generated.resources.laduck_error_crying
+import ramap.shared.generated.resources.new_menu_ongoing_section
+import ramap.shared.generated.resources.new_menu_upcoming_section
+import ramap.shared.generated.resources.operating_notice_open
 
 @Composable
 fun EventsRoute(
-    onCalendarClick: () -> Unit,
-    onEventClick: (ShopEvent) -> Unit,
+    onClickEvent: (ShopEvent) -> Unit,
+    onClickNotice: () -> Unit,
     toastManager: ToastManager = koinInject(),
     viewModel: EventsViewModel = koinViewModel(),
 ) {
@@ -71,13 +74,13 @@ fun EventsRoute(
     }
     EventsScreen(
         uiState = uiState,
-        onCalendarClick = onCalendarClick,
-        onEventClick = { event ->
+        onClickNotice = onClickNotice,
+        onClickEvent = { event ->
             viewModel.dispatch(EventsIntent.OnEventClicked(event))
-            onEventClick(event)
+            onClickEvent(event)
         },
         onRefresh = { viewModel.dispatch(EventsIntent.OnEventsRefreshed) },
-        onRetryClick = { viewModel.dispatch(EventsIntent.OnEventsRetried) },
+        onClickRetry = { viewModel.dispatch(EventsIntent.OnEventsRetried) },
         onFilterSelected = { filter -> viewModel.dispatch(EventsIntent.OnFilterSelected(filter)) },
     )
 }
@@ -85,10 +88,10 @@ fun EventsRoute(
 @Composable
 internal fun EventsScreen(
     uiState: EventsUiState,
-    onCalendarClick: () -> Unit,
-    onEventClick: (ShopEvent) -> Unit,
+    onClickNotice: () -> Unit,
+    onClickEvent: (ShopEvent) -> Unit,
     onRefresh: () -> Unit,
-    onRetryClick: () -> Unit,
+    onClickRetry: () -> Unit,
     onFilterSelected: (EventFilter) -> Unit,
 ) {
     var selectedEventGroup by remember { mutableStateOf<ShopEvents?>(null) }
@@ -124,18 +127,32 @@ internal fun EventsScreen(
                             image = Res.drawable.laduck_error_crying,
                             title = stringResource(Res.string.event_list_error_title),
                             description = stringResource(Res.string.event_list_error_description),
-                            onRetry = onRetryClick,
+                            onRetry = onClickRetry,
                             modifier = Modifier.fillMaxSize(),
                         )
 
                     else -> {
-                        val summerLimitedTitle = stringResource(Res.string.event_filter_summer_limited)
-                        val ongoingTitle = stringResource(Res.string.event_list_ongoing_section)
-                        val upcomingTitle = stringResource(Res.string.event_list_upcoming_section)
+                        val summerLimitedTitle =
+                            stringResource(Res.string.event_filter_summer_limited)
+                        val ongoingTitleRes =
+                            if (uiState.selectedFilter == EventFilter.NEW_MENU) {
+                                Res.string.new_menu_ongoing_section
+                            } else {
+                                Res.string.event_list_ongoing_section
+                            }
+                        val upcomingTitleRes =
+                            if (uiState.selectedFilter == EventFilter.NEW_MENU) {
+                                Res.string.new_menu_upcoming_section
+                            } else {
+                                Res.string.event_list_upcoming_section
+                            }
+
+                        val ongoingTitle = stringResource(ongoingTitleRes)
+                        val upcomingTitle = stringResource(upcomingTitleRes)
                         LazyColumn(
                             modifier = Modifier.fillMaxSize(),
                             contentPadding = PaddingValues(bottom = 5.dp),
-                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                            verticalArrangement = Arrangement.spacedBy(10.dp),
                         ) {
                             item {
                                 EventFilters(
@@ -156,8 +173,8 @@ internal fun EventsScreen(
                                     events = uiState.summerLimitedEvents,
                                     isOngoingSection = true,
                                     useHorizontalScroll = uiState.upcomingEvents.isNotEmpty(),
-                                    horizontalContentPadding = 15.dp,
-                                    onEventClick = onEventClick,
+                                    horizontalContentPadding = 5.dp,
+                                    onEventClick = onClickEvent,
                                     onEventGroupClick = { selectedEventGroup = it },
                                 )
                                 eventSection(
@@ -166,8 +183,8 @@ internal fun EventsScreen(
                                     events = uiState.ongoingEvents,
                                     isOngoingSection = true,
                                     useHorizontalScroll = uiState.upcomingEvents.isNotEmpty(),
-                                    horizontalContentPadding = 15.dp,
-                                    onEventClick = onEventClick,
+                                    horizontalContentPadding = 5.dp,
+                                    onEventClick = onClickEvent,
                                     onEventGroupClick = { selectedEventGroup = it },
                                 )
                                 eventSection(
@@ -175,8 +192,8 @@ internal fun EventsScreen(
                                     title = upcomingTitle,
                                     events = uiState.upcomingEvents,
                                     isOngoingSection = false,
-                                    horizontalContentPadding = 15.dp,
-                                    onEventClick = onEventClick,
+                                    horizontalContentPadding = 10.dp,
+                                    onEventClick = onClickEvent,
                                     onEventGroupClick = { selectedEventGroup = it },
                                 )
                             }
@@ -185,14 +202,19 @@ internal fun EventsScreen(
                 }
             }
             FloatingActionButton(
-                onClick = onCalendarClick,
-                modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp),
-                containerColor = CommonColor.Black,
-                contentColor = CommonColor.White,
+                onClick = onClickNotice,
+                modifier =
+                    Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(start = 5.dp)
+                        .padding(20.dp),
+                shape = CircleShape,
+                containerColor = CommonColor.White,
             ) {
-                Icon(
-                    painter = painterResource(Res.drawable.ic_event_calendar),
-                    contentDescription = stringResource(Res.string.event_calendar_open),
+                Image(
+                    painter = painterResource(Res.drawable.ic_operating_notice_fab),
+                    contentDescription = stringResource(Res.string.operating_notice_open),
+                    modifier = Modifier.padding(start = 3.dp),
                 )
             }
             selectedEventGroup?.let { eventGroup ->
@@ -201,7 +223,7 @@ internal fun EventsScreen(
                     onDismiss = { selectedEventGroup = null },
                     onEventClick = { event ->
                         selectedEventGroup = null
-                        onEventClick(event)
+                        onClickEvent(event)
                     },
                 )
             }
@@ -217,10 +239,10 @@ private fun EventsRoutePreview(
     RamapTheme {
         EventsScreen(
             uiState = uiState,
-            onCalendarClick = {},
-            onEventClick = {},
+            onClickNotice = {},
+            onClickEvent = {},
             onRefresh = {},
-            onRetryClick = {},
+            onClickRetry = {},
             onFilterSelected = {},
         )
     }

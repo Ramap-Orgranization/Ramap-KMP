@@ -62,6 +62,7 @@ private fun navKeySerializersModule(): SerializersModule =
             subclass(ScreenRoutes.MapRoutes::class)
             subclass(ScreenRoutes.EventTabRoutes::class)
             subclass(ScreenRoutes.EventCalendarRoutes::class)
+            subclass(ScreenRoutes.OperatingNoticeRoutes::class)
             subclass(ScreenRoutes.RankingTabRoutes::class)
             subclass(ScreenRoutes.MyTabRoutes::class)
             subclass(ScreenRoutes.AccountSettingsRoutes::class)

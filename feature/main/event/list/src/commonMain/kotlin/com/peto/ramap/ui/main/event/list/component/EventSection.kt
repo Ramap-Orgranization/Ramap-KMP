@@ -3,14 +3,12 @@ package com.peto.ramap.ui.main.event.list.component
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
@@ -25,23 +23,20 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.peto.ramap.designsystem.card.EventShopGroupCard
-import com.peto.ramap.designsystem.image.RemoteShopImage
+import com.peto.ramap.designsystem.component.ShopThumbnail
 import com.peto.ramap.designsystem.resource.event.ShopEventResourceMapper
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.model.event.ShopEvents
-import com.peto.ramap.extension.noRippleClickable
 import com.peto.ramap.theme.AppTextStyle
+import com.peto.ramap.theme.ChromaticColor
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
-import com.peto.ramap.theme.InstagramColor
 import com.peto.ramap.theme.RamapTheme
 import com.peto.ramap.theme.SystemColor
 import com.peto.ramap.ui.main.event.list.preview.EventSectionPreviewParameterProvider
@@ -97,35 +92,32 @@ internal fun eventSection(
                     }
                 }
             } else {
-                Column(
+                FlowRow(
                     modifier =
                         Modifier
                             .fillMaxWidth()
                             .padding(horizontal = horizontalContentPadding),
-                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                    horizontalArrangement =
+                        Arrangement.spacedBy(
+                            space = 10.dp,
+                            alignment = Alignment.CenterHorizontally,
+                        ),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    events.chunked(4).forEach { rowEvents ->
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(6.dp),
-                        ) {
-                            rowEvents.forEach { eventGroup ->
-                                OngoingEventShopItem(
-                                    eventGroup = eventGroup,
-                                    modifier = Modifier.weight(1f),
-                                    onClick = {
-                                        if (eventGroup.hasMultipleEvents) {
-                                            onEventGroupClick(eventGroup)
-                                        } else {
-                                            onEventClick(eventGroup.representativeEvent)
-                                        }
-                                    },
-                                )
-                            }
-                            repeat(4 - rowEvents.size) {
-                                Spacer(Modifier.weight(1f))
-                            }
-                        }
+                    events.forEach { eventGroup ->
+                        OngoingEventShopItem(
+                            eventGroup = eventGroup,
+                            onClick = {
+                                if (eventGroup.hasMultipleEvents) {
+                                    onEventGroupClick(eventGroup)
+                                } else {
+                                    onEventClick(eventGroup.representativeEvent)
+                                }
+                            },
+                        )
+                    }
+                    repeat(10) {
+                        Spacer(modifier = Modifier.width(72.dp).height(0.dp))
                     }
                 }
             }
@@ -147,24 +139,16 @@ internal fun eventSection(
 @Composable
 private fun OngoingEventShopItem(
     eventGroup: ShopEvents,
-    modifier: Modifier = Modifier.width(72.dp),
+    modifier: Modifier = Modifier,
     onClick: () -> Unit,
 ) {
     val event = eventGroup.representativeEvent
-    Column(
-        modifier =
-            modifier
-                .noRippleClickable(onClick = onClick),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(6.dp),
-    ) {
-        Box(
-            modifier = Modifier.size(72.dp),
-        ) {
-            RemoteShopImage(
-                url = event.venueProfileImageUrl,
-                modifier = Modifier.size(68.dp),
-            )
+    ShopThumbnail(
+        imageUrl = event.venueProfileImageUrl,
+        name = event.venueShopName,
+        modifier = modifier,
+        onClick = onClick,
+        badge = {
             ShopEventResourceMapper
                 .statusLabel(
                     isCancelled = eventGroup.any(ShopEvent::isCancelledToday),
@@ -181,6 +165,8 @@ private fun OngoingEventShopItem(
                         color = CommonColor.White,
                     )
                 }
+        },
+        topEndBadge = {
             if (eventGroup.hasMultipleEvents) {
                 AppText(
                     text =
@@ -191,23 +177,14 @@ private fun OngoingEventShopItem(
                     modifier =
                         Modifier
                             .align(Alignment.TopEnd)
-                            .background(InstagramColor.Blue, CircleShape)
+                            .background(ChromaticColor.Blue400, CircleShape)
                             .padding(4.dp),
                     style = AppTextStyle.C2,
                     color = CommonColor.White,
                 )
             }
-        }
-        AppText(
-            text = event.venueShopName,
-            modifier = Modifier.fillMaxWidth().height(36.dp),
-            style = AppTextStyle.B3,
-            color = GrayColor.C500,
-            textAlign = TextAlign.Center,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-        )
-    }
+        },
+    )
 }
 
 @Preview(showBackground = true)

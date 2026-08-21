@@ -1,12 +1,11 @@
-package com.peto.ramap.ui.main.event.detail.component
+package com.peto.ramap.designsystem.badge
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.peto.ramap.designsystem.text.AppText
@@ -18,31 +17,35 @@ import com.peto.ramap.theme.RamapTheme
 import com.peto.ramap.theme.SystemColor
 
 @Composable
-internal fun EventTag(
+fun NewsBadge(
     text: String,
-    isStatus: Boolean = false,
+    textStyle: AppTextStyle,
+    modifier: Modifier = Modifier,
+    containerColor: Color = ChromaticColor.Yellow400,
+    contentColor: Color = GrayColor.C500,
 ) {
     AppText(
-        text,
+        text = text,
         modifier =
-            Modifier
+            modifier
                 .background(
-                    if (isStatus) SystemColor.Warning else ChromaticColor.Yellow400,
+                    containerColor,
                     RoundedCornerShape(999.dp),
-                ).padding(horizontal = 10.dp, vertical = 4.dp),
-        style = AppTextStyle.T3,
-        color = if (isStatus) CommonColor.White else GrayColor.C500,
+                ).padding(horizontal = 8.dp, vertical = 3.dp),
+        style = textStyle,
+        color = contentColor,
     )
 }
 
-@Preview
+@Preview(showBackground = true)
 @Composable
-private fun EventTagPreview() {
+private fun NewsBadgePreview() {
     RamapTheme {
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            EventTag(text = "팝업스토어")
-
-            EventTag(text = "콜라보", isStatus = true)
-        }
+        NewsBadge(
+            text = "영업중",
+            textStyle = AppTextStyle.C2,
+            containerColor = SystemColor.Warning,
+            contentColor = CommonColor.White,
+        )
     }
 }

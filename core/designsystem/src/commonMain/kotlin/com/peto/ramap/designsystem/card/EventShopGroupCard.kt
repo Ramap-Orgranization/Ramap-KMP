@@ -16,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.peto.ramap.designsystem.badge.NewsBadge
 import com.peto.ramap.designsystem.image.RemoteShopImage
 import com.peto.ramap.designsystem.resource.event.ShopEventResourceMapper
 import com.peto.ramap.designsystem.text.AppText
@@ -25,7 +26,6 @@ import com.peto.ramap.domain.model.event.ShopEventType
 import com.peto.ramap.domain.model.event.ShopEvents
 import com.peto.ramap.extension.noRippleClickable
 import com.peto.ramap.theme.AppTextStyle
-import com.peto.ramap.theme.ChromaticColor
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.SystemColor
@@ -71,7 +71,12 @@ fun EventShopGroupCard(
                         isCancelled = true,
                         isSoldOut = false,
                     )?.let { statusLabel ->
-                        EventStatusTag(stringResource(statusLabel))
+                        NewsBadge(
+                            text = stringResource(statusLabel),
+                            containerColor = SystemColor.Warning,
+                            contentColor = CommonColor.White,
+                            textStyle = AppTextStyle.B3,
+                        )
                     }
             }
         }
@@ -97,17 +102,17 @@ fun EventShopGroupCard(
                     )
                     ShopEventResourceMapper
                         .statusLabel(isCancelled(event), isSoldOut(event))
-                        ?.let { statusLabel -> EventStatusTag(stringResource(statusLabel)) }
-                    AppText(
+                        ?.let { statusLabel ->
+                            NewsBadge(
+                                text = stringResource(statusLabel),
+                                containerColor = SystemColor.Warning,
+                                contentColor = CommonColor.White,
+                                textStyle = AppTextStyle.B3,
+                            )
+                        }
+                    NewsBadge(
                         text = stringResource(ShopEventResourceMapper.typeLabel(event.type)),
-                        modifier =
-                            Modifier
-                                .background(ChromaticColor.Yellow400, RoundedCornerShape(10.dp))
-                                .padding(horizontal = 8.dp, vertical = 3.dp),
-                        style = AppTextStyle.C2,
-                        color = GrayColor.C500,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
+                        textStyle = AppTextStyle.B3,
                     )
                 }
                 AppText(
@@ -122,18 +127,4 @@ fun EventShopGroupCard(
             }
         }
     }
-}
-
-@Composable
-private fun EventStatusTag(text: String) {
-    AppText(
-        text = text,
-        modifier =
-            Modifier
-                .background(SystemColor.Warning, RoundedCornerShape(10.dp))
-                .padding(horizontal = 8.dp, vertical = 3.dp),
-        style = AppTextStyle.C2,
-        color = CommonColor.White,
-        maxLines = 1,
-    )
 }
