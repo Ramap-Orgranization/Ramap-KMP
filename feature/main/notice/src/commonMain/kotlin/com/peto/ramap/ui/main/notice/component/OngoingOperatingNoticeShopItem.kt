@@ -14,6 +14,7 @@ import com.peto.ramap.designsystem.component.ShopThumbnail
 import com.peto.ramap.designsystem.resource.operatingnotice.ShopOperatingNoticeResourceMapper
 import com.peto.ramap.domain.model.notice.OperatingNotice
 import com.peto.ramap.preview.OperatingNoticePreviewParameterProvider
+import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.RamapTheme
 import com.peto.ramap.theme.SystemColor
@@ -36,6 +37,7 @@ internal fun OngoingOperatingNoticeShop(
                 modifier = Modifier.align(Alignment.BottomStart),
                 containerColor = SystemColor.Warning,
                 contentColor = CommonColor.White,
+                textStyle = AppTextStyle.C2,
             )
         },
     )

@@ -67,6 +67,7 @@ internal fun OperatingNoticeCard(
                     text = stringResource(ShopOperatingNoticeResourceMapper.typeLabel(notice.type)),
                     containerColor = SystemColor.Warning,
                     contentColor = CommonColor.White,
+                    textStyle = AppTextStyle.C2,
                 )
                 EventDateBadge(text = eventDateText("${notice.startDate}", "${notice.endDate}"))
             }

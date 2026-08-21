@@ -311,9 +311,11 @@ private fun EventDetailContent(
                 text = stringResource(ShopEventResourceMapper.dateLabel(event)),
                 containerColor = if (isStatus) SystemColor.Warning else ChromaticColor.Yellow400,
                 contentColor = if (isStatus) CommonColor.White else GrayColor.C500,
+                textStyle = AppTextStyle.T3,
             )
             NewsBadge(
                 text = stringResource(ShopEventResourceMapper.typeLabel(event.type)),
+                textStyle = AppTextStyle.T3,
             )
         }
         AppText("🍜 ${event.title}", style = AppTextStyle.H1, color = GrayColor.C500)

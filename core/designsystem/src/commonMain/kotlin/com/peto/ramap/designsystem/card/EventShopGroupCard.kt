@@ -75,6 +75,7 @@ fun EventShopGroupCard(
                             text = stringResource(statusLabel),
                             containerColor = SystemColor.Warning,
                             contentColor = CommonColor.White,
+                            textStyle = AppTextStyle.B3,
                         )
                     }
             }
@@ -106,9 +107,13 @@ fun EventShopGroupCard(
                                 text = stringResource(statusLabel),
                                 containerColor = SystemColor.Warning,
                                 contentColor = CommonColor.White,
+                                textStyle = AppTextStyle.B3,
                             )
                         }
-                    NewsBadge(text = stringResource(ShopEventResourceMapper.typeLabel(event.type)))
+                    NewsBadge(
+                        text = stringResource(ShopEventResourceMapper.typeLabel(event.type)),
+                        textStyle = AppTextStyle.B3,
+                    )
                 }
                 AppText(
                     text =

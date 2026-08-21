@@ -19,6 +19,7 @@ import com.peto.ramap.theme.SystemColor
 @Composable
 fun NewsBadge(
     text: String,
+    textStyle: AppTextStyle,
     modifier: Modifier = Modifier,
     containerColor: Color = ChromaticColor.Yellow400,
     contentColor: Color = GrayColor.C500,
@@ -31,7 +32,7 @@ fun NewsBadge(
                     containerColor,
                     RoundedCornerShape(999.dp),
                 ).padding(horizontal = 8.dp, vertical = 3.dp),
-        style = AppTextStyle.C2,
+        style = textStyle,
         color = contentColor,
     )
 }
@@ -42,6 +43,7 @@ private fun NewsBadgePreview() {
     RamapTheme {
         NewsBadge(
             text = "영업중",
+            textStyle = AppTextStyle.C2,
             containerColor = SystemColor.Warning,
             contentColor = CommonColor.White,
         )

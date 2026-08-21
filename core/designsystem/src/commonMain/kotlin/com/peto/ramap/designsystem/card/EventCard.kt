@@ -18,7 +18,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.peto.ramap.designsystem.badge.NewsBadge
@@ -86,9 +85,13 @@ fun EventCard(
                     text = stringResource(statusLabel),
                     containerColor = SystemColor.Warning,
                     contentColor = CommonColor.White,
+                    textStyle = AppTextStyle.B3,
                 )
             }
-            NewsBadge(stringResource(ShopEventResourceMapper.typeLabel(event.type)))
+            NewsBadge(
+                text = stringResource(ShopEventResourceMapper.typeLabel(event.type)),
+                textStyle = AppTextStyle.B3,
+            )
             if (actionLabel != null && onAction != null) {
                 IconButton(onClick = onAction) {
                     Icon(
