@@ -1,9 +1,7 @@
 package com.peto.ramap.data.model
 
-import com.peto.ramap.domain.model.operatingnotice.OperatingNoticeStatus
-import com.peto.ramap.domain.model.operatingnotice.OperatingNoticeType
+import com.peto.ramap.domain.model.notice.OperatingNoticeType
 import com.peto.ramap.fixture.ramenShopFixture
-import kotlinx.datetime.LocalDate
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFails
@@ -28,15 +26,6 @@ class OperatingNoticeResponseTest {
     }
 
     @Test
-    fun `종료일이 없는 영업 변동의 상태를 계산한다`() {
-        val notice = response(startDate = "2026-08-20", endDate = null).toDomain(ramenShopFixture())
-
-        assertEquals(OperatingNoticeStatus.UPCOMING, notice.statusOn(LocalDate(2026, 8, 19)))
-        assertEquals(OperatingNoticeStatus.ONGOING, notice.statusOn(LocalDate(2026, 8, 20)))
-        assertEquals(OperatingNoticeStatus.ONGOING, notice.statusOn(LocalDate(2026, 8, 21)))
-    }
-
-    @Test
     fun `실제 영업 변동 유형을 도메인 유형으로 변환한다`() {
         val shop = ramenShopFixture()
 
@@ -51,7 +40,6 @@ class OperatingNoticeResponseTest {
 
         assertFails { response(noticeType = "unknown").toDomain(shop) }
         assertFails { response(startDate = "invalid-date").toDomain(shop) }
-        assertFails { response(startDate = "2026-08-22").toDomain(shop) }
         assertFails { response(endDate = "invalid-date").toDomain(shop) }
         assertFails { response(endTime = "25:00").toDomain(shop) }
     }

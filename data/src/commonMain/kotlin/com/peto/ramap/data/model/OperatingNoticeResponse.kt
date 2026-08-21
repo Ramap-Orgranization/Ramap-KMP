@@ -2,8 +2,8 @@ package com.peto.ramap.data.model
 
 import com.peto.ramap.data.extension.toLocalDate
 import com.peto.ramap.data.extension.toLocalTime
-import com.peto.ramap.domain.model.operatingnotice.OperatingNotice
-import com.peto.ramap.domain.model.operatingnotice.OperatingNoticeType
+import com.peto.ramap.domain.model.notice.OperatingNotice
+import com.peto.ramap.domain.model.notice.OperatingNoticeType
 import com.peto.ramap.domain.model.shop.RamenShop
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable

@@ -3,7 +3,7 @@ package com.peto.ramap.data.repository
 import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.data.datasource.notice.OperatingNoticeDataSource
 import com.peto.ramap.data.datasource.shop.RamenShopDataSource
-import com.peto.ramap.domain.model.operatingnotice.OperatingNotice
+import com.peto.ramap.domain.model.notice.OperatingNotice
 import com.peto.ramap.domain.repository.OperatingNoticeRepository
 import com.peto.ramap.network.execute.invokeRequest
 import kotlinx.datetime.LocalDate
@@ -17,8 +17,8 @@ internal class DefaultOperatingNoticeRepository(
 ) : OperatingNoticeRepository {
     override suspend fun fetchCurrentOperatingNotices(): RamapResult<List<OperatingNotice>> =
         invokeRequest {
-            val responses = operatingNoticeDataSource.fetchApprovedOperatingNotices()
             val today = today()
+            val responses = operatingNoticeDataSource.fetchApprovedOperatingNotices(today)
             val shops =
                 ramenShopDataSource
                     .fetchRamenShopsByIds(responses.mapTo(mutableSetOf()) { it.shopId })
@@ -27,7 +27,7 @@ internal class DefaultOperatingNoticeRepository(
                 .mapNotNull { response ->
                     val shop = shops[response.shopId]?.toDomain() ?: return@mapNotNull null
                     response.toDomain(shop)
-                }.filter { notice -> notice.statusOn(today) != null }
+                }
         }
 
     private fun today(): LocalDate = Clock.System.todayIn(TimeZone.of(SEOUL_TIME_ZONE))

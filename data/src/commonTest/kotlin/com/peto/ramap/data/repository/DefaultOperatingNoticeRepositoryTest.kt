@@ -3,11 +3,11 @@ package com.peto.ramap.data.repository
 import com.peto.ramap.core.result.getOrThrow
 import com.peto.ramap.data.datasource.notice.OperatingNoticeDataSource
 import com.peto.ramap.data.model.OperatingNoticeResponse
-import com.peto.ramap.domain.model.operatingnotice.OperatingNoticeStatus
 import com.peto.ramap.fake.FakeRamenShopDataSource
 import com.peto.ramap.fixture.ramenShopResponseFixture
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.DateTimeUnit
+import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.minus
 import kotlinx.datetime.plus
@@ -18,23 +18,23 @@ import kotlin.time.Clock
 
 class DefaultOperatingNoticeRepositoryTest {
     @Test
-    fun `서울 기준으로 종료된 영업 변동은 제외한다`() =
+    fun `서울 기준 오늘을 data source에 전달한다`() =
         runTest {
             val today = Clock.System.todayIn(TimeZone.of("Asia/Seoul"))
+            var requestedDate = today.minus(1, DateTimeUnit.DAY)
             val repository =
                 DefaultOperatingNoticeRepository(
                     operatingNoticeDataSource =
                         object : OperatingNoticeDataSource {
-                            override suspend fun fetchApprovedOperatingNotices() =
+                            override suspend fun fetchApprovedOperatingNotices(today: LocalDate) =
                                 listOf(
-                                    response(id = "ended", endDate = today.minus(1, DateTimeUnit.DAY).toString()),
                                     response(id = "current", endDate = today.toString()),
                                     response(
                                         id = "upcoming",
                                         startDate = today.plus(1, DateTimeUnit.DAY).toString(),
                                         endDate = today.plus(2, DateTimeUnit.DAY).toString(),
                                     ),
-                                )
+                                ).also { requestedDate = today }
                         },
                     ramenShopDataSource =
                         FakeRamenShopDataSource(
@@ -44,9 +44,8 @@ class DefaultOperatingNoticeRepositoryTest {
 
             val notices = repository.fetchCurrentOperatingNotices().getOrThrow()
 
+            assertEquals(today, requestedDate)
             assertEquals(listOf("current", "upcoming"), notices.map { it.id })
-            assertEquals(OperatingNoticeStatus.ONGOING, notices[0].statusOn(today))
-            assertEquals(OperatingNoticeStatus.UPCOMING, notices[1].statusOn(today))
         }
 
     private fun response(
