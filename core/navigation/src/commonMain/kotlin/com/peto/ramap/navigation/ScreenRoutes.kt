@@ -3,6 +3,7 @@ package com.peto.ramap.navigation
 import androidx.navigation3.runtime.NavKey
 import kotlinx.serialization.Serializable
 
+@Serializable
 sealed interface ScreenRoutes : NavKey {
     @Serializable
     data class MapRoutes(
