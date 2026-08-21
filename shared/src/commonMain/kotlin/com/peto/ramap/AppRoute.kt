@@ -110,6 +110,9 @@ internal fun AppRoute(
                 onEventNavigate = { event ->
                     navigationState.showEvent(event.id)
                 },
+                onOperatingNoticeNavigate = { notice ->
+                    navigationState.showShopOnMap(notice.shop.id)
+                },
                 requestedShopId = route.shopId,
                 showShopDetail = route.showShopDetail,
                 originSource =

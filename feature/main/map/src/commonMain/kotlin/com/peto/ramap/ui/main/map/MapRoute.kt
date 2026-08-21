@@ -13,6 +13,7 @@ import com.peto.ramap.designsystem.toast.ToastManager
 import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.event.ShopEvent
+import com.peto.ramap.domain.model.notice.OperatingNotice
 import com.peto.ramap.navigation.deeplink.ShopShareLinkFactory
 import com.peto.ramap.platform.AppSettingsOpener
 import com.peto.ramap.platform.NotificationPermissionRequester
@@ -55,6 +56,7 @@ fun MapRoute(
     isBackEnabled: Boolean = true,
     onDetailDismissed: () -> Unit = {},
     onEventNavigate: (ShopEvent) -> Unit = {},
+    onOperatingNoticeNavigate: (OperatingNotice) -> Unit,
     requestedShopId: String? = null,
     showShopDetail: Boolean = true,
     originSource: AnalyticsSource = AnalyticsSource.MAP,
@@ -149,6 +151,7 @@ fun MapRoute(
             },
             onBookmarkedShopsToggle = { viewModel.dispatch(OnBookmarkedShopsToggled) },
             onEventClick = onEventNavigate,
+            onOperatingNoticeNavigate = onOperatingNoticeNavigate,
             showShopDetail = shouldShowShopDetail,
         )
     }

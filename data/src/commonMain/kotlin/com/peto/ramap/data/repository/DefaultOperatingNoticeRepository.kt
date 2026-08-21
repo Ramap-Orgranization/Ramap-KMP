@@ -30,6 +30,21 @@ internal class DefaultOperatingNoticeRepository(
                 }
         }
 
+    override suspend fun fetchActiveShopOperatingNotice(shopId: String): RamapResult<OperatingNotice?> =
+        invokeRequest {
+            val today = today()
+            val responses = operatingNoticeDataSource.fetchApprovedShopOperatingNotices(shopId, today)
+            if (responses.isEmpty()) return@invokeRequest null
+
+            val shop =
+                ramenShopDataSource
+                    .fetchRamenShopsByIds(setOf(shopId))
+                    .firstOrNull()
+                    ?.toDomain() ?: return@invokeRequest null
+
+            responses.firstOrNull()?.toDomain(shop)
+        }
+
     private fun today(): LocalDate = Clock.System.todayIn(TimeZone.of(SEOUL_TIME_ZONE))
 
     private companion object {

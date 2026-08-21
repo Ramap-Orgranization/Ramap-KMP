@@ -24,9 +24,11 @@ import com.peto.ramap.designsystem.image.RemoteShopImage
 import com.peto.ramap.designsystem.resource.category.CategoryResourceMapper
 import com.peto.ramap.designsystem.resource.event.ShopEventResourceMapper
 import com.peto.ramap.designsystem.resource.format
+import com.peto.ramap.designsystem.resource.operatingnotice.ShopOperatingNoticeResourceMapper
 import com.peto.ramap.designsystem.resource.wating.WaitingSystemUiModel
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.domain.model.event.ShopEvent
+import com.peto.ramap.domain.model.notice.OperatingNotice
 import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.extension.noRippleClickable
 import com.peto.ramap.preview.RamenShopPreviewParameterProvider
@@ -76,6 +78,8 @@ fun RamenShopOverview(
     onAppleMapsClick: (RamenShop) -> Unit,
     event: ShopEvent? = null,
     onEventClick: (ShopEvent) -> Unit,
+    operatingNotice: OperatingNotice? = null,
+    onOperatingNoticeClick: (OperatingNotice) -> Unit = {},
 ) {
     val clipboardManager = LocalClipboardManager.current
 
@@ -90,6 +94,18 @@ fun RamenShopOverview(
             modifier = dragAreaModifier,
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
+            operatingNotice?.let { notice ->
+                AppText(
+                    text = ShopOperatingNoticeResourceMapper.notice(notice).format(),
+                    modifier =
+                        Modifier
+                            .padding(top = 5.dp)
+                            .padding(horizontal = 24.dp)
+                            .noRippleClickable { onOperatingNoticeClick(notice) },
+                    style = AppTextStyle.B1,
+                    color = SystemColor.Warning,
+                )
+            }
             event?.let { shopEvent ->
                 ShopEventResourceMapper.notice(shopEvent)?.let { notice ->
                     AppText(
@@ -291,6 +307,8 @@ private fun RamenShopOverviewPreview(
             onAppleMapsClick = {},
             event = null,
             onEventClick = {},
+            operatingNotice = null,
+            onOperatingNoticeClick = {},
         )
     }
 }
@@ -323,6 +341,8 @@ private fun RamenShopOverviewWithEventPreview(
             onAppleMapsClick = {},
             event = event,
             onEventClick = {},
+            operatingNotice = null,
+            onOperatingNoticeClick = {},
         )
     }
 }

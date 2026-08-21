@@ -35,12 +35,12 @@ import androidx.navigationevent.compose.NavigationBackHandler
 import androidx.navigationevent.compose.rememberNavigationEventState
 import com.peto.ramap.designsystem.component.LoadErrorContent
 import com.peto.ramap.designsystem.component.ShopListEmptyContent
+import com.peto.ramap.designsystem.notice.OperatingNoticeBottomSheet
 import com.peto.ramap.domain.model.notice.OperatingNotice
 import com.peto.ramap.preview.OperatingNoticePreviewParameterProvider
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.RamapTheme
 import com.peto.ramap.ui.main.notice.component.OngoingOperatingNoticeShop
-import com.peto.ramap.ui.main.notice.component.OperatingNoticeBottomSheet
 import com.peto.ramap.ui.main.notice.component.OperatingNoticeSectionTitle
 import com.peto.ramap.ui.main.notice.component.OperatingNoticeSkeleton
 import com.peto.ramap.ui.main.notice.contract.OperatingNoticeUiState

@@ -2,13 +2,11 @@ package com.peto.ramap.ui.main.notice
 
 import app.cash.turbine.test
 import com.peto.ramap.core.result.RamapError
-import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.coroutinesTest
 import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.notice.OperatingNotice
 import com.peto.ramap.domain.model.notice.OperatingNoticeType
-import com.peto.ramap.domain.repository.OperatingNoticeRepository
 import com.peto.ramap.fake.FakeOperatingNoticeRepository
 import com.peto.ramap.fixture.ramenShopFixture
 import com.peto.ramap.ui.main.notice.contract.OperatingNoticeIntent

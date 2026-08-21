@@ -5,13 +5,18 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.peto.ramap.analytics.AnalyticsSource
+import com.peto.ramap.designsystem.notice.OperatingNoticeBottomSheet
 import com.peto.ramap.designsystem.resource.wating.toUiModel
 import com.peto.ramap.designsystem.shop.ShopDetailContent
 import com.peto.ramap.designsystem.toast.ToastManager
 import com.peto.ramap.domain.model.event.ShopEvent
+import com.peto.ramap.domain.model.notice.OperatingNotice
 import com.peto.ramap.navigation.deeplink.ShopShareLinkFactory
 import com.peto.ramap.platform.AppSettingsOpener
 import com.peto.ramap.platform.ExternalUriOpener
@@ -33,6 +38,7 @@ fun ShopDetailHost(
     requestNotificationPermission: suspend () -> Boolean = NotificationPermissionRequester::request,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    var selectedNotice by remember { mutableStateOf<OperatingNotice?>(null) }
 
     LaunchedEffect(shopId) {
         viewModel.dispatch(MapIntent.OnShopIdSelected(shopId))
@@ -96,6 +102,7 @@ fun ShopDetailHost(
                     )
                 },
                 onEventClick = onEventNavigate,
+                onOperatingNoticeClick = { selectedNotice = it },
                 onReportSubmit = { wrongFields, description ->
                     viewModel.dispatch(MapIntent.OnShopReportSubmitted(wrongFields, description))
                 },
@@ -105,5 +112,18 @@ fun ShopDetailHost(
                 },
             )
         }
+    }
+
+    selectedNotice?.let { notice ->
+        OperatingNoticeBottomSheet(
+            notice = notice,
+            isSourceUrlSupported = ExternalUriOpener::isSupportedWebUri,
+            onSourceClick = ExternalUriOpener::open,
+            onShopClick = {
+                if (it != shopId) onShowOnMap(it)
+                selectedNotice = null
+            },
+            onDismiss = { selectedNotice = null },
+        )
     }
 }

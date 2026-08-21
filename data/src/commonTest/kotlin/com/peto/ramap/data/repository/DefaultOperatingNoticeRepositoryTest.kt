@@ -35,6 +35,11 @@ class DefaultOperatingNoticeRepositoryTest {
                                         endDate = today.plus(2, DateTimeUnit.DAY).toString(),
                                     ),
                                 ).also { requestedDate = today }
+
+                            override suspend fun fetchApprovedShopOperatingNotices(
+                                shopId: String,
+                                today: LocalDate,
+                            ) = emptyList<OperatingNoticeResponse>()
                         },
                     ramenShopDataSource =
                         FakeRamenShopDataSource(
