@@ -9,7 +9,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.peto.ramap.designsystem.badge.EventBadge
+import com.peto.ramap.designsystem.badge.NewsBadge
 import com.peto.ramap.designsystem.component.ShopThumbnail
 import com.peto.ramap.designsystem.resource.operatingnotice.ShopOperatingNoticeResourceMapper
 import com.peto.ramap.domain.model.notice.OperatingNotice
@@ -17,6 +17,7 @@ import com.peto.ramap.preview.OperatingNoticePreviewParameterProvider
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.RamapTheme
+import com.peto.ramap.theme.SystemColor
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
@@ -31,9 +32,11 @@ internal fun OngoingOperatingNoticeShop(
         modifier = modifier,
         onClick = onClick,
         badge = {
-            EventBadge(
+            NewsBadge(
                 text = stringResource(ShopOperatingNoticeResourceMapper.typeLabel(notice.type)),
                 modifier = Modifier.align(Alignment.BottomStart),
+                containerColor = SystemColor.Warning,
+                contentColor = CommonColor.White,
                 textStyle = AppTextStyle.C2,
             )
         },

@@ -14,8 +14,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
-import com.peto.ramap.designsystem.badge.EventBadge
 import com.peto.ramap.designsystem.badge.EventDateBadge
+import com.peto.ramap.designsystem.badge.NewsBadge
 import com.peto.ramap.designsystem.component.RamenShopSummary
 import com.peto.ramap.designsystem.resource.category.CategoryResourceMapper
 import com.peto.ramap.designsystem.resource.operatingnotice.ShopOperatingNoticeResourceMapper
@@ -27,6 +27,7 @@ import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.RamapTheme
+import com.peto.ramap.theme.SystemColor
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.operating_notice_source_action
@@ -62,8 +63,10 @@ fun OperatingNoticeCard(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(5.dp),
             ) {
-                EventBadge(
+                NewsBadge(
                     text = stringResource(ShopOperatingNoticeResourceMapper.typeLabel(notice.type)),
+                    containerColor = SystemColor.Warning,
+                    contentColor = CommonColor.White,
                     textStyle = AppTextStyle.C2,
                 )
                 EventDateBadge(text = eventDateText("${notice.startDate}", "${notice.endDate}"))

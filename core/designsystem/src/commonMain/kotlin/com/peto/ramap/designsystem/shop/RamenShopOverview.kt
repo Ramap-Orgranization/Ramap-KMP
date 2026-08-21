@@ -19,8 +19,8 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
+import com.peto.ramap.designsystem.badge.NewsBadge
 import com.peto.ramap.designsystem.component.MenuCategoryLabels
-import com.peto.ramap.designsystem.badge.EventBadge
 import com.peto.ramap.designsystem.image.RemoteShopImage
 import com.peto.ramap.designsystem.resource.category.CategoryResourceMapper
 import com.peto.ramap.designsystem.resource.event.ShopEventResourceMapper
@@ -35,8 +35,10 @@ import com.peto.ramap.extension.noRippleClickable
 import com.peto.ramap.preview.RamenShopPreviewParameterProvider
 import com.peto.ramap.preview.ShopEventPreviewParameterProvider
 import com.peto.ramap.theme.AppTextStyle
+import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.RamapTheme
+import com.peto.ramap.theme.SystemColor
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.apple_maps_icon
@@ -95,19 +97,21 @@ fun RamenShopOverview(
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             operatingNotice?.let { notice ->
-                EventBadge(
+                NewsBadge(
                     text = ShopOperatingNoticeResourceMapper.notice(notice).format(),
                     modifier =
                         Modifier
                             .padding(top = 5.dp)
                             .padding(horizontal = 24.dp)
                             .noRippleClickable { onOperatingNoticeClick(notice) },
-                    textStyle = AppTextStyle.B1,
+                    textStyle = AppTextStyle.B3,
+                    containerColor = SystemColor.Warning,
+                    contentColor = CommonColor.White,
                 )
             }
             event?.let { shopEvent ->
                 ShopEventResourceMapper.notice(shopEvent)?.let { notice ->
-                    EventBadge(
+                    NewsBadge(
                         text = notice.format(),
                         modifier =
                             Modifier
@@ -115,6 +119,8 @@ fun RamenShopOverview(
                                 .padding(horizontal = 24.dp)
                                 .noRippleClickable { onEventClick(shopEvent) },
                         textStyle = AppTextStyle.B1,
+                        containerColor = SystemColor.Warning,
+                        contentColor = CommonColor.White,
                     )
                 }
             }
