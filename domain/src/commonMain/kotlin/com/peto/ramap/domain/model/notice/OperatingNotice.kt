@@ -8,7 +8,6 @@ data class OperatingNotice(
     val id: String,
     val shop: RamenShop,
     val type: OperatingNoticeType,
-    val title: String,
     val description: String,
     val startDate: LocalDate,
     val endDate: LocalDate?,

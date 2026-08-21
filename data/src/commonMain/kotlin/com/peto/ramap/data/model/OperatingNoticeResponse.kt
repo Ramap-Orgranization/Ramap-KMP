@@ -15,7 +15,6 @@ internal data class OperatingNoticeResponse(
     val shopId: String,
     @SerialName("notice_type")
     val noticeType: String,
-    val title: String,
     val description: String,
     @SerialName("notice_date")
     val startDate: String,
@@ -33,7 +32,6 @@ internal data class OperatingNoticeResponse(
             id = id,
             shop = shop,
             type = OperatingNoticeType.from(noticeType),
-            title = title,
             description = description,
             startDate = startDate.toLocalDate(),
             endDate = endDate?.toLocalDate(),

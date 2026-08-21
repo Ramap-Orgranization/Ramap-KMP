@@ -88,21 +88,18 @@ class OperatingNoticeViewModelTest {
             }
         }
 
-    private fun operatingNotice(
-        id: String = "notice",
-        title: String = "임시 휴무",
-    ) = OperatingNotice(
-        id = id,
-        shop = ramenShopFixture(id = "shop", name = "매장", address = "서울"),
-        type = OperatingNoticeType.TEMPORARY_CLOSURE,
-        title = title,
-        description = "내부 사정으로 쉽니다.",
-        startDate = LocalDate(2026, 8, 21),
-        endDate = LocalDate(2026, 8, 21),
-        startTime = null,
-        endTime = null,
-        sourceUrl = null,
-    )
+    private fun operatingNotice(id: String = "notice") =
+        OperatingNotice(
+            id = id,
+            shop = ramenShopFixture(id = "shop", name = "매장", address = "서울"),
+            type = OperatingNoticeType.TEMPORARY_CLOSURE,
+            description = "내부 사정으로 쉽니다.",
+            startDate = LocalDate(2026, 8, 21),
+            endDate = LocalDate(2026, 8, 21),
+            startTime = null,
+            endTime = null,
+            sourceUrl = null,
+        )
 
     private class FakeOperatingNoticeRepository(
         var notices: List<OperatingNotice> = emptyList(),

@@ -56,7 +56,6 @@ class DefaultOperatingNoticeRepositoryTest {
         id = id,
         shopId = "shop",
         noticeType = "full_close",
-        title = "임시 휴무",
         description = "내부 사정으로 쉽니다.",
         startDate = startDate,
         endDate = endDate,
