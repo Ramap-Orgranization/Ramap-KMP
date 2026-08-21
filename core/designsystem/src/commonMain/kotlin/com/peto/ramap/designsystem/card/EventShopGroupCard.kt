@@ -28,6 +28,7 @@ import com.peto.ramap.extension.noRippleClickable
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
+import com.peto.ramap.theme.SystemColor
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
@@ -72,7 +73,8 @@ fun EventShopGroupCard(
                     )?.let { statusLabel ->
                         NewsBadge(
                             text = stringResource(statusLabel),
-                            isStatus = true,
+                            containerColor = SystemColor.Warning,
+                            contentColor = CommonColor.White,
                         )
                     }
             }
@@ -102,7 +104,8 @@ fun EventShopGroupCard(
                         ?.let { statusLabel ->
                             NewsBadge(
                                 text = stringResource(statusLabel),
-                                isStatus = true,
+                                containerColor = SystemColor.Warning,
+                                contentColor = CommonColor.White,
                             )
                         }
                     NewsBadge(text = stringResource(ShopEventResourceMapper.typeLabel(event.type)))

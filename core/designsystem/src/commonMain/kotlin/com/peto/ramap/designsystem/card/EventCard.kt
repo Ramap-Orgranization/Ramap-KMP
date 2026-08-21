@@ -29,6 +29,7 @@ import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
+import com.peto.ramap.theme.SystemColor
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
@@ -83,7 +84,8 @@ fun EventCard(
             ShopEventResourceMapper.statusLabel(isCancelled, isSoldOut)?.let { statusLabel ->
                 NewsBadge(
                     text = stringResource(statusLabel),
-                    isStatus = true,
+                    containerColor = SystemColor.Warning,
+                    contentColor = CommonColor.White,
                 )
             }
             NewsBadge(stringResource(ShopEventResourceMapper.typeLabel(event.type)))

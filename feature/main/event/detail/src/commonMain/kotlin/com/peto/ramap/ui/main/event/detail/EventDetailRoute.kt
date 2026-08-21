@@ -55,10 +55,12 @@ import com.peto.ramap.platform.AppSettingsOpener
 import com.peto.ramap.platform.ExternalUriOpener
 import com.peto.ramap.platform.NotificationPermissionRequester
 import com.peto.ramap.theme.AppTextStyle
+import com.peto.ramap.theme.ChromaticColor
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.InstagramColor
 import com.peto.ramap.theme.RamapTheme
+import com.peto.ramap.theme.SystemColor
 import com.peto.ramap.ui.base.ObserveAsEvents
 import com.peto.ramap.ui.main.event.detail.component.EventCancellationNotice
 import com.peto.ramap.ui.main.event.detail.component.EventImages
@@ -304,9 +306,11 @@ private fun EventDetailContent(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier.padding(top = 5.dp),
         ) {
+            val isStatus = ShopEventResourceMapper.statusLabel(event) != null
             NewsBadge(
                 text = stringResource(ShopEventResourceMapper.dateLabel(event)),
-                isStatus = ShopEventResourceMapper.statusLabel(event) != null,
+                containerColor = if (isStatus) SystemColor.Warning else ChromaticColor.Yellow400,
+                contentColor = if (isStatus) CommonColor.White else GrayColor.C500,
             )
             NewsBadge(
                 text = stringResource(ShopEventResourceMapper.typeLabel(event.type)),
