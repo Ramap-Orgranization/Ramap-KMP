@@ -84,6 +84,7 @@ internal fun ShopOverflowMenu(
                     icon = if (isBookmarked) Res.drawable.ic_kid_star_filled else Res.drawable.ic_kid_star,
                     isActive = isBookmarked,
                     onClick = {
+                        isExpanded = false
                         onBookmarkClick()
                     },
                 )
@@ -97,7 +98,10 @@ internal fun ShopOverflowMenu(
                                 Res.drawable.ic_notification
                             },
                         isActive = isNotificationEnabled,
-                        onClick = onNotificationClick,
+                        onClick = {
+                            isExpanded = false
+                            onNotificationClick()
+                        },
                     )
                 }
             }
