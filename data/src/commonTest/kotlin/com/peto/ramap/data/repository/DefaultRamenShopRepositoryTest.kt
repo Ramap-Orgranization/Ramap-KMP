@@ -15,13 +15,13 @@ import com.peto.ramap.fixture.BOUNDS_FIXTURE
 import com.peto.ramap.fixture.ramenShopResponseFixture
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.DateTimeUnit
-import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.minus
 import kotlinx.datetime.plus
 import kotlinx.datetime.todayIn
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 import kotlin.time.Clock
 
 class DefaultRamenShopRepositoryTest {
@@ -39,7 +39,7 @@ class DefaultRamenShopRepositoryTest {
         }
 
     @Test
-    fun `활성 이벤트 목록은 잘못된 타입을 제외하고 응답 순서를 유지한다`() =
+    fun `활성 이벤트 목록에 잘못된 타입이 포함되어 있으면 실패한다`() =
         runTest {
             val repository =
                 DefaultRamenShopRepository(
@@ -53,9 +53,9 @@ class DefaultRamenShopRepositoryTest {
                     ),
                 )
 
-            val events = repository.fetchActiveEvents().getOrThrow()
+            val result = repository.fetchActiveEvents()
 
-            assertEquals(listOf("today", "upcoming"), events.map { it.id })
+            assertTrue(result is RamapResult.Error)
         }
 
     @Test
@@ -138,7 +138,7 @@ class DefaultRamenShopRepositoryTest {
         }
 
     @Test
-    fun `캘린더 페이지 응답은 이벤트와 인접 월 경계를 매핑한다`() =
+    fun `캘린더 페이지 응답에 잘못된 날짜 형식이 포함되어 있으면 실패한다`() =
         runTest {
             val repository =
                 DefaultRamenShopRepository(
@@ -153,12 +153,9 @@ class DefaultRamenShopRepositoryTest {
                     ),
                 )
 
-            val page = repository.fetchCalendarEventPage("2026-07-01").getOrThrow()
+            val result = repository.fetchCalendarEventPage("2026-07-01")
 
-            assertEquals(listOf("event"), page.events.map { it.id })
-            assertEquals(true, page.hasPrevious)
-            assertEquals(false, page.hasNext)
-            assertEquals(listOf(LocalDate(2026, 7, 15)), page.notificationDates)
+            assertTrue(result is RamapResult.Error)
         }
 
     @Test

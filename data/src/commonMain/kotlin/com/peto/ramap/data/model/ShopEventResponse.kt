@@ -1,9 +1,9 @@
 package com.peto.ramap.data.model
 
+import com.peto.ramap.data.extension.toLocalDate
 import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.model.event.ShopEventType
 import com.peto.ramap.network.config.RamapSecrets
-import kotlinx.datetime.LocalDate
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -31,15 +31,17 @@ internal data class ShopEventResponse(
     @SerialName("sold_out_dates") val soldOutDates: List<String> = emptyList(),
     @SerialName("is_sold_out_today") val isSoldOutToday: Boolean = false,
 ) {
-    fun toDomain(): ShopEvent? {
-        val type = runCatching { ShopEventType.valueOf(eventType.uppercase()) }.getOrNull() ?: return null
+    fun toDomain(): ShopEvent {
+        val type = ShopEventType.from(eventType)
+        val finalEndDate = if (type == ShopEventType.STORE_RENEWAL) null else endDate
+
         return ShopEvent(
             id = id,
             type = type,
             title = title,
             description = description,
             startDate = startDate,
-            endDate = if (type == ShopEventType.STORE_RENEWAL) null else endDate,
+            endDate = finalEndDate,
             sourceUrl = sourceUrl,
             isToday = isToday,
             isVenue = isVenue,
@@ -48,11 +50,11 @@ internal data class ShopEventResponse(
             externalParticipants = externalParticipants.map(ExternalParticipantResponse::toDomain),
             waitingMethod = waitingMethod,
             waitingUrl = waitingUrl,
-            cancelledDates = cancelledDates.mapNotNull { runCatching { LocalDate.parse(it) }.getOrNull() },
+            cancelledDates = cancelledDates.map(String::toLocalDate),
             isCancelledToday = isCancelledToday,
             cancellationReason = cancellationReason,
             cancellationSourceUrl = cancellationSourceUrl,
-            soldOutDates = soldOutDates.mapNotNull { runCatching { LocalDate.parse(it) }.getOrNull() },
+            soldOutDates = soldOutDates.map(String::toLocalDate),
             isSoldOutToday = isSoldOutToday,
             imageUrls = imagePaths.mapNotNull(::toPublicEventImageUrl).take(ShopEvent.MAX_IMAGE_COUNT),
         )

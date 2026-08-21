@@ -2,6 +2,7 @@ package com.peto.ramap.data.repository
 
 import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.data.datasource.shop.RamenShopDataSource
+import com.peto.ramap.data.extension.toLocalDate
 import com.peto.ramap.data.model.ShopEventResponse
 import com.peto.ramap.domain.model.event.CalendarEventPage
 import com.peto.ramap.domain.model.event.ShopEvent
@@ -32,7 +33,7 @@ internal class DefaultRamenShopRepository(
         invokeRequest {
             dataSource
                 .fetchActiveEvents()
-                .mapNotNull(::toDomain)
+                .map(::toDomain)
                 .filter(::isVisibleInActiveEvents)
         }
 
@@ -41,7 +42,7 @@ internal class DefaultRamenShopRepository(
         endDate: String,
     ): RamapResult<List<ShopEvent>> =
         invokeRequest {
-            dataSource.fetchCalendarEvents(startDate, endDate).mapNotNull(::toDomain)
+            dataSource.fetchCalendarEvents(startDate, endDate).map(::toDomain)
         }
 
     override suspend fun fetchCalendarEventPage(monthStart: String): RamapResult<CalendarEventPage> {
@@ -51,10 +52,10 @@ internal class DefaultRamenShopRepository(
             invokeRequest {
                 val page = dataSource.fetchCalendarEventPage(monthStart)
                 CalendarEventPage(
-                    events = page.events.mapNotNull(::toDomain),
+                    events = page.events.map(::toDomain),
                     hasPrevious = page.hasPrevious,
                     hasNext = page.hasNext,
-                    notificationDates = page.notificationDates.mapNotNull { parseDate(it) },
+                    notificationDates = page.notificationDates.map(String::toLocalDate),
                 )
             }
         if (result is RamapResult.Success) {
@@ -67,8 +68,6 @@ internal class DefaultRamenShopRepository(
         calendarEventPageCache.remove(monthStart)
     }
 
-    private fun parseDate(value: String): LocalDate? = runCatching { LocalDate.parse(value) }.getOrNull()
-
     override suspend fun fetchEvent(eventId: String): RamapResult<ShopEvent?> =
         invokeRequest {
             dataSource.fetchEvent(eventId)?.let(::toDomain)
@@ -79,7 +78,7 @@ internal class DefaultRamenShopRepository(
             val events =
                 dataSource
                     .fetchActiveShopEvents(shopId)
-                    .mapNotNull(::toDomain)
+                    .map(::toDomain)
                     .filter(::isVisibleInActiveEvents)
             val event = events.firstOrNull() ?: return@invokeRequest null
             if (events.size != 1 || event.type != ShopEventType.COLLAB || event.isToday) {
@@ -95,8 +94,8 @@ internal class DefaultRamenShopRepository(
             event.copy(activeEventCount = 1, collaborationPartnerCount = partnerCount)
         }
 
-    private fun toDomain(response: ShopEventResponse): ShopEvent? {
-        val event = response.toDomain() ?: return null
+    private fun toDomain(response: ShopEventResponse): ShopEvent {
+        val event = response.toDomain()
         if (event.type != ShopEventType.STORE_RENEWAL) return event
         val today = today()
         return event.copy(
@@ -109,13 +108,13 @@ internal class DefaultRamenShopRepository(
         startDate: String,
         today: LocalDate,
     ): Boolean {
-        val start = parseDate(startDate) ?: return false
+        val start = startDate.toLocalDate()
         return today >= start && today < start.plus(1, DateTimeUnit.MONTH)
     }
 
     private fun isVisibleInActiveEvents(event: ShopEvent): Boolean {
         if (event.type != ShopEventType.STORE_RENEWAL) return true
-        val startDate = parseDate(event.startDate) ?: return false
+        val startDate = event.startDate.toLocalDate()
         return today() < startDate.plus(1, DateTimeUnit.MONTH)
     }
 
