@@ -2,8 +2,6 @@ package com.peto.ramap
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import com.peto.ramap.analytics.AnalyticsSource
 import com.peto.ramap.deeplink.DeepLinkEntryPoint
@@ -42,6 +40,7 @@ import com.peto.ramap.ui.main.map.MapViewModel
 import com.peto.ramap.ui.main.map.ShopDetailHost
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnMapTabExited
 import com.peto.ramap.ui.main.my.MyTabRoute
+import com.peto.ramap.ui.main.notice.OperatingNoticeRoute
 import com.peto.ramap.ui.main.ranking.RankingRoute
 import com.peto.ramap.ui.notification.NotificationSettingsRoute
 import com.peto.ramap.ui.report.PlaceReportRoute
@@ -120,6 +119,7 @@ internal fun AppRoute(
                         NavigationSource.HIDDEN_SHOPS -> AnalyticsSource.HIDDEN_SHOPS
                         NavigationSource.RANKING -> AnalyticsSource.RANKING
                         NavigationSource.SUBSCRIBED_SHOPS -> AnalyticsSource.SUBSCRIBED_SHOPS
+                        NavigationSource.OPERATING_NOTICE -> AnalyticsSource.OPERATING_NOTICE
                         NavigationSource.SHARED_LINK, null -> AnalyticsSource.MAP
                     },
                 viewModel = mapViewModel,
@@ -173,16 +173,28 @@ internal fun AppRoute(
         },
         eventListScreen = {
             EventsRoute(
-                onCalendarClick = navigationState::showEventCalendar,
-                onEventClick = { event ->
+                onClickEvent = { event ->
                     navigationState.showEvent(event.id)
                 },
+                onClickNotice = navigationState::showOperatingNotice,
             )
         },
         eventCalendarScreen = {
             EventCalendarRoute(
                 onBack = navigationState::pop,
                 onEventClick = navigationState::showEvent,
+            )
+        },
+        operatingNoticeScreen = {
+            OperatingNoticeRoute(
+                onBack = navigationState::pop,
+                onEventListClick = navigationState::pop,
+                onShopClick = { shopId ->
+                    navigationState.showShopOnMap(
+                        shopId = shopId,
+                        source = NavigationSource.OPERATING_NOTICE,
+                    )
+                },
             )
         },
         hiddenScreen = {
