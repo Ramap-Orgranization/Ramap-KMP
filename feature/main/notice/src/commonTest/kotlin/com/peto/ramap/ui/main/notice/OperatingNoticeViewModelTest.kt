@@ -9,6 +9,7 @@ import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.notice.OperatingNotice
 import com.peto.ramap.domain.model.notice.OperatingNoticeType
 import com.peto.ramap.domain.repository.OperatingNoticeRepository
+import com.peto.ramap.fake.FakeOperatingNoticeRepository
 import com.peto.ramap.fixture.ramenShopFixture
 import com.peto.ramap.ui.main.notice.contract.OperatingNoticeIntent
 import com.peto.ramap.ui.main.notice.contract.OperatingNoticeSideEffect
@@ -100,23 +101,4 @@ class OperatingNoticeViewModelTest {
             endTime = null,
             sourceUrl = null,
         )
-
-    private class FakeOperatingNoticeRepository(
-        var notices: List<OperatingNotice> = emptyList(),
-        var error: RamapError? = null,
-        var delayMillis: Long = 0,
-    ) : OperatingNoticeRepository {
-        var fetchCount = 0
-            private set
-
-        override suspend fun fetchCurrentOperatingNotices(): RamapResult<List<OperatingNotice>> {
-            fetchCount++
-            if (delayMillis > 0) kotlinx.coroutines.delay(delayMillis)
-            return error?.let { RamapResult.Error(it) } ?: RamapResult.Success(notices)
-        }
-
-        override suspend fun fetchActiveShopOperatingNotice(shopId: String): RamapResult<OperatingNotice?> {
-            TODO("Not yet implemented")
-        }
-    }
 }

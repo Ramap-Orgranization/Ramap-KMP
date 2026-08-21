@@ -29,6 +29,7 @@ import com.peto.ramap.fake.FakeAnalyticsTracker
 import com.peto.ramap.fake.FakeCrashReporter
 import com.peto.ramap.fake.FakeLoginRepository
 import com.peto.ramap.fake.FakeNotificationSettingsRepository
+import com.peto.ramap.fake.FakeOperatingNoticeRepository
 import com.peto.ramap.fake.FakePersonalizationRepository
 import com.peto.ramap.fake.FakeRamenShopRepository
 import com.peto.ramap.fake.FakeShopReportRepository
@@ -2525,6 +2526,7 @@ private fun mapViewModel(
         FakeFetchShopDetailUseCase(
             ramenShopRepository,
             shopWaitingSystemRepository,
+            FakeOperatingNoticeRepository(),
         ),
         FakeMapSearchHistoryStorage(),
         MapAnalytics(FakeAnalyticsTracker()),
