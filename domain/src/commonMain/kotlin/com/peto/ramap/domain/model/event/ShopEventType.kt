@@ -7,4 +7,11 @@ enum class ShopEventType {
     SUMMER_LIMITED,
     NEW_MENU,
     STORE_RENEWAL,
+    ;
+
+    companion object {
+        fun from(id: String): ShopEventType =
+            runCatching { valueOf(id.uppercase()) }
+                .getOrElse { error("Invalid event type: $id") }
+    }
 }

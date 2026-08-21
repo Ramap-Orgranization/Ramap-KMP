@@ -5,20 +5,21 @@ import com.peto.ramap.fixture.ramenShopResponseFixture
 import kotlinx.datetime.LocalDate
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFails
 
 class ShopEventResponseTest {
     @Test
     fun `여름 한정 타입을 도메인 이벤트로 변환한다`() {
         val event = response(eventType = "summer_limited").toDomain()
 
-        assertEquals(ShopEventType.SUMMER_LIMITED, event?.type)
+        assertEquals(ShopEventType.SUMMER_LIMITED, event.type)
     }
 
     @Test
     fun `신메뉴 타입을 도메인 이벤트로 변환한다`() {
         val event = response(eventType = "new_menu").toDomain()
 
-        assertEquals(ShopEventType.NEW_MENU, event?.type)
+        assertEquals(ShopEventType.NEW_MENU, event.type)
     }
 
     @Test
@@ -26,7 +27,7 @@ class ShopEventResponseTest {
         val event =
             response(eventType = "limited_menu", endDate = null).toDomain()
 
-        assertEquals(null, event?.endDate)
+        assertEquals(null, event.endDate)
     }
 
     @Test
@@ -35,8 +36,8 @@ class ShopEventResponseTest {
             response(eventType = "store_renewal", endDate = "2026-08-10")
                 .toDomain()
 
-        assertEquals(ShopEventType.STORE_RENEWAL, event?.type)
-        assertEquals(null, event?.endDate)
+        assertEquals(ShopEventType.STORE_RENEWAL, event.type)
+        assertEquals(null, event.endDate)
     }
 
     @Test
@@ -57,18 +58,18 @@ class ShopEventResponseTest {
                     ),
             ).toDomain()
 
-        assertEquals(5, event?.imageUrls?.size)
+        assertEquals(5, event.imageUrls.size)
         assertEquals(
             "${com.peto.ramap.network.config.RamapSecrets.supabaseUrl.trimEnd(
                 '/',
             )}/storage/v1/object/public/event-images/events/event-1/1.png",
-            event?.imageUrls?.first(),
+            event.imageUrls.first(),
         )
         assertEquals(
             "${com.peto.ramap.network.config.RamapSecrets.supabaseUrl.trimEnd(
                 '/',
             )}/storage/v1/object/public/event-images/events/event-1/5.png",
-            event?.imageUrls?.last(),
+            event.imageUrls.last(),
         )
     }
 
@@ -81,8 +82,8 @@ class ShopEventResponseTest {
                     isSoldOutToday = true,
                 ).toDomain()
 
-        assertEquals(listOf(LocalDate(2026, 7, 29)), event?.soldOutDates)
-        assertEquals(true, event?.isSoldOutToday)
+        assertEquals(listOf(LocalDate(2026, 7, 29)), event.soldOutDates)
+        assertEquals(true, event.isSoldOutToday)
     }
 
     @Test
@@ -94,8 +95,8 @@ class ShopEventResponseTest {
                     cancellationSourceUrl = "https://www.instagram.com/p/cancellation/",
                 ).toDomain()
 
-        assertEquals("연휴 기간중 판매가 어렵습니다🙏", event?.cancellationReason)
-        assertEquals("https://www.instagram.com/p/cancellation/", event?.cancellationSourceUrl)
+        assertEquals("연휴 기간중 판매가 어렵습니다🙏", event.cancellationReason)
+        assertEquals("https://www.instagram.com/p/cancellation/", event.cancellationSourceUrl)
     }
 
     @Test
@@ -117,8 +118,16 @@ class ShopEventResponseTest {
                         ),
                 ).toDomain()
 
-        assertEquals(listOf("partner-1", "partner-2"), event?.collaboratorShops?.map { it.id })
-        assertEquals("외부 셰프", event?.externalParticipants?.single()?.name)
+        assertEquals(listOf("partner-1", "partner-2"), event.collaboratorShops.map { it.id })
+        assertEquals("외부 셰프", event.externalParticipants.single().name)
+    }
+
+    @Test
+    fun `잘못된 이벤트 유형이나 날짜 형식은 예외를 발생시킨다`() {
+        assertFails { response(eventType = "unknown").toDomain() }
+        assertFails {
+            response(eventType = "popup").copy(soldOutDates = listOf("invalid-date")).toDomain()
+        }
     }
 
     private fun response(
