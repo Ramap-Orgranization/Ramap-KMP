@@ -147,7 +147,7 @@ fun RamenShopOverview(
                                     width = 1.dp,
                                     color = GrayColor.C100,
                                     shape = RoundedCornerShape(999.dp),
-                                ).size(50.dp)
+                                ).size(45.dp)
                                 .clip(CircleShape),
                     )
                     Column(modifier = Modifier.weight(1f)) {
