@@ -192,7 +192,7 @@ internal fun EventsScreen(
                                     title = upcomingTitle,
                                     events = uiState.upcomingEvents,
                                     isOngoingSection = false,
-                                    horizontalContentPadding = 5.dp,
+                                    horizontalContentPadding = 10.dp,
                                     onEventClick = onClickEvent,
                                     onEventGroupClick = { selectedEventGroup = it },
                                 )
