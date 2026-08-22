@@ -2,6 +2,8 @@ package com.peto.ramap.fake
 
 import com.peto.ramap.core.result.RamapError
 import com.peto.ramap.core.result.RamapResult
+import com.peto.ramap.domain.model.report.NewsReport
+import com.peto.ramap.domain.model.report.NewsReportSubmission
 import com.peto.ramap.domain.model.report.ShopInformationReport
 import com.peto.ramap.domain.model.report.UnregisteredPlaceReport
 import com.peto.ramap.domain.repository.ShopReportRepository
@@ -13,6 +15,7 @@ class FakeShopReportRepository(
 ) : ShopReportRepository {
     val reports = mutableListOf<ShopInformationReport>()
     val placeReports = mutableListOf<UnregisteredPlaceReport>()
+    val newsReports = mutableListOf<NewsReport>()
 
     override suspend fun submitShopInformationReport(report: ShopInformationReport): RamapResult<Unit> {
         delay(delayMillis)
@@ -26,5 +29,12 @@ class FakeShopReportRepository(
         error?.let { return RamapResult.Error(RamapError.Unknown(it)) }
         placeReports += report
         return RamapResult.Success(Unit)
+    }
+
+    override suspend fun submitNewsReport(report: NewsReport): RamapResult<NewsReportSubmission> {
+        delay(delayMillis)
+        error?.let { return RamapResult.Error(RamapError.Unknown(it)) }
+        newsReports += report
+        return RamapResult.Success(NewsReportSubmission.SUBMITTED)
     }
 }
