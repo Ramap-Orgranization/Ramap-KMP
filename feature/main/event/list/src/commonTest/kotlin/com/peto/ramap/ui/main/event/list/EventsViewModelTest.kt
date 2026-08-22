@@ -11,6 +11,7 @@ import com.peto.ramap.domain.model.event.ShopEventType
 import com.peto.ramap.domain.model.event.ShopEvents
 import com.peto.ramap.domain.repository.RamenShopRepository
 import com.peto.ramap.fake.FakeAnalyticsTracker
+import com.peto.ramap.fake.FakeEventReadRepository
 import com.peto.ramap.fake.FakeRamenShopRepository
 import com.peto.ramap.fixture.ramenShopFixture
 import com.peto.ramap.ui.main.event.list.contract.EventsIntent
@@ -48,6 +49,62 @@ class EventsViewModelTest {
             assertFalse(viewModel.uiState.value.isLoading)
             assertEquals(EventFilter.EVENT, viewModel.uiState.value.selectedFilter)
             assertEquals(1, repository.activeEventsRequestCount)
+        }
+
+    @Test
+    fun `확인 기록을 불러오기 전에는 미확인 이벤트를 표시하지 않는다`() =
+        coroutinesTest {
+            val eventReadRepository = FakeEventReadRepository(initialReadEventIds = null)
+            val viewModel =
+                eventsViewModel(
+                    FakeRamenShopRepository(activeEvents = listOf(event())),
+                    eventReadRepository,
+                )
+            runCurrent()
+
+            assertEquals(emptySet(), viewModel.uiState.value.unreadEventIds)
+
+            viewModel.dispatch(EventsIntent.OnEventDisplayed("event"))
+            runCurrent()
+
+            assertEquals(null, eventReadRepository.readEventIds.value)
+
+            eventReadRepository.updateReadEventIds(emptySet())
+            runCurrent()
+
+            assertEquals(setOf("event"), viewModel.uiState.value.unreadEventIds)
+        }
+
+    @Test
+    fun `확인한 이벤트를 제외한 미확인 이벤트를 표시한다`() =
+        coroutinesTest {
+            val viewModel =
+                eventsViewModel(
+                    ramenShopRepository =
+                        FakeRamenShopRepository(activeEvents = listOf(event("read"), event("unread"))),
+                    eventReadRepository = FakeEventReadRepository(setOf("read")),
+                )
+            runCurrent()
+
+            assertEquals(setOf("unread"), viewModel.uiState.value.unreadEventIds)
+        }
+
+    @Test
+    fun `표시한 미확인 이벤트를 읽음 처리한다`() =
+        coroutinesTest {
+            val eventReadRepository = FakeEventReadRepository()
+            val viewModel =
+                eventsViewModel(
+                    FakeRamenShopRepository(activeEvents = listOf(event())),
+                    eventReadRepository,
+                )
+            runCurrent()
+
+            viewModel.dispatch(EventsIntent.OnEventDisplayed("event"))
+            runCurrent()
+
+            assertEquals(setOf("event"), eventReadRepository.readEventIds.value)
+            assertEquals(emptySet(), viewModel.uiState.value.unreadEventIds)
         }
 
     @Test
@@ -239,9 +296,13 @@ class EventsViewModelTest {
             )
         }
 
-    private fun eventsViewModel(ramenShopRepository: RamenShopRepository): EventsViewModel =
+    private fun eventsViewModel(
+        ramenShopRepository: RamenShopRepository,
+        eventReadRepository: FakeEventReadRepository = FakeEventReadRepository(),
+    ): EventsViewModel =
         EventsViewModel(
             ramenShopRepository,
+            eventReadRepository,
             EventsAnalytics(FakeAnalyticsTracker()),
         )
 

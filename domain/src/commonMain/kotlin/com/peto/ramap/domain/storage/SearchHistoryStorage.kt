@@ -1,4 +1,4 @@
-package com.peto.ramap.platform.storage
+package com.peto.ramap.domain.storage
 
 import kotlinx.coroutines.flow.StateFlow
 

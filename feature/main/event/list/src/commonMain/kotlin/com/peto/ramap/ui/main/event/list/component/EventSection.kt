@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
@@ -17,6 +18,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -37,6 +39,7 @@ import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.ChromaticColor
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
+import com.peto.ramap.theme.InstagramColor
 import com.peto.ramap.theme.RamapTheme
 import com.peto.ramap.theme.SystemColor
 import com.peto.ramap.ui.main.event.list.preview.EventSectionPreviewParameterProvider
@@ -44,6 +47,7 @@ import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.event_list_additional_events
 import ramap.shared.generated.resources.event_list_ongoing_section
+import ramap.shared.generated.resources.event_unread_badge
 
 internal fun eventSection(
     scope: LazyListScope,
@@ -52,6 +56,8 @@ internal fun eventSection(
     isOngoingSection: Boolean,
     useHorizontalScroll: Boolean = true,
     horizontalContentPadding: Dp,
+    unreadEventIds: Set<String>,
+    onEventDisplayed: (String) -> Unit,
     onEventClick: (ShopEvent) -> Unit,
     onEventGroupClick: (ShopEvents) -> Unit,
 ) {
@@ -63,7 +69,7 @@ internal fun eventSection(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .padding(start = 15.dp),
+                    .padding(start = 15.dp, bottom = 5.dp),
             style = AppTextStyle.H3,
             color = GrayColor.C500,
         )
@@ -81,6 +87,8 @@ internal fun eventSection(
                     ) { eventGroup ->
                         OngoingEventShopItem(
                             eventGroup = eventGroup,
+                            unreadEventIds = unreadEventIds,
+                            onEventDisplayed = onEventDisplayed,
                             onClick = {
                                 if (eventGroup.hasMultipleEvents) {
                                     onEventGroupClick(eventGroup)
@@ -102,11 +110,12 @@ internal fun eventSection(
                             space = 10.dp,
                             alignment = Alignment.CenterHorizontally,
                         ),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     events.forEach { eventGroup ->
                         OngoingEventShopItem(
                             eventGroup = eventGroup,
+                            unreadEventIds = unreadEventIds,
+                            onEventDisplayed = onEventDisplayed,
                             onClick = {
                                 if (eventGroup.hasMultipleEvents) {
                                     onEventGroupClick(eventGroup)
@@ -131,6 +140,8 @@ internal fun eventSection(
                 eventGroup = eventGroup,
                 onEventClick = onEventClick,
                 modifier = Modifier.padding(horizontal = horizontalContentPadding),
+                unreadEventIds = unreadEventIds,
+                onEventDisplayed = onEventDisplayed,
             )
         }
     }
@@ -139,10 +150,17 @@ internal fun eventSection(
 @Composable
 private fun OngoingEventShopItem(
     eventGroup: ShopEvents,
+    unreadEventIds: Set<String>,
+    onEventDisplayed: (String) -> Unit,
     modifier: Modifier = Modifier,
     onClick: () -> Unit,
 ) {
     val event = eventGroup.representativeEvent
+    if (event.id in unreadEventIds) {
+        LaunchedEffect(event.id) {
+            onEventDisplayed(event.id)
+        }
+    }
     ShopThumbnail(
         imageUrl = event.venueProfileImageUrl,
         name = event.venueShopName,
@@ -167,6 +185,25 @@ private fun OngoingEventShopItem(
                 }
         },
         topEndBadge = {
+            if (eventGroup.any { it.id in unreadEventIds }) {
+                Box(
+                    modifier =
+                        Modifier
+                            .align(Alignment.TopStart)
+                            .size(18.dp)
+                            .background(
+                                InstagramColor.Yellow,
+                                CircleShape,
+                            ),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    AppText(
+                        text = stringResource(Res.string.event_unread_badge),
+                        style = AppTextStyle.C2,
+                        color = GrayColor.C500,
+                    )
+                }
+            }
             if (eventGroup.hasMultipleEvents) {
                 AppText(
                     text =
@@ -195,6 +232,8 @@ private fun OngoingEventShopItemPreview(
     RamapTheme {
         OngoingEventShopItem(
             eventGroup = eventGroups.first(),
+            unreadEventIds = setOf(eventGroups.first().representativeEvent.id),
+            onEventDisplayed = {},
             onClick = {},
         )
     }
@@ -208,10 +247,11 @@ private fun EventSectionPreview(
     RamapTheme {
         var selectedEventGroup by remember { mutableStateOf<ShopEvents?>(null) }
         val title = stringResource(Res.string.event_list_ongoing_section)
+        val unreadEventIds = setOf(eventGroups.first().representativeEvent.id)
         Box {
             LazyColumn(
                 contentPadding = PaddingValues(vertical = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 eventSection(
                     scope = this,
@@ -219,6 +259,8 @@ private fun EventSectionPreview(
                     events = eventGroups,
                     isOngoingSection = true,
                     horizontalContentPadding = 15.dp,
+                    unreadEventIds = unreadEventIds,
+                    onEventDisplayed = {},
                     onEventClick = {},
                     onEventGroupClick = { selectedEventGroup = it },
                 )
@@ -226,6 +268,8 @@ private fun EventSectionPreview(
             selectedEventGroup?.let { eventGroup ->
                 EventListBottomSheet(
                     events = eventGroup,
+                    unreadEventIds = unreadEventIds,
+                    onEventDisplayed = {},
                     onDismiss = { selectedEventGroup = null },
                     onEventClick = { selectedEventGroup = null },
                 )

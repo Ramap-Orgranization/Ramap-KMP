@@ -6,7 +6,9 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -82,6 +84,7 @@ fun EventsRoute(
         onRefresh = { viewModel.dispatch(EventsIntent.OnEventsRefreshed) },
         onClickRetry = { viewModel.dispatch(EventsIntent.OnEventsRetried) },
         onFilterSelected = { filter -> viewModel.dispatch(EventsIntent.OnFilterSelected(filter)) },
+        onEventDisplayed = { eventId -> viewModel.dispatch(EventsIntent.OnEventDisplayed(eventId)) },
     )
 }
 
@@ -93,6 +96,7 @@ internal fun EventsScreen(
     onRefresh: () -> Unit,
     onClickRetry: () -> Unit,
     onFilterSelected: (EventFilter) -> Unit,
+    onEventDisplayed: (String) -> Unit,
 ) {
     var selectedEventGroup by remember { mutableStateOf<ShopEvents?>(null) }
     val pullToRefreshState = rememberPullToRefreshState()
@@ -152,7 +156,7 @@ internal fun EventsScreen(
                         LazyColumn(
                             modifier = Modifier.fillMaxSize(),
                             contentPadding = PaddingValues(bottom = 5.dp),
-                            verticalArrangement = Arrangement.spacedBy(10.dp),
+                            verticalArrangement = Arrangement.spacedBy(4.dp),
                         ) {
                             item {
                                 EventFilters(
@@ -167,6 +171,8 @@ internal fun EventsScreen(
                                     EventListEmptyContent(modifier = Modifier.fillMaxSize())
                                 }
                             } else {
+                                item { Spacer(modifier = Modifier.height(5.dp)) }
+
                                 eventSection(
                                     scope = this,
                                     title = summerLimitedTitle,
@@ -174,6 +180,8 @@ internal fun EventsScreen(
                                     isOngoingSection = true,
                                     useHorizontalScroll = uiState.upcomingEvents.isNotEmpty(),
                                     horizontalContentPadding = 5.dp,
+                                    unreadEventIds = uiState.unreadEventIds,
+                                    onEventDisplayed = onEventDisplayed,
                                     onEventClick = onClickEvent,
                                     onEventGroupClick = { selectedEventGroup = it },
                                 )
@@ -184,6 +192,8 @@ internal fun EventsScreen(
                                     isOngoingSection = true,
                                     useHorizontalScroll = uiState.upcomingEvents.isNotEmpty(),
                                     horizontalContentPadding = 5.dp,
+                                    unreadEventIds = uiState.unreadEventIds,
+                                    onEventDisplayed = onEventDisplayed,
                                     onEventClick = onClickEvent,
                                     onEventGroupClick = { selectedEventGroup = it },
                                 )
@@ -193,6 +203,8 @@ internal fun EventsScreen(
                                     events = uiState.upcomingEvents,
                                     isOngoingSection = false,
                                     horizontalContentPadding = 10.dp,
+                                    unreadEventIds = uiState.unreadEventIds,
+                                    onEventDisplayed = onEventDisplayed,
                                     onEventClick = onClickEvent,
                                     onEventGroupClick = { selectedEventGroup = it },
                                 )
@@ -220,6 +232,8 @@ internal fun EventsScreen(
             selectedEventGroup?.let { eventGroup ->
                 EventListBottomSheet(
                     events = eventGroup,
+                    unreadEventIds = uiState.unreadEventIds,
+                    onEventDisplayed = onEventDisplayed,
                     onDismiss = { selectedEventGroup = null },
                     onEventClick = { event ->
                         selectedEventGroup = null
@@ -244,6 +258,7 @@ private fun EventsRoutePreview(
             onRefresh = {},
             onClickRetry = {},
             onFilterSelected = {},
+            onEventDisplayed = {},
         )
     }
 }

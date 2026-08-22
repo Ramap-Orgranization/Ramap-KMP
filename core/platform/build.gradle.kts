@@ -5,6 +5,7 @@ plugins {
 
 kotlin {
     sourceSets.commonMain.dependencies {
+        implementation(projects.domain)
         implementation(libs.kotlinx.coroutines.core)
         implementation(libs.androidx.datastore.preferences)
     }

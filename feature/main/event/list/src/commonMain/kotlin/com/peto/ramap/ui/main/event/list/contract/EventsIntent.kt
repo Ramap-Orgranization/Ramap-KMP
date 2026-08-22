@@ -16,4 +16,8 @@ sealed interface EventsIntent : Intent {
     data class OnEventClicked(
         val event: ShopEvent,
     ) : EventsIntent
+
+    data class OnEventDisplayed(
+        val eventId: String,
+    ) : EventsIntent
 }

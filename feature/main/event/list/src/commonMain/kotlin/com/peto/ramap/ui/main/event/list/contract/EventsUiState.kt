@@ -13,6 +13,7 @@ data class EventsUiState(
     val summerLimitedEvents: List<ShopEvents> = emptyList(),
     val ongoingEvents: List<ShopEvents> = emptyList(),
     val upcomingEvents: List<ShopEvents> = emptyList(),
+    val readEventIds: Set<String>? = null,
     val showError: Boolean = false,
     override val loadState: TaskLoadState = TaskLoadState(),
 ) : State,
@@ -28,6 +29,13 @@ data class EventsUiState(
             summerLimitedEvents.isEmpty() &&
                 ongoingEvents.isEmpty() &&
                 upcomingEvents.isEmpty()
+
+    val unreadEventIds: Set<String>
+        get() =
+            readEventIds
+                ?.let { readIds ->
+                    loadedEvents.map(ShopEvent::id).filterNot(readIds::contains).toSet()
+                }.orEmpty()
 
     override fun withLoadingState(loadState: TaskLoadState): EventsUiState = copy(loadState = loadState)
 }

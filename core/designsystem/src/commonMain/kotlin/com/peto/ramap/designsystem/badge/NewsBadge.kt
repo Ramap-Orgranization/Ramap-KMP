@@ -10,9 +10,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.theme.AppTextStyle
-import com.peto.ramap.theme.ChromaticColor
 import com.peto.ramap.theme.CommonColor
-import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.RamapTheme
 import com.peto.ramap.theme.SystemColor
 
@@ -21,8 +19,8 @@ fun NewsBadge(
     text: String,
     textStyle: AppTextStyle,
     modifier: Modifier = Modifier,
-    containerColor: Color = ChromaticColor.Yellow400,
-    contentColor: Color = GrayColor.C500,
+    containerColor: Color,
+    contentColor: Color,
 ) {
     AppText(
         text = text,

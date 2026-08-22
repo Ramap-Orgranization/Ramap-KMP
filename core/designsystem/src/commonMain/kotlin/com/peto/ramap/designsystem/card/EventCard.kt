@@ -26,6 +26,7 @@ import com.peto.ramap.designsystem.resource.event.ShopEventResourceMapper
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.theme.AppTextStyle
+import com.peto.ramap.theme.ChromaticColor
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.SystemColor
@@ -91,6 +92,8 @@ fun EventCard(
             NewsBadge(
                 text = stringResource(ShopEventResourceMapper.typeLabel(event.type)),
                 textStyle = AppTextStyle.B3,
+                containerColor = ChromaticColor.Yellow400,
+                contentColor = GrayColor.C500,
             )
             if (actionLabel != null && onAction != null) {
                 IconButton(onClick = onAction) {

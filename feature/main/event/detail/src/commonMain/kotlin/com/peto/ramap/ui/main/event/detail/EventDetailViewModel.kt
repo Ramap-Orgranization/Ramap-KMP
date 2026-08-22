@@ -2,6 +2,7 @@ package com.peto.ramap.ui.main.event.detail
 
 import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.model.notification.EventNotificationWindow
+import com.peto.ramap.domain.repository.EventReadRepository
 import com.peto.ramap.domain.repository.LoginRepository
 import com.peto.ramap.domain.repository.NotificationSettingsRepository
 import com.peto.ramap.domain.repository.RamenShopRepository
@@ -33,6 +34,7 @@ class EventDetailViewModel(
     private val ramenShopRepository: RamenShopRepository,
     private val loginRepository: LoginRepository,
     private val notificationRepository: NotificationSettingsRepository,
+    private val eventReadRepository: EventReadRepository,
     private val eventDetailAnalytics: EventDetailAnalytics,
 ) : BaseViewModel<
         EventDetailUiState,
@@ -149,6 +151,7 @@ class EventDetailViewModel(
         }
 
         applyLoadedEvent(event)
+        eventReadRepository.markAsRead(event.id)
         refreshEventNotification(event)
     }
 

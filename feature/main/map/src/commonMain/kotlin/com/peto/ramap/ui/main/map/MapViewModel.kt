@@ -25,12 +25,12 @@ import com.peto.ramap.domain.model.shop.SearchQuery
 import com.peto.ramap.domain.repository.LoginRepository
 import com.peto.ramap.domain.repository.RamenShopRepository
 import com.peto.ramap.domain.repository.ShopReportRepository
+import com.peto.ramap.domain.storage.SearchHistoryStorage
 import com.peto.ramap.domain.store.PersonalizationBootstrapState
 import com.peto.ramap.domain.store.ShopPersonalizationStore
 import com.peto.ramap.domain.usecase.FetchShopDetailUseCase
 import com.peto.ramap.domain.usecase.ShopDetail
 import com.peto.ramap.domain.usecase.ShopDetailCacheLookup
-import com.peto.ramap.platform.storage.SearchHistoryStorage
 import com.peto.ramap.ui.base.BaseViewModel
 import com.peto.ramap.ui.location.CurrentLocationStore
 import com.peto.ramap.ui.main.map.contract.MapIntent

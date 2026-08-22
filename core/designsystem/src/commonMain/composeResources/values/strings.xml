@@ -62,6 +62,8 @@
 
     <!-- 이벤트 상세 화면 -->
     <string name="event_detail_title">이벤트 상세</string>
+    <string name="event_unread_badge">N</string>
+    <string name="event_unread_badge_content_description">읽지 않은 이벤트</string>
     <string name="event_not_found_message">종료되었거나 찾을 수 없는 이벤트예요</string>
     <string name="event_notification_enable">이벤트 알림 켜기</string>
     <string name="event_notification_disable">이벤트 알림 끄기</string>

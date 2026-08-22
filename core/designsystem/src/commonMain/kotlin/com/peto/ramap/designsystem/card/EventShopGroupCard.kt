@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -26,10 +27,13 @@ import com.peto.ramap.domain.model.event.ShopEventType
 import com.peto.ramap.domain.model.event.ShopEvents
 import com.peto.ramap.extension.noRippleClickable
 import com.peto.ramap.theme.AppTextStyle
+import com.peto.ramap.theme.ChromaticColor
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.SystemColor
 import org.jetbrains.compose.resources.stringResource
+import ramap.shared.generated.resources.Res
+import ramap.shared.generated.resources.event_unread_badge
 
 @Composable
 fun EventShopGroupCard(
@@ -39,6 +43,8 @@ fun EventShopGroupCard(
     isCancelled: (ShopEvent) -> Boolean = ShopEvent::isCancelledToday,
     isSoldOut: (ShopEvent) -> Boolean = ShopEvent::isSoldOutToday,
     showHeaderCancelledBadge: Boolean = true,
+    unreadEventIds: Set<String> = emptySet(),
+    onEventDisplayed: (String) -> Unit = {},
 ) {
     val shop = eventGroup.representativeEvent
     val cardShape = RoundedCornerShape(16.dp)
@@ -81,6 +87,11 @@ fun EventShopGroupCard(
             }
         }
         eventGroup.forEachIndexed { index, event ->
+            if (event.id in unreadEventIds) {
+                LaunchedEffect(event.id) {
+                    onEventDisplayed(event.id)
+                }
+            }
             if (index > 0) {
                 HorizontalDivider(thickness = 1.dp, color = GrayColor.C100)
             }
@@ -100,6 +111,14 @@ fun EventShopGroupCard(
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
                     )
+                    if (event.id in unreadEventIds) {
+                        NewsBadge(
+                            text = stringResource(Res.string.event_unread_badge),
+                            textStyle = AppTextStyle.B3,
+                            containerColor = ChromaticColor.Yellow400,
+                            contentColor = GrayColor.C500,
+                        )
+                    }
                     ShopEventResourceMapper
                         .statusLabel(isCancelled(event), isSoldOut(event))
                         ?.let { statusLabel ->
@@ -113,6 +132,8 @@ fun EventShopGroupCard(
                     NewsBadge(
                         text = stringResource(ShopEventResourceMapper.typeLabel(event.type)),
                         textStyle = AppTextStyle.B3,
+                        containerColor = ChromaticColor.Yellow400,
+                        contentColor = GrayColor.C500,
                     )
                 }
                 AppText(

@@ -14,6 +14,8 @@ import com.peto.ramap.domain.model.event.ShopEvents
 @Composable
 internal fun EventListBottomSheet(
     events: ShopEvents,
+    unreadEventIds: Set<String>,
+    onEventDisplayed: (String) -> Unit,
     onDismiss: () -> Unit,
     onEventClick: (ShopEvent) -> Unit,
 ) {
@@ -29,6 +31,8 @@ internal fun EventListBottomSheet(
             EventShopGroupCard(
                 eventGroup = events,
                 onEventClick = onEventClick,
+                unreadEventIds = unreadEventIds,
+                onEventDisplayed = onEventDisplayed,
             )
         }
     }

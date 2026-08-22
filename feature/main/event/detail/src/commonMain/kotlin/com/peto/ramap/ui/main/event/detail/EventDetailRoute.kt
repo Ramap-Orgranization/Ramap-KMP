@@ -316,9 +316,15 @@ private fun EventDetailContent(
             NewsBadge(
                 text = stringResource(ShopEventResourceMapper.typeLabel(event.type)),
                 textStyle = AppTextStyle.T3,
+                containerColor = ChromaticColor.Yellow400,
+                contentColor = GrayColor.C500,
             )
         }
-        AppText("🍜 ${event.title}", style = AppTextStyle.H1, color = GrayColor.C500)
+        AppText(
+            text = "🍜 ${event.title}",
+            style = AppTextStyle.H1,
+            color = GrayColor.C500,
+        )
 
         event.cancellationReason?.let { reason ->
             EventCancellationNotice(reason)

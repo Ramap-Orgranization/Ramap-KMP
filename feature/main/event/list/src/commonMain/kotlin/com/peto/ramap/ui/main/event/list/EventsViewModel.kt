@@ -3,6 +3,7 @@ package com.peto.ramap.ui.main.event.list
 import androidx.lifecycle.viewModelScope
 import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
+import com.peto.ramap.domain.repository.EventReadRepository
 import com.peto.ramap.domain.repository.RamenShopRepository
 import com.peto.ramap.ui.base.BaseViewModel
 import com.peto.ramap.ui.main.event.list.contract.EventsIntent
@@ -13,6 +14,7 @@ import com.peto.ramap.ui.main.event.list.contract.mapEventsToUiState
 import com.peto.ramap.ui.main.event.list.contract.selectEventFilter
 import com.peto.ramap.ui.main.event.list.log.EventsAnalytics
 import com.peto.ramap.ui.task.TaskPolicy
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.StringResource
 import ramap.shared.generated.resources.Res
@@ -20,9 +22,11 @@ import ramap.shared.generated.resources.event_list_refresh_failure_message
 
 class EventsViewModel(
     private val ramenShopRepository: RamenShopRepository,
+    private val eventReadRepository: EventReadRepository,
     private val eventsAnalytics: EventsAnalytics,
 ) : BaseViewModel<EventsUiState, EventsIntent, EventsSideEffect>(EventsUiState()) {
     init {
+        observeReadEvents()
         loadEvents()
     }
 
@@ -32,7 +36,16 @@ class EventsViewModel(
             EventsIntent.OnEventsRetried -> loadEvents()
             is EventsIntent.OnFilterSelected -> reduce { selectEventFilter(this, intent.filter) }
             is EventsIntent.OnEventClicked -> eventsAnalytics.logEventSelected(intent.event)
+            is EventsIntent.OnEventDisplayed -> markEventAsRead(intent.eventId)
         }
+    }
+
+    private suspend fun markEventAsRead(eventId: String) {
+        val readEventIds = currentState.readEventIds ?: return
+        if (eventId in readEventIds) return
+
+        eventReadRepository.markAsRead(eventId)
+        reduce { copy(readEventIds = readEventIds + eventId) }
     }
 
     private fun loadEvents() {
@@ -46,6 +59,14 @@ class EventsViewModel(
             onSuccess = { events -> reduce { mapEventsToUiState(this, events) } },
             onError = { reduce { copy(showError = true) } },
         )
+    }
+
+    private fun observeReadEvents() {
+        viewModelScope.launch {
+            eventReadRepository.readEventIds.collectLatest { readEventIds ->
+                reduce { copy(readEventIds = readEventIds) }
+            }
+        }
     }
 
     private fun refreshEvents() {

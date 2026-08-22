@@ -10,6 +10,7 @@ import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.model.event.ShopEventType
 import com.peto.ramap.domain.model.notification.EventNotificationOverride
 import com.peto.ramap.fake.FakeAnalyticsTracker
+import com.peto.ramap.fake.FakeEventReadRepository
 import com.peto.ramap.fake.FakeLoginRepository
 import com.peto.ramap.fake.FakeNotificationSettingsRepository
 import com.peto.ramap.fake.FakeRamenShopRepository
@@ -37,10 +38,12 @@ class EventDetailViewModelTest {
     @Test
     fun `활성 이벤트가 없으면 이용 불가 안내를 보낸다`() =
         coroutinesTest {
+            val eventReadRepository = FakeEventReadRepository()
             val viewModel =
                 eventDetailViewModel(
                     repository = FakeNotificationSettingsRepository(),
                     ramenShopRepository = FakeRamenShopRepository(),
+                    eventReadRepository = eventReadRepository,
                 )
 
             viewModel.sideEffect.test {
@@ -49,11 +52,29 @@ class EventDetailViewModelTest {
 
                 assertEquals(EventUnavailable, awaitItem())
             }
+            assertEquals(emptySet(), eventReadRepository.readEventIds.value)
+        }
+
+    @Test
+    fun `이벤트 조회에 성공하면 이벤트를 확인 처리한다`() =
+        coroutinesTest {
+            val eventReadRepository = FakeEventReadRepository()
+            val viewModel =
+                eventDetailViewModel(
+                    repository = FakeNotificationSettingsRepository(),
+                    eventReadRepository = eventReadRepository,
+                )
+
+            viewModel.dispatch(OnEntered(EVENT.id))
+            runCurrent()
+
+            assertEquals(setOf(EVENT.id), eventReadRepository.readEventIds.value)
         }
 
     @Test
     fun `활성 이벤트 조회가 실패하면 화면 내 재시도 상태를 표시한다`() =
         coroutinesTest {
+            val eventReadRepository = FakeEventReadRepository()
             val viewModel =
                 eventDetailViewModel(
                     repository = FakeNotificationSettingsRepository(),
@@ -61,6 +82,7 @@ class EventDetailViewModelTest {
                         FakeRamenShopRepository(
                             activeEventError = RamapError.Unknown(IllegalStateException("failure")),
                         ),
+                    eventReadRepository = eventReadRepository,
                 )
 
             viewModel.dispatch(OnEntered(EVENT.id))
@@ -68,6 +90,7 @@ class EventDetailViewModelTest {
 
             assertTrue(viewModel.uiState.value.hasEventLoadFailed)
             assertEquals(null, viewModel.uiState.value.event)
+            assertEquals(emptySet(), eventReadRepository.readEventIds.value)
         }
 
     @Test
@@ -267,12 +290,14 @@ class EventDetailViewModelTest {
     private fun eventDetailViewModel(
         repository: FakeNotificationSettingsRepository,
         ramenShopRepository: FakeRamenShopRepository = FakeRamenShopRepository(activeEvent = EVENT),
+        eventReadRepository: FakeEventReadRepository = FakeEventReadRepository(),
         analyticsTracker: FakeAnalyticsTracker = FakeAnalyticsTracker(),
     ): EventDetailViewModel =
         EventDetailViewModel(
             ramenShopRepository = ramenShopRepository,
             loginRepository = FakeLoginRepository(LoginSessionState.AUTHENTICATED),
             notificationRepository = repository,
+            eventReadRepository = eventReadRepository,
             eventDetailAnalytics = EventDetailAnalytics(analyticsTracker),
         )
 
