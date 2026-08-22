@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -37,6 +38,7 @@ fun AppButton(
     cornerRadius: Dp = 12.dp,
     border: BorderStroke? = null,
     icon: DrawableResource? = null,
+    isLoading: Boolean = false,
 ) {
     Surface(
         modifier = modifier.height(52.dp),
@@ -44,22 +46,30 @@ fun AppButton(
         shape = RoundedCornerShape(cornerRadius),
         border = border,
         onClick = onClick,
-        enabled = enabled,
+        enabled = enabled && !isLoading,
     ) {
         Box(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center,
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                icon?.let {
-                    Image(
-                        painter = painterResource(it),
-                        contentDescription = null,
-                        modifier = Modifier.size(24.dp),
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
+            if (isLoading) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(20.dp),
+                    color = textColor,
+                    strokeWidth = 2.dp,
+                )
+            } else {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    icon?.let {
+                        Image(
+                            painter = painterResource(it),
+                            contentDescription = null,
+                            modifier = Modifier.size(24.dp),
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                    }
+                    AppText(text = text, color = textColor, style = textStyle, textAlign = TextAlign.Center)
                 }
-                AppText(text = text, color = textColor, style = textStyle, textAlign = TextAlign.Center)
             }
         }
     }

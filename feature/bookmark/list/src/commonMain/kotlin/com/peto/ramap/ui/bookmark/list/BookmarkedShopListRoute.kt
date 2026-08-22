@@ -119,6 +119,7 @@ private fun BookmarkedShopListContent(
                 categoryLabel = { stringResource(CategoryResourceMapper.label(it)) },
                 itemActionLabel = { stringResource(Res.string.bookmark_removal_confirm_action) },
                 onItemAction = onRemovalRequested,
+                modifier = Modifier.padding(horizontal = 15.dp),
             )
         }
     }

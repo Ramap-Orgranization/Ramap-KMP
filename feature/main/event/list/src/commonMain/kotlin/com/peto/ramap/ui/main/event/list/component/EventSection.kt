@@ -102,7 +102,6 @@ internal fun eventSection(
                             space = 10.dp,
                             alignment = Alignment.CenterHorizontally,
                         ),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     events.forEach { eventGroup ->
                         OngoingEventShopItem(
