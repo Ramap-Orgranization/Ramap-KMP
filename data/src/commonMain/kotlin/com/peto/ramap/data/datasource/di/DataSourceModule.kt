@@ -1,5 +1,7 @@
 package com.peto.ramap.data.datasource.di
 
+import com.peto.ramap.data.datasource.appnotice.AppNoticeDataSource
+import com.peto.ramap.data.datasource.appnotice.RemoteAppNoticeDataSource
 import com.peto.ramap.data.datasource.geocoder.SupabaseReverseGeocoder
 import com.peto.ramap.data.datasource.importation.ImportationDataSource
 import com.peto.ramap.data.datasource.importation.KakaoImportationDataSource
@@ -63,5 +65,8 @@ val dataSourceModule =
         single<ReverseGeocoder> { SupabaseReverseGeocoder(get()) }
         single<AppUpdatePolicyDataSource> {
             RemoteAppUpdatePolicyDataSource(get<SupabaseClient>())
+        }
+        single<AppNoticeDataSource> {
+            RemoteAppNoticeDataSource(get<SupabaseClient>())
         }
     }
