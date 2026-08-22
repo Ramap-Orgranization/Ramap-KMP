@@ -25,6 +25,7 @@ import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.app_update_action
 import ramap.shared.generated.resources.app_update_description
 import ramap.shared.generated.resources.app_update_title
+import kotlin.time.Duration.Companion.milliseconds
 
 @Composable
 internal fun AppUpdateGate(
@@ -45,7 +46,6 @@ internal fun AppUpdateGate(
         return
     }
 
-    content()
     val isUpdateRequired =
         shouldRequireAppUpdate(
             policy = policy,
@@ -75,7 +75,10 @@ internal fun AppUpdateGate(
             },
             onConfirm = { ExternalUriOpener.startAppUpdate(policy?.storeUrl.orEmpty()) },
         )
+        return
     }
+
+    content()
 }
 
 internal fun shouldRequireAppUpdate(
@@ -88,7 +91,7 @@ private suspend fun fetchAppUpdatePolicy(
     repository: AppUpdateRepository,
     platform: String,
 ): AppUpdatePolicy? =
-    withTimeoutOrNull(UPDATE_POLICY_TIMEOUT_MS) {
+    withTimeoutOrNull(UPDATE_POLICY_TIMEOUT_MS.milliseconds) {
         when (val result = repository.fetchAppUpdatePolicy(platform)) {
             is RamapResult.Success -> result.data
             is RamapResult.Error -> null

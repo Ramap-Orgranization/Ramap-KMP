@@ -18,6 +18,7 @@ import com.peto.ramap.designsystem.indicator.RamenLoadingIndicator
 import com.peto.ramap.designsystem.toast.ToastHost
 import com.peto.ramap.designsystem.toast.ToastManager
 import com.peto.ramap.domain.model.auth.LoginSessionState
+import com.peto.ramap.domain.repository.AppNoticeRepository
 import com.peto.ramap.domain.repository.AppUpdateRepository
 import com.peto.ramap.domain.repository.LoginRepository
 import com.peto.ramap.domain.store.PersonalizationBootstrapState
@@ -25,6 +26,7 @@ import com.peto.ramap.domain.store.ShopPersonalizationStore
 import com.peto.ramap.platform.AppVersionProvider
 import com.peto.ramap.platform.network.NetworkConnectivityObserver
 import com.peto.ramap.platform.network.NetworkConnectivityStatus
+import com.peto.ramap.platform.storage.AppNoticeStorage
 import com.peto.ramap.theme.RamapTheme
 import com.peto.ramap.ui.retry.NetworkRetryGenerator
 import kotlinx.coroutines.CancellationException
@@ -44,22 +46,32 @@ import ramap.shared.generated.resources.personalization_load_failure_title
 @Composable
 fun App(
     appUpdateRepository: AppUpdateRepository = koinInject(),
+    appNoticeRepository: AppNoticeRepository = koinInject(),
     appVersionProvider: AppVersionProvider = koinInject(),
+    appNoticeStorage: AppNoticeStorage = koinInject(),
     loginRepository: LoginRepository = koinInject(),
     personalizationStore: ShopPersonalizationStore = koinInject(),
     toastManager: ToastManager = koinInject(),
     onExitRequested: (() -> Unit)? = null,
 ) {
-    AppUpdateGate(
-        appUpdateRepository = appUpdateRepository,
-        appVersionProvider = appVersionProvider,
-    ) {
-        AppContent(
-            loginRepository = loginRepository,
-            personalizationStore = personalizationStore,
-            toastManager = toastManager,
-            onExitRequested = onExitRequested,
-        )
+    RamapTheme {
+        AppUpdateGate(
+            appUpdateRepository = appUpdateRepository,
+            appVersionProvider = appVersionProvider,
+        ) {
+            AppNoticeGate(
+                appNoticeRepository = appNoticeRepository,
+                appNoticeStorage = appNoticeStorage,
+                platform = appVersionProvider.platform,
+            ) {
+                AppContent(
+                    loginRepository = loginRepository,
+                    personalizationStore = personalizationStore,
+                    toastManager = toastManager,
+                    onExitRequested = onExitRequested,
+                )
+            }
+        }
     }
 }
 
@@ -96,35 +108,33 @@ private fun AppContent(
         }
     }
 
-    RamapTheme {
-        Box(modifier = Modifier.fillMaxSize()) {
-            when {
-                shouldShowAppRoute(
-                    personalizationState = personalizationState,
-                    hasShownAppRoute = hasShownAppRoute,
-                ) ->
-                    AppRoute(
-                        toastManager = toastManager,
-                        onExitRequested = onExitRequested,
-                    )
+    Box(modifier = Modifier.fillMaxSize()) {
+        when {
+            shouldShowAppRoute(
+                personalizationState = personalizationState,
+                hasShownAppRoute = hasShownAppRoute,
+            ) ->
+                AppRoute(
+                    toastManager = toastManager,
+                    onExitRequested = onExitRequested,
+                )
 
-                personalizationState == PersonalizationBootstrapState.Loading ->
-                    RamenLoadingIndicator(modifier = Modifier.fillMaxSize())
+            personalizationState == PersonalizationBootstrapState.Loading ->
+                RamenLoadingIndicator(modifier = Modifier.fillMaxSize())
 
-                personalizationState == PersonalizationBootstrapState.Error ->
-                    LoadErrorContent(
-                        image = Res.drawable.laduck_error_confused,
-                        title = stringResource(Res.string.personalization_load_failure_title),
-                        description = stringResource(Res.string.personalization_load_failure_message),
-                        onRetry = { retryRequests.tryEmit(Unit) },
-                        modifier = Modifier.fillMaxSize(),
-                    )
+            personalizationState == PersonalizationBootstrapState.Error ->
+                LoadErrorContent(
+                    image = Res.drawable.laduck_error_confused,
+                    title = stringResource(Res.string.personalization_load_failure_title),
+                    description = stringResource(Res.string.personalization_load_failure_message),
+                    onRetry = { retryRequests.tryEmit(Unit) },
+                    modifier = Modifier.fillMaxSize(),
+                )
 
-                else -> Unit
-            }
-
-            ToastHost(toastManager = toastManager)
+            else -> Unit
         }
+
+        ToastHost(toastManager = toastManager)
     }
 }
 

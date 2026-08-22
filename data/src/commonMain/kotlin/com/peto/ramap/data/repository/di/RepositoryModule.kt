@@ -1,6 +1,7 @@
 package com.peto.ramap.data.repository.di
 
 import com.peto.ramap.data.datasource.event.EventReadDataSource
+import com.peto.ramap.data.datasource.appnotice.AppNoticeDataSource
 import com.peto.ramap.data.datasource.importation.ImportationDataSource
 import com.peto.ramap.data.datasource.notice.OperatingNoticeDataSource
 import com.peto.ramap.data.datasource.personalization.BookmarkShopDataSource
@@ -10,6 +11,7 @@ import com.peto.ramap.data.datasource.report.ShopReportDataSource
 import com.peto.ramap.data.datasource.shop.RamenShopDataSource
 import com.peto.ramap.data.datasource.update.AppUpdatePolicyDataSource
 import com.peto.ramap.data.datasource.waiting.ShopWaitingSystemDataSource
+import com.peto.ramap.data.repository.DefaultAppNoticeRepository
 import com.peto.ramap.data.repository.DefaultAppUpdateRepository
 import com.peto.ramap.data.repository.DefaultBookmarkRepository
 import com.peto.ramap.data.repository.DefaultEventReadRepository
@@ -26,6 +28,7 @@ import com.peto.ramap.data.repository.DefaultShopReportRepository
 import com.peto.ramap.data.repository.DefaultShopWaitingSystemRepository
 import com.peto.ramap.data.repository.DefaultSubscribedShopRepository
 import com.peto.ramap.data.store.DefaultShopPersonalizationStore
+import com.peto.ramap.domain.repository.AppNoticeRepository
 import com.peto.ramap.domain.repository.AppUpdateRepository
 import com.peto.ramap.domain.repository.BookmarkRepository
 import com.peto.ramap.domain.repository.EventReadRepository
@@ -49,6 +52,9 @@ val repositoryModule =
         single<EventReadRepository> { DefaultEventReadRepository(get<EventReadDataSource>()) }
         single<AppUpdateRepository> {
             DefaultAppUpdateRepository(get<AppUpdatePolicyDataSource>())
+        }
+        single<AppNoticeRepository> {
+            DefaultAppNoticeRepository(get<AppNoticeDataSource>())
         }
         single<ImportationRepository> { DefaultImportationRepository(get<ImportationDataSource>()) }
         single<LoginRepository> {
