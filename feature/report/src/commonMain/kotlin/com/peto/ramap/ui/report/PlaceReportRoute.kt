@@ -104,7 +104,12 @@ private fun PlaceReportContent(
     val refreshDescription = stringResource(Res.string.place_report_location_refresh)
 
     Box {
-        SectionCard {
+        SectionCard(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 10.dp),
+        ) {
             AppText(
                 stringResource(Res.string.place_report_description),
                 AppTextStyle.B1,
