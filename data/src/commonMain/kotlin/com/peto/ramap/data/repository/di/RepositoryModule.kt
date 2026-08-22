@@ -1,7 +1,7 @@
 package com.peto.ramap.data.repository.di
 
-import com.peto.ramap.data.datasource.event.EventReadDataSource
 import com.peto.ramap.data.datasource.appnotice.AppNoticeDataSource
+import com.peto.ramap.data.datasource.event.EventReadDataSource
 import com.peto.ramap.data.datasource.importation.ImportationDataSource
 import com.peto.ramap.data.datasource.notice.OperatingNoticeDataSource
 import com.peto.ramap.data.datasource.personalization.BookmarkShopDataSource
