@@ -5,4 +5,5 @@ import com.peto.ramap.ui.loading.LoadKey
 enum class EventsLoadKey : LoadKey {
     Fetch,
     Refresh,
+    Submit,
 }

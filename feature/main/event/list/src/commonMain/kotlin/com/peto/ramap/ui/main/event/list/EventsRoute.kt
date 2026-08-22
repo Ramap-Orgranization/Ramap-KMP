@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -38,10 +39,12 @@ import com.peto.ramap.ui.main.event.list.component.EventFilters
 import com.peto.ramap.ui.main.event.list.component.EventListBottomSheet
 import com.peto.ramap.ui.main.event.list.component.EventListEmptyContent
 import com.peto.ramap.ui.main.event.list.component.EventListSkeleton
+import com.peto.ramap.ui.main.event.list.component.NewsReportDialog
 import com.peto.ramap.ui.main.event.list.component.eventSection
 import com.peto.ramap.ui.main.event.list.contract.EventsIntent
 import com.peto.ramap.ui.main.event.list.contract.EventsSideEffect
 import com.peto.ramap.ui.main.event.list.contract.EventsUiState
+import com.peto.ramap.ui.main.event.list.platform.rememberNewsReportImagePicker
 import com.peto.ramap.ui.main.event.list.preview.EventsPreviewParameterProvider
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
@@ -54,9 +57,11 @@ import ramap.shared.generated.resources.event_list_error_title
 import ramap.shared.generated.resources.event_list_ongoing_section
 import ramap.shared.generated.resources.event_list_upcoming_section
 import ramap.shared.generated.resources.ic_operating_notice_fab
+import ramap.shared.generated.resources.ic_report
 import ramap.shared.generated.resources.laduck_error_crying
 import ramap.shared.generated.resources.new_menu_ongoing_section
 import ramap.shared.generated.resources.new_menu_upcoming_section
+import ramap.shared.generated.resources.news_report_open
 import ramap.shared.generated.resources.operating_notice_open
 
 @Composable
@@ -67,6 +72,10 @@ fun EventsRoute(
     viewModel: EventsViewModel = koinViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val imagePicker =
+        rememberNewsReportImagePicker { evidence ->
+            viewModel.dispatch(EventsIntent.OnNewsReportEvidenceSelected(evidence))
+        }
     ObserveAsEvents(viewModel.sideEffect) { sideEffect ->
         when (sideEffect) {
             is EventsSideEffect.ShowEventsToast -> toastManager.show(sideEffect.data)
@@ -82,6 +91,12 @@ fun EventsRoute(
         onRefresh = { viewModel.dispatch(EventsIntent.OnEventsRefreshed) },
         onClickRetry = { viewModel.dispatch(EventsIntent.OnEventsRetried) },
         onFilterSelected = { filter -> viewModel.dispatch(EventsIntent.OnFilterSelected(filter)) },
+        onClickNewsReport = { viewModel.dispatch(EventsIntent.OnNewsReportClicked) },
+        onNewsReportContentChanged = { viewModel.dispatch(EventsIntent.OnNewsReportContentChanged(it)) },
+        onNewsReportImagePick = imagePicker,
+        onNewsReportEvidenceRemoved = { viewModel.dispatch(EventsIntent.OnNewsReportEvidenceRemoved) },
+        onNewsReportSubmit = { viewModel.dispatch(EventsIntent.OnNewsReportSubmit) },
+        onNewsReportDismiss = { viewModel.dispatch(EventsIntent.OnNewsReportDismissed) },
     )
 }
 
@@ -93,6 +108,12 @@ internal fun EventsScreen(
     onRefresh: () -> Unit,
     onClickRetry: () -> Unit,
     onFilterSelected: (EventFilter) -> Unit,
+    onClickNewsReport: () -> Unit,
+    onNewsReportContentChanged: (String) -> Unit,
+    onNewsReportImagePick: () -> Unit,
+    onNewsReportEvidenceRemoved: () -> Unit,
+    onNewsReportSubmit: () -> Unit,
+    onNewsReportDismiss: () -> Unit,
 ) {
     var selectedEventGroup by remember { mutableStateOf<ShopEvents?>(null) }
     val pullToRefreshState = rememberPullToRefreshState()
@@ -202,6 +223,22 @@ internal fun EventsScreen(
                 }
             }
             FloatingActionButton(
+                onClick = onClickNewsReport,
+                modifier =
+                    Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(20.dp)
+                        .offset(y = (-72).dp),
+                shape = CircleShape,
+                containerColor = CommonColor.White,
+            ) {
+                Image(
+                    painter = painterResource(Res.drawable.ic_report),
+                    contentDescription = stringResource(Res.string.news_report_open),
+                    modifier = Modifier.padding(3.dp),
+                )
+            }
+            FloatingActionButton(
                 onClick = onClickNotice,
                 modifier =
                     Modifier
@@ -227,6 +264,17 @@ internal fun EventsScreen(
                     },
                 )
             }
+            NewsReportDialog(
+                value = uiState.newsReportContent,
+                evidence = uiState.newsReportEvidence,
+                visible = uiState.showNewsReportDialog,
+                isSubmitting = uiState.isSubmittingNewsReport,
+                onValueChange = onNewsReportContentChanged,
+                onImagePick = onNewsReportImagePick,
+                onEvidenceRemove = onNewsReportEvidenceRemoved,
+                onSubmit = onNewsReportSubmit,
+                onDismiss = onNewsReportDismiss,
+            )
         }
     }
 }
@@ -244,6 +292,12 @@ private fun EventsRoutePreview(
             onRefresh = {},
             onClickRetry = {},
             onFilterSelected = {},
+            onClickNewsReport = {},
+            onNewsReportContentChanged = {},
+            onNewsReportImagePick = {},
+            onNewsReportEvidenceRemoved = {},
+            onNewsReportSubmit = {},
+            onNewsReportDismiss = {},
         )
     }
 }
