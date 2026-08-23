@@ -116,16 +116,15 @@ fun RamenShopOverview(
             }
             event?.let { shopEvent ->
                 ShopEventResourceMapper.notice(shopEvent)?.let { notice ->
-                    NewsBadge(
+                    AppText(
                         text = notice.format(),
                         modifier =
                             Modifier
                                 .padding(top = 5.dp)
                                 .padding(horizontal = 24.dp)
                                 .noRippleClickable { onEventClick(shopEvent) },
-                        textStyle = AppTextStyle.B1,
-                        containerColor = SystemColor.Warning,
-                        contentColor = CommonColor.White,
+                        style = AppTextStyle.B1,
+                        color = SystemColor.Warning,
                     )
                 }
             }
