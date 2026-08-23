@@ -4,7 +4,7 @@ import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
 
 /**
- * Google Play Install Referrer 문자열에서 라맵 유입 경로 정보를 추출한다.
+ * Google Play Install Referrer 문자열에서 유입 경로 정보를 추출한다.
  *
  * 지원하는 쿼리 파라미터는 `click_id`, `source`, `campaign`, `shop_id`이며,
  * URL 디코딩에 실패하거나 값이 비어 있거나 최대 길이를 초과한 항목은 제외한다.
