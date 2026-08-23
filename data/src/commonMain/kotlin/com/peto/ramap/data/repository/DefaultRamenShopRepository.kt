@@ -85,6 +85,7 @@ internal class DefaultRamenShopRepository(
                     .fetchActiveShopEvents(shopId)
                     .map(::toDomain)
                     .filter(::isVisibleInActiveEvents)
+                    .filterNot(::isGenericOngoingRenewal)
             val event = events.firstOrNull() ?: return@invokeRequest null
             if (events.size != 1 || event.type != ShopEventType.COLLAB || event.isToday) {
                 return@invokeRequest event.copy(activeEventCount = events.size)
@@ -122,6 +123,13 @@ internal class DefaultRamenShopRepository(
         val startDate = event.startDate.toLocalDate()
         return today() < startDate.plus(1, DateTimeUnit.MONTH)
     }
+
+    private fun isGenericOngoingRenewal(event: ShopEvent): Boolean =
+        event.type == ShopEventType.STORE_RENEWAL &&
+            event.isToday &&
+            !event.isStartDateToday &&
+            !event.isCancelledToday &&
+            !event.isSoldOutToday
 
     private fun today(): LocalDate = Clock.System.todayIn(TimeZone.of(SEOUL_TIME_ZONE))
 

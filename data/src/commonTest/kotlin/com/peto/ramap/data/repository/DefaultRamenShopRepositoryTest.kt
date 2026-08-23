@@ -195,6 +195,31 @@ class DefaultRamenShopRepositoryTest {
         }
 
     @Test
+    fun `진행 중인 일반 리뉴얼보다 예정된 콜라보를 우선 선택한다`() =
+        runTest {
+            val today = Clock.System.todayIn(TimeZone.of("Asia/Seoul"))
+            val repository =
+                DefaultRamenShopRepository(
+                    FakeRamenShopDataSource(
+                        activeEventResponses =
+                            listOf(
+                                shopEventResponse(
+                                    id = "ongoing-renewal",
+                                    eventType = "store_renewal",
+                                    startDate = today.minus(1, DateTimeUnit.DAY).toString(),
+                                    endDate = null,
+                                ),
+                                shopEventResponse(id = "upcoming-collab"),
+                            ),
+                    ),
+                )
+
+            val event = repository.fetchActiveShopEvent("venue-shop").getOrThrow()
+
+            assertEquals("upcoming-collab", event?.id)
+        }
+
+    @Test
     fun `라멘 가게 목록을 조회하면 도메인 모델로 변환한다`() =
         runTest {
             val dataSource =
