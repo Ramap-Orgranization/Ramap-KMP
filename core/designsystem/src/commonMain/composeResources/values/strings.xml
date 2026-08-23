@@ -42,7 +42,7 @@
     <string name="shop_detail_more_actions">매장 메뉴 더보기</string>
     <string name="share_shop_action">공유하기</string>
     <string name="share_shop_chooser_title">매장 공유</string>
-    <string name="share_shop_message">라맵에서 %1$s 매장을 확인해 보세요 🍜\n\n%2$s</string>
+    <string name="share_shop_message">라멥에서 %1$s 매장을 확인해 보세요 🍜\n\n%2$s</string>
     <string name="shop_detail_waiting_catchtable">캐치테이블</string>
     <string name="shop_detail_waiting_tabling">테이블링</string>
     <string name="shop_detail_waiting_syrup_friends">시럽 프렌즈</string>
