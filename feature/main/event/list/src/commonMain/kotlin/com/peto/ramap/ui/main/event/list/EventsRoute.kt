@@ -7,12 +7,12 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
@@ -33,6 +33,7 @@ import com.peto.ramap.domain.model.event.EventFilter
 import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.model.event.ShopEvents
 import com.peto.ramap.theme.CommonColor
+import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.RamapTheme
 import com.peto.ramap.ui.base.ObserveAsEvents
 import com.peto.ramap.ui.main.event.list.component.EventFilters
@@ -57,11 +58,9 @@ import ramap.shared.generated.resources.event_list_error_title
 import ramap.shared.generated.resources.event_list_ongoing_section
 import ramap.shared.generated.resources.event_list_upcoming_section
 import ramap.shared.generated.resources.ic_operating_notice_fab
-import ramap.shared.generated.resources.ic_report
 import ramap.shared.generated.resources.laduck_error_crying
 import ramap.shared.generated.resources.new_menu_ongoing_section
 import ramap.shared.generated.resources.new_menu_upcoming_section
-import ramap.shared.generated.resources.news_report_open
 import ramap.shared.generated.resources.operating_notice_open
 
 @Composable
@@ -179,7 +178,15 @@ internal fun EventsScreen(
                                 EventFilters(
                                     selectedFilter = uiState.selectedFilter,
                                     onFilterSelected = onFilterSelected,
+                                    onClickNewsReport = onClickNewsReport,
                                     modifier = Modifier.padding(top = 5.dp),
+                                )
+                            }
+
+                            item {
+                                HorizontalDivider(
+                                    thickness = 2.dp,
+                                    color = GrayColor.C100,
                                 )
                             }
 
@@ -221,22 +228,6 @@ internal fun EventsScreen(
                         }
                     }
                 }
-            }
-            FloatingActionButton(
-                onClick = onClickNewsReport,
-                modifier =
-                    Modifier
-                        .align(Alignment.BottomEnd)
-                        .padding(20.dp)
-                        .offset(y = (-72).dp),
-                shape = CircleShape,
-                containerColor = CommonColor.White,
-            ) {
-                Image(
-                    painter = painterResource(Res.drawable.ic_report),
-                    contentDescription = stringResource(Res.string.news_report_open),
-                    modifier = Modifier.padding(3.dp),
-                )
             }
             FloatingActionButton(
                 onClick = onClickNotice,
