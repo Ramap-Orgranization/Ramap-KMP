@@ -255,19 +255,19 @@ internal fun EventsScreen(
                     },
                 )
             }
-            NewsReportDialog(
-                value = uiState.newsReportContent,
-                evidence = uiState.newsReportEvidence,
-                visible = uiState.showNewsReportDialog,
-                isSubmitting = uiState.isSubmittingNewsReport,
-                onValueChange = onNewsReportContentChanged,
-                onImagePick = onNewsReportImagePick,
-                onEvidenceRemove = onNewsReportEvidenceRemoved,
-                onSubmit = onNewsReportSubmit,
-                onDismiss = onNewsReportDismiss,
-            )
         }
     }
+    NewsReportDialog(
+        value = uiState.newsReportContent,
+        evidence = uiState.newsReportEvidence,
+        visible = uiState.showNewsReportDialog,
+        isSubmitting = uiState.isSubmittingNewsReport,
+        onValueChange = onNewsReportContentChanged,
+        onImagePick = onNewsReportImagePick,
+        onEvidenceRemove = onNewsReportEvidenceRemoved,
+        onSubmit = onNewsReportSubmit,
+        onDismiss = onNewsReportDismiss,
+    )
 }
 
 @Preview(showBackground = true)
