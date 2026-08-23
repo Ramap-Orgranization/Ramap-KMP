@@ -388,11 +388,7 @@ private fun EventDetailContent(
                             value =
                                 eventDateText(
                                     event.startDate,
-                                    if (event.type == ShopEventType.STORE_RENEWAL) {
-                                        event.startDate
-                                    } else {
-                                        event.endDate
-                                    },
+                                    event.startDate,
                                 ),
                             modifier =
                                 Modifier
