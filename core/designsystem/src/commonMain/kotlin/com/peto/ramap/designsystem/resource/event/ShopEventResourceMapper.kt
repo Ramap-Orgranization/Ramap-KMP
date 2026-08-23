@@ -73,13 +73,13 @@ object ShopEventResourceMapper {
         }
 
     fun notice(event: ShopEvent): UiText? {
-        if (event.type == ShopEventType.STORE_RENEWAL && event.isToday && !event.isStartDateToday) return null
         if (event.isCancelledToday) {
             return UiText(Res.string.event_cancelled_notice)
         }
         if (event.isSoldOutToday) {
             return UiText(Res.string.event_sold_out_notice)
         }
+        if (event.type == ShopEventType.STORE_RENEWAL && event.isToday && !event.isStartDateToday) return null
         event.upcomingCollaborationPartnerName?.let { partnerName ->
             return UiText(
                 resource = Res.string.shop_event_notice_collab_upcoming_with_shop,

@@ -8,6 +8,8 @@ import com.peto.ramap.domain.model.shop.Location
 import com.peto.ramap.domain.model.shop.MenuCategories
 import com.peto.ramap.domain.model.shop.RamenShop
 import ramap.shared.generated.resources.Res
+import ramap.shared.generated.resources.event_cancelled_notice
+import ramap.shared.generated.resources.event_sold_out_notice
 import ramap.shared.generated.resources.event_status_cancelled
 import ramap.shared.generated.resources.event_status_sold_out
 import ramap.shared.generated.resources.event_status_today
@@ -122,6 +124,26 @@ class ShopEventResourceMapperTest {
             UiText(Res.string.shop_event_notice_store_renewal_upcoming),
             ShopEventResourceMapper.notice(
                 event(type = ShopEventType.STORE_RENEWAL, isToday = false),
+            ),
+        )
+    }
+
+    @Test
+    fun `진행 중인 취소 리뉴얼은 취소 안내를 반환한다`() {
+        assertEquals(
+            UiText(Res.string.event_cancelled_notice),
+            ShopEventResourceMapper.notice(
+                event(type = ShopEventType.STORE_RENEWAL, isToday = true, isCancelledToday = true),
+            ),
+        )
+    }
+
+    @Test
+    fun `진행 중인 품절 리뉴얼은 품절 안내를 반환한다`() {
+        assertEquals(
+            UiText(Res.string.event_sold_out_notice),
+            ShopEventResourceMapper.notice(
+                event(type = ShopEventType.STORE_RENEWAL, isToday = true, isSoldOutToday = true),
             ),
         )
     }
