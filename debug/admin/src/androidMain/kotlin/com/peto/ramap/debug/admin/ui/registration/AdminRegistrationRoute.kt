@@ -7,6 +7,7 @@ import com.peto.ramap.debug.admin.ui.registration.contract.AdminEventStatus
 import com.peto.ramap.debug.admin.ui.registration.contract.AdminEventStatusScope
 import com.peto.ramap.debug.admin.ui.registration.contract.AdminRegistrationIntent
 import com.peto.ramap.debug.admin.ui.registration.contract.AdminRegistrationTab
+import com.peto.ramap.domain.model.event.ShopEventType
 import com.peto.ramap.domain.model.notice.OperatingNoticeType
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -18,9 +19,13 @@ internal fun AdminRegistrationRoute(viewModel: AdminRegistrationViewModel = koin
         onNoticeTypeSelected = { noticeType: OperatingNoticeType ->
             viewModel.dispatch(AdminRegistrationIntent.OnNoticeTypeSelected(noticeType))
         },
+        onEventTypeSelected = { eventType: ShopEventType ->
+            viewModel.dispatch(AdminRegistrationIntent.OnEventTypeSelected(eventType))
+        },
         onShopNameChanged = { viewModel.dispatch(AdminRegistrationIntent.OnShopNameChanged(it)) },
         onSourceUrlChanged = { viewModel.dispatch(AdminRegistrationIntent.OnSourceUrlChanged(it)) },
         onFeedbackChanged = { viewModel.dispatch(AdminRegistrationIntent.OnFeedbackChanged(it)) },
+        onDraftTitleChanged = { viewModel.dispatch(AdminRegistrationIntent.OnDraftTitleChanged(it)) },
         onDraftDescriptionChanged = { viewModel.dispatch(AdminRegistrationIntent.OnDraftDescriptionChanged(it)) },
         onEvidenceSelected = { viewModel.dispatch(AdminRegistrationIntent.OnEvidenceSelected(it)) },
         onDateRangeSelected = { startDate, endDate ->

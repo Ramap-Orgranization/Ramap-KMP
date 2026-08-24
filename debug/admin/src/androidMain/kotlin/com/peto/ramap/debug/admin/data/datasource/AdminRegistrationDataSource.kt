@@ -7,6 +7,7 @@ import com.peto.ramap.debug.admin.data.model.AdminShopName
 import com.peto.ramap.debug.admin.data.model.request.EventStatusRequest
 import com.peto.ramap.debug.admin.data.model.request.PreviewRequest
 import com.peto.ramap.debug.admin.data.model.request.RegisterRequest
+import com.peto.ramap.domain.model.event.ShopEventType
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.functions.functions
 import io.github.jan.supabase.postgrest.from
@@ -58,6 +59,7 @@ internal class AdminRegistrationDataSource(
     suspend fun register(
         draft: AdminDraft,
         isOperatingNotice: Boolean,
+        eventType: ShopEventType,
     ) {
         client.functions.invoke(
             REGISTER_FUNCTION,
@@ -65,6 +67,7 @@ internal class AdminRegistrationDataSource(
                 registrationType = if (isOperatingNotice) "operating_notice" else "event",
                 shopName = draft.shopName.orEmpty(),
                 title = draft.title.orEmpty(),
+                eventType = eventType.name.lowercase(),
                 startDate = draft.startDate.orEmpty(),
                 endDate = draft.endDate,
                 description = draft.description.orEmpty(),

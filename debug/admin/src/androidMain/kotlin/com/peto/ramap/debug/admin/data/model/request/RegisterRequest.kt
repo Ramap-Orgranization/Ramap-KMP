@@ -8,6 +8,7 @@ internal data class RegisterRequest(
     @SerialName("registration_type") val registrationType: String,
     @SerialName("shop_name") val shopName: String,
     val title: String,
+    @SerialName("event_type") val eventType: String,
     @SerialName("start_date") val startDate: String,
     @SerialName("end_date") val endDate: String?,
     val description: String,

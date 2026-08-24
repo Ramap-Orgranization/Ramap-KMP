@@ -7,6 +7,7 @@ import com.peto.ramap.debug.admin.ui.registration.contract.AdminRegistrationInte
 import com.peto.ramap.debug.admin.ui.registration.contract.AdminRegistrationMessage
 import com.peto.ramap.debug.admin.ui.registration.contract.AdminRegistrationTab
 import com.peto.ramap.debug.admin.ui.registration.contract.AdminRegistrationUiState
+import com.peto.ramap.domain.model.event.ShopEventType
 import com.peto.ramap.domain.model.notice.OperatingNoticeType
 import com.peto.ramap.ui.base.BaseViewModel
 import com.peto.ramap.ui.task.TaskPolicy
@@ -27,6 +28,7 @@ internal class AdminRegistrationViewModel(
                     copy(
                         isOperatingNotice = intent.isOperatingNotice,
                         selectedNoticeType = null,
+                        selectedEventType = ShopEventType.LIMITED_MENU,
                         draft = null,
                         selectedStartDate = null,
                         selectedEndDate = null,
@@ -43,9 +45,24 @@ internal class AdminRegistrationViewModel(
                     )
                 }
 
+            is AdminRegistrationIntent.OnEventTypeSelected ->
+                reduce {
+                    copy(
+                        selectedEventType = intent.eventType,
+                        selectedEndDate = if (intent.eventType == ShopEventType.STORE_RENEWAL) null else selectedEndDate,
+                        draft =
+                            draft?.copy(
+                                endDate = if (intent.eventType == ShopEventType.STORE_RENEWAL) null else draft.endDate,
+                            ),
+                        message = null,
+                    )
+                }
+
             is AdminRegistrationIntent.OnShopNameChanged -> reduce { copy(shopName = intent.value, draft = null, message = null) }
             is AdminRegistrationIntent.OnSourceUrlChanged -> reduce { copy(sourceUrl = intent.value, draft = null, message = null) }
             is AdminRegistrationIntent.OnFeedbackChanged -> reduce { copy(feedback = intent.value, draft = null, message = null) }
+            is AdminRegistrationIntent.OnDraftTitleChanged ->
+                reduce { copy(draft = draft?.copy(title = intent.value), message = null) }
             is AdminRegistrationIntent.OnDraftDescriptionChanged ->
                 reduce { copy(draft = draft?.copy(description = intent.value), message = null) }
             is AdminRegistrationIntent.OnEvidenceSelected -> reduce { copy(evidence = intent.evidence, draft = null, message = null) }
@@ -107,6 +124,7 @@ internal class AdminRegistrationViewModel(
                 selectedTab = tab,
                 isOperatingNotice = tab == AdminRegistrationTab.OPERATING_NOTICE,
                 selectedNoticeType = null,
+                selectedEventType = ShopEventType.LIMITED_MENU,
                 draft = null,
                 selectedStartDate = null,
                 selectedEndDate = null,
@@ -235,7 +253,12 @@ internal class AdminRegistrationViewModel(
                                 shopName = result.shopName ?: currentState.shopName.ifBlank { null },
                                 sourceUrl = result.sourceUrl ?: currentState.sourceUrl.ifBlank { null },
                                 startDate = selectedStartDate ?: result.startDate,
-                                endDate = selectedEndDate ?: result.endDate,
+                                endDate =
+                                    if (selectedEventType == ShopEventType.STORE_RENEWAL) {
+                                        null
+                                    } else {
+                                        selectedEndDate ?: result.endDate
+                                    },
                                 noticeType = selectedNoticeType?.toRequestValue() ?: result.noticeType,
                             ),
                         message = null,
@@ -257,7 +280,7 @@ internal class AdminRegistrationViewModel(
         ) {
             reduce { copy(isSubmitting = true, message = null) }
             try {
-                dataSource.register(draft, currentState.isOperatingNotice)
+                dataSource.register(draft, currentState.isOperatingNotice, currentState.selectedEventType)
                 reduce { copy(draft = null, message = AdminRegistrationMessage.SUCCESS) }
             } catch (_: Throwable) {
                 reduce { copy(message = AdminRegistrationMessage.FAILED) }

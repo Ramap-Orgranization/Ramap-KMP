@@ -1,6 +1,7 @@
 package com.peto.ramap.debug.admin.ui.registration.contract
 
 import com.peto.ramap.debug.admin.data.model.AdminEvidence
+import com.peto.ramap.domain.model.event.ShopEventType
 import com.peto.ramap.domain.model.notice.OperatingNoticeType
 import com.peto.ramap.ui.base.Intent
 
@@ -13,6 +14,10 @@ internal sealed interface AdminRegistrationIntent : Intent {
         val noticeType: OperatingNoticeType,
     ) : AdminRegistrationIntent
 
+    data class OnEventTypeSelected(
+        val eventType: ShopEventType,
+    ) : AdminRegistrationIntent
+
     data class OnShopNameChanged(
         val value: String,
     ) : AdminRegistrationIntent
@@ -22,6 +27,10 @@ internal sealed interface AdminRegistrationIntent : Intent {
     ) : AdminRegistrationIntent
 
     data class OnFeedbackChanged(
+        val value: String,
+    ) : AdminRegistrationIntent
+
+    data class OnDraftTitleChanged(
         val value: String,
     ) : AdminRegistrationIntent
 

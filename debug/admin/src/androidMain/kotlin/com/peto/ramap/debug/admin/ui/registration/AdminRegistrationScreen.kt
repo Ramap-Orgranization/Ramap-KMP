@@ -26,6 +26,7 @@ import com.peto.ramap.debug.admin.data.model.AdminEvidence
 import com.peto.ramap.debug.admin.ui.registration.component.AdminBottomNavigation
 import com.peto.ramap.debug.admin.ui.registration.component.AdminDraftPreview
 import com.peto.ramap.debug.admin.ui.registration.component.AdminEventStatusManager
+import com.peto.ramap.debug.admin.ui.registration.component.AdminEventTypeSelector
 import com.peto.ramap.debug.admin.ui.registration.component.AdminEvidenceField
 import com.peto.ramap.debug.admin.ui.registration.component.AdminFeedbackField
 import com.peto.ramap.debug.admin.ui.registration.component.AdminFieldSection
@@ -40,6 +41,7 @@ import com.peto.ramap.debug.admin.ui.registration.contract.AdminRegistrationTab
 import com.peto.ramap.debug.admin.ui.registration.contract.AdminRegistrationUiState
 import com.peto.ramap.designsystem.button.AppButton
 import com.peto.ramap.designsystem.text.AppText
+import com.peto.ramap.domain.model.event.ShopEventType
 import com.peto.ramap.domain.model.notice.OperatingNoticeType
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.CommonColor
@@ -50,9 +52,11 @@ import com.peto.ramap.theme.SystemColor
 internal fun AdminRegistrationScreen(
     uiState: AdminRegistrationUiState,
     onNoticeTypeSelected: (OperatingNoticeType) -> Unit,
+    onEventTypeSelected: (ShopEventType) -> Unit,
     onShopNameChanged: (String) -> Unit,
     onSourceUrlChanged: (String) -> Unit,
     onFeedbackChanged: (String) -> Unit,
+    onDraftTitleChanged: (String) -> Unit,
     onDraftDescriptionChanged: (String) -> Unit,
     onEvidenceSelected: (AdminEvidence?) -> Unit,
     onDateRangeSelected: (String, String) -> Unit,
@@ -136,6 +140,13 @@ internal fun AdminRegistrationScreen(
                             onNoticeTypeSelected = onNoticeTypeSelected,
                         )
                     }
+                } else {
+                    AdminFieldSection(label = stringResource(R.string.admin_registration_event_type)) {
+                        AdminEventTypeSelector(
+                            selectedEventType = uiState.selectedEventType,
+                            onEventTypeSelected = onEventTypeSelected,
+                        )
+                    }
                 }
 
                 AdminFieldSection(label = stringResource(R.string.admin_registration_shop)) {
@@ -204,6 +215,7 @@ internal fun AdminRegistrationScreen(
                 uiState.draft?.let { draft ->
                     AdminDraftPreview(
                         draft = draft,
+                        onTitleChanged = onDraftTitleChanged,
                         onDescriptionChanged = onDraftDescriptionChanged,
                     )
                 }
@@ -236,9 +248,11 @@ private fun AdminRegistrationScreenPreview() {
                     selectedEndDate = "2024-05-07",
                 ),
             onNoticeTypeSelected = {},
+            onEventTypeSelected = {},
             onShopNameChanged = {},
             onSourceUrlChanged = {},
             onFeedbackChanged = {},
+            onDraftTitleChanged = {},
             onDraftDescriptionChanged = {},
             onEvidenceSelected = {},
             onDateRangeSelected = { _, _ -> },
@@ -282,9 +296,11 @@ private fun AdminRegistrationScreenWithDraftPreview() {
                         ),
                 ),
             onNoticeTypeSelected = {},
+            onEventTypeSelected = {},
             onShopNameChanged = {},
             onSourceUrlChanged = {},
             onFeedbackChanged = {},
+            onDraftTitleChanged = {},
             onDraftDescriptionChanged = {},
             onEvidenceSelected = {},
             onDateRangeSelected = { _, _ -> },

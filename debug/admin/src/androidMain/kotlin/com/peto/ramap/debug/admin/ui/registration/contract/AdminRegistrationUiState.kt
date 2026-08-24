@@ -3,6 +3,7 @@ package com.peto.ramap.debug.admin.ui.registration.contract
 import com.peto.ramap.debug.admin.data.model.AdminDraft
 import com.peto.ramap.debug.admin.data.model.AdminEvidence
 import com.peto.ramap.debug.admin.data.model.AdminManagedEvent
+import com.peto.ramap.domain.model.event.ShopEventType
 import com.peto.ramap.domain.model.notice.OperatingNoticeType
 import com.peto.ramap.ui.base.State
 
@@ -10,6 +11,7 @@ internal data class AdminRegistrationUiState(
     val shopNames: List<String> = emptyList(),
     val isOperatingNotice: Boolean = false,
     val selectedNoticeType: OperatingNoticeType? = null,
+    val selectedEventType: ShopEventType = ShopEventType.LIMITED_MENU,
     val shopName: String = "",
     val sourceUrl: String = "",
     val feedback: String = "",

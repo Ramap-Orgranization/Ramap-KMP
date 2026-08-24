@@ -32,6 +32,7 @@ import org.jetbrains.compose.resources.stringResource as composeStringResource
 internal fun AdminDraftPreview(
     draft: AdminDraft,
     modifier: Modifier = Modifier,
+    onTitleChanged: (String) -> Unit = {},
     onDescriptionChanged: (String) -> Unit = {},
 ) {
     Column(
@@ -46,6 +47,25 @@ internal fun AdminDraftPreview(
             text = stringResource(R.string.admin_registration_preview_title),
             style = AppTextStyle.T2,
             color = GrayColor.C500,
+        )
+        AppText(
+            text = stringResource(R.string.admin_registration_title_label),
+            style = AppTextStyle.B1,
+            color = GrayColor.C400,
+        )
+        OutlinedTextField(
+            value = draft.title.orEmpty(),
+            onValueChange = onTitleChanged,
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+            placeholder = {
+                Text(
+                    text = stringResource(R.string.admin_registration_title_placeholder),
+                    color = GrayColor.C200,
+                )
+            },
+            shape = RoundedCornerShape(10.dp),
+            colors = previewTextFieldColors(),
         )
         PreviewRow(stringResource(R.string.admin_registration_shop), draft.shopName)
         PreviewRow(stringResource(R.string.admin_registration_source), draft.sourceUrl)
@@ -77,12 +97,7 @@ internal fun AdminDraftPreview(
                 )
             },
             shape = RoundedCornerShape(10.dp),
-            colors =
-                OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = GrayColor.C200,
-                    unfocusedBorderColor = GrayColor.C200,
-                    cursorColor = GrayColor.C500,
-                ),
+            colors = previewTextFieldColors(),
         )
         if (draft.uncertainties.isNotEmpty()) {
             AppText(
@@ -94,6 +109,14 @@ internal fun AdminDraftPreview(
         }
     }
 }
+
+@Composable
+private fun previewTextFieldColors() =
+    OutlinedTextFieldDefaults.colors(
+        focusedBorderColor = GrayColor.C200,
+        unfocusedBorderColor = GrayColor.C200,
+        cursorColor = GrayColor.C500,
+    )
 
 @Composable
 private fun PreviewRow(
