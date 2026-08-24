@@ -1,4 +1,4 @@
-import { createServiceClient } from "../_shared/event-notifications.ts";
+import { assertKnownEventType, createServiceClient } from "../_shared/event-notifications.ts";
 
 const EVIDENCE_BUCKET = "news-report-evidence";
 const EVENT_BUCKET = "event-images";
@@ -18,12 +18,18 @@ Deno.serve(async (request) => {
 
   const shopName = text(body?.shop_name);
   const title = text(body?.title);
+  const eventType = text(body?.event_type) ?? "limited_menu";
   const startDate = text(body?.start_date);
   const endDate = text(body?.end_date) ?? startDate;
   const description = text(body?.description);
   const sourceUrl = normalizeInstagramUrl(text(body?.source_url));
   const evidencePath = text(body?.evidence_path);
   if (!shopName || !title || !startDate || !description || !sourceUrl || !validDate(startDate) || !validDate(endDate) || !isInstagramUrl(sourceUrl)) {
+    return json({ code: "invalid_draft" }, 400);
+  }
+  try {
+    assertKnownEventType(eventType);
+  } catch {
     return json({ code: "invalid_draft" }, 400);
   }
 
@@ -66,9 +72,9 @@ Deno.serve(async (request) => {
       title,
       description,
       start_date: startDate,
-      end_date: endDate,
+      end_date: eventType === "store_renewal" ? null : endDate,
       source_url: sourceUrl,
-      event_type: "limited_menu",
+      event_type: eventType,
       image_paths: imagePath ? [imagePath] : [],
       cancelled_dates: [],
       sold_out_dates: [],
