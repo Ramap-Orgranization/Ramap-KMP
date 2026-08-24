@@ -1,0 +1,270 @@
+import { createServiceClient } from "../_shared/event-notifications.ts";
+
+const OPENAI_URL = "https://api.openai.com/v1/chat/completions";
+const EVIDENCE_BUCKET = "news-report-evidence";
+const ADMIN_TIMEOUT_MS = 3_000;
+const EVENT_EXTRACTION_PROMPT =
+  "라멘 매장의 이벤트 등록 초안을 추출하세요. 입력에 없는 사실은 절대 만들지 마세요. " +
+  "원문 캡션이 있으면 description은 캡션의 문구, 이모지, 구두점, 줄바꿈을 그대로 보존하세요. " +
+  "캡션을 요약·번역·홍보 문구로 재작성하지 말고, 이미지에만 있는 내용은 캡션에 섞지 마세요. " +
+  "이미지만 있으면 이미지에서 실제로 읽히는 내용만 사용하고 OCR이 불확실하면 uncertainties에 적으세요. " +
+  "title은 원문에 명시된 이벤트명이나 메뉴명만 짧게 적고, 원문에 없으면 null로 반환하세요. " +
+  "날짜는 YYYY-MM-DD로 변환하고, 상대 날짜는 게시일이나 관찰일을 알 수 없으면 추측하지 마세요. " +
+  "명확한 하루 일정만 start_date와 end_date를 같은 날짜로 반환하세요. " +
+  "store_renewal은 end_date를 null로 반환하세요. 그 외 날짜가 불명확하거나 누락되면 null과 한국어 uncertainties를 반환하세요. " +
+  "매장명은 계정명으로 추측하지 말고 실제 매장명이 원문에 명시된 경우에만 반환하세요. " +
+  "관리자 피드백은 원문 사실을 더 정확히 반영하기 위한 수정 지시로만 사용하고 새로운 사실의 근거로 사용하지 마세요.";
+const OPERATING_NOTICE_EXTRACTION_PROMPT =
+  "라멘 매장의 영업 변동 공지 초안을 추출하세요. 입력에 없는 사실은 절대 만들지 마세요. " +
+  "description은 원문 캡션 또는 이미지의 문구, 이모지, 구두점, 줄바꿈을 그대로 보존하세요. " +
+  "요약·번역·홍보 문구로 재작성하지 말고, OCR이 불확실하면 읽은 내용을 임의로 보정하지 말고 uncertainties에 적으세요. " +
+  "notice_type은 operating_notice(일반 영업 변동), full_close(휴무), early_close(조기 마감), late_opening(오픈 지연) 중 하나만 선택하세요. " +
+  "title은 null로 반환하세요. 날짜는 YYYY-MM-DD, 시간은 HH:mm으로 변환하세요. " +
+  "오늘·내일 같은 상대 날짜는 게시일이나 관찰일을 알 수 없으면 추측하지 마세요. " +
+  "종료일이 원문에 없으면 end_date를 null로 반환하고 uncertainties에 적으세요. " +
+  "매장명은 계정명으로 추측하지 말고 실제 매장명이 원문에 명시된 경우에만 반환하세요. " +
+  "관리자 피드백은 원문 사실을 더 정확히 반영하기 위한 수정 지시로만 사용하고 새로운 사실의 근거로 사용하지 마세요.";
+
+type RequestBody = { registration_type?: unknown; shop_name?: unknown; feedback?: unknown; source_url?: unknown; evidence_path?: unknown };
+type EventDraft = {
+  shop_name: string | null;
+  title: string | null;
+  start_date: string | null;
+  end_date: string | null;
+  description: string | null;
+  uncertainties: string[];
+  notice_type: string | null;
+  start_time: string | null;
+  end_time: string | null;
+};
+type InstagramCaption = { cleanText: string; handle: string | null; isExact: boolean };
+
+Deno.serve(async (request) => {
+  if (request.method !== "POST") return json({ code: "method_not_allowed" }, 405);
+  if (!await isAdministrator(request)) return json({ code: "administrator_required" }, 403);
+
+  const body = await request.json().catch(() => null) as RequestBody | null;
+  const registrationType = text(body?.registration_type) ?? "event";
+  let sourceUrl = normalizeInstagramUrl(text(body?.source_url));
+  const requestedShopName = text(body?.shop_name);
+  const feedback = text(body?.feedback)?.slice(0, 1_000) ?? null;
+  const evidencePath = text(body?.evidence_path);
+  if (!sourceUrl && !evidencePath) return json({ code: "input_required" }, 400);
+  if (!isSupportedRegistrationType(registrationType)) return json({ code: "invalid_registration_type" }, 400);
+  if (sourceUrl && !isInstagramUrl(sourceUrl)) return json({ code: "invalid_source_url" }, 400);
+
+  const apiKey = Deno.env.get("OPENAI_API_KEY");
+  if (!apiKey) return json({ code: "analysis_unavailable" }, 503);
+
+  try {
+    const supabase = createServiceClient();
+    const imageUrl = await createEvidenceUrl(supabase, evidencePath);
+    const caption = sourceUrl ? await fetchInstagramCaption(sourceUrl) : null;
+    const draft = await analyze(apiKey, registrationType, caption?.cleanText ?? null, imageUrl, feedback);
+    if (caption?.isExact) draft.description = caption.cleanText;
+    if (registrationType === "operating_notice" && !isSupportedNoticeType(draft.notice_type)) {
+      draft.notice_type = null;
+      draft.uncertainties.push("영업 변동 유형을 확인하지 못했습니다.");
+    }
+    const resolvedShop = await resolveShop(supabase, caption?.handle, [requestedShopName, draft.shop_name]);
+    if (resolvedShop) {
+      draft.shop_name = resolvedShop.name;
+      if (!sourceUrl) sourceUrl = normalizeInstagramProfileUrl(resolvedShop.instagramUrl);
+    } else {
+      draft.shop_name = null;
+      draft.uncertainties.push("등록된 매장과 Instagram 계정을 확인하지 못했습니다.");
+    }
+
+    if (!caption && !imageUrl) draft.uncertainties.push("분석할 공개 캡션이나 이미지가 없습니다.");
+    return json({ ...draft, source_url: sourceUrl, evidence_path: evidencePath });
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error);
+    console.error("preview-event failed", detail);
+    return json({ code: "analysis_failed" }, 502);
+  }
+});
+
+async function analyze(
+  apiKey: string,
+  registrationType: string,
+  caption: string | null,
+  imageUrl: string | null,
+  feedback: string | null,
+): Promise<EventDraft> {
+  const context = [
+    caption ? `Instagram 공개 캡션:\n${caption}` : "공개 캡션 없음",
+    imageUrl ? "첨부 이미지는 스토리 또는 게시물 원문입니다. 이미지에 실제로 보이는 텍스트만 사용하세요." : null,
+    feedback ? `관리자 피드백:\n${feedback}` : null,
+    "입력에 없는 값은 추측하지 말고 null로 반환하세요.",
+  ].filter(Boolean).join("\n\n");
+  const content: Array<Record<string, unknown>> = [{ type: "text", text: context }];
+  if (imageUrl) content.push({ type: "image_url", image_url: { url: imageUrl, detail: "high" } });
+
+  const response = await fetch(OPENAI_URL, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model: Deno.env.get("AI_MODEL") ?? "gpt-4o-mini",
+      temperature: 0,
+      messages: [
+        {
+          role: "system",
+          content: registrationType === "operating_notice"
+            ? "라멘 매장의 영업 변동 공지 초안을 추출하세요. 입력에 없는 사실은 절대 만들지 마세요. 관리자 피드백은 입력 사실을 더 정확히 반영하기 위한 수정 지시로만 사용하고, 새로운 사실을 추측하는 근거로 사용하지 마세요. notice_type은 operating_notice(일반 영업 변동), full_close(휴무), early_close(조기 마감), late_opening(오픈 지연) 중 하나만 선택하세요. title은 null로 반환하세요. description은 입력 캡션의 사실만 사용하고 홍보 문구로 바꾸지 마세요. 날짜는 YYYY-MM-DD, 시간은 HH:mm으로 변환합니다. 하루만 언급된 공지는 end_date를 start_date와 동일하게 반환하세요. 날짜·시간·유형이 확실하지 않으면 uncertainties에 한국어로 적습니다. 매장명은 계정명이 아니라 실제 매장명으로 추측하지 말고 null을 반환하세요."
+            : "라멘 매장의 이벤트 등록 초안을 추출하세요. 입력에 없는 사실은 절대 만들지 마세요. 관리자 피드백은 입력 사실을 더 정확히 반영하기 위한 수정 지시로만 사용하고, 새로운 사실을 추측하는 근거로 사용하지 마세요. title은 원문에 명시된 이벤트명이나 메뉴명만 짧게 적고, 원문에 없으면 null을 반환하세요. 날짜·회식·메뉴·수량·운영 시간을 추측하거나 추가하지 마세요. description은 입력 캡션의 사실만 사용하고 홍보 문구로 바꾸지 마세요. 매장명은 계정명이 아니라 실제 매장명으로 추측하지 말고 null을 반환하세요. 날짜는 YYYY-MM-DD로 변환합니다. 확실하지 않거나 누락된 필드는 uncertainties에 한국어로 적습니다.",
+        },
+        {
+          role: "system",
+          content: registrationType === "operating_notice"
+            ? OPERATING_NOTICE_EXTRACTION_PROMPT
+            : EVENT_EXTRACTION_PROMPT,
+        },
+        { role: "user", content },
+      ],
+      response_format: {
+        type: "json_schema",
+        json_schema: {
+          name: "event_draft",
+          strict: true,
+          schema: {
+            type: "object",
+            additionalProperties: false,
+            properties: {
+              shop_name: { type: ["string", "null"] },
+              title: { type: ["string", "null"] },
+              start_date: { type: ["string", "null"] },
+              end_date: { type: ["string", "null"] },
+              description: { type: ["string", "null"] },
+              notice_type: { type: ["string", "null"] },
+              start_time: { type: ["string", "null"] },
+              end_time: { type: ["string", "null"] },
+              uncertainties: { type: "array", items: { type: "string" } },
+            },
+            required: ["shop_name", "title", "start_date", "end_date", "description", "notice_type", "start_time", "end_time", "uncertainties"],
+          },
+        },
+      },
+    }),
+  });
+  if (!response.ok) throw new Error(`OpenAI analysis failed: ${response.status} ${await response.text()}`);
+  const payload = await response.json() as { choices?: Array<{ message?: { content?: string } }> };
+  const outputText = payload.choices?.[0]?.message?.content;
+  if (!outputText) throw new Error("OpenAI returned no structured output");
+  const draft = JSON.parse(outputText) as EventDraft;
+  return {
+    shop_name: text(draft.shop_name),
+    title: text(draft.title),
+    start_date: validDate(draft.start_date) ? draft.start_date : null,
+    end_date: validDate(draft.end_date) ? draft.end_date : null,
+    description: text(draft.description),
+    notice_type: text(draft.notice_type),
+    start_time: validTime(draft.start_time) ? draft.start_time : null,
+    end_time: validTime(draft.end_time) ? draft.end_time : null,
+    uncertainties: Array.isArray(draft.uncertainties) ? draft.uncertainties.filter((item) => typeof item === "string") : [],
+  };
+}
+
+async function createEvidenceUrl(supabase: ReturnType<typeof createServiceClient>, path: string | null) {
+  if (!path || !/^[\w-]+\.(?:jpe?g|png)$/i.test(path)) return null;
+  const { data, error } = await supabase.storage.from(EVIDENCE_BUCKET).createSignedUrl(path, 300);
+  if (error) throw error;
+  return data.signedUrl;
+}
+
+async function fetchInstagramCaption(sourceUrl: string): Promise<InstagramCaption | null> {
+  const response = await fetch(sourceUrl, { headers: { "User-Agent": "Mozilla/5.0" } }).catch(() => null);
+  if (!response?.ok) return null;
+  const html = await response.text();
+  const match = html.match(/<meta\b[^>]*(?:name|property)=["'](?:description|og:description)["'][^>]*content=["']([^"']*)["'][^>]*>/i);
+  if (!match) return null;
+  const rawText = decodeHtml(match[1]);
+  const prefix = rawText.match(/^\s*[\d,.]+\s+likes?,\s*[\d,.]+\s+comments?\s+-\s*([A-Za-z0-9._]+)\s+on\s+[^:]+:\s*/i);
+  if (!prefix) return { cleanText: rawText.trim(), handle: null, isExact: false };
+  const cleanText = rawText.slice(prefix[0].length).replace(/^["“]|["”]\s*\.?\s*$/g, "").trim();
+  return {
+    cleanText: cleanText || rawText.trim(),
+    handle: prefix[1].toLowerCase(),
+    isExact: cleanText.length > 0,
+  };
+}
+
+async function resolveShop(
+  supabase: ReturnType<typeof createServiceClient>,
+  handle: string | null | undefined,
+  candidates: Array<string | null>,
+) {
+  const findByName = async (candidate: string) => {
+    const { data } = await supabase.from("shops").select("name,instagram_url").eq("name", candidate).limit(2);
+    return data?.length === 1 ? { name: data[0].name as string, instagramUrl: data[0].instagram_url as string | null } : null;
+  };
+  for (const candidate of candidates) {
+    if (candidate) {
+      const shop = await findByName(candidate);
+      if (shop) return shop;
+    }
+  }
+  const handles = handle ? [
+    `https://www.instagram.com/${handle}`,
+    `https://www.instagram.com/${handle}/`,
+    `https://instagram.com/${handle}`,
+    `https://instagram.com/${handle}/`,
+  ] : [];
+  if (handles.length > 0) {
+    const { data } = await supabase.from("shops").select("name,instagram_url").in("instagram_url", handles).limit(2);
+    if (data?.length === 1) return { name: data[0].name as string, instagramUrl: data[0].instagram_url as string | null };
+  }
+  return null;
+}
+
+async function isAdministrator(request: Request): Promise<boolean> {
+  const token = request.headers.get("authorization")?.match(/^Bearer\s+(.+)$/i)?.[1]?.trim();
+  const url = Deno.env.get("SUPABASE_URL");
+  const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
+  const adminEmail = (Deno.env.get("ADMIN_EMAIL") ?? "uni070@naver.com").trim().toLowerCase();
+  if (!token || !url || !anonKey || !adminEmail) return false;
+  const response = await fetch(`${url}/auth/v1/user`, {
+    headers: { apikey: anonKey, Authorization: `Bearer ${token}` },
+    signal: AbortSignal.timeout(ADMIN_TIMEOUT_MS),
+  }).catch(() => null);
+  const user = response?.ok ? await response.json() as { email?: unknown } : null;
+  return typeof user?.email === "string" && user.email.toLowerCase() === adminEmail;
+}
+
+function isInstagramUrl(value: string) {
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" && (url.hostname === "instagram.com" || url.hostname.endsWith(".instagram.com"));
+  } catch {
+    return false;
+  }
+}
+
+function normalizeInstagramUrl(value: string | null) {
+  if (!value) return null;
+  const match = value.match(/https?:\/\/(?:www\.)?instagram\.com\/(p|reel)\/([^/?#\s\]"']+)/i);
+  if (!match) return null;
+  return `https://www.instagram.com/${match[1].toLowerCase()}/${match[2]}/`;
+}
+function normalizeInstagramProfileUrl(value: string | null) {
+  if (!value) return null;
+  const match = value.match(/https?:\/\/(?:www\.)?instagram\.com\/([^/?#\s\]"']+)/i);
+  if (!match || ["p", "reel"].includes(match[1].toLowerCase())) return null;
+  return `https://www.instagram.com/${match[1]}/`;
+}
+
+function isSupportedRegistrationType(value: string) { return value === "event" || value === "operating_notice"; }
+function isSupportedNoticeType(value: string | null) { return value === "operating_notice" || value === "full_close" || value === "early_close" || value === "late_opening"; }
+function validDate(value: string | null) { return typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value); }
+function validTime(value: string | null) { return typeof value === "string" && /^([01]\d|2[0-3]):[0-5]\d$/.test(value); }
+function text(value: unknown): string | null { return typeof value === "string" && value.trim() !== "" ? value.trim() : null; }
+function decodeHtml(value: string) {
+  return value
+    .replace(/&#x([\da-f]+);/gi, (_, code: string) => String.fromCodePoint(parseInt(code, 16)))
+    .replace(/&#(\d+);/g, (_, code: string) => String.fromCodePoint(Number(code)))
+    .replaceAll("&amp;", "&")
+    .replaceAll("&quot;", '"')
+    .replaceAll("&#39;", "'")
+    .replaceAll("&lt;", "<")
+    .replaceAll("&gt;", ">");
+}
+function json(body: Record<string, unknown>, status = 200): Response { return Response.json(body, { status }); }
