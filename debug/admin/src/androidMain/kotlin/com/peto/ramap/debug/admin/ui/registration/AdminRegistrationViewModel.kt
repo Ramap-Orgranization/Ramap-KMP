@@ -1,21 +1,41 @@
 package com.peto.ramap.debug.admin.ui.registration
 
+import androidx.lifecycle.viewModelScope
 import com.peto.ramap.debug.admin.data.datasource.AdminRegistrationDataSource
 import com.peto.ramap.debug.admin.ui.registration.contract.AdminEventStatus
 import com.peto.ramap.debug.admin.ui.registration.contract.AdminEventStatusScope
 import com.peto.ramap.debug.admin.ui.registration.contract.AdminRegistrationIntent
 import com.peto.ramap.debug.admin.ui.registration.contract.AdminRegistrationMessage
+import com.peto.ramap.debug.admin.ui.registration.contract.AdminRegistrationSideEffect
 import com.peto.ramap.debug.admin.ui.registration.contract.AdminRegistrationTab
 import com.peto.ramap.debug.admin.ui.registration.contract.AdminRegistrationUiState
+import com.peto.ramap.designsystem.toast.model.ToastData
+import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.event.ShopEventType
 import com.peto.ramap.domain.model.notice.OperatingNoticeType
 import com.peto.ramap.ui.base.BaseViewModel
 import com.peto.ramap.ui.task.TaskPolicy
+import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.StringResource
+import ramap.shared.generated.resources.Res
+import ramap.shared.generated.resources.admin_event_status_event_required
+import ramap.shared.generated.resources.admin_event_status_period_required
+import ramap.shared.generated.resources.admin_event_status_reason_required
+import ramap.shared.generated.resources.admin_event_status_save_failure
+import ramap.shared.generated.resources.admin_registration_draft_required
+import ramap.shared.generated.resources.admin_registration_image_only_required
+import ramap.shared.generated.resources.admin_registration_image_required
+import ramap.shared.generated.resources.admin_registration_managed_events_load_failure
+import ramap.shared.generated.resources.admin_registration_preview_failure
+import ramap.shared.generated.resources.admin_registration_preview_required
+import ramap.shared.generated.resources.admin_registration_register_failure
+import ramap.shared.generated.resources.admin_registration_shop_names_load_failure
+import ramap.shared.generated.resources.admin_registration_success
 import java.time.LocalDate
 
 internal class AdminRegistrationViewModel(
     private val dataSource: AdminRegistrationDataSource,
-) : BaseViewModel<AdminRegistrationUiState, AdminRegistrationIntent, Nothing>(AdminRegistrationUiState()) {
+) : BaseViewModel<AdminRegistrationUiState, AdminRegistrationIntent, AdminRegistrationSideEffect>(AdminRegistrationUiState()) {
     init {
         loadShopNames()
         loadManagedEvents()
@@ -29,6 +49,8 @@ internal class AdminRegistrationViewModel(
                         isOperatingNotice = intent.isOperatingNotice,
                         selectedNoticeType = null,
                         selectedEventType = ShopEventType.LIMITED_MENU,
+                        isImageOnly = false,
+                        imageOnlyTitle = "",
                         draft = null,
                         selectedStartDate = null,
                         selectedEndDate = null,
@@ -61,6 +83,11 @@ internal class AdminRegistrationViewModel(
             is AdminRegistrationIntent.OnShopNameChanged -> reduce { copy(shopName = intent.value, draft = null, message = null) }
             is AdminRegistrationIntent.OnSourceUrlChanged -> reduce { copy(sourceUrl = intent.value, draft = null, message = null) }
             is AdminRegistrationIntent.OnFeedbackChanged -> reduce { copy(feedback = intent.value, draft = null, message = null) }
+            AdminRegistrationIntent.OnImageOnlyRegistrationClicked ->
+                if (!currentState.isOperatingNotice) {
+                    reduce { copy(isImageOnly = !isImageOnly, draft = null, message = null) }
+                }
+            is AdminRegistrationIntent.OnImageOnlyTitleChanged -> reduce { copy(imageOnlyTitle = intent.value, message = null) }
             is AdminRegistrationIntent.OnDraftTitleChanged ->
                 reduce { copy(draft = draft?.copy(title = intent.value), message = null) }
             is AdminRegistrationIntent.OnDraftDescriptionChanged ->
@@ -125,6 +152,8 @@ internal class AdminRegistrationViewModel(
                 isOperatingNotice = tab == AdminRegistrationTab.OPERATING_NOTICE,
                 selectedNoticeType = null,
                 selectedEventType = ShopEventType.LIMITED_MENU,
+                isImageOnly = false,
+                imageOnlyTitle = "",
                 draft = null,
                 selectedStartDate = null,
                 selectedEndDate = null,
@@ -156,25 +185,41 @@ internal class AdminRegistrationViewModel(
             taskKey = SHOP_NAMES_TASK_KEY,
             policy = TaskPolicy.IgnoreNew,
         ) {
-            val shopNames = runCatching { dataSource.fetchShopNames() }.getOrDefault(emptyList())
-            reduce { copy(shopNames = shopNames) }
+            try {
+                val shopNames = dataSource.fetchShopNames()
+                reduce { copy(shopNames = shopNames) }
+            } catch (_: Throwable) {
+                showToast(Res.string.admin_registration_shop_names_load_failure)
+            }
         }
     }
 
     private fun loadManagedEvents() {
         launchTask(taskKey = MANAGED_EVENTS_TASK_KEY, policy = TaskPolicy.CancelPrevious) {
-            val events = runCatching { dataSource.fetchManagedEvents() }.getOrDefault(emptyList())
-            reduce { copy(managedEvents = events) }
+            try {
+                val events = dataSource.fetchManagedEvents()
+                reduce { copy(managedEvents = events) }
+            } catch (_: Throwable) {
+                showToast(Res.string.admin_registration_managed_events_load_failure)
+            }
         }
     }
 
     private fun saveEventStatus() {
-        val eventId = currentState.selectedManagedEventId ?: return
+        val eventId = currentState.selectedManagedEventId
+        if (eventId == null) {
+            showToast(Res.string.admin_event_status_event_required)
+            return
+        }
         val reason = currentState.eventStatusReason.trim().takeIf { currentState.selectedEventStatus == AdminEventStatus.CANCELLED }
-        if (currentState.selectedEventStatus == AdminEventStatus.CANCELLED && reason.isNullOrEmpty()) return
+        if (currentState.selectedEventStatus == AdminEventStatus.CANCELLED && reason.isNullOrEmpty()) {
+            showToast(Res.string.admin_event_status_reason_required)
+            return
+        }
         if (currentState.selectedEventStatusScope == AdminEventStatusScope.CUSTOM_PERIOD &&
             (currentState.eventStatusStartDate == null || currentState.eventStatusEndDate == null)
         ) {
+            showToast(Res.string.admin_event_status_period_required)
             return
         }
         launchTask(taskKey = EVENT_STATUS_SAVE_TASK_KEY, policy = TaskPolicy.IgnoreNew) {
@@ -206,7 +251,7 @@ internal class AdminRegistrationViewModel(
                 loadManagedEvents()
                 reduce { copy(message = AdminRegistrationMessage.SUCCESS) }
             } catch (_: Throwable) {
-                reduce { copy(message = AdminRegistrationMessage.FAILED) }
+                showToast(Res.string.admin_event_status_save_failure)
             } finally {
                 reduce { copy(isSavingEventStatus = false) }
             }
@@ -219,7 +264,9 @@ internal class AdminRegistrationViewModel(
     }
 
     private fun previewOrRegister() {
-        if (currentState.draft == null) {
+        if (currentState.isImageOnly) {
+            registerImageOnly()
+        } else if (currentState.draft == null) {
             preview()
         } else {
             register()
@@ -228,7 +275,7 @@ internal class AdminRegistrationViewModel(
 
     private fun preview() {
         if (currentState.sourceUrl.isBlank() && currentState.evidence == null) {
-            reduce { copy(message = AdminRegistrationMessage.REQUIRED) }
+            showToast(Res.string.admin_registration_preview_required)
             return
         }
 
@@ -265,7 +312,7 @@ internal class AdminRegistrationViewModel(
                     )
                 }
             } catch (_: Throwable) {
-                reduce { copy(message = AdminRegistrationMessage.FAILED) }
+                showToast(Res.string.admin_registration_preview_failure)
             } finally {
                 reduce { copy(isSubmitting = false) }
             }
@@ -273,7 +320,11 @@ internal class AdminRegistrationViewModel(
     }
 
     private fun register() {
-        val draft = currentState.draft ?: return
+        val draft = currentState.draft
+        if (draft == null) {
+            showToast(Res.string.admin_registration_draft_required)
+            return
+        }
         launchTask(
             taskKey = SUBMIT_TASK_KEY,
             policy = TaskPolicy.IgnoreNew,
@@ -282,11 +333,61 @@ internal class AdminRegistrationViewModel(
             try {
                 dataSource.register(draft, currentState.isOperatingNotice, currentState.selectedEventType)
                 reduce { copy(draft = null, message = AdminRegistrationMessage.SUCCESS) }
+                showToast(Res.string.admin_registration_success, ToastType.SUCCESS)
             } catch (_: Throwable) {
-                reduce { copy(message = AdminRegistrationMessage.FAILED) }
+                showToast(Res.string.admin_registration_register_failure)
             } finally {
                 reduce { copy(isSubmitting = false) }
             }
+        }
+    }
+
+    private fun registerImageOnly() {
+        val state = currentState
+        val startDate = state.selectedStartDate
+        val endDate = state.selectedEndDate
+        if (
+            state.shopName.isBlank() ||
+            state.imageOnlyTitle.isBlank() ||
+            startDate == null ||
+            (state.selectedEventType != ShopEventType.STORE_RENEWAL && endDate == null)
+        ) {
+            showToast(Res.string.admin_registration_image_only_required)
+            return
+        }
+        val evidence = state.evidence
+        if (evidence == null) {
+            showToast(Res.string.admin_registration_image_required)
+            return
+        }
+
+        launchTask(taskKey = SUBMIT_TASK_KEY, policy = TaskPolicy.IgnoreNew) {
+            reduce { copy(isSubmitting = true, message = null) }
+            try {
+                dataSource.registerImageOnly(
+                    shopName = state.shopName,
+                    title = state.imageOnlyTitle,
+                    eventType = state.selectedEventType,
+                    startDate = startDate,
+                    endDate = if (state.selectedEventType == ShopEventType.STORE_RENEWAL) null else endDate,
+                    evidence = evidence,
+                )
+                reduce { copy(imageOnlyTitle = "", evidence = null, message = AdminRegistrationMessage.SUCCESS) }
+                showToast(Res.string.admin_registration_success, ToastType.SUCCESS)
+            } catch (_: Throwable) {
+                showToast(Res.string.admin_registration_register_failure)
+            } finally {
+                reduce { copy(isSubmitting = false) }
+            }
+        }
+    }
+
+    private fun showToast(
+        message: StringResource,
+        type: ToastType = ToastType.ERROR,
+    ) {
+        viewModelScope.launch {
+            trySideEffect(AdminRegistrationSideEffect.ShowToast(ToastData(message, type)))
         }
     }
 

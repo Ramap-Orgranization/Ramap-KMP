@@ -412,4 +412,18 @@
     <string name="ranking_area_gangwon">강원특별자치도</string>
     <string name="ranking_area_jeonbuk">전북특별자치도</string>
     <string name="ranking_area_jeju">제주특별자치도</string>
+    <!-- 관리자 등록 -->
+    <string name="admin_registration_shop_names_load_failure">매장 목록을 불러오지 못했어요.</string>
+    <string name="admin_registration_managed_events_load_failure">관리할 이벤트를 불러오지 못했어요.</string>
+    <string name="admin_registration_preview_required">URL 또는 캡처 이미지를 입력해 주세요.</string>
+    <string name="admin_registration_preview_failure">미리보기를 만들지 못했어요.</string>
+    <string name="admin_registration_draft_required">먼저 미리보기를 만들어 주세요.</string>
+    <string name="admin_registration_image_only_required">매장명, 제목, 날짜를 입력해 주세요.</string>
+    <string name="admin_registration_image_required">캡처 이미지를 선택해 주세요.</string>
+    <string name="admin_registration_success">등록했어요.</string>
+    <string name="admin_registration_register_failure">요청을 처리하지 못했어요.</string>
+    <string name="admin_event_status_event_required">이벤트를 선택해 주세요.</string>
+    <string name="admin_event_status_reason_required">취소 사유를 입력해 주세요.</string>
+    <string name="admin_event_status_period_required">적용 기간을 선택해 주세요.</string>
+    <string name="admin_event_status_save_failure">이벤트 상태를 저장하지 못했어요.</string>
 </resources>

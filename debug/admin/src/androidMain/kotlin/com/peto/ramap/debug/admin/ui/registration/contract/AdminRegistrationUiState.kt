@@ -15,6 +15,8 @@ internal data class AdminRegistrationUiState(
     val shopName: String = "",
     val sourceUrl: String = "",
     val feedback: String = "",
+    val isImageOnly: Boolean = false,
+    val imageOnlyTitle: String = "",
     val selectedStartDate: String? = null,
     val selectedEndDate: String? = null,
     val evidence: AdminEvidence? = null,
@@ -31,15 +33,3 @@ internal data class AdminRegistrationUiState(
     val isSavingEventStatus: Boolean = false,
     val selectedTab: AdminRegistrationTab = AdminRegistrationTab.EVENT_MANAGEMENT,
 ) : State
-
-internal enum class AdminRegistrationMessage {
-    REQUIRED,
-    FAILED,
-    SUCCESS,
-}
-
-internal enum class AdminEventStatus { SOLD_OUT, CANCELLED }
-
-internal enum class AdminEventStatusScope { TODAY, ENTIRE_PERIOD, CUSTOM_PERIOD }
-
-internal enum class AdminRegistrationTab { EVENT_MANAGEMENT, EVENT_REGISTRATION, OPERATING_NOTICE }

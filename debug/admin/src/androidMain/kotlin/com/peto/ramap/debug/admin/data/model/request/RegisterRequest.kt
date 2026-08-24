@@ -17,4 +17,5 @@ internal data class RegisterRequest(
     @SerialName("notice_type") val noticeType: String?,
     @SerialName("start_time") val startTime: String?,
     @SerialName("end_time") val endTime: String?,
+    @SerialName("image_only") val imageOnly: Boolean = false,
 )

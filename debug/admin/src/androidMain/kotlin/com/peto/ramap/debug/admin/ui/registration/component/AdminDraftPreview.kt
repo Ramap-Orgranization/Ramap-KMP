@@ -53,20 +53,7 @@ internal fun AdminDraftPreview(
             style = AppTextStyle.B1,
             color = GrayColor.C400,
         )
-        OutlinedTextField(
-            value = draft.title.orEmpty(),
-            onValueChange = onTitleChanged,
-            modifier = Modifier.fillMaxWidth(),
-            singleLine = true,
-            placeholder = {
-                Text(
-                    text = stringResource(R.string.admin_registration_title_placeholder),
-                    color = GrayColor.C200,
-                )
-            },
-            shape = RoundedCornerShape(10.dp),
-            colors = previewTextFieldColors(),
-        )
+        AdminTitleField(draft.title, onTitleChanged)
         PreviewRow(stringResource(R.string.admin_registration_shop), draft.shopName)
         PreviewRow(stringResource(R.string.admin_registration_source), draft.sourceUrl)
         PreviewRow(
@@ -108,6 +95,28 @@ internal fun AdminDraftPreview(
             )
         }
     }
+}
+
+@Composable
+internal fun AdminTitleField(
+    title: String?,
+    onTitleChanged: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    OutlinedTextField(
+        value = title.orEmpty(),
+        onValueChange = onTitleChanged,
+        modifier = modifier.fillMaxWidth(),
+        singleLine = true,
+        placeholder = {
+            Text(
+                text = stringResource(R.string.admin_registration_title_placeholder),
+                color = GrayColor.C200,
+            )
+        },
+        shape = RoundedCornerShape(10.dp),
+        colors = previewTextFieldColors(),
+    )
 }
 
 @Composable

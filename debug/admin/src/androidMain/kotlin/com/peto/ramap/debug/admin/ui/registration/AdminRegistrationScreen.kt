@@ -17,7 +17,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.peto.ramap.debug.admin.R
@@ -34,9 +33,9 @@ import com.peto.ramap.debug.admin.ui.registration.component.AdminNoticeTypeSelec
 import com.peto.ramap.debug.admin.ui.registration.component.AdminRegistrationDateRangeField
 import com.peto.ramap.debug.admin.ui.registration.component.AdminShopNameField
 import com.peto.ramap.debug.admin.ui.registration.component.AdminSourceField
+import com.peto.ramap.debug.admin.ui.registration.component.AdminTitleField
 import com.peto.ramap.debug.admin.ui.registration.contract.AdminEventStatus
 import com.peto.ramap.debug.admin.ui.registration.contract.AdminEventStatusScope
-import com.peto.ramap.debug.admin.ui.registration.contract.AdminRegistrationMessage
 import com.peto.ramap.debug.admin.ui.registration.contract.AdminRegistrationTab
 import com.peto.ramap.debug.admin.ui.registration.contract.AdminRegistrationUiState
 import com.peto.ramap.designsystem.button.AppButton
@@ -56,6 +55,8 @@ internal fun AdminRegistrationScreen(
     onShopNameChanged: (String) -> Unit,
     onSourceUrlChanged: (String) -> Unit,
     onFeedbackChanged: (String) -> Unit,
+    onImageOnlyRegistrationClick: () -> Unit,
+    onImageOnlyTitleChanged: (String) -> Unit,
     onDraftTitleChanged: (String) -> Unit,
     onDraftDescriptionChanged: (String) -> Unit,
     onEvidenceSelected: (AdminEvidence?) -> Unit,
@@ -157,18 +158,27 @@ internal fun AdminRegistrationScreen(
                     )
                 }
 
-                AdminFieldSection(label = stringResource(R.string.admin_registration_source)) {
-                    AdminSourceField(
-                        sourceUrl = uiState.sourceUrl,
-                        onSourceUrlChanged = onSourceUrlChanged,
-                    )
-                }
+                if (!uiState.isOperatingNotice && uiState.isImageOnly) {
+                    AdminFieldSection(label = stringResource(R.string.admin_registration_title_label)) {
+                        AdminTitleField(
+                            title = uiState.imageOnlyTitle,
+                            onTitleChanged = onImageOnlyTitleChanged,
+                        )
+                    }
+                } else {
+                    AdminFieldSection(label = stringResource(R.string.admin_registration_source)) {
+                        AdminSourceField(
+                            sourceUrl = uiState.sourceUrl,
+                            onSourceUrlChanged = onSourceUrlChanged,
+                        )
+                    }
 
-                AdminFieldSection(label = stringResource(R.string.admin_registration_feedback)) {
-                    AdminFeedbackField(
-                        feedback = uiState.feedback,
-                        onFeedbackChanged = onFeedbackChanged,
-                    )
+                    AdminFieldSection(label = stringResource(R.string.admin_registration_feedback)) {
+                        AdminFeedbackField(
+                            feedback = uiState.feedback,
+                            onFeedbackChanged = onFeedbackChanged,
+                        )
+                    }
                 }
 
                 AdminRegistrationDateRangeField(
@@ -187,13 +197,30 @@ internal fun AdminRegistrationScreen(
                     )
                 }
 
+                if (!uiState.isOperatingNotice && uiState.draft == null) {
+                    AppButton(
+                        text =
+                            stringResource(
+                                if (uiState.isImageOnly) {
+                                    R.string.admin_registration_url_mode
+                                } else {
+                                    R.string.admin_registration_image_only
+                                },
+                            ),
+                        onClick = onImageOnlyRegistrationClick,
+                        enabled = !uiState.isSubmitting,
+                        modifier = Modifier.fillMaxWidth(),
+                        backgroundColor = CommonColor.Black,
+                    )
+                }
+
                 AppButton(
                     text =
                         stringResource(
-                            if (uiState.draft == null) {
-                                R.string.admin_registration_preview
-                            } else {
+                            if (uiState.isImageOnly || uiState.draft != null) {
                                 R.string.admin_registration_register
+                            } else {
+                                R.string.admin_registration_preview
                             },
                         ),
                     onClick = onPreviewOrRegisterClick,
@@ -205,11 +232,10 @@ internal fun AdminRegistrationScreen(
 
                 uiState.message?.let { message ->
                     AppText(
-                        text = stringResource(message.resourceId()),
+                        text = stringResource(R.string.admin_registration_success),
                         style = AppTextStyle.B2,
-                        color = if (message == AdminRegistrationMessage.SUCCESS) SystemColor.Success else SystemColor.Warning,
+                        color = SystemColor.Success,
                         modifier = Modifier.fillMaxWidth(),
-                        textAlign = TextAlign.Center,
                     )
                 }
                 uiState.draft?.let { draft ->
@@ -223,13 +249,6 @@ internal fun AdminRegistrationScreen(
         }
     }
 }
-
-private fun AdminRegistrationMessage.resourceId(): Int =
-    when (this) {
-        AdminRegistrationMessage.REQUIRED -> R.string.admin_registration_required
-        AdminRegistrationMessage.FAILED -> R.string.admin_registration_failed
-        AdminRegistrationMessage.SUCCESS -> R.string.admin_registration_success
-    }
 
 private val SUPPORTED_MIME_TYPES = setOf("image/jpeg", "image/png")
 
@@ -252,6 +271,8 @@ private fun AdminRegistrationScreenPreview() {
             onShopNameChanged = {},
             onSourceUrlChanged = {},
             onFeedbackChanged = {},
+            onImageOnlyRegistrationClick = {},
+            onImageOnlyTitleChanged = {},
             onDraftTitleChanged = {},
             onDraftDescriptionChanged = {},
             onEvidenceSelected = {},
@@ -300,6 +321,8 @@ private fun AdminRegistrationScreenWithDraftPreview() {
             onShopNameChanged = {},
             onSourceUrlChanged = {},
             onFeedbackChanged = {},
+            onImageOnlyRegistrationClick = {},
+            onImageOnlyTitleChanged = {},
             onDraftTitleChanged = {},
             onDraftDescriptionChanged = {},
             onEvidenceSelected = {},

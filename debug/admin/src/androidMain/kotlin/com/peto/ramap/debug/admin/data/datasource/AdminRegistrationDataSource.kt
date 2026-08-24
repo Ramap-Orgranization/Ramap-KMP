@@ -80,6 +80,40 @@ internal class AdminRegistrationDataSource(
         )
     }
 
+    suspend fun registerImageOnly(
+        shopName: String,
+        title: String,
+        eventType: ShopEventType,
+        startDate: String,
+        endDate: String?,
+        evidence: AdminEvidence,
+    ) {
+        val evidencePath = uploadEvidence(evidence)
+        try {
+            client.functions.invoke(
+                REGISTER_FUNCTION,
+                RegisterRequest(
+                    registrationType = "event",
+                    shopName = shopName,
+                    title = title,
+                    eventType = eventType.name.lowercase(),
+                    startDate = startDate,
+                    endDate = endDate,
+                    description = "",
+                    sourceUrl = "",
+                    evidencePath = evidencePath,
+                    noticeType = null,
+                    startTime = null,
+                    endTime = null,
+                    imageOnly = true,
+                ),
+            )
+        } catch (exception: Throwable) {
+            deleteEvidence(evidencePath)
+            throw exception
+        }
+    }
+
     suspend fun fetchManagedEvents(): List<AdminManagedEvent> =
         client.functions.invoke(EVENT_STATUS_FUNCTION, EventStatusRequest(action = "list")).body()
 

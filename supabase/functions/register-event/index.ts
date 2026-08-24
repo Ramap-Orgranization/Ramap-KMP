@@ -24,9 +24,15 @@ Deno.serve(async (request) => {
   const description = text(body?.description);
   const sourceUrl = normalizeInstagramUrl(text(body?.source_url));
   const evidencePath = text(body?.evidence_path);
-  if (!shopName || !title || !startDate || !description || !sourceUrl || !validDate(startDate) || !validDate(endDate) || !isInstagramUrl(sourceUrl)) {
+  const imageOnly = body?.image_only === true;
+  if (!shopName || !title || !startDate || !validDate(startDate) || !validDate(endDate)) {
     return json({ code: "invalid_draft" }, 400);
   }
+  if (imageOnly ? !isEvidencePath(evidencePath) : !description || !sourceUrl || !isInstagramUrl(sourceUrl)) {
+    return json({ code: "invalid_draft" }, 400);
+  }
+  const eventDescription = description ?? "";
+  const eventSourceUrl = sourceUrl ?? "";
   try {
     assertKnownEventType(eventType);
   } catch {
@@ -42,7 +48,7 @@ Deno.serve(async (request) => {
     .from("shop_events")
     .select("id")
     .eq("shop_id", shopId)
-    .eq("source_url", sourceUrl)
+    .eq("source_url", eventSourceUrl)
     .eq("title", title)
     .eq("start_date", startDate)
     .limit(1);
@@ -70,10 +76,10 @@ Deno.serve(async (request) => {
       id: eventId,
       shop_id: shopId,
       title,
-      description,
+      description: eventDescription,
       start_date: startDate,
       end_date: eventType === "store_renewal" ? null : endDate,
-      source_url: sourceUrl,
+      source_url: eventSourceUrl,
       event_type: eventType,
       image_paths: imagePath ? [imagePath] : [],
       cancelled_dates: [],
@@ -84,13 +90,14 @@ Deno.serve(async (request) => {
     return json({ id: eventId });
   } catch (error) {
     if (imagePath) await supabase.storage.from(EVENT_BUCKET).remove([imagePath]);
+    await deleteEvidence(supabase, evidencePath);
     console.error("register-event failed", error);
     return json({ code: "registration_failed" }, 422);
   }
 });
 
 async function deleteEvidence(supabase: ReturnType<typeof createServiceClient>, path: string | null) {
-  if (path && /^[\w-]+\.(?:jpe?g|png)$/i.test(path)) await supabase.storage.from(EVIDENCE_BUCKET).remove([path]);
+  if (isEvidencePath(path)) await supabase.storage.from(EVIDENCE_BUCKET).remove([path]);
 }
 
 async function registerOperatingNotice(
@@ -207,6 +214,7 @@ function isInstagramUrl(value: string) {
     return false;
   }
 }
+function isEvidencePath(value: string | null): value is string { return value !== null && /^[\w-]+\.(?:jpe?g|png)$/i.test(value); }
 function validDate(value: string | null) { return typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value); }
 function validTime(value: string | null) { return typeof value === "string" && /^([01]\d|2[0-3]):[0-5]\d$/.test(value); }
 function isSupportedNoticeType(value: string | null) { return value === "operating_notice" || value === "full_close" || value === "early_close" || value === "late_opening"; }

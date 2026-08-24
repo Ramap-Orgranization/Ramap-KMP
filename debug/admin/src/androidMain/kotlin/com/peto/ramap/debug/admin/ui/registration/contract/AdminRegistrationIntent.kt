@@ -30,6 +30,12 @@ internal sealed interface AdminRegistrationIntent : Intent {
         val value: String,
     ) : AdminRegistrationIntent
 
+    data object OnImageOnlyRegistrationClicked : AdminRegistrationIntent
+
+    data class OnImageOnlyTitleChanged(
+        val value: String,
+    ) : AdminRegistrationIntent
+
     data class OnDraftTitleChanged(
         val value: String,
     ) : AdminRegistrationIntent
