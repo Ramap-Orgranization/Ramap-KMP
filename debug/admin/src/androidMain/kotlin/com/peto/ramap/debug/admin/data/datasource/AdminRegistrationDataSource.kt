@@ -1,0 +1,117 @@
+package com.peto.ramap.debug.admin.data.datasource
+
+import com.peto.ramap.debug.admin.data.model.AdminDraft
+import com.peto.ramap.debug.admin.data.model.AdminEvidence
+import com.peto.ramap.debug.admin.data.model.AdminManagedEvent
+import com.peto.ramap.debug.admin.data.model.AdminShopName
+import com.peto.ramap.debug.admin.data.model.request.EventStatusRequest
+import com.peto.ramap.debug.admin.data.model.request.PreviewRequest
+import com.peto.ramap.debug.admin.data.model.request.RegisterRequest
+import io.github.jan.supabase.SupabaseClient
+import io.github.jan.supabase.functions.functions
+import io.github.jan.supabase.postgrest.from
+import io.github.jan.supabase.postgrest.query.Columns
+import io.github.jan.supabase.storage.storage
+import io.ktor.client.call.body
+import io.ktor.http.ContentType
+import kotlin.uuid.Uuid
+
+internal class AdminRegistrationDataSource(
+    private val client: SupabaseClient,
+) {
+    suspend fun fetchShopNames(): List<String> =
+        client
+            .from(SHOPS_TABLE)
+            .select(columns = Columns.list(SHOP_NAME_COLUMN))
+            .decodeList<AdminShopName>()
+            .map(AdminShopName::name)
+            .filter(String::isNotBlank)
+            .distinct()
+            .sorted()
+
+    suspend fun preview(
+        shopName: String,
+        feedback: String,
+        sourceUrl: String,
+        evidence: AdminEvidence?,
+        isOperatingNotice: Boolean,
+    ): AdminDraft {
+        val evidencePath = if (evidence == null) null else uploadEvidence(evidence)
+        return try {
+            client.functions
+                .invoke(
+                    PREVIEW_FUNCTION,
+                    PreviewRequest(
+                        registrationType = if (isOperatingNotice) "operating_notice" else "event",
+                        shopName = shopName.ifBlank { null },
+                        feedback = feedback.ifBlank { null },
+                        sourceUrl = sourceUrl.ifBlank { null },
+                        evidencePath = evidencePath,
+                    ),
+                ).body<AdminDraft>()
+        } catch (exception: Throwable) {
+            if (evidencePath != null) deleteEvidence(evidencePath)
+            throw exception
+        }
+    }
+
+    suspend fun register(
+        draft: AdminDraft,
+        isOperatingNotice: Boolean,
+    ) {
+        client.functions.invoke(
+            REGISTER_FUNCTION,
+            RegisterRequest(
+                registrationType = if (isOperatingNotice) "operating_notice" else "event",
+                shopName = draft.shopName.orEmpty(),
+                title = draft.title.orEmpty(),
+                startDate = draft.startDate.orEmpty(),
+                endDate = draft.endDate,
+                description = draft.description.orEmpty(),
+                sourceUrl = draft.sourceUrl.orEmpty(),
+                evidencePath = draft.evidencePath,
+                noticeType = draft.noticeType,
+                startTime = draft.startTime,
+                endTime = draft.endTime,
+            ),
+        )
+    }
+
+    suspend fun fetchManagedEvents(): List<AdminManagedEvent> =
+        client.functions.invoke(EVENT_STATUS_FUNCTION, EventStatusRequest(action = "list")).body()
+
+    suspend fun saveEventStatus(
+        eventId: String,
+        status: String,
+        scope: String,
+        reason: String?,
+        startDate: String?,
+        endDate: String?,
+    ) {
+        client.functions.invoke(
+            EVENT_STATUS_FUNCTION,
+            EventStatusRequest("update", eventId, status, scope, reason, startDate, endDate),
+        )
+    }
+
+    private suspend fun uploadEvidence(evidence: AdminEvidence): String {
+        val path = "${Uuid.random()}.${if (evidence.mimeType == "image/png") "png" else "jpg"}"
+        client.storage.from(EVIDENCE_BUCKET).upload(path, evidence.bytes) {
+            contentType = ContentType.parse(evidence.mimeType)
+        }
+        return path
+    }
+
+    private suspend fun deleteEvidence(path: String) {
+        client.storage.from(EVIDENCE_BUCKET).delete(path)
+    }
+
+    private companion object {
+        const val SHOPS_TABLE = "shops"
+        const val SHOP_NAME_COLUMN = "name"
+        const val EVIDENCE_BUCKET = "news-report-evidence"
+        const val PREVIEW_FUNCTION = "preview-event"
+        const val REGISTER_FUNCTION = "register-event"
+        const val EVENT_STATUS_FUNCTION = "admin-event-status"
+    }
+}
