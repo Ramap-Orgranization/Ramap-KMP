@@ -23,6 +23,8 @@ import com.peto.ramap.theme.RamapTheme
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
+import ramap.shared.generated.resources.event_registration_open
+import ramap.shared.generated.resources.ic_add
 import ramap.shared.generated.resources.ic_report
 import ramap.shared.generated.resources.news_report_open
 
@@ -31,6 +33,7 @@ internal fun EventFilters(
     selectedFilter: EventFilter,
     onFilterSelected: (EventFilter) -> Unit,
     onClickNewsReport: () -> Unit,
+    onClickAdminRegistration: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     Row(
@@ -63,6 +66,16 @@ internal fun EventFilters(
                     .size(25.dp)
                     .noRippleClickable { onClickNewsReport() },
         )
+        if (onClickAdminRegistration != null) {
+            Image(
+                painter = painterResource(Res.drawable.ic_add),
+                contentDescription = stringResource(Res.string.event_registration_open),
+                modifier =
+                    Modifier
+                        .size(25.dp)
+                        .noRippleClickable(onClick = onClickAdminRegistration),
+            )
+        }
     }
 }
 

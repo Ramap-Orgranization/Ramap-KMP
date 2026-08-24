@@ -45,6 +45,7 @@ import com.peto.ramap.ui.main.event.list.component.eventSection
 import com.peto.ramap.ui.main.event.list.contract.EventsIntent
 import com.peto.ramap.ui.main.event.list.contract.EventsSideEffect
 import com.peto.ramap.ui.main.event.list.contract.EventsUiState
+import com.peto.ramap.ui.main.event.list.platform.rememberAdminRegistrationAction
 import com.peto.ramap.ui.main.event.list.platform.rememberNewsReportImagePicker
 import com.peto.ramap.ui.main.event.list.preview.EventsPreviewParameterProvider
 import org.jetbrains.compose.resources.painterResource
@@ -71,6 +72,7 @@ fun EventsRoute(
     viewModel: EventsViewModel = koinViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val adminRegistrationAction = rememberAdminRegistrationAction()
     val imagePicker =
         rememberNewsReportImagePicker { evidence ->
             viewModel.dispatch(EventsIntent.OnNewsReportEvidenceSelected(evidence))
@@ -96,6 +98,7 @@ fun EventsRoute(
         onNewsReportEvidenceRemoved = { viewModel.dispatch(EventsIntent.OnNewsReportEvidenceRemoved) },
         onNewsReportSubmit = { viewModel.dispatch(EventsIntent.OnNewsReportSubmit) },
         onNewsReportDismiss = { viewModel.dispatch(EventsIntent.OnNewsReportDismissed) },
+        onClickAdminRegistration = adminRegistrationAction,
     )
 }
 
@@ -113,6 +116,7 @@ internal fun EventsScreen(
     onNewsReportEvidenceRemoved: () -> Unit,
     onNewsReportSubmit: () -> Unit,
     onNewsReportDismiss: () -> Unit,
+    onClickAdminRegistration: (() -> Unit)?,
 ) {
     var selectedEventGroup by remember { mutableStateOf<ShopEvents?>(null) }
     val pullToRefreshState = rememberPullToRefreshState()
@@ -179,6 +183,7 @@ internal fun EventsScreen(
                                     selectedFilter = uiState.selectedFilter,
                                     onFilterSelected = onFilterSelected,
                                     onClickNewsReport = onClickNewsReport,
+                                    onClickAdminRegistration = onClickAdminRegistration,
                                     modifier = Modifier.padding(top = 5.dp),
                                 )
                             }
@@ -289,6 +294,7 @@ private fun EventsRoutePreview(
             onNewsReportEvidenceRemoved = {},
             onNewsReportSubmit = {},
             onNewsReportDismiss = {},
+            onClickAdminRegistration = null,
         )
     }
 }
