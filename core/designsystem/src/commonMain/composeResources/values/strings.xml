@@ -86,6 +86,7 @@
     <string name="event_filter_new_menu">신메뉴</string>
     <string name="event_filter_store_renewal">리뉴얼</string>
     <string name="news_report_open">새소식 제보하기</string>
+    <string name="event_registration_open">관리자 등록</string>
     <string name="news_report_title">새소식 제보</string>
     <string name="news_report_description">인스타그램 게시물 링크 또는 스토리 캡처를 보내주세요</string>
     <string name="news_report_placeholder">인스타그램 게시물 링크</string>

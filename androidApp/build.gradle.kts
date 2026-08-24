@@ -81,6 +81,7 @@ dependencies {
     implementation(libs.kermit)
 
     implementation(libs.compose.ui.tooling.preview)
+    debugImplementation(projects.debug.admin)
     debugImplementation(libs.compose.ui.tooling)
 }
 
