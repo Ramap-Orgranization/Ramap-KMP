@@ -1,0 +1,22 @@
+#!/bin/sh
+
+source_root=$(git config --get ramap.configSourceRoot)
+target_root=$(git rev-parse --show-toplevel)
+
+[ -n "$source_root" ] && [ "$source_root" != "$target_root" ] || exit 0
+
+for config_file in \
+    local.properties \
+    androidApp/google-services.json \
+    androidApp/src/debug/google-services.json \
+    iosApp/iosApp/GoogleService-Info.plist \
+    distribution/app-store/GoogleService-Info.plist \
+    distribution/firebase/google-services.json
+do
+    source_file="$source_root/$config_file"
+    target_file="$target_root/$config_file"
+
+    [ -f "$source_file" ] && [ ! -e "$target_file" ] && [ ! -L "$target_file" ] || continue
+    mkdir -p "$(dirname "$target_file")"
+    ln -s "$source_file" "$target_file"
+done
