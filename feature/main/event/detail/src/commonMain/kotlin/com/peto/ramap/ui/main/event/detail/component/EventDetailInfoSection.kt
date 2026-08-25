@@ -186,7 +186,7 @@ private fun VenueShopInfo(
                 }
                 AppText(
                     text = shop.address,
-                    style = AppTextStyle.C2,
+                    style = AppTextStyle.B4,
                     color = GrayColor.C300,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
