@@ -102,11 +102,14 @@ internal class DefaultRamenShopRepository(
 
     private fun toDomain(response: ShopEventResponse): ShopEvent {
         val event = response.toDomain()
-        if (event.type != ShopEventType.STORE_RENEWAL) return event
         val today = today()
+        val isStartDateToday = event.startDate == today.toString()
+        if (event.type != ShopEventType.STORE_RENEWAL) {
+            return event.copy(isStartDateToday = isStartDateToday)
+        }
         return event.copy(
             isToday = isRenewalOngoingOn(event.startDate, today),
-            isStartDateToday = event.startDate == today.toString(),
+            isStartDateToday = isStartDateToday,
         )
     }
 

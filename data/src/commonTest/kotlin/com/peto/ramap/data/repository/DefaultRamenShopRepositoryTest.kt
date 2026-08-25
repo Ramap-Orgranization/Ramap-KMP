@@ -114,6 +114,29 @@ class DefaultRamenShopRepositoryTest {
         }
 
     @Test
+    fun `신메뉴도 시작일 여부를 오늘 기준으로 계산한다`() =
+        runTest {
+            val today = Clock.System.todayIn(TimeZone.of("Asia/Seoul"))
+            val repository =
+                DefaultRamenShopRepository(
+                    FakeRamenShopDataSource(
+                        activeEventsResponses =
+                            listOf(
+                                shopEventResponse(
+                                    id = "today-new-menu",
+                                    eventType = "new_menu",
+                                    startDate = today.toString(),
+                                ),
+                            ),
+                    ),
+                )
+
+            val event = repository.fetchActiveEvents().getOrThrow().single()
+
+            assertEquals(true, event.isStartDateToday)
+        }
+
+    @Test
     fun `종료된 이벤트도 캘린더 이벤트 조회와 상세 조회에 포함한다`() =
         runTest {
             val repository =

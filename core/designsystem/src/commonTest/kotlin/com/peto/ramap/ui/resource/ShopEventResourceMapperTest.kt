@@ -9,17 +9,26 @@ import com.peto.ramap.domain.model.shop.MenuCategories
 import com.peto.ramap.domain.model.shop.RamenShop
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.event_cancelled_notice
+import ramap.shared.generated.resources.event_date_event
+import ramap.shared.generated.resources.event_date_new_menu
+import ramap.shared.generated.resources.event_date_store_renewal
+import ramap.shared.generated.resources.event_detail_new_menu_title
+import ramap.shared.generated.resources.event_detail_store_renewal_title
+import ramap.shared.generated.resources.event_detail_title
+import ramap.shared.generated.resources.event_new_menu_venue
 import ramap.shared.generated.resources.event_sold_out_notice
 import ramap.shared.generated.resources.event_status_cancelled
 import ramap.shared.generated.resources.event_status_sold_out
 import ramap.shared.generated.resources.event_status_today
 import ramap.shared.generated.resources.event_status_upcoming
+import ramap.shared.generated.resources.event_store_renewal_venue
 import ramap.shared.generated.resources.event_type_collab
 import ramap.shared.generated.resources.event_type_limited_menu
 import ramap.shared.generated.resources.event_type_new_menu
 import ramap.shared.generated.resources.event_type_popup
 import ramap.shared.generated.resources.event_type_store_renewal
 import ramap.shared.generated.resources.event_type_summer_limited
+import ramap.shared.generated.resources.event_venue
 import ramap.shared.generated.resources.shop_event_notice_collab_participant_today
 import ramap.shared.generated.resources.shop_event_notice_collab_upcoming_with_shop
 import ramap.shared.generated.resources.shop_event_notice_limited_menu_upcoming
@@ -32,9 +41,65 @@ import kotlin.test.assertEquals
 
 class ShopEventResourceMapperTest {
     @Test
+    fun `이벤트 타입에 맞는 상세 제목을 매핑한다`() {
+        assertEquals(Res.string.event_detail_title, ShopEventResourceMapper.detailTitle(ShopEventType.COLLAB))
+        assertEquals(
+            Res.string.event_detail_new_menu_title,
+            ShopEventResourceMapper.detailTitle(ShopEventType.NEW_MENU),
+        )
+        assertEquals(
+            Res.string.event_detail_store_renewal_title,
+            ShopEventResourceMapper.detailTitle(ShopEventType.STORE_RENEWAL),
+        )
+    }
+
+    @Test
+    fun `이벤트 타입에 맞는 장소 라벨을 매핑한다`() {
+        assertEquals(Res.string.event_venue, ShopEventResourceMapper.venueTitle(ShopEventType.COLLAB))
+        assertEquals(
+            Res.string.event_new_menu_venue,
+            ShopEventResourceMapper.venueTitle(ShopEventType.NEW_MENU),
+        )
+        assertEquals(
+            Res.string.event_store_renewal_venue,
+            ShopEventResourceMapper.venueTitle(ShopEventType.STORE_RENEWAL),
+        )
+    }
+
+    @Test
+    fun `이벤트 타입에 맞는 날짜 라벨을 매핑한다`() {
+        assertEquals(Res.string.event_date_event, ShopEventResourceMapper.dateTitle(ShopEventType.COLLAB))
+        assertEquals(Res.string.event_date_new_menu, ShopEventResourceMapper.dateTitle(ShopEventType.NEW_MENU))
+        assertEquals(
+            Res.string.event_date_store_renewal,
+            ShopEventResourceMapper.dateTitle(ShopEventType.STORE_RENEWAL),
+        )
+    }
+
+    @Test
     fun `이벤트 상태와 타입을 리소스로 매핑한다`() {
         assertEquals(Res.string.event_status_today, ShopEventResourceMapper.dateLabel(event(isToday = true)))
         assertEquals(Res.string.event_status_upcoming, ShopEventResourceMapper.dateLabel(event(isToday = false)))
+        assertEquals(
+            Res.string.event_status_today,
+            ShopEventResourceMapper.dateLabel(
+                event(type = ShopEventType.NEW_MENU, isToday = true, isStartDateToday = true),
+            ),
+        )
+        assertEquals(
+            Res.string.event_status_today,
+            ShopEventResourceMapper.dateLabel(
+                event(type = ShopEventType.STORE_RENEWAL, isToday = true, isStartDateToday = true),
+            ),
+        )
+        assertEquals(
+            null,
+            ShopEventResourceMapper.dateLabel(event(type = ShopEventType.NEW_MENU, isToday = true)),
+        )
+        assertEquals(
+            null,
+            ShopEventResourceMapper.dateLabel(event(type = ShopEventType.STORE_RENEWAL, isToday = true)),
+        )
         assertEquals(
             Res.string.event_status_cancelled,
             ShopEventResourceMapper.dateLabel(event(isToday = true, isCancelledToday = true)),
@@ -152,6 +217,12 @@ class ShopEventResourceMapperTest {
     fun `신메뉴 안내 문구와 타입을 매핑한다`() {
         assertEquals(
             UiText(Res.string.shop_event_notice_new_menu_today),
+            ShopEventResourceMapper.notice(
+                event(type = ShopEventType.NEW_MENU, isToday = true, isStartDateToday = true),
+            ),
+        )
+        assertEquals(
+            null,
             ShopEventResourceMapper.notice(
                 event(type = ShopEventType.NEW_MENU, isToday = true),
             ),

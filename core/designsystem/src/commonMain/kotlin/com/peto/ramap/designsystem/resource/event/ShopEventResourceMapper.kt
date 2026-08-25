@@ -8,17 +8,26 @@ import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.event_cancelled_notice
 import ramap.shared.generated.resources.event_collaborator_person
 import ramap.shared.generated.resources.event_collaborator_shop
+import ramap.shared.generated.resources.event_date_event
+import ramap.shared.generated.resources.event_date_new_menu
+import ramap.shared.generated.resources.event_date_store_renewal
+import ramap.shared.generated.resources.event_detail_new_menu_title
+import ramap.shared.generated.resources.event_detail_store_renewal_title
+import ramap.shared.generated.resources.event_detail_title
+import ramap.shared.generated.resources.event_new_menu_venue
 import ramap.shared.generated.resources.event_sold_out_notice
 import ramap.shared.generated.resources.event_status_cancelled
 import ramap.shared.generated.resources.event_status_sold_out
 import ramap.shared.generated.resources.event_status_today
 import ramap.shared.generated.resources.event_status_upcoming
+import ramap.shared.generated.resources.event_store_renewal_venue
 import ramap.shared.generated.resources.event_type_collab
 import ramap.shared.generated.resources.event_type_limited_menu
 import ramap.shared.generated.resources.event_type_new_menu
 import ramap.shared.generated.resources.event_type_popup
 import ramap.shared.generated.resources.event_type_store_renewal
 import ramap.shared.generated.resources.event_type_summer_limited
+import ramap.shared.generated.resources.event_venue
 import ramap.shared.generated.resources.shop_event_notice_collab_participant_today
 import ramap.shared.generated.resources.shop_event_notice_collab_participant_upcoming
 import ramap.shared.generated.resources.shop_event_notice_collab_today
@@ -36,8 +45,47 @@ import ramap.shared.generated.resources.shop_event_notice_store_renewal_today
 import ramap.shared.generated.resources.shop_event_notice_store_renewal_upcoming
 
 object ShopEventResourceMapper {
-    fun dateLabel(event: ShopEvent): StringResource =
-        statusLabel(event) ?: if (event.isToday) Res.string.event_status_today else Res.string.event_status_upcoming
+    fun detailTitle(type: ShopEventType): StringResource =
+        when (type) {
+            ShopEventType.COLLAB,
+            ShopEventType.POPUP,
+            ShopEventType.LIMITED_MENU,
+            ShopEventType.SUMMER_LIMITED,
+            -> Res.string.event_detail_title
+
+            ShopEventType.NEW_MENU -> Res.string.event_detail_new_menu_title
+            ShopEventType.STORE_RENEWAL -> Res.string.event_detail_store_renewal_title
+        }
+
+    fun venueTitle(type: ShopEventType): StringResource =
+        when (type) {
+            ShopEventType.COLLAB,
+            ShopEventType.POPUP,
+            ShopEventType.LIMITED_MENU,
+            ShopEventType.SUMMER_LIMITED,
+            -> Res.string.event_venue
+
+            ShopEventType.NEW_MENU -> Res.string.event_new_menu_venue
+            ShopEventType.STORE_RENEWAL -> Res.string.event_store_renewal_venue
+        }
+
+    fun dateTitle(type: ShopEventType): StringResource =
+        when (type) {
+            ShopEventType.COLLAB,
+            ShopEventType.POPUP,
+            ShopEventType.LIMITED_MENU,
+            ShopEventType.SUMMER_LIMITED,
+            -> Res.string.event_date_event
+
+            ShopEventType.NEW_MENU -> Res.string.event_date_new_menu
+            ShopEventType.STORE_RENEWAL -> Res.string.event_date_store_renewal
+        }
+
+    fun dateLabel(event: ShopEvent): StringResource? {
+        statusLabel(event)?.let { return it }
+        if (isStartDateBased(event.type) && event.isToday && !event.isStartDateToday) return null
+        return if (event.isToday) Res.string.event_status_today else Res.string.event_status_upcoming
+    }
 
     fun statusLabel(event: ShopEvent): StringResource? =
         statusLabel(
@@ -54,6 +102,8 @@ object ShopEventResourceMapper {
             isSoldOut -> Res.string.event_status_sold_out
             else -> null
         }
+
+    private fun isStartDateBased(type: ShopEventType): Boolean = type == ShopEventType.NEW_MENU || type == ShopEventType.STORE_RENEWAL
 
     fun typeLabel(type: ShopEventType): StringResource =
         when (type) {
@@ -79,7 +129,7 @@ object ShopEventResourceMapper {
         if (event.isSoldOutToday) {
             return UiText(Res.string.event_sold_out_notice)
         }
-        if (event.type == ShopEventType.STORE_RENEWAL && event.isToday && !event.isStartDateToday) return null
+        if (event.isToday && !event.isStartDateToday && isStartDateBased(event.type)) return null
         event.upcomingCollaborationPartnerName?.let { partnerName ->
             return UiText(
                 resource = Res.string.shop_event_notice_collab_upcoming_with_shop,
