@@ -10,7 +10,6 @@ import com.peto.ramap.domain.model.shop.WaitingSystem
 import com.peto.ramap.domain.usecase.ShopDetail
 import com.peto.ramap.ui.loading.LoadState
 import com.peto.ramap.ui.loading.LoadableState
-import com.peto.ramap.ui.main.map.config.DefaultMapConfig
 import com.peto.ramap.ui.main.map.model.CameraPosition
 import com.peto.ramap.ui.main.map.model.location.LocationFocusStatus
 import com.peto.ramap.ui.main.map.model.search.SearchResultGuide
@@ -50,7 +49,7 @@ data class MapUiState(
     /**
      * 현재 지도 카메라가 보고 있는 영역.
      */
-    val bounds: MapBounds = DefaultMapConfig.bounds,
+    val bounds: MapBounds = MapBounds(),
     val hasViewportLoadFailed: Boolean = false,
     /**
      * 현재 지도 영역(bounds) 기준 매장 조회가 진행 중인지 여부.

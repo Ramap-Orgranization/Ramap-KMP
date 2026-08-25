@@ -20,7 +20,6 @@ import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.ui.main.ShopLeafMarkerUpdater
 import com.peto.ramap.ui.main.map.config.CurrentLocationConfig
-import com.peto.ramap.ui.main.map.config.DefaultMapConfig
 import com.peto.ramap.ui.main.map.config.MapInteractionConfig
 import com.peto.ramap.ui.main.map.model.CameraPosition
 import kotlinx.cinterop.BetaInteropApi
@@ -76,12 +75,6 @@ internal class IosNaverMapController(
         mapView.addCameraDelegate(this)
         mapView.addLoadDelegate(this)
         locationManager?.addDelegate(this)
-        moveCamera(
-            NMFCameraUpdate.cameraUpdateWithScrollTo(
-                NMGLatLng.latLngWithLat(DefaultMapConfig.LATITUDE, DefaultMapConfig.LONGITUDE),
-                zoomTo = DefaultMapConfig.ZOOM_LEVEL.toDouble(),
-            ),
-        )
     }
 
     fun updateShops(shops: RamenShops) {

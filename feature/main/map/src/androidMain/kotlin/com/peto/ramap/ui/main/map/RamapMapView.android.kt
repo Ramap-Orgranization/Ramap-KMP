@@ -26,7 +26,6 @@ import com.naver.maps.map.CameraUpdate
 import com.naver.maps.map.LocationTrackingMode
 import com.naver.maps.map.MapView
 import com.naver.maps.map.NaverMap
-import com.naver.maps.map.OnMapReadyCallback
 import com.naver.maps.map.util.FusedLocationSource
 import com.peto.ramap.domain.model.shop.Location
 import com.peto.ramap.domain.model.shop.MapBounds
@@ -37,7 +36,6 @@ import com.peto.ramap.platform.permission.findActivity
 import com.peto.ramap.platform.permission.rememberLocationPermissionGenerator
 import com.peto.ramap.ui.main.map.component.LocationButton
 import com.peto.ramap.ui.main.map.config.CurrentLocationConfig
-import com.peto.ramap.ui.main.map.config.DefaultMapConfig
 import com.peto.ramap.ui.main.map.config.MapInteractionConfig
 import com.peto.ramap.ui.main.map.config.MarkerConfig
 import com.peto.ramap.ui.main.map.model.CameraPosition
@@ -46,6 +44,7 @@ import kotlinx.coroutines.delay
 import org.jetbrains.compose.resources.painterResource
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.marker_ramen
+import kotlin.time.Duration.Companion.milliseconds
 
 @Composable
 internal actual fun RamapMapView(
@@ -199,7 +198,7 @@ internal actual fun RamapMapView(
 
     LaunchedEffect(currentLocationRequestState) {
         if (!currentLocationRequestState.isLoading) return@LaunchedEffect
-        delay(CurrentLocationConfig.REQUEST_TIMEOUT_MILLIS)
+        delay(CurrentLocationConfig.REQUEST_TIMEOUT_MILLIS.milliseconds)
         if (!currentLocationRequestState.isLoading) return@LaunchedEffect
 
         shouldMoveToCurrentLocation = false
@@ -211,44 +210,41 @@ internal actual fun RamapMapView(
         AndroidView(
             modifier = Modifier.fillMaxSize(),
             factory = {
-                mapView.getMapAsync(
-                    OnMapReadyCallback { map ->
-                        map.minZoom = MapInteractionConfig.MAX_ZOOM_OUT_LEVEL.toDouble()
-                        map.locationSource = locationSource
-                        map.uiSettings.isCompassEnabled = false
-                        map.uiSettings.isLocationButtonEnabled = false
-                        map.uiSettings.isZoomControlEnabled = false
-                        map.addOnLocationChangeListener { location ->
-                            Location(location.latitude, location.longitude).let { current ->
-                                currentLocation = current
-                                onMyLocationChanged(current)
-                                if (shouldMoveToCurrentLocation) moveToCurrentLocation()
-                            }
+                mapView.getMapAsync { map ->
+                    map.minZoom = MapInteractionConfig.MAX_ZOOM_OUT_LEVEL.toDouble()
+                    map.locationSource = locationSource
+                    map.uiSettings.isCompassEnabled = false
+                    map.uiSettings.isLocationButtonEnabled = false
+                    map.uiSettings.isZoomControlEnabled = false
+                    map.addOnLocationChangeListener { location ->
+                        Location(location.latitude, location.longitude).let { current ->
+                            currentLocation = current
+                            onMyLocationChanged(current)
+                            if (shouldMoveToCurrentLocation) moveToCurrentLocation()
                         }
-                        map.addOnCameraChangeListener { _, _ ->
-                            if (!isCameraMoving) {
-                                isCameraMoving = true
-                                onMapMoveStarted()
-                            }
+                    }
+                    map.addOnCameraChangeListener { _, _ ->
+                        if (!isCameraMoving) {
+                            isCameraMoving = true
+                            onMapMoveStarted()
                         }
-                        map.addOnCameraIdleListener {
-                            isCameraMoving = false
-                            notifyBounds(map, onBoundsChanged)
-                            notifyCameraPosition(map, onCameraPositionChanged)
-                        }
-                        val initialCenter =
-                            cameraPosition?.center
-                                ?: Location(DefaultMapConfig.LATITUDE, DefaultMapConfig.LONGITUDE)
+                    }
+                    map.addOnCameraIdleListener {
+                        isCameraMoving = false
+                        notifyBounds(map, onBoundsChanged)
+                        notifyCameraPosition(map, onCameraPositionChanged)
+                    }
+                    cameraPosition?.let { position ->
                         map.moveCamera(
                             CameraUpdate.scrollAndZoomTo(
-                                LatLng(initialCenter.lat, initialCenter.lng),
-                                cameraPosition?.zoom ?: DefaultMapConfig.ZOOM_LEVEL.toDouble(),
+                                LatLng(position.center.lat, position.center.lng),
+                                position.zoom,
                             ),
                         )
-                        naverMap = map
-                        mapView.post { notifyBounds(map, onBoundsChanged) }
-                    },
-                )
+                    }
+                    naverMap = map
+                    mapView.post { notifyBounds(map, onBoundsChanged) }
+                }
                 mapView
             },
         )

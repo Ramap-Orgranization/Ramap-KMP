@@ -1,7 +1,6 @@
 package com.peto.ramap.ui.main.map
 
 import com.peto.ramap.ui.main.map.config.CurrentLocationConfig
-import com.peto.ramap.ui.main.map.config.DefaultMapConfig
 import com.peto.ramap.ui.main.map.model.location.CurrentLocationRequestState
 import kotlin.test.Test
 import kotlin.test.assertEquals

@@ -9,10 +9,10 @@ import kotlin.math.abs
  * 지도 이동이나 확대/축소가 실제 조회와 클러스터 갱신에 의미 있는 변화인지 판단한다.
  */
 data class MapBounds(
-    val minLat: Double,
-    val maxLat: Double,
-    val minLng: Double,
-    val maxLng: Double,
+    val minLat: Double = 0.0,
+    val maxLat: Double = 0.0,
+    val minLng: Double = 0.0,
+    val maxLng: Double = 0.0,
 ) {
     /** 현재 지도 영역의 중심 위도. */
     val centerLat: Double
