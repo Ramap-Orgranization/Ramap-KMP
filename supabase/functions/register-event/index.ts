@@ -3,6 +3,7 @@ import { assertKnownEventType, createServiceClient } from "../_shared/event-noti
 const EVIDENCE_BUCKET = "news-report-evidence";
 const EVENT_BUCKET = "event-images";
 const ADMIN_TIMEOUT_MS = 3_000;
+type Participant = { name: string; instagramUrl: string | null };
 
 Deno.serve(async (request) => {
   if (request.method !== "POST") return json({ code: "method_not_allowed" }, 405);
@@ -22,6 +23,7 @@ Deno.serve(async (request) => {
   const startDate = text(body?.start_date);
   const endDate = text(body?.end_date) ?? startDate;
   const description = text(body?.description);
+  const participants = parseParticipants(body?.participants);
   const sourceUrl = normalizeInstagramUrl(text(body?.source_url));
   const evidencePath = text(body?.evidence_path);
   const imageOnly = body?.image_only === true;
@@ -31,6 +33,7 @@ Deno.serve(async (request) => {
   if (imageOnly ? !isEvidencePath(evidencePath) : !description || !sourceUrl || !isInstagramUrl(sourceUrl)) {
     return json({ code: "invalid_draft" }, 400);
   }
+  if (!participants) return json({ code: "invalid_draft" }, 400);
   const eventDescription = description ?? "";
   const eventSourceUrl = sourceUrl ?? "";
   try {
@@ -60,6 +63,7 @@ Deno.serve(async (request) => {
 
   const eventId = crypto.randomUUID();
   let imagePath: string | null = null;
+  let eventCreated = false;
   try {
     if (evidencePath && /^[\w-]+\.(?:jpe?g|png)$/i.test(evidencePath)) {
       imagePath = `events/${eventId}/1.${evidencePath.split(".").pop()!.toLowerCase()}`;
@@ -86,9 +90,15 @@ Deno.serve(async (request) => {
       sold_out_dates: [],
     });
     if (insertError) throw insertError;
+    eventCreated = true;
+    await saveParticipants(supabase, eventId, shopId, participants);
     await deleteEvidence(supabase, evidencePath);
     return json({ id: eventId });
   } catch (error) {
+    if (eventCreated) {
+      await supabase.from("shop_event_participants").delete().eq("event_id", eventId);
+      await supabase.from("shop_events").delete().eq("id", eventId);
+    }
     if (imagePath) await supabase.storage.from(EVENT_BUCKET).remove([imagePath]);
     await deleteEvidence(supabase, evidencePath);
     console.error("register-event failed", error);
@@ -98,6 +108,65 @@ Deno.serve(async (request) => {
 
 async function deleteEvidence(supabase: ReturnType<typeof createServiceClient>, path: string | null) {
   if (isEvidencePath(path)) await supabase.storage.from(EVIDENCE_BUCKET).remove([path]);
+}
+
+function parseParticipants(value: unknown): Participant[] | null {
+  if (value === undefined) return [];
+  if (!Array.isArray(value)) return null;
+  const participants: Participant[] = [];
+  const names = new Set<string>();
+  const instagramUrls = new Set<string>();
+  for (const item of value) {
+    if (!item || typeof item !== "object" || Array.isArray(item)) return null;
+    const name = text((item as Record<string, unknown>).name);
+    const instagramUrl = normalizeInstagramProfileUrl((item as Record<string, unknown>).instagram_url);
+    if (!name || ((item as Record<string, unknown>).instagram_url !== null && !instagramUrl)) return null;
+    const nameKey = name.toLowerCase();
+    if (names.has(nameKey) || (instagramUrl && instagramUrls.has(instagramUrl))) continue;
+    names.add(nameKey);
+    if (instagramUrl) instagramUrls.add(instagramUrl);
+    participants.push({ name, instagramUrl });
+  }
+  return participants;
+}
+
+async function saveParticipants(
+  supabase: ReturnType<typeof createServiceClient>,
+  eventId: string,
+  hostShopId: string,
+  participants: Participant[],
+) {
+  const rows = [];
+  const shopIds = new Set<string>();
+  for (const participant of participants) {
+    const shopId = await resolveParticipantShop(supabase, participant);
+    if (shopId === hostShopId || (shopId && shopIds.has(shopId))) continue;
+    if (shopId) shopIds.add(shopId);
+    rows.push(shopId
+      ? { event_id: eventId, shop_id: shopId, external_name: null, external_instagram_url: null }
+      : { event_id: eventId, shop_id: null, external_name: participant.name, external_instagram_url: participant.instagramUrl });
+  }
+  if (rows.length === 0) return;
+  const { error } = await supabase.from("shop_event_participants").insert(rows);
+  if (error) throw error;
+}
+
+async function resolveParticipantShop(supabase: ReturnType<typeof createServiceClient>, participant: Participant) {
+  if (participant.instagramUrl) {
+    const handle = extractInstagramUsername(participant.instagramUrl);
+    const urls = handle ? [
+      `https://www.instagram.com/${handle}`,
+      `https://www.instagram.com/${handle}/`,
+      `https://instagram.com/${handle}`,
+      `https://instagram.com/${handle}/`,
+    ] : [];
+    const { data, error } = await supabase.from("shops").select("id").in("instagram_url", urls).limit(2);
+    if (error) throw error;
+    if (data?.length === 1) return data[0].id as string;
+  }
+  const { data, error } = await supabase.from("shops").select("id").eq("name", participant.name).limit(2);
+  if (error) throw error;
+  return data?.length === 1 ? data[0].id as string : null;
 }
 
 async function registerOperatingNotice(
@@ -226,6 +295,13 @@ function normalizeInstagramUrl(value: string | null) {
   const profileMatch = value.match(/https?:\/\/(?:www\.)?instagram\.com\/([^/?#\s\]"']+)/i);
   if (!profileMatch || ["p", "reel"].includes(profileMatch[1].toLowerCase())) return null;
   return `https://www.instagram.com/${profileMatch[1]}/`;
+}
+function normalizeInstagramProfileUrl(value: unknown) {
+  if (value === null) return null;
+  if (typeof value !== "string") return null;
+  const match = value.trim().match(/^https?:\/\/(?:www\.)?instagram\.com\/([^/?#\s\]"']+)\/?(?:[?#].*)?$/i);
+  if (!match || ["p", "reel"].includes(match[1].toLowerCase())) return null;
+  return `https://www.instagram.com/${match[1]}/`;
 }
 function extractInstagramUsername(value: string | null | undefined) {
   return value?.match(/instagram\.com\/([^/?#]+)/i)?.[1]?.toLowerCase() ?? null;

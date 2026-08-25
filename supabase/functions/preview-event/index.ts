@@ -12,6 +12,8 @@ const EVENT_EXTRACTION_PROMPT =
   "날짜는 YYYY-MM-DD로 변환하고, 상대 날짜는 게시일이나 관찰일을 알 수 없으면 추측하지 마세요. " +
   "명확한 하루 일정만 start_date와 end_date를 같은 날짜로 반환하세요. " +
   "store_renewal은 end_date를 null로 반환하세요. 그 외 날짜가 불명확하거나 누락되면 null과 한국어 uncertainties를 반환하세요. " +
+  "event_type은 collab, popup, limited_menu, summer_limited, new_menu, store_renewal 중 하나를 반환하세요. 명시적으로 다른 매장·브랜드·셰프 등과 함께하는 콜라보 문맥일 때만 collab을 선택하세요. " +
+  "participants에는 원문에서 이벤트 참여 또는 콜라보가 명시된 주체만 반환하세요. 각 항목은 name과 canonical Instagram 프로필 URL(알 수 없으면 null)을 가지며, 단순 재료·면·식자재 공급자나 납품업체는 참여자로 반환하지 마세요. " +
   "매장명은 계정명으로 추측하지 말고 실제 매장명이 원문에 명시된 경우에만 반환하세요. " +
   "관리자 피드백은 원문 사실을 더 정확히 반영하기 위한 수정 지시로만 사용하고 새로운 사실의 근거로 사용하지 마세요.";
 const OPERATING_NOTICE_EXTRACTION_PROMPT =
@@ -22,6 +24,7 @@ const OPERATING_NOTICE_EXTRACTION_PROMPT =
   "title은 null로 반환하세요. 날짜는 YYYY-MM-DD, 시간은 HH:mm으로 변환하세요. " +
   "오늘·내일 같은 상대 날짜는 게시일이나 관찰일을 알 수 없으면 추측하지 마세요. " +
   "종료일이 원문에 없으면 end_date를 null로 반환하고 uncertainties에 적으세요. " +
+  "event_type은 null, participants는 빈 배열로 반환하세요. " +
   "매장명은 계정명으로 추측하지 말고 실제 매장명이 원문에 명시된 경우에만 반환하세요. " +
   "관리자 피드백은 원문 사실을 더 정확히 반영하기 위한 수정 지시로만 사용하고 새로운 사실의 근거로 사용하지 마세요.";
 
@@ -32,11 +35,14 @@ type EventDraft = {
   start_date: string | null;
   end_date: string | null;
   description: string | null;
+  event_type: string | null;
+  participants: EventParticipant[];
   uncertainties: string[];
   notice_type: string | null;
   start_time: string | null;
   end_time: string | null;
 };
+type EventParticipant = { name: string; instagram_url: string | null };
 type InstagramCaption = { cleanText: string; handle: string | null; isExact: boolean };
 
 Deno.serve(async (request) => {
@@ -62,9 +68,16 @@ Deno.serve(async (request) => {
     const caption = sourceUrl ? await fetchInstagramCaption(sourceUrl) : null;
     const draft = await analyze(apiKey, registrationType, caption?.cleanText ?? null, imageUrl, feedback);
     if (caption?.isExact) draft.description = caption.cleanText;
-    if (registrationType === "operating_notice" && !isSupportedNoticeType(draft.notice_type)) {
-      draft.notice_type = null;
-      draft.uncertainties.push("영업 변동 유형을 확인하지 못했습니다.");
+    if (registrationType === "operating_notice") {
+      draft.event_type = null;
+      draft.participants = [];
+      if (!isSupportedNoticeType(draft.notice_type)) {
+        draft.notice_type = null;
+        draft.uncertainties.push("영업 변동 유형을 확인하지 못했습니다.");
+      }
+    } else if (!isSupportedEventType(draft.event_type)) {
+      draft.event_type = "limited_menu";
+      draft.uncertainties.push("이벤트 유형을 확인하지 못해 한정 메뉴로 분류했습니다.");
     }
     const resolvedShop = await resolveShop(supabase, caption?.handle, [requestedShopName, draft.shop_name]);
     if (resolvedShop) {
@@ -111,7 +124,7 @@ async function analyze(
           role: "system",
           content: registrationType === "operating_notice"
             ? "라멘 매장의 영업 변동 공지 초안을 추출하세요. 입력에 없는 사실은 절대 만들지 마세요. 관리자 피드백은 입력 사실을 더 정확히 반영하기 위한 수정 지시로만 사용하고, 새로운 사실을 추측하는 근거로 사용하지 마세요. notice_type은 operating_notice(일반 영업 변동), full_close(휴무), early_close(조기 마감), late_opening(오픈 지연) 중 하나만 선택하세요. title은 null로 반환하세요. description은 입력 캡션의 사실만 사용하고 홍보 문구로 바꾸지 마세요. 날짜는 YYYY-MM-DD, 시간은 HH:mm으로 변환합니다. 하루만 언급된 공지는 end_date를 start_date와 동일하게 반환하세요. 날짜·시간·유형이 확실하지 않으면 uncertainties에 한국어로 적습니다. 매장명은 계정명이 아니라 실제 매장명으로 추측하지 말고 null을 반환하세요."
-            : "라멘 매장의 이벤트 등록 초안을 추출하세요. 입력에 없는 사실은 절대 만들지 마세요. 관리자 피드백은 입력 사실을 더 정확히 반영하기 위한 수정 지시로만 사용하고, 새로운 사실을 추측하는 근거로 사용하지 마세요. title은 원문에 명시된 이벤트명이나 메뉴명만 짧게 적고, 원문에 없으면 null을 반환하세요. 날짜·회식·메뉴·수량·운영 시간을 추측하거나 추가하지 마세요. description은 입력 캡션의 사실만 사용하고 홍보 문구로 바꾸지 마세요. 매장명은 계정명이 아니라 실제 매장명으로 추측하지 말고 null을 반환하세요. 날짜는 YYYY-MM-DD로 변환합니다. 확실하지 않거나 누락된 필드는 uncertainties에 한국어로 적습니다.",
+            : "라멘 매장의 이벤트 등록 초안을 추출하세요. 입력에 없는 사실은 절대 만들지 마세요. 관리자 피드백은 입력 사실을 더 정확히 반영하기 위한 수정 지시로만 사용하고, 새로운 사실을 추측하는 근거로 사용하지 마세요. title은 원문에 명시된 이벤트명이나 메뉴명만 짧게 적고, 원문에 없으면 null을 반환하세요. event_type은 collab, popup, limited_menu, summer_limited, new_menu, store_renewal 중 하나입니다. 다른 매장·브랜드·셰프 등이 이벤트에 함께 참여하거나 콜라보한다고 명시된 경우에만 collab을 선택하세요. participants에는 원문에서 이벤트 참여 또는 콜라보가 명시된 주체만 넣고, 각 항목에 name과 canonical Instagram 프로필 URL(알 수 없으면 null)을 넣으세요. 단순 재료·면·식자재 공급자나 납품업체는 참여자가 아닙니다. 날짜·회식·메뉴·수량·운영 시간을 추측하거나 추가하지 마세요. description은 입력 캡션의 사실만 사용하고 홍보 문구로 바꾸지 마세요. 매장명은 계정명이 아니라 실제 매장명으로 추측하지 말고 null을 반환하세요. 날짜는 YYYY-MM-DD로 변환합니다. 확실하지 않거나 누락된 필드는 uncertainties에 한국어로 적습니다.",
         },
         {
           role: "system",
@@ -135,12 +148,25 @@ async function analyze(
               start_date: { type: ["string", "null"] },
               end_date: { type: ["string", "null"] },
               description: { type: ["string", "null"] },
+              event_type: { type: ["string", "null"] },
+              participants: {
+                type: "array",
+                items: {
+                  type: "object",
+                  additionalProperties: false,
+                  properties: {
+                    name: { type: "string" },
+                    instagram_url: { type: ["string", "null"] },
+                  },
+                  required: ["name", "instagram_url"],
+                },
+              },
               notice_type: { type: ["string", "null"] },
               start_time: { type: ["string", "null"] },
               end_time: { type: ["string", "null"] },
               uncertainties: { type: "array", items: { type: "string" } },
             },
-            required: ["shop_name", "title", "start_date", "end_date", "description", "notice_type", "start_time", "end_time", "uncertainties"],
+            required: ["shop_name", "title", "start_date", "end_date", "description", "event_type", "participants", "notice_type", "start_time", "end_time", "uncertainties"],
           },
         },
       },
@@ -157,6 +183,13 @@ async function analyze(
     start_date: validDate(draft.start_date) ? draft.start_date : null,
     end_date: validDate(draft.end_date) ? draft.end_date : null,
     description: text(draft.description),
+    event_type: text(draft.event_type),
+    participants: Array.isArray(draft.participants)
+      ? draft.participants.flatMap((participant) => {
+        const name = text(participant?.name);
+        return name ? [{ name, instagram_url: normalizeInstagramProfileUrl(text(participant?.instagram_url)) }] : [];
+      })
+      : [],
     notice_type: text(draft.notice_type),
     start_time: validTime(draft.start_time) ? draft.start_time : null,
     end_time: validTime(draft.end_time) ? draft.end_time : null,
@@ -247,12 +280,13 @@ function normalizeInstagramUrl(value: string | null) {
 }
 function normalizeInstagramProfileUrl(value: string | null) {
   if (!value) return null;
-  const match = value.match(/https?:\/\/(?:www\.)?instagram\.com\/([^/?#\s\]"']+)/i);
+  const match = value.match(/^https?:\/\/(?:www\.)?instagram\.com\/([^/?#\s\]"']+)\/?(?:[?#].*)?$/i);
   if (!match || ["p", "reel"].includes(match[1].toLowerCase())) return null;
   return `https://www.instagram.com/${match[1]}/`;
 }
 
 function isSupportedRegistrationType(value: string) { return value === "event" || value === "operating_notice"; }
+function isSupportedEventType(value: string | null) { return value === "collab" || value === "popup" || value === "limited_menu" || value === "summer_limited" || value === "new_menu" || value === "store_renewal"; }
 function isSupportedNoticeType(value: string | null) { return value === "operating_notice" || value === "full_close" || value === "early_close" || value === "late_opening"; }
 function validDate(value: string | null) { return typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value); }
 function validTime(value: string | null) { return typeof value === "string" && /^([01]\d|2[0-3]):[0-5]\d$/.test(value); }
