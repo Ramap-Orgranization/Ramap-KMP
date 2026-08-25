@@ -5,9 +5,9 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -17,20 +17,23 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
 import com.peto.ramap.designsystem.image.RemoteShopImage
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.domain.model.shop.Category
 import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.extension.noRippleClickable
+import com.peto.ramap.preview.RamenShopPreviewParameterProvider
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
+import com.peto.ramap.theme.RamapTheme
 import org.jetbrains.compose.resources.painterResource
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.ic_close
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun RamenShopSummary(
     shop: RamenShop,
@@ -41,18 +44,21 @@ fun RamenShopSummary(
     actionLabel: String? = null,
     onAction: (() -> Unit)? = null,
 ) {
+    val hasAction = actionLabel != null && onAction != null
+
     Box(
         modifier =
             modifier
                 .fillMaxWidth()
                 .noRippleClickable(onClick = onClick)
                 .background(CommonColor.White)
-                .padding(horizontal = 8.dp, vertical = 5.dp),
+                .padding(start = 8.dp, bottom = 5.dp),
     ) {
         Row(
             modifier =
                 Modifier
-                    .fillMaxWidth(),
+                    .fillMaxWidth()
+                    .padding(end = if (hasAction) 48.dp else 0.dp),
             horizontalArrangement = Arrangement.spacedBy(10.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -106,6 +112,7 @@ private fun BoxScope.RamenShopSummaryAction(
             modifier =
                 Modifier
                     .align(Alignment.TopEnd)
+                    .offset(x = 12.dp, y = (-12).dp)
                     .size(48.dp),
         ) {
             Icon(
@@ -115,5 +122,35 @@ private fun BoxScope.RamenShopSummaryAction(
                 tint = GrayColor.C400,
             )
         }
+    }
+}
+
+@Preview(showBackground = true, name = "Without Action")
+@Composable
+private fun RamenShopSummaryPreview(
+    @PreviewParameter(RamenShopPreviewParameterProvider::class) shop: RamenShop,
+) {
+    RamapTheme {
+        RamenShopSummary(
+            shop = shop,
+            onClick = {},
+            categoryLabel = { it.name },
+        )
+    }
+}
+
+@Preview(showBackground = true, name = "With Action")
+@Composable
+private fun RamenShopSummaryActionPreview(
+    @PreviewParameter(RamenShopPreviewParameterProvider::class) shop: RamenShop,
+) {
+    RamapTheme {
+        RamenShopSummary(
+            shop = shop,
+            onClick = {},
+            categoryLabel = { it.name },
+            actionLabel = "삭제",
+            onAction = {},
+        )
     }
 }

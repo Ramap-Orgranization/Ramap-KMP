@@ -29,7 +29,10 @@ fun ShopListCount(
         text = stringResource(Res.string.shop_list_count, count),
         style = AppTextStyle.B1,
         color = GrayColor.C500,
-        modifier = modifier.padding(horizontal = 24.dp, vertical = 8.dp),
+        modifier =
+            modifier
+                .padding(horizontal = 24.dp)
+                .padding(bottom = 8.dp),
     )
 }
 

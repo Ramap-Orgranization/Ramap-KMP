@@ -19,15 +19,19 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
 import com.peto.ramap.designsystem.badge.NewsBadge
 import com.peto.ramap.designsystem.image.RemoteShopImage
 import com.peto.ramap.designsystem.resource.event.ShopEventResourceMapper
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.domain.model.event.ShopEvent
+import com.peto.ramap.preview.ShopEventPreviewParameterProvider
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
+import com.peto.ramap.theme.RamapTheme
 import com.peto.ramap.theme.SystemColor
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
@@ -111,5 +115,46 @@ fun EventCard(
         )
         HorizontalDivider(thickness = 1.dp, color = GrayColor.C100)
         AppText(dateText, style = AppTextStyle.B4, color = GrayColor.C400)
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun EventCardPreview(
+    @PreviewParameter(ShopEventPreviewParameterProvider::class) event: ShopEvent,
+) {
+    RamapTheme {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            EventCard(
+                event = event,
+                dateText = "2026.08.12 ~ 2026.08.16",
+                onClick = {},
+            )
+
+            EventCard(
+                event = event,
+                dateText = "2026.08.12 ~ 2026.08.16",
+                isCancelled = true,
+                onClick = {},
+            )
+
+            EventCard(
+                event = event,
+                dateText = "2026.08.12 ~ 2026.08.16",
+                isSoldOut = true,
+                onClick = {},
+            )
+
+            EventCard(
+                event = event,
+                dateText = "2026.08.12 ~ 2026.08.16",
+                actionLabel = "삭제",
+                onAction = {},
+                onClick = {},
+            )
+        }
     }
 }
