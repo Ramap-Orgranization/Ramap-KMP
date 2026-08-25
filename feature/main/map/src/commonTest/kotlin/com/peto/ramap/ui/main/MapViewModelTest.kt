@@ -17,6 +17,7 @@ import com.peto.ramap.domain.model.report.ShopInformationField
 import com.peto.ramap.domain.model.report.ShopInformationReport
 import com.peto.ramap.domain.model.shop.Category
 import com.peto.ramap.domain.model.shop.Location
+import com.peto.ramap.domain.model.shop.MapBounds
 import com.peto.ramap.domain.model.shop.RamenShopFilter
 import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.domain.model.shop.SearchQuery
@@ -294,7 +295,7 @@ class MapViewModelTest {
             viewModel.uiState.test {
                 val initialState = awaitItem()
                 assertEquals(RamenShops(emptyMap()), initialState.shops)
-                assertEquals(DefaultMapConfig.bounds, initialState.bounds)
+                assertEquals(MapBounds(), initialState.bounds)
 
                 viewModel.dispatch(OnBoundsChanged(BOUNDS_FIXTURE))
                 assertEquals(BOUNDS_FIXTURE, awaitItem().bounds)

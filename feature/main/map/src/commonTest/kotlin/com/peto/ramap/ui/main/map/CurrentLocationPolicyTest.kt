@@ -12,7 +12,7 @@ class CurrentLocationPolicyTest {
     fun `기본 줌보다 축소된 경우 현재 위치 줌은 기본 줌을 사용한다`() {
         val zoom = CurrentLocationConfig.zoomForCurrentLocation(currentZoom = 10.0)
 
-        assertEquals(DefaultMapConfig.ZOOM_LEVEL.toDouble(), zoom)
+        assertEquals(CurrentLocationConfig.ZOOM_LEVEL, zoom)
     }
 
     @Test
