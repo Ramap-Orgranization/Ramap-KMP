@@ -31,7 +31,11 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalAccessibilityManager
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -68,6 +72,7 @@ fun ToastHost(
     var dismissJob by remember { mutableStateOf<Job?>(null) }
     val animationMS = 200
     val density = LocalDensity.current
+    val accessibilityManager = LocalAccessibilityManager.current
     val isImeVisible = WindowInsets.ime.getBottom(density) > 0
     val toastBottomPadding = if (isImeVisible) 16.dp else bottomPadding
 
@@ -79,7 +84,20 @@ fun ToastHost(
 
             dismissJob =
                 scope.launch {
-                    delay(toast.durationMills.milliseconds)
+                    val baseTimeoutMillis =
+                        if (toast.action == null) {
+                            toast.durationMills
+                        } else {
+                            maxOf(toast.durationMills, ACTION_TOAST_DURATION_MILLIS)
+                        }
+                    val timeoutMillis =
+                        accessibilityManager?.calculateRecommendedTimeoutMillis(
+                            originalTimeoutMillis = baseTimeoutMillis,
+                            containsIcons = true,
+                            containsText = true,
+                            containsControls = toast.action != null,
+                        ) ?: baseTimeoutMillis
+                    delay(timeoutMillis.milliseconds)
                     visible = false
                     delay(animationMS.toLong().milliseconds)
                     if (current == toast) current = null
@@ -127,6 +145,8 @@ fun ToastHost(
     }
 }
 
+private const val ACTION_TOAST_DURATION_MILLIS = 10_000L
+
 @Composable
 private fun ToastItem(
     data: ToastData,
@@ -145,7 +165,8 @@ private fun ToastItem(
             Modifier
                 .padding(horizontal = 16.dp)
                 .padding(bottom = bottomPadding)
-                .fillMaxWidth(),
+                .fillMaxWidth()
+                .semantics { liveRegion = LiveRegionMode.Polite },
         shape = RoundedCornerShape(12.dp),
         border = BorderStroke(1.dp, GrayColor.C300),
         color = GrayColor.C100,

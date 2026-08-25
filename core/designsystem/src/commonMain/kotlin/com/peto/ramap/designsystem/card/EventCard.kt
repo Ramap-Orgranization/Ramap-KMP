@@ -96,7 +96,7 @@ fun EventCard(
                 IconButton(onClick = onAction) {
                     Icon(
                         painter = painterResource(Res.drawable.ic_close),
-                        contentDescription = null,
+                        contentDescription = actionLabel,
                         tint = GrayColor.C400,
                     )
                 }

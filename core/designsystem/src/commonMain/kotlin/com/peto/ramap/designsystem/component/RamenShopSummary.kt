@@ -106,11 +106,12 @@ private fun BoxScope.RamenShopSummaryAction(
             modifier =
                 Modifier
                     .align(Alignment.TopEnd)
-                    .size(15.dp),
+                    .size(48.dp),
         ) {
             Icon(
                 painter = painterResource(Res.drawable.ic_close),
-                contentDescription = null,
+                contentDescription = actionLabel,
+                modifier = Modifier.size(24.dp),
                 tint = GrayColor.C400,
             )
         }

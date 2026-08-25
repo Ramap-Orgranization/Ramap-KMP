@@ -65,14 +65,14 @@ internal fun BusinessHoursCardRow(
                             modifier =
                                 Modifier
                                     .padding(top = 4.dp),
-                            style = AppTextStyle.C2,
+                            style = AppTextStyle.B4,
                             color = InstagramColor.Orange,
                         )
                     } else {
                         AppText(
                             text = value.format(),
                             modifier = Modifier.padding(top = 4.dp),
-                            style = AppTextStyle.C2,
+                            style = AppTextStyle.B4,
                             color = GrayColor.C300,
                         )
                     }

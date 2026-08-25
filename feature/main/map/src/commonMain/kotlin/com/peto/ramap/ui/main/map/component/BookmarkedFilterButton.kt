@@ -22,12 +22,14 @@ internal fun BookmarkedFilterButton(
 ) {
     MapCircleIconButton(
         isActive = isActive,
+        contentDescription = stringResource(Res.string.bookmarked_shops_toggle),
+        selected = isActive,
         onClick = onClick,
         modifier = modifier,
     ) {
         Image(
             painter = painterResource(Res.drawable.ic_kid_star),
-            contentDescription = stringResource(Res.string.bookmarked_shops_toggle),
+            contentDescription = null,
             colorFilter =
                 ColorFilter.tint(
                     if (isActive) CommonColor.White else GrayColor.C500,

@@ -2,12 +2,12 @@ package com.peto.ramap.ui.main.ranking.component
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -93,15 +93,21 @@ internal fun RankingRow(
                 overflow = TextOverflow.Ellipsis,
             )
         }
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Column(
+            modifier =
+                Modifier
+                    .noRippleClickable(
+                        enabled = isBookmarkEnabled,
+                        onClick = onBookmarkClick,
+                    ).semantics {
+                        contentDescription = bookmarkDescription
+                    },
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
             val bookmarkColor = if (isBookmarked) InstagramColor.Pink else GrayColor.C500
-            IconButton(
-                onClick = onBookmarkClick,
-                enabled = isBookmarkEnabled,
-                modifier =
-                    Modifier
-                        .size(48.dp)
-                        .semantics { contentDescription = bookmarkDescription },
+            Box(
+                modifier = Modifier.size(48.dp),
+                contentAlignment = Alignment.Center,
             ) {
                 Image(
                     painter = painterResource(Res.drawable.ic_kid_star_filled),

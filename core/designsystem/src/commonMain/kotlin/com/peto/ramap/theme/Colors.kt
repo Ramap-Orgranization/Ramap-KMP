@@ -6,7 +6,7 @@ object GrayColor {
     val C050 = Color(0xFFF4F4F4)
     val C100 = Color(0xFFECECEC)
     val C200 = Color(0xFFC6C6C6)
-    val C300 = Color(0xFF858585)
+    val C300 = Color(0xFF6B6B6B)
     val C400 = Color(0xFF464646)
     val C500 = Color(0xFF171717)
 }

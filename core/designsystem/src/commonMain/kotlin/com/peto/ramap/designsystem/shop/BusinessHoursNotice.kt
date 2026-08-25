@@ -35,7 +35,7 @@ internal fun BusinessHoursNotice(modifier: Modifier = Modifier) {
         ) {
             AppText(
                 text = "!",
-                style = AppTextStyle.C2,
+                style = AppTextStyle.B4,
                 color = GrayColor.C500,
             )
         }

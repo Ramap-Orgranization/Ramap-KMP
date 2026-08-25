@@ -14,14 +14,23 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.ProgressBarRangeInfo
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.progressBarRangeInfo
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.painterResource
+import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.ic_progress
+import ramap.shared.generated.resources.loading_content_description
 
 @Composable
 fun RamenLoadingIndicator(modifier: Modifier = Modifier) {
+    val loadingDescription = stringResource(Res.string.loading_content_description)
     val infiniteTransition = rememberInfiniteTransition(label = "ramen_loading")
 
     val rotation by infiniteTransition.animateFloat(
@@ -35,7 +44,12 @@ fun RamenLoadingIndicator(modifier: Modifier = Modifier) {
     )
 
     Box(
-        modifier = modifier,
+        modifier =
+            modifier.semantics {
+                contentDescription = loadingDescription
+                progressBarRangeInfo = ProgressBarRangeInfo.Indeterminate
+                liveRegion = LiveRegionMode.Polite
+            },
         contentAlignment = Alignment.Center,
     ) {
         Image(

@@ -7,6 +7,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.peto.ramap.designsystem.text.AppText
@@ -24,7 +28,11 @@ fun CategoryFilterChip(
     style: AppTextStyle = AppTextStyle.C2,
 ) {
     Surface(
-        modifier = modifier,
+        modifier =
+            modifier.semantics {
+                this.selected = selected
+                role = Role.Tab
+            },
         shape = RoundedCornerShape(999.dp),
         color = if (selected) GrayColor.C500 else CommonColor.White,
         onClick = onClick,

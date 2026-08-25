@@ -39,6 +39,9 @@ AGENTS.md
 !/supabase/functions/*/
 !/supabase/functions/*/index.ts
 !/supabase/functions/*/README.md
+!/supabase/workers/
+!/supabase/workers/**
+/supabase/workers/**/node_modules/
 /supabase/functions/**/.env
 /feature/main/map/map.podspec
 /androidApp/release/

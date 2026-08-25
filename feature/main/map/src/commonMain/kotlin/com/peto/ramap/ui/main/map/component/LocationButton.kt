@@ -21,6 +21,7 @@ internal fun LocationButton(
 ) {
     MapCircleIconButton(
         isActive = false,
+        contentDescription = stringResource(Res.string.current_location),
         onClick = {
             if (!isLoading) onClick()
         },
@@ -35,7 +36,7 @@ internal fun LocationButton(
         } else {
             Image(
                 painter = painterResource(Res.drawable.ic_current_location),
-                contentDescription = stringResource(Res.string.current_location),
+                contentDescription = null,
             )
         }
     }
