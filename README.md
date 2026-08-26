@@ -5,7 +5,7 @@
 <a href="https://apps.apple.com/kr/app/%EB%9D%BC%EB%A7%B5/id6797046935">iOS 다운로드</a>
 </p>
 
-<img src="https://github.com/user-attachments/assets/3ac49158-b4c9-47c1-8cef-264d782058af" alt="라멥 히어로 이미지" width="100%" />
+<img src="https://github.com/user-attachments/assets/a28b7556-2fa3-43bb-89f6-be1264fbfbf8" alt="라멥 히어로 이미지" width="100%" />
 
 <p align="center">
 <img src="https://github.com/user-attachments/assets/b232948c-5377-4577-acd5-bf7b324edd78" width="30%"/>
