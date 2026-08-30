@@ -90,6 +90,7 @@ import ramap.shared.generated.resources.shop_information_report_failure_message
 import ramap.shared.generated.resources.shop_information_report_success_message
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class MapViewModelTest {
@@ -2075,30 +2076,6 @@ class MapViewModelTest {
         }
 
     @Test
-    fun `영업중 필터가 켜져 있으면 주기적으로 목록을 갱신한다`() =
-        coroutinesTest {
-            val viewModel = mapViewModel()
-
-            viewModel.dispatch(OnOpenFilterToggled)
-            runCurrent()
-            val initialVersion = viewModel.uiState.value.openFilterRefreshVersion
-
-            advanceTimeBy(60_000)
-            runCurrent()
-
-            assertEquals(initialVersion + 1, viewModel.uiState.value.openFilterRefreshVersion)
-
-            viewModel.dispatch(OnOpenFilterToggled)
-            runCurrent()
-            val disabledVersion = viewModel.uiState.value.openFilterRefreshVersion
-
-            advanceTimeBy(60_000)
-            runCurrent()
-
-            assertEquals(disabledVersion, viewModel.uiState.value.openFilterRefreshVersion)
-        }
-
-    @Test
     fun `검색 결과도 카테고리 필터가 적용된 목록을 보여준다`() =
         coroutinesTest {
             val mazesobaShop =
@@ -2167,6 +2144,30 @@ class MapViewModelTest {
         assertEquals(openShops, uiState.searchResultShops)
         assertEquals(openShops, uiState.markerShops)
         assertEquals(true, uiState.showSearchResults)
+    }
+
+    @Test
+    fun `정기 휴무로 선택된 매장은 영업중 필터의 마커에 포함하지 않는다`() {
+        val closedShop =
+            ramenShopFixture(id = "regularly-closed-shop").copy(
+                businessHoursDetails =
+                    BusinessHours(
+                        weekly =
+                            listOf("mon", "tue", "wed", "thu", "fri", "sat", "sun").associateWith {
+                                BusinessHoursDay(true, null, null, false, "정기휴무")
+                            },
+                        breakTimes = emptyMap(),
+                        lastOrders = emptyMap(),
+                        notice = null,
+                    ),
+            )
+        val uiState =
+            MapUiState(
+                shopDetailState = ShopDetailSheetUiState.Loading(closedShop.id, closedShop),
+                filters = RamenShopFilter(isOpenSelected = true),
+            )
+
+        assertTrue(uiState.markerShops.isEmpty())
     }
 
     @Test
@@ -2749,6 +2750,7 @@ private fun mapViewModel(
         FakeMapSearchHistoryStorage(),
         MapAnalytics(FakeAnalyticsTracker()),
         LoginAnalytics(FakeAnalyticsTracker(), FakeCrashReporter()),
+        FakeOperatingNoticeRepository(),
     )
 
 private fun loggedInRepository(): FakeLoginRepository =

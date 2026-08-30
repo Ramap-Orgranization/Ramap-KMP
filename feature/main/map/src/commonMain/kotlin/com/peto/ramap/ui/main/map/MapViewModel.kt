@@ -23,6 +23,7 @@ import com.peto.ramap.domain.model.shop.RamenShopFilter
 import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.domain.model.shop.SearchQuery
 import com.peto.ramap.domain.repository.LoginRepository
+import com.peto.ramap.domain.repository.OperatingNoticeRepository
 import com.peto.ramap.domain.repository.RamenShopRepository
 import com.peto.ramap.domain.repository.ShopReportRepository
 import com.peto.ramap.domain.store.PersonalizationBootstrapState
@@ -75,8 +76,6 @@ import com.peto.ramap.ui.main.map.model.location.LocationFocusStatus
 import com.peto.ramap.ui.main.map.viewport.ViewportLoadResult
 import com.peto.ramap.ui.main.map.viewport.ViewportShopLoader
 import com.peto.ramap.ui.task.TaskPolicy
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -100,7 +99,6 @@ import ramap.shared.generated.resources.search_result_hidden_only_message
 import ramap.shared.generated.resources.shop_information_report_failure_message
 import ramap.shared.generated.resources.shop_information_report_success_message
 import kotlin.time.Clock
-import kotlin.time.Duration.Companion.milliseconds
 
 class MapViewModel(
     private val ramenShopRepository: RamenShopRepository,
@@ -112,17 +110,25 @@ class MapViewModel(
     private val mapSearchHistoryStorage: SearchHistoryStorage,
     private val mapAnalytics: MapAnalytics,
     private val loginAnalytics: LoginAnalytics,
+    private val operatingNoticeRepository: OperatingNoticeRepository,
 ) : BaseViewModel<MapUiState, MapIntent, MapSideEffect>(initialState = MapUiState()) {
     private val viewportShopLoader = ViewportShopLoader(ramenShopRepository, viewModelScope)
     private var pendingMapAction: PendingMapAction? = null
     private var observedBookmarkedShopIds: Set<String>? = null
-    private var openFilterRefreshJob: Job? = null
 
     init {
         viewModelScope.launch { observeSessionState() }
         viewModelScope.launch { observePersonalization() }
         viewModelScope.launch { observeRecentSearches() }
         viewModelScope.launch { observeRecentlyViewedShops() }
+        viewModelScope.launch { loadOperatingNotices() }
+    }
+
+    private suspend fun loadOperatingNotices() {
+        val result = operatingNoticeRepository.fetchCurrentOperatingNotices()
+        if (result is RamapResult.Success) {
+            reduce { copy(operatingNotices = result.data) }
+        }
     }
 
     private suspend fun observeRecentSearches() {
@@ -883,50 +889,13 @@ class MapViewModel(
                                     Clock.System
                                         .now()
                                         .toLocalDateTime(TimeZone.currentSystemDefault()),
+                                    currentState.operatingNotices,
                                 ).containsKey(shop.id)
                         } ?: true
                     } ?: ShopDetailSheetUiState.Closed,
             )
         }
-        updateOpenFilterRefreshJob(filter.isOpenSelected)
         showEmptyFilterResultMessageIfNeeded()
-    }
-
-    private fun updateOpenFilterRefreshJob(isEnabled: Boolean) {
-        if (!isEnabled) {
-            openFilterRefreshJob?.cancel()
-            openFilterRefreshJob = null
-            return
-        }
-        if (openFilterRefreshJob?.isActive == true) return
-
-        openFilterRefreshJob =
-            viewModelScope.launch {
-                while (true) {
-                    delay(OPEN_FILTER_REFRESH_INTERVAL_MILLIS.milliseconds)
-                    refreshOpenFilter()
-                }
-            }
-    }
-
-    private fun refreshOpenFilter() {
-        reduce {
-            copy(
-                openFilterRefreshVersion = openFilterRefreshVersion + 1,
-                shopDetailState =
-                    shopDetailState.takeIf {
-                        selectedShop?.let { shop ->
-                            currentState.shops
-                                .filterByOpenStatus(
-                                    filters,
-                                    Clock.System
-                                        .now()
-                                        .toLocalDateTime(TimeZone.currentSystemDefault()),
-                                ).containsKey(shop.id)
-                        } ?: true
-                    } ?: ShopDetailSheetUiState.Closed,
-            )
-        }
     }
 
     private fun showEmptyFilterResultMessageIfNeeded() {
@@ -1242,6 +1211,5 @@ class MapViewModel(
         private const val SHOP_REPORT_TASK_KEY = "map-shop-report"
         private const val SIGN_IN_TASK_KEY = "map-sign-in"
         private const val PERSONALIZED_SHOPS_TASK_KEY = "map-personalized-shops"
-        private const val OPEN_FILTER_REFRESH_INTERVAL_MILLIS = 60_000L
     }
 }

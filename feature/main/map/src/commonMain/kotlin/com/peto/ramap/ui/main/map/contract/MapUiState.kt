@@ -1,6 +1,7 @@
 package com.peto.ramap.ui.main.map.contract
 
 import com.peto.ramap.designsystem.shop.model.ShopDetailSheetUiState
+import com.peto.ramap.domain.model.notice.OperatingNotice
 import com.peto.ramap.domain.model.shop.Location
 import com.peto.ramap.domain.model.shop.MapBounds
 import com.peto.ramap.domain.model.shop.RamenShop
@@ -44,8 +45,8 @@ data class MapUiState(
      * 지도와 검색 결과에 적용 중인 매장 필터.
      */
     val filters: RamenShopFilter = RamenShopFilter(),
+    val operatingNotices: List<OperatingNotice> = emptyList(),
     /** 영업중 필터의 시간 변화를 반영하기 위한 화면 갱신 버전. */
-    val openFilterRefreshVersion: Long = 0L,
     /**
      * 현재 지도 카메라가 보고 있는 영역.
      */
@@ -153,16 +154,23 @@ data class MapUiState(
      */
     val markerShops: RamenShops
         get() {
+            val currentDateTime = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
             val selectedMarkerShop =
                 selectedShop
-                    ?.let { shop -> mapOf(shop.id to shop) }
+                    ?.takeIf { shop ->
+                        !filters.isOpenSelected ||
+                            shop.isOpenAt(currentDateTime, operatingNotices)
+                    }?.let { shop -> mapOf(shop.id to shop) }
                     .orEmpty()
 
-            return if (search.hasLoadedResultsForInput) {
-                RamenShops(displaySearchResults + selectedMarkerShop)
-            } else {
-                RamenShops(displayFilteredShops + selectedMarkerShop)
-            }
+            val markerShops =
+                if (search.hasLoadedResultsForInput) {
+                    RamenShops(displaySearchResults + selectedMarkerShop)
+                } else {
+                    RamenShops(displayFilteredShops + selectedMarkerShop)
+                }
+
+            return markerShops.filterByOpenStatus(filters, currentDateTime, operatingNotices)
         }
 
     /**
@@ -234,6 +242,7 @@ data class MapUiState(
             }.filterByOpenStatus(
                 filters,
                 Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()),
+                operatingNotices,
             )
 
     /**
@@ -248,6 +257,7 @@ data class MapUiState(
             }.filterByOpenStatus(
                 filters,
                 Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()),
+                operatingNotices,
             )
 
     /**

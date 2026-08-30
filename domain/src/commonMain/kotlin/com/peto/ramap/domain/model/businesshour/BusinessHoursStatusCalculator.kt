@@ -181,6 +181,7 @@ internal object BusinessHoursStatusCalculator {
         isAfterMidnight: Boolean,
     ): Boolean {
         if (businessHoursDay == null || businessHoursDay.closed) return false
+        if (isAfterMidnight && !businessHoursDay.closeNextDay) return false
 
         val openValue = businessHoursDay.open ?: return false
         val closeValue = businessHoursDay.close ?: return false

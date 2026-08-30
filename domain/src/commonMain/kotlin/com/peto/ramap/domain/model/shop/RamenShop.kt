@@ -2,6 +2,8 @@ package com.peto.ramap.domain.model.shop
 
 import com.peto.ramap.domain.model.businesshour.BusinessHours
 import com.peto.ramap.domain.model.businesshour.BusinessHoursStatus
+import com.peto.ramap.domain.model.notice.OperatingNotice
+import com.peto.ramap.domain.model.notice.OperatingNoticeType
 import kotlinx.datetime.LocalDateTime
 
 data class RamenShop(
@@ -27,11 +29,31 @@ data class RamenShop(
     fun isOpened(
         filter: RamenShopFilter,
         currentDateTime: LocalDateTime,
+        operatingNotices: List<OperatingNotice> = emptyList(),
     ): Boolean =
         (!filter.hasCategoryFilter || menuCategories.any { it in filter }) &&
-            (!filter.isOpenSelected || isOpenAt(currentDateTime))
+            (!filter.isOpenSelected || isOpenAt(currentDateTime, operatingNotices))
 
-    fun isOpenAt(currentDateTime: LocalDateTime): Boolean = businessHoursDetails?.isOpenAt(currentDateTime) == true
+    fun isOpenAt(
+        currentDateTime: LocalDateTime,
+        operatingNotices: List<OperatingNotice> = emptyList(),
+    ): Boolean {
+        if (businessHoursDetails?.isOpenAt(currentDateTime) != true) return false
+
+        return operatingNotices
+            .asSequence()
+            .filter { it.shop.id == id && it.isActiveAt(currentDateTime) }
+            .none { notice ->
+                when (notice.type) {
+                    OperatingNoticeType.TEMPORARY_CLOSURE -> true
+                    OperatingNoticeType.EARLY_CLOSING ->
+                        notice.endTime != null && currentDateTime.time >= notice.endTime
+                    OperatingNoticeType.LATE_OPENING ->
+                        notice.startTime != null && currentDateTime.time < notice.startTime
+                    OperatingNoticeType.OPERATING_NOTICE -> false
+                }
+            }
+    }
 
     fun businessHoursStatus(currentDateTime: LocalDateTime): BusinessHoursStatus? = businessHoursDetails?.statusAt(currentDateTime)
 }

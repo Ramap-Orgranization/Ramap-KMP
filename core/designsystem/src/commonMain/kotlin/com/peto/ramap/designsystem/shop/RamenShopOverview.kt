@@ -24,12 +24,14 @@ import androidx.compose.ui.unit.dp
 import com.peto.ramap.designsystem.badge.NewsBadge
 import com.peto.ramap.designsystem.component.MenuCategoryLabels
 import com.peto.ramap.designsystem.image.RemoteShopImage
+import com.peto.ramap.designsystem.resource.businesshours.BusinessHoursStatusResourceMapper
 import com.peto.ramap.designsystem.resource.category.CategoryResourceMapper
 import com.peto.ramap.designsystem.resource.event.ShopEventResourceMapper
 import com.peto.ramap.designsystem.resource.format
 import com.peto.ramap.designsystem.resource.operatingnotice.ShopOperatingNoticeResourceMapper
 import com.peto.ramap.designsystem.resource.wating.WaitingSystemUiModel
 import com.peto.ramap.designsystem.text.AppText
+import com.peto.ramap.domain.model.businesshour.BusinessHoursStatus
 import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.model.notice.OperatingNotice
 import com.peto.ramap.domain.model.shop.RamenShop
@@ -109,6 +111,17 @@ fun RamenShopOverview(
                             .padding(top = 5.dp)
                             .padding(horizontal = 24.dp)
                             .noRippleClickable { onOperatingNoticeClick(notice) },
+                    textStyle = AppTextStyle.B3,
+                    containerColor = SystemColor.Warning,
+                    contentColor = CommonColor.White,
+                )
+            }
+            businessHoursStatus?.let { status ->
+                NewsBadge(
+                    text = BusinessHoursStatusResourceMapper.noticeLabel(status)?.format().orEmpty(),
+                    modifier =
+                        Modifier
+                            .padding(horizontal = 24.dp),
                     textStyle = AppTextStyle.B3,
                     containerColor = SystemColor.Warning,
                     contentColor = CommonColor.White,

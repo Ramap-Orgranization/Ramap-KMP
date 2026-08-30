@@ -4,12 +4,102 @@ import com.peto.ramap.domain.model.businesshour.BreakTime
 import com.peto.ramap.domain.model.businesshour.BusinessHours
 import com.peto.ramap.domain.model.businesshour.BusinessHoursDay
 import com.peto.ramap.domain.model.businesshour.BusinessHoursStatus
+import com.peto.ramap.domain.model.notice.OperatingNotice
+import com.peto.ramap.domain.model.notice.OperatingNoticeType
 import com.peto.ramap.fixture.ramenShopFixture
 import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.LocalTime
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class BusinessHoursTest {
+    @Test
+    fun `활성 영업 변동 공지는 영업중 필터에 반영된다`() {
+        val shop =
+            ramenShopFixture().copy(
+                businessHoursDetails =
+                    BusinessHours(
+                        weekly = mapOf("sun" to BusinessHoursDay(false, "11:00", "22:00", false, null)),
+                        breakTimes = emptyMap(),
+                        lastOrders = emptyMap(),
+                        notice = null,
+                    ),
+            )
+        val notice =
+            OperatingNotice(
+                id = "notice-1",
+                shop = shop,
+                type = OperatingNoticeType.TEMPORARY_CLOSURE,
+                description = "임시 휴무",
+                startDate = LocalDateTime(2026, 8, 30, 0, 0).date,
+                endDate = LocalDateTime(2026, 8, 30, 0, 0).date,
+                startTime = null,
+                endTime = null,
+                sourceUrl = null,
+            )
+
+        assertEquals(false, shop.isOpenAt(LocalDateTime(2026, 8, 30, 12, 0), listOf(notice)))
+    }
+
+    @Test
+    fun `조기 마감과 늦은 오픈 공지는 공지 시간 기준으로 영업 여부를 제한한다`() {
+        val shop =
+            ramenShopFixture().copy(
+                businessHoursDetails =
+                    BusinessHours(
+                        weekly = mapOf("sun" to BusinessHoursDay(false, "11:00", "22:00", false, null)),
+                        breakTimes = emptyMap(),
+                        lastOrders = emptyMap(),
+                        notice = null,
+                    ),
+            )
+        val date = LocalDateTime(2026, 8, 30, 0, 0).date
+        val earlyClosing =
+            OperatingNotice(
+                id = "early",
+                shop = shop,
+                type = OperatingNoticeType.EARLY_CLOSING,
+                description = "조기 마감",
+                startDate = date,
+                endDate = date,
+                startTime = null,
+                endTime = LocalTime(15, 0),
+                sourceUrl = null,
+            )
+        val lateOpening =
+            earlyClosing.copy(
+                id = "late",
+                type = OperatingNoticeType.LATE_OPENING,
+                startTime = LocalTime(15, 0),
+                endTime = null,
+            )
+
+        assertEquals(true, shop.isOpenAt(LocalDateTime(2026, 8, 30, 14, 59), listOf(earlyClosing)))
+        assertEquals(false, shop.isOpenAt(LocalDateTime(2026, 8, 30, 15, 0), listOf(earlyClosing)))
+        assertEquals(false, shop.isOpenAt(LocalDateTime(2026, 8, 30, 14, 59), listOf(lateOpening)))
+        assertEquals(true, shop.isOpenAt(LocalDateTime(2026, 8, 30, 15, 0), listOf(lateOpening)))
+    }
+
+    @Test
+    fun `전날 당일 영업시간은 다음 날 영업중으로 판정하지 않는다`() {
+        val shop =
+            ramenShopFixture().copy(
+                businessHoursDetails =
+                    BusinessHours(
+                        weekly =
+                            mapOf(
+                                "sat" to BusinessHoursDay(false, "11:30", "21:00", false, null),
+                                "sun" to BusinessHoursDay(true, null, null, false, "정기휴무"),
+                            ),
+                        breakTimes = emptyMap(),
+                        lastOrders = emptyMap(),
+                        notice = null,
+                    ),
+            )
+
+        assertEquals(false, shop.isOpenAt(LocalDateTime(2026, 8, 30, 20, 32)))
+    }
+
     @Test
     fun `영업시간 데이터의 의미 필드를 보존한다`() {
         val hours =
