@@ -8,6 +8,14 @@ import kotlinx.datetime.toLocalDateTime
 import kotlin.time.Clock
 
 sealed interface ShopDetailSheetUiState {
+    fun businessHoursNoticeStatus(): BusinessHoursStatus? {
+        val contentState = (this as? Content) ?: return null
+        val currentDateTime = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
+        val businessHoursStatus = contentState.detail.shop.businessHoursStatus(currentDateTime)
+
+        return businessHoursStatus?.takeIf { it.isNotOpening }
+    }
+
     data object Closed : ShopDetailSheetUiState
 
     data class Loading(
@@ -24,11 +32,3 @@ sealed interface ShopDetailSheetUiState {
         val shop: RamenShop?,
     ) : ShopDetailSheetUiState
 }
-
-val ShopDetailSheetUiState.businessHoursNoticeStatus: BusinessHoursStatus?
-    get() =
-        (this as? ShopDetailSheetUiState.Content)
-            ?.detail
-            ?.shop
-            ?.businessHoursStatus(Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()))
-            ?.takeIf { it is BusinessHoursStatus.BreakTime || it is BusinessHoursStatus.Closed }

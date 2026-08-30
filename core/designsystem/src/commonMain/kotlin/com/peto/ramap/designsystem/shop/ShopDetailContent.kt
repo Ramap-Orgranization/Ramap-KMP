@@ -22,7 +22,6 @@ import com.peto.ramap.designsystem.indicator.RamenLoadingIndicator
 import com.peto.ramap.designsystem.resource.wating.WaitingSystemUiModel
 import com.peto.ramap.designsystem.shop.model.RamenShopUiModel
 import com.peto.ramap.designsystem.shop.model.ShopDetailSheetUiState
-import com.peto.ramap.designsystem.shop.model.businessHoursNoticeStatus
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.model.notice.OperatingNotice
@@ -138,7 +137,7 @@ fun ShopDetailContent(
                         onEventClick = onEventClick,
                         operatingNotice = state.detail.operatingNotice,
                         onOperatingNoticeClick = onOperatingNoticeClick,
-                        businessHoursStatus = state.businessHoursNoticeStatus,
+                        businessHoursStatus = state.businessHoursNoticeStatus(),
                         onReportClick = { showReportDialog = true },
                     )
                     onShowOnMap?.let { showOnMap ->
