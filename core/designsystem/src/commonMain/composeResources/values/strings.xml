@@ -9,6 +9,8 @@
     <string name="map_search_result_open">영업중</string>
     <string name="map_search_result_open_last_order_format">영업중 · %1$s에 라스트오더</string>
     <string name="map_search_result_open_close_format">영업중 · %1$s에 영업종료</string>
+    <string name="map_search_result_break_time_label">브레이크 타임</string>
+    <string name="map_search_result_break_time_format">브레이크 타임 · %1$s에 영업 시작</string>
     <string name="map_search_result_closed_label">영업 종료</string>
     <string name="map_search_result_closed_format">영업 종료 · %1$s에 영업 시작</string>
     <string name="shop_detail_label_phone">전화</string>

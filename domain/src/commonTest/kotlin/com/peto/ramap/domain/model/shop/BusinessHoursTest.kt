@@ -64,7 +64,7 @@ class BusinessHoursTest {
             shop.businessHoursStatus(LocalDateTime(2026, 8, 10, 13, 0)),
         )
         assertEquals(
-            BusinessHoursStatus.Closed("15:00"),
+            BusinessHoursStatus.BreakTime("15:00"),
             shop.businessHoursStatus(LocalDateTime(2026, 8, 10, 14, 30)),
         )
         assertEquals(

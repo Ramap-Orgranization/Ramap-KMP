@@ -22,7 +22,7 @@ internal object BusinessHoursStatusCalculator {
      * 주어진 시각의 영업 상태를 계산한다.
      *
      * 영업 중이면 마지막 주문 시간 또는 마감 시간을 포함한 상태를 반환하고,
-     * 영업 전이거나 휴게시간이면 다음 영업시간을 반환한다.
+     * 휴게시간이면 휴게 종료 시간을, 영업 전이면 다음 영업시간을 반환한다.
      */
     fun statusAt(
         businessHours: BusinessHours,
@@ -33,12 +33,11 @@ internal object BusinessHoursStatusCalculator {
             return openStatus(businessHours, activeDayKey)
         }
 
-        val nextOpenTime = findNextOpenTime(businessHours, currentDateTime)
-        return if (nextOpenTime == null) {
-            null
-        } else {
-            BusinessHoursStatus.Closed(nextOpenTime)
-        }
+        val breakEndTime = findBreakEndDuringCurrentHours(businessHours, currentDateTime)
+        if (breakEndTime != null) return BusinessHoursStatus.BreakTime(breakEndTime)
+
+        val nextOpenTime = findNextOpeningSchedule(businessHours, currentDateTime)
+        return nextOpenTime?.let(BusinessHoursStatus::Closed)
     }
 
     /**
@@ -89,19 +88,6 @@ internal object BusinessHoursStatusCalculator {
 
         return null
     }
-
-    /**
-     * 현재 시각 기준으로 가장 가까운 다음 영업시간을 찾는다.
-     *
-     * 현재 영업일의 휴게시간 중이라면 휴게 종료 시간을 우선 반환하고,
-     * 그렇지 않으면 이후 영업일의 영업 시작 시간을 찾는다.
-     */
-    private fun findNextOpenTime(
-        businessHours: BusinessHours,
-        currentDateTime: LocalDateTime,
-    ): String? =
-        findBreakEndDuringCurrentHours(businessHours, currentDateTime)
-            ?: findNextOpeningSchedule(businessHours, currentDateTime)
 
     /**
      * 현재 시각이 휴게시간이면 해당 휴게시간의 종료 시각을 찾는다.

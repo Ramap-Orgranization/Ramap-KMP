@@ -36,6 +36,7 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
+import ramap.shared.generated.resources.map_search_result_break_time_label
 import ramap.shared.generated.resources.map_search_result_closed_label
 import kotlin.time.Clock
 
@@ -107,16 +108,25 @@ private fun SearchResultItem(
                 )
                 shop.businessHoursStatus(currentDateTime)?.let { status ->
                     val statusText = BusinessHoursStatusResourceMapper.status(status).format()
-                    if (status is BusinessHoursStatus.Closed) {
-                        val closedLabel = stringResource(Res.string.map_search_result_closed_label)
+                    val highlightedLabel =
+                        when (status) {
+                            is BusinessHoursStatus.BreakTime ->
+                                stringResource(Res.string.map_search_result_break_time_label)
+
+                            is BusinessHoursStatus.Closed ->
+                                stringResource(Res.string.map_search_result_closed_label)
+
+                            else -> null
+                        }
+                    if (highlightedLabel != null) {
                         Row {
                             AppText(
-                                text = closedLabel,
+                                text = highlightedLabel,
                                 style = AppTextStyle.B2,
                                 color = SystemColor.Warning,
                             )
                             AppText(
-                                text = statusText.removePrefix(closedLabel),
+                                text = statusText.removePrefix(highlightedLabel),
                                 style = AppTextStyle.B2,
                                 color = GrayColor.C500,
                             )
