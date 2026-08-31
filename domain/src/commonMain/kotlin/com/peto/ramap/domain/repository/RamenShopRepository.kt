@@ -6,8 +6,11 @@ import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.model.shop.MapBounds
 import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.domain.model.shop.SearchQuery
+import com.peto.ramap.domain.usecase.ShopDetail
 
 interface RamenShopRepository {
+    suspend fun fetchShopDetail(shopId: String): RamapResult<ShopDetail>
+
     suspend fun fetchShopLikeCount(shopId: String): RamapResult<Long>
 
     suspend fun fetchRamenShops(bounds: MapBounds): RamapResult<RamenShops>
