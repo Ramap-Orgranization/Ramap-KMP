@@ -7,6 +7,6 @@ import org.koin.dsl.module
 val useCaseModule =
     module {
         factory<FetchShopDetailUseCase> {
-            DefaultFetchShopDetailUseCase(get(), get(), get())
+            DefaultFetchShopDetailUseCase(get())
         }
     }
