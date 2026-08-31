@@ -76,6 +76,7 @@ internal class AdminRegistrationDataSource(
                 noticeType = draft.noticeType,
                 startTime = draft.startTime,
                 endTime = draft.endTime,
+                participants = draft.participants,
             ),
         )
     }
@@ -114,8 +115,7 @@ internal class AdminRegistrationDataSource(
         }
     }
 
-    suspend fun fetchManagedEvents(): List<AdminManagedEvent> =
-        client.functions.invoke(EVENT_STATUS_FUNCTION, EventStatusRequest(action = "list")).body()
+    suspend fun fetchManagedEvents(): List<AdminManagedEvent> = client.functions.invoke(EVENT_STATUS_FUNCTION, EventStatusRequest(action = "list")).body()
 
     suspend fun saveEventStatus(
         eventId: String,

@@ -8,6 +8,7 @@
     <string name="admin_registration_title_label">제목</string>
     <string name="admin_registration_title_placeholder">이벤트 제목을 입력하세요</string>
     <string name="admin_registration_shop">매장명</string>
+    <string name="admin_registration_collaborators">협업자</string>
     <string name="admin_registration_shop_placeholder">매장 이름을 입력하세요</string>
     <string name="admin_registration_source">Instagram 게시물 URL</string>
     <string name="admin_registration_source_placeholder">https://instagram.com/p/...</string>

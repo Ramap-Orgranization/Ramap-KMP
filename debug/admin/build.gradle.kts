@@ -1,5 +1,6 @@
 plugins {
     id("ramap.kmp.compose")
+    id("ramap.kmp.test")
     id("ramap.serialization")
 }
 

@@ -294,22 +294,7 @@ internal class AdminRegistrationViewModel(
                         isOperatingNotice = currentState.isOperatingNotice,
                     )
                 reduce {
-                    copy(
-                        draft =
-                            result.copy(
-                                shopName = result.shopName ?: currentState.shopName.ifBlank { null },
-                                sourceUrl = result.sourceUrl ?: currentState.sourceUrl.ifBlank { null },
-                                startDate = selectedStartDate ?: result.startDate,
-                                endDate =
-                                    if (selectedEventType == ShopEventType.STORE_RENEWAL) {
-                                        null
-                                    } else {
-                                        selectedEndDate ?: result.endDate
-                                    },
-                                noticeType = selectedNoticeType?.toRequestValue() ?: result.noticeType,
-                            ),
-                        message = null,
-                    )
+                    AdminRegistrationPreviewStateReducer.reduce(this, result)
                 }
             } catch (_: Throwable) {
                 showToast(Res.string.admin_registration_preview_failure)

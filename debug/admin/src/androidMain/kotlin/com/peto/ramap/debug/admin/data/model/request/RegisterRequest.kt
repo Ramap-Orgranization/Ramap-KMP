@@ -1,5 +1,6 @@
 package com.peto.ramap.debug.admin.data.model.request
 
+import com.peto.ramap.debug.admin.data.model.AdminParticipant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -18,4 +19,5 @@ internal data class RegisterRequest(
     @SerialName("start_time") val startTime: String?,
     @SerialName("end_time") val endTime: String?,
     @SerialName("image_only") val imageOnly: Boolean = false,
+    val participants: List<AdminParticipant> = emptyList(),
 )

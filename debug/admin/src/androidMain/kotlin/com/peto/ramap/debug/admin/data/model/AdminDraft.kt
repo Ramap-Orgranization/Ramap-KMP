@@ -7,6 +7,8 @@ import kotlinx.serialization.Serializable
 internal data class AdminDraft(
     @SerialName("shop_name") val shopName: String? = null,
     val title: String? = null,
+    @SerialName("event_type") val eventType: String? = null,
+    val participants: List<AdminParticipant> = emptyList(),
     @SerialName("start_date") val startDate: String? = null,
     @SerialName("end_date") val endDate: String? = null,
     val description: String? = null,

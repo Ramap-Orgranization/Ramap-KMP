@@ -55,6 +55,10 @@ internal fun AdminDraftPreview(
         )
         AdminTitleField(draft.title, onTitleChanged)
         PreviewRow(stringResource(R.string.admin_registration_shop), draft.shopName)
+        PreviewRow(
+            stringResource(R.string.admin_registration_collaborators),
+            draft.participants.joinToString(", ") { participant -> participant.name },
+        )
         PreviewRow(stringResource(R.string.admin_registration_source), draft.sourceUrl)
         PreviewRow(
             stringResource(R.string.admin_registration_date_range),
