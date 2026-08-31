@@ -44,8 +44,7 @@ class DefaultShopPersonalizationStoreTest {
         runTest {
             val bookmarkRepository =
                 object : BookmarkRepository {
-                    override suspend fun fetchBookmarkedShopIds(): RamapResult<Set<String>> =
-                        RamapResult.Error(RamapError.Unknown(IllegalStateException("failure")))
+                    override suspend fun fetchBookmarkedShopIds(): RamapResult<Set<String>> = RamapResult.Error(RamapError.Unknown(IllegalStateException("failure")))
 
                     override suspend fun addBookmark(shopId: String) = RamapResult.Success(Unit)
 
@@ -363,6 +362,5 @@ class DefaultShopPersonalizationStoreTest {
             assertEquals(emptyList(), subscribedShopRepository.subscriptionRequests)
         }
 
-    private fun personalization(store: DefaultShopPersonalizationStore): ShopPersonalization =
-        assertIs<PersonalizationBootstrapState.Success>(store.state.value).value
+    private fun personalization(store: DefaultShopPersonalizationStore): ShopPersonalization = assertIs<PersonalizationBootstrapState.Success>(store.state.value).value
 }

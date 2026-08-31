@@ -8,8 +8,7 @@ import com.peto.ramap.network.execute.invokeRequest
 internal class DefaultHiddenShopRepository(
     private val dataSource: HiddenShopDataSource,
 ) : HiddenShopRepository {
-    override suspend fun fetchHiddenShopIds(): RamapResult<Set<String>> =
-        invokeRequest { dataSource.fetchHiddenShopIds().mapTo(mutableSetOf()) { it.shopId } }
+    override suspend fun fetchHiddenShopIds(): RamapResult<Set<String>> = invokeRequest { dataSource.fetchHiddenShopIds().mapTo(mutableSetOf()) { it.shopId } }
 
     override suspend fun hideShop(shopId: String): RamapResult<Unit> = invokeRequest { dataSource.hideShop(shopId) }
 

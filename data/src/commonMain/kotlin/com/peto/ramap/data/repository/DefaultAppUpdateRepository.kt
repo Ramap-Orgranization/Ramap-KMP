@@ -9,6 +9,5 @@ import com.peto.ramap.network.execute.invokeRequest
 internal class DefaultAppUpdateRepository(
     private val dataSource: AppUpdatePolicyDataSource,
 ) : AppUpdateRepository {
-    override suspend fun fetchAppUpdatePolicy(platform: String): RamapResult<AppUpdatePolicy?> =
-        invokeRequest { dataSource.fetchAppUpdatePolicy(platform)?.toDomain() }
+    override suspend fun fetchAppUpdatePolicy(platform: String): RamapResult<AppUpdatePolicy?> = invokeRequest { dataSource.fetchAppUpdatePolicy(platform)?.toDomain() }
 }

@@ -12,8 +12,7 @@ internal class FakeShopRankingDataSource(
 ) : ShopRankingDataSource {
     val administrativeDistrictRequests = mutableListOf<AdministrativeDistrictParameters>()
 
-    override suspend fun fetchShopRankings(parameter: ShopRankingParameters): RankingPage =
-        error("Ranking fetch is not used in administrative district cache tests")
+    override suspend fun fetchShopRankings(parameter: ShopRankingParameters): RankingPage = error("Ranking fetch is not used in administrative district cache tests")
 
     override suspend fun fetchAdministrativeDistricts(parameter: AdministrativeDistrictParameters): AdministrativeDistricts {
         administrativeDistrictRequests += parameter

@@ -23,8 +23,7 @@ class FakeNotificationSettingsRepository(
     var eventNotificationStatusError: RamapError? = null
     var eventNotificationUpdateError: RamapError? = null
 
-    override suspend fun fetchEventNotificationsEnabled(): RamapResult<Boolean> =
-        fetchEnabledError?.let { RamapResult.Error(it) } ?: RamapResult.Success(enabled)
+    override suspend fun fetchEventNotificationsEnabled(): RamapResult<Boolean> = fetchEnabledError?.let { RamapResult.Error(it) } ?: RamapResult.Success(enabled)
 
     override suspend fun updateEventNotificationsEnabled(enabled: Boolean): RamapResult<Unit> {
         enabledUpdates += enabled
@@ -49,8 +48,7 @@ class FakeNotificationSettingsRepository(
         return RamapResult.Success(Unit)
     }
 
-    override suspend fun fetchEventOverrides(): RamapResult<List<EventNotificationOverride>> =
-        fetchEventOverridesError?.let { RamapResult.Error(it) } ?: RamapResult.Success(eventOverrides.toList())
+    override suspend fun fetchEventOverrides(): RamapResult<List<EventNotificationOverride>> = fetchEventOverridesError?.let { RamapResult.Error(it) } ?: RamapResult.Success(eventOverrides.toList())
 
     override suspend fun clearEventNotificationOverride(eventId: String): RamapResult<Unit> {
         clearedEventNotificationIds += eventId
@@ -59,8 +57,7 @@ class FakeNotificationSettingsRepository(
         return RamapResult.Success(Unit)
     }
 
-    suspend fun fetchSubscribedShopIds(): RamapResult<Set<String>> =
-        fetchShopIdsError?.let { RamapResult.Error(it) } ?: RamapResult.Success(shopIds.toSet())
+    suspend fun fetchSubscribedShopIds(): RamapResult<Set<String>> = fetchShopIdsError?.let { RamapResult.Error(it) } ?: RamapResult.Success(shopIds.toSet())
 
     suspend fun updateShopNotification(
         shopId: String,

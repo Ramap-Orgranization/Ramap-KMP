@@ -8,6 +8,7 @@ import com.peto.ramap.domain.model.shop.MapBounds
 import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.domain.model.shop.SearchQuery
 import com.peto.ramap.domain.repository.RamenShopRepository
+import com.peto.ramap.domain.usecase.ShopDetail
 import kotlinx.coroutines.delay
 
 class FakeRamenShopRepository(
@@ -25,11 +26,23 @@ class FakeRamenShopRepository(
     var activeEventsDelayMillis: Long = 0,
     private val shopLikeCount: Long = 0L,
     var shopLikeCountError: RamapError? = null,
+    var shopDetail: ShopDetail? = null,
+    var shopDetailError: RamapError? = null,
 ) : RamenShopRepository {
+    val requestedShopDetailIds = mutableListOf<String>()
+
+    override suspend fun fetchShopDetail(shopId: String): RamapResult<ShopDetail> {
+        requestedShopDetailIds += shopId
+        return (shopDetailError ?: error)?.let { RamapResult.Error(it) }
+            ?: shopDetail?.let { RamapResult.Success(it) }
+            ?: RamapResult.Error(
+                RamapError.Unknown(IllegalStateException("Missing fake shop detail")),
+            )
+    }
+
     val requestedActiveEventShopIds = mutableListOf<String>()
 
-    override suspend fun fetchShopLikeCount(shopId: String): RamapResult<Long> =
-        shopLikeCountError?.let { RamapResult.Error(it) } ?: RamapResult.Success(shopLikeCount)
+    override suspend fun fetchShopLikeCount(shopId: String): RamapResult<Long> = shopLikeCountError?.let { RamapResult.Error(it) } ?: RamapResult.Success(shopLikeCount)
 
     override suspend fun fetchActiveShopEvent(shopId: String): RamapResult<ShopEvent?> {
         requestedActiveEventShopIds += shopId
