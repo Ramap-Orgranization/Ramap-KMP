@@ -2,6 +2,7 @@ package com.peto.ramap.data.datasource.shop
 
 import com.peto.ramap.data.model.CalendarEventPageResponse
 import com.peto.ramap.data.model.RamenShopResponse
+import com.peto.ramap.data.model.ShopDetailResponse
 import com.peto.ramap.data.model.ShopEventParticipantResponse
 import com.peto.ramap.data.model.ShopEventResponse
 import com.peto.ramap.data.model.ShopLikeCountResponse
@@ -18,6 +19,14 @@ import kotlinx.serialization.json.put
 internal class RemoteRamenShopDataSource(
     private val client: SupabaseClient,
 ) : RamenShopDataSource {
+    override suspend fun fetchShopDetail(shopId: String): ShopDetailResponse? =
+        client.postgrest
+            .rpc(
+                function = FETCH_SHOP_DETAIL_RPC,
+                parameters = buildJsonObject { put(SHOP_ID_PARAMETER, shopId) },
+            ).decodeList<ShopDetailResponse>()
+            .singleOrNull()
+
     override suspend fun fetchShopLikeCount(shopId: String): Long =
         client
             .from(SHOP_BOOKMARK_COUNTS_VIEW)
@@ -155,7 +164,9 @@ internal class RemoteRamenShopDataSource(
         private const val ACTIVE_EVENTS_VIEW = "active_events"
         private const val CALENDAR_EVENTS_VIEW = "calendar_events"
         private const val FETCH_CALENDAR_EVENT_PAGE_RPC = "fetch_calendar_event_page"
+        private const val FETCH_SHOP_DETAIL_RPC = "fetch_shop_detail"
         private const val REQUESTED_MONTH_PARAMETER = "requested_month"
+        private const val SHOP_ID_PARAMETER = "p_shop_id"
         private const val EVENT_PARTICIPANT_TABLE = "shop_event_participants"
         private const val COLUMN_SHOP_CONTEXT_ID = "shop_context_id"
         private const val COLUMN_EVENT_ID = "event_id"

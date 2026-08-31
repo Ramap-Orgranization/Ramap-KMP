@@ -3,6 +3,9 @@ package com.peto.ramap.data.repository
 import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.core.result.getOrThrow
 import com.peto.ramap.data.model.CalendarEventPageResponse
+import com.peto.ramap.data.model.MenuResponse
+import com.peto.ramap.data.model.MenuSectionResponse
+import com.peto.ramap.data.model.ShopDetailResponse
 import com.peto.ramap.data.model.ShopEventParticipantResponse
 import com.peto.ramap.data.model.ShopEventResponse
 import com.peto.ramap.domain.model.shop.Category
@@ -25,6 +28,99 @@ import kotlin.test.assertTrue
 import kotlin.time.Clock
 
 class DefaultRamenShopRepositoryTest {
+    @Test
+    fun `상세 RPC 응답도 기존 이벤트와 메뉴 규칙으로 변환한다`() =
+        runTest {
+            val response =
+                ShopDetailResponse(
+                    shop = ramenShopResponseFixture(id = "venue-shop"),
+                    likeCount = 3L,
+                    events = listOf(shopEventResponse()),
+                    eventParticipants =
+                        listOf(
+                            ShopEventParticipantResponse(eventId = "event", shopId = "partner-shop"),
+                            ShopEventParticipantResponse(eventId = "event", shopId = null),
+                        ),
+                    menuSections =
+                        listOf(
+                            MenuSectionResponse(
+                                id = "section",
+                                shopId = "venue-shop",
+                                title = "한정 메뉴",
+                                description = "하루 10그릇 한정",
+                                displayOrder = 0,
+                            ),
+                        ),
+                    menuItems =
+                        listOf(
+                            MenuResponse(
+                                id = "menu",
+                                sectionId = "section",
+                                name = "시오라멘",
+                                priceKrw = 10000,
+                                displayOrder = 0,
+                            ),
+                        ),
+                )
+            val repository =
+                DefaultRamenShopRepository(
+                    FakeRamenShopDataSource(shopDetailResponse = response),
+                )
+
+            val detail = repository.fetchShopDetail("venue-shop").getOrThrow()
+
+            assertEquals(2, detail.event?.collaborationPartnerCount)
+            assertEquals("하루 10그릇 한정", detail.menuSections.single().description)
+        }
+
+    @Test
+    fun `이벤트 메뉴 섹션은 상시 메뉴보다 먼저 표시한다`() =
+        runTest {
+            val response =
+                ShopDetailResponse(
+                    shop = ramenShopResponseFixture(id = "menu-order-shop"),
+                    likeCount = 0L,
+                    menuSections =
+                        listOf(
+                            MenuSectionResponse(
+                                id = "permanent",
+                                shopId = "menu-order-shop",
+                                title = " 상시메뉴 ",
+                                displayOrder = 0,
+                            ),
+                            MenuSectionResponse(
+                                id = "event",
+                                shopId = "menu-order-shop",
+                                title = "기간 한정",
+                                displayOrder = 1,
+                            ),
+                        ),
+                    menuItems =
+                        listOf(
+                            MenuResponse(
+                                id = "permanent-item",
+                                sectionId = "permanent",
+                                name = "쇼유라멘",
+                                displayOrder = 0,
+                            ),
+                            MenuResponse(
+                                id = "event-item",
+                                sectionId = "event",
+                                name = "한정 라멘",
+                                displayOrder = 0,
+                            ),
+                        ),
+                )
+            val repository =
+                DefaultRamenShopRepository(
+                    FakeRamenShopDataSource(shopDetailResponse = response),
+                )
+
+            val detail = repository.fetchShopDetail("menu-order-shop").getOrThrow()
+
+            assertEquals(listOf("event", "permanent"), detail.menuSections.map { it.id })
+        }
+
     @Test
     fun `활성 이벤트가 없으면 성공 결과에 null을 반환한다`() =
         runTest {
@@ -205,8 +301,8 @@ class DefaultRamenShopRepositoryTest {
                         activeEventResponses = listOf(shopEventResponse()),
                         participantResponses =
                             listOf(
-                                ShopEventParticipantResponse(shopId = "partner-shop"),
-                                ShopEventParticipantResponse(shopId = null),
+                                ShopEventParticipantResponse(eventId = "event", shopId = "partner-shop"),
+                                ShopEventParticipantResponse(eventId = "event", shopId = null),
                             ),
                     ),
                 )
@@ -215,6 +311,40 @@ class DefaultRamenShopRepositoryTest {
 
             assertEquals(2, event?.collaborationPartnerCount)
             assertEquals(null, event?.upcomingCollaborationPartnerName)
+        }
+
+    @Test
+    fun `상세 RPC의 다른 활성 이벤트 참여자는 선택한 콜라보 인원에서 제외한다`() =
+        runTest {
+            val response =
+                ShopDetailResponse(
+                    shop = ramenShopResponseFixture(id = "venue-shop"),
+                    likeCount = 0L,
+                    events = listOf(shopEventResponse(id = "selected-collab")),
+                    eventParticipants =
+                        listOf(
+                            ShopEventParticipantResponse(
+                                eventId = "selected-collab",
+                                shopId = "selected-partner",
+                            ),
+                            ShopEventParticipantResponse(
+                                eventId = "another-active-event",
+                                shopId = "unrelated-partner",
+                            ),
+                            ShopEventParticipantResponse(
+                                eventId = "another-active-event",
+                                shopId = null,
+                            ),
+                        ),
+                )
+            val repository =
+                DefaultRamenShopRepository(
+                    FakeRamenShopDataSource(shopDetailResponse = response),
+                )
+
+            val detail = repository.fetchShopDetail("venue-shop").getOrThrow()
+
+            assertEquals(1, detail.event?.collaborationPartnerCount)
         }
 
     @Test
