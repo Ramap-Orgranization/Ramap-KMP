@@ -39,11 +39,11 @@
     <string name="shop_detail_business_hours_last_order_format">%1$s (라스트오더)</string>
     <string name="shop_detail_business_hours_item_separator"> / </string>
     <string name="shop_detail_business_hours_show_all">전체보기 &gt;</string>
-    <string name="shop_detail_label_waiting">대기</string>
+    <string name="shop_detail_label_waiting">웨이팅</string>
     <string name="shop_detail_link_instagram">Instagram</string>
-    <string name="shop_detail_link_kakao_map">카카오 지도에서 보기</string>
-    <string name="shop_detail_link_naver_map">네이버 지도에서 보기</string>
-    <string name="shop_detail_link_apple_maps">애플 지도에서 보기</string>
+    <string name="shop_detail_link_kakao_map">카카오 지도</string>
+    <string name="shop_detail_link_naver_map">네이버 지도</string>
+    <string name="shop_detail_link_apple_maps">애플 지도</string>
     <string name="shop_detail_link_report">제보하기</string>
     <string name="shop_detail_more_actions">매장 메뉴 더보기</string>
     <string name="share_shop_action">공유하기</string>

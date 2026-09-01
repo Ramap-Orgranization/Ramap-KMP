@@ -93,6 +93,7 @@ fun ShopDetailContent(
                     maxHeight = maxHeight,
                     isDraggable = true,
                     isContentDraggable = true,
+                    isStatusBarPadded = true,
                 ),
         ) { dragModifier ->
             when (state) {
@@ -164,7 +165,12 @@ fun ShopDetailContent(
             visible = visible,
             onDismissRequest = onDismissRequest,
             isBackEnabled = isBackEnabled,
-            config = CommonBottomSheetConfig(maxHeight = maxHeight, isDraggable = true),
+            config =
+                CommonBottomSheetConfig(
+                    maxHeight = maxHeight,
+                    isDraggable = true,
+                    isStatusBarPadded = true,
+                ),
         ) { _ ->
             LoadErrorContent(
                 image = Res.drawable.laduck_error_crying,

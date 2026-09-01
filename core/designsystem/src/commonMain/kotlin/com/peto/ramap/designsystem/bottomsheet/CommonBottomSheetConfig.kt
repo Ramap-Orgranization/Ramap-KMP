@@ -15,6 +15,7 @@ data class CommonBottomSheetConfig(
     val showHandle: Boolean = true,
     val isDraggable: Boolean = false,
     val isContentDraggable: Boolean = false,
+    val isStatusBarPadded: Boolean = false,
     val handleTopPadding: Dp = 11.dp,
     val handleBottomPadding: Dp = 11.dp,
     val maxHeightFraction: Float = 0.8f,
