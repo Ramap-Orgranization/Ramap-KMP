@@ -66,7 +66,6 @@ fun ShopDetailContent(
     onShowOnMap: ((String) -> Unit)? = null,
     onPhoneClick: (String) -> Unit = {},
     onWaitingClick: (String) -> Unit = {},
-    shouldShowExternalLink: (String) -> Boolean = { true },
     onExternalLinkClick: (String) -> Unit = {},
     isAppleMapsAvailable: Boolean = false,
     onAppleMapsClick: (RamenShop) -> Unit = {},
@@ -129,7 +128,6 @@ fun ShopDetailContent(
                         onMapLinkClick = { provider -> onShopMapLinkClick(shop, provider) },
                         onPhoneClick = onPhoneClick,
                         onWaitingClick = onWaitingClick,
-                        shouldShowExternalLink = shouldShowExternalLink,
                         onExternalLinkClick = onExternalLinkClick,
                         isAppleMapsAvailable = isAppleMapsAvailable,
                         onAppleMapsClick = onAppleMapsClick,
@@ -137,6 +135,7 @@ fun ShopDetailContent(
                         onEventClick = onEventClick,
                         operatingNotice = state.detail.operatingNotice,
                         onOperatingNoticeClick = onOperatingNoticeClick,
+                        menuSections = state.detail.menuSections,
                         businessHoursStatus = state.businessHoursNoticeStatus(),
                         onReportClick = { showReportDialog = true },
                     )

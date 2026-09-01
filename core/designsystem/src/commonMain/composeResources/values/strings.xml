@@ -14,6 +14,10 @@
     <string name="map_search_result_closed_label">영업 종료</string>
     <string name="map_search_result_closed_format">영업 종료 · %1$s에 영업 시작</string>
     <string name="shop_detail_label_phone">전화</string>
+    <string name="shop_menu_title">메뉴판</string>
+    <string name="shop_menu_representative">대표</string>
+    <string name="shop_menu_price">%1$s원</string>
+    <string name="shop_menu_source">자세히 보기 &gt;</string>
     <string name="shop_detail_label_business_hours">영업시간</string>
     <string name="shop_detail_business_hours_notice">실제 매장 운영 상황과 다를 수 있어요</string>
     <string name="shop_detail_business_hours_weekly_title">영업시간</string>

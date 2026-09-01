@@ -89,7 +89,6 @@ fun ShopDetailHost(
                 },
                 onPhoneClick = { ExternalUriOpener.open("tel:$it") },
                 onWaitingClick = ExternalUriOpener::open,
-                shouldShowExternalLink = ExternalUriOpener::isSupportedWebUri,
                 onExternalLinkClick = ExternalUriOpener::open,
                 isAppleMapsAvailable = ExternalUriOpener.isAppleMapsAvailable,
                 onAppleMapsClick = { shop ->

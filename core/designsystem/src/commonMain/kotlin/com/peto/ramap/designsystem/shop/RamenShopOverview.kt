@@ -33,11 +33,11 @@ import com.peto.ramap.designsystem.resource.wating.WaitingSystemUiModel
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.domain.model.businesshour.BusinessHoursStatus
 import com.peto.ramap.domain.model.event.ShopEvent
+import com.peto.ramap.domain.model.menu.MenuSection
 import com.peto.ramap.domain.model.notice.OperatingNotice
 import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.extension.noRippleClickable
 import com.peto.ramap.preview.RamenShopPreviewParameterProvider
-import com.peto.ramap.preview.ShopEventPreviewParameterProvider
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
@@ -81,7 +81,6 @@ fun RamenShopOverview(
     onMapLinkClick: (String) -> Unit,
     onPhoneClick: (String) -> Unit,
     onWaitingClick: (String) -> Unit,
-    shouldShowExternalLink: (String) -> Boolean,
     onExternalLinkClick: (String) -> Unit,
     isAppleMapsAvailable: Boolean = false,
     onAppleMapsClick: (RamenShop) -> Unit,
@@ -89,6 +88,8 @@ fun RamenShopOverview(
     onEventClick: (ShopEvent) -> Unit,
     operatingNotice: OperatingNotice? = null,
     onOperatingNoticeClick: (OperatingNotice) -> Unit = {},
+    menuSections: List<MenuSection> = emptyList(),
+    businessHoursStatus: BusinessHoursStatus? = null,
 ) {
     val clipboardManager = LocalClipboardManager.current
 
@@ -241,19 +242,13 @@ fun RamenShopOverview(
             modifier = Modifier.padding(horizontal = 20.dp),
         ) {
             shop.businessHoursDetails?.let { businessHours ->
-                BusinessHoursCard(
-                    businessHours = businessHours,
-                )
+                BusinessHoursCard(businessHours)
             }
 
-            waitingSystem?.let {
-                ShopIconLinkRow(
-                    label = stringResource(Res.string.shop_detail_label_waiting),
-                    icon = waitingSystem.icon,
-                    contentDescription = stringResource(waitingSystem.label),
-                    onClick = { onWaitingClick(waitingSystem.providerUrl) },
-                )
-            }
+            ShopMenuContent(
+                sections = menuSections,
+                onMenuSourceClick = onExternalLinkClick,
+            )
         }
 
         HorizontalDivider(
@@ -266,7 +261,7 @@ fun RamenShopOverview(
             verticalArrangement = Arrangement.spacedBy(10.dp),
             modifier = Modifier.padding(horizontal = 20.dp),
         ) {
-            shop.instagramUrl?.takeIf(shouldShowExternalLink)?.let { instagramUrl ->
+            shop.instagramUrl?.let { instagramUrl ->
                 ShopLinkRow(
                     icon = Res.drawable.instagram_icon,
                     label = stringResource(Res.string.shop_detail_link_instagram),
@@ -274,7 +269,15 @@ fun RamenShopOverview(
                 )
             }
 
-            shop.kakaoPlaceUrl?.takeIf(shouldShowExternalLink)?.let { kakaoPlaceUrl ->
+            waitingSystem?.let {
+                ShopLinkRow(
+                    label = stringResource(Res.string.shop_detail_label_waiting),
+                    icon = waitingSystem.icon,
+                    onClick = { onWaitingClick(waitingSystem.providerUrl) },
+                )
+            }
+
+            shop.kakaoPlaceUrl?.let { kakaoPlaceUrl ->
                 ShopLinkRow(
                     icon = Res.drawable.kakao_map_icon,
                     label = stringResource(Res.string.shop_detail_link_kakao_map),
@@ -285,7 +288,7 @@ fun RamenShopOverview(
                 )
             }
 
-            shop.naverPlaceUrl?.takeIf(shouldShowExternalLink)?.let { naverPlaceUrl ->
+            shop.naverPlaceUrl?.let { naverPlaceUrl ->
                 ShopLinkRow(
                     icon = Res.drawable.naver_map_icon,
                     label = stringResource(Res.string.shop_detail_link_naver_map),
@@ -337,45 +340,10 @@ private fun RamenShopOverviewPreview(
             onMapLinkClick = {},
             onPhoneClick = {},
             onWaitingClick = {},
-            shouldShowExternalLink = { true },
             onExternalLinkClick = {},
             isAppleMapsAvailable = false,
             onAppleMapsClick = {},
             event = null,
-            onEventClick = {},
-            operatingNotice = null,
-            onOperatingNoticeClick = {},
-        )
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-private fun RamenShopOverviewWithEventPreview(
-    @PreviewParameter(RamenShopPreviewParameterProvider::class) shop: RamenShop,
-    @PreviewParameter(ShopEventPreviewParameterProvider::class) event: ShopEvent,
-) {
-    RamapTheme {
-        RamenShopOverview(
-            shop = shop,
-            dragAreaModifier = Modifier,
-            waitingSystem = null,
-            isBookmarked = false,
-            isNotificationEnabled = false,
-            isHidden = false,
-            onBookmarkClick = {},
-            onNotificationClick = {},
-            onHiddenClick = {},
-            onReportClick = {},
-            onShareClick = {},
-            onMapLinkClick = {},
-            onPhoneClick = {},
-            onWaitingClick = {},
-            shouldShowExternalLink = { true },
-            onExternalLinkClick = {},
-            isAppleMapsAvailable = false,
-            onAppleMapsClick = {},
-            event = event,
             onEventClick = {},
             operatingNotice = null,
             onOperatingNoticeClick = {},
