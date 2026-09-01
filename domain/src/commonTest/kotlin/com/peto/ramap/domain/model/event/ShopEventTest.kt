@@ -43,6 +43,22 @@ class ShopEventTest {
     }
 
     @Test
+    fun `한정 메뉴 기간을 포함 날짜 기준으로 분류한다`() {
+        assertEquals(
+            LimitedMenuDuration.ONE_DAY,
+            event(type = ShopEventType.LIMITED_MENU, startDate = "2026-09-01", endDate = "2026-09-01").limitedMenuDuration(),
+        )
+        assertEquals(
+            LimitedMenuDuration.SHORT_TERM,
+            event(type = ShopEventType.SUMMER_LIMITED, startDate = "2026-09-01", endDate = "2026-09-06").limitedMenuDuration(),
+        )
+        assertEquals(
+            LimitedMenuDuration.LONG_TERM,
+            event(type = ShopEventType.LIMITED_MENU, startDate = "2026-09-01", endDate = "2026-09-07").limitedMenuDuration(),
+        )
+    }
+
+    @Test
     fun `이벤트를 날짜별로 묶고 빈 날짜를 제외한다`() {
         val first = event(startDate = "2024-02-28", endDate = "2024-03-01")
         val second = event(startDate = "2024-03-01", endDate = "2024-03-01")

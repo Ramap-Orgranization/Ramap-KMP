@@ -31,6 +31,7 @@ import ramap.shared.generated.resources.event_type_summer_limited
 import ramap.shared.generated.resources.event_venue
 import ramap.shared.generated.resources.shop_event_notice_collab_participant_today
 import ramap.shared.generated.resources.shop_event_notice_collab_upcoming_with_shop
+import ramap.shared.generated.resources.shop_event_notice_limited_menu_today
 import ramap.shared.generated.resources.shop_event_notice_limited_menu_upcoming
 import ramap.shared.generated.resources.shop_event_notice_new_menu_today
 import ramap.shared.generated.resources.shop_event_notice_participant_today
@@ -151,6 +152,30 @@ class ShopEventResourceMapperTest {
     }
 
     @Test
+    fun `중장기 한정 메뉴는 오늘 안내 문구를 숨긴다`() {
+        assertEquals(
+            null,
+            ShopEventResourceMapper.notice(
+                event(
+                    type = ShopEventType.LIMITED_MENU,
+                    endDate = "2026-07-29",
+                    isToday = true,
+                ),
+            ),
+        )
+        assertEquals(
+            UiText(Res.string.shop_event_notice_limited_menu_today),
+            ShopEventResourceMapper.notice(
+                event(
+                    type = ShopEventType.SUMMER_LIMITED,
+                    endDate = "2026-07-23",
+                    isToday = true,
+                ),
+            ),
+        )
+    }
+
+    @Test
     fun `예정된 단독 협업은 파트너 이름을 포함한다`() {
         val notice =
             ShopEventResourceMapper.notice(
@@ -231,6 +256,8 @@ class ShopEventResourceMapperTest {
 
     private fun event(
         type: ShopEventType = ShopEventType.POPUP,
+        startDate: String = "2026-07-23",
+        endDate: String? = "2026-07-23",
         isToday: Boolean = false,
         isVenue: Boolean = true,
         collaboratorShopId: String? = null,
