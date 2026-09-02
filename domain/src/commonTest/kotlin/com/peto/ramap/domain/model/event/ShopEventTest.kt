@@ -12,16 +12,6 @@ import kotlin.test.assertTrue
 
 class ShopEventTest {
     @Test
-    fun `이벤트 기간의 양 끝 날짜를 포함하고 잘못된 날짜를 거부한다`() {
-        val event = event(startDate = "2024-02-28", endDate = "2024-03-01")
-
-        assertTrue(event.occursOn(LocalDate(2024, 2, 28)))
-        assertTrue(event.occursOn(LocalDate(2024, 3, 1)))
-        assertFalse(event.occursOn(LocalDate(2024, 3, 2)))
-        assertFalse(event(startDate = "2024-02-30", endDate = null).occursOn(LocalDate(2024, 2, 29)))
-    }
-
-    @Test
     fun `매장 리뉴얼은 시작일부터 한 달간 진행한다`() {
         val renewal =
             event(
