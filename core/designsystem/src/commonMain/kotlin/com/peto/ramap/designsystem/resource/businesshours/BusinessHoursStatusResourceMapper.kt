@@ -32,6 +32,9 @@ object BusinessHoursStatusResourceMapper {
                 UiText(Res.string.map_search_result_break_time_format, listOf(status.endTime))
 
             is BusinessHoursStatus.Closed ->
-                UiText(Res.string.map_search_result_closed_format, listOf(status.nextOpenTime))
+                status.nextOpenTime?.let {
+                    UiText(Res.string.map_search_result_closed_format, listOf(it))
+                }
+                    ?: UiText(Res.string.map_search_result_closed_label)
         }
 }

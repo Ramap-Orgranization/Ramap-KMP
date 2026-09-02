@@ -24,14 +24,12 @@ import androidx.compose.ui.unit.dp
 import com.peto.ramap.designsystem.badge.NewsBadge
 import com.peto.ramap.designsystem.component.MenuCategoryLabels
 import com.peto.ramap.designsystem.image.RemoteShopImage
-import com.peto.ramap.designsystem.resource.businesshours.BusinessHoursStatusResourceMapper
 import com.peto.ramap.designsystem.resource.category.CategoryResourceMapper
 import com.peto.ramap.designsystem.resource.event.ShopEventResourceMapper
 import com.peto.ramap.designsystem.resource.format
 import com.peto.ramap.designsystem.resource.operatingnotice.ShopOperatingNoticeResourceMapper
 import com.peto.ramap.designsystem.resource.wating.WaitingSystemUiModel
 import com.peto.ramap.designsystem.text.AppText
-import com.peto.ramap.domain.model.businesshour.BusinessHoursStatus
 import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.model.menu.MenuSection
 import com.peto.ramap.domain.model.notice.OperatingNotice
@@ -89,7 +87,7 @@ fun RamenShopOverview(
     operatingNotice: OperatingNotice? = null,
     onOperatingNoticeClick: (OperatingNotice) -> Unit = {},
     menuSections: List<MenuSection> = emptyList(),
-    businessHoursStatus: BusinessHoursStatus? = null,
+    menuUpdatedAt: String? = null,
 ) {
     val clipboardManager = LocalClipboardManager.current
 
@@ -112,17 +110,6 @@ fun RamenShopOverview(
                             .padding(top = 5.dp)
                             .padding(horizontal = 24.dp)
                             .noRippleClickable { onOperatingNoticeClick(notice) },
-                    textStyle = AppTextStyle.B3,
-                    containerColor = SystemColor.Warning,
-                    contentColor = CommonColor.White,
-                )
-            }
-            businessHoursStatus?.let { status ->
-                NewsBadge(
-                    text = BusinessHoursStatusResourceMapper.noticeLabel(status)?.format().orEmpty(),
-                    modifier =
-                        Modifier
-                            .padding(horizontal = 24.dp),
                     textStyle = AppTextStyle.B3,
                     containerColor = SystemColor.Warning,
                     contentColor = CommonColor.White,
@@ -241,12 +228,16 @@ fun RamenShopOverview(
             verticalArrangement = Arrangement.spacedBy(10.dp),
             modifier = Modifier.padding(horizontal = 20.dp),
         ) {
-            shop.businessHoursDetails?.let { businessHours ->
-                BusinessHoursCard(businessHours)
+            if (shop.businessHoursDetails != null) {
+                BusinessHoursCard(
+                    shop = shop,
+                    operatingNotice = operatingNotice,
+                )
             }
 
             ShopMenuContent(
                 sections = menuSections,
+                updatedAt = menuUpdatedAt,
                 onMenuSourceClick = onExternalLinkClick,
             )
         }
@@ -258,63 +249,85 @@ fun RamenShopOverview(
         )
 
         Column(
-            verticalArrangement = Arrangement.spacedBy(10.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier.padding(horizontal = 20.dp),
         ) {
-            shop.instagramUrl?.let { instagramUrl ->
-                ShopLinkRow(
-                    icon = Res.drawable.instagram_icon,
-                    label = stringResource(Res.string.shop_detail_link_instagram),
-                    onClick = { onExternalLinkClick(instagramUrl) },
-                )
+            if (shop.instagramUrl != null || waitingSystem != null) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    shop.instagramUrl?.let { url ->
+                        ShopLinkRow(
+                            icon = Res.drawable.instagram_icon,
+                            label = stringResource(Res.string.shop_detail_link_instagram),
+                            onClick = { onExternalLinkClick(url) },
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
+                    waitingSystem?.let { waiting ->
+                        ShopLinkRow(
+                            label = stringResource(Res.string.shop_detail_label_waiting),
+                            icon = waiting.icon,
+                            onClick = { onWaitingClick(waiting.providerUrl) },
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
+                }
             }
 
-            waitingSystem?.let {
-                ShopLinkRow(
-                    label = stringResource(Res.string.shop_detail_label_waiting),
-                    icon = waitingSystem.icon,
-                    onClick = { onWaitingClick(waitingSystem.providerUrl) },
-                )
+            if (shop.kakaoPlaceUrl != null || shop.naverPlaceUrl != null) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    shop.kakaoPlaceUrl?.let { url ->
+                        ShopLinkRow(
+                            icon = Res.drawable.kakao_map_icon,
+                            label = stringResource(Res.string.shop_detail_link_kakao_map),
+                            onClick = {
+                                onMapLinkClick("kakao")
+                                onExternalLinkClick(url)
+                            },
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
+                    shop.naverPlaceUrl?.let { url ->
+                        ShopLinkRow(
+                            icon = Res.drawable.naver_map_icon,
+                            label = stringResource(Res.string.shop_detail_link_naver_map),
+                            onClick = {
+                                onMapLinkClick("naver")
+                                onExternalLinkClick(url)
+                            },
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
+                }
             }
 
-            shop.kakaoPlaceUrl?.let { kakaoPlaceUrl ->
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                if (isAppleMapsAvailable) {
+                    ShopLinkRow(
+                        icon = Res.drawable.apple_maps_icon,
+                        label = stringResource(Res.string.shop_detail_link_apple_maps),
+                        onClick = {
+                            onMapLinkClick("apple")
+                            onAppleMapsClick(shop)
+                        },
+                        modifier = Modifier.weight(1f),
+                    )
+                }
                 ShopLinkRow(
-                    icon = Res.drawable.kakao_map_icon,
-                    label = stringResource(Res.string.shop_detail_link_kakao_map),
-                    onClick = {
-                        onMapLinkClick("kakao")
-                        onExternalLinkClick(kakaoPlaceUrl)
-                    },
+                    icon = Res.drawable.ic_report,
+                    label = stringResource(Res.string.shop_detail_link_report),
+                    onClick = onReportClick,
+                    modifier = Modifier.weight(1f),
                 )
             }
-
-            shop.naverPlaceUrl?.let { naverPlaceUrl ->
-                ShopLinkRow(
-                    icon = Res.drawable.naver_map_icon,
-                    label = stringResource(Res.string.shop_detail_link_naver_map),
-                    onClick = {
-                        onMapLinkClick("naver")
-                        onExternalLinkClick(naverPlaceUrl)
-                    },
-                )
-            }
-
-            if (isAppleMapsAvailable) {
-                ShopLinkRow(
-                    icon = Res.drawable.apple_maps_icon,
-                    label = stringResource(Res.string.shop_detail_link_apple_maps),
-                    onClick = {
-                        onMapLinkClick("apple")
-                        onAppleMapsClick(shop)
-                    },
-                )
-            }
-
-            ShopLinkRow(
-                icon = Res.drawable.ic_report,
-                label = stringResource(Res.string.shop_detail_link_report),
-                onClick = onReportClick,
-            )
         }
     }
 }
@@ -330,6 +343,7 @@ private fun RamenShopOverviewPreview(
             dragAreaModifier = Modifier,
             waitingSystem = null,
             isBookmarked = false,
+            isAppleMapsAvailable = true,
             isNotificationEnabled = false,
             isHidden = false,
             onBookmarkClick = {},
@@ -341,7 +355,6 @@ private fun RamenShopOverviewPreview(
             onPhoneClick = {},
             onWaitingClick = {},
             onExternalLinkClick = {},
-            isAppleMapsAvailable = false,
             onAppleMapsClick = {},
             event = null,
             onEventClick = {},

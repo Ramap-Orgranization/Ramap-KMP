@@ -137,7 +137,7 @@ fun ShopDetailContent(
                         operatingNotice = state.detail.operatingNotice,
                         onOperatingNoticeClick = onOperatingNoticeClick,
                         menuSections = state.detail.menuSections,
-                        businessHoursStatus = state.businessHoursNoticeStatus(),
+                        menuUpdatedAt = state.detail.menuUpdatedAt,
                         onReportClick = { showReportDialog = true },
                     )
                     onShowOnMap?.let { showOnMap ->

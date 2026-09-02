@@ -15,9 +15,9 @@ import com.peto.ramap.designsystem.component.RamenShopSummaries
 import com.peto.ramap.designsystem.component.ShopListCount
 import com.peto.ramap.designsystem.component.ShopListEmptyContent
 import com.peto.ramap.designsystem.resource.category.CategoryResourceMapper
+import com.peto.ramap.designsystem.resource.event.ShopEventResourceMapper
 import com.peto.ramap.designsystem.text.eventDateText
 import com.peto.ramap.domain.model.event.ShopEvent
-import com.peto.ramap.domain.model.event.ShopEventType
 import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.preview.RamenShopPreviewParameterProvider
@@ -62,11 +62,7 @@ internal fun SubscribedShopListContent(
                             dateText =
                                 eventDateText(
                                     event.startDate,
-                                    if (event.type == ShopEventType.STORE_RENEWAL) {
-                                        event.startDate
-                                    } else {
-                                        event.endDate
-                                    },
+                                    ShopEventResourceMapper.displayEndDate(event),
                                 ),
                             onClick = { onEventOpen(event) },
                             actionLabel = stringResource(Res.string.notification_removal_confirm_action),

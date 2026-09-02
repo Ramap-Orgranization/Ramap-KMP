@@ -45,8 +45,10 @@ data class MapUiState(
      * 지도와 검색 결과에 적용 중인 매장 필터.
      */
     val filters: RamenShopFilter = RamenShopFilter(),
+    /**
+     * 운영 공지 목록
+     */
     val operatingNotices: List<OperatingNotice> = emptyList(),
-    /** 영업중 필터의 시간 변화를 반영하기 위한 화면 갱신 버전. */
     /**
      * 현재 지도 카메라가 보고 있는 영역.
      */

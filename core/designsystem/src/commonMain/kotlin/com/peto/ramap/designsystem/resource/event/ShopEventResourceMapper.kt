@@ -82,6 +82,8 @@ object ShopEventResourceMapper {
             ShopEventType.STORE_RENEWAL -> Res.string.event_date_store_renewal
         }
 
+    fun displayEndDate(event: ShopEvent): String? = if (isStartDateBased(event.type)) event.startDate else event.endDate
+
     fun dateLabel(event: ShopEvent): StringResource? {
         statusLabel(event)?.let { return it }
         if (isStartDateBased(event.type) && event.isToday && !event.isStartDateToday) return null

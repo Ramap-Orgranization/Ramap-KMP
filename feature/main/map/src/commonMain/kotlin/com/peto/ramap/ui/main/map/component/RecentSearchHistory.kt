@@ -67,7 +67,7 @@ internal fun RecentSearchHistory(
                     modifier =
                         Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 8.dp)
+                            .padding(horizontal = 10.dp)
                             .noRippleClickable { onSearchSelected(query) },
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
@@ -127,11 +127,16 @@ private fun HistoryHeader(
         modifier =
             modifier
                 .fillMaxWidth()
-                .padding(start = 8.dp, end = 8.dp),
+                .padding(horizontal = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
-        AppText(text = title, style = AppTextStyle.T2, color = GrayColor.C500)
+        AppText(
+            text = title,
+            style = AppTextStyle.T2,
+            color = GrayColor.C500,
+        )
+
         if (action != null && onAction != null) {
             TextButton(onClick = onAction) {
                 AppText(text = action, style = AppTextStyle.B2, color = GrayColor.C300)

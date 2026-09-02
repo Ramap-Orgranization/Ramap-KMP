@@ -183,6 +183,7 @@ internal fun SearchContent(
                         if (uiState.hasSearchResult) {
                             SearchResultList(
                                 shops = uiState.searchResultShops,
+                                operatingNotices = uiState.operatingNotices,
                                 onShopClick = {
                                     onShopSelected(it, true, AnalyticsSource.SEARCH_RESULT)
                                 },

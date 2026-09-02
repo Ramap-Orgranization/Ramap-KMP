@@ -22,7 +22,6 @@ import com.peto.ramap.designsystem.resource.event.ShopEventResourceMapper
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.designsystem.text.eventDateText
 import com.peto.ramap.domain.model.event.ShopEvent
-import com.peto.ramap.domain.model.event.ShopEventType
 import com.peto.ramap.domain.model.event.ShopEvents
 import com.peto.ramap.extension.noRippleClickable
 import com.peto.ramap.theme.AppTextStyle
@@ -119,7 +118,7 @@ fun EventShopGroupCard(
                     text =
                         eventDateText(
                             event.startDate,
-                            if (event.type == ShopEventType.STORE_RENEWAL) event.startDate else event.endDate,
+                            ShopEventResourceMapper.displayEndDate(event),
                         ),
                     style = AppTextStyle.B4,
                     color = GrayColor.C400,

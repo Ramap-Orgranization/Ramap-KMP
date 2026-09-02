@@ -90,7 +90,7 @@ fun EventDetailInfoSection(
                         color = ChromaticColor.Blue400,
                     )
                     AppText(
-                        text = eventDateText(event.startDate, event.endDate),
+                        text = eventDateText(event.startDate, ShopEventResourceMapper.displayEndDate(event)),
                         style = AppTextStyle.B1,
                         color = GrayColor.C500,
                     )

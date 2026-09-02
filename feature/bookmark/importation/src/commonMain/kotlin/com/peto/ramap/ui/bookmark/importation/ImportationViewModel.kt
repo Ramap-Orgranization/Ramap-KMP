@@ -138,8 +138,7 @@ class ImportationViewModel(
         reduce { clearPreview(this).copy(url = "") }
     }
 
-    private fun currentPersonalization(): ShopPersonalization? =
-        (personalizationStore.state.value as? PersonalizationBootstrapState.Success)?.value
+    private fun currentPersonalization(): ShopPersonalization? = (personalizationStore.state.value as? PersonalizationBootstrapState.Success)?.value
 
     private fun publishError(error: ImportationError) {
         reduce { copy(error = error) }
