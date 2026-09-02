@@ -22,6 +22,7 @@ import com.peto.ramap.designsystem.resource.businesshours.BusinessHoursStatusRes
 import com.peto.ramap.designsystem.resource.format
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.domain.model.businesshour.BusinessHoursStatus
+import com.peto.ramap.domain.model.notice.OperatingNotice
 import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.preview.RamenShopsPreviewParameterProvider
@@ -43,6 +44,7 @@ import kotlin.time.Clock
 @Composable
 internal fun SearchResultList(
     shops: RamenShops,
+    operatingNotices: List<OperatingNotice>,
     onShopClick: (RamenShop) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -59,6 +61,7 @@ internal fun SearchResultList(
             SearchResultItem(
                 shop = shop,
                 currentDateTime = currentDateTime,
+                operatingNotices = operatingNotices,
                 onClick = { onShopClick(shop) },
             )
             if (index != shops.size - 1) {
@@ -72,6 +75,7 @@ internal fun SearchResultList(
 private fun SearchResultItem(
     shop: RamenShop,
     currentDateTime: LocalDateTime,
+    operatingNotices: List<OperatingNotice>,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -106,7 +110,7 @@ private fun SearchResultItem(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
-                shop.businessHoursStatus(currentDateTime)?.let { status ->
+                shop.businessHoursStatus(currentDateTime, operatingNotices)?.let { status ->
                     val statusText = BusinessHoursStatusResourceMapper.status(status).format()
                     val highlightedLabel =
                         when (status) {
@@ -159,6 +163,7 @@ private fun SearchResultListPreview(
     RamapTheme {
         SearchResultList(
             shops = shops,
+            operatingNotices = emptyList(),
             onShopClick = {},
         )
     }

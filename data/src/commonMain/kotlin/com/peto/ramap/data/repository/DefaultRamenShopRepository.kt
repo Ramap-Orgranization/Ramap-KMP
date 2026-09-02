@@ -38,7 +38,11 @@ internal class DefaultRamenShopRepository(
             val response =
                 dataSource.fetchShopDetail(shopId)
                     ?: error("매장 상세를 찾을 수 없습니다: $shopId")
-            shopDetail(response, shopId)
+            val menuUpdatedAt =
+                response.menuSections
+                    .takeIf(List<MenuSectionResponse>::isNotEmpty)
+                    ?.let { dataSource.fetchShopMenuUpdatedAt(shopId) }
+            shopDetail(response, shopId, menuUpdatedAt)
         }
 
     override suspend fun fetchShopLikeCount(shopId: String): RamapResult<Long> =
@@ -111,6 +115,7 @@ internal class DefaultRamenShopRepository(
     private fun shopDetail(
         response: ShopDetailResponse,
         shopId: String,
+        menuUpdatedAt: String?,
     ): ShopDetail {
         val domainShop = response.shop.toDomain()
         val activeEvents = activeShopEvents(response.events)
@@ -121,6 +126,7 @@ internal class DefaultRamenShopRepository(
             event = activeShopEvent(activeEvents, response.eventParticipants, shopId),
             operatingNotice = response.operatingNotice?.toDomain(domainShop),
             menuSections = menuSections(response.menuSections, response.menuItems),
+            menuUpdatedAt = menuUpdatedAt,
         )
     }
 

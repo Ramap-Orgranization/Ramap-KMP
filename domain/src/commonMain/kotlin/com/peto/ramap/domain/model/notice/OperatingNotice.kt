@@ -16,6 +16,5 @@ data class OperatingNotice(
     val endTime: LocalTime?,
     val sourceUrl: String?,
 ) {
-    fun isActiveAt(currentDateTime: LocalDateTime): Boolean =
-        currentDateTime.date >= startDate && (endDate == null || currentDateTime.date <= endDate)
+    fun isActiveAt(currentDateTime: LocalDateTime): Boolean = currentDateTime.date >= startDate && (endDate == null || currentDateTime.date <= endDate)
 }

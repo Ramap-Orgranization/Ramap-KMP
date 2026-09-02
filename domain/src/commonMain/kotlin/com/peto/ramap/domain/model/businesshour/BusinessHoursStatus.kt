@@ -19,6 +19,6 @@ sealed interface BusinessHoursStatus {
     ) : BusinessHoursStatus
 
     data class Closed(
-        val nextOpenTime: String,
+        val nextOpenTime: String? = null,
     ) : BusinessHoursStatus
 }

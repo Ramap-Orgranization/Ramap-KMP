@@ -162,4 +162,70 @@ class BusinessHoursTest {
             shop.businessHoursStatus(LocalDateTime(2026, 8, 10, 23, 0)),
         )
     }
+
+    @Test
+    fun `영업 변동으로 닫힌 매장은 다음 영업시간 없이 영업 종료 상태를 표시한다`() {
+        val shop =
+            ramenShopFixture().copy(
+                businessHoursDetails =
+                    BusinessHours(
+                        weekly = mapOf("sun" to BusinessHoursDay(false, "11:00", "22:00", false, null)),
+                        breakTimes = mapOf("sun" to listOf(BreakTime("13:00", "14:00"))),
+                        lastOrders = emptyMap(),
+                        notice = null,
+                    ),
+            )
+        val date = LocalDateTime(2026, 8, 30, 0, 0).date
+        val temporaryClosure =
+            OperatingNotice(
+                id = "temporary",
+                shop = shop,
+                type = OperatingNoticeType.TEMPORARY_CLOSURE,
+                description = "임시 휴무",
+                startDate = date,
+                endDate = date,
+                startTime = null,
+                endTime = null,
+                sourceUrl = null,
+            )
+
+        assertEquals(
+            BusinessHoursStatus.Closed(),
+            shop.businessHoursStatus(LocalDateTime(2026, 8, 30, 12, 0), listOf(temporaryClosure)),
+        )
+        assertEquals(
+            BusinessHoursStatus.Closed(),
+            shop.businessHoursStatus(LocalDateTime(2026, 8, 30, 13, 30), listOf(temporaryClosure)),
+        )
+
+        val earlyClosing =
+            temporaryClosure.copy(
+                id = "early",
+                type = OperatingNoticeType.EARLY_CLOSING,
+                endTime = LocalTime(15, 0),
+            )
+        val lateOpening =
+            temporaryClosure.copy(
+                id = "late",
+                type = OperatingNoticeType.LATE_OPENING,
+                startTime = LocalTime(15, 0),
+            )
+
+        assertEquals(
+            BusinessHoursStatus.Closed(),
+            shop.businessHoursStatus(LocalDateTime(2026, 8, 30, 15, 0), listOf(earlyClosing)),
+        )
+        assertEquals(
+            BusinessHoursStatus.OpenUntil("22:00"),
+            shop.businessHoursStatus(LocalDateTime(2026, 8, 30, 14, 59), listOf(earlyClosing)),
+        )
+        assertEquals(
+            BusinessHoursStatus.Closed(),
+            shop.businessHoursStatus(LocalDateTime(2026, 8, 30, 14, 59), listOf(lateOpening)),
+        )
+        assertEquals(
+            BusinessHoursStatus.OpenUntil("22:00"),
+            shop.businessHoursStatus(LocalDateTime(2026, 8, 30, 15, 0), listOf(lateOpening)),
+        )
+    }
 }

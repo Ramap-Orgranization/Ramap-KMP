@@ -66,7 +66,6 @@ fun ShopDetailContent(
     onShowOnMap: ((String) -> Unit)? = null,
     onPhoneClick: (String) -> Unit = {},
     onWaitingClick: (String) -> Unit = {},
-    shouldShowExternalLink: (String) -> Boolean = { true },
     onExternalLinkClick: (String) -> Unit = {},
     isAppleMapsAvailable: Boolean = false,
     onAppleMapsClick: (RamenShop) -> Unit = {},
@@ -94,6 +93,7 @@ fun ShopDetailContent(
                     maxHeight = maxHeight,
                     isDraggable = true,
                     isContentDraggable = true,
+                    isStatusBarPadded = true,
                 ),
         ) { dragModifier ->
             when (state) {
@@ -129,7 +129,6 @@ fun ShopDetailContent(
                         onMapLinkClick = { provider -> onShopMapLinkClick(shop, provider) },
                         onPhoneClick = onPhoneClick,
                         onWaitingClick = onWaitingClick,
-                        shouldShowExternalLink = shouldShowExternalLink,
                         onExternalLinkClick = onExternalLinkClick,
                         isAppleMapsAvailable = isAppleMapsAvailable,
                         onAppleMapsClick = onAppleMapsClick,
@@ -137,7 +136,8 @@ fun ShopDetailContent(
                         onEventClick = onEventClick,
                         operatingNotice = state.detail.operatingNotice,
                         onOperatingNoticeClick = onOperatingNoticeClick,
-                        businessHoursStatus = state.businessHoursNoticeStatus(),
+                        menuSections = state.detail.menuSections,
+                        menuUpdatedAt = state.detail.menuUpdatedAt,
                         onReportClick = { showReportDialog = true },
                     )
                     onShowOnMap?.let { showOnMap ->
@@ -165,7 +165,12 @@ fun ShopDetailContent(
             visible = visible,
             onDismissRequest = onDismissRequest,
             isBackEnabled = isBackEnabled,
-            config = CommonBottomSheetConfig(maxHeight = maxHeight, isDraggable = true),
+            config =
+                CommonBottomSheetConfig(
+                    maxHeight = maxHeight,
+                    isDraggable = true,
+                    isStatusBarPadded = true,
+                ),
         ) { _ ->
             LoadErrorContent(
                 image = Res.drawable.laduck_error_crying,

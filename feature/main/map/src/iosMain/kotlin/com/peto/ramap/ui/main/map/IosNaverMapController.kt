@@ -336,6 +336,5 @@ internal class IosNaverMapController(
         )
     }
 
-    private fun shopRenderKey(shop: RamenShop): String =
-        "${shop.id}:${shop.location.lat}:${shop.location.lng}:${shop.name}:${shop.isVisible}"
+    private fun shopRenderKey(shop: RamenShop): String = "${shop.id}:${shop.location.lat}:${shop.location.lng}:${shop.name}:${shop.isVisible}"
 }

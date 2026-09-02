@@ -2759,5 +2759,4 @@ private fun loggedInRepository(): FakeLoginRepository =
         userEmail = "test@ramap.com",
     )
 
-private fun personalization(repository: FakePersonalizationRepository): ShopPersonalization =
-    (repository.state.value as PersonalizationBootstrapState.Success).value
+private fun personalization(repository: FakePersonalizationRepository): ShopPersonalization = (repository.state.value as PersonalizationBootstrapState.Success).value

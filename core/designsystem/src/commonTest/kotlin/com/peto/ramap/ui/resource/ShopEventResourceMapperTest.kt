@@ -31,6 +31,7 @@ import ramap.shared.generated.resources.event_type_summer_limited
 import ramap.shared.generated.resources.event_venue
 import ramap.shared.generated.resources.shop_event_notice_collab_participant_today
 import ramap.shared.generated.resources.shop_event_notice_collab_upcoming_with_shop
+import ramap.shared.generated.resources.shop_event_notice_limited_menu_today
 import ramap.shared.generated.resources.shop_event_notice_limited_menu_upcoming
 import ramap.shared.generated.resources.shop_event_notice_new_menu_today
 import ramap.shared.generated.resources.shop_event_notice_participant_today
@@ -73,6 +74,28 @@ class ShopEventResourceMapperTest {
         assertEquals(
             Res.string.event_date_store_renewal,
             ShopEventResourceMapper.dateTitle(ShopEventType.STORE_RENEWAL),
+        )
+    }
+
+    @Test
+    fun `신메뉴와 매장 리뉴얼은 시작일만 표시한다`() {
+        assertEquals(
+            "2026-07-23",
+            ShopEventResourceMapper.displayEndDate(
+                event(type = ShopEventType.NEW_MENU, endDate = "2026-07-29"),
+            ),
+        )
+        assertEquals(
+            "2026-07-23",
+            ShopEventResourceMapper.displayEndDate(
+                event(type = ShopEventType.STORE_RENEWAL, endDate = "2026-07-29"),
+            ),
+        )
+        assertEquals(
+            "2026-07-29",
+            ShopEventResourceMapper.displayEndDate(
+                event(type = ShopEventType.LIMITED_MENU, endDate = "2026-07-29"),
+            ),
         )
     }
 
@@ -146,6 +169,30 @@ class ShopEventResourceMapperTest {
             UiText(Res.string.shop_event_notice_participant_today, listOf(VENUE_NAME)),
             ShopEventResourceMapper.notice(
                 event(type = ShopEventType.POPUP, isToday = true, isVenue = false),
+            ),
+        )
+    }
+
+    @Test
+    fun `중장기 한정 메뉴는 오늘 안내 문구를 숨긴다`() {
+        assertEquals(
+            null,
+            ShopEventResourceMapper.notice(
+                event(
+                    type = ShopEventType.LIMITED_MENU,
+                    endDate = "2026-07-29",
+                    isToday = true,
+                ),
+            ),
+        )
+        assertEquals(
+            UiText(Res.string.shop_event_notice_limited_menu_today),
+            ShopEventResourceMapper.notice(
+                event(
+                    type = ShopEventType.SUMMER_LIMITED,
+                    endDate = "2026-07-23",
+                    isToday = true,
+                ),
             ),
         )
     }
@@ -231,6 +278,8 @@ class ShopEventResourceMapperTest {
 
     private fun event(
         type: ShopEventType = ShopEventType.POPUP,
+        startDate: String = "2026-07-23",
+        endDate: String? = "2026-07-23",
         isToday: Boolean = false,
         isVenue: Boolean = true,
         collaboratorShopId: String? = null,
@@ -245,8 +294,8 @@ class ShopEventResourceMapperTest {
         type = type,
         title = "title",
         description = "description",
-        startDate = "2026-07-23",
-        endDate = "2026-07-23",
+        startDate = startDate,
+        endDate = endDate,
         sourceUrl = "https://example.com/event",
         isToday = isToday,
         isVenue = isVenue,

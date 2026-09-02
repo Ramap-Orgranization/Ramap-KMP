@@ -11,6 +11,8 @@ import com.peto.ramap.domain.model.shop.SearchQuery
 internal interface RamenShopDataSource {
     suspend fun fetchShopDetail(shopId: String): ShopDetailResponse?
 
+    suspend fun fetchShopMenuUpdatedAt(shopId: String): String?
+
     suspend fun fetchShopLikeCount(shopId: String): Long
 
     suspend fun fetchRamenShops(bounds: MapBounds): List<RamenShopResponse>

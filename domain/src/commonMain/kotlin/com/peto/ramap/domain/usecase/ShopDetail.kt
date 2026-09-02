@@ -13,4 +13,5 @@ data class ShopDetail(
     val event: ShopEvent?,
     val operatingNotice: OperatingNotice?,
     val menuSections: List<MenuSection> = emptyList(),
+    val menuUpdatedAt: String? = null,
 )

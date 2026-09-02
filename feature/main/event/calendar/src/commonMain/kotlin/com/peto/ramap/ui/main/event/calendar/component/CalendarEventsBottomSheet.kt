@@ -19,10 +19,10 @@ import com.peto.ramap.designsystem.bottomsheet.CommonBottomSheet
 import com.peto.ramap.designsystem.bottomsheet.CommonBottomSheetConfig
 import com.peto.ramap.designsystem.card.EventCard
 import com.peto.ramap.designsystem.card.EventShopGroupCard
+import com.peto.ramap.designsystem.resource.event.ShopEventResourceMapper
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.designsystem.text.eventDateText
 import com.peto.ramap.domain.model.event.ShopEvent
-import com.peto.ramap.domain.model.event.ShopEventType
 import com.peto.ramap.domain.model.event.ShopEvents
 import com.peto.ramap.extension.noRippleClickable
 import com.peto.ramap.theme.AppTextStyle
@@ -93,11 +93,7 @@ internal fun CalendarEventsBottomSheet(
                             dateText =
                                 eventDateText(
                                     event.startDate,
-                                    if (event.type == ShopEventType.STORE_RENEWAL) {
-                                        event.startDate
-                                    } else {
-                                        event.endDate
-                                    },
+                                    ShopEventResourceMapper.displayEndDate(event),
                                 ),
                             isCancelled = event.isCancelledOn(day.date),
                             isSoldOut = event.isSoldOutOn(day.date),

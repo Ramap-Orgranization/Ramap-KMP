@@ -2,6 +2,7 @@ package com.peto.ramap.domain.model.event
 
 import com.peto.ramap.domain.model.shop.RamenShop
 import kotlinx.datetime.LocalDate
+import kotlinx.datetime.daysUntil
 
 data class ShopEvent(
     val id: String,
@@ -38,10 +39,24 @@ data class ShopEvent(
     val venueProfileImageUrl: String?
         get() = venueShop.instagramProfileImageUrl
 
+    fun limitedMenuDuration(): LimitedMenuDuration? {
+        if (type != ShopEventType.LIMITED_MENU && type != ShopEventType.SUMMER_LIMITED) return null
+
+        val start = LocalDate.parse(startDate)
+        val end = endDate?.let { LocalDate.parse(it) } ?: return null
+        if (end < start) return null
+
+        return when (start.daysUntil(end) + 1) {
+            1 -> LimitedMenuDuration.ONE_DAY
+            in 2 until LONG_TERM_MINIMUM_DAYS -> LimitedMenuDuration.SHORT_TERM
+            else -> LimitedMenuDuration.LONG_TERM
+        }
+    }
+
     fun occursOn(date: LocalDate): Boolean {
-        val start = runCatching { LocalDate.parse(startDate) }.getOrNull() ?: return false
+        val start = LocalDate.parse(startDate)
         if (type == ShopEventType.STORE_RENEWAL) return date == start
-        val end = runCatching { LocalDate.parse(endDate ?: startDate) }.getOrNull() ?: return false
+        val end = LocalDate.parse(endDate ?: startDate)
         return date in start..end
     }
 
@@ -71,5 +86,6 @@ data class ShopEvent(
 
     companion object {
         const val MAX_IMAGE_COUNT = 5
+        private const val LONG_TERM_MINIMUM_DAYS = 7
     }
 }

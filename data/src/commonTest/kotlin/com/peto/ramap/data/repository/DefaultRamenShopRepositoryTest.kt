@@ -74,6 +74,45 @@ class DefaultRamenShopRepositoryTest {
         }
 
     @Test
+    fun `메뉴가 있는 상세는 메뉴 전용 갱신 시각을 반환한다`() =
+        runTest {
+            val response =
+                ShopDetailResponse(
+                    shop = ramenShopResponseFixture(id = "menu-update-shop"),
+                    likeCount = 0L,
+                    menuSections =
+                        listOf(
+                            MenuSectionResponse(
+                                id = "section",
+                                shopId = "menu-update-shop",
+                                title = "상시메뉴",
+                                displayOrder = 0,
+                            ),
+                        ),
+                    menuItems =
+                        listOf(
+                            MenuResponse(
+                                id = "menu",
+                                sectionId = "section",
+                                name = "쇼유라멘",
+                                displayOrder = 0,
+                            ),
+                        ),
+                )
+            val repository =
+                DefaultRamenShopRepository(
+                    FakeRamenShopDataSource(
+                        shopDetailResponse = response,
+                        shopMenuUpdatedAt = "2026-09-02T12:00:00Z",
+                    ),
+                )
+
+            val detail = repository.fetchShopDetail("menu-update-shop").getOrThrow()
+
+            assertEquals("2026-09-02T12:00:00Z", detail.menuUpdatedAt)
+        }
+
+    @Test
     fun `이벤트 메뉴 섹션은 상시 메뉴보다 먼저 표시한다`() =
         runTest {
             val response =

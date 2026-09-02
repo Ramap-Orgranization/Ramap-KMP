@@ -1,6 +1,7 @@
 package com.peto.ramap.designsystem.resource.event
 
 import com.peto.ramap.designsystem.resource.UiText
+import com.peto.ramap.domain.model.event.LimitedMenuDuration
 import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.model.event.ShopEventType
 import org.jetbrains.compose.resources.StringResource
@@ -81,6 +82,8 @@ object ShopEventResourceMapper {
             ShopEventType.STORE_RENEWAL -> Res.string.event_date_store_renewal
         }
 
+    fun displayEndDate(event: ShopEvent): String? = if (isStartDateBased(event.type)) event.startDate else event.endDate
+
     fun dateLabel(event: ShopEvent): StringResource? {
         statusLabel(event)?.let { return it }
         if (isStartDateBased(event.type) && event.isToday && !event.isStartDateToday) return null
@@ -130,6 +133,8 @@ object ShopEventResourceMapper {
             return UiText(Res.string.event_sold_out_notice)
         }
         if (event.isToday && !event.isStartDateToday && isStartDateBased(event.type)) return null
+        if (event.isToday && event.limitedMenuDuration() == LimitedMenuDuration.LONG_TERM) return null
+
         event.upcomingCollaborationPartnerName?.let { partnerName ->
             return UiText(
                 resource = Res.string.shop_event_notice_collab_upcoming_with_shop,

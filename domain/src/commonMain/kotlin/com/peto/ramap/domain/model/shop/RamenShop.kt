@@ -40,10 +40,29 @@ data class RamenShop(
     ): Boolean {
         if (businessHoursDetails?.isOpenAt(currentDateTime) != true) return false
 
-        return operatingNotices
+        return !hasOperatingNoticeBlockingOpening(currentDateTime, operatingNotices)
+    }
+
+    fun businessHoursStatus(
+        currentDateTime: LocalDateTime,
+        operatingNotices: List<OperatingNotice> = emptyList(),
+    ): BusinessHoursStatus? {
+        val status = businessHoursDetails?.statusAt(currentDateTime) ?: return null
+        return if (hasOperatingNoticeBlockingOpening(currentDateTime, operatingNotices)) {
+            BusinessHoursStatus.Closed()
+        } else {
+            status
+        }
+    }
+
+    private fun hasOperatingNoticeBlockingOpening(
+        currentDateTime: LocalDateTime,
+        operatingNotices: List<OperatingNotice>,
+    ): Boolean =
+        operatingNotices
             .asSequence()
             .filter { it.shop.id == id && it.isActiveAt(currentDateTime) }
-            .none { notice ->
+            .any { notice ->
                 when (notice.type) {
                     OperatingNoticeType.TEMPORARY_CLOSURE -> true
                     OperatingNoticeType.EARLY_CLOSING ->
@@ -53,7 +72,4 @@ data class RamenShop(
                     OperatingNoticeType.OPERATING_NOTICE -> false
                 }
             }
-    }
-
-    fun businessHoursStatus(currentDateTime: LocalDateTime): BusinessHoursStatus? = businessHoursDetails?.statusAt(currentDateTime)
 }
