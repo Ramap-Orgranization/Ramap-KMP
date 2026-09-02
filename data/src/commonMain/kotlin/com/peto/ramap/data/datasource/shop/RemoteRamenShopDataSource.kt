@@ -27,6 +27,13 @@ internal class RemoteRamenShopDataSource(
             ).decodeList<ShopDetailResponse>()
             .singleOrNull()
 
+    override suspend fun fetchShopMenuUpdatedAt(shopId: String): String? =
+        client.postgrest
+            .rpc(
+                function = FETCH_SHOP_MENU_UPDATED_AT_RPC,
+                parameters = buildJsonObject { put(SHOP_ID_PARAMETER, shopId) },
+            ).decodeAs<String?>()
+
     override suspend fun fetchShopLikeCount(shopId: String): Long =
         client
             .from(SHOP_BOOKMARK_COUNTS_VIEW)
@@ -165,6 +172,7 @@ internal class RemoteRamenShopDataSource(
         private const val CALENDAR_EVENTS_VIEW = "calendar_events"
         private const val FETCH_CALENDAR_EVENT_PAGE_RPC = "fetch_calendar_event_page"
         private const val FETCH_SHOP_DETAIL_RPC = "fetch_shop_detail"
+        private const val FETCH_SHOP_MENU_UPDATED_AT_RPC = "fetch_shop_menu_updated_at"
         private const val REQUESTED_MONTH_PARAMETER = "requested_month"
         private const val SHOP_ID_PARAMETER = "p_shop_id"
         private const val EVENT_PARTICIPANT_TABLE = "shop_event_participants"
