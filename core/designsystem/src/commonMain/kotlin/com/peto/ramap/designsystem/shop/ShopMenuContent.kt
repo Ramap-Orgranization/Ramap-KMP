@@ -41,8 +41,8 @@ internal fun ShopMenuContent(
             updatedAt?.let {
                 AppText(
                     text = stringResource(Res.string.shop_menu_updated_at, it.substringBefore("T")),
-                    style = AppTextStyle.B3,
-                    color = GrayColor.C500,
+                    style = AppTextStyle.C1,
+                    color = GrayColor.C400,
                 )
             }
         }
