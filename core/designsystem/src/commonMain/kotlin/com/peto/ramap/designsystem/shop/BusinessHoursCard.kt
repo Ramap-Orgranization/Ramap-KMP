@@ -78,7 +78,7 @@ internal fun BusinessHoursCard(
         ) {
             BusinessHoursStatusSummary(
                 status = status,
-                modifier = Modifier.padding(top = 5.dp, bottom = 10.dp),
+                modifier = Modifier.padding(vertical = 5.dp),
             )
 
             Icon(
