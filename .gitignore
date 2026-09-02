@@ -50,6 +50,8 @@ AGENTS.md
 tools
 !tools/
 tools/*
+!tools/menu-snapshot-compare.html
+!tools/export-menu-snapshot-compare.sh
 !tools/instagram-collector/
 !tools/instagram-collector/**
 !tools/instagram-review/
@@ -61,3 +63,4 @@ tools/instagram-review/**/*.pyc
 /trace_processor
 /artifacts
 iosApp/iosApp/GoogleService-Info-Release.plist
+tools/menu-snapshot-data.js
