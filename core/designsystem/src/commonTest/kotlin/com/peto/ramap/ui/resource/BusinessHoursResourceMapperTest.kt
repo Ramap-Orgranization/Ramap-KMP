@@ -4,6 +4,7 @@ import com.peto.ramap.designsystem.resource.businesshours.BusinessHoursResourceM
 import com.peto.ramap.domain.model.businesshour.BreakTime
 import com.peto.ramap.domain.model.businesshour.BusinessHours
 import com.peto.ramap.domain.model.businesshour.BusinessHoursDay
+import kotlinx.datetime.DayOfWeek
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.shop_detail_business_hours_break_time_format
 import ramap.shared.generated.resources.shop_detail_business_hours_closed
@@ -11,12 +12,27 @@ import ramap.shared.generated.resources.shop_detail_business_hours_weekday_fri
 import ramap.shared.generated.resources.shop_detail_business_hours_weekday_mon
 import ramap.shared.generated.resources.shop_detail_business_hours_weekday_sat
 import ramap.shared.generated.resources.shop_detail_business_hours_weekday_sun
+import ramap.shared.generated.resources.shop_detail_business_hours_weekday_tue
 import ramap.shared.generated.resources.shop_detail_business_hours_weekday_wed
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 
 class BusinessHoursResourceMapperTest {
+    @Test
+    fun `오늘 요일의 영업시간만 반환한다`() {
+        val lines =
+            BusinessHoursResourceMapper.today(
+                businessHours(
+                    days = mapOf("mon" to openDay(), "tue" to closedDay()),
+                ),
+                DayOfWeek.TUESDAY,
+            )
+
+        assertEquals(Res.string.shop_detail_business_hours_weekday_tue, lines?.dayLabel)
+        assertEquals(Res.string.shop_detail_business_hours_closed, lines?.values?.single()?.resource)
+    }
+
     @Test
     fun `같은 월요일부터 금요일은 범위로 묶고 토요일과 일요일 휴무는 분리한다`() {
         val days =

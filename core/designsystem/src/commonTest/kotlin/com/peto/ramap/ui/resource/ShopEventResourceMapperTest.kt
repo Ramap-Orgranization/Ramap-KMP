@@ -78,6 +78,28 @@ class ShopEventResourceMapperTest {
     }
 
     @Test
+    fun `신메뉴와 매장 리뉴얼은 시작일만 표시한다`() {
+        assertEquals(
+            "2026-07-23",
+            ShopEventResourceMapper.displayEndDate(
+                event(type = ShopEventType.NEW_MENU, endDate = "2026-07-29"),
+            ),
+        )
+        assertEquals(
+            "2026-07-23",
+            ShopEventResourceMapper.displayEndDate(
+                event(type = ShopEventType.STORE_RENEWAL, endDate = "2026-07-29"),
+            ),
+        )
+        assertEquals(
+            "2026-07-29",
+            ShopEventResourceMapper.displayEndDate(
+                event(type = ShopEventType.LIMITED_MENU, endDate = "2026-07-29"),
+            ),
+        )
+    }
+
+    @Test
     fun `이벤트 상태와 타입을 리소스로 매핑한다`() {
         assertEquals(Res.string.event_status_today, ShopEventResourceMapper.dateLabel(event(isToday = true)))
         assertEquals(Res.string.event_status_upcoming, ShopEventResourceMapper.dateLabel(event(isToday = false)))
@@ -272,8 +294,8 @@ class ShopEventResourceMapperTest {
         type = type,
         title = "title",
         description = "description",
-        startDate = "2026-07-23",
-        endDate = "2026-07-23",
+        startDate = startDate,
+        endDate = endDate,
         sourceUrl = "https://example.com/event",
         isToday = isToday,
         isVenue = isVenue,

@@ -11,6 +11,7 @@ import com.peto.ramap.domain.model.shop.SearchQuery
 
 internal class FakeRamenShopDataSource(
     private val shopDetailResponse: ShopDetailResponse? = null,
+    private val shopMenuUpdatedAt: String? = null,
     private val responses: List<RamenShopResponse> = emptyList(),
     private val searchResponses: List<RamenShopResponse> = emptyList(),
     private val fetchByIdsResponses: List<RamenShopResponse> = emptyList(),
@@ -29,6 +30,8 @@ internal class FakeRamenShopDataSource(
         error?.let { throw it }
         return shopDetailResponse
     }
+
+    override suspend fun fetchShopMenuUpdatedAt(shopId: String): String? = shopMenuUpdatedAt
 
     override suspend fun fetchShopLikeCount(shopId: String): Long = 0L
 
