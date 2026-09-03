@@ -50,6 +50,11 @@
     <string name="admin_event_status_custom_period">기간 지정</string>
     <string name="admin_event_status_reason">사유</string>
     <string name="admin_event_status_save">저장</string>
+    <string name="admin_correction_title">등록 내용 수정</string>
+    <string name="admin_correction_request">수정 요청 (매장명과 이벤트 제목 또는 공지 내용을 함께 입력하세요)</string>
+    <string name="admin_correction_preview">수정 내용 확인</string>
+    <string name="admin_correction_confirm_title">이대로 수정할까요?</string>
+    <string name="admin_correction_confirm">수정 적용</string>
     <string name="admin_tab_event_management">이벤트 관리</string>
     <string name="admin_tab_event_registration">이벤트 등록</string>
     <string name="admin_tab_operating_notice">영업 변동</string>

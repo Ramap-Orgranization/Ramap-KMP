@@ -18,6 +18,9 @@ import com.peto.ramap.ui.task.TaskPolicy
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.StringResource
 import ramap.shared.generated.resources.Res
+import ramap.shared.generated.resources.admin_correction_failure
+import ramap.shared.generated.resources.admin_correction_required
+import ramap.shared.generated.resources.admin_correction_success
 import ramap.shared.generated.resources.admin_event_status_event_required
 import ramap.shared.generated.resources.admin_event_status_period_required
 import ramap.shared.generated.resources.admin_event_status_reason_required
@@ -141,6 +144,11 @@ internal class AdminRegistrationViewModel(
                 }
             AdminRegistrationIntent.OnEventStatusTodaySelected -> selectEventStatusToday()
             AdminRegistrationIntent.OnEventStatusSaved -> saveEventStatus()
+            is AdminRegistrationIntent.OnCorrectionRequestChanged ->
+                reduce { copy(correctionRequest = intent.value, correctionPreview = null) }
+            AdminRegistrationIntent.OnCorrectionPreviewRequested -> previewCorrection()
+            AdminRegistrationIntent.OnCorrectionConfirmed -> applyCorrection()
+            AdminRegistrationIntent.OnCorrectionPreviewDismissed -> reduce { copy(correctionPreview = null) }
             is AdminRegistrationIntent.OnTabSelected -> selectTab(intent.tab)
         }
     }
@@ -164,6 +172,8 @@ internal class AdminRegistrationViewModel(
                 eventStatusEndDate = null,
                 selectedEventStatus = AdminEventStatus.SOLD_OUT,
                 selectedEventStatusScope = AdminEventStatusScope.TODAY,
+                correctionRequest = "",
+                correctionPreview = null,
             )
         }
     }
@@ -201,6 +211,41 @@ internal class AdminRegistrationViewModel(
                 reduce { copy(managedEvents = events) }
             } catch (_: Throwable) {
                 showToast(Res.string.admin_registration_managed_events_load_failure)
+            }
+        }
+    }
+
+    private fun previewCorrection() {
+        val request = currentState.correctionRequest.trim()
+        if (request.isEmpty()) {
+            showToast(Res.string.admin_correction_required)
+            return
+        }
+        launchTask(taskKey = CORRECTION_TASK_KEY, policy = TaskPolicy.IgnoreNew) {
+            reduce { copy(isCorrecting = true) }
+            try {
+                val preview = dataSource.previewCorrection(request)
+                reduce { copy(correctionPreview = preview) }
+            } catch (_: Throwable) {
+                showToast(Res.string.admin_correction_failure)
+            } finally {
+                reduce { copy(isCorrecting = false) }
+            }
+        }
+    }
+
+    private fun applyCorrection() {
+        val preview = currentState.correctionPreview ?: return
+        launchTask(taskKey = CORRECTION_TASK_KEY, policy = TaskPolicy.IgnoreNew) {
+            reduce { copy(isCorrecting = true) }
+            try {
+                dataSource.applyCorrection(preview, preview.changes)
+                reduce { copy(correctionPreview = null, correctionRequest = "") }
+                showToast(Res.string.admin_correction_success, ToastType.SUCCESS)
+            } catch (_: Throwable) {
+                showToast(Res.string.admin_correction_failure)
+            } finally {
+                reduce { copy(isCorrecting = false) }
             }
         }
     }
@@ -381,6 +426,7 @@ internal class AdminRegistrationViewModel(
         const val SUBMIT_TASK_KEY = "admin-registration-submit"
         const val MANAGED_EVENTS_TASK_KEY = "admin-managed-events"
         const val EVENT_STATUS_SAVE_TASK_KEY = "admin-event-status-save"
+        const val CORRECTION_TASK_KEY = "admin-correction"
     }
 }
 

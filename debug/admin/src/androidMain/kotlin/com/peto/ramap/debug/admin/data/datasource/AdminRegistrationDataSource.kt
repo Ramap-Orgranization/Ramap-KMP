@@ -1,9 +1,11 @@
 package com.peto.ramap.debug.admin.data.datasource
 
+import com.peto.ramap.debug.admin.data.model.AdminCorrectionPreview
 import com.peto.ramap.debug.admin.data.model.AdminDraft
 import com.peto.ramap.debug.admin.data.model.AdminEvidence
 import com.peto.ramap.debug.admin.data.model.AdminManagedEvent
 import com.peto.ramap.debug.admin.data.model.AdminShopName
+import com.peto.ramap.debug.admin.data.model.request.CorrectionRequest
 import com.peto.ramap.debug.admin.data.model.request.EventStatusRequest
 import com.peto.ramap.debug.admin.data.model.request.PreviewRequest
 import com.peto.ramap.debug.admin.data.model.request.RegisterRequest
@@ -131,6 +133,31 @@ internal class AdminRegistrationDataSource(
         )
     }
 
+    suspend fun previewCorrection(request: String): AdminCorrectionPreview =
+        client.functions
+            .invoke(
+                CORRECTION_FUNCTION,
+                CorrectionRequest(
+                    action = "preview",
+                    request = request,
+                ),
+            ).body()
+
+    suspend fun applyCorrection(
+        preview: AdminCorrectionPreview,
+        changes: com.peto.ramap.debug.admin.data.model.AdminCorrectionChanges,
+    ) {
+        client.functions.invoke(
+            CORRECTION_FUNCTION,
+            CorrectionRequest(
+                action = "apply",
+                registrationType = preview.registrationType,
+                targetId = preview.targetId,
+                changes = changes,
+            ),
+        )
+    }
+
     private suspend fun uploadEvidence(evidence: AdminEvidence): String {
         val path = "${Uuid.random()}.${if (evidence.mimeType == "image/png") "png" else "jpg"}"
         client.storage.from(EVIDENCE_BUCKET).upload(path, evidence.bytes) {
@@ -150,5 +177,6 @@ internal class AdminRegistrationDataSource(
         const val PREVIEW_FUNCTION = "preview-event"
         const val REGISTER_FUNCTION = "register-event"
         const val EVENT_STATUS_FUNCTION = "admin-event-status"
+        const val CORRECTION_FUNCTION = "admin-correct-registration"
     }
 }

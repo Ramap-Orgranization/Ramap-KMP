@@ -23,6 +23,7 @@ import com.peto.ramap.debug.admin.R
 import com.peto.ramap.debug.admin.data.model.AdminDraft
 import com.peto.ramap.debug.admin.data.model.AdminEvidence
 import com.peto.ramap.debug.admin.ui.registration.component.AdminBottomNavigation
+import com.peto.ramap.debug.admin.ui.registration.component.AdminCorrectionManager
 import com.peto.ramap.debug.admin.ui.registration.component.AdminDraftPreview
 import com.peto.ramap.debug.admin.ui.registration.component.AdminEventStatusManager
 import com.peto.ramap.debug.admin.ui.registration.component.AdminEventTypeSelector
@@ -71,6 +72,10 @@ internal fun AdminRegistrationScreen(
     onEventStatusDateRangeSelected: (String, String) -> Unit,
     onEventStatusTodaySelected: () -> Unit,
     onEventStatusSave: () -> Unit,
+    onCorrectionRequestChanged: (String) -> Unit,
+    onCorrectionPreviewRequested: () -> Unit,
+    onCorrectionConfirmed: () -> Unit,
+    onCorrectionPreviewDismissed: () -> Unit,
     onTabSelected: (AdminRegistrationTab) -> Unit,
 ) {
     val context = LocalContext.current
@@ -129,6 +134,17 @@ internal fun AdminRegistrationScreen(
                         onDateRangeSelected = onEventStatusDateRangeSelected,
                         onTodaySelected = onEventStatusTodaySelected,
                         onSave = onEventStatusSave,
+                    )
+                }
+                AdminFieldSection(label = "") {
+                    AdminCorrectionManager(
+                        request = uiState.correctionRequest,
+                        preview = uiState.correctionPreview,
+                        isLoading = uiState.isCorrecting,
+                        onRequestChanged = onCorrectionRequestChanged,
+                        onPreviewRequested = onCorrectionPreviewRequested,
+                        onConfirm = onCorrectionConfirmed,
+                        onDismiss = onCorrectionPreviewDismissed,
                     )
                 }
             } else {
@@ -287,6 +303,10 @@ private fun AdminRegistrationScreenPreview() {
             onEventStatusDateRangeSelected = { _, _ -> },
             onEventStatusTodaySelected = {},
             onEventStatusSave = {},
+            onCorrectionRequestChanged = {},
+            onCorrectionPreviewRequested = {},
+            onCorrectionConfirmed = {},
+            onCorrectionPreviewDismissed = {},
             onTabSelected = {},
         )
     }
@@ -337,6 +357,10 @@ private fun AdminRegistrationScreenWithDraftPreview() {
             onEventStatusDateRangeSelected = { _, _ -> },
             onEventStatusTodaySelected = {},
             onEventStatusSave = {},
+            onCorrectionRequestChanged = {},
+            onCorrectionPreviewRequested = {},
+            onCorrectionConfirmed = {},
+            onCorrectionPreviewDismissed = {},
             onTabSelected = {},
         )
     }

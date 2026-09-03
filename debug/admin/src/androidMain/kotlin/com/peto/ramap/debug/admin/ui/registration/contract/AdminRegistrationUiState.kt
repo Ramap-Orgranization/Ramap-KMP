@@ -1,5 +1,6 @@
 package com.peto.ramap.debug.admin.ui.registration.contract
 
+import com.peto.ramap.debug.admin.data.model.AdminCorrectionPreview
 import com.peto.ramap.debug.admin.data.model.AdminDraft
 import com.peto.ramap.debug.admin.data.model.AdminEvidence
 import com.peto.ramap.debug.admin.data.model.AdminManagedEvent
@@ -31,5 +32,8 @@ internal data class AdminRegistrationUiState(
     val eventStatusStartDate: String? = null,
     val eventStatusEndDate: String? = null,
     val isSavingEventStatus: Boolean = false,
+    val correctionRequest: String = "",
+    val correctionPreview: AdminCorrectionPreview? = null,
+    val isCorrecting: Boolean = false,
     val selectedTab: AdminRegistrationTab = AdminRegistrationTab.EVENT_MANAGEMENT,
 ) : State
