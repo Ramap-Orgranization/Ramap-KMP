@@ -19,9 +19,6 @@ sealed interface ScreenRoutes : NavKey {
     ) : ScreenRoutes
 
     @Serializable
-    data object EventCalendarRoutes : ScreenRoutes
-
-    @Serializable
     data object OperatingNoticeRoutes : ScreenRoutes
 
     @Serializable

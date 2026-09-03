@@ -32,7 +32,6 @@ import com.peto.ramap.ui.bookmark.importation.ImportationGuideRoute
 import com.peto.ramap.ui.bookmark.importation.ImportationRoute
 import com.peto.ramap.ui.bookmark.list.BookmarkedShopListRoute
 import com.peto.ramap.ui.hidden.HiddenShopListRoute
-import com.peto.ramap.ui.main.event.calendar.EventCalendarRoute
 import com.peto.ramap.ui.main.event.detail.EventDetailRoute
 import com.peto.ramap.ui.main.event.list.EventsRoute
 import com.peto.ramap.ui.main.map.MapRoute
@@ -180,12 +179,6 @@ internal fun AppRoute(
                     navigationState.showEvent(event.id)
                 },
                 onClickNotice = navigationState::showOperatingNotice,
-            )
-        },
-        eventCalendarScreen = {
-            EventCalendarRoute(
-                onBack = navigationState::pop,
-                onEventClick = navigationState::showEvent,
             )
         },
         operatingNoticeScreen = {

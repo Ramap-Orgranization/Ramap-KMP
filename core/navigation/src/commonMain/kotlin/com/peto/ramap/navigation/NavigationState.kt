@@ -59,14 +59,11 @@ class NavigationState(
         currentBackStack.add(ScreenRoutes.EventDetailRoutes(eventId))
     }
 
-    fun showEventCalendar() = showOnce(ScreenRoutes.EventCalendarRoutes)
-
     fun showOperatingNotice() = showOnce(ScreenRoutes.OperatingNoticeRoutes)
 
     fun showEventRoot() {
         if (
-            currentBackStack.lastOrNull() is ScreenRoutes.EventDetailRoutes ||
-            currentBackStack.lastOrNull() is ScreenRoutes.EventCalendarRoutes
+            currentBackStack.lastOrNull() is ScreenRoutes.EventDetailRoutes
         ) {
             currentBackStack.removeLastOrNull()
         }
