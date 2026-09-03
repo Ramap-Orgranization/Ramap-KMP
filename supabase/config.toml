@@ -9,3 +9,6 @@ verify_jwt = true
 
 [functions.admin-event-status]
 verify_jwt = true
+
+[functions.admin-correct-registration]
+verify_jwt = true

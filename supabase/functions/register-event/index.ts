@@ -21,13 +21,13 @@ Deno.serve(async (request) => {
   const title = text(body?.title);
   const eventType = text(body?.event_type) ?? "limited_menu";
   const startDate = text(body?.start_date);
-  const endDate = text(body?.end_date) ?? startDate;
+  const requestedEndDate = text(body?.end_date) ?? startDate;
   const description = text(body?.description);
   const participants = parseParticipants(body?.participants);
   const sourceUrl = normalizeInstagramUrl(text(body?.source_url));
   const evidencePath = text(body?.evidence_path);
   const imageOnly = body?.image_only === true;
-  if (!shopName || !title || !startDate || !validDate(startDate) || !validDate(endDate)) {
+  if (!shopName || !title || !startDate || !validDate(startDate) || !validDate(requestedEndDate)) {
     return json({ code: "invalid_draft" }, 400);
   }
   if (imageOnly ? !isEvidencePath(evidencePath) : !description || !sourceUrl || !isInstagramUrl(sourceUrl)) {
@@ -41,6 +41,7 @@ Deno.serve(async (request) => {
   } catch {
     return json({ code: "invalid_draft" }, 400);
   }
+  const endDate = eventType === "new_menu" ? dateAfterDays(startDate, 6) : requestedEndDate;
 
   const { data: shops, error: shopError } = await supabase.from("shops").select("id").eq("name", shopName).limit(2);
   if (shopError) return json({ code: "server_unavailable" }, 503);
@@ -285,6 +286,11 @@ function isInstagramUrl(value: string) {
 }
 function isEvidencePath(value: string | null): value is string { return value !== null && /^[\w-]+\.(?:jpe?g|png)$/i.test(value); }
 function validDate(value: string | null) { return typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value); }
+function dateAfterDays(value: string, days: number) {
+  const date = new Date(`${value}T00:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
+}
 function validTime(value: string | null) { return typeof value === "string" && /^([01]\d|2[0-3]):[0-5]\d$/.test(value); }
 function isSupportedNoticeType(value: string | null) { return value === "operating_notice" || value === "full_close" || value === "early_close" || value === "late_opening"; }
 function text(value: unknown): string | null { return typeof value === "string" && value.trim() !== "" ? value.trim() : null; }
