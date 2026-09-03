@@ -1,7 +1,6 @@
 package com.peto.ramap.fake
 
 import com.peto.ramap.data.datasource.shop.RamenShopDataSource
-import com.peto.ramap.data.model.CalendarEventPageResponse
 import com.peto.ramap.data.model.RamenShopResponse
 import com.peto.ramap.data.model.ShopDetailResponse
 import com.peto.ramap.data.model.ShopEventParticipantResponse
@@ -17,8 +16,6 @@ internal class FakeRamenShopDataSource(
     private val fetchByIdsResponses: List<RamenShopResponse> = emptyList(),
     private val activeEventResponses: List<ShopEventResponse> = emptyList(),
     private val activeEventsResponses: List<ShopEventResponse> = emptyList(),
-    private val calendarEventsResponses: List<ShopEventResponse> = emptyList(),
-    private val calendarEventPageResponse: CalendarEventPageResponse? = null,
     private val participantResponses: List<ShopEventParticipantResponse> = emptyList(),
     private val error: Throwable? = null,
 ) : RamenShopDataSource {
@@ -41,24 +38,7 @@ internal class FakeRamenShopDataSource(
 
     override suspend fun fetchActiveEvent(eventId: String): ShopEventResponse? = activeEventsResponses.firstOrNull { it.id == eventId }
 
-    override suspend fun fetchCalendarEvents(
-        startDate: String,
-        endDate: String,
-    ): List<ShopEventResponse> = calendarEventsResponses
-
-    override suspend fun fetchCalendarEventPage(monthStart: String): CalendarEventPageResponse {
-        error?.let { throw it }
-        calendarEventPageRequestCount += 1
-        return calendarEventPageResponse
-            ?: CalendarEventPageResponse(events = calendarEventsResponses)
-    }
-
-    var calendarEventPageRequestCount: Int = 0
-        private set
-
-    override suspend fun fetchEvent(eventId: String): ShopEventResponse? =
-        calendarEventsResponses.firstOrNull { it.id == eventId }
-            ?: activeEventsResponses.firstOrNull { it.id == eventId }
+    override suspend fun fetchEvent(eventId: String): ShopEventResponse? = activeEventsResponses.firstOrNull { it.id == eventId }
 
     override suspend fun fetchShopEventParticipants(eventId: String): List<ShopEventParticipantResponse> = participantResponses
 

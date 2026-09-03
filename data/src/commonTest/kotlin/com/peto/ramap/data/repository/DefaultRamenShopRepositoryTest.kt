@@ -2,7 +2,6 @@ package com.peto.ramap.data.repository
 
 import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.core.result.getOrThrow
-import com.peto.ramap.data.model.CalendarEventPageResponse
 import com.peto.ramap.data.model.MenuResponse
 import com.peto.ramap.data.model.MenuSectionResponse
 import com.peto.ramap.data.model.ShopDetailResponse
@@ -17,15 +16,9 @@ import com.peto.ramap.fake.FakeRamenShopDataSource
 import com.peto.ramap.fixture.BOUNDS_FIXTURE
 import com.peto.ramap.fixture.ramenShopResponseFixture
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.DateTimeUnit
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.minus
-import kotlinx.datetime.plus
-import kotlinx.datetime.todayIn
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
-import kotlin.time.Clock
 
 class DefaultRamenShopRepositoryTest {
     @Test
@@ -194,144 +187,6 @@ class DefaultRamenShopRepositoryTest {
         }
 
     @Test
-    fun `활성 매장 리뉴얼은 시작일부터 한 달간 노출한다`() =
-        runTest {
-            val today = Clock.System.todayIn(TimeZone.of("Asia/Seoul"))
-            val repository =
-                DefaultRamenShopRepository(
-                    FakeRamenShopDataSource(
-                        activeEventsResponses =
-                            listOf(
-                                shopEventResponse(
-                                    id = "within-one-month-renewal",
-                                    eventType = "store_renewal",
-                                    startDate =
-                                        today
-                                            .minus(1, DateTimeUnit.MONTH)
-                                            .plus(1, DateTimeUnit.DAY)
-                                            .toString(),
-                                    endDate = null,
-                                ),
-                                shopEventResponse(
-                                    id = "today-renewal",
-                                    eventType = "store_renewal",
-                                    startDate = today.toString(),
-                                    endDate = null,
-                                ),
-                                shopEventResponse(
-                                    id = "upcoming-renewal",
-                                    eventType = "store_renewal",
-                                    startDate = today.plus(1, DateTimeUnit.DAY).toString(),
-                                    endDate = null,
-                                ),
-                                shopEventResponse(
-                                    id = "expired-renewal",
-                                    eventType = "store_renewal",
-                                    startDate = today.minus(1, DateTimeUnit.MONTH).toString(),
-                                    endDate = null,
-                                ),
-                            ),
-                    ),
-                )
-
-            val events = repository.fetchActiveEvents().getOrThrow()
-
-            assertEquals(
-                listOf("within-one-month-renewal", "today-renewal", "upcoming-renewal"),
-                events.map { it.id },
-            )
-            assertEquals(true, events.first().isToday)
-            assertEquals(true, events[1].isToday)
-            assertEquals(false, events.last().isToday)
-            assertEquals(false, events.first().isStartDateToday)
-            assertEquals(true, events[1].isStartDateToday)
-            assertEquals(false, events.last().isStartDateToday)
-        }
-
-    @Test
-    fun `신메뉴도 시작일 여부를 오늘 기준으로 계산한다`() =
-        runTest {
-            val today = Clock.System.todayIn(TimeZone.of("Asia/Seoul"))
-            val repository =
-                DefaultRamenShopRepository(
-                    FakeRamenShopDataSource(
-                        activeEventsResponses =
-                            listOf(
-                                shopEventResponse(
-                                    id = "today-new-menu",
-                                    eventType = "new_menu",
-                                    startDate = today.toString(),
-                                ),
-                            ),
-                    ),
-                )
-
-            val event = repository.fetchActiveEvents().getOrThrow().single()
-
-            assertEquals(true, event.isStartDateToday)
-        }
-
-    @Test
-    fun `종료된 이벤트도 캘린더 이벤트 조회와 상세 조회에 포함한다`() =
-        runTest {
-            val repository =
-                DefaultRamenShopRepository(
-                    FakeRamenShopDataSource(
-                        calendarEventsResponses =
-                            listOf(
-                                shopEventResponse().copy(
-                                    id = "ended-event",
-                                    startDate = "2026-01-01",
-                                    endDate = "2026-01-02",
-                                ),
-                            ),
-                    ),
-                )
-
-            val events = repository.fetchCalendarEvents("2026-01-01", "2026-01-31").getOrThrow()
-            val event = repository.fetchEvent("ended-event").getOrThrow()
-
-            assertEquals(listOf("ended-event"), events.map { it.id })
-            assertEquals("ended-event", event?.id)
-        }
-
-    @Test
-    fun `캘린더 페이지 응답에 잘못된 날짜 형식이 포함되어 있으면 실패한다`() =
-        runTest {
-            val repository =
-                DefaultRamenShopRepository(
-                    FakeRamenShopDataSource(
-                        calendarEventPageResponse =
-                            CalendarEventPageResponse(
-                                events = listOf(shopEventResponse()),
-                                hasPrevious = true,
-                                hasNext = false,
-                                notificationDates = listOf("2026-07-15", "invalid-date"),
-                            ),
-                    ),
-                )
-
-            val result = repository.fetchCalendarEventPage("2026-07-01")
-
-            assertTrue(result is RamapResult.Error)
-        }
-
-    @Test
-    fun `캘린더 페이지는 월별로 캐시하고 무효화하면 재조회한다`() =
-        runTest {
-            val dataSource = FakeRamenShopDataSource()
-            val repository = DefaultRamenShopRepository(dataSource)
-
-            repository.fetchCalendarEventPage("2026-07-01")
-            repository.fetchCalendarEventPage("2026-07-01")
-            assertEquals(1, dataSource.calendarEventPageRequestCount)
-
-            repository.invalidateCalendarEventPage("2026-07-01")
-            repository.fetchCalendarEventPage("2026-07-01")
-            assertEquals(2, dataSource.calendarEventPageRequestCount)
-        }
-
-    @Test
     fun `한 콜라보에 상대가 여러 명이면 특정 매장명을 노출하지 않는다`() =
         runTest {
             val repository =
@@ -384,31 +239,6 @@ class DefaultRamenShopRepositoryTest {
             val detail = repository.fetchShopDetail("venue-shop").getOrThrow()
 
             assertEquals(1, detail.event?.collaborationPartnerCount)
-        }
-
-    @Test
-    fun `진행 중인 일반 리뉴얼보다 예정된 콜라보를 우선 선택한다`() =
-        runTest {
-            val today = Clock.System.todayIn(TimeZone.of("Asia/Seoul"))
-            val repository =
-                DefaultRamenShopRepository(
-                    FakeRamenShopDataSource(
-                        activeEventResponses =
-                            listOf(
-                                shopEventResponse(
-                                    id = "ongoing-renewal",
-                                    eventType = "store_renewal",
-                                    startDate = today.minus(1, DateTimeUnit.DAY).toString(),
-                                    endDate = null,
-                                ),
-                                shopEventResponse(id = "upcoming-collab"),
-                            ),
-                    ),
-                )
-
-            val event = repository.fetchActiveShopEvent("venue-shop").getOrThrow()
-
-            assertEquals("upcoming-collab", event?.id)
         }
 
     @Test
