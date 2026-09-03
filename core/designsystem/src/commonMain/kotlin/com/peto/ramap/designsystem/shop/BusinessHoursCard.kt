@@ -27,10 +27,12 @@ import com.peto.ramap.designsystem.card.SectionCard
 import com.peto.ramap.designsystem.resource.businesshours.BusinessHoursResourceMapper
 import com.peto.ramap.designsystem.resource.businesshours.BusinessHoursStatusResourceMapper
 import com.peto.ramap.designsystem.resource.format
+import com.peto.ramap.designsystem.resource.operatingnotice.ShopOperatingNoticeResourceMapper
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.domain.model.businesshour.BusinessHours
 import com.peto.ramap.domain.model.businesshour.BusinessHoursStatus
 import com.peto.ramap.domain.model.notice.OperatingNotice
+import com.peto.ramap.domain.model.notice.OperatingNoticeType
 import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.extension.noRippleClickable
 import com.peto.ramap.preview.BusinessHoursPreviewParameterProvider
@@ -39,6 +41,7 @@ import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.RamapTheme
 import com.peto.ramap.theme.SystemColor
+import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import org.jetbrains.compose.resources.painterResource
@@ -51,6 +54,7 @@ internal fun BusinessHoursCard(
     shop: RamenShop,
     operatingNotice: OperatingNotice?,
     modifier: Modifier = Modifier,
+    onOperatingNoticeClick: (OperatingNotice) -> Unit = {},
 ) {
     var isExpanded by rememberSaveable { mutableStateOf(false) }
     val currentDateTime = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
@@ -78,6 +82,8 @@ internal fun BusinessHoursCard(
         ) {
             BusinessHoursStatusSummary(
                 status = status,
+                operatingNotice = operatingNotice,
+                onOperatingNoticeClick = onOperatingNoticeClick,
                 modifier = Modifier.padding(vertical = 5.dp),
             )
 
@@ -108,8 +114,21 @@ internal fun BusinessHoursCard(
 @Composable
 private fun BusinessHoursStatusSummary(
     status: BusinessHoursStatus?,
+    operatingNotice: OperatingNotice?,
+    onOperatingNoticeClick: (OperatingNotice) -> Unit,
     modifier: Modifier,
 ) {
+    if (operatingNotice != null) {
+        val noticeText = ShopOperatingNoticeResourceMapper.notice(operatingNotice).format()
+        AppText(
+            text = noticeText,
+            modifier = modifier.noRippleClickable { onOperatingNoticeClick(operatingNotice) },
+            style = AppTextStyle.B1,
+            color = SystemColor.Warning,
+        )
+        return
+    }
+
     val statusText = status?.let(BusinessHoursStatusResourceMapper::status)?.format()
     val highlightedLabel = status?.let(BusinessHoursStatusResourceMapper::noticeLabel)?.format()
 
@@ -151,6 +170,29 @@ private fun BusinessHoursCardPreview(
                     .first()
                     .copy(businessHoursDetails = businessHours),
             operatingNotice = null,
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun BusinessHoursCardWithNoticePreview() {
+    val shop = RamenShopPreviewParameterProvider().values.first()
+    RamapTheme {
+        BusinessHoursCard(
+            shop = shop,
+            operatingNotice =
+                OperatingNotice(
+                    id = "1",
+                    shop = shop,
+                    type = OperatingNoticeType.TEMPORARY_CLOSURE,
+                    description = "임시 휴무 안내입니다.",
+                    startDate = LocalDate(2024, 1, 1),
+                    endDate = null,
+                    startTime = null,
+                    endTime = null,
+                    sourceUrl = null,
+                ),
         )
     }
 }
