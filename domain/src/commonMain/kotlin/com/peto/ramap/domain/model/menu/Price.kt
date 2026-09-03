@@ -1,5 +1,7 @@
 package com.peto.ramap.domain.model.menu
 
+import kotlin.jvm.JvmInline
+
 @JvmInline
 value class Price(
     val krw: Int,
