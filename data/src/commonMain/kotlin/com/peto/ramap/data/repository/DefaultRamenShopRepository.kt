@@ -8,7 +8,6 @@ import com.peto.ramap.data.model.MenuSectionResponse
 import com.peto.ramap.data.model.ShopDetailResponse
 import com.peto.ramap.data.model.ShopEventParticipantResponse
 import com.peto.ramap.data.model.ShopEventResponse
-import com.peto.ramap.domain.model.event.CalendarEventPage
 import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.model.event.ShopEventType
 import com.peto.ramap.domain.model.menu.Menu
@@ -31,8 +30,6 @@ import kotlin.time.Clock
 internal class DefaultRamenShopRepository(
     private val dataSource: RamenShopDataSource,
 ) : RamenShopRepository {
-    private val calendarEventPageCache = mutableMapOf<String, CalendarEventPage>()
-
     override suspend fun fetchShopDetail(shopId: String): RamapResult<ShopDetail> =
         invokeRequest {
             val response =
@@ -62,37 +59,6 @@ internal class DefaultRamenShopRepository(
                 .map(::toDomain)
                 .filter(::isVisibleInActiveEvents)
         }
-
-    override suspend fun fetchCalendarEvents(
-        startDate: String,
-        endDate: String,
-    ): RamapResult<List<ShopEvent>> =
-        invokeRequest {
-            dataSource.fetchCalendarEvents(startDate, endDate).map(::toDomain)
-        }
-
-    override suspend fun fetchCalendarEventPage(monthStart: String): RamapResult<CalendarEventPage> {
-        calendarEventPageCache[monthStart]?.let { return RamapResult.Success(it) }
-
-        val result =
-            invokeRequest {
-                val page = dataSource.fetchCalendarEventPage(monthStart)
-                CalendarEventPage(
-                    events = page.events.map(::toDomain),
-                    hasPrevious = page.hasPrevious,
-                    hasNext = page.hasNext,
-                    notificationDates = page.notificationDates.map(String::toLocalDate),
-                )
-            }
-        if (result is RamapResult.Success) {
-            calendarEventPageCache[monthStart] = result.data
-        }
-        return result
-    }
-
-    override fun invalidateCalendarEventPage(monthStart: String) {
-        calendarEventPageCache.remove(monthStart)
-    }
 
     override suspend fun fetchEvent(eventId: String): RamapResult<ShopEvent?> =
         invokeRequest {

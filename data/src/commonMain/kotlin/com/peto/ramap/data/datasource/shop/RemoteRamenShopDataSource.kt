@@ -1,6 +1,5 @@
 package com.peto.ramap.data.datasource.shop
 
-import com.peto.ramap.data.model.CalendarEventPageResponse
 import com.peto.ramap.data.model.RamenShopResponse
 import com.peto.ramap.data.model.ShopDetailResponse
 import com.peto.ramap.data.model.ShopEventParticipantResponse
@@ -12,7 +11,6 @@ import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Columns
-import io.github.jan.supabase.postgrest.query.filter.FilterOperator
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 
@@ -58,33 +56,9 @@ internal class RemoteRamenShopDataSource(
                 limit(1)
             }.decodeSingleOrNull<ShopEventResponse>()
 
-    override suspend fun fetchCalendarEvents(
-        startDate: String,
-        endDate: String,
-    ): List<ShopEventResponse> =
-        client
-            .from(CALENDAR_EVENTS_VIEW)
-            .select {
-                filter {
-                    lte(COLUMN_START_DATE, endDate)
-                    or {
-                        filter(COLUMN_END_DATE, FilterOperator.IS, null)
-                        gte(COLUMN_END_DATE, startDate)
-                    }
-                }
-            }.decodeList<ShopEventResponse>()
-
-    override suspend fun fetchCalendarEventPage(monthStart: String): CalendarEventPageResponse =
-        client.postgrest
-            .rpc(
-                function = FETCH_CALENDAR_EVENT_PAGE_RPC,
-                parameters = buildJsonObject { put(REQUESTED_MONTH_PARAMETER, monthStart) },
-            ).decodeList<CalendarEventPageResponse>()
-            .single()
-
     override suspend fun fetchEvent(eventId: String): ShopEventResponse? =
         client
-            .from(CALENDAR_EVENTS_VIEW)
+            .from(ACTIVE_EVENTS_VIEW)
             .select {
                 filter { eq(COLUMN_ID, eventId) }
                 limit(1)
@@ -169,11 +143,8 @@ internal class RemoteRamenShopDataSource(
         private const val SHOP_BOOKMARK_COUNTS_VIEW = "shop_bookmark_counts"
         private const val EVENT_VIEW = "active_shop_events"
         private const val ACTIVE_EVENTS_VIEW = "active_events"
-        private const val CALENDAR_EVENTS_VIEW = "calendar_events"
-        private const val FETCH_CALENDAR_EVENT_PAGE_RPC = "fetch_calendar_event_page"
         private const val FETCH_SHOP_DETAIL_RPC = "fetch_shop_detail"
         private const val FETCH_SHOP_MENU_UPDATED_AT_RPC = "fetch_shop_menu_updated_at"
-        private const val REQUESTED_MONTH_PARAMETER = "requested_month"
         private const val SHOP_ID_PARAMETER = "p_shop_id"
         private const val EVENT_PARTICIPANT_TABLE = "shop_event_participants"
         private const val COLUMN_SHOP_CONTEXT_ID = "shop_context_id"
@@ -182,8 +153,6 @@ internal class RemoteRamenShopDataSource(
         private const val COLUMN_ID = "id"
         private const val COLUMN_SHOP_ID = "shop_id"
         private const val COLUMN_LIKE_COUNT = "like_count"
-        private const val COLUMN_START_DATE = "start_date"
-        private const val COLUMN_END_DATE = "end_date"
         private const val COLUMN_LAT = "lat"
         private const val COLUMN_LNG = "lng"
     }
