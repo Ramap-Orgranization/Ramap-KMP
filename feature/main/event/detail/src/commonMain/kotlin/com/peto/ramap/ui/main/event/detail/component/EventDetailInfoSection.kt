@@ -40,7 +40,7 @@ import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.ic_chevron_right
-import ramap.shared.generated.resources.ic_event_calendar
+import ramap.shared.generated.resources.ic_operating_notice_fab
 import ramap.shared.generated.resources.instagram_icon
 
 @Composable
@@ -73,7 +73,7 @@ fun EventDetailInfoSection(
                     contentAlignment = Alignment.Center,
                 ) {
                     Icon(
-                        painter = painterResource(Res.drawable.ic_event_calendar),
+                        painter = painterResource(Res.drawable.ic_operating_notice_fab),
                         contentDescription = null,
                         modifier = Modifier.size(24.dp),
                         tint = ChromaticColor.Blue400,
