@@ -272,6 +272,7 @@ internal fun AppRoute(
                         shopId = shopId,
                         viewModel = mapViewModel,
                         onDismiss = onDismiss,
+                        isNavigationBarPadded = true,
                         onShowOnMap = onShowOnMap,
                         onEventNavigate = onEventNavigate,
                         originSource = AnalyticsSource.EVENT_DETAIL,

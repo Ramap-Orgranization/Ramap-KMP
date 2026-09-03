@@ -43,9 +43,10 @@ import ramap.shared.generated.resources.ranking_show_shop_on_map
 @Composable
 fun ShopDetailContent(
     state: ShopDetailSheetUiState,
-    visible: Boolean = true,
     isBackEnabled: Boolean,
     maxHeight: Dp,
+    isNavigationBarPadded: Boolean = false,
+    visible: Boolean = true,
     showRequestedLoadingInSheet: Boolean = false,
     waitingSystem: WaitingSystemUiModel? = null,
     isBookmarked: Boolean = false,
@@ -94,6 +95,7 @@ fun ShopDetailContent(
                     isDraggable = true,
                     isContentDraggable = true,
                     isStatusBarPadded = true,
+                    isNavigationBarPadded = isNavigationBarPadded,
                 ),
         ) { dragModifier ->
             when (state) {
@@ -170,6 +172,7 @@ fun ShopDetailContent(
                     maxHeight = maxHeight,
                     isDraggable = true,
                     isStatusBarPadded = true,
+                    isNavigationBarPadded = isNavigationBarPadded,
                 ),
         ) { _ ->
             LoadErrorContent(

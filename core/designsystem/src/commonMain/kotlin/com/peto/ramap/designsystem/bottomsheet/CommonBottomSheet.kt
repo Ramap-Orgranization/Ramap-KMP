@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
@@ -193,6 +194,7 @@ private fun BottomSheetContent(
                 modifier =
                     Modifier
                         .fillMaxWidth()
+                        .run { if (config.isNavigationBarPadded) navigationBarsPadding() else this }
                         .run { if (config.isStatusBarPadded) statusBarsPadding() else this }
                         .verticalScroll(rememberScrollState()),
                 horizontalAlignment = Alignment.CenterHorizontally,
