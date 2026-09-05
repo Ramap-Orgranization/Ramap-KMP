@@ -49,7 +49,6 @@ import ramap.shared.generated.resources.kakao_map_icon
 import ramap.shared.generated.resources.naver_map_icon
 import ramap.shared.generated.resources.shop_detail_copy_address
 import ramap.shared.generated.resources.shop_detail_label_address
-import ramap.shared.generated.resources.shop_detail_label_phone
 import ramap.shared.generated.resources.shop_detail_label_waiting
 import ramap.shared.generated.resources.shop_detail_link_apple_maps
 import ramap.shared.generated.resources.shop_detail_link_instagram
@@ -74,7 +73,6 @@ fun RamenShopOverview(
     onReportClick: () -> Unit,
     onShareClick: () -> Unit,
     onMapLinkClick: (String) -> Unit,
-    onPhoneClick: (String) -> Unit,
     onWaitingClick: (String) -> Unit,
     onExternalLinkClick: (String) -> Unit,
     isAppleMapsAvailable: Boolean = false,
@@ -198,13 +196,6 @@ fun RamenShopOverview(
                     onClickLabel = stringResource(Res.string.shop_detail_copy_address),
                 )
 
-                shop.phone?.takeIf(String::isNotBlank)?.let { phone ->
-                    ShopInfoRow(
-                        label = stringResource(Res.string.shop_detail_label_phone),
-                        value = phone,
-                        onClick = { onPhoneClick(phone) },
-                    )
-                }
             }
         }
 
@@ -337,7 +328,6 @@ private fun RamenShopOverviewPreview(
             onReportClick = {},
             onShareClick = {},
             onMapLinkClick = {},
-            onPhoneClick = {},
             onWaitingClick = {},
             onExternalLinkClick = {},
             onAppleMapsClick = {},

@@ -742,12 +742,10 @@ class RankingViewModelTest {
     private fun ramenShop(id: String = "shop-id"): RamenShop =
         RamenShop(
             id = id,
-            kakaoPlaceId = null,
             name = "매장-$id",
             address = "서울특별시 마포구",
             location = Location(37.0, 127.0),
             kakaoPlaceUrl = null,
-            phone = null,
             instagramUrl = null,
             menuCategories =
                 MenuCategories(

@@ -1028,7 +1028,7 @@ class MapViewModelTest {
             viewModel.sideEffect.test {
                 viewModel.dispatch(
                     OnShopReportSubmitted(
-                        wrongFields = setOf(ShopInformationField.PHONE),
+                        wrongFields = setOf(ShopInformationField.ADDRESS),
                         description = "",
                     ),
                 )
@@ -2076,6 +2076,23 @@ class MapViewModelTest {
         }
 
     @Test
+    fun `검색어를 입력하면 카테고리 영업중 좋아요 필터를 해제한다`() =
+        coroutinesTest {
+            val viewModel = mapViewModel(loginRepository = loggedInRepository())
+            runCurrent()
+            viewModel.dispatch(OnCategoryFilterToggled(Category.MAZESOBA))
+            viewModel.dispatch(OnOpenFilterToggled)
+            viewModel.dispatch(OnBookmarkedShopsToggled)
+            runCurrent()
+
+            viewModel.dispatch(OnQueryChanged("라멘"))
+            runCurrent()
+
+            assertEquals(RamenShopFilter(), viewModel.uiState.value.filters)
+            assertEquals(false, viewModel.uiState.value.isBookmarkedView)
+        }
+
+    @Test
     fun `검색 결과도 카테고리 필터가 적용된 목록을 보여준다`() =
         coroutinesTest {
             val mazesobaShop =
@@ -2092,9 +2109,10 @@ class MapViewModelTest {
             val ramenShopRepository = FakeRamenShopRepository(searchResult = searchShops)
             val viewModel = mapViewModel(ramenShopRepository)
 
-            viewModel.dispatch(OnCategoryFilterToggled(Category.MAZESOBA))
             viewModel.dispatch(OnQueryChanged("라멘"))
             advanceTimeBy(300)
+            runCurrent()
+            viewModel.dispatch(OnCategoryFilterToggled(Category.MAZESOBA))
             runCurrent()
 
             assertEquals(
@@ -2169,45 +2187,6 @@ class MapViewModelTest {
 
         assertTrue(uiState.markerShops.isEmpty())
     }
-
-    @Test
-    fun `필터와 맞지 않는 단일 검색 결과는 자동 선택하지 않는다`() =
-        coroutinesTest {
-            val shop =
-                ramenShopFixture(
-                    id = "jiro-shop",
-                    menuCategories = listOf(Category.JIRO),
-                )
-            val mapShop =
-                ramenShopFixture(
-                    id = "mazesoba-map-shop",
-                    menuCategories = listOf(Category.MAZESOBA),
-                )
-            val searchShops = RamenShops(listOf(shop).associateBy { it.id })
-            val ramenShopRepository =
-                FakeRamenShopRepository(
-                    result = RamenShops(mapOf(mapShop.id to mapShop)),
-                    searchResult = searchShops,
-                )
-            val viewModel = mapViewModel(ramenShopRepository)
-
-            viewModel.sideEffect.test {
-                viewModel.dispatch(OnBoundsChanged(BOUNDS_FIXTURE))
-                advanceTimeBy(350)
-                runCurrent()
-                viewModel.dispatch(OnCategoryFilterToggled(Category.MAZESOBA))
-                viewModel.dispatch(OnQueryChanged("라멘"))
-                advanceTimeBy(300)
-                runCurrent()
-
-                assertEquals(null, viewModel.uiState.value.selectedShop)
-                assertEquals(RamenShops(emptyMap()), viewModel.uiState.value.searchResultShops)
-                assertEquals(
-                    showToastSideEffect(Res.string.filter_empty_visible_result_message),
-                    awaitItem(),
-                )
-            }
-        }
 
     @Test
     fun `검색 결과가 없으면 안내 바텀시트를 보여주지 않는다`() {
@@ -2638,7 +2617,7 @@ class MapViewModelTest {
         }
 
     @Test
-    fun `필터 적용 후 숨김 검색 결과만 남으면 상세를 열지 않고 숨김 안내를 보여준다`() =
+    fun `검색 후 필터 적용으로 숨김 검색 결과만 남으면 상세를 열지 않는다`() =
         coroutinesTest {
             val hiddenShop =
                 ramenShopFixture(
@@ -2661,34 +2640,25 @@ class MapViewModelTest {
                     shopWaitingSystemRepository = waitingSystemRepository,
                 )
 
-            viewModel.sideEffect.test {
-                viewModel.dispatch(OnCategoryFilterToggled(Category.MAZESOBA))
-                viewModel.dispatch(OnQueryChanged("라멘"))
-                advanceTimeBy(300)
-                runCurrent()
+            viewModel.dispatch(OnQueryChanged("라멘"))
+            advanceTimeBy(300)
+            runCurrent()
+            viewModel.dispatch(OnCategoryFilterToggled(Category.MAZESOBA))
+            runCurrent()
 
-                assertEquals(null, viewModel.uiState.value.selectedShop)
-                assertEquals(false, viewModel.uiState.value.showBottomSheet)
-                assertEquals(false, viewModel.uiState.value.showSearchResults)
-                assertEquals(
-                    SearchResultGuide.HiddenOnly,
-                    viewModel.uiState.value.searchResultGuide,
-                )
-                assertEquals(
-                    RamenShops(listOf(hiddenShop)),
-                    viewModel.uiState.value.searchResultShops,
-                )
-                assertEquals(RamenShops(listOf(hiddenShop)), viewModel.uiState.value.focusShops)
-                assertEquals(emptyList(), waitingSystemRepository.requestedShopIds)
-                assertEquals(
-                    showToastSideEffect(Res.string.filter_empty_visible_result_message),
-                    awaitItem(),
-                )
-                assertEquals(
-                    showToastSideEffect(Res.string.hidden_shop_search_result_message),
-                    awaitItem(),
-                )
-            }
+            assertEquals(null, viewModel.uiState.value.selectedShop)
+            assertEquals(false, viewModel.uiState.value.showBottomSheet)
+            assertEquals(false, viewModel.uiState.value.showSearchResults)
+            assertEquals(
+                SearchResultGuide.HiddenOnly,
+                viewModel.uiState.value.searchResultGuide,
+            )
+            assertEquals(
+                RamenShops(listOf(hiddenShop)),
+                viewModel.uiState.value.searchResultShops,
+            )
+            assertEquals(RamenShops(listOf(hiddenShop)), viewModel.uiState.value.focusShops)
+            assertEquals(emptyList(), waitingSystemRepository.requestedShopIds)
         }
 
     @Test

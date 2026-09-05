@@ -7,18 +7,18 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 internal data class ShopWaitingSystemResponse(
-    val id: String,
-    @SerialName("shop_id")
-    val shopId: String,
-    val provider: String,
-    @SerialName("provider_url")
+    @SerialName("waiting_provider")
+    val provider: String? = null,
+    @SerialName("waiting_provider_url")
     val providerUrl: String? = null,
 ) {
-    fun toDomain(): WaitingSystem =
-        WaitingSystem(
-            id = id,
-            shopId = shopId,
-            provider = WaitingProvider.fromId(provider),
-            providerUrl = providerUrl,
-        )
+    fun toDomain(shopId: String): WaitingSystem? =
+        provider?.let {
+            WaitingSystem(
+                id = shopId,
+                shopId = shopId,
+                provider = WaitingProvider.fromId(it),
+                providerUrl = providerUrl,
+            )
+        }
 }

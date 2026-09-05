@@ -89,7 +89,6 @@ fun ShopDetailHost(
                 onShopMapLinkClick = { shop, provider ->
                     viewModel.dispatch(MapIntent.OnShopMapLinkClicked(shop, provider))
                 },
-                onPhoneClick = { ExternalUriOpener.open("tel:$it") },
                 onWaitingClick = ExternalUriOpener::open,
                 onExternalLinkClick = ExternalUriOpener::open,
                 isAppleMapsAvailable = ExternalUriOpener.isAppleMapsAvailable,

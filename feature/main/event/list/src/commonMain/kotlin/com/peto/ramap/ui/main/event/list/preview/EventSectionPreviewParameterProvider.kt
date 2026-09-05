@@ -77,13 +77,11 @@ class EventSectionPreviewParameterProvider : PreviewParameterProvider<List<ShopE
         val previewShop =
             RamenShop(
                 id = "preview-shop",
-                kakaoPlaceId = null,
                 name = "라멘 프리뷰 매장",
                 address = "서울 마포구",
                 location = Location(37.5, 127.0),
                 kakaoPlaceUrl = null,
                 naverPlaceUrl = null,
-                phone = null,
                 instagramUrl = null,
                 menuCategories = MenuCategories(emptyList()),
                 isVisible = true,

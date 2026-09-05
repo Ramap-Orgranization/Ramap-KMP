@@ -144,13 +144,11 @@ class EventsPreviewParameterProvider : PreviewParameterProvider<EventsUiState> {
         name: String,
     ) = RamenShop(
         id = id,
-        kakaoPlaceId = null,
         name = name,
         address = "서울 마포구",
         location = Location(37.5, 127.0),
         kakaoPlaceUrl = null,
         naverPlaceUrl = null,
-        phone = null,
         instagramUrl = null,
         menuCategories = MenuCategories(emptyList()),
         isVisible = true,

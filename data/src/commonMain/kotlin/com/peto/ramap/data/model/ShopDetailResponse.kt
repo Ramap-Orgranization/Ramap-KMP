@@ -9,7 +9,7 @@ internal data class ShopDetailResponse(
     @SerialName("like_count")
     val likeCount: Long,
     @SerialName("waiting_system")
-    val waitingSystem: ShopWaitingSystemResponse? = null,
+    val waitingSystem: LegacyShopWaitingSystemResponse? = null,
     val events: List<ShopEventResponse> = emptyList(),
     @SerialName("event_participants")
     val eventParticipants: List<ShopEventParticipantResponse> = emptyList(),

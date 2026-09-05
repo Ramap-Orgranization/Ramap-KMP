@@ -8,14 +8,12 @@ import kotlinx.serialization.Serializable
 @Serializable
 internal data class ShopRankingResponse(
     val id: String,
-    @SerialName("kakao_place_id") val kakaoPlaceId: String? = null,
     val name: String,
     val address: String,
     val lat: Double,
     val lng: Double,
     @SerialName("kakao_place_url") val kakaoPlaceUrl: String? = null,
     @SerialName("naver_place_url") val naverPlaceUrl: String? = null,
-    val phone: String? = null,
     @SerialName("business_hours_weekly") val businessHoursWeekly: Map<String, BusinessHoursDayResponse>? = null,
     @SerialName("business_hours_break_times") val businessHoursBreakTimes: Map<String, List<BreakTimeResponse>>? = null,
     @SerialName("business_hours_last_orders") val businessHoursLastOrders: Map<String, List<String>>? = null,
@@ -33,14 +31,12 @@ internal data class ShopRankingResponse(
             shop =
                 RamenShopResponse(
                     id = id,
-                    kakaoPlaceId = kakaoPlaceId,
                     name = name,
                     address = address,
                     lat = lat,
                     lng = lng,
                     kakaoPlaceUrl = kakaoPlaceUrl,
                     naverPlaceUrl = naverPlaceUrl,
-                    phone = phone,
                     businessHoursWeekly = businessHoursWeekly,
                     businessHoursBreakTimes = businessHoursBreakTimes,
                     businessHoursLastOrders = businessHoursLastOrders,

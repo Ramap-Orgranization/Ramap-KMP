@@ -255,10 +255,8 @@ class DefaultRamenShopRepositoryTest {
                             ),
                             ramenShopResponseFixture(
                                 id = "shop-2",
-                                kakaoPlaceId = null,
                                 name = "숨은 라멘집",
                                 kakaoPlaceUrl = null,
-                                phone = null,
                                 instagramUrl = null,
                                 menuCategoryIds = null,
                             ),
@@ -273,12 +271,10 @@ class DefaultRamenShopRepositoryTest {
                 listOf(
                     RamenShop(
                         id = "shop-1",
-                        kakaoPlaceId = "kakao-shop-1",
                         name = "라멘집",
                         address = "서울시 마포구 라멘로 1",
                         location = Location(lat = 37.551, lng = 126.921),
                         kakaoPlaceUrl = "https://place.map.kakao.com/shop-1",
-                        phone = "02-0000-0000",
                         instagramUrl = "https://instagram.com/ramen_shop",
                         menuCategories =
                             MenuCategories(
@@ -290,12 +286,10 @@ class DefaultRamenShopRepositoryTest {
                     ),
                     RamenShop(
                         id = "shop-2",
-                        kakaoPlaceId = null,
                         name = "숨은 라멘집",
                         address = "서울시 마포구 라멘로 1",
                         location = Location(lat = 37.551, lng = 126.921),
                         kakaoPlaceUrl = null,
-                        phone = null,
                         instagramUrl = null,
                         menuCategories = MenuCategories(emptyList()),
                         isVisible = true,
@@ -351,12 +345,10 @@ class DefaultRamenShopRepositoryTest {
                 listOf(
                     RamenShop(
                         id = "shop-1",
-                        kakaoPlaceId = "kakao-shop-1",
                         name = "시오라멘",
                         address = "서울시 마포구 라멘로 1",
                         location = Location(lat = 37.551, lng = 126.921),
                         kakaoPlaceUrl = "https://place.map.kakao.com/shop-1",
-                        phone = "02-0000-0000",
                         instagramUrl = "https://instagram.com/ramen_shop",
                         menuCategories = MenuCategories(listOf(Category.SHIO)),
                         isVisible = true,
@@ -365,12 +357,10 @@ class DefaultRamenShopRepositoryTest {
                     ),
                     RamenShop(
                         id = "shop-2",
-                        kakaoPlaceId = "kakao-shop-1",
                         name = "시오 라멘 연구소",
                         address = "서울시 마포구 라멘로 1",
                         location = Location(lat = 37.551, lng = 126.921),
                         kakaoPlaceUrl = "https://place.map.kakao.com/shop-1",
-                        phone = "02-0000-0000",
                         instagramUrl = "https://instagram.com/ramen_shop",
                         menuCategories = MenuCategories(emptyList()),
                         isVisible = true,

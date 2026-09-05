@@ -139,7 +139,7 @@ internal class RemoteRamenShopDataSource(
     }
 
     companion object {
-        private const val TABLE_NAME = "shops"
+        private const val TABLE_NAME = "ramen_shops"
         private const val SHOP_BOOKMARK_COUNTS_VIEW = "shop_bookmark_counts"
         private const val EVENT_VIEW = "active_shop_events"
         private const val ACTIVE_EVENTS_VIEW = "active_events"

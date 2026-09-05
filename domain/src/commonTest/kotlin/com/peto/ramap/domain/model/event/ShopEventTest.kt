@@ -188,13 +188,11 @@ class ShopEventTest {
     ): RamenShop =
         RamenShop(
             id = id,
-            kakaoPlaceId = null,
             name = name,
             address = "address",
             location = Location(37.5, 127.0),
             kakaoPlaceUrl = null,
             naverPlaceUrl = null,
-            phone = null,
             instagramUrl = null,
             menuCategories = MenuCategories(emptyList()),
             isVisible = true,

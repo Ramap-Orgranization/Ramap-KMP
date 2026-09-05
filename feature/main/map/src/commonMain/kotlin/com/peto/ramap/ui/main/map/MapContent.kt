@@ -162,7 +162,6 @@ internal fun MapContent(
             onHiddenToggled = onHiddenToggled,
             onShopShareClick = onShopShareClick,
             onShopMapLinkClick = onShopMapLinkClick,
-            onPhoneClick = { ExternalUriOpener.open("tel:$it") },
             onWaitingClick = ExternalUriOpener::open,
             onExternalLinkClick = ExternalUriOpener::open,
             isAppleMapsAvailable = ExternalUriOpener.isAppleMapsAvailable,

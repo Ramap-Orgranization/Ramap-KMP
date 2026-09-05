@@ -13,7 +13,6 @@
     <string name="map_search_result_break_time_format">브레이크 타임 · %1$s에 영업 시작</string>
     <string name="map_search_result_closed_label">영업 종료</string>
     <string name="map_search_result_closed_format">영업 종료 · %1$s에 영업 시작</string>
-    <string name="shop_detail_label_phone">전화</string>
     <string name="shop_menu_title">메뉴판</string>
     <string name="shop_menu_updated_at">%1$s 업데이트</string>
     <string name="shop_menu_representative">대표</string>
@@ -167,7 +166,6 @@
     <string name="shop_information_report_success_message">제보가 접수되었습니다</string>
     <string name="shop_information_report_failure_message">제보 접수에 실패했습니다</string>
     <string name="shop_information_field_address">주소</string>
-    <string name="shop_information_field_phone">전화번호</string>
     <string name="shop_information_field_business_hours">영업시간</string>
     <string name="shop_information_field_menu_categories">메뉴 카테고리</string>
     <string name="shop_information_field_waiting">웨이팅</string>

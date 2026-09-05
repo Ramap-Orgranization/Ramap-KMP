@@ -233,7 +233,7 @@ class MapViewModel(
     private suspend fun handleSearchIntent(intent: MapIntent): Boolean {
         when (intent) {
             is OnSearchResultsDismissed -> dismissSearchResults()
-            is OnQueryChanged -> updateQuery(intent.query)
+            is OnQueryChanged -> updateQuery(intent.query, clearFilters = true)
             is OnRecentSearchSelected -> updateQuery(intent.query)
             is OnRecentSearchDeleted -> mapSearchHistoryStorage.removeRecentSearch(intent.query)
             OnRecentSearchesCleared -> mapSearchHistoryStorage.clearRecentSearches()
@@ -410,9 +410,12 @@ class MapViewModel(
         reduce { copy(search = search.dismissResults()) }
     }
 
-    private fun updateQuery(query: String) {
+    private fun updateQuery(
+        query: String,
+        clearFilters: Boolean = false,
+    ) {
         val normalizedQuery = SearchQuery(query).normalizeShopSearchQuery()
-        updateSearchInput(query)
+        updateSearchInput(query, clearFilters)
 
         if (normalizedQuery.value.length !in SEARCH_QUERY_LENGTH) {
             clearSearchResultsForInvalidQuery()
@@ -450,12 +453,17 @@ class MapViewModel(
             currentState.search.hasLoadedResultsFor(query) &&
             currentState.search.results.isNotEmpty()
 
-    private fun updateSearchInput(query: String) {
+    private fun updateSearchInput(
+        query: String,
+        clearFilters: Boolean,
+    ) {
         cancelShopDetailLoad()
         reduce {
             copy(
                 search = search.updateInput(query),
                 shopDetailState = ShopDetailSheetUiState.Closed,
+                filters = if (clearFilters) filters.clear() else filters,
+                isBookmarkedView = if (clearFilters) false else isBookmarkedView,
             )
         }
     }

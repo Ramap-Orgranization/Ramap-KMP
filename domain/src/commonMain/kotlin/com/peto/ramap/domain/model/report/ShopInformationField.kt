@@ -4,7 +4,6 @@ enum class ShopInformationField(
     val key: String,
 ) {
     ADDRESS("address"),
-    PHONE("phone"),
     BUSINESS_HOURS("business_hours"),
     MENU_CATEGORIES("menu_categories"),
     WAITING("waiting"),

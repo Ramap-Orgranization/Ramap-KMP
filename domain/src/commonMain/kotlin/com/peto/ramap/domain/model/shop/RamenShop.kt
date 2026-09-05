@@ -8,13 +8,11 @@ import kotlinx.datetime.LocalDateTime
 
 data class RamenShop(
     val id: String,
-    val kakaoPlaceId: String?,
     val name: String,
     val address: String,
     val location: Location,
     val kakaoPlaceUrl: String?,
     val naverPlaceUrl: String? = null,
-    val phone: String?,
     val instagramUrl: String?,
     val menuCategories: MenuCategories,
     val isVisible: Boolean,
