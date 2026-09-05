@@ -30,7 +30,7 @@ internal object BusinessHoursStatusCalculator {
     ): BusinessHoursStatus? {
         val activeDayKey = findActiveBusinessHoursDayKey(businessHours, currentDateTime)
         if (activeDayKey != null) {
-            return openStatus(businessHours, activeDayKey)
+            return openStatus(businessHours, activeDayKey, currentDateTime.time)
         }
 
         val breakEndTime = findBreakEndDuringCurrentHours(businessHours, currentDateTime)
@@ -46,13 +46,28 @@ internal object BusinessHoursStatusCalculator {
     private fun openStatus(
         businessHours: BusinessHours,
         dayKey: String,
+        currentTime: LocalTime,
     ): BusinessHoursStatus {
-        val lastOrder = businessHours.lastOrders[dayKey]?.firstOrNull()
+        val lastOrder = findActiveLastOrder(businessHours, dayKey, currentTime)
         if (lastOrder != null) return BusinessHoursStatus.OpenWithLastOrder(lastOrder)
 
         val closeTime = businessHours.weekly[dayKey]?.close ?: return BusinessHoursStatus.Open
 
         return BusinessHoursStatus.OpenUntil(closeTime)
+    }
+
+    private fun findActiveLastOrder(
+        businessHours: BusinessHours,
+        dayKey: String,
+        currentTime: LocalTime,
+    ): String? {
+        val lastOrders = businessHours.lastOrders[dayKey].orEmpty()
+        val nextBreakIndex =
+            businessHours.breakTimes[dayKey].orEmpty().indexOfFirst { breakTime ->
+                parseTime(breakTime.start)?.let { currentTime < it } == true
+            }
+        val activeLastOrderIndex = nextBreakIndex.takeIf { it >= 0 } ?: lastOrders.lastIndex
+        return lastOrders.getOrNull(activeLastOrderIndex) ?: lastOrders.lastOrNull()
     }
 
     /**

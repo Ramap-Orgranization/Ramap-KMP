@@ -144,18 +144,22 @@ class BusinessHoursTest {
                                         ),
                                     ),
                             ),
-                        lastOrders = mapOf("mon" to listOf("21:00")),
+                        lastOrders = mapOf("mon" to listOf("13:30", "21:00")),
                         notice = null,
                     ),
             )
 
         assertEquals(
-            BusinessHoursStatus.OpenWithLastOrder("21:00"),
+            BusinessHoursStatus.OpenWithLastOrder("13:30"),
             shop.businessHoursStatus(LocalDateTime(2026, 8, 10, 13, 0)),
         )
         assertEquals(
             BusinessHoursStatus.BreakTime("15:00"),
             shop.businessHoursStatus(LocalDateTime(2026, 8, 10, 14, 30)),
+        )
+        assertEquals(
+            BusinessHoursStatus.OpenWithLastOrder("21:00"),
+            shop.businessHoursStatus(LocalDateTime(2026, 8, 10, 16, 0)),
         )
         assertEquals(
             BusinessHoursStatus.Closed("12:00"),
