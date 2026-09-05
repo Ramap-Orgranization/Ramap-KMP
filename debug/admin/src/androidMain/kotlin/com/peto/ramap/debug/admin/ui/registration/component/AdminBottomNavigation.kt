@@ -83,6 +83,7 @@ private fun AdminBottomNavigationItem(
     val icon =
         when (tab) {
             AdminRegistrationTab.EVENT_MANAGEMENT -> Res.drawable.ic_list
+            AdminRegistrationTab.EVENT_EDIT -> Res.drawable.ic_list
             AdminRegistrationTab.EVENT_REGISTRATION -> Res.drawable.ic_add
             AdminRegistrationTab.OPERATING_NOTICE -> Res.drawable.ic_notification
         }
@@ -119,6 +120,7 @@ private fun AdminBottomNavigationItem(
 private fun labelResourceId(tab: AdminRegistrationTab): Int =
     when (tab) {
         AdminRegistrationTab.EVENT_MANAGEMENT -> R.string.admin_tab_event_management
+        AdminRegistrationTab.EVENT_EDIT -> R.string.admin_tab_event_edit
         AdminRegistrationTab.EVENT_REGISTRATION -> R.string.admin_tab_event_registration
         AdminRegistrationTab.OPERATING_NOTICE -> R.string.admin_tab_operating_notice
     }

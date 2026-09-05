@@ -25,6 +25,7 @@ import com.peto.ramap.debug.admin.data.model.AdminEvidence
 import com.peto.ramap.debug.admin.ui.registration.component.AdminBottomNavigation
 import com.peto.ramap.debug.admin.ui.registration.component.AdminCorrectionManager
 import com.peto.ramap.debug.admin.ui.registration.component.AdminDraftPreview
+import com.peto.ramap.debug.admin.ui.registration.component.AdminEventEditManager
 import com.peto.ramap.debug.admin.ui.registration.component.AdminEventStatusManager
 import com.peto.ramap.debug.admin.ui.registration.component.AdminEventTypeSelector
 import com.peto.ramap.debug.admin.ui.registration.component.AdminEvidenceField
@@ -72,6 +73,7 @@ internal fun AdminRegistrationScreen(
     onEventStatusDateRangeSelected: (String, String) -> Unit,
     onEventStatusTodaySelected: () -> Unit,
     onEventStatusSave: () -> Unit,
+    onManagedEventEdit: (String) -> Unit,
     onCorrectionRequestChanged: (String) -> Unit,
     onCorrectionPreviewRequested: () -> Unit,
     onCorrectionConfirmed: () -> Unit,
@@ -147,6 +149,10 @@ internal fun AdminRegistrationScreen(
                         onDismiss = onCorrectionPreviewDismissed,
                     )
                 }
+            } else if (uiState.selectedTab == AdminRegistrationTab.EVENT_EDIT) {
+                AdminFieldSection(label = "") {
+                    AdminEventEditManager(events = uiState.managedEvents, onEdit = onManagedEventEdit)
+                }
             } else {
                 if (uiState.isOperatingNotice) {
                     AdminFieldSection(label = stringResource(R.string.admin_registration_detailed_classification)) {
@@ -171,6 +177,7 @@ internal fun AdminRegistrationScreen(
                         shopName = uiState.shopName,
                         shopNames = uiState.shopNames,
                         onShopNameChanged = onShopNameChanged,
+                        readOnly = uiState.editingEventId != null,
                     )
                 }
 
@@ -182,18 +189,19 @@ internal fun AdminRegistrationScreen(
                         )
                     }
                 } else {
-                    AdminFieldSection(label = stringResource(R.string.admin_registration_source)) {
-                        AdminSourceField(
-                            sourceUrl = uiState.sourceUrl,
-                            onSourceUrlChanged = onSourceUrlChanged,
-                        )
-                    }
-
-                    AdminFieldSection(label = stringResource(R.string.admin_registration_feedback)) {
-                        AdminFeedbackField(
-                            feedback = uiState.feedback,
-                            onFeedbackChanged = onFeedbackChanged,
-                        )
+                    if (uiState.editingEventId == null) {
+                        AdminFieldSection(label = stringResource(R.string.admin_registration_source)) {
+                            AdminSourceField(
+                                sourceUrl = uiState.sourceUrl,
+                                onSourceUrlChanged = onSourceUrlChanged,
+                            )
+                        }
+                        AdminFieldSection(label = stringResource(R.string.admin_registration_feedback)) {
+                            AdminFeedbackField(
+                                feedback = uiState.feedback,
+                                onFeedbackChanged = onFeedbackChanged,
+                            )
+                        }
                     }
                 }
 
@@ -205,12 +213,14 @@ internal fun AdminRegistrationScreen(
                     onTodayClick = onTodaySelected,
                 )
 
-                AdminFieldSection(label = stringResource(R.string.admin_registration_image)) {
-                    AdminEvidenceField(
-                        evidence = uiState.evidence,
-                        onAddClick = { imagePicker.launch("image/*") },
-                        onRemoveClick = { onEvidenceSelected(null) },
-                    )
+                if (uiState.editingEventId == null) {
+                    AdminFieldSection(label = stringResource(R.string.admin_registration_image)) {
+                        AdminEvidenceField(
+                            evidence = uiState.evidence,
+                            onAddClick = { imagePicker.launch("image/*") },
+                            onRemoveClick = { onEvidenceSelected(null) },
+                        )
+                    }
                 }
 
                 if (!uiState.isOperatingNotice && uiState.draft == null) {
@@ -234,7 +244,7 @@ internal fun AdminRegistrationScreen(
                     text =
                         stringResource(
                             if (uiState.isImageOnly || uiState.draft != null) {
-                                R.string.admin_registration_register
+                                if (uiState.editingEventId == null) R.string.admin_registration_register else R.string.admin_event_edit
                             } else {
                                 R.string.admin_registration_preview
                             },
@@ -303,6 +313,7 @@ private fun AdminRegistrationScreenPreview() {
             onEventStatusDateRangeSelected = { _, _ -> },
             onEventStatusTodaySelected = {},
             onEventStatusSave = {},
+            onManagedEventEdit = {},
             onCorrectionRequestChanged = {},
             onCorrectionPreviewRequested = {},
             onCorrectionConfirmed = {},
@@ -357,6 +368,7 @@ private fun AdminRegistrationScreenWithDraftPreview() {
             onEventStatusDateRangeSelected = { _, _ -> },
             onEventStatusTodaySelected = {},
             onEventStatusSave = {},
+            onManagedEventEdit = {},
             onCorrectionRequestChanged = {},
             onCorrectionPreviewRequested = {},
             onCorrectionConfirmed = {},

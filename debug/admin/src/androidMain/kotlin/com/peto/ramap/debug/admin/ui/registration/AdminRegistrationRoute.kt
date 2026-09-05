@@ -69,6 +69,7 @@ internal fun AdminRegistrationRoute(
             },
             onEventStatusTodaySelected = { viewModel.dispatch(AdminRegistrationIntent.OnEventStatusTodaySelected) },
             onEventStatusSave = { viewModel.dispatch(AdminRegistrationIntent.OnEventStatusSaved) },
+            onManagedEventEdit = { viewModel.dispatch(AdminRegistrationIntent.OnManagedEventEditRequested(it)) },
             onCorrectionRequestChanged = { viewModel.dispatch(AdminRegistrationIntent.OnCorrectionRequestChanged(it)) },
             onCorrectionPreviewRequested = { viewModel.dispatch(AdminRegistrationIntent.OnCorrectionPreviewRequested) },
             onCorrectionConfirmed = { viewModel.dispatch(AdminRegistrationIntent.OnCorrectionConfirmed) },

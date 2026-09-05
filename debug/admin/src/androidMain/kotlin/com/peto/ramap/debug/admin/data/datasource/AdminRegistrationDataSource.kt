@@ -133,6 +133,25 @@ internal class AdminRegistrationDataSource(
         )
     }
 
+    suspend fun updateEvent(
+        eventId: String,
+        draft: AdminDraft,
+        eventType: ShopEventType,
+    ) {
+        client.functions.invoke(
+            EVENT_STATUS_FUNCTION,
+            EventStatusRequest(
+                action = "edit",
+                eventId = eventId,
+                title = draft.title,
+                description = draft.description,
+                eventType = eventType.name.lowercase(),
+                startDate = draft.startDate,
+                endDate = draft.endDate,
+            ),
+        )
+    }
+
     suspend fun previewCorrection(request: String): AdminCorrectionPreview =
         client.functions
             .invoke(

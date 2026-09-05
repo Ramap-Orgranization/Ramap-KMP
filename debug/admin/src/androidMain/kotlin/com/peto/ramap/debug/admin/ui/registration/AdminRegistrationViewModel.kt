@@ -2,6 +2,8 @@ package com.peto.ramap.debug.admin.ui.registration
 
 import androidx.lifecycle.viewModelScope
 import com.peto.ramap.debug.admin.data.datasource.AdminRegistrationDataSource
+import com.peto.ramap.debug.admin.data.model.AdminDraft
+import com.peto.ramap.debug.admin.data.model.AdminManagedEvent
 import com.peto.ramap.debug.admin.ui.registration.contract.AdminEventStatus
 import com.peto.ramap.debug.admin.ui.registration.contract.AdminEventStatusScope
 import com.peto.ramap.debug.admin.ui.registration.contract.AdminRegistrationIntent
@@ -83,8 +85,8 @@ internal class AdminRegistrationViewModel(
                     )
                 }
 
-            is AdminRegistrationIntent.OnShopNameChanged -> reduce { copy(shopName = intent.value, draft = null, message = null) }
-            is AdminRegistrationIntent.OnSourceUrlChanged -> reduce { copy(sourceUrl = intent.value, draft = null, message = null) }
+            is AdminRegistrationIntent.OnShopNameChanged -> reduce { copy(shopName = intent.value, draft = if (editingEventId == null) null else draft, message = null) }
+            is AdminRegistrationIntent.OnSourceUrlChanged -> reduce { copy(sourceUrl = intent.value, draft = if (editingEventId == null) null else draft, message = null) }
             is AdminRegistrationIntent.OnFeedbackChanged -> reduce { copy(feedback = intent.value, draft = null, message = null) }
             AdminRegistrationIntent.OnImageOnlyRegistrationClicked ->
                 if (!currentState.isOperatingNotice) {
@@ -144,6 +146,7 @@ internal class AdminRegistrationViewModel(
                 }
             AdminRegistrationIntent.OnEventStatusTodaySelected -> selectEventStatusToday()
             AdminRegistrationIntent.OnEventStatusSaved -> saveEventStatus()
+            is AdminRegistrationIntent.OnManagedEventEditRequested -> startEventEditing(intent.eventId)
             is AdminRegistrationIntent.OnCorrectionRequestChanged ->
                 reduce { copy(correctionRequest = intent.value, correctionPreview = null) }
             AdminRegistrationIntent.OnCorrectionPreviewRequested -> previewCorrection()
@@ -172,6 +175,7 @@ internal class AdminRegistrationViewModel(
                 eventStatusEndDate = null,
                 selectedEventStatus = AdminEventStatus.SOLD_OUT,
                 selectedEventStatusScope = AdminEventStatusScope.TODAY,
+                editingEventId = null,
                 correctionRequest = "",
                 correctionPreview = null,
             )
@@ -308,6 +312,23 @@ internal class AdminRegistrationViewModel(
         reduce { copy(eventStatusStartDate = today, eventStatusEndDate = today) }
     }
 
+    private fun startEventEditing(eventId: String) {
+        val event = currentState.managedEvents.firstOrNull { it.id == eventId } ?: return
+        val eventType = runCatching { ShopEventType.from(event.eventType) }.getOrNull() ?: return
+        reduce {
+            copy(
+                selectedTab = AdminRegistrationTab.EVENT_REGISTRATION,
+                editingEventId = event.id,
+                selectedEventType = eventType,
+                shopName = event.shopName,
+                selectedStartDate = event.startDate,
+                selectedEndDate = event.endDate,
+                draft = createEventDraft(event),
+                message = null,
+            )
+        }
+    }
+
     private fun previewOrRegister() {
         if (currentState.isImageOnly) {
             registerImageOnly()
@@ -361,8 +382,14 @@ internal class AdminRegistrationViewModel(
         ) {
             reduce { copy(isSubmitting = true, message = null) }
             try {
-                dataSource.register(draft, currentState.isOperatingNotice, currentState.selectedEventType)
-                reduce { copy(draft = null, message = AdminRegistrationMessage.SUCCESS) }
+                val editingEventId = currentState.editingEventId
+                if (editingEventId == null) {
+                    dataSource.register(draft, currentState.isOperatingNotice, currentState.selectedEventType)
+                } else {
+                    dataSource.updateEvent(editingEventId, draft, currentState.selectedEventType)
+                }
+                reduce { copy(draft = null, editingEventId = null, message = AdminRegistrationMessage.SUCCESS) }
+                if (editingEventId != null) loadManagedEvents()
                 showToast(Res.string.admin_registration_success, ToastType.SUCCESS)
             } catch (_: Throwable) {
                 showToast(Res.string.admin_registration_register_failure)
@@ -446,3 +473,13 @@ private fun OperatingNoticeType.toRequestValue(): String =
         OperatingNoticeType.EARLY_CLOSING -> "early_close"
         OperatingNoticeType.LATE_OPENING -> "late_opening"
     }
+
+private fun createEventDraft(event: AdminManagedEvent): AdminDraft =
+    AdminDraft(
+        shopName = event.shopName,
+        title = event.title,
+        eventType = event.eventType,
+        startDate = event.startDate,
+        endDate = event.endDate,
+        description = event.description,
+    )

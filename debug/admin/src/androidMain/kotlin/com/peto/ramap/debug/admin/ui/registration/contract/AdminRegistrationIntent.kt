@@ -84,6 +84,10 @@ internal sealed interface AdminRegistrationIntent : Intent {
 
     data object OnEventStatusSaved : AdminRegistrationIntent
 
+    data class OnManagedEventEditRequested(
+        val eventId: String,
+    ) : AdminRegistrationIntent
+
     data class OnCorrectionRequestChanged(
         val value: String,
     ) : AdminRegistrationIntent

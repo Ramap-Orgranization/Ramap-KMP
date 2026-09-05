@@ -32,6 +32,7 @@ internal data class AdminRegistrationUiState(
     val eventStatusStartDate: String? = null,
     val eventStatusEndDate: String? = null,
     val isSavingEventStatus: Boolean = false,
+    val editingEventId: String? = null,
     val correctionRequest: String = "",
     val correctionPreview: AdminCorrectionPreview? = null,
     val isCorrecting: Boolean = false,

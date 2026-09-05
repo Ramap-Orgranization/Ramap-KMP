@@ -12,4 +12,7 @@ internal data class EventStatusRequest(
     val reason: String? = null,
     @SerialName("start_date") val startDate: String? = null,
     @SerialName("end_date") val endDate: String? = null,
+    val title: String? = null,
+    val description: String? = null,
+    @SerialName("event_type") val eventType: String? = null,
 )
