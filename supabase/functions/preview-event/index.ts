@@ -227,7 +227,7 @@ async function resolveShop(
   candidates: Array<string | null>,
 ) {
   const findByName = async (candidate: string) => {
-    const { data } = await supabase.from("shops").select("name,instagram_url").eq("name", candidate).limit(2);
+    const { data } = await supabase.from("ramen_shops").select("name,instagram_url").eq("name", candidate).limit(2);
     return data?.length === 1 ? { name: data[0].name as string, instagramUrl: data[0].instagram_url as string | null } : null;
   };
   for (const candidate of candidates) {
@@ -243,7 +243,7 @@ async function resolveShop(
     `https://instagram.com/${handle}/`,
   ] : [];
   if (handles.length > 0) {
-    const { data } = await supabase.from("shops").select("name,instagram_url").in("instagram_url", handles).limit(2);
+    const { data } = await supabase.from("ramen_shops").select("name,instagram_url").in("instagram_url", handles).limit(2);
     if (data?.length === 1) return { name: data[0].name as string, instagramUrl: data[0].instagram_url as string | null };
   }
   return null;

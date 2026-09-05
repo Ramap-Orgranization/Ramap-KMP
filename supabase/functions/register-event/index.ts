@@ -43,7 +43,7 @@ Deno.serve(async (request) => {
   }
   const endDate = eventType === "new_menu" ? dateAfterDays(startDate, 6) : requestedEndDate;
 
-  const { data: shops, error: shopError } = await supabase.from("shops").select("id").eq("name", shopName).limit(2);
+  const { data: shops, error: shopError } = await supabase.from("ramen_shops").select("id").eq("name", shopName).limit(2);
   if (shopError) return json({ code: "server_unavailable" }, 503);
   if (!shops || shops.length !== 1) return json({ code: "shop_not_resolved" }, 422);
   const shopId = shops[0].id as string;
@@ -199,11 +199,11 @@ async function resolveParticipantShop(supabase: ReturnType<typeof createServiceC
       `https://instagram.com/${handle}`,
       `https://instagram.com/${handle}/`,
     ] : [];
-    const { data, error } = await supabase.from("shops").select("id").in("instagram_url", urls).limit(2);
+    const { data, error } = await supabase.from("ramen_shops").select("id").in("instagram_url", urls).limit(2);
     if (error) throw error;
     if (data?.length === 1) return data[0].id as string;
   }
-  const { data, error } = await supabase.from("shops").select("id").eq("name", participant.name).limit(2);
+  const { data, error } = await supabase.from("ramen_shops").select("id").eq("name", participant.name).limit(2);
   if (error) throw error;
   return data?.length === 1 ? data[0].id as string : null;
 }
@@ -227,7 +227,7 @@ async function registerOperatingNotice(
     (endTime && !validTime(endTime)) || !isInstagramUrl(sourceUrl)
   ) return json({ code: "invalid_operating_notice_draft" }, 400);
 
-  const { data: shops, error: shopError } = await supabase.from("shops").select("id,instagram_url").eq("name", shopName).limit(2);
+  const { data: shops, error: shopError } = await supabase.from("ramen_shops").select("id,instagram_url").eq("name", shopName).limit(2);
   if (shopError) return json({ code: "server_unavailable" }, 503);
   if (!shops || shops.length !== 1) return json({ code: "shop_not_resolved" }, 422);
   const shop = shops[0] as { id: string; instagram_url?: string | null };

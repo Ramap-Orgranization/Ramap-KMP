@@ -18,7 +18,7 @@ async function listActiveEvents() {
   const supabase = createServiceClient();
   const { data, error } = await supabase
     .from("shop_events")
-    .select("id,title,description,event_type,start_date,end_date,cancelled_dates,sold_out_dates,shops!inner(name)")
+    .select("id,title,description,event_type,start_date,end_date,cancelled_dates,sold_out_dates,ramen_shops!inner(name)")
     .lte("start_date", today)
     .or(`end_date.gte.${today},end_date.is.null`)
     .order("end_date");
@@ -28,7 +28,7 @@ async function listActiveEvents() {
     title: event.title,
     start_date: event.start_date,
     end_date: event.end_date,
-    shop_name: event.shops.name,
+    shop_name: event.ramen_shops.name,
     description: event.description,
     event_type: event.event_type,
     cancelled_dates: event.cancelled_dates ?? [],

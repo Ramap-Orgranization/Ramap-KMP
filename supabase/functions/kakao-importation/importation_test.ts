@@ -29,7 +29,7 @@ Deno.test("unsupported hosts are rejected", () => {
   assertEquals(error.code, "unsupported_url")
 })
 Deno.test("ambiguous matches are not imported while exact Kakao ID wins", () => {
-  const shops = [{ id: "one", kakao_place_id: "45", name: "동일", address: "서울", lat: 37, lng: 127 }, { id: "two", name: "동일", address: "서울", lat: 37, lng: 127 }]
+  const shops = [{ id: "one", kakao_place_url: "https://place.map.kakao.com/45", name: "동일", address: "서울", lat: 37, lng: 127 }, { id: "two", name: "동일", address: "서울", lat: 37, lng: 127 }]
   assertEquals(matchPlaces([{ sourceId: "45", name: "동일" }, { name: "동일", address: "서울" }], shops).map((item) => item.shopId), ["one", null])
 })
 Deno.test("different names match by unique address", () => {

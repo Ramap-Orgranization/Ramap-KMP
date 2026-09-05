@@ -60,7 +60,7 @@ async function parseTarget(apiKey: string, instruction: string): Promise<Target>
 }
 
 async function findActiveCandidates(supabase: ReturnType<typeof createServiceClient>, target: Target): Promise<Candidate[]> {
-  const { data: shops, error } = await supabase.from("shops").select("id").ilike("name", `%${escapeLike(target.shop_name)}%`).limit(3);
+  const { data: shops, error } = await supabase.from("ramen_shops").select("id").ilike("name", `%${escapeLike(target.shop_name)}%`).limit(3);
   if (error || !shops?.length) return [];
   const shopIds = shops.map((shop) => shop.id), today = koreaToday();
   const [events, notices] = await Promise.all([

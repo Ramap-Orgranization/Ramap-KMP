@@ -190,7 +190,7 @@ internal class AdminRegistrationDataSource(
     }
 
     private companion object {
-        const val SHOPS_TABLE = "shops"
+        const val SHOPS_TABLE = "ramen_shops"
         const val SHOP_NAME_COLUMN = "name"
         const val EVIDENCE_BUCKET = "news-report-evidence"
         const val PREVIEW_FUNCTION = "preview-event"

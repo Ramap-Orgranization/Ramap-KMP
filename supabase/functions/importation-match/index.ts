@@ -23,7 +23,7 @@ Deno.serve(async (request) => {
 async function fetchVisibleShops(): Promise<Shop[]> {
   const url = Deno.env.get("SUPABASE_URL"), key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")
   if (!url || !key) throw new ImportationError("provider_failure", "Server database unavailable")
-  const result = await fetch(`${url}/rest/v1/shops?select=id,kakao_place_id,name,address,lat,lng&is_visible=eq.true`, { headers: { apikey: key, Authorization: `Bearer ${key}` }, signal: AbortSignal.timeout(15_000) })
+  const result = await fetch(`${url}/rest/v1/ramen_shops?select=id,kakao_place_url,name,address,lat,lng&is_visible=eq.true`, { headers: { apikey: key, Authorization: `Bearer ${key}` }, signal: AbortSignal.timeout(15_000) })
   if (!result.ok) throw new ImportationError("provider_failure", "Shop lookup failed")
   return await result.json() as Shop[]
 }
