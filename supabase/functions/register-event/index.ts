@@ -75,6 +75,8 @@ Deno.serve(async (request) => {
         upsert: false,
       });
       if (uploadError) throw uploadError;
+    } else if (sourceUrl && /\/(?:p|reel)\//.test(sourceUrl)) {
+      imagePath = await copyInstagramImage(supabase, sourceUrl, eventId);
     }
 
     const { error: insertError } = await supabase.from("shop_events").insert({
@@ -109,6 +111,42 @@ Deno.serve(async (request) => {
 
 async function deleteEvidence(supabase: ReturnType<typeof createServiceClient>, path: string | null) {
   if (isEvidencePath(path)) await supabase.storage.from(EVIDENCE_BUCKET).remove([path]);
+}
+
+async function copyInstagramImage(
+  supabase: ReturnType<typeof createServiceClient>,
+  sourceUrl: string,
+  eventId: string,
+): Promise<string | null> {
+  const post = await fetch(sourceUrl, { headers: { "User-Agent": "Mozilla/5.0" } }).catch(() => null);
+  if (!post?.ok) return null;
+  const imageUrl = extractOpenGraphImageUrl(await post.text());
+  if (!imageUrl) return null;
+
+  const image = await fetch(imageUrl).catch(() => null);
+  const contentType = image?.headers.get("content-type")?.split(";", 1)[0]?.toLowerCase() ?? "";
+  const extension = contentType === "image/jpeg" ? "jpg" : contentType === "image/png" ? "png" : null;
+  if (!image?.ok || !extension) return null;
+
+  const imagePath = `events/${eventId}/1.${extension}`;
+  const { error } = await supabase.storage.from(EVENT_BUCKET).upload(imagePath, await image.arrayBuffer(), {
+    contentType,
+    upsert: false,
+  });
+  if (error) throw error;
+  return imagePath;
+}
+
+function extractOpenGraphImageUrl(html: string): string | null {
+  const tag = html.match(/<meta\b[^>]*\bproperty=["']og:image["'][^>]*>/i)?.[0];
+  const value = tag?.match(/\bcontent=["']([^"']+)["']/i)?.[1];
+  if (!value) return null;
+  try {
+    const url = new URL(value.replaceAll("&amp;", "&"));
+    return url.protocol === "https:" ? url.toString() : null;
+  } catch {
+    return null;
+  }
 }
 
 function parseParticipants(value: unknown): Participant[] | null {
