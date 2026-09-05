@@ -1,7 +1,7 @@
 package com.peto.ramap.domain.model.report
 
-import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.domain.model.shop.KakaoPlaceUrl
+import com.peto.ramap.domain.model.shop.RamenShop
 
 object PlaceReportTextParser {
     fun extractSupportedUrl(content: String): String? =

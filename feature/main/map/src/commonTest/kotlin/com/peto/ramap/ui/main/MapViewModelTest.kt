@@ -80,7 +80,6 @@ import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.withContext
 import org.jetbrains.compose.resources.StringResource
 import ramap.shared.generated.resources.Res
-import ramap.shared.generated.resources.filter_empty_visible_result_message
 import ramap.shared.generated.resources.hidden_shop_notification_unavailable_message
 import ramap.shared.generated.resources.hidden_shop_search_result_message
 import ramap.shared.generated.resources.hide_shop_success_message

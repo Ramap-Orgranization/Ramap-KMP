@@ -50,7 +50,7 @@ class PlaceReportViewModelTest {
         coroutinesTest {
             val reportRepository = FakeShopReportRepository()
             val shop =
-                ramenShopFixture(kakaoPlaceId = "1521564391", name = "멘코지")
+                ramenShopFixture(kakaoPlaceUrl = "https://place.map.kakao.com/1521564391", name = "멘코지")
             val viewModel =
                 placeReportViewModel(
                     ramenShopRepository =

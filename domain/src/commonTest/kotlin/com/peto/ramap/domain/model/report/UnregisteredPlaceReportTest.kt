@@ -70,6 +70,9 @@ class UnregisteredPlaceReportTest {
                 "https://place.map.kakao.com/1521564391?referrer=share",
             ),
         )
-        assertNull(com.peto.ramap.domain.model.shop.KakaoPlaceUrl.extractPlaceId("https://kko.to/example"))
+        assertNull(
+            com.peto.ramap.domain.model.shop.KakaoPlaceUrl
+                .extractPlaceId("https://kko.to/example"),
+        )
     }
 }

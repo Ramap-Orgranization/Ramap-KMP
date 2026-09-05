@@ -195,7 +195,6 @@ fun RamenShopOverview(
                     onClick = { clipboardManager.setText(AnnotatedString(shop.address)) },
                     onClickLabel = stringResource(Res.string.shop_detail_copy_address),
                 )
-
             }
         }
 
