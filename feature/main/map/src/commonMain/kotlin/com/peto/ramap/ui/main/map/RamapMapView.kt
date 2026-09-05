@@ -2,6 +2,7 @@ package com.peto.ramap.ui.main.map
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.IntOffset
 import com.peto.ramap.domain.model.shop.Location
 import com.peto.ramap.domain.model.shop.MapBounds
 import com.peto.ramap.domain.model.shop.RamenShop
@@ -25,6 +26,7 @@ internal expect fun RamapMapView(
     onSelectedShopFocusConsumed: () -> Unit,
     onMyLocationChanged: (Location) -> Unit,
     onShopClick: (RamenShop) -> Unit,
+    onClusterClick: (List<RamenShop>, IntOffset?) -> Unit,
     onLocationPermissionBlocked: () -> Unit,
     onCurrentLocationTimeout: () -> Unit,
     modifier: Modifier = Modifier,
