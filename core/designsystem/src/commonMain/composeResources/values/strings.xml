@@ -43,6 +43,15 @@
     <string name="shop_detail_link_naver_map">네이버 지도</string>
     <string name="shop_detail_link_apple_maps">애플 지도</string>
     <string name="shop_detail_link_report">제보하기</string>
+    <string name="shop_review_title">리뷰</string>
+    <string name="shop_review_empty">아직 리뷰가 없어요</string>
+    <string name="shop_review_write">리뷰 작성</string>
+    <string name="shop_review_placeholder">매장 경험을 알려주세요</string>
+    <string name="shop_review_invalid_body">10~300바이트로 입력해 주세요</string>
+    <string name="shop_review_submit">등록</string>
+    <string name="shop_review_cancel">취소</string>
+    <string name="shop_review_success_message">리뷰가 등록되었습니다</string>
+    <string name="shop_review_failure_message">리뷰 등록에 실패했습니다</string>
     <string name="shop_detail_more_actions">매장 메뉴 더보기</string>
     <string name="share_shop_action">공유하기</string>
     <string name="share_shop_chooser_title">매장 공유</string>

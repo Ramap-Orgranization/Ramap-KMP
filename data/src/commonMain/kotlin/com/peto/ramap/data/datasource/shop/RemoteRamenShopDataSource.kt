@@ -5,12 +5,15 @@ import com.peto.ramap.data.model.ShopDetailResponse
 import com.peto.ramap.data.model.ShopEventParticipantResponse
 import com.peto.ramap.data.model.ShopEventResponse
 import com.peto.ramap.data.model.ShopLikeCountResponse
+import com.peto.ramap.data.model.ShopReviewRequest
+import com.peto.ramap.data.model.ShopReviewResponse
 import com.peto.ramap.domain.model.shop.MapBounds
 import com.peto.ramap.domain.model.shop.SearchQuery
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Columns
+import io.github.jan.supabase.postgrest.query.Order
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 
@@ -24,6 +27,22 @@ internal class RemoteRamenShopDataSource(
                 parameters = buildJsonObject { put(SHOP_ID_PARAMETER, shopId) },
             ).decodeList<ShopDetailResponse>()
             .singleOrNull()
+
+    override suspend fun fetchShopReviews(shopId: String): List<ShopReviewResponse> =
+        client
+            .from(SHOP_REVIEW_TABLE)
+            .select(columns = Columns.list(COLUMN_ID, COLUMN_SHOP_ID, COLUMN_BODY, COLUMN_CREATED_AT)) {
+                filter { eq(COLUMN_SHOP_ID, shopId) }
+                order(COLUMN_CREATED_AT, Order.DESCENDING)
+                order(COLUMN_ID, Order.DESCENDING)
+                limit(SHOP_REVIEW_LIMIT)
+            }.decodeList()
+
+    override suspend fun submitShopReview(review: ShopReviewRequest) {
+        client
+            .from(SHOP_REVIEW_TABLE)
+            .insert(review)
+    }
 
     override suspend fun fetchShopMenuUpdatedAt(shopId: String): String? =
         client.postgrest
@@ -147,13 +166,17 @@ internal class RemoteRamenShopDataSource(
         private const val FETCH_SHOP_MENU_UPDATED_AT_RPC = "fetch_shop_menu_updated_at"
         private const val SHOP_ID_PARAMETER = "p_shop_id"
         private const val EVENT_PARTICIPANT_TABLE = "shop_event_participants"
+        private const val SHOP_REVIEW_TABLE = "shop_reviews"
         private const val COLUMN_SHOP_CONTEXT_ID = "shop_context_id"
         private const val COLUMN_EVENT_ID = "event_id"
 
         private const val COLUMN_ID = "id"
         private const val COLUMN_SHOP_ID = "shop_id"
         private const val COLUMN_LIKE_COUNT = "like_count"
+        private const val COLUMN_BODY = "body"
+        private const val COLUMN_CREATED_AT = "created_at"
         private const val COLUMN_LAT = "lat"
         private const val COLUMN_LNG = "lng"
+        private const val SHOP_REVIEW_LIMIT = 20L
     }
 }

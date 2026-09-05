@@ -8,6 +8,7 @@ import com.peto.ramap.data.model.MenuSectionResponse
 import com.peto.ramap.data.model.ShopDetailResponse
 import com.peto.ramap.data.model.ShopEventParticipantResponse
 import com.peto.ramap.data.model.ShopEventResponse
+import com.peto.ramap.data.model.ShopReviewRequest
 import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.model.event.ShopEventType
 import com.peto.ramap.domain.model.menu.Menu
@@ -17,6 +18,7 @@ import com.peto.ramap.domain.model.menu.Price
 import com.peto.ramap.domain.model.shop.MapBounds
 import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.domain.model.shop.SearchQuery
+import com.peto.ramap.domain.model.shop.ShopReview
 import com.peto.ramap.domain.repository.RamenShopRepository
 import com.peto.ramap.domain.usecase.ShopDetail
 import com.peto.ramap.network.execute.invokeRequest
@@ -39,7 +41,22 @@ internal class DefaultRamenShopRepository(
                 response.menuSections
                     .takeIf(List<MenuSectionResponse>::isNotEmpty)
                     ?.let { dataSource.fetchShopMenuUpdatedAt(shopId) }
-            shopDetail(response, shopId, menuUpdatedAt)
+            shopDetail(
+                response = response,
+                shopId = shopId,
+                menuUpdatedAt = menuUpdatedAt,
+                reviews = dataSource.fetchShopReviews(shopId).map { it.toDomain() },
+            )
+        }
+
+    override suspend fun submitShopReview(
+        shopId: String,
+        body: String,
+    ): RamapResult<Unit> =
+        invokeRequest {
+            val trimmedBody = body.trim()
+            require(ShopReview.isValidBody(trimmedBody)) { "Invalid shop review body" }
+            dataSource.submitShopReview(ShopReviewRequest(shopId = shopId, body = trimmedBody))
         }
 
     override suspend fun fetchShopLikeCount(shopId: String): RamapResult<Long> =
@@ -82,6 +99,7 @@ internal class DefaultRamenShopRepository(
         response: ShopDetailResponse,
         shopId: String,
         menuUpdatedAt: String?,
+        reviews: List<ShopReview>,
     ): ShopDetail {
         val domainShop = response.shop.toDomain()
         val activeEvents = activeShopEvents(response.events)
@@ -93,6 +111,7 @@ internal class DefaultRamenShopRepository(
             operatingNotice = response.operatingNotice?.toDomain(domainShop),
             menuSections = menuSections(response.menuSections, response.menuItems),
             menuUpdatedAt = menuUpdatedAt,
+            reviews = reviews,
         )
     }
 

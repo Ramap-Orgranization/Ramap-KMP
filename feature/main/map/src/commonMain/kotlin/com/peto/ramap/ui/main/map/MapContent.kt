@@ -72,6 +72,8 @@ internal fun MapContent(
     onEventClick: (ShopEvent) -> Unit,
     onOperatingNoticeNavigate: (OperatingNotice) -> Unit = {},
     onReportSubmit: (Set<ShopInformationField>, String) -> Unit,
+    onReviewWriteClick: () -> Unit,
+    onReviewSubmit: (String) -> Unit,
     onBookmarkedShopsToggle: () -> Unit,
     showShopDetail: Boolean,
 ) {
@@ -177,6 +179,8 @@ internal fun MapContent(
             onEventClick = onEventClick,
             onOperatingNoticeClick = { selectedNotice = it },
             onReportSubmit = onReportSubmit,
+            onReviewWriteClick = onReviewWriteClick,
+            onReviewSubmit = onReviewSubmit,
         )
 
         if ((uiState.isShopDetailLoading && selectedShop == null) || uiState.isSearchLoading) {
@@ -235,6 +239,8 @@ private fun MapContentPreview(
             onShopMapLinkClick = { _, _ -> },
             onEventClick = {},
             onReportSubmit = { _, _ -> },
+            onReviewWriteClick = {},
+            onReviewSubmit = {},
             onBookmarkedShopsToggle = {},
             showShopDetail = false,
         )

@@ -64,6 +64,8 @@ fun ShopDetailContent(
     onEventClick: (ShopEvent) -> Unit,
     onOperatingNoticeClick: (OperatingNotice) -> Unit = {},
     onReportSubmit: (Set<ShopInformationField>, String) -> Unit,
+    onReviewWriteClick: () -> Unit,
+    onReviewSubmit: (String) -> Unit,
     onShowOnMap: ((String) -> Unit)? = null,
     onWaitingClick: (String) -> Unit = {},
     onExternalLinkClick: (String) -> Unit = {},
@@ -79,6 +81,7 @@ fun ShopDetailContent(
         }
     var hideConfirmShop by remember { mutableStateOf<RamenShop?>(null) }
     var showReportDialog by remember(selectedShop?.id) { mutableStateOf(false) }
+    var showReviewDialog by remember(selectedShop?.id) { mutableStateOf(false) }
     val shouldShowMainSheet =
         selectedShop != null ||
             (showRequestedLoadingInSheet && state is ShopDetailSheetUiState.Loading)
@@ -139,6 +142,12 @@ fun ShopDetailContent(
                         menuSections = state.detail.menuSections,
                         menuUpdatedAt = state.detail.menuUpdatedAt,
                         onReportClick = { showReportDialog = true },
+                    )
+                    ShopReviewContent(
+                        reviews = state.detail.reviews,
+                        onWriteClick = {
+                            if (isLoggedIn) showReviewDialog = true else onReviewWriteClick()
+                        },
                     )
                     onShowOnMap?.let { showOnMap ->
                         AppButton(
@@ -226,4 +235,13 @@ fun ShopDetailContent(
             },
         )
     }
+
+    ShopReviewDialog(
+        visible = showReviewDialog,
+        onDismiss = { showReviewDialog = false },
+        onSubmit = { body ->
+            showReviewDialog = false
+            onReviewSubmit(body)
+        },
+    )
 }

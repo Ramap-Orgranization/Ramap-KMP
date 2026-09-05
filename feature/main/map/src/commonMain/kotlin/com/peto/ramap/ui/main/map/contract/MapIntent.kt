@@ -98,6 +98,12 @@ sealed interface MapIntent : Intent {
         val description: String,
     ) : MapIntent
 
+    data object OnShopReviewWriteClicked : MapIntent
+
+    data class OnShopReviewSubmitted(
+        val body: String,
+    ) : MapIntent
+
     data object OnBookmarkedShopsToggled : MapIntent
 
     data class OnLoginTypeSelected(

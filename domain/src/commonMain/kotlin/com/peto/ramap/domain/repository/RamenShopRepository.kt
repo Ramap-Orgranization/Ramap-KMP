@@ -10,6 +10,11 @@ import com.peto.ramap.domain.usecase.ShopDetail
 interface RamenShopRepository {
     suspend fun fetchShopDetail(shopId: String): RamapResult<ShopDetail>
 
+    suspend fun submitShopReview(
+        shopId: String,
+        body: String,
+    ): RamapResult<Unit> = RamapResult.Success(Unit)
+
     suspend fun fetchShopLikeCount(shopId: String): RamapResult<Long>
 
     suspend fun fetchRamenShops(bounds: MapBounds): RamapResult<RamenShops>

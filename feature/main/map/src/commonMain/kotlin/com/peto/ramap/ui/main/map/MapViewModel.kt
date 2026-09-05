@@ -22,6 +22,7 @@ import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.domain.model.shop.RamenShopFilter
 import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.domain.model.shop.SearchQuery
+import com.peto.ramap.domain.model.shop.ShopReview
 import com.peto.ramap.domain.repository.LoginRepository
 import com.peto.ramap.domain.repository.OperatingNoticeRepository
 import com.peto.ramap.domain.repository.RamenShopRepository
@@ -60,6 +61,8 @@ import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopIdSelected
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopMapLinkClicked
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopNotificationToggled
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopReportSubmitted
+import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopReviewSubmitted
+import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopReviewWriteClicked
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopSelected
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopShareClicked
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnViewportLoadRetry
@@ -98,6 +101,8 @@ import ramap.shared.generated.resources.search_result_empty_message
 import ramap.shared.generated.resources.search_result_hidden_only_message
 import ramap.shared.generated.resources.shop_information_report_failure_message
 import ramap.shared.generated.resources.shop_information_report_success_message
+import ramap.shared.generated.resources.shop_review_failure_message
+import ramap.shared.generated.resources.shop_review_success_message
 import kotlin.time.Clock
 
 class MapViewModel(
@@ -220,6 +225,8 @@ class MapViewModel(
             OnRequestedShopDismissed -> dismissRequestedShopLoad()
             is OnShopDetailDismissed -> dismissShopDetail()
             OnShopDetailRetry -> retryShopDetailLoad()
+            OnShopReviewWriteClicked -> isLoggedInOrShowGuide()
+            is OnShopReviewSubmitted -> submitShopReview(intent.body)
             else -> return false
         }
         return true
@@ -814,6 +821,23 @@ class MapViewModel(
         )
     }
 
+    private fun submitShopReview(body: String) {
+        if (!isLoggedInOrShowGuide()) return
+        val shop = currentState.selectedShop ?: return
+        if (!ShopReview.isValidBody(body)) return
+
+        launchResultTask(
+            taskKey = SHOP_REVIEW_TASK_KEY,
+            policy = TaskPolicy.IgnoreNew,
+            request = { ramenShopRepository.submitShopReview(shop.id, body) },
+            onSuccess = {
+                loadShopDetail(shop.id)
+                showToast(Res.string.shop_review_success_message)
+            },
+            onError = { showToast(Res.string.shop_review_failure_message, ToastType.ERROR) },
+        )
+    }
+
     private fun createShopInformationReport(
         wrongFields: Set<ShopInformationField>,
         description: String,
@@ -1217,6 +1241,7 @@ class MapViewModel(
         private const val SEARCH_TASK_KEY = "map-search"
         private const val SHOP_DETAIL_TASK_KEY = "map-shop-detail"
         private const val SHOP_REPORT_TASK_KEY = "map-shop-report"
+        private const val SHOP_REVIEW_TASK_KEY = "map-shop-review"
         private const val SIGN_IN_TASK_KEY = "map-sign-in"
         private const val PERSONALIZED_SHOPS_TASK_KEY = "map-personalized-shops"
     }

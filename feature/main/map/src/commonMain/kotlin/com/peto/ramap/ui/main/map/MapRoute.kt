@@ -42,6 +42,8 @@ import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopIdSelected
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopMapLinkClicked
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopNotificationToggled
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopReportSubmitted
+import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopReviewSubmitted
+import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopReviewWriteClicked
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopSelected
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopShareClicked
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnViewportLoadRetry
@@ -149,6 +151,8 @@ fun MapRoute(
             onReportSubmit = { wrongFields, description ->
                 viewModel.dispatch(OnShopReportSubmitted(wrongFields, description))
             },
+            onReviewWriteClick = { viewModel.dispatch(OnShopReviewWriteClicked) },
+            onReviewSubmit = { viewModel.dispatch(OnShopReviewSubmitted(it)) },
             onBookmarkedShopsToggle = { viewModel.dispatch(OnBookmarkedShopsToggled) },
             onEventClick = onEventNavigate,
             onOperatingNoticeNavigate = onOperatingNoticeNavigate,

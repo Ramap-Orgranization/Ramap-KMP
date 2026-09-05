@@ -4,11 +4,17 @@ import com.peto.ramap.data.model.RamenShopResponse
 import com.peto.ramap.data.model.ShopDetailResponse
 import com.peto.ramap.data.model.ShopEventParticipantResponse
 import com.peto.ramap.data.model.ShopEventResponse
+import com.peto.ramap.data.model.ShopReviewRequest
+import com.peto.ramap.data.model.ShopReviewResponse
 import com.peto.ramap.domain.model.shop.MapBounds
 import com.peto.ramap.domain.model.shop.SearchQuery
 
 internal interface RamenShopDataSource {
     suspend fun fetchShopDetail(shopId: String): ShopDetailResponse?
+
+    suspend fun fetchShopReviews(shopId: String): List<ShopReviewResponse> = emptyList()
+
+    suspend fun submitShopReview(review: ShopReviewRequest) = Unit
 
     suspend fun fetchShopMenuUpdatedAt(shopId: String): String?
 

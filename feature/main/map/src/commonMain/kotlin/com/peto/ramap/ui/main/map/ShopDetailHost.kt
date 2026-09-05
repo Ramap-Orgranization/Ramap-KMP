@@ -106,6 +106,8 @@ fun ShopDetailHost(
                 onReportSubmit = { wrongFields, description ->
                     viewModel.dispatch(MapIntent.OnShopReportSubmitted(wrongFields, description))
                 },
+                onReviewWriteClick = { viewModel.dispatch(MapIntent.OnShopReviewWriteClicked) },
+                onReviewSubmit = { viewModel.dispatch(MapIntent.OnShopReviewSubmitted(it)) },
                 onShowOnMap = { selectedShopId ->
                     viewModel.dispatch(MapIntent.OnShopDetailDismissed)
                     onShowOnMap(selectedShopId)
