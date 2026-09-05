@@ -118,7 +118,7 @@ private fun BusinessHoursStatusSummary(
     onOperatingNoticeClick: (OperatingNotice) -> Unit,
     modifier: Modifier,
 ) {
-    if (operatingNotice != null) {
+    if (operatingNotice != null && status !is BusinessHoursStatus.Closed) {
         val noticeText = ShopOperatingNoticeResourceMapper.notice(operatingNotice).format()
         AppText(
             text = noticeText,
