@@ -215,7 +215,7 @@ internal fun EventsScreen(
                                     title = ongoingTitle,
                                     events = uiState.ongoingEvents,
                                     isOngoingSection = true,
-                                    useHorizontalScroll = uiState.upcomingEvents.isNotEmpty(),
+                                    useHorizontalScroll = false,
                                     horizontalContentPadding = 5.dp,
                                     onEventClick = onClickEvent,
                                     onEventGroupClick = { selectedEventGroup = it },
