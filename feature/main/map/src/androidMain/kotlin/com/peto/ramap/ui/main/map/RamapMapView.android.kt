@@ -215,7 +215,7 @@ internal actual fun RamapMapView(
             factory = {
                 mapView.getMapAsync { map ->
                     map.minZoom = MapInteractionConfig.MAX_ZOOM_OUT_LEVEL.toDouble()
-                    map.maxZoom = MapInteractionConfig.CLUSTER_MAX_ZOOM_LEVEL.toDouble()
+                    map.maxZoom = MapInteractionConfig.MAP_MAX_ZOOM_LEVEL.toDouble()
                     map.locationSource = locationSource
                     map.uiSettings.isCompassEnabled = false
                     map.uiSettings.isLocationButtonEnabled = false

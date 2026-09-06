@@ -130,7 +130,13 @@ internal fun AppRoute(
         rankingScreen = {
             RankingRoute(
                 onFindShopClick = navigationState::showMap,
-                onShowShopOnMap = { navigationState.showMap() },
+                onShowShopOnMap = { shopId ->
+                    navigationState.showShopOnMap(
+                        shopId = shopId,
+                        source = NavigationSource.RANKING,
+                        showShopDetail = false,
+                    )
+                },
                 onEventNavigate = { event -> navigationState.showEvent(event.id) },
                 shopDetailContent = { shopId, onDismiss, onShowOnMap, onEventNavigate ->
                     ShopDetailHost(
@@ -201,6 +207,7 @@ internal fun AppRoute(
                         shopId,
                         source = NavigationSource.HIDDEN_SHOPS,
                         returnTab = TabStatus.MY,
+                        showShopDetail = false,
                     )
                 },
             )
@@ -218,6 +225,7 @@ internal fun AppRoute(
                         shopId,
                         source = NavigationSource.SUBSCRIBED_SHOPS,
                         returnTab = TabStatus.MY,
+                        showShopDetail = false,
                     )
                 },
                 onEventOpen = navigationState::showEvent,
@@ -232,6 +240,7 @@ internal fun AppRoute(
                         shopId,
                         source = NavigationSource.BOOKMARKED_SHOPS,
                         returnTab = TabStatus.MY,
+                        showShopDetail = false,
                     )
                 },
             )
@@ -264,6 +273,7 @@ internal fun AppRoute(
                     navigationState.showShopOnMap(
                         shopId = shopId,
                         source = NavigationSource.EVENT_DETAIL,
+                        showShopDetail = false,
                     )
                 },
                 onEventNavigate = { event -> navigationState.showEvent(event.id) },

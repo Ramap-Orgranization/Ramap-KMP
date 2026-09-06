@@ -15,6 +15,11 @@ class MapInteractionConfigTest {
         assertTrue(MapInteractionConfig.CLUSTER_MAX_ZOOM_LEVEL < SDK_MAX_ZOOM_LEVEL)
     }
 
+    @Test
+    fun `지도 최대 줌은 SDK 최대 줌 이하이다`() {
+        assertTrue(MapInteractionConfig.MAP_MAX_ZOOM_LEVEL <= SDK_MAX_ZOOM_LEVEL)
+    }
+
     private companion object {
         const val SDK_MAX_ZOOM_LEVEL = 21
     }

@@ -2,7 +2,7 @@ package com.peto.ramap.ui.main.map
 
 import com.peto.ramap.domain.model.shop.RamenShop
 
-private const val OVERLAPPING_MARKER_MAX_DISTANCE_METERS = 1.0
+private const val OVERLAPPING_MARKER_MAX_DISTANCE_METERS = 10.0
 
 internal fun hasOnlyOverlappingMarkers(shops: List<RamenShop>): Boolean =
     shops.size >= 2 &&

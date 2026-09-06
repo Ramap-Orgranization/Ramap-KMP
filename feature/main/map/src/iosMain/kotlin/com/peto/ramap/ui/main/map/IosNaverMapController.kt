@@ -81,7 +81,7 @@ internal class IosNaverMapController(
         view.showZoomControls = false
         view.showLocationButton = false
         mapView.minZoomLevel = MapInteractionConfig.MAX_ZOOM_OUT_LEVEL.toDouble()
-        mapView.maxZoomLevel = MapInteractionConfig.CLUSTER_MAX_ZOOM_LEVEL.toDouble()
+        mapView.maxZoomLevel = MapInteractionConfig.MAP_MAX_ZOOM_LEVEL.toDouble()
         mapView.addCameraDelegate(this)
         mapView.addLoadDelegate(this)
         locationManager?.addDelegate(this)
