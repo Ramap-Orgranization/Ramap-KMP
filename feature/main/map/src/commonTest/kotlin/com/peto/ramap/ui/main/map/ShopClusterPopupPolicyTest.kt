@@ -15,13 +15,13 @@ class ShopClusterPopupPolicyTest {
     }
 
     @Test
-    fun `1미터 이내의 매장들은 팝업 대상이다`() {
-        assertTrue(hasOnlyOverlappingMarkers(listOf(shop("first"), shop("second", latitudeOffset = 0.000005))))
+    fun `10미터 이내의 매장들은 팝업 대상이다`() {
+        assertTrue(hasOnlyOverlappingMarkers(listOf(shop("first"), shop("second", latitudeOffset = 0.00008))))
     }
 
     @Test
     fun `떨어진 매장이 포함되면 팝업 대상이 아니다`() {
-        assertFalse(hasOnlyOverlappingMarkers(listOf(shop("first"), shop("second", latitudeOffset = 0.00002))))
+        assertFalse(hasOnlyOverlappingMarkers(listOf(shop("first"), shop("second", latitudeOffset = 0.0001))))
     }
 
     @Test
@@ -30,8 +30,8 @@ class ShopClusterPopupPolicyTest {
             hasOnlyOverlappingMarkers(
                 listOf(
                     shop("first"),
-                    shop("second", latitudeOffset = 0.000005),
-                    shop("third", latitudeOffset = 0.00002),
+                    shop("second", latitudeOffset = 0.00008),
+                    shop("third", latitudeOffset = 0.0001),
                 ),
             ),
         )
@@ -44,13 +44,13 @@ class ShopClusterPopupPolicyTest {
     }
 
     @Test
-    fun `첫 매장에 가까워도 양 끝 매장이 1미터보다 멀면 팝업 대상이 아니다`() {
+    fun `첫 매장에 가까워도 양 끝 매장이 10미터보다 멀면 팝업 대상이 아니다`() {
         assertFalse(
             hasOnlyOverlappingMarkers(
                 listOf(
                     shop("first"),
-                    shop("second", latitudeOffset = -0.000005),
-                    shop("third", latitudeOffset = 0.000005),
+                    shop("second", latitudeOffset = -0.00008),
+                    shop("third", latitudeOffset = 0.00008),
                 ),
             ),
         )
