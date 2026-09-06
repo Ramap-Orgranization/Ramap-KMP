@@ -202,7 +202,7 @@ fun RamenShopOverview(
             verticalArrangement = Arrangement.spacedBy(10.dp),
             modifier = Modifier.padding(horizontal = 20.dp),
         ) {
-            if (shop.businessHoursDetails != null) {
+            if (shop.businessHoursDetails != null || operatingNotice != null) {
                 BusinessHoursCard(
                     shop = shop,
                     operatingNotice = operatingNotice,

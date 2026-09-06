@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
@@ -19,7 +20,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
@@ -45,8 +45,12 @@ import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import org.jetbrains.compose.resources.painterResource
+import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.ic_keyboard_arrow_down
+import ramap.shared.generated.resources.shop_detail_business_hours_collapse
+import ramap.shared.generated.resources.shop_detail_business_hours_expand
+import ramap.shared.generated.resources.shop_detail_operating_notice_action_suffix
 import kotlin.time.Clock
 
 @Composable
@@ -59,7 +63,8 @@ internal fun BusinessHoursCard(
     var isExpanded by rememberSaveable { mutableStateOf(false) }
     val currentDateTime = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
     val status = shop.businessHoursStatus(currentDateTime, listOfNotNull(operatingNotice))
-    val lines = BusinessHoursResourceMapper.all(shop.businessHoursDetails ?: return)
+    val businessHours = shop.businessHoursDetails
+    val lines = businessHours?.let(BusinessHoursResourceMapper::all).orEmpty()
 
     Column(
         modifier =
@@ -87,18 +92,29 @@ internal fun BusinessHoursCard(
                 modifier = Modifier.padding(vertical = 5.dp),
             )
 
-            Icon(
-                painter = painterResource(Res.drawable.ic_keyboard_arrow_down),
-                contentDescription = null,
-                modifier =
-                    Modifier
-                        .rotate(if (isExpanded) 180f else 0f)
-                        .noRippleClickable(onClick = { isExpanded = !isExpanded }),
-                tint = GrayColor.C400,
-            )
+            if (businessHours != null) {
+                val toggleDescription =
+                    stringResource(
+                        if (isExpanded) {
+                            Res.string.shop_detail_business_hours_collapse
+                        } else {
+                            Res.string.shop_detail_business_hours_expand
+                        },
+                    )
+
+                Icon(
+                    painter = painterResource(Res.drawable.ic_keyboard_arrow_down),
+                    contentDescription = toggleDescription,
+                    modifier =
+                        Modifier
+                            .rotate(if (isExpanded) 180f else 0f)
+                            .noRippleClickable(onClick = { isExpanded = !isExpanded }),
+                    tint = GrayColor.C400,
+                )
+            }
         }
 
-        if (isExpanded) {
+        if (isExpanded && businessHours != null) {
             SectionCard {
                 lines.forEachIndexed { index, line ->
                     BusinessHoursCardRow(
@@ -120,12 +136,22 @@ private fun BusinessHoursStatusSummary(
 ) {
     if (operatingNotice != null && status !is BusinessHoursStatus.Closed) {
         val noticeText = ShopOperatingNoticeResourceMapper.notice(operatingNotice).format()
-        AppText(
-            text = noticeText,
+        Row(
             modifier = modifier.noRippleClickable { onOperatingNoticeClick(operatingNotice) },
-            style = AppTextStyle.B1,
-            color = SystemColor.Warning,
-        )
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            AppText(
+                text = noticeText,
+                style = AppTextStyle.B1,
+                color = SystemColor.Warning,
+            )
+            Spacer(modifier = Modifier.width(4.dp))
+            AppText(
+                text = stringResource(Res.string.shop_detail_operating_notice_action_suffix),
+                style = AppTextStyle.B1,
+                color = SystemColor.Warning,
+            )
+        }
         return
     }
 
