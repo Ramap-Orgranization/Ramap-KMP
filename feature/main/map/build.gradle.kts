@@ -23,6 +23,7 @@ kotlin {
             implementation(projects.core.preview)
             implementation(libs.navigation.event.compose)
             implementation(libs.coil.compose)
+            implementation(libs.balloon)
             implementation(libs.compose.ui.tooling.preview)
         }
     }

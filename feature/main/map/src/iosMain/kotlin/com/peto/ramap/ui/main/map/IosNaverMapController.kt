@@ -2,7 +2,7 @@
 
 package com.peto.ramap.ui.main.map
 
-import cocoapods.NMapsMap.NMCBuilder
+import cocoapods.NMapsMap.NMCComplexBuilder
 import cocoapods.NMapsMap.NMFCameraUpdate
 import cocoapods.NMapsMap.NMFLocationManager
 import cocoapods.NMapsMap.NMFLocationManagerDelegateProtocol
@@ -18,7 +18,9 @@ import com.peto.ramap.domain.model.shop.Location
 import com.peto.ramap.domain.model.shop.MapBounds
 import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.domain.model.shop.RamenShops
+import com.peto.ramap.ui.main.ShopClusterMarkerUpdater
 import com.peto.ramap.ui.main.ShopLeafMarkerUpdater
+import com.peto.ramap.ui.main.ShopTagMergeStrategy
 import com.peto.ramap.ui.main.map.config.CurrentLocationConfig
 import com.peto.ramap.ui.main.map.config.MapInteractionConfig
 import com.peto.ramap.ui.main.map.model.CameraPosition
@@ -38,6 +40,7 @@ internal class IosNaverMapController(
     private val onBoundsChanged: (MapBounds) -> Unit,
     private val onCameraPositionChanged: (CameraPosition) -> Unit,
     private val onShopClick: (RamenShop) -> Unit,
+    private val onClusterClick: (List<RamenShop>, Double, Double) -> Unit,
     private val onMyLocationChanged: (Location) -> Unit,
     private val onCurrentLocationFocused: () -> Unit,
 ) : NSObject(),
@@ -48,6 +51,12 @@ internal class IosNaverMapController(
     val mapView = view.mapView
     var viewportHeight: Int = 0
     private val leafUpdater = ShopLeafMarkerUpdater(onShopClick)
+    private val clusterUpdater =
+        ShopClusterMarkerUpdater { shops, position ->
+            mapView.projection.pointFromLatLng(position).useContents {
+                onClusterClick(shops, x, y)
+            }
+        }
     private var clusterer = newClusterer()
     private var lastShopsKey = ""
     private var lastFocusKey = ""
@@ -72,6 +81,7 @@ internal class IosNaverMapController(
         view.showZoomControls = false
         view.showLocationButton = false
         mapView.minZoomLevel = MapInteractionConfig.MAX_ZOOM_OUT_LEVEL.toDouble()
+        mapView.maxZoomLevel = MapInteractionConfig.CLUSTER_MAX_ZOOM_LEVEL.toDouble()
         mapView.addCameraDelegate(this)
         mapView.addLoadDelegate(this)
         locationManager?.addDelegate(this)
@@ -272,11 +282,14 @@ internal class IosNaverMapController(
     }
 
     private fun newClusterer() =
-        NMCBuilder()
+        NMCComplexBuilder()
             .apply {
-                maxZoom = MapInteractionConfig.CLUSTER_MAX_ZOOM_LEVEL.toLong()
-                animate = false
+                maxClusteringZoom = MapInteractionConfig.CLUSTER_MAX_ZOOM_LEVEL.toLong()
+                maxIndexingZoom = MapInteractionConfig.CLUSTER_MAX_ZOOM_LEVEL.toLong()
+                animationDuration = 0.0
                 leafMarkerUpdater = leafUpdater
+                clusterMarkerUpdater = clusterUpdater
+                tagMergeStrategy = ShopTagMergeStrategy()
             }.build()
 
     private fun canRenderShopKeys(): Boolean =

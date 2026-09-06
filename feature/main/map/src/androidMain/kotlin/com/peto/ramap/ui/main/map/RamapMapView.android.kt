@@ -16,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Lifecycle
@@ -63,6 +64,7 @@ internal actual fun RamapMapView(
     onSelectedShopFocusConsumed: () -> Unit,
     onMyLocationChanged: (Location) -> Unit,
     onShopClick: (RamenShop) -> Unit,
+    onClusterClick: (List<RamenShop>, IntOffset?) -> Unit,
     onLocationPermissionBlocked: () -> Unit,
     onCurrentLocationTimeout: () -> Unit,
     modifier: Modifier,
@@ -106,6 +108,7 @@ internal actual fun RamapMapView(
             NaverShopClusterRenderer(
                 markerBitmap = markerBitmap,
                 onShopClick = onShopClick,
+                onClusterClick = { shops, x, y -> onClusterClick(shops, IntOffset(x, y)) },
             )
         }
 
@@ -212,6 +215,7 @@ internal actual fun RamapMapView(
             factory = {
                 mapView.getMapAsync { map ->
                     map.minZoom = MapInteractionConfig.MAX_ZOOM_OUT_LEVEL.toDouble()
+                    map.maxZoom = MapInteractionConfig.CLUSTER_MAX_ZOOM_LEVEL.toDouble()
                     map.locationSource = locationSource
                     map.uiSettings.isCompassEnabled = false
                     map.uiSettings.isLocationButtonEnabled = false

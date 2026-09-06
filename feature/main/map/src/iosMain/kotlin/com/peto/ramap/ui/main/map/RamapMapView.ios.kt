@@ -11,11 +11,14 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.UIKitInteropInteractionMode
 import androidx.compose.ui.viewinterop.UIKitInteropProperties
@@ -32,6 +35,7 @@ import com.peto.ramap.ui.main.map.model.CameraPosition
 import com.peto.ramap.ui.main.map.model.location.CurrentLocationRequestState
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.coroutines.delay
+import kotlin.math.roundToInt
 
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
@@ -51,10 +55,14 @@ internal actual fun RamapMapView(
     onSelectedShopFocusConsumed: () -> Unit,
     onMyLocationChanged: (Location) -> Unit,
     onShopClick: (RamenShop) -> Unit,
+    onClusterClick: (List<RamenShop>, IntOffset?) -> Unit,
     onLocationPermissionBlocked: () -> Unit,
     onCurrentLocationTimeout: () -> Unit,
     modifier: Modifier,
 ) {
+    val density = LocalDensity.current
+    val currentOnClusterClick by rememberUpdatedState(onClusterClick)
+    val currentDensity by rememberUpdatedState(density)
     var currentLocationRequestState by remember {
         mutableStateOf(CurrentLocationRequestState.Idle)
     }
@@ -65,6 +73,15 @@ internal actual fun RamapMapView(
                 onBoundsChanged = onBoundsChanged,
                 onCameraPositionChanged = onCameraPositionChanged,
                 onShopClick = onShopClick,
+                onClusterClick = { shops, x, y ->
+                    currentOnClusterClick(
+                        shops,
+                        IntOffset(
+                            x = (x * currentDensity.density).roundToInt(),
+                            y = (y * currentDensity.density).roundToInt(),
+                        ),
+                    )
+                },
                 onMyLocationChanged = onMyLocationChanged,
                 onCurrentLocationFocused = {
                     currentLocationRequestState = currentLocationRequestState.finish()

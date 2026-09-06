@@ -1,11 +1,18 @@
 package com.peto.ramap.ui.main.map
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -16,6 +23,8 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.dp
 import androidx.navigationevent.NavigationEventInfo
 import androidx.navigationevent.compose.NavigationBackHandler
 import androidx.navigationevent.compose.rememberNavigationEventState
@@ -34,10 +43,16 @@ import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.platform.ExternalUriOpener
 import com.peto.ramap.preview.RamenShopsPreviewParameterProvider
+import com.peto.ramap.theme.CommonColor
+import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.RamapTheme
+import com.peto.ramap.ui.main.map.component.ClusterShopList
 import com.peto.ramap.ui.main.map.component.SearchContent
 import com.peto.ramap.ui.main.map.contract.MapUiState
 import com.peto.ramap.ui.main.map.model.CameraPosition
+import com.skydoves.balloon.Balloon
+import com.skydoves.balloon.rememberBalloonBuilder
+import com.skydoves.balloon.rememberBalloonState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -81,6 +96,36 @@ internal fun MapContent(
     val isImeVisible = WindowInsets.ime.getBottom(density) > 0
     var isSearchFocused by remember { mutableStateOf(false) }
     var selectedNotice by remember { mutableStateOf<OperatingNotice?>(null) }
+    var overlappingClusterShops by remember { mutableStateOf(emptyList<RamenShop>()) }
+    var clusterMenuOffset by remember { mutableStateOf<IntOffset?>(null) }
+    val clusterBalloonStyle =
+        rememberBalloonBuilder {
+            setArrowSize(10.dp)
+            setArrowPosition(0.5f)
+            setCornerRadius(8.dp)
+            setBackgroundColor(CommonColor.White)
+            setBorder(GrayColor.C200, 1.dp)
+            setPadding(15.dp)
+            setMinWidth(210.dp)
+            setMaxWidth(310.dp)
+            setDismissWhenTouchOutside(true)
+            setDismissWhenBackPressed(true)
+        }
+    val clusterBalloonState = rememberBalloonState(clusterBalloonStyle)
+
+    clusterBalloonState.onDismiss = {
+        overlappingClusterShops = emptyList()
+        clusterMenuOffset = null
+    }
+
+    LaunchedEffect(uiState.markerShops, selectedShop) {
+        clusterBalloonState.dismiss()
+        overlappingClusterShops = emptyList()
+        clusterMenuOffset = null
+    }
+    LaunchedEffect(overlappingClusterShops, clusterMenuOffset) {
+        if (overlappingClusterShops.isNotEmpty()) clusterBalloonState.showAlignTop()
+    }
 
     val backEventState =
         rememberNavigationEventState<NavigationEventInfo>(
@@ -89,9 +134,11 @@ internal fun MapContent(
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         NavigationBackHandler(
             state = backEventState,
-            isBackEnabled = isBackEnabled && (isSearchFocused || uiState.showBottomSheet),
+            isBackEnabled =
+                isBackEnabled && (clusterBalloonState.isVisible || isSearchFocused || uiState.showBottomSheet),
             onBackCompleted = {
                 when {
+                    clusterBalloonState.isVisible -> clusterBalloonState.dismiss()
                     isSearchFocused -> focusManager.clearFocus()
                     selectedShop != null -> onShopDetailDismissed()
                     uiState.hasShopDetailLoadFailed -> onRequestedShopDismissed()
@@ -111,16 +158,55 @@ internal fun MapContent(
             shouldBootstrapInitialLocationFocus = uiState.shouldBootstrapLocationFocusStatus,
             selectedShopId = uiState.selectedShop?.id,
             cameraPosition = uiState.cameraPosition,
-            onMapMoveStarted = { if (isImeVisible) focusManager.clearFocus() },
+            onMapMoveStarted = {
+                clusterBalloonState.dismiss()
+                if (isImeVisible) focusManager.clearFocus()
+            },
             onBoundsChanged = onBoundsChanged,
             onCameraPositionChanged = onCameraPositionChanged,
             onInitialFocusConsumed = onInitialLocationFocusConsumed,
             onSelectedShopFocusConsumed = onSelectedShopFocusConsumed,
             onMyLocationChanged = onMyLocationChanged,
-            onShopClick = { onShopSelected(it, false, AnalyticsSource.MARKER) },
+            onShopClick = {
+                clusterBalloonState.dismiss()
+                onShopSelected(it, false, AnalyticsSource.MARKER)
+            },
+            onClusterClick = { shops, offset ->
+                overlappingClusterShops = shops
+                clusterMenuOffset = offset
+            },
             onLocationPermissionBlocked = onLocationPermissionBlocked,
             onCurrentLocationTimeout = onCurrentLocationTimeout,
         )
+
+        if (overlappingClusterShops.isNotEmpty()) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = if (clusterMenuOffset == null) Alignment.Center else Alignment.TopStart,
+            ) {
+                Balloon(
+                    state = clusterBalloonState,
+                    modifier =
+                        Modifier
+                            .size(1.dp)
+                            .then(clusterMenuOffset?.let { Modifier.offset { it } } ?: Modifier),
+                    balloonContent = {
+                        ClusterShopList(
+                            shops = overlappingClusterShops,
+                            operatingNotices = uiState.operatingNotices,
+                            onShopClick = { shop ->
+                                clusterBalloonState.dismiss()
+                                onShopSelected(shop, false, AnalyticsSource.MARKER)
+                            },
+                            modifier =
+                                Modifier
+                                    .heightIn(max = 320.dp)
+                                    .verticalScroll(rememberScrollState()),
+                        )
+                    },
+                ) {}
+            }
+        }
 
         SearchContent(
             uiState = uiState,
