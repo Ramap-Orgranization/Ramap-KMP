@@ -136,7 +136,7 @@ function validateChanges(type: RegistrationType, value: unknown): Changes | null
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
   const item = value as Record<string, unknown>;
   const changes: Changes = { title: nullableText(item.title), description: nullableText(item.description), start_date: nullableDate(item.start_date), end_date: nullableDate(item.end_date), event_type: nullableText(item.event_type), notice_type: nullableText(item.notice_type), start_time: nullableTime(item.start_time), end_time: nullableTime(item.end_time) };
-  if (Object.values(item).some((value) => value !== null && typeof value !== "string")) return null;
+  if (Object.values(item).some((value) => value !== null && value !== undefined && typeof value !== "string")) return null;
   if (changes.start_date === "" || changes.end_date === "" || changes.start_time === "" || changes.end_time === "") return null;
   if (changes.event_type && !EVENT_TYPES.includes(changes.event_type as typeof EVENT_TYPES[number])) return null;
   if (changes.notice_type && !NOTICE_TYPES.includes(changes.notice_type as typeof NOTICE_TYPES[number])) return null;
@@ -157,8 +157,8 @@ async function isAdministrator(request: Request): Promise<boolean> {
 function isRegistrationType(value: unknown): value is RegistrationType { return value === "event" || value === "operating_notice"; }
 function text(value: unknown): string | null { return typeof value === "string" && value.trim() ? value.trim() : null; }
 function nullableText(value: unknown): string | null { return value === null ? null : text(value); }
-function nullableDate(value: unknown): string | null | "" { return value === null ? null : typeof value === "string" && validDate(value) ? value : ""; }
-function nullableTime(value: unknown): string | null | "" { return value === null ? null : typeof value === "string" && /^([01]\d|2[0-3]):[0-5]\d$/.test(value) ? value : ""; }
+function nullableDate(value: unknown): string | null | "" { return value == null ? null : typeof value === "string" && validDate(value) ? value : ""; }
+function nullableTime(value: unknown): string | null | "" { return value == null ? null : typeof value === "string" && /^([01]\d|2[0-3]):[0-5]\d$/.test(value) ? value : ""; }
 function validDate(value: string): boolean {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
   const date = new Date(`${value}T00:00:00Z`);

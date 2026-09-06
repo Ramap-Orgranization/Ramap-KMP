@@ -47,6 +47,7 @@ import com.peto.ramap.ui.main.map.contract.MapIntent.OnLoginTypeSelected
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnMapTabExited
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnMyLocationChanged
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnOpenFilterToggled
+import com.peto.ramap.ui.main.map.contract.MapIntent.OnOperatingNoticesRefreshRequested
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnQueryChanged
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnRecentSearchDeleted
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnRecentSearchSelected
@@ -121,14 +122,16 @@ class MapViewModel(
         viewModelScope.launch { observePersonalization() }
         viewModelScope.launch { observeRecentSearches() }
         viewModelScope.launch { observeRecentlyViewedShops() }
-        viewModelScope.launch { loadOperatingNotices() }
+        loadOperatingNotices()
     }
 
-    private suspend fun loadOperatingNotices() {
-        val result = operatingNoticeRepository.fetchCurrentOperatingNotices()
-        if (result is RamapResult.Success) {
-            reduce { copy(operatingNotices = result.data) }
-        }
+    private fun loadOperatingNotices() {
+        launchResultTask(
+            taskKey = OPERATING_NOTICES_TASK_KEY,
+            retryOnNetworkError = true,
+            request = operatingNoticeRepository::fetchCurrentOperatingNotices,
+            onSuccess = { notices -> reduce { copy(operatingNotices = notices) } },
+        )
     }
 
     private suspend fun observeRecentSearches() {
@@ -185,6 +188,8 @@ class MapViewModel(
             OnSelectedShopFocusConsumed -> consumeSelectedShopFocus()
 
             OnMapTabExited -> dismissBottomSheet()
+
+            OnOperatingNoticesRefreshRequested -> loadOperatingNotices()
 
             else -> return false
         }
@@ -422,7 +427,6 @@ class MapViewModel(
             return
         }
 
-        recordRecentSearch(normalizedQuery.value)
         searchShops(normalizedQuery)
     }
 
@@ -434,6 +438,7 @@ class MapViewModel(
     private fun searchShops(query: SearchQuery) {
         if (canReuseSearchResults(query)) {
             cancelTask(SEARCH_TASK_KEY)
+            recordRecentSearch(query.value)
             handleSingleSearchResult(currentState.searchResultShops.singleShopOrNull())
             return
         }
@@ -935,6 +940,7 @@ class MapViewModel(
         query: SearchQuery,
         shops: RamenShops,
     ) {
+        recordRecentSearch(query.value)
         reduceSearchResult(query, shops)
         val searchResultShops = currentState.searchResultShops
         // 검색시 필터 적용으로 인해 검색 결과가 없을 때
@@ -1219,5 +1225,6 @@ class MapViewModel(
         private const val SHOP_REPORT_TASK_KEY = "map-shop-report"
         private const val SIGN_IN_TASK_KEY = "map-sign-in"
         private const val PERSONALIZED_SHOPS_TASK_KEY = "map-personalized-shops"
+        private const val OPERATING_NOTICES_TASK_KEY = "map-operating-notices"
     }
 }

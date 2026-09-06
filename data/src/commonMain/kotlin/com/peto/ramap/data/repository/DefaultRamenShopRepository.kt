@@ -20,6 +20,7 @@ import com.peto.ramap.domain.model.shop.SearchQuery
 import com.peto.ramap.domain.repository.RamenShopRepository
 import com.peto.ramap.domain.usecase.ShopDetail
 import com.peto.ramap.network.execute.invokeRequest
+import kotlinx.coroutines.CancellationException
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
@@ -38,7 +39,15 @@ internal class DefaultRamenShopRepository(
             val menuUpdatedAt =
                 response.menuSections
                     .takeIf(List<MenuSectionResponse>::isNotEmpty)
-                    ?.let { dataSource.fetchShopMenuUpdatedAt(shopId) }
+                    ?.let {
+                        try {
+                            dataSource.fetchShopMenuUpdatedAt(shopId)
+                        } catch (exception: CancellationException) {
+                            throw exception
+                        } catch (_: Throwable) {
+                            null
+                        }
+                    }
             shopDetail(response, shopId, menuUpdatedAt)
         }
 

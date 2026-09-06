@@ -55,6 +55,7 @@ internal class DefaultFetchShopDetailUseCase(
                 event = refreshed.event,
                 operatingNotice = refreshed.operatingNotice,
                 menuSections = refreshed.menuSections,
+                menuUpdatedAt = refreshed.menuUpdatedAt,
             )
         cache[cached.shop.id] = updated
         return RamapResult.Success(updated)
