@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -102,16 +101,16 @@ internal fun BusinessHoursCard(
                             Res.string.shop_detail_business_hours_expand
                         },
                     )
-                IconButton(
-                    onClick = { isExpanded = !isExpanded },
-                ) {
-                    Icon(
-                        painter = painterResource(Res.drawable.ic_keyboard_arrow_down),
-                        contentDescription = toggleDescription,
-                        modifier = Modifier.rotate(if (isExpanded) 180f else 0f),
-                        tint = GrayColor.C400,
-                    )
-                }
+
+                Icon(
+                    painter = painterResource(Res.drawable.ic_keyboard_arrow_down),
+                    contentDescription = toggleDescription,
+                    modifier =
+                        Modifier
+                            .rotate(if (isExpanded) 180f else 0f)
+                            .noRippleClickable(onClick = { isExpanded = !isExpanded }),
+                    tint = GrayColor.C400,
+                )
             }
         }
 
