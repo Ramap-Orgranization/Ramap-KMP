@@ -23,6 +23,7 @@ import com.peto.ramap.domain.model.menu.MenuSection
 import com.peto.ramap.extension.noRippleClickable
 import com.peto.ramap.preview.MenuSectionsPreviewParameterProvider
 import com.peto.ramap.theme.AppTextStyle
+import com.peto.ramap.theme.ChromaticColor
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.RamapTheme
@@ -42,6 +43,13 @@ internal fun MenuRow(
         horizontalArrangement = Arrangement.spacedBy(16.dp),
         verticalAlignment = Alignment.Top,
     ) {
+        item.imageUrl?.let { imageUrl ->
+            RemoteShopImage(
+                url = imageUrl,
+                modifier = Modifier.size(96.dp).clip(RoundedCornerShape(16.dp)),
+                shape = RoundedCornerShape(16.dp),
+            )
+        }
         Column(
             modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.spacedBy(4.dp),
@@ -53,12 +61,12 @@ internal fun MenuRow(
                         Modifier
                             .border(
                                 1.dp,
-                                GrayColor.C200,
+                                ChromaticColor.Blue400,
                                 RoundedCornerShape(999.dp),
                             ),
                     textStyle = AppTextStyle.C2,
                     containerColor = CommonColor.White,
-                    contentColor = GrayColor.C400,
+                    contentColor = ChromaticColor.Blue400,
                 )
             }
             AppText(
@@ -89,13 +97,6 @@ internal fun MenuRow(
                     color = GrayColor.C300,
                 )
             }
-        }
-        item.imageUrl?.let { imageUrl ->
-            RemoteShopImage(
-                url = imageUrl,
-                modifier = Modifier.size(96.dp).clip(RoundedCornerShape(16.dp)),
-                shape = RoundedCornerShape(16.dp),
-            )
         }
     }
 }
