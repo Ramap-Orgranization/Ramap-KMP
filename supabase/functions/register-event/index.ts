@@ -218,13 +218,19 @@ async function registerOperatingNotice(
   const endDate = text(body.end_date) ?? startDate;
   const startTime = text(body.start_time);
   const endTime = text(body.end_time);
+  const scheduleOverride = body.schedule_override;
   const description = text(body.description);
   const sourceUrl = normalizeInstagramUrl(text(body.source_url));
   const evidencePath = text(body.evidence_path);
   if (
     !shopName || !isSupportedNoticeType(noticeType) || !startDate || !endDate || !description || !sourceUrl ||
     !validDate(startDate) || !validDate(endDate) || (startTime && !validTime(startTime)) ||
-    (endTime && !validTime(endTime)) || !isInstagramUrl(sourceUrl)
+    (endTime && !validTime(endTime)) || !isInstagramUrl(sourceUrl) ||
+    (noticeType === "operating_notice" && !validScheduleOverride(scheduleOverride)) ||
+    (noticeType !== "operating_notice" && scheduleOverride != null) ||
+    (noticeType === "early_close" && !endTime) ||
+    (noticeType === "late_opening" && startTime !== null && !validTime(startTime)) ||
+    (noticeType === "operating_notice" && startDate !== endDate)
   ) return json({ code: "invalid_operating_notice_draft" }, 400);
 
   const { data: shops, error: shopError } = await supabase.from("ramen_shops").select("id,instagram_url").eq("name", shopName).limit(2);
@@ -246,6 +252,19 @@ async function registerOperatingNotice(
     return json({ code: "duplicate" }, 409);
   }
 
+  if (noticeType === "operating_notice") {
+    const { data: overrides, error: overrideError } = await supabase
+      .from("shop_operating_notices")
+      .select("id")
+      .eq("shop_id", shop.id)
+      .eq("notice_type", "operating_notice")
+      .eq("notice_date", startDate)
+      .not("schedule_override", "is", null)
+      .limit(1);
+    if (overrideError) return json({ code: "server_unavailable" }, 503);
+    if (overrides?.length) return json({ code: "duplicate" }, 409);
+  }
+
   try {
     const rawPostId = await ensureRawPost(supabase, shop.id, shop.instagram_url, sourceUrl, description);
     const { data: notice, error: insertError } = await supabase
@@ -259,6 +278,7 @@ async function registerOperatingNotice(
         end_date: endDate,
         start_time: startTime,
         end_time: endTime,
+        schedule_override: scheduleOverride,
         source_url: sourceUrl,
         review_note: "관리자 미리보기 승인 등록",
       })
@@ -324,6 +344,15 @@ function isInstagramUrl(value: string) {
 }
 function isEvidencePath(value: string | null): value is string { return value !== null && /^[\w-]+\.(?:jpe?g|png)$/i.test(value); }
 function validDate(value: string | null) { return typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value); }
+function validScheduleOverride(value: unknown) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const day = value as Record<string, unknown>;
+  if (typeof day.closed !== "boolean" || typeof day.close_next_day !== "boolean") return false;
+  if (day.open !== null && !validTime(day.open as string)) return false;
+  if (day.close !== null && !validTime(day.close as string)) return false;
+  if (day.break_times !== undefined && (!Array.isArray(day.break_times) || day.break_times.some((item) => !item || typeof item !== "object" || !validTime((item as Record<string, unknown>).start as string) || !validTime((item as Record<string, unknown>).end as string)))) return false;
+  return day.closed || (typeof day.open === "string" && typeof day.close === "string");
+}
 function dateAfterDays(value: string, days: number) {
   const date = new Date(`${value}T00:00:00Z`);
   date.setUTCDate(date.getUTCDate() + days);

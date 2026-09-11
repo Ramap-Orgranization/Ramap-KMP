@@ -24,6 +24,7 @@ import com.peto.ramap.debug.admin.data.model.AdminDraft
 import com.peto.ramap.debug.admin.data.model.AdminEvidence
 import com.peto.ramap.debug.admin.ui.registration.component.AdminBottomNavigation
 import com.peto.ramap.debug.admin.ui.registration.component.AdminCorrectionManager
+import com.peto.ramap.debug.admin.ui.registration.component.AdminDelayedOpeningManager
 import com.peto.ramap.debug.admin.ui.registration.component.AdminDraftPreview
 import com.peto.ramap.debug.admin.ui.registration.component.AdminEventEditManager
 import com.peto.ramap.debug.admin.ui.registration.component.AdminEventStatusManager
@@ -31,8 +32,10 @@ import com.peto.ramap.debug.admin.ui.registration.component.AdminEventTypeSelect
 import com.peto.ramap.debug.admin.ui.registration.component.AdminEvidenceField
 import com.peto.ramap.debug.admin.ui.registration.component.AdminFeedbackField
 import com.peto.ramap.debug.admin.ui.registration.component.AdminFieldSection
+import com.peto.ramap.debug.admin.ui.registration.component.AdminNoticeTimeFields
 import com.peto.ramap.debug.admin.ui.registration.component.AdminNoticeTypeSelector
 import com.peto.ramap.debug.admin.ui.registration.component.AdminRegistrationDateRangeField
+import com.peto.ramap.debug.admin.ui.registration.component.AdminRegularScheduleSelector
 import com.peto.ramap.debug.admin.ui.registration.component.AdminShopNameField
 import com.peto.ramap.debug.admin.ui.registration.component.AdminSourceField
 import com.peto.ramap.debug.admin.ui.registration.component.AdminTitleField
@@ -61,11 +64,18 @@ internal fun AdminRegistrationScreen(
     onImageOnlyTitleChanged: (String) -> Unit,
     onDraftTitleChanged: (String) -> Unit,
     onDraftDescriptionChanged: (String) -> Unit,
+    onDraftNoticeTimesChanged: (String?, String?) -> Unit,
+    onDraftScheduleOverrideChanged: (String?, String?) -> Unit,
+    onRegularSegmentSelected: (String, String) -> Unit,
+    onDraftBreakTimeChanged: (Int, String, String) -> Unit,
+    onDraftBreakTimesCleared: () -> Unit,
     onEvidenceSelected: (AdminEvidence?) -> Unit,
     onDateRangeSelected: (String, String) -> Unit,
     onTodaySelected: () -> Unit,
     onPreviewOrRegisterClick: () -> Unit,
     onManagedEventsRefresh: () -> Unit,
+    onDelayedOpeningsRefresh: () -> Unit,
+    onDelayedOpeningReleased: (String) -> Unit,
     onManagedEventSelected: (String) -> Unit,
     onEventStatusSelected: (AdminEventStatus) -> Unit,
     onEventStatusScopeSelected: (AdminEventStatusScope) -> Unit,
@@ -118,6 +128,14 @@ internal fun AdminRegistrationScreen(
             verticalArrangement = Arrangement.spacedBy(24.dp),
         ) {
             if (uiState.selectedTab == AdminRegistrationTab.EVENT_MANAGEMENT) {
+                AdminFieldSection(label = stringResource(R.string.admin_delayed_opening_title)) {
+                    AdminDelayedOpeningManager(
+                        notices = uiState.delayedOpenings,
+                        releasingId = uiState.releasingDelayedOpeningId,
+                        onRefresh = onDelayedOpeningsRefresh,
+                        onRelease = onDelayedOpeningReleased,
+                    )
+                }
                 AdminFieldSection(label = "") {
                     AdminEventStatusManager(
                         events = uiState.managedEvents,
@@ -265,6 +283,33 @@ internal fun AdminRegistrationScreen(
                     )
                 }
                 uiState.draft?.let { draft ->
+                    if (uiState.isOperatingNotice) {
+                        val dayKey =
+                            uiState.selectedStartDate
+                                ?.let { java.time.LocalDate.parse(it) }
+                                ?.dayOfWeek
+                                ?.let(::dayKey)
+                        uiState.selectedShopHours?.weekly?.get(dayKey)?.let { regularDay ->
+                            AdminFieldSection(label = stringResource(R.string.admin_notice_regular_segments)) {
+                                AdminRegularScheduleSelector(
+                                    day = regularDay.copy(breakTimes = uiState.selectedShopHours.breakTimes[dayKey].orEmpty()),
+                                    onSegmentSelected = onRegularSegmentSelected,
+                                )
+                            }
+                        }
+                        AdminNoticeTimeFields(
+                            type = uiState.selectedNoticeType ?: draft.noticeType?.let(::toOperatingNoticeType),
+                            startTime = draft.scheduleOverride?.open ?: draft.startTime,
+                            endTime = draft.scheduleOverride?.close ?: draft.endTime,
+                            onTimesChanged = onDraftNoticeTimesChanged,
+                            onScheduleChanged = onDraftScheduleOverrideChanged,
+                            breakTimes = draft.scheduleOverride?.breakTimes.orEmpty(),
+                            onBreakTimeChanged = onDraftBreakTimeChanged,
+                        )
+                        if (draft.scheduleOverride?.breakTimes?.isNotEmpty() == true) {
+                            AppButton(stringResource(R.string.admin_notice_clear_break), onDraftBreakTimesCleared, modifier = Modifier.fillMaxWidth())
+                        }
+                    }
                     AdminDraftPreview(
                         draft = draft,
                         onTitleChanged = onDraftTitleChanged,
@@ -275,6 +320,17 @@ internal fun AdminRegistrationScreen(
         }
     }
 }
+
+private fun dayKey(day: java.time.DayOfWeek): String =
+    when (day) {
+        java.time.DayOfWeek.MONDAY -> "mon"
+        java.time.DayOfWeek.TUESDAY -> "tue"
+        java.time.DayOfWeek.WEDNESDAY -> "wed"
+        java.time.DayOfWeek.THURSDAY -> "thu"
+        java.time.DayOfWeek.FRIDAY -> "fri"
+        java.time.DayOfWeek.SATURDAY -> "sat"
+        java.time.DayOfWeek.SUNDAY -> "sun"
+    }
 
 private val SUPPORTED_MIME_TYPES = setOf("image/jpeg", "image/png")
 
@@ -301,11 +357,18 @@ private fun AdminRegistrationScreenPreview() {
             onImageOnlyTitleChanged = {},
             onDraftTitleChanged = {},
             onDraftDescriptionChanged = {},
+            onDraftNoticeTimesChanged = { _, _ -> },
+            onDraftScheduleOverrideChanged = { _, _ -> },
+            onRegularSegmentSelected = { _, _ -> },
+            onDraftBreakTimeChanged = { _, _, _ -> },
+            onDraftBreakTimesCleared = {},
             onEvidenceSelected = {},
             onDateRangeSelected = { _, _ -> },
             onTodaySelected = {},
             onPreviewOrRegisterClick = {},
             onManagedEventsRefresh = {},
+            onDelayedOpeningsRefresh = {},
+            onDelayedOpeningReleased = {},
             onManagedEventSelected = {},
             onEventStatusSelected = {},
             onEventStatusScopeSelected = {},
@@ -356,11 +419,18 @@ private fun AdminRegistrationScreenWithDraftPreview() {
             onImageOnlyTitleChanged = {},
             onDraftTitleChanged = {},
             onDraftDescriptionChanged = {},
+            onDraftNoticeTimesChanged = { _, _ -> },
+            onDraftScheduleOverrideChanged = { _, _ -> },
+            onRegularSegmentSelected = { _, _ -> },
+            onDraftBreakTimeChanged = { _, _, _ -> },
+            onDraftBreakTimesCleared = {},
             onEvidenceSelected = {},
             onDateRangeSelected = { _, _ -> },
             onTodaySelected = {},
             onPreviewOrRegisterClick = {},
             onManagedEventsRefresh = {},
+            onDelayedOpeningsRefresh = {},
+            onDelayedOpeningReleased = {},
             onManagedEventSelected = {},
             onEventStatusSelected = {},
             onEventStatusScopeSelected = {},

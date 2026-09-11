@@ -18,4 +18,5 @@ internal data class AdminDraft(
     @SerialName("notice_type") val noticeType: String? = null,
     @SerialName("start_time") val startTime: String? = null,
     @SerialName("end_time") val endTime: String? = null,
+    @SerialName("schedule_override") val scheduleOverride: AdminScheduleOverride? = null,
 )

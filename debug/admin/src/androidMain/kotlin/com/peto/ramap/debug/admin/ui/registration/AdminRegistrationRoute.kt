@@ -46,6 +46,11 @@ internal fun AdminRegistrationRoute(
             onImageOnlyTitleChanged = { viewModel.dispatch(AdminRegistrationIntent.OnImageOnlyTitleChanged(it)) },
             onDraftTitleChanged = { viewModel.dispatch(AdminRegistrationIntent.OnDraftTitleChanged(it)) },
             onDraftDescriptionChanged = { viewModel.dispatch(AdminRegistrationIntent.OnDraftDescriptionChanged(it)) },
+            onDraftNoticeTimesChanged = { start, end -> viewModel.dispatch(AdminRegistrationIntent.OnDraftNoticeTimesChanged(start, end)) },
+            onDraftScheduleOverrideChanged = { open, close -> viewModel.dispatch(AdminRegistrationIntent.OnDraftScheduleOverrideChanged(open, close)) },
+            onRegularSegmentSelected = { open, close -> viewModel.dispatch(AdminRegistrationIntent.OnRegularSegmentSelected(open, close)) },
+            onDraftBreakTimeChanged = { index, start, end -> viewModel.dispatch(AdminRegistrationIntent.OnDraftBreakTimeChanged(index, start, end)) },
+            onDraftBreakTimesCleared = { viewModel.dispatch(AdminRegistrationIntent.OnDraftBreakTimesCleared) },
             onEvidenceSelected = { viewModel.dispatch(AdminRegistrationIntent.OnEvidenceSelected(it)) },
             onDateRangeSelected = { startDate, endDate ->
                 viewModel.dispatch(AdminRegistrationIntent.OnDateRangeSelected(startDate, endDate))
@@ -53,6 +58,8 @@ internal fun AdminRegistrationRoute(
             onTodaySelected = { viewModel.dispatch(AdminRegistrationIntent.OnTodaySelected) },
             onPreviewOrRegisterClick = { viewModel.dispatch(AdminRegistrationIntent.OnPreviewOrRegisterClicked) },
             onManagedEventsRefresh = { viewModel.dispatch(AdminRegistrationIntent.OnManagedEventsRefreshed) },
+            onDelayedOpeningsRefresh = { viewModel.dispatch(AdminRegistrationIntent.OnDelayedOpeningsRefreshed) },
+            onDelayedOpeningReleased = { viewModel.dispatch(AdminRegistrationIntent.OnDelayedOpeningReleased(it)) },
             onManagedEventSelected = { viewModel.dispatch(AdminRegistrationIntent.OnManagedEventSelected(it)) },
             onEventStatusSelected = { status: AdminEventStatus ->
                 viewModel.dispatch(AdminRegistrationIntent.OnEventStatusSelected(status))
