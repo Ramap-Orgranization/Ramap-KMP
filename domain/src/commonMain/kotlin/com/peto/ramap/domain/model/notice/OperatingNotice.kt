@@ -22,4 +22,6 @@ data class OperatingNotice(
     val updatedAt: String? = null,
 ) {
     fun isActiveAt(currentDateTime: LocalDateTime): Boolean = currentDateTime.date >= startDate && (endDate == null || currentDateTime.date <= endDate)
+
+    fun isCurrentOrScheduledAt(currentDateTime: LocalDateTime): Boolean = isActiveAt(currentDateTime) || startDate > currentDateTime.date
 }

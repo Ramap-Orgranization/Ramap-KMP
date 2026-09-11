@@ -30,6 +30,11 @@ class DefaultOperatingNoticeRepositoryTest {
                                 listOf(
                                     response(id = "current", endDate = today.toString()),
                                     response(
+                                        id = "expired",
+                                        startDate = today.minus(2, DateTimeUnit.DAY).toString(),
+                                        endDate = today.minus(1, DateTimeUnit.DAY).toString(),
+                                    ),
+                                    response(
                                         id = "upcoming",
                                         startDate = today.plus(1, DateTimeUnit.DAY).toString(),
                                         endDate = today.plus(2, DateTimeUnit.DAY).toString(),

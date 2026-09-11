@@ -10,6 +10,7 @@ import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.minus
+import kotlinx.datetime.toLocalDateTime
 import kotlinx.datetime.todayIn
 import kotlin.time.Clock
 
@@ -19,8 +20,8 @@ internal class DefaultOperatingNoticeRepository(
 ) : OperatingNoticeRepository {
     override suspend fun fetchCurrentOperatingNotices(): RamapResult<List<OperatingNotice>> =
         invokeRequest {
-            val today = today()
-            val responses = operatingNoticeDataSource.fetchApprovedOperatingNotices(today)
+            val now = Clock.System.now().toLocalDateTime(TimeZone.of(SEOUL_TIME_ZONE))
+            val responses = operatingNoticeDataSource.fetchApprovedOperatingNotices(now.date)
             val shops =
                 ramenShopDataSource
                     .fetchRamenShopsByIds(responses.mapTo(mutableSetOf()) { it.shopId })
@@ -29,7 +30,7 @@ internal class DefaultOperatingNoticeRepository(
                 .mapNotNull { response ->
                     val shop = shops[response.shopId]?.toDomain() ?: return@mapNotNull null
                     response.toDomain(shop)
-                }
+                }.filter { it.isCurrentOrScheduledAt(now) }
         }
 
     override suspend fun fetchActiveShopOperatingNotices(shopId: String): RamapResult<List<OperatingNotice>> =
