@@ -1,6 +1,7 @@
 package com.peto.ramap.data.usecase
 
 import com.peto.ramap.core.result.RamapResult
+import com.peto.ramap.domain.repository.OperatingNoticeRepository
 import com.peto.ramap.domain.repository.RamenShopRepository
 import com.peto.ramap.domain.usecase.FetchShopDetailUseCase
 import com.peto.ramap.domain.usecase.ShopDetail
@@ -8,6 +9,7 @@ import com.peto.ramap.domain.usecase.ShopDetailCacheLookup
 
 internal class DefaultFetchShopDetailUseCase(
     private val ramenShopRepository: RamenShopRepository,
+    private val operatingNoticeRepository: OperatingNoticeRepository,
 ) : FetchShopDetailUseCase {
     private val cache = mutableMapOf<String, ShopDetail>()
 
@@ -21,7 +23,7 @@ internal class DefaultFetchShopDetailUseCase(
         val cached = cache[shopId]
         if (cached != null) return revalidateDetail(cached)
 
-        val result = ramenShopRepository.fetchShopDetail(shopId)
+        val result = fetchDetailWithNotices(shopId)
         if (result is RamapResult.Success) cache[result.data.shop.id] = result.data
         return result
     }
@@ -46,7 +48,7 @@ internal class DefaultFetchShopDetailUseCase(
      */
     private suspend fun revalidateDetail(cached: ShopDetail): RamapResult<ShopDetail> {
         val refreshed =
-            when (val result = ramenShopRepository.fetchShopDetail(cached.shop.id)) {
+            when (val result = fetchDetailWithNotices(cached.shop.id)) {
                 is RamapResult.Success -> result.data
                 is RamapResult.Error -> return RamapResult.Success(cached)
             }
@@ -54,10 +56,24 @@ internal class DefaultFetchShopDetailUseCase(
             cached.copy(
                 event = refreshed.event,
                 operatingNotice = refreshed.operatingNotice,
+                operatingNotices = refreshed.operatingNotices,
                 menuSections = refreshed.menuSections,
                 menuUpdatedAt = refreshed.menuUpdatedAt,
             )
         cache[cached.shop.id] = updated
         return RamapResult.Success(updated)
+    }
+
+    private suspend fun fetchDetailWithNotices(shopId: String): RamapResult<ShopDetail> {
+        val detail = ramenShopRepository.fetchShopDetail(shopId)
+        if (detail !is RamapResult.Success) return detail
+        val notices = operatingNoticeRepository.fetchActiveShopOperatingNotices(shopId)
+        if (notices !is RamapResult.Success) return detail
+        return RamapResult.Success(
+            detail.data.copy(
+                operatingNotice = notices.data.firstOrNull(),
+                operatingNotices = notices.data,
+            ),
+        )
     }
 }

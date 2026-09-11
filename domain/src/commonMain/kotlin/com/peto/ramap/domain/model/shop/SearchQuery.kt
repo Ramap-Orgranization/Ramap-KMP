@@ -21,23 +21,24 @@ value class SearchQuery(
         )
 
     /**
-     * Supabase/PostgREST `ilike` 검색 패턴에서 특별한 의미를 갖는 문자를 이스케이프한다.
+     * `ilike` 연산에서 사용할 공백 무시 포함 검색 패턴을 생성한다.
      *
-     * 사용자 입력에 포함된 `\`, `%`, `_`가 와일드카드나 escape 문자로 해석되지 않고
-     * 일반 문자 그대로 검색되도록 변환한다.
+     * 공백을 제외한 각 문자를 이스케이프하고 그 사이에 `%` 와일드카드를 넣어,
+     * 저장된 상호에 포함된 공백과 관계없이 매칭될 수 있는 패턴을 반환한다.
      */
-    fun escapeIlikePattern(): String =
-        value
-            .replace("\\", "\\\\")
-            .replace("%", "\\%")
-            .replace("_", "\\_")
-
-    /**
-     * `ilike` 연산에서 사용할 포함 검색 패턴을 생성한다.
-     *
-     * 사용자 입력을 먼저 [escapeIlikePattern]으로 이스케이프한 뒤,
-     * 앞뒤에 `%` 와일드카드를 추가하여 문자열 어디에 검색어가 포함되어 있어도
-     * 매칭될 수 있는 패턴을 반환한다.
-     */
-    fun ilikePattern(): String = "%${escapeIlikePattern()}%"
+    fun ilikePattern(): String =
+        buildString {
+            append('%')
+            value.forEach { character ->
+                if (!character.isWhitespace()) {
+                    when (character) {
+                        '\\' -> append("\\\\")
+                        '%' -> append("\\%")
+                        '_' -> append("\\_")
+                        else -> append(character)
+                    }
+                    append('%')
+                }
+            }
+        }
 }

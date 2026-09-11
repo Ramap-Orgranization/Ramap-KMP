@@ -12,6 +12,7 @@ data class ShopDetail(
     val waitingSystem: WaitingSystem?,
     val event: ShopEvent?,
     val operatingNotice: OperatingNotice?,
+    val operatingNotices: List<OperatingNotice> = operatingNotice?.let(::listOf).orEmpty(),
     val menuSections: List<MenuSection> = emptyList(),
     val menuUpdatedAt: String? = null,
 )

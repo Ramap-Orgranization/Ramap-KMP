@@ -4,7 +4,9 @@ import com.peto.ramap.domain.model.businesshour.BusinessHours
 import com.peto.ramap.domain.model.businesshour.BusinessHoursStatus
 import com.peto.ramap.domain.model.notice.OperatingNotice
 import com.peto.ramap.domain.model.notice.OperatingNoticeType
+import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.minus
 
 data class RamenShop(
     val id: String,
@@ -35,18 +37,19 @@ data class RamenShop(
     fun isOpenAt(
         currentDateTime: LocalDateTime,
         operatingNotices: List<OperatingNotice> = emptyList(),
-    ): Boolean {
-        if (businessHoursDetails?.isOpenAt(currentDateTime) != true) return false
-
-        return !hasOperatingNoticeBlockingOpening(currentDateTime, operatingNotices)
-    }
+    ): Boolean =
+        businessHoursStatus(currentDateTime, operatingNotices)?.let { status ->
+            status !is BusinessHoursStatus.Closed && status !is BusinessHoursStatus.BreakTime
+        } == true
 
     fun businessHoursStatus(
         currentDateTime: LocalDateTime,
         operatingNotices: List<OperatingNotice> = emptyList(),
     ): BusinessHoursStatus? {
-        val status = businessHoursDetails?.statusAt(currentDateTime) ?: return null
-        return if (hasOperatingNoticeBlockingOpening(currentDateTime, operatingNotices)) {
+        val hours = businessHoursDetails ?: return null
+        val applicableNotices = operatingNotices.filter { it.shop.id == id }
+        val status = effectiveBusinessHours(hours, currentDateTime, applicableNotices).statusAt(currentDateTime) ?: return null
+        return if (hasOperatingNoticeBlockingOpening(currentDateTime, applicableNotices)) {
             BusinessHoursStatus.Closed()
         } else {
             status
@@ -59,15 +62,84 @@ data class RamenShop(
     ): Boolean =
         operatingNotices
             .asSequence()
-            .filter { it.shop.id == id && it.isActiveAt(currentDateTime) }
-            .any { notice ->
+            .mapNotNull { notice -> notice.businessDateAt(currentDateTime)?.let { businessDate -> notice to businessDate } }
+            .any { (notice, businessDate) ->
                 when (notice.type) {
                     OperatingNoticeType.TEMPORARY_CLOSURE -> true
                     OperatingNoticeType.EARLY_CLOSING ->
-                        notice.endTime != null && currentDateTime.time >= notice.endTime
+                        notice.endTime?.let { currentDateTime >= LocalDateTime(businessDate, it) } == true
                     OperatingNoticeType.LATE_OPENING ->
-                        notice.startTime != null && currentDateTime.time < notice.startTime
+                        notice.manuallyReleasedAt == null &&
+                            (notice.startTime == null || currentDateTime < LocalDateTime(businessDate, notice.startTime))
                     OperatingNoticeType.OPERATING_NOTICE -> false
                 }
             }
+
+    private fun OperatingNotice.businessDateAt(currentDateTime: LocalDateTime) =
+        when {
+            isActiveAt(currentDateTime) -> currentDateTime.date
+            appliesToPreviousDaySession(this, currentDateTime) -> currentDateTime.date.minus(1, DateTimeUnit.DAY)
+            else -> null
+        }
+
+    private fun appliesToPreviousDaySession(
+        notice: OperatingNotice,
+        currentDateTime: LocalDateTime,
+    ): Boolean {
+        val previousDate = currentDateTime.date.minus(1, DateTimeUnit.DAY)
+        if (notice.endDate != previousDate) return false
+        val previousHours = businessHoursDetails?.weekly?.get(dayKey(previousDate.dayOfWeek)) ?: return false
+        if (!previousHours.closeNextDay) return false
+        val closeTime = previousHours.close?.let { runCatching { kotlinx.datetime.LocalTime.parse(it) }.getOrNull() } ?: return false
+        return currentDateTime.time < closeTime
+    }
+
+    private fun effectiveBusinessHours(
+        businessHours: BusinessHours,
+        currentDateTime: LocalDateTime,
+        notices: List<OperatingNotice>,
+    ): BusinessHours {
+        val weekly = businessHours.weekly.toMutableMap()
+        val dates = listOf(currentDateTime.date, currentDateTime.date.minus(1, DateTimeUnit.DAY))
+        for (date in dates) {
+            val override = notices.latestScheduleOverrideFor(date, currentDateTime.time) ?: continue
+            weekly[dayKey(date.dayOfWeek)] = override.scheduleOverride!!.day
+        }
+        val breakTimes = businessHours.breakTimes.toMutableMap()
+        for (date in dates) {
+            val override = notices.latestScheduleOverrideFor(date, currentDateTime.time) ?: continue
+            breakTimes[dayKey(date.dayOfWeek)] = override.scheduleOverride!!.breakTimes
+        }
+        return businessHours.copy(weekly = weekly, breakTimes = breakTimes)
+    }
+
+    fun latestScheduleOverride(
+        currentDateTime: LocalDateTime,
+        operatingNotices: List<OperatingNotice>,
+    ): OperatingNotice? =
+        operatingNotices
+            .filter { it.shop.id == id }
+            .latestScheduleOverrideFor(currentDateTime.date, currentDateTime.time)
+
+    private fun List<OperatingNotice>.latestScheduleOverrideFor(
+        date: kotlinx.datetime.LocalDate,
+        time: kotlinx.datetime.LocalTime,
+    ): OperatingNotice? =
+        asSequence()
+            .filter {
+                it.type == OperatingNoticeType.OPERATING_NOTICE &&
+                    it.scheduleOverride != null &&
+                    it.isActiveAt(LocalDateTime(date, time))
+            }.maxByOrNull { it.updatedAt.orEmpty() }
+
+    private fun dayKey(dayOfWeek: kotlinx.datetime.DayOfWeek): String =
+        when (dayOfWeek) {
+            kotlinx.datetime.DayOfWeek.MONDAY -> "mon"
+            kotlinx.datetime.DayOfWeek.TUESDAY -> "tue"
+            kotlinx.datetime.DayOfWeek.WEDNESDAY -> "wed"
+            kotlinx.datetime.DayOfWeek.THURSDAY -> "thu"
+            kotlinx.datetime.DayOfWeek.FRIDAY -> "fri"
+            kotlinx.datetime.DayOfWeek.SATURDAY -> "sat"
+            kotlinx.datetime.DayOfWeek.SUNDAY -> "sun"
+        }
 }
