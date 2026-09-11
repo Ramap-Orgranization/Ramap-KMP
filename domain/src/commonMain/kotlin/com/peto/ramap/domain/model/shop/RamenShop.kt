@@ -1,11 +1,14 @@
 package com.peto.ramap.domain.model.shop
 
+import com.peto.ramap.domain.model.businesshour.BusinessDay
 import com.peto.ramap.domain.model.businesshour.BusinessHours
 import com.peto.ramap.domain.model.businesshour.BusinessHoursStatus
 import com.peto.ramap.domain.model.notice.OperatingNotice
 import com.peto.ramap.domain.model.notice.OperatingNoticeType
 import kotlinx.datetime.DateTimeUnit
+import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.LocalTime
 import kotlinx.datetime.minus
 
 data class RamenShop(
@@ -88,9 +91,9 @@ data class RamenShop(
     ): Boolean {
         val previousDate = currentDateTime.date.minus(1, DateTimeUnit.DAY)
         if (notice.endDate != previousDate) return false
-        val previousHours = businessHoursDetails?.weekly?.get(dayKey(previousDate.dayOfWeek)) ?: return false
+        val previousHours = businessHoursDetails?.weekly?.get(BusinessDay.from(previousDate.dayOfWeek).key) ?: return false
         if (!previousHours.closeNextDay) return false
-        val closeTime = previousHours.close?.let { runCatching { kotlinx.datetime.LocalTime.parse(it) }.getOrNull() } ?: return false
+        val closeTime = previousHours.close?.let { runCatching { LocalTime.parse(it) }.getOrNull() } ?: return false
         return currentDateTime.time < closeTime
     }
 
@@ -103,12 +106,12 @@ data class RamenShop(
         val dates = listOf(currentDateTime.date, currentDateTime.date.minus(1, DateTimeUnit.DAY))
         for (date in dates) {
             val override = notices.latestScheduleOverrideFor(date, currentDateTime.time) ?: continue
-            weekly[dayKey(date.dayOfWeek)] = override.scheduleOverride!!.day
+            weekly[BusinessDay.from(date.dayOfWeek).key] = override.scheduleOverride!!.day
         }
         val breakTimes = businessHours.breakTimes.toMutableMap()
         for (date in dates) {
             val override = notices.latestScheduleOverrideFor(date, currentDateTime.time) ?: continue
-            breakTimes[dayKey(date.dayOfWeek)] = override.scheduleOverride!!.breakTimes
+            breakTimes[BusinessDay.from(date.dayOfWeek).key] = override.scheduleOverride!!.breakTimes
         }
         return businessHours.copy(weekly = weekly, breakTimes = breakTimes)
     }
@@ -122,8 +125,8 @@ data class RamenShop(
             .latestScheduleOverrideFor(currentDateTime.date, currentDateTime.time)
 
     private fun List<OperatingNotice>.latestScheduleOverrideFor(
-        date: kotlinx.datetime.LocalDate,
-        time: kotlinx.datetime.LocalTime,
+        date: LocalDate,
+        time: LocalTime,
     ): OperatingNotice? =
         asSequence()
             .filter {
@@ -131,15 +134,4 @@ data class RamenShop(
                     it.scheduleOverride != null &&
                     it.isActiveAt(LocalDateTime(date, time))
             }.maxByOrNull { it.updatedAt.orEmpty() }
-
-    private fun dayKey(dayOfWeek: kotlinx.datetime.DayOfWeek): String =
-        when (dayOfWeek) {
-            kotlinx.datetime.DayOfWeek.MONDAY -> "mon"
-            kotlinx.datetime.DayOfWeek.TUESDAY -> "tue"
-            kotlinx.datetime.DayOfWeek.WEDNESDAY -> "wed"
-            kotlinx.datetime.DayOfWeek.THURSDAY -> "thu"
-            kotlinx.datetime.DayOfWeek.FRIDAY -> "fri"
-            kotlinx.datetime.DayOfWeek.SATURDAY -> "sat"
-            kotlinx.datetime.DayOfWeek.SUNDAY -> "sun"
-        }
 }
