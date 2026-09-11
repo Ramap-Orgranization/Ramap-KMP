@@ -8,6 +8,7 @@ import com.peto.ramap.domain.model.menu.MenuSection
 import com.peto.ramap.domain.model.menu.Menus
 import com.peto.ramap.domain.usecase.ShopDetail
 import com.peto.ramap.domain.usecase.ShopDetailCacheLookup
+import com.peto.ramap.fake.FakeOperatingNoticeRepository
 import com.peto.ramap.fake.FakeRamenShopRepository
 import com.peto.ramap.fixture.ramenShopFixture
 import com.peto.ramap.fixture.waitingSystemFixture
@@ -22,7 +23,7 @@ class DefaultFetchShopDetailUseCaseTest {
         runTest {
             val initial = detail()
             val repository = FakeRamenShopRepository(shopDetail = initial)
-            val useCase = DefaultFetchShopDetailUseCase(repository)
+            val useCase = DefaultFetchShopDetailUseCase(repository, FakeOperatingNoticeRepository())
 
             useCase(initial.shop.id)
             useCase(initial.shop.id)
@@ -42,7 +43,7 @@ class DefaultFetchShopDetailUseCaseTest {
                     menuSections = listOf(menuSection()),
                 )
             val repository = FakeRamenShopRepository(shopDetail = initial)
-            val useCase = DefaultFetchShopDetailUseCase(repository)
+            val useCase = DefaultFetchShopDetailUseCase(repository, FakeOperatingNoticeRepository())
             useCase(initial.shop.id)
             repository.shopDetail = refreshed
 
@@ -60,7 +61,7 @@ class DefaultFetchShopDetailUseCaseTest {
         runTest {
             val initial = detail(event = event("shop"))
             val repository = FakeRamenShopRepository(shopDetail = initial)
-            val useCase = DefaultFetchShopDetailUseCase(repository)
+            val useCase = DefaultFetchShopDetailUseCase(repository, FakeOperatingNoticeRepository())
             useCase(initial.shop.id)
             repository.shopDetailError = RamapError.Unknown(IllegalStateException("failed"))
 
@@ -76,7 +77,7 @@ class DefaultFetchShopDetailUseCaseTest {
                 FakeRamenShopRepository(
                     shopDetailError = RamapError.Unknown(IllegalStateException("failed")),
                 )
-            val useCase = DefaultFetchShopDetailUseCase(repository)
+            val useCase = DefaultFetchShopDetailUseCase(repository, FakeOperatingNoticeRepository())
 
             val result = useCase("shop")
 
@@ -89,7 +90,7 @@ class DefaultFetchShopDetailUseCaseTest {
     fun `캐시된 상세의 좋아요 수를 저장 상태 변경에 맞춰 갱신한다`() =
         runTest {
             val initial = detail(likeCount = 1L)
-            val useCase = DefaultFetchShopDetailUseCase(FakeRamenShopRepository(shopDetail = initial))
+            val useCase = DefaultFetchShopDetailUseCase(FakeRamenShopRepository(shopDetail = initial), FakeOperatingNoticeRepository())
             useCase(initial.shop.id)
 
             useCase.updateCachedLikeCount(initial.shop.id, enabled = false)

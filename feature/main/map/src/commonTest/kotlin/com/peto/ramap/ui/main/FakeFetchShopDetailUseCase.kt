@@ -51,7 +51,7 @@ internal class FakeFetchShopDetailUseCase(
             val likeCountResult = async { ramenShopRepository.fetchShopLikeCount(shopId) }
             val waitingResult = async { waitingSystemRepository.fetchShopWaitingSystem(shopId) }
             val eventResult = async { ramenShopRepository.fetchActiveShopEvent(shopId) }
-            val noticeResult = async { operatingNoticeRepository.fetchActiveShopOperatingNotice(shopId) }
+            val noticeResult = async { operatingNoticeRepository.fetchActiveShopOperatingNotices(shopId) }
             when (val shops = shopsResult.await()) {
                 is RamapResult.Error -> shops
                 is RamapResult.Success -> {
@@ -69,7 +69,8 @@ internal class FakeFetchShopDetailUseCase(
                                     likeCount = (likeCountResult.await() as? RamapResult.Success)?.data ?: 0L,
                                     waitingSystem = waiting.data,
                                     event = (event as? RamapResult.Success)?.data,
-                                    operatingNotice = (notice as? RamapResult.Success)?.data,
+                                    operatingNotice = (notice as? RamapResult.Success)?.data?.firstOrNull(),
+                                    operatingNotices = (notice as? RamapResult.Success)?.data.orEmpty(),
                                 ),
                             )
                         }

@@ -38,7 +38,7 @@ class DefaultOperatingNoticeRepositoryTest {
 
                             override suspend fun fetchApprovedShopOperatingNotices(
                                 shopId: String,
-                                today: LocalDate,
+                                earliestDate: LocalDate,
                             ) = emptyList<OperatingNoticeResponse>()
                         },
                     ramenShopDataSource =

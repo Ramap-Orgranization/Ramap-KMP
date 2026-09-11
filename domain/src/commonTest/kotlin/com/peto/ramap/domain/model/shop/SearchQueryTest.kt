@@ -29,51 +29,18 @@ class SearchQueryTest {
     }
 
     @Test
-    fun `ilike 패턴을 이스케이프하면 역슬래시 퍼센트 언더스코어를 일반 문자로 처리한다`() {
+    fun `ilike 패턴은 입력과 저장된 상호의 공백을 무시한다`() {
         // Given
-        val query = SearchQuery("""라멘\맛집%_검색""")
+        val spacedQuery = SearchQuery("멘야 타마시")
+        val unspacedQuery = SearchQuery("멘야타마시")
 
         // When
-        val actual = query.escapeIlikePattern()
+        val spacedPattern = spacedQuery.ilikePattern()
+        val unspacedPattern = unspacedQuery.ilikePattern()
 
         // Then
-        assertEquals("""라멘\\맛집\%\_검색""", actual)
-    }
-
-    @Test
-    fun `ilike 패턴을 이스케이프할 때 일반 문자는 변경하지 않는다`() {
-        // Given
-        val query = SearchQuery("요코다베이스")
-
-        // When
-        val actual = query.escapeIlikePattern()
-
-        // Then
-        assertEquals("요코다베이스", actual)
-    }
-
-    @Test
-    fun `정규화한 검색어를 ilike 패턴용으로 이스케이프할 수 있다`() {
-        // Given
-        val query = SearchQuery("  RAMEN_%   SHOP  ").normalizeShopSearchQuery()
-
-        // When
-        val actual = query.escapeIlikePattern()
-
-        // Then
-        assertEquals("""ramen\_\% shop""", actual)
-    }
-
-    @Test
-    fun `ilike 패턴은 앞뒤에 와일드카드를 추가한다`() {
-        // Given
-        val query = SearchQuery("ramen")
-
-        // When
-        val actual = query.ilikePattern()
-
-        // Then
-        assertEquals("%ramen%", actual)
+        assertEquals("%멘%야%타%마%시%", spacedPattern)
+        assertEquals(spacedPattern, unspacedPattern)
     }
 
     @Test
@@ -85,7 +52,7 @@ class SearchQueryTest {
         val actual = query.ilikePattern()
 
         // Then
-        assertEquals("""%라멘\\맛집\%\_검색%""", actual)
+        assertEquals("""%라%멘%\\%맛%집%\%%\_%검%색%""", actual)
     }
 
     @Test
@@ -99,6 +66,6 @@ class SearchQueryTest {
         val actual = query.ilikePattern()
 
         // Then
-        assertEquals("""%ramen\_\% shop%""", actual)
+        assertEquals("""%r%a%m%e%n%\_%\%%s%h%o%p%""", actual)
     }
 }
