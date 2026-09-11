@@ -14,6 +14,7 @@ import com.peto.ramap.ui.main.notice.contract.OperatingNoticeSideEffect
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
+import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.plus
@@ -96,7 +97,7 @@ class OperatingNoticeViewModelTest {
         coroutinesTest {
             val today = Clock.System.todayIn(TimeZone.of("Asia/Seoul"))
             val current = operatingNotice(id = "today", startDate = today, endDate = today)
-            val scheduled = operatingNotice(id = "future", startDate = today.plus(1, kotlinx.datetime.DateTimeUnit.DAY), endDate = today.plus(1, kotlinx.datetime.DateTimeUnit.DAY))
+            val scheduled = operatingNotice(id = "future", startDate = today.plus(1, DateTimeUnit.DAY), endDate = today.plus(1, DateTimeUnit.DAY))
             val viewModel = OperatingNoticeViewModel(FakeOperatingNoticeRepository(notices = listOf(current, scheduled)))
 
             runCurrent()

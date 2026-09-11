@@ -4,6 +4,7 @@ import com.peto.ramap.data.model.OperatingNoticeResponse
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.query.filter.FilterOperator
+import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.minus
 
@@ -17,7 +18,7 @@ internal class RemoteOperatingNoticeDataSource(
                 filter {
                     or {
                         filter(COLUMN_END_DATE, FilterOperator.IS, null)
-                        gte(COLUMN_END_DATE, today.minus(1, kotlinx.datetime.DateTimeUnit.DAY).toString())
+                        gte(COLUMN_END_DATE, today.minus(1, DateTimeUnit.DAY).toString())
                     }
                 }
             }.decodeList()

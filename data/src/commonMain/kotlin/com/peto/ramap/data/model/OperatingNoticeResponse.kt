@@ -6,6 +6,7 @@ import com.peto.ramap.domain.model.businesshour.BusinessHoursScheduleOverride
 import com.peto.ramap.domain.model.notice.OperatingNotice
 import com.peto.ramap.domain.model.notice.OperatingNoticeType
 import com.peto.ramap.domain.model.shop.RamenShop
+import kotlinx.datetime.LocalTime
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlin.time.Instant
@@ -71,4 +72,4 @@ internal data class ScheduleOverrideResponse(
     }
 }
 
-private fun String?.isValidTime(): Boolean = this != null && runCatching { kotlinx.datetime.LocalTime.parse(this) }.isSuccess
+private fun String?.isValidTime(): Boolean = this != null && runCatching { LocalTime.parse(this) }.isSuccess
