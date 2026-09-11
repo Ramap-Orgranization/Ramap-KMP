@@ -120,6 +120,8 @@
     <string name="operating_notice_open">영업 변동 보기</string>
     <string name="operating_notice_empty">현재 또는 예정된 영업 변동이 없어요</string>
     <string name="operating_notice_section">운영 변동</string>
+    <string name="operating_notice_today_section">오늘의 운영 변동</string>
+    <string name="operating_notice_scheduled_section">예정된 운영 변동</string>
     <string name="operating_notice_error_title">영업 변동을 불러오지 못했어요</string>
     <string name="operating_notice_error_description">잠시 후 다시 시도해 주세요.</string>
     <string name="operating_notice_type_operating_notice">영업 변동</string>
