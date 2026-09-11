@@ -13,7 +13,7 @@ Deno.serve(async (request) => {
       .select("id,shop_id,notice_date,start_time,description,manually_released_at,ramen_shops(name,business_hours_weekly)")
       .eq("notice_type", "late_opening").gte("notice_date", today).is("manually_released_at", null)
       .order("notice_date").order("start_time");
-    return error ? json({ code: "fetch_failed" }, 422) : json({ notices: data ?? [] });
+    return error ? json({ code: "fetch_failed" }, 422) : json({ korea_today: today, notices: data ?? [] });
   }
   if (request.method !== "POST") return json({ code: "method_not_allowed" }, 405);
   if (action !== undefined && action !== "release") return json({ code: "invalid_action" }, 400);
