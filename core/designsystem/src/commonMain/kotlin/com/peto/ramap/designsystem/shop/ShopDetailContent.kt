@@ -135,6 +135,7 @@ fun ShopDetailContent(
                         event = state.detail.event,
                         onEventClick = onEventClick,
                         operatingNotice = state.detail.operatingNotice,
+                        operatingNotices = state.detail.operatingNotices,
                         onOperatingNoticeClick = onOperatingNoticeClick,
                         menuSections = state.detail.menuSections,
                         menuUpdatedAt = state.detail.menuUpdatedAt,

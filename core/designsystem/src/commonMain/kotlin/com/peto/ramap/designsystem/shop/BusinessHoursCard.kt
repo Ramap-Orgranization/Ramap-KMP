@@ -48,8 +48,11 @@ import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.ic_keyboard_arrow_down
+import ramap.shared.generated.resources.shop_detail_business_hours_break_removed
 import ramap.shared.generated.resources.shop_detail_business_hours_collapse
 import ramap.shared.generated.resources.shop_detail_business_hours_expand
+import ramap.shared.generated.resources.shop_detail_business_hours_override
+import ramap.shared.generated.resources.shop_detail_business_hours_override_reason
 import ramap.shared.generated.resources.shop_detail_operating_notice_action_suffix
 import kotlin.time.Clock
 
@@ -57,12 +60,13 @@ import kotlin.time.Clock
 internal fun BusinessHoursCard(
     shop: RamenShop,
     operatingNotice: OperatingNotice?,
+    operatingNotices: List<OperatingNotice> = listOfNotNull(operatingNotice),
     modifier: Modifier = Modifier,
     onOperatingNoticeClick: (OperatingNotice) -> Unit = {},
 ) {
     var isExpanded by rememberSaveable { mutableStateOf(false) }
-    val currentDateTime = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
-    val status = shop.businessHoursStatus(currentDateTime, listOfNotNull(operatingNotice))
+    val currentDateTime = Clock.System.now().toLocalDateTime(TimeZone.of("Asia/Seoul"))
+    val status = shop.businessHoursStatus(currentDateTime, operatingNotices)
     val businessHours = shop.businessHoursDetails
     val lines = businessHours?.let(BusinessHoursResourceMapper::all).orEmpty()
 
@@ -116,6 +120,21 @@ internal fun BusinessHoursCard(
 
         if (isExpanded && businessHours != null) {
             SectionCard {
+                shop.latestScheduleOverride(currentDateTime, operatingNotices)?.let { notice ->
+                    val override = notice.scheduleOverride!!
+                    AppText(stringResource(Res.string.shop_detail_business_hours_override), AppTextStyle.B2, GrayColor.C500)
+                    AppText(
+                        text = "${override.day.open.orEmpty()} ~ ${override.day.close.orEmpty()}",
+                        style = AppTextStyle.B1,
+                        color = SystemColor.Warning,
+                    )
+                    AppText(
+                        text = override.breakTimes.joinToString { "${it.start} ~ ${it.end}" }.ifBlank { stringResource(Res.string.shop_detail_business_hours_break_removed) },
+                        style = AppTextStyle.B2,
+                        color = GrayColor.C500,
+                    )
+                    AppText(stringResource(Res.string.shop_detail_business_hours_override_reason, notice.description), AppTextStyle.B2, GrayColor.C500)
+                }
                 lines.forEachIndexed { index, line ->
                     BusinessHoursCardRow(
                         line = line,

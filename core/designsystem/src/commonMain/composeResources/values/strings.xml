@@ -40,6 +40,9 @@
     <string name="shop_detail_business_hours_last_order_format">%1$s (라스트오더)</string>
     <string name="shop_detail_business_hours_item_separator"> / </string>
     <string name="shop_detail_business_hours_show_all">전체보기 &gt;</string>
+    <string name="shop_detail_business_hours_override">오늘 변경 영업시간</string>
+    <string name="shop_detail_business_hours_override_reason">변경 사유: %1$s</string>
+    <string name="shop_detail_business_hours_break_removed">브레이크타임 없음</string>
     <string name="shop_detail_label_waiting">웨이팅</string>
     <string name="shop_detail_link_instagram">Instagram</string>
     <string name="shop_detail_link_kakao_map">카카오 지도</string>
@@ -411,6 +414,8 @@
     <!-- 관리자 등록 -->
     <string name="admin_registration_shop_names_load_failure">매장 목록을 불러오지 못했어요.</string>
     <string name="admin_registration_managed_events_load_failure">관리할 이벤트를 불러오지 못했어요.</string>
+    <string name="admin_delayed_opening_load_failure">오픈 지연 목록을 불러오지 못했어요.</string>
+    <string name="admin_delayed_opening_release_failure">영업 시작 처리에 실패했어요. 다시 시도해 주세요.</string>
     <string name="admin_registration_preview_required">URL 또는 캡처 이미지를 입력해 주세요.</string>
     <string name="admin_registration_preview_failure">미리보기를 만들지 못했어요.</string>
     <string name="admin_registration_draft_required">먼저 미리보기를 만들어 주세요.</string>

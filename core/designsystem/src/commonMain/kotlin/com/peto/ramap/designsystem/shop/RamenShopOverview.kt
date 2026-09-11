@@ -80,6 +80,7 @@ fun RamenShopOverview(
     event: ShopEvent? = null,
     onEventClick: (ShopEvent) -> Unit,
     operatingNotice: OperatingNotice? = null,
+    operatingNotices: List<OperatingNotice> = listOfNotNull(operatingNotice),
     onOperatingNoticeClick: (OperatingNotice) -> Unit = {},
     menuSections: List<MenuSection> = emptyList(),
     menuUpdatedAt: String? = null,
@@ -206,6 +207,7 @@ fun RamenShopOverview(
                 BusinessHoursCard(
                     shop = shop,
                     operatingNotice = operatingNotice,
+                    operatingNotices = operatingNotices,
                     onOperatingNoticeClick = onOperatingNoticeClick,
                 )
             }
