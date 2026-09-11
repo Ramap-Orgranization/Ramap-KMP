@@ -1,10 +1,14 @@
 package com.peto.ramap.debug.admin.data.datasource
 
 import com.peto.ramap.debug.admin.data.model.AdminCorrectionPreview
+import com.peto.ramap.debug.admin.data.model.AdminDelayedOpening
+import com.peto.ramap.debug.admin.data.model.AdminDelayedOpenings
 import com.peto.ramap.debug.admin.data.model.AdminDraft
 import com.peto.ramap.debug.admin.data.model.AdminEvidence
 import com.peto.ramap.debug.admin.data.model.AdminManagedEvent
+import com.peto.ramap.debug.admin.data.model.AdminShopHours
 import com.peto.ramap.debug.admin.data.model.AdminShopName
+import com.peto.ramap.debug.admin.data.model.request.AdminOperatingNoticeRequest
 import com.peto.ramap.debug.admin.data.model.request.CorrectionRequest
 import com.peto.ramap.debug.admin.data.model.request.EventStatusRequest
 import com.peto.ramap.debug.admin.data.model.request.PreviewRequest
@@ -31,6 +35,14 @@ internal class AdminRegistrationDataSource(
             .filter(String::isNotBlank)
             .distinct()
             .sorted()
+
+    suspend fun fetchShopHours(shopName: String): AdminShopHours? =
+        client
+            .from(SHOPS_TABLE)
+            .select(columns = Columns.list(SHOP_NAME_COLUMN, "business_hours_weekly", "business_hours_break_times")) {
+                filter { eq(SHOP_NAME_COLUMN, shopName) }
+            }.decodeList<AdminShopHours>()
+            .singleOrNull()
 
     suspend fun preview(
         shopName: String,
@@ -78,6 +90,7 @@ internal class AdminRegistrationDataSource(
                 noticeType = draft.noticeType,
                 startTime = draft.startTime,
                 endTime = draft.endTime,
+                scheduleOverride = draft.scheduleOverride,
                 participants = draft.participants,
             ),
         )
@@ -118,6 +131,16 @@ internal class AdminRegistrationDataSource(
     }
 
     suspend fun fetchManagedEvents(): List<AdminManagedEvent> = client.functions.invoke(EVENT_STATUS_FUNCTION, EventStatusRequest(action = "list")).body()
+
+    suspend fun fetchDelayedOpenings(): AdminDelayedOpenings =
+        client.functions
+            .invoke(OPERATING_NOTICE_FUNCTION, AdminOperatingNoticeRequest(action = "list"))
+            .body<DelayedOpeningResponse>()
+            .let { AdminDelayedOpenings(it.koreaToday, it.notices) }
+
+    suspend fun releaseDelayedOpening(id: String) {
+        client.functions.invoke(OPERATING_NOTICE_FUNCTION, AdminOperatingNoticeRequest(action = "release", id = id))
+    }
 
     suspend fun saveEventStatus(
         eventId: String,
@@ -197,5 +220,12 @@ internal class AdminRegistrationDataSource(
         const val REGISTER_FUNCTION = "register-event"
         const val EVENT_STATUS_FUNCTION = "admin-event-status"
         const val CORRECTION_FUNCTION = "admin-correct-registration"
+        const val OPERATING_NOTICE_FUNCTION = "admin-operating-notice"
     }
 }
+
+@kotlinx.serialization.Serializable
+private data class DelayedOpeningResponse(
+    @kotlinx.serialization.SerialName("korea_today") val koreaToday: String,
+    val notices: List<AdminDelayedOpening> = emptyList(),
+)

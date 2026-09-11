@@ -7,7 +7,7 @@ const NOTICE_TYPES = ["operating_notice", "full_close", "early_close", "late_ope
 type RegistrationType = "event" | "operating_notice";
 type Changes = {
   title: string | null; description: string | null; start_date: string | null; end_date: string | null;
-  event_type: string | null; notice_type: string | null; start_time: string | null; end_time: string | null;
+  event_type: string | null; notice_type: string | null; start_time: string | null; end_time: string | null; schedule_override: unknown | null;
 };
 
 Deno.serve(async (request) => {
@@ -89,7 +89,7 @@ async function applyCorrection(type: RegistrationType, id: string, value: unknow
   }
   const update = type === "event"
     ? { title: changes.title, description: changes.description, start_date: changes.start_date, end_date: changes.end_date, event_type: changes.event_type }
-    : { description: changes.description, notice_date: changes.start_date, end_date: changes.end_date, notice_type: changes.notice_type, start_time: changes.start_time, end_time: changes.end_time };
+    : { description: changes.description, notice_date: changes.start_date, end_date: changes.end_date, notice_type: changes.notice_type, start_time: changes.start_time, end_time: changes.end_time, schedule_override: changes.schedule_override };
   const filtered = Object.fromEntries(Object.entries(update).filter(([, value]) => value !== null));
   if (Object.keys(filtered).length === 0) return json({ code: "no_supported_changes" }, 422);
   const table = type === "event" ? "shop_events" : "shop_operating_notices";
@@ -100,7 +100,7 @@ async function applyCorrection(type: RegistrationType, id: string, value: unknow
 async function findRecord(supabase: ReturnType<typeof createServiceClient>, type: RegistrationType, id: string) {
   const query = type === "event"
     ? supabase.from("shop_events").select("title,description,start_date,end_date,event_type").eq("id", id).maybeSingle()
-    : supabase.from("shop_operating_notices").select("description,notice_date,end_date,notice_type,start_time,end_time").eq("id", id).maybeSingle();
+    : supabase.from("shop_operating_notices").select("description,notice_date,end_date,notice_type,start_time,end_time,schedule_override").eq("id", id).maybeSingle();
   const { data, error } = await query;
   return error || !data ? null : data;
 }
@@ -120,9 +120,9 @@ async function analyze(apiKey: string, type: RegistrationType, record: unknown, 
       temperature: 0,
       messages: [{
         role: "system",
-        content: `관리자 등록 수정 도우미입니다. ${type === "event" ? "이벤트는 title, description, start_date, end_date, event_type만" : "영업 변동은 description, start_date(원본 notice_date), end_date, notice_type, start_time, end_time만"} 변경할 수 있습니다. 기존 레코드와 요청만 근거로 삼고, 추측하거나 지원하지 않는 필드는 변경하지 마세요. summary는 적용될 변경을 한국어로 한 문장에 설명하세요. 변경할 값이 없으면 모든 changes 필드를 null로 반환하세요. 날짜는 YYYY-MM-DD, 시간은 HH:mm입니다.`,
+        content: `관리자 등록 수정 도우미입니다. ${type === "event" ? "이벤트는 title, description, start_date, end_date, event_type만" : "영업 변동은 description, start_date(원본 notice_date), end_date, notice_type, start_time, end_time, schedule_override만"} 변경할 수 있습니다. schedule_override는 operating_notice에만 허용하며 기존 레코드와 요청만 근거로 삼으세요.`,
       }, { role: "user", content: `기존 레코드:\n${JSON.stringify(record)}\n\n수정 요청:\n${instruction}` }],
-      response_format: { type: "json_schema", json_schema: { name: "registration_correction", strict: true, schema: { type: "object", additionalProperties: false, properties: { summary: { type: "string" }, changes: { type: "object", additionalProperties: false, properties: { title: { type: ["string", "null"] }, description: { type: ["string", "null"] }, start_date: { type: ["string", "null"] }, end_date: { type: ["string", "null"] }, event_type: { type: ["string", "null"] }, notice_type: { type: ["string", "null"] }, start_time: { type: ["string", "null"] }, end_time: { type: ["string", "null"] } }, required: ["title", "description", "start_date", "end_date", "event_type", "notice_type", "start_time", "end_time"] } }, required: ["summary", "changes"] } } },
+      response_format: { type: "json_schema", json_schema: { name: "registration_correction", strict: true, schema: { type: "object", additionalProperties: false, properties: { summary: { type: "string" }, changes: { type: "object", additionalProperties: false, properties: { title: { type: ["string", "null"] }, description: { type: ["string", "null"] }, start_date: { type: ["string", "null"] }, end_date: { type: ["string", "null"] }, event_type: { type: ["string", "null"] }, notice_type: { type: ["string", "null"] }, start_time: { type: ["string", "null"] }, end_time: { type: ["string", "null"] }, schedule_override: { type: ["object", "null"], additionalProperties: false, properties: { closed: { type: "boolean" }, open: { type: ["string", "null"] }, close: { type: ["string", "null"] }, close_next_day: { type: "boolean" }, label: { type: ["string", "null"] } }, required: ["closed", "open", "close", "close_next_day", "label"] } }, required: ["title", "description", "start_date", "end_date", "event_type", "notice_type", "start_time", "end_time", "schedule_override"] } }, required: ["summary", "changes"] } } },
     }),
   });
   if (!response.ok) throw new Error(`OpenAI analysis failed: ${response.status}`);
@@ -135,12 +135,13 @@ async function analyze(apiKey: string, type: RegistrationType, record: unknown, 
 function validateChanges(type: RegistrationType, value: unknown): Changes | null {
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
   const item = value as Record<string, unknown>;
-  const changes: Changes = { title: nullableText(item.title), description: nullableText(item.description), start_date: nullableDate(item.start_date), end_date: nullableDate(item.end_date), event_type: nullableText(item.event_type), notice_type: nullableText(item.notice_type), start_time: nullableTime(item.start_time), end_time: nullableTime(item.end_time) };
-  if (Object.values(item).some((value) => value !== null && value !== undefined && typeof value !== "string")) return null;
+  const changes: Changes = { title: nullableText(item.title), description: nullableText(item.description), start_date: nullableDate(item.start_date), end_date: nullableDate(item.end_date), event_type: nullableText(item.event_type), notice_type: nullableText(item.notice_type), start_time: nullableTime(item.start_time), end_time: nullableTime(item.end_time), schedule_override: item.schedule_override ?? null };
+  if (Object.entries(item).some(([key, value]) => key !== "schedule_override" && value !== null && value !== undefined && typeof value !== "string")) return null;
   if (changes.start_date === "" || changes.end_date === "" || changes.start_time === "" || changes.end_time === "") return null;
   if (changes.event_type && !EVENT_TYPES.includes(changes.event_type as typeof EVENT_TYPES[number])) return null;
   if (changes.notice_type && !NOTICE_TYPES.includes(changes.notice_type as typeof NOTICE_TYPES[number])) return null;
-  if (type === "event") changes.notice_type = changes.start_time = changes.end_time = null;
+  if (type === "event") changes.notice_type = changes.start_time = changes.end_time = changes.schedule_override = null;
+  if (changes.schedule_override && (!changes.notice_type || changes.notice_type !== "operating_notice" || typeof changes.schedule_override !== "object")) return null;
   else changes.title = changes.event_type = null;
   return Object.values(changes).some((value) => value !== null) ? changes : null;
 }

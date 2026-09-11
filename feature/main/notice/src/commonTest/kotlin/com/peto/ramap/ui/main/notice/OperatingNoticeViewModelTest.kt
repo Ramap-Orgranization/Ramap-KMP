@@ -14,13 +14,18 @@ import com.peto.ramap.ui.main.notice.contract.OperatingNoticeSideEffect
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
+import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.plus
+import kotlinx.datetime.todayIn
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.event_list_refresh_failure_message
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
+import kotlin.time.Clock
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class OperatingNoticeViewModelTest {
@@ -33,7 +38,7 @@ class OperatingNoticeViewModelTest {
 
             runCurrent()
 
-            assertEquals(listOf(notice), viewModel.uiState.value.operatingNotices)
+            assertEquals(listOf(notice), viewModel.uiState.value.todayOperatingNotices)
             assertFalse(viewModel.uiState.value.isLoading)
             assertEquals(1, repository.fetchCount)
         }
@@ -51,7 +56,7 @@ class OperatingNoticeViewModelTest {
             runCurrent()
 
             assertEquals(2, repository.fetchCount)
-            assertEquals(listOf(notice), viewModel.uiState.value.operatingNotices)
+            assertEquals(listOf(notice), viewModel.uiState.value.todayOperatingNotices)
             assertTrue(viewModel.uiState.value.isRefreshing)
 
             advanceTimeBy(1_000)
@@ -73,7 +78,7 @@ class OperatingNoticeViewModelTest {
                 viewModel.dispatch(OperatingNoticeIntent.OnRefreshed)
                 runCurrent()
 
-                assertEquals(listOf(notice), viewModel.uiState.value.operatingNotices)
+                assertEquals(listOf(notice), viewModel.uiState.value.todayOperatingNotices)
                 assertFalse(viewModel.uiState.value.isRefreshing)
                 assertEquals(
                     OperatingNoticeSideEffect.ShowToast(
@@ -87,16 +92,33 @@ class OperatingNoticeViewModelTest {
             }
         }
 
-    private fun operatingNotice(id: String = "notice") =
-        OperatingNotice(
-            id = id,
-            shop = ramenShopFixture(id = "shop", name = "매장", address = "서울"),
-            type = OperatingNoticeType.TEMPORARY_CLOSURE,
-            description = "내부 사정으로 쉽니다.",
-            startDate = LocalDate(2026, 8, 21),
-            endDate = LocalDate(2026, 8, 21),
-            startTime = null,
-            endTime = null,
-            sourceUrl = null,
-        )
+    @Test
+    fun `오늘 공지와 미래 공지를 각각 분리한다`() =
+        coroutinesTest {
+            val today = Clock.System.todayIn(TimeZone.of("Asia/Seoul"))
+            val current = operatingNotice(id = "today", startDate = today, endDate = today)
+            val scheduled = operatingNotice(id = "future", startDate = today.plus(1, DateTimeUnit.DAY), endDate = today.plus(1, DateTimeUnit.DAY))
+            val viewModel = OperatingNoticeViewModel(FakeOperatingNoticeRepository(notices = listOf(current, scheduled)))
+
+            runCurrent()
+
+            assertEquals(listOf(current), viewModel.uiState.value.todayOperatingNotices)
+            assertEquals(listOf(scheduled), viewModel.uiState.value.scheduledOperatingNotices)
+        }
+
+    private fun operatingNotice(
+        id: String = "notice",
+        startDate: LocalDate = Clock.System.todayIn(TimeZone.of("Asia/Seoul")),
+        endDate: LocalDate? = startDate,
+    ) = OperatingNotice(
+        id = id,
+        shop = ramenShopFixture(id = "shop", name = "매장", address = "서울"),
+        type = OperatingNoticeType.TEMPORARY_CLOSURE,
+        description = "내부 사정으로 쉽니다.",
+        startDate = startDate,
+        endDate = endDate,
+        startTime = null,
+        endTime = null,
+        sourceUrl = null,
+    )
 }

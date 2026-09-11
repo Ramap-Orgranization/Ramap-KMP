@@ -44,6 +44,16 @@ class OperatingNoticeResponseTest {
         assertFails { response(endTime = "25:00").toDomain(shop) }
     }
 
+    @Test
+    fun `잘못된 일정 변경 시간은 예외를 발생시킨다`() {
+        val response =
+            response(noticeType = "operating_notice").copy(
+                scheduleOverride = ScheduleOverrideResponse(open = "25:00", close = "22:00"),
+            )
+
+        assertFails { response.toDomain(ramenShopFixture()) }
+    }
+
     private fun response(
         noticeType: String = "temporary_closure",
         startDate: String = "2026-08-20",

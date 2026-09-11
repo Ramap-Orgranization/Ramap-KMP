@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -53,7 +54,8 @@ import ramap.shared.generated.resources.laduck_error_crying
 import ramap.shared.generated.resources.operating_notice_empty
 import ramap.shared.generated.resources.operating_notice_error_description
 import ramap.shared.generated.resources.operating_notice_error_title
-import ramap.shared.generated.resources.operating_notice_section
+import ramap.shared.generated.resources.operating_notice_scheduled_section
+import ramap.shared.generated.resources.operating_notice_today_section
 
 @Composable
 internal fun OperatingNoticeScreen(
@@ -69,6 +71,8 @@ internal fun OperatingNoticeScreen(
     val backEventState = rememberNavigationEventState<NavigationEventInfo>(NavigationEventInfo.None)
     val pullToRefreshState = rememberPullToRefreshState()
     var selectedNotice by remember { mutableStateOf<OperatingNotice?>(null) }
+    val todaySectionTitle = stringResource(Res.string.operating_notice_today_section)
+    val scheduledSectionTitle = stringResource(Res.string.operating_notice_scheduled_section)
 
     NavigationBackHandler(
         state = backEventState,
@@ -109,7 +113,7 @@ internal fun OperatingNoticeScreen(
                             modifier = Modifier.fillMaxSize(),
                         )
 
-                    uiState.operatingNotices.isEmpty() ->
+                    !uiState.hasOperatingNotices ->
                         ShopListEmptyContent(
                             title = stringResource(Res.string.operating_notice_empty),
                             modifier = Modifier.fillMaxSize(),
@@ -122,40 +126,18 @@ internal fun OperatingNoticeScreen(
                                 contentPadding = PaddingValues(vertical = 16.dp),
                                 verticalArrangement = Arrangement.spacedBy(10.dp),
                             ) {
-                                if (uiState.operatingNotices.isNotEmpty()) {
-                                    item {
-                                        OperatingNoticeSectionTitle(
-                                            title = stringResource(Res.string.operating_notice_section),
-                                            modifier = Modifier.padding(horizontal = 16.dp),
-                                        )
-                                    }
-                                    item {
-                                        FlowRow(
-                                            modifier =
-                                                Modifier
-                                                    .fillMaxWidth()
-                                                    .padding(horizontal = 5.dp),
-                                            horizontalArrangement =
-                                                Arrangement.spacedBy(
-                                                    10.dp,
-                                                    Alignment.CenterHorizontally,
-                                                ),
-                                            verticalArrangement = Arrangement.spacedBy(12.dp),
-                                        ) {
-                                            uiState.operatingNotices.forEach { notice ->
-                                                OngoingOperatingNoticeShop(
-                                                    notice = notice,
-                                                    onClick = { selectedNotice = notice },
-                                                )
-                                            }
-                                            repeat(10) {
-                                                Spacer(
-                                                    modifier = Modifier.width(72.dp).height(0.dp),
-                                                )
-                                            }
-                                        }
-                                    }
-                                }
+                                addNoticeSection(
+                                    listScope = this,
+                                    title = todaySectionTitle,
+                                    notices = uiState.todayOperatingNotices,
+                                    onNoticeClick = { selectedNotice = it },
+                                )
+                                addNoticeSection(
+                                    listScope = this,
+                                    title = scheduledSectionTitle,
+                                    notices = uiState.scheduledOperatingNotices,
+                                    onNoticeClick = { selectedNotice = it },
+                                )
                             }
                         }
                 }
@@ -187,6 +169,30 @@ internal fun OperatingNoticeScreen(
     }
 }
 
+private fun addNoticeSection(
+    listScope: LazyListScope,
+    title: String,
+    notices: List<OperatingNotice>,
+    onNoticeClick: (OperatingNotice) -> Unit,
+) {
+    if (notices.isEmpty()) return
+    listScope.item {
+        OperatingNoticeSectionTitle(title = title, modifier = Modifier.padding(horizontal = 16.dp))
+    }
+    listScope.item {
+        FlowRow(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 5.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterHorizontally),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            notices.forEach { notice ->
+                OngoingOperatingNoticeShop(notice = notice, onClick = { onNoticeClick(notice) })
+            }
+            repeat(10) { Spacer(modifier = Modifier.width(72.dp).height(0.dp)) }
+        }
+    }
+}
+
 @Preview
 @Composable
 private fun OperatingNoticeScreenPreview(
@@ -195,7 +201,7 @@ private fun OperatingNoticeScreenPreview(
 ) {
     RamapTheme {
         OperatingNoticeScreen(
-            uiState = OperatingNoticeUiState(operatingNotices = notices),
+            uiState = OperatingNoticeUiState(todayOperatingNotices = notices),
             onBack = {},
             onEventListClick = {},
             onRefresh = {},

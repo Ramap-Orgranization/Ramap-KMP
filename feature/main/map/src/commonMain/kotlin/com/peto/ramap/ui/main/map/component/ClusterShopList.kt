@@ -41,7 +41,7 @@ internal fun ClusterShopList(
     onShopClick: (RamenShop) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val currentDateTime = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
+    val currentDateTime = Clock.System.now().toLocalDateTime(TimeZone.of("Asia/Seoul"))
 
     Column(
         modifier = modifier.fillMaxWidth(),

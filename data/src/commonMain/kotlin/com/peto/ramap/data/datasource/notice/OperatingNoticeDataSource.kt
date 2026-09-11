@@ -8,6 +8,6 @@ internal interface OperatingNoticeDataSource {
 
     suspend fun fetchApprovedShopOperatingNotices(
         shopId: String,
-        today: LocalDate,
+        earliestDate: LocalDate,
     ): List<OperatingNoticeResponse>
 }

@@ -44,6 +44,29 @@ internal sealed interface AdminRegistrationIntent : Intent {
         val value: String,
     ) : AdminRegistrationIntent
 
+    data class OnDraftNoticeTimesChanged(
+        val startTime: String?,
+        val endTime: String?,
+    ) : AdminRegistrationIntent
+
+    data class OnDraftScheduleOverrideChanged(
+        val open: String?,
+        val close: String?,
+    ) : AdminRegistrationIntent
+
+    data class OnRegularSegmentSelected(
+        val open: String,
+        val close: String,
+    ) : AdminRegistrationIntent
+
+    data class OnDraftBreakTimeChanged(
+        val index: Int,
+        val start: String,
+        val end: String,
+    ) : AdminRegistrationIntent
+
+    data object OnDraftBreakTimesCleared : AdminRegistrationIntent
+
     data class OnEvidenceSelected(
         val evidence: AdminEvidence?,
     ) : AdminRegistrationIntent
@@ -58,6 +81,12 @@ internal sealed interface AdminRegistrationIntent : Intent {
     data object OnPreviewOrRegisterClicked : AdminRegistrationIntent
 
     data object OnManagedEventsRefreshed : AdminRegistrationIntent
+
+    data object OnDelayedOpeningsRefreshed : AdminRegistrationIntent
+
+    data class OnDelayedOpeningReleased(
+        val id: String,
+    ) : AdminRegistrationIntent
 
     data class OnManagedEventSelected(
         val eventId: String,

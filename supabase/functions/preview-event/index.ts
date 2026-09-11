@@ -41,6 +41,7 @@ type EventDraft = {
   notice_type: string | null;
   start_time: string | null;
   end_time: string | null;
+  schedule_override: { closed: boolean; open: string | null; close: string | null; close_next_day: boolean; label: string | null; break_times: Array<{ start: string; end: string }> } | null;
 };
 type EventParticipant = { name: string; instagram_url: string | null };
 type InstagramCaption = { cleanText: string; handle: string | null; isExact: boolean };
@@ -123,7 +124,7 @@ async function analyze(
         {
           role: "system",
           content: registrationType === "operating_notice"
-            ? "라멘 매장의 영업 변동 공지 초안을 추출하세요. 입력에 없는 사실은 절대 만들지 마세요. 관리자 피드백은 입력 사실을 더 정확히 반영하기 위한 수정 지시로만 사용하고, 새로운 사실을 추측하는 근거로 사용하지 마세요. notice_type은 operating_notice(일반 영업 변동), full_close(휴무), early_close(조기 마감), late_opening(오픈 지연) 중 하나만 선택하세요. title은 null로 반환하세요. description은 입력 캡션의 사실만 사용하고 홍보 문구로 바꾸지 마세요. 날짜는 YYYY-MM-DD, 시간은 HH:mm으로 변환합니다. 하루만 언급된 공지는 end_date를 start_date와 동일하게 반환하세요. 날짜·시간·유형이 확실하지 않으면 uncertainties에 한국어로 적습니다. 매장명은 계정명이 아니라 실제 매장명으로 추측하지 말고 null을 반환하세요."
+            ? "라멘 매장의 영업 변동 공지 초안을 추출하세요. 입력에 없는 사실은 절대 만들지 마세요. operating_notice면 schedule_override에 변경 영업 세그먼트만 넣고, early_close는 end_time이 필수이며, late_opening은 예정 시간이 없으면 start_time을 null로 두세요."
             : "라멘 매장의 이벤트 등록 초안을 추출하세요. 입력에 없는 사실은 절대 만들지 마세요. 관리자 피드백은 입력 사실을 더 정확히 반영하기 위한 수정 지시로만 사용하고, 새로운 사실을 추측하는 근거로 사용하지 마세요. title은 원문에 명시된 이벤트명이나 메뉴명만 짧게 적고, 원문에 없으면 null을 반환하세요. event_type은 collab, popup, limited_menu, summer_limited, new_menu, store_renewal 중 하나입니다. 다른 매장·브랜드·셰프 등이 이벤트에 함께 참여하거나 콜라보한다고 명시된 경우에만 collab을 선택하세요. participants에는 원문에서 이벤트 참여 또는 콜라보가 명시된 주체만 넣고, 각 항목에 name과 canonical Instagram 프로필 URL(알 수 없으면 null)을 넣으세요. 단순 재료·면·식자재 공급자나 납품업체는 참여자가 아닙니다. 날짜·회식·메뉴·수량·운영 시간을 추측하거나 추가하지 마세요. description은 입력 캡션의 사실만 사용하고 홍보 문구로 바꾸지 마세요. 매장명은 계정명이 아니라 실제 매장명으로 추측하지 말고 null을 반환하세요. 날짜는 YYYY-MM-DD로 변환합니다. 확실하지 않거나 누락된 필드는 uncertainties에 한국어로 적습니다.",
         },
         {
@@ -164,9 +165,10 @@ async function analyze(
               notice_type: { type: ["string", "null"] },
               start_time: { type: ["string", "null"] },
               end_time: { type: ["string", "null"] },
+              schedule_override: { type: ["object", "null"], additionalProperties: false, properties: { closed: { type: "boolean" }, open: { type: ["string", "null"] }, close: { type: ["string", "null"] }, close_next_day: { type: "boolean" }, label: { type: ["string", "null"] }, break_times: { type: "array", items: { type: "object", additionalProperties: false, properties: { start: { type: "string" }, end: { type: "string" } }, required: ["start", "end"] } } }, required: ["closed", "open", "close", "close_next_day", "label", "break_times"] },
               uncertainties: { type: "array", items: { type: "string" } },
             },
-            required: ["shop_name", "title", "start_date", "end_date", "description", "event_type", "participants", "notice_type", "start_time", "end_time", "uncertainties"],
+            required: ["shop_name", "title", "start_date", "end_date", "description", "event_type", "participants", "notice_type", "start_time", "end_time", "schedule_override", "uncertainties"],
           },
         },
       },
@@ -193,6 +195,7 @@ async function analyze(
     notice_type: text(draft.notice_type),
     start_time: validTime(draft.start_time) ? draft.start_time : null,
     end_time: validTime(draft.end_time) ? draft.end_time : null,
+    schedule_override: draft.notice_type === "operating_notice" ? draft.schedule_override : null,
     uncertainties: Array.isArray(draft.uncertainties) ? draft.uncertainties.filter((item) => typeof item === "string") : [],
   };
 }

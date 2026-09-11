@@ -1,9 +1,11 @@
 package com.peto.ramap.debug.admin.ui.registration.contract
 
 import com.peto.ramap.debug.admin.data.model.AdminCorrectionPreview
+import com.peto.ramap.debug.admin.data.model.AdminDelayedOpening
 import com.peto.ramap.debug.admin.data.model.AdminDraft
 import com.peto.ramap.debug.admin.data.model.AdminEvidence
 import com.peto.ramap.debug.admin.data.model.AdminManagedEvent
+import com.peto.ramap.debug.admin.data.model.AdminShopHours
 import com.peto.ramap.domain.model.event.ShopEventType
 import com.peto.ramap.domain.model.notice.OperatingNoticeType
 import com.peto.ramap.ui.base.State
@@ -14,6 +16,7 @@ internal data class AdminRegistrationUiState(
     val selectedNoticeType: OperatingNoticeType? = null,
     val selectedEventType: ShopEventType = ShopEventType.LIMITED_MENU,
     val shopName: String = "",
+    val selectedShopHours: AdminShopHours? = null,
     val sourceUrl: String = "",
     val feedback: String = "",
     val isImageOnly: Boolean = false,
@@ -36,5 +39,8 @@ internal data class AdminRegistrationUiState(
     val correctionRequest: String = "",
     val correctionPreview: AdminCorrectionPreview? = null,
     val isCorrecting: Boolean = false,
+    val delayedOpenings: List<AdminDelayedOpening> = emptyList(),
+    val delayedOpeningKoreaToday: String? = null,
+    val releasingDelayedOpeningId: String? = null,
     val selectedTab: AdminRegistrationTab = AdminRegistrationTab.EVENT_MANAGEMENT,
 ) : State

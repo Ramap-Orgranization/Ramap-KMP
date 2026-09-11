@@ -33,6 +33,8 @@ sealed interface MapIntent : Intent {
 
     data object OnOperatingNoticesRefreshRequested : MapIntent
 
+    data object OnStatusTimeRefreshed : MapIntent
+
     data class OnShopSelected(
         val shop: RamenShop,
         val shouldFocus: Boolean = true,

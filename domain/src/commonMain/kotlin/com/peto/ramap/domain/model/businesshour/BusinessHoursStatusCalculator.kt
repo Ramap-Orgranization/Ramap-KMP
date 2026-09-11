@@ -1,7 +1,6 @@
 package com.peto.ramap.domain.model.businesshour
 
 import kotlinx.datetime.DateTimeUnit
-import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.LocalTime
@@ -79,26 +78,26 @@ internal object BusinessHoursStatusCalculator {
         businessHours: BusinessHours,
         currentDateTime: LocalDateTime,
     ): String? {
-        val todayKey = dayKey(currentDateTime.date.dayOfWeek)
+        val today = BusinessDay.from(currentDateTime.date.dayOfWeek)
         if (isOpenDuring(
                 businessHours = businessHours,
-                dayKey = todayKey,
+                dayKey = today.key,
                 currentTime = currentDateTime.time,
                 isAfterMidnight = false,
             )
         ) {
-            return todayKey
+            return today.key
         }
 
-        val previousKey = previousDayKey(currentDateTime.date.dayOfWeek)
+        val previous = today.previous()
         if (isOpenDuring(
                 businessHours = businessHours,
-                dayKey = previousKey,
+                dayKey = previous.key,
                 currentTime = currentDateTime.time,
                 isAfterMidnight = true,
             )
         ) {
-            return previousKey
+            return previous.key
         }
 
         return null
@@ -111,20 +110,20 @@ internal object BusinessHoursStatusCalculator {
         businessHours: BusinessHours,
         currentDateTime: LocalDateTime,
     ): String? {
-        val todayKey = dayKey(currentDateTime.date.dayOfWeek)
+        val today = BusinessDay.from(currentDateTime.date.dayOfWeek)
         val todayBreakEnd =
             findBreakEndIfWithinHours(
                 businessHours = businessHours,
-                dayKey = todayKey,
+                dayKey = today.key,
                 currentTime = currentDateTime.time,
                 isAfterMidnight = false,
             )
         if (todayBreakEnd != null) return todayBreakEnd
 
-        val previousKey = previousDayKey(currentDateTime.date.dayOfWeek)
+        val previous = today.previous()
         return findBreakEndIfWithinHours(
             businessHours = businessHours,
-            dayKey = previousKey,
+            dayKey = previous.key,
             currentTime = currentDateTime.time,
             isAfterMidnight = true,
         )
@@ -175,7 +174,7 @@ internal object BusinessHoursStatusCalculator {
         dayOffset: Int,
         currentTime: LocalTime,
     ): String? {
-        val day = businessHours.weekly[dayKey(date.dayOfWeek)] ?: return null
+        val day = businessHours.weekly[BusinessDay.from(date.dayOfWeek).key] ?: return null
         if (day.closed) return null
 
         val openTime = day.open ?: return null
@@ -271,32 +270,4 @@ internal object BusinessHoursStatusCalculator {
      * 형식이 올바르지 않으면 null을 반환한다.
      */
     private fun parseTime(value: String): LocalTime? = runCatching { LocalTime.parse(value) }.getOrNull()
-
-    /**
-     * [DayOfWeek]를 영업시간 데이터의 요일 키로 변환한다.
-     */
-    private fun dayKey(dayOfWeek: DayOfWeek): String =
-        when (dayOfWeek) {
-            DayOfWeek.MONDAY -> "mon"
-            DayOfWeek.TUESDAY -> "tue"
-            DayOfWeek.WEDNESDAY -> "wed"
-            DayOfWeek.THURSDAY -> "thu"
-            DayOfWeek.FRIDAY -> "fri"
-            DayOfWeek.SATURDAY -> "sat"
-            DayOfWeek.SUNDAY -> "sun"
-        }
-
-    /**
-     * 주어진 요일의 전날을 영업시간 데이터의 요일 키로 변환한다.
-     */
-    private fun previousDayKey(dayOfWeek: DayOfWeek): String =
-        when (dayOfWeek) {
-            DayOfWeek.MONDAY -> "sun"
-            DayOfWeek.TUESDAY -> "mon"
-            DayOfWeek.WEDNESDAY -> "tue"
-            DayOfWeek.THURSDAY -> "wed"
-            DayOfWeek.FRIDAY -> "thu"
-            DayOfWeek.SATURDAY -> "fri"
-            DayOfWeek.SUNDAY -> "sat"
-        }
 }

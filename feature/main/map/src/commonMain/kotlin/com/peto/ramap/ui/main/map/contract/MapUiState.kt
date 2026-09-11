@@ -15,11 +15,13 @@ import com.peto.ramap.ui.main.map.model.CameraPosition
 import com.peto.ramap.ui.main.map.model.location.LocationFocusStatus
 import com.peto.ramap.ui.main.map.model.search.SearchResultGuide
 import com.peto.ramap.ui.main.map.model.search.SearchUiModel
+import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import kotlin.time.Clock
 
 data class MapUiState(
+    val currentDateTime: LocalDateTime = Clock.System.now().toLocalDateTime(TimeZone.of("Asia/Seoul")),
     val shopDetailState: ShopDetailSheetUiState = ShopDetailSheetUiState.Closed,
     /** 지도 화면의 작업별 로딩 카운트. */
     override val loadState: LoadState = LoadState(),
@@ -156,7 +158,6 @@ data class MapUiState(
      */
     val markerShops: RamenShops
         get() {
-            val currentDateTime = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
             val selectedMarkerShop =
                 selectedShop
                     ?.takeIf { shop ->
@@ -243,7 +244,7 @@ data class MapUiState(
                 shops.filterNotHidden(hiddenShopIds)
             }.filterByOpenStatus(
                 filters,
-                Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()),
+                currentDateTime,
                 operatingNotices,
             )
 
@@ -258,7 +259,7 @@ data class MapUiState(
                 search.results
             }.filterByOpenStatus(
                 filters,
-                Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()),
+                currentDateTime,
                 operatingNotices,
             )
 
