@@ -40,6 +40,7 @@ internal data class AdminRegistrationUiState(
     val correctionPreview: AdminCorrectionPreview? = null,
     val isCorrecting: Boolean = false,
     val delayedOpenings: List<AdminDelayedOpening> = emptyList(),
+    val delayedOpeningKoreaToday: String? = null,
     val releasingDelayedOpeningId: String? = null,
     val selectedTab: AdminRegistrationTab = AdminRegistrationTab.EVENT_MANAGEMENT,
 ) : State

@@ -66,6 +66,10 @@
     <string name="admin_delayed_opening_release">영업 시작 처리</string>
     <string name="admin_delayed_opening_load_failure">오픈 지연 목록을 불러오지 못했어요.</string>
     <string name="admin_delayed_opening_release_failure">영업 시작 처리에 실패했어요. 다시 시도해 주세요.</string>
+    <string name="admin_delayed_opening_today">오늘 적용분</string>
+    <string name="admin_delayed_opening_today_empty">오늘 적용할 오픈 지연이 없습니다.</string>
+    <string name="admin_delayed_opening_scheduled">예정분</string>
+    <string name="admin_delayed_opening_scheduled_empty">예정된 오픈 지연이 없습니다.</string>
     <string name="admin_notice_override_open">변경 오픈 시간</string>
     <string name="admin_notice_override_close">변경 마감 시간</string>
     <string name="admin_notice_planned_open">예정 오픈 시간 (미정이면 비워 두세요)</string>

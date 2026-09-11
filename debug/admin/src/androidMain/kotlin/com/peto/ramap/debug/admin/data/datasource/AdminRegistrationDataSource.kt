@@ -2,6 +2,7 @@ package com.peto.ramap.debug.admin.data.datasource
 
 import com.peto.ramap.debug.admin.data.model.AdminCorrectionPreview
 import com.peto.ramap.debug.admin.data.model.AdminDelayedOpening
+import com.peto.ramap.debug.admin.data.model.AdminDelayedOpenings
 import com.peto.ramap.debug.admin.data.model.AdminDraft
 import com.peto.ramap.debug.admin.data.model.AdminEvidence
 import com.peto.ramap.debug.admin.data.model.AdminManagedEvent
@@ -131,11 +132,11 @@ internal class AdminRegistrationDataSource(
 
     suspend fun fetchManagedEvents(): List<AdminManagedEvent> = client.functions.invoke(EVENT_STATUS_FUNCTION, EventStatusRequest(action = "list")).body()
 
-    suspend fun fetchDelayedOpenings(): List<AdminDelayedOpening> =
+    suspend fun fetchDelayedOpenings(): AdminDelayedOpenings =
         client.functions
             .invoke(OPERATING_NOTICE_FUNCTION, AdminOperatingNoticeRequest(action = "list"))
             .body<DelayedOpeningResponse>()
-            .notices
+            .let { AdminDelayedOpenings(it.koreaToday, it.notices) }
 
     suspend fun releaseDelayedOpening(id: String) {
         client.functions.invoke(OPERATING_NOTICE_FUNCTION, AdminOperatingNoticeRequest(action = "release", id = id))
@@ -225,5 +226,6 @@ internal class AdminRegistrationDataSource(
 
 @kotlinx.serialization.Serializable
 private data class DelayedOpeningResponse(
+    @kotlinx.serialization.SerialName("korea_today") val koreaToday: String,
     val notices: List<AdminDelayedOpening> = emptyList(),
 )

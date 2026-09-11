@@ -131,6 +131,7 @@ internal fun AdminRegistrationScreen(
                 AdminFieldSection(label = stringResource(R.string.admin_delayed_opening_title)) {
                     AdminDelayedOpeningManager(
                         notices = uiState.delayedOpenings,
+                        koreaToday = uiState.delayedOpeningKoreaToday,
                         releasingId = uiState.releasingDelayedOpeningId,
                         onRefresh = onDelayedOpeningsRefresh,
                         onRelease = onDelayedOpeningReleased,

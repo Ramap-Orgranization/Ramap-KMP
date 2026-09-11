@@ -284,7 +284,12 @@ internal class AdminRegistrationViewModel(
         launchTask(taskKey = DELAYED_OPENINGS_TASK_KEY, policy = TaskPolicy.CancelPrevious) {
             try {
                 val delayedOpenings = dataSource.fetchDelayedOpenings()
-                reduce { copy(delayedOpenings = delayedOpenings) }
+                reduce {
+                    copy(
+                        delayedOpenings = delayedOpenings.notices,
+                        delayedOpeningKoreaToday = delayedOpenings.koreaToday,
+                    )
+                }
             } catch (_: Throwable) {
                 showToast(Res.string.admin_delayed_opening_load_failure)
             }
