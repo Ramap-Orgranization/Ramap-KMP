@@ -47,12 +47,15 @@ import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopNotificationToggled
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopReportSubmitted
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopSelected
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopShareClicked
+import com.peto.ramap.ui.main.map.contract.MapIntent.OnStatusTimeRefreshed
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnViewportLoadRetry
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.current_location_timeout_message
+import kotlin.time.Duration.Companion.milliseconds
 
 @Composable
 fun MapRoute(
@@ -76,6 +79,15 @@ fun MapRoute(
 
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
         coroutineScope.launch {
+            viewModel.dispatch(OnStatusTimeRefreshed)
+            viewModel.dispatch(OnOperatingNoticesRefreshRequested)
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(OPERATING_NOTICE_REFRESH_MILLIS.milliseconds)
+            viewModel.dispatch(OnStatusTimeRefreshed)
             viewModel.dispatch(OnOperatingNoticesRefreshRequested)
         }
     }
@@ -165,3 +177,5 @@ fun MapRoute(
         )
     }
 }
+
+private const val OPERATING_NOTICE_REFRESH_MILLIS = 60_000L

@@ -63,6 +63,7 @@ import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopNotificationToggled
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopReportSubmitted
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopSelected
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopShareClicked
+import com.peto.ramap.ui.main.map.contract.MapIntent.OnStatusTimeRefreshed
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnViewportLoadRetry
 import com.peto.ramap.ui.main.map.contract.MapLoadKey
 import com.peto.ramap.ui.main.map.contract.MapSideEffect
@@ -190,6 +191,8 @@ class MapViewModel(
             OnMapTabExited -> dismissBottomSheet()
 
             OnOperatingNoticesRefreshRequested -> loadOperatingNotices()
+
+            OnStatusTimeRefreshed -> reduce { copy(currentDateTime = Clock.System.now().toLocalDateTime(TimeZone.of("Asia/Seoul"))) }
 
             else -> return false
         }
@@ -901,7 +904,7 @@ class MapViewModel(
                                     filter,
                                     Clock.System
                                         .now()
-                                        .toLocalDateTime(TimeZone.currentSystemDefault()),
+                                        .toLocalDateTime(TimeZone.of("Asia/Seoul")),
                                     currentState.operatingNotices,
                                 ).containsKey(shop.id)
                         } ?: true
