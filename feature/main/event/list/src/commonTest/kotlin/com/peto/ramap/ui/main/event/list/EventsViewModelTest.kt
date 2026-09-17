@@ -33,6 +33,30 @@ import kotlin.test.assertTrue
 @OptIn(ExperimentalCoroutinesApi::class)
 class EventsViewModelTest {
     @Test
+    fun `이벤트를 선택하면 이벤트 유형을 함께 기록한다`() =
+        coroutinesTest {
+            val analyticsTracker = FakeAnalyticsTracker()
+            val viewModel =
+                EventsViewModel(
+                    FakeRamenShopRepository(),
+                    FakeShopReportRepository(),
+                    EventsAnalytics(analyticsTracker),
+                )
+
+            viewModel.dispatch(EventsIntent.OnEventClicked(event()))
+            runCurrent()
+
+            assertEquals(
+                mapOf(
+                    "content_type" to "event",
+                    "event_id" to "event",
+                    "event_status" to "upcoming",
+                ),
+                analyticsTracker.events.single().params(),
+            )
+        }
+
+    @Test
     fun `스토리 캡처만 있으면 새소식 제보를 제출할 수 있다`() {
         val state =
             EventsUiState(

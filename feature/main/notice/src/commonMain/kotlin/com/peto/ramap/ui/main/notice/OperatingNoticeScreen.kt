@@ -65,6 +65,7 @@ internal fun OperatingNoticeScreen(
     onRefresh: () -> Unit,
     onRetry: () -> Unit,
     onShopClick: (String) -> Unit,
+    onNoticeClick: (OperatingNotice) -> Unit,
     isSourceUrlSupported: (String) -> Boolean,
     onSourceClick: (String) -> Unit,
 ) {
@@ -130,13 +131,19 @@ internal fun OperatingNoticeScreen(
                                     listScope = this,
                                     title = todaySectionTitle,
                                     notices = uiState.todayOperatingNotices,
-                                    onNoticeClick = { selectedNotice = it },
+                                    onNoticeClick = {
+                                        onNoticeClick(it)
+                                        selectedNotice = it
+                                    },
                                 )
                                 addNoticeSection(
                                     listScope = this,
                                     title = scheduledSectionTitle,
                                     notices = uiState.scheduledOperatingNotices,
-                                    onNoticeClick = { selectedNotice = it },
+                                    onNoticeClick = {
+                                        onNoticeClick(it)
+                                        selectedNotice = it
+                                    },
                                 )
                             }
                         }
@@ -207,6 +214,7 @@ private fun OperatingNoticeScreenPreview(
             onRefresh = {},
             onRetry = {},
             onShopClick = {},
+            onNoticeClick = {},
             isSourceUrlSupported = { true },
             onSourceClick = {},
         )

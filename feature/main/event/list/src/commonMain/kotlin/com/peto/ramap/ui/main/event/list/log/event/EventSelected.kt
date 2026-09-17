@@ -10,6 +10,7 @@ internal data class EventSelected(
 
     override fun params(): Map<String, Any> =
         mapOf(
+            "content_type" to "event",
             "event_id" to eventId,
             "event_status" to status.value,
         )

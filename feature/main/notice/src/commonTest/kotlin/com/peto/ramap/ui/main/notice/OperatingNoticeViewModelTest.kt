@@ -7,10 +7,12 @@ import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.notice.OperatingNotice
 import com.peto.ramap.domain.model.notice.OperatingNoticeType
+import com.peto.ramap.fake.FakeAnalyticsTracker
 import com.peto.ramap.fake.FakeOperatingNoticeRepository
 import com.peto.ramap.fixture.ramenShopFixture
 import com.peto.ramap.ui.main.notice.contract.OperatingNoticeIntent
 import com.peto.ramap.ui.main.notice.contract.OperatingNoticeSideEffect
+import com.peto.ramap.ui.main.notice.log.OperatingNoticeAnalytics
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
@@ -30,11 +32,35 @@ import kotlin.time.Clock
 @OptIn(ExperimentalCoroutinesApi::class)
 class OperatingNoticeViewModelTest {
     @Test
+    fun `영업 공지를 선택하면 유형과 공지 식별자를 기록한다`() =
+        coroutinesTest {
+            val notice = operatingNotice()
+            val analyticsTracker = FakeAnalyticsTracker()
+            val viewModel =
+                OperatingNoticeViewModel(
+                    FakeOperatingNoticeRepository(),
+                    OperatingNoticeAnalytics(analyticsTracker),
+                )
+
+            viewModel.dispatch(OperatingNoticeIntent.OnNoticeClicked(notice))
+            runCurrent()
+
+            assertEquals("operating_notice_select", analyticsTracker.events.single().name)
+            assertEquals(
+                mapOf(
+                    "content_type" to "operating_notice",
+                    "operating_notice_id" to notice.id,
+                ),
+                analyticsTracker.events.single().params(),
+            )
+        }
+
+    @Test
     fun `영업 공지를 불러오면 목록을 표시한다`() =
         coroutinesTest {
             val notice = operatingNotice()
             val repository = FakeOperatingNoticeRepository(notices = listOf(notice))
-            val viewModel = OperatingNoticeViewModel(repository)
+            val viewModel = operatingNoticeViewModel(repository)
 
             runCurrent()
 
@@ -48,7 +74,7 @@ class OperatingNoticeViewModelTest {
         coroutinesTest {
             val notice = operatingNotice()
             val repository = FakeOperatingNoticeRepository(notices = listOf(notice))
-            val viewModel = OperatingNoticeViewModel(repository)
+            val viewModel = operatingNoticeViewModel(repository)
             runCurrent()
             repository.delayMillis = 1_000
 
@@ -70,7 +96,7 @@ class OperatingNoticeViewModelTest {
         coroutinesTest {
             val notice = operatingNotice()
             val repository = FakeOperatingNoticeRepository(notices = listOf(notice))
-            val viewModel = OperatingNoticeViewModel(repository)
+            val viewModel = operatingNoticeViewModel(repository)
             runCurrent()
             repository.error = RamapError.Unknown(IllegalStateException("failure"))
 
@@ -98,7 +124,7 @@ class OperatingNoticeViewModelTest {
             val today = Clock.System.todayIn(TimeZone.of("Asia/Seoul"))
             val current = operatingNotice(id = "today", startDate = today, endDate = today)
             val scheduled = operatingNotice(id = "future", startDate = today.plus(1, DateTimeUnit.DAY), endDate = today.plus(1, DateTimeUnit.DAY))
-            val viewModel = OperatingNoticeViewModel(FakeOperatingNoticeRepository(notices = listOf(current, scheduled)))
+            val viewModel = operatingNoticeViewModel(FakeOperatingNoticeRepository(notices = listOf(current, scheduled)))
 
             runCurrent()
 
@@ -121,4 +147,10 @@ class OperatingNoticeViewModelTest {
         endTime = null,
         sourceUrl = null,
     )
+
+    private fun operatingNoticeViewModel(repository: FakeOperatingNoticeRepository) =
+        OperatingNoticeViewModel(
+            repository,
+            OperatingNoticeAnalytics(FakeAnalyticsTracker()),
+        )
 }

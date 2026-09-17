@@ -34,6 +34,7 @@ fun OperatingNoticeRoute(
         onRefresh = { viewModel.dispatch(OperatingNoticeIntent.OnRefreshed) },
         onRetry = { viewModel.dispatch(OperatingNoticeIntent.OnRetried) },
         onShopClick = onShopClick,
+        onNoticeClick = { viewModel.dispatch(OperatingNoticeIntent.OnNoticeClicked(it)) },
         isSourceUrlSupported = ExternalUriOpener::isSupportedWebUri,
         onSourceClick = ExternalUriOpener::open,
     )

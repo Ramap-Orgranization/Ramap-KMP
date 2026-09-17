@@ -10,6 +10,7 @@ import com.peto.ramap.ui.main.notice.contract.OperatingNoticeIntent
 import com.peto.ramap.ui.main.notice.contract.OperatingNoticeLoadKey
 import com.peto.ramap.ui.main.notice.contract.OperatingNoticeSideEffect
 import com.peto.ramap.ui.main.notice.contract.OperatingNoticeUiState
+import com.peto.ramap.ui.main.notice.log.OperatingNoticeAnalytics
 import com.peto.ramap.ui.task.TaskPolicy
 import kotlinx.coroutines.launch
 import kotlinx.datetime.TimeZone
@@ -21,6 +22,7 @@ import kotlin.time.Clock
 
 class OperatingNoticeViewModel(
     private val operatingNoticeRepository: OperatingNoticeRepository,
+    private val operatingNoticeAnalytics: OperatingNoticeAnalytics,
 ) : BaseViewModel<OperatingNoticeUiState, OperatingNoticeIntent, OperatingNoticeSideEffect>(
         OperatingNoticeUiState(),
     ) {
@@ -30,6 +32,7 @@ class OperatingNoticeViewModel(
 
     override suspend fun handleIntent(intent: OperatingNoticeIntent) {
         when (intent) {
+            is OperatingNoticeIntent.OnNoticeClicked -> operatingNoticeAnalytics.logNoticeSelected(intent.notice)
             OperatingNoticeIntent.OnRefreshed -> refreshOperatingNotices()
             OperatingNoticeIntent.OnRetried -> loadOperatingNotices()
         }
