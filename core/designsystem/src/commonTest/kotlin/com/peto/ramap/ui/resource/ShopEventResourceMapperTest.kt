@@ -2,6 +2,7 @@ package com.peto.ramap.ui.resource
 
 import com.peto.ramap.designsystem.resource.UiText
 import com.peto.ramap.designsystem.resource.event.ShopEventResourceMapper
+import com.peto.ramap.domain.model.event.EventVenue
 import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.model.event.ShopEventType
 import com.peto.ramap.domain.model.shop.Location
@@ -30,7 +31,9 @@ import ramap.shared.generated.resources.event_type_store_renewal
 import ramap.shared.generated.resources.event_type_summer_limited
 import ramap.shared.generated.resources.event_venue
 import ramap.shared.generated.resources.shop_event_notice_collab_participant_today
-import ramap.shared.generated.resources.shop_event_notice_collab_upcoming_with_shop
+import ramap.shared.generated.resources.shop_event_notice_collab_participant_today_with_final_consonant
+import ramap.shared.generated.resources.shop_event_notice_collab_participant_upcoming_without_particle
+import ramap.shared.generated.resources.shop_event_notice_collab_upcoming_with_shop_with_final_consonant
 import ramap.shared.generated.resources.shop_event_notice_limited_menu_today
 import ramap.shared.generated.resources.shop_event_notice_limited_menu_upcoming
 import ramap.shared.generated.resources.shop_event_notice_new_menu_today
@@ -160,7 +163,7 @@ class ShopEventResourceMapperTest {
             ),
         )
         assertEquals(
-            UiText(Res.string.shop_event_notice_collab_participant_today, listOf(VENUE_NAME)),
+            UiText(Res.string.shop_event_notice_collab_participant_today_with_final_consonant, listOf(VENUE_NAME)),
             ShopEventResourceMapper.notice(
                 event(type = ShopEventType.COLLAB, isToday = true, isVenue = false),
             ),
@@ -213,8 +216,41 @@ class ShopEventResourceMapperTest {
             )
 
         assertEquals(
-            UiText(Res.string.shop_event_notice_collab_upcoming_with_shop, listOf(PARTNER_NAME)),
+            UiText(
+                Res.string.shop_event_notice_collab_upcoming_with_shop_with_final_consonant,
+                listOf(PARTNER_NAME),
+            ),
             notice,
+        )
+    }
+
+    @Test
+    fun `콜라보 안내는 매장명 끝 글자에 맞는 조사를 선택한다`() {
+        assertEquals(
+            UiText(
+                Res.string.shop_event_notice_collab_upcoming_with_shop_with_final_consonant,
+                listOf("헷츠 전포점"),
+            ),
+            ShopEventResourceMapper.notice(
+                event(
+                    type = ShopEventType.COLLAB,
+                    collaboratorShopId = "partner-id",
+                    collaboratorName = "헷츠 전포점",
+                    collaborationPartnerCount = 1,
+                ),
+            ),
+        )
+        assertEquals(
+            UiText(Res.string.shop_event_notice_collab_participant_today, listOf("토리하나")),
+            ShopEventResourceMapper.notice(
+                event(type = ShopEventType.COLLAB, isToday = true, isVenue = false, venueName = "토리하나"),
+            ),
+        )
+        assertEquals(
+            UiText(Res.string.shop_event_notice_collab_participant_upcoming_without_particle, listOf("RAMEN LAB")),
+            ShopEventResourceMapper.notice(
+                event(type = ShopEventType.COLLAB, isVenue = false, venueName = "RAMEN LAB"),
+            ),
         )
     }
 
@@ -282,6 +318,7 @@ class ShopEventResourceMapperTest {
         endDate: String? = "2026-07-23",
         isToday: Boolean = false,
         isVenue: Boolean = true,
+        venueName: String = VENUE_NAME,
         collaboratorShopId: String? = null,
         collaboratorName: String? = null,
         activeEventCount: Int = 1,
@@ -299,7 +336,7 @@ class ShopEventResourceMapperTest {
         sourceUrl = "https://example.com/event",
         isToday = isToday,
         isVenue = isVenue,
-        venueShop = shop("venue-id", VENUE_NAME),
+        venue = EventVenue.Registered(shop("venue-id", venueName)),
         collaboratorShops =
             collaboratorShopId
                 ?.let { listOf(shop(it, collaboratorName.orEmpty())) }

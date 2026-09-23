@@ -17,9 +17,9 @@ internal fun mapEventsToUiState(state: EventsUiState): EventsUiState {
     val regularOngoingEvents = ongoingEvents.filterNot { it.type == ShopEventType.SUMMER_LIMITED }
 
     return state.copy(
-        summerLimitedEvents = ShopEvents.groupByVenue(summerLimitedEvents),
-        ongoingEvents = ShopEvents.groupByVenue(regularOngoingEvents),
-        upcomingEvents = ShopEvents.groupByVenue(upcomingEvents),
+        summerLimitedEvents = ShopEvents.groupByEventListShop(summerLimitedEvents),
+        ongoingEvents = ShopEvents.groupByEventListShop(regularOngoingEvents),
+        upcomingEvents = ShopEvents.groupByEventListShop(upcomingEvents),
     )
 }
 

@@ -5,6 +5,7 @@ import com.peto.ramap.debug.admin.data.model.AdminDelayedOpening
 import com.peto.ramap.debug.admin.data.model.AdminDelayedOpenings
 import com.peto.ramap.debug.admin.data.model.AdminDraft
 import com.peto.ramap.debug.admin.data.model.AdminEvidence
+import com.peto.ramap.debug.admin.data.model.AdminExternalVenue
 import com.peto.ramap.debug.admin.data.model.AdminManagedEvent
 import com.peto.ramap.debug.admin.data.model.AdminShopHours
 import com.peto.ramap.debug.admin.data.model.AdminShopName
@@ -35,6 +36,13 @@ internal class AdminRegistrationDataSource(
             .filter(String::isNotBlank)
             .distinct()
             .sorted()
+
+    suspend fun fetchExternalVenues(): List<AdminExternalVenue> =
+        client
+            .from(EXTERNAL_VENUES_TABLE)
+            .select(columns = Columns.list("id", "name", "address", "instagram_url", "naver_map_url", "kakao_map_url"))
+            .decodeList<AdminExternalVenue>()
+            .sortedWith(compareBy(AdminExternalVenue::name, AdminExternalVenue::address))
 
     suspend fun fetchShopHours(shopName: String): AdminShopHours? =
         client
@@ -82,6 +90,12 @@ internal class AdminRegistrationDataSource(
                 shopName = draft.shopName.orEmpty(),
                 title = draft.title.orEmpty(),
                 eventType = eventType.name.lowercase(),
+                venueName = draft.venueName,
+                venueAddress = draft.venueAddress,
+                externalVenueId = draft.externalVenueId,
+                venueInstagramUrl = draft.venueInstagramUrl,
+                venueNaverMapUrl = draft.venueNaverMapUrl,
+                venueKakaoMapUrl = draft.venueKakaoMapUrl,
                 startDate = draft.startDate.orEmpty(),
                 endDate = draft.endDate,
                 description = draft.description.orEmpty(),
@@ -214,6 +228,7 @@ internal class AdminRegistrationDataSource(
 
     private companion object {
         const val SHOPS_TABLE = "ramen_shops"
+        const val EXTERNAL_VENUES_TABLE = "external_venues"
         const val SHOP_NAME_COLUMN = "name"
         const val EVIDENCE_BUCKET = "news-report-evidence"
         const val PREVIEW_FUNCTION = "preview-event"

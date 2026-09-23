@@ -1,4 +1,5 @@
 import { createServiceClient } from "../_shared/event-notifications.ts";
+import { normalizeMapUrl } from "../_shared/event-venue-url.ts";
 
 const OPENAI_URL = "https://api.openai.com/v1/chat/completions";
 const EVIDENCE_BUCKET = "news-report-evidence";
@@ -14,6 +15,7 @@ const EVENT_EXTRACTION_PROMPT =
   "store_renewal은 end_date를 null로 반환하세요. 그 외 날짜가 불명확하거나 누락되면 null과 한국어 uncertainties를 반환하세요. " +
   "event_type은 collab, popup, limited_menu, summer_limited, new_menu, store_renewal 중 하나를 반환하세요. 명시적으로 다른 매장·브랜드·셰프 등과 함께하는 콜라보 문맥일 때만 collab을 선택하세요. " +
   "participants에는 원문에서 이벤트 참여 또는 콜라보가 명시된 주체만 반환하세요. 각 항목은 name과 canonical Instagram 프로필 URL(알 수 없으면 null)을 가지며, 단순 재료·면·식자재 공급자나 납품업체는 참여자로 반환하지 마세요. " +
+  "venue_name에는 행사가 실제로 열리는 장소만 반환하세요. 등록 매장과 같은 장소면 null로 반환하고, 외부 장소면 venue_address에는 명시된 주소만 반환하세요. venue_instagram_url에 명확히 연결된 canonical Instagram 프로필 URL만 반환하세요. venue_naver_map_url과 venue_kakao_map_url은 각각 그 외부 장소로 명확히 연결된 지도 URL일 때만 반환하세요. 게시물·릴 URL, 불명확한 계정, 또는 근거 없는 주소·지도 URL은 null로 반환하세요. " +
   "매장명은 계정명으로 추측하지 말고 실제 매장명이 원문에 명시된 경우에만 반환하세요. " +
   "관리자 피드백은 원문 사실을 더 정확히 반영하기 위한 수정 지시로만 사용하고 새로운 사실의 근거로 사용하지 마세요.";
 const OPERATING_NOTICE_EXTRACTION_PROMPT =
@@ -36,6 +38,11 @@ type EventDraft = {
   end_date: string | null;
   description: string | null;
   event_type: string | null;
+  venue_name: string | null;
+  venue_address: string | null;
+  venue_instagram_url: string | null;
+  venue_naver_map_url: string | null;
+  venue_kakao_map_url: string | null;
   participants: EventParticipant[];
   uncertainties: string[];
   notice_type: string | null;
@@ -79,6 +86,15 @@ Deno.serve(async (request) => {
     } else if (!isSupportedEventType(draft.event_type)) {
       draft.event_type = "limited_menu";
       draft.uncertainties.push("이벤트 유형을 확인하지 못해 한정 메뉴로 분류했습니다.");
+    }
+    draft.venue_instagram_url = normalizeInstagramProfileUrl(draft.venue_instagram_url);
+    draft.venue_naver_map_url = normalizeMapUrl(draft.venue_naver_map_url, "naver");
+    draft.venue_kakao_map_url = normalizeMapUrl(draft.venue_kakao_map_url, "kakao");
+    if (!draft.venue_name) {
+      draft.venue_address = null;
+      draft.venue_instagram_url = null;
+      draft.venue_naver_map_url = null;
+      draft.venue_kakao_map_url = null;
     }
     const resolvedShop = await resolveShop(supabase, caption?.handle, [requestedShopName, draft.shop_name]);
     if (resolvedShop) {
@@ -150,6 +166,7 @@ async function analyze(
               end_date: { type: ["string", "null"] },
               description: { type: ["string", "null"] },
               event_type: { type: ["string", "null"] },
+              venue_name: { type: ["string", "null"] }, venue_address: { type: ["string", "null"] }, venue_instagram_url: { type: ["string", "null"] }, venue_naver_map_url: { type: ["string", "null"] }, venue_kakao_map_url: { type: ["string", "null"] },
               participants: {
                 type: "array",
                 items: {
@@ -168,7 +185,7 @@ async function analyze(
               schedule_override: { type: ["object", "null"], additionalProperties: false, properties: { closed: { type: "boolean" }, open: { type: ["string", "null"] }, close: { type: ["string", "null"] }, close_next_day: { type: "boolean" }, label: { type: ["string", "null"] }, break_times: { type: "array", items: { type: "object", additionalProperties: false, properties: { start: { type: "string" }, end: { type: "string" } }, required: ["start", "end"] } } }, required: ["closed", "open", "close", "close_next_day", "label", "break_times"] },
               uncertainties: { type: "array", items: { type: "string" } },
             },
-            required: ["shop_name", "title", "start_date", "end_date", "description", "event_type", "participants", "notice_type", "start_time", "end_time", "schedule_override", "uncertainties"],
+            required: ["shop_name", "title", "start_date", "end_date", "description", "event_type", "venue_name", "venue_address", "venue_instagram_url", "venue_naver_map_url", "venue_kakao_map_url", "participants", "notice_type", "start_time", "end_time", "schedule_override", "uncertainties"],
           },
         },
       },
@@ -186,6 +203,7 @@ async function analyze(
     end_date: validDate(draft.end_date) ? draft.end_date : null,
     description: text(draft.description),
     event_type: text(draft.event_type),
+    venue_name: text(draft.venue_name), venue_address: text(draft.venue_address), venue_instagram_url: normalizeInstagramProfileUrl(text(draft.venue_instagram_url)), venue_naver_map_url: normalizeMapUrl(draft.venue_naver_map_url, "naver"), venue_kakao_map_url: normalizeMapUrl(draft.venue_kakao_map_url, "kakao"),
     participants: Array.isArray(draft.participants)
       ? draft.participants.flatMap((participant) => {
         const name = text(participant?.name);

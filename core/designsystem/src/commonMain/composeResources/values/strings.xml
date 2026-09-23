@@ -59,6 +59,8 @@
     <string name="shop_event_notice_collab_today">오늘 진행하는 콜라보가 있어요 ></string>
     <string name="shop_event_notice_collab_upcoming">진행 예정인 콜라보가 있어요 ></string>
     <string name="shop_event_notice_collab_upcoming_with_shop">%1$s와 함께하는 콜라보가 예정되어 있어요 ></string>
+    <string name="shop_event_notice_collab_upcoming_with_shop_with_final_consonant">%1$s과 함께하는 콜라보가 예정되어 있어요 ></string>
+    <string name="shop_event_notice_collab_upcoming_with_shop_without_particle">%1$s 콜라보가 예정되어 있어요 ></string>
     <string name="shop_event_notice_popup_today">오늘 진행하는 팝업이 있어요 ></string>
     <string name="shop_event_notice_popup_upcoming">진행 예정인 팝업이 있어요 ></string>
     <string name="shop_event_notice_limited_menu_today">오늘 진행하는 한정 메뉴가 있어요 ></string>
@@ -68,7 +70,11 @@
     <string name="shop_event_notice_participant_today">오늘 %1$s에서 진행하는 이벤트에 참여해요 ></string>
     <string name="shop_event_notice_participant_upcoming">%1$s에서 진행 예정인 이벤트에 참여해요 ></string>
     <string name="shop_event_notice_collab_participant_today">%1$s와 함께하는 콜라보가 오늘 진행돼요 ></string>
+    <string name="shop_event_notice_collab_participant_today_with_final_consonant">%1$s과 함께하는 콜라보가 오늘 진행돼요 ></string>
+    <string name="shop_event_notice_collab_participant_today_without_particle">%1$s 콜라보가 오늘 진행돼요 ></string>
     <string name="shop_event_notice_collab_participant_upcoming">%1$s와 함께하는 콜라보가 예정되어 있어요 ></string>
+    <string name="shop_event_notice_collab_participant_upcoming_with_final_consonant">%1$s과 함께하는 콜라보가 예정되어 있어요 ></string>
+    <string name="shop_event_notice_collab_participant_upcoming_without_particle">%1$s 콜라보가 예정되어 있어요 ></string>
 
     <!-- 이벤트 상세 화면 -->
     <string name="event_detail_title">이벤트 상세</string>

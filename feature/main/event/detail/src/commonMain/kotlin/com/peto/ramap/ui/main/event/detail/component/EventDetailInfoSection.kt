@@ -27,8 +27,8 @@ import com.peto.ramap.designsystem.image.RemoteShopImage
 import com.peto.ramap.designsystem.resource.event.ShopEventResourceMapper
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.designsystem.text.eventDateText
+import com.peto.ramap.domain.model.event.EventVenue
 import com.peto.ramap.domain.model.event.ShopEvent
-import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.extension.noRippleClickable
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.ChromaticColor
@@ -42,12 +42,20 @@ import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.ic_chevron_right
 import ramap.shared.generated.resources.ic_operating_notice_fab
 import ramap.shared.generated.resources.instagram_icon
+import ramap.shared.generated.resources.kakao_map_icon
+import ramap.shared.generated.resources.naver_map_icon
+import ramap.shared.generated.resources.shop_detail_link_instagram
+import ramap.shared.generated.resources.shop_detail_link_kakao_map
+import ramap.shared.generated.resources.shop_detail_link_naver_map
 
 @Composable
 fun EventDetailInfoSection(
     event: ShopEvent,
     hasCollaborators: Boolean,
     onVenueShopClick: (String) -> Unit,
+    onVenueInstagramClick: (String) -> Unit,
+    onVenueNaverMapClick: (String) -> Unit,
+    onVenueKakaoMapClick: (String) -> Unit,
     onCollaboratorShopClick: (String) -> Unit,
     onCollaboratorInstagramClick: (String) -> Unit,
     modifier: Modifier = Modifier,
@@ -103,18 +111,35 @@ fun EventDetailInfoSection(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                VenueShopInfo(
-                    shop = event.venueShop,
-                    label = stringResource(ShopEventResourceMapper.venueTitle(event.type)),
-                    onClick = { onVenueShopClick(event.venueShop.id) },
-                )
+                when (val venue = event.venue) {
+                    is EventVenue.Registered ->
+                        VenueShopInfo(
+                            name = venue.shop.name,
+                            imageUrl = venue.shop.instagramProfileImageUrl,
+                            label = stringResource(ShopEventResourceMapper.venueTitle(event.type)),
+                            address = venue.shop.address,
+                            onClick = { onVenueShopClick(venue.shop.id) },
+                        )
+                    is EventVenue.External ->
+                        VenueShopInfo(
+                            name = venue.name,
+                            imageUrl = venue.imageUrl,
+                            label = stringResource(ShopEventResourceMapper.venueTitle(event.type)),
+                            address = venue.address,
+                            onInstagramClick = venue.instagramUrl?.let { { onVenueInstagramClick(it) } },
+                            onNaverMapClick = venue.naverMapUrl?.let { { onVenueNaverMapClick(it) } },
+                            onKakaoMapClick = venue.kakaoMapUrl?.let { { onVenueKakaoMapClick(it) } },
+                        )
+                }
 
                 if (hasCollaborators) {
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         event.collaboratorShops.forEach { shop ->
                             VenueShopInfo(
-                                shop = shop,
+                                name = shop.name,
+                                imageUrl = shop.instagramProfileImageUrl,
                                 label = stringResource(ShopEventResourceMapper.collaboratorLabel(event)),
+                                address = shop.address,
                                 onClick = { onCollaboratorShopClick(shop.id) },
                             )
                         }
@@ -134,9 +159,14 @@ fun EventDetailInfoSection(
 
 @Composable
 private fun VenueShopInfo(
-    shop: RamenShop,
+    name: String,
+    imageUrl: String?,
     label: String,
-    onClick: () -> Unit,
+    address: String? = null,
+    onClick: (() -> Unit)? = null,
+    onInstagramClick: (() -> Unit)? = null,
+    onNaverMapClick: (() -> Unit)? = null,
+    onKakaoMapClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -152,12 +182,12 @@ private fun VenueShopInfo(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .noRippleClickable(onClick = onClick),
+                    .then(if (onClick == null) Modifier else Modifier.noRippleClickable(onClick = onClick)),
             horizontalArrangement = Arrangement.spacedBy(15.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             RemoteShopImage(
-                url = shop.instagramProfileImageUrl,
+                url = imageUrl,
                 modifier = Modifier.size(60.dp),
                 shape = RoundedCornerShape(12.dp),
             )
@@ -171,26 +201,31 @@ private fun VenueShopInfo(
                     horizontalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
                     AppText(
-                        text = shop.name,
+                        text = name,
                         style = AppTextStyle.T2,
                         color = GrayColor.C500,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
-                    Icon(
-                        painter = painterResource(Res.drawable.ic_chevron_right),
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp),
-                        tint = GrayColor.C200,
+                    if (onClick != null) {
+                        Icon(
+                            painter = painterResource(Res.drawable.ic_chevron_right),
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp),
+                            tint = GrayColor.C200,
+                        )
+                    }
+                }
+                if (address != null) {
+                    AppText(
+                        text = address,
+                        style = AppTextStyle.B4,
+                        color = GrayColor.C300,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
                     )
                 }
-                AppText(
-                    text = shop.address,
-                    style = AppTextStyle.B4,
-                    color = GrayColor.C300,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                )
+                VenueLinkIcons(onInstagramClick, onNaverMapClick, onKakaoMapClick)
             }
         }
     }
@@ -199,11 +234,11 @@ private fun VenueShopInfo(
 @Composable
 private fun EventVenueLink(
     title: String,
-    onClick: () -> Unit,
+    onClick: (() -> Unit)?,
     modifier: Modifier = Modifier,
 ) {
     Row(
-        modifier = modifier.then(Modifier.noRippleClickable(onClick = onClick)),
+        modifier = modifier.then(if (onClick == null) Modifier else Modifier.noRippleClickable(onClick = onClick)),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Image(
@@ -222,6 +257,53 @@ private fun EventVenueLink(
     }
 }
 
+@Composable
+private fun VenueLinkIcons(
+    onInstagramClick: (() -> Unit)?,
+    onNaverMapClick: (() -> Unit)?,
+    onKakaoMapClick: (() -> Unit)?,
+) {
+    if (onInstagramClick == null && onNaverMapClick == null && onKakaoMapClick == null) return
+
+    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+        onInstagramClick?.let {
+            VenueIcon(
+                icon = Res.drawable.instagram_icon,
+                contentDescription = stringResource(Res.string.shop_detail_link_instagram),
+                onClick = it,
+            )
+        }
+        onNaverMapClick?.let {
+            VenueIcon(
+                icon = Res.drawable.naver_map_icon,
+                contentDescription = stringResource(Res.string.shop_detail_link_naver_map),
+                onClick = it,
+            )
+        }
+        onKakaoMapClick?.let {
+            VenueIcon(
+                icon = Res.drawable.kakao_map_icon,
+                contentDescription = stringResource(Res.string.shop_detail_link_kakao_map),
+                onClick = it,
+            )
+        }
+    }
+}
+
+@Composable
+private fun VenueIcon(
+    icon: org.jetbrains.compose.resources.DrawableResource,
+    contentDescription: String,
+    onClick: () -> Unit,
+) {
+    Box(
+        modifier = Modifier.size(40.dp).noRippleClickable(onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Image(painterResource(icon), contentDescription, Modifier.size(24.dp))
+    }
+}
+
 @Preview(showBackground = true)
 @Composable
 private fun EventDetailInfoSectionPreview(
@@ -234,6 +316,9 @@ private fun EventDetailInfoSectionPreview(
                 event = event,
                 hasCollaborators = uiState.hasCollaborators,
                 onVenueShopClick = {},
+                onVenueInstagramClick = {},
+                onVenueNaverMapClick = {},
+                onVenueKakaoMapClick = {},
                 onCollaboratorShopClick = {},
                 onCollaboratorInstagramClick = {},
                 modifier = Modifier.padding(16.dp),

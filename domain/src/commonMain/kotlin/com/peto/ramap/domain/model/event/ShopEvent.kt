@@ -14,7 +14,7 @@ data class ShopEvent(
     val sourceUrl: String,
     val isToday: Boolean,
     val isVenue: Boolean,
-    val venueShop: RamenShop,
+    val venue: EventVenue,
     val collaboratorShops: List<RamenShop> = emptyList(),
     val externalParticipants: List<ExternalParticipant> = emptyList(),
     val waitingMethod: String?,
@@ -30,14 +30,38 @@ data class ShopEvent(
     val imageUrls: List<String> = emptyList(),
     val isStartDateToday: Boolean = false,
 ) {
-    val venueShopId: String
-        get() = venueShop.id
+    val venueKey: String
+        get() =
+            when (venue) {
+                is EventVenue.Registered -> "registered:${venue.shop.id}"
+                is EventVenue.External -> "external:${venue.id ?: venue.name}"
+            }
 
-    val venueShopName: String
-        get() = venueShop.name
+    val venueDisplayName: String
+        get() =
+            when (venue) {
+                is EventVenue.Registered -> venue.shop.name
+                is EventVenue.External -> venue.name
+            }
 
     val venueProfileImageUrl: String?
-        get() = venueShop.instagramProfileImageUrl
+        get() = (venue as? EventVenue.Registered)?.shop?.instagramProfileImageUrl
+
+    val eventListShop: RamenShop?
+        get() =
+            when (venue) {
+                is EventVenue.Registered -> venue.shop
+                is EventVenue.External -> collaboratorShops.firstOrNull()
+            }
+
+    val eventListKey: String
+        get() = eventListShop?.id ?: venueKey
+
+    val eventListDisplayName: String
+        get() = eventListShop?.name ?: venueDisplayName
+
+    val eventListProfileImageUrl: String?
+        get() = eventListShop?.instagramProfileImageUrl ?: venueProfileImageUrl
 
     fun limitedMenuDuration(): LimitedMenuDuration? {
         if (type != ShopEventType.LIMITED_MENU && type != ShopEventType.SUMMER_LIMITED) return null
@@ -80,7 +104,7 @@ data class ShopEvent(
             return if (isVenue) {
                 collaboratorShops.singleOrNull()?.name
             } else {
-                venueShop.name
+                venueDisplayName
             }
         }
 

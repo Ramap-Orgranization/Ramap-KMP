@@ -15,6 +15,9 @@ import com.peto.ramap.ui.main.event.detail.contract.EventDetailIntent.OnNotifica
 import com.peto.ramap.ui.main.event.detail.contract.EventDetailIntent.OnNotificationPermissionGranted
 import com.peto.ramap.ui.main.event.detail.contract.EventDetailIntent.OnRetry
 import com.peto.ramap.ui.main.event.detail.contract.EventDetailIntent.OnSourceLinkSelected
+import com.peto.ramap.ui.main.event.detail.contract.EventDetailIntent.OnVenueInstagramSelected
+import com.peto.ramap.ui.main.event.detail.contract.EventDetailIntent.OnVenueKakaoMapSelected
+import com.peto.ramap.ui.main.event.detail.contract.EventDetailIntent.OnVenueNaverMapSelected
 import com.peto.ramap.ui.main.event.detail.contract.EventDetailIntent.OnVenueShopSelected
 import com.peto.ramap.ui.main.event.detail.contract.EventDetailIntent.OnWaitingLinkSelected
 import com.peto.ramap.ui.main.event.detail.contract.EventDetailLoadKey
@@ -48,6 +51,9 @@ class EventDetailViewModel(
             is OnNotificationChanged -> handleNotificationChanged(intent.enabled)
             OnNotificationPermissionGranted -> handleNotificationPermissionGranted()
             is OnVenueShopSelected -> handleVenueShopSelected(intent.shopId)
+            OnVenueInstagramSelected -> handleVenueInstagramSelected()
+            OnVenueNaverMapSelected -> handleVenueNaverMapSelected()
+            OnVenueKakaoMapSelected -> handleVenueKakaoMapSelected()
             is OnCollaboratorShopSelected -> handleCollaboratorShopSelected(intent.shopId)
             OnCollaboratorInstagramSelected -> handleCollaboratorInstagramSelected()
             OnWaitingLinkSelected -> handleWaitingLinkSelected()
@@ -76,6 +82,18 @@ class EventDetailViewModel(
             eventId = eventId,
             shopId = shopId,
         )
+    }
+
+    private fun handleVenueInstagramSelected() {
+        currentState.event?.id?.let(eventDetailAnalytics::logVenueInstagramSelected)
+    }
+
+    private fun handleVenueNaverMapSelected() {
+        currentState.event?.id?.let(eventDetailAnalytics::logVenueNaverMapSelected)
+    }
+
+    private fun handleVenueKakaoMapSelected() {
+        currentState.event?.id?.let(eventDetailAnalytics::logVenueKakaoMapSelected)
     }
 
     private fun handleCollaboratorShopSelected(shopId: String) {

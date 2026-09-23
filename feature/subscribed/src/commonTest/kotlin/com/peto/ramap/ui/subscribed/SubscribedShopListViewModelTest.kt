@@ -8,6 +8,7 @@ import com.peto.ramap.core.result.RamapError
 import com.peto.ramap.coroutinesTest
 import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
+import com.peto.ramap.domain.model.event.EventVenue
 import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.model.event.ShopEventType
 import com.peto.ramap.domain.model.notification.EventNotificationOverride
@@ -385,7 +386,7 @@ class SubscribedShopListViewModelTest {
             sourceUrl = "https://instagram.com/event",
             isToday = false,
             isVenue = true,
-            venueShop = ramenShopFixture(id = "shop", name = "매장", address = "서울"),
+            venue = EventVenue.Registered(ramenShopFixture(id = "shop", name = "매장", address = "서울")),
             waitingMethod = null,
             waitingUrl = null,
         )

@@ -55,9 +55,9 @@ fun EventShopGroupCard(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            RemoteShopImage(url = shop.venueProfileImageUrl, modifier = Modifier.size(44.dp))
+            RemoteShopImage(url = shop.eventListProfileImageUrl, modifier = Modifier.size(44.dp))
             AppText(
-                text = shop.venueShopName,
+                text = shop.eventListDisplayName,
                 modifier = Modifier.weight(1f),
                 style = AppTextStyle.B1,
                 color = GrayColor.C400,

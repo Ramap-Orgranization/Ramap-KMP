@@ -1,4 +1,6 @@
 import { assertKnownEventType, createServiceClient } from "../_shared/event-notifications.ts";
+import { normalizeMapUrl } from "../_shared/event-venue-url.ts";
+import { requiresExistingVenueSelection } from "../_shared/external-venue.ts";
 
 const EVIDENCE_BUCKET = "news-report-evidence";
 const EVENT_BUCKET = "event-images";
@@ -24,6 +26,12 @@ Deno.serve(async (request) => {
   const requestedEndDate = text(body?.end_date) ?? startDate;
   const description = text(body?.description);
   const participants = parseParticipants(body?.participants);
+  let venueName = text(body?.venue_name);
+  let venueAddress = text(body?.venue_address);
+  const requestedExternalVenueId = text(body?.external_venue_id);
+  let venueInstagramUrl = normalizeInstagramProfileUrl(body?.venue_instagram_url);
+  let venueNaverMapUrl = normalizeMapUrl(body?.venue_naver_map_url, "naver");
+  let venueKakaoMapUrl = normalizeMapUrl(body?.venue_kakao_map_url, "kakao");
   const sourceUrl = normalizeInstagramUrl(text(body?.source_url));
   const evidencePath = text(body?.evidence_path);
   const imageOnly = body?.image_only === true;
@@ -34,6 +42,8 @@ Deno.serve(async (request) => {
     return json({ code: "invalid_draft" }, 400);
   }
   if (!participants) return json({ code: "invalid_draft" }, 400);
+  if (body?.venue_instagram_url !== undefined && body?.venue_instagram_url !== null && !venueInstagramUrl) return json({ code: "invalid_draft" }, 400);
+  if ((body?.venue_naver_map_url != null && !venueNaverMapUrl) || (body?.venue_kakao_map_url != null && !venueKakaoMapUrl)) return json({ code: "invalid_draft" }, 400);
   const eventDescription = description ?? "";
   const eventSourceUrl = sourceUrl ?? "";
   try {
@@ -48,16 +58,83 @@ Deno.serve(async (request) => {
   if (!shops || shops.length !== 1) return json({ code: "shop_not_resolved" }, 422);
   const shopId = shops[0].id as string;
 
-  const { data: duplicates, error: duplicateError } = await supabase
+  let externalVenueId = requestedExternalVenueId;
+  let createdExternalVenueId: string | null = null;
+  if (externalVenueId) {
+    const { data: externalVenue, error: externalVenueError } = await supabase
+      .from("external_venues")
+      .select("id,name,address,instagram_url,naver_map_url,kakao_map_url")
+      .eq("id", externalVenueId)
+      .maybeSingle();
+    if (externalVenueError || !externalVenue) return json({ code: "external_venue_not_found" }, 422);
+    venueName = externalVenue.name as string;
+    venueAddress = externalVenue.address as string | null;
+    venueInstagramUrl = externalVenue.instagram_url as string | null;
+    venueNaverMapUrl = externalVenue.naver_map_url as string | null;
+    venueKakaoMapUrl = externalVenue.kakao_map_url as string | null;
+  }
+  if (venueName && !externalVenueId) {
+    const { data: sameNameVenues, error: sameNameError } = await supabase
+      .from("external_venues")
+      .select("address,naver_map_url,kakao_map_url")
+      .eq("name", venueName)
+      .limit(100);
+    if (sameNameError) return json({ code: "server_unavailable" }, 503);
+    if (requiresExistingVenueSelection(sameNameVenues ?? [], venueAddress, venueNaverMapUrl, venueKakaoMapUrl)) {
+      return json({ code: "external_venue_selection_required" }, 422);
+    }
+    const mapVenueQueries = [
+      venueNaverMapUrl
+        ? supabase.from("external_venues").select("id").eq("naver_map_url", venueNaverMapUrl).limit(1)
+        : null,
+      venueKakaoMapUrl
+        ? supabase.from("external_venues").select("id").eq("kakao_map_url", venueKakaoMapUrl).limit(1)
+        : null,
+    ].filter((query): query is NonNullable<typeof query> => query !== null);
+    const mapVenueResults = await Promise.all(mapVenueQueries);
+    if (mapVenueResults.some(({ error }) => error)) return json({ code: "server_unavailable" }, 503);
+    if (mapVenueResults.some(({ data }) => data && data.length > 0)) {
+      return json({ code: "external_venue_selection_required" }, 422);
+    }
+    const { data: externalVenue, error: externalVenueError } = await supabase
+      .from("external_venues")
+      .insert({
+        name: venueName,
+        address: venueAddress,
+        instagram_url: venueInstagramUrl,
+        naver_map_url: venueNaverMapUrl,
+        kakao_map_url: venueKakaoMapUrl,
+      })
+      .select("id")
+      .single();
+    if (externalVenueError?.code === "23505") return json({ code: "external_venue_selection_required" }, 422);
+    if (externalVenueError || !externalVenue) return json({ code: "server_unavailable" }, 503);
+    externalVenueId = externalVenue.id as string;
+    createdExternalVenueId = externalVenueId;
+  }
+  if (externalVenueId && !venueName) return json({ code: "invalid_draft" }, 400);
+  const eventParticipants = participants.filter((participant) =>
+    !venueName || (
+      participant.name.toLowerCase() !== venueName.toLowerCase() &&
+      (!venueInstagramUrl || participant.instagramUrl !== venueInstagramUrl)
+    )
+  );
+
+  const duplicateQuery = supabase
     .from("shop_events")
     .select("id")
-    .eq("shop_id", shopId)
     .eq("source_url", eventSourceUrl)
     .eq("title", title)
-    .eq("start_date", startDate)
-    .limit(1);
-  if (duplicateError) return json({ code: "server_unavailable" }, 503);
+    .eq("start_date", startDate);
+  const { data: duplicates, error: duplicateError } = externalVenueId
+    ? await duplicateQuery.is("shop_id", null).eq("external_venue_id", externalVenueId).limit(1)
+    : await duplicateQuery.eq("shop_id", shopId).limit(1);
+  if (duplicateError) {
+    if (createdExternalVenueId) await supabase.from("external_venues").delete().eq("id", createdExternalVenueId);
+    return json({ code: "server_unavailable" }, 503);
+  }
   if (duplicates && duplicates.length > 0) {
+    if (createdExternalVenueId) await supabase.from("external_venues").delete().eq("id", createdExternalVenueId);
     await deleteEvidence(supabase, evidencePath);
     return json({ code: "duplicate" }, 409);
   }
@@ -81,7 +158,12 @@ Deno.serve(async (request) => {
 
     const { error: insertError } = await supabase.from("shop_events").insert({
       id: eventId,
-      shop_id: shopId,
+      shop_id: venueName ? null : shopId,
+      external_venue_id: externalVenueId,
+      venue_name: venueName,
+      venue_instagram_url: venueName ? venueInstagramUrl : null,
+      venue_naver_map_url: venueName ? venueNaverMapUrl : null,
+      venue_kakao_map_url: venueName ? venueKakaoMapUrl : null,
       title,
       description: eventDescription,
       start_date: startDate,
@@ -94,7 +176,7 @@ Deno.serve(async (request) => {
     });
     if (insertError) throw insertError;
     eventCreated = true;
-    await saveParticipants(supabase, eventId, shopId, participants);
+    await saveParticipants(supabase, eventId, venueName ? null : shopId, eventParticipants, venueName ? shopId : null);
     await deleteEvidence(supabase, evidencePath);
     return json({ id: eventId });
   } catch (error) {
@@ -102,6 +184,7 @@ Deno.serve(async (request) => {
       await supabase.from("shop_event_participants").delete().eq("event_id", eventId);
       await supabase.from("shop_events").delete().eq("id", eventId);
     }
+    if (createdExternalVenueId) await supabase.from("external_venues").delete().eq("id", createdExternalVenueId);
     if (imagePath) await supabase.storage.from(EVENT_BUCKET).remove([imagePath]);
     await deleteEvidence(supabase, evidencePath);
     console.error("register-event failed", error);
@@ -172,8 +255,9 @@ function parseParticipants(value: unknown): Participant[] | null {
 async function saveParticipants(
   supabase: ReturnType<typeof createServiceClient>,
   eventId: string,
-  hostShopId: string,
+  hostShopId: string | null,
   participants: Participant[],
+  requiredShopId: string | null,
 ) {
   const rows = [];
   const shopIds = new Set<string>();
@@ -185,6 +269,7 @@ async function saveParticipants(
       ? { event_id: eventId, shop_id: shopId, external_name: null, external_instagram_url: null }
       : { event_id: eventId, shop_id: null, external_name: participant.name, external_instagram_url: participant.instagramUrl });
   }
+  if (requiredShopId && !shopIds.has(requiredShopId)) rows.push({ event_id: eventId, shop_id: requiredShopId, external_name: null, external_instagram_url: null });
   if (rows.length === 0) return;
   const { error } = await supabase.from("shop_event_participants").insert(rows);
   if (error) throw error;
