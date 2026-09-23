@@ -30,10 +30,16 @@ import ramap.shared.generated.resources.event_type_store_renewal
 import ramap.shared.generated.resources.event_type_summer_limited
 import ramap.shared.generated.resources.event_venue
 import ramap.shared.generated.resources.shop_event_notice_collab_participant_today
+import ramap.shared.generated.resources.shop_event_notice_collab_participant_today_with_final_consonant
+import ramap.shared.generated.resources.shop_event_notice_collab_participant_today_without_particle
 import ramap.shared.generated.resources.shop_event_notice_collab_participant_upcoming
+import ramap.shared.generated.resources.shop_event_notice_collab_participant_upcoming_with_final_consonant
+import ramap.shared.generated.resources.shop_event_notice_collab_participant_upcoming_without_particle
 import ramap.shared.generated.resources.shop_event_notice_collab_today
 import ramap.shared.generated.resources.shop_event_notice_collab_upcoming
 import ramap.shared.generated.resources.shop_event_notice_collab_upcoming_with_shop
+import ramap.shared.generated.resources.shop_event_notice_collab_upcoming_with_shop_with_final_consonant
+import ramap.shared.generated.resources.shop_event_notice_collab_upcoming_with_shop_without_particle
 import ramap.shared.generated.resources.shop_event_notice_limited_menu_today
 import ramap.shared.generated.resources.shop_event_notice_limited_menu_upcoming
 import ramap.shared.generated.resources.shop_event_notice_new_menu_today
@@ -137,7 +143,14 @@ object ShopEventResourceMapper {
 
         event.upcomingCollaborationPartnerName?.let { partnerName ->
             return UiText(
-                resource = Res.string.shop_event_notice_collab_upcoming_with_shop,
+                resource =
+                    collaborationNoticeResource(
+                        name = partnerName,
+                        withFinalConsonant =
+                            Res.string.shop_event_notice_collab_upcoming_with_shop_with_final_consonant,
+                        withoutFinalConsonant = Res.string.shop_event_notice_collab_upcoming_with_shop,
+                        withoutParticle = Res.string.shop_event_notice_collab_upcoming_with_shop_without_particle,
+                    ),
                 arguments = listOf(partnerName),
             )
         }
@@ -197,15 +210,47 @@ object ShopEventResourceMapper {
         val resource =
             if (event.type == ShopEventType.COLLAB) {
                 if (event.isToday) {
-                    Res.string.shop_event_notice_collab_participant_today
+                    collaborationNoticeResource(
+                        name = event.venueDisplayName,
+                        withFinalConsonant = Res.string.shop_event_notice_collab_participant_today_with_final_consonant,
+                        withoutFinalConsonant = Res.string.shop_event_notice_collab_participant_today,
+                        withoutParticle = Res.string.shop_event_notice_collab_participant_today_without_particle,
+                    )
                 } else {
-                    Res.string.shop_event_notice_collab_participant_upcoming
+                    collaborationNoticeResource(
+                        name = event.venueDisplayName,
+                        withFinalConsonant =
+                            Res.string.shop_event_notice_collab_participant_upcoming_with_final_consonant,
+                        withoutFinalConsonant = Res.string.shop_event_notice_collab_participant_upcoming,
+                        withoutParticle = Res.string.shop_event_notice_collab_participant_upcoming_without_particle,
+                    )
                 }
             } else if (event.isToday) {
                 Res.string.shop_event_notice_participant_today
             } else {
                 Res.string.shop_event_notice_participant_upcoming
             }
-        return UiText(resource, listOf(event.venueShop.name))
+        return UiText(resource, listOf(event.venueDisplayName))
     }
+
+    private fun collaborationNoticeResource(
+        name: String,
+        withFinalConsonant: StringResource,
+        withoutFinalConsonant: StringResource,
+        withoutParticle: StringResource,
+    ): StringResource =
+        when (hasFinalConsonant(name)) {
+            true -> withFinalConsonant
+            false -> withoutFinalConsonant
+            null -> withoutParticle
+        }
+
+    private fun hasFinalConsonant(name: String): Boolean? {
+        val lastCharacter = name.trimEnd().lastOrNull() ?: return null
+        if (lastCharacter !in HANGUL_SYLLABLES) return null
+        return (lastCharacter.code - HANGUL_SYLLABLES.first.code) % HANGUL_FINAL_CONSONANT_COUNT != 0
+    }
+
+    private val HANGUL_SYLLABLES = '\uAC00'..'\uD7A3'
+    private const val HANGUL_FINAL_CONSONANT_COUNT = 28
 }
