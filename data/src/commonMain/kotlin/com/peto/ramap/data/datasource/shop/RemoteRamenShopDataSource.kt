@@ -141,9 +141,9 @@ internal class RemoteRamenShopDataSource(
     companion object {
         private const val TABLE_NAME = "ramen_shops"
         private const val SHOP_BOOKMARK_COUNTS_VIEW = "shop_bookmark_counts"
-        private const val EVENT_VIEW = "active_shop_events"
-        private const val ACTIVE_EVENTS_VIEW = "active_events"
-        private const val FETCH_SHOP_DETAIL_RPC = "fetch_shop_detail"
+        private const val EVENT_VIEW = "active_shop_events_v2"
+        private const val ACTIVE_EVENTS_VIEW = "active_events_v2"
+        private const val FETCH_SHOP_DETAIL_RPC = "fetch_shop_detail_v2"
         private const val FETCH_SHOP_MENU_UPDATED_AT_RPC = "fetch_shop_menu_updated_at"
         private const val SHOP_ID_PARAMETER = "p_shop_id"
         private const val EVENT_PARTICIPANT_TABLE = "shop_event_participants"

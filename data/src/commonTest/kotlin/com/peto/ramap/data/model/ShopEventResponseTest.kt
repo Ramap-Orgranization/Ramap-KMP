@@ -1,5 +1,6 @@
 package com.peto.ramap.data.model
 
+import com.peto.ramap.domain.model.event.EventVenue
 import com.peto.ramap.domain.model.event.ShopEventType
 import com.peto.ramap.fixture.ramenShopResponseFixture
 import kotlinx.datetime.LocalDate
@@ -120,6 +121,62 @@ class ShopEventResponseTest {
 
         assertEquals(listOf("partner-1", "partner-2"), event.collaboratorShops.map { it.id })
         assertEquals("외부 셰프", event.externalParticipants.single().name)
+    }
+
+    @Test
+    fun `외부 행사 장소를 가짜 매장 없이 변환한다`() {
+        val event =
+            response(eventType = "popup")
+                .copy(
+                    venueShop = null,
+                    venueName = "헷츠 전포점",
+                    venueInstagramUrl = "https://www.instagram.com/hetz.katsu/",
+                ).toDomain()
+
+        val venue = event.venue as EventVenue.External
+        assertEquals("헷츠 전포점", event.venueDisplayName)
+        assertEquals("https://www.instagram.com/hetz.katsu/", venue.instagramUrl)
+    }
+
+    @Test
+    fun `구조화된 외부 장소는 ID와 주소를 보존해 변환한다`() {
+        val event =
+            response(eventType = "popup")
+                .copy(
+                    venueShop = null,
+                    venueName = "행사 당시 장소명",
+                    externalVenue =
+                        ExternalVenueResponse(
+                            id = "venue-1",
+                            name = "와루가키노 아소비",
+                            address = "부산 부산진구",
+                            imagePath = "venues/warugaki.jpg",
+                            naverMapUrl = "https://map.naver.com/p/entry/place/1",
+                        ),
+                ).toDomain()
+
+        val venue = event.venue as EventVenue.External
+        assertEquals("venue-1", venue.id)
+        assertEquals("와루가키노 아소비", venue.name)
+        assertEquals("부산 부산진구", venue.address)
+        assertEquals(
+            "${com.peto.ramap.network.config.RamapSecrets.supabaseUrl.trimEnd('/')}/storage/v1/object/public/shop-profile-images/venues/warugaki.jpg",
+            venue.imageUrl,
+        )
+        assertEquals("https://map.naver.com/p/entry/place/1", venue.naverMapUrl)
+    }
+
+    @Test
+    fun `외부 장소의 안전하지 않은 이미지 경로는 URL로 변환하지 않는다`() {
+        val event =
+            response(eventType = "popup")
+                .copy(
+                    venueShop = null,
+                    venueName = "행사 장소",
+                    externalVenue = ExternalVenueResponse(id = "venue-1", name = "행사 장소", imagePath = "../private.jpg"),
+                ).toDomain()
+
+        assertEquals(null, (event.venue as EventVenue.External).imageUrl)
     }
 
     @Test
