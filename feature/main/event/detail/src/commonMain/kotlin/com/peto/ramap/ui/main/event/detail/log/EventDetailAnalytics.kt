@@ -53,6 +53,18 @@ class EventDetailAnalytics(
         )
     }
 
+    fun logVenueInstagramSelected(eventId: String) {
+        logExternalLinkSelected(eventId, EventExternalLinkSource.VENUE_INSTAGRAM)
+    }
+
+    fun logVenueNaverMapSelected(eventId: String) {
+        logExternalLinkSelected(eventId, EventExternalLinkSource.VENUE_NAVER_MAP)
+    }
+
+    fun logVenueKakaoMapSelected(eventId: String) {
+        logExternalLinkSelected(eventId, EventExternalLinkSource.VENUE_KAKAO_MAP)
+    }
+
     fun logWaitingLinkSelected(eventId: String) {
         logExternalLinkSelected(
             eventId = eventId,

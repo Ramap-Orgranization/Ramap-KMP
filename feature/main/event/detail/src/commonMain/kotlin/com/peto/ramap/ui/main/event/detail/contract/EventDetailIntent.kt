@@ -19,6 +19,12 @@ sealed interface EventDetailIntent : Intent {
         val shopId: String,
     ) : EventDetailIntent
 
+    data object OnVenueInstagramSelected : EventDetailIntent
+
+    data object OnVenueNaverMapSelected : EventDetailIntent
+
+    data object OnVenueKakaoMapSelected : EventDetailIntent
+
     data class OnCollaboratorShopSelected(
         val shopId: String,
     ) : EventDetailIntent
