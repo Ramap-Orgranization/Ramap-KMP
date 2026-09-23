@@ -30,6 +30,15 @@ internal sealed interface AdminRegistrationIntent : Intent {
         val value: String,
     ) : AdminRegistrationIntent
 
+    data class OnDraftVenueChanged(
+        val name: String,
+        val address: String,
+        val externalVenueId: String,
+        val instagramUrl: String,
+        val naverMapUrl: String,
+        val kakaoMapUrl: String,
+    ) : AdminRegistrationIntent
+
     data object OnImageOnlyRegistrationClicked : AdminRegistrationIntent
 
     data class OnImageOnlyTitleChanged(

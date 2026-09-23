@@ -64,6 +64,7 @@ internal fun AdminRegistrationScreen(
     onImageOnlyTitleChanged: (String) -> Unit,
     onDraftTitleChanged: (String) -> Unit,
     onDraftDescriptionChanged: (String) -> Unit,
+    onDraftVenueChanged: (String, String, String, String, String, String) -> Unit,
     onDraftNoticeTimesChanged: (String?, String?) -> Unit,
     onDraftScheduleOverrideChanged: (String?, String?) -> Unit,
     onRegularSegmentSelected: (String, String) -> Unit,
@@ -315,6 +316,8 @@ internal fun AdminRegistrationScreen(
                         draft = draft,
                         onTitleChanged = onDraftTitleChanged,
                         onDescriptionChanged = onDraftDescriptionChanged,
+                        externalVenues = uiState.externalVenues,
+                        onVenueChanged = onDraftVenueChanged,
                     )
                 }
             }
@@ -358,6 +361,7 @@ private fun AdminRegistrationScreenPreview() {
             onImageOnlyTitleChanged = {},
             onDraftTitleChanged = {},
             onDraftDescriptionChanged = {},
+            onDraftVenueChanged = { _, _, _, _, _, _ -> },
             onDraftNoticeTimesChanged = { _, _ -> },
             onDraftScheduleOverrideChanged = { _, _ -> },
             onRegularSegmentSelected = { _, _ -> },
@@ -395,20 +399,22 @@ private fun AdminRegistrationScreenWithDraftPreview() {
             uiState =
                 AdminRegistrationUiState(
                     shopName = "멘야준",
-                    isOperatingNotice = true,
+                    selectedEventType = ShopEventType.POPUP,
                     draft =
                         AdminDraft(
                             shopName = "멘야준",
-                            title = "임시 휴무",
+                            title = "라멘 페스티벌 팝업",
+                            eventType = "POPUP",
+                            venueName = "라멘 페스티벌",
+                            venueInstagramUrl = "https://www.instagram.com/ramen_festival/",
+                            venueNaverMapUrl = "https://map.naver.com/p/entry/place/1",
+                            venueKakaoMapUrl = "https://place.map.kakao.com/1",
                             startDate = "2024-05-10",
-                            endDate = "2024-05-10",
-                            description = "내부 공사로 인한 임시 휴무입니다.",
+                            endDate = "2024-05-16",
+                            description = "특별한 팝업 이벤트입니다.",
                             sourceUrl = "https://instagram.com/p/...",
-                            uncertainties = listOf("정확한 영업 재개일은 미정입니다."),
+                            uncertainties = listOf("운영 시간은 변동될 수 있습니다."),
                             evidencePath = "evidence/path.jpg",
-                            noticeType = "TEMPORARY_CLOSURE",
-                            startTime = "11:00",
-                            endTime = "21:00",
                         ),
                 ),
             onNoticeTypeSelected = {},
@@ -420,6 +426,7 @@ private fun AdminRegistrationScreenWithDraftPreview() {
             onImageOnlyTitleChanged = {},
             onDraftTitleChanged = {},
             onDraftDescriptionChanged = {},
+            onDraftVenueChanged = { _, _, _, _, _, _ -> },
             onDraftNoticeTimesChanged = { _, _ -> },
             onDraftScheduleOverrideChanged = { _, _ -> },
             onRegularSegmentSelected = { _, _ -> },

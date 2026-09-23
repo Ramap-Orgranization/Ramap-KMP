@@ -1,5 +1,6 @@
 package com.peto.ramap.debug.admin.ui.registration.component
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.OutlinedTextField
@@ -19,15 +20,18 @@ import com.peto.ramap.theme.RamapTheme
 internal fun AdminSourceField(
     sourceUrl: String,
     onSourceUrlChanged: (String) -> Unit,
+    @StringRes placeholder: Int = R.string.admin_registration_source_placeholder,
+    readOnly: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     OutlinedTextField(
         value = sourceUrl,
         onValueChange = onSourceUrlChanged,
         modifier = modifier.fillMaxWidth(),
+        readOnly = readOnly,
         placeholder = {
             AppText(
-                text = stringResource(R.string.admin_registration_source_placeholder),
+                text = stringResource(placeholder),
                 style = AppTextStyle.B2,
                 color = GrayColor.C200,
             )

@@ -8,6 +8,12 @@
     <string name="admin_registration_title_label">제목</string>
     <string name="admin_registration_title_placeholder">이벤트 제목을 입력하세요</string>
     <string name="admin_registration_shop">매장명</string>
+    <string name="admin_registration_venue_name_placeholder">외부 행사 장소명 (등록 매장이면 비워 두세요)</string>
+    <string name="admin_registration_venue_address_placeholder">외부 행사 장소 주소 (선택)</string>
+    <string name="admin_registration_external_venue_id_placeholder">저장된 외부 장소 ID</string>
+    <string name="admin_registration_venue_instagram_placeholder">외부 장소 Instagram 프로필 URL (선택)</string>
+    <string name="admin_registration_venue_naver_map_placeholder">외부 장소 네이버 지도 URL (선택)</string>
+    <string name="admin_registration_venue_kakao_map_placeholder">외부 장소 카카오맵 URL (선택)</string>
     <string name="admin_registration_collaborators">협업자</string>
     <string name="admin_registration_shop_placeholder">매장 이름을 입력하세요</string>
     <string name="admin_registration_source">Instagram 게시물 URL</string>

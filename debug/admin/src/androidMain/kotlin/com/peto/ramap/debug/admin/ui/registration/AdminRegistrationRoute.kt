@@ -46,6 +46,7 @@ internal fun AdminRegistrationRoute(
             onImageOnlyTitleChanged = { viewModel.dispatch(AdminRegistrationIntent.OnImageOnlyTitleChanged(it)) },
             onDraftTitleChanged = { viewModel.dispatch(AdminRegistrationIntent.OnDraftTitleChanged(it)) },
             onDraftDescriptionChanged = { viewModel.dispatch(AdminRegistrationIntent.OnDraftDescriptionChanged(it)) },
+            onDraftVenueChanged = { name, address, externalVenueId, instagramUrl, naverMapUrl, kakaoMapUrl -> viewModel.dispatch(AdminRegistrationIntent.OnDraftVenueChanged(name, address, externalVenueId, instagramUrl, naverMapUrl, kakaoMapUrl)) },
             onDraftNoticeTimesChanged = { start, end -> viewModel.dispatch(AdminRegistrationIntent.OnDraftNoticeTimesChanged(start, end)) },
             onDraftScheduleOverrideChanged = { open, close -> viewModel.dispatch(AdminRegistrationIntent.OnDraftScheduleOverrideChanged(open, close)) },
             onRegularSegmentSelected = { open, close -> viewModel.dispatch(AdminRegistrationIntent.OnRegularSegmentSelected(open, close)) },

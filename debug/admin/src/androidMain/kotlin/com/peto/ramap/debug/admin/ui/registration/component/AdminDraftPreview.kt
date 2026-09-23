@@ -18,6 +18,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.peto.ramap.debug.admin.R
 import com.peto.ramap.debug.admin.data.model.AdminDraft
+import com.peto.ramap.debug.admin.data.model.AdminExternalVenue
 import com.peto.ramap.debug.admin.ui.registration.formatDateRange
 import com.peto.ramap.debug.admin.ui.registration.toOperatingNoticeType
 import com.peto.ramap.designsystem.resource.operatingnotice.ShopOperatingNoticeResourceMapper
@@ -34,6 +35,8 @@ internal fun AdminDraftPreview(
     modifier: Modifier = Modifier,
     onTitleChanged: (String) -> Unit = {},
     onDescriptionChanged: (String) -> Unit = {},
+    externalVenues: List<AdminExternalVenue> = emptyList(),
+    onVenueChanged: (String, String, String, String, String, String) -> Unit = { _, _, _, _, _, _ -> },
 ) {
     Column(
         modifier =
@@ -55,6 +58,16 @@ internal fun AdminDraftPreview(
         )
         AdminTitleField(draft.title, onTitleChanged)
         PreviewRow(stringResource(R.string.admin_registration_shop), draft.shopName)
+        AdminExternalVenueField(
+            venueName = draft.venueName.orEmpty(),
+            venues = externalVenues,
+            onNewVenueNameChanged = { onVenueChanged(it, draft.venueAddress.orEmpty(), "", draft.venueInstagramUrl.orEmpty(), draft.venueNaverMapUrl.orEmpty(), draft.venueKakaoMapUrl.orEmpty()) },
+            onVenueSelected = { venue -> onVenueChanged(venue.name, venue.address.orEmpty(), venue.id, venue.instagramUrl.orEmpty(), venue.naverMapUrl.orEmpty(), venue.kakaoMapUrl.orEmpty()) },
+        )
+        AdminSourceField(draft.venueAddress.orEmpty(), { onVenueChanged(draft.venueName.orEmpty(), it, "", draft.venueInstagramUrl.orEmpty(), draft.venueNaverMapUrl.orEmpty(), draft.venueKakaoMapUrl.orEmpty()) }, R.string.admin_registration_venue_address_placeholder, readOnly = draft.externalVenueId != null)
+        AdminSourceField(draft.venueInstagramUrl.orEmpty(), { onVenueChanged(draft.venueName.orEmpty(), draft.venueAddress.orEmpty(), "", it, draft.venueNaverMapUrl.orEmpty(), draft.venueKakaoMapUrl.orEmpty()) }, R.string.admin_registration_venue_instagram_placeholder, readOnly = draft.externalVenueId != null)
+        AdminSourceField(draft.venueNaverMapUrl.orEmpty(), { onVenueChanged(draft.venueName.orEmpty(), draft.venueAddress.orEmpty(), "", draft.venueInstagramUrl.orEmpty(), it, draft.venueKakaoMapUrl.orEmpty()) }, R.string.admin_registration_venue_naver_map_placeholder, readOnly = draft.externalVenueId != null)
+        AdminSourceField(draft.venueKakaoMapUrl.orEmpty(), { onVenueChanged(draft.venueName.orEmpty(), draft.venueAddress.orEmpty(), "", draft.venueInstagramUrl.orEmpty(), draft.venueNaverMapUrl.orEmpty(), it) }, R.string.admin_registration_venue_kakao_map_placeholder, readOnly = draft.externalVenueId != null)
         PreviewRow(
             stringResource(R.string.admin_registration_collaborators),
             draft.participants.joinToString(", ") { participant -> participant.name },
@@ -171,16 +184,47 @@ private fun AdminDraftPreviewPreview() {
             draft =
                 AdminDraft(
                     shopName = "멘야준",
+                    title = "라멘 페스티벌 팝업",
+                    eventType = "POPUP",
+                    venueName = "라멘 페스티벌",
+                    venueAddress = "서울시 마포구",
+                    venueInstagramUrl = "https://www.instagram.com/ramen_festival/",
+                    venueNaverMapUrl = "https://map.naver.com/p/entry/place/1",
+                    venueKakaoMapUrl = "https://place.map.kakao.com/1",
                     sourceUrl = "https://instagram.com/p/...",
                     startDate = "2024-05-10",
-                    endDate = "2024-05-10",
-                    noticeType = "TEMPORARY_CLOSURE",
-                    startTime = "11:00",
-                    endTime = "21:00",
-                    description = "내부 공사로 인한 임시 휴무입니다.",
+                    endDate = "2024-05-16",
+                    description = "특별한 팝업 이벤트입니다.",
                     evidencePath = "evidence/path.jpg",
-                    uncertainties = listOf("정확한 영업 재개일은 미정입니다."),
+                    uncertainties = listOf("운영 시간은 변동될 수 있습니다."),
                 ),
+            modifier = Modifier.padding(16.dp),
+            externalVenues = previewExternalVenues(),
+        )
+    }
+}
+
+@Preview(name = "저장된 외부 장소 초안", showBackground = true)
+@Composable
+private fun AdminStoredExternalVenueDraftPreview() {
+    RamapTheme {
+        AdminDraftPreview(
+            draft =
+                AdminDraft(
+                    shopName = "멘야준",
+                    title = "라멘 페스티벌 팝업",
+                    eventType = "POPUP",
+                    venueName = "라멘 페스티벌",
+                    venueAddress = "서울시 마포구 월드컵로 1",
+                    externalVenueId = "venue-ramen-festival",
+                    venueInstagramUrl = "https://www.instagram.com/ramen_festival/",
+                    venueNaverMapUrl = "https://map.naver.com/p/entry/place/1",
+                    venueKakaoMapUrl = "https://place.map.kakao.com/1",
+                    startDate = "2024-05-10",
+                    endDate = "2024-05-16",
+                    description = "특별한 팝업 이벤트입니다.",
+                ),
+            externalVenues = previewExternalVenues(),
             modifier = Modifier.padding(16.dp),
         )
     }

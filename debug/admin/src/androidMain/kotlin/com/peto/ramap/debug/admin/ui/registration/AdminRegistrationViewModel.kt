@@ -47,6 +47,7 @@ internal class AdminRegistrationViewModel(
 ) : BaseViewModel<AdminRegistrationUiState, AdminRegistrationIntent, AdminRegistrationSideEffect>(AdminRegistrationUiState()) {
     init {
         loadShopNames()
+        loadExternalVenues()
         loadManagedEvents()
         loadDelayedOpenings()
     }
@@ -96,6 +97,10 @@ internal class AdminRegistrationViewModel(
             }
             is AdminRegistrationIntent.OnSourceUrlChanged -> reduce { copy(sourceUrl = intent.value, draft = if (editingEventId == null) null else draft, message = null) }
             is AdminRegistrationIntent.OnFeedbackChanged -> reduce { copy(feedback = intent.value, draft = null, message = null) }
+            is AdminRegistrationIntent.OnDraftVenueChanged ->
+                reduce {
+                    copy(draft = draft?.copy(venueName = intent.name.ifBlank { null }, venueAddress = intent.address.ifBlank { null }, externalVenueId = intent.externalVenueId.ifBlank { null }, venueInstagramUrl = intent.instagramUrl.ifBlank { null }, venueNaverMapUrl = intent.naverMapUrl.ifBlank { null }, venueKakaoMapUrl = intent.kakaoMapUrl.ifBlank { null }), message = null)
+                }
             AdminRegistrationIntent.OnImageOnlyRegistrationClicked ->
                 if (!currentState.isOperatingNotice) {
                     reduce { copy(isImageOnly = !isImageOnly, draft = null, message = null) }
@@ -258,6 +263,13 @@ internal class AdminRegistrationViewModel(
             } catch (_: Throwable) {
                 showToast(Res.string.admin_registration_shop_names_load_failure)
             }
+        }
+    }
+
+    private fun loadExternalVenues() {
+        launchTask(taskKey = EXTERNAL_VENUES_TASK_KEY, policy = TaskPolicy.IgnoreNew) {
+            runCatching { dataSource.fetchExternalVenues() }
+                .onSuccess { venues -> reduce { copy(externalVenues = venues) } }
         }
     }
 
@@ -481,6 +493,7 @@ internal class AdminRegistrationViewModel(
                 }
                 reduce { copy(draft = null, editingEventId = null, message = AdminRegistrationMessage.SUCCESS) }
                 if (editingEventId != null) loadManagedEvents()
+                if (!currentState.isOperatingNotice && editingEventId == null) loadExternalVenues()
                 showToast(Res.string.admin_registration_success, ToastType.SUCCESS)
             } catch (_: Throwable) {
                 showToast(Res.string.admin_registration_register_failure)
@@ -541,6 +554,7 @@ internal class AdminRegistrationViewModel(
 
     private companion object {
         const val SHOP_NAMES_TASK_KEY = "admin-registration-shop-names"
+        const val EXTERNAL_VENUES_TASK_KEY = "admin-registration-external-venues"
         const val SHOP_HOURS_TASK_KEY = "admin-registration-shop-hours"
         const val SUBMIT_TASK_KEY = "admin-registration-submit"
         const val MANAGED_EVENTS_TASK_KEY = "admin-managed-events"
