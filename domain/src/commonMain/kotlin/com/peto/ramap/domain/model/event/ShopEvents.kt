@@ -17,9 +17,9 @@ data class ShopEvents(
         get() = events.size > 1
 
     companion object {
-        fun groupByVenue(events: List<ShopEvent>): List<ShopEvents> =
+        fun groupByEventListShop(events: List<ShopEvent>): List<ShopEvents> =
             events
-                .groupBy(ShopEvent::venueShopId)
+                .groupBy(ShopEvent::eventListKey)
                 .values
                 .map(::ShopEvents)
     }

@@ -33,6 +33,18 @@ class ShopEventTest {
     }
 
     @Test
+    fun `외부 장소는 ID를 우선하는 유형 구분 장소 키를 사용한다`() {
+        val first = event().copy(venue = EventVenue.External(id = "venue-1", name = "동명 장소"))
+        val second = event().copy(venue = EventVenue.External(id = "venue-2", name = "동명 장소"))
+        val legacy = event().copy(venue = EventVenue.External(id = null, name = "동명 장소"))
+
+        assertEquals("external:venue-1", first.venueKey)
+        assertEquals("external:venue-2", second.venueKey)
+        assertEquals("external:동명 장소", legacy.venueKey)
+        assertEquals("registered:shop", event().venueKey)
+    }
+
+    @Test
     fun `한정 메뉴 기간을 포함 날짜 기준으로 분류한다`() {
         assertEquals(
             LimitedMenuDuration.ONE_DAY,
@@ -162,7 +174,7 @@ class ShopEventTest {
         sourceUrl = "https://instagram.com/p/event",
         isToday = false,
         isVenue = isVenue,
-        venueShop = shop("shop", venueShopName),
+        venue = EventVenue.Registered(shop("shop", venueShopName)),
         collaboratorShops =
             collaboratorShopId
                 ?.let { listOf(shop(it, collaboratorName.orEmpty())) }
