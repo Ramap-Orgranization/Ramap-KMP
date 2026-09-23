@@ -1,6 +1,7 @@
 package com.peto.ramap.ui.main.event.list.preview
 
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
+import com.peto.ramap.domain.model.event.EventVenue
 import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.model.event.ShopEventType
 import com.peto.ramap.domain.model.event.ShopEvents
@@ -47,6 +48,13 @@ class EventSectionPreviewParameterProvider : PreviewParameterProvider<List<ShopE
                             type = ShopEventType.POPUP,
                             isCancelledToday = true,
                         ),
+                        previewEvent(
+                            id = "external-venue",
+                            title = "외부 매장에서 진행하는 팝업",
+                            type = ShopEventType.POPUP,
+                            venue = EventVenue.External(id = "external-venue", name = "외부 행사장"),
+                            collaboratorShops = listOf(previewShop),
+                        ),
                     ),
                 ),
             ),
@@ -57,6 +65,8 @@ class EventSectionPreviewParameterProvider : PreviewParameterProvider<List<ShopE
         title: String,
         type: ShopEventType,
         isCancelledToday: Boolean = false,
+        venue: EventVenue = EventVenue.Registered(previewShop),
+        collaboratorShops: List<RamenShop> = emptyList(),
     ) = ShopEvent(
         id = id,
         type = type,
@@ -67,7 +77,8 @@ class EventSectionPreviewParameterProvider : PreviewParameterProvider<List<ShopE
         sourceUrl = "https://instagram.com/event",
         isToday = true,
         isVenue = true,
-        venueShop = previewShop,
+        venue = venue,
+        collaboratorShops = collaboratorShops,
         waitingMethod = null,
         waitingUrl = null,
         isCancelledToday = isCancelledToday,

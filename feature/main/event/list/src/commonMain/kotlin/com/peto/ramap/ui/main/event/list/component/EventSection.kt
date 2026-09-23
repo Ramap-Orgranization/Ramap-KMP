@@ -77,7 +77,7 @@ internal fun eventSection(
                 ) {
                     items(
                         items = events,
-                        key = { eventGroup -> eventGroup.representativeEvent.venueShopId },
+                        key = { eventGroup -> eventGroup.representativeEvent.eventListKey },
                     ) { eventGroup ->
                         OngoingEventShopItem(
                             eventGroup = eventGroup,
@@ -124,7 +124,7 @@ internal fun eventSection(
     } else {
         scope.items(
             items = events,
-            key = { eventGroup -> eventGroup.representativeEvent.venueShopId },
+            key = { eventGroup -> eventGroup.representativeEvent.eventListKey },
         ) { eventGroup ->
             EventShopGroupCard(
                 eventGroup = eventGroup,
@@ -143,8 +143,8 @@ private fun OngoingEventShopItem(
 ) {
     val event = eventGroup.representativeEvent
     ShopThumbnail(
-        imageUrl = event.venueProfileImageUrl,
-        name = event.venueShopName,
+        imageUrl = event.eventListProfileImageUrl,
+        name = event.eventListDisplayName,
         modifier = modifier,
         onClick = onClick,
         badge = {
