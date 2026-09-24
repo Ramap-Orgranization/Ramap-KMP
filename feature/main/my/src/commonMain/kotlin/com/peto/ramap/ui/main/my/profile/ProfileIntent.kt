@@ -6,11 +6,11 @@ import com.peto.ramap.ui.base.Intent
 sealed interface ProfileIntent : Intent {
     data object Retry : ProfileIntent
 
-    data object Edit : ProfileIntent
-
     data class ChangeNickname(
         val value: String,
     ) : ProfileIntent
+
+    data object CheckNickname : ProfileIntent
 
     data class ChangeBio(
         val value: String,

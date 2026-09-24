@@ -6,6 +6,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigationevent.NavigationEventInfo
 import androidx.navigationevent.compose.NavigationBackHandler
@@ -14,10 +15,12 @@ import com.peto.ramap.designsystem.toast.ToastManager
 import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.auth.LoginType
+import com.peto.ramap.domain.model.profile.AccountProfile
 import com.peto.ramap.domain.model.profile.ProfileImage
-import com.peto.ramap.platform.ExternalUriOpener
 import com.peto.ramap.platform.image.rememberImagePicker
+import com.peto.ramap.theme.RamapTheme
 import com.peto.ramap.ui.base.ObserveAsEvents
+import com.peto.ramap.ui.loading.LoadState
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -44,19 +47,61 @@ fun MyProfileRoute(
             is ProfileSideEffect.Toast -> toastManager.show(ToastData(it.message, ToastType.DEFAULT))
         }
     }
-    NavigationBackHandler(
-        state = rememberNavigationEventState<NavigationEventInfo>(NavigationEventInfo.None),
-        isBackEnabled = state.editing,
-        onBackCompleted = { viewModel.dispatch(ProfileIntent.Back) },
-    )
-    MyProfileContent(
+    MyProfileRouteContent(
         state = state,
         onIntent = viewModel::dispatch,
         onLoginClick = onLoginClick,
-        onOpenInstagram = ExternalUriOpener::open,
         onPickImage = {
             pickerGeneration = state.draftGeneration
             pickImage()
         },
     )
+}
+
+@Composable
+internal fun MyProfileRouteContent(
+    state: ProfileUiState,
+    onIntent: (ProfileIntent) -> Unit,
+    onLoginClick: (LoginType) -> Unit,
+    onPickImage: () -> Unit = {},
+) {
+    NavigationBackHandler(
+        state = rememberNavigationEventState<NavigationEventInfo>(NavigationEventInfo.None),
+        isBackEnabled = state.editing,
+        onBackCompleted = { onIntent(ProfileIntent.Back) },
+    )
+    MyProfileContent(
+        state = state,
+        onIntent = onIntent,
+        onLoginClick = onLoginClick,
+        onPickImage = onPickImage,
+    )
+}
+
+@Preview
+@Composable
+private fun MyProfileRoutePreview() {
+    RamapTheme {
+        MyProfileRouteContent(
+            state =
+                ProfileUiState(
+                    userId = "preview",
+                    profile =
+                        AccountProfile(
+                            userId = "preview",
+                            nickname = "느긋한차슈",
+                            bio = "오늘도 맛있는 한 그릇을 찾아서",
+                            instagramUsername = "ramap_official",
+                        ),
+                    email = "ramen@example.com",
+                    loadState = LoadState(),
+                    editing = true,
+                    nickname = "느긋한차슈",
+                    bio = "오늘도 맛있는 한 그릇을 찾아서",
+                    instagram = "ramap_official",
+                ),
+            onIntent = {},
+            onLoginClick = {},
+        )
+    }
 }

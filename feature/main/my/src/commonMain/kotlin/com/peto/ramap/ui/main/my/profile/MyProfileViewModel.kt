@@ -2,10 +2,13 @@ package com.peto.ramap.ui.main.my.profile
 
 import androidx.lifecycle.viewModelScope
 import com.peto.ramap.core.result.RamapResult
+import com.peto.ramap.domain.model.profile.AccountProfile
+import com.peto.ramap.domain.model.profile.ProfileDraft
 import com.peto.ramap.domain.model.profile.ProfileInstagram
 import com.peto.ramap.domain.repository.LoginRepository
 import com.peto.ramap.domain.repository.ProfileRepository
 import com.peto.ramap.ui.base.BaseViewModel
+import com.peto.ramap.ui.loading.LoadState
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import ramap.shared.generated.resources.Res
@@ -26,7 +29,8 @@ class MyProfileViewModel(
                 sessionGeneration++
                 cancelTask(FETCH)
                 cancelTask(SAVE)
-                reduce { ProfileUiState(userId = userId, loading = userId != null, draftGeneration = ++nextDraftGeneration) }
+                cancelTask(CHECK_NICKNAME)
+                reduce { ProfileUiState(userId = userId, draftGeneration = ++nextDraftGeneration, loadState = LoadState()) }
                 if (userId != null) fetch()
             }
         }
@@ -35,8 +39,8 @@ class MyProfileViewModel(
     override suspend fun handleIntent(intent: ProfileIntent) {
         when (intent) {
             ProfileIntent.Retry -> fetch()
-            ProfileIntent.Edit -> beginEdit()
-            is ProfileIntent.ChangeNickname -> if (currentState.editing && !currentState.saving) reduce { copy(nickname = intent.value, nicknameTouched = true) }
+            is ProfileIntent.ChangeNickname -> changeNickname(intent.value)
+            ProfileIntent.CheckNickname -> checkNickname()
             is ProfileIntent.ChangeBio -> if (currentState.editing && !currentState.saving) reduce { copy(bio = intent.value) }
             is ProfileIntent.ChangeInstagram -> if (currentState.editing && !currentState.saving) reduce { copy(instagram = intent.value) }
             is ProfileIntent.PickImage -> pickImage(intent)
@@ -44,7 +48,8 @@ class MyProfileViewModel(
             ProfileIntent.RemovePhoto -> if (!currentState.saving) reduce { copy(image = null, removePhoto = profile?.avatarUrl != null) }
             ProfileIntent.Save -> save()
             ProfileIntent.Back -> back()
-            ProfileIntent.Discard, ProfileIntent.Leave -> endEdit()
+            ProfileIntent.Discard -> discardAndNavigateBack()
+            ProfileIntent.Leave -> endEdit()
             ProfileIntent.KeepEditing -> reduce { copy(confirmDiscard = false) }
         }
     }
@@ -52,21 +57,34 @@ class MyProfileViewModel(
     private fun fetch() {
         if (currentState.userId == null) return
         val generation = sessionGeneration
-        launchTask(FETCH, onStart = { copy(loading = true, failed = false) }, onFinish = { copy(loading = false) }) {
+        launchTask(FETCH, loadKey = ProfileLoadKey.Fetch, onStart = { copy(failed = false) }) {
             when (val result = repository.fetchMyProfile()) {
                 is RamapResult.Success ->
                     if (generation == sessionGeneration && result.data.userId == currentState.userId) {
-                        reduce { copy(profile = result.data, email = loginRepository.currentUserEmail()) }
+                        beginEdit(result.data)
                     }
                 is RamapResult.Error -> if (generation == sessionGeneration) reduce { copy(failed = true) }
             }
         }
     }
 
-    private fun beginEdit() {
-        if (currentState.saving || currentState.editing) return
-        val profile = currentState.profile ?: return
-        reduce { copy(editing = true, nickname = profile.nickname, bio = profile.bio, instagram = profile.instagramUsername, image = null, removePhoto = false, nicknameTouched = false, draftGeneration = ++nextDraftGeneration) }
+    private fun beginEdit(profile: AccountProfile) {
+        reduce {
+            copy(
+                profile = profile,
+                email = loginRepository.currentUserEmail(),
+                editing = true,
+                nickname = profile.nickname,
+                bio = profile.bio,
+                instagram = profile.instagramUsername,
+                image = null,
+                removePhoto = false,
+                nicknameTouched = false,
+                nicknameAvailable = null,
+                nicknameCheckFailed = false,
+                draftGeneration = ++nextDraftGeneration,
+            )
+        }
     }
 
     private fun pickImage(intent: ProfileIntent.PickImage) {
@@ -78,23 +96,77 @@ class MyProfileViewModel(
         reduce { copy(image = intent.image, removePhoto = false) }
     }
 
+    private fun changeNickname(value: String) {
+        if (!currentState.editing || currentState.saving) return
+        cancelTask(CHECK_NICKNAME)
+        reduce {
+            copy(
+                nickname = value,
+                nicknameTouched = true,
+                nicknameAvailable = null,
+                nicknameCheckFailed = false,
+            )
+        }
+    }
+
+    private fun checkNickname() {
+        val draft = currentState
+        if (!draft.editing || draft.saving || draft.checkingNickname || draft.nicknameInvalid || !draft.nicknameChanged) return
+        val nickname = draft.nickname.trim()
+        val generation = sessionGeneration
+        launchTask(
+            taskKey = CHECK_NICKNAME,
+            loadKey = ProfileLoadKey.CheckNickname,
+            onStart = { copy(nicknameCheckFailed = false, nicknameAvailable = null) },
+        ) {
+            val result = repository.isNicknameAvailable(nickname)
+            if (generation != sessionGeneration || draft.draftGeneration != currentState.draftGeneration || nickname != currentState.nickname.trim()) return@launchTask
+            when (result) {
+                is RamapResult.Success -> reduce { copy(nicknameAvailable = result.data) }
+                is RamapResult.Error -> reduce { copy(nicknameCheckFailed = true) }
+            }
+        }
+    }
+
     private fun save() {
         val draft = currentState
         if (!draft.canSave) return
         val instagramUsername = ProfileInstagram.normalize(draft.instagram) ?: return
         val generation = sessionGeneration
-        launchTask(SAVE, onStart = { copy(saving = true) }, onFinish = { copy(saving = false) }) {
-            val result = repository.updateMyProfile(draft.nickname.trim(), draft.image, draft.removePhoto, bio = draft.bio.trim(), instagramUsername = instagramUsername)
+        launchTask(SAVE, loadKey = ProfileLoadKey.Save) {
+            val result =
+                repository.updateMyProfile(
+                    ProfileDraft.of(
+                        nickname = draft.nickname.trim(),
+                        image = draft.image,
+                        removePhoto = draft.removePhoto,
+                        bio = draft.bio.trim(),
+                        instagramUsername = instagramUsername,
+                    ),
+                )
             if (generation != sessionGeneration || draft.draftGeneration != currentState.draftGeneration) return@launchTask
             when (result) {
                 is RamapResult.Success ->
                     if (result.data.userId == currentState.userId) {
                         reduce { copy(profile = result.data, editing = false, image = null, removePhoto = false, confirmDiscard = false, draftGeneration = ++nextDraftGeneration) }
                         trySideEffect(ProfileSideEffect.Toast(Res.string.profile_saved))
+                        trySideEffect(ProfileSideEffect.NavigateBack)
                     }
-                is RamapResult.Error -> trySideEffect(ProfileSideEffect.Toast(Res.string.profile_save_failed))
+                is RamapResult.Error -> handleSaveFailure(draft)
             }
         }
+    }
+
+    private suspend fun handleSaveFailure(draft: ProfileUiState) {
+        if (draft.nicknameChanged) {
+            val availability = repository.isNicknameAvailable(draft.nickname.trim())
+            if (draft.draftGeneration != currentState.draftGeneration || draft.userId != currentState.userId) return
+            if (availability is RamapResult.Success && !availability.data) {
+                reduce { copy(nicknameAvailable = false) }
+                return
+            }
+        }
+        trySideEffect(ProfileSideEffect.Toast(Res.string.profile_save_failed))
     }
 
     private fun back() {
@@ -102,14 +174,20 @@ class MyProfileViewModel(
             !currentState.editing -> trySideEffect(ProfileSideEffect.NavigateBack)
             currentState.saving -> Unit
             currentState.changed -> reduce { copy(confirmDiscard = true) }
-            else -> endEdit()
+            else -> discardAndNavigateBack()
         }
+    }
+
+    private fun discardAndNavigateBack() {
+        endEdit()
+        trySideEffect(ProfileSideEffect.NavigateBack)
     }
 
     private fun endEdit() {
         nextDraftGeneration++
         cancelTask(SAVE)
-        reduce { copy(editing = false, nickname = "", bio = "", instagram = "", image = null, removePhoto = false, nicknameTouched = false, confirmDiscard = false, draftGeneration = nextDraftGeneration) }
+        cancelTask(CHECK_NICKNAME)
+        reduce { copy(editing = false, nickname = "", bio = "", instagram = "", image = null, removePhoto = false, nicknameTouched = false, nicknameAvailable = null, nicknameCheckFailed = false, confirmDiscard = false, draftGeneration = nextDraftGeneration) }
     }
 
     override fun handleError(throwable: Throwable) {
@@ -124,5 +202,6 @@ class MyProfileViewModel(
     companion object {
         private const val FETCH = "profile-fetch"
         private const val SAVE = "profile-save"
+        private const val CHECK_NICKNAME = "profile-check-nickname"
     }
 }

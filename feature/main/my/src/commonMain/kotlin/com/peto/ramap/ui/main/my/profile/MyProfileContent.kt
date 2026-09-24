@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
@@ -26,12 +25,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -44,70 +40,61 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.peto.ramap.designsystem.button.login.LoginButton
+import com.peto.ramap.designsystem.indicator.RamenLoadingIndicator
 import com.peto.ramap.designsystem.profile.ProfileAvatar
-import com.peto.ramap.designsystem.profile.ProfileCheckStamp
-import com.peto.ramap.designsystem.profile.ProfileDotField
-import com.peto.ramap.designsystem.profile.ProfileFooterPixels
+import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.domain.model.auth.LoginType
 import com.peto.ramap.domain.model.auth.supportedLoginTypes
 import com.peto.ramap.domain.model.profile.AccountProfile
 import com.peto.ramap.domain.model.profile.ProfileBio
-import com.peto.ramap.domain.model.profile.ProfileInstagram
+import com.peto.ramap.theme.AppTextStyle
+import com.peto.ramap.theme.ProfileColor
 import com.peto.ramap.theme.RamapTheme
+import com.peto.ramap.ui.loading.LoadState
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.ic_arrow3_left
 import ramap.shared.generated.resources.ic_camera_add
-import ramap.shared.generated.resources.ic_person
-import ramap.shared.generated.resources.instagram_icon
+import ramap.shared.generated.resources.ic_close
 import ramap.shared.generated.resources.navigation_back
-import ramap.shared.generated.resources.profile_account
 import ramap.shared.generated.resources.profile_bio
 import ramap.shared.generated.resources.profile_bio_counter
 import ramap.shared.generated.resources.profile_bio_invalid
 import ramap.shared.generated.resources.profile_bio_placeholder
 import ramap.shared.generated.resources.profile_cancel
-import ramap.shared.generated.resources.profile_connected
+import ramap.shared.generated.resources.profile_complete
 import ramap.shared.generated.resources.profile_counter
 import ramap.shared.generated.resources.profile_discard
 import ramap.shared.generated.resources.profile_discard_body
 import ramap.shared.generated.resources.profile_discard_title
 import ramap.shared.generated.resources.profile_edit
-import ramap.shared.generated.resources.profile_edit_action
 import ramap.shared.generated.resources.profile_instagram
-import ramap.shared.generated.resources.profile_instagram_handle
 import ramap.shared.generated.resources.profile_instagram_invalid
-import ramap.shared.generated.resources.profile_instagram_open
 import ramap.shared.generated.resources.profile_instagram_placeholder
 import ramap.shared.generated.resources.profile_keep_editing
 import ramap.shared.generated.resources.profile_load_failed
 import ramap.shared.generated.resources.profile_nickname
+import ramap.shared.generated.resources.profile_nickname_available
+import ramap.shared.generated.resources.profile_nickname_check
+import ramap.shared.generated.resources.profile_nickname_check_failed
+import ramap.shared.generated.resources.profile_nickname_clear
 import ramap.shared.generated.resources.profile_nickname_invalid
 import ramap.shared.generated.resources.profile_nickname_placeholder
+import ramap.shared.generated.resources.profile_nickname_unavailable
 import ramap.shared.generated.resources.profile_photo
 import ramap.shared.generated.resources.profile_photo_change
 import ramap.shared.generated.resources.profile_photo_formats
 import ramap.shared.generated.resources.profile_photo_remove
 import ramap.shared.generated.resources.profile_photo_select
 import ramap.shared.generated.resources.profile_retry
-import ramap.shared.generated.resources.profile_save
-import ramap.shared.generated.resources.profile_title
-
-private val ProfilePaper = Color(0xFFFFFEFB)
-private val ProfileInk = Color(0xFF252721)
-private val ProfileMuted = Color(0xFF777A70)
-private val ProfileOrange = Color(0xFFE95432)
-private val ProfileLine = Color(0xFFDEDFD5)
 
 @Composable
 internal fun MyProfileContent(
@@ -115,118 +102,169 @@ internal fun MyProfileContent(
     onIntent: (ProfileIntent) -> Unit,
     onLoginClick: (LoginType) -> Unit,
     onPickImage: () -> Unit,
-    onOpenInstagram: (String) -> Unit,
 ) {
     Column(
-        Modifier
-            .fillMaxSize()
-            .background(ProfilePaper)
-            .safeDrawingPadding()
-            .imePadding(),
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .background(ProfileColor.Paper)
+                .safeDrawingPadding()
+                .imePadding(),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Row(
-            Modifier
-                .widthIn(max = 560.dp)
-                .fillMaxWidth()
-                .heightIn(min = 68.dp)
-                .padding(horizontal = 12.dp),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 68.dp)
+                    .padding(horizontal = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Box(Modifier.width(64.dp)) {
-                IconButton(onClick = { onIntent(ProfileIntent.Back) }) {
-                    Image(painterResource(Res.drawable.ic_arrow3_left), stringResource(Res.string.navigation_back), Modifier.size(24.dp))
-                }
+            IconButton(onClick = { onIntent(ProfileIntent.Back) }) {
+                Image(
+                    painter = painterResource(Res.drawable.ic_arrow3_left),
+                    contentDescription = stringResource(Res.string.navigation_back),
+                    modifier = Modifier.size(24.dp),
+                )
             }
-            Text(stringResource(if (state.editing) Res.string.profile_edit else Res.string.profile_title), Modifier.weight(1f).semantics { heading() }, textAlign = TextAlign.Center, color = ProfileInk, fontSize = 17.sp, fontWeight = FontWeight.Bold)
-            Box(Modifier.widthIn(min = 64.dp), contentAlignment = Alignment.CenterEnd) {
-                if (!state.editing && !state.loading && !state.failed && state.userId != null && state.profile != null) {
-                    TextButton(onClick = { onIntent(ProfileIntent.Edit) }) {
-                        Text(stringResource(Res.string.profile_edit_action), color = ProfileOrange, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+            AppText(
+                text = stringResource(Res.string.profile_edit),
+                style = AppTextStyle.T1,
+                color = ProfileColor.Ink,
+                modifier =
+                    Modifier
+                        .weight(1f)
+                        .semantics { heading() },
+                textAlign = TextAlign.Center,
+            )
+            TextButton(
+                onClick = { onIntent(ProfileIntent.Save) },
+                enabled = state.canSave,
+                modifier = Modifier.width(64.dp),
+            ) {
+                AppText(
+                    text = stringResource(Res.string.profile_complete),
+                    style = AppTextStyle.B1,
+                    color = if (state.canSave) ProfileColor.Orange else ProfileColor.Muted,
+                )
+            }
+        }
+        BoxWithConstraints(
+            modifier =
+                Modifier
+                    .widthIn(max = 560.dp)
+                    .fillMaxWidth()
+                    .weight(1f),
+        ) {
+            val contentHeight = maxHeight
+            Column(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .then(
+                            if (state.loading) {
+                                Modifier.fillMaxSize()
+                            } else {
+                                Modifier.verticalScroll(rememberScrollState())
+                            },
+                        ),
+            ) {
+                when {
+                    state.loading -> {
+                        RamenLoadingIndicator(modifier = Modifier.fillMaxSize())
+                    }
+
+                    state.userId == null -> {
+                        Column(
+                            modifier = Modifier.padding(24.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            supportedLoginTypes().forEach { type ->
+                                LoginButton(
+                                    type = type,
+                                    modifier = Modifier.fillMaxWidth(),
+                                    onClick = { onLoginClick(type) },
+                                )
+                            }
+                        }
+                    }
+
+                    state.failed || state.profile == null -> {
+                        Column(
+                            modifier = Modifier.padding(24.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                        ) {
+                            AppText(
+                                text = stringResource(Res.string.profile_load_failed),
+                                style = AppTextStyle.C1,
+                                color = ProfileColor.Muted,
+                            )
+                            ProfileButton(
+                                text = stringResource(Res.string.profile_retry),
+                                onClick = { onIntent(ProfileIntent.Retry) },
+                                modifier = Modifier.padding(top = 20.dp),
+                            )
+                        }
+                    }
+
+                    else -> {
+                        ProfileEdit(
+                            state = state,
+                            onIntent = onIntent,
+                            onPickImage = onPickImage,
+                            contentHeight = contentHeight,
+                        )
                     }
                 }
             }
-        }
-        BoxWithConstraints(Modifier.widthIn(max = 560.dp).fillMaxWidth().weight(1f)) {
-            val contentHeight = maxHeight
-            Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState())) {
-                when {
-                    state.loading -> Box(Modifier.fillMaxWidth().padding(64.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = ProfileOrange) }
-                    state.userId == null ->
-                        Column(Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                            supportedLoginTypes().forEach { type -> LoginButton(type = type, modifier = Modifier.fillMaxWidth(), onClick = { onLoginClick(type) }) }
-                        }
-                    state.failed || state.profile == null ->
-                        Column(Modifier.padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(stringResource(Res.string.profile_load_failed), color = ProfileMuted)
-                            ProfileButton(stringResource(Res.string.profile_retry), { onIntent(ProfileIntent.Retry) }, Modifier.padding(top = 20.dp))
-                        }
-                    state.editing -> ProfileEdit(state, onIntent, onPickImage, contentHeight)
-                    else -> ProfileView(state, contentHeight, onOpenInstagram)
-                }
+            if (state.checkingNickname || state.saving) {
+                RamenLoadingIndicator(
+                    modifier =
+                        Modifier
+                            .align(Alignment.Center)
+                            .size(120.dp)
+                            .background(ProfileColor.Paper.copy(alpha = 0.9f), RoundedCornerShape(16.dp)),
+                )
             }
         }
     }
     if (state.confirmDiscard) {
         AlertDialog(
             onDismissRequest = { onIntent(ProfileIntent.KeepEditing) },
-            title = { Text(stringResource(Res.string.profile_discard_title)) },
-            text = { Text(stringResource(Res.string.profile_discard_body)) },
-            confirmButton = { TextButton(onClick = { onIntent(ProfileIntent.Discard) }) { Text(stringResource(Res.string.profile_discard)) } },
-            dismissButton = { TextButton(onClick = { onIntent(ProfileIntent.KeepEditing) }) { Text(stringResource(Res.string.profile_keep_editing)) } },
-            containerColor = ProfilePaper,
+            title = {
+                AppText(
+                    text = stringResource(Res.string.profile_discard_title),
+                    style = AppTextStyle.T2,
+                    color = ProfileColor.Ink,
+                )
+            },
+            text = {
+                AppText(
+                    text = stringResource(Res.string.profile_discard_body),
+                    style = AppTextStyle.B2,
+                    color = ProfileColor.Muted,
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = { onIntent(ProfileIntent.Discard) }) {
+                    AppText(
+                        text = stringResource(Res.string.profile_discard),
+                        style = AppTextStyle.B1,
+                        color = ProfileColor.Orange,
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { onIntent(ProfileIntent.KeepEditing) }) {
+                    AppText(
+                        text = stringResource(Res.string.profile_keep_editing),
+                        style = AppTextStyle.B2,
+                        color = ProfileColor.Muted,
+                    )
+                }
+            },
+            containerColor = ProfileColor.Paper,
         )
-    }
-}
-
-@Composable
-private fun ProfileView(
-    state: ProfileUiState,
-    contentHeight: Dp,
-    onOpenInstagram: (String) -> Unit,
-) {
-    val profile = state.profile ?: return
-    Column(Modifier.fillMaxWidth().heightIn(min = contentHeight), verticalArrangement = Arrangement.SpaceBetween) {
-        Column {
-            Box(Modifier.fillMaxWidth()) {
-                ProfileDotField(Modifier.fillMaxWidth().height(156.dp).padding(horizontal = 12.dp))
-                Column(Modifier.fillMaxWidth().padding(top = 24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                    Box {
-                        ProfileAvatar(profile.avatarUrl, stringResource(Res.string.profile_photo), Modifier.size(128.dp))
-                        ProfileCheckStamp(Modifier.align(Alignment.BottomEnd).offset(x = 14.dp, y = 4.dp).size(34.dp))
-                    }
-                    Text(profile.nickname, Modifier.padding(top = 23.dp, start = 24.dp, end = 24.dp), color = ProfileInk, fontSize = 29.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
-                    if (profile.bio.isNotBlank()) {
-                        Text(profile.bio, Modifier.padding(top = 8.dp, start = 24.dp, end = 24.dp), color = ProfileMuted, fontSize = 12.sp, textAlign = TextAlign.Center)
-                    }
-                    val instagramUrl = ProfileInstagram.url(profile.instagramUsername)
-                    if (instagramUrl != null) {
-                        val description = stringResource(Res.string.profile_instagram_open, profile.instagramUsername)
-                        TextButton(
-                            onClick = { onOpenInstagram(instagramUrl) },
-                            modifier = Modifier.padding(horizontal = 24.dp).semantics { contentDescription = description },
-                        ) {
-                            Image(painterResource(Res.drawable.instagram_icon), null, Modifier.size(18.dp))
-                            Spacer(Modifier.size(8.dp))
-                            Text(stringResource(Res.string.profile_instagram_handle, profile.instagramUsername), color = ProfileOrange, fontSize = 13.sp, textAlign = TextAlign.Center)
-                        }
-                    }
-                }
-            }
-            Spacer(Modifier.height(32.dp))
-            Column(Modifier.padding(horizontal = 24.dp)) {
-                HorizontalDivider(color = ProfileLine)
-                Text(stringResource(Res.string.profile_account), Modifier.padding(top = 23.dp, bottom = 17.dp), color = ProfileMuted, fontSize = 12.sp)
-                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(11.dp)) {
-                    Image(painterResource(Res.drawable.ic_person), null, Modifier.size(36.dp).background(Color(0xFFF0F1EA), RoundedCornerShape(12.dp)).padding(8.dp))
-                    Text(state.email ?: stringResource(Res.string.profile_account), Modifier.weight(1f), fontSize = 13.sp, color = ProfileInk)
-                    Text(stringResource(Res.string.profile_connected), Modifier.background(Color(0xFFF0F1EA), RoundedCornerShape(4.dp)).padding(7.dp), color = ProfileMuted, fontSize = 10.sp)
-                }
-            }
-        }
-        Box(Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 24.dp), contentAlignment = Alignment.CenterEnd) {
-            ProfileFooterPixels(Modifier.size(width = 45.dp, height = 18.dp))
-        }
     }
 }
 
@@ -242,97 +280,306 @@ private fun ProfileEdit(
     val bioLabel = stringResource(Res.string.profile_bio)
     val instagramLabel = stringResource(Res.string.profile_instagram)
     val photo: Any? = state.image?.bytes ?: if (state.removePhoto) null else state.profile?.avatarUrl
-    Column(Modifier.fillMaxWidth().heightIn(min = contentHeight).padding(24.dp), verticalArrangement = Arrangement.SpaceBetween, horizontalAlignment = Alignment.CenterHorizontally) {
+
+    Column(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .heightIn(min = contentHeight)
+                .padding(24.dp),
+        verticalArrangement = Arrangement.SpaceBetween,
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Box(contentAlignment = Alignment.BottomEnd) {
-                ProfileAvatar(photo, stringResource(Res.string.profile_photo), Modifier.size(128.dp))
-                IconButton(onClick = { photoDialog = true }, enabled = !state.saving, modifier = Modifier.size(48.dp).background(ProfilePaper, RoundedCornerShape(24.dp))) {
-                    Image(painterResource(Res.drawable.ic_camera_add), stringResource(Res.string.profile_photo_change), Modifier.size(24.dp))
+                ProfileAvatar(
+                    model = photo,
+                    description = stringResource(Res.string.profile_photo),
+                    modifier = Modifier.size(128.dp),
+                )
+                IconButton(
+                    onClick = { photoDialog = true },
+                    enabled = !state.saving,
+                    modifier =
+                        Modifier
+                            .size(48.dp)
+                            .background(ProfileColor.Paper, RoundedCornerShape(24.dp)),
+                ) {
+                    Image(
+                        painter = painterResource(Res.drawable.ic_camera_add),
+                        contentDescription = stringResource(Res.string.profile_photo_change),
+                        modifier = Modifier.size(24.dp),
+                    )
                 }
             }
-            TextButton(onClick = { photoDialog = true }, enabled = !state.saving) { Text(stringResource(Res.string.profile_photo_change), color = ProfileOrange, fontSize = 12.sp) }
-            Spacer(Modifier.height(24.dp))
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text(stringResource(Res.string.profile_nickname), color = ProfileInk, fontSize = 13.sp, fontWeight = FontWeight.Bold)
-                Text(stringResource(Res.string.profile_counter, state.nickname.trim().length), color = ProfileMuted, fontSize = 11.sp)
-            }
-            OutlinedTextField(
-                value = state.nickname,
-                onValueChange = { onIntent(ProfileIntent.ChangeNickname(it)) },
-                modifier = Modifier.fillMaxWidth().padding(top = 10.dp).semantics { contentDescription = nicknameLabel },
+            TextButton(
+                onClick = { photoDialog = true },
                 enabled = !state.saving,
-                singleLine = true,
-                isError = state.nicknameTouched && state.nicknameInvalid,
-                placeholder = { Text(stringResource(Res.string.profile_nickname_placeholder), fontSize = 14.sp) },
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-                shape = RoundedCornerShape(8.dp),
-                colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = ProfileOrange, unfocusedBorderColor = ProfileLine, focusedTextColor = ProfileInk, unfocusedTextColor = ProfileInk),
+            ) {
+                AppText(
+                    text = stringResource(Res.string.profile_photo_change),
+                    style = AppTextStyle.B4,
+                    color = ProfileColor.Orange,
+                )
+            }
+            Spacer(modifier = Modifier.height(24.dp))
+            AppText(
+                text = stringResource(Res.string.profile_nickname),
+                style = AppTextStyle.B1,
+                color = ProfileColor.Ink,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(top = 10.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                OutlinedTextField(
+                    value = state.nickname,
+                    onValueChange = { onIntent(ProfileIntent.ChangeNickname(it)) },
+                    modifier = Modifier.weight(1f).semantics { contentDescription = nicknameLabel },
+                    enabled = !state.saving,
+                    singleLine = true,
+                    isError = state.nicknameTouched && (state.nicknameInvalid || state.nicknameAvailable == false),
+                    placeholder = {
+                        AppText(
+                            text = stringResource(Res.string.profile_nickname_placeholder),
+                            style = AppTextStyle.B2,
+                            color = ProfileColor.Muted,
+                        )
+                    },
+                    trailingIcon = {
+                        if (state.nickname.isNotEmpty()) {
+                            IconButton(onClick = { onIntent(ProfileIntent.ChangeNickname("")) }) {
+                                Image(
+                                    painter = painterResource(Res.drawable.ic_close),
+                                    contentDescription = stringResource(Res.string.profile_nickname_clear),
+                                    modifier = Modifier.size(18.dp),
+                                )
+                            }
+                        }
+                    },
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                    shape = RoundedCornerShape(12.dp),
+                    colors =
+                        OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = ProfileColor.Orange,
+                            unfocusedBorderColor = ProfileColor.Line,
+                            focusedTextColor = ProfileColor.Ink,
+                            unfocusedTextColor = ProfileColor.Ink,
+                            focusedContainerColor = Color(0xFFF6F7F8),
+                            unfocusedContainerColor = Color(0xFFF6F7F8),
+                        ),
+                )
+                Button(
+                    onClick = { onIntent(ProfileIntent.CheckNickname) },
+                    enabled = state.nicknameChanged && !state.nicknameInvalid && !state.checkingNickname && !state.saving,
+                    modifier = Modifier.heightIn(min = 56.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFE9E3), contentColor = ProfileColor.Orange),
+                ) {
+                    AppText(
+                        text = stringResource(Res.string.profile_nickname_check),
+                        style = AppTextStyle.B2,
+                        color = ProfileColor.Orange,
+                    )
+                }
+            }
+            AppText(
+                text = stringResource(Res.string.profile_counter, state.nickname.trim().length),
+                style = AppTextStyle.C2,
+                color = ProfileColor.Muted,
+                modifier = Modifier.fillMaxWidth(),
+                textAlign = TextAlign.End,
             )
             if (state.nicknameTouched && state.nicknameInvalid) {
-                Text(stringResource(Res.string.profile_nickname_invalid), Modifier.fillMaxWidth().padding(top = 10.dp), color = Color(0xFFBA3424), fontSize = 11.sp)
+                AppText(
+                    text = stringResource(Res.string.profile_nickname_invalid),
+                    style = AppTextStyle.C2,
+                    color = Color(0xFFBA3424),
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(top = 10.dp),
+                )
             }
-            Spacer(Modifier.height(24.dp))
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text(stringResource(Res.string.profile_bio), color = ProfileInk, fontSize = 13.sp, fontWeight = FontWeight.Bold)
-                Text(stringResource(Res.string.profile_bio_counter, ProfileBio.length(state.bio.trim())), color = ProfileMuted, fontSize = 11.sp)
+            if (!state.nicknameInvalid && state.nicknameChanged && (state.nicknameAvailable != null || state.nicknameCheckFailed)) {
+                AppText(
+                    text =
+                        stringResource(
+                            when {
+                                state.nicknameCheckFailed -> Res.string.profile_nickname_check_failed
+                                state.nicknameAvailable == true -> Res.string.profile_nickname_available
+                                else -> Res.string.profile_nickname_unavailable
+                            },
+                        ),
+                    style = AppTextStyle.C2,
+                    color = if (state.nicknameAvailable == true) ProfileColor.Muted else Color(0xFFBA3424),
+                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                )
             }
+            Spacer(modifier = Modifier.height(24.dp))
+            AppText(
+                text = stringResource(Res.string.profile_bio),
+                style = AppTextStyle.B1,
+                color = ProfileColor.Ink,
+                modifier = Modifier.fillMaxWidth(),
+            )
             OutlinedTextField(
                 value = state.bio,
                 onValueChange = { onIntent(ProfileIntent.ChangeBio(it)) },
-                modifier = Modifier.fillMaxWidth().padding(top = 10.dp).semantics { contentDescription = bioLabel },
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(top = 10.dp)
+                        .semantics { contentDescription = bioLabel },
                 enabled = !state.saving,
-                singleLine = true,
+                minLines = 3,
                 isError = state.bioInvalid,
-                placeholder = { Text(stringResource(Res.string.profile_bio_placeholder), fontSize = 14.sp) },
+                placeholder = {
+                    AppText(
+                        text = stringResource(Res.string.profile_bio_placeholder),
+                        style = AppTextStyle.B2,
+                        color = ProfileColor.Muted,
+                    )
+                },
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-                shape = RoundedCornerShape(8.dp),
-                colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = ProfileOrange, unfocusedBorderColor = ProfileLine, focusedTextColor = ProfileInk, unfocusedTextColor = ProfileInk),
+                shape = RoundedCornerShape(12.dp),
+                colors =
+                    OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = ProfileColor.Orange,
+                        unfocusedBorderColor = ProfileColor.Line,
+                        focusedTextColor = ProfileColor.Ink,
+                        unfocusedTextColor = ProfileColor.Ink,
+                        focusedContainerColor = Color(0xFFF6F7F8),
+                        unfocusedContainerColor = Color(0xFFF6F7F8),
+                    ),
+            )
+            AppText(
+                text = stringResource(Res.string.profile_bio_counter, ProfileBio.length(state.bio.trim())),
+                style = AppTextStyle.C2,
+                color = ProfileColor.Muted,
+                modifier = Modifier.fillMaxWidth(),
+                textAlign = TextAlign.End,
             )
             if (state.bioInvalid) {
-                Text(stringResource(Res.string.profile_bio_invalid), Modifier.fillMaxWidth().padding(top = 10.dp), color = Color(0xFFBA3424), fontSize = 11.sp)
+                AppText(
+                    text = stringResource(Res.string.profile_bio_invalid),
+                    style = AppTextStyle.C2,
+                    color = Color(0xFFBA3424),
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(top = 10.dp),
+                )
             }
-            Spacer(Modifier.height(24.dp))
-            Text(instagramLabel, Modifier.fillMaxWidth(), color = ProfileInk, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+            Spacer(modifier = Modifier.height(24.dp))
+            AppText(
+                text = instagramLabel,
+                style = AppTextStyle.B1,
+                color = ProfileColor.Ink,
+                modifier = Modifier.fillMaxWidth(),
+            )
             OutlinedTextField(
                 value = state.instagram,
                 onValueChange = { onIntent(ProfileIntent.ChangeInstagram(it)) },
-                modifier = Modifier.fillMaxWidth().padding(top = 10.dp).semantics { contentDescription = instagramLabel },
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(top = 10.dp)
+                        .semantics { contentDescription = instagramLabel },
                 enabled = !state.saving,
                 singleLine = true,
                 isError = state.instagramInvalid,
-                placeholder = { Text(stringResource(Res.string.profile_instagram_placeholder), fontSize = 14.sp) },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, autoCorrectEnabled = false, imeAction = ImeAction.Done),
+                placeholder = {
+                    AppText(
+                        text = stringResource(Res.string.profile_instagram_placeholder),
+                        style = AppTextStyle.B2,
+                        color = ProfileColor.Muted,
+                    )
+                },
+                keyboardOptions =
+                    KeyboardOptions(
+                        keyboardType = KeyboardType.Uri,
+                        autoCorrectEnabled = false,
+                        imeAction = ImeAction.Done,
+                    ),
                 shape = RoundedCornerShape(8.dp),
-                colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = ProfileOrange, unfocusedBorderColor = ProfileLine, focusedTextColor = ProfileInk, unfocusedTextColor = ProfileInk),
+                colors =
+                    OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = ProfileColor.Orange,
+                        unfocusedBorderColor = ProfileColor.Line,
+                        focusedTextColor = ProfileColor.Ink,
+                        unfocusedTextColor = ProfileColor.Ink,
+                    ),
             )
             if (state.instagramInvalid) {
-                Text(stringResource(Res.string.profile_instagram_invalid), Modifier.fillMaxWidth().padding(top = 10.dp), color = Color(0xFFBA3424), fontSize = 11.sp)
+                AppText(
+                    text = stringResource(Res.string.profile_instagram_invalid),
+                    style = AppTextStyle.C2,
+                    color = Color(0xFFBA3424),
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(top = 10.dp),
+                )
             }
-        }
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            ProfileButton(stringResource(Res.string.profile_save), { onIntent(ProfileIntent.Save) }, Modifier.padding(top = 36.dp), state.canSave)
-            if (state.saving) CircularProgressIndicator(Modifier.padding(top = 12.dp).size(24.dp), color = ProfileOrange)
         }
     }
     if (photoDialog) {
         AlertDialog(
             onDismissRequest = { photoDialog = false },
-            title = { Text(stringResource(Res.string.profile_photo)) },
+            title = {
+                AppText(
+                    text = stringResource(Res.string.profile_photo),
+                    style = AppTextStyle.T2,
+                    color = ProfileColor.Ink,
+                )
+            },
             text = {
                 Column {
-                    TextButton(onClick = {
-                        photoDialog = false
-                        onPickImage()
-                    }) { Text(stringResource(Res.string.profile_photo_select)) }
-                    TextButton(onClick = {
-                        photoDialog = false
-                        onIntent(ProfileIntent.RemovePhoto)
-                    }, enabled = photo != null) { Text(stringResource(Res.string.profile_photo_remove)) }
-                    Text(stringResource(Res.string.profile_photo_formats), fontSize = 11.sp, color = ProfileMuted)
+                    TextButton(
+                        onClick = {
+                            photoDialog = false
+                            onPickImage()
+                        },
+                    ) {
+                        AppText(
+                            text = stringResource(Res.string.profile_photo_select),
+                            style = AppTextStyle.B2,
+                            color = ProfileColor.Ink,
+                        )
+                    }
+                    TextButton(
+                        onClick = {
+                            photoDialog = false
+                            onIntent(ProfileIntent.RemovePhoto)
+                        },
+                        enabled = photo != null,
+                    ) {
+                        AppText(
+                            text = stringResource(Res.string.profile_photo_remove),
+                            style = AppTextStyle.B2,
+                            color = if (photo != null) ProfileColor.Orange else ProfileColor.Muted,
+                        )
+                    }
+                    AppText(
+                        text = stringResource(Res.string.profile_photo_formats),
+                        style = AppTextStyle.C2,
+                        color = ProfileColor.Muted,
+                    )
                 }
             },
-            confirmButton = { TextButton(onClick = { photoDialog = false }) { Text(stringResource(Res.string.profile_cancel)) } },
-            containerColor = ProfilePaper,
+            confirmButton = {
+                TextButton(onClick = { photoDialog = false }) {
+                    AppText(
+                        text = stringResource(Res.string.profile_cancel),
+                        style = AppTextStyle.B2,
+                        color = ProfileColor.Muted,
+                    )
+                }
+            },
+            containerColor = ProfileColor.Paper,
         )
     }
 }
@@ -344,19 +591,55 @@ private fun ProfileButton(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
 ) {
-    Button(onClick = onClick, modifier = modifier.fillMaxWidth().heightIn(min = 52.dp), enabled = enabled, shape = RoundedCornerShape(8.dp), colors = ButtonDefaults.buttonColors(containerColor = ProfileInk, contentColor = Color.White, disabledContainerColor = Color(0xFFE5E6DF), disabledContentColor = Color(0xFF8B8E82))) {
-        Text(text, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+    Button(
+        onClick = onClick,
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .heightIn(min = 52.dp),
+        enabled = enabled,
+        shape = RoundedCornerShape(8.dp),
+        colors =
+            ButtonDefaults.buttonColors(
+                containerColor = ProfileColor.Ink,
+                contentColor = Color.White,
+                disabledContainerColor = Color(0xFFE5E6DF),
+                disabledContentColor = Color(0xFF8B8E82),
+            ),
+    ) {
+        AppText(
+            text = text,
+            style = AppTextStyle.B1,
+            color = if (enabled) Color.White else Color(0xFF8B8E82),
+        )
     }
 }
 
 @Preview
 @Composable
 fun MyProfilePreview() {
-    RamapTheme { MyProfileContent(ProfileUiState(userId = "preview", profile = AccountProfile("preview", "느긋한차슈", bio = "오늘도 맛있는 한 그릇을 찾아서", instagramUsername = "ramap_official"), email = "ramen@example.com", loading = false), {}, {}, {}, {}) }
-}
-
-@Preview
-@Composable
-fun MyProfileEditPreview() {
-    RamapTheme { MyProfileContent(ProfileUiState(userId = "preview", profile = AccountProfile("preview", "느긋한차슈", bio = "오늘도 맛있는 한 그릇을 찾아서", instagramUsername = "ramap_official"), loading = false, editing = true, nickname = "느긋한차슈", bio = "오늘도 맛있는 한 그릇을 찾아서", instagram = "ramap_official"), {}, {}, {}, {}) }
+    RamapTheme {
+        MyProfileContent(
+            state =
+                ProfileUiState(
+                    userId = "preview",
+                    profile =
+                        AccountProfile(
+                            userId = "preview",
+                            nickname = "느긋한차슈",
+                            bio = "오늘도 맛있는 한 그릇을 찾아서",
+                            instagramUsername = "ramap_official",
+                        ),
+                    loadState = LoadState(),
+                    editing = true,
+                    nickname = "새로운차슈",
+                    nicknameAvailable = true,
+                    bio = "오늘도 맛있는 한 그릇을 찾아서",
+                    instagram = "ramap_official",
+                ),
+            onIntent = {},
+            onLoginClick = {},
+            onPickImage = {},
+        )
+    }
 }
