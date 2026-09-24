@@ -19,6 +19,7 @@ import com.peto.ramap.data.repository.DefaultLoginRepository
 import com.peto.ramap.data.repository.DefaultNotificationSettingsRepository
 import com.peto.ramap.data.repository.DefaultOperatingNoticeRepository
 import com.peto.ramap.data.repository.DefaultPlaceSearchRepository
+import com.peto.ramap.data.repository.DefaultProfileRepository
 import com.peto.ramap.data.repository.DefaultPushRegistrationRepository
 import com.peto.ramap.data.repository.DefaultRamenShopRepository
 import com.peto.ramap.data.repository.DefaultShopRankingRepository
@@ -35,6 +36,7 @@ import com.peto.ramap.domain.repository.LoginRepository
 import com.peto.ramap.domain.repository.NotificationSettingsRepository
 import com.peto.ramap.domain.repository.OperatingNoticeRepository
 import com.peto.ramap.domain.repository.PlaceSearchRepository
+import com.peto.ramap.domain.repository.ProfileRepository
 import com.peto.ramap.domain.repository.PushRegistrationRepository
 import com.peto.ramap.domain.repository.RamenShopRepository
 import com.peto.ramap.domain.repository.ShopRankingRepository
@@ -46,6 +48,7 @@ import org.koin.dsl.module
 
 val repositoryModule =
     module {
+        single<ProfileRepository> { DefaultProfileRepository(get()) }
         single<AppUpdateRepository> {
             DefaultAppUpdateRepository(get<AppUpdatePolicyDataSource>())
         }
