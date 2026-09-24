@@ -4,11 +4,14 @@ internal enum class SettingsMenu {
     ACCOUNT,
     INFORMATION,
     NOTIFICATION,
-}
+    ;
 
-internal fun visibleSettingsMenus(isNotificationSupported: Boolean): List<SettingsMenu> =
-    if (isNotificationSupported) {
-        listOf(SettingsMenu.ACCOUNT, SettingsMenu.NOTIFICATION, SettingsMenu.INFORMATION)
-    } else {
-        listOf(SettingsMenu.ACCOUNT, SettingsMenu.INFORMATION)
+    companion object {
+        fun visibleSettingsMenus(isNotificationSupported: Boolean): List<SettingsMenu> =
+            if (isNotificationSupported) {
+                listOf(ACCOUNT, NOTIFICATION, INFORMATION)
+            } else {
+                listOf(ACCOUNT, INFORMATION)
+            }
     }
+}

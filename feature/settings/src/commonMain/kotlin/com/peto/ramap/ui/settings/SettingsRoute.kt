@@ -39,7 +39,7 @@ fun SettingsRoute(
                 .border(1.dp, GrayColor.C200, RoundedCornerShape(20.dp))
                 .clip(RoundedCornerShape(20.dp)),
         ) {
-            visibleSettingsMenus(NotificationPermissionRequester.isSupported).forEachIndexed { index, menu ->
+            SettingsMenu.visibleSettingsMenus(NotificationPermissionRequester.isSupported).forEachIndexed { index, menu ->
                 if (index > 0) HorizontalDivider(thickness = 1.dp, color = GrayColor.C200)
                 SettingsRow(
                     title =
