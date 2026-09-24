@@ -20,6 +20,8 @@ const read = path => readFileSync(resolve('supabase', path), 'utf8');
     await db.exec(read('tests/account_profile.sql'));
     await db.exec(read('tests/account_profile_bio.sql'));
     await db.exec(read('tests/account_profile_instagram.sql'));
+    await db.exec(read('migrations/20260924060646_unique_profile_nickname.sql'));
+    await db.exec(read('tests/account_profile_nickname.sql'));
     console.log('PASS: standalone migration and RPC/RLS assertions');
   } finally { await db.close(); }
 })().catch(error => { console.error(error.message); process.exitCode = 1; });
