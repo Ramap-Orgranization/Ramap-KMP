@@ -8,9 +8,15 @@ import kotlin.test.assertTrue
 class ProfileValidationTest {
     @Test
     fun nicknameRequiresTwoToTenAllowedCharacters() {
-        listOf("시오", "ramen_1234", "가".repeat(10)).forEach { assertTrue(ProfileNickname.isValid(it)) }
+        listOf("시오", "ramen_1234", "가".repeat(10)).forEach {
+            assertTrue(ProfileNickname.isValid(it))
+            val nickname = ProfileNickname(it)
+            assertEquals(it, nickname.value)
+            assertTrue(nickname.isValid)
+        }
         listOf("", "가", "가".repeat(11), " 라멘", "라멘 ", "라 멘", "라멘🍜", "ㄱㄴ").forEach {
             assertFalse(ProfileNickname.isValid(it))
+            assertFalse(ProfileNickname(it).isValid)
         }
     }
 

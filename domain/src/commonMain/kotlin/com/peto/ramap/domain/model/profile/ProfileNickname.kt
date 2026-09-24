@@ -1,10 +1,20 @@
 package com.peto.ramap.domain.model.profile
 
-object ProfileNickname {
-    const val MIN_LENGTH = 2
-    const val MAX_LENGTH = 10
+import kotlin.jvm.JvmInline
 
-    private val allowed = Regex("^[A-Za-z0-9가-힣_]{2,10}$")
+@JvmInline
+value class ProfileNickname(
+    val value: String,
+) {
+    val isValid: Boolean
+        get() = isValid(value)
 
-    fun isValid(value: String): Boolean = allowed.matches(value)
+    companion object {
+        const val MIN_LENGTH = 2
+        const val MAX_LENGTH = 10
+
+        private val allowed = Regex("^[A-Za-z0-9가-힣_]{$MIN_LENGTH,$MAX_LENGTH}$")
+
+        fun isValid(value: String): Boolean = allowed.matches(value)
+    }
 }
