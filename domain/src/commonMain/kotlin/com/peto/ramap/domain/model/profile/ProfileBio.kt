@@ -15,9 +15,9 @@ value class ProfileBio(
     companion object {
         const val MAX_LENGTH = 50
 
-        private const val lineBreaks = "\n\r\u000B\u000C\u0085\u2028\u2029"
+        private const val LINE_BREAKS = "\n\r\u000B\u000C\u0085\u2028\u2029"
 
-        fun isValid(value: String): Boolean = length(value) <= MAX_LENGTH && value.none { it in lineBreaks }
+        fun isValid(value: String): Boolean = length(value) <= MAX_LENGTH && value.none { it in LINE_BREAKS }
 
         fun length(value: String): Int {
             var length = 0
