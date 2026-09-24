@@ -43,6 +43,7 @@ import com.peto.ramap.ui.main.notice.OperatingNoticeRoute
 import com.peto.ramap.ui.main.ranking.RankingRoute
 import com.peto.ramap.ui.notification.NotificationSettingsRoute
 import com.peto.ramap.ui.report.PlaceReportRoute
+import com.peto.ramap.ui.settings.SettingsRoute
 import com.peto.ramap.ui.subscribed.SubscribedShopListRoute
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
@@ -152,16 +153,21 @@ internal fun AppRoute(
         },
         myScreen = {
             MyTabRoute(
-                onAccountNavigate = navigationState::showAccountSettings,
-                onInformationNavigate = navigationState::showInformation,
+                onSettingsNavigate = navigationState::showSettings,
                 onReportNavigate = navigationState::showPlaceReport,
                 onHiddenShopsNavigate = navigationState::showHiddenShops,
-                onNotificationSettingsNavigate =
-                    navigationState::showNotificationSettings,
                 onSubscribedShopsNavigate =
                     navigationState::showSubscribedShops,
                 onBookmarkedShopsNavigate =
                     navigationState::showBookmarkedShops,
+            )
+        },
+        settingsScreen = {
+            SettingsRoute(
+                onBack = navigationState::pop,
+                onAccountNavigate = navigationState::showAccountSettings,
+                onInformationNavigate = navigationState::showInformation,
+                onNotificationSettingsNavigate = navigationState::showNotificationSettings,
             )
         },
         accountSettingsScreen = {

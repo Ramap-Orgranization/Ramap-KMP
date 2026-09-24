@@ -15,6 +15,8 @@ import com.peto.ramap.data.datasource.personalization.RemoteBookmarkShopDataSour
 import com.peto.ramap.data.datasource.personalization.RemoteHiddenShopDataSource
 import com.peto.ramap.data.datasource.place.PlaceSearchDataSource
 import com.peto.ramap.data.datasource.place.RemotePlaceSearchDataSource
+import com.peto.ramap.data.datasource.profile.ProfileDataSource
+import com.peto.ramap.data.datasource.profile.RemoteProfileDataSource
 import com.peto.ramap.data.datasource.ranking.RemoteShopRankingDataSource
 import com.peto.ramap.data.datasource.ranking.ShopRankingDataSource
 import com.peto.ramap.data.datasource.report.RemotePlaceLinkResolver
@@ -34,6 +36,7 @@ import org.koin.dsl.module
 
 val dataSourceModule =
     module {
+        single<ProfileDataSource> { RemoteProfileDataSource(get()) }
         single { NaverImportationDataSource(get(), get<HttpClient>()) }
         single { KakaoImportationDataSource(get()) }
         single<ImportationDataSource> { RemoteImportationDataSource(get(), get()) }

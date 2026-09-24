@@ -1,4 +1,4 @@
-package com.peto.ramap.ui.main.my
+package com.peto.ramap.ui.settings
 
 import com.peto.ramap.coroutinesTest
 import com.peto.ramap.domain.model.auth.LoginSessionState
@@ -20,12 +20,10 @@ class SettingsViewModelTest {
 
             repository.updateSessionState(LoginSessionState.AUTHENTICATED)
             runCurrent()
-
             assertTrue(viewModel.uiState.value.isLoggedIn)
 
             repository.updateSessionState(LoginSessionState.NOT_AUTHENTICATED)
             runCurrent()
-
             assertFalse(viewModel.uiState.value.isLoggedIn)
         }
 }

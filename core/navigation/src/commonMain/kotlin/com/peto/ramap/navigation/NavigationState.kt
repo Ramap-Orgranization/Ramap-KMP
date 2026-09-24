@@ -34,6 +34,8 @@ class NavigationState(
         }
     }
 
+    fun showSettings() = showOnce(ScreenRoutes.SettingsRoutes)
+
     fun showAccountSettings() = showOnce(ScreenRoutes.AccountSettingsRoutes)
 
     fun showInformation() = showOnce(ScreenRoutes.InformationRoutes)

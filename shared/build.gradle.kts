@@ -100,6 +100,7 @@ kotlin {
             implementation(projects.feature.hidden)
             implementation(projects.feature.notification)
             implementation(projects.feature.report)
+            implementation(projects.feature.settings)
             implementation(projects.feature.subscribed)
             implementation(libs.compose.runtime)
             implementation(libs.compose.foundation)
