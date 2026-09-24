@@ -32,7 +32,6 @@ import com.peto.ramap.ui.account.AccountViewModel
 import com.peto.ramap.ui.account.InformationRoute
 import com.peto.ramap.ui.account.contract.AccountIntent
 import com.peto.ramap.ui.account.contract.AccountSideEffect
-import com.peto.ramap.ui.account.profile.MyProfileRoute
 import com.peto.ramap.ui.base.ObserveAsEvents
 import com.peto.ramap.ui.bookmark.importation.ImportationGuideRoute
 import com.peto.ramap.ui.bookmark.importation.ImportationRoute
@@ -45,10 +44,12 @@ import com.peto.ramap.ui.main.map.MapViewModel
 import com.peto.ramap.ui.main.map.ShopDetailHost
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnMapTabExited
 import com.peto.ramap.ui.main.my.MyTabRoute
+import com.peto.ramap.ui.main.my.profile.MyProfileRoute
 import com.peto.ramap.ui.main.notice.OperatingNoticeRoute
 import com.peto.ramap.ui.main.ranking.RankingRoute
 import com.peto.ramap.ui.notification.NotificationSettingsRoute
 import com.peto.ramap.ui.report.PlaceReportRoute
+import com.peto.ramap.ui.settings.SettingsRoute
 import com.peto.ramap.ui.subscribed.SubscribedShopListRoute
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
@@ -166,16 +167,21 @@ internal fun AppRoute(
         myScreen = {
             MyTabRoute(
                 onProfileNavigate = navigationState::showMyProfile,
-                onAccountNavigate = navigationState::showAccountSettings,
-                onInformationNavigate = navigationState::showInformation,
+                onSettingsNavigate = navigationState::showSettings,
                 onReportNavigate = navigationState::showPlaceReport,
                 onHiddenShopsNavigate = navigationState::showHiddenShops,
-                onNotificationSettingsNavigate =
-                    navigationState::showNotificationSettings,
                 onSubscribedShopsNavigate =
                     navigationState::showSubscribedShops,
                 onBookmarkedShopsNavigate =
                     navigationState::showBookmarkedShops,
+            )
+        },
+        settingsScreen = {
+            SettingsRoute(
+                onBack = navigationState::pop,
+                onAccountNavigate = navigationState::showAccountSettings,
+                onInformationNavigate = navigationState::showInformation,
+                onNotificationSettingsNavigate = navigationState::showNotificationSettings,
             )
         },
         accountSettingsScreen = {

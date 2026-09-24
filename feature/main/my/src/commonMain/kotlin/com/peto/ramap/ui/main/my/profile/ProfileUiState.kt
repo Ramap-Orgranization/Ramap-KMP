@@ -1,4 +1,4 @@
-package com.peto.ramap.ui.account.profile
+package com.peto.ramap.ui.main.my.profile
 
 import com.peto.ramap.domain.model.profile.AccountProfile
 import com.peto.ramap.domain.model.profile.ProfileBio

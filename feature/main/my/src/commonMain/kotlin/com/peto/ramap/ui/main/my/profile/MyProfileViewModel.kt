@@ -1,4 +1,4 @@
-package com.peto.ramap.ui.account.profile
+package com.peto.ramap.ui.main.my.profile
 
 import androidx.lifecycle.viewModelScope
 import com.peto.ramap.core.result.RamapResult

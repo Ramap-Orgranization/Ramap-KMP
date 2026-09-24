@@ -1,4 +1,4 @@
-package com.peto.ramap.ui.account.profile
+package com.peto.ramap.ui.main.my.profile
 
 import com.peto.ramap.ui.base.SideEffect
 import org.jetbrains.compose.resources.StringResource

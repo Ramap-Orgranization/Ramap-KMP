@@ -25,6 +25,7 @@ fun NavigationRouter(
     eventListScreen: @Composable () -> Unit,
     operatingNoticeScreen: @Composable () -> Unit,
     myScreen: @Composable () -> Unit,
+    settingsScreen: @Composable () -> Unit,
     accountSettingsScreen: @Composable () -> Unit,
     myProfileScreen: @Composable () -> Unit,
     informationScreen: @Composable () -> Unit,
@@ -76,6 +77,7 @@ fun NavigationRouter(
                 )
             }
             entry<ScreenRoutes.MyProfileRoutes> { FullScreen(myProfileScreen) }
+            entry<ScreenRoutes.SettingsRoutes> { FullScreen(settingsScreen) }
             entry<ScreenRoutes.AccountSettingsRoutes> { FullScreen(accountSettingsScreen) }
             entry<ScreenRoutes.InformationRoutes> { FullScreen(informationScreen) }
             entry<ScreenRoutes.PlaceReportRoutes> { FullScreen(placeReportScreen) }
