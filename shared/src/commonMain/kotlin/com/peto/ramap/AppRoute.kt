@@ -9,6 +9,7 @@ import com.peto.ramap.deeplink.DeepLinkEvent
 import com.peto.ramap.designsystem.toast.ToastManager
 import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
+import com.peto.ramap.domain.model.auth.LoginType
 import com.peto.ramap.domain.repository.LoginRepository
 import com.peto.ramap.domain.store.PersonalizationBootstrapState
 import com.peto.ramap.domain.store.ShopPersonalizationStore
@@ -27,7 +28,11 @@ import com.peto.ramap.notification.NotificationDeepLink
 import com.peto.ramap.notification.NotificationDeepLinkParser
 import com.peto.ramap.notification.NotificationLaunchDispatcher
 import com.peto.ramap.ui.account.AccountSettingsRoute
+import com.peto.ramap.ui.account.AccountViewModel
 import com.peto.ramap.ui.account.InformationRoute
+import com.peto.ramap.ui.account.contract.AccountIntent
+import com.peto.ramap.ui.account.contract.AccountSideEffect
+import com.peto.ramap.ui.base.ObserveAsEvents
 import com.peto.ramap.ui.bookmark.importation.ImportationGuideRoute
 import com.peto.ramap.ui.bookmark.importation.ImportationRoute
 import com.peto.ramap.ui.bookmark.list.BookmarkedShopListRoute
@@ -39,6 +44,7 @@ import com.peto.ramap.ui.main.map.MapViewModel
 import com.peto.ramap.ui.main.map.ShopDetailHost
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnMapTabExited
 import com.peto.ramap.ui.main.my.MyTabRoute
+import com.peto.ramap.ui.main.my.profile.MyProfileRoute
 import com.peto.ramap.ui.main.notice.OperatingNoticeRoute
 import com.peto.ramap.ui.main.ranking.RankingRoute
 import com.peto.ramap.ui.notification.NotificationSettingsRoute
@@ -70,6 +76,13 @@ internal fun AppRoute(
         rememberNavigationState(
             onMapTabExited = { mapViewModel.dispatch(OnMapTabExited) },
         )
+
+    val profileLoginViewModel = koinViewModel<AccountViewModel>(key = "profile-login")
+    ObserveAsEvents(profileLoginViewModel.sideEffect) { effect ->
+        when (effect) {
+            is AccountSideEffect.ShowToast -> toastManager.show(effect.data)
+        }
+    }
 
     HandleDeepLinkEvents(deepLinkEntryPoint, notificationLaunchDispatcher, shopDeepLinkDispatcher, appAnalytics)
 
@@ -153,6 +166,7 @@ internal fun AppRoute(
         },
         myScreen = {
             MyTabRoute(
+                onProfileNavigate = navigationState::showMyProfile,
                 onSettingsNavigate = navigationState::showSettings,
                 onReportNavigate = navigationState::showPlaceReport,
                 onHiddenShopsNavigate = navigationState::showHiddenShops,
@@ -173,6 +187,19 @@ internal fun AppRoute(
         accountSettingsScreen = {
             AccountSettingsRoute(
                 onBack = navigationState::pop,
+            )
+        },
+        myProfileScreen = {
+            MyProfileRoute(
+                onBack = navigationState::pop,
+                onLoginClick = { type ->
+                    profileLoginViewModel.dispatch(
+                        when (type) {
+                            LoginType.KAKAO -> AccountIntent.OnKakaoLoginClick
+                            LoginType.APPLE -> AccountIntent.OnAppleLoginClick
+                        },
+                    )
+                },
             )
         },
         informationScreen = {

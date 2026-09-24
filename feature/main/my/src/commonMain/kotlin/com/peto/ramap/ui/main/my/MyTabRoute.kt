@@ -14,10 +14,12 @@ import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
@@ -31,6 +33,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -42,8 +46,10 @@ import com.peto.ramap.designsystem.profile.ProfileAvatar
 import com.peto.ramap.designsystem.profile.ProfileDotField
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.domain.model.profile.AccountProfile
+import com.peto.ramap.extension.noRippleClickable
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.MyTabColor
+import com.peto.ramap.theme.ProfileColor
 import com.peto.ramap.theme.RamapTheme
 import com.peto.ramap.ui.main.my.contract.MyTabIntent
 import com.peto.ramap.ui.main.my.contract.MyTabUiState
@@ -56,10 +62,12 @@ import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.ic_chevron_right
 import ramap.shared.generated.resources.ic_notification
 import ramap.shared.generated.resources.ic_profile_bookmark
+import ramap.shared.generated.resources.ic_profile_edit
 import ramap.shared.generated.resources.ic_profile_report
 import ramap.shared.generated.resources.ic_setting
 import ramap.shared.generated.resources.ic_visibility_off
 import ramap.shared.generated.resources.profile_bio_empty
+import ramap.shared.generated.resources.profile_edit
 import ramap.shared.generated.resources.profile_instagram_empty
 import ramap.shared.generated.resources.profile_instagram_handle
 import ramap.shared.generated.resources.profile_load_failed
@@ -79,6 +87,7 @@ fun MyTabRoute(
     onHiddenShopsNavigate: () -> Unit,
     onSubscribedShopsNavigate: () -> Unit,
     onBookmarkedShopsNavigate: () -> Unit,
+    onProfileNavigate: () -> Unit,
     viewModel: MyTabViewModel = koinViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -86,6 +95,7 @@ fun MyTabRoute(
     MyTabContent(
         state = state,
         onSettingsClick = onSettingsNavigate,
+        onProfileClick = onProfileNavigate,
         onRetryClick = { viewModel.dispatch(MyTabIntent.Refresh) },
         onBookmarkedShopsClick = onBookmarkedShopsNavigate,
         onSubscribedShopsClick = onSubscribedShopsNavigate,
@@ -98,12 +108,14 @@ fun MyTabRoute(
 internal fun MyTabContent(
     state: MyTabUiState,
     onSettingsClick: () -> Unit,
+    onProfileClick: () -> Unit,
     onRetryClick: () -> Unit,
     onBookmarkedShopsClick: () -> Unit,
     onSubscribedShopsClick: () -> Unit,
     onHiddenShopsClick: () -> Unit,
     onReportClick: () -> Unit,
 ) {
+    val profileEditDescription = stringResource(Res.string.profile_edit)
     Column(
         modifier =
             Modifier
@@ -131,7 +143,9 @@ internal fun MyTabContent(
         Column(
             modifier =
                 Modifier
-                    .fillMaxWidth(),
+                    .fillMaxWidth()
+                    .semantics { contentDescription = profileEditDescription }
+                    .noRippleClickable(role = Role.Button, onClick = onProfileClick),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             if (!state.sessionResolved || (state.loading && state.profile == null)) {
@@ -145,11 +159,31 @@ internal fun MyTabContent(
                     contentAlignment = Alignment.Center,
                 ) {
                     ProfileDotField(modifier = Modifier.fillMaxSize())
-                    ProfileAvatar(
-                        model = state.profile?.avatarUrl,
-                        description = stringResource(Res.string.profile_photo),
-                        modifier = Modifier.size(86.dp),
-                    )
+                    Box(modifier = Modifier.size(86.dp)) {
+                        ProfileAvatar(
+                            model = state.profile?.avatarUrl,
+                            description = stringResource(Res.string.profile_photo),
+                            modifier = Modifier.size(86.dp),
+                        )
+                        Box(
+                            modifier =
+                                Modifier
+                                    .align(Alignment.BottomEnd)
+                                    .offset(x = 4.dp, y = 4.dp)
+                                    .size(30.dp)
+                                    .border(2.dp, Color.White, CircleShape)
+                                    .clip(CircleShape)
+                                    .background(ProfileColor.Orange),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Icon(
+                                painter = painterResource(Res.drawable.ic_profile_edit),
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp),
+                                tint = Color.White,
+                            )
+                        }
+                    }
                 }
                 AppText(
                     text = state.profile?.nickname ?: stringResource(Res.string.profile_title),
@@ -365,6 +399,7 @@ private fun MyTabRoutePreview() {
                     hiddenCount = 0,
                 ),
             onSettingsClick = {},
+            onProfileClick = {},
             onRetryClick = {},
             onBookmarkedShopsClick = {},
             onSubscribedShopsClick = {},
