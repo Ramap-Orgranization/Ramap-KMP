@@ -15,6 +15,7 @@ val ScreenRoutes.analyticsScreenName: String
             is ScreenRoutes.OperatingNoticeRoutes -> "operating_notice"
             is ScreenRoutes.RankingTabRoutes -> "ranking"
             is ScreenRoutes.MyTabRoutes -> "my"
+            is ScreenRoutes.SettingsRoutes -> "settings"
             is ScreenRoutes.AccountSettingsRoutes -> "account_settings"
             is ScreenRoutes.InformationRoutes -> "information"
             is ScreenRoutes.PlaceReportRoutes -> "place_report"
