@@ -4,9 +4,8 @@ import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.data.datasource.profile.ProfileDataSource
 import com.peto.ramap.data.model.ProfileResponse
 import com.peto.ramap.domain.model.profile.AccountProfile
-import com.peto.ramap.domain.model.profile.ProfileBio
+import com.peto.ramap.domain.model.profile.ProfileDraft
 import com.peto.ramap.domain.model.profile.ProfileImage
-import com.peto.ramap.domain.model.profile.ProfileInstagram
 import com.peto.ramap.domain.model.profile.ProfileNickname
 import com.peto.ramap.domain.repository.ProfileRepository
 import com.peto.ramap.network.execute.invokeRequest
@@ -31,21 +30,29 @@ internal class DefaultProfileRepository(
             }
         }
 
-    override suspend fun updateMyProfile(
-        nickname: String,
-        image: ProfileImage?,
-        removePhoto: Boolean,
-        bio: String?,
-        instagramUsername: String?,
-    ): RamapResult<AccountProfile> =
+    override suspend fun isNicknameAvailable(nickname: String): RamapResult<Boolean> =
         invokeRequest {
-            require(ProfileNickname.isValid(nickname)) { "Invalid profile nickname" }
-            require(bio == null || ProfileBio.isValid(bio)) { "Invalid profile bio" }
-            val instagram = instagramUsername?.let { requireNotNull(ProfileInstagram.normalize(it)) { "Invalid profile Instagram" } }
-            require(image == null || image.isValid()) { "Invalid profile image" }
-            require(image == null || !removePhoto) { "Conflicting profile image changes" }
+            require(ProfileNickname(nickname).isValid) { "Invalid profile nickname" }
             val userId = requireNotNull(dataSource.currentUserId()) { "Missing authenticated user" }
-            operations.withLock { updateProfile(userId, nickname, image, removePhoto, bio, instagram) }
+            val available = dataSource.isNicknameAvailable(nickname)
+            checkSession(userId)
+            available
+        }
+
+    override suspend fun updateMyProfile(draft: ProfileDraft): RamapResult<AccountProfile> =
+        invokeRequest {
+            draft.validate()
+            val userId = requireNotNull(dataSource.currentUserId()) { "Missing authenticated user" }
+            operations.withLock {
+                updateProfile(
+                    userId = userId,
+                    nickname = draft.nickname.value,
+                    image = draft.image,
+                    removePhoto = draft.removePhoto,
+                    bio = draft.bio?.value.orEmpty(),
+                    instagramUsername = draft.normalizedInstagramUsername.orEmpty(),
+                )
+            }
         }
 
     private suspend fun updateProfile(

@@ -174,6 +174,8 @@ internal class ProfileDataSourceFake : ProfileDataSource {
         return ProfileResponse(userId, "라멘", "$userId/old.jpg", bio, instagramUsername)
     }
 
+    override suspend fun isNicknameAvailable(nickname: String): Boolean = true
+
     override suspend fun updateProfile(
         userId: String,
         nickname: String,

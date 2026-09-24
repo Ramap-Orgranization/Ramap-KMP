@@ -11,6 +11,8 @@ internal interface ProfileDataSource {
 
     suspend fun fetchProfile(userId: String): ProfileResponse
 
+    suspend fun isNicknameAvailable(nickname: String): Boolean
+
     suspend fun updateProfile(
         userId: String,
         nickname: String,

@@ -27,6 +27,8 @@ internal class RemoteProfileDataSource(
 
     override suspend fun fetchProfile(userId: String): ProfileResponse = client.postgrest.rpc("fetch_or_create_my_profile", buildJsonObject { put("p_user_id", userId) }).decodeAs()
 
+    override suspend fun isNicknameAvailable(nickname: String): Boolean = client.postgrest.rpc("is_profile_nickname_available", buildJsonObject { put("p_nickname", nickname) }).decodeAs()
+
     override suspend fun updateProfile(
         userId: String,
         nickname: String,
