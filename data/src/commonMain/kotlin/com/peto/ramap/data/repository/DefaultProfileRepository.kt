@@ -49,8 +49,8 @@ internal class DefaultProfileRepository(
                     nickname = draft.nickname.value,
                     image = draft.image,
                     removePhoto = draft.removePhoto,
-                    bio = draft.bio?.value.orEmpty(),
-                    instagramUsername = draft.normalizedInstagramUsername.orEmpty(),
+                    bio = draft.bio?.value,
+                    instagramUsername = draft.normalizedInstagramUsername,
                 )
             }
         }
