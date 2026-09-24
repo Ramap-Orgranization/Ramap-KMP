@@ -52,3 +52,8 @@ outputs/
 /artifacts
 iosApp/iosApp/GoogleService-Info-Release.plist
 tools/menu-snapshot-data.js
+
+!/supabase/ACCOUNT_PROFILE.md
+!/supabase/tests/
+!/supabase/tests/*.sql
+!/supabase/tests/*.cjs

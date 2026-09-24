@@ -1,0 +1,33 @@
+-- Run only after account_profile_bio.sql in the disposable PostgreSQL fixture.
+select public.profile_test_assert((select count(*) = 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'public' and p.proname = 'update_my_profile'), 'one Instagram RPC signature');
+set role authenticated;
+select set_config('request.jwt.claim.sub', '22222222-2222-2222-2222-222222222222', false);
+select public.profile_test_assert(public.fetch_or_create_my_profile('22222222-2222-2222-2222-222222222222')->>'instagram_username' = '', 'Instagram defaults to empty');
+select public.profile_test_reject($q$select instagram_username from public.public_profiles$q$);
+select public.profile_test_assert(public.update_my_profile('22222222-2222-2222-2222-222222222222', '시오라멘', p_instagram_username => 'ramap.official')->>'instagram_username' = 'ramap.official', 'canonical Instagram stored');
+select public.profile_test_assert(public.fetch_or_create_my_profile('22222222-2222-2222-2222-222222222222')->>'instagram_username' = 'ramap.official', 'Instagram persists on fetch');
+select public.profile_test_assert(public.update_my_profile('22222222-2222-2222-2222-222222222222', '시오라멘', null, false)->>'instagram_username' = 'ramap.official', 'legacy four-argument update preserves Instagram');
+select public.profile_test_assert(public.update_my_profile('22222222-2222-2222-2222-222222222222', '시오라멘', null, false, '한 줄')->>'instagram_username' = 'ramap.official', 'legacy five-argument bio update preserves Instagram');
+select public.profile_test_assert(public.update_my_profile('22222222-2222-2222-2222-222222222222', '시오라멘', null, false, null, null)->>'instagram_username' = 'ramap.official', 'explicit null sixth argument preserves Instagram');
+select public.profile_test_reject(format('select public.update_my_profile(%L, %L, p_instagram_username => %L)', '22222222-2222-2222-2222-222222222222', '시오라멘', invalid))
+from unnest(array['RaMap', '@ramap', 'https://instagram.com/ramap', '라맵', 'ra map', 'ra-map', '.ramap', 'ramap.', 'ra..map', '.', '..', repeat('a', 31), E'ramap\n', 'about', 'accounts', 'api', 'challenge', 'developer', 'developers', 'direct', 'emails', 'explore', 'legal', 'nametag', 'oauth', 'p', 'privacy', 'reel', 'reels', 'share', 'stories', 'terms', 'tv', 'web']) invalid;
+select public.profile_test_assert(public.update_my_profile('22222222-2222-2222-2222-222222222222', '시오라멘', p_instagram_username => repeat('a', 30))->>'instagram_username' = repeat('a', 30), 'thirty ASCII characters accepted');
+select public.profile_test_assert(public.update_my_profile('22222222-2222-2222-2222-222222222222', '시오라멘', p_instagram_username => '_')->>'instagram_username' = '_', 'single valid character accepted');
+select public.profile_test_reject($q$select public.update_my_profile('11111111-1111-1111-1111-111111111111', '시오라멘', p_instagram_username => 'other_owner')$q$);
+reset role;
+update public.public_profiles set approved_at = now() where user_id = '22222222-2222-2222-2222-222222222222';
+set role authenticated;
+select public.update_my_profile('22222222-2222-2222-2222-222222222222', '시오라멘', p_instagram_username => '_');
+reset role;
+select public.profile_test_assert((select approved_at is not null from public.public_profiles where user_id = '22222222-2222-2222-2222-222222222222'), 'unchanged Instagram preserves approval');
+set role authenticated;
+select public.profile_test_assert(public.update_my_profile('22222222-2222-2222-2222-222222222222', '시오라멘', p_instagram_username => '')->>'instagram_username' = '', 'empty Instagram removes link');
+reset role;
+select public.profile_test_assert((select approved_at is null and bio = '한 줄' and accepted_at is null and accepted_guidelines_version is null from public.public_profiles where user_id = '22222222-2222-2222-2222-222222222222'), 'Instagram change resets approval and preserves bio/consent');
+select public.profile_test_reject($q$update public.public_profiles set instagram_username = 'RaMap' where user_id = '22222222-2222-2222-2222-222222222222'$q$);
+set role authenticated;
+select set_config('request.jwt.claim.sub', '11111111-1111-1111-1111-111111111111', false);
+select public.profile_test_reject($q$select public.update_my_profile('11111111-1111-1111-1111-111111111111', '시오라멘', p_instagram_username => 'suspended')$q$);
+set role anon;
+select public.profile_test_reject($q$select public.update_my_profile('11111111-1111-1111-1111-111111111111', '시오라멘', p_instagram_username => 'anonymous')$q$);
+reset role;
