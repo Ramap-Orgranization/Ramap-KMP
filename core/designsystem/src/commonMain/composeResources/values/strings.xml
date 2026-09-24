@@ -368,7 +368,7 @@
     <string name="top_level_tab_map">지도</string>
     <string name="top_level_tab_ranking">랭킹</string>
     <string name="top_level_tab_event">새소식</string>
-    <string name="top_level_tab_my">내 프로필</string>
+    <string name="top_level_tab_my">마이</string>
 
     <!-- 매장 랭킹 화면 -->
     <string name="ranking_title">매장 랭킹</string>
@@ -441,13 +441,15 @@
     <string name="admin_correction_success">수정했어요.</string>
     <!-- Profile -->
     <string name="profile_title">내 프로필</string>
-    <string name="profile_edit">프로필 수정</string>
+    <string name="profile_edit">프로필 편집</string>
     <string name="profile_edit_action">수정</string>
     <string name="profile_bio">한 줄 자기소개</string>
+    <string name="profile_bio_empty">자기소개를 작성해주세요</string>
     <string name="profile_bio_placeholder">50자 이내로 입력해 주세요.</string>
     <string name="profile_bio_invalid">줄바꿈 없이 50자 이내로 입력해 주세요.</string>
     <string name="profile_bio_counter">%1$d / 50</string>
     <string name="profile_instagram">인스타그램 계정</string>
+    <string name="profile_instagram_empty">인스타그램 계정을 등록해주세요</string>
     <string name="profile_instagram_placeholder">아이디 또는 프로필 링크</string>
     <string name="profile_instagram_invalid">인스타그램 아이디 또는 프로필 링크를 확인해 주세요.</string>
     <string name="profile_instagram_handle">@%1$s</string>
@@ -462,6 +464,12 @@
     <string name="profile_nickname">닉네임</string>
     <string name="profile_nickname_placeholder">2~10글자를 입력해 주세요.</string>
     <string name="profile_nickname_invalid">한글·영문·숫자·밑줄로 2~10글자를 입력해 주세요.</string>
+    <string name="profile_nickname_check">중복확인</string>
+    <string name="profile_nickname_available">사용할 수 있는 닉네임이에요.</string>
+    <string name="profile_nickname_unavailable">이미 사용 중인 닉네임이에요.</string>
+    <string name="profile_nickname_check_failed">확인하지 못했어요. 다시 시도해 주세요.</string>
+    <string name="profile_nickname_clear">닉네임 지우기</string>
+    <string name="profile_complete">완료</string>
     <string name="profile_counter">%1$d / 10</string>
     <string name="profile_save">저장하기</string>
     <string name="profile_saved">프로필을 저장했어요.</string>
