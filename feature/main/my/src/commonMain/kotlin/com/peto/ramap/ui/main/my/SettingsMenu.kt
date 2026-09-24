@@ -2,6 +2,7 @@ package com.peto.ramap.ui.main.my
 
 internal enum class SettingsMenu {
     ACCOUNT,
+    PROFILE,
     INFORMATION,
     NOTIFICATION,
     REPORT,
@@ -23,18 +24,14 @@ internal fun visibleSettingsMenus(
     if (!isLoggedIn) return commonMenus
 
     val loggedInMenus =
-        listOf(
-            SettingsMenu.ACCOUNT,
-            SettingsMenu.INFORMATION,
-            SettingsMenu.REPORT,
-        ) +
+        listOf(SettingsMenu.PROFILE) + commonMenus +
             listOf(
                 SettingsMenu.HIDDEN_SHOPS,
                 SettingsMenu.SUBSCRIBED_SHOPS,
                 SettingsMenu.BOOKMARKED_SHOPS,
             )
     return if (isNotificationSupported) {
-        loggedInMenus.toMutableList().apply { add(2, SettingsMenu.NOTIFICATION) }
+        loggedInMenus.toMutableList().apply { add(3, SettingsMenu.NOTIFICATION) }
     } else {
         loggedInMenus
     }

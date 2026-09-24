@@ -30,6 +30,7 @@ import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 import ramap.shared.generated.resources.Res
+import ramap.shared.generated.resources.profile_title
 import ramap.shared.generated.resources.settings_account_menu
 import ramap.shared.generated.resources.settings_bookmarked_shops_menu
 import ramap.shared.generated.resources.settings_hidden_shops_menu
@@ -48,6 +49,7 @@ fun MyTabRoute(
     onHiddenShopsNavigate: () -> Unit,
     onSubscribedShopsNavigate: () -> Unit,
     onBookmarkedShopsNavigate: () -> Unit,
+    onProfileNavigate: () -> Unit,
     viewModel: SettingsViewModel = koinViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -62,6 +64,7 @@ fun MyTabRoute(
         onHiddenShopsClick = onHiddenShopsNavigate,
         onSubscribedShopsClick = onSubscribedShopsNavigate,
         onBookmarkedShopsClick = onBookmarkedShopsNavigate,
+        onProfileClick = onProfileNavigate,
     )
 }
 
@@ -76,6 +79,7 @@ internal fun MyContent(
     onHiddenShopsClick: () -> Unit,
     onSubscribedShopsClick: () -> Unit,
     onBookmarkedShopsClick: () -> Unit,
+    onProfileClick: () -> Unit,
 ) {
     Column(
         modifier =
@@ -112,6 +116,7 @@ internal fun MyContent(
                             onHiddenShopsClick = onHiddenShopsClick,
                             onSubscribedShopsClick = onSubscribedShopsClick,
                             onBookmarkedShopsClick = onBookmarkedShopsClick,
+                            onProfileClick = onProfileClick,
                         ),
                 )
             }
@@ -140,6 +145,7 @@ private fun SettingsRow(
 private fun settingsMenuTitle(menu: SettingsMenu): StringResource =
     when (menu) {
         SettingsMenu.ACCOUNT -> Res.string.settings_account_menu
+        SettingsMenu.PROFILE -> Res.string.profile_title
         SettingsMenu.INFORMATION -> Res.string.settings_information_menu
         SettingsMenu.NOTIFICATION -> Res.string.settings_notification_menu
         SettingsMenu.REPORT -> Res.string.settings_report_menu
@@ -157,9 +163,11 @@ private fun onClickSettingsMenu(
     onHiddenShopsClick: () -> Unit,
     onSubscribedShopsClick: () -> Unit,
     onBookmarkedShopsClick: () -> Unit,
+    onProfileClick: () -> Unit,
 ): () -> Unit =
     when (menu) {
         SettingsMenu.ACCOUNT -> onAccountClick
+        SettingsMenu.PROFILE -> onProfileClick
         SettingsMenu.INFORMATION -> onInformationClick
         SettingsMenu.NOTIFICATION -> onNotificationSettingsClick
         SettingsMenu.REPORT -> onReportClick
