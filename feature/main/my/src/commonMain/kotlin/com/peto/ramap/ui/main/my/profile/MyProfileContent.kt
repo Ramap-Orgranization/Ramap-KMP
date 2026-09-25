@@ -30,10 +30,6 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -69,7 +65,6 @@ import ramap.shared.generated.resources.profile_bio
 import ramap.shared.generated.resources.profile_bio_counter
 import ramap.shared.generated.resources.profile_bio_invalid
 import ramap.shared.generated.resources.profile_bio_placeholder
-import ramap.shared.generated.resources.profile_cancel
 import ramap.shared.generated.resources.profile_complete
 import ramap.shared.generated.resources.profile_counter
 import ramap.shared.generated.resources.profile_discard
@@ -91,9 +86,6 @@ import ramap.shared.generated.resources.profile_nickname_placeholder
 import ramap.shared.generated.resources.profile_nickname_unavailable
 import ramap.shared.generated.resources.profile_photo
 import ramap.shared.generated.resources.profile_photo_change
-import ramap.shared.generated.resources.profile_photo_formats
-import ramap.shared.generated.resources.profile_photo_remove
-import ramap.shared.generated.resources.profile_photo_select
 import ramap.shared.generated.resources.profile_retry
 
 @Composable
@@ -275,7 +267,6 @@ private fun ProfileEdit(
     onPickImage: () -> Unit,
     contentHeight: Dp,
 ) {
-    var photoDialog by remember(state.draftGeneration) { mutableStateOf(false) }
     val nicknameLabel = stringResource(Res.string.profile_nickname)
     val bioLabel = stringResource(Res.string.profile_bio)
     val instagramLabel = stringResource(Res.string.profile_instagram)
@@ -298,7 +289,7 @@ private fun ProfileEdit(
                     modifier = Modifier.size(128.dp),
                 )
                 IconButton(
-                    onClick = { photoDialog = true },
+                    onClick = onPickImage,
                     enabled = !state.saving,
                     modifier =
                         Modifier
@@ -311,16 +302,6 @@ private fun ProfileEdit(
                         modifier = Modifier.size(24.dp),
                     )
                 }
-            }
-            TextButton(
-                onClick = { photoDialog = true },
-                enabled = !state.saving,
-            ) {
-                AppText(
-                    text = stringResource(Res.string.profile_photo_change),
-                    style = AppTextStyle.B4,
-                    color = ProfileColor.Orange,
-                )
             }
             Spacer(modifier = Modifier.height(24.dp))
             AppText(
@@ -525,62 +506,6 @@ private fun ProfileEdit(
                 )
             }
         }
-    }
-    if (photoDialog) {
-        AlertDialog(
-            onDismissRequest = { photoDialog = false },
-            title = {
-                AppText(
-                    text = stringResource(Res.string.profile_photo),
-                    style = AppTextStyle.T2,
-                    color = ProfileColor.Ink,
-                )
-            },
-            text = {
-                Column {
-                    TextButton(
-                        onClick = {
-                            photoDialog = false
-                            onPickImage()
-                        },
-                    ) {
-                        AppText(
-                            text = stringResource(Res.string.profile_photo_select),
-                            style = AppTextStyle.B2,
-                            color = ProfileColor.Ink,
-                        )
-                    }
-                    TextButton(
-                        onClick = {
-                            photoDialog = false
-                            onIntent(ProfileIntent.RemovePhoto)
-                        },
-                        enabled = photo != null,
-                    ) {
-                        AppText(
-                            text = stringResource(Res.string.profile_photo_remove),
-                            style = AppTextStyle.B2,
-                            color = if (photo != null) ProfileColor.Orange else ProfileColor.Muted,
-                        )
-                    }
-                    AppText(
-                        text = stringResource(Res.string.profile_photo_formats),
-                        style = AppTextStyle.C2,
-                        color = ProfileColor.Muted,
-                    )
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = { photoDialog = false }) {
-                    AppText(
-                        text = stringResource(Res.string.profile_cancel),
-                        style = AppTextStyle.B2,
-                        color = ProfileColor.Muted,
-                    )
-                }
-            },
-            containerColor = ProfileColor.Paper,
-        )
     }
 }
 

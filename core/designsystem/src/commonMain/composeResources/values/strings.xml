@@ -454,9 +454,6 @@
     <string name="profile_connected">연결됨</string>
     <string name="profile_photo">프로필 사진</string>
     <string name="profile_photo_change">사진 변경</string>
-    <string name="profile_photo_select">사진에서 선택</string>
-    <string name="profile_photo_remove">기본 라멘 이미지로 변경</string>
-    <string name="profile_photo_formats">JPG, PNG · 최대 5MB</string>
     <string name="profile_nickname">닉네임</string>
     <string name="profile_nickname_placeholder">2~10글자를 입력해 주세요.</string>
     <string name="profile_nickname_invalid">한글·영문·숫자·밑줄로 2~10글자를 입력해 주세요.</string>
@@ -477,5 +474,4 @@
     <string name="profile_discard_body">저장하지 않은 변경사항은 사라져요.</string>
     <string name="profile_discard">수정 취소</string>
     <string name="profile_keep_editing">계속 수정</string>
-    <string name="profile_cancel">취소</string>
 </resources>

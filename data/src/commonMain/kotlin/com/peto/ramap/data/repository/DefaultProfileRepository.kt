@@ -23,7 +23,7 @@ internal class DefaultProfileRepository(
 
     override suspend fun fetchMyProfile(): RamapResult<AccountProfile> =
         invokeRequest {
-            val userId = requireNotNull(dataSource.currentUserId()) { "Missing authenticated user" }
+            val userId = requireNotNull(dataSource.currentUserId()) { ERROR_MISSING_AUTHENTICATED_USER }
             operations.withLock {
                 checkSession(userId)
                 accountProfile(userId, dataSource.fetchProfile(userId))
@@ -32,8 +32,8 @@ internal class DefaultProfileRepository(
 
     override suspend fun isNicknameAvailable(nickname: String): RamapResult<Boolean> =
         invokeRequest {
-            require(ProfileNickname(nickname).isValid) { "Invalid profile nickname" }
-            val userId = requireNotNull(dataSource.currentUserId()) { "Missing authenticated user" }
+            require(ProfileNickname(nickname).isValid) { ERROR_INVALID_PROFILE_NICKNAME }
+            val userId = requireNotNull(dataSource.currentUserId()) { ERROR_MISSING_AUTHENTICATED_USER }
             val available = dataSource.isNicknameAvailable(nickname)
             checkSession(userId)
             available
@@ -42,7 +42,7 @@ internal class DefaultProfileRepository(
     override suspend fun updateMyProfile(draft: ProfileDraft): RamapResult<AccountProfile> =
         invokeRequest {
             draft.validate()
-            val userId = requireNotNull(dataSource.currentUserId()) { "Missing authenticated user" }
+            val userId = requireNotNull(dataSource.currentUserId()) { ERROR_MISSING_AUTHENTICATED_USER }
             operations.withLock {
                 updateProfile(
                     userId = userId,
@@ -66,7 +66,7 @@ internal class DefaultProfileRepository(
         checkSession(userId)
         val previous = dataSource.fetchProfile(userId)
         checkSession(userId)
-        check(previous.userId == userId) { "Mismatched profile owner" }
+        check(previous.userId == userId) { ERROR_MISMATCHED_PROFILE_OWNER }
         val path = image?.let { "$userId/${Uuid.random()}.${it.fileExtension}" }
         if (path != null) uploadPhoto(userId, path, image)
         try {
@@ -75,10 +75,9 @@ internal class DefaultProfileRepository(
             if (path != null) cleanupPhoto(userId, path)
             throw exception
         }
-        // A failed RPC may have committed: retain the new upload for operator orphan reconciliation.
         val response = dataSource.updateProfile(userId, nickname, path, removePhoto, bio, instagramUsername)
         checkSession(userId)
-        check(response.userId == userId) { "Mismatched profile owner" }
+        check(response.userId == userId) { ERROR_MISMATCHED_PROFILE_OWNER }
         if (previous.avatarPath != null && previous.avatarPath != response.avatarPath) {
             cleanupPhoto(userId, previous.avatarPath)
         }
@@ -114,13 +113,26 @@ internal class DefaultProfileRepository(
         response: ProfileResponse,
     ): AccountProfile {
         checkSession(userId)
-        check(response.userId == userId) { "Mismatched profile owner" }
+        check(response.userId == userId) { ERROR_MISMATCHED_PROFILE_OWNER }
         val avatarUrl = response.avatarPath?.let { dataSource.signedPhotoUrl(userId, it) }
         checkSession(userId)
-        return AccountProfile(userId, response.nickname, avatarUrl, response.bio, response.instagramUsername)
+        return AccountProfile(
+            userId = userId,
+            nickname = response.nickname,
+            avatarUrl = avatarUrl,
+            bio = response.bio,
+            instagramUsername = response.instagramUsername,
+        )
     }
 
     private fun checkSession(userId: String) {
-        check(dataSource.currentUserId() == userId) { "Profile session changed" }
+        check(dataSource.currentUserId() == userId) { ERROR_PROFILE_SESSION_CHANGED }
+    }
+
+    private companion object {
+        const val ERROR_MISSING_AUTHENTICATED_USER = "Missing authenticated user"
+        const val ERROR_INVALID_PROFILE_NICKNAME = "Invalid profile nickname"
+        const val ERROR_MISMATCHED_PROFILE_OWNER = "Mismatched profile owner"
+        const val ERROR_PROFILE_SESSION_CHANGED = "Profile session changed"
     }
 }

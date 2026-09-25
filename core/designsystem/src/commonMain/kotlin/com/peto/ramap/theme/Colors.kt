@@ -49,13 +49,13 @@ object InstagramColor {
     val Blue = Color(0xFF7638FA)
 }
 
- object ProfileColor {
+object ProfileColor {
     val Paper = Color(0xFFFFFEFB)
     val Ink = Color(0xFF252721)
     val Muted = Color(0xFF777A70)
     val Orange = Color(0xFFE95432)
     val Line = Color(0xFFDEDFD5)
- }
+}
 
 object MyTabColor {
     val Ink = Color(0xFF1E2633)

@@ -10,6 +10,7 @@ interface ProfileRepository {
     val sessionUserIds: Flow<String?>
 
     suspend fun fetchMyProfile(): RamapResult<AccountProfile>
+
     suspend fun isNicknameAvailable(nickname: String): RamapResult<Boolean>
 
     suspend fun updateMyProfile(draft: ProfileDraft): RamapResult<AccountProfile>

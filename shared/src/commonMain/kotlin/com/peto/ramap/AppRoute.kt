@@ -174,13 +174,20 @@ internal fun AppRoute(
                     navigationState::showSubscribedShops,
                 onBookmarkedShopsNavigate =
                     navigationState::showBookmarkedShops,
+                onLoginClick = { type ->
+                    profileLoginViewModel.dispatch(
+                        when (type) {
+                            LoginType.KAKAO -> AccountIntent.OnKakaoLoginClick
+                            LoginType.APPLE -> AccountIntent.OnAppleLoginClick
+                        },
+                    )
+                },
             )
         },
         settingsScreen = {
             SettingsRoute(
                 onBack = navigationState::pop,
                 onAccountNavigate = navigationState::showAccountSettings,
-                onInformationNavigate = navigationState::showInformation,
                 onNotificationSettingsNavigate = navigationState::showNotificationSettings,
             )
         },

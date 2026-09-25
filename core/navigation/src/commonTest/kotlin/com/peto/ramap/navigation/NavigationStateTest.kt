@@ -314,6 +314,7 @@ class NavigationStateTest {
         navigationState.showSettings()
         assertEquals(ScreenRoutes.SettingsRoutes, navigationState.currentRoute)
         assertEquals(2, navigationState.currentBackStack.size)
+
         navigationState.pop()
 
         navigationState.showMyProfile()

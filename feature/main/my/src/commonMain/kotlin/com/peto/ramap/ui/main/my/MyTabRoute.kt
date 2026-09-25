@@ -37,20 +37,26 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.peto.ramap.designsystem.indicator.RamenLoadingIndicator
+import com.peto.ramap.designsystem.button.login.LoginButton
+import com.peto.ramap.designsystem.component.Skeleton
 import com.peto.ramap.designsystem.profile.ProfileAvatar
 import com.peto.ramap.designsystem.profile.ProfileDotField
 import com.peto.ramap.designsystem.text.AppText
+import com.peto.ramap.domain.model.auth.LoginType
+import com.peto.ramap.domain.model.auth.supportedLoginTypes
 import com.peto.ramap.domain.model.profile.AccountProfile
 import com.peto.ramap.extension.noRippleClickable
 import com.peto.ramap.theme.AppTextStyle
+import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.MyTabColor
 import com.peto.ramap.theme.ProfileColor
 import com.peto.ramap.theme.RamapTheme
+import com.peto.ramap.ui.main.my.component.MyTabSkeleton
 import com.peto.ramap.ui.main.my.contract.MyTabIntent
 import com.peto.ramap.ui.main.my.contract.MyTabUiState
 import org.jetbrains.compose.resources.DrawableResource
@@ -66,6 +72,7 @@ import ramap.shared.generated.resources.ic_profile_edit
 import ramap.shared.generated.resources.ic_profile_report
 import ramap.shared.generated.resources.ic_setting
 import ramap.shared.generated.resources.ic_visibility_off
+import ramap.shared.generated.resources.login_required_message
 import ramap.shared.generated.resources.profile_bio_empty
 import ramap.shared.generated.resources.profile_edit
 import ramap.shared.generated.resources.profile_instagram_empty
@@ -88,6 +95,7 @@ fun MyTabRoute(
     onSubscribedShopsNavigate: () -> Unit,
     onBookmarkedShopsNavigate: () -> Unit,
     onProfileNavigate: () -> Unit,
+    onLoginClick: (LoginType) -> Unit,
     viewModel: MyTabViewModel = koinViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -101,6 +109,7 @@ fun MyTabRoute(
         onSubscribedShopsClick = onSubscribedShopsNavigate,
         onHiddenShopsClick = onHiddenShopsNavigate,
         onReportClick = onReportNavigate,
+        onLoginClick = onLoginClick,
     )
 }
 
@@ -114,8 +123,11 @@ internal fun MyTabContent(
     onSubscribedShopsClick: () -> Unit,
     onHiddenShopsClick: () -> Unit,
     onReportClick: () -> Unit,
+    onLoginClick: (LoginType) -> Unit,
 ) {
     val profileEditDescription = stringResource(Res.string.profile_edit)
+    val isLoading = !state.sessionResolved || (state.loading && state.profile == null)
+    val isGuest = state.sessionResolved && state.userId == null
     Column(
         modifier =
             Modifier
@@ -140,96 +152,103 @@ internal fun MyTabContent(
                 )
             }
         }
-        Column(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .semantics { contentDescription = profileEditDescription }
-                    .noRippleClickable(role = Role.Button, onClick = onProfileClick),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            if (!state.sessionResolved || (state.loading && state.profile == null)) {
-                RamenLoadingIndicator(modifier = Modifier.height(120.dp))
-            } else {
-                Box(
+        when {
+            isLoading -> MyTabSkeleton()
+
+            isGuest -> GuestProfileHeader(onLoginClick = onLoginClick)
+
+            else -> {
+                Column(
                     modifier =
                         Modifier
                             .fillMaxWidth()
-                            .height(108.dp),
-                    contentAlignment = Alignment.Center,
+                            .semantics { contentDescription = profileEditDescription }
+                            .noRippleClickable(
+                                role = Role.Button,
+                                onClick = onProfileClick,
+                            ),
+                    horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
-                    ProfileDotField(modifier = Modifier.fillMaxSize())
-                    Box(modifier = Modifier.size(86.dp)) {
-                        ProfileAvatar(
-                            model = state.profile?.avatarUrl,
-                            description = stringResource(Res.string.profile_photo),
-                            modifier = Modifier.size(86.dp),
-                        )
-                        Box(
-                            modifier =
-                                Modifier
-                                    .align(Alignment.BottomEnd)
-                                    .offset(x = 4.dp, y = 4.dp)
-                                    .size(30.dp)
-                                    .border(2.dp, Color.White, CircleShape)
-                                    .clip(CircleShape)
-                                    .background(ProfileColor.Orange),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Icon(
-                                painter = painterResource(Res.drawable.ic_profile_edit),
-                                contentDescription = null,
-                                modifier = Modifier.size(16.dp),
-                                tint = Color.White,
+                    Box(
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .height(108.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        ProfileDotField(modifier = Modifier.fillMaxSize())
+                        Box(modifier = Modifier.size(86.dp)) {
+                            ProfileAvatar(
+                                model = state.profile?.avatarUrl,
+                                description = stringResource(Res.string.profile_photo),
+                                modifier = Modifier.size(86.dp),
                             )
+                            Box(
+                                modifier =
+                                    Modifier
+                                        .align(Alignment.BottomEnd)
+                                        .offset(x = 4.dp, y = 4.dp)
+                                        .size(30.dp)
+                                        .border(2.dp, Color.White, CircleShape)
+                                        .clip(CircleShape)
+                                        .background(ProfileColor.Orange),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Icon(
+                                    painter = painterResource(Res.drawable.ic_profile_edit),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp),
+                                    tint = Color.White,
+                                )
+                            }
                         }
                     }
+                    AppText(
+                        text = state.profile?.nickname ?: stringResource(Res.string.profile_title),
+                        style = AppTextStyle.T1,
+                        color = MyTabColor.Ink,
+                    )
+                    val profile = state.profile
+                    val bio = profile?.bio.orEmpty()
+                    if (bio.isNotBlank()) {
+                        AppText(
+                            text = bio,
+                            style = AppTextStyle.C1,
+                            color = MyTabColor.Muted,
+                            modifier = Modifier.padding(top = 4.dp, start = 20.dp, end = 20.dp),
+                            textAlign = TextAlign.Center,
+                        )
+                    } else if (!state.failed) {
+                        AppText(
+                            text = stringResource(Res.string.profile_bio_empty),
+                            style = AppTextStyle.C1,
+                            color = MyTabColor.Muted,
+                            modifier = Modifier.padding(top = 4.dp, start = 20.dp, end = 20.dp),
+                            textAlign = TextAlign.Center,
+                        )
+                    }
+                    val instagramUsername = profile?.instagramUsername.orEmpty()
+                    if (instagramUsername.isNotBlank()) {
+                        AppText(
+                            text = stringResource(Res.string.profile_instagram_handle, instagramUsername),
+                            style = AppTextStyle.C1,
+                            color = MyTabColor.Muted,
+                            modifier = Modifier.padding(top = 4.dp, start = 20.dp, end = 20.dp),
+                            textAlign = TextAlign.Center,
+                        )
+                    } else if (!state.failed) {
+                        AppText(
+                            text = stringResource(Res.string.profile_instagram_empty),
+                            style = AppTextStyle.C1,
+                            color = MyTabColor.Muted,
+                            modifier = Modifier.padding(top = 4.dp, start = 20.dp, end = 20.dp),
+                            textAlign = TextAlign.Center,
+                        )
+                    }
                 }
-                AppText(
-                    text = state.profile?.nickname ?: stringResource(Res.string.profile_title),
-                    style = AppTextStyle.T1,
-                    color = MyTabColor.Ink,
-                )
-            }
-            val profile = state.profile
-            val bio = profile?.bio.orEmpty()
-            if (bio.isNotBlank()) {
-                AppText(
-                    text = bio,
-                    style = AppTextStyle.C1,
-                    color = MyTabColor.Muted,
-                    modifier = Modifier.padding(top = 4.dp, start = 20.dp, end = 20.dp),
-                    textAlign = TextAlign.Center,
-                )
-            } else if (profile != null && !state.failed) {
-                AppText(
-                    text = stringResource(Res.string.profile_bio_empty),
-                    style = AppTextStyle.C1,
-                    color = MyTabColor.Muted,
-                    modifier = Modifier.padding(top = 4.dp, start = 20.dp, end = 20.dp),
-                    textAlign = TextAlign.Center,
-                )
-            }
-            val instagramUsername = profile?.instagramUsername.orEmpty()
-            if (instagramUsername.isNotBlank()) {
-                AppText(
-                    text = stringResource(Res.string.profile_instagram_handle, instagramUsername),
-                    style = AppTextStyle.C1,
-                    color = MyTabColor.Muted,
-                    modifier = Modifier.padding(top = 4.dp, start = 20.dp, end = 20.dp),
-                    textAlign = TextAlign.Center,
-                )
-            } else if (profile != null && !state.failed) {
-                AppText(
-                    text = stringResource(Res.string.profile_instagram_empty),
-                    style = AppTextStyle.C1,
-                    color = MyTabColor.Muted,
-                    modifier = Modifier.padding(top = 4.dp, start = 20.dp, end = 20.dp),
-                    textAlign = TextAlign.Center,
-                )
             }
         }
-        if (state.failed) {
+        if (state.failed && !isGuest) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.Center,
@@ -249,64 +268,112 @@ internal fun MyTabContent(
                 }
             }
         }
-        Spacer(modifier = Modifier.height(26.dp))
-        Column(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 12.dp)
-                    .border(1.dp, MyTabColor.Border, RoundedCornerShape(16.dp))
-                    .clip(RoundedCornerShape(16.dp)),
-        ) {
-            MyMenuRow(
-                icon = Res.drawable.ic_profile_bookmark,
-                title = Res.string.settings_bookmarked_shops_menu,
-                count = state.bookmarkedCount,
-                iconBackground = Color(0xFFFFF3E9),
-                iconTint = Color(0xFFE77730),
-                onClick = onBookmarkedShopsClick,
-            )
-            HorizontalDivider(
-                modifier = Modifier.padding(start = 16.dp),
-                thickness = 1.dp,
-                color = MyTabColor.Border,
-            )
-            MyMenuRow(
-                icon = Res.drawable.ic_notification,
-                title = Res.string.settings_subscribed_shops_menu,
-                count = state.notificationCount,
-                iconBackground = Color(0xFFFFF8E9),
-                iconTint = Color(0xFFEAA827),
-                onClick = onSubscribedShopsClick,
-            )
-            HorizontalDivider(
-                modifier = Modifier.padding(start = 16.dp),
-                thickness = 1.dp,
-                color = MyTabColor.Border,
-            )
-            MyMenuRow(
-                icon = Res.drawable.ic_visibility_off,
-                title = Res.string.settings_hidden_shops_menu,
-                count = state.hiddenCount,
-                iconBackground = Color(0xFFF2F4F8),
-                iconTint = Color(0xFF8491A3),
-                onClick = onHiddenShopsClick,
-            )
-            HorizontalDivider(
-                modifier = Modifier.padding(start = 16.dp),
-                thickness = 1.dp,
-                color = MyTabColor.Border,
-            )
-            MyMenuRow(
-                icon = Res.drawable.ic_profile_report,
-                title = Res.string.settings_report_menu,
-                count = null,
-                iconBackground = Color(0xFFFFF0F1),
-                iconTint = Color(0xFFF25871),
-                onClick = onReportClick,
+        if (state.sessionResolved) {
+            Spacer(modifier = Modifier.height(if (isGuest) 40.dp else 26.dp))
+            Column(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = if (isGuest) 22.dp else 12.dp)
+                        .border(1.dp, MyTabColor.Border, RoundedCornerShape(16.dp))
+                        .clip(RoundedCornerShape(16.dp)),
+            ) {
+                if (!isGuest) {
+                    MyMenuRow(
+                        icon = Res.drawable.ic_profile_bookmark,
+                        title = Res.string.settings_bookmarked_shops_menu,
+                        count = state.bookmarkedCount,
+                        iconBackground = Color(0xFFFFF3E9),
+                        iconTint = Color(0xFFE77730),
+                        isLoading = isLoading,
+                        onClick = onBookmarkedShopsClick,
+                    )
+                    HorizontalDivider(
+                        modifier = Modifier.padding(start = 16.dp),
+                        thickness = 1.dp,
+                        color = MyTabColor.Border,
+                    )
+                    MyMenuRow(
+                        icon = Res.drawable.ic_notification,
+                        title = Res.string.settings_subscribed_shops_menu,
+                        count = state.notificationCount,
+                        iconBackground = Color(0xFFFFF8E9),
+                        iconTint = Color(0xFFEAA827),
+                        isLoading = isLoading,
+                        onClick = onSubscribedShopsClick,
+                    )
+                    HorizontalDivider(
+                        modifier = Modifier.padding(start = 16.dp),
+                        thickness = 1.dp,
+                        color = MyTabColor.Border,
+                    )
+                    MyMenuRow(
+                        icon = Res.drawable.ic_visibility_off,
+                        title = Res.string.settings_hidden_shops_menu,
+                        count = state.hiddenCount,
+                        iconBackground = Color(0xFFF2F4F8),
+                        iconTint = Color(0xFF8491A3),
+                        isLoading = isLoading,
+                        onClick = onHiddenShopsClick,
+                    )
+                    HorizontalDivider(
+                        modifier = Modifier.padding(start = 16.dp),
+                        thickness = 1.dp,
+                        color = MyTabColor.Border,
+                    )
+                }
+                MyMenuRow(
+                    icon = Res.drawable.ic_profile_report,
+                    title = Res.string.settings_report_menu,
+                    count = null,
+                    iconBackground = Color(0xFFFFF0F1),
+                    iconTint = Color(0xFFF25871),
+                    hasCount = false,
+                    height = if (isGuest) 59.dp else 52.dp,
+                    onClick = onReportClick,
+                )
+            }
+            Spacer(modifier = Modifier.height(24.dp))
+        }
+    }
+}
+
+@Composable
+private fun GuestProfileHeader(
+    onLoginClick: (LoginType) -> Unit,
+) {
+    Box(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .height(176.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        ProfileDotField(modifier = Modifier.fillMaxSize())
+        ProfileAvatar(
+            model = null,
+            description = stringResource(Res.string.profile_photo),
+            modifier = Modifier.size(86.dp),
+        )
+    }
+    AppText(
+        text = stringResource(Res.string.login_required_message),
+        style = AppTextStyle.H3Brand,
+        color = GrayColor.C400,
+        modifier = Modifier.fillMaxWidth(),
+        textAlign = TextAlign.Center,
+    )
+    Column(
+        modifier = Modifier.padding(top = 15.dp, start = 22.dp, end = 22.dp),
+        verticalArrangement = Arrangement.spacedBy(9.dp),
+    ) {
+        supportedLoginTypes().forEach { type ->
+            LoginButton(
+                type = type,
+                modifier = Modifier.fillMaxWidth(),
+                onClick = { onLoginClick(type) },
             )
         }
-        Spacer(modifier = Modifier.height(24.dp))
     }
 }
 
@@ -317,13 +384,16 @@ private fun MyMenuRow(
     count: Int?,
     iconBackground: Color,
     iconTint: Color,
+    hasCount: Boolean = true,
+    isLoading: Boolean = false,
+    height: Dp = 52.dp,
     onClick: () -> Unit,
 ) {
     Row(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .height(52.dp)
+                .height(height)
                 .clickable(role = Role.Button, onClick = onClick)
                 .padding(horizontal = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -352,7 +422,12 @@ private fun MyMenuRow(
                     .weight(1f)
                     .padding(start = 12.dp),
         )
-        if (count != null) {
+        if (hasCount && isLoading && count == null) {
+            Skeleton(
+                modifier = Modifier.size(width = 24.dp, height = 18.dp),
+                shape = RoundedCornerShape(8.dp),
+            )
+        } else if (count != null) {
             AppText(
                 text = count.toString(),
                 style = AppTextStyle.C2,
@@ -403,6 +478,7 @@ private fun MyTabRoutePreview() {
             onSubscribedShopsClick = {},
             onHiddenShopsClick = {},
             onReportClick = {},
+            onLoginClick = {},
         )
     }
 }
