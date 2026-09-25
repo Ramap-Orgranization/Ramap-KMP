@@ -307,7 +307,7 @@ class NavigationStateTest {
     }
 
     @Test
-    fun `설정과 하위 화면을 전체 화면 경로로 연다`() {
+    fun `프로필 탭과 설정의 하위 화면을 전체 화면 경로로 연다`() {
         val navigationState = navigationState(selectedTab = TabStatus.MY)
 
         navigationState.showSettings()
@@ -315,6 +315,12 @@ class NavigationStateTest {
         assertEquals(ScreenRoutes.SettingsRoutes, navigationState.currentRoute)
         assertEquals(2, navigationState.currentBackStack.size)
         navigationState.pop()
+
+        navigationState.showMyProfile()
+        navigationState.showMyProfile()
+        assertEquals(ScreenRoutes.MyProfileRoutes, navigationState.currentRoute)
+        navigationState.pop()
+        assertEquals(ScreenRoutes.MyTabRoutes, navigationState.currentRoute)
 
         navigationState.showAccountSettings()
         assertEquals(ScreenRoutes.AccountSettingsRoutes, navigationState.currentRoute)
