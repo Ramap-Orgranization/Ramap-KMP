@@ -236,6 +236,8 @@
     <string name="settings_title">설정</string>
     <string name="settings_account_menu">계정</string>
     <string name="settings_information_menu">정보</string>
+    <string name="settings_official_account_menu">라맵 공식 계정</string>
+    <string name="settings_contact_menu">문의하기</string>
     <string name="settings_report_menu">제보하기</string>
     <string name="settings_subscribed_shops_menu">알림 설정한 매장 보기</string>
     <string name="settings_bookmarked_shops_menu">저장한 매장 보기</string>
