@@ -10,8 +10,6 @@ import com.peto.ramap.platform.AppSettingsOpener
 import com.peto.ramap.platform.AppVersionProvider
 import com.peto.ramap.platform.createAppNoticeStorage
 import com.peto.ramap.platform.createMapSearchHistoryStorage
-import com.peto.ramap.platform.location.AndroidCurrentLocationProvider
-import com.peto.ramap.platform.location.CurrentLocationProvider
 import com.peto.ramap.platform.network.AndroidNetworkConnectivityObserver
 import com.peto.ramap.platform.network.NetworkConnectivityObserver
 import com.peto.ramap.platform.storage.AppNoticeStorage
@@ -28,7 +26,6 @@ actual val platformModule =
         single<AppNoticeStorage> { createAppNoticeStorage(androidContext()) }
         single<SearchHistoryStorage> { createMapSearchHistoryStorage(androidContext()) }
         single<NetworkConnectivityObserver> { AndroidNetworkConnectivityObserver(androidContext()) }
-        single<CurrentLocationProvider> { AndroidCurrentLocationProvider(androidContext()) }
         single<AnalyticsTracker> { FirebaseAnalyticsTracker() }
         single<CrashReporter> { FirebaseCrashReporter() }
     }
