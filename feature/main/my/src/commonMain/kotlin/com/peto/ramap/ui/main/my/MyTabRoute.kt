@@ -22,7 +22,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -42,6 +41,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.peto.ramap.designsystem.indicator.RamenLoadingIndicator
 import com.peto.ramap.designsystem.profile.ProfileAvatar
 import com.peto.ramap.designsystem.profile.ProfileDotField
 import com.peto.ramap.designsystem.text.AppText
@@ -148,47 +148,43 @@ internal fun MyTabContent(
                     .noRippleClickable(role = Role.Button, onClick = onProfileClick),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Box(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .height(108.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                ProfileDotField(modifier = Modifier.fillMaxSize())
-                Box(modifier = Modifier.size(86.dp)) {
-                    ProfileAvatar(
-                        model = state.profile?.avatarUrl,
-                        description = stringResource(Res.string.profile_photo),
-                        modifier = Modifier.size(86.dp),
-                    )
-                    Box(
-                        modifier =
-                            Modifier
-                                .align(Alignment.BottomEnd)
-                                .offset(x = 4.dp, y = 4.dp)
-                                .size(30.dp)
-                                .border(2.dp, Color.White, CircleShape)
-                                .clip(CircleShape)
-                                .background(ProfileColor.Orange),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Icon(
-                            painter = painterResource(Res.drawable.ic_profile_edit),
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp),
-                            tint = Color.White,
+            if (!state.sessionResolved || (state.loading && state.profile == null)) {
+                RamenLoadingIndicator(modifier = Modifier.height(120.dp))
+            } else {
+                Box(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .height(108.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    ProfileDotField(modifier = Modifier.fillMaxSize())
+                    Box(modifier = Modifier.size(86.dp)) {
+                        ProfileAvatar(
+                            model = state.profile?.avatarUrl,
+                            description = stringResource(Res.string.profile_photo),
+                            modifier = Modifier.size(86.dp),
                         )
+                        Box(
+                            modifier =
+                                Modifier
+                                    .align(Alignment.BottomEnd)
+                                    .offset(x = 4.dp, y = 4.dp)
+                                    .size(30.dp)
+                                    .border(2.dp, Color.White, CircleShape)
+                                    .clip(CircleShape)
+                                    .background(ProfileColor.Orange),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Icon(
+                                painter = painterResource(Res.drawable.ic_profile_edit),
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp),
+                                tint = Color.White,
+                            )
+                        }
                     }
                 }
-            }
-            if (state.loading && state.profile == null) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(20.dp),
-                    strokeWidth = 2.dp,
-                    color = MyTabColor.Ink,
-                )
-            } else {
                 AppText(
                     text = state.profile?.nickname ?: stringResource(Res.string.profile_title),
                     style = AppTextStyle.T1,
@@ -387,6 +383,7 @@ private fun MyTabRoutePreview() {
             state =
                 MyTabUiState(
                     userId = "preview",
+                    sessionResolved = true,
                     profile =
                         AccountProfile(
                             userId = "preview",

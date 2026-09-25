@@ -19,7 +19,7 @@ class DefaultProfileRepositoryTest {
     fun returnsSignedPhotoAndCapturedOwner() =
         runTest {
             val source = ProfileDataSourceFake()
-            val result = assertIs<RamapResult.Success<*>>(DefaultProfileRepository(source).fetchMyProfile())
+            val result = assertIs<RamapResult.Success<AccountProfile>>(DefaultProfileRepository(source).fetchMyProfile())
             assertEquals("owner", source.requestOwner)
             assertEquals(AccountProfile("owner", "라멘", "signed:owner/old.jpg"), result.data)
         }
@@ -150,6 +150,14 @@ class DefaultProfileRepositoryTest {
         }
 
     private fun photo() = ProfileImage(byteArrayOf(0xff.toByte(), 0xd8.toByte(), 0xff.toByte()), "image/jpeg")
+
+    @Test
+    fun discardsSignedPhotoAfterAccountSwitch() =
+        runTest {
+            val source = ProfileDataSourceFake()
+            source.afterSignedUrl = { source.userId = "other" }
+            assertIs<RamapResult.Error>(DefaultProfileRepository(source).fetchMyProfile())
+        }
 }
 
 internal class ProfileDataSourceFake : ProfileDataSource {
@@ -165,6 +173,7 @@ internal class ProfileDataSourceFake : ProfileDataSource {
     var instagramUsername = ""
     val uploaded = mutableListOf<String>()
     val deleted = mutableListOf<String>()
+    var afterSignedUrl: () -> Unit = {}
 
     override fun currentUserId() = userId
 
@@ -212,5 +221,8 @@ internal class ProfileDataSourceFake : ProfileDataSource {
     override suspend fun signedPhotoUrl(
         userId: String,
         path: String,
-    ) = "signed:$path"
+    ): String {
+        afterSignedUrl()
+        return "signed:$path"
+    }
 }

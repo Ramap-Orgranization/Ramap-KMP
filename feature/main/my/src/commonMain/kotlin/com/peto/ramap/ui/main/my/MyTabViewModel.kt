@@ -23,7 +23,7 @@ class MyTabViewModel(
             repository.sessionUserIds.distinctUntilChanged().collect { userId ->
                 requestGeneration++
                 cancelTask(FETCH)
-                reduce { MyTabUiState(userId = userId) }
+                reduce { MyTabUiState(userId = userId, sessionResolved = userId == null) }
                 if (userId != null) refresh()
             }
         }
@@ -53,7 +53,7 @@ class MyTabViewModel(
         launchResultTask(
             taskKey = FETCH,
             loadKey = MyTabLoadKey.Fetch,
-            onStart = { copy(failed = false) },
+            onStart = { copy(failed = false, sessionResolved = true) },
             request = repository::fetchMyProfile,
             onSuccess = { profile ->
                 if (generation == requestGeneration && currentState.userId == userId) {

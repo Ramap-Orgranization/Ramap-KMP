@@ -7,9 +7,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.peto.ramap.designsystem.component.SettingsPage
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.extension.noRippleClickable
@@ -18,6 +20,7 @@ import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.GrayColor
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
+import org.koin.compose.viewmodel.koinViewModel
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.settings_account_menu
 import ramap.shared.generated.resources.settings_information_menu
@@ -30,7 +33,14 @@ fun SettingsRoute(
     onAccountNavigate: () -> Unit,
     onInformationNavigate: () -> Unit,
     onNotificationSettingsNavigate: () -> Unit,
+    viewModel: SettingsViewModel = koinViewModel(),
 ) {
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val menus =
+        SettingsMenu.visibleSettingsMenus(
+            isLoggedIn = state.isLoggedIn,
+            isNotificationSupported = NotificationPermissionRequester.isSupported,
+        )
     SettingsPage(Res.string.settings_title, onBack) {
         Column(
             Modifier
@@ -39,7 +49,7 @@ fun SettingsRoute(
                 .border(1.dp, GrayColor.C200, RoundedCornerShape(20.dp))
                 .clip(RoundedCornerShape(20.dp)),
         ) {
-            SettingsMenu.visibleSettingsMenus(NotificationPermissionRequester.isSupported).forEachIndexed { index, menu ->
+            menus.forEachIndexed { index, menu ->
                 if (index > 0) HorizontalDivider(thickness = 1.dp, color = GrayColor.C200)
                 SettingsRow(
                     title =

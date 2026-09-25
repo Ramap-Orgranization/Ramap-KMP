@@ -19,6 +19,27 @@ import kotlin.test.assertTrue
 @OptIn(ExperimentalCoroutinesApi::class)
 class MyTabViewModelTest {
     @Test
+    fun `첫 세션 응답 전에는 프로필 표시를 보류하고 조회 시작 시 로딩 상태가 된다`() =
+        coroutinesTest {
+            val profiles = FakeProfileRepository()
+            val pending = CompletableDeferred<RamapResult<AccountProfile>>()
+            profiles.fetchPending = pending
+            val viewModel = MyTabViewModel(profiles, FakePersonalizationRepository())
+
+            assertFalse(viewModel.uiState.value.sessionResolved)
+            assertNull(viewModel.uiState.value.profile)
+            runCurrent()
+            assertTrue(viewModel.uiState.value.sessionResolved)
+            assertTrue(viewModel.uiState.value.loading)
+            assertNull(viewModel.uiState.value.profile)
+            pending.complete(RamapResult.Success(AccountProfile("first", "느긋한차슈")))
+            runCurrent()
+            assertFalse(viewModel.uiState.value.loading)
+            val loadedProfile = viewModel.uiState.value.profile
+            assertEquals("느긋한차슈", loadedProfile?.nickname)
+        }
+
+    @Test
     fun `프로필과 개인화 개수를 표시하고 세션이 바뀌면 프로필을 비운다`() =
         coroutinesTest {
             val profiles = FakeProfileRepository()
@@ -31,9 +52,11 @@ class MyTabViewModelTest {
                     ),
                 )
             val viewModel = MyTabViewModel(profiles, personalization)
+            assertFalse(viewModel.uiState.value.sessionResolved)
             runCurrent()
 
             val initialProfile = viewModel.uiState.value.profile
+            assertTrue(viewModel.uiState.value.sessionResolved)
             assertEquals("느긋한차슈", initialProfile?.nickname)
             assertEquals(1, viewModel.uiState.value.bookmarkedCount)
             assertEquals(2, viewModel.uiState.value.notificationCount)
@@ -51,6 +74,7 @@ class MyTabViewModelTest {
             profiles.sessionUserIds.value = null
             runCurrent()
             assertNull(viewModel.uiState.value.profile)
+            assertTrue(viewModel.uiState.value.sessionResolved)
         }
 
     @Test
@@ -66,6 +90,7 @@ class MyTabViewModelTest {
             viewModel.dispatch(MyTabIntent.Refresh)
             runCurrent()
             assertTrue(viewModel.uiState.value.loading)
+            assertTrue(viewModel.uiState.value.sessionResolved)
 
             profiles.fetchPending = null
             profiles.fetchResult = RamapResult.Success(AccountProfile("first", "최신 닉네임"))

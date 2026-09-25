@@ -6,6 +6,7 @@ import com.peto.ramap.ui.loading.LoadableState
 
 data class MyTabUiState(
     val userId: String? = null,
+    val sessionResolved: Boolean = false,
     val profile: AccountProfile? = null,
     val failed: Boolean = false,
     val bookmarkedCount: Int? = null,

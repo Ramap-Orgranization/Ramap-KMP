@@ -7,8 +7,11 @@ internal enum class SettingsMenu {
     ;
 
     companion object {
-        fun visibleSettingsMenus(isNotificationSupported: Boolean): List<SettingsMenu> =
-            if (isNotificationSupported) {
+        fun visibleSettingsMenus(
+            isLoggedIn: Boolean,
+            isNotificationSupported: Boolean,
+        ): List<SettingsMenu> =
+            if (isLoggedIn && isNotificationSupported) {
                 listOf(ACCOUNT, NOTIFICATION, INFORMATION)
             } else {
                 listOf(ACCOUNT, INFORMATION)
