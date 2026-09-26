@@ -1,4 +1,4 @@
-package com.peto.ramap.ui.settings
+package com.peto.ramap.ui.settings.contract
 
 import com.peto.ramap.ui.base.State
 
