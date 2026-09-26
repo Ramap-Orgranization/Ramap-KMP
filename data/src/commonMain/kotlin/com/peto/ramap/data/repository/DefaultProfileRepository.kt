@@ -50,7 +50,6 @@ internal class DefaultProfileRepository(
                     image = draft.image,
                     removePhoto = draft.removePhoto,
                     bio = draft.bio?.value,
-                    instagramUsername = draft.normalizedInstagramUsername,
                 )
             }
         }
@@ -61,7 +60,6 @@ internal class DefaultProfileRepository(
         image: ProfileImage?,
         removePhoto: Boolean,
         bio: String?,
-        instagramUsername: String?,
     ): AccountProfile {
         checkSession(userId)
         val previous = dataSource.fetchProfile(userId)
@@ -75,7 +73,7 @@ internal class DefaultProfileRepository(
             if (path != null) cleanupPhoto(userId, path)
             throw exception
         }
-        val response = dataSource.updateProfile(userId, nickname, path, removePhoto, bio, instagramUsername)
+        val response = dataSource.updateProfile(userId, nickname, path, removePhoto, bio)
         checkSession(userId)
         check(response.userId == userId) { ERROR_MISMATCHED_PROFILE_OWNER }
         if (previous.avatarPath != null && previous.avatarPath != response.avatarPath) {
@@ -121,7 +119,6 @@ internal class DefaultProfileRepository(
             nickname = response.nickname,
             avatarUrl = avatarUrl,
             bio = response.bio,
-            instagramUsername = response.instagramUsername,
         )
     }
 

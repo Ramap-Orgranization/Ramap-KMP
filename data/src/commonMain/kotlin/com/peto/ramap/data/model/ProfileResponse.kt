@@ -11,6 +11,4 @@ internal data class ProfileResponse(
     @SerialName("avatar_path")
     val avatarPath: String? = null,
     val bio: String = "",
-    @SerialName("instagram_username")
-    val instagramUsername: String = "",
 )

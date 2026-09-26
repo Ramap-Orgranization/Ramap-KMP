@@ -20,7 +20,6 @@ interface ProfileRepository {
         image: ProfileImage? = null,
         removePhoto: Boolean = false,
         bio: String? = null,
-        instagramUsername: String? = null,
     ): RamapResult<AccountProfile> =
         updateMyProfile(
             ProfileDraft.of(
@@ -28,7 +27,6 @@ interface ProfileRepository {
                 image = image,
                 removePhoto = removePhoto,
                 bio = bio,
-                instagramUsername = instagramUsername,
             ),
         )
 }

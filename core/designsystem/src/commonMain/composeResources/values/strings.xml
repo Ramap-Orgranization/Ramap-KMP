@@ -444,12 +444,6 @@
     <string name="profile_bio_placeholder">50자 이내로 입력해 주세요.</string>
     <string name="profile_bio_invalid">줄바꿈 없이 50자 이내로 입력해 주세요.</string>
     <string name="profile_bio_counter">%1$d / 50</string>
-    <string name="profile_instagram">인스타그램 계정</string>
-    <string name="profile_instagram_empty">인스타그램 계정을 등록해주세요</string>
-    <string name="profile_instagram_placeholder">아이디 또는 프로필 링크</string>
-    <string name="profile_instagram_invalid">인스타그램 아이디 또는 프로필 링크를 확인해 주세요.</string>
-    <string name="profile_instagram_handle">@%1$s</string>
-    <string name="profile_instagram_open">인스타그램 @%1$s 열기</string>
     <string name="profile_account">내 계정</string>
     <string name="profile_connected">연결됨</string>
     <string name="profile_photo">프로필 사진</string>

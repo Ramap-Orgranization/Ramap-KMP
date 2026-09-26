@@ -35,7 +35,6 @@ internal class RemoteProfileDataSource(
         avatarPath: String?,
         removePhoto: Boolean,
         bio: String?,
-        instagramUsername: String?,
     ): ProfileResponse =
         client.postgrest
             .rpc(
@@ -46,7 +45,6 @@ internal class RemoteProfileDataSource(
                     put("p_avatar_path", avatarPath)
                     put("p_remove_photo", removePhoto)
                     if (bio != null) put("p_bio", bio)
-                    if (instagramUsername != null) put("p_instagram_username", instagramUsername)
                 },
             ).decodeAs()
 

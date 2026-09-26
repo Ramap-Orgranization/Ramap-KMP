@@ -19,7 +19,6 @@ internal interface ProfileDataSource {
         avatarPath: String?,
         removePhoto: Boolean,
         bio: String? = null,
-        instagramUsername: String? = null,
     ): ProfileResponse
 
     suspend fun uploadPhoto(
