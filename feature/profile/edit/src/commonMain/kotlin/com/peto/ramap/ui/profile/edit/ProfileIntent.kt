@@ -1,4 +1,4 @@
-package com.peto.ramap.ui.main.my.profile
+package com.peto.ramap.ui.profile.edit
 
 import com.peto.ramap.domain.model.profile.ProfileImage
 import com.peto.ramap.ui.base.Intent
@@ -13,10 +13,6 @@ sealed interface ProfileIntent : Intent {
     data object CheckNickname : ProfileIntent
 
     data class ChangeBio(
-        val value: String,
-    ) : ProfileIntent
-
-    data class ChangeInstagram(
         val value: String,
     ) : ProfileIntent
 

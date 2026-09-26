@@ -1,10 +1,9 @@
-package com.peto.ramap.ui.main.my.profile
+package com.peto.ramap.ui.profile.edit
 
 import androidx.lifecycle.viewModelScope
 import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.domain.model.profile.AccountProfile
 import com.peto.ramap.domain.model.profile.ProfileDraft
-import com.peto.ramap.domain.model.profile.ProfileInstagram
 import com.peto.ramap.domain.repository.LoginRepository
 import com.peto.ramap.domain.repository.ProfileRepository
 import com.peto.ramap.ui.base.BaseViewModel
@@ -16,7 +15,7 @@ import ramap.shared.generated.resources.profile_image_rejected
 import ramap.shared.generated.resources.profile_save_failed
 import ramap.shared.generated.resources.profile_saved
 
-class MyProfileViewModel(
+class ProfileEditViewModel(
     private val repository: ProfileRepository,
     private val loginRepository: LoginRepository,
 ) : BaseViewModel<ProfileUiState, ProfileIntent, ProfileSideEffect>(ProfileUiState()) {
@@ -42,7 +41,6 @@ class MyProfileViewModel(
             is ProfileIntent.ChangeNickname -> changeNickname(intent.value)
             ProfileIntent.CheckNickname -> checkNickname()
             is ProfileIntent.ChangeBio -> if (currentState.editing && !currentState.saving) reduce { copy(bio = intent.value) }
-            is ProfileIntent.ChangeInstagram -> if (currentState.editing && !currentState.saving) reduce { copy(instagram = intent.value) }
             is ProfileIntent.PickImage -> pickImage(intent)
             ProfileIntent.RejectImage -> trySideEffect(ProfileSideEffect.Toast(Res.string.profile_image_rejected))
             ProfileIntent.RemovePhoto -> if (!currentState.saving) reduce { copy(image = null, removePhoto = profile?.avatarUrl != null) }
@@ -76,7 +74,6 @@ class MyProfileViewModel(
                 editing = true,
                 nickname = profile.nickname,
                 bio = profile.bio,
-                instagram = profile.instagramUsername,
                 image = null,
                 removePhoto = false,
                 nicknameTouched = false,
@@ -131,7 +128,6 @@ class MyProfileViewModel(
     private fun save() {
         val draft = currentState
         if (!draft.canSave) return
-        val instagramUsername = ProfileInstagram.normalize(draft.instagram) ?: return
         val generation = sessionGeneration
         launchTask(SAVE, loadKey = ProfileLoadKey.Save) {
             val result =
@@ -141,7 +137,6 @@ class MyProfileViewModel(
                         image = draft.image,
                         removePhoto = draft.removePhoto,
                         bio = draft.bio.trim(),
-                        instagramUsername = instagramUsername,
                     ),
                 )
             if (generation != sessionGeneration || draft.draftGeneration != currentState.draftGeneration) return@launchTask
@@ -187,7 +182,7 @@ class MyProfileViewModel(
         nextDraftGeneration++
         cancelTask(SAVE)
         cancelTask(CHECK_NICKNAME)
-        reduce { copy(editing = false, nickname = "", bio = "", instagram = "", image = null, removePhoto = false, nicknameTouched = false, nicknameAvailable = null, nicknameCheckFailed = false, confirmDiscard = false, draftGeneration = nextDraftGeneration) }
+        reduce { copy(editing = false, nickname = "", bio = "", image = null, removePhoto = false, nicknameTouched = false, nicknameAvailable = null, nicknameCheckFailed = false, confirmDiscard = false, draftGeneration = nextDraftGeneration) }
     }
 
     override fun handleError(throwable: Throwable) {

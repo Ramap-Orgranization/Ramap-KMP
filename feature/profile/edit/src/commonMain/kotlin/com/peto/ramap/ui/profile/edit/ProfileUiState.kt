@@ -1,9 +1,8 @@
-package com.peto.ramap.ui.main.my.profile
+package com.peto.ramap.ui.profile.edit
 
 import com.peto.ramap.domain.model.profile.AccountProfile
 import com.peto.ramap.domain.model.profile.ProfileBio
 import com.peto.ramap.domain.model.profile.ProfileImage
-import com.peto.ramap.domain.model.profile.ProfileInstagram
 import com.peto.ramap.domain.model.profile.ProfileNickname
 import com.peto.ramap.ui.loading.LoadState
 import com.peto.ramap.ui.loading.LoadableState
@@ -16,7 +15,6 @@ data class ProfileUiState(
     val editing: Boolean = false,
     val nickname: String = "",
     val bio: String = "",
-    val instagram: String = "",
     val image: ProfileImage? = null,
     val removePhoto: Boolean = false,
     val nicknameTouched: Boolean = false,
@@ -30,12 +28,11 @@ data class ProfileUiState(
     val checkingNickname: Boolean get() = loadState.isLoading(ProfileLoadKey.CheckNickname)
     val saving: Boolean get() = loadState.isLoading(ProfileLoadKey.Save)
 
-    val changed: Boolean get() = nickname.trim() != profile?.nickname || bio.trim() != profile?.bio || ProfileInstagram.normalize(instagram) != profile?.instagramUsername || image != null || removePhoto
+    val changed: Boolean get() = nickname.trim() != profile?.nickname || bio.trim() != profile?.bio || image != null || removePhoto
     val nicknameInvalid: Boolean get() = !ProfileNickname.isValid(nickname.trim())
     val nicknameChanged: Boolean get() = nickname.trim() != profile?.nickname
     val bioInvalid: Boolean get() = !ProfileBio.isValid(bio.trim())
-    val instagramInvalid: Boolean get() = ProfileInstagram.normalize(instagram) == null
-    val canSave: Boolean get() = editing && changed && !nicknameInvalid && (!nicknameChanged || nicknameAvailable == true) && !checkingNickname && !bioInvalid && !instagramInvalid && !saving
+    val canSave: Boolean get() = editing && changed && !nicknameInvalid && (!nicknameChanged || nicknameAvailable == true) && !checkingNickname && !bioInvalid && !saving
 
     override fun withLoadingState(loadState: LoadState): ProfileUiState = copy(loadState = loadState)
 }

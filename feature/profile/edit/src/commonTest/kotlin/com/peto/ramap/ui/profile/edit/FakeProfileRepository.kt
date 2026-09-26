@@ -1,4 +1,4 @@
-package com.peto.ramap.ui.main.my.profile
+package com.peto.ramap.ui.profile.edit
 
 import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.domain.model.profile.AccountProfile
@@ -31,7 +31,7 @@ class FakeProfileRepository : ProfileRepository {
     override suspend fun updateMyProfile(draft: ProfileDraft): RamapResult<AccountProfile> {
         saveCalls++
         val pending = saveResult
-        if (pending == null) return RamapResult.Success(AccountProfile(sessionUserIds.value.orEmpty(), draft.nickname.value, bio = draft.bio?.value.orEmpty(), instagramUsername = draft.normalizedInstagramUsername.orEmpty()))
+        if (pending == null) return RamapResult.Success(AccountProfile(sessionUserIds.value.orEmpty(), draft.nickname.value, bio = draft.bio?.value.orEmpty()))
         return if (ignoreCancellation) withContext(NonCancellable) { pending.await() } else pending.await()
     }
 }

@@ -53,7 +53,6 @@ import com.peto.ramap.domain.model.profile.AccountProfile
 import com.peto.ramap.extension.noRippleClickable
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.GrayColor
-import com.peto.ramap.theme.MyTabColor
 import com.peto.ramap.theme.ProfileColor
 import com.peto.ramap.theme.RamapTheme
 import com.peto.ramap.ui.main.my.component.MyTabSkeleton
@@ -75,8 +74,6 @@ import ramap.shared.generated.resources.ic_visibility_off
 import ramap.shared.generated.resources.login_required_message
 import ramap.shared.generated.resources.profile_bio_empty
 import ramap.shared.generated.resources.profile_edit
-import ramap.shared.generated.resources.profile_instagram_empty
-import ramap.shared.generated.resources.profile_instagram_handle
 import ramap.shared.generated.resources.profile_load_failed
 import ramap.shared.generated.resources.profile_photo
 import ramap.shared.generated.resources.profile_retry
@@ -148,7 +145,7 @@ internal fun MyTabContent(
                 Icon(
                     painter = painterResource(Res.drawable.ic_setting),
                     contentDescription = stringResource(Res.string.settings_title),
-                    tint = MyTabColor.Ink,
+                    tint = GrayColor.C500,
                 )
             }
         }
@@ -206,7 +203,7 @@ internal fun MyTabContent(
                     AppText(
                         text = state.profile?.nickname ?: stringResource(Res.string.profile_title),
                         style = AppTextStyle.T1,
-                        color = MyTabColor.Ink,
+                        color = GrayColor.C500,
                     )
                     val profile = state.profile
                     val bio = profile?.bio.orEmpty()
@@ -214,7 +211,7 @@ internal fun MyTabContent(
                         AppText(
                             text = bio,
                             style = AppTextStyle.C1,
-                            color = MyTabColor.Muted,
+                            color = GrayColor.C400,
                             modifier = Modifier.padding(top = 4.dp, start = 20.dp, end = 20.dp),
                             textAlign = TextAlign.Center,
                         )
@@ -222,25 +219,7 @@ internal fun MyTabContent(
                         AppText(
                             text = stringResource(Res.string.profile_bio_empty),
                             style = AppTextStyle.C1,
-                            color = MyTabColor.Muted,
-                            modifier = Modifier.padding(top = 4.dp, start = 20.dp, end = 20.dp),
-                            textAlign = TextAlign.Center,
-                        )
-                    }
-                    val instagramUsername = profile?.instagramUsername.orEmpty()
-                    if (instagramUsername.isNotBlank()) {
-                        AppText(
-                            text = stringResource(Res.string.profile_instagram_handle, instagramUsername),
-                            style = AppTextStyle.C1,
-                            color = MyTabColor.Muted,
-                            modifier = Modifier.padding(top = 4.dp, start = 20.dp, end = 20.dp),
-                            textAlign = TextAlign.Center,
-                        )
-                    } else if (!state.failed) {
-                        AppText(
-                            text = stringResource(Res.string.profile_instagram_empty),
-                            style = AppTextStyle.C1,
-                            color = MyTabColor.Muted,
+                            color = GrayColor.C400,
                             modifier = Modifier.padding(top = 4.dp, start = 20.dp, end = 20.dp),
                             textAlign = TextAlign.Center,
                         )
@@ -257,13 +236,13 @@ internal fun MyTabContent(
                 AppText(
                     text = stringResource(Res.string.profile_load_failed),
                     style = AppTextStyle.C1,
-                    color = MyTabColor.Muted,
+                    color = GrayColor.C400,
                 )
                 TextButton(onClick = onRetryClick) {
                     AppText(
                         text = stringResource(Res.string.profile_retry),
                         style = AppTextStyle.B4,
-                        color = MyTabColor.Ink,
+                        color = GrayColor.C500,
                     )
                 }
             }
@@ -275,7 +254,7 @@ internal fun MyTabContent(
                     Modifier
                         .fillMaxWidth()
                         .padding(horizontal = if (isGuest) 22.dp else 12.dp)
-                        .border(1.dp, MyTabColor.Border, RoundedCornerShape(16.dp))
+                        .border(1.dp, GrayColor.C100, RoundedCornerShape(16.dp))
                         .clip(RoundedCornerShape(16.dp)),
             ) {
                 if (!isGuest) {
@@ -291,7 +270,7 @@ internal fun MyTabContent(
                     HorizontalDivider(
                         modifier = Modifier.padding(start = 16.dp),
                         thickness = 1.dp,
-                        color = MyTabColor.Border,
+                        color = GrayColor.C100,
                     )
                     MyMenuRow(
                         icon = Res.drawable.ic_notification,
@@ -305,7 +284,7 @@ internal fun MyTabContent(
                     HorizontalDivider(
                         modifier = Modifier.padding(start = 16.dp),
                         thickness = 1.dp,
-                        color = MyTabColor.Border,
+                        color = GrayColor.C100,
                     )
                     MyMenuRow(
                         icon = Res.drawable.ic_visibility_off,
@@ -319,7 +298,7 @@ internal fun MyTabContent(
                     HorizontalDivider(
                         modifier = Modifier.padding(start = 16.dp),
                         thickness = 1.dp,
-                        color = MyTabColor.Border,
+                        color = GrayColor.C100,
                     )
                 }
                 MyMenuRow(
@@ -416,7 +395,7 @@ private fun MyMenuRow(
         AppText(
             text = stringResource(title),
             style = AppTextStyle.B1,
-            color = MyTabColor.Ink,
+            color = GrayColor.C500,
             modifier =
                 Modifier
                     .weight(1f)
@@ -464,7 +443,6 @@ private fun MyTabRoutePreview() {
                             userId = "preview",
                             nickname = "느긋한차슈",
                             bio = "",
-                            instagramUsername = "",
                         ),
                     failed = false,
                     bookmarkedCount = 12,

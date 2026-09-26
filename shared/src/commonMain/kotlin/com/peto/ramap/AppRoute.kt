@@ -44,10 +44,10 @@ import com.peto.ramap.ui.main.map.MapViewModel
 import com.peto.ramap.ui.main.map.ShopDetailHost
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnMapTabExited
 import com.peto.ramap.ui.main.my.MyTabRoute
-import com.peto.ramap.ui.main.my.profile.MyProfileRoute
 import com.peto.ramap.ui.main.notice.OperatingNoticeRoute
 import com.peto.ramap.ui.main.ranking.RankingRoute
 import com.peto.ramap.ui.notification.NotificationSettingsRoute
+import com.peto.ramap.ui.profile.edit.ProfileEditRoute
 import com.peto.ramap.ui.report.PlaceReportRoute
 import com.peto.ramap.ui.settings.SettingsRoute
 import com.peto.ramap.ui.subscribed.SubscribedShopListRoute
@@ -166,7 +166,7 @@ internal fun AppRoute(
         },
         myScreen = {
             MyTabRoute(
-                onProfileNavigate = navigationState::showMyProfile,
+                onProfileNavigate = navigationState::showProfileEdit,
                 onSettingsNavigate = navigationState::showSettings,
                 onReportNavigate = navigationState::showPlaceReport,
                 onHiddenShopsNavigate = navigationState::showHiddenShops,
@@ -196,8 +196,8 @@ internal fun AppRoute(
                 onBack = navigationState::pop,
             )
         },
-        myProfileScreen = {
-            MyProfileRoute(
+        profileEditScreen = {
+            ProfileEditRoute(
                 onBack = navigationState::pop,
                 onLoginClick = { type ->
                     profileLoginViewModel.dispatch(

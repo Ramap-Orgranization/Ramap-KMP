@@ -317,9 +317,9 @@ class NavigationStateTest {
 
         navigationState.pop()
 
-        navigationState.showMyProfile()
-        navigationState.showMyProfile()
-        assertEquals(ScreenRoutes.MyProfileRoutes, navigationState.currentRoute)
+        navigationState.showProfileEdit()
+        navigationState.showProfileEdit()
+        assertEquals(ScreenRoutes.ProfileEditRoutes, navigationState.currentRoute)
         navigationState.pop()
         assertEquals(ScreenRoutes.MyTabRoutes, navigationState.currentRoute)
 

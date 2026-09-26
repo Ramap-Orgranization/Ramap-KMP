@@ -1,4 +1,4 @@
-package com.peto.ramap.ui.main.my.profile
+package com.peto.ramap.ui.profile.edit
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -25,10 +25,10 @@ import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
-fun MyProfileRoute(
+fun ProfileEditRoute(
     onBack: () -> Unit,
     onLoginClick: (LoginType) -> Unit,
-    viewModel: MyProfileViewModel = koinViewModel(),
+    viewModel: ProfileEditViewModel = koinViewModel(),
     toastManager: ToastManager = koinInject(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -47,7 +47,7 @@ fun MyProfileRoute(
             is ProfileSideEffect.Toast -> toastManager.show(ToastData(it.message, ToastType.DEFAULT))
         }
     }
-    MyProfileRouteContent(
+    ProfileEditRouteContent(
         state = state,
         onIntent = viewModel::dispatch,
         onLoginClick = onLoginClick,
@@ -59,7 +59,7 @@ fun MyProfileRoute(
 }
 
 @Composable
-internal fun MyProfileRouteContent(
+internal fun ProfileEditRouteContent(
     state: ProfileUiState,
     onIntent: (ProfileIntent) -> Unit,
     onLoginClick: (LoginType) -> Unit,
@@ -70,7 +70,7 @@ internal fun MyProfileRouteContent(
         isBackEnabled = state.editing,
         onBackCompleted = { onIntent(ProfileIntent.Back) },
     )
-    MyProfileContent(
+    ProfileEditContent(
         state = state,
         onIntent = onIntent,
         onLoginClick = onLoginClick,
@@ -80,9 +80,9 @@ internal fun MyProfileRouteContent(
 
 @Preview
 @Composable
-private fun MyProfileRoutePreview() {
+private fun ProfileEditRoutePreview() {
     RamapTheme {
-        MyProfileRouteContent(
+        ProfileEditRouteContent(
             state =
                 ProfileUiState(
                     userId = "preview",
@@ -91,14 +91,12 @@ private fun MyProfileRoutePreview() {
                             userId = "preview",
                             nickname = "느긋한차슈",
                             bio = "오늘도 맛있는 한 그릇을 찾아서",
-                            instagramUsername = "ramap_official",
                         ),
                     email = "ramen@example.com",
                     loadState = LoadState(),
                     editing = true,
                     nickname = "느긋한차슈",
                     bio = "오늘도 맛있는 한 그릇을 찾아서",
-                    instagram = "ramap_official",
                 ),
             onIntent = {},
             onLoginClick = {},

@@ -1,4 +1,4 @@
-package com.peto.ramap.ui.main.my.profile
+package com.peto.ramap.ui.profile.edit
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -23,8 +23,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -37,11 +35,11 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.peto.ramap.designsystem.button.AppButton
 import com.peto.ramap.designsystem.button.login.LoginButton
 import com.peto.ramap.designsystem.indicator.RamenLoadingIndicator
 import com.peto.ramap.designsystem.profile.ProfileAvatar
@@ -51,6 +49,7 @@ import com.peto.ramap.domain.model.auth.supportedLoginTypes
 import com.peto.ramap.domain.model.profile.AccountProfile
 import com.peto.ramap.domain.model.profile.ProfileBio
 import com.peto.ramap.theme.AppTextStyle
+import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.ProfileColor
 import com.peto.ramap.theme.RamapTheme
 import com.peto.ramap.ui.loading.LoadState
@@ -71,9 +70,6 @@ import ramap.shared.generated.resources.profile_discard
 import ramap.shared.generated.resources.profile_discard_body
 import ramap.shared.generated.resources.profile_discard_title
 import ramap.shared.generated.resources.profile_edit
-import ramap.shared.generated.resources.profile_instagram
-import ramap.shared.generated.resources.profile_instagram_invalid
-import ramap.shared.generated.resources.profile_instagram_placeholder
 import ramap.shared.generated.resources.profile_keep_editing
 import ramap.shared.generated.resources.profile_load_failed
 import ramap.shared.generated.resources.profile_nickname
@@ -89,7 +85,7 @@ import ramap.shared.generated.resources.profile_photo_change
 import ramap.shared.generated.resources.profile_retry
 
 @Composable
-internal fun MyProfileContent(
+internal fun ProfileEditContent(
     state: ProfileUiState,
     onIntent: (ProfileIntent) -> Unit,
     onLoginClick: (LoginType) -> Unit,
@@ -99,7 +95,7 @@ internal fun MyProfileContent(
         modifier =
             Modifier
                 .fillMaxSize()
-                .background(ProfileColor.Paper)
+                .background(CommonColor.White)
                 .safeDrawingPadding()
                 .imePadding(),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -191,10 +187,11 @@ internal fun MyProfileContent(
                                 style = AppTextStyle.C1,
                                 color = ProfileColor.Muted,
                             )
-                            ProfileButton(
+                            AppButton(
                                 text = stringResource(Res.string.profile_retry),
                                 onClick = { onIntent(ProfileIntent.Retry) },
-                                modifier = Modifier.padding(top = 20.dp),
+                                modifier = Modifier.fillMaxWidth().padding(top = 20.dp),
+                                backgroundColor = ProfileColor.Ink,
                             )
                         }
                     }
@@ -214,8 +211,7 @@ internal fun MyProfileContent(
                     modifier =
                         Modifier
                             .align(Alignment.Center)
-                            .size(120.dp)
-                            .background(ProfileColor.Paper.copy(alpha = 0.9f), RoundedCornerShape(16.dp)),
+                            .size(120.dp),
                 )
             }
         }
@@ -255,7 +251,7 @@ internal fun MyProfileContent(
                     )
                 }
             },
-            containerColor = ProfileColor.Paper,
+            containerColor = CommonColor.White,
         )
     }
 }
@@ -269,7 +265,6 @@ private fun ProfileEdit(
 ) {
     val nicknameLabel = stringResource(Res.string.profile_nickname)
     val bioLabel = stringResource(Res.string.profile_bio)
-    val instagramLabel = stringResource(Res.string.profile_instagram)
     val photo: Any? = state.image?.bytes ?: if (state.removePhoto) null else state.profile?.avatarUrl
 
     Column(
@@ -294,12 +289,15 @@ private fun ProfileEdit(
                     modifier =
                         Modifier
                             .size(48.dp)
-                            .background(ProfileColor.Paper, RoundedCornerShape(24.dp)),
+                            .background(
+                                CommonColor.White,
+                                RoundedCornerShape(24.dp),
+                            ),
                 ) {
                     Image(
                         painter = painterResource(Res.drawable.ic_camera_add),
                         contentDescription = stringResource(Res.string.profile_photo_change),
-                        modifier = Modifier.size(24.dp),
+                        modifier = Modifier.size(30.dp),
                     )
                 }
             }
@@ -352,19 +350,14 @@ private fun ProfileEdit(
                             unfocusedContainerColor = Color(0xFFF6F7F8),
                         ),
                 )
-                Button(
+                AppButton(
+                    text = stringResource(Res.string.profile_nickname_check),
                     onClick = { onIntent(ProfileIntent.CheckNickname) },
+                    modifier = Modifier.width(96.dp),
+                    textStyle = AppTextStyle.B2,
                     enabled = state.nicknameChanged && !state.nicknameInvalid && !state.checkingNickname && !state.saving,
-                    modifier = Modifier.heightIn(min = 56.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFE9E3), contentColor = ProfileColor.Orange),
-                ) {
-                    AppText(
-                        text = stringResource(Res.string.profile_nickname_check),
-                        style = AppTextStyle.B2,
-                        color = ProfileColor.Orange,
-                    )
-                }
+                    cornerRadius = 12.dp,
+                )
             }
             AppText(
                 text = stringResource(Res.string.profile_counter, state.nickname.trim().length),
@@ -396,7 +389,10 @@ private fun ProfileEdit(
                         ),
                     style = AppTextStyle.C2,
                     color = if (state.nicknameAvailable == true) ProfileColor.Muted else Color(0xFFBA3424),
-                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(top = 8.dp),
                 )
             }
             Spacer(modifier = Modifier.height(24.dp))
@@ -454,97 +450,15 @@ private fun ProfileEdit(
                             .padding(top = 10.dp),
                 )
             }
-            Spacer(modifier = Modifier.height(24.dp))
-            AppText(
-                text = instagramLabel,
-                style = AppTextStyle.B1,
-                color = ProfileColor.Ink,
-                modifier = Modifier.fillMaxWidth(),
-            )
-            OutlinedTextField(
-                value = state.instagram,
-                onValueChange = { onIntent(ProfileIntent.ChangeInstagram(it)) },
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(top = 10.dp)
-                        .semantics { contentDescription = instagramLabel },
-                enabled = !state.saving,
-                singleLine = true,
-                isError = state.instagramInvalid,
-                placeholder = {
-                    AppText(
-                        text = stringResource(Res.string.profile_instagram_placeholder),
-                        style = AppTextStyle.B2,
-                        color = ProfileColor.Muted,
-                    )
-                },
-                keyboardOptions =
-                    KeyboardOptions(
-                        keyboardType = KeyboardType.Uri,
-                        autoCorrectEnabled = false,
-                        imeAction = ImeAction.Done,
-                    ),
-                shape = RoundedCornerShape(8.dp),
-                colors =
-                    OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = ProfileColor.Orange,
-                        unfocusedBorderColor = ProfileColor.Line,
-                        focusedTextColor = ProfileColor.Ink,
-                        unfocusedTextColor = ProfileColor.Ink,
-                    ),
-            )
-            if (state.instagramInvalid) {
-                AppText(
-                    text = stringResource(Res.string.profile_instagram_invalid),
-                    style = AppTextStyle.C2,
-                    color = Color(0xFFBA3424),
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(top = 10.dp),
-                )
-            }
         }
-    }
-}
-
-@Composable
-private fun ProfileButton(
-    text: String,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    enabled: Boolean = true,
-) {
-    Button(
-        onClick = onClick,
-        modifier =
-            modifier
-                .fillMaxWidth()
-                .heightIn(min = 52.dp),
-        enabled = enabled,
-        shape = RoundedCornerShape(8.dp),
-        colors =
-            ButtonDefaults.buttonColors(
-                containerColor = ProfileColor.Ink,
-                contentColor = Color.White,
-                disabledContainerColor = Color(0xFFE5E6DF),
-                disabledContentColor = Color(0xFF8B8E82),
-            ),
-    ) {
-        AppText(
-            text = text,
-            style = AppTextStyle.B1,
-            color = if (enabled) Color.White else Color(0xFF8B8E82),
-        )
     }
 }
 
 @Preview
 @Composable
-fun MyProfilePreview() {
+fun ProfileEditPreview() {
     RamapTheme {
-        MyProfileContent(
+        ProfileEditContent(
             state =
                 ProfileUiState(
                     userId = "preview",
@@ -553,14 +467,12 @@ fun MyProfilePreview() {
                             userId = "preview",
                             nickname = "느긋한차슈",
                             bio = "오늘도 맛있는 한 그릇을 찾아서",
-                            instagramUsername = "ramap_official",
                         ),
                     loadState = LoadState(),
                     editing = true,
                     nickname = "새로운차슈",
                     nicknameAvailable = true,
                     bio = "오늘도 맛있는 한 그릇을 찾아서",
-                    instagram = "ramap_official",
                 ),
             onIntent = {},
             onLoginClick = {},

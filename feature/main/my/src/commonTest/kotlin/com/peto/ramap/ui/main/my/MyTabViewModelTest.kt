@@ -6,7 +6,6 @@ import com.peto.ramap.domain.model.personalization.ShopPersonalization
 import com.peto.ramap.domain.model.profile.AccountProfile
 import com.peto.ramap.fake.FakePersonalizationRepository
 import com.peto.ramap.ui.main.my.contract.MyTabIntent
-import com.peto.ramap.ui.main.my.profile.FakeProfileRepository
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runCurrent
