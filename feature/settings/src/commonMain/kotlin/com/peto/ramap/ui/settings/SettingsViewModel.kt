@@ -4,6 +4,9 @@ import androidx.lifecycle.viewModelScope
 import com.peto.ramap.domain.model.auth.LoginSessionState
 import com.peto.ramap.domain.repository.LoginRepository
 import com.peto.ramap.ui.base.BaseViewModel
+import com.peto.ramap.ui.settings.contract.SettingsIntent
+import com.peto.ramap.ui.settings.contract.SettingsSideEffect
+import com.peto.ramap.ui.settings.contract.SettingsUiState
 import kotlinx.coroutines.launch
 
 class SettingsViewModel(

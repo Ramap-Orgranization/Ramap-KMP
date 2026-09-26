@@ -2,8 +2,10 @@ package com.peto.ramap.ui.settings
 
 internal enum class SettingsMenu {
     ACCOUNT,
-    INFORMATION,
     NOTIFICATION,
+    OFFICIAL_ACCOUNT,
+    CONTACT,
+    PRIVACY_POLICY,
     ;
 
     companion object {
@@ -11,10 +13,14 @@ internal enum class SettingsMenu {
             isLoggedIn: Boolean,
             isNotificationSupported: Boolean,
         ): List<SettingsMenu> =
-            if (isLoggedIn && isNotificationSupported) {
-                listOf(ACCOUNT, NOTIFICATION, INFORMATION)
-            } else {
-                listOf(ACCOUNT, INFORMATION)
+            buildList {
+                if (isLoggedIn) {
+                    add(ACCOUNT)
+                    if (isNotificationSupported) add(NOTIFICATION)
+                }
+                add(OFFICIAL_ACCOUNT)
+                add(CONTACT)
+                add(PRIVACY_POLICY)
             }
     }
 }

@@ -9,7 +9,7 @@ import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.withContext
 
-internal class FakeProfileRepository : ProfileRepository {
+class FakeProfileRepository : ProfileRepository {
     override val sessionUserIds = MutableStateFlow<String?>("first")
     var fetchResult: RamapResult<AccountProfile>? = null
     var fetchPending: CompletableDeferred<RamapResult<AccountProfile>>? = null
@@ -23,5 +23,6 @@ internal class FakeProfileRepository : ProfileRepository {
 
     override suspend fun isNicknameAvailable(nickname: String): RamapResult<Boolean> = RamapResult.Success(true)
 
-    override suspend fun updateMyProfile(draft: ProfileDraft): RamapResult<AccountProfile> = RamapResult.Success(AccountProfile(sessionUserIds.value.orEmpty(), draft.nickname.value))
+    override suspend fun updateMyProfile(draft: ProfileDraft): RamapResult<AccountProfile> =
+        RamapResult.Success(AccountProfile(sessionUserIds.value.orEmpty(), draft.nickname.value, bio = draft.bio?.value.orEmpty()))
 }

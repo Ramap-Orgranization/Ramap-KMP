@@ -1,6 +1,6 @@
 # Account profile migration
 
-`20260923232146_account_profile.sql` adds the account profile API and private avatars using the existing Supabase Auth UID and `public.public_profiles`. It does not create an additional identity or accept community guidelines on behalf of a user. This initial migration permits duplicate nicknames; first creation chooses a Korean adjective and ramen word, then persists that name. Concurrent creation uses the UID primary key and row locks. The final migration below makes nicknames case-insensitively unique.
+`20260923232146_account_profile.sql` adds the account profile API and private avatars using the existing Supabase Auth UID and `public.public_profiles`. It does not create an additional identity or accept community guidelines on behalf of a user. Nicknames need not be unique; first creation chooses a Korean adjective and ramen word, then persists that name. Concurrent creation uses the UID primary key and row locks.
 
 ## Apply order
 
@@ -26,28 +26,17 @@ Server verification passed in a rolled-back transaction: save/read/clear, four-a
 
 `20260923234115_account_profile_instagram.sql` was applied to the same `ramap` server on 2026-09-24 KST for the requested Instagram registration. It adds `instagram_username text not null default ''`, preserving existing profiles with an empty account link. The two earlier migrations remain unchanged; the filename and SQL match the server migration record exactly.
 
-The client accepts a plain handle, `@handle`, or an `instagram.com`/`www.instagram.com` profile URL with HTTP, HTTPS, or no scheme, optionally followed by a trailing slash and share query/fragment. It normalizes valid values to lowercase handles. Hosts must match exactly; userinfo, ports, other schemes, extra path segments, and post/reel routes are rejected. Canonical handles contain 1–30 ASCII letters, digits, underscores, and separated dots; leading, trailing, or consecutive dots are rejected. The domain and database also reject reserved Instagram routes. Empty input removes the link. Saving a link does not verify account existence or ownership.
+At deployment, the client accepted a plain handle, `@handle`, or an Instagram profile URL and normalized valid values to lowercase handles. This only checked format, not account existence or ownership. On 2026-09-26, profile Instagram registration and display were removed from the app. The database column and existing values remain for now.
 
-The update RPC now has one six-argument signature, appending `p_instagram_username text default null` to the previous five arguments. The migration drops the former public wrapper before replacing its private implementation, avoiding overloaded RPCs. Old four/five-argument calls and explicit-null values preserve Instagram; `''` clears it. Fetch/update JSON includes `instagram_username`; the new DTO defaults a missing field to empty. Only canonical handles reach the data source, and the database independently enforces the canonical format. Opening a link generates `https://www.instagram.com/<handle>/` only from a validated canonical handle.
+The update RPC has one six-argument signature, appending `p_instagram_username text default null` to the previous five arguments. The migration drops the former public wrapper before replacing its private implementation, avoiding overloaded RPCs. Current app calls omit the Instagram argument, preserving any stored value. Fetch/update JSON still includes `instagram_username`, which the app ignores.
 
 Instagram remains accessible through the authenticated own-profile RPC, with no new direct column grants. Changes clear moderation approval through the identity trigger; unchanged values preserve approval, and consent/bio/photo behavior is retained.
 
 Live database-role checks passed for save/read/clear, four/five/null-six argument compatibility, 30/31-character bounds, invalid and reserved handles, owner/anonymous protection, and preserved bio/column privacy. All test writes were rolled back. Security advisor findings were unchanged. Evidence is in `.artifacts/profile-instagram/server-verification.json`; external app/browser opening and account ownership are not verified by these database tests.
 
-## Unique nickname follow-up
-
-`20260924060646_unique_profile_nickname.sql` is the final applied migration. It adds a unique index on `lower(nickname)`, an authenticated availability RPC, and a collision-safe fallback for generated nicknames. Availability checks improve the editing UI; the index is the final guard against concurrent duplicate saves. Before replaying this migration in another environment, resolve any existing case-insensitive duplicates or index creation will fail. Check without changing data:
-
-```sql
-select lower(nickname) as normalized_nickname, count(*) as duplicate_count
-from public.public_profiles
-group by lower(nickname)
-having count(*) > 1;
-```
-
 ## API and access
 
-Authenticated clients call `fetch_or_create_my_profile(p_user_id)` and `update_my_profile(p_user_id, p_nickname, p_avatar_path, p_remove_photo, p_bio, p_instagram_username)`. Both reject a supplied UID that differs from `auth.uid()`. Private security-definer implementations perform the writes, with empty search paths and explicit grants; public wrappers use invoker security. No client receives table write privileges or access to private consent/moderation/avatar columns. Existing community nickname read policies remain intact.
+Authenticated clients call `fetch_or_create_my_profile(p_user_id)` and `update_my_profile(p_user_id, p_nickname, p_avatar_path, p_remove_photo, p_bio)`. The server's optional Instagram argument is omitted. Both RPCs reject a supplied UID that differs from `auth.uid()`. Private security-definer implementations perform the writes, with empty search paths and explicit grants; public wrappers use invoker security. No client receives table write privileges or access to private consent/moderation/avatar columns. Existing community nickname read policies remain intact.
 
 Updating nickname, avatar, bio, or Instagram clears `approved_at` through a table trigger, including writes through other entry points. Consent is unchanged. Suspended accounts cannot use the update RPC. Profile row locks serialize concurrent profile writes and existing review submission locks.
 

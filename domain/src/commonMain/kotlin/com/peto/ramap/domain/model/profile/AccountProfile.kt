@@ -5,5 +5,4 @@ data class AccountProfile(
     val nickname: String,
     val avatarUrl: String? = null,
     val bio: String = "",
-    val instagramUsername: String = "",
 )

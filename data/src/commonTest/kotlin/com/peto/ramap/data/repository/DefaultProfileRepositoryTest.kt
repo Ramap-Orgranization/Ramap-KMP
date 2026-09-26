@@ -19,7 +19,7 @@ class DefaultProfileRepositoryTest {
     fun returnsSignedPhotoAndCapturedOwner() =
         runTest {
             val source = ProfileDataSourceFake()
-            val result = assertIs<RamapResult.Success<*>>(DefaultProfileRepository(source).fetchMyProfile())
+            val result = assertIs<RamapResult.Success<AccountProfile>>(DefaultProfileRepository(source).fetchMyProfile())
             assertEquals("owner", source.requestOwner)
             assertEquals(AccountProfile("owner", "라멘", "signed:owner/old.jpg"), result.data)
         }
@@ -125,31 +125,15 @@ class DefaultProfileRepositoryTest {
             assertTrue(source.uploaded.isEmpty())
         }
 
-    @Test
-    fun normalizesFetchesPreservesAndRemovesInstagram() =
-        runTest {
-            val source = ProfileDataSourceFake()
-            val repository = DefaultProfileRepository(source)
-            val saved = repository.updateMyProfile("라멘", instagramUsername = "https://www.instagram.com/Ramap.official/?igsh=123")
-            assertEquals("ramap.official", assertIs<RamapResult.Success<AccountProfile>>(saved).data.instagramUsername)
-            assertEquals("ramap.official", source.instagramUsername)
-            assertEquals("ramap.official", assertIs<RamapResult.Success<AccountProfile>>(repository.fetchMyProfile()).data.instagramUsername)
-            assertEquals("ramap.official", assertIs<RamapResult.Success<AccountProfile>>(repository.updateMyProfile("라멘")).data.instagramUsername)
-            assertEquals("", assertIs<RamapResult.Success<AccountProfile>>(repository.updateMyProfile("라멘", instagramUsername = "")).data.instagramUsername)
-        }
-
-    @Test
-    fun rejectsInvalidInstagramBeforeNetworkOrPhotoUpload() =
-        runTest {
-            val source = ProfileDataSourceFake()
-            val result = DefaultProfileRepository(source).updateMyProfile("라멘", photo(), instagramUsername = "https://evil.test/ramap")
-            assertIs<RamapResult.Error>(result)
-            assertEquals(null, source.requestOwner)
-            assertEquals(0, source.updateCount)
-            assertTrue(source.uploaded.isEmpty())
-        }
-
     private fun photo() = ProfileImage(byteArrayOf(0xff.toByte(), 0xd8.toByte(), 0xff.toByte()), "image/jpeg")
+
+    @Test
+    fun discardsSignedPhotoAfterAccountSwitch() =
+        runTest {
+            val source = ProfileDataSourceFake()
+            source.afterSignedUrl = { source.userId = "other" }
+            assertIs<RamapResult.Error>(DefaultProfileRepository(source).fetchMyProfile())
+        }
 }
 
 internal class ProfileDataSourceFake : ProfileDataSource {
@@ -162,16 +146,16 @@ internal class ProfileDataSourceFake : ProfileDataSource {
     var uploadFailure: Throwable? = null
     var updateCount = 0
     var bio = ""
-    var instagramUsername = ""
     val uploaded = mutableListOf<String>()
     val deleted = mutableListOf<String>()
+    var afterSignedUrl: () -> Unit = {}
 
     override fun currentUserId() = userId
 
     override suspend fun fetchProfile(userId: String): ProfileResponse {
         requestOwner = userId
         afterFetch()
-        return ProfileResponse(userId, "라멘", "$userId/old.jpg", bio, instagramUsername)
+        return ProfileResponse(userId, "라멘", "$userId/old.jpg", bio)
     }
 
     override suspend fun isNicknameAvailable(nickname: String): Boolean = true
@@ -182,14 +166,12 @@ internal class ProfileDataSourceFake : ProfileDataSource {
         avatarPath: String?,
         removePhoto: Boolean,
         bio: String?,
-        instagramUsername: String?,
     ): ProfileResponse {
         requestOwner = userId
         updateCount++
         updateFailure?.let { throw it }
         this.bio = bio ?: this.bio
-        this.instagramUsername = instagramUsername ?: this.instagramUsername
-        return ProfileResponse(userId, nickname, if (removePhoto) null else avatarPath ?: "$userId/old.jpg", this.bio, this.instagramUsername)
+        return ProfileResponse(userId, nickname, if (removePhoto) null else avatarPath ?: "$userId/old.jpg", this.bio)
     }
 
     override suspend fun uploadPhoto(
@@ -212,5 +194,8 @@ internal class ProfileDataSourceFake : ProfileDataSource {
     override suspend fun signedPhotoUrl(
         userId: String,
         path: String,
-    ) = "signed:$path"
+    ): String {
+        afterSignedUrl()
+        return "signed:$path"
+    }
 }

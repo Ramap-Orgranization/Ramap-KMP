@@ -2,7 +2,6 @@ package com.peto.ramap.data.datasource.di
 
 import com.peto.ramap.data.datasource.appnotice.AppNoticeDataSource
 import com.peto.ramap.data.datasource.appnotice.RemoteAppNoticeDataSource
-import com.peto.ramap.data.datasource.geocoder.SupabaseReverseGeocoder
 import com.peto.ramap.data.datasource.importation.ImportationDataSource
 import com.peto.ramap.data.datasource.importation.KakaoImportationDataSource
 import com.peto.ramap.data.datasource.importation.NaverImportationDataSource
@@ -29,7 +28,6 @@ import com.peto.ramap.data.datasource.update.RemoteAppUpdatePolicyDataSource
 import com.peto.ramap.data.datasource.waiting.RemoteShopWaitingSystemDataSource
 import com.peto.ramap.data.datasource.waiting.ShopWaitingSystemDataSource
 import com.peto.ramap.domain.repository.PlaceLinkResolver
-import com.peto.ramap.domain.repository.ReverseGeocoder
 import io.github.jan.supabase.SupabaseClient
 import io.ktor.client.HttpClient
 import org.koin.dsl.module
@@ -65,7 +63,6 @@ val dataSourceModule =
             RemoteShopReportDataSource(get<SupabaseClient>())
         }
         single<PlaceLinkResolver> { RemotePlaceLinkResolver(get<HttpClient>()) }
-        single<ReverseGeocoder> { SupabaseReverseGeocoder(get()) }
         single<AppUpdatePolicyDataSource> {
             RemoteAppUpdatePolicyDataSource(get<SupabaseClient>())
         }

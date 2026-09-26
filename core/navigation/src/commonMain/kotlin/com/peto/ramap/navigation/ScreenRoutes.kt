@@ -34,7 +34,7 @@ sealed interface ScreenRoutes : NavKey {
     data object AccountSettingsRoutes : ScreenRoutes
 
     @Serializable
-    data object MyProfileRoutes : ScreenRoutes
+    data object ProfileEditRoutes : ScreenRoutes
 
     @Serializable
     data object InformationRoutes : ScreenRoutes
