@@ -5,6 +5,7 @@ on:
     branches: [ "develop" ]
     paths:
       - "privacy-policy.html"
+      - "community-guidelines.html"
       - ".github/workflows/pages.yml"
   workflow_dispatch:
 
@@ -36,6 +37,7 @@ jobs:
           mkdir _site
           cp privacy-policy.html _site/index.html
           cp privacy-policy.html _site/privacy-policy.html
+          cp community-guidelines.html _site/community-guidelines.html
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v4
