@@ -340,6 +340,7 @@ private fun ProfileEdit(
                 text = stringResource(Res.string.profile_nickname),
                 style = AppTextStyle.B1,
                 color = GrayColor.C500,
+                modifier = Modifier.fillMaxWidth(),
             )
             Row(
                 modifier = Modifier.fillMaxWidth().padding(top = 10.dp),
@@ -433,6 +434,7 @@ private fun ProfileEdit(
                 text = stringResource(Res.string.profile_bio_short),
                 style = AppTextStyle.B1,
                 color = GrayColor.C500,
+                modifier = Modifier.fillMaxWidth(),
             )
             OutlinedTextField(
                 value = state.bio,
