@@ -327,11 +327,10 @@ private fun ProfileEdit(
                         modifier =
                             Modifier
                                 .align(Alignment.TopEnd)
-                                .offset(x = 8.dp, y = (-8).dp)
-                                .size(36.dp)
-                                .border(2.dp, Color.White, CircleShape)
+                                .padding(8.dp)
+                                .size(32.dp)
                                 .clip(CircleShape)
-                                .background(GrayColor.C400)
+                                .background(Color.Black.copy(alpha = 0.5f))
                                 .noRippleClickable(
                                     enabled = !state.saving,
                                     onClick = { onIntent(ProfileIntent.RemovePhoto) },
@@ -341,7 +340,7 @@ private fun ProfileEdit(
                         Icon(
                             painter = painterResource(Res.drawable.ic_close),
                             contentDescription = stringResource(Res.string.profile_photo_remove),
-                            modifier = Modifier.size(18.dp),
+                            modifier = Modifier.size(16.dp),
                             tint = Color.White,
                         )
                     }
