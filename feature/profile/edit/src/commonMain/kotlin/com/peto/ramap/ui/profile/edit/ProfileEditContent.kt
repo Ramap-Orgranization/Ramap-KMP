@@ -322,17 +322,29 @@ private fun ProfileEdit(
                         tint = Color.White,
                     )
                 }
-            }
-            if (photo != null) {
-                TextButton(
-                    enabled = !state.saving,
-                    onClick = { onIntent(ProfileIntent.RemovePhoto) },
-                ) {
-                    AppText(
-                        text = stringResource(Res.string.profile_photo_remove),
-                        style = AppTextStyle.B2,
-                        color = if (state.saving) GrayColor.C300 else GrayColor.C400,
-                    )
+                if (photo != null) {
+                    Box(
+                        modifier =
+                            Modifier
+                                .align(Alignment.TopEnd)
+                                .offset(x = 8.dp, y = (-8).dp)
+                                .size(36.dp)
+                                .border(2.dp, Color.White, CircleShape)
+                                .clip(CircleShape)
+                                .background(GrayColor.C400)
+                                .noRippleClickable(
+                                    enabled = !state.saving,
+                                    onClick = { onIntent(ProfileIntent.RemovePhoto) },
+                                ),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            painter = painterResource(Res.drawable.ic_close),
+                            contentDescription = stringResource(Res.string.profile_photo_remove),
+                            modifier = Modifier.size(18.dp),
+                            tint = Color.White,
+                        )
+                    }
                 }
             }
             Spacer(modifier = Modifier.height(24.dp))
