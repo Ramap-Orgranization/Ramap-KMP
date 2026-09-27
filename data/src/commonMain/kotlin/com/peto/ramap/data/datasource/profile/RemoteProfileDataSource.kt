@@ -25,9 +25,19 @@ internal class RemoteProfileDataSource(
 
     override fun currentUserId(): String? = client.auth.currentUserOrNull()?.id
 
-    override suspend fun fetchProfile(userId: String): ProfileResponse = client.postgrest.rpc("fetch_or_create_my_profile", buildJsonObject { put("p_user_id", userId) }).decodeAs()
+    override suspend fun fetchProfile(userId: String): ProfileResponse =
+        client.postgrest
+            .rpc(
+                FUNCTION_FETCH_OR_CREATE_MY_PROFILE,
+                buildJsonObject { put(PARAMETER_USER_ID, userId) },
+            ).decodeAs()
 
-    override suspend fun isNicknameAvailable(nickname: String): Boolean = client.postgrest.rpc("is_profile_nickname_available", buildJsonObject { put("p_nickname", nickname) }).decodeAs()
+    override suspend fun isNicknameAvailable(nickname: String): Boolean =
+        client.postgrest
+            .rpc(
+                FUNCTION_IS_PROFILE_NICKNAME_AVAILABLE,
+                buildJsonObject { put(PARAMETER_NICKNAME, nickname) },
+            ).decodeAs()
 
     override suspend fun updateProfile(
         userId: String,
@@ -38,14 +48,21 @@ internal class RemoteProfileDataSource(
     ): ProfileResponse =
         client.postgrest
             .rpc(
-                "update_my_profile",
+                FUNCTION_UPDATE_MY_PROFILE,
                 buildJsonObject {
-                    put("p_user_id", userId)
-                    put("p_nickname", nickname)
-                    put("p_avatar_path", avatarPath)
-                    put("p_remove_photo", removePhoto)
-                    if (bio != null) put("p_bio", bio)
+                    put(PARAMETER_USER_ID, userId)
+                    put(PARAMETER_NICKNAME, nickname)
+                    put(PARAMETER_AVATAR_PATH, avatarPath)
+                    put(PARAMETER_REMOVE_PHOTO, removePhoto)
+                    if (bio != null) put(PARAMETER_BIO, bio)
                 },
+            ).decodeAs()
+
+    override suspend fun updateProfileVisibility(isPublic: Boolean): ProfileResponse =
+        client.postgrest
+            .rpc(
+                FUNCTION_UPDATE_MY_PROFILE_VISIBILITY,
+                buildJsonObject { put(PARAMETER_IS_PUBLIC, isPublic) },
             ).decodeAs()
 
     override suspend fun uploadPhoto(
@@ -79,11 +96,25 @@ internal class RemoteProfileDataSource(
         userId: String,
         path: String,
     ) {
-        check(currentUserId() == userId && path.startsWith("$userId/")) { "Profile session changed" }
+        check(currentUserId() == userId && path.startsWith("$userId/")) { ERROR_SESSION_CHANGED }
     }
 
     private companion object {
         const val BUCKET = "profile-avatars"
         val URL_LIFETIME = 30.minutes
+
+        const val FUNCTION_FETCH_OR_CREATE_MY_PROFILE = "fetch_or_create_my_profile"
+        const val FUNCTION_IS_PROFILE_NICKNAME_AVAILABLE = "is_profile_nickname_available"
+        const val FUNCTION_UPDATE_MY_PROFILE = "update_my_profile"
+        const val FUNCTION_UPDATE_MY_PROFILE_VISIBILITY = "update_my_profile_visibility"
+
+        const val PARAMETER_USER_ID = "p_user_id"
+        const val PARAMETER_NICKNAME = "p_nickname"
+        const val PARAMETER_AVATAR_PATH = "p_avatar_path"
+        const val PARAMETER_REMOVE_PHOTO = "p_remove_photo"
+        const val PARAMETER_BIO = "p_bio"
+        const val PARAMETER_IS_PUBLIC = "p_is_public"
+
+        const val ERROR_SESSION_CHANGED = "Profile session changed"
     }
 }

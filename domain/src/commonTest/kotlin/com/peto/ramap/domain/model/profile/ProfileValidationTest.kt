@@ -21,13 +21,13 @@ class ProfileValidationTest {
     }
 
     @Test
-    fun bioAllowsEmptyAndFiftyCodepointsOnOneLine() {
-        for (bio in listOf("", "라멘을 좋아해요", "가".repeat(50), "🍜".repeat(50))) {
+    fun bioAllowsEmptyAndThirtyCodepointsOnOneLine() {
+        for (bio in listOf("", "라멘을 좋아해요", "가".repeat(30), "🍜".repeat(30))) {
             assertTrue(ProfileBio.isValid(bio))
         }
-        assertEquals(50, ProfileBio.length("🍜".repeat(50)))
+        assertEquals(30, ProfileBio.length("🍜".repeat(30)))
         assertEquals(3, ProfileBio.length("가🍜a"))
-        assertFalse(ProfileBio.isValid("🍜".repeat(51)))
+        assertFalse(ProfileBio.isValid("🍜".repeat(31)))
         for (separator in "\n\r\u000B\u000C\u0085\u2028\u2029") {
             assertFalse(ProfileBio.isValid("한 줄${separator}두 줄"))
         }

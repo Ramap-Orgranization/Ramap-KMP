@@ -1,6 +1,7 @@
 package com.peto.ramap.ui.profile.edit
 
 import androidx.lifecycle.viewModelScope
+import com.peto.ramap.core.result.RamapError
 import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.domain.model.profile.AccountProfile
 import com.peto.ramap.domain.model.profile.ProfileDraft
@@ -11,8 +12,12 @@ import com.peto.ramap.ui.loading.LoadState
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import ramap.shared.generated.resources.Res
+import ramap.shared.generated.resources.profile_bio_daily_change_limit_reached
 import ramap.shared.generated.resources.profile_image_rejected
+import ramap.shared.generated.resources.profile_nickname_check_rate_limited
+import ramap.shared.generated.resources.profile_nickname_daily_change_limit_reached
 import ramap.shared.generated.resources.profile_save_failed
+import ramap.shared.generated.resources.profile_save_rate_limited
 import ramap.shared.generated.resources.profile_saved
 
 class ProfileEditViewModel(
@@ -79,6 +84,7 @@ class ProfileEditViewModel(
                 nicknameTouched = false,
                 nicknameAvailable = null,
                 nicknameCheckFailed = false,
+                checkedNickname = null,
                 draftGeneration = ++nextDraftGeneration,
             )
         }
@@ -95,20 +101,25 @@ class ProfileEditViewModel(
 
     private fun changeNickname(value: String) {
         if (!currentState.editing || currentState.saving) return
-        cancelTask(CHECK_NICKNAME)
+        if (value.trim() != currentState.nickname.trim()) cancelTask(CHECK_NICKNAME)
         reduce {
-            copy(
-                nickname = value,
-                nicknameTouched = true,
-                nicknameAvailable = null,
-                nicknameCheckFailed = false,
-            )
+            if (value.trim() == nickname.trim()) {
+                copy(nickname = value, nicknameTouched = true)
+            } else {
+                copy(
+                    nickname = value,
+                    nicknameTouched = true,
+                    nicknameAvailable = null,
+                    nicknameCheckFailed = false,
+                    checkedNickname = null,
+                )
+            }
         }
     }
 
     private fun checkNickname() {
         val draft = currentState
-        if (!draft.editing || draft.saving || draft.checkingNickname || draft.nicknameInvalid || !draft.nicknameChanged) return
+        if (!draft.canCheckNickname) return
         val nickname = draft.nickname.trim()
         val generation = sessionGeneration
         launchTask(
@@ -119,8 +130,14 @@ class ProfileEditViewModel(
             val result = repository.isNicknameAvailable(nickname)
             if (generation != sessionGeneration || draft.draftGeneration != currentState.draftGeneration || nickname != currentState.nickname.trim()) return@launchTask
             when (result) {
-                is RamapResult.Success -> reduce { copy(nicknameAvailable = result.data) }
-                is RamapResult.Error -> reduce { copy(nicknameCheckFailed = true) }
+                is RamapResult.Success -> reduce { copy(nicknameAvailable = result.data, checkedNickname = nickname) }
+                is RamapResult.Error -> {
+                    if (isRateLimit(result.error)) {
+                        trySideEffect(ProfileSideEffect.Toast(Res.string.profile_nickname_check_rate_limited))
+                    } else {
+                        reduce { copy(nicknameCheckFailed = true) }
+                    }
+                }
             }
         }
     }
@@ -147,12 +164,33 @@ class ProfileEditViewModel(
                         trySideEffect(ProfileSideEffect.Toast(Res.string.profile_saved))
                         trySideEffect(ProfileSideEffect.NavigateBack)
                     }
-                is RamapResult.Error -> handleSaveFailure(draft)
+                is RamapResult.Error -> handleSaveFailure(draft, result.error)
             }
         }
     }
 
-    private suspend fun handleSaveFailure(draft: ProfileUiState) {
+    private suspend fun handleSaveFailure(
+        draft: ProfileUiState,
+        error: RamapError,
+    ) {
+        if (isProfileSaveRateLimit(error)) {
+            trySideEffect(ProfileSideEffect.Toast(Res.string.profile_save_rate_limited))
+            return
+        }
+        if (isProfileDailyChangeLimit(error)) {
+            trySideEffect(ProfileSideEffect.Toast(dailyChangeLimitMessage(error)))
+            return
+        }
+        if (isNicknameTaken(error)) {
+            reduce {
+                copy(
+                    nicknameAvailable = false,
+                    nicknameCheckFailed = false,
+                    checkedNickname = draft.nickname.trim(),
+                )
+            }
+            return
+        }
         if (draft.nicknameChanged) {
             val availability = repository.isNicknameAvailable(draft.nickname.trim())
             if (draft.draftGeneration != currentState.draftGeneration || draft.userId != currentState.userId) return
@@ -162,6 +200,30 @@ class ProfileEditViewModel(
             }
         }
         trySideEffect(ProfileSideEffect.Toast(Res.string.profile_save_failed))
+    }
+
+    private fun isProfileDailyChangeLimit(error: RamapError): Boolean {
+        if (error !is RamapError.Http || error.status != HTTP_TOO_MANY_REQUESTS_STATUS) return false
+        return error.serverMessage in setOf(PROFILE_NICKNAME_DAILY_LIMIT, PROFILE_BIO_DAILY_LIMIT)
+    }
+
+    private fun dailyChangeLimitMessage(error: RamapError) =
+        when ((error as RamapError.Http).serverMessage) {
+            PROFILE_NICKNAME_DAILY_LIMIT -> Res.string.profile_nickname_daily_change_limit_reached
+            PROFILE_BIO_DAILY_LIMIT -> Res.string.profile_bio_daily_change_limit_reached
+            else -> error("Unsupported profile daily change limit")
+        }
+
+    private fun isNicknameTaken(error: RamapError): Boolean =
+        error is RamapError.Http &&
+            error.status == HTTP_CONFLICT_STATUS &&
+            error.serverMessage == PROFILE_NICKNAME_TAKEN
+
+    private fun isRateLimit(error: RamapError): Boolean = error is RamapError.Http && error.status == HTTP_TOO_MANY_REQUESTS_STATUS
+
+    private fun isProfileSaveRateLimit(error: RamapError): Boolean {
+        if (error !is RamapError.Http || error.status != HTTP_TOO_MANY_REQUESTS_STATUS) return false
+        return error.serverMessage == PROFILE_SAVE_RATE_LIMIT
     }
 
     private fun back() {
@@ -182,7 +244,7 @@ class ProfileEditViewModel(
         nextDraftGeneration++
         cancelTask(SAVE)
         cancelTask(CHECK_NICKNAME)
-        reduce { copy(editing = false, nickname = "", bio = "", image = null, removePhoto = false, nicknameTouched = false, nicknameAvailable = null, nicknameCheckFailed = false, confirmDiscard = false, draftGeneration = nextDraftGeneration) }
+        reduce { copy(editing = false, nickname = "", bio = "", image = null, removePhoto = false, nicknameTouched = false, nicknameAvailable = null, nicknameCheckFailed = false, checkedNickname = null, confirmDiscard = false, draftGeneration = nextDraftGeneration) }
     }
 
     override fun handleError(throwable: Throwable) {
@@ -198,5 +260,11 @@ class ProfileEditViewModel(
         private const val FETCH = "profile-fetch"
         private const val SAVE = "profile-save"
         private const val CHECK_NICKNAME = "profile-check-nickname"
+        private const val HTTP_TOO_MANY_REQUESTS_STATUS = 429
+        private const val HTTP_CONFLICT_STATUS = 409
+        private const val PROFILE_NICKNAME_TAKEN = "PROFILE_NICKNAME_TAKEN"
+        private const val PROFILE_NICKNAME_DAILY_LIMIT = "PROFILE_NICKNAME_DAILY_LIMIT"
+        private const val PROFILE_BIO_DAILY_LIMIT = "PROFILE_BIO_DAILY_LIMIT"
+        private const val PROFILE_SAVE_RATE_LIMIT = "PROFILE_SAVE_RATE_LIMIT"
     }
 }

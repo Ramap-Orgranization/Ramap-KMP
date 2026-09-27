@@ -15,6 +15,8 @@ interface ProfileRepository {
 
     suspend fun updateMyProfile(draft: ProfileDraft): RamapResult<AccountProfile>
 
+    suspend fun updateProfileVisibility(isPublic: Boolean): RamapResult<AccountProfile>
+
     suspend fun updateMyProfile(
         nickname: String,
         image: ProfileImage? = null,

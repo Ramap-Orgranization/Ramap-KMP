@@ -13,7 +13,7 @@ value class ProfileBio(
         get() = length(value)
 
     companion object {
-        const val MAX_LENGTH = 50
+        const val MAX_LENGTH = 30
 
         private const val LINE_BREAKS = "\n\r\u000B\u000C\u0085\u2028\u2029"
 
