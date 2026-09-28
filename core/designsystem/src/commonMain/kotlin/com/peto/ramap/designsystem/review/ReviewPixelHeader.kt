@@ -8,28 +8,27 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.ChromaticColor
+import com.peto.ramap.theme.CommonColor
+import com.peto.ramap.theme.GrayColor
 
 @Composable
 fun ReviewPixelHeader(
     title: String,
-    description: String,
+    description: String? = null,
     modifier: Modifier = Modifier,
 ) {
-    val colors = MaterialTheme.colorScheme
     Column(
         modifier =
             modifier
@@ -40,7 +39,7 @@ fun ReviewPixelHeader(
                     for (row in 0..(size.height / step).toInt()) {
                         for (column in 0..(size.width / step).toInt()) {
                             drawRect(
-                                color = colors.onSurface.copy(alpha = 0.12f),
+                                color = GrayColor.C500.copy(alpha = 0.12f),
                                 topLeft = Offset(column * step, row * step),
                                 size = Size(dot, dot),
                             )
@@ -61,17 +60,19 @@ fun ReviewPixelHeader(
                         .weight(1f)
                         .semantics { heading() },
                 style = AppTextStyle.H1,
-                color = MaterialTheme.colorScheme.onSurface,
+                color = GrayColor.C500,
             )
             ReviewPixelRamen(
                 modifier = Modifier.size(72.dp),
             )
         }
-        AppText(
-            text = description,
-            style = AppTextStyle.B3,
-            color = colors.onSurfaceVariant,
-        )
+        if (!description.isNullOrBlank()) {
+            AppText(
+                text = description,
+                style = AppTextStyle.B3,
+                color = GrayColor.C300,
+            )
+        }
         Canvas(
             modifier =
                 Modifier
@@ -81,7 +82,7 @@ fun ReviewPixelHeader(
             val cell = 4.dp.toPx()
             for (column in 0..(size.width / cell).toInt()) {
                 drawRect(
-                    color = colors.onSurface,
+                    color = GrayColor.C500,
                     topLeft = Offset(column * cell, (column % 2) * cell),
                     size = Size(cell, cell),
                 )
@@ -94,7 +95,7 @@ fun ReviewPixelHeader(
 private fun ReviewPixelRamen(
     modifier: Modifier = Modifier,
 ) {
-    val ink = MaterialTheme.colorScheme.onSurface
+    val ink = GrayColor.C500
     val pixels =
         listOf(
             "............",
@@ -119,7 +120,7 @@ private fun ReviewPixelRamen(
                 val color =
                     when (pixels[row][column]) {
                         '#' -> ink
-                        'w' -> Color.White
+                        'w' -> CommonColor.White
                         'o' -> ChromaticColor.Orange400
                         else -> continue
                     }

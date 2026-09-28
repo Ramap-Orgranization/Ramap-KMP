@@ -14,12 +14,13 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
 import com.peto.ramap.designsystem.resource.wating.WaitingSystemUiModel
+import com.peto.ramap.designsystem.review.ReviewsContent
 import com.peto.ramap.designsystem.shop.model.ShopDetailTab
 import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.model.menu.MenuSection
 import com.peto.ramap.domain.model.notice.OperatingNotice
+import com.peto.ramap.domain.model.review.Review
 import com.peto.ramap.domain.model.shop.RamenShop
-import com.peto.ramap.domain.model.shop.ShopReview
 import com.peto.ramap.preview.RamenShopPreviewParameterProvider
 import com.peto.ramap.theme.RamapTheme
 
@@ -38,7 +39,7 @@ fun RamenShopOverview(
     operatingNotices: List<OperatingNotice>,
     menuSections: List<MenuSection>,
     menuUpdatedAt: String?,
-    reviews: List<ShopReview>,
+    reviews: List<Review>,
     reviewCount: Int,
     menuItemCount: Int,
     modifier: Modifier = Modifier,
@@ -56,6 +57,7 @@ fun RamenShopOverview(
     onOperatingNoticeClick: (OperatingNotice) -> Unit,
     onOpenProfile: (String) -> Unit,
     onWriteReviewClick: () -> Unit,
+    menuFooter: @Composable () -> Unit = {},
 ) {
     var selectedTab by remember(shop.id) { mutableStateOf(ShopDetailTab.MENU) }
 
@@ -127,9 +129,10 @@ fun RamenShopOverview(
                         onMenuSourceClick = onExternalLinkClick,
                     )
                 }
+                menuFooter()
             }
             ShopDetailTab.REVIEW -> {
-                ShopReviewsContent(
+                ReviewsContent(
                     shopName = shop.name,
                     reviews = reviews,
                     onOpenProfile = onOpenProfile,

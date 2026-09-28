@@ -39,6 +39,8 @@ fun CommonDialog(
     modifier: Modifier = Modifier,
     dismissText: String? = null,
     confirmEnabled: Boolean = true,
+    confirmIsLoading: Boolean = false,
+    dismissEnabled: Boolean = true,
     dismissOnBackPress: Boolean = true,
     dismissOnClickOutside: Boolean = true,
     onDismiss: (() -> Unit)? = null,
@@ -73,6 +75,8 @@ fun CommonDialog(
                 confirmText = confirmText,
                 dismissText = dismissText,
                 confirmEnabled = confirmEnabled,
+                confirmIsLoading = confirmIsLoading,
+                dismissEnabled = dismissEnabled,
                 content = content,
                 onConfirm = onConfirm,
                 onDismiss = onDismiss,
@@ -111,6 +115,8 @@ private fun DialogContent(
     confirmText: String,
     dismissText: String? = null,
     confirmEnabled: Boolean = true,
+    confirmIsLoading: Boolean = false,
+    dismissEnabled: Boolean = true,
     content: @Composable ColumnScope.() -> Unit,
     onConfirm: () -> Unit,
     onDismiss: (() -> Unit)? = null,
@@ -151,6 +157,7 @@ private fun DialogContent(
                             textColor = GrayColor.C500,
                             backgroundColor = CommonColor.White,
                             border = BorderStroke(1.dp, GrayColor.C500),
+                            enabled = dismissEnabled,
                             onClick = onDismiss,
                         )
 
@@ -161,6 +168,7 @@ private fun DialogContent(
                         modifier = Modifier.weight(1f),
                         text = confirmText,
                         enabled = confirmEnabled,
+                        isLoading = confirmIsLoading,
                         onClick = onConfirm,
                     )
                 }

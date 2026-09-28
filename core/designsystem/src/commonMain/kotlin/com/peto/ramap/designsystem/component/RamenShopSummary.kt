@@ -16,6 +16,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
@@ -37,9 +38,10 @@ import ramap.shared.generated.resources.ic_close
 @Composable
 fun RamenShopSummary(
     shop: RamenShop,
-    onClick: () -> Unit,
     categoryLabel: @Composable (Category) -> String,
     modifier: Modifier = Modifier,
+    onClick: (() -> Unit)? = null,
+    containerColor: Color = CommonColor.White,
     leadingContent: @Composable () -> Unit = {},
     actionLabel: String? = null,
     onAction: (() -> Unit)? = null,
@@ -50,8 +52,9 @@ fun RamenShopSummary(
         modifier =
             modifier
                 .fillMaxWidth()
-                .noRippleClickable(onClick = onClick)
-                .background(CommonColor.White)
+                .then(
+                    if (onClick != null) Modifier.noRippleClickable(onClick = onClick) else Modifier,
+                ).background(containerColor)
                 .padding(start = 8.dp, bottom = 5.dp),
     ) {
         Row(
@@ -133,7 +136,6 @@ private fun RamenShopSummaryPreview(
     RamapTheme {
         RamenShopSummary(
             shop = shop,
-            onClick = {},
             categoryLabel = { it.name },
         )
     }
@@ -147,7 +149,6 @@ private fun RamenShopSummaryActionPreview(
     RamapTheme {
         RamenShopSummary(
             shop = shop,
-            onClick = {},
             categoryLabel = { it.name },
             actionLabel = "삭제",
             onAction = {},

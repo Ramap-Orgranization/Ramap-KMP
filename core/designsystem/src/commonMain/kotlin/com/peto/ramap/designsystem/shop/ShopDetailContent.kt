@@ -146,18 +146,20 @@ fun ShopDetailContent(
                         onOperatingNoticeClick = onOperatingNoticeClick,
                         onOpenProfile = {},
                         onWriteReviewClick = { onReviewsClick(shop.id) },
+                        menuFooter = {
+                            onShowOnMap?.let { showOnMap ->
+                                AppButton(
+                                    text = stringResource(Res.string.ranking_show_shop_on_map),
+                                    modifier =
+                                        Modifier
+                                            .fillMaxWidth()
+                                            .padding(bottom = 2.dp)
+                                            .padding(horizontal = 20.dp),
+                                    onClick = { showOnMap(shop.id) },
+                                )
+                            }
+                        },
                     )
-                    onShowOnMap?.let { showOnMap ->
-                        AppButton(
-                            text = stringResource(Res.string.ranking_show_shop_on_map),
-                            modifier =
-                                Modifier
-                                    .fillMaxWidth()
-                                    .padding(bottom = 2.dp)
-                                    .padding(horizontal = 20.dp),
-                            onClick = { showOnMap(shop.id) },
-                        )
-                    }
                 }
 
                 ShopDetailSheetUiState.Closed,
