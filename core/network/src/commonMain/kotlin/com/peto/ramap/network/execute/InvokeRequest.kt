@@ -22,7 +22,7 @@ suspend inline fun <T> invokeRequest(crossinline call: suspend () -> T): RamapRe
         networkLogger.d(exception) {
             "supabase response exception status=${exception.response.status.value}, message=${exception.message}"
         }
-        RamapResult.Error(RamapError.Http(exception.response.status.value, exception))
+        RamapResult.Error(RamapError.Http(exception.response.status.value, exception, exception.error))
     } catch (exception: ResponseException) {
         networkLogger.d(exception) {
             "response exception status=${exception.response.status.value}, message=${exception.message}"

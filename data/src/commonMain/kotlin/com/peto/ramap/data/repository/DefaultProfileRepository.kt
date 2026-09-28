@@ -9,49 +9,54 @@ import com.peto.ramap.domain.model.profile.ProfileImage
 import com.peto.ramap.domain.model.profile.ProfileNickname
 import com.peto.ramap.domain.repository.ProfileRepository
 import com.peto.ramap.network.execute.invokeRequest
+import io.github.jan.supabase.exceptions.RestException
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.NonCancellable
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
+import kotlin.time.Clock
+import kotlin.time.Instant
 import kotlin.uuid.Uuid
 
 internal class DefaultProfileRepository(
     private val dataSource: ProfileDataSource,
+    private val currentTime: () -> Instant = { Clock.System.now() },
 ) : ProfileRepository {
-    private val operations = Mutex()
     override val sessionUserIds = dataSource.sessionUserIds
+
+    private var avatarCache: AvatarCache? = null
 
     override suspend fun fetchMyProfile(): RamapResult<AccountProfile> =
         invokeRequest {
             val userId = requireNotNull(dataSource.currentUserId()) { ERROR_MISSING_AUTHENTICATED_USER }
-            operations.withLock {
-                checkSession(userId)
-                accountProfile(userId, dataSource.fetchProfile(userId))
-            }
+            accountProfile(userId, dataSource.fetchProfile(userId))
         }
 
     override suspend fun isNicknameAvailable(nickname: String): RamapResult<Boolean> =
         invokeRequest {
             require(ProfileNickname(nickname).isValid) { ERROR_INVALID_PROFILE_NICKNAME }
-            val userId = requireNotNull(dataSource.currentUserId()) { ERROR_MISSING_AUTHENTICATED_USER }
-            val available = dataSource.isNicknameAvailable(nickname)
-            checkSession(userId)
-            available
+            dataSource.isNicknameAvailable(nickname)
         }
 
     override suspend fun updateMyProfile(draft: ProfileDraft): RamapResult<AccountProfile> =
         invokeRequest {
             draft.validate()
             val userId = requireNotNull(dataSource.currentUserId()) { ERROR_MISSING_AUTHENTICATED_USER }
-            operations.withLock {
-                updateProfile(
-                    userId = userId,
-                    nickname = draft.nickname.value,
-                    image = draft.image,
-                    removePhoto = draft.removePhoto,
-                    bio = draft.bio?.value,
-                )
-            }
+            updateProfile(
+                userId = userId,
+                nickname = draft.nickname.value,
+                image = draft.image,
+                removePhoto = draft.removePhoto,
+                bio = draft.bio?.value,
+            )
+        }
+
+    override suspend fun updateProfileVisibility(isPublic: Boolean): RamapResult<AccountProfile> =
+        invokeRequest {
+            val userId = requireNotNull(dataSource.currentUserId()) { ERROR_MISSING_AUTHENTICATED_USER }
+            val response = dataSource.updateProfileVisibility(isPublic)
+            accountProfile(userId, response, tolerateAvatarSigningFailure = true)
         }
 
     private suspend fun updateProfile(
@@ -61,75 +66,125 @@ internal class DefaultProfileRepository(
         removePhoto: Boolean,
         bio: String?,
     ): AccountProfile {
-        checkSession(userId)
-        val previous = dataSource.fetchProfile(userId)
-        checkSession(userId)
-        check(previous.userId == userId) { ERROR_MISMATCHED_PROFILE_OWNER }
+        val previousAvatarPath = previousAvatarPath(userId, image, removePhoto)
         val path = image?.let { "$userId/${Uuid.random()}.${it.fileExtension}" }
-        if (path != null) uploadPhoto(userId, path, image)
-        try {
-            checkSession(userId)
-        } catch (exception: Throwable) {
-            if (path != null) cleanupPhoto(userId, path)
-            throw exception
-        }
-        val response = dataSource.updateProfile(userId, nickname, path, removePhoto, bio)
-        checkSession(userId)
-        check(response.userId == userId) { ERROR_MISMATCHED_PROFILE_OWNER }
-        if (previous.avatarPath != null && previous.avatarPath != response.avatarPath) {
-            cleanupPhoto(userId, previous.avatarPath)
-        }
-        return accountProfile(userId, response)
-    }
-
-    private suspend fun uploadPhoto(
-        userId: String,
-        path: String,
-        image: ProfileImage,
-    ) {
-        try {
+        if (path != null) {
             dataSource.uploadPhoto(userId, path, image)
-        } catch (exception: Throwable) {
-            cleanupPhoto(userId, path)
-            throw exception
         }
+        val response =
+            try {
+                dataSource.updateProfile(userId, nickname, path, removePhoto, bio)
+            } catch (error: Throwable) {
+                rethrowProfileUpdateFailure(userId, path, (error as? RestException)?.statusCode, error)
+            }
+        check(response.userId == userId) { ERROR_MISMATCHED_PROFILE_OWNER }
+        cleanUpPreviousAvatar(userId, previousAvatarPath, response.avatarPath)
+        return accountProfile(userId, response, tolerateAvatarSigningFailure = true)
     }
 
-    private suspend fun cleanupPhoto(
+    private suspend fun previousAvatarPath(
         userId: String,
-        path: String,
-    ) = withContext(NonCancellable) {
-        try {
-            if (dataSource.currentUserId() == userId) dataSource.deletePhoto(userId, path)
-        } catch (_: Exception) {
-            // Best-effort cleanup must preserve the original failure, including cancellation.
+        image: ProfileImage?,
+        removePhoto: Boolean,
+    ): String? {
+        if (image == null && !removePhoto) return null
+        val previous = dataSource.fetchProfile(userId)
+        check(previous.userId == userId) { ERROR_MISMATCHED_PROFILE_OWNER }
+        return previous.avatarPath
+    }
+
+    private suspend fun cleanUpPreviousAvatar(
+        userId: String,
+        previousPath: String?,
+        updatedPath: String?,
+    ) {
+        if (previousPath == null || previousPath == updatedPath) return
+        withContext(NonCancellable) {
+            try {
+                dataSource.deletePhoto(userId, previousPath)
+            } catch (_: Throwable) {
+                // A completed profile save remains successful when old-photo cleanup fails.
+            }
         }
+        currentCoroutineContext().ensureActive()
+    }
+
+    internal suspend fun rethrowProfileUpdateFailure(
+        userId: String,
+        path: String?,
+        status: Int?,
+        error: Throwable,
+    ): Nothing {
+        if (path != null && status in CONFIRMED_REJECTION_STATUSES) {
+            try {
+                withContext(NonCancellable) { dataSource.deletePhoto(userId, path) }
+            } catch (cleanupError: CancellationException) {
+                throw cleanupError
+            } catch (_: Throwable) {
+                // Keep the original profile-save failure when best-effort cleanup also fails.
+            }
+        }
+        throw error
     }
 
     private suspend fun accountProfile(
         userId: String,
         response: ProfileResponse,
+        tolerateAvatarSigningFailure: Boolean = false,
     ): AccountProfile {
-        checkSession(userId)
         check(response.userId == userId) { ERROR_MISMATCHED_PROFILE_OWNER }
-        val avatarUrl = response.avatarPath?.let { dataSource.signedPhotoUrl(userId, it) }
-        checkSession(userId)
+        val avatarUrl =
+            if (response.avatarPath != null) {
+                resolveAvatarUrl(
+                    userId = userId,
+                    path = response.avatarPath,
+                    tolerateFailure = tolerateAvatarSigningFailure,
+                )
+            } else {
+                clearAvatarCache()
+                null
+            }
         return AccountProfile(
             userId = userId,
             nickname = response.nickname,
             avatarUrl = avatarUrl,
             bio = response.bio,
+            isPublic = response.isPublic,
+            nicknameChangesRemaining = response.nicknameChangesRemaining,
+            bioChangesRemaining = response.bioChangesRemaining,
         )
     }
 
-    private fun checkSession(userId: String) {
-        check(dataSource.currentUserId() == userId) { ERROR_PROFILE_SESSION_CHANGED }
+    private suspend fun resolveAvatarUrl(
+        userId: String,
+        path: String,
+        tolerateFailure: Boolean,
+    ): String? {
+        val currentCache = avatarCache
+        if (currentCache != null && currentCache.matches(userId, path, currentTime())) {
+            return currentCache.url
+        }
+        val url =
+            try {
+                dataSource.signedPhotoUrl(userId, path)
+            } catch (exception: CancellationException) {
+                throw exception
+            } catch (exception: Throwable) {
+                if (!tolerateFailure) throw exception
+                return null
+            }
+        avatarCache = AvatarCache(userId = userId, path = path, url = url, signedAt = currentTime())
+        return url
+    }
+
+    private fun clearAvatarCache() {
+        avatarCache = null
     }
 
     private companion object {
+        val CONFIRMED_REJECTION_STATUSES = setOf(400, 401, 403, 404, 409, 422, 429)
         const val ERROR_MISSING_AUTHENTICATED_USER = "Missing authenticated user"
         const val ERROR_INVALID_PROFILE_NICKNAME = "Invalid profile nickname"
         const val ERROR_MISMATCHED_PROFILE_OWNER = "Mismatched profile owner"
-        const val ERROR_PROFILE_SESSION_CHANGED = "Profile session changed"
     }
 }

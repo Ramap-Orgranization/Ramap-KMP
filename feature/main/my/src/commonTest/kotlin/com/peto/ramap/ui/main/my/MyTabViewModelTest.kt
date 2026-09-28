@@ -23,7 +23,7 @@ class MyTabViewModelTest {
             val profiles = FakeProfileRepository()
             val pending = CompletableDeferred<RamapResult<AccountProfile>>()
             profiles.fetchPending = pending
-            val viewModel = MyTabViewModel(profiles, FakePersonalizationRepository())
+            val viewModel = MyTabViewModel(profiles, FakeReviewCommunityRepository(), FakePersonalizationRepository())
 
             assertFalse(viewModel.uiState.value.sessionResolved)
             assertNull(viewModel.uiState.value.profile)
@@ -50,7 +50,7 @@ class MyTabViewModelTest {
                         hiddenShopIds = setOf("four", "five", "six"),
                     ),
                 )
-            val viewModel = MyTabViewModel(profiles, personalization)
+            val viewModel = MyTabViewModel(profiles, FakeReviewCommunityRepository(), personalization)
             assertFalse(viewModel.uiState.value.sessionResolved)
             runCurrent()
 
@@ -80,7 +80,7 @@ class MyTabViewModelTest {
     fun `이전 갱신 응답이 늦게 도착해도 최신 프로필을 유지한다`() =
         coroutinesTest {
             val profiles = FakeProfileRepository()
-            val viewModel = MyTabViewModel(profiles, FakePersonalizationRepository())
+            val viewModel = MyTabViewModel(profiles, FakeReviewCommunityRepository(), FakePersonalizationRepository())
             runCurrent()
 
             val oldRequest = CompletableDeferred<RamapResult<AccountProfile>>()
@@ -107,7 +107,7 @@ class MyTabViewModelTest {
     fun `로그아웃 후 도착한 프로필 응답을 무시한다`() =
         coroutinesTest {
             val profiles = FakeProfileRepository()
-            val viewModel = MyTabViewModel(profiles, FakePersonalizationRepository())
+            val viewModel = MyTabViewModel(profiles, FakeReviewCommunityRepository(), FakePersonalizationRepository())
             runCurrent()
 
             val oldRequest = CompletableDeferred<RamapResult<AccountProfile>>()

@@ -14,6 +14,7 @@ sealed interface RamapError {
     data class Http(
         val status: Int,
         override val cause: Throwable? = null,
+        val serverMessage: String? = null,
     ) : RamapError
 
     data class Serialization(

@@ -14,10 +14,13 @@ import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -28,6 +31,9 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -44,40 +50,57 @@ import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.peto.ramap.designsystem.button.login.LoginButton
 import com.peto.ramap.designsystem.component.Skeleton
+import com.peto.ramap.designsystem.dialog.CommonDialog
 import com.peto.ramap.designsystem.profile.ProfileAvatar
 import com.peto.ramap.designsystem.profile.ProfileDotField
 import com.peto.ramap.designsystem.text.AppText
+import com.peto.ramap.designsystem.toast.ToastManager
 import com.peto.ramap.domain.model.auth.LoginType
 import com.peto.ramap.domain.model.auth.supportedLoginTypes
+import com.peto.ramap.domain.model.community.PublicProfile
 import com.peto.ramap.domain.model.profile.AccountProfile
 import com.peto.ramap.extension.noRippleClickable
 import com.peto.ramap.theme.AppTextStyle
+import com.peto.ramap.theme.ChromaticColor
 import com.peto.ramap.theme.GrayColor
-import com.peto.ramap.theme.ProfileColor
 import com.peto.ramap.theme.RamapTheme
+import com.peto.ramap.ui.base.ObserveAsEvents
 import com.peto.ramap.ui.main.my.component.MyTabSkeleton
 import com.peto.ramap.ui.main.my.contract.MyTabIntent
+import com.peto.ramap.ui.main.my.contract.MyTabSideEffect
 import com.peto.ramap.ui.main.my.contract.MyTabUiState
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
+import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.ic_chevron_right
 import ramap.shared.generated.resources.ic_notification
+import ramap.shared.generated.resources.ic_person
 import ramap.shared.generated.resources.ic_profile_bookmark
 import ramap.shared.generated.resources.ic_profile_edit
 import ramap.shared.generated.resources.ic_profile_report
 import ramap.shared.generated.resources.ic_setting
 import ramap.shared.generated.resources.ic_visibility_off
 import ramap.shared.generated.resources.login_required_message
+import ramap.shared.generated.resources.my_reviews
 import ramap.shared.generated.resources.profile_bio_empty
+import ramap.shared.generated.resources.profile_discard
 import ramap.shared.generated.resources.profile_edit
 import ramap.shared.generated.resources.profile_load_failed
 import ramap.shared.generated.resources.profile_photo
 import ramap.shared.generated.resources.profile_retry
 import ramap.shared.generated.resources.profile_title
+import ramap.shared.generated.resources.profile_visibility
+import ramap.shared.generated.resources.profile_visibility_body
+import ramap.shared.generated.resources.profile_visibility_private
+import ramap.shared.generated.resources.profile_visibility_public
+import ramap.shared.generated.resources.profile_visibility_status
+import ramap.shared.generated.resources.review_blocked_users
+import ramap.shared.generated.resources.review_blocked_users_empty
+import ramap.shared.generated.resources.review_close
 import ramap.shared.generated.resources.settings_bookmarked_shops_menu
 import ramap.shared.generated.resources.settings_hidden_shops_menu
 import ramap.shared.generated.resources.settings_report_menu
@@ -92,15 +115,47 @@ fun MyTabRoute(
     onSubscribedShopsNavigate: () -> Unit,
     onBookmarkedShopsNavigate: () -> Unit,
     onProfileNavigate: () -> Unit,
+    onReviewNavigate: () -> Unit = {},
+    onOpenProfile: (String) -> Unit = {},
     onLoginClick: (LoginType) -> Unit,
+    toastManager: ToastManager = koinInject(),
     viewModel: MyTabViewModel = koinViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.dispatch(MyTabIntent.Refresh) }
+    var isVisibilityDialogOpen by rememberSaveable { mutableStateOf(false) }
+    var isBlockedUsersDialogOpen by rememberSaveable { mutableStateOf(false) }
+    ObserveAsEvents(viewModel.sideEffect) { effect ->
+        when (effect) {
+            is MyTabSideEffect.ShowToast -> toastManager.show(effect.data)
+            MyTabSideEffect.OpenBlockedUsersDialog -> isBlockedUsersDialogOpen = true
+        }
+    }
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
+        viewModel.dispatch(MyTabIntent.Refresh)
+    }
     MyTabContent(
         state = state,
+        isVisibilityDialogOpen = isVisibilityDialogOpen,
+        isBlockedUsersDialogOpen = isBlockedUsersDialogOpen,
         onSettingsClick = onSettingsNavigate,
+        onVisibilityClick = { if (state.profile != null) isVisibilityDialogOpen = true },
+        onVisibilityDismiss = { if (!state.savingVisibility) isVisibilityDialogOpen = false },
+        onVisibilitySave = { isPublic ->
+            isVisibilityDialogOpen = false
+            viewModel.dispatch(MyTabIntent.SaveVisibility(isPublic))
+        },
+        onBlockedUsersClick = { viewModel.dispatch(MyTabIntent.OpenBlockedUsers) },
+        onBlockedUsersDismiss = {
+            isBlockedUsersDialogOpen = false
+            viewModel.dispatch(MyTabIntent.DismissBlockedUsers)
+        },
+        onBlockedUserProfileClick = { userId ->
+            isBlockedUsersDialogOpen = false
+            viewModel.dispatch(MyTabIntent.DismissBlockedUsers)
+            onOpenProfile(userId)
+        },
         onProfileClick = onProfileNavigate,
+        onReviewClick = onReviewNavigate,
         onRetryClick = { viewModel.dispatch(MyTabIntent.Refresh) },
         onBookmarkedShopsClick = onBookmarkedShopsNavigate,
         onSubscribedShopsClick = onSubscribedShopsNavigate,
@@ -113,8 +168,17 @@ fun MyTabRoute(
 @Composable
 internal fun MyTabContent(
     state: MyTabUiState,
+    isVisibilityDialogOpen: Boolean = false,
+    isBlockedUsersDialogOpen: Boolean = false,
     onSettingsClick: () -> Unit,
+    onVisibilityClick: () -> Unit,
+    onVisibilityDismiss: () -> Unit,
+    onVisibilitySave: (Boolean) -> Unit,
+    onBlockedUsersClick: () -> Unit,
+    onBlockedUsersDismiss: () -> Unit,
+    onBlockedUserProfileClick: (String) -> Unit,
     onProfileClick: () -> Unit,
+    onReviewClick: () -> Unit,
     onRetryClick: () -> Unit,
     onBookmarkedShopsClick: () -> Unit,
     onSubscribedShopsClick: () -> Unit,
@@ -141,6 +205,13 @@ internal fun MyTabContent(
                     .padding(end = 14.dp),
             horizontalArrangement = Arrangement.End,
         ) {
+            IconButton(onClick = onVisibilityClick, enabled = state.profile != null) {
+                Icon(
+                    painter = painterResource(Res.drawable.ic_visibility_off),
+                    contentDescription = stringResource(Res.string.profile_visibility),
+                    tint = GrayColor.C500,
+                )
+            }
             IconButton(onClick = onSettingsClick) {
                 Icon(
                     painter = painterResource(Res.drawable.ic_setting),
@@ -149,6 +220,53 @@ internal fun MyTabContent(
                 )
             }
         }
+        val isPublic = state.profile?.isPublic == true
+        CommonDialog(
+            visible = isVisibilityDialogOpen,
+            confirmText =
+                stringResource(
+                    if (isPublic) Res.string.profile_visibility_private else Res.string.profile_visibility_public,
+                ),
+            dismissText = stringResource(Res.string.profile_discard),
+            confirmEnabled = !state.savingVisibility,
+            onDismissRequest = onVisibilityDismiss,
+            onConfirm = { onVisibilitySave(!isPublic) },
+            onDismiss = onVisibilityDismiss,
+            content = {
+                AppText(
+                    text = stringResource(Res.string.profile_visibility),
+                    style = AppTextStyle.T1,
+                    color = GrayColor.C500,
+                    textAlign = TextAlign.Center,
+                )
+                AppText(
+                    text = stringResource(Res.string.profile_visibility_body),
+                    style = AppTextStyle.B2,
+                    color = GrayColor.C400,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(top = 8.dp),
+                )
+                AppText(
+                    text =
+                        stringResource(
+                            Res.string.profile_visibility_status,
+                            stringResource(
+                                if (isPublic) Res.string.profile_visibility_public else Res.string.profile_visibility_private,
+                            ),
+                        ),
+                    style = AppTextStyle.B2,
+                    color = GrayColor.C400,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(top = 4.dp),
+                )
+            },
+        )
+        BlockedUsersDialog(
+            visible = isBlockedUsersDialogOpen,
+            users = state.blockedUsers,
+            onDismiss = onBlockedUsersDismiss,
+            onProfileClick = onBlockedUserProfileClick,
+        )
         when {
             isLoading -> MyTabSkeleton()
 
@@ -170,31 +288,31 @@ internal fun MyTabContent(
                         modifier =
                             Modifier
                                 .fillMaxWidth()
-                                .height(108.dp),
+                                .height(160.dp),
                         contentAlignment = Alignment.Center,
                     ) {
                         ProfileDotField(modifier = Modifier.fillMaxSize())
-                        Box(modifier = Modifier.size(86.dp)) {
+                        Box(modifier = Modifier.size(128.dp)) {
                             ProfileAvatar(
                                 model = state.profile?.avatarUrl,
                                 description = stringResource(Res.string.profile_photo),
-                                modifier = Modifier.size(86.dp),
+                                modifier = Modifier.size(128.dp),
                             )
                             Box(
                                 modifier =
                                     Modifier
                                         .align(Alignment.BottomEnd)
-                                        .offset(x = 4.dp, y = 4.dp)
-                                        .size(30.dp)
+                                        .offset(x = 6.dp, y = 6.dp)
+                                        .size(40.dp)
                                         .border(2.dp, Color.White, CircleShape)
                                         .clip(CircleShape)
-                                        .background(ProfileColor.Orange),
+                                        .background(ChromaticColor.Orange400),
                                 contentAlignment = Alignment.Center,
                             ) {
                                 Icon(
                                     painter = painterResource(Res.drawable.ic_profile_edit),
                                     contentDescription = null,
-                                    modifier = Modifier.size(16.dp),
+                                    modifier = Modifier.size(20.dp),
                                     tint = Color.White,
                                 )
                             }
@@ -260,6 +378,36 @@ internal fun MyTabContent(
                 if (!isGuest) {
                     MyMenuRow(
                         icon = Res.drawable.ic_profile_bookmark,
+                        title = Res.string.my_reviews,
+                        count = null,
+                        hasCount = false,
+                        iconBackground = Color(0xFFFFF3E9),
+                        iconTint = Color(0xFFE77730),
+                        isLoading = isLoading,
+                        onClick = onReviewClick,
+                    )
+                    HorizontalDivider(
+                        modifier = Modifier.padding(start = 16.dp),
+                        thickness = 1.dp,
+                        color = GrayColor.C100,
+                    )
+                    MyMenuRow(
+                        icon = Res.drawable.ic_person,
+                        title = Res.string.review_blocked_users,
+                        count = null,
+                        hasCount = false,
+                        iconBackground = Color(0xFFF2F4F8),
+                        iconTint = Color(0xFF8491A3),
+                        isLoading = isLoading,
+                        onClick = onBlockedUsersClick,
+                    )
+                    HorizontalDivider(
+                        modifier = Modifier.padding(start = 16.dp),
+                        thickness = 1.dp,
+                        color = GrayColor.C100,
+                    )
+                    MyMenuRow(
+                        icon = Res.drawable.ic_profile_bookmark,
                         title = Res.string.settings_bookmarked_shops_menu,
                         count = state.bookmarkedCount,
                         iconBackground = Color(0xFFFFF3E9),
@@ -318,6 +466,65 @@ internal fun MyTabContent(
 }
 
 @Composable
+private fun BlockedUsersDialog(
+    visible: Boolean,
+    users: List<PublicProfile>,
+    onDismiss: () -> Unit,
+    onProfileClick: (String) -> Unit,
+) {
+    if (!visible) return
+    CommonDialog(
+        visible = visible,
+        confirmText = stringResource(Res.string.review_close),
+        onDismissRequest = onDismiss,
+        onConfirm = onDismiss,
+        content = {
+            AppText(
+                text = stringResource(Res.string.review_blocked_users),
+                style = AppTextStyle.T1,
+                color = GrayColor.C500,
+                textAlign = TextAlign.Center,
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            if (users.isEmpty()) {
+                AppText(
+                    text = stringResource(Res.string.review_blocked_users_empty),
+                    style = AppTextStyle.B2,
+                    color = GrayColor.C400,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(vertical = 16.dp),
+                )
+            } else {
+                LazyColumn(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 300.dp),
+                ) {
+                    items(users, key = { it.userId }) { profile ->
+                        Row(
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .clickable { onProfileClick(profile.userId) }
+                                    .padding(vertical = 12.dp, horizontal = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            AppText(
+                                text = profile.nickname,
+                                style = AppTextStyle.B1,
+                                color = GrayColor.C500,
+                                modifier = Modifier.weight(1f),
+                            )
+                        }
+                    }
+                }
+            }
+        },
+    )
+}
+
+@Composable
 private fun GuestProfileHeader(
     onLoginClick: (LoginType) -> Unit,
 ) {
@@ -325,14 +532,14 @@ private fun GuestProfileHeader(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .height(176.dp),
+                .height(160.dp),
         contentAlignment = Alignment.Center,
     ) {
         ProfileDotField(modifier = Modifier.fillMaxSize())
         ProfileAvatar(
             model = null,
             description = stringResource(Res.string.profile_photo),
-            modifier = Modifier.size(86.dp),
+            modifier = Modifier.size(128.dp),
         )
     }
     AppText(
@@ -450,7 +657,14 @@ private fun MyTabRoutePreview() {
                     hiddenCount = 0,
                 ),
             onSettingsClick = {},
+            onVisibilityClick = {},
+            onVisibilityDismiss = {},
+            onVisibilitySave = {},
+            onBlockedUsersClick = {},
+            onBlockedUsersDismiss = {},
+            onBlockedUserProfileClick = {},
             onProfileClick = {},
+            onReviewClick = {},
             onRetryClick = {},
             onBookmarkedShopsClick = {},
             onSubscribedShopsClick = {},

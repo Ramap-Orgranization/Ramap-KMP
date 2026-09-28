@@ -20,6 +20,7 @@ data class ProfileUiState(
     val nicknameTouched: Boolean = false,
     val nicknameAvailable: Boolean? = null,
     val nicknameCheckFailed: Boolean = false,
+    val checkedNickname: String? = null,
     val confirmDiscard: Boolean = false,
     val draftGeneration: Long = 0,
     override val loadState: LoadState = LoadState.loading(ProfileLoadKey.Fetch),
@@ -28,10 +29,13 @@ data class ProfileUiState(
     val checkingNickname: Boolean get() = loadState.isLoading(ProfileLoadKey.CheckNickname)
     val saving: Boolean get() = loadState.isLoading(ProfileLoadKey.Save)
 
-    val changed: Boolean get() = nickname.trim() != profile?.nickname || bio.trim() != profile?.bio || image != null || removePhoto
+    val changed: Boolean get() = nickname.trim() != profile?.nickname || bio.trim() != profile.bio || image != null || removePhoto
     val nicknameInvalid: Boolean get() = !ProfileNickname.isValid(nickname.trim())
     val nicknameChanged: Boolean get() = nickname.trim() != profile?.nickname
+    val canCheckNickname: Boolean get() = editing && nicknameChanged && !nicknameInvalid && checkedNickname != nickname.trim() && !checkingNickname && !saving
+    val showNicknameStatus: Boolean get() = !nicknameInvalid && nicknameChanged && (nicknameAvailable != null || nicknameCheckFailed)
     val bioInvalid: Boolean get() = !ProfileBio.isValid(bio.trim())
+    val bioChanged: Boolean get() = bio.trim() != profile?.bio
     val canSave: Boolean get() = editing && changed && !nicknameInvalid && (!nicknameChanged || nicknameAvailable == true) && !checkingNickname && !bioInvalid && !saving
 
     override fun withLoadingState(loadState: LoadState): ProfileUiState = copy(loadState = loadState)

@@ -21,6 +21,8 @@ internal interface ProfileDataSource {
         bio: String? = null,
     ): ProfileResponse
 
+    suspend fun updateProfileVisibility(isPublic: Boolean): ProfileResponse
+
     suspend fun uploadPhoto(
         userId: String,
         path: String,

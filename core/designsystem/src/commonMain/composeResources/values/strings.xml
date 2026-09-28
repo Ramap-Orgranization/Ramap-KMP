@@ -2,6 +2,15 @@
     <!-- 공통 탐색 및 앱 동작 -->
     <string name="navigation_back">뒤로가기</string>
     <string name="app_exit_back_message">뒤로가기를 한 번 더 누르면 종료돼요</string>
+    <string name="review_blocked_users">차단한 사용자</string>
+    <string name="review_blocked_users_empty">차단한 사용자가 없어요</string>
+    <string name="review_close">닫기</string>
+    <string name="my_reviews">내 리뷰</string>
+    <string name="profile_visibility">프로필 공개</string>
+    <string name="profile_visibility_body">공개하면 프로필과 게시된 리뷰를 다른 사용자에게 보여줘요.</string>
+    <string name="profile_visibility_status">현재 %1$s 상태예요.</string>
+    <string name="profile_visibility_public">공개</string>
+    <string name="profile_visibility_private">비공개</string>
 
     <!-- 매장 상세 화면 -->
     <string name="shop_detail_label_address">주소</string>
@@ -440,14 +449,20 @@
     <string name="profile_edit">프로필 편집</string>
     <string name="profile_edit_action">수정</string>
     <string name="profile_bio">한 줄 자기소개</string>
+    <string name="profile_bio_short">한 줄 소개</string>
     <string name="profile_bio_empty">자기소개를 작성해주세요</string>
     <string name="profile_bio_placeholder">50자 이내로 입력해 주세요.</string>
     <string name="profile_bio_invalid">줄바꿈 없이 50자 이내로 입력해 주세요.</string>
     <string name="profile_bio_counter">%1$d / 50</string>
+    <string name="profile_nickname_daily_change_limit_reached">오늘 닉네임 변경 횟수를 모두 사용했어요. 자정에 다시 변경할 수 있어요.</string>
+    <string name="profile_bio_daily_change_limit_reached">오늘 자기소개 변경 횟수를 모두 사용했어요. 자정에 다시 변경할 수 있어요.</string>
+    <string name="profile_nickname_check_rate_limited">닉네임 확인 요청이 많아요. 잠시 후 다시 시도해 주세요.</string>
+    <string name="profile_save_rate_limited">저장 요청이 많아요. 잠시 후 다시 시도해 주세요.</string>
     <string name="profile_account">내 계정</string>
     <string name="profile_connected">연결됨</string>
     <string name="profile_photo">프로필 사진</string>
     <string name="profile_photo_change">사진 변경</string>
+    <string name="profile_photo_remove">사진 제거</string>
     <string name="profile_nickname">닉네임</string>
     <string name="profile_nickname_placeholder">2~10글자를 입력해 주세요.</string>
     <string name="profile_nickname_invalid">한글·영문·숫자·밑줄로 2~10글자를 입력해 주세요.</string>
@@ -468,4 +483,8 @@
     <string name="profile_discard_body">저장하지 않은 변경사항은 사라져요.</string>
     <string name="profile_discard">수정 취소</string>
     <string name="profile_keep_editing">계속 수정</string>
+    <string name="profile_policy_title">닉네임 및 소개 변경 안내</string>
+    <string name="profile_policy_bullet_1">닉네임과 자기소개는 각각 하루 최대 2회 수정할 수 있어요.</string>
+    <string name="profile_policy_bullet_2">변경 횟수는 매일 자정에 2회로 초기화돼요.</string>
+    <string name="profile_policy_bullet_3">부적절하거나 타인을 비방하는 단어는 제재될 수 있어요.</string>
 </resources>

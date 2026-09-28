@@ -24,4 +24,11 @@ class FakeProfileRepository : ProfileRepository {
     override suspend fun isNicknameAvailable(nickname: String): RamapResult<Boolean> = RamapResult.Success(true)
 
     override suspend fun updateMyProfile(draft: ProfileDraft): RamapResult<AccountProfile> = RamapResult.Success(AccountProfile(sessionUserIds.value.orEmpty(), draft.nickname.value, bio = draft.bio?.value.orEmpty()))
+
+    override suspend fun updateProfileVisibility(
+        isPublic: Boolean,
+    ): RamapResult<AccountProfile> =
+        RamapResult.Success(
+            AccountProfile(sessionUserIds.value.orEmpty(), "느긋한차슈", isPublic = isPublic),
+        )
 }

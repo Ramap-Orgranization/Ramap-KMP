@@ -52,8 +52,10 @@ fun ProfileEditRoute(
         onIntent = viewModel::dispatch,
         onLoginClick = onLoginClick,
         onPickImage = {
-            pickerGeneration = state.draftGeneration
-            pickImage()
+            if (!state.saving) {
+                pickerGeneration = state.draftGeneration
+                pickImage()
+            }
         },
     )
 }

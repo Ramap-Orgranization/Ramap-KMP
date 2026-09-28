@@ -17,6 +17,7 @@ class FakeProfileRepository : ProfileRepository {
     var ignoreFetchCancellation = false
     var ignoreCancellation = false
     var saveCalls = 0
+    var nicknameCheckCalls = 0
     var nicknameAvailable = true
     var nicknameCheckResult: CompletableDeferred<RamapResult<Boolean>>? = null
 
@@ -26,7 +27,10 @@ class FakeProfileRepository : ProfileRepository {
         return fetchResult ?: RamapResult.Success(AccountProfile(sessionUserIds.value.orEmpty(), "느긋한차슈"))
     }
 
-    override suspend fun isNicknameAvailable(nickname: String): RamapResult<Boolean> = nicknameCheckResult?.await() ?: RamapResult.Success(nicknameAvailable)
+    override suspend fun isNicknameAvailable(nickname: String): RamapResult<Boolean> {
+        nicknameCheckCalls++
+        return nicknameCheckResult?.await() ?: RamapResult.Success(nicknameAvailable)
+    }
 
     override suspend fun updateMyProfile(draft: ProfileDraft): RamapResult<AccountProfile> {
         saveCalls++
@@ -34,4 +38,6 @@ class FakeProfileRepository : ProfileRepository {
         if (pending == null) return RamapResult.Success(AccountProfile(sessionUserIds.value.orEmpty(), draft.nickname.value, bio = draft.bio?.value.orEmpty()))
         return if (ignoreCancellation) withContext(NonCancellable) { pending.await() } else pending.await()
     }
+
+    override suspend fun updateProfileVisibility(isPublic: Boolean): RamapResult<AccountProfile> = RamapResult.Success(AccountProfile(sessionUserIds.value.orEmpty(), "느긋한차슈", isPublic = isPublic))
 }
