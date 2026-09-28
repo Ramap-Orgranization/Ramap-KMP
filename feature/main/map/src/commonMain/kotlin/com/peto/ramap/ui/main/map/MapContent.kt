@@ -90,6 +90,7 @@ internal fun MapContent(
     onReportSubmit: (Set<ShopInformationField>, String) -> Unit,
     onBookmarkedShopsToggle: () -> Unit,
     showShopDetail: Boolean,
+    showReviewsOnOpen: Boolean = false,
 ) {
     val selectedShop: RamenShop? = uiState.selectedShop
     val focusManager = LocalFocusManager.current
@@ -232,6 +233,7 @@ internal fun MapContent(
             state =
                 uiState.shopDetailState,
             visible = showShopDetail,
+            showReviewsOnOpen = showReviewsOnOpen,
             isBackEnabled = isBackEnabled,
             maxHeight = maxHeight,
             waitingSystem = selectedShop?.let { uiState.shopWaiting[it.id].toUiModel() },

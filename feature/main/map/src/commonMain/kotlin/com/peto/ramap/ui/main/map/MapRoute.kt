@@ -66,6 +66,7 @@ fun MapRoute(
     onOperatingNoticeNavigate: (OperatingNotice) -> Unit,
     requestedShopId: String? = null,
     showShopDetail: Boolean = true,
+    showReviewsOnOpen: Boolean = false,
     originSource: AnalyticsSource = AnalyticsSource.MAP,
     toastManager: ToastManager = koinInject(),
     appSettingsOpener: AppSettingsOpener = koinInject(),
@@ -76,6 +77,7 @@ fun MapRoute(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val coroutineScope = rememberCoroutineScope()
     var shouldShowShopDetail by remember(requestedShopId, showShopDetail) { mutableStateOf(showShopDetail) }
+    var shouldShowReviews by remember(requestedShopId, showReviewsOnOpen) { mutableStateOf(showReviewsOnOpen) }
     var detailSource by remember(requestedShopId, originSource) { mutableStateOf(originSource) }
 
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
@@ -134,11 +136,13 @@ fun MapRoute(
             },
             onShopSelected = { shop, shouldFocus, source ->
                 shouldShowShopDetail = true
+                shouldShowReviews = false
                 detailSource = AnalyticsSource.MAP
                 viewModel.dispatch(OnShopSelected(shop, shouldFocus, source))
             },
             onShopDetailDismissed = {
                 detailSource = AnalyticsSource.MAP
+                shouldShowReviews = false
                 viewModel.dispatch(OnShopDetailDismissed)
                 onDetailDismissed()
             },
@@ -150,6 +154,7 @@ fun MapRoute(
                 }
             },
             onRequestedShopDismissed = {
+                shouldShowReviews = false
                 viewModel.dispatch(OnRequestedShopDismissed)
                 onDetailDismissed()
             },
@@ -182,6 +187,7 @@ fun MapRoute(
             },
             onOperatingNoticeNavigate = onOperatingNoticeNavigate,
             showShopDetail = shouldShowShopDetail,
+            showReviewsOnOpen = shouldShowReviews,
         )
     }
 }

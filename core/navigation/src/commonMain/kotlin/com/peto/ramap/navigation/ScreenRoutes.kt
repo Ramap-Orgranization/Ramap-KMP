@@ -10,6 +10,7 @@ sealed interface ScreenRoutes : NavKey {
         val shopId: String? = null,
         val returnTab: TabStatus? = null,
         val showShopDetail: Boolean = true,
+        val showReviews: Boolean = false,
         val source: NavigationSource? = null,
     ) : ScreenRoutes
 

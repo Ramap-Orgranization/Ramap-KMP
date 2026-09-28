@@ -42,6 +42,7 @@ fun RamenShopOverview(
     reviews: List<Review>,
     reviewCount: Int,
     menuItemCount: Int,
+    showReviewsOnOpen: Boolean = false,
     modifier: Modifier = Modifier,
     dragAreaModifier: Modifier = Modifier,
     onBookmarkClick: () -> Unit,
@@ -59,7 +60,9 @@ fun RamenShopOverview(
     onWriteReviewClick: () -> Unit,
     menuFooter: @Composable () -> Unit = {},
 ) {
-    var selectedTab by remember(shop.id) { mutableStateOf(ShopDetailTab.MENU) }
+    var selectedTab by remember(shop.id, showReviewsOnOpen) {
+        mutableStateOf(if (showReviewsOnOpen) ShopDetailTab.REVIEW else ShopDetailTab.MENU)
+    }
 
     Column(
         modifier =

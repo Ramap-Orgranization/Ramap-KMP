@@ -135,12 +135,14 @@ class NavigationState(
         source: NavigationSource? = null,
         returnTab: TabStatus? = null,
         showShopDetail: Boolean = true,
+        showReviews: Boolean = false,
     ) {
         val mapRoute =
             ScreenRoutes.MapRoutes(
                 shopId = shopId,
                 returnTab = returnTab,
                 showShopDetail = showShopDetail,
+                showReviews = showReviews,
                 source = source,
             )
         val mapBackStack = backStacks.getValue(TabStatus.MAP)

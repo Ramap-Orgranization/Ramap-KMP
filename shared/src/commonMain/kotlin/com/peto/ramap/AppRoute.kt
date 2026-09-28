@@ -130,6 +130,7 @@ internal fun AppRoute(
                 },
                 requestedShopId = route.shopId,
                 showShopDetail = route.showShopDetail,
+                showReviewsOnOpen = route.showReviews,
                 originSource =
                     when (route.source) {
                         NavigationSource.BOOKMARKED_SHOPS -> AnalyticsSource.BOOKMARKED_SHOPS
@@ -216,7 +217,9 @@ internal fun AppRoute(
             ShopReviewWriteRoute(
                 shopId = route.shopId,
                 onBack = navigationState::pop,
-                onSubmitted = navigationState::pop,
+                onSubmitted = {
+                    navigationState.showShopOnMap(shopId = route.shopId, showReviews = true)
+                },
                 onLogin = navigationState::showMyRoot,
             )
         },
