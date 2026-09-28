@@ -69,6 +69,7 @@ fun ShopDetailContent(
     onExternalLinkClick: (String) -> Unit = {},
     isAppleMapsAvailable: Boolean = false,
     onAppleMapsClick: (RamenShop) -> Unit = {},
+    onReviewsClick: (String) -> Unit,
 ) {
     val selectedShop =
         when (state) {
@@ -82,26 +83,27 @@ fun ShopDetailContent(
     val shouldShowMainSheet =
         selectedShop != null ||
             (showRequestedLoadingInSheet && state is ShopDetailSheetUiState.Loading)
+    val mainSheetShopId =
+        when (state) {
+            ShopDetailSheetUiState.Closed -> null
+            is ShopDetailSheetUiState.Loading -> state.shopId
+            is ShopDetailSheetUiState.Content -> state.detail.shop.id
+            is ShopDetailSheetUiState.Error -> state.shopId
+        }
 
     if (visible && shouldShowMainSheet && state !is ShopDetailSheetUiState.Error) {
-        CommonBottomSheet(
-            visible = visible,
+        ShopDetailBottomSheet(
+            shopId = requireNotNull(mainSheetShopId),
             onDismissRequest = onDismissRequest,
             isBackEnabled = isBackEnabled,
-            config =
-                CommonBottomSheetConfig(
-                    maxHeight = maxHeight,
-                    isDraggable = true,
-                    isContentDraggable = true,
-                    isStatusBarPadded = true,
-                    isNavigationBarPadded = isNavigationBarPadded,
-                ),
-        ) { dragModifier ->
+            maxHeight = maxHeight,
+            isNavigationBarPadded = isNavigationBarPadded,
+        ) {
             when (state) {
                 is ShopDetailSheetUiState.Loading ->
                     RamenLoadingIndicator(
                         modifier =
-                            dragModifier
+                            Modifier
                                 .fillMaxWidth()
                                 .heightIn(min = 240.dp),
                     )
@@ -111,12 +113,20 @@ fun ShopDetailContent(
                     RamenShopOverview(
                         shop = shop,
                         likeCount = state.detail.likeCount,
-                        dragAreaModifier = dragModifier,
                         waitingSystem = waitingSystem,
                         isBookmarked = isBookmarked,
                         isNotificationEnabled = isNotificationEnabled,
                         showNotificationActions = showNotificationActions,
                         isHidden = isHidden,
+                        isAppleMapsAvailable = isAppleMapsAvailable,
+                        event = state.detail.event,
+                        operatingNotice = state.detail.operatingNotice,
+                        operatingNotices = state.detail.operatingNotices,
+                        menuSections = state.detail.menuSections,
+                        menuUpdatedAt = state.detail.menuUpdatedAt,
+                        reviews = state.detail.reviews,
+                        reviewCount = state.detail.reviewCount,
+                        menuItemCount = state.detail.menuItemCount,
                         onBookmarkClick = { onBookmarkToggled(shop) },
                         onNotificationClick = { onShopNotificationToggled(shop) },
                         onHiddenClick = {
@@ -126,20 +136,16 @@ fun ShopDetailContent(
                                 onHiddenToggled(shop)
                             }
                         },
+                        onReportClick = { showReportDialog = true },
                         onShareClick = { onShopShareClick(shop) },
                         onMapLinkClick = { provider -> onShopMapLinkClick(shop, provider) },
                         onWaitingClick = onWaitingClick,
                         onExternalLinkClick = onExternalLinkClick,
-                        isAppleMapsAvailable = isAppleMapsAvailable,
                         onAppleMapsClick = onAppleMapsClick,
-                        event = state.detail.event,
                         onEventClick = onEventClick,
-                        operatingNotice = state.detail.operatingNotice,
-                        operatingNotices = state.detail.operatingNotices,
                         onOperatingNoticeClick = onOperatingNoticeClick,
-                        menuSections = state.detail.menuSections,
-                        menuUpdatedAt = state.detail.menuUpdatedAt,
-                        onReportClick = { showReportDialog = true },
+                        onOpenProfile = {},
+                        onWriteReviewClick = { onReviewsClick(shop.id) },
                     )
                     onShowOnMap?.let { showOnMap ->
                         AppButton(
