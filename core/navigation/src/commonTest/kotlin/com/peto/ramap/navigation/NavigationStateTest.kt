@@ -10,6 +10,25 @@ import kotlin.test.assertTrue
 
 class NavigationStateTest {
     @Test
+    fun `리뷰 작성은 현재 탭에서 한 단계로 열리고 뒤로 가면 출발 화면으로 돌아간다`() {
+        for (tab in TabStatus.entries) {
+            val state = navigationState(selectedTab = tab)
+            val sourceRoute = state.currentRoute
+            val sourceStackSize = state.currentBackStack.size
+
+            state.showReviewWrite("shop")
+
+            assertEquals(ScreenRoutes.ReviewWriteRoutes("shop"), state.currentRoute)
+            assertEquals(sourceStackSize + 1, state.currentBackStack.size)
+
+            state.pop()
+
+            assertEquals(tab, state.selectedTab)
+            assertEquals(sourceRoute, state.currentRoute)
+            assertEquals(sourceStackSize, state.currentBackStack.size)
+        }
+    }
+    @Test
     fun `네 개 탭은 지도 랭킹 이벤트 설정 순서와 독립 스택을 가진다`() {
         val navigationState = navigationState()
 
