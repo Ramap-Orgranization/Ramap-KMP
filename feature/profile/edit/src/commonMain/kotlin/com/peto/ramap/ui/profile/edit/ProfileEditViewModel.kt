@@ -11,6 +11,7 @@ import com.peto.ramap.ui.base.BaseViewModel
 import com.peto.ramap.ui.loading.LoadState
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.StringResource
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.profile_bio_daily_change_limit_reached
 import ramap.shared.generated.resources.profile_image_rejected
@@ -207,7 +208,7 @@ class ProfileEditViewModel(
         return error.serverMessage in setOf(PROFILE_NICKNAME_DAILY_LIMIT, PROFILE_BIO_DAILY_LIMIT)
     }
 
-    private fun dailyChangeLimitMessage(error: RamapError) =
+    private fun dailyChangeLimitMessage(error: RamapError): StringResource =
         when ((error as RamapError.Http).serverMessage) {
             PROFILE_NICKNAME_DAILY_LIMIT -> Res.string.profile_nickname_daily_change_limit_reached
             PROFILE_BIO_DAILY_LIMIT -> Res.string.profile_bio_daily_change_limit_reached

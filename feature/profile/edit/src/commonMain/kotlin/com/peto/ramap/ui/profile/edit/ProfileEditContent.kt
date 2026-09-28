@@ -302,22 +302,22 @@ private fun ProfileEdit(
                 modifier =
                     Modifier
                         .fillMaxWidth()
-                        .height(108.dp),
+                        .height(160.dp),
                 contentAlignment = Alignment.Center,
             ) {
                 ProfileDotField(modifier = Modifier.fillMaxSize())
-                Box(modifier = Modifier.size(86.dp)) {
+                Box(modifier = Modifier.size(128.dp)) {
                     ProfileAvatar(
                         model = photo,
                         description = stringResource(Res.string.profile_photo),
-                        modifier = Modifier.size(86.dp),
+                        modifier = Modifier.size(128.dp),
                     )
                     Box(
                         modifier =
                             Modifier
                                 .align(Alignment.BottomEnd)
-                                .offset(x = 4.dp, y = 4.dp)
-                                .size(30.dp)
+                                .offset(x = 6.dp, y = 6.dp)
+                                .size(40.dp)
                                 .border(2.dp, Color.White, CircleShape)
                                 .clip(CircleShape)
                                 .background(ChromaticColor.Orange400)
@@ -327,7 +327,7 @@ private fun ProfileEdit(
                         Icon(
                             painter = painterResource(Res.drawable.ic_camera_add),
                             contentDescription = stringResource(Res.string.profile_photo_change),
-                            modifier = Modifier.size(16.dp),
+                            modifier = Modifier.size(26.dp),
                             tint = Color.White,
                         )
                     }
@@ -336,8 +336,8 @@ private fun ProfileEdit(
                             modifier =
                                 Modifier
                                     .align(Alignment.TopEnd)
-                                    .offset(x = 4.dp, y = (-4).dp)
-                                    .size(28.dp)
+                                    .padding(8.dp)
+                                    .size(36.dp)
                                     .clip(CircleShape)
                                     .background(Color.Black.copy(alpha = 0.5f))
                                     .noRippleClickable(
@@ -349,14 +349,14 @@ private fun ProfileEdit(
                             Icon(
                                 painter = painterResource(Res.drawable.ic_close),
                                 contentDescription = stringResource(Res.string.profile_photo_remove),
-                                modifier = Modifier.size(14.dp),
+                                modifier = Modifier.size(18.dp),
                                 tint = Color.White,
                             )
                         }
                     }
                 }
             }
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(20.dp))
             AppText(
                 text = stringResource(Res.string.profile_nickname),
                 style = AppTextStyle.B1,
