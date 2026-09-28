@@ -49,6 +49,7 @@ import com.peto.ramap.ui.main.ranking.RankingRoute
 import com.peto.ramap.ui.notification.NotificationSettingsRoute
 import com.peto.ramap.ui.profile.edit.ProfileEditRoute
 import com.peto.ramap.ui.report.PlaceReportRoute
+import com.peto.ramap.ui.review.write.ShopReviewWriteRoute
 import com.peto.ramap.ui.settings.SettingsRoute
 import com.peto.ramap.ui.subscribed.SubscribedShopListRoute
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -118,6 +119,7 @@ internal fun AppRoute(
         navigationState = navigationState,
         mapScreen = { route ->
             MapRoute(
+                onReviewNavigate = navigationState::showReviewWrite,
                 isBackEnabled = route.returnTab == null,
                 onDetailDismissed = navigationState::consumeMapReturnOrigin,
                 onEventNavigate = { event ->
@@ -128,6 +130,7 @@ internal fun AppRoute(
                 },
                 requestedShopId = route.shopId,
                 showShopDetail = route.showShopDetail,
+                showReviewsOnOpen = route.showReviews,
                 originSource =
                     when (route.source) {
                         NavigationSource.BOOKMARKED_SHOPS -> AnalyticsSource.BOOKMARKED_SHOPS
@@ -157,6 +160,7 @@ internal fun AppRoute(
                         shopId = shopId,
                         viewModel = mapViewModel,
                         onDismiss = onDismiss,
+                        onReviewNavigate = navigationState::showReviewWrite,
                         onShowOnMap = onShowOnMap,
                         onEventNavigate = { event -> onEventNavigate(event) },
                         originSource = AnalyticsSource.RANKING,
@@ -207,6 +211,16 @@ internal fun AppRoute(
                         },
                     )
                 },
+            )
+        },
+        reviewWriteScreen = { route ->
+            ShopReviewWriteRoute(
+                shopId = route.shopId,
+                onBack = navigationState::pop,
+                onSubmitted = {
+                    navigationState.showShopOnMap(shopId = route.shopId, showReviews = true)
+                },
+                onLogin = navigationState::showMyRoot,
             )
         },
         informationScreen = {
@@ -322,6 +336,7 @@ internal fun AppRoute(
                         shopId = shopId,
                         viewModel = mapViewModel,
                         onDismiss = onDismiss,
+                        onReviewNavigate = navigationState::showReviewWrite,
                         isNavigationBarPadded = true,
                         onShowOnMap = onShowOnMap,
                         onEventNavigate = onEventNavigate,

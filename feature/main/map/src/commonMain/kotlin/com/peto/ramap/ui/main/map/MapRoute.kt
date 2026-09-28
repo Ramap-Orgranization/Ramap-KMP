@@ -59,12 +59,14 @@ import kotlin.time.Duration.Companion.milliseconds
 
 @Composable
 fun MapRoute(
+    onReviewNavigate: (String) -> Unit,
     isBackEnabled: Boolean = true,
     onDetailDismissed: () -> Unit = {},
     onEventNavigate: (ShopEvent) -> Unit = {},
     onOperatingNoticeNavigate: (OperatingNotice) -> Unit,
     requestedShopId: String? = null,
     showShopDetail: Boolean = true,
+    showReviewsOnOpen: Boolean = false,
     originSource: AnalyticsSource = AnalyticsSource.MAP,
     toastManager: ToastManager = koinInject(),
     appSettingsOpener: AppSettingsOpener = koinInject(),
@@ -75,6 +77,7 @@ fun MapRoute(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val coroutineScope = rememberCoroutineScope()
     var shouldShowShopDetail by remember(requestedShopId, showShopDetail) { mutableStateOf(showShopDetail) }
+    var shouldShowReviews by remember(requestedShopId, showReviewsOnOpen) { mutableStateOf(showReviewsOnOpen) }
     var detailSource by remember(requestedShopId, originSource) { mutableStateOf(originSource) }
 
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
@@ -112,7 +115,7 @@ fun MapRoute(
         onNotificationToggled = { viewModel.dispatch(OnShopNotificationToggled(it, detailSource)) },
         onLoginTypeSelected = { viewModel.dispatch(OnLoginTypeSelected(it)) },
         onLoginDismissed = { viewModel.dispatch(OnLoginSelectionDismissed) },
-    ) { onShopNotificationToggled ->
+    ) { onShopNotificationToggled, onLoginGuideRequested ->
         MapContent(
             uiState = uiState,
             showNotificationActions = NotificationPermissionRequester.isSupported,
@@ -133,11 +136,13 @@ fun MapRoute(
             },
             onShopSelected = { shop, shouldFocus, source ->
                 shouldShowShopDetail = true
+                shouldShowReviews = false
                 detailSource = AnalyticsSource.MAP
                 viewModel.dispatch(OnShopSelected(shop, shouldFocus, source))
             },
             onShopDetailDismissed = {
                 detailSource = AnalyticsSource.MAP
+                shouldShowReviews = false
                 viewModel.dispatch(OnShopDetailDismissed)
                 onDetailDismissed()
             },
@@ -149,6 +154,7 @@ fun MapRoute(
                 }
             },
             onRequestedShopDismissed = {
+                shouldShowReviews = false
                 viewModel.dispatch(OnRequestedShopDismissed)
                 onDetailDismissed()
             },
@@ -172,8 +178,16 @@ fun MapRoute(
             },
             onBookmarkedShopsToggle = { viewModel.dispatch(OnBookmarkedShopsToggled) },
             onEventClick = onEventNavigate,
+            onReviewsClick = { shopId ->
+                if (uiState.isLoggedIn) {
+                    onReviewNavigate(shopId)
+                } else {
+                    onLoginGuideRequested()
+                }
+            },
             onOperatingNoticeNavigate = onOperatingNoticeNavigate,
             showShopDetail = shouldShowShopDetail,
+            showReviewsOnOpen = shouldShowReviews,
         )
     }
 }

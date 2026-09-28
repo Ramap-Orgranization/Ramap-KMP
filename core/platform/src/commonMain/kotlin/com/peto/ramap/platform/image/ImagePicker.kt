@@ -12,3 +12,10 @@ expect fun rememberImagePicker(
     onImagePicked: (PickedImage) -> Unit,
     onRejected: () -> Unit,
 ): () -> Unit
+
+@Composable
+expect fun rememberImagesPicker(
+    maxSelectionCount: Int,
+    onImagesPicked: (List<PickedImage>) -> Unit,
+    onRejected: () -> Unit,
+): () -> Unit

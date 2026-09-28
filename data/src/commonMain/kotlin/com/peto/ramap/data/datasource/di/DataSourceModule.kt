@@ -23,6 +23,8 @@ import com.peto.ramap.data.datasource.ranking.ShopRankingDataSource
 import com.peto.ramap.data.datasource.report.RemotePlaceLinkResolver
 import com.peto.ramap.data.datasource.report.RemoteShopReportDataSource
 import com.peto.ramap.data.datasource.report.ShopReportDataSource
+import com.peto.ramap.data.datasource.review.RemoteReviewDataSource
+import com.peto.ramap.data.datasource.review.ReviewDataSource
 import com.peto.ramap.data.datasource.shop.RamenShopDataSource
 import com.peto.ramap.data.datasource.shop.RemoteRamenShopDataSource
 import com.peto.ramap.data.datasource.update.AppUpdatePolicyDataSource
@@ -38,6 +40,7 @@ val dataSourceModule =
     module {
         single<ProfileDataSource> { RemoteProfileDataSource(get()) }
         single<ReviewCommunityDataSource> { RemoteReviewCommunityDataSource(get()) }
+        single<ReviewDataSource> { RemoteReviewDataSource(get()) }
         single { NaverImportationDataSource(get(), get<HttpClient>()) }
         single { KakaoImportationDataSource(get()) }
         single<ImportationDataSource> { RemoteImportationDataSource(get(), get()) }

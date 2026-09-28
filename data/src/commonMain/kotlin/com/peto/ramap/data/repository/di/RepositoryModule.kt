@@ -26,8 +26,10 @@ import com.peto.ramap.data.repository.DefaultRamenShopRepository
 import com.peto.ramap.data.repository.DefaultReviewCommunityRepository
 import com.peto.ramap.data.repository.DefaultShopRankingRepository
 import com.peto.ramap.data.repository.DefaultShopReportRepository
+import com.peto.ramap.data.repository.DefaultShopReviewRepository
 import com.peto.ramap.data.repository.DefaultShopWaitingSystemRepository
 import com.peto.ramap.data.repository.DefaultSubscribedShopRepository
+import com.peto.ramap.data.repository.ReviewChangeNotifier
 import com.peto.ramap.data.store.DefaultShopPersonalizationStore
 import com.peto.ramap.domain.repository.AppNoticeRepository
 import com.peto.ramap.domain.repository.AppUpdateRepository
@@ -44,6 +46,7 @@ import com.peto.ramap.domain.repository.RamenShopRepository
 import com.peto.ramap.domain.repository.ReviewCommunityRepository
 import com.peto.ramap.domain.repository.ShopRankingRepository
 import com.peto.ramap.domain.repository.ShopReportRepository
+import com.peto.ramap.domain.repository.ShopReviewRepository
 import com.peto.ramap.domain.repository.ShopWaitingSystemRepository
 import com.peto.ramap.domain.repository.SubscribedShopRepository
 import com.peto.ramap.domain.store.ShopPersonalizationStore
@@ -52,9 +55,11 @@ import org.koin.dsl.module
 val repositoryModule =
     module {
         single<ProfileRepository> { DefaultProfileRepository(get()) }
+        single { ReviewChangeNotifier() }
         single<ReviewCommunityRepository> {
             DefaultReviewCommunityRepository(get<ReviewCommunityDataSource>())
         }
+        single<ShopReviewRepository> { DefaultShopReviewRepository(get(), get()) }
         single<AppUpdateRepository> {
             DefaultAppUpdateRepository(get<AppUpdatePolicyDataSource>())
         }

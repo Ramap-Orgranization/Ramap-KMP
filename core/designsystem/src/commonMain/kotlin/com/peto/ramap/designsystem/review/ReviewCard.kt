@@ -14,9 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -25,10 +23,13 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
+import com.peto.ramap.designsystem.button.AppButton
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.domain.model.community.ReviewModerationStatus
-import com.peto.ramap.domain.model.shop.ShopReview
+import com.peto.ramap.domain.model.review.Review
 import com.peto.ramap.theme.AppTextStyle
+import com.peto.ramap.theme.CommonColor
+import com.peto.ramap.theme.GrayColor
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.review_author_unknown
@@ -41,18 +42,17 @@ import ramap.shared.generated.resources.review_status_removed
 
 @Composable
 fun ReviewCard(
-    review: ShopReview,
+    review: Review,
     onOpenProfile: (String) -> Unit,
     modifier: Modifier = Modifier,
     onReport: (() -> Unit)? = null,
     onShopClick: (() -> Unit)? = null,
 ) {
-    val colors = MaterialTheme.colorScheme
     Surface(
         modifier = modifier.fillMaxWidth(),
         shape = RectangleShape,
-        border = BorderStroke(1.dp, colors.outlineVariant),
-        color = colors.surface,
+        border = BorderStroke(1.dp, GrayColor.C100),
+        color = CommonColor.White,
     ) {
         Column(
             verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -95,32 +95,31 @@ fun ReviewCard(
                                     stringResource(Res.string.review_author_unknown)
                                 },
                             style = AppTextStyle.B2,
-                            color = MaterialTheme.colorScheme.onSurface,
+                            color = GrayColor.C500,
                         )
                         AppText(
                             text = review.createdAt.take(10).replace('-', '.'),
                             style = AppTextStyle.C2,
-                            color = colors.onSurfaceVariant,
+                            color = GrayColor.C300,
                         )
                     }
                 }
                 if (onReport != null) {
-                    TextButton(
+                    AppButton(
+                        text = stringResource(Res.string.review_report),
                         onClick = onReport,
-                    ) {
-                        AppText(
-                            text = stringResource(Res.string.review_report),
-                            style = AppTextStyle.B3,
-                            color = MaterialTheme.colorScheme.onSurface,
-                        )
-                    }
+                        textStyle = AppTextStyle.B3,
+                        textColor = GrayColor.C500,
+                        backgroundColor = CommonColor.White,
+                        cornerRadius = 0.dp,
+                    )
                 }
             }
             AppText(
                 text = review.body,
                 modifier = Modifier.padding(horizontal = 16.dp),
                 style = AppTextStyle.B1,
-                color = MaterialTheme.colorScheme.onSurface,
+                color = GrayColor.C500,
             )
             if (review.imageUrls.isNotEmpty()) {
                 LazyRow(
@@ -152,21 +151,20 @@ fun ReviewCard(
                             },
                         ),
                     modifier = Modifier.padding(horizontal = 16.dp),
-                    color = colors.onSurfaceVariant,
+                    color = GrayColor.C300,
                     style = AppTextStyle.C1,
                 )
             }
             if (onShopClick != null) {
-                TextButton(
+                AppButton(
+                    text = stringResource(Res.string.review_open_shop),
                     onClick = onShopClick,
                     modifier = Modifier.padding(horizontal = 4.dp),
-                ) {
-                    AppText(
-                        text = stringResource(Res.string.review_open_shop),
-                        style = AppTextStyle.B3,
-                        color = MaterialTheme.colorScheme.onSurface,
-                    )
-                }
+                    textStyle = AppTextStyle.B3,
+                    textColor = GrayColor.C500,
+                    backgroundColor = CommonColor.White,
+                    cornerRadius = 0.dp,
+                )
             }
             Spacer(
                 modifier = Modifier.height(0.dp),

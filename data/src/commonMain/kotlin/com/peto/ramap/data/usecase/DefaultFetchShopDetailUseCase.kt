@@ -1,29 +1,35 @@
 package com.peto.ramap.data.usecase
 
 import com.peto.ramap.core.result.RamapResult
+import com.peto.ramap.domain.model.review.Review
 import com.peto.ramap.domain.repository.OperatingNoticeRepository
 import com.peto.ramap.domain.repository.RamenShopRepository
+import com.peto.ramap.domain.repository.ReviewRepository
 import com.peto.ramap.domain.usecase.FetchShopDetailUseCase
 import com.peto.ramap.domain.usecase.ShopDetail
 import com.peto.ramap.domain.usecase.ShopDetailCacheLookup
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
+import kotlin.time.Clock
 
 internal class DefaultFetchShopDetailUseCase(
     private val ramenShopRepository: RamenShopRepository,
     private val operatingNoticeRepository: OperatingNoticeRepository,
+    private val reviewRepository: ReviewRepository,
 ) : FetchShopDetailUseCase {
     private val cache = mutableMapOf<String, ShopDetail>()
 
     /**
      * 매장 상세를 조회한다.
      *
-     * 캐시된 매장·좋아요·웨이팅은 유지하고 서버의 최신 이벤트·공지·메뉴를 반영한다.
+     * 캐시된 매장·좋아요·웨이팅은 유지하고 서버의 최신 이벤트·공지·메뉴·리뷰를 반영한다.
      * 재검증 실패 시에는 캐시 전체를 그대로 사용한다.
      */
     override suspend fun invoke(shopId: String): RamapResult<ShopDetail> {
         val cached = cache[shopId]
         if (cached != null) return revalidateDetail(cached)
 
-        val result = fetchDetailWithNotices(shopId)
+        val result = fetchDetailWithNoticesAndReviews(shopId)
         if (result is RamapResult.Success) cache[result.data.shop.id] = result.data
         return result
     }
@@ -44,11 +50,11 @@ internal class DefaultFetchShopDetailUseCase(
     }
 
     /**
-     * 캐시된 매장·웨이팅은 유지하고 이벤트·공지·메뉴만 새로 조회해 상세를 갱신한다.
+     * 캐시된 매장·웨이팅은 유지하고 이벤트·공지·메뉴·리뷰를 새로 조회해 상세를 갱신한다.
      */
     private suspend fun revalidateDetail(cached: ShopDetail): RamapResult<ShopDetail> {
         val refreshed =
-            when (val result = fetchDetailWithNotices(cached.shop.id)) {
+            when (val result = fetchDetailWithNoticesAndReviews(cached.shop.id, cached.reviews)) {
                 is RamapResult.Success -> result.data
                 is RamapResult.Error -> return RamapResult.Success(cached)
             }
@@ -59,21 +65,38 @@ internal class DefaultFetchShopDetailUseCase(
                 operatingNotices = refreshed.operatingNotices,
                 menuSections = refreshed.menuSections,
                 menuUpdatedAt = refreshed.menuUpdatedAt,
+                reviews = refreshed.reviews,
             )
         cache[cached.shop.id] = updated
         return RamapResult.Success(updated)
     }
 
-    private suspend fun fetchDetailWithNotices(shopId: String): RamapResult<ShopDetail> {
+    private suspend fun fetchDetailWithNoticesAndReviews(
+        shopId: String,
+        cachedReviews: List<Review> = emptyList(),
+    ): RamapResult<ShopDetail> {
         val detail = ramenShopRepository.fetchShopDetail(shopId)
         if (detail !is RamapResult.Success) return detail
         val notices = operatingNoticeRepository.fetchActiveShopOperatingNotices(shopId)
-        if (notices !is RamapResult.Success) return detail
+        val reviews = reviewRepository.fetchShopReviews(shopId, offset = 0L)
+        val detailWithNotices =
+            if (notices is RamapResult.Success) {
+                val now = Clock.System.now().toLocalDateTime(TimeZone.of(SEOUL_TIME_ZONE))
+                detail.data.copy(
+                    operatingNotice = notices.data.firstOrNull { it.isCurrentOrScheduledAt(now) },
+                    operatingNotices = notices.data,
+                )
+            } else {
+                detail.data
+            }
         return RamapResult.Success(
-            detail.data.copy(
-                operatingNotice = notices.data.firstOrNull(),
-                operatingNotices = notices.data,
+            detailWithNotices.copy(
+                reviews = if (reviews is RamapResult.Success) reviews.data else cachedReviews,
             ),
         )
+    }
+
+    private companion object {
+        const val SEOUL_TIME_ZONE = "Asia/Seoul"
     }
 }

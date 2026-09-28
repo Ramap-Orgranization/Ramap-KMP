@@ -96,6 +96,7 @@ kotlin {
             implementation(projects.feature.main)
             implementation(projects.feature.profile.edit)
             implementation(projects.feature.account)
+            implementation(projects.feature.review.write)
             implementation(projects.feature.bookmark.list)
             implementation(projects.feature.bookmark.importation)
             implementation(projects.feature.hidden)

@@ -10,6 +10,7 @@ sealed interface ScreenRoutes : NavKey {
         val shopId: String? = null,
         val returnTab: TabStatus? = null,
         val showShopDetail: Boolean = true,
+        val showReviews: Boolean = false,
         val source: NavigationSource? = null,
     ) : ScreenRoutes
 
@@ -35,6 +36,11 @@ sealed interface ScreenRoutes : NavKey {
 
     @Serializable
     data object ProfileEditRoutes : ScreenRoutes
+
+    @Serializable
+    data class ReviewWriteRoutes(
+        val shopId: String,
+    ) : ScreenRoutes
 
     @Serializable
     data object InformationRoutes : ScreenRoutes

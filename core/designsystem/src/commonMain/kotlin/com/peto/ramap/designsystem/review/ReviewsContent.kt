@@ -1,4 +1,4 @@
-package com.peto.ramap.designsystem.shop
+package com.peto.ramap.designsystem.review
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -12,10 +12,9 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.peto.ramap.designsystem.component.LoadErrorContent
-import com.peto.ramap.designsystem.review.ReviewCard
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.domain.model.community.ReviewAuthor
-import com.peto.ramap.domain.model.shop.ShopReview
+import com.peto.ramap.domain.model.review.Review
 import com.peto.ramap.extension.noRippleClickable
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.GrayColor
@@ -28,15 +27,15 @@ import ramap.shared.generated.resources.shop_review_empty_title
 import ramap.shared.generated.resources.shop_review_go_write
 
 @Composable
-internal fun ShopReviewsContent(
+internal fun ReviewsContent(
     shopName: String,
-    reviews: List<ShopReview>,
+    reviews: List<Review>,
     onOpenProfile: (String) -> Unit,
     onWriteReviewClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(20.dp),
         modifier = modifier.fillMaxWidth(),
     ) {
         if (reviews.isEmpty()) {
@@ -91,23 +90,23 @@ private fun ReviewWriteAction(
 
 @Preview(showBackground = true)
 @Composable
-private fun ShopReviewsContentPreview() {
+private fun ReviewsContentPreview() {
     RamapTheme {
         Column(
             verticalArrangement = Arrangement.spacedBy(16.dp),
             modifier = Modifier.padding(16.dp),
         ) {
-            ShopReviewsContent(
+            ReviewsContent(
                 shopName = "멘야 하나비",
                 reviews = emptyList(),
                 onOpenProfile = {},
                 onWriteReviewClick = {},
             )
-            ShopReviewsContent(
+            ReviewsContent(
                 shopName = "멘야 하나비",
                 reviews =
                     listOf(
-                        ShopReview(
+                        Review(
                             id = "preview-review-1",
                             shopId = "preview-shop",
                             body = "국물이 진하고 면발의 식감이 아주 좋습니다. 또 방문하고 싶네요!",
@@ -115,7 +114,7 @@ private fun ShopReviewsContentPreview() {
                             imageUrls = emptyList(),
                             author = ReviewAuthor("preview-author-1", "면발수집가"),
                         ),
-                        ShopReview(
+                        Review(
                             id = "preview-review-2",
                             shopId = "preview-shop",
                             body = "자가제면이라 면발이 탱탱해요.",

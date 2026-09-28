@@ -48,6 +48,7 @@ fun ShopDetailContent(
     isNavigationBarPadded: Boolean = false,
     visible: Boolean = true,
     showRequestedLoadingInSheet: Boolean = false,
+    showReviewsOnOpen: Boolean = false,
     waitingSystem: WaitingSystemUiModel? = null,
     isBookmarked: Boolean = false,
     isNotificationEnabled: Boolean = false,
@@ -126,6 +127,7 @@ fun ShopDetailContent(
                         menuUpdatedAt = state.detail.menuUpdatedAt,
                         reviews = state.detail.reviews,
                         reviewCount = state.detail.reviewCount,
+                        showReviewsOnOpen = showReviewsOnOpen,
                         menuItemCount = state.detail.menuItemCount,
                         onBookmarkClick = { onBookmarkToggled(shop) },
                         onNotificationClick = { onShopNotificationToggled(shop) },
@@ -146,18 +148,20 @@ fun ShopDetailContent(
                         onOperatingNoticeClick = onOperatingNoticeClick,
                         onOpenProfile = {},
                         onWriteReviewClick = { onReviewsClick(shop.id) },
+                        menuFooter = {
+                            onShowOnMap?.let { showOnMap ->
+                                AppButton(
+                                    text = stringResource(Res.string.ranking_show_shop_on_map),
+                                    modifier =
+                                        Modifier
+                                            .fillMaxWidth()
+                                            .padding(bottom = 2.dp)
+                                            .padding(horizontal = 20.dp),
+                                    onClick = { showOnMap(shop.id) },
+                                )
+                            }
+                        },
                     )
-                    onShowOnMap?.let { showOnMap ->
-                        AppButton(
-                            text = stringResource(Res.string.ranking_show_shop_on_map),
-                            modifier =
-                                Modifier
-                                    .fillMaxWidth()
-                                    .padding(bottom = 2.dp)
-                                    .padding(horizontal = 20.dp),
-                            onClick = { showOnMap(shop.id) },
-                        )
-                    }
                 }
 
                 ShopDetailSheetUiState.Closed,

@@ -38,6 +38,8 @@ class NavigationState(
 
     fun showSettings() = showOnce(ScreenRoutes.SettingsRoutes)
 
+    fun showReviewWrite(shopId: String) = showOnce(ScreenRoutes.ReviewWriteRoutes(shopId))
+
     fun showAccountSettings() = showOnce(ScreenRoutes.AccountSettingsRoutes)
 
     fun showInformation() = showOnce(ScreenRoutes.InformationRoutes)
@@ -121,17 +123,26 @@ class NavigationState(
         selectTopLevelTab(TabStatus.MAP)
     }
 
+    fun showMyRoot() {
+        val myBackStack = backStacks.getValue(TabStatus.MY)
+        myBackStack.clear()
+        myBackStack.add(ScreenRoutes.MyTabRoutes)
+        selectTopLevelTab(TabStatus.MY)
+    }
+
     fun showShopOnMap(
         shopId: String,
         source: NavigationSource? = null,
         returnTab: TabStatus? = null,
         showShopDetail: Boolean = true,
+        showReviews: Boolean = false,
     ) {
         val mapRoute =
             ScreenRoutes.MapRoutes(
                 shopId = shopId,
                 returnTab = returnTab,
                 showShopDetail = showShopDetail,
+                showReviews = showReviews,
                 source = source,
             )
         val mapBackStack = backStacks.getValue(TabStatus.MAP)

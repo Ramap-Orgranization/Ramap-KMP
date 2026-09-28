@@ -375,6 +375,7 @@ class MapViewModel(
             is ShopDetailCacheLookup.Hit -> {
                 cancelShopDetailLoad()
                 applyRequestedShopDetail(lookup.detail)
+                loadShopDetail(shopId, selectShopOnSuccess = true)
                 return
             }
 
