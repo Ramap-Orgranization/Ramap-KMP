@@ -30,10 +30,10 @@ internal class RemoteReviewDataSource(
         offset: Long,
     ): List<ShopReviewResponse> =
         fetchReviews(
-            "fetch_shop_reviews",
+            RPC_FETCH_SHOP_REVIEWS,
             buildJsonObject {
-                put("p_shop_id", shopId)
-                put("p_offset", offset)
+                put(PARAM_SHOP_ID, shopId)
+                put(PARAM_OFFSET, offset)
             },
         )
 
@@ -42,10 +42,10 @@ internal class RemoteReviewDataSource(
         offset: Long,
     ): List<ShopReviewResponse> =
         fetchReviews(
-            "fetch_profile_reviews",
+            RPC_FETCH_PROFILE_REVIEWS,
             buildJsonObject {
-                put("p_user_id", userId)
-                put("p_offset", offset)
+                put(PARAM_USER_ID, userId)
+                put(PARAM_OFFSET, offset)
             },
         )
 
@@ -56,12 +56,12 @@ internal class RemoteReviewDataSource(
         val paths = uploadImages(images)
         try {
             client.postgrest.rpc(
-                "submit_shop_review",
+                RPC_SUBMIT_SHOP_REVIEW,
                 buildJsonObject {
-                    put("p_shop_id", review.shopId)
-                    put("p_body", review.body)
-                    put("p_image_paths", JsonArray(paths.map(::JsonPrimitive)))
-                    put("p_is_public", review.isPublic)
+                    put(PARAM_SHOP_ID, review.shopId)
+                    put(PARAM_BODY, review.body)
+                    put(PARAM_IMAGE_PATHS, JsonArray(paths.map(::JsonPrimitive)))
+                    put(PARAM_IS_PUBLIC, review.isPublic)
                 },
             )
         } catch (error: Throwable) {
@@ -106,6 +106,17 @@ internal class RemoteReviewDataSource(
         }
 
     private companion object {
+        const val RPC_FETCH_SHOP_REVIEWS = "fetch_shop_reviews"
+        const val RPC_FETCH_PROFILE_REVIEWS = "fetch_profile_reviews"
+        const val RPC_SUBMIT_SHOP_REVIEW = "submit_shop_review"
+
+        const val PARAM_SHOP_ID = "p_shop_id"
+        const val PARAM_USER_ID = "p_user_id"
+        const val PARAM_OFFSET = "p_offset"
+        const val PARAM_BODY = "p_body"
+        const val PARAM_IMAGE_PATHS = "p_image_paths"
+        const val PARAM_IS_PUBLIC = "p_is_public"
+
         const val BUCKET = "shop-review-images"
         val SIGNED_URL_LIFETIME = 5.minutes
     }
