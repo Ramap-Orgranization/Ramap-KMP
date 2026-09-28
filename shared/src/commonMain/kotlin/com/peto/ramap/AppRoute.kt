@@ -118,8 +118,8 @@ internal fun AppRoute(
     NavigationRouter(
         navigationState = navigationState,
         mapScreen = { route ->
-                onReviewNavigate = navigationState::showReviewWrite,
             MapRoute(
+                onReviewNavigate = navigationState::showReviewWrite,
                 isBackEnabled = route.returnTab == null,
                 onDetailDismissed = navigationState::consumeMapReturnOrigin,
                 onEventNavigate = { event ->
@@ -209,15 +209,15 @@ internal fun AppRoute(
                             LoginType.APPLE -> AccountIntent.OnAppleLoginClick
                         },
                     )
+                },
+            )
+        },
         reviewWriteScreen = { route ->
             ShopReviewWriteRoute(
                 shopId = route.shopId,
                 onBack = navigationState::pop,
                 onSubmitted = navigationState::pop,
                 onLogin = navigationState::showMyRoot,
-            )
-        },
-                },
             )
         },
         informationScreen = {
@@ -333,6 +333,7 @@ internal fun AppRoute(
                         shopId = shopId,
                         viewModel = mapViewModel,
                         onDismiss = onDismiss,
+                        onReviewNavigate = navigationState::showReviewWrite,
                         isNavigationBarPadded = true,
                         onShowOnMap = onShowOnMap,
                         onEventNavigate = onEventNavigate,
@@ -349,7 +350,6 @@ private fun HandleDeepLinkEvents(
     entryPoint: DeepLinkEntryPoint,
     notificationDispatcher: NotificationLaunchDispatcher,
     shopDispatcher: ShopDeepLinkDispatcher,
-                        onReviewNavigate = navigationState::showReviewWrite,
     appAnalytics: AppAnalytics,
 ) {
     LaunchedEffect(entryPoint) {

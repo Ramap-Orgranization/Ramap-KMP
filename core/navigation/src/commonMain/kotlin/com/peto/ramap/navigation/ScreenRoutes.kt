@@ -40,6 +40,7 @@ sealed interface ScreenRoutes : NavKey {
     data class ReviewWriteRoutes(
         val shopId: String,
     ) : ScreenRoutes
+
     @Serializable
     data object InformationRoutes : ScreenRoutes
 

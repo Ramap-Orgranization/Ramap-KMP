@@ -28,6 +28,7 @@ class NavigationStateTest {
             assertEquals(sourceStackSize, state.currentBackStack.size)
         }
     }
+
     @Test
     fun `네 개 탭은 지도 랭킹 이벤트 설정 순서와 독립 스택을 가진다`() {
         val navigationState = navigationState()
