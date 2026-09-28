@@ -82,26 +82,27 @@ fun ShopDetailContent(
     val shouldShowMainSheet =
         selectedShop != null ||
             (showRequestedLoadingInSheet && state is ShopDetailSheetUiState.Loading)
+    val mainSheetShopId =
+        when (state) {
+            ShopDetailSheetUiState.Closed -> null
+            is ShopDetailSheetUiState.Loading -> state.shopId
+            is ShopDetailSheetUiState.Content -> state.detail.shop.id
+            is ShopDetailSheetUiState.Error -> state.shopId
+        }
 
     if (visible && shouldShowMainSheet && state !is ShopDetailSheetUiState.Error) {
-        CommonBottomSheet(
-            visible = visible,
+        ShopDetailBottomSheet(
+            shopId = requireNotNull(mainSheetShopId),
             onDismissRequest = onDismissRequest,
             isBackEnabled = isBackEnabled,
-            config =
-                CommonBottomSheetConfig(
-                    maxHeight = maxHeight,
-                    isDraggable = true,
-                    isContentDraggable = true,
-                    isStatusBarPadded = true,
-                    isNavigationBarPadded = isNavigationBarPadded,
-                ),
-        ) { dragModifier ->
+            maxHeight = maxHeight,
+            isNavigationBarPadded = isNavigationBarPadded,
+        ) {
             when (state) {
                 is ShopDetailSheetUiState.Loading ->
                     RamenLoadingIndicator(
                         modifier =
-                            dragModifier
+                            Modifier
                                 .fillMaxWidth()
                                 .heightIn(min = 240.dp),
                     )
@@ -111,7 +112,6 @@ fun ShopDetailContent(
                     RamenShopOverview(
                         shop = shop,
                         likeCount = state.detail.likeCount,
-                        dragAreaModifier = dragModifier,
                         waitingSystem = waitingSystem,
                         isBookmarked = isBookmarked,
                         isNotificationEnabled = isNotificationEnabled,
