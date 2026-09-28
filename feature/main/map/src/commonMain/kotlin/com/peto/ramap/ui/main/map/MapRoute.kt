@@ -59,6 +59,7 @@ import kotlin.time.Duration.Companion.milliseconds
 
 @Composable
 fun MapRoute(
+    onReviewNavigate: (String) -> Unit,
     isBackEnabled: Boolean = true,
     onDetailDismissed: () -> Unit = {},
     onEventNavigate: (ShopEvent) -> Unit = {},
@@ -112,7 +113,7 @@ fun MapRoute(
         onNotificationToggled = { viewModel.dispatch(OnShopNotificationToggled(it, detailSource)) },
         onLoginTypeSelected = { viewModel.dispatch(OnLoginTypeSelected(it)) },
         onLoginDismissed = { viewModel.dispatch(OnLoginSelectionDismissed) },
-    ) { onShopNotificationToggled ->
+    ) { onShopNotificationToggled, onLoginGuideRequested ->
         MapContent(
             uiState = uiState,
             showNotificationActions = NotificationPermissionRequester.isSupported,
@@ -172,6 +173,13 @@ fun MapRoute(
             },
             onBookmarkedShopsToggle = { viewModel.dispatch(OnBookmarkedShopsToggled) },
             onEventClick = onEventNavigate,
+            onReviewsClick = { shopId ->
+                if (uiState.isLoggedIn) {
+                    onReviewNavigate(shopId)
+                } else {
+                    onLoginGuideRequested()
+                }
+            },
             onOperatingNoticeNavigate = onOperatingNoticeNavigate,
             showShopDetail = shouldShowShopDetail,
         )

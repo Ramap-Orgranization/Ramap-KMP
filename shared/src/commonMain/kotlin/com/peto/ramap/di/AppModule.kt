@@ -21,6 +21,7 @@ import com.peto.ramap.ui.main.ranking.di.rankingModule
 import com.peto.ramap.ui.notification.di.notificationSettingsModule
 import com.peto.ramap.ui.profile.edit.di.profileEditModule
 import com.peto.ramap.ui.report.di.reportModule
+import com.peto.ramap.ui.review.write.di.reviewWriteModule
 import com.peto.ramap.ui.settings.di.settingsModule
 import com.peto.ramap.ui.subscribed.di.subscribedModule
 import kotlinx.coroutines.CoroutineScope
@@ -46,6 +47,7 @@ internal val appModule =
             myTabModule,
             profileEditModule,
             settingsModule,
+            reviewWriteModule,
             subscribedModule,
             analyticsModule,
         )

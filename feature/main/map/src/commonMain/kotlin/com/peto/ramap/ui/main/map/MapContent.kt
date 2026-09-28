@@ -85,6 +85,7 @@ internal fun MapContent(
     onShopShareClick: (RamenShop) -> Unit,
     onShopMapLinkClick: (RamenShop, String) -> Unit,
     onEventClick: (ShopEvent) -> Unit,
+    onReviewsClick: (String) -> Unit,
     onOperatingNoticeNavigate: (OperatingNotice) -> Unit = {},
     onReportSubmit: (Set<ShopInformationField>, String) -> Unit,
     onBookmarkedShopsToggle: () -> Unit,
@@ -261,6 +262,7 @@ internal fun MapContent(
                 )
             },
             onEventClick = onEventClick,
+            onReviewsClick = onReviewsClick,
             onOperatingNoticeClick = { selectedNotice = it },
             onReportSubmit = onReportSubmit,
         )
@@ -320,6 +322,7 @@ private fun MapContentPreview(
             onShopShareClick = {},
             onShopMapLinkClick = { _, _ -> },
             onEventClick = {},
+            onReviewsClick = {},
             onReportSubmit = { _, _ -> },
             onBookmarkedShopsToggle = {},
             showShopDetail = false,

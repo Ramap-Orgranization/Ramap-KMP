@@ -30,6 +30,7 @@ fun ShopDetailHost(
     viewModel: MapViewModel,
     onDismiss: () -> Unit,
     onShowOnMap: (String) -> Unit,
+    onReviewNavigate: (String) -> Unit,
     isNavigationBarPadded: Boolean = false,
     onEventNavigate: (ShopEvent) -> Unit = {},
     originSource: AnalyticsSource = AnalyticsSource.MAP,
@@ -59,7 +60,7 @@ fun ShopDetailHost(
         },
         onLoginTypeSelected = { viewModel.dispatch(MapIntent.OnLoginTypeSelected(it)) },
         onLoginDismissed = { viewModel.dispatch(MapIntent.OnLoginSelectionDismissed) },
-    ) { onShopNotificationToggled ->
+    ) { onShopNotificationToggled, onLoginGuideRequested ->
         BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
             ShopDetailContent(
                 state = uiState.shopDetailState,
@@ -109,6 +110,13 @@ fun ShopDetailHost(
                 onShowOnMap = { selectedShopId ->
                     viewModel.dispatch(MapIntent.OnShopDetailDismissed)
                     onShowOnMap(selectedShopId)
+                },
+                onReviewsClick = { selectedShopId ->
+                    if (uiState.isLoggedIn) {
+                        onReviewNavigate(selectedShopId)
+                    } else {
+                        onLoginGuideRequested()
+                    }
                 },
             )
         }

@@ -38,6 +38,7 @@ class NavigationState(
 
     fun showSettings() = showOnce(ScreenRoutes.SettingsRoutes)
 
+    fun showReviewWrite(shopId: String) = showOnce(ScreenRoutes.ReviewWriteRoutes(shopId))
     fun showAccountSettings() = showOnce(ScreenRoutes.AccountSettingsRoutes)
 
     fun showInformation() = showOnce(ScreenRoutes.InformationRoutes)

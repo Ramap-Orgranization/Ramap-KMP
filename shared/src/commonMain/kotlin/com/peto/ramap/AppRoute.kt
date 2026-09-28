@@ -49,6 +49,7 @@ import com.peto.ramap.ui.main.ranking.RankingRoute
 import com.peto.ramap.ui.notification.NotificationSettingsRoute
 import com.peto.ramap.ui.profile.edit.ProfileEditRoute
 import com.peto.ramap.ui.report.PlaceReportRoute
+import com.peto.ramap.ui.review.write.ShopReviewWriteRoute
 import com.peto.ramap.ui.settings.SettingsRoute
 import com.peto.ramap.ui.subscribed.SubscribedShopListRoute
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -117,6 +118,7 @@ internal fun AppRoute(
     NavigationRouter(
         navigationState = navigationState,
         mapScreen = { route ->
+                onReviewNavigate = navigationState::showReviewWrite,
             MapRoute(
                 isBackEnabled = route.returnTab == null,
                 onDetailDismissed = navigationState::consumeMapReturnOrigin,
@@ -157,6 +159,7 @@ internal fun AppRoute(
                         shopId = shopId,
                         viewModel = mapViewModel,
                         onDismiss = onDismiss,
+                        onReviewNavigate = navigationState::showReviewWrite,
                         onShowOnMap = onShowOnMap,
                         onEventNavigate = { event -> onEventNavigate(event) },
                         originSource = AnalyticsSource.RANKING,
@@ -206,6 +209,14 @@ internal fun AppRoute(
                             LoginType.APPLE -> AccountIntent.OnAppleLoginClick
                         },
                     )
+        reviewWriteScreen = { route ->
+            ShopReviewWriteRoute(
+                shopId = route.shopId,
+                onBack = navigationState::pop,
+                onSubmitted = navigationState::pop,
+                onLogin = navigationState::showMyRoot,
+            )
+        },
                 },
             )
         },
@@ -338,6 +349,7 @@ private fun HandleDeepLinkEvents(
     entryPoint: DeepLinkEntryPoint,
     notificationDispatcher: NotificationLaunchDispatcher,
     shopDispatcher: ShopDeepLinkDispatcher,
+                        onReviewNavigate = navigationState::showReviewWrite,
     appAnalytics: AppAnalytics,
 ) {
     LaunchedEffect(entryPoint) {
