@@ -24,8 +24,8 @@ import com.peto.ramap.extension.noRippleClickable
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
-import com.peto.ramap.theme.SocialColor
 import com.peto.ramap.theme.RamapTheme
+import com.peto.ramap.theme.SocialColor
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
 import ramap.shared.generated.resources.Res
