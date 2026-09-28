@@ -49,6 +49,7 @@ import com.peto.ramap.designsystem.button.AppButton
 import com.peto.ramap.designsystem.button.login.LoginButton
 import com.peto.ramap.designsystem.indicator.RamenLoadingIndicator
 import com.peto.ramap.designsystem.profile.ProfileAvatar
+import com.peto.ramap.designsystem.profile.ProfileDotField
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.domain.model.auth.LoginType
 import com.peto.ramap.domain.model.auth.supportedLoginTypes
@@ -297,56 +298,65 @@ private fun ProfileEdit(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Box(contentAlignment = Alignment.BottomEnd) {
-                ProfileAvatar(
-                    model = photo,
-                    description = stringResource(Res.string.profile_photo),
-                    modifier = Modifier.size(128.dp),
-                )
-                Box(
-                    modifier =
-                        Modifier
-                            .align(Alignment.BottomEnd)
-                            .offset(x = 10.dp, y = 10.dp)
-                            .size(48.dp)
-                            .border(2.dp, Color.White, CircleShape)
-                            .clip(CircleShape)
-                            .background(ChromaticColor.Orange400)
-                            .noRippleClickable(enabled = !state.saving, onClick = onPickImage),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(
-                        painter = painterResource(Res.drawable.ic_camera_add),
-                        contentDescription = stringResource(Res.string.profile_photo_change),
-                        modifier = Modifier.size(30.dp),
-                        tint = Color.White,
+            Box(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .height(108.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                ProfileDotField(modifier = Modifier.fillMaxSize())
+                Box(modifier = Modifier.size(86.dp)) {
+                    ProfileAvatar(
+                        model = photo,
+                        description = stringResource(Res.string.profile_photo),
+                        modifier = Modifier.size(86.dp),
                     )
-                }
-                if (photo != null) {
                     Box(
                         modifier =
                             Modifier
-                                .align(Alignment.TopEnd)
-                                .padding(8.dp)
-                                .size(32.dp)
+                                .align(Alignment.BottomEnd)
+                                .offset(x = 4.dp, y = 4.dp)
+                                .size(30.dp)
+                                .border(2.dp, Color.White, CircleShape)
                                 .clip(CircleShape)
-                                .background(Color.Black.copy(alpha = 0.5f))
-                                .noRippleClickable(
-                                    enabled = !state.saving,
-                                    onClick = { onIntent(ProfileIntent.RemovePhoto) },
-                                ),
+                                .background(ChromaticColor.Orange400)
+                                .noRippleClickable(enabled = !state.saving, onClick = onPickImage),
                         contentAlignment = Alignment.Center,
                     ) {
                         Icon(
-                            painter = painterResource(Res.drawable.ic_close),
-                            contentDescription = stringResource(Res.string.profile_photo_remove),
+                            painter = painterResource(Res.drawable.ic_camera_add),
+                            contentDescription = stringResource(Res.string.profile_photo_change),
                             modifier = Modifier.size(16.dp),
                             tint = Color.White,
                         )
                     }
+                    if (photo != null) {
+                        Box(
+                            modifier =
+                                Modifier
+                                    .align(Alignment.TopEnd)
+                                    .offset(x = 4.dp, y = (-4).dp)
+                                    .size(28.dp)
+                                    .clip(CircleShape)
+                                    .background(Color.Black.copy(alpha = 0.5f))
+                                    .noRippleClickable(
+                                        enabled = !state.saving,
+                                        onClick = { onIntent(ProfileIntent.RemovePhoto) },
+                                    ),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Icon(
+                                painter = painterResource(Res.drawable.ic_close),
+                                contentDescription = stringResource(Res.string.profile_photo_remove),
+                                modifier = Modifier.size(14.dp),
+                                tint = Color.White,
+                            )
+                        }
+                    }
                 }
             }
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(16.dp))
             AppText(
                 text = stringResource(Res.string.profile_nickname),
                 style = AppTextStyle.B1,
