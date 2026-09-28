@@ -5,7 +5,7 @@ import com.peto.ramap.domain.model.review.Review
 import com.peto.ramap.domain.model.review.ReviewImage
 import kotlinx.coroutines.flow.Flow
 
-interface ShopReviewRepository {
+interface ReviewRepository {
     fun observeChanges(): Flow<Unit>
 
     suspend fun fetchShopReviews(

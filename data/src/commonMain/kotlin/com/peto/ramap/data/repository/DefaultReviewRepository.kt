@@ -5,14 +5,14 @@ import com.peto.ramap.data.datasource.review.ReviewDataSource
 import com.peto.ramap.data.model.ShopReviewRequest
 import com.peto.ramap.domain.model.review.Review
 import com.peto.ramap.domain.model.review.ReviewImage
-import com.peto.ramap.domain.repository.ShopReviewRepository
+import com.peto.ramap.domain.repository.ReviewRepository
 import com.peto.ramap.network.execute.invokeRequest
 import kotlinx.coroutines.flow.Flow
 
-internal class DefaultShopReviewRepository(
+internal class DefaultReviewRepository(
     private val dataSource: ReviewDataSource,
     private val changes: ReviewChangeNotifier,
-) : ShopReviewRepository {
+) : ReviewRepository {
     override fun observeChanges(): Flow<Unit> = changes.events
 
     override suspend fun fetchShopReviews(

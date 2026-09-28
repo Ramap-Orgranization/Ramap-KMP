@@ -7,18 +7,28 @@ import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.model.event.ShopEventType
 import com.peto.ramap.domain.model.menu.MenuSection
 import com.peto.ramap.domain.model.menu.Menus
+import com.peto.ramap.domain.model.notice.OperatingNotice
+import com.peto.ramap.domain.model.notice.OperatingNoticeType
 import com.peto.ramap.domain.model.review.Review
 import com.peto.ramap.domain.usecase.ShopDetail
 import com.peto.ramap.domain.usecase.ShopDetailCacheLookup
 import com.peto.ramap.fake.FakeOperatingNoticeRepository
 import com.peto.ramap.fake.FakeRamenShopRepository
-import com.peto.ramap.fake.FakeShopReviewRepository
+import com.peto.ramap.fake.FakeReviewRepository
 import com.peto.ramap.fixture.ramenShopFixture
 import com.peto.ramap.fixture.waitingSystemFixture
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.DateTimeUnit
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.minus
+import kotlinx.datetime.plus
+import kotlinx.datetime.toLocalDateTime
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
+import kotlin.test.assertNull
+import kotlin.time.Clock
 
 class DefaultFetchShopDetailUseCaseTest {
     @Test
@@ -27,7 +37,11 @@ class DefaultFetchShopDetailUseCaseTest {
             val initial = detail()
             val repository = FakeRamenShopRepository(shopDetail = initial)
             val useCase =
-                DefaultFetchShopDetailUseCase(repository, FakeOperatingNoticeRepository(), FakeShopReviewRepository())
+                DefaultFetchShopDetailUseCase(
+                    repository,
+                    FakeOperatingNoticeRepository(),
+                    FakeReviewRepository(),
+                )
 
             useCase(initial.shop.id)
             useCase(initial.shop.id)
@@ -40,7 +54,7 @@ class DefaultFetchShopDetailUseCaseTest {
         runTest {
             val initial = detail()
             val review = review(initial.shop.id)
-            val reviews = FakeShopReviewRepository(reviews = listOf(review))
+            val reviews = FakeReviewRepository(reviews = listOf(review))
             val useCase =
                 DefaultFetchShopDetailUseCase(FakeRamenShopRepository(shopDetail = initial), FakeOperatingNoticeRepository(), reviews)
 
@@ -58,7 +72,7 @@ class DefaultFetchShopDetailUseCaseTest {
             val initial = detail()
             val firstReview = review(initial.shop.id)
             val secondReview = firstReview.copy(id = "review-2")
-            val reviews = FakeShopReviewRepository(reviews = listOf(firstReview))
+            val reviews = FakeReviewRepository(reviews = listOf(firstReview))
             val useCase =
                 DefaultFetchShopDetailUseCase(FakeRamenShopRepository(shopDetail = initial), FakeOperatingNoticeRepository(), reviews)
             useCase(initial.shop.id)
@@ -85,7 +99,11 @@ class DefaultFetchShopDetailUseCaseTest {
                 )
             val repository = FakeRamenShopRepository(shopDetail = initial)
             val useCase =
-                DefaultFetchShopDetailUseCase(repository, FakeOperatingNoticeRepository(), FakeShopReviewRepository())
+                DefaultFetchShopDetailUseCase(
+                    repository,
+                    FakeOperatingNoticeRepository(),
+                    FakeReviewRepository(),
+                )
             useCase(initial.shop.id)
             repository.shopDetail = refreshed
 
@@ -104,7 +122,11 @@ class DefaultFetchShopDetailUseCaseTest {
             val initial = detail(event = event("shop"))
             val repository = FakeRamenShopRepository(shopDetail = initial)
             val useCase =
-                DefaultFetchShopDetailUseCase(repository, FakeOperatingNoticeRepository(), FakeShopReviewRepository())
+                DefaultFetchShopDetailUseCase(
+                    repository,
+                    FakeOperatingNoticeRepository(),
+                    FakeReviewRepository(),
+                )
             useCase(initial.shop.id)
             repository.shopDetailError = RamapError.Unknown(IllegalStateException("failed"))
 
@@ -121,7 +143,11 @@ class DefaultFetchShopDetailUseCaseTest {
                     shopDetailError = RamapError.Unknown(IllegalStateException("failed")),
                 )
             val useCase =
-                DefaultFetchShopDetailUseCase(repository, FakeOperatingNoticeRepository(), FakeShopReviewRepository())
+                DefaultFetchShopDetailUseCase(
+                    repository,
+                    FakeOperatingNoticeRepository(),
+                    FakeReviewRepository(),
+                )
 
             val result = useCase("shop")
 
@@ -138,7 +164,7 @@ class DefaultFetchShopDetailUseCaseTest {
                 DefaultFetchShopDetailUseCase(
                     FakeRamenShopRepository(shopDetail = initial),
                     FakeOperatingNoticeRepository(),
-                    FakeShopReviewRepository(),
+                    FakeReviewRepository(),
                 )
             useCase(initial.shop.id)
 
@@ -147,6 +173,105 @@ class DefaultFetchShopDetailUseCaseTest {
 
             val cached = assertIs<ShopDetailCacheLookup.Hit>(useCase.findCached(initial.shop.id)).detail
             assertEquals(0L, cached.likeCount)
+        }
+
+    @Test
+    fun `만료된 공지 다음의 진행 중 공지를 대표 공지로 선택한다`() =
+        runTest {
+            val shopDetail = detail()
+            val today = seoulToday()
+            val expired =
+                operatingNotice(
+                    "expired",
+                    shopDetail,
+                    today.minus(2, DateTimeUnit.DAY),
+                    today.minus(1, DateTimeUnit.DAY),
+                )
+            val current = operatingNotice("current", shopDetail, today, today)
+            val useCase =
+                DefaultFetchShopDetailUseCase(
+                    FakeRamenShopRepository(shopDetail = shopDetail),
+                    FakeOperatingNoticeRepository(notices = listOf(expired, current)),
+                    FakeReviewRepository(),
+                )
+
+            val result = assertIs<RamapResult.Success<ShopDetail>>(useCase(shopDetail.shop.id)).data
+
+            assertEquals(current, result.operatingNotice)
+            assertEquals(listOf(expired, current), result.operatingNotices)
+        }
+
+    @Test
+    fun `만료된 공지만 있으면 대표 공지를 비운다`() =
+        runTest {
+            val shopDetail = detail()
+            val today = seoulToday()
+            val expired =
+                operatingNotice(
+                    "expired",
+                    shopDetail,
+                    today.minus(2, DateTimeUnit.DAY),
+                    today.minus(1, DateTimeUnit.DAY),
+                )
+            val useCase =
+                DefaultFetchShopDetailUseCase(
+                    FakeRamenShopRepository(shopDetail = shopDetail),
+                    FakeOperatingNoticeRepository(notices = listOf(expired)),
+                    FakeReviewRepository(),
+                )
+
+            val result = assertIs<RamapResult.Success<ShopDetail>>(useCase(shopDetail.shop.id)).data
+
+            assertNull(result.operatingNotice)
+            assertEquals(listOf(expired), result.operatingNotices)
+        }
+
+    @Test
+    fun `종료일이 오늘인 공지를 대표 공지로 선택한다`() =
+        runTest {
+            val shopDetail = detail()
+            val today = seoulToday()
+            val endingToday =
+                operatingNotice(
+                    "ending-today",
+                    shopDetail,
+                    today.minus(1, DateTimeUnit.DAY),
+                    today,
+                )
+            val useCase =
+                DefaultFetchShopDetailUseCase(
+                    FakeRamenShopRepository(shopDetail = shopDetail),
+                    FakeOperatingNoticeRepository(notices = listOf(endingToday)),
+                    FakeReviewRepository(),
+                )
+
+            val result = assertIs<RamapResult.Success<ShopDetail>>(useCase(shopDetail.shop.id)).data
+
+            assertEquals(endingToday, result.operatingNotice)
+        }
+
+    @Test
+    fun `예정 공지를 대표 공지로 선택한다`() =
+        runTest {
+            val shopDetail = detail()
+            val today = seoulToday()
+            val scheduled =
+                operatingNotice(
+                    "scheduled",
+                    shopDetail,
+                    today.plus(1, DateTimeUnit.DAY),
+                    today.plus(2, DateTimeUnit.DAY),
+                )
+            val useCase =
+                DefaultFetchShopDetailUseCase(
+                    FakeRamenShopRepository(shopDetail = shopDetail),
+                    FakeOperatingNoticeRepository(notices = listOf(scheduled)),
+                    FakeReviewRepository(),
+                )
+
+            val result = assertIs<RamapResult.Success<ShopDetail>>(useCase(shopDetail.shop.id)).data
+
+            assertEquals(scheduled, result.operatingNotice)
         }
 
     private fun detail(
@@ -163,6 +288,29 @@ class DefaultFetchShopDetailUseCaseTest {
             operatingNotice = null,
             menuSections = menuSections,
         )
+
+    private fun operatingNotice(
+        id: String,
+        shopDetail: ShopDetail,
+        startDate: LocalDate,
+        endDate: LocalDate,
+    ) = OperatingNotice(
+        id = id,
+        shop = shopDetail.shop,
+        type = OperatingNoticeType.TEMPORARY_CLOSURE,
+        description = "임시 휴무",
+        startDate = startDate,
+        endDate = endDate,
+        startTime = null,
+        endTime = null,
+        sourceUrl = null,
+    )
+
+    private fun seoulToday(): LocalDate =
+        Clock.System
+            .now()
+            .toLocalDateTime(TimeZone.of("Asia/Seoul"))
+            .date
 
     private fun menuSection() =
         MenuSection(

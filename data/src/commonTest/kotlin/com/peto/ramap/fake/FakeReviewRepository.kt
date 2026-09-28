@@ -4,14 +4,14 @@ import com.peto.ramap.core.result.RamapError
 import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.domain.model.review.Review
 import com.peto.ramap.domain.model.review.ReviewImage
-import com.peto.ramap.domain.repository.ShopReviewRepository
+import com.peto.ramap.domain.repository.ReviewRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 
-class FakeShopReviewRepository(
+class FakeReviewRepository(
     var reviews: List<Review> = emptyList(),
     var error: RamapError? = null,
-) : ShopReviewRepository {
+) : ReviewRepository {
     val requestedShopReviews = mutableListOf<Pair<String, Long>>()
 
     override fun observeChanges(): Flow<Unit> = emptyFlow()

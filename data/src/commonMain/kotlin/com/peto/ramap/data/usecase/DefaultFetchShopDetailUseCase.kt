@@ -4,15 +4,18 @@ import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.domain.model.review.Review
 import com.peto.ramap.domain.repository.OperatingNoticeRepository
 import com.peto.ramap.domain.repository.RamenShopRepository
-import com.peto.ramap.domain.repository.ShopReviewRepository
+import com.peto.ramap.domain.repository.ReviewRepository
 import com.peto.ramap.domain.usecase.FetchShopDetailUseCase
 import com.peto.ramap.domain.usecase.ShopDetail
 import com.peto.ramap.domain.usecase.ShopDetailCacheLookup
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
+import kotlin.time.Clock
 
 internal class DefaultFetchShopDetailUseCase(
     private val ramenShopRepository: RamenShopRepository,
     private val operatingNoticeRepository: OperatingNoticeRepository,
-    private val shopReviewRepository: ShopReviewRepository,
+    private val reviewRepository: ReviewRepository,
 ) : FetchShopDetailUseCase {
     private val cache = mutableMapOf<String, ShopDetail>()
 
@@ -75,11 +78,12 @@ internal class DefaultFetchShopDetailUseCase(
         val detail = ramenShopRepository.fetchShopDetail(shopId)
         if (detail !is RamapResult.Success) return detail
         val notices = operatingNoticeRepository.fetchActiveShopOperatingNotices(shopId)
-        val reviews = shopReviewRepository.fetchShopReviews(shopId, offset = 0L)
+        val reviews = reviewRepository.fetchShopReviews(shopId, offset = 0L)
         val detailWithNotices =
             if (notices is RamapResult.Success) {
+                val now = Clock.System.now().toLocalDateTime(TimeZone.of(SEOUL_TIME_ZONE))
                 detail.data.copy(
-                    operatingNotice = notices.data.firstOrNull(),
+                    operatingNotice = notices.data.firstOrNull { it.isCurrentOrScheduledAt(now) },
                     operatingNotices = notices.data,
                 )
             } else {
@@ -90,5 +94,9 @@ internal class DefaultFetchShopDetailUseCase(
                 reviews = if (reviews is RamapResult.Success) reviews.data else cachedReviews,
             ),
         )
+    }
+
+    private companion object {
+        const val SEOUL_TIME_ZONE = "Asia/Seoul"
     }
 }

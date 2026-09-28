@@ -3,18 +3,18 @@ package com.peto.ramap.ui.review.write
 import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.domain.model.review.Review
 import com.peto.ramap.domain.model.review.ReviewImage
-import com.peto.ramap.domain.repository.ShopReviewRepository
+import com.peto.ramap.domain.repository.ReviewRepository
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.withContext
 
-internal class FakeShopReviewRepository(
+internal class FakeReviewRepository(
     private val submitResult: RamapResult<Unit> = RamapResult.Success(Unit),
     private val submitPending: CompletableDeferred<RamapResult<Unit>>? = null,
     private val ignoreSubmitCancellation: Boolean = false,
-) : ShopReviewRepository {
+) : ReviewRepository {
     val submissions = mutableListOf<Submission>()
 
     override fun observeChanges(): Flow<Unit> = emptyFlow()

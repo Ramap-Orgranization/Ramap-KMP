@@ -8,7 +8,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
 
 @Serializable
-internal data class ShopReviewResponse(
+internal data class ReviewResponse(
     val id: String,
     @SerialName("shop_id") val shopId: String,
     val body: String,
@@ -16,9 +16,11 @@ internal data class ShopReviewResponse(
     @SerialName("image_paths") val imagePaths: List<String> = emptyList(),
     @SerialName("user_id") val userId: String = "",
     val nickname: String = "",
+    @SerialName("avatar_path") val avatarPath: String? = null,
     @SerialName("moderation_status") val moderationStatus: String = "pending",
     @SerialName("is_public") val isPublic: Boolean = true,
     @Transient val imageUrls: List<String> = emptyList(),
+    @Transient val avatarUrl: String? = null,
 ) {
     fun toDomain(): Review =
         Review(
@@ -27,7 +29,7 @@ internal data class ShopReviewResponse(
             body = body,
             createdAt = createdAt,
             imageUrls = imageUrls,
-            author = ReviewAuthor(userId, nickname),
+            author = ReviewAuthor(userId, nickname, avatarUrl),
             moderationStatus = ReviewModerationStatus.entries.find { it.name.equals(moderationStatus, ignoreCase = true) } ?: ReviewModerationStatus.PENDING,
             isPublic = isPublic,
         )

@@ -8,7 +8,7 @@ import com.peto.ramap.domain.model.review.Review
 import com.peto.ramap.domain.model.review.ReviewImage
 import com.peto.ramap.domain.repository.ProfileRepository
 import com.peto.ramap.domain.repository.RamenShopRepository
-import com.peto.ramap.domain.repository.ShopReviewRepository
+import com.peto.ramap.domain.repository.ReviewRepository
 import com.peto.ramap.ui.base.BaseViewModel
 import com.peto.ramap.ui.review.write.contract.ReviewWriteIntent
 import com.peto.ramap.ui.review.write.contract.ReviewWriteLoadKey
@@ -23,7 +23,7 @@ import ramap.shared.generated.resources.review_load_failed
 import ramap.shared.generated.resources.shop_review_failure_message
 
 class ReviewWriteViewModel(
-    private val reviewRepository: ShopReviewRepository,
+    private val reviewRepository: ReviewRepository,
     private val profileRepository: ProfileRepository,
     private val ramenShopRepository: RamenShopRepository,
 ) : BaseViewModel<ReviewWriteUiState, ReviewWriteIntent, ReviewWriteSideEffect>(ReviewWriteUiState()) {

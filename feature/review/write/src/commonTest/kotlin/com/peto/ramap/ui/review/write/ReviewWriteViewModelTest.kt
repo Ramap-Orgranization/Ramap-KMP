@@ -29,7 +29,7 @@ class ReviewWriteViewModelTest {
     @Test
     fun `opening another shop clears draft and submits only to the new shop`() =
         coroutinesTest {
-            val reviews = FakeShopReviewRepository()
+            val reviews = FakeReviewRepository()
             val ramenShops = FakeRamenShopRepository()
             val viewModel =
                 ReviewWriteViewModel(
@@ -56,7 +56,7 @@ class ReviewWriteViewModelTest {
     @Test
     fun `submission clears the draft`() =
         coroutinesTest {
-            val reviews = FakeShopReviewRepository()
+            val reviews = FakeReviewRepository()
             val viewModel = ReviewWriteViewModel(reviews, FakeProfileRepository(), FakeRamenShopRepository())
             viewModel.dispatch(ReviewWriteIntent.Open("shop"))
             runCurrent()
@@ -85,7 +85,7 @@ class ReviewWriteViewModelTest {
     fun `submission failure keeps the draft`() =
         coroutinesTest {
             val reviews =
-                FakeShopReviewRepository(
+                FakeReviewRepository(
                     submitResult = RamapResult.Error(RamapError.Network(IllegalStateException("offline"))),
                 )
             val viewModel = ReviewWriteViewModel(reviews, FakeProfileRepository(), FakeRamenShopRepository())
@@ -118,7 +118,7 @@ class ReviewWriteViewModelTest {
     @Test
     fun `submission without a session requests login`() =
         coroutinesTest {
-            val viewModel = ReviewWriteViewModel(FakeShopReviewRepository(), FakeProfileRepository(null), FakeRamenShopRepository())
+            val viewModel = ReviewWriteViewModel(FakeReviewRepository(), FakeProfileRepository(null), FakeRamenShopRepository())
             viewModel.dispatch(ReviewWriteIntent.Open("shop"))
             runCurrent()
 
@@ -141,7 +141,7 @@ class ReviewWriteViewModelTest {
         coroutinesTest {
             val viewModel =
                 ReviewWriteViewModel(
-                    FakeShopReviewRepository(),
+                    FakeReviewRepository(),
                     FakeProfileRepository(),
                     FakeRamenShopRepository(),
                 )
@@ -160,7 +160,7 @@ class ReviewWriteViewModelTest {
             val first = reviewImage(1)
             val second = reviewImage(2)
             val third = reviewImage(3)
-            val reviews = FakeShopReviewRepository()
+            val reviews = FakeReviewRepository()
             val viewModel =
                 ReviewWriteViewModel(
                     reviews,
@@ -184,7 +184,7 @@ class ReviewWriteViewModelTest {
     @Test
     fun `private visibility is passed to the repository and restored after submission`() =
         coroutinesTest {
-            val reviews = FakeShopReviewRepository()
+            val reviews = FakeReviewRepository()
             val viewModel =
                 ReviewWriteViewModel(
                     reviews,
@@ -208,7 +208,7 @@ class ReviewWriteViewModelTest {
         coroutinesTest {
             val viewModel =
                 ReviewWriteViewModel(
-                    FakeShopReviewRepository(),
+                    FakeReviewRepository(),
                     FakeProfileRepository(null),
                     FakeRamenShopRepository(),
                 )
@@ -226,7 +226,7 @@ class ReviewWriteViewModelTest {
         coroutinesTest {
             val viewModel =
                 ReviewWriteViewModel(
-                    FakeShopReviewRepository(),
+                    FakeReviewRepository(),
                     FakeProfileRepository(),
                     FakeRamenShopRepository(),
                 )
@@ -246,7 +246,7 @@ class ReviewWriteViewModelTest {
             val second = reviewImage(2)
             val viewModel =
                 ReviewWriteViewModel(
-                    FakeShopReviewRepository(),
+                    FakeReviewRepository(),
                     FakeProfileRepository(),
                     FakeRamenShopRepository(),
                 )
@@ -270,7 +270,7 @@ class ReviewWriteViewModelTest {
             val ramenShops = FakeRamenShopRepository(shopDetail = ShopDetail(shop, 0, null, null, null))
             val viewModel =
                 ReviewWriteViewModel(
-                    FakeShopReviewRepository(),
+                    FakeReviewRepository(),
                     FakeProfileRepository(),
                     ramenShops,
                 )
