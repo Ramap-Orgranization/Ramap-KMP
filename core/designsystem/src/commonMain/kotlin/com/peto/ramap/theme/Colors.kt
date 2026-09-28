@@ -37,11 +37,7 @@ object ChromaticColor {
     val Purple400 = Color(0xFFDCC3FF)
 }
 
-object LoginColor {
-    val Kakao = Color(0xFFFEE500)
-}
-
-object MapColor {
+object SocialColor {
     val Kakao = Color(0xFFFEE500)
     val Naver = Color(0xFF03C75A)
 }

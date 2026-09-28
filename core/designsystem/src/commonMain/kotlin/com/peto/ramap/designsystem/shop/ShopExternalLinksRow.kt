@@ -13,7 +13,7 @@ import com.peto.ramap.designsystem.resource.wating.WaitingSystemUiModel
 import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
-import com.peto.ramap.theme.MapColor
+import com.peto.ramap.theme.SocialColor
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.apple_maps_icon
@@ -74,7 +74,7 @@ internal fun ShopExternalLinksRow(
                     ShopLinkRow(
                         icon = Res.drawable.kakao_map_icon,
                         label = stringResource(Res.string.shop_detail_link_kakao_map),
-                        containerColor = MapColor.Kakao,
+                        containerColor = SocialColor.Kakao,
                         contentColor = GrayColor.C500,
                         shape = RoundedCornerShape(100.dp),
                         onClick = {
@@ -88,7 +88,7 @@ internal fun ShopExternalLinksRow(
                     ShopLinkRow(
                         icon = Res.drawable.naver_map_icon,
                         label = stringResource(Res.string.shop_detail_link_naver_map),
-                        containerColor = MapColor.Naver,
+                        containerColor = SocialColor.Naver,
                         contentColor = CommonColor.White,
                         shape = RoundedCornerShape(100.dp),
                         onClick = {

@@ -24,7 +24,7 @@ import com.peto.ramap.extension.noRippleClickable
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
-import com.peto.ramap.theme.MapColor
+import com.peto.ramap.theme.SocialColor
 import com.peto.ramap.theme.RamapTheme
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
@@ -85,7 +85,7 @@ private fun ShopLinkRowPreview() {
                 ShopLinkRow(
                     icon = Res.drawable.kakao_map_icon,
                     label = "카카오 지도",
-                    containerColor = MapColor.Kakao,
+                    containerColor = SocialColor.Kakao,
                     contentColor = GrayColor.C500,
                     shape = RoundedCornerShape(100.dp),
                     onClick = {},
@@ -94,7 +94,7 @@ private fun ShopLinkRowPreview() {
                 ShopLinkRow(
                     icon = Res.drawable.naver_map_icon,
                     label = "네이버 지도",
-                    containerColor = MapColor.Naver,
+                    containerColor = SocialColor.Naver,
                     contentColor = CommonColor.White,
                     shape = RoundedCornerShape(100.dp),
                     onClick = {},

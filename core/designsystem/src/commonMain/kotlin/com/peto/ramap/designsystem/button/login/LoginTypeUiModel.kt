@@ -5,7 +5,7 @@ import androidx.compose.ui.graphics.Color
 import com.peto.ramap.domain.model.auth.LoginType
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
-import com.peto.ramap.theme.LoginColor
+import com.peto.ramap.theme.SocialColor
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.StringResource
 import ramap.shared.generated.resources.Res
@@ -29,8 +29,8 @@ data class LoginTypeUiModel(
                     LoginTypeUiModel(
                         buttonTitle = Res.string.kakao_login_button_title,
                         buttonLogo = Res.drawable.ic_kakao,
-                        buttonBackground = LoginColor.Kakao,
-                        buttonBorder = LoginColor.Kakao,
+                        buttonBackground = SocialColor.Kakao,
+                        buttonBorder = SocialColor.Kakao,
                         buttonTextColor = GrayColor.C500,
                     )
 
