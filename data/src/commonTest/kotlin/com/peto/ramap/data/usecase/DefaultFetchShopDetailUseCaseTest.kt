@@ -7,10 +7,12 @@ import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.model.event.ShopEventType
 import com.peto.ramap.domain.model.menu.MenuSection
 import com.peto.ramap.domain.model.menu.Menus
+import com.peto.ramap.domain.model.review.Review
 import com.peto.ramap.domain.usecase.ShopDetail
 import com.peto.ramap.domain.usecase.ShopDetailCacheLookup
 import com.peto.ramap.fake.FakeOperatingNoticeRepository
 import com.peto.ramap.fake.FakeRamenShopRepository
+import com.peto.ramap.fake.FakeShopReviewRepository
 import com.peto.ramap.fixture.ramenShopFixture
 import com.peto.ramap.fixture.waitingSystemFixture
 import kotlinx.coroutines.test.runTest
@@ -24,12 +26,50 @@ class DefaultFetchShopDetailUseCaseTest {
         runTest {
             val initial = detail()
             val repository = FakeRamenShopRepository(shopDetail = initial)
-            val useCase = DefaultFetchShopDetailUseCase(repository, FakeOperatingNoticeRepository())
+            val useCase =
+                DefaultFetchShopDetailUseCase(repository, FakeOperatingNoticeRepository(), FakeShopReviewRepository())
 
             useCase(initial.shop.id)
             useCase(initial.shop.id)
 
             assertEquals(listOf(initial.shop.id, initial.shop.id), repository.requestedShopDetailIds)
+        }
+
+    @Test
+    fun `최초 상세 조회는 리뷰를 함께 불러온다`() =
+        runTest {
+            val initial = detail()
+            val review = review(initial.shop.id)
+            val reviews = FakeShopReviewRepository(reviews = listOf(review))
+            val useCase =
+                DefaultFetchShopDetailUseCase(FakeRamenShopRepository(shopDetail = initial), FakeOperatingNoticeRepository(), reviews)
+
+            val result = assertIs<RamapResult.Success<ShopDetail>>(useCase(initial.shop.id)).data
+
+            assertEquals(listOf(review), result.reviews)
+            assertEquals(1, result.reviewCount)
+            assertEquals(0, result.menuItemCount)
+            assertEquals(listOf(initial.shop.id to 0L), reviews.requestedShopReviews)
+        }
+
+    @Test
+    fun `캐시 재검증은 리뷰를 갱신하고 리뷰 조회 실패 시 이전 목록을 유지한다`() =
+        runTest {
+            val initial = detail()
+            val firstReview = review(initial.shop.id)
+            val secondReview = firstReview.copy(id = "review-2")
+            val reviews = FakeShopReviewRepository(reviews = listOf(firstReview))
+            val useCase =
+                DefaultFetchShopDetailUseCase(FakeRamenShopRepository(shopDetail = initial), FakeOperatingNoticeRepository(), reviews)
+            useCase(initial.shop.id)
+            reviews.reviews = listOf(secondReview)
+
+            val refreshed = assertIs<RamapResult.Success<ShopDetail>>(useCase(initial.shop.id)).data
+            assertEquals(listOf(secondReview), refreshed.reviews)
+
+            reviews.error = RamapError.Unknown(IllegalStateException("failed"))
+            val fallback = assertIs<RamapResult.Success<ShopDetail>>(useCase(initial.shop.id)).data
+            assertEquals(listOf(secondReview), fallback.reviews)
         }
 
     @Test
@@ -44,7 +84,8 @@ class DefaultFetchShopDetailUseCaseTest {
                     menuSections = listOf(menuSection()),
                 )
             val repository = FakeRamenShopRepository(shopDetail = initial)
-            val useCase = DefaultFetchShopDetailUseCase(repository, FakeOperatingNoticeRepository())
+            val useCase =
+                DefaultFetchShopDetailUseCase(repository, FakeOperatingNoticeRepository(), FakeShopReviewRepository())
             useCase(initial.shop.id)
             repository.shopDetail = refreshed
 
@@ -62,7 +103,8 @@ class DefaultFetchShopDetailUseCaseTest {
         runTest {
             val initial = detail(event = event("shop"))
             val repository = FakeRamenShopRepository(shopDetail = initial)
-            val useCase = DefaultFetchShopDetailUseCase(repository, FakeOperatingNoticeRepository())
+            val useCase =
+                DefaultFetchShopDetailUseCase(repository, FakeOperatingNoticeRepository(), FakeShopReviewRepository())
             useCase(initial.shop.id)
             repository.shopDetailError = RamapError.Unknown(IllegalStateException("failed"))
 
@@ -78,7 +120,8 @@ class DefaultFetchShopDetailUseCaseTest {
                 FakeRamenShopRepository(
                     shopDetailError = RamapError.Unknown(IllegalStateException("failed")),
                 )
-            val useCase = DefaultFetchShopDetailUseCase(repository, FakeOperatingNoticeRepository())
+            val useCase =
+                DefaultFetchShopDetailUseCase(repository, FakeOperatingNoticeRepository(), FakeShopReviewRepository())
 
             val result = useCase("shop")
 
@@ -91,7 +134,12 @@ class DefaultFetchShopDetailUseCaseTest {
     fun `캐시된 상세의 좋아요 수를 저장 상태 변경에 맞춰 갱신한다`() =
         runTest {
             val initial = detail(likeCount = 1L)
-            val useCase = DefaultFetchShopDetailUseCase(FakeRamenShopRepository(shopDetail = initial), FakeOperatingNoticeRepository())
+            val useCase =
+                DefaultFetchShopDetailUseCase(
+                    FakeRamenShopRepository(shopDetail = initial),
+                    FakeOperatingNoticeRepository(),
+                    FakeShopReviewRepository(),
+                )
             useCase(initial.shop.id)
 
             useCase.updateCachedLikeCount(initial.shop.id, enabled = false)
@@ -138,5 +186,13 @@ class DefaultFetchShopDetailUseCaseTest {
             venue = EventVenue.Registered(ramenShopFixture(id = shopId, name = "매장", address = "서울")),
             waitingMethod = null,
             waitingUrl = null,
+        )
+
+    private fun review(shopId: String) =
+        Review(
+            id = "review-1",
+            shopId = shopId,
+            body = "맛있는 라멘",
+            createdAt = "2026-09-29T00:00:00Z",
         )
 }

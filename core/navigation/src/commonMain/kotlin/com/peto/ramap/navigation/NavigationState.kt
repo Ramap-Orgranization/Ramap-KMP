@@ -123,6 +123,13 @@ class NavigationState(
         selectTopLevelTab(TabStatus.MAP)
     }
 
+    fun showMyRoot() {
+        val myBackStack = backStacks.getValue(TabStatus.MY)
+        myBackStack.clear()
+        myBackStack.add(ScreenRoutes.MyTabRoutes)
+        selectTopLevelTab(TabStatus.MY)
+    }
+
     fun showShopOnMap(
         shopId: String,
         source: NavigationSource? = null,

@@ -18,6 +18,7 @@ val ScreenRoutes.analyticsScreenName: String
             is ScreenRoutes.SettingsRoutes -> "settings"
             is ScreenRoutes.AccountSettingsRoutes -> "account_settings"
             is ScreenRoutes.ProfileEditRoutes -> "my_profile"
+            is ScreenRoutes.ReviewWriteRoutes -> "review_write"
             is ScreenRoutes.InformationRoutes -> "information"
             is ScreenRoutes.PlaceReportRoutes -> "place_report"
             is ScreenRoutes.HiddenShopListRoutes -> "hidden_shop_list"

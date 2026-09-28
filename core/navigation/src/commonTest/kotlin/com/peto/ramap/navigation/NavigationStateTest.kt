@@ -30,6 +30,21 @@ class NavigationStateTest {
     }
 
     @Test
+    fun `리뷰 작성 중 로그인하면 마이 탭 스택을 초기화하고 루트로 이동한다`() {
+        for (tab in TabStatus.entries) {
+            val state = navigationState(selectedTab = TabStatus.MY)
+            state.showSettings()
+            state.selectTopLevelTab(tab)
+            state.showReviewWrite("shop")
+
+            state.showMyRoot()
+
+            assertEquals(TabStatus.MY, state.selectedTab)
+            assertEquals(listOf(ScreenRoutes.MyTabRoutes), state.backStacks.getValue(TabStatus.MY).toList())
+        }
+    }
+
+    @Test
     fun `네 개 탭은 지도 랭킹 이벤트 설정 순서와 독립 스택을 가진다`() {
         val navigationState = navigationState()
 
