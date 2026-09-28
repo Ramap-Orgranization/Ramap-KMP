@@ -4,4 +4,6 @@ import com.peto.ramap.ui.loading.LoadKey
 
 enum class MyTabLoadKey : LoadKey {
     Fetch,
+    Visibility,
+    BlockedUsers,
 }

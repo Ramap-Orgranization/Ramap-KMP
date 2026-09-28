@@ -1,6 +1,7 @@
 package com.peto.ramap.data.repository.di
 
 import com.peto.ramap.data.datasource.appnotice.AppNoticeDataSource
+import com.peto.ramap.data.datasource.community.ReviewCommunityDataSource
 import com.peto.ramap.data.datasource.importation.ImportationDataSource
 import com.peto.ramap.data.datasource.notice.OperatingNoticeDataSource
 import com.peto.ramap.data.datasource.personalization.BookmarkShopDataSource
@@ -22,6 +23,7 @@ import com.peto.ramap.data.repository.DefaultPlaceSearchRepository
 import com.peto.ramap.data.repository.DefaultProfileRepository
 import com.peto.ramap.data.repository.DefaultPushRegistrationRepository
 import com.peto.ramap.data.repository.DefaultRamenShopRepository
+import com.peto.ramap.data.repository.DefaultReviewCommunityRepository
 import com.peto.ramap.data.repository.DefaultShopRankingRepository
 import com.peto.ramap.data.repository.DefaultShopReportRepository
 import com.peto.ramap.data.repository.DefaultShopWaitingSystemRepository
@@ -39,6 +41,7 @@ import com.peto.ramap.domain.repository.PlaceSearchRepository
 import com.peto.ramap.domain.repository.ProfileRepository
 import com.peto.ramap.domain.repository.PushRegistrationRepository
 import com.peto.ramap.domain.repository.RamenShopRepository
+import com.peto.ramap.domain.repository.ReviewCommunityRepository
 import com.peto.ramap.domain.repository.ShopRankingRepository
 import com.peto.ramap.domain.repository.ShopReportRepository
 import com.peto.ramap.domain.repository.ShopWaitingSystemRepository
@@ -49,6 +52,9 @@ import org.koin.dsl.module
 val repositoryModule =
     module {
         single<ProfileRepository> { DefaultProfileRepository(get()) }
+        single<ReviewCommunityRepository> {
+            DefaultReviewCommunityRepository(get<ReviewCommunityDataSource>())
+        }
         single<AppUpdateRepository> {
             DefaultAppUpdateRepository(get<AppUpdatePolicyDataSource>())
         }
