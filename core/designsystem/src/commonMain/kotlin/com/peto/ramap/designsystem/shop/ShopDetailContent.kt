@@ -69,6 +69,7 @@ fun ShopDetailContent(
     onExternalLinkClick: (String) -> Unit = {},
     isAppleMapsAvailable: Boolean = false,
     onAppleMapsClick: (RamenShop) -> Unit = {},
+    onReviewsClick: (String) -> Unit,
 ) {
     val selectedShop =
         when (state) {
@@ -117,6 +118,15 @@ fun ShopDetailContent(
                         isNotificationEnabled = isNotificationEnabled,
                         showNotificationActions = showNotificationActions,
                         isHidden = isHidden,
+                        isAppleMapsAvailable = isAppleMapsAvailable,
+                        event = state.detail.event,
+                        operatingNotice = state.detail.operatingNotice,
+                        operatingNotices = state.detail.operatingNotices,
+                        menuSections = state.detail.menuSections,
+                        menuUpdatedAt = state.detail.menuUpdatedAt,
+                        reviews = state.detail.reviews,
+                        reviewCount = state.detail.reviewCount,
+                        menuItemCount = state.detail.menuItemCount,
                         onBookmarkClick = { onBookmarkToggled(shop) },
                         onNotificationClick = { onShopNotificationToggled(shop) },
                         onHiddenClick = {
@@ -126,20 +136,16 @@ fun ShopDetailContent(
                                 onHiddenToggled(shop)
                             }
                         },
+                        onReportClick = { showReportDialog = true },
                         onShareClick = { onShopShareClick(shop) },
                         onMapLinkClick = { provider -> onShopMapLinkClick(shop, provider) },
                         onWaitingClick = onWaitingClick,
                         onExternalLinkClick = onExternalLinkClick,
-                        isAppleMapsAvailable = isAppleMapsAvailable,
                         onAppleMapsClick = onAppleMapsClick,
-                        event = state.detail.event,
                         onEventClick = onEventClick,
-                        operatingNotice = state.detail.operatingNotice,
-                        operatingNotices = state.detail.operatingNotices,
                         onOperatingNoticeClick = onOperatingNoticeClick,
-                        menuSections = state.detail.menuSections,
-                        menuUpdatedAt = state.detail.menuUpdatedAt,
-                        onReportClick = { showReportDialog = true },
+                        onOpenProfile = {},
+                        onWriteReviewClick = { onReviewsClick(shop.id) },
                     )
                     onShowOnMap?.let { showOnMap ->
                         AppButton(

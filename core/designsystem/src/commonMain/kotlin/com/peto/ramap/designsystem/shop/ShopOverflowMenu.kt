@@ -29,9 +29,11 @@ import ramap.shared.generated.resources.ic_kid_star_filled
 import ramap.shared.generated.resources.ic_more_vert
 import ramap.shared.generated.resources.ic_notification
 import ramap.shared.generated.resources.ic_notification_filled
+import ramap.shared.generated.resources.ic_report
 import ramap.shared.generated.resources.ic_share
 import ramap.shared.generated.resources.ic_visibility_off
 import ramap.shared.generated.resources.share_shop_action
+import ramap.shared.generated.resources.shop_detail_link_report
 import ramap.shared.generated.resources.shop_detail_more_actions
 
 @Composable
@@ -44,6 +46,7 @@ internal fun ShopOverflowMenu(
     onBookmarkClick: () -> Unit,
     onNotificationClick: () -> Unit,
     onHiddenClick: () -> Unit,
+    onReportClick: () -> Unit,
     onShareClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -112,6 +115,15 @@ internal fun ShopOverflowMenu(
                 onClick = {
                     isExpanded = false
                     onHiddenClick()
+                },
+            )
+            ShopOverflowMenuItem(
+                text = stringResource(Res.string.shop_detail_link_report),
+                icon = Res.drawable.ic_report,
+                isActive = false,
+                onClick = {
+                    isExpanded = false
+                    onReportClick()
                 },
             )
         }

@@ -124,7 +124,7 @@ private fun ShopDetailSheetHandle() {
         modifier =
             Modifier
                 .fillMaxWidth()
-                .padding(top = 15.dp, bottom = 10.dp),
+                .padding(top = 25.dp, bottom = 15.dp),
         contentAlignment = Alignment.Center,
     ) {
         Box(

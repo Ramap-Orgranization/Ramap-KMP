@@ -33,12 +33,17 @@ object ChromaticColor {
     val Pink400 = Color(0xFFFF96AD)
     val Pink300 = Color(0xFFFFC0CE)
     val Pink200 = Color(0xFFFFD5DE)
-    val Orange400 = Color(0xFFFFA271)
+    val Orange400 = Color(0xFFE95432)
     val Purple400 = Color(0xFFDCC3FF)
 }
 
 object LoginColor {
     val Kakao = Color(0xFFFEE500)
+}
+
+object MapColor {
+    val Kakao = Color(0xFFFEE500)
+    val Naver = Color(0xFF03C75A)
 }
 
 object InstagramColor {
@@ -47,11 +52,4 @@ object InstagramColor {
     val Pink = Color(0xFFFF0069)
     val Purple = Color(0xFFD300C5)
     val Blue = Color(0xFF7638FA)
-}
-
-object ProfileColor {
-    val Ink = Color(0xFF252721)
-    val Muted = Color(0xFF777A70)
-    val Orange = Color(0xFFE95432)
-    val Line = Color(0xFFDEDFD5)
 }

@@ -2,15 +2,6 @@
     <!-- 공통 탐색 및 앱 동작 -->
     <string name="navigation_back">뒤로가기</string>
     <string name="app_exit_back_message">뒤로가기를 한 번 더 누르면 종료돼요</string>
-    <string name="review_blocked_users">차단한 사용자</string>
-    <string name="review_blocked_users_empty">차단한 사용자가 없어요</string>
-    <string name="review_close">닫기</string>
-    <string name="my_reviews">내 리뷰</string>
-    <string name="profile_visibility">프로필 공개</string>
-    <string name="profile_visibility_body">공개하면 프로필과 게시된 리뷰를 다른 사용자에게 보여줘요.</string>
-    <string name="profile_visibility_status">현재 %1$s 상태예요.</string>
-    <string name="profile_visibility_public">공개</string>
-    <string name="profile_visibility_private">비공개</string>
 
     <!-- 매장 상세 화면 -->
     <string name="shop_detail_label_address">주소</string>
@@ -27,9 +18,7 @@
     <string name="shop_menu_representative">대표</string>
     <string name="shop_menu_price">%1$s원</string>
     <string name="shop_menu_source">자세히 보기 &gt;</string>
-    <string name="shop_detail_label_business_hours">영업시간</string>
     <string name="shop_detail_business_hours_notice">실제 매장 운영 상황과 다를 수 있어요</string>
-    <string name="shop_detail_business_hours_weekly_title">영업시간</string>
     <string name="shop_detail_business_hours_expand">영업시간 펼치기</string>
     <string name="shop_detail_business_hours_collapse">영업시간 접기</string>
     <string name="shop_detail_operating_notice_action_suffix">&gt;</string>
@@ -47,8 +36,6 @@
     <string name="shop_detail_business_hours_closed_label_format">%1$s</string>
     <string name="shop_detail_business_hours_break_time_format">%1$s ~ %2$s (브레이크타임)</string>
     <string name="shop_detail_business_hours_last_order_format">%1$s (라스트오더)</string>
-    <string name="shop_detail_business_hours_item_separator"> / </string>
-    <string name="shop_detail_business_hours_show_all">전체보기 &gt;</string>
     <string name="shop_detail_business_hours_override">오늘 변경 영업시간</string>
     <string name="shop_detail_business_hours_override_reason">변경 사유: %1$s</string>
     <string name="shop_detail_business_hours_break_removed">브레이크타임 없음</string>
@@ -58,6 +45,66 @@
     <string name="shop_detail_link_naver_map">네이버 지도</string>
     <string name="shop_detail_link_apple_maps">애플 지도</string>
     <string name="shop_detail_link_report">제보하기</string>
+    <string name="shop_review_title">리뷰</string>
+    <string name="shop_review_empty">아직 리뷰가 없어요</string>
+    <string name="shop_review_empty_title">아직 등록된 리뷰가 없어요</string>
+    <string name="shop_review_empty_description">%1$s의 첫 번째 방문 후기를 남겨주세요!\n회원님의 소중한 리뷰가 다른 방문자에게 큰 도움이 됩니다.</string>
+    <string name="shop_review_write">리뷰 작성</string>
+    <string name="shop_review_go_write">리뷰 쓰러가기 &gt;</string>
+    <string name="shop_review_placeholder">매장 경험을 알려주세요</string>
+    <string name="shop_review_invalid_body">리뷰는 5~150글자로 작성해 주세요</string>
+    <string name="shop_review_image_limit">사진은 최대 3장까지 첨부할 수 있어요</string>
+    <string name="shop_review_image_invalid">JPEG·PNG 형식의 5MB 이하 사진을 선택해 주세요</string>
+    <string name="shop_review_image_add">사진 추가</string>
+    <string name="shop_review_image_remove">사진 삭제</string>
+    <string name="shop_review_load_more">더 보기</string>
+    <string name="shop_review_submit">등록</string>
+    <string name="shop_review_cancel">취소</string>
+    <string name="shop_review_failure_message">리뷰 등록에 실패했습니다</string>
+    <string name="review_author_unknown">알 수 없는 사용자</string>
+    <string name="review_report">신고</string>
+    <string name="review_photo_description">리뷰 사진 %1$d</string>
+    <string name="review_status_pending">검토 중</string>
+    <string name="review_status_rejected">게시 거부됨</string>
+    <string name="review_status_removed">삭제된 리뷰</string>
+    <string name="review_open_shop">매장 보기</string>
+    <string name="community_guidelines_title">커뮤니티 가이드라인</string>
+    <string name="community_guidelines_publication_title">리뷰 게시 안내</string>
+    <string name="review_action_failed">처리하지 못했어요. 잠시 후 다시 시도해 주세요.</string>
+    <string name="review_action_success">처리 완료</string>
+    <string name="review_action_success_description">요청이 접수되었어요.</string>
+    <string name="review_block_confirm">%1$s님을 차단할까요? 이 사용자의 리뷰가 숨겨져요.</string>
+    <string name="review_blocked_empty">차단한 사용자의 리뷰는 표시하지 않아요</string>
+    <string name="review_blocked_users">차단한 사용자</string>
+    <string name="review_blocked_users_empty">차단한 사용자가 없어요</string>
+    <string name="review_close">닫기</string>
+    <string name="review_feed_description">한 그릇에 담긴 경험을 함께 나눠요</string>
+    <string name="review_guidelines_accept">커뮤니티 가이드라인에 동의합니다</string>
+    <string name="review_load_failed">불러오지 못했어요. 다시 시도해 주세요.</string>
+    <string name="review_login">로그인</string>
+    <string name="review_loading">불러오는 중</string>
+    <string name="review_publication_notice">리뷰는 작성 후 바로 게시돼요. 프로필 공개 설정을 켜면 다른 사용자에게도 보여요. 커뮤니티 가이드라인을 위반한 글은 삭제될 수 있어요.</string>
+    <string name="review_photos">사진</string>
+    <string name="review_profile_description">라멘 취향이 쌓이는 공간</string>
+    <string name="review_profile_setup_hint">로그인하면 내가 작성한 리뷰를 확인할 수 있어요.</string>
+    <string name="review_profile_title">리뷰 프로필</string>
+    <string name="review_profile_unavailable">표시할 프로필이 없어요</string>
+    <string name="review_reason_harassment">욕설·괴롭힘</string>
+    <string name="review_reason_hate">혐오·차별</string>
+    <string name="review_reason_other">기타</string>
+    <string name="review_reason_privacy">개인정보 노출</string>
+    <string name="review_reason_sexual">음란·성적 콘텐츠</string>
+    <string name="review_reason_spam">광고·도배</string>
+    <string name="review_reason_violence">폭력·위협</string>
+    <string name="review_report_description">신고 사유를 선택해 주세요. 운영자가 내용을 확인해요.</string>
+    <string name="review_report_details">추가 설명 (선택, 최대 1,000글자)</string>
+    <string name="review_report_send">신고하기</string>
+    <string name="review_report_user">사용자 신고</string>
+    <string name="my_reviews">내 리뷰</string>
+    <string name="review_retry">다시 시도</string>
+    <string name="review_block">차단</string>
+    <string name="review_unblock">차단 해제</string>
+    <string name="review_unblock_confirm">%1$s님의 차단을 해제할까요?</string>
     <string name="shop_detail_more_actions">매장 메뉴 더보기</string>
     <string name="share_shop_action">공유하기</string>
     <string name="share_shop_chooser_title">매장 공유</string>
@@ -99,7 +146,6 @@
 
     <!-- 이벤트 목록 화면 -->
     <string name="event_list_empty">진행 중이거나 예정된 새소식이 없어요</string>
-    <string name="event_list_loading_message">새소식을 불러오고 있어요...</string>
     <string name="event_list_error_title">새소식을 불러오지 못했어요</string>
     <string name="event_list_error_description">잠시 후 다시 시도해 주세요.</string>
     <string name="event_list_refresh_failure_message">새소식을 새로고침하지 못했어요</string>
@@ -143,10 +189,6 @@
     <string name="operating_notice_type_temporary_closure">임시 휴무</string>
     <string name="operating_notice_type_early_closing">조기 마감</string>
     <string name="operating_notice_type_late_opening">오픈 지연</string>
-    <string name="operating_notice_end_date_format">%1$s</string>
-    <string name="operating_notice_time_format">%1$s ~ %2$s</string>
-    <string name="operating_notice_time_start_format">%1$s부터</string>
-    <string name="operating_notice_time_end_format">%1$s까지</string>
     <string name="operating_notice_source_action">원문 보기</string>
 
     <!-- 이벤트 공통 정보 -->
@@ -212,7 +254,6 @@
     <string name="menu_category_iekei">이에케</string>
     <string name="menu_category_tomato">토마토라멘</string>
     <string name="menu_category_separator">·</string>
-    <string name="map_filter_open">영업중</string>
 
     <!-- 매장 검색 화면 -->
     <string name="search_bar_placeholder">매장명을 입력해주세요</string>
@@ -357,7 +398,6 @@
 
     <!-- 공통 상태 및 피드백 -->
     <string name="loading_content_description">불러오는 중</string>
-    <string name="bottom_sheet_pane_title">추가 정보</string>
     <string name="data_load_failure_message">정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.</string>
     <string name="event_detail_load_failure_title">이벤트를 불러오지 못했어요</string>
     <string name="event_list_open">이벤트 목록 보기</string>
@@ -451,21 +491,19 @@
     <string name="profile_bio">한 줄 자기소개</string>
     <string name="profile_bio_short">한 줄 소개</string>
     <string name="profile_bio_empty">자기소개를 작성해주세요</string>
-    <string name="profile_bio_placeholder">50자 이내로 입력해 주세요.</string>
-    <string name="profile_bio_invalid">줄바꿈 없이 50자 이내로 입력해 주세요.</string>
-    <string name="profile_bio_counter">%1$d / 50</string>
+    <string name="profile_bio_placeholder">30자 이내로 입력해 주세요.</string>
+    <string name="profile_bio_invalid">줄바꿈 없이 30자 이내로 입력해 주세요.</string>
+    <string name="profile_bio_counter">%1$d / 30</string>
+    <string name="profile_daily_change_policy">닉네임과 자기소개는 각각 하루에 2번 변경할 수 있어요. 매일 한국 시간 자정에 초기화돼요.</string>
     <string name="profile_nickname_daily_change_limit_reached">오늘 닉네임 변경 횟수를 모두 사용했어요. 자정에 다시 변경할 수 있어요.</string>
     <string name="profile_bio_daily_change_limit_reached">오늘 자기소개 변경 횟수를 모두 사용했어요. 자정에 다시 변경할 수 있어요.</string>
     <string name="profile_nickname_check_rate_limited">닉네임 확인 요청이 많아요. 잠시 후 다시 시도해 주세요.</string>
     <string name="profile_save_rate_limited">저장 요청이 많아요. 잠시 후 다시 시도해 주세요.</string>
-    <string name="profile_account">내 계정</string>
-    <string name="profile_connected">연결됨</string>
     <string name="profile_photo">프로필 사진</string>
     <string name="profile_photo_change">사진 변경</string>
     <string name="profile_photo_remove">사진 제거</string>
     <string name="profile_nickname">닉네임</string>
     <string name="profile_nickname_placeholder">2~10글자를 입력해 주세요.</string>
-    <string name="profile_nickname_invalid">한글·영문·숫자·밑줄로 2~10글자를 입력해 주세요.</string>
     <string name="profile_nickname_check">중복확인</string>
     <string name="profile_nickname_available">사용할 수 있는 닉네임이에요.</string>
     <string name="profile_nickname_unavailable">이미 사용 중인 닉네임이에요.</string>
@@ -483,6 +521,11 @@
     <string name="profile_discard_body">저장하지 않은 변경사항은 사라져요.</string>
     <string name="profile_discard">수정 취소</string>
     <string name="profile_keep_editing">계속 수정</string>
+    <string name="profile_visibility">프로필 공개</string>
+    <string name="profile_visibility_body">공개하면 프로필과 게시된 리뷰를 다른 사용자에게 보여줘요.</string>
+    <string name="profile_visibility_status">현재 %1$s 상태예요.</string>
+    <string name="profile_visibility_public">공개</string>
+    <string name="profile_visibility_private">비공개</string>
     <string name="profile_policy_title">닉네임 및 소개 변경 안내</string>
     <string name="profile_policy_bullet_1">닉네임과 자기소개는 각각 하루 최대 2회 수정할 수 있어요.</string>
     <string name="profile_policy_bullet_2">변경 횟수는 매일 자정에 2회로 초기화돼요.</string>

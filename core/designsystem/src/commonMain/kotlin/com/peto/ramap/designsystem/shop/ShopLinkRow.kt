@@ -15,17 +15,23 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.extension.noRippleClickable
 import com.peto.ramap.theme.AppTextStyle
+import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
+import com.peto.ramap.theme.MapColor
 import com.peto.ramap.theme.RamapTheme
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.ic_close
+import ramap.shared.generated.resources.kakao_map_icon
+import ramap.shared.generated.resources.naver_map_icon
 
 @Composable
 internal fun ShopLinkRow(
@@ -33,27 +39,30 @@ internal fun ShopLinkRow(
     label: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    containerColor: Color = GrayColor.C050,
+    contentColor: Color = GrayColor.C500,
+    shape: Shape = RoundedCornerShape(8.dp),
 ) {
     Row(
         modifier =
             modifier
-                .clip(RoundedCornerShape(8.dp))
-                .background(GrayColor.C050)
+                .clip(shape)
+                .background(containerColor)
                 .noRippleClickable(onClick = onClick)
-                .padding(vertical = 14.dp, horizontal = 16.dp),
+                .padding(vertical = 12.dp, horizontal = 16.dp),
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Image(
             painter = painterResource(icon),
             contentDescription = null,
-            modifier = Modifier.size(24.dp),
+            modifier = Modifier.size(20.dp),
         )
         Spacer(modifier = Modifier.width(8.dp))
         AppText(
             text = label,
             style = AppTextStyle.B1,
-            color = GrayColor.C500,
+            color = contentColor,
         )
     }
 }
@@ -74,14 +83,20 @@ private fun ShopLinkRowPreview() {
             )
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 ShopLinkRow(
-                    icon = Res.drawable.ic_close,
-                    label = "지도로 보기",
+                    icon = Res.drawable.kakao_map_icon,
+                    label = "카카오 지도",
+                    containerColor = MapColor.Kakao,
+                    contentColor = GrayColor.C500,
+                    shape = RoundedCornerShape(100.dp),
                     onClick = {},
                     modifier = Modifier.weight(1f),
                 )
                 ShopLinkRow(
-                    icon = Res.drawable.ic_close,
-                    label = "인스타그램",
+                    icon = Res.drawable.naver_map_icon,
+                    label = "네이버 지도",
+                    containerColor = MapColor.Naver,
+                    contentColor = CommonColor.White,
+                    shape = RoundedCornerShape(100.dp),
                     onClick = {},
                     modifier = Modifier.weight(1f),
                 )
