@@ -14,8 +14,7 @@ internal class DefaultReviewCommunityRepository(
 ) : ReviewCommunityRepository {
     override fun observeChanges() = changes.events
 
-    override suspend fun fetchMyCommunityProfile(): RamapResult<PublicProfile?> =
-        invokeRequest { dataSource.fetchMyCommunityProfile().toDomain() }
+    override suspend fun fetchMyCommunityProfile(): RamapResult<PublicProfile?> = invokeRequest { dataSource.fetchMyCommunityProfile().toDomain() }
 
     override suspend fun fetchPublicProfile(userId: String): RamapResult<PublicProfile?> = invokeRequest { dataSource.fetchPublicProfile(userId)?.toDomain() }
 

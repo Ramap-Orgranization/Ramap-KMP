@@ -1,8 +1,10 @@
 package com.peto.ramap.ui.review.write
 
 import com.peto.ramap.core.result.RamapResult
+import com.peto.ramap.domain.model.review.EditableReview
 import com.peto.ramap.domain.model.review.Review
 import com.peto.ramap.domain.model.review.ReviewImage
+import com.peto.ramap.domain.repository.ReviewLike
 import com.peto.ramap.domain.repository.ReviewRepository
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.NonCancellable
@@ -16,6 +18,9 @@ internal class FakeReviewRepository(
     private val ignoreSubmitCancellation: Boolean = false,
 ) : ReviewRepository {
     val submissions = mutableListOf<Submission>()
+    var editableReview: EditableReview? = null
+    var editResult: RamapResult<Unit> = RamapResult.Success(Unit)
+    val updates = mutableListOf<Update>()
 
     override fun observeChanges(): Flow<Unit> = emptyFlow()
 
@@ -46,4 +51,32 @@ internal class FakeReviewRepository(
         val images: List<ReviewImage>,
         val isPublic: Boolean,
     )
+
+    data class Update(
+        val reviewId: String,
+        val body: String,
+        val retainedImagePaths: List<String>,
+        val newImages: List<ReviewImage>,
+        val isPublic: Boolean,
+    )
+
+    override suspend fun fetchEditableReview(reviewId: String): RamapResult<EditableReview?> = RamapResult.Success(editableReview)
+
+    override suspend fun updateReview(
+        reviewId: String,
+        body: String,
+        retainedImagePaths: List<String>,
+        newImages: List<ReviewImage>,
+        isPublic: Boolean,
+    ): RamapResult<Unit> {
+        updates += Update(reviewId, body, retainedImagePaths, newImages, isPublic)
+        return editResult
+    }
+
+    override suspend fun deleteReview(reviewId: String): RamapResult<Unit> = error("Unexpected review deletion")
+
+    override suspend fun setReviewLike(
+        reviewId: String,
+        liked: Boolean,
+    ): RamapResult<ReviewLike> = error("Unexpected review like")
 }
