@@ -18,6 +18,7 @@ internal class DefaultFetchShopDetailUseCase(
     private val reviewRepository: ReviewRepository,
 ) : FetchShopDetailUseCase {
     private val cache = mutableMapOf<String, ShopDetail>()
+    private var cacheVersion = 0L
 
     /**
      * 매장 상세를 조회한다.
@@ -26,11 +27,14 @@ internal class DefaultFetchShopDetailUseCase(
      * 재검증 실패 시에는 캐시 전체를 그대로 사용한다.
      */
     override suspend fun invoke(shopId: String): RamapResult<ShopDetail> {
+        val requestedVersion = cacheVersion
         val cached = cache[shopId]
-        if (cached != null) return revalidateDetail(cached)
+        if (cached != null) return revalidateDetail(cached, requestedVersion)
 
         val result = fetchDetailWithNoticesAndReviews(shopId)
-        if (result is RamapResult.Success) cache[result.data.shop.id] = result.data
+        if (result is RamapResult.Success && requestedVersion == cacheVersion) {
+            cache[result.data.shop.id] = result.data
+        }
         return result
     }
 
@@ -38,6 +42,11 @@ internal class DefaultFetchShopDetailUseCase(
         cache[shopId]
             ?.let(ShopDetailCacheLookup::Hit)
             ?: ShopDetailCacheLookup.Miss
+
+    override fun clearCache() {
+        cacheVersion++
+        cache.clear()
+    }
 
     override fun updateCachedLikeCount(
         shopId: String,
@@ -52,7 +61,10 @@ internal class DefaultFetchShopDetailUseCase(
     /**
      * 캐시된 매장·웨이팅은 유지하고 이벤트·공지·메뉴·리뷰를 새로 조회해 상세를 갱신한다.
      */
-    private suspend fun revalidateDetail(cached: ShopDetail): RamapResult<ShopDetail> {
+    private suspend fun revalidateDetail(
+        cached: ShopDetail,
+        requestedVersion: Long,
+    ): RamapResult<ShopDetail> {
         val refreshed =
             when (val result = fetchDetailWithNoticesAndReviews(cached.shop.id, cached.reviews)) {
                 is RamapResult.Success -> result.data
@@ -67,7 +79,7 @@ internal class DefaultFetchShopDetailUseCase(
                 menuUpdatedAt = refreshed.menuUpdatedAt,
                 reviews = refreshed.reviews,
             )
-        cache[cached.shop.id] = updated
+        if (requestedVersion == cacheVersion) cache[cached.shop.id] = updated
         return RamapResult.Success(updated)
     }
 

@@ -19,6 +19,10 @@ internal class FakeFetchShopDetailUseCase(
 ) : FetchShopDetailUseCase {
     private val cache = mutableMapOf<String, ShopDetail>()
 
+    override fun clearCache() {
+        cache.clear()
+    }
+
     override suspend fun invoke(shopId: String): RamapResult<ShopDetail> {
         when (val lookup = findCached(shopId)) {
             is ShopDetailCacheLookup.Hit -> return RamapResult.Success(lookup.detail)

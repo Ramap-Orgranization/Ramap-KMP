@@ -44,7 +44,7 @@ internal fun ReviewVisibilitySetting(
             Switch(
                 checked = state.isPublic,
                 onCheckedChange = { onIntent(ReviewWriteIntent.ChangeVisibility(it)) },
-                enabled = !state.isSubmitting,
+                enabled = state.canEdit,
                 colors = SwitchDefaults.colors(checkedThumbColor = CommonColor.White, checkedTrackColor = GrayColor.C500),
             )
         }

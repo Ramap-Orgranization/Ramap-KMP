@@ -82,7 +82,12 @@ internal fun PhotoEditor(
             )
             Spacer(modifier = Modifier.weight(1f))
             AppText(
-                text = stringResource(Res.string.shop_review_image_count, state.images.size, ReviewImage.MAX_COUNT),
+                text =
+                    stringResource(
+                        Res.string.shop_review_image_count,
+                        state.images.size + state.existingImages.size,
+                        ReviewImage.MAX_COUNT,
+                    ),
                 style = AppTextStyle.C1,
                 color = GrayColor.C500,
             )
@@ -97,15 +102,25 @@ internal fun PhotoEditor(
             val slotPitchPx = with(LocalDensity.current) { (PHOTO_SLOT_SIZE + PHOTO_SLOT_SPACING).toPx() }
 
             repeat(ReviewImage.MAX_COUNT) { index ->
-                val image = state.images.getOrNull(index)
+                val existing = state.existingImages.getOrNull(index)
+                val image = state.images.getOrNull(index - state.existingImages.size)
                 if (image == null) {
-                    if (index == state.images.size) {
+                    if (existing != null) {
+                        PhotoSlot(
+                            image = existing.url ?: "",
+                            index = index,
+                            size = PHOTO_SLOT_SIZE,
+                            isSubmitting = !state.canEdit,
+                            onPick = null,
+                            onRemove = { dispatch(ReviewWriteIntent.RemoveExistingImage(index)) },
+                        )
+                    } else if (index == state.images.size + state.existingImages.size) {
                         PhotoSlot(
                             image = null,
                             index = null,
                             size = PHOTO_SLOT_SIZE,
                             onPick = onPick,
-                            isPickEnabled = !state.isSubmitting,
+                            isPickEnabled = state.canEdit,
                         )
                     } else {
                         EmptyPhotoSlot(PHOTO_SLOT_SIZE)
@@ -116,13 +131,20 @@ internal fun PhotoEditor(
                         index = index,
                         size = PHOTO_SLOT_SIZE,
                         slotPitchPx = slotPitchPx,
-                        imageCount = state.images.size,
-                        isSubmitting = state.isSubmitting,
+                        imageCount = state.images.size + state.existingImages.size,
+                        isSubmitting = !state.canEdit,
                         onPick = null,
                         onMove = { fromIndex, toIndex ->
-                            dispatch(ReviewWriteIntent.MoveImage(fromIndex, toIndex))
+                            if (toIndex >= state.existingImages.size) {
+                                dispatch(
+                                    ReviewWriteIntent.MoveImage(
+                                        fromIndex - state.existingImages.size,
+                                        toIndex - state.existingImages.size,
+                                    ),
+                                )
+                            }
                         },
-                        onRemove = { dispatch(ReviewWriteIntent.RemoveImage(index)) },
+                        onRemove = { dispatch(ReviewWriteIntent.RemoveImage(index - state.existingImages.size)) },
                     )
                 }
             }
@@ -179,7 +201,7 @@ private fun DashedPhotoSlot(
 
 @Composable
 private fun PhotoSlot(
-    image: ReviewImage?,
+    image: Any?,
     index: Int?,
     size: Dp,
     slotPitchPx: Float = 0f,
@@ -252,7 +274,7 @@ private fun PhotoSlot(
                 },
     ) {
         AsyncImage(
-            model = image.bytes,
+            model = if (image is ReviewImage) image.bytes else image,
             contentDescription = stringResource(Res.string.review_photo_description, imageIndex + 1),
             modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(12.dp)),
             contentScale = ContentScale.Crop,

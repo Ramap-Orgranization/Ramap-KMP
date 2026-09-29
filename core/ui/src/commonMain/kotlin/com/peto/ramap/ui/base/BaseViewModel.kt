@@ -229,6 +229,39 @@ abstract class BaseViewModel<S : State, I : Intent, SE : SideEffect>(
     }
 
     /**
+     * 낙관적 업데이트(Optimistic Update)와 디바운싱/중복 요청 방지([TaskPolicy.IgnoreNew])를 결합한 작업 실행 함수.
+     * 동일한 항목 작업이 진행 중일 경우 요청을 무시하고, 실패 시 [rollback]을 통해 이전 상태로 되돌린다.
+     */
+    protected fun <T> launchOptimisticTask(
+        taskKey: String,
+        isUpdating: (S) -> Boolean,
+        onStart: S.() -> S,
+        onFinish: S.() -> S = { this },
+        rollback: S.() -> S,
+        loadKey: LoadKey? = null,
+        retryOnNetworkError: Boolean = false,
+        request: suspend () -> RamapResult<T>,
+        onSuccess: suspend (T) -> Unit = {},
+        onError: suspend (RamapError) -> Unit = {},
+    ): Job? {
+        if (isUpdating(currentState)) return null
+        return launchResultTask(
+            taskKey = taskKey,
+            loadKey = loadKey,
+            policy = TaskPolicy.IgnoreNew,
+            onStart = onStart,
+            onFinish = onFinish,
+            retryOnNetworkError = retryOnNetworkError,
+            request = request,
+            onSuccess = onSuccess,
+            onError = { error ->
+                reduce(rollback)
+                onError(error)
+            },
+        )
+    }
+
+    /**
      * [taskKey]에 등록된 작업을 취소하고 종료 상태를 동기적으로 정리한다.
      *
      * 작업이 있으면 레지스트리에서 먼저 제거한 뒤 로딩 카운트와 `onFinish`를 한 번 정리하므로,

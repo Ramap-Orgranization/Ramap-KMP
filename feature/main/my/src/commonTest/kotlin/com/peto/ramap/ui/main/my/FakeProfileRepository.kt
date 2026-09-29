@@ -14,6 +14,9 @@ class FakeProfileRepository : ProfileRepository {
     var fetchResult: RamapResult<AccountProfile>? = null
     var fetchPending: CompletableDeferred<RamapResult<AccountProfile>>? = null
     var ignoreFetchCancellation = false
+    var visibilityResult: RamapResult<AccountProfile>? = null
+    var visibilityPending: CompletableDeferred<RamapResult<AccountProfile>>? = null
+    var ignoreVisibilityCancellation = false
 
     override suspend fun fetchMyProfile(): RamapResult<AccountProfile> {
         val pending = fetchPending
@@ -25,10 +28,9 @@ class FakeProfileRepository : ProfileRepository {
 
     override suspend fun updateMyProfile(draft: ProfileDraft): RamapResult<AccountProfile> = RamapResult.Success(AccountProfile(sessionUserIds.value.orEmpty(), draft.nickname.value, bio = draft.bio?.value.orEmpty()))
 
-    override suspend fun updateProfileVisibility(
-        isPublic: Boolean,
-    ): RamapResult<AccountProfile> =
-        RamapResult.Success(
-            AccountProfile(sessionUserIds.value.orEmpty(), "느긋한차슈", isPublic = isPublic),
-        )
+    override suspend fun updateProfileVisibility(isPublic: Boolean): RamapResult<AccountProfile> {
+        val pending = visibilityPending
+        if (pending != null) return if (ignoreVisibilityCancellation) withContext(NonCancellable) { pending.await() } else pending.await()
+        return visibilityResult ?: RamapResult.Success(AccountProfile(sessionUserIds.value.orEmpty(), "느긋한차슈", isPublic = isPublic))
+    }
 }

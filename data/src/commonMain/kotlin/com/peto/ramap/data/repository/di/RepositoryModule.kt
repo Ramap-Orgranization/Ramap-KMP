@@ -1,7 +1,6 @@
 package com.peto.ramap.data.repository.di
 
 import com.peto.ramap.data.datasource.appnotice.AppNoticeDataSource
-import com.peto.ramap.data.datasource.community.ReviewCommunityDataSource
 import com.peto.ramap.data.datasource.importation.ImportationDataSource
 import com.peto.ramap.data.datasource.notice.OperatingNoticeDataSource
 import com.peto.ramap.data.datasource.personalization.BookmarkShopDataSource
@@ -24,9 +23,9 @@ import com.peto.ramap.data.repository.DefaultProfileRepository
 import com.peto.ramap.data.repository.DefaultPushRegistrationRepository
 import com.peto.ramap.data.repository.DefaultRamenShopRepository
 import com.peto.ramap.data.repository.DefaultReviewCommunityRepository
+import com.peto.ramap.data.repository.DefaultReviewRepository
 import com.peto.ramap.data.repository.DefaultShopRankingRepository
 import com.peto.ramap.data.repository.DefaultShopReportRepository
-import com.peto.ramap.data.repository.DefaultShopReviewRepository
 import com.peto.ramap.data.repository.DefaultShopWaitingSystemRepository
 import com.peto.ramap.data.repository.DefaultSubscribedShopRepository
 import com.peto.ramap.data.repository.ReviewChangeNotifier
@@ -44,9 +43,9 @@ import com.peto.ramap.domain.repository.ProfileRepository
 import com.peto.ramap.domain.repository.PushRegistrationRepository
 import com.peto.ramap.domain.repository.RamenShopRepository
 import com.peto.ramap.domain.repository.ReviewCommunityRepository
+import com.peto.ramap.domain.repository.ReviewRepository
 import com.peto.ramap.domain.repository.ShopRankingRepository
 import com.peto.ramap.domain.repository.ShopReportRepository
-import com.peto.ramap.domain.repository.ShopReviewRepository
 import com.peto.ramap.domain.repository.ShopWaitingSystemRepository
 import com.peto.ramap.domain.repository.SubscribedShopRepository
 import com.peto.ramap.domain.store.ShopPersonalizationStore
@@ -56,10 +55,8 @@ val repositoryModule =
     module {
         single<ProfileRepository> { DefaultProfileRepository(get()) }
         single { ReviewChangeNotifier() }
-        single<ReviewCommunityRepository> {
-            DefaultReviewCommunityRepository(get<ReviewCommunityDataSource>())
-        }
-        single<ShopReviewRepository> { DefaultShopReviewRepository(get(), get()) }
+        single<ReviewCommunityRepository> { DefaultReviewCommunityRepository(get(), get()) }
+        single<ReviewRepository> { DefaultReviewRepository(get(), get()) }
         single<AppUpdateRepository> {
             DefaultAppUpdateRepository(get<AppUpdatePolicyDataSource>())
         }
