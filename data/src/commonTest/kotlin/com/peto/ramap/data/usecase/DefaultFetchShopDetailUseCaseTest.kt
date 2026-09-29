@@ -32,6 +32,27 @@ import kotlin.time.Clock
 
 class DefaultFetchShopDetailUseCaseTest {
     @Test
+    fun `세션 변경 시 캐시 삭제는 이전 계정 비공개 리뷰를 재사용하지 않는다`() =
+        runTest {
+            val initial = detail()
+            val reviews = FakeReviewRepository(reviews = listOf(review(initial.shop.id).copy(isPublic = false)))
+            val useCase =
+                DefaultFetchShopDetailUseCase(
+                    FakeRamenShopRepository(shopDetail = initial),
+                    FakeOperatingNoticeRepository(),
+                    reviews,
+                )
+            useCase(initial.shop.id)
+            assertIs<ShopDetailCacheLookup.Hit>(useCase.findCached(initial.shop.id))
+
+            useCase.clearCache()
+            reviews.error = RamapError.Unknown(IllegalStateException("offline"))
+            assertIs<ShopDetailCacheLookup.Miss>(useCase.findCached(initial.shop.id))
+            val loaded = assertIs<RamapResult.Success<ShopDetail>>(useCase(initial.shop.id)).data
+            assertEquals(emptyList(), loaded.reviews)
+        }
+
+    @Test
     fun `최초 조회와 캐시 재검증은 각각 상세 RPC를 한 번 요청한다`() =
         runTest {
             val initial = detail()

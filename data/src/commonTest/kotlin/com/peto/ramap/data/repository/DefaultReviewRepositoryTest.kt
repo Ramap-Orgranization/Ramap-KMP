@@ -2,8 +2,10 @@ package com.peto.ramap.data.repository
 
 import com.peto.ramap.core.result.getOrThrow
 import com.peto.ramap.data.datasource.review.ReviewDataSource
-import com.peto.ramap.data.model.ShopReviewRequest
+import com.peto.ramap.data.model.EditableReviewResponse
+import com.peto.ramap.data.model.ReviewLikeResponse
 import com.peto.ramap.data.model.ReviewResponse
+import com.peto.ramap.data.model.ShopReviewRequest
 import com.peto.ramap.domain.model.review.ReviewImage
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -48,5 +50,26 @@ class DefaultReviewRepositoryTest {
         ) {
             submittedReview = review
         }
+
+        override suspend fun fetchEditableReview(reviewId: String): Pair<EditableReviewResponse, List<String?>>? = error("Unexpected editable review fetch")
+
+        override suspend fun updateReview(
+            reviewId: String,
+            body: String,
+            retainedImagePaths: List<String>,
+            newImages: List<ReviewImage>,
+            isPublic: Boolean,
+        ) {
+            error("Unexpected review update")
+        }
+
+        override suspend fun deleteReview(reviewId: String) {
+            error("Unexpected review deletion")
+        }
+
+        override suspend fun setReviewLike(
+            reviewId: String,
+            liked: Boolean,
+        ): ReviewLikeResponse = error("Unexpected review like")
     }
 }

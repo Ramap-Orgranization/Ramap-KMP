@@ -39,7 +39,7 @@ import org.koin.dsl.module
 val dataSourceModule =
     module {
         single<ProfileDataSource> { RemoteProfileDataSource(get()) }
-        single<ReviewCommunityDataSource> { RemoteReviewCommunityDataSource(get()) }
+        single<ReviewCommunityDataSource> { RemoteReviewCommunityDataSource(get(), get()) }
         single<ReviewDataSource> { RemoteReviewDataSource(get()) }
         single { NaverImportationDataSource(get(), get<HttpClient>()) }
         single { KakaoImportationDataSource(get()) }

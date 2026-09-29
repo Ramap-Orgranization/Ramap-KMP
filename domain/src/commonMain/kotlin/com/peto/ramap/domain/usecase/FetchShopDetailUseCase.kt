@@ -7,6 +7,8 @@ interface FetchShopDetailUseCase {
 
     fun findCached(shopId: String): ShopDetailCacheLookup
 
+    fun clearCache()
+
     fun updateCachedLikeCount(
         shopId: String,
         enabled: Boolean,

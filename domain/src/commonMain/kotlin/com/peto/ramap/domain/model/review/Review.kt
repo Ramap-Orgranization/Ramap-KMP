@@ -12,6 +12,9 @@ data class Review(
     val author: ReviewAuthor = ReviewAuthor("", ""),
     val moderationStatus: ReviewModerationStatus = ReviewModerationStatus.PUBLISHED,
     val isPublic: Boolean = true,
+    val visitNumber: Int = 1,
+    val likeCount: Int = 0,
+    val isLiked: Boolean = false,
 ) {
     companion object {
         fun isValidBody(body: String): Boolean = codePointCount(body.trim()) in BODY_LENGTH
