@@ -1,13 +1,11 @@
 package com.peto.ramap.data.datasource.community
 
-import com.peto.ramap.data.model.CommunityMembershipResponse
+import com.peto.ramap.data.model.MyCommunityProfileResponse
 import com.peto.ramap.data.model.PublicProfileResponse
 import com.peto.ramap.data.model.ReviewResponse
 
 internal interface ReviewCommunityDataSource {
-    suspend fun fetchMyMembership(): CommunityMembershipResponse
-
-    suspend fun acceptGuidelines(version: String): CommunityMembershipResponse
+    suspend fun fetchMyCommunityProfile(): MyCommunityProfileResponse
 
     suspend fun fetchPublicProfile(userId: String): PublicProfileResponse?
 

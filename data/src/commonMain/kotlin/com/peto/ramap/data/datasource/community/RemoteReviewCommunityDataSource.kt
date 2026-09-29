@@ -1,7 +1,7 @@
 package com.peto.ramap.data.datasource.community
 
 import com.peto.ramap.data.datasource.review.ReviewDataSource
-import com.peto.ramap.data.model.CommunityMembershipResponse
+import com.peto.ramap.data.model.MyCommunityProfileResponse
 import com.peto.ramap.data.model.PublicProfileResponse
 import com.peto.ramap.data.model.ReviewResponse
 import io.github.jan.supabase.SupabaseClient
@@ -16,19 +16,13 @@ internal class RemoteReviewCommunityDataSource(
     private val client: SupabaseClient,
     private val reviewDataSource: ReviewDataSource,
 ) : ReviewCommunityDataSource {
-    override suspend fun fetchMyMembership(): CommunityMembershipResponse {
-        val membership = client.postgrest.rpc("fetch_my_community_membership").decodeAs<CommunityMembershipResponse>()
-        return membership.copy(avatarUrl = signedAvatar(membership.avatarPath))
+    override suspend fun fetchMyCommunityProfile(): MyCommunityProfileResponse {
+        val profile =
+            client.postgrest
+                .rpc("fetch_my_community_membership")
+                .decodeAs<MyCommunityProfileResponse>()
+        return profile.copy(avatarUrl = signedAvatar(profile.avatarPath))
     }
-
-    override suspend fun acceptGuidelines(version: String): CommunityMembershipResponse =
-        client.postgrest
-            .rpc(
-                "accept_community_guidelines",
-                buildJsonObject {
-                    put("p_guidelines_version", version)
-                },
-            ).decodeAs()
 
     override suspend fun fetchPublicProfile(userId: String): PublicProfileResponse? {
         val profile =

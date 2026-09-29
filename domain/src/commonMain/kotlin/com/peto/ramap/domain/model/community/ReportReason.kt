@@ -8,4 +8,9 @@ enum class ReportReason {
     VIOLENCE,
     PRIVACY,
     OTHER,
+    ;
+
+    companion object {
+        const val MAX_DETAILS_LENGTH = 1000
+    }
 }

@@ -2,8 +2,6 @@ package com.peto.ramap.data.repository
 
 import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.data.datasource.community.ReviewCommunityDataSource
-import com.peto.ramap.domain.model.community.CommunityGuidelines
-import com.peto.ramap.domain.model.community.CommunityMembership
 import com.peto.ramap.domain.model.community.PublicProfile
 import com.peto.ramap.domain.model.community.ReportReason
 import com.peto.ramap.domain.model.review.Review
@@ -16,12 +14,8 @@ internal class DefaultReviewCommunityRepository(
 ) : ReviewCommunityRepository {
     override fun observeChanges() = changes.events
 
-    override suspend fun fetchMyMembership(): RamapResult<CommunityMembership> = invokeRequest { dataSource.fetchMyMembership().toDomain() }
-
-    override suspend fun acceptGuidelines(version: String): RamapResult<CommunityMembership> =
-        invokeRequest {
-            dataSource.acceptGuidelines(version).toDomain().also { changes.notifyChanged() }
-        }
+    override suspend fun fetchMyCommunityProfile(): RamapResult<PublicProfile?> =
+        invokeRequest { dataSource.fetchMyCommunityProfile().toDomain() }
 
     override suspend fun fetchPublicProfile(userId: String): RamapResult<PublicProfile?> = invokeRequest { dataSource.fetchPublicProfile(userId)?.toDomain() }
 
@@ -51,7 +45,7 @@ internal class DefaultReviewCommunityRepository(
         details: String,
     ): RamapResult<Unit> =
         invokeRequest {
-            require(details.length <= CommunityGuidelines.MAX_REPORT_DETAILS_LENGTH) { "Report details too long" }
+            require(details.length <= ReportReason.MAX_DETAILS_LENGTH) { "Report details too long" }
             dataSource.report(type, id, reason.name.lowercase(), details.trim())
         }
 
