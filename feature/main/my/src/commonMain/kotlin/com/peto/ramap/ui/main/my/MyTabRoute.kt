@@ -3,9 +3,7 @@ package com.peto.ramap.ui.main.my
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -14,15 +12,10 @@ import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
@@ -37,69 +30,54 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.peto.ramap.designsystem.button.login.LoginButton
-import com.peto.ramap.designsystem.component.Skeleton
 import com.peto.ramap.designsystem.dialog.CommonDialog
-import com.peto.ramap.designsystem.profile.ProfileAvatar
-import com.peto.ramap.designsystem.profile.ProfileDotField
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.designsystem.toast.ToastManager
 import com.peto.ramap.domain.model.auth.LoginType
-import com.peto.ramap.domain.model.auth.supportedLoginTypes
-import com.peto.ramap.domain.model.community.PublicProfile
 import com.peto.ramap.domain.model.profile.AccountProfile
-import com.peto.ramap.extension.noRippleClickable
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.ChromaticColor
+import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.RamapTheme
 import com.peto.ramap.ui.base.ObserveAsEvents
+import com.peto.ramap.ui.main.my.component.BlockedUsersDialog
+import com.peto.ramap.ui.main.my.component.GuestProfileHeader
+import com.peto.ramap.ui.main.my.component.MyMenuRow
+import com.peto.ramap.ui.main.my.component.MyProfileHeader
 import com.peto.ramap.ui.main.my.component.MyTabSkeleton
 import com.peto.ramap.ui.main.my.contract.MyTabIntent
 import com.peto.ramap.ui.main.my.contract.MyTabSideEffect
 import com.peto.ramap.ui.main.my.contract.MyTabUiState
-import org.jetbrains.compose.resources.DrawableResource
-import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 import ramap.shared.generated.resources.Res
-import ramap.shared.generated.resources.ic_chevron_right
 import ramap.shared.generated.resources.ic_notification
 import ramap.shared.generated.resources.ic_person
 import ramap.shared.generated.resources.ic_profile_bookmark
-import ramap.shared.generated.resources.ic_profile_edit
+import ramap.shared.generated.resources.ic_profile_private
+import ramap.shared.generated.resources.ic_profile_public
 import ramap.shared.generated.resources.ic_profile_report
 import ramap.shared.generated.resources.ic_setting
 import ramap.shared.generated.resources.ic_visibility_off
-import ramap.shared.generated.resources.login_required_message
-import ramap.shared.generated.resources.profile_bio_empty
 import ramap.shared.generated.resources.profile_discard
-import ramap.shared.generated.resources.profile_edit
 import ramap.shared.generated.resources.profile_load_failed
-import ramap.shared.generated.resources.profile_photo
 import ramap.shared.generated.resources.profile_retry
-import ramap.shared.generated.resources.profile_title
 import ramap.shared.generated.resources.profile_visibility
 import ramap.shared.generated.resources.profile_visibility_body
 import ramap.shared.generated.resources.profile_visibility_private
 import ramap.shared.generated.resources.profile_visibility_public
 import ramap.shared.generated.resources.profile_visibility_status
 import ramap.shared.generated.resources.review_blocked_users
-import ramap.shared.generated.resources.review_blocked_users_empty
-import ramap.shared.generated.resources.review_close
 import ramap.shared.generated.resources.settings_bookmarked_shops_menu
 import ramap.shared.generated.resources.settings_hidden_shops_menu
 import ramap.shared.generated.resources.settings_report_menu
@@ -182,14 +160,14 @@ internal fun MyTabContent(
     onReportClick: () -> Unit,
     onLoginClick: (LoginType) -> Unit,
 ) {
-    val profileEditDescription = stringResource(Res.string.profile_edit)
     val isLoading = !state.sessionResolved || (state.loading && state.profile == null)
     val isGuest = state.sessionResolved && state.userId == null
+    val isPublic = state.profile?.isPublic == true
     Column(
         modifier =
             Modifier
                 .fillMaxSize()
-                .background(Color.White)
+                .background(CommonColor.White)
                 .padding(top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding())
                 .verticalScroll(rememberScrollState()),
     ) {
@@ -201,12 +179,17 @@ internal fun MyTabContent(
                     .padding(end = 14.dp),
             horizontalArrangement = Arrangement.End,
         ) {
-            IconButton(onClick = onVisibilityClick, enabled = state.profile != null) {
-                Icon(
-                    painter = painterResource(Res.drawable.ic_visibility_off),
-                    contentDescription = stringResource(Res.string.profile_visibility),
-                    tint = GrayColor.C500,
-                )
+            if (state.userId != null) {
+                IconButton(onClick = onVisibilityClick, enabled = state.profile != null) {
+                    Image(
+                        painter =
+                            painterResource(
+                                if (isPublic) Res.drawable.ic_profile_public else Res.drawable.ic_profile_private,
+                            ),
+                        contentDescription = stringResource(Res.string.profile_visibility),
+                        modifier = Modifier.size(36.dp),
+                    )
+                }
             }
             IconButton(onClick = onSettingsClick) {
                 Icon(
@@ -216,7 +199,6 @@ internal fun MyTabContent(
                 )
             }
         }
-        val isPublic = state.profile?.isPublic == true
         CommonDialog(
             visible = isVisibilityDialogOpen,
             confirmText =
@@ -268,78 +250,12 @@ internal fun MyTabContent(
 
             isGuest -> GuestProfileHeader(onLoginClick = onLoginClick)
 
-            else -> {
-                Column(
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .semantics { contentDescription = profileEditDescription }
-                            .noRippleClickable(
-                                role = Role.Button,
-                                onClick = onProfileClick,
-                            ),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    Box(
-                        modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .height(160.dp),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        ProfileDotField(modifier = Modifier.fillMaxSize())
-                        Box(modifier = Modifier.size(128.dp)) {
-                            ProfileAvatar(
-                                model = state.profile?.avatarUrl,
-                                description = stringResource(Res.string.profile_photo),
-                                modifier = Modifier.size(128.dp),
-                            )
-                            Box(
-                                modifier =
-                                    Modifier
-                                        .align(Alignment.BottomEnd)
-                                        .offset(x = 6.dp, y = 6.dp)
-                                        .size(40.dp)
-                                        .border(2.dp, Color.White, CircleShape)
-                                        .clip(CircleShape)
-                                        .background(ChromaticColor.Orange400),
-                                contentAlignment = Alignment.Center,
-                            ) {
-                                Icon(
-                                    painter = painterResource(Res.drawable.ic_profile_edit),
-                                    contentDescription = null,
-                                    modifier = Modifier.size(20.dp),
-                                    tint = Color.White,
-                                )
-                            }
-                        }
-                    }
-                    AppText(
-                        text = state.profile?.nickname ?: stringResource(Res.string.profile_title),
-                        style = AppTextStyle.T1,
-                        color = GrayColor.C500,
-                    )
-                    val profile = state.profile
-                    val bio = profile?.bio.orEmpty()
-                    if (bio.isNotBlank()) {
-                        AppText(
-                            text = bio,
-                            style = AppTextStyle.C1,
-                            color = GrayColor.C400,
-                            modifier = Modifier.padding(top = 4.dp, start = 20.dp, end = 20.dp),
-                            textAlign = TextAlign.Center,
-                        )
-                    } else if (!state.failed) {
-                        AppText(
-                            text = stringResource(Res.string.profile_bio_empty),
-                            style = AppTextStyle.C1,
-                            color = GrayColor.C400,
-                            modifier = Modifier.padding(top = 4.dp, start = 20.dp, end = 20.dp),
-                            textAlign = TextAlign.Center,
-                        )
-                    }
-                }
-            }
+            else ->
+                MyProfileHeader(
+                    profile = state.profile,
+                    failed = state.failed,
+                    onProfileClick = onProfileClick,
+                )
         }
         if (state.failed && !isGuest) {
             Row(
@@ -377,8 +293,8 @@ internal fun MyTabContent(
                         title = Res.string.review_blocked_users,
                         count = null,
                         hasCount = false,
-                        iconBackground = Color(0xFFF2F4F8),
-                        iconTint = Color(0xFF8491A3),
+                        iconBackground = GrayColor.C050,
+                        iconTint = GrayColor.C300,
                         isLoading = isLoading,
                         onClick = onBlockedUsersClick,
                     )
@@ -391,8 +307,8 @@ internal fun MyTabContent(
                         icon = Res.drawable.ic_profile_bookmark,
                         title = Res.string.settings_bookmarked_shops_menu,
                         count = state.bookmarkedCount,
-                        iconBackground = Color(0xFFFFF3E9),
-                        iconTint = Color(0xFFE77730),
+                        iconBackground = ChromaticColor.Orange050,
+                        iconTint = ChromaticColor.Orange300,
                         isLoading = isLoading,
                         onClick = onBookmarkedShopsClick,
                     )
@@ -405,8 +321,8 @@ internal fun MyTabContent(
                         icon = Res.drawable.ic_notification,
                         title = Res.string.settings_subscribed_shops_menu,
                         count = state.notificationCount,
-                        iconBackground = Color(0xFFFFF8E9),
-                        iconTint = Color(0xFFEAA827),
+                        iconBackground = ChromaticColor.Yellow050,
+                        iconTint = ChromaticColor.Yellow300,
                         isLoading = isLoading,
                         onClick = onSubscribedShopsClick,
                     )
@@ -419,8 +335,8 @@ internal fun MyTabContent(
                         icon = Res.drawable.ic_visibility_off,
                         title = Res.string.settings_hidden_shops_menu,
                         count = state.hiddenCount,
-                        iconBackground = Color(0xFFF2F4F8),
-                        iconTint = Color(0xFF8491A3),
+                        iconBackground = GrayColor.C050,
+                        iconTint = GrayColor.C300,
                         isLoading = isLoading,
                         onClick = onHiddenShopsClick,
                     )
@@ -434,186 +350,14 @@ internal fun MyTabContent(
                     icon = Res.drawable.ic_profile_report,
                     title = Res.string.settings_report_menu,
                     count = null,
-                    iconBackground = Color(0xFFFFF0F1),
-                    iconTint = Color(0xFFF25871),
+                    iconBackground = ChromaticColor.Red050,
+                    iconTint = ChromaticColor.Red300,
                     hasCount = false,
-                    height = if (isGuest) 59.dp else 52.dp,
                     onClick = onReportClick,
                 )
             }
             Spacer(modifier = Modifier.height(24.dp))
         }
-    }
-}
-
-@Composable
-private fun BlockedUsersDialog(
-    visible: Boolean,
-    users: List<PublicProfile>,
-    onDismiss: () -> Unit,
-    onProfileClick: (String) -> Unit,
-) {
-    if (!visible) return
-    CommonDialog(
-        visible = visible,
-        confirmText = stringResource(Res.string.review_close),
-        onDismissRequest = onDismiss,
-        onConfirm = onDismiss,
-        content = {
-            AppText(
-                text = stringResource(Res.string.review_blocked_users),
-                style = AppTextStyle.T1,
-                color = GrayColor.C500,
-                textAlign = TextAlign.Center,
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-            if (users.isEmpty()) {
-                AppText(
-                    text = stringResource(Res.string.review_blocked_users_empty),
-                    style = AppTextStyle.B2,
-                    color = GrayColor.C400,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(vertical = 16.dp),
-                )
-            } else {
-                LazyColumn(
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .heightIn(max = 300.dp),
-                ) {
-                    items(users, key = { it.userId }) { profile ->
-                        Row(
-                            modifier =
-                                Modifier
-                                    .fillMaxWidth()
-                                    .clickable { onProfileClick(profile.userId) }
-                                    .padding(vertical = 12.dp, horizontal = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            AppText(
-                                text = profile.nickname,
-                                style = AppTextStyle.B1,
-                                color = GrayColor.C500,
-                                modifier = Modifier.weight(1f),
-                            )
-                        }
-                    }
-                }
-            }
-        },
-    )
-}
-
-@Composable
-private fun GuestProfileHeader(
-    onLoginClick: (LoginType) -> Unit,
-) {
-    Box(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .height(160.dp),
-        contentAlignment = Alignment.Center,
-    ) {
-        ProfileDotField(modifier = Modifier.fillMaxSize())
-        ProfileAvatar(
-            model = null,
-            description = stringResource(Res.string.profile_photo),
-            modifier = Modifier.size(128.dp),
-        )
-    }
-    AppText(
-        text = stringResource(Res.string.login_required_message),
-        style = AppTextStyle.H3Brand,
-        color = GrayColor.C400,
-        modifier = Modifier.fillMaxWidth(),
-        textAlign = TextAlign.Center,
-    )
-    Column(
-        modifier = Modifier.padding(top = 15.dp, start = 22.dp, end = 22.dp),
-        verticalArrangement = Arrangement.spacedBy(9.dp),
-    ) {
-        supportedLoginTypes().forEach { type ->
-            LoginButton(
-                type = type,
-                modifier = Modifier.fillMaxWidth(),
-                onClick = { onLoginClick(type) },
-            )
-        }
-    }
-}
-
-@Composable
-private fun MyMenuRow(
-    icon: DrawableResource,
-    title: StringResource,
-    count: Int?,
-    iconBackground: Color,
-    iconTint: Color,
-    hasCount: Boolean = true,
-    isLoading: Boolean = false,
-    height: Dp = 52.dp,
-    onClick: () -> Unit,
-) {
-    Row(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .height(height)
-                .clickable(role = Role.Button, onClick = onClick)
-                .padding(horizontal = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Box(
-            modifier =
-                Modifier
-                    .size(32.dp)
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(iconBackground),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(
-                painter = painterResource(icon),
-                contentDescription = null,
-                modifier = Modifier.size(18.dp),
-                tint = iconTint,
-            )
-        }
-        AppText(
-            text = stringResource(title),
-            style = AppTextStyle.B1,
-            color = GrayColor.C500,
-            modifier =
-                Modifier
-                    .weight(1f)
-                    .padding(start = 12.dp),
-        )
-        if (hasCount && isLoading && count == null) {
-            Skeleton(
-                modifier = Modifier.size(width = 24.dp, height = 18.dp),
-                shape = RoundedCornerShape(8.dp),
-            )
-        } else if (count != null) {
-            AppText(
-                text = count.toString(),
-                style = AppTextStyle.C2,
-                color = iconTint,
-                modifier =
-                    Modifier
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(iconBackground)
-                        .padding(horizontal = 7.dp, vertical = 3.dp),
-            )
-        }
-        Image(
-            painter = painterResource(Res.drawable.ic_chevron_right),
-            contentDescription = null,
-            modifier =
-                Modifier
-                    .padding(start = 8.dp)
-                    .size(16.dp),
-        )
     }
 }
 
