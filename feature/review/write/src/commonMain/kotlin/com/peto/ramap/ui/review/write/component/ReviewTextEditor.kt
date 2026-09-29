@@ -59,7 +59,7 @@ internal fun ReviewTextEditor(
                     value = state.body,
                     onValueChange = { onIntent(ReviewWriteIntent.ChangeBody(it)) },
                     modifier = Modifier.fillMaxWidth(),
-                    enabled = !state.isSubmitting,
+                    enabled = state.canEdit,
                     placeholder = {
                         AppText(
                             text = stringResource(Res.string.shop_review_placeholder),
