@@ -34,6 +34,7 @@ import com.peto.ramap.fake.FakeOperatingNoticeRepository
 import com.peto.ramap.fake.FakePersonalizationRepository
 import com.peto.ramap.fake.FakeProfileRepository
 import com.peto.ramap.fake.FakeRamenShopRepository
+import com.peto.ramap.fake.FakeReviewCommunityRepository
 import com.peto.ramap.fake.FakeShopReportRepository
 import com.peto.ramap.fake.FakeShopWaitingSystemRepository
 import com.peto.ramap.fixture.BOUNDS_FIXTURE
@@ -2722,6 +2723,7 @@ private fun mapViewModel(
         LoginAnalytics(FakeAnalyticsTracker(), FakeCrashReporter()),
         FakeOperatingNoticeRepository(),
         FakeMapReviewRepository(),
+        FakeReviewCommunityRepository(),
         FakeProfileRepository(null),
     )
 

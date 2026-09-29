@@ -10,4 +10,5 @@ enum class MapLoadKey : LoadKey {
     /** 선택한 매장의 상세·웨이팅·이벤트 정보를 조회하는 로딩. */
     ShopDetail,
     ReviewAction,
+    ReviewReport,
 }

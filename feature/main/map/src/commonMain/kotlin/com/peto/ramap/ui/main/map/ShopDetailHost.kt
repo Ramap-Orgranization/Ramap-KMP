@@ -121,14 +121,18 @@ fun ShopDetailHost(
                     }
                 },
                 currentUserId = uiState.currentUserId,
+                currentProfileIsPublic = uiState.currentProfileIsPublic,
                 actingReviewId = uiState.actingReviewId,
                 onOpenProfile = onOpenProfile,
                 onReviewLike = { viewModel.dispatch(MapIntent.OnReviewLikeToggled(it)) },
                 onReviewEdit = { onEditReview(it.shopId, it.id) },
                 onReviewDelete = { viewModel.dispatch(MapIntent.OnReviewDeleted(it)) },
+                onReviewReport = { viewModel.dispatch(MapIntent.OnReviewReportRequested(it)) },
             )
         }
     }
+
+    MapReviewReportDialog(state = uiState, onIntent = viewModel::dispatch)
 
     selectedNotice?.let { notice ->
         OperatingNoticeBottomSheet(

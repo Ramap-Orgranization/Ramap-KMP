@@ -37,6 +37,7 @@ import com.peto.ramap.ui.main.map.contract.MapIntent.OnRecentSearchDeleted
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnRecentSearchSelected
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnRecentSearchesCleared
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnRequestedShopDismissed
+import com.peto.ramap.ui.main.map.contract.MapIntent.OnReviewReportRequested
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnSearchResultsDismissed
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnSelectedShopFocusConsumed
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopDetailDismissed
@@ -201,11 +202,13 @@ fun MapRoute(
                         .OnReviewDeleted(it),
                 )
             },
+            onReviewReport = { viewModel.dispatch(OnReviewReportRequested(it)) },
             onOperatingNoticeNavigate = onOperatingNoticeNavigate,
             showShopDetail = shouldShowShopDetail,
             showReviewsOnOpen = shouldShowReviews,
         )
     }
+    MapReviewReportDialog(state = uiState, onIntent = viewModel::dispatch)
 }
 
 private const val OPERATING_NOTICE_REFRESH_MILLIS = 60_000L

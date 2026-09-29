@@ -22,7 +22,9 @@ import com.peto.ramap.designsystem.dialog.CommonDialog
 import com.peto.ramap.designsystem.review.ReviewCard
 import com.peto.ramap.designsystem.review.ReviewPage
 import com.peto.ramap.designsystem.review.ReviewPixelHeader
+import com.peto.ramap.designsystem.review.ReviewReportDialog
 import com.peto.ramap.designsystem.text.AppText
+import com.peto.ramap.designsystem.toast.ToastManager
 import com.peto.ramap.domain.model.community.PublicProfile
 import com.peto.ramap.domain.model.community.ReportReason
 import com.peto.ramap.domain.model.community.ReviewModerationStatus
@@ -40,6 +42,7 @@ import com.peto.ramap.ui.profile.review.contract.ProfileReviewSideEffect
 import com.peto.ramap.ui.profile.review.contract.ProfileReviewTarget
 import com.peto.ramap.ui.profile.review.contract.ProfileReviewUiState
 import org.jetbrains.compose.resources.stringResource
+import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.community_guidelines_title
@@ -55,9 +58,6 @@ import ramap.shared.generated.resources.review_delete_confirm_title
 import ramap.shared.generated.resources.review_delete_failed
 import ramap.shared.generated.resources.review_load_failed
 import ramap.shared.generated.resources.review_profile_title
-import ramap.shared.generated.resources.review_report
-import ramap.shared.generated.resources.review_report_send
-import ramap.shared.generated.resources.review_report_user
 import ramap.shared.generated.resources.review_retry
 import ramap.shared.generated.resources.review_unblock
 import ramap.shared.generated.resources.review_unblock_confirm
@@ -74,6 +74,7 @@ fun ReviewProfileRoute(
     onShopClick: (String) -> Unit,
     onEditReview: (String, String) -> Unit,
     viewModel: ProfileReviewViewModel = koinViewModel(),
+    toastManager: ToastManager = koinInject(),
 ) {
     ReviewFeedRoute(
         target = ProfileReviewTarget(userId),
@@ -84,6 +85,7 @@ fun ReviewProfileRoute(
         onShopClick = onShopClick,
         onEditReview = onEditReview,
         viewModel = viewModel,
+        toastManager = toastManager,
     )
 }
 
@@ -97,6 +99,7 @@ private fun ReviewFeedRoute(
     onShopClick: (String) -> Unit,
     onEditReview: (String, String) -> Unit,
     viewModel: ProfileReviewViewModel,
+    toastManager: ToastManager,
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     LaunchedEffect(target) {
@@ -105,6 +108,7 @@ private fun ReviewFeedRoute(
     ObserveAsEvents(viewModel.sideEffect) {
         when (it) {
             ProfileReviewSideEffect.LoginRequired -> onLogin()
+            is ProfileReviewSideEffect.ShowToast -> toastManager.show(it.data)
         }
     }
 
@@ -185,6 +189,8 @@ private fun ReviewFeedRoute(
             items(state.reviews, key = { it.id }) { review ->
                 ReviewCard(
                     review = review,
+                    currentUserId = state.currentUserId,
+                    currentProfileIsPublic = state.currentProfileIsPublic,
                     onOpenProfile = onOpenProfile,
                     onReport =
                         if (review.author.userId.isNotBlank() && review.author.userId != state.currentUserId) {
@@ -232,44 +238,21 @@ private fun ReviewFeedRoute(
     var reportDetails by remember(state.reportTargetId) { mutableStateOf("") }
     val dismissAction = { viewModel.dispatch(ProfileReviewIntent.DismissAction) }
 
-    CommonDialog(
+    ReviewReportDialog(
         visible = state.reportTargetId != null,
-        confirmText = stringResource(Res.string.review_report_send),
-        dismissText = stringResource(Res.string.shop_review_cancel),
-        confirmEnabled = selectedReason != null && !state.isActing,
-        confirmIsLoading = state.isActing,
-        dismissEnabled = !state.isActing,
-        dismissOnBackPress = !state.isActing,
-        dismissOnClickOutside = !state.isActing,
-        onDismissRequest = { if (!state.isActing) dismissAction() },
-        onDismiss = dismissAction,
-        onConfirm = {
-            selectedReason?.let { reason ->
-                viewModel.dispatch(ProfileReviewIntent.SendReport(reason, reportDetails))
-            }
+        selectedReason = selectedReason,
+        onReasonSelected = {
+            selectedReason = it
+            reportDetails = reportDetails.take(it.maxDetailsLength)
         },
-    ) {
-        AppText(
-            text =
-                stringResource(
-                    if (state.reportingUser) {
-                        Res.string.review_report_user
-                    } else {
-                        Res.string.review_report
-                    },
-                ),
-            style = AppTextStyle.B3,
-            color = GrayColor.C500,
-        )
-        ReviewReportFormContent(
-            selectedReason = selectedReason,
-            onReasonSelected = { selectedReason = it },
-            details = reportDetails,
-            onDetailsChanged = { reportDetails = it },
-            isActing = state.isActing,
-            actionFailed = state.actionFailed,
-        )
-    }
+        details = reportDetails,
+        onDetailsChanged = { reportDetails = it },
+        isActing = state.isActing,
+        onDismissRequest = { if (!state.isActing) dismissAction() },
+        onSubmit = { reason, details ->
+            viewModel.dispatch(ProfileReviewIntent.SendReport(reason, details))
+        },
+    )
 
     CommonDialog(
         visible = state.deleteTarget != null,

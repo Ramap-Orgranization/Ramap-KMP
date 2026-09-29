@@ -1,6 +1,7 @@
 package com.peto.ramap.designsystem.review
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -55,6 +56,7 @@ import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.ic_heart_filled
 import ramap.shared.generated.resources.ic_heart_outline
 import ramap.shared.generated.resources.ic_more_vert
+import ramap.shared.generated.resources.ic_review_private
 import ramap.shared.generated.resources.review_author_review_count
 import ramap.shared.generated.resources.review_author_unknown
 import ramap.shared.generated.resources.review_collapse
@@ -64,6 +66,7 @@ import ramap.shared.generated.resources.review_like
 import ramap.shared.generated.resources.review_more
 import ramap.shared.generated.resources.review_open_shop
 import ramap.shared.generated.resources.review_photo_description
+import ramap.shared.generated.resources.review_private_status
 import ramap.shared.generated.resources.review_report
 import ramap.shared.generated.resources.review_status_removed
 import ramap.shared.generated.resources.review_visit_number
@@ -73,6 +76,8 @@ import ramap.shared.generated.resources.shop_detail_more_actions
 fun ReviewCard(
     review: Review,
     modifier: Modifier = Modifier,
+    currentUserId: String? = null,
+    currentProfileIsPublic: Boolean? = null,
     onOpenProfile: (String) -> Unit = {},
     onReport: (() -> Unit)? = null,
     onShopClick: (() -> Unit)? = null,
@@ -251,6 +256,33 @@ fun ReviewCard(
                     style = AppTextStyle.C1,
                 )
             }
+            if ((!review.isPublic || currentProfileIsPublic == false) &&
+                !currentUserId.isNullOrBlank() &&
+                review.author.userId == currentUserId
+            ) {
+                Row(
+                    modifier =
+                        Modifier
+                            .padding(horizontal = 16.dp)
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(GrayColor.C050)
+                            .padding(horizontal = 8.dp, vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    Image(
+                        painter = painterResource(Res.drawable.ic_review_private),
+                        contentDescription = null,
+                        modifier = Modifier.size(14.dp),
+                        colorFilter = ColorFilter.tint(GrayColor.C300),
+                    )
+                    AppText(
+                        text = stringResource(Res.string.review_private_status),
+                        style = AppTextStyle.C1,
+                        color = GrayColor.C300,
+                    )
+                }
+            }
             Row(
                 modifier =
                     Modifier
@@ -343,7 +375,15 @@ private fun ReviewCardPreview(
                 onShopClick = {},
             )
             ReviewCard(
-                review = review,
+                review = review.copy(isPublic = false),
+                currentUserId = review.author.userId,
+                onEdit = {},
+                onDelete = {},
+            )
+            ReviewCard(
+                review = review.copy(isPublic = true),
+                currentUserId = review.author.userId,
+                currentProfileIsPublic = false,
                 onEdit = {},
                 onDelete = {},
             )

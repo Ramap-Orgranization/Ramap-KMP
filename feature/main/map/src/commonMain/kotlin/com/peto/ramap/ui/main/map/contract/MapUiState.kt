@@ -2,6 +2,7 @@ package com.peto.ramap.ui.main.map.contract
 
 import com.peto.ramap.designsystem.shop.model.ShopDetailSheetUiState
 import com.peto.ramap.domain.model.notice.OperatingNotice
+import com.peto.ramap.domain.model.review.Review
 import com.peto.ramap.domain.model.shop.Location
 import com.peto.ramap.domain.model.shop.MapBounds
 import com.peto.ramap.domain.model.shop.RamenShop
@@ -86,8 +87,12 @@ data class MapUiState(
      */
     val isLoggedIn: Boolean = false,
     val currentUserId: String? = null,
+    val currentProfileIsPublic: Boolean? = null,
     val actingReviewId: String? = null,
+    val reportReview: Review? = null,
 ) : LoadableState<MapUiState> {
+    val isReportingReview: Boolean
+        get() = loadState.isLoading(MapLoadKey.ReviewReport)
     val selectedShop: RamenShop?
         get() =
             when (val state = shopDetailState) {

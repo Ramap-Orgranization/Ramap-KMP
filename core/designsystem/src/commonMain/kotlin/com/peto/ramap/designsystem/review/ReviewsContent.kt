@@ -27,6 +27,7 @@ internal fun ReviewsContent(
     onOpenProfile: (String) -> Unit,
     onWriteReviewClick: () -> Unit,
     currentUserId: String? = null,
+    currentProfileIsPublic: Boolean? = null,
     actingReviewId: String? = null,
     onLike: (Review) -> Unit = {},
     onEdit: (Review) -> Unit = {},
@@ -69,6 +70,8 @@ internal fun ReviewsContent(
                 key(review.id) {
                     ReviewCard(
                         review = review,
+                        currentUserId = currentUserId,
+                        currentProfileIsPublic = currentProfileIsPublic,
                         onOpenProfile = onOpenProfile,
                         onLike =
                             if (review.author.userId != currentUserId && review.isPublic && review.moderationStatus == ReviewModerationStatus.PUBLISHED) {

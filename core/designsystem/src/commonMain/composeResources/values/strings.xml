@@ -70,7 +70,7 @@
     <string name="review_status_removed">삭제된 리뷰</string>
     <string name="review_open_shop">매장 보기</string>
     <string name="review_action_failed">처리하지 못했어요. 잠시 후 다시 시도해 주세요.</string>
-    <string name="review_action_success">처리 완료</string>
+    <string name="review_action_success">신고가 완료되었습니다.</string>
     <string name="review_action_success_description">요청이 접수되었어요.</string>
     <string name="review_block_confirm">%1$s님을 차단할까요? 이 사용자의 리뷰가 숨겨져요.</string>
     <string name="review_blocked_empty">차단한 사용자의 리뷰는 표시하지 않아요</string>
@@ -84,6 +84,7 @@
     <string name="review_body_required">*</string>
     <string name="review_body_count">%1$d / %2$d자</string>
     <string name="review_visibility_title">리뷰 공개 설정</string>
+    <string name="review_private_status">나만 보기</string>
     <string name="review_visibility_description">공개 시 매장 리뷰에 등록되며 다른 방문자에게 노출됩니다.</string>
     <string name="review_photos">사진 첨부(선택)</string>
     <string name="review_body_title">리뷰 작성</string>
@@ -96,9 +97,13 @@
     <string name="review_reason_sexual">음란·성적 콘텐츠</string>
     <string name="review_reason_spam">광고·도배</string>
     <string name="review_reason_violence">폭력·위협</string>
-    <string name="review_report_description">신고 사유를 선택해 주세요. 운영자가 내용을 확인해요.</string>
-    <string name="review_report_details">추가 설명 (선택, 최대 1,000글자)</string>
-    <string name="review_report_send">신고하기</string>
+    <string name="review_report_description">신고 사유를 선택해 주세요.</string>
+    <string name="review_report_policy_title">안전하고 투명한 커뮤니티 보호 정책</string>
+    <string name="review_report_policy_body">접수된 신고는 즉시 자동 삭제되지 않으며, 가이드라인에 따라 운영자가 내용을 면밀히 확인한 후 신속하게 처리됩니다.</string>
+    <string name="review_report_details">추가 설명 (최대 %1$d자)</string>
+    <string name="review_report_details_required">추가 설명 (필수, 최대 %1$d자)</string>
+    <string name="review_report_title">리뷰 신고</string>
+    <string name="review_report_send">신고 접수하기</string>
     <string name="review_report_user">사용자 신고</string>
     <string name="review_retry">다시 시도</string>
     <string name="review_block">차단</string>

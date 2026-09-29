@@ -270,6 +270,7 @@ internal fun MapContent(
             onEventClick = onEventClick,
             onReviewsClick = onReviewsClick,
             currentUserId = uiState.currentUserId,
+            currentProfileIsPublic = uiState.currentProfileIsPublic,
             actingReviewId = uiState.actingReviewId,
             onOpenProfile = onOpenProfile,
             onReviewLike = onReviewLike,

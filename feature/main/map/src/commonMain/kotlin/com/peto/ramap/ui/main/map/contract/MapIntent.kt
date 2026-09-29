@@ -2,6 +2,7 @@ package com.peto.ramap.ui.main.map.contract
 
 import com.peto.ramap.analytics.AnalyticsSource
 import com.peto.ramap.domain.model.auth.LoginType
+import com.peto.ramap.domain.model.community.ReportReason
 import com.peto.ramap.domain.model.report.ShopInformationField
 import com.peto.ramap.domain.model.review.Review
 import com.peto.ramap.domain.model.shop.Category
@@ -19,6 +20,17 @@ sealed interface MapIntent : Intent {
     data class OnReviewDeleted(
         val review: Review,
     ) : MapIntent
+
+    data class OnReviewReportRequested(
+        val review: Review,
+    ) : MapIntent
+
+    data class OnReviewReportSubmitted(
+        val reason: ReportReason,
+        val details: String,
+    ) : MapIntent
+
+    data object OnReviewReportDismissed : MapIntent
 
     data object OnReviewsChanged : MapIntent
 

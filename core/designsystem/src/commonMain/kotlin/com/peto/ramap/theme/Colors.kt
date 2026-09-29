@@ -27,14 +27,19 @@ object SystemColor {
 }
 
 object ChromaticColor {
+    val Blue050 = Color(0xFFF3F8FF)
+    val Blue100 = Color(0xFFD9E7FF)
+    val Blue500 = Color(0xFF1E4FC4)
+    val Orange050 = Color(0xFFFFF3E9)
+    val Orange300 = Color(0xFFE77730)
+    val Yellow050 = Color(0xFFFFF8E9)
+    val Yellow300 = Color(0xFFEAA827)
+    val Red050 = Color(0xFFFFF0F1)
+    val Red300 = Color(0xFFF25871)
     val Green400 = Color(0xFFBEF0A3)
     val Blue400 = Color(0xFF3972FD)
     val Yellow400 = Color(0xFFFDF2E3)
-    val Pink400 = Color(0xFFFF96AD)
-    val Pink300 = Color(0xFFFFC0CE)
-    val Pink200 = Color(0xFFFFD5DE)
     val Orange400 = Color(0xFFE95432)
-    val Purple400 = Color(0xFFDCC3FF)
     val Cream400 = Color(0xFFFFF8EC)
     val Apricot400 = Color(0xFFFDE0B2)
 }

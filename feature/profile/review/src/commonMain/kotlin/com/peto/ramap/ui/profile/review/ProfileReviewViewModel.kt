@@ -2,6 +2,8 @@ package com.peto.ramap.ui.profile.review
 
 import androidx.lifecycle.viewModelScope
 import com.peto.ramap.core.result.RamapResult
+import com.peto.ramap.designsystem.toast.model.ToastData
+import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.community.PublicProfile
 import com.peto.ramap.domain.model.community.ReviewModerationStatus
 import com.peto.ramap.domain.model.review.Review
@@ -16,10 +18,14 @@ import com.peto.ramap.ui.profile.review.contract.ProfileReviewSideEffect
 import com.peto.ramap.ui.profile.review.contract.ProfileReviewTarget
 import com.peto.ramap.ui.profile.review.contract.ProfileReviewUiState
 import com.peto.ramap.ui.task.TaskPolicy
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import ramap.shared.generated.resources.Res
+import ramap.shared.generated.resources.review_action_failed
+import ramap.shared.generated.resources.review_action_success
 import kotlin.coroutines.coroutineContext
 
 class ProfileReviewViewModel(
@@ -29,11 +35,13 @@ class ProfileReviewViewModel(
     private val profileRepository: ProfileRepository,
 ) : BaseViewModel<ProfileReviewUiState, ProfileReviewIntent, ProfileReviewSideEffect>(ProfileReviewUiState()) {
     private var target: ProfileReviewTarget? = null
+    private var profileVisibilityJob: Job? = null
 
     init {
         viewModelScope.launch {
             reviewRepository.observeChanges().collect {
                 if (target != null) load(reset = true, preserveVisible = true)
+                refreshCurrentProfileVisibility()
             }
         }
         viewModelScope.launch {
@@ -41,6 +49,7 @@ class ProfileReviewViewModel(
                 .sessionUserIds
                 .distinctUntilChanged()
                 .collect { userId ->
+                    profileVisibilityJob?.cancel()
                     cancelTask(FEED_TASK)
                     cancelTask(ACTION_TASK)
                     cancelTask(LIKE_TASK)
@@ -202,13 +211,29 @@ class ProfileReviewViewModel(
             copy(
                 isAuthenticated = true,
                 currentUserId = ownProfile?.userId,
+                currentProfileIsPublic =
+                    currentProfileIsPublic.takeIf { currentUserId == ownProfile?.userId },
                 profile = profile,
                 blockedUsers = blockedUsers,
                 isBlocked = profile != null && blockedUsers.any { it.userId == profile.userId },
                 hasMore = profile != null,
             )
         }
+        refreshCurrentProfileVisibility()
         return true
+    }
+
+    private fun refreshCurrentProfileVisibility() {
+        profileVisibilityJob?.cancel()
+        val userId = currentState.currentUserId ?: return
+        profileVisibilityJob =
+            viewModelScope.launch {
+                val result = profileRepository.fetchMyProfile()
+                if (currentState.currentUserId != userId) return@launch
+                val profile = (result as? RamapResult.Success)?.data
+                val verifiedProfile = profile?.takeIf { it.userId == userId } ?: return@launch
+                reduce { copy(currentProfileIsPublic = verifiedProfile.isPublic) }
+            }
     }
 
     private fun openReport(
@@ -218,6 +243,8 @@ class ProfileReviewViewModel(
     ) {
         if (
             !requireLogin() ||
+            currentState.currentUserId == null ||
+            id.isBlank() ||
             authorId.isBlank() ||
             authorId == currentState.currentUserId
         ) {
@@ -330,6 +357,7 @@ class ProfileReviewViewModel(
 
     private fun sendReport(intent: ProfileReviewIntent.SendReport) {
         val id = currentState.reportTargetId ?: return
+        if (!intent.reason.isValidDetails(intent.details)) return
         val reportingUser = currentState.reportingUser
         launchResultTask(
             taskKey = ACTION_TASK,
@@ -345,12 +373,21 @@ class ProfileReviewViewModel(
             },
             onSuccess = {
                 if (coroutineContext.isActive) {
-                    reduce { copy(reportTargetId = null, actionSucceeded = true) }
+                    reduce { copy(reportTargetId = null) }
+                    trySideEffect(
+                        ProfileReviewSideEffect.ShowToast(
+                            ToastData(Res.string.review_action_success, ToastType.SUCCESS),
+                        ),
+                    )
                 }
             },
             onError = {
                 if (coroutineContext.isActive) {
-                    reduce { copy(actionFailed = true) }
+                    trySideEffect(
+                        ProfileReviewSideEffect.ShowToast(
+                            ToastData(Res.string.review_action_failed, ToastType.ERROR),
+                        ),
+                    )
                 }
             },
         )

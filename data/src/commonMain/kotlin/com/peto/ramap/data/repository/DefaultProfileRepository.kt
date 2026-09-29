@@ -21,6 +21,7 @@ import kotlin.uuid.Uuid
 
 internal class DefaultProfileRepository(
     private val dataSource: ProfileDataSource,
+    private val changes: ReviewChangeNotifier = ReviewChangeNotifier(),
     private val currentTime: () -> Instant = { Clock.System.now() },
 ) : ProfileRepository {
     override val sessionUserIds = dataSource.sessionUserIds
@@ -56,6 +57,8 @@ internal class DefaultProfileRepository(
         invokeRequest {
             val userId = requireNotNull(dataSource.currentUserId()) { ERROR_MISSING_AUTHENTICATED_USER }
             val response = dataSource.updateProfileVisibility(isPublic)
+            check(response.userId == userId) { ERROR_MISMATCHED_PROFILE_OWNER }
+            changes.notifyChanged()
             accountProfile(userId, response, tolerateAvatarSigningFailure = true)
         }
 

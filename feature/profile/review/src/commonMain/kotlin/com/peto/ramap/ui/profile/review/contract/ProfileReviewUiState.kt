@@ -12,6 +12,7 @@ data class ProfileReviewUiState(
     val profile: PublicProfile? = null,
     val isAuthenticated: Boolean = false,
     val currentUserId: String? = null,
+    val currentProfileIsPublic: Boolean? = null,
     val blockedUsers: List<PublicProfile> = emptyList(),
     val isBlocked: Boolean = false,
     val reportTargetId: String? = null,

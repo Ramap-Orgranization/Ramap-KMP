@@ -53,7 +53,7 @@ import org.koin.dsl.module
 
 val repositoryModule =
     module {
-        single<ProfileRepository> { DefaultProfileRepository(get()) }
+        single<ProfileRepository> { DefaultProfileRepository(get(), get()) }
         single { ReviewChangeNotifier() }
         single<ReviewCommunityRepository> { DefaultReviewCommunityRepository(get(), get()) }
         single<ReviewRepository> { DefaultReviewRepository(get(), get()) }
