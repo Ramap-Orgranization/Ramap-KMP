@@ -34,11 +34,37 @@ class NavigationState(
         }
     }
 
+    fun showMyRoot() {
+        val myStack = backStacks.getValue(TabStatus.MY)
+        myStack.clear()
+        myStack.add(ScreenRoutes.MyTabRoutes)
+        selectTopLevelTab(TabStatus.MY)
+    }
+
+    fun showReviewShopOnMap(shopId: String) {
+        if (selectedTab == TabStatus.MAP) {
+            showOnce(ScreenRoutes.MapRoutes(shopId = shopId, showShopDetail = true))
+            return
+        }
+        val mapStack = backStacks.getValue(TabStatus.MAP)
+        mapStack.clear()
+        mapStack.add(ScreenRoutes.MapRoutes(shopId = shopId, returnTab = selectedTab, showShopDetail = true))
+        // Preserve the originating review stack, including the event tab, for Back.
+        selectedTab = TabStatus.MAP
+    }
+
     fun showProfileEdit() = showOnce(ScreenRoutes.ProfileEditRoutes)
 
-    fun showSettings() = showOnce(ScreenRoutes.SettingsRoutes)
+    fun showProfileReviews(userId: String) = showOnce(ScreenRoutes.ProfileReviewRoutes(userId))
 
     fun showReviewWrite(shopId: String) = showOnce(ScreenRoutes.ReviewWriteRoutes(shopId))
+
+    fun showReviewEdit(
+        shopId: String,
+        reviewId: String,
+    ) = showOnce(ScreenRoutes.ReviewWriteRoutes(shopId, reviewId))
+
+    fun showSettings() = showOnce(ScreenRoutes.SettingsRoutes)
 
     fun showAccountSettings() = showOnce(ScreenRoutes.AccountSettingsRoutes)
 
@@ -121,13 +147,6 @@ class NavigationState(
         mapBackStack.clear()
         mapBackStack.add(ScreenRoutes.MapRoutes())
         selectTopLevelTab(TabStatus.MAP)
-    }
-
-    fun showMyRoot() {
-        val myBackStack = backStacks.getValue(TabStatus.MY)
-        myBackStack.clear()
-        myBackStack.add(ScreenRoutes.MyTabRoutes)
-        selectTopLevelTab(TabStatus.MY)
     }
 
     fun showShopOnMap(

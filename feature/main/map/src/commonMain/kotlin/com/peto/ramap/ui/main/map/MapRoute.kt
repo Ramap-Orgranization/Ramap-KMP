@@ -60,6 +60,8 @@ import kotlin.time.Duration.Companion.milliseconds
 @Composable
 fun MapRoute(
     onReviewNavigate: (String) -> Unit,
+    onOpenProfile: (String) -> Unit = {},
+    onEditReview: (String, String) -> Unit = { _, _ -> },
     isBackEnabled: Boolean = true,
     onDetailDismissed: () -> Unit = {},
     onEventNavigate: (ShopEvent) -> Unit = {},
@@ -184,6 +186,20 @@ fun MapRoute(
                 } else {
                     onLoginGuideRequested()
                 }
+            },
+            onOpenProfile = onOpenProfile,
+            onReviewLike = {
+                viewModel.dispatch(
+                    com.peto.ramap.ui.main.map.contract.MapIntent
+                        .OnReviewLikeToggled(it),
+                )
+            },
+            onReviewEdit = { onEditReview(it.shopId, it.id) },
+            onReviewDelete = {
+                viewModel.dispatch(
+                    com.peto.ramap.ui.main.map.contract.MapIntent
+                        .OnReviewDeleted(it),
+                )
             },
             onOperatingNoticeNavigate = onOperatingNoticeNavigate,
             showShopDetail = shouldShowShopDetail,

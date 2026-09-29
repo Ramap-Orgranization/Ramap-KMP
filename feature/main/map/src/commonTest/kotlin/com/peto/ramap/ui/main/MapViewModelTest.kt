@@ -32,6 +32,7 @@ import com.peto.ramap.fake.FakeLoginRepository
 import com.peto.ramap.fake.FakeNotificationSettingsRepository
 import com.peto.ramap.fake.FakeOperatingNoticeRepository
 import com.peto.ramap.fake.FakePersonalizationRepository
+import com.peto.ramap.fake.FakeProfileRepository
 import com.peto.ramap.fake.FakeRamenShopRepository
 import com.peto.ramap.fake.FakeShopReportRepository
 import com.peto.ramap.fake.FakeShopWaitingSystemRepository
@@ -2720,6 +2721,8 @@ private fun mapViewModel(
         MapAnalytics(FakeAnalyticsTracker()),
         LoginAnalytics(FakeAnalyticsTracker(), FakeCrashReporter()),
         FakeOperatingNoticeRepository(),
+        FakeMapReviewRepository(),
+        FakeProfileRepository(null),
     )
 
 private fun loggedInRepository(): FakeLoginRepository =

@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -36,6 +35,7 @@ import com.peto.ramap.designsystem.shop.ShopDetailContent
 import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.model.notice.OperatingNotice
 import com.peto.ramap.domain.model.report.ShopInformationField
+import com.peto.ramap.domain.model.review.Review
 import com.peto.ramap.domain.model.shop.Category
 import com.peto.ramap.domain.model.shop.Location
 import com.peto.ramap.domain.model.shop.MapBounds
@@ -54,7 +54,6 @@ import com.skydoves.balloon.Balloon
 import com.skydoves.balloon.rememberBalloonBuilder
 import com.skydoves.balloon.rememberBalloonState
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun MapContent(
     uiState: MapUiState,
@@ -86,6 +85,11 @@ internal fun MapContent(
     onShopMapLinkClick: (RamenShop, String) -> Unit,
     onEventClick: (ShopEvent) -> Unit,
     onReviewsClick: (String) -> Unit,
+    onOpenProfile: (String) -> Unit = {},
+    onReviewLike: (Review) -> Unit = {},
+    onReviewEdit: (Review) -> Unit = {},
+    onReviewDelete: (Review) -> Unit = {},
+    onReviewReport: (Review) -> Unit = {},
     onOperatingNoticeNavigate: (OperatingNotice) -> Unit = {},
     onReportSubmit: (Set<ShopInformationField>, String) -> Unit,
     onBookmarkedShopsToggle: () -> Unit,
@@ -265,6 +269,13 @@ internal fun MapContent(
             },
             onEventClick = onEventClick,
             onReviewsClick = onReviewsClick,
+            currentUserId = uiState.currentUserId,
+            actingReviewId = uiState.actingReviewId,
+            onOpenProfile = onOpenProfile,
+            onReviewLike = onReviewLike,
+            onReviewEdit = onReviewEdit,
+            onReviewDelete = onReviewDelete,
+            onReviewReport = onReviewReport,
             onOperatingNoticeClick = { selectedNotice = it },
             onReportSubmit = onReportSubmit,
         )

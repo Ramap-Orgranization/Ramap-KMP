@@ -6,6 +6,7 @@ import com.peto.ramap.ui.base.Intent
 sealed interface ReviewWriteIntent : Intent {
     data class Open(
         val shopId: String,
+        val reviewId: String? = null,
     ) : ReviewWriteIntent
 
     data class ChangeBody(
@@ -19,6 +20,12 @@ sealed interface ReviewWriteIntent : Intent {
     data class RemoveImage(
         val index: Int,
     ) : ReviewWriteIntent
+
+    data class RemoveExistingImage(
+        val index: Int,
+    ) : ReviewWriteIntent
+
+    data object ReloadReview : ReviewWriteIntent
 
     data class MoveImage(
         val fromIndex: Int,

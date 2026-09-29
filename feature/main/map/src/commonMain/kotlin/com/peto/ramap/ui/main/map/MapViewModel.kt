@@ -12,9 +12,11 @@ import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.auth.LoginSessionState
 import com.peto.ramap.domain.model.auth.LoginType
+import com.peto.ramap.domain.model.community.ReviewModerationStatus
 import com.peto.ramap.domain.model.personalization.ShopPersonalization
 import com.peto.ramap.domain.model.report.ShopInformationField
 import com.peto.ramap.domain.model.report.ShopInformationReport
+import com.peto.ramap.domain.model.review.Review
 import com.peto.ramap.domain.model.shop.Category
 import com.peto.ramap.domain.model.shop.Location
 import com.peto.ramap.domain.model.shop.MapBounds
@@ -24,7 +26,9 @@ import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.domain.model.shop.SearchQuery
 import com.peto.ramap.domain.repository.LoginRepository
 import com.peto.ramap.domain.repository.OperatingNoticeRepository
+import com.peto.ramap.domain.repository.ProfileRepository
 import com.peto.ramap.domain.repository.RamenShopRepository
+import com.peto.ramap.domain.repository.ReviewRepository
 import com.peto.ramap.domain.repository.ShopReportRepository
 import com.peto.ramap.domain.store.PersonalizationBootstrapState
 import com.peto.ramap.domain.store.ShopPersonalizationStore
@@ -78,8 +82,10 @@ import com.peto.ramap.ui.main.map.model.location.LocationFocusStatus
 import com.peto.ramap.ui.main.map.viewport.ViewportLoadResult
 import com.peto.ramap.ui.main.map.viewport.ViewportShopLoader
 import com.peto.ramap.ui.task.TaskPolicy
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
@@ -96,6 +102,8 @@ import ramap.shared.generated.resources.location_permission_enable_message
 import ramap.shared.generated.resources.location_permission_settings_action
 import ramap.shared.generated.resources.login_success_message
 import ramap.shared.generated.resources.personalization_update_failure_message
+import ramap.shared.generated.resources.review_delete_failed
+import ramap.shared.generated.resources.review_like_failed
 import ramap.shared.generated.resources.search_result_empty_message
 import ramap.shared.generated.resources.search_result_hidden_only_message
 import ramap.shared.generated.resources.shop_information_report_failure_message
@@ -113,6 +121,8 @@ class MapViewModel(
     private val mapAnalytics: MapAnalytics,
     private val loginAnalytics: LoginAnalytics,
     private val operatingNoticeRepository: OperatingNoticeRepository,
+    private val reviewRepository: ReviewRepository,
+    private val profileRepository: ProfileRepository,
 ) : BaseViewModel<MapUiState, MapIntent, MapSideEffect>(initialState = MapUiState()) {
     private val viewportShopLoader = ViewportShopLoader(ramenShopRepository, viewModelScope)
     private var pendingMapAction: PendingMapAction? = null
@@ -120,6 +130,8 @@ class MapViewModel(
 
     init {
         viewModelScope.launch { observeSessionState() }
+        viewModelScope.launch { observeReviewSession() }
+        viewModelScope.launch { reviewRepository.observeChanges().collect { refreshReviews() } }
         viewModelScope.launch { observePersonalization() }
         viewModelScope.launch { observeRecentSearches() }
         viewModelScope.launch { observeRecentlyViewedShops() }
@@ -166,12 +178,147 @@ class MapViewModel(
 
     override suspend fun handleIntent(intent: MapIntent) {
         when {
+            handleReviewIntent(intent) -> Unit
             handleViewportIntent(intent) -> Unit
             handleShopIntent(intent) -> Unit
             handleSearchIntent(intent) -> Unit
             handlePersonalizationIntent(intent) -> Unit
             else -> handleAccountIntent(intent)
         }
+    }
+
+    private suspend fun observeReviewSession() {
+        profileRepository.sessionUserIds.collectLatest { userId ->
+            if (currentState.currentUserId != userId) {
+                cancelTask(REVIEW_ACTION_TASK_KEY)
+                cancelTask(SHOP_DETAIL_TASK_KEY)
+                fetchShopDetailUseCase.clearCache()
+                val visibleShop = currentState.selectedShop
+                val selectedShopId =
+                    when (val detailState = currentState.shopDetailState) {
+                        is ShopDetailSheetUiState.Content -> detailState.detail.shop.id
+                        is ShopDetailSheetUiState.Loading -> detailState.shopId
+                        is ShopDetailSheetUiState.Error -> detailState.shopId
+                        ShopDetailSheetUiState.Closed -> null
+                    }
+                reduce {
+                    copy(
+                        currentUserId = userId,
+                        actingReviewId = null,
+                        shopDetailState =
+                            selectedShopId?.let { ShopDetailSheetUiState.Loading(it, visibleShop) }
+                                ?: shopDetailState,
+                    )
+                }
+                selectedShopId?.let { loadShopDetail(it, selectShopOnSuccess = visibleShop == null) }
+            }
+        }
+    }
+
+    private fun handleReviewIntent(intent: MapIntent): Boolean {
+        when (intent) {
+            is MapIntent.OnReviewLikeToggled -> toggleReviewLike(intent.review)
+            is MapIntent.OnReviewDeleted -> deleteReview(intent.review)
+            MapIntent.OnReviewsChanged -> refreshReviews()
+            else -> return false
+        }
+        return true
+    }
+
+    private fun toggleReviewLike(review: Review) {
+        if (review.author.userId == currentState.currentUserId ||
+            !review.isPublic ||
+            review.moderationStatus != ReviewModerationStatus.PUBLISHED
+        ) {
+            return
+        }
+        if (currentState.currentUserId == null) {
+            trySideEffect(ShowLoginGuide)
+            return
+        }
+        val actingUserId = currentState.currentUserId
+        val newIsLiked = !review.isLiked
+        val newLikeCount = if (newIsLiked) review.likeCount + 1 else review.likeCount - 1
+
+        launchOptimisticTask(
+            taskKey = "$REVIEW_ACTION_TASK_KEY:${review.id}",
+            isUpdating = { review.id == it.actingReviewId },
+            loadKey = MapLoadKey.ReviewAction,
+            onStart = {
+                copy(actingReviewId = review.id).also {
+                    updateVisibleReview(review.id) { it.copy(isLiked = newIsLiked, likeCount = newLikeCount) }
+                }
+            },
+            onFinish = { copy(actingReviewId = null) },
+            rollback = {
+                copy(actingReviewId = null).also {
+                    updateVisibleReview(review.id) { it.copy(isLiked = review.isLiked, likeCount = review.likeCount) }
+                }
+            },
+            request = { reviewRepository.setReviewLike(review.id, newIsLiked) },
+            onSuccess = { result ->
+                if (!currentCoroutineContext().isActive || currentState.currentUserId != actingUserId) {
+                    return@launchOptimisticTask
+                }
+                updateVisibleReview(review.id) { it.copy(likeCount = result.likeCount, isLiked = result.isLiked) }
+                reduce { copy(actingReviewId = null) }
+            },
+            onError = {
+                if (!currentCoroutineContext().isActive) return@launchOptimisticTask
+                reduce { copy(actingReviewId = null) }
+                showToast(Res.string.review_like_failed, ToastType.ERROR)
+            },
+        )
+    }
+
+    private fun deleteReview(review: Review) {
+        if (review.author.userId != currentState.currentUserId) return
+        val actingUserId = currentState.currentUserId
+        launchResultTask(
+            taskKey = REVIEW_ACTION_TASK_KEY,
+            loadKey = MapLoadKey.ReviewAction,
+            policy = TaskPolicy.IgnoreNew,
+            onStart = { copy(actingReviewId = review.id) },
+            request = { reviewRepository.deleteReview(review.id) },
+            onSuccess = {
+                if (!currentCoroutineContext().isActive || currentState.currentUserId != actingUserId) {
+                    return@launchResultTask
+                }
+                updateVisibleReview(review.id) { null }
+                reduce { copy(actingReviewId = null) }
+            },
+            onError = {
+                if (!currentCoroutineContext().isActive) return@launchResultTask
+                reduce { copy(actingReviewId = null) }
+                showToast(Res.string.review_delete_failed, ToastType.ERROR)
+            },
+        )
+    }
+
+    private fun updateVisibleReview(
+        reviewId: String,
+        update: (Review) -> Review?,
+    ) {
+        reduce {
+            val content = shopDetailState as? ShopDetailSheetUiState.Content ?: return@reduce this
+            copy(
+                shopDetailState =
+                    content.copy(
+                        detail =
+                            content.detail.copy(
+                                reviews =
+                                    content.detail.reviews.mapNotNull { review ->
+                                        if (review.id == reviewId) update(review) else review
+                                    },
+                            ),
+                    ),
+            )
+        }
+    }
+
+    private fun refreshReviews() {
+        fetchShopDetailUseCase.clearCache()
+        currentState.selectedShop?.id?.let(::loadShopDetail)
     }
 
     private fun handleViewportIntent(intent: MapIntent): Boolean {
@@ -1028,7 +1175,10 @@ class MapViewModel(
                 }
             },
         ) {
-            handleShopDetailResult(shopId, selectShopOnSuccess, fetchShopDetailUseCase(shopId))
+            val result = fetchShopDetailUseCase(shopId)
+            if (currentCoroutineContext().isActive) {
+                handleShopDetailResult(shopId, selectShopOnSuccess, result)
+            }
         }
     }
 
@@ -1226,6 +1376,7 @@ class MapViewModel(
         private const val SEARCH_RESULT_LIMIT = 50
         private const val SEARCH_TASK_KEY = "map-search"
         private const val SHOP_DETAIL_TASK_KEY = "map-shop-detail"
+        private const val REVIEW_ACTION_TASK_KEY = "map-review-action"
         private const val SHOP_REPORT_TASK_KEY = "map-shop-report"
         private const val SIGN_IN_TASK_KEY = "map-sign-in"
         private const val PERSONALIZED_SHOPS_TASK_KEY = "map-personalized-shops"

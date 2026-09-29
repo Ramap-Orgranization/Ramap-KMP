@@ -23,6 +23,7 @@ import ramap.shared.generated.resources.shop_review_image_invalid
 @Composable
 fun ShopReviewWriteRoute(
     shopId: String,
+    reviewId: String? = null,
     onBack: () -> Unit,
     onSubmitted: () -> Unit,
     onLogin: () -> Unit,
@@ -30,12 +31,12 @@ fun ShopReviewWriteRoute(
     viewModel: ReviewWriteViewModel = koinViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-    LaunchedEffect(shopId) {
-        viewModel.dispatch(ReviewWriteIntent.Open(shopId))
+    LaunchedEffect(shopId, reviewId) {
+        viewModel.dispatch(ReviewWriteIntent.Open(shopId, reviewId))
     }
     val imagePicker =
         rememberImagesPicker(
-            maxSelectionCount = ReviewImage.MAX_COUNT - state.images.size,
+            maxSelectionCount = if (state.canEdit) ReviewImage.MAX_COUNT - state.images.size - state.existingImages.size else 0,
             onImagesPicked = { images ->
                 for ((bytes, mimeType) in images) {
                     viewModel.dispatch(ReviewWriteIntent.AddImage(ReviewImage(bytes, mimeType)))
@@ -52,7 +53,9 @@ fun ShopReviewWriteRoute(
             is ReviewWriteSideEffect.ShowToast -> {
                 val action =
                     if (it.canRetry) {
-                        ToastAction(Res.string.review_retry) { viewModel.dispatch(ReviewWriteIntent.Load) }
+                        ToastAction(Res.string.review_retry) {
+                            viewModel.dispatch(if (reviewId == null) ReviewWriteIntent.Load else ReviewWriteIntent.ReloadReview)
+                        }
                     } else {
                         null
                     }

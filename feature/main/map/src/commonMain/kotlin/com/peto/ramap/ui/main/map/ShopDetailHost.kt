@@ -31,6 +31,8 @@ fun ShopDetailHost(
     onDismiss: () -> Unit,
     onShowOnMap: (String) -> Unit,
     onReviewNavigate: (String) -> Unit,
+    onOpenProfile: (String) -> Unit = {},
+    onEditReview: (String, String) -> Unit = { _, _ -> },
     isNavigationBarPadded: Boolean = false,
     onEventNavigate: (ShopEvent) -> Unit = {},
     originSource: AnalyticsSource = AnalyticsSource.MAP,
@@ -118,6 +120,12 @@ fun ShopDetailHost(
                         onLoginGuideRequested()
                     }
                 },
+                currentUserId = uiState.currentUserId,
+                actingReviewId = uiState.actingReviewId,
+                onOpenProfile = onOpenProfile,
+                onReviewLike = { viewModel.dispatch(MapIntent.OnReviewLikeToggled(it)) },
+                onReviewEdit = { onEditReview(it.shopId, it.id) },
+                onReviewDelete = { viewModel.dispatch(MapIntent.OnReviewDeleted(it)) },
             )
         }
     }
