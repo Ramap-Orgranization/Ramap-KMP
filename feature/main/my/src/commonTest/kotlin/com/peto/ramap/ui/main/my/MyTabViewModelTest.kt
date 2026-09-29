@@ -1,14 +1,22 @@
 package com.peto.ramap.ui.main.my
 
+import app.cash.turbine.test
+import com.peto.ramap.core.result.RamapError
 import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.coroutinesTest
+import com.peto.ramap.domain.model.community.PublicProfile
 import com.peto.ramap.domain.model.personalization.ShopPersonalization
 import com.peto.ramap.domain.model.profile.AccountProfile
 import com.peto.ramap.fake.FakePersonalizationRepository
+import com.peto.ramap.fake.FakeReviewCommunityRepository
 import com.peto.ramap.ui.main.my.contract.MyTabIntent
+import com.peto.ramap.ui.main.my.contract.MyTabSideEffect
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runCurrent
+import ramap.shared.generated.resources.Res
+import ramap.shared.generated.resources.profile_save_failed
+import ramap.shared.generated.resources.review_blocked_users_empty
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -123,5 +131,129 @@ class MyTabViewModelTest {
             assertNull(viewModel.uiState.value.profile)
             assertNull(viewModel.uiState.value.userId)
             assertFalse(viewModel.uiState.value.loading)
+        }
+
+    @Test
+    fun `공개 설정 저장에 성공하면 프로필을 갱신한다`() =
+        coroutinesTest {
+            val profiles = FakeProfileRepository()
+            val viewModel = MyTabViewModel(profiles, FakeReviewCommunityRepository(), FakePersonalizationRepository())
+            runCurrent()
+
+            viewModel.dispatch(MyTabIntent.SaveVisibility(true))
+            runCurrent()
+
+            assertTrue(
+                viewModel.uiState.value.profile
+                    ?.isPublic == true,
+            )
+        }
+
+    @Test
+    fun `공개 설정 저장 실패는 저장된 공개 상태를 유지하고 토스트를 표시한다`() =
+        coroutinesTest {
+            val profiles = FakeProfileRepository()
+            profiles.visibilityResult = RamapResult.Error(RamapError.Unknown(IllegalStateException("failed")))
+            val viewModel = MyTabViewModel(profiles, FakeReviewCommunityRepository(), FakePersonalizationRepository())
+            runCurrent()
+
+            viewModel.sideEffect.test {
+                viewModel.dispatch(MyTabIntent.SaveVisibility(true))
+                runCurrent()
+
+                val sideEffect = awaitItem()
+                assertTrue(sideEffect is MyTabSideEffect.ShowToast)
+                assertEquals(Res.string.profile_save_failed, sideEffect.data.message)
+                assertFalse(
+                    viewModel.uiState.value.profile
+                        ?.isPublic == true,
+                )
+            }
+        }
+
+    @Test
+    fun `같은 공개 상태 저장은 프로필 변경 요청을 하지 않는다`() =
+        coroutinesTest {
+            val profiles = FakeProfileRepository()
+            val viewModel = MyTabViewModel(profiles, FakeReviewCommunityRepository(), FakePersonalizationRepository())
+            runCurrent()
+
+            viewModel.dispatch(MyTabIntent.SaveVisibility(false))
+            runCurrent()
+            assertFalse(
+                viewModel.uiState.value.profile
+                    ?.isPublic == true,
+            )
+        }
+
+    @Test
+    fun `로그아웃 뒤 늦게 완료된 공개 설정 저장은 이전 프로필을 복원하지 않는다`() =
+        coroutinesTest {
+            val profiles = FakeProfileRepository()
+            val pending = CompletableDeferred<RamapResult<AccountProfile>>()
+            profiles.visibilityPending = pending
+            profiles.ignoreVisibilityCancellation = true
+            val viewModel = MyTabViewModel(profiles, FakeReviewCommunityRepository(), FakePersonalizationRepository())
+            runCurrent()
+
+            viewModel.dispatch(MyTabIntent.SaveVisibility(true))
+            runCurrent()
+            profiles.sessionUserIds.value = null
+            runCurrent()
+            pending.complete(RamapResult.Success(AccountProfile("first", "느긋한차슈", isPublic = true)))
+            runCurrent()
+
+            assertNull(viewModel.uiState.value.userId)
+            assertNull(viewModel.uiState.value.profile)
+        }
+
+    @Test
+    fun `차단한 사용자가 있으면 대화상자를 열고 목록을 로드한다`() =
+        coroutinesTest {
+            val profiles = FakeProfileRepository()
+            val community =
+                FakeReviewCommunityRepository(
+                    blockedUsersResult = RamapResult.Success(listOf(PublicProfile("user1", "차단사용자1"))),
+                )
+            val viewModel = MyTabViewModel(profiles, community, FakePersonalizationRepository())
+            runCurrent()
+
+            viewModel.sideEffect.test {
+                viewModel.dispatch(MyTabIntent.OpenBlockedUsers)
+                runCurrent()
+
+                val sideEffect = awaitItem()
+                assertTrue(sideEffect is MyTabSideEffect.OpenBlockedUsersDialog)
+
+                val state = viewModel.uiState.value
+                assertEquals(1, state.blockedUsers.size)
+                assertEquals("차단사용자1", state.blockedUsers.first().nickname)
+
+                viewModel.dispatch(MyTabIntent.DismissBlockedUsers)
+                runCurrent()
+
+                assertEquals(0, viewModel.uiState.value.blockedUsers.size)
+            }
+        }
+
+    @Test
+    fun `차단한 사용자가 없으면 토스트 메시지를 표시하고 대화상자를 열지 않는다`() =
+        coroutinesTest {
+            val profiles = FakeProfileRepository()
+            val community = FakeReviewCommunityRepository(blockedUsersResult = RamapResult.Success(emptyList()))
+            val viewModel = MyTabViewModel(profiles, community, FakePersonalizationRepository())
+            runCurrent()
+
+            viewModel.sideEffect.test {
+                viewModel.dispatch(MyTabIntent.OpenBlockedUsers)
+                runCurrent()
+
+                val sideEffect = awaitItem()
+                assertTrue(sideEffect is MyTabSideEffect.ShowToast)
+                assertEquals(
+                    Res.string.review_blocked_users_empty,
+                    sideEffect.data.message,
+                )
+            }
         }
 }
