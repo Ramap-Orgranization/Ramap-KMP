@@ -26,6 +26,7 @@ import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.model.notice.OperatingNotice
 import com.peto.ramap.domain.model.report.ShopInformationField
+import com.peto.ramap.domain.model.review.Review
 import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.GrayColor
@@ -39,6 +40,10 @@ import ramap.shared.generated.resources.laduck_error_crying
 import ramap.shared.generated.resources.map_shop_detail_error_description
 import ramap.shared.generated.resources.map_shop_detail_error_title
 import ramap.shared.generated.resources.ranking_show_shop_on_map
+import ramap.shared.generated.resources.review_delete
+import ramap.shared.generated.resources.review_delete_confirm
+import ramap.shared.generated.resources.review_delete_confirm_title
+import ramap.shared.generated.resources.shop_review_cancel
 
 @Composable
 fun ShopDetailContent(
@@ -71,6 +76,13 @@ fun ShopDetailContent(
     isAppleMapsAvailable: Boolean = false,
     onAppleMapsClick: (RamenShop) -> Unit = {},
     onReviewsClick: (String) -> Unit,
+    currentUserId: String? = null,
+    actingReviewId: String? = null,
+    onOpenProfile: (String) -> Unit = {},
+    onReviewLike: (Review) -> Unit = {},
+    onReviewEdit: (Review) -> Unit = {},
+    onReviewDelete: (Review) -> Unit = {},
+    onReviewReport: (Review) -> Unit = {},
 ) {
     val selectedShop =
         when (state) {
@@ -81,6 +93,7 @@ fun ShopDetailContent(
         }
     var hideConfirmShop by remember { mutableStateOf<RamenShop?>(null) }
     var showReportDialog by remember(selectedShop?.id) { mutableStateOf(false) }
+    var deleteReview by remember(selectedShop?.id) { mutableStateOf<Review?>(null) }
     val shouldShowMainSheet =
         selectedShop != null ||
             (showRequestedLoadingInSheet && state is ShopDetailSheetUiState.Loading)
@@ -146,8 +159,14 @@ fun ShopDetailContent(
                         onAppleMapsClick = onAppleMapsClick,
                         onEventClick = onEventClick,
                         onOperatingNoticeClick = onOperatingNoticeClick,
-                        onOpenProfile = {},
+                        onOpenProfile = onOpenProfile,
                         onWriteReviewClick = { onReviewsClick(shop.id) },
+                        currentUserId = currentUserId,
+                        actingReviewId = actingReviewId,
+                        onReviewLike = onReviewLike,
+                        onReviewEdit = onReviewEdit,
+                        onReviewDelete = { deleteReview = it },
+                        onReviewReport = onReviewReport,
                         menuFooter = {
                             onShowOnMap?.let { showOnMap ->
                                 AppButton(
@@ -235,6 +254,35 @@ fun ShopDetailContent(
                 showReportDialog = false
                 onReportSubmit(wrongFields, description)
             },
+        )
+    }
+    CommonDialog(
+        visible = deleteReview != null,
+        confirmText = stringResource(Res.string.review_delete),
+        dismissText = stringResource(Res.string.shop_review_cancel),
+        confirmEnabled = deleteReview?.id != actingReviewId,
+        confirmIsLoading = deleteReview?.id == actingReviewId,
+        dismissOnBackPress = deleteReview?.id != actingReviewId,
+        dismissOnClickOutside = deleteReview?.id != actingReviewId,
+        onDismissRequest = { if (deleteReview?.id != actingReviewId) deleteReview = null },
+        onDismiss = { deleteReview = null },
+        onConfirm = {
+            deleteReview?.let(onReviewDelete)
+            deleteReview = null
+        },
+    ) {
+        AppText(
+            text = stringResource(Res.string.review_delete_confirm_title),
+            style = AppTextStyle.T1,
+            color = GrayColor.C500,
+            textAlign = TextAlign.Center,
+        )
+        AppText(
+            text = stringResource(Res.string.review_delete_confirm),
+            modifier = Modifier.padding(top = 8.dp),
+            style = AppTextStyle.B2,
+            color = GrayColor.C500,
+            textAlign = TextAlign.Center,
         )
     }
 }

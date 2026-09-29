@@ -5,8 +5,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.DropdownMenu
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -15,8 +13,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.unit.dp
+import com.peto.ramap.designsystem.menu.AppDropdownMenu
 import com.peto.ramap.extension.noRippleClickable
-import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
@@ -65,12 +63,10 @@ internal fun ShopOverflowMenu(
             colorFilter = ColorFilter.tint(GrayColor.C500),
         )
 
-        DropdownMenu(
+        AppDropdownMenu(
             expanded = isExpanded,
             onDismissRequest = { isExpanded = false },
             modifier = Modifier.widthIn(min = 150.dp),
-            shape = RoundedCornerShape(16.dp),
-            containerColor = CommonColor.White,
         ) {
             ShopOverflowMenuItem(
                 text = stringResource(Res.string.share_shop_action),

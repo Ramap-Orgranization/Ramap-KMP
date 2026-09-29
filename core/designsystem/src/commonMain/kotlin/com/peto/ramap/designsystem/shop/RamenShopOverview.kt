@@ -58,6 +58,12 @@ fun RamenShopOverview(
     onOperatingNoticeClick: (OperatingNotice) -> Unit,
     onOpenProfile: (String) -> Unit,
     onWriteReviewClick: () -> Unit,
+    currentUserId: String? = null,
+    actingReviewId: String? = null,
+    onReviewLike: (Review) -> Unit = {},
+    onReviewEdit: (Review) -> Unit = {},
+    onReviewDelete: (Review) -> Unit = {},
+    onReviewReport: (Review) -> Unit = {},
     menuFooter: @Composable () -> Unit = {},
 ) {
     var selectedTab by remember(shop.id, showReviewsOnOpen) {
@@ -140,6 +146,12 @@ fun RamenShopOverview(
                     reviews = reviews,
                     onOpenProfile = onOpenProfile,
                     onWriteReviewClick = onWriteReviewClick,
+                    currentUserId = currentUserId,
+                    actingReviewId = actingReviewId,
+                    onLike = onReviewLike,
+                    onEdit = onReviewEdit,
+                    onDelete = onReviewDelete,
+                    onReport = onReviewReport,
                 )
             }
         }
