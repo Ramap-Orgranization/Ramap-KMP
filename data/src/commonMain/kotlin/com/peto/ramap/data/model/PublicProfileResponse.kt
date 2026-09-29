@@ -7,11 +7,14 @@ import kotlinx.serialization.Transient
 
 @Serializable
 internal data class PublicProfileResponse(
-    @SerialName("user_id") val userId: String,
+    @SerialName("user_id")
+    val userId: String,
     val nickname: String,
     val bio: String = "",
-    @SerialName("avatar_path") val avatarPath: String? = null,
-    @Transient val avatarUrl: String? = null,
+    @SerialName("avatar_path")
+    val avatarPath: String? = null,
+    @Transient
+    val avatarUrl: String? = null,
 ) {
     fun toDomain(): PublicProfile = PublicProfile(userId, nickname, bio, avatarUrl)
 }

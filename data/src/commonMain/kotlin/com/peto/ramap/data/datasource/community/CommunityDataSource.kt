@@ -4,7 +4,7 @@ import com.peto.ramap.data.model.MyCommunityProfileResponse
 import com.peto.ramap.data.model.PublicProfileResponse
 import com.peto.ramap.data.model.ReviewResponse
 
-internal interface ReviewCommunityDataSource {
+internal interface CommunityDataSource {
     suspend fun fetchMyCommunityProfile(): MyCommunityProfileResponse
 
     suspend fun fetchPublicProfile(userId: String): PublicProfileResponse?
