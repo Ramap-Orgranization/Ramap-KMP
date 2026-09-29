@@ -47,7 +47,7 @@ fun ProfileAvatar(
                 modifier =
                     Modifier
                         .fillMaxSize()
-                        .padding(13.dp),
+                        .padding(7.dp),
             )
         } else {
             AsyncImage(

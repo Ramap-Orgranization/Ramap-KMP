@@ -35,6 +35,8 @@ object ChromaticColor {
     val Pink200 = Color(0xFFFFD5DE)
     val Orange400 = Color(0xFFE95432)
     val Purple400 = Color(0xFFDCC3FF)
+    val Cream400 = Color(0xFFFFF8EC)
+    val Apricot400 = Color(0xFFFDE0B2)
 }
 
 object SocialColor {

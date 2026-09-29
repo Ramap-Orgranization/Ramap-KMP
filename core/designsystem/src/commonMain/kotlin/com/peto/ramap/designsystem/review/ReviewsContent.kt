@@ -5,26 +5,20 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.key
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.peto.ramap.designsystem.component.LoadErrorContent
-import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.domain.model.community.ReviewAuthor
+import com.peto.ramap.domain.model.community.ReviewModerationStatus
 import com.peto.ramap.domain.model.review.Review
-import com.peto.ramap.extension.noRippleClickable
-import com.peto.ramap.theme.AppTextStyle
-import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.RamapTheme
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.laduck_error_confused
 import ramap.shared.generated.resources.shop_review_empty_description
 import ramap.shared.generated.resources.shop_review_empty_title
-import ramap.shared.generated.resources.shop_review_go_write
 
 @Composable
 internal fun ReviewsContent(
@@ -32,6 +26,12 @@ internal fun ReviewsContent(
     reviews: List<Review>,
     onOpenProfile: (String) -> Unit,
     onWriteReviewClick: () -> Unit,
+    currentUserId: String? = null,
+    actingReviewId: String? = null,
+    onLike: (Review) -> Unit = {},
+    onEdit: (Review) -> Unit = {},
+    onDelete: (Review) -> Unit = {},
+    onReport: (Review) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -50,42 +50,57 @@ internal fun ReviewsContent(
                 compact = true,
                 modifier = Modifier.fillMaxWidth(),
             )
-            ReviewWriteAction(
+            ReviewWriteCard(
                 onClick = onWriteReviewClick,
-                modifier = Modifier.fillMaxWidth(),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
             )
         } else {
-            ReviewWriteAction(
+            ReviewWriteCard(
                 onClick = onWriteReviewClick,
-                modifier = Modifier.align(Alignment.End),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
             )
             reviews.forEach { review ->
-                ReviewCard(
-                    review = review,
-                    onOpenProfile = onOpenProfile,
-                )
+                key(review.id) {
+                    ReviewCard(
+                        review = review,
+                        onOpenProfile = onOpenProfile,
+                        onLike =
+                            if (review.author.userId != currentUserId && review.isPublic && review.moderationStatus == ReviewModerationStatus.PUBLISHED) {
+                                { onLike(review) }
+                            } else {
+                                null
+                            },
+                        isLikeLoading = actingReviewId == review.id,
+                        actionsEnabled = actingReviewId == null,
+                        onEdit =
+                            if (currentUserId != null && review.author.userId == currentUserId) {
+                                { onEdit(review) }
+                            } else {
+                                null
+                            },
+                        onDelete =
+                            if (currentUserId != null && review.author.userId == currentUserId) {
+                                { onDelete(review) }
+                            } else {
+                                null
+                            },
+                        onReport =
+                            if (review.author.userId.isNotBlank() && review.author.userId != currentUserId) {
+                                { onReport(review) }
+                            } else {
+                                null
+                            },
+                    )
+                }
             }
         }
     }
-}
-
-@Composable
-private fun ReviewWriteAction(
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    AppText(
-        text = stringResource(Res.string.shop_review_go_write),
-        style = AppTextStyle.T3,
-        textAlign = TextAlign.Center,
-        textDecoration = TextDecoration.Underline,
-        color = GrayColor.C300,
-        modifier =
-            modifier
-                .padding(horizontal = 20.dp)
-                .padding(bottom = 5.dp)
-                .noRippleClickable(onClick = onClick),
-    )
 }
 
 @Preview(showBackground = true)
