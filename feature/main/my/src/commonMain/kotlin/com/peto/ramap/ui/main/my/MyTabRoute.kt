@@ -85,7 +85,6 @@ import ramap.shared.generated.resources.ic_profile_report
 import ramap.shared.generated.resources.ic_setting
 import ramap.shared.generated.resources.ic_visibility_off
 import ramap.shared.generated.resources.login_required_message
-import ramap.shared.generated.resources.my_reviews
 import ramap.shared.generated.resources.profile_bio_empty
 import ramap.shared.generated.resources.profile_discard
 import ramap.shared.generated.resources.profile_edit
@@ -115,7 +114,6 @@ fun MyTabRoute(
     onSubscribedShopsNavigate: () -> Unit,
     onBookmarkedShopsNavigate: () -> Unit,
     onProfileNavigate: () -> Unit,
-    onReviewNavigate: () -> Unit = {},
     onOpenProfile: (String) -> Unit = {},
     onLoginClick: (LoginType) -> Unit,
     toastManager: ToastManager = koinInject(),
@@ -155,7 +153,6 @@ fun MyTabRoute(
             onOpenProfile(userId)
         },
         onProfileClick = onProfileNavigate,
-        onReviewClick = onReviewNavigate,
         onRetryClick = { viewModel.dispatch(MyTabIntent.Refresh) },
         onBookmarkedShopsClick = onBookmarkedShopsNavigate,
         onSubscribedShopsClick = onSubscribedShopsNavigate,
@@ -178,7 +175,6 @@ internal fun MyTabContent(
     onBlockedUsersDismiss: () -> Unit,
     onBlockedUserProfileClick: (String) -> Unit,
     onProfileClick: () -> Unit,
-    onReviewClick: () -> Unit,
     onRetryClick: () -> Unit,
     onBookmarkedShopsClick: () -> Unit,
     onSubscribedShopsClick: () -> Unit,
@@ -376,21 +372,6 @@ internal fun MyTabContent(
                         .clip(RoundedCornerShape(16.dp)),
             ) {
                 if (!isGuest) {
-                    MyMenuRow(
-                        icon = Res.drawable.ic_profile_bookmark,
-                        title = Res.string.my_reviews,
-                        count = null,
-                        hasCount = false,
-                        iconBackground = Color(0xFFFFF3E9),
-                        iconTint = Color(0xFFE77730),
-                        isLoading = isLoading,
-                        onClick = onReviewClick,
-                    )
-                    HorizontalDivider(
-                        modifier = Modifier.padding(start = 16.dp),
-                        thickness = 1.dp,
-                        color = GrayColor.C100,
-                    )
                     MyMenuRow(
                         icon = Res.drawable.ic_person,
                         title = Res.string.review_blocked_users,
@@ -664,7 +645,6 @@ private fun MyTabRoutePreview() {
             onBlockedUsersDismiss = {},
             onBlockedUserProfileClick = {},
             onProfileClick = {},
-            onReviewClick = {},
             onRetryClick = {},
             onBookmarkedShopsClick = {},
             onSubscribedShopsClick = {},

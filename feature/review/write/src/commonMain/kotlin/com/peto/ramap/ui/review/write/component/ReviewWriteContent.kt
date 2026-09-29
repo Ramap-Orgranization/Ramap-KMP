@@ -24,6 +24,8 @@ import com.peto.ramap.ui.review.write.contract.ReviewWriteIntent
 import com.peto.ramap.ui.review.write.contract.ReviewWriteUiState
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
+import ramap.shared.generated.resources.review_edit_title
+import ramap.shared.generated.resources.review_save
 import ramap.shared.generated.resources.shop_review_submit
 import ramap.shared.generated.resources.shop_review_write
 
@@ -36,7 +38,7 @@ internal fun ReviewWriteRouteContent(
 ) {
     Box(modifier = Modifier.fillMaxSize()) {
         ReviewPage(
-            title = stringResource(Res.string.shop_review_write),
+            title = stringResource(if (state.reviewId == null) Res.string.shop_review_write else Res.string.review_edit_title),
             onBack = onBack,
         ) {
             LazyColumn(
@@ -82,9 +84,10 @@ internal fun ReviewWriteRouteContent(
                 }
                 item {
                     AppButton(
-                        text = stringResource(Res.string.shop_review_submit),
+                        text = stringResource(if (state.reviewId == null) Res.string.shop_review_submit else Res.string.review_save),
                         onClick = { onIntent(ReviewWriteIntent.Submit) },
                         modifier =
+
                             Modifier
                                 .fillMaxWidth()
                                 .padding(10.dp),
@@ -95,7 +98,7 @@ internal fun ReviewWriteRouteContent(
             }
         }
 
-        if (state.isSubmitting) {
+        if (state.isSubmitting || state.isLoadingReview) {
             RamenLoadingIndicator(modifier = Modifier.align(Alignment.Center))
         }
     }

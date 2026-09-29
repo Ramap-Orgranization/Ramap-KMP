@@ -10,13 +10,16 @@ import com.peto.ramap.domain.repository.ProfileRepository
 import com.peto.ramap.domain.repository.RamenShopRepository
 import com.peto.ramap.domain.repository.ReviewRepository
 import com.peto.ramap.ui.base.BaseViewModel
+import com.peto.ramap.ui.review.write.contract.ExistingReviewPhoto
 import com.peto.ramap.ui.review.write.contract.ReviewWriteIntent
 import com.peto.ramap.ui.review.write.contract.ReviewWriteLoadKey
 import com.peto.ramap.ui.review.write.contract.ReviewWriteSideEffect
 import com.peto.ramap.ui.review.write.contract.ReviewWriteUiState
 import com.peto.ramap.ui.task.TaskPolicy
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.review_load_failed
@@ -28,31 +31,42 @@ class ReviewWriteViewModel(
     private val ramenShopRepository: RamenShopRepository,
 ) : BaseViewModel<ReviewWriteUiState, ReviewWriteIntent, ReviewWriteSideEffect>(ReviewWriteUiState()) {
     private var shopId: String? = null
+    private var reviewId: String? = null
 
     init {
         viewModelScope.launch {
             profileRepository.sessionUserIds
                 .distinctUntilChanged()
-                .collect {
+                .collect { userId ->
                     cancelTask(SUBMIT_TASK)
+                    cancelTask(REVIEW_TASK)
                     reduce {
                         ReviewWriteUiState(
+                            reviewId = reviewId,
                             shop = shop,
                             shopLoadFailed = shopLoadFailed,
                             loadState = loadState,
                         )
                     }
+                    if (userId != null && reviewId != null) loadEditableReview()
                 }
         }
     }
 
     override suspend fun handleIntent(intent: ReviewWriteIntent) {
         when (intent) {
-            is ReviewWriteIntent.Open -> openShop(intent.shopId)
+            is ReviewWriteIntent.Open -> openShop(intent.shopId, intent.reviewId)
             is ReviewWriteIntent.ChangeBody -> changeBody(intent.body)
-            is ReviewWriteIntent.ChangeVisibility -> if (!currentState.isSubmitting) reduce { copy(isPublic = intent.isPublic) }
+            is ReviewWriteIntent.ChangeVisibility -> if (currentState.canEdit) reduce { copy(isPublic = intent.isPublic) }
             is ReviewWriteIntent.AddImage -> addImage(intent.image)
-            is ReviewWriteIntent.RemoveImage -> if (!currentState.isSubmitting) reduce { copy(images = images.filterIndexed { index, _ -> index != intent.index }) }
+            is ReviewWriteIntent.RemoveImage -> if (currentState.canEdit) reduce { copy(images = images.filterIndexed { index, _ -> index != intent.index }) }
+            is ReviewWriteIntent.RemoveExistingImage ->
+                if (currentState.canEdit) {
+                    reduce {
+                        copy(existingImages = existingImages.filterIndexed { index, _ -> index != intent.index })
+                    }
+                }
+            ReviewWriteIntent.ReloadReview -> loadEditableReview()
             is ReviewWriteIntent.MoveImage -> moveImage(intent.fromIndex, intent.toIndex)
             ReviewWriteIntent.Load -> {
                 loadShop()
@@ -62,22 +76,28 @@ class ReviewWriteViewModel(
         }
     }
 
-    private fun openShop(shopId: String) {
-        if (this.shopId == shopId) return
+    private fun openShop(
+        shopId: String,
+        reviewId: String?,
+    ) {
+        if (this.shopId == shopId && this.reviewId == reviewId) return
         cancelTask(SHOP_TASK)
         cancelTask(SUBMIT_TASK)
+        cancelTask(REVIEW_TASK)
         this.shopId = shopId
-        reduce { ReviewWriteUiState() }
+        this.reviewId = reviewId
+        reduce { ReviewWriteUiState(reviewId = reviewId) }
         loadShop()
+        if (reviewId != null) loadEditableReview()
     }
 
     private fun changeBody(body: String) {
-        if (currentState.isSubmitting) return
+        if (!currentState.canEdit) return
         reduce { copy(body = limitBodyLength(body)) }
     }
 
     private fun addImage(image: ReviewImage) {
-        if (!currentState.isSubmitting && image.isValid() && currentState.images.size < ReviewImage.MAX_COUNT) {
+        if (currentState.canEdit && image.isValid() && currentState.images.size + currentState.existingImages.size < ReviewImage.MAX_COUNT) {
             reduce { copy(images = images + image) }
         }
     }
@@ -86,7 +106,7 @@ class ReviewWriteViewModel(
         fromIndex: Int,
         toIndex: Int,
     ) {
-        if (currentState.isSubmitting) return
+        if (!currentState.canEdit) return
         if (fromIndex !in currentState.images.indices || toIndex !in currentState.images.indices) return
         reduce {
             copy(
@@ -115,6 +135,54 @@ class ReviewWriteViewModel(
         )
     }
 
+    private fun loadEditableReview() {
+        val reviewId = reviewId ?: return
+        launchResultTask(
+            taskKey = REVIEW_TASK,
+            loadKey = ReviewWriteLoadKey.Review,
+            policy = TaskPolicy.CancelPrevious,
+            onStart = { copy(reviewLoadFailed = false, reviewLoaded = false) },
+            request = { reviewRepository.fetchEditableReview(reviewId) },
+            onSuccess = { review ->
+                if (!currentCoroutineContext().isActive || this.reviewId != reviewId) {
+                    return@launchResultTask
+                }
+                if (review == null || review.shopId != shopId) {
+                    reduce { copy(reviewLoadFailed = true) }
+                    postSideEffect(
+                        ReviewWriteSideEffect.ShowToast(
+                            ToastData(Res.string.review_load_failed, ToastType.ERROR),
+                            canRetry = true,
+                        ),
+                    )
+                    return@launchResultTask
+                }
+                reduce {
+                    copy(
+                        reviewLoaded = true,
+                        body = review.body,
+                        isPublic = review.isPublic,
+                        existingImages =
+                            review.imagePaths.zip(review.imageUrls).map { (path, url) ->
+                                ExistingReviewPhoto(path, url)
+                            },
+                        images = emptyList(),
+                    )
+                }
+            },
+            onError = {
+                if (!currentCoroutineContext().isActive) return@launchResultTask
+                reduce { copy(reviewLoadFailed = true) }
+                postSideEffect(
+                    ReviewWriteSideEffect.ShowToast(
+                        ToastData(Res.string.review_load_failed, ToastType.ERROR),
+                        canRetry = true,
+                    ),
+                )
+            },
+        )
+    }
+
     private suspend fun submit() {
         if (!currentState.canSubmit) return
         if (profileRepository.sessionUserIds.first() == null) {
@@ -122,13 +190,27 @@ class ReviewWriteViewModel(
             return
         }
         val shopId = shopId ?: return
+        val editReviewId = reviewId
         val draft = currentState
         launchTask(
             taskKey = SUBMIT_TASK,
             loadKey = ReviewWriteLoadKey.Submit,
             policy = TaskPolicy.IgnoreNew,
         ) {
-            when (reviewRepository.submitReview(shopId, draft.body, draft.images, isPublic = draft.isPublic)) {
+            val result =
+                if (editReviewId == null) {
+                    reviewRepository.submitReview(shopId, draft.body, draft.images, isPublic = draft.isPublic)
+                } else {
+                    reviewRepository.updateReview(
+                        reviewId = editReviewId,
+                        body = draft.body,
+                        retainedImagePaths = draft.existingImages.map { it.path },
+                        newImages = draft.images,
+                        isPublic = draft.isPublic,
+                    )
+                }
+            if (!currentCoroutineContext().isActive) return@launchTask
+            when (result) {
                 is RamapResult.Error -> {
                     showSubmitFailureIfAuthenticated()
                 }
@@ -152,6 +234,7 @@ class ReviewWriteViewModel(
     private companion object {
         const val SHOP_TASK = "shop-review-write-shop"
         const val SUBMIT_TASK = "shop-review-write-submit"
+        const val REVIEW_TASK = "shop-review-write-review"
 
         fun limitBodyLength(body: String): String {
             var endIndex = 0

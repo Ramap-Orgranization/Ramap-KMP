@@ -28,6 +28,7 @@ fun NavigationRouter(
     settingsScreen: @Composable () -> Unit,
     accountSettingsScreen: @Composable () -> Unit,
     profileEditScreen: @Composable () -> Unit,
+    profileReviewScreen: @Composable (ScreenRoutes.ProfileReviewRoutes) -> Unit,
     reviewWriteScreen: @Composable (ScreenRoutes.ReviewWriteRoutes) -> Unit,
     informationScreen: @Composable () -> Unit,
     placeReportScreen: @Composable () -> Unit,
@@ -78,6 +79,7 @@ fun NavigationRouter(
                 )
             }
             entry<ScreenRoutes.ProfileEditRoutes> { FullScreen(profileEditScreen) }
+            entry<ScreenRoutes.ProfileReviewRoutes> { route -> FullScreen { profileReviewScreen(route) } }
             entry<ScreenRoutes.ReviewWriteRoutes> { route -> FullScreen { reviewWriteScreen(route) } }
             entry<ScreenRoutes.SettingsRoutes> { FullScreen(settingsScreen) }
             entry<ScreenRoutes.AccountSettingsRoutes> { FullScreen(accountSettingsScreen) }

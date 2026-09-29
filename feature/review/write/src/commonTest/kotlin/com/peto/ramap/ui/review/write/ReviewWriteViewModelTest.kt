@@ -6,6 +6,7 @@ import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.coroutinesTest
 import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
+import com.peto.ramap.domain.model.review.EditableReview
 import com.peto.ramap.domain.model.review.Review
 import com.peto.ramap.domain.model.review.ReviewImage
 import com.peto.ramap.domain.usecase.ShopDetail
@@ -26,6 +27,93 @@ import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ReviewWriteViewModelTest {
+    @Test
+    fun `edit loads owner draft and saves retained photos privacy and new photo`() =
+        coroutinesTest {
+            val reviews =
+                FakeReviewRepository().apply {
+                    editableReview =
+                        EditableReview(
+                            id = "review",
+                            shopId = "shop",
+                            body = "기존 리뷰입니다",
+                            imagePaths = listOf("first", "second"),
+                            imageUrls = listOf(null, "signed-second"),
+                            isPublic = false,
+                        )
+                }
+            val viewModel = ReviewWriteViewModel(reviews, FakeProfileRepository(), FakeRamenShopRepository())
+            viewModel.dispatch(ReviewWriteIntent.Open("shop", "review"))
+            runCurrent()
+            assertEquals("기존 리뷰입니다", viewModel.uiState.value.body)
+            assertEquals(
+                listOf("first", "second"),
+                viewModel.uiState.value.existingImages
+                    .map { it.path },
+            )
+            assertFalse(viewModel.uiState.value.isPublic)
+
+            viewModel.dispatch(ReviewWriteIntent.RemoveExistingImage(0))
+            viewModel.dispatch(ReviewWriteIntent.AddImage(reviewImage(1)))
+            viewModel.dispatch(ReviewWriteIntent.Submit)
+            runCurrent()
+            assertEquals(listOf("second"), reviews.updates.single().retainedImagePaths)
+            assertEquals(
+                1,
+                reviews.updates
+                    .single()
+                    .newImages.size,
+            )
+            assertFalse(reviews.updates.single().isPublic)
+        }
+
+    @Test
+    fun `failed edit retains body and owner photo paths for retry`() =
+        coroutinesTest {
+            val reviews =
+                FakeReviewRepository().apply {
+                    editableReview = EditableReview("review", "shop", "기존 리뷰입니다", listOf("path"), listOf(null), true)
+                    editResult = RamapResult.Error(RamapError.Network(IllegalStateException("offline")))
+                }
+            val viewModel = ReviewWriteViewModel(reviews, FakeProfileRepository(), FakeRamenShopRepository())
+            viewModel.dispatch(ReviewWriteIntent.Open("shop", "review"))
+            runCurrent()
+            viewModel.dispatch(ReviewWriteIntent.ChangeBody("수정된 리뷰입니다"))
+            viewModel.dispatch(ReviewWriteIntent.Submit)
+            runCurrent()
+            assertEquals("수정된 리뷰입니다", viewModel.uiState.value.body)
+            assertEquals(
+                listOf("path"),
+                viewModel.uiState.value.existingImages
+                    .map { it.path },
+            )
+            assertEquals(listOf("path"), reviews.updates.single().retainedImagePaths)
+        }
+
+    @Test
+    fun `account switch clears edit draft and reloads owner data`() =
+        coroutinesTest {
+            val profiles = FakeProfileRepository("first")
+            val reviews =
+                FakeReviewRepository().apply {
+                    editableReview = EditableReview("review", "shop", "첫 계정 리뷰", listOf("first"), listOf("url"), true)
+                }
+            val viewModel = ReviewWriteViewModel(reviews, profiles, FakeRamenShopRepository())
+            viewModel.dispatch(ReviewWriteIntent.Open("shop", "review"))
+            runCurrent()
+            assertEquals("첫 계정 리뷰", viewModel.uiState.value.body)
+
+            reviews.editableReview = EditableReview("review", "shop", "새 계정 리뷰", listOf("second"), listOf(null), false)
+            profiles.sessionUserIds.value = "second"
+            runCurrent()
+            assertEquals("새 계정 리뷰", viewModel.uiState.value.body)
+            assertEquals(
+                listOf("second"),
+                viewModel.uiState.value.existingImages
+                    .map { it.path },
+            )
+        }
+
     @Test
     fun `opening another shop clears draft and submits only to the new shop`() =
         coroutinesTest {

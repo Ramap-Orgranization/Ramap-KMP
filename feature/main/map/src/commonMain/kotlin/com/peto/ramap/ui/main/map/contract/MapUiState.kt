@@ -85,6 +85,8 @@ data class MapUiState(
      * 현재 사용자의 로그인 여부.
      */
     val isLoggedIn: Boolean = false,
+    val currentUserId: String? = null,
+    val actingReviewId: String? = null,
 ) : LoadableState<MapUiState> {
     val selectedShop: RamenShop?
         get() =
