@@ -31,13 +31,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.RectangleShape
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
-import coil3.compose.AsyncImage
 import com.peto.ramap.designsystem.menu.AppDropdownMenu
 import com.peto.ramap.designsystem.menu.AppDropdownMenuItem
 import com.peto.ramap.designsystem.profile.ProfileAvatar
@@ -253,12 +251,14 @@ fun ReviewCard(
             }
             if (review.imageUrls.isNotEmpty()) {
                 LazyRow(
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement =
+                        if (review.imageUrls.size == 1) Arrangement.Center else Arrangement.spacedBy(4.dp),
                     contentPadding = PaddingValues(horizontal = 16.dp),
                 ) {
                     itemsIndexed(review.imageUrls) { index, url ->
-                        AsyncImage(
-                            model = url,
+                        ReviewPhoto(
+                            url = url,
                             contentDescription =
                                 stringResource(
                                     Res.string.review_photo_description,
@@ -268,7 +268,6 @@ fun ReviewCard(
                                 Modifier
                                     .size(220.dp)
                                     .clip(RoundedCornerShape(12.dp)),
-                            contentScale = ContentScale.Crop,
                         )
                     }
                 }
@@ -510,42 +509,6 @@ private fun BlockedReviewCardPreview(
                 onUnblockBlockedUser = {},
             )
             ReviewCard(review = review)
-        }
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-private fun ReviewCardPreview(
-    @PreviewParameter(ReviewPreviewParameterProvider::class) review: Review,
-) {
-    RamapTheme {
-        Column(
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-            modifier = Modifier.padding(16.dp),
-        ) {
-            ReviewCard(
-                review = review,
-                onLike = {},
-                onShopClick = {},
-            )
-            ReviewCard(
-                review = review.copy(isPublic = false),
-                currentUserId = review.author.userId,
-                onEdit = {},
-                onDelete = {},
-            )
-            ReviewCard(
-                review = review.copy(isPublic = true),
-                currentUserId = review.author.userId,
-                currentProfileIsPublic = false,
-                onEdit = {},
-                onDelete = {},
-            )
-            ReviewCard(
-                review = review,
-                onReport = {},
-            )
         }
     }
 }
