@@ -11,9 +11,19 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.peto.ramap.debug.admin.R
 import com.peto.ramap.debug.admin.ui.login.contract.AdminLoginError
@@ -29,7 +39,6 @@ import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.ic_arrow3_left
-import ramap.shared.generated.resources.kakao_login_failure_message
 import ramap.shared.generated.resources.navigation_back
 import androidx.compose.ui.res.stringResource as androidStringResource
 
@@ -37,8 +46,11 @@ import androidx.compose.ui.res.stringResource as androidStringResource
 internal fun AdminLoginScreen(
     uiState: AdminLoginUiState,
     onBack: () -> Unit,
-    onAdminLogin: () -> Unit,
+    onAdminLogin: (String, String) -> Unit,
 ) {
+    var email by rememberSaveable { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
+
     Column(
         modifier = Modifier.fillMaxSize().background(CommonColor.White).statusBarsPadding(),
     ) {
@@ -61,6 +73,23 @@ internal fun AdminLoginScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
+                OutlinedTextField(
+                    value = email,
+                    onValueChange = { email = it },
+                    label = { Text(androidStringResource(R.string.admin_login_email)) },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                OutlinedTextField(
+                    value = password,
+                    onValueChange = { password = it },
+                    label = { Text(androidStringResource(R.string.admin_login_password)) },
+                    visualTransformation = PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
                 uiState.error?.let { error ->
                     AppText(
                         text = adminLoginErrorText(error),
@@ -70,9 +99,10 @@ internal fun AdminLoginScreen(
                 }
                 AppButton(
                     text = androidStringResource(R.string.admin_login_action),
-                    onClick = onAdminLogin,
+                    onClick = { onAdminLogin(email, password) },
                     modifier = Modifier.fillMaxWidth(),
                     isLoading = uiState.loadState.isAnyLoading,
+                    enabled = email.isNotBlank() && password.isNotBlank(),
                 )
             }
         }
@@ -84,5 +114,5 @@ private fun adminLoginErrorText(error: AdminLoginError): String =
     when (error) {
         AdminLoginError.AccessDenied -> androidStringResource(R.string.admin_login_access_denied)
         AdminLoginError.AccessUnavailable -> androidStringResource(R.string.admin_login_access_unavailable)
-        AdminLoginError.LoginFailed -> stringResource(Res.string.kakao_login_failure_message)
+        AdminLoginError.LoginFailed -> androidStringResource(R.string.admin_login_failed)
     }

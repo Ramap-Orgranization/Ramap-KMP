@@ -12,7 +12,6 @@ kotlin {
     }
 
     sourceSets.androidMain.dependencies {
-        implementation(projects.data)
         implementation(projects.core.network)
         implementation(projects.core.designsystem)
         implementation(projects.core.ui)
@@ -23,6 +22,7 @@ kotlin {
         implementation(libs.compose.components.resources)
         implementation(libs.compose.material3)
         implementation(libs.supabase.functions)
+        implementation(libs.supabase.auth)
         implementation(libs.supabase.postgrest)
         implementation(libs.supabase.storage)
         implementation(libs.ktor.client.core)

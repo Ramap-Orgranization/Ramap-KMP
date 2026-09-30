@@ -2,10 +2,9 @@ package com.peto.ramap.debug.admin.ui.login
 
 import com.peto.ramap.coroutinesTest
 import com.peto.ramap.debug.admin.data.datasource.AdminAccessDataSource
+import com.peto.ramap.debug.admin.data.datasource.AdminAuthDataSource
 import com.peto.ramap.debug.admin.ui.login.contract.AdminLoginError
 import com.peto.ramap.debug.admin.ui.login.contract.AdminLoginIntent
-import com.peto.ramap.domain.model.auth.LoginSessionState
-import com.peto.ramap.fake.FakeLoginRepository
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runCurrent
 import kotlin.test.Test
@@ -18,24 +17,20 @@ class AdminLoginViewModelTest {
     @Test
     fun `administrator must press login before opening registration`() =
         coroutinesTest {
-            val loginRepository = FakeLoginRepository(LoginSessionState.AUTHENTICATED)
+            val authDataSource = FakeAdminAuthDataSource()
             val accessDataSource = FakeAdminAccessDataSource()
-            val viewModel = AdminLoginViewModel(loginRepository, accessDataSource)
+            val viewModel = AdminLoginViewModel(authDataSource, accessDataSource)
             runCurrent()
 
             assertFalse(viewModel.uiState.value.isAuthorized)
             assertEquals(0, accessDataSource.checkCount)
 
-            viewModel.dispatch(AdminLoginIntent.OnAdminLoginClicked)
+            viewModel.dispatch(AdminLoginIntent.OnAdminLoginClicked(EMAIL, PASSWORD))
             runCurrent()
 
             assertTrue(viewModel.uiState.value.isAuthorized)
-            assertEquals(1, loginRepository.signInWithKakaoCallCount)
+            assertEquals(EMAIL to PASSWORD, authDataSource.lastCredentials)
             assertEquals(1, accessDataSource.checkCount)
-
-            loginRepository.updateSessionState(LoginSessionState.NOT_AUTHENTICATED)
-            runCurrent()
-            assertFalse(viewModel.uiState.value.isAuthorized)
         }
 
     @Test
@@ -43,11 +38,11 @@ class AdminLoginViewModelTest {
         coroutinesTest {
             val viewModel =
                 AdminLoginViewModel(
-                    FakeLoginRepository(),
+                    FakeAdminAuthDataSource(),
                     FakeAdminAccessDataSource(allowed = false),
                 )
 
-            viewModel.dispatch(AdminLoginIntent.OnAdminLoginClicked)
+            viewModel.dispatch(AdminLoginIntent.OnAdminLoginClicked(EMAIL, PASSWORD))
             runCurrent()
 
             assertFalse(viewModel.uiState.value.isAuthorized)
@@ -58,18 +53,53 @@ class AdminLoginViewModelTest {
     fun `access check failure can be retried with the same button`() =
         coroutinesTest {
             val accessDataSource = FakeAdminAccessDataSource(failure = IllegalStateException("network"))
-            val viewModel = AdminLoginViewModel(FakeLoginRepository(), accessDataSource)
-            viewModel.dispatch(AdminLoginIntent.OnAdminLoginClicked)
+            val viewModel = AdminLoginViewModel(FakeAdminAuthDataSource(), accessDataSource)
+            viewModel.dispatch(AdminLoginIntent.OnAdminLoginClicked(EMAIL, PASSWORD))
             runCurrent()
 
             assertEquals(AdminLoginError.AccessUnavailable, viewModel.uiState.value.error)
             accessDataSource.failure = null
-            viewModel.dispatch(AdminLoginIntent.OnAdminLoginClicked)
+            viewModel.dispatch(AdminLoginIntent.OnAdminLoginClicked(EMAIL, PASSWORD))
             runCurrent()
 
             assertTrue(viewModel.uiState.value.isAuthorized)
             assertEquals(2, accessDataSource.checkCount)
         }
+
+    @Test
+    fun `failed credentials do not check administrator access`() =
+        coroutinesTest {
+            val accessDataSource = FakeAdminAccessDataSource()
+            val viewModel =
+                AdminLoginViewModel(
+                    FakeAdminAuthDataSource(
+                        failure = IllegalArgumentException("credentials"),
+                    ),
+                    accessDataSource,
+                )
+
+            viewModel.dispatch(AdminLoginIntent.OnAdminLoginClicked(EMAIL, PASSWORD))
+            runCurrent()
+
+            assertFalse(viewModel.uiState.value.isAuthorized)
+            assertEquals(AdminLoginError.LoginFailed, viewModel.uiState.value.error)
+            assertEquals(0, accessDataSource.checkCount)
+        }
+
+    private class FakeAdminAuthDataSource(
+        private val failure: Throwable? = null,
+    ) : AdminAuthDataSource {
+        var lastCredentials: Pair<String, String>? = null
+            private set
+
+        override suspend fun signIn(
+            email: String,
+            password: String,
+        ) {
+            lastCredentials = email to password
+            failure?.let { throw it }
+        }
+    }
 
     private class FakeAdminAccessDataSource(
         private val allowed: Boolean = true,
@@ -83,5 +113,10 @@ class AdminLoginViewModelTest {
             failure?.let { throw it }
             return allowed
         }
+    }
+
+    private companion object {
+        const val EMAIL = "admin@example.com"
+        const val PASSWORD = "test-password"
     }
 }
