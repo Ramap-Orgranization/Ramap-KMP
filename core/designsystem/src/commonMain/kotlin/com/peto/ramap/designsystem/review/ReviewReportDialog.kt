@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -62,7 +61,10 @@ fun ReviewReportDialog(
             ),
     ) {
         BoxWithConstraints(
-            modifier = Modifier.fillMaxSize().padding(8.dp),
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(8.dp),
             contentAlignment = Alignment.Center,
         ) {
             ReviewReportDialogContent(
@@ -73,11 +75,7 @@ fun ReviewReportDialog(
                 isActing = isActing,
                 onDismissRequest = onDismissRequest,
                 onSubmit = onSubmit,
-                modifier =
-                    Modifier
-                        .widthIn(max = 480.dp)
-                        .fillMaxWidth()
-                        .height(maxHeight.coerceAtMost(720.dp)),
+                modifier = Modifier.fillMaxWidth(),
             )
         }
     }
@@ -143,7 +141,7 @@ private fun ReviewReportDialogContent(
                     onClick = onDismissRequest,
                     modifier = Modifier.weight(1f),
                     enabled = !isActing,
-                    textStyle = AppTextStyle.B3,
+                    textStyle = AppTextStyle.B1,
                     textColor = GrayColor.C300,
                     backgroundColor = GrayColor.C050,
                     disabledBackgroundColor = GrayColor.C050,
@@ -157,7 +155,7 @@ private fun ReviewReportDialogContent(
                     modifier = Modifier.weight(1.6f),
                     enabled = selectedReason?.isValidDetails(details) == true && !isActing,
                     isLoading = isActing,
-                    textStyle = AppTextStyle.B3,
+                    textStyle = AppTextStyle.B1,
                     backgroundColor = GrayColor.C500,
                 )
             }
