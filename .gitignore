@@ -34,6 +34,8 @@ AGENTS.md
 /supabase/*
 !/supabase/migrations/
 !/supabase/migrations/*.sql
+!/supabase/tests/
+!/supabase/tests/*.mjs
 !/supabase/config.toml
 !/supabase/functions/
 !/supabase/functions/*/
