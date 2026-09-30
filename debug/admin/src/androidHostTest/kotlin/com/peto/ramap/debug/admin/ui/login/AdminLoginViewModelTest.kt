@@ -25,11 +25,11 @@ class AdminLoginViewModelTest {
             assertFalse(viewModel.uiState.value.isAuthorized)
             assertEquals(0, accessDataSource.checkCount)
 
-            viewModel.dispatch(AdminLoginIntent.OnAdminLoginClicked(EMAIL, PASSWORD))
+            viewModel.dispatch(AdminLoginIntent.OnAdminLoginClicked)
             runCurrent()
 
             assertTrue(viewModel.uiState.value.isAuthorized)
-            assertEquals(EMAIL to PASSWORD, authDataSource.lastCredentials)
+            assertEquals(1, authDataSource.signInCount)
             assertEquals(1, accessDataSource.checkCount)
         }
 
@@ -42,7 +42,7 @@ class AdminLoginViewModelTest {
                     FakeAdminAccessDataSource(allowed = false),
                 )
 
-            viewModel.dispatch(AdminLoginIntent.OnAdminLoginClicked(EMAIL, PASSWORD))
+            viewModel.dispatch(AdminLoginIntent.OnAdminLoginClicked)
             runCurrent()
 
             assertFalse(viewModel.uiState.value.isAuthorized)
@@ -54,12 +54,12 @@ class AdminLoginViewModelTest {
         coroutinesTest {
             val accessDataSource = FakeAdminAccessDataSource(failure = IllegalStateException("network"))
             val viewModel = AdminLoginViewModel(FakeAdminAuthDataSource(), accessDataSource)
-            viewModel.dispatch(AdminLoginIntent.OnAdminLoginClicked(EMAIL, PASSWORD))
+            viewModel.dispatch(AdminLoginIntent.OnAdminLoginClicked)
             runCurrent()
 
             assertEquals(AdminLoginError.AccessUnavailable, viewModel.uiState.value.error)
             accessDataSource.failure = null
-            viewModel.dispatch(AdminLoginIntent.OnAdminLoginClicked(EMAIL, PASSWORD))
+            viewModel.dispatch(AdminLoginIntent.OnAdminLoginClicked)
             runCurrent()
 
             assertTrue(viewModel.uiState.value.isAuthorized)
@@ -78,7 +78,7 @@ class AdminLoginViewModelTest {
                     accessDataSource,
                 )
 
-            viewModel.dispatch(AdminLoginIntent.OnAdminLoginClicked(EMAIL, PASSWORD))
+            viewModel.dispatch(AdminLoginIntent.OnAdminLoginClicked)
             runCurrent()
 
             assertFalse(viewModel.uiState.value.isAuthorized)
@@ -89,14 +89,11 @@ class AdminLoginViewModelTest {
     private class FakeAdminAuthDataSource(
         private val failure: Throwable? = null,
     ) : AdminAuthDataSource {
-        var lastCredentials: Pair<String, String>? = null
+        var signInCount = 0
             private set
 
-        override suspend fun signIn(
-            email: String,
-            password: String,
-        ) {
-            lastCredentials = email to password
+        override suspend fun signIn() {
+            signInCount += 1
             failure?.let { throw it }
         }
     }
@@ -113,10 +110,5 @@ class AdminLoginViewModelTest {
             failure?.let { throw it }
             return allowed
         }
-    }
-
-    private companion object {
-        const val EMAIL = "admin@example.com"
-        const val PASSWORD = "test-password"
     }
 }

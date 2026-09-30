@@ -17,14 +17,11 @@ internal class AdminLoginViewModel(
 ) : BaseViewModel<AdminLoginUiState, AdminLoginIntent, AdminLoginSideEffect>(AdminLoginUiState()) {
     override suspend fun handleIntent(intent: AdminLoginIntent) {
         when (intent) {
-            is AdminLoginIntent.OnAdminLoginClicked -> signInAsAdministrator(intent.email, intent.password)
+            AdminLoginIntent.OnAdminLoginClicked -> signInAsAdministrator()
         }
     }
 
-    private fun signInAsAdministrator(
-        email: String,
-        password: String,
-    ) {
+    private fun signInAsAdministrator() {
         launchTask(
             taskKey = LOGIN_TASK_KEY,
             loadKey = AdminLoginLoadKey.Login,
@@ -32,7 +29,7 @@ internal class AdminLoginViewModel(
             onStart = { copy(isAuthorized = false, error = null) },
         ) {
             try {
-                authDataSource.signIn(email.trim(), password)
+                authDataSource.signIn()
             } catch (exception: CancellationException) {
                 throw exception
             } catch (exception: Throwable) {

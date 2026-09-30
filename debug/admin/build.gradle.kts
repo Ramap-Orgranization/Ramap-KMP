@@ -1,7 +1,36 @@
+import com.codingfeline.buildkonfig.compiler.FieldSpec.Type.STRING
+import java.util.Properties
+
 plugins {
     id("ramap.kmp.compose")
     id("ramap.kmp.test")
     id("ramap.serialization")
+    alias(libs.plugins.build.konfig)
+}
+
+val localProperties =
+    Properties().apply {
+        rootProject
+            .file("local.properties")
+            .takeIf { it.exists() }
+            ?.inputStream()
+            ?.use(::load)
+    }
+
+fun adminCredential(
+    localName: String,
+    envName: String,
+): String =
+    providers.gradleProperty(localName).orElse(providers.environmentVariable(envName)).orNull
+        ?: localProperties.getProperty(localName).orEmpty()
+
+buildkonfig {
+    packageName = "com.peto.ramap.debug.admin.config"
+    objectName = "AdminConfig"
+    defaultConfigs {
+        buildConfigField(STRING, "ADMIN_EMAIL", adminCredential("admin.email", "RAMAP_ADMIN_EMAIL"))
+        buildConfigField(STRING, "ADMIN_PASSWORD", adminCredential("admin.password", "RAMAP_ADMIN_PASSWORD"))
+    }
 }
 
 kotlin {

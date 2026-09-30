@@ -19,9 +19,7 @@ internal fun AdminLoginRoute(
         AdminLoginScreen(
             uiState = uiState,
             onBack = onBack,
-            onAdminLogin = { email, password ->
-                viewModel.dispatch(AdminLoginIntent.OnAdminLoginClicked(email, password))
-            },
+            onAdminLogin = { viewModel.dispatch(AdminLoginIntent.OnAdminLoginClicked) },
         )
     }
 }
