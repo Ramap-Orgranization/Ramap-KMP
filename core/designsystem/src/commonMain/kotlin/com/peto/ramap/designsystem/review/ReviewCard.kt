@@ -36,7 +36,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
-import com.peto.ramap.designsystem.button.AppButton
 import com.peto.ramap.designsystem.menu.AppDropdownMenu
 import com.peto.ramap.designsystem.menu.AppDropdownMenuItem
 import com.peto.ramap.designsystem.profile.ProfileAvatar
@@ -59,12 +58,12 @@ import ramap.shared.generated.resources.ic_more_vert
 import ramap.shared.generated.resources.ic_review_private
 import ramap.shared.generated.resources.review_author_review_count
 import ramap.shared.generated.resources.review_author_unknown
+import ramap.shared.generated.resources.review_blocked_review
 import ramap.shared.generated.resources.review_collapse
 import ramap.shared.generated.resources.review_delete
 import ramap.shared.generated.resources.review_edit
 import ramap.shared.generated.resources.review_like
 import ramap.shared.generated.resources.review_more
-import ramap.shared.generated.resources.review_open_shop
 import ramap.shared.generated.resources.review_photo_description
 import ramap.shared.generated.resources.review_private_status
 import ramap.shared.generated.resources.review_report
@@ -87,6 +86,10 @@ fun ReviewCard(
     isLikeLoading: Boolean = false,
     actionsEnabled: Boolean = true,
 ) {
+    if (review.isBlocked) {
+        BlockedReviewCard(modifier = modifier)
+        return
+    }
     var expanded by remember(review.id, review.body) { mutableStateOf(false) }
     var hasOverflow by remember(review.id, review.body) { mutableStateOf(false) }
     var menuExpanded by remember(review.id) { mutableStateOf(false) }
@@ -129,7 +132,18 @@ fun ReviewCard(
                         modifier = Modifier.size(44.dp),
                     )
                     Column(
-                        modifier = Modifier.weight(1f),
+                        modifier =
+                            Modifier
+                                .weight(1f)
+                                .then(
+                                    if (onShopClick != null) {
+                                        Modifier.noRippleClickable {
+                                            onShopClick()
+                                        }
+                                    } else {
+                                        Modifier
+                                    },
+                                ),
                         verticalArrangement = Arrangement.spacedBy(2.dp),
                     ) {
                         AppText(
@@ -340,22 +354,24 @@ fun ReviewCard(
                     )
                 }
             }
-            if (onShopClick != null) {
-                AppButton(
-                    text = stringResource(Res.string.review_open_shop),
-                    onClick = onShopClick,
-                    modifier = Modifier.padding(horizontal = 4.dp),
-                    textStyle = AppTextStyle.B3,
-                    textColor = GrayColor.C500,
-                    backgroundColor = CommonColor.White,
-                    cornerRadius = 0.dp,
-                )
-            }
             Spacer(
                 modifier = Modifier.height(4.dp),
             )
             HorizontalDivider(color = GrayColor.C100)
         }
+    }
+}
+
+@Composable
+private fun BlockedReviewCard(modifier: Modifier = Modifier) {
+    Column(modifier = modifier.fillMaxWidth()) {
+        AppText(
+            text = stringResource(Res.string.review_blocked_review),
+            style = AppTextStyle.B2,
+            color = GrayColor.C400,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 24.dp),
+        )
+        HorizontalDivider(color = GrayColor.C100)
     }
 }
 

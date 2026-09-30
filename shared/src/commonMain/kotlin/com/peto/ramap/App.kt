@@ -149,9 +149,14 @@ internal suspend fun observeSessionPersonalization(
     retryRequests: Flow<Unit> = emptyFlow(),
 ) {
     awaitSessionInitialization(loginRepository)
+    var previousSessionState: LoginSessionState? = null
     loginRepository.sessionState
         .distinctUntilChanged()
         .collectLatest { sessionState ->
+            val authenticatedAfterGuest =
+                sessionState == LoginSessionState.AUTHENTICATED &&
+                    previousSessionState == LoginSessionState.NOT_AUTHENTICATED
+            previousSessionState = sessionState
             if (sessionState != LoginSessionState.AUTHENTICATED) {
                 personalizationStore.clear()
                 NetworkRetryGenerator.clear()
@@ -159,8 +164,11 @@ internal suspend fun observeSessionPersonalization(
             }
 
             retryRequests
-                .onStart { emit(Unit) }
-                .collectLatest { refreshPersonalization(personalizationStore) }
+                .onStart {
+                    val hasPersonalization =
+                        personalizationStore.state.value is PersonalizationBootstrapState.Success
+                    if (authenticatedAfterGuest || !hasPersonalization) emit(Unit)
+                }.collectLatest { refreshPersonalization(personalizationStore) }
         }
 }
 

@@ -20,8 +20,9 @@ import com.peto.ramap.ui.main.notice.di.noticeModule
 import com.peto.ramap.ui.main.ranking.di.rankingModule
 import com.peto.ramap.ui.notification.di.notificationSettingsModule
 import com.peto.ramap.ui.profile.edit.di.profileEditModule
-import com.peto.ramap.ui.profile.review.di.profileReviewModule
 import com.peto.ramap.ui.report.di.reportModule
+import com.peto.ramap.ui.review.my.di.reviewMyModule
+import com.peto.ramap.ui.review.other.di.reviewOtherModule
 import com.peto.ramap.ui.review.write.di.reviewWriteModule
 import com.peto.ramap.ui.settings.di.settingsModule
 import com.peto.ramap.ui.subscribed.di.subscribedModule
@@ -47,8 +48,9 @@ internal val appModule =
             reportModule,
             myTabModule,
             profileEditModule,
-            profileReviewModule,
             reviewWriteModule,
+            reviewMyModule,
+            reviewOtherModule,
             settingsModule,
             subscribedModule,
             analyticsModule,

@@ -38,7 +38,10 @@ sealed interface ScreenRoutes : NavKey {
     data object ProfileEditRoutes : ScreenRoutes
 
     @Serializable
-    data class ProfileReviewRoutes(
+    data object MyReviewsRoutes : ScreenRoutes
+
+    @Serializable
+    data class OtherReviewsRoutes(
         val userId: String,
     ) : ScreenRoutes
 

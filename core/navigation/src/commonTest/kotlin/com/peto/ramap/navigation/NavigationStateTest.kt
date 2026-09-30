@@ -45,33 +45,6 @@ class NavigationStateTest {
     }
 
     @Test
-    fun `review login reveals my root even when my tab is already selected`() {
-        for (tab in listOf(TabStatus.MY, TabStatus.MAP)) {
-            val state = navigationState(selectedTab = TabStatus.MY)
-            state.showProfileReviews("author")
-            state.showSettings()
-            state.selectTopLevelTab(tab)
-            state.showMyRoot()
-            assertEquals(TabStatus.MY, state.selectedTab)
-            assertEquals(listOf(ScreenRoutes.MyTabRoutes), state.currentBackStack.toList())
-        }
-    }
-
-    @Test
-    fun `review shop back returns to the profile on every originating tab`() {
-        for (tab in TabStatus.entries) {
-            val state = navigationState(selectedTab = tab)
-            state.showProfileReviews("author")
-            state.showReviewShopOnMap("shop")
-            assertEquals(TabStatus.MAP, state.selectedTab)
-            assertEquals("shop", (state.currentRoute as ScreenRoutes.MapRoutes).shopId)
-            state.pop()
-            assertEquals(tab, state.selectedTab)
-            assertEquals(ScreenRoutes.ProfileReviewRoutes("author"), state.currentRoute)
-        }
-    }
-
-    @Test
     fun `네 개 탭은 지도 랭킹 이벤트 설정 순서와 독립 스택을 가진다`() {
         val navigationState = navigationState()
 

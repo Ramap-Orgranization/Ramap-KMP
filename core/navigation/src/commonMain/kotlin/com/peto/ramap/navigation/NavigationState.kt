@@ -55,7 +55,11 @@ class NavigationState(
 
     fun showProfileEdit() = showOnce(ScreenRoutes.ProfileEditRoutes)
 
-    fun showProfileReviews(userId: String) = showOnce(ScreenRoutes.ProfileReviewRoutes(userId))
+    fun showMyReviews() = showOnce(ScreenRoutes.MyReviewsRoutes)
+
+    fun showOtherReviews(userId: String) {
+        if (userId.isNotBlank()) showOnce(ScreenRoutes.OtherReviewsRoutes(userId))
+    }
 
     fun showReviewWrite(shopId: String) = showOnce(ScreenRoutes.ReviewWriteRoutes(shopId))
 

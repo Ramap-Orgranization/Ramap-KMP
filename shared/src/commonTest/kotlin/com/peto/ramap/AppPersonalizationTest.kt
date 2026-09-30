@@ -24,6 +24,67 @@ import kotlin.test.assertTrue
 @OptIn(ExperimentalCoroutinesApi::class)
 class AppPersonalizationTest {
     @Test
+    fun `게스트에서 로그인하면 빈 성공 상태여도 개인 설정을 다시 조회한다`() =
+        runTest {
+            val loginRepository = FakeLoginRepository(LoginSessionState.NOT_AUTHENTICATED)
+            val fakeStore = FakePersonalizationRepository()
+            var refreshCount = 0
+            val store =
+                object : ShopPersonalizationStore by fakeStore {
+                    override suspend fun refresh(): RamapResult<Unit> {
+                        refreshCount++
+                        fakeStore.updateBookmarkedShopIds(setOf("saved-shop"))
+                        return fakeStore.refresh()
+                    }
+                }
+
+            backgroundScope.launch {
+                observeSessionPersonalization(
+                    loginRepository = loginRepository,
+                    personalizationStore = store,
+                )
+            }
+            runCurrent()
+            assertEquals(0, refreshCount)
+            assertTrue(store.state.value is PersonalizationBootstrapState.Success)
+
+            loginRepository.updateSessionState(LoginSessionState.AUTHENTICATED)
+            runCurrent()
+
+            assertEquals(1, refreshCount)
+            val personalization = store.state.value as PersonalizationBootstrapState.Success
+            assertEquals(1, personalization.value.bookmarkedShopIds.size)
+        }
+
+    @Test
+    fun `이미 동기화된 개인 설정은 화면 재생성 시 다시 조회하지 않는다`() =
+        runTest {
+            var refreshCount = 0
+            val store =
+                object : ShopPersonalizationStore by FakePersonalizationRepository() {
+                    override suspend fun refresh(): RamapResult<Unit> {
+                        refreshCount++
+                        return RamapResult.Success(Unit)
+                    }
+                }
+            val retryRequests = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+
+            backgroundScope.launch {
+                observeSessionPersonalization(
+                    loginRepository = FakeLoginRepository(LoginSessionState.AUTHENTICATED),
+                    personalizationStore = store,
+                    retryRequests = retryRequests,
+                )
+            }
+            runCurrent()
+            assertEquals(0, refreshCount)
+
+            retryRequests.emit(Unit)
+            runCurrent()
+            assertEquals(1, refreshCount)
+        }
+
+    @Test
     fun `이미 표시한 앱 경로는 구성 변경 새로고침 중에도 유지한다`() {
         assertTrue(
             shouldShowAppRoute(
@@ -62,7 +123,9 @@ class AppPersonalizationTest {
         runTest {
             var refreshCount = 0
             val store =
-                object : ShopPersonalizationStore by FakePersonalizationRepository() {
+                object : ShopPersonalizationStore by FakePersonalizationRepository(
+                    initialState = PersonalizationBootstrapState.Loading,
+                ) {
                     override suspend fun refresh(): RamapResult<Unit> {
                         refreshCount += 1
                         return if (refreshCount == 1) {
@@ -98,7 +161,9 @@ class AppPersonalizationTest {
         runTest {
             var refreshCount = 0
             val store =
-                object : ShopPersonalizationStore by FakePersonalizationRepository() {
+                object : ShopPersonalizationStore by FakePersonalizationRepository(
+                    initialState = PersonalizationBootstrapState.Loading,
+                ) {
                     override suspend fun refresh(): RamapResult<Unit> {
                         refreshCount += 1
                         if (refreshCount == 1) {
@@ -177,7 +242,9 @@ class AppPersonalizationTest {
             val refreshStarted = CompletableDeferred<Unit>()
             var clearCount = 0
             val store =
-                object : ShopPersonalizationStore by FakePersonalizationRepository() {
+                object : ShopPersonalizationStore by FakePersonalizationRepository(
+                    initialState = PersonalizationBootstrapState.Loading,
+                ) {
                     override suspend fun refresh(): RamapResult<Unit> {
                         refreshStarted.complete(Unit)
                         awaitCancellation()

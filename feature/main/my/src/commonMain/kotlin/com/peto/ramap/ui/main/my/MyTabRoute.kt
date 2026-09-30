@@ -34,10 +34,9 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.peto.ramap.designsystem.dialog.CommonDialog
+import com.peto.ramap.designsystem.profile.ProfileHeader
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.designsystem.toast.ToastManager
 import com.peto.ramap.domain.model.auth.LoginType
@@ -51,7 +50,6 @@ import com.peto.ramap.ui.base.ObserveAsEvents
 import com.peto.ramap.ui.main.my.component.BlockedUsersDialog
 import com.peto.ramap.ui.main.my.component.GuestProfileHeader
 import com.peto.ramap.ui.main.my.component.MyMenuRow
-import com.peto.ramap.ui.main.my.component.MyProfileHeader
 import com.peto.ramap.ui.main.my.component.MyTabSkeleton
 import com.peto.ramap.ui.main.my.contract.MyTabIntent
 import com.peto.ramap.ui.main.my.contract.MyTabSideEffect
@@ -62,13 +60,15 @@ import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.ic_notification
-import ramap.shared.generated.resources.ic_person
+import ramap.shared.generated.resources.ic_profile_blocked
 import ramap.shared.generated.resources.ic_profile_bookmark
 import ramap.shared.generated.resources.ic_profile_private
 import ramap.shared.generated.resources.ic_profile_public
 import ramap.shared.generated.resources.ic_profile_report
+import ramap.shared.generated.resources.ic_review
 import ramap.shared.generated.resources.ic_setting
 import ramap.shared.generated.resources.ic_visibility_off
+import ramap.shared.generated.resources.my_reviews
 import ramap.shared.generated.resources.profile_discard
 import ramap.shared.generated.resources.profile_load_failed
 import ramap.shared.generated.resources.profile_retry
@@ -92,6 +92,7 @@ fun MyTabRoute(
     onSubscribedShopsNavigate: () -> Unit,
     onBookmarkedShopsNavigate: () -> Unit,
     onProfileNavigate: () -> Unit,
+    onMyReviewsNavigate: () -> Unit,
     onOpenProfile: (String) -> Unit = {},
     onLoginClick: (LoginType) -> Unit,
     toastManager: ToastManager = koinInject(),
@@ -105,9 +106,6 @@ fun MyTabRoute(
             is MyTabSideEffect.ShowToast -> toastManager.show(effect.data)
             MyTabSideEffect.OpenBlockedUsersDialog -> isBlockedUsersDialogOpen = true
         }
-    }
-    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
-        viewModel.dispatch(MyTabIntent.Refresh)
     }
     MyTabContent(
         state = state,
@@ -131,6 +129,7 @@ fun MyTabRoute(
             onOpenProfile(userId)
         },
         onProfileClick = onProfileNavigate,
+        onMyReviewsClick = onMyReviewsNavigate,
         onRetryClick = { viewModel.dispatch(MyTabIntent.Refresh) },
         onBookmarkedShopsClick = onBookmarkedShopsNavigate,
         onSubscribedShopsClick = onSubscribedShopsNavigate,
@@ -153,6 +152,7 @@ internal fun MyTabContent(
     onBlockedUsersDismiss: () -> Unit,
     onBlockedUserProfileClick: (String) -> Unit,
     onProfileClick: () -> Unit,
+    onMyReviewsClick: () -> Unit = {},
     onRetryClick: () -> Unit,
     onBookmarkedShopsClick: () -> Unit,
     onSubscribedShopsClick: () -> Unit,
@@ -251,7 +251,7 @@ internal fun MyTabContent(
             isGuest -> GuestProfileHeader(onLoginClick = onLoginClick)
 
             else ->
-                MyProfileHeader(
+                ProfileHeader(
                     profile = state.profile,
                     failed = state.failed,
                     onProfileClick = onProfileClick,
@@ -289,13 +289,26 @@ internal fun MyTabContent(
             ) {
                 if (!isGuest) {
                     MyMenuRow(
-                        icon = Res.drawable.ic_person,
+                        icon = Res.drawable.ic_review,
+                        title = Res.string.my_reviews,
+                        count = state.reviewCount,
+                        iconBackground = ChromaticColor.Purple050,
+                        iconTint = ChromaticColor.Purple300,
+                        isLoading = state.loadingReviewCount,
+                        onClick = onMyReviewsClick,
+                    )
+                    HorizontalDivider(
+                        modifier = Modifier.padding(start = 16.dp),
+                        thickness = 1.dp,
+                        color = GrayColor.C100,
+                    )
+                    MyMenuRow(
+                        icon = Res.drawable.ic_profile_blocked,
                         title = Res.string.review_blocked_users,
-                        count = null,
-                        hasCount = false,
+                        count = state.blockedUserCount,
                         iconBackground = GrayColor.C050,
                         iconTint = GrayColor.C300,
-                        isLoading = isLoading,
+                        isLoading = state.loadingBlockedUserCount,
                         onClick = onBlockedUsersClick,
                     )
                     HorizontalDivider(
@@ -380,6 +393,8 @@ private fun MyTabRoutePreview() {
                     bookmarkedCount = 12,
                     notificationCount = 3,
                     hiddenCount = 0,
+                    reviewCount = 8,
+                    blockedUserCount = 2,
                 ),
             onSettingsClick = {},
             onVisibilityClick = {},

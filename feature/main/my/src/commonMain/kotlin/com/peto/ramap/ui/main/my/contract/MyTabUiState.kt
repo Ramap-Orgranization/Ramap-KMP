@@ -13,11 +13,15 @@ data class MyTabUiState(
     val bookmarkedCount: Int? = null,
     val notificationCount: Int? = null,
     val hiddenCount: Int? = null,
+    val reviewCount: Int? = null,
+    val blockedUserCount: Int? = null,
     val blockedUsers: List<PublicProfile> = emptyList(),
     override val loadState: LoadState = LoadState(),
 ) : LoadableState<MyTabUiState> {
     val loading: Boolean get() = loadState.isLoading(MyTabLoadKey.Fetch)
     val savingVisibility: Boolean get() = loadState.isLoading(MyTabLoadKey.Visibility)
+    val loadingReviewCount: Boolean get() = loadState.isLoading(MyTabLoadKey.ReviewCount)
+    val loadingBlockedUserCount: Boolean get() = loadState.isLoading(MyTabLoadKey.BlockedUserCount)
 
     override fun withLoadingState(loadState: LoadState): MyTabUiState = copy(loadState = loadState)
 }

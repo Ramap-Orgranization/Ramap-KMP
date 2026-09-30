@@ -6,4 +6,6 @@ enum class MyTabLoadKey : LoadKey {
     Fetch,
     Visibility,
     BlockedUsers,
+    ReviewCount,
+    BlockedUserCount,
 }

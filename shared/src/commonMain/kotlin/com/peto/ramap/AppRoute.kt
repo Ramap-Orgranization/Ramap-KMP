@@ -11,12 +11,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigationevent.NavigationEventInfo
 import androidx.navigationevent.compose.NavigationBackHandler
 import androidx.navigationevent.compose.rememberNavigationEventState
 import com.peto.ramap.analytics.AnalyticsSource
 import com.peto.ramap.deeplink.DeepLinkEntryPoint
 import com.peto.ramap.deeplink.DeepLinkEvent
+import com.peto.ramap.designsystem.button.login.LoginButton
+import com.peto.ramap.designsystem.dialog.LoginGuideDialog
 import com.peto.ramap.designsystem.toast.ToastManager
 import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
@@ -38,7 +41,6 @@ import com.peto.ramap.navigation.rememberNavigationState
 import com.peto.ramap.notification.NotificationDeepLink
 import com.peto.ramap.notification.NotificationDeepLinkParser
 import com.peto.ramap.notification.NotificationLaunchDispatcher
-import com.peto.ramap.platform.ExternalUriOpener
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.ui.account.AccountSettingsRoute
 import com.peto.ramap.ui.account.AccountViewModel
@@ -61,8 +63,9 @@ import com.peto.ramap.ui.main.notice.OperatingNoticeRoute
 import com.peto.ramap.ui.main.ranking.RankingRoute
 import com.peto.ramap.ui.notification.NotificationSettingsRoute
 import com.peto.ramap.ui.profile.edit.ProfileEditRoute
-import com.peto.ramap.ui.profile.review.ReviewProfileRoute
 import com.peto.ramap.ui.report.PlaceReportRoute
+import com.peto.ramap.ui.review.my.MyReviewsRoute
+import com.peto.ramap.ui.review.other.OtherReviewsRoute
 import com.peto.ramap.ui.review.write.ShopReviewWriteRoute
 import com.peto.ramap.ui.settings.SettingsRoute
 import com.peto.ramap.ui.subscribed.SubscribedShopListRoute
@@ -93,13 +96,24 @@ internal fun AppRoute(
         )
 
     val profileLoginViewModel = koinViewModel<AccountViewModel>(key = "profile-login")
+    val accountState by profileLoginViewModel.uiState.collectAsStateWithLifecycle()
+    var pendingProfileTarget by remember { mutableStateOf<Pair<String, Boolean>?>(null) }
+    var showProfileLoginGuide by remember { mutableStateOf(false) }
     ObserveAsEvents(profileLoginViewModel.sideEffect) { effect ->
         when (effect) {
-            is AccountSideEffect.ShowToast -> toastManager.show(effect.data)
+            is AccountSideEffect.ShowToast -> {
+                toastManager.show(effect.data)
+                if (effect.data.type == ToastType.ERROR) pendingProfileTarget = null
+            }
         }
     }
 
-    HandleDeepLinkEvents(deepLinkEntryPoint, notificationLaunchDispatcher, shopDeepLinkDispatcher, appAnalytics)
+    HandleDeepLinkEvents(
+        deepLinkEntryPoint,
+        notificationLaunchDispatcher,
+        shopDeepLinkDispatcher,
+        appAnalytics,
+    )
 
     TrackScreenViews(navigationState, appAnalytics)
 
@@ -131,6 +145,27 @@ internal fun AppRoute(
 
     var overlayProfileUserId by remember { mutableStateOf<String?>(null) }
     var overlayReviewWriteArgs by remember { mutableStateOf<Pair<String, String?>?>(null) }
+
+    fun openProfile(
+        userId: String,
+        asOverlay: Boolean,
+    ) {
+        if (userId.isBlank()) return
+        if (!loginRepository.hasSession()) {
+            pendingProfileTarget = userId to asOverlay
+            showProfileLoginGuide = true
+            return
+        }
+        if (asOverlay) overlayProfileUserId = userId else navigationState.showOtherReviews(userId)
+    }
+
+    LaunchedEffect(accountState.isLoggedIn, pendingProfileTarget) {
+        if (!accountState.isLoggedIn) return@LaunchedEffect
+        val (userId, asOverlay) = pendingProfileTarget ?: return@LaunchedEffect
+        pendingProfileTarget = null
+        showProfileLoginGuide = false
+        openProfile(userId, asOverlay)
+    }
     val backEventState =
         rememberNavigationEventState<NavigationEventInfo>(
             currentInfo = NavigationEventInfo.None,
@@ -154,9 +189,14 @@ internal fun AppRoute(
             mapScreen = { route ->
                 MapRoute(
                     onReviewNavigate = { shopId -> overlayReviewWriteArgs = shopId to null },
-                    onOpenProfile = { userId -> overlayProfileUserId = userId },
                     onEditReview = { shopId, reviewId -> overlayReviewWriteArgs = shopId to reviewId },
-                    isBackEnabled = route.returnTab == null && overlayProfileUserId == null && overlayReviewWriteArgs == null,
+                    onOpenProfile = { userId ->
+                        openProfile(userId, asOverlay = true)
+                    },
+                    isBackEnabled =
+                        route.returnTab == null &&
+                            overlayProfileUserId == null &&
+                            overlayReviewWriteArgs == null,
                     onDetailDismissed = navigationState::consumeMapReturnOrigin,
                     onEventNavigate = { event ->
                         navigationState.showEvent(event.id)
@@ -198,8 +238,10 @@ internal fun AppRoute(
                             onDismiss = onDismiss,
                             onShowOnMap = onShowOnMap,
                             onReviewNavigate = { shopId -> overlayReviewWriteArgs = shopId to null },
-                            onOpenProfile = { userId -> overlayProfileUserId = userId },
                             onEditReview = { shopId, reviewId -> overlayReviewWriteArgs = shopId to reviewId },
+                            onOpenProfile = { userId ->
+                                openProfile(userId, asOverlay = true)
+                            },
                             onEventNavigate = { event -> onEventNavigate(event) },
                             originSource = AnalyticsSource.RANKING,
                         )
@@ -209,7 +251,8 @@ internal fun AppRoute(
             myScreen = {
                 MyTabRoute(
                     onProfileNavigate = navigationState::showProfileEdit,
-                    onOpenProfile = navigationState::showProfileReviews,
+                    onMyReviewsNavigate = navigationState::showMyReviews,
+                    onOpenProfile = { userId -> openProfile(userId, asOverlay = false) },
                     onSettingsNavigate = navigationState::showSettings,
                     onReportNavigate = navigationState::showPlaceReport,
                     onHiddenShopsNavigate = navigationState::showHiddenShops,
@@ -252,15 +295,26 @@ internal fun AppRoute(
                     },
                 )
             },
-            profileReviewScreen = { route ->
-                ReviewProfileRoute(
+            myReviewsScreen = {
+                MyReviewsRoute(
+                    onBack = navigationState::pop,
+                    onShowShop = navigationState::showReviewShopOnMap,
+                    onEditReview = navigationState::showReviewEdit,
+                )
+            },
+            otherReviewsScreen = { route ->
+                OtherReviewsRoute(
                     userId = route.userId,
                     onBack = navigationState::pop,
-                    onLogin = navigationState::showMyRoot,
-                    onOpenProfile = navigationState::showProfileReviews,
-                    onGuidelines = { ExternalUriOpener.open(COMMUNITY_GUIDELINES_URL) },
-                    onShopClick = navigationState::showReviewShopOnMap,
-                    onEditReview = navigationState::showReviewEdit,
+                    onLoginTypeSelected = { type ->
+                        profileLoginViewModel.dispatch(
+                            when (type) {
+                                LoginType.KAKAO -> AccountIntent.OnKakaoLoginClick
+                                LoginType.APPLE -> AccountIntent.OnAppleLoginClick
+                            },
+                        )
+                    },
+                    onShowShop = navigationState::showReviewShopOnMap,
                 )
             },
             reviewWriteScreen = { route ->
@@ -392,7 +446,6 @@ internal fun AppRoute(
                             viewModel = mapViewModel,
                             onDismiss = onDismiss,
                             onReviewNavigate = navigationState::showReviewWrite,
-                            onOpenProfile = navigationState::showProfileReviews,
                             onEditReview = navigationState::showReviewEdit,
                             isNavigationBarPadded = true,
                             onShowOnMap = onShowOnMap,
@@ -406,19 +459,20 @@ internal fun AppRoute(
 
         if (overlayProfileUserId != null) {
             FullScreenOverlay {
-                ReviewProfileRoute(
+                OtherReviewsRoute(
                     userId = overlayProfileUserId!!,
                     onBack = { overlayProfileUserId = null },
-                    onLogin = navigationState::showMyRoot,
-                    onOpenProfile = { overlayProfileUserId = it },
-                    onGuidelines = { ExternalUriOpener.open(COMMUNITY_GUIDELINES_URL) },
-                    onShopClick = { shopId ->
+                    onLoginTypeSelected = { type ->
+                        profileLoginViewModel.dispatch(
+                            when (type) {
+                                LoginType.KAKAO -> AccountIntent.OnKakaoLoginClick
+                                LoginType.APPLE -> AccountIntent.OnAppleLoginClick
+                            },
+                        )
+                    },
+                    onShowShop = { shopId ->
                         overlayProfileUserId = null
                         navigationState.showShopOnMap(shopId)
-                    },
-                    onEditReview = { shopId, reviewId ->
-                        overlayProfileUserId = null
-                        overlayReviewWriteArgs = shopId to reviewId
                     },
                 )
             }
@@ -439,6 +493,24 @@ internal fun AppRoute(
             }
         }
     }
+
+    LoginGuideDialog(
+        visible = showProfileLoginGuide,
+        onDismiss = {
+            showProfileLoginGuide = false
+            pendingProfileTarget = null
+        },
+        onLoginTypeSelected = { type ->
+            showProfileLoginGuide = false
+            profileLoginViewModel.dispatch(
+                when (type) {
+                    LoginType.KAKAO -> AccountIntent.OnKakaoLoginClick
+                    LoginType.APPLE -> AccountIntent.OnAppleLoginClick
+                },
+            )
+        },
+        loginButton = { type, onClick -> LoginButton(type, onClick) },
+    )
 }
 
 @Composable
@@ -571,5 +643,3 @@ private fun HandleNotificationDeepLink(
         }
     }
 }
-
-private const val COMMUNITY_GUIDELINES_URL = "https://ramap-orgranization.github.io/Ramap-KMP/community-guidelines.html"
