@@ -4,6 +4,7 @@ import androidx.lifecycle.viewModelScope
 import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
+import com.peto.ramap.domain.model.review.EditableReview
 import com.peto.ramap.domain.model.review.Review
 import com.peto.ramap.domain.model.review.ReviewImage
 import com.peto.ramap.domain.repository.ProfileRepository
@@ -34,50 +35,51 @@ class ReviewWriteViewModel(
     private var reviewId: String? = null
 
     init {
-        viewModelScope.launch {
-            profileRepository.sessionUserIds
-                .distinctUntilChanged()
-                .collect { userId ->
-                    cancelTask(PROFILE_VISIBILITY_TASK)
-                    cancelTask(SUBMIT_TASK)
-                    cancelTask(REVIEW_TASK)
-                    reduce {
-                        ReviewWriteUiState(
-                            reviewId = reviewId,
-                            shop = shop,
-                            shopLoadFailed = shopLoadFailed,
-                            loadState = loadState,
-                        )
-                    }
-                    if (userId != null && reviewId != null) loadEditableReview()
-                }
-        }
+        observeSessionUser()
     }
 
     override suspend fun handleIntent(intent: ReviewWriteIntent) {
         when (intent) {
             is ReviewWriteIntent.Open -> openShop(intent.shopId, intent.reviewId)
             is ReviewWriteIntent.ChangeBody -> changeBody(intent.body)
-            is ReviewWriteIntent.ChangeVisibility -> if (currentState.canEdit) reduce { copy(isPublic = intent.isPublic) }
+            is ReviewWriteIntent.ChangeVisibility -> changeVisibility(intent.isPublic)
             is ReviewWriteIntent.AddImage -> addImage(intent.image)
-            is ReviewWriteIntent.RemoveImage -> if (currentState.canEdit) reduce { copy(images = images.filterIndexed { index, _ -> index != intent.index }) }
-            is ReviewWriteIntent.RemoveExistingImage ->
-                if (currentState.canEdit) {
-                    reduce {
-                        copy(existingImages = existingImages.filterIndexed { index, _ -> index != intent.index })
-                    }
-                }
-            ReviewWriteIntent.ReloadReview -> loadEditableReview()
+            is ReviewWriteIntent.RemoveImage -> removeImage(intent.index)
+            is ReviewWriteIntent.RemoveExistingImage -> removeExistingImage(intent.index)
             is ReviewWriteIntent.MoveImage -> moveImage(intent.fromIndex, intent.toIndex)
-            ReviewWriteIntent.Load -> {
-                loadShop()
-            }
-
+            ReviewWriteIntent.ReloadReview -> loadEditableReview()
+            ReviewWriteIntent.Load -> loadShop()
             ReviewWriteIntent.Submit -> submit()
             ReviewWriteIntent.ConfirmSubmitWithPrivateProfile -> confirmSubmitWithPrivateProfile()
             ReviewWriteIntent.ConfirmSubmitWithPublicProfile -> confirmSubmitWithPublicProfile()
-            ReviewWriteIntent.CancelPrivateProfileConfirmation ->
-                reduce { copy(showPrivateProfileConfirmation = false) }
+            ReviewWriteIntent.CancelPrivateProfileConfirmation -> cancelPrivateProfileConfirmation()
+        }
+    }
+
+    private fun observeSessionUser() {
+        viewModelScope.launch {
+            profileRepository.sessionUserIds
+                .distinctUntilChanged()
+                .collect { userId ->
+                    resetStateForSessionUserChange()
+                    if (userId != null && reviewId != null) {
+                        loadEditableReview()
+                    }
+                }
+        }
+    }
+
+    private fun resetStateForSessionUserChange() {
+        cancelTask(PROFILE_VISIBILITY_TASK)
+        cancelTask(SUBMIT_TASK)
+        cancelTask(REVIEW_TASK)
+        reduce {
+            ReviewWriteUiState(
+                reviewId = reviewId,
+                shop = shop,
+                shopLoadFailed = shopLoadFailed,
+                loadState = loadState,
+            )
         }
     }
 
@@ -102,10 +104,27 @@ class ReviewWriteViewModel(
         reduce { copy(body = limitBodyLength(body)) }
     }
 
+    private fun changeVisibility(isPublic: Boolean) {
+        if (!currentState.canEdit) return
+        reduce { copy(isPublic = isPublic) }
+    }
+
     private fun addImage(image: ReviewImage) {
-        if (currentState.canEdit && image.isValid() && currentState.images.size + currentState.existingImages.size < ReviewImage.MAX_COUNT) {
+        if (!currentState.canEdit || !image.isValid()) return
+        val currentTotalCount = currentState.images.size + currentState.existingImages.size
+        if (currentTotalCount < ReviewImage.MAX_COUNT) {
             reduce { copy(images = images + image) }
         }
+    }
+
+    private fun removeImage(index: Int) {
+        if (!currentState.canEdit) return
+        reduce { copy(images = images.filterIndexed { i, _ -> i != index }) }
+    }
+
+    private fun removeExistingImage(index: Int) {
+        if (!currentState.canEdit) return
+        reduce { copy(existingImages = existingImages.filterIndexed { i, _ -> i != index }) }
     }
 
     private fun moveImage(
@@ -121,6 +140,10 @@ class ReviewWriteViewModel(
         }
     }
 
+    private fun cancelPrivateProfileConfirmation() {
+        reduce { copy(showPrivateProfileConfirmation = false) }
+    }
+
     private fun loadShop() {
         val shopId = shopId ?: return
         launchResultTask(
@@ -129,15 +152,17 @@ class ReviewWriteViewModel(
             onStart = { copy(shopLoadFailed = false) },
             request = { ramenShopRepository.fetchShopDetail(shopId) },
             onSuccess = { detail -> reduce { copy(shop = detail.shop) } },
-            onError = {
-                reduce { copy(shopLoadFailed = true) }
-                postSideEffect(
-                    ReviewWriteSideEffect.ShowToast(
-                        ToastData(Res.string.review_load_failed, ToastType.ERROR),
-                        canRetry = true,
-                    ),
-                )
-            },
+            onError = { handleShopLoadError() },
+        )
+    }
+
+    private suspend fun handleShopLoadError() {
+        reduce { copy(shopLoadFailed = true) }
+        postSideEffect(
+            ReviewWriteSideEffect.ShowToast(
+                ToastData(Res.string.review_load_failed, ToastType.ERROR),
+                canRetry = true,
+            ),
         )
     }
 
@@ -149,43 +174,43 @@ class ReviewWriteViewModel(
             policy = TaskPolicy.CancelPrevious,
             onStart = { copy(reviewLoadFailed = false, reviewLoaded = false) },
             request = { reviewRepository.fetchEditableReview(reviewId) },
-            onSuccess = { review ->
-                if (!currentCoroutineContext().isActive || this.reviewId != reviewId) {
-                    return@launchResultTask
-                }
-                if (review == null || review.shopId != shopId) {
-                    reduce { copy(reviewLoadFailed = true) }
-                    postSideEffect(
-                        ReviewWriteSideEffect.ShowToast(
-                            ToastData(Res.string.review_load_failed, ToastType.ERROR),
-                            canRetry = true,
-                        ),
-                    )
-                    return@launchResultTask
-                }
-                reduce {
-                    copy(
-                        reviewLoaded = true,
-                        body = review.body,
-                        isPublic = review.isPublic,
-                        existingImages =
-                            review.imagePaths.zip(review.imageUrls).map { (path, url) ->
-                                ExistingReviewPhoto(path, url)
-                            },
-                        images = emptyList(),
-                    )
-                }
-            },
-            onError = {
-                if (!currentCoroutineContext().isActive) return@launchResultTask
-                reduce { copy(reviewLoadFailed = true) }
-                postSideEffect(
-                    ReviewWriteSideEffect.ShowToast(
-                        ToastData(Res.string.review_load_failed, ToastType.ERROR),
-                        canRetry = true,
-                    ),
-                )
-            },
+            onSuccess = { review -> handleEditableReviewSuccess(review, reviewId) },
+            onError = { handleReviewLoadError() },
+        )
+    }
+
+    private suspend fun handleEditableReviewSuccess(
+        review: EditableReview?,
+        targetReviewId: String,
+    ) {
+        if (!currentCoroutineContext().isActive || reviewId != targetReviewId) return
+        if (review == null || review.shopId != shopId) {
+            handleReviewLoadError()
+            return
+        }
+        val existingPhotos =
+            review.imagePaths.zip(review.imageUrls).map { (path, url) ->
+                ExistingReviewPhoto(path, url)
+            }
+        reduce {
+            copy(
+                reviewLoaded = true,
+                body = review.body,
+                isPublic = review.isPublic,
+                existingImages = existingPhotos,
+                images = emptyList(),
+            )
+        }
+    }
+
+    private suspend fun handleReviewLoadError() {
+        if (!currentCoroutineContext().isActive) return
+        reduce { copy(reviewLoadFailed = true) }
+        postSideEffect(
+            ReviewWriteSideEffect.ShowToast(
+                ToastData(Res.string.review_load_failed, ToastType.ERROR),
+                canRetry = true,
+            ),
         )
     }
 
@@ -201,6 +226,13 @@ class ReviewWriteViewModel(
             submitDraft(draft)
             return
         }
+        checkProfileVisibilityAndSubmit(draft, userId)
+    }
+
+    private fun checkProfileVisibilityAndSubmit(
+        draft: ReviewWriteUiState,
+        userId: String,
+    ) {
         launchResultTask(
             taskKey = PROFILE_VISIBILITY_TASK,
             loadKey = ReviewWriteLoadKey.Submit,
@@ -221,27 +253,29 @@ class ReviewWriteViewModel(
     }
 
     private fun confirmSubmitWithPrivateProfile() {
-        if (!currentState.showPrivateProfileConfirmation || !Review.isValidBody(currentState.body)) return
+        if (!hasValidConfirmationState()) return
         val draft = currentState.copy(showPrivateProfileConfirmation = false)
         reduce { copy(showPrivateProfileConfirmation = false) }
         submitDraft(draft)
     }
 
     private fun confirmSubmitWithPublicProfile() {
-        if (!currentState.showPrivateProfileConfirmation || !Review.isValidBody(currentState.body)) return
+        if (!hasValidConfirmationState()) return
         val draft = currentState.copy(showPrivateProfileConfirmation = false)
         reduce { copy(showPrivateProfileConfirmation = false) }
+        updateProfileVisibilityAndSubmit(draft)
+    }
+
+    private fun hasValidConfirmationState(): Boolean = currentState.showPrivateProfileConfirmation && Review.isValidBody(currentState.body)
+
+    private fun updateProfileVisibilityAndSubmit(draft: ReviewWriteUiState) {
         launchResultTask(
             taskKey = UPDATE_PROFILE_VISIBILITY_TASK,
             loadKey = ReviewWriteLoadKey.Submit,
             policy = TaskPolicy.IgnoreNew,
             request = { profileRepository.updateProfileVisibility(isPublic = true) },
-            onSuccess = {
-                submitDraft(draft)
-            },
-            onError = {
-                showSubmitFailureIfAuthenticated()
-            },
+            onSuccess = { submitDraft(draft) },
+            onError = { showSubmitFailureIfAuthenticated() },
         )
     }
 
@@ -253,28 +287,40 @@ class ReviewWriteViewModel(
             loadKey = ReviewWriteLoadKey.Submit,
             policy = TaskPolicy.IgnoreNew,
         ) {
-            val result =
-                if (editReviewId == null) {
-                    reviewRepository.submitReview(shopId, draft.body, draft.images, isPublic = draft.isPublic)
-                } else {
-                    reviewRepository.updateReview(
-                        reviewId = editReviewId,
-                        body = draft.body,
-                        retainedImagePaths = draft.existingImages.map { it.path },
-                        newImages = draft.images,
-                        isPublic = draft.isPublic,
-                    )
-                }
+            val result = executeSubmitRequest(shopId, editReviewId, draft)
             if (!currentCoroutineContext().isActive) return@launchTask
-            when (result) {
-                is RamapResult.Error -> {
-                    showSubmitFailureIfAuthenticated()
-                }
+            handleSubmitResult(result)
+        }
+    }
 
-                is RamapResult.Success -> {
-                    reduce { copy(body = "", images = emptyList(), isPublic = true) }
-                    postSideEffect(ReviewWriteSideEffect.Submitted)
-                }
+    private suspend fun executeSubmitRequest(
+        shopId: String,
+        editReviewId: String?,
+        draft: ReviewWriteUiState,
+    ): RamapResult<Unit> =
+        if (editReviewId == null) {
+            reviewRepository.submitReview(
+                shopId = shopId,
+                body = draft.body,
+                images = draft.images,
+                isPublic = draft.isPublic,
+            )
+        } else {
+            reviewRepository.updateReview(
+                reviewId = editReviewId,
+                body = draft.body,
+                retainedImagePaths = draft.existingImages.map { it.path },
+                newImages = draft.images,
+                isPublic = draft.isPublic,
+            )
+        }
+
+    private suspend fun handleSubmitResult(result: RamapResult<Unit>) {
+        when (result) {
+            is RamapResult.Error -> showSubmitFailureIfAuthenticated()
+            is RamapResult.Success -> {
+                reduce { copy(body = "", images = emptyList(), isPublic = true) }
+                postSideEffect(ReviewWriteSideEffect.Submitted)
             }
         }
     }
