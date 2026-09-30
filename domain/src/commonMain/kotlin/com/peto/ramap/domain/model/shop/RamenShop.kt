@@ -10,6 +10,7 @@ import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.LocalTime
 import kotlinx.datetime.minus
+import kotlinx.datetime.plus
 
 data class RamenShop(
     val id: String,
@@ -69,14 +70,30 @@ data class RamenShop(
             .any { (notice, businessDate) ->
                 when (notice.type) {
                     OperatingNoticeType.TEMPORARY_CLOSURE -> true
-                    OperatingNoticeType.EARLY_CLOSING ->
-                        notice.endTime?.let { currentDateTime >= LocalDateTime(businessDate, it) } == true
+                    OperatingNoticeType.EARLY_CLOSING -> hasEarlyClosingStarted(notice, businessDate, currentDateTime)
                     OperatingNoticeType.LATE_OPENING ->
                         notice.manuallyReleasedAt == null &&
                             (notice.startTime == null || currentDateTime < LocalDateTime(businessDate, notice.startTime))
                     OperatingNoticeType.OPERATING_NOTICE -> false
                 }
             }
+
+    private fun hasEarlyClosingStarted(
+        notice: OperatingNotice,
+        businessDate: LocalDate,
+        currentDateTime: LocalDateTime,
+    ): Boolean {
+        val endTime = notice.endTime ?: return false
+        val businessDay = businessHoursDetails?.weekly?.get(BusinessDay.from(businessDate.dayOfWeek).key)
+        val openTime = businessDay?.open?.let { runCatching { LocalTime.parse(it) }.getOrNull() }
+        val closingDate =
+            if (businessDay?.closeNextDay == true && openTime != null && endTime < openTime) {
+                businessDate.plus(1, DateTimeUnit.DAY)
+            } else {
+                businessDate
+            }
+        return currentDateTime >= LocalDateTime(closingDate, endTime)
+    }
 
     private fun OperatingNotice.businessDateAt(currentDateTime: LocalDateTime) =
         when {

@@ -164,6 +164,26 @@ class BusinessHoursTest {
     }
 
     @Test
+    fun `익일 새벽 조기 마감은 영업 시작일 저녁에 적용되지 않는다`() {
+        val shop =
+            ramenShopFixture().copy(
+                businessHoursDetails =
+                    BusinessHours(
+                        weekly = mapOf("sat" to BusinessHoursDay(false, "18:00", "02:00", true, null)),
+                        breakTimes = emptyMap(),
+                        lastOrders = emptyMap(),
+                        notice = null,
+                    ),
+            )
+        val saturday = LocalDateTime(2026, 8, 29, 0, 0).date
+        val early = OperatingNotice("early", shop, OperatingNoticeType.EARLY_CLOSING, "조기", saturday, saturday, null, LocalTime(1, 0), null, null, null)
+
+        assertEquals(true, shop.isOpenAt(LocalDateTime(2026, 8, 29, 22, 0), listOf(early)))
+        assertEquals(true, shop.isOpenAt(LocalDateTime(2026, 8, 30, 0, 30), listOf(early)))
+        assertEquals(false, shop.isOpenAt(LocalDateTime(2026, 8, 30, 1, 0), listOf(early)))
+    }
+
+    @Test
     fun `전날 당일 영업시간은 다음 날 영업중으로 판정하지 않는다`() {
         val shop =
             ramenShopFixture().copy(
