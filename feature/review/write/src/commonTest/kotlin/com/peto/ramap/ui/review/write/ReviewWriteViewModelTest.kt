@@ -369,6 +369,63 @@ class ReviewWriteViewModelTest {
             assertEquals(shop, viewModel.uiState.value.shop)
         }
 
+    @Test
+    fun `submitting public review with private profile shows modal and selecting public updates profile and submits`() =
+        coroutinesTest {
+            val reviews = FakeReviewRepository()
+            val profileRepository = FakeProfileRepository(isProfilePublic = false)
+            val viewModel =
+                ReviewWriteViewModel(
+                    reviews,
+                    profileRepository,
+                    FakeRamenShopRepository(),
+                )
+            viewModel.dispatch(ReviewWriteIntent.Open("shop"))
+            runCurrent()
+
+            viewModel.dispatch(ReviewWriteIntent.ChangeBody("12345"))
+            viewModel.dispatch(ReviewWriteIntent.Submit)
+            runCurrent()
+
+            assertTrue(viewModel.uiState.value.showPrivateProfileConfirmation)
+            assertEquals(0, reviews.submissions.size)
+
+            viewModel.dispatch(ReviewWriteIntent.ConfirmSubmitWithPublicProfile)
+            runCurrent()
+
+            assertTrue(profileRepository.isProfilePublic)
+            assertEquals(1, reviews.submissions.size)
+            assertFalse(viewModel.uiState.value.showPrivateProfileConfirmation)
+        }
+
+    @Test
+    fun `submitting public review with private profile shows modal and selecting private submits without updating profile`() =
+        coroutinesTest {
+            val reviews = FakeReviewRepository()
+            val profileRepository = FakeProfileRepository(isProfilePublic = false)
+            val viewModel =
+                ReviewWriteViewModel(
+                    reviews,
+                    profileRepository,
+                    FakeRamenShopRepository(),
+                )
+            viewModel.dispatch(ReviewWriteIntent.Open("shop"))
+            runCurrent()
+
+            viewModel.dispatch(ReviewWriteIntent.ChangeBody("12345"))
+            viewModel.dispatch(ReviewWriteIntent.Submit)
+            runCurrent()
+
+            assertTrue(viewModel.uiState.value.showPrivateProfileConfirmation)
+
+            viewModel.dispatch(ReviewWriteIntent.ConfirmSubmitWithPrivateProfile)
+            runCurrent()
+
+            assertFalse(profileRepository.isProfilePublic)
+            assertEquals(1, reviews.submissions.size)
+            assertFalse(viewModel.uiState.value.showPrivateProfileConfirmation)
+        }
+
     private fun reviewImage(seed: Int): ReviewImage =
         ReviewImage(
             bytes = byteArrayOf(0xFF.toByte(), 0xD8.toByte(), 0xFF.toByte(), seed.toByte()),

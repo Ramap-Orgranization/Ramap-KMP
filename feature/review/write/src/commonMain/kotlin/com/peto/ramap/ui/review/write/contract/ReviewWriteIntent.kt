@@ -39,4 +39,10 @@ sealed interface ReviewWriteIntent : Intent {
     data object Load : ReviewWriteIntent
 
     data object Submit : ReviewWriteIntent
+
+    data object ConfirmSubmitWithPrivateProfile : ReviewWriteIntent
+
+    data object ConfirmSubmitWithPublicProfile : ReviewWriteIntent
+
+    data object CancelPrivateProfileConfirmation : ReviewWriteIntent
 }

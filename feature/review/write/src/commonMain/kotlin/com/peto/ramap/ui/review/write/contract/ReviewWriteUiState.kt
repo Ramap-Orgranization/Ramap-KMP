@@ -14,6 +14,7 @@ data class ReviewWriteUiState(
     val reviewLoadFailed: Boolean = false,
     val reviewLoaded: Boolean = false,
     val isPublic: Boolean = true,
+    val showPrivateProfileConfirmation: Boolean = false,
     val shop: RamenShop? = null,
     val shopLoadFailed: Boolean = false,
     override val loadState: LoadState = LoadState(),
@@ -21,8 +22,12 @@ data class ReviewWriteUiState(
     val isLoadingShop: Boolean get() = loadState.isLoading(ReviewWriteLoadKey.Shop)
     val isLoadingReview: Boolean get() = loadState.isLoading(ReviewWriteLoadKey.Review)
     val isSubmitting: Boolean get() = loadState.isLoading(ReviewWriteLoadKey.Submit)
+    val showsLoadingOverlay: Boolean get() = isSubmitting || isLoadingReview
     val canEdit: Boolean
-        get() = !isSubmitting && (reviewId == null || (reviewLoaded && !isLoadingReview && !reviewLoadFailed))
+        get() =
+            !isSubmitting &&
+                !showPrivateProfileConfirmation &&
+                (reviewId == null || (reviewLoaded && !isLoadingReview && !reviewLoadFailed))
     val canSubmit: Boolean
         get() = Review.isValidBody(body) && canEdit
 

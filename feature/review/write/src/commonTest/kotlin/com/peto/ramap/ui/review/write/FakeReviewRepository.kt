@@ -2,6 +2,9 @@ package com.peto.ramap.ui.review.write
 
 import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.domain.model.review.EditableReview
+import com.peto.ramap.domain.model.review.MyReview
+import com.peto.ramap.domain.model.review.MyReviewVisibility
+import com.peto.ramap.domain.model.review.MyReviewsPage
 import com.peto.ramap.domain.model.review.Review
 import com.peto.ramap.domain.model.review.ReviewImage
 import com.peto.ramap.domain.repository.ReviewLike
@@ -23,6 +26,13 @@ internal class FakeReviewRepository(
     val updates = mutableListOf<Update>()
 
     override fun observeChanges(): Flow<Unit> = emptyFlow()
+
+    override suspend fun fetchMyReviews(
+        offset: Long,
+        visibility: MyReviewVisibility,
+    ): RamapResult<MyReviewsPage> = RamapResult.Success(MyReviewsPage(emptyList(), 0, 0, 0, true))
+
+    override suspend fun fetchMyReview(reviewId: String): RamapResult<MyReview?> = RamapResult.Success(null)
 
     override suspend fun fetchShopReviews(
         shopId: String,

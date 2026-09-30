@@ -38,6 +38,7 @@ class ReviewWriteViewModel(
             profileRepository.sessionUserIds
                 .distinctUntilChanged()
                 .collect { userId ->
+                    cancelTask(PROFILE_VISIBILITY_TASK)
                     cancelTask(SUBMIT_TASK)
                     cancelTask(REVIEW_TASK)
                     reduce {
@@ -73,6 +74,10 @@ class ReviewWriteViewModel(
             }
 
             ReviewWriteIntent.Submit -> submit()
+            ReviewWriteIntent.ConfirmSubmitWithPrivateProfile -> confirmSubmitWithPrivateProfile()
+            ReviewWriteIntent.ConfirmSubmitWithPublicProfile -> confirmSubmitWithPublicProfile()
+            ReviewWriteIntent.CancelPrivateProfileConfirmation ->
+                reduce { copy(showPrivateProfileConfirmation = false) }
         }
     }
 
@@ -82,6 +87,7 @@ class ReviewWriteViewModel(
     ) {
         if (this.shopId == shopId && this.reviewId == reviewId) return
         cancelTask(SHOP_TASK)
+        cancelTask(PROFILE_VISIBILITY_TASK)
         cancelTask(SUBMIT_TASK)
         cancelTask(REVIEW_TASK)
         this.shopId = shopId
@@ -185,13 +191,63 @@ class ReviewWriteViewModel(
 
     private suspend fun submit() {
         if (!currentState.canSubmit) return
-        if (profileRepository.sessionUserIds.first() == null) {
+        val userId = profileRepository.sessionUserIds.first()
+        if (userId == null) {
             postSideEffect(ReviewWriteSideEffect.LoginRequired)
             return
         }
+        val draft = currentState
+        if (!draft.isPublic) {
+            submitDraft(draft)
+            return
+        }
+        launchResultTask(
+            taskKey = PROFILE_VISIBILITY_TASK,
+            loadKey = ReviewWriteLoadKey.Submit,
+            policy = TaskPolicy.IgnoreNew,
+            request = { profileRepository.fetchMyProfile() },
+            onSuccess = { profile ->
+                if (profile.userId != userId || profileRepository.sessionUserIds.first() != userId) {
+                    return@launchResultTask
+                }
+                if (draft.isPublic && !profile.isPublic) {
+                    reduce { copy(showPrivateProfileConfirmation = true) }
+                } else {
+                    submitDraft(draft)
+                }
+            },
+            onError = { showSubmitFailureIfAuthenticated() },
+        )
+    }
+
+    private fun confirmSubmitWithPrivateProfile() {
+        if (!currentState.showPrivateProfileConfirmation || !Review.isValidBody(currentState.body)) return
+        val draft = currentState.copy(showPrivateProfileConfirmation = false)
+        reduce { copy(showPrivateProfileConfirmation = false) }
+        submitDraft(draft)
+    }
+
+    private fun confirmSubmitWithPublicProfile() {
+        if (!currentState.showPrivateProfileConfirmation || !Review.isValidBody(currentState.body)) return
+        val draft = currentState.copy(showPrivateProfileConfirmation = false)
+        reduce { copy(showPrivateProfileConfirmation = false) }
+        launchResultTask(
+            taskKey = UPDATE_PROFILE_VISIBILITY_TASK,
+            loadKey = ReviewWriteLoadKey.Submit,
+            policy = TaskPolicy.IgnoreNew,
+            request = { profileRepository.updateProfileVisibility(isPublic = true) },
+            onSuccess = {
+                submitDraft(draft)
+            },
+            onError = {
+                showSubmitFailureIfAuthenticated()
+            },
+        )
+    }
+
+    private fun submitDraft(draft: ReviewWriteUiState) {
         val shopId = shopId ?: return
         val editReviewId = reviewId
-        val draft = currentState
         launchTask(
             taskKey = SUBMIT_TASK,
             loadKey = ReviewWriteLoadKey.Submit,
@@ -233,6 +289,8 @@ class ReviewWriteViewModel(
 
     private companion object {
         const val SHOP_TASK = "shop-review-write-shop"
+        const val PROFILE_VISIBILITY_TASK = "shop-review-write-profile-visibility"
+        const val UPDATE_PROFILE_VISIBILITY_TASK = "shop-review-write-update-profile-visibility"
         const val SUBMIT_TASK = "shop-review-write-submit"
         const val REVIEW_TASK = "shop-review-write-review"
 

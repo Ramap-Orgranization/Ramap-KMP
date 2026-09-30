@@ -1,22 +1,35 @@
 package com.peto.ramap.ui.review.write
 
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.peto.ramap.designsystem.dialog.CommonDialog
+import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.designsystem.toast.ToastManager
 import com.peto.ramap.designsystem.toast.model.ToastAction
 import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.review.ReviewImage
 import com.peto.ramap.platform.image.rememberImagesPicker
+import com.peto.ramap.theme.AppTextStyle
+import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.ui.base.ObserveAsEvents
 import com.peto.ramap.ui.review.write.component.ReviewWriteRouteContent
 import com.peto.ramap.ui.review.write.contract.ReviewWriteIntent
 import com.peto.ramap.ui.review.write.contract.ReviewWriteSideEffect
+import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 import ramap.shared.generated.resources.Res
+import ramap.shared.generated.resources.profile_visibility_private
+import ramap.shared.generated.resources.profile_visibility_public
+import ramap.shared.generated.resources.review_private_profile_confirmation
+import ramap.shared.generated.resources.review_private_profile_confirmation_title
 import ramap.shared.generated.resources.review_retry
 import ramap.shared.generated.resources.shop_review_image_invalid
 
@@ -68,5 +81,28 @@ fun ShopReviewWriteRoute(
         onBack = onBack,
         onIntent = viewModel::dispatch,
         onPickImage = imagePicker,
+    )
+    CommonDialog(
+        visible = state.showPrivateProfileConfirmation,
+        confirmText = stringResource(Res.string.profile_visibility_public),
+        dismissText = stringResource(Res.string.profile_visibility_private),
+        onDismissRequest = { viewModel.dispatch(ReviewWriteIntent.CancelPrivateProfileConfirmation) },
+        onDismiss = { viewModel.dispatch(ReviewWriteIntent.ConfirmSubmitWithPrivateProfile) },
+        onConfirm = { viewModel.dispatch(ReviewWriteIntent.ConfirmSubmitWithPublicProfile) },
+        content = {
+            AppText(
+                text = stringResource(Res.string.review_private_profile_confirmation_title),
+                style = AppTextStyle.T1,
+                color = GrayColor.C500,
+                textAlign = TextAlign.Center,
+            )
+            AppText(
+                text = stringResource(Res.string.review_private_profile_confirmation),
+                modifier = Modifier.padding(top = 8.dp),
+                style = AppTextStyle.B2,
+                color = GrayColor.C400,
+                textAlign = TextAlign.Center,
+            )
+        },
     )
 }

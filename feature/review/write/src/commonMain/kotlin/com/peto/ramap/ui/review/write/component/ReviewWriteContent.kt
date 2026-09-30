@@ -98,7 +98,7 @@ internal fun ReviewWriteRouteContent(
             }
         }
 
-        if (state.isSubmitting || state.isLoadingReview) {
+        if (state.showsLoadingOverlay) {
             RamenLoadingIndicator(modifier = Modifier.align(Alignment.Center))
         }
     }
