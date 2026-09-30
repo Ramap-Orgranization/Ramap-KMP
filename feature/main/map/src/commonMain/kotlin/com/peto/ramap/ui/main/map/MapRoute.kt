@@ -7,8 +7,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.peto.ramap.analytics.AnalyticsSource
 import com.peto.ramap.designsystem.toast.ToastManager
@@ -84,13 +82,6 @@ fun MapRoute(
     var shouldShowShopDetail by remember(requestedShopId, showShopDetail) { mutableStateOf(showShopDetail) }
     var shouldShowReviews by remember(requestedShopId, showReviewsOnOpen) { mutableStateOf(showReviewsOnOpen) }
     var detailSource by remember(requestedShopId, originSource) { mutableStateOf(originSource) }
-
-    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
-        coroutineScope.launch {
-            viewModel.dispatch(OnStatusTimeRefreshed)
-            viewModel.dispatch(OnOperatingNoticesRefreshRequested)
-        }
-    }
 
     LaunchedEffect(Unit) {
         while (true) {
