@@ -30,6 +30,7 @@ data class ReviewWriteUiState(
                 (reviewId == null || (reviewLoaded && !isLoadingReview && !reviewLoadFailed))
     val canSubmit: Boolean
         get() = Review.isValidBody(body) && canEdit
+    val bodyContainsProfanity: Boolean get() = Review.containsProfanity(body)
 
     override fun withLoadingState(loadState: LoadState): ReviewWriteUiState = copy(loadState = loadState)
 }

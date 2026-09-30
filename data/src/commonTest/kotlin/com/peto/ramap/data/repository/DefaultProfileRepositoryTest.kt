@@ -23,6 +23,18 @@ import kotlin.time.Instant
 
 class DefaultProfileRepositoryTest {
     @Test
+    fun rejectsProfaneNicknameBeforeAvailabilityRequestOrPhotoUpload() =
+        runTest {
+            val source = ProfileDataSourceFake()
+            val repository = DefaultProfileRepository(source)
+            assertIs<RamapResult.Error>(repository.isNicknameAvailable("씨_발"))
+            assertIs<RamapResult.Error>(repository.updateMyProfile("씨_발", photo()))
+            assertEquals(0, source.nicknameCheckCount)
+            assertEquals(0, source.updateCount)
+            assertTrue(source.uploaded.isEmpty())
+        }
+
+    @Test
     fun profileSavePublishesUpdatedProfile() =
         runTest {
             val repository = DefaultProfileRepository(ProfileDataSourceFake())
@@ -280,6 +292,7 @@ internal class ProfileDataSourceFake : ProfileDataSource {
     var uploadFailure: Throwable? = null
     var deleteFailure: Throwable? = null
     var updateCount = 0
+    var nicknameCheckCount = 0
     var bio = ""
     val uploaded = mutableListOf<String>()
     val deleted = mutableListOf<String>()
@@ -294,7 +307,10 @@ internal class ProfileDataSourceFake : ProfileDataSource {
         return ProfileResponse(userId, "라멘", "$userId/old.jpg", bio)
     }
 
-    override suspend fun isNicknameAvailable(nickname: String): Boolean = true
+    override suspend fun isNicknameAvailable(nickname: String): Boolean {
+        nicknameCheckCount++
+        return true
+    }
 
     override suspend fun updateProfile(
         userId: String,

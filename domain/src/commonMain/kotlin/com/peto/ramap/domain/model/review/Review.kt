@@ -2,6 +2,7 @@ package com.peto.ramap.domain.model.review
 
 import com.peto.ramap.domain.model.community.ReviewAuthor
 import com.peto.ramap.domain.model.community.ReviewModerationStatus
+import com.peto.ramap.domain.model.moderation.KoreanProfanityFilter
 
 data class Review(
     val id: String,
@@ -18,7 +19,11 @@ data class Review(
     val isBlocked: Boolean = false,
 ) {
     companion object {
-        fun isValidBody(body: String): Boolean = codePointCount(body.trim()) in BODY_LENGTH
+        private val profanityFilter = KoreanProfanityFilter()
+
+        fun isValidBody(body: String): Boolean = codePointCount(body.trim()) in BODY_LENGTH && !containsProfanity(body)
+
+        fun containsProfanity(body: String): Boolean = profanityFilter.containsProfanity(body)
 
         fun bodyCharacterCount(body: String): Int = codePointCount(body)
 

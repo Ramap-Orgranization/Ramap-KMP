@@ -30,6 +30,7 @@ data class ProfileUiState(
 
     val changed: Boolean get() = nickname.trim() != profile?.nickname || bio.trim() != profile.bio || image != null || removePhoto
     val nicknameInvalid: Boolean get() = !ProfileNickname.isValid(nickname.trim())
+    val nicknameContainsProfanity: Boolean get() = ProfileNickname.containsProfanity(nickname.trim())
     val nicknameChanged: Boolean get() = nickname.trim() != profile?.nickname
     val canCheckNickname: Boolean get() = editing && nicknameChanged && !nicknameInvalid && checkedNickname != nickname.trim() && !checkingNickname && !saving
     val showNicknameStatus: Boolean get() = !nicknameInvalid && nicknameChanged && (nicknameAvailable != null || nicknameCheckFailed)

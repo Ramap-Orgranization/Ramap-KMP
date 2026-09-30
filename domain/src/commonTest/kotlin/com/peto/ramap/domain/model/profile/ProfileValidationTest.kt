@@ -7,6 +7,17 @@ import kotlin.test.assertTrue
 
 class ProfileValidationTest {
     @Test
+    fun nicknameRejectsProfanityAndKeepsNormalExpressions() {
+        for (value in listOf("씨발", "병신", "SIBAL", "씨_발", "씨1발")) {
+            assertFalse(ProfileNickname.isValid(value), value)
+            assertFalse(ProfileDraft.of(nickname = value).isValid, value)
+        }
+        for (value in listOf("시발점", "시바견", "라멘18", "미친라멘")) {
+            assertTrue(ProfileNickname.isValid(value), value)
+        }
+    }
+
+    @Test
     fun nicknameRequiresTwoToTenAllowedCharacters() {
         listOf("시오", "ramen_1234", "가".repeat(10)).forEach {
             assertTrue(ProfileNickname.isValid(it))

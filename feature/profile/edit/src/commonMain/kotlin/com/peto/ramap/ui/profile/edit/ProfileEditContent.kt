@@ -69,6 +69,7 @@ import ramap.shared.generated.resources.ic_camera_add
 import ramap.shared.generated.resources.ic_close
 import ramap.shared.generated.resources.ic_info
 import ramap.shared.generated.resources.navigation_back
+import ramap.shared.generated.resources.profanity_input_invalid
 import ramap.shared.generated.resources.profile_bio_counter
 import ramap.shared.generated.resources.profile_bio_invalid
 import ramap.shared.generated.resources.profile_bio_placeholder
@@ -362,7 +363,13 @@ private fun ProfileEdit(
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Box(modifier = Modifier.weight(1f)) {
-                                if (state.showNicknameStatus) {
+                                if (state.nicknameTouched && state.nicknameContainsProfanity) {
+                                    AppText(
+                                        text = stringResource(Res.string.profanity_input_invalid),
+                                        style = AppTextStyle.C2,
+                                        color = SystemColor.Warning,
+                                    )
+                                } else if (state.showNicknameStatus) {
                                     AppText(
                                         text =
                                             stringResource(

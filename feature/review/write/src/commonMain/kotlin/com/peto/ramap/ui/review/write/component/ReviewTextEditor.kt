@@ -26,6 +26,7 @@ import com.peto.ramap.ui.review.write.contract.ReviewWriteIntent
 import com.peto.ramap.ui.review.write.contract.ReviewWriteUiState
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
+import ramap.shared.generated.resources.profanity_input_invalid
 import ramap.shared.generated.resources.review_body_count
 import ramap.shared.generated.resources.review_body_required
 import ramap.shared.generated.resources.review_body_title
@@ -72,7 +73,16 @@ internal fun ReviewTextEditor(
                             modifier = Modifier.fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            Spacer(modifier = Modifier.weight(1f))
+                            if (state.bodyContainsProfanity) {
+                                AppText(
+                                    text = stringResource(Res.string.profanity_input_invalid),
+                                    style = AppTextStyle.C1,
+                                    color = SystemColor.Warning,
+                                    modifier = Modifier.weight(1f),
+                                )
+                            } else {
+                                Spacer(modifier = Modifier.weight(1f))
+                            }
                             AppText(
                                 text = stringResource(Res.string.review_body_count, bodyCharacterCount, Review.BODY_LENGTH.last),
                                 style = AppTextStyle.C1,

@@ -25,6 +25,33 @@ import kotlin.test.assertTrue
 @OptIn(ExperimentalCoroutinesApi::class)
 class ProfileEditViewModelTest {
     @Test
+    fun `비속어 닉네임의 중복 확인과 저장을 막고 수정 후 저장한다`() =
+        coroutinesTest {
+            val repository = FakeProfileRepository()
+            val model = ProfileEditViewModel(repository, FakeLoginRepository())
+            runCurrent()
+            model.dispatch(ProfileIntent.ChangeNickname("씨_발"))
+            model.dispatch(ProfileIntent.CheckNickname)
+            model.dispatch(ProfileIntent.Save)
+            runCurrent()
+            assertTrue(model.uiState.value.nicknameContainsProfanity)
+            assertFalse(model.uiState.value.canCheckNickname)
+            assertFalse(model.uiState.value.canSave)
+            assertEquals(0, repository.nicknameCheckCalls)
+            assertEquals(0, repository.saveCalls)
+
+            model.dispatch(ProfileIntent.ChangeNickname("정상라멘러"))
+            model.dispatch(ProfileIntent.CheckNickname)
+            runCurrent()
+            assertFalse(model.uiState.value.nicknameContainsProfanity)
+            assertTrue(model.uiState.value.canSave)
+            model.dispatch(ProfileIntent.Save)
+            runCurrent()
+            assertEquals(1, repository.nicknameCheckCalls)
+            assertEquals(1, repository.saveCalls)
+        }
+
+    @Test
     fun `프로필 조회 중 로그아웃하면 조회 로딩을 종료한다`() =
         coroutinesTest {
             val repository = FakeProfileRepository().apply { fetchPending = CompletableDeferred() }

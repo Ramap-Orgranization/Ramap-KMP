@@ -33,6 +33,7 @@ class ReviewWriteViewModel(
 ) : BaseViewModel<ReviewWriteUiState, ReviewWriteIntent, ReviewWriteSideEffect>(ReviewWriteUiState()) {
     private var shopId: String? = null
     private var reviewId: String? = null
+    private var submissionGeneration = 0L
 
     init {
         observeSessionUser()
@@ -70,7 +71,9 @@ class ReviewWriteViewModel(
     }
 
     private fun resetStateForSessionUserChange() {
+        submissionGeneration++
         cancelTask(PROFILE_VISIBILITY_TASK)
+        cancelTask(UPDATE_PROFILE_VISIBILITY_TASK)
         cancelTask(SUBMIT_TASK)
         cancelTask(REVIEW_TASK)
         reduce {
@@ -87,9 +90,10 @@ class ReviewWriteViewModel(
         shopId: String,
         reviewId: String?,
     ) {
-        if (this.shopId == shopId && this.reviewId == reviewId) return
+        submissionGeneration++
         cancelTask(SHOP_TASK)
         cancelTask(PROFILE_VISIBILITY_TASK)
+        cancelTask(UPDATE_PROFILE_VISIBILITY_TASK)
         cancelTask(SUBMIT_TASK)
         cancelTask(REVIEW_TASK)
         this.shopId = shopId
@@ -233,13 +237,18 @@ class ReviewWriteViewModel(
         draft: ReviewWriteUiState,
         userId: String,
     ) {
+        val generation = submissionGeneration
         launchResultTask(
             taskKey = PROFILE_VISIBILITY_TASK,
             loadKey = ReviewWriteLoadKey.Submit,
             policy = TaskPolicy.IgnoreNew,
             request = { profileRepository.fetchMyProfile() },
             onSuccess = { profile ->
-                if (profile.userId != userId || profileRepository.sessionUserIds.first() != userId) {
+                if (
+                    generation != submissionGeneration ||
+                    profile.userId != userId ||
+                    profileRepository.sessionUserIds.first() != userId
+                ) {
                     return@launchResultTask
                 }
                 if (draft.isPublic && !profile.isPublic) {
@@ -269,12 +278,15 @@ class ReviewWriteViewModel(
     private fun hasValidConfirmationState(): Boolean = currentState.showPrivateProfileConfirmation && Review.isValidBody(currentState.body)
 
     private fun updateProfileVisibilityAndSubmit(draft: ReviewWriteUiState) {
+        val generation = submissionGeneration
         launchResultTask(
             taskKey = UPDATE_PROFILE_VISIBILITY_TASK,
             loadKey = ReviewWriteLoadKey.Submit,
             policy = TaskPolicy.IgnoreNew,
             request = { profileRepository.updateProfileVisibility(isPublic = true) },
-            onSuccess = { submitDraft(draft) },
+            onSuccess = {
+                if (generation == submissionGeneration) submitDraft(draft)
+            },
             onError = { showSubmitFailureIfAuthenticated() },
         )
     }

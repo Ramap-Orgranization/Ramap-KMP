@@ -55,6 +55,7 @@
     <string name="shop_review_write_action">방문 후기 작성하기</string>
     <string name="shop_review_placeholder">매장 경험을 알려주세요</string>
     <string name="shop_review_invalid_body">리뷰는 5~30글자로 작성해 주세요</string>
+    <string name="profanity_input_invalid">비속어가 포함되어 있어요. 내용을 수정해 주세요.</string>
     <string name="shop_review_image_limit">사진은 최대 3장까지 첨부할 수 있어요</string>
     <string name="shop_review_image_count">%1$d / %2$d장</string>
     <string name="shop_review_image_invalid">JPEG·PNG 형식의 5MB 이하 사진을 선택해 주세요</string>

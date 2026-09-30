@@ -6,15 +6,18 @@ import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.coroutinesTest
 import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
+import com.peto.ramap.domain.model.profile.AccountProfile
 import com.peto.ramap.domain.model.review.EditableReview
 import com.peto.ramap.domain.model.review.Review
 import com.peto.ramap.domain.model.review.ReviewImage
+import com.peto.ramap.domain.repository.ProfileRepository
 import com.peto.ramap.domain.usecase.ShopDetail
 import com.peto.ramap.fake.FakeProfileRepository
 import com.peto.ramap.fake.FakeRamenShopRepository
 import com.peto.ramap.fixture.ramenShopFixture
 import com.peto.ramap.ui.review.write.contract.ReviewWriteIntent
 import com.peto.ramap.ui.review.write.contract.ReviewWriteSideEffect
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runCurrent
 import ramap.shared.generated.resources.Res
@@ -27,6 +30,89 @@ import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ReviewWriteViewModelTest {
+    @Test
+    fun `비속어 리뷰의 신규 등록과 수정을 막고 정상 내용으로 수정하면 저장한다`() =
+        coroutinesTest {
+            for (reviewId in listOf(null, "review")) {
+                val reviews =
+                    FakeReviewRepository().apply {
+                        editableReview = EditableReview("review", "shop", "기존 리뷰입니다", emptyList(), emptyList(), false)
+                    }
+                val viewModel = ReviewWriteViewModel(reviews, FakeProfileRepository(), FakeRamenShopRepository())
+                viewModel.dispatch(ReviewWriteIntent.Open("shop", reviewId))
+                runCurrent()
+                viewModel.dispatch(ReviewWriteIntent.ChangeBody("씨.발 맛없어요"))
+                viewModel.dispatch(ReviewWriteIntent.Submit)
+                runCurrent()
+                assertTrue(viewModel.uiState.value.bodyContainsProfanity)
+                assertFalse(viewModel.uiState.value.canSubmit)
+                assertTrue(reviews.submissions.isEmpty())
+                assertTrue(reviews.updates.isEmpty())
+
+                viewModel.dispatch(ReviewWriteIntent.ChangeBody("국물이 진하고 맛있어요"))
+                runCurrent()
+                assertFalse(viewModel.uiState.value.bodyContainsProfanity)
+                assertTrue(viewModel.uiState.value.canSubmit)
+                viewModel.dispatch(ReviewWriteIntent.Submit)
+                runCurrent()
+                assertEquals(1, reviews.submissions.size + reviews.updates.size)
+            }
+        }
+
+    @Test
+    fun `reopening the same review reloads the saved body and photos`() =
+        coroutinesTest {
+            val reviews =
+                FakeReviewRepository().apply {
+                    editableReview = EditableReview("review", "shop", "이전 내용", listOf("old"), listOf("old-url"), true)
+                }
+            val viewModel = ReviewWriteViewModel(reviews, FakeProfileRepository(), FakeRamenShopRepository())
+            viewModel.dispatch(ReviewWriteIntent.Open("shop", "review"))
+            runCurrent()
+            viewModel.dispatch(ReviewWriteIntent.ChangeBody("수정한 내용"))
+            viewModel.dispatch(ReviewWriteIntent.Submit)
+            runCurrent()
+
+            reviews.editableReview = EditableReview("review", "shop", "수정한 내용", listOf("new"), listOf("new-url"), true)
+            viewModel.dispatch(ReviewWriteIntent.Open("shop", "review"))
+            runCurrent()
+
+            assertEquals("수정한 내용", viewModel.uiState.value.body)
+            assertEquals(
+                listOf("new"),
+                viewModel.uiState.value.existingImages
+                    .map { it.path },
+            )
+        }
+
+    @Test
+    fun `pending profile visibility update cannot submit a draft to another shop`() =
+        coroutinesTest {
+            val pendingUpdate = CompletableDeferred<RamapResult<AccountProfile>>()
+            val baseProfiles = FakeProfileRepository(isProfilePublic = false)
+            val profiles =
+                object : ProfileRepository by baseProfiles {
+                    override suspend fun updateProfileVisibility(isPublic: Boolean): RamapResult<AccountProfile> = pendingUpdate.await()
+                }
+            val reviews = FakeReviewRepository()
+            val viewModel = ReviewWriteViewModel(reviews, profiles, FakeRamenShopRepository())
+            viewModel.dispatch(ReviewWriteIntent.Open("first"))
+            runCurrent()
+            viewModel.dispatch(ReviewWriteIntent.ChangeBody("first draft"))
+            viewModel.dispatch(ReviewWriteIntent.Submit)
+            runCurrent()
+            viewModel.dispatch(ReviewWriteIntent.ConfirmSubmitWithPublicProfile)
+            runCurrent()
+
+            viewModel.dispatch(ReviewWriteIntent.Open("second"))
+            runCurrent()
+            pendingUpdate.complete(RamapResult.Success(AccountProfile("me", "라멘러", isPublic = true)))
+            runCurrent()
+
+            assertEquals(emptyList(), reviews.submissions)
+            assertEquals("", viewModel.uiState.value.body)
+        }
+
     @Test
     fun `edit loads owner draft and saves retained photos privacy and new photo`() =
         coroutinesTest {
