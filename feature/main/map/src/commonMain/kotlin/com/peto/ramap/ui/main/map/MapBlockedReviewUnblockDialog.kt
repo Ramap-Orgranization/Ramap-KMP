@@ -1,6 +1,10 @@
 package com.peto.ramap.ui.main.map
 
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.unit.dp
 import com.peto.ramap.designsystem.dialog.CommonDialog
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.theme.AppTextStyle
@@ -31,10 +35,20 @@ internal fun MapBlockedReviewUnblockDialog(
         onDismiss = { onIntent(MapIntent.OnBlockedReviewUnblockDismissed) },
         onConfirm = { onIntent(MapIntent.OnBlockedReviewUnblockConfirmed) },
     ) {
-        AppText(
-            text = stringResource(Res.string.review_unblock_user_confirm),
-            style = AppTextStyle.B2,
-            color = GrayColor.C500,
-        )
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            AppText(
+                text = stringResource(Res.string.review_unblock_user),
+                style = AppTextStyle.B2,
+                color = GrayColor.C500,
+            )
+            AppText(
+                text = stringResource(Res.string.review_unblock_user_confirm),
+                style = AppTextStyle.B2,
+                color = GrayColor.C500,
+            )
+        }
     }
 }

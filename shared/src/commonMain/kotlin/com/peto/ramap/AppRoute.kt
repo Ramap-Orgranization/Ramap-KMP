@@ -446,6 +446,7 @@ internal fun AppRoute(
                             viewModel = mapViewModel,
                             onDismiss = onDismiss,
                             onReviewNavigate = navigationState::showReviewWrite,
+                            onOpenProfile = { userId -> openProfile(userId, asOverlay = false) },
                             onEditReview = navigationState::showReviewEdit,
                             isNavigationBarPadded = true,
                             onShowOnMap = onShowOnMap,

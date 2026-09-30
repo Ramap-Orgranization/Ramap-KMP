@@ -81,6 +81,7 @@ import com.peto.ramap.ui.main.map.model.CameraPosition
 import com.peto.ramap.ui.main.map.model.location.LocationFocusStatus
 import com.peto.ramap.ui.main.map.model.search.SearchResultGuide
 import com.peto.ramap.ui.main.map.model.search.SearchUiModel
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.delay
@@ -190,6 +191,84 @@ class MapViewModelTest {
             runCurrent()
             assertEquals(listOf("blocked-author"), community.unblockedUserIds)
             assertEquals(null, viewModel.uiState.value.pendingUnblockReview)
+        }
+
+    @Test
+    fun `차단 해제 후 새 리뷰를 불러오는 동안 이전 가림 카드로 조회하지 않는다`() =
+        coroutinesTest {
+            val shop = ramenShopFixture(id = "unblocked-review-shop")
+            val blocked =
+                Review(
+                    id = "blocked-review",
+                    shopId = shop.id,
+                    body = "",
+                    createdAt = "2026-09-30T00:00:00Z",
+                    author = ReviewAuthor("blocked-author", ""),
+                    isBlocked = true,
+                )
+            val initialDetail =
+                ShopDetail(
+                    shop = shop,
+                    likeCount = 0L,
+                    waitingSystem = null,
+                    event = null,
+                    operatingNotice = null,
+                    reviews = listOf(blocked),
+                )
+            val refreshedDetail = CompletableDeferred<ShopDetail>()
+            var fetchCount = 0
+            val detailUseCase =
+                object : FetchShopDetailUseCase {
+                    override suspend fun invoke(shopId: String): RamapResult<ShopDetail> {
+                        fetchCount++
+                        return RamapResult.Success(
+                            if (fetchCount == 1) initialDetail else refreshedDetail.await(),
+                        )
+                    }
+
+                    override fun findCached(shopId: String): ShopDetailCacheLookup = ShopDetailCacheLookup.Miss
+
+                    override fun clearCache() = Unit
+
+                    override fun updateCachedLikeCount(
+                        shopId: String,
+                        enabled: Boolean,
+                    ) = Unit
+                }
+            val reviews = FakeMapReviewRepository()
+            val viewModel =
+                mapViewModel(
+                    ramenShopRepository = FakeRamenShopRepository(fetchByIdsResult = RamenShops(mapOf(shop.id to shop))),
+                    loginRepository = loggedInRepository(),
+                    profileRepository = FakeProfileRepository("viewer"),
+                    communityRepository = FakeCommunityRepository(),
+                    reviewRepository = reviews,
+                    detailUseCase = detailUseCase,
+                )
+
+            runCurrent()
+            viewModel.dispatch(OnShopSelected(shop))
+            runCurrent()
+            assertEquals(1, fetchCount)
+
+            viewModel.dispatch(MapIntent.OnBlockedReviewUnblockRequested(blocked))
+            viewModel.dispatch(MapIntent.OnBlockedReviewUnblockConfirmed)
+            runCurrent()
+
+            assertTrue(viewModel.uiState.value.shopDetailState is ShopDetailSheetUiState.Loading)
+            viewModel.dispatch(MapIntent.OnBlockedReviewViewRequested(blocked))
+            runCurrent()
+            assertTrue(reviews.requestedBlockedReviews.isEmpty())
+
+            refreshedDetail.complete(initialDetail.copy(reviews = listOf(blocked.copy(body = "공개 리뷰", isBlocked = false))))
+            runCurrent()
+            assertEquals(
+                "공개 리뷰",
+                viewModel.uiState.value.shopDetail
+                    ?.reviews
+                    ?.single()
+                    ?.body,
+            )
         }
 
     @Test

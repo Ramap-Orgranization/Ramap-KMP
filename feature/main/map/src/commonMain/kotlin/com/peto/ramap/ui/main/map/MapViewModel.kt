@@ -275,6 +275,7 @@ class MapViewModel(
         }
 
     private fun revealBlockedReview(review: Review) {
+        if (currentState.isUnblockingReview) return
         val blockedReview = currentBlockedReview(review) ?: return
         val userId = currentState.currentUserId ?: return
         if (currentState.revealedBlockedReviews.containsKey(review.id)) return
@@ -336,7 +337,18 @@ class MapViewModel(
             request = { communityRepository.unblockUser(review.author.userId) },
             onSuccess = {
                 if (!currentCoroutineContext().isActive || currentState.currentUserId != userId) return@launchResultTask
-                reduce { copy(pendingUnblockReview = null) }
+                val selectedShop = currentState.selectedShop
+                reduce {
+                    copy(
+                        pendingUnblockReview = null,
+                        shopDetailState =
+                            if (selectedShop?.id == review.shopId) {
+                                ShopDetailSheetUiState.Loading(review.shopId, selectedShop)
+                            } else {
+                                shopDetailState
+                            },
+                    )
+                }
                 refreshReviews()
             },
             onError = {
