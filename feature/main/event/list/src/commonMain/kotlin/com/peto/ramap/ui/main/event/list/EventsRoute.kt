@@ -159,13 +159,13 @@ internal fun EventsScreen(
                         val summerLimitedTitle =
                             stringResource(Res.string.event_filter_summer_limited)
                         val ongoingTitleRes =
-                            if (uiState.selectedFilter == EventFilter.NEW_MENU) {
+                            if (uiState.isNewMenuFilter) {
                                 Res.string.new_menu_ongoing_section
                             } else {
                                 Res.string.event_list_ongoing_section
                             }
                         val upcomingTitleRes =
-                            if (uiState.selectedFilter == EventFilter.NEW_MENU) {
+                            if (uiState.isNewMenuFilter) {
                                 Res.string.new_menu_upcoming_section
                             } else {
                                 Res.string.event_list_upcoming_section
