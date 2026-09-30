@@ -72,9 +72,6 @@ class ProfileEditViewModelTest {
             assertEquals(0, repository.saveCalls)
             model.dispatch(ProfileIntent.Back)
             runCurrent()
-            assertTrue(model.uiState.value.confirmDiscard)
-            model.dispatch(ProfileIntent.Discard)
-            runCurrent()
             assertEquals("", model.uiState.value.bio)
             assertEquals(
                 "",
@@ -229,18 +226,12 @@ class ProfileEditViewModelTest {
         }
 
     @Test
-    fun `변경한 초안에서 돌아가면 확인 후 취소하고 마이 탭으로 돌아간다`() =
+    fun `변경한 초안에서 돌아가면 마이 탭으로 돌아간다`() =
         coroutinesTest {
             val model = ProfileEditViewModel(FakeProfileRepository(), FakeLoginRepository())
             runCurrent()
             model.dispatch(ProfileIntent.ChangeNickname("새로운차슈"))
             model.dispatch(ProfileIntent.Back)
-            runCurrent()
-            assertTrue(model.uiState.value.confirmDiscard)
-            model.dispatch(ProfileIntent.KeepEditing)
-            runCurrent()
-            assertTrue(model.uiState.value.editing)
-            model.dispatch(ProfileIntent.Discard)
             runCurrent()
             assertFalse(model.uiState.value.editing)
             assertEquals(
@@ -278,7 +269,6 @@ class ProfileEditViewModelTest {
             runCurrent()
             assertTrue(model.uiState.value.saving)
             assertTrue(model.uiState.value.editing)
-            assertFalse(model.uiState.value.confirmDiscard)
             repository.saveResult?.complete(RamapResult.Success(AccountProfile("first", "새로운차슈")))
             runCurrent()
             assertFalse(model.uiState.value.editing)

@@ -25,13 +25,11 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -77,11 +75,7 @@ import ramap.shared.generated.resources.profile_bio_placeholder
 import ramap.shared.generated.resources.profile_bio_short
 import ramap.shared.generated.resources.profile_complete
 import ramap.shared.generated.resources.profile_counter
-import ramap.shared.generated.resources.profile_discard
-import ramap.shared.generated.resources.profile_discard_body
-import ramap.shared.generated.resources.profile_discard_title
 import ramap.shared.generated.resources.profile_edit
-import ramap.shared.generated.resources.profile_keep_editing
 import ramap.shared.generated.resources.profile_load_failed
 import ramap.shared.generated.resources.profile_nickname
 import ramap.shared.generated.resources.profile_nickname_available
@@ -236,44 +230,6 @@ internal fun ProfileEditContent(
                 )
             }
         }
-    }
-    if (state.confirmDiscard) {
-        AlertDialog(
-            onDismissRequest = { onIntent(ProfileIntent.KeepEditing) },
-            title = {
-                AppText(
-                    text = stringResource(Res.string.profile_discard_title),
-                    style = AppTextStyle.T2,
-                    color = GrayColor.C500,
-                )
-            },
-            text = {
-                AppText(
-                    text = stringResource(Res.string.profile_discard_body),
-                    style = AppTextStyle.B2,
-                    color = GrayColor.C300,
-                )
-            },
-            confirmButton = {
-                TextButton(onClick = { onIntent(ProfileIntent.Discard) }) {
-                    AppText(
-                        text = stringResource(Res.string.profile_discard),
-                        style = AppTextStyle.B1,
-                        color = ChromaticColor.Orange400,
-                    )
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { onIntent(ProfileIntent.KeepEditing) }) {
-                    AppText(
-                        text = stringResource(Res.string.profile_keep_editing),
-                        style = AppTextStyle.B2,
-                        color = GrayColor.C300,
-                    )
-                }
-            },
-            containerColor = CommonColor.White,
-        )
     }
 }
 

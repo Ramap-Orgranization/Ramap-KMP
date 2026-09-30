@@ -29,9 +29,5 @@ sealed interface ProfileIntent : Intent {
 
     data object Back : ProfileIntent
 
-    data object Discard : ProfileIntent
-
-    data object KeepEditing : ProfileIntent
-
     data object Leave : ProfileIntent
 }

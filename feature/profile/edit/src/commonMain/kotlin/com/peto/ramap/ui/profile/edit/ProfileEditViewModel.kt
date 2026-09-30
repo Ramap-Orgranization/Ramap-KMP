@@ -52,9 +52,7 @@ class ProfileEditViewModel(
             ProfileIntent.RemovePhoto -> if (!currentState.saving) reduce { copy(image = null, removePhoto = profile?.avatarUrl != null) }
             ProfileIntent.Save -> save()
             ProfileIntent.Back -> back()
-            ProfileIntent.Discard -> discardAndNavigateBack()
             ProfileIntent.Leave -> endEdit()
-            ProfileIntent.KeepEditing -> reduce { copy(confirmDiscard = false) }
         }
     }
 
@@ -161,7 +159,7 @@ class ProfileEditViewModel(
             when (result) {
                 is RamapResult.Success ->
                     if (result.data.userId == currentState.userId) {
-                        reduce { copy(profile = result.data, editing = false, image = null, removePhoto = false, confirmDiscard = false, draftGeneration = ++nextDraftGeneration) }
+                        reduce { copy(profile = result.data, editing = false, image = null, removePhoto = false, draftGeneration = ++nextDraftGeneration) }
                         trySideEffect(ProfileSideEffect.Toast(Res.string.profile_saved))
                         trySideEffect(ProfileSideEffect.NavigateBack)
                     }
@@ -231,7 +229,6 @@ class ProfileEditViewModel(
         when {
             !currentState.editing -> trySideEffect(ProfileSideEffect.NavigateBack)
             currentState.saving -> Unit
-            currentState.changed -> reduce { copy(confirmDiscard = true) }
             else -> discardAndNavigateBack()
         }
     }
@@ -245,7 +242,7 @@ class ProfileEditViewModel(
         nextDraftGeneration++
         cancelTask(SAVE)
         cancelTask(CHECK_NICKNAME)
-        reduce { copy(editing = false, nickname = "", bio = "", image = null, removePhoto = false, nicknameTouched = false, nicknameAvailable = null, nicknameCheckFailed = false, checkedNickname = null, confirmDiscard = false, draftGeneration = nextDraftGeneration) }
+        reduce { copy(editing = false, nickname = "", bio = "", image = null, removePhoto = false, nicknameTouched = false, nicknameAvailable = null, nicknameCheckFailed = false, checkedNickname = null, draftGeneration = nextDraftGeneration) }
     }
 
     override fun handleError(throwable: Throwable) {
