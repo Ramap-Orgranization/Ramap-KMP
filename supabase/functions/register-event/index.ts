@@ -308,14 +308,14 @@ async function registerOperatingNotice(
   const sourceUrl = normalizeInstagramUrl(text(body.source_url));
   const evidencePath = text(body.evidence_path);
   if (
-    !shopName || !isSupportedNoticeType(noticeType) || !startDate || !endDate || !description || !sourceUrl ||
-    !validDate(startDate) || !validDate(endDate) || (startTime && !validTime(startTime)) ||
+    !shopName || !isSupportedNoticeType(noticeType) || !startDate || !description || !sourceUrl ||
+    !validDate(startDate) || (endDate !== null && !validDate(endDate)) || (startTime && !validTime(startTime)) ||
     (endTime && !validTime(endTime)) || !isInstagramUrl(sourceUrl) ||
     (noticeType === "operating_notice" && !validScheduleOverride(scheduleOverride)) ||
     (noticeType !== "operating_notice" && scheduleOverride != null) ||
     (noticeType === "early_close" && !endTime) ||
     (noticeType === "late_opening" && startTime !== null && !validTime(startTime)) ||
-    (noticeType === "operating_notice" && startDate !== endDate)
+    (noticeType === "operating_notice" && endDate !== null && startDate !== endDate)
   ) return json({ code: "invalid_operating_notice_draft" }, 400);
 
   const { data: shops, error: shopError } = await supabase.from("ramen_shops").select("id,instagram_url").eq("name", shopName).limit(2);
@@ -408,15 +408,6 @@ async function ensureRawPost(
     .single();
   if (error || !inserted) throw error ?? new Error("Raw Instagram post was not created");
   return inserted.id as string;
-}
-
-async function isAdministrator(request: Request): Promise<boolean> {
-  const token = request.headers.get("authorization")?.match(/^Bearer\s+(.+)$/i)?.[1]?.trim();
-  const url = Deno.env.get("SUPABASE_URL"), anonKey = Deno.env.get("SUPABASE_ANON_KEY"), adminEmail = (Deno.env.get("ADMIN_EMAIL") ?? "uni070@naver.com").trim().toLowerCase();
-  if (!token || !url || !anonKey || !adminEmail) return false;
-  const response = await fetch(`${url}/auth/v1/user`, { headers: { apikey: anonKey, Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(ADMIN_TIMEOUT_MS) }).catch(() => null);
-  const user = response?.ok ? await response.json() as { email?: unknown } : null;
-  return typeof user?.email === "string" && user.email.toLowerCase() === adminEmail;
 }
 
 function isInstagramUrl(value: string) {
