@@ -309,7 +309,7 @@ async function registerOperatingNotice(
   const evidencePath = text(body.evidence_path);
   if (
     !shopName || !isSupportedNoticeType(noticeType) || !startDate || !description || !sourceUrl ||
-    !validDate(startDate) || (endDate !== null && !validDate(endDate)) || (startTime && !validTime(startTime)) ||
+    !validDate(startDate) || !endDate || !validDate(endDate) || endDate < startDate || (startTime && !validTime(startTime)) ||
     (endTime && !validTime(endTime)) || !isInstagramUrl(sourceUrl) ||
     (noticeType === "operating_notice" && !validScheduleOverride(scheduleOverride)) ||
     (noticeType !== "operating_notice" && scheduleOverride != null) ||
