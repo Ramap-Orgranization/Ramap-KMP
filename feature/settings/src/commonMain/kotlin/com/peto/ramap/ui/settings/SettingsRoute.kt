@@ -35,7 +35,8 @@ import ramap.shared.generated.resources.settings_official_account_menu
 import ramap.shared.generated.resources.settings_title
 
 private const val OFFICIAL_ACCOUNT_URL = "https://www.instagram.com/ramap.app/"
-private const val CONTACT_EMAIL_URL = "mailto:uni070@naver.com"
+private const val CONTACT_FORM_URL =
+    "https://docs.google.com/forms/d/11HMyDlBmQ--ZTBizZpWgTDZUed98m53OWrT8mrkkxcU/viewform"
 private const val PRIVACY_POLICY_URL = "https://ramap-orgranization.github.io/Ramap-KMP/"
 
 @Composable
@@ -70,7 +71,7 @@ fun SettingsRoute(
                                 SettingsMenu.ACCOUNT -> onAccountNavigate()
                                 SettingsMenu.NOTIFICATION -> onNotificationSettingsNavigate()
                                 SettingsMenu.OFFICIAL_ACCOUNT -> ExternalUriOpener.open(OFFICIAL_ACCOUNT_URL)
-                                SettingsMenu.CONTACT -> ExternalUriOpener.open(CONTACT_EMAIL_URL)
+                                SettingsMenu.CONTACT -> ExternalUriOpener.open(CONTACT_FORM_URL)
                                 SettingsMenu.PRIVACY_POLICY -> ExternalUriOpener.open(PRIVACY_POLICY_URL)
                             }
                         },
