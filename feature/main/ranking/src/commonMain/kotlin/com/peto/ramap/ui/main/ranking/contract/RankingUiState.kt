@@ -44,6 +44,9 @@ data class RankingUiState(
     val hasNext: Boolean
         get() = nextCursor != null
 
+    val showsNextPageFooter: Boolean
+        get() = hasNext || isLoadingNext || showNextPageError
+
     fun displayedLikeCount(item: RankedShop): Long {
         val shopId = item.ranking.shop.id
         val delta = bookmarkLikeCountDeltas[shopId] ?: 0L

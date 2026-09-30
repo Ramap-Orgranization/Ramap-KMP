@@ -99,7 +99,7 @@ internal fun RankingContent(
                             onClick = { onShopClick(item.ranking.shop) },
                         )
                     }
-                    if (uiState.hasNext || uiState.isLoadingNext || uiState.showNextPageError) {
+                    if (uiState.showsNextPageFooter) {
                         item {
                             RankingNextPageFooter(
                                 uiState = uiState,
