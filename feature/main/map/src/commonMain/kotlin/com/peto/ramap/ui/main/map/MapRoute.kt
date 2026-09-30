@@ -205,6 +205,7 @@ fun MapRoute(
             onUnblockBlockedUser = { viewModel.dispatch(MapIntent.OnBlockedReviewUnblockRequested(it)) },
             hasMoreReviews = uiState.hasMoreShopReviews,
             isLoadingMoreReviews = uiState.isLoadingMoreShopReviews,
+            isRetryingReviews = uiState.isRetryingShopReviews,
             onLoadMoreReviews = { viewModel.dispatch(OnShopReviewsLoadMore) },
             onOperatingNoticeNavigate = onOperatingNoticeNavigate,
             showShopDetail = shouldShowShopDetail,

@@ -101,6 +101,8 @@ data class MapUiState(
         get() = loadState.isLoading(MapLoadKey.BlockedReviewUnblock)
     val isLoadingMoreShopReviews: Boolean
         get() = loadState.isLoading(MapLoadKey.ShopReviewsPage)
+    val isRetryingShopReviews: Boolean
+        get() = shopDetail?.hasReviewLoadFailure == true && loadState.isLoading(MapLoadKey.ShopDetail)
     val selectedShop: RamenShop?
         get() =
             when (val state = shopDetailState) {

@@ -24,6 +24,9 @@ import com.peto.ramap.domain.model.review.Review
 import com.peto.ramap.theme.RamapTheme
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
+import ramap.shared.generated.resources.data_load_failure_message
+import ramap.shared.generated.resources.laduck_error_crying
+import ramap.shared.generated.resources.map_shop_detail_error_description
 import ramap.shared.generated.resources.review_empty_illustration
 import ramap.shared.generated.resources.shop_review_empty_description
 import ramap.shared.generated.resources.shop_review_empty_title
@@ -32,9 +35,12 @@ import ramap.shared.generated.resources.shop_review_empty_title
 internal fun ReviewsContent(
     shopName: String,
     reviews: List<Review>,
+    hasReviewLoadFailure: Boolean = false,
+    isRetryingReviews: Boolean = false,
     scrollState: ScrollState = rememberScrollState(),
     onOpenProfile: (String) -> Unit,
     onWriteReviewClick: () -> Unit,
+    onRetry: (() -> Unit)? = null,
     currentUserId: String? = null,
     currentProfileIsPublic: Boolean? = null,
     actingReviewId: String? = null,
@@ -82,7 +88,24 @@ internal fun ReviewsContent(
         verticalArrangement = Arrangement.spacedBy(20.dp),
         modifier = modifier.fillMaxWidth(),
     ) {
-        if (reviews.isEmpty()) {
+        if (hasReviewLoadFailure && isRetryingReviews) {
+            RamenLoadingIndicator(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .height(120.dp),
+            )
+        } else if (hasReviewLoadFailure) {
+            LoadErrorContent(
+                image = Res.drawable.laduck_error_crying,
+                title = stringResource(Res.string.data_load_failure_message),
+                description = stringResource(Res.string.map_shop_detail_error_description),
+                onRetry = onRetry,
+                compact = true,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+        if (reviews.isEmpty() && !hasReviewLoadFailure) {
             LoadErrorContent(
                 image = Res.drawable.review_empty_illustration,
                 title = stringResource(Res.string.shop_review_empty_title),

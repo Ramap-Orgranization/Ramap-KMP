@@ -90,6 +90,7 @@ fun ShopDetailContent(
     onReviewReport: (Review) -> Unit = {},
     hasMoreReviews: Boolean = false,
     isLoadingMoreReviews: Boolean = false,
+    isRetryingReviews: Boolean = false,
     onLoadMoreReviews: () -> Unit = {},
 ) {
     val selectedShop =
@@ -149,6 +150,8 @@ fun ShopDetailContent(
                         reviews = state.detail.reviews,
                         reviewScrollState = scrollState,
                         reviewCount = state.detail.reviewCount,
+                        hasReviewLoadFailure = state.detail.hasReviewLoadFailure,
+                        isRetryingReviews = isRetryingReviews,
                         showReviewsOnOpen = showReviewsOnOpen,
                         menuItemCount = state.detail.menuItemCount,
                         onBookmarkClick = { onBookmarkToggled(shop) },
@@ -170,6 +173,7 @@ fun ShopDetailContent(
                         onOperatingNoticeClick = onOperatingNoticeClick,
                         onOpenProfile = onOpenProfile,
                         onWriteReviewClick = { onReviewsClick(shop.id) },
+                        onReviewRetry = onRetry,
                         currentUserId = currentUserId,
                         currentProfileIsPublic = currentProfileIsPublic,
                         actingReviewId = actingReviewId,

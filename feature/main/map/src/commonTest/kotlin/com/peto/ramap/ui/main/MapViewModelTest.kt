@@ -631,6 +631,56 @@ class MapViewModelTest {
         }
 
     @Test
+    fun `리뷰만 실패한 매장 상세에서 재시도하면 리뷰를 다시 조회한다`() =
+        coroutinesTest {
+            val shop = ramenShopFixture()
+            var requests = 0
+            val detailUseCase =
+                object : FetchShopDetailUseCase {
+                    override suspend fun invoke(shopId: String): RamapResult<ShopDetail> {
+                        requests++
+                        return RamapResult.Success(
+                            ShopDetail(
+                                shop,
+                                0L,
+                                null,
+                                null,
+                                null,
+                                hasReviewLoadFailure = requests == 1,
+                            ),
+                        )
+                    }
+
+                    override fun findCached(shopId: String): ShopDetailCacheLookup = ShopDetailCacheLookup.Miss
+
+                    override fun clearCache() = Unit
+
+                    override fun updateCachedLikeCount(
+                        shopId: String,
+                        enabled: Boolean,
+                    ) = Unit
+                }
+            val viewModel = mapViewModel(detailUseCase = detailUseCase)
+            viewModel.dispatch(OnShopSelected(shop))
+            runCurrent()
+            assertEquals(
+                true,
+                viewModel.uiState.value.shopDetail
+                    ?.hasReviewLoadFailure,
+            )
+
+            viewModel.dispatch(OnShopDetailRetry)
+            runCurrent()
+
+            assertEquals(2, requests)
+            assertEquals(
+                false,
+                viewModel.uiState.value.shopDetail
+                    ?.hasReviewLoadFailure,
+            )
+        }
+
+    @Test
     fun `이미 조회한 가게를 다시 선택하면 상세를 중복 조회하지 않고 즉시 표시한다`() =
         coroutinesTest {
             val shop = ramenShopFixture()

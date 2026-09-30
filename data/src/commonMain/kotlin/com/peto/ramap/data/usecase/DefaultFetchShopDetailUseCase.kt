@@ -86,6 +86,7 @@ internal class DefaultFetchShopDetailUseCase(
                 menuUpdatedAt = refreshed.menuUpdatedAt,
                 reviews = refreshed.reviews,
                 reviewCount = refreshed.reviewCount,
+                hasReviewLoadFailure = refreshed.hasReviewLoadFailure,
             )
         if (requestedVersion == cacheVersion) cache[cached.shop.id] = updated
         return RamapResult.Success(updated)
@@ -114,6 +115,7 @@ internal class DefaultFetchShopDetailUseCase(
             detailWithNotices.copy(
                 reviews = if (reviews is RamapResult.Success) reviews.data.reviews else cachedReviews,
                 reviewCount = if (reviews is RamapResult.Success) reviews.data.totalCount else cachedReviewCount,
+                hasReviewLoadFailure = reviews is RamapResult.Error,
             ),
         )
     }

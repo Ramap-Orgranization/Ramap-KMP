@@ -50,6 +50,7 @@ class DefaultFetchShopDetailUseCaseTest {
             assertIs<ShopDetailCacheLookup.Miss>(useCase.findCached(initial.shop.id))
             val loaded = assertIs<RamapResult.Success<ShopDetail>>(useCase(initial.shop.id)).data
             assertEquals(emptyList(), loaded.reviews)
+            assertEquals(true, loaded.hasReviewLoadFailure)
         }
 
     @Test
@@ -105,6 +106,11 @@ class DefaultFetchShopDetailUseCaseTest {
             reviews.error = RamapError.Unknown(IllegalStateException("failed"))
             val fallback = assertIs<RamapResult.Success<ShopDetail>>(useCase(initial.shop.id)).data
             assertEquals(listOf(secondReview), fallback.reviews)
+            assertEquals(true, fallback.hasReviewLoadFailure)
+
+            reviews.error = null
+            val recovered = assertIs<RamapResult.Success<ShopDetail>>(useCase(initial.shop.id)).data
+            assertEquals(false, recovered.hasReviewLoadFailure)
         }
 
     @Test

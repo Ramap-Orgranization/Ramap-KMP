@@ -742,11 +742,17 @@ class MapViewModel(
     }
 
     private fun retryShopDetailLoad() {
-        val errorState = currentState.shopDetailState as? ShopDetailSheetUiState.Error ?: return
-        loadShopDetail(
-            shopId = errorState.shopId,
-            selectShopOnSuccess = errorState.shop == null,
-        )
+        when (val state = currentState.shopDetailState) {
+            is ShopDetailSheetUiState.Error ->
+                loadShopDetail(
+                    shopId = state.shopId,
+                    selectShopOnSuccess = state.shop == null,
+                )
+            is ShopDetailSheetUiState.Content -> {
+                if (state.detail.hasReviewLoadFailure) loadShopDetail(state.detail.shop.id)
+            }
+            else -> Unit
+        }
     }
 
     private fun selectShop(shopId: String) {
