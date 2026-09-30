@@ -1,4 +1,4 @@
-package com.peto.ramap.domain.repository
+package com.peto.ramap.domain.model.review
 
 data class ReviewLike(
     val likeCount: Int,

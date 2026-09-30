@@ -12,12 +12,15 @@ import com.peto.ramap.domain.model.auth.LoginSessionState
 import com.peto.ramap.domain.model.auth.LoginType
 import com.peto.ramap.domain.model.businesshour.BusinessHours
 import com.peto.ramap.domain.model.businesshour.BusinessHoursDay
+import com.peto.ramap.domain.model.community.ReviewAuthor
 import com.peto.ramap.domain.model.personalization.ShopPersonalization
 import com.peto.ramap.domain.model.report.ShopInformationField
 import com.peto.ramap.domain.model.report.ShopInformationReport
+import com.peto.ramap.domain.model.review.Review
 import com.peto.ramap.domain.model.shop.Category
 import com.peto.ramap.domain.model.shop.Location
 import com.peto.ramap.domain.model.shop.MapBounds
+import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.domain.model.shop.RamenShopFilter
 import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.domain.model.shop.SearchQuery
@@ -28,7 +31,9 @@ import com.peto.ramap.domain.store.PersonalizationBootstrapState
 import com.peto.ramap.domain.store.ShopPersonalizationStore
 import com.peto.ramap.domain.usecase.FetchShopDetailUseCase
 import com.peto.ramap.domain.usecase.ShopDetail
+import com.peto.ramap.domain.usecase.ShopDetailCacheLookup
 import com.peto.ramap.fake.FakeAnalyticsTracker
+import com.peto.ramap.fake.FakeCommunityRepository
 import com.peto.ramap.fake.FakeCrashReporter
 import com.peto.ramap.fake.FakeLoginRepository
 import com.peto.ramap.fake.FakeNotificationSettingsRepository
@@ -36,7 +41,6 @@ import com.peto.ramap.fake.FakeOperatingNoticeRepository
 import com.peto.ramap.fake.FakePersonalizationRepository
 import com.peto.ramap.fake.FakeProfileRepository
 import com.peto.ramap.fake.FakeRamenShopRepository
-import com.peto.ramap.fake.FakeReviewCommunityRepository
 import com.peto.ramap.fake.FakeShopReportRepository
 import com.peto.ramap.fake.FakeShopWaitingSystemRepository
 import com.peto.ramap.fixture.BOUNDS_FIXTURE
@@ -44,6 +48,7 @@ import com.peto.ramap.fixture.ramenShopFixture
 import com.peto.ramap.fixture.waitingSystemFixture
 import com.peto.ramap.ui.location.CurrentLocationStore
 import com.peto.ramap.ui.main.map.MapViewModel
+import com.peto.ramap.ui.main.map.contract.MapIntent
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnBookmarkToggled
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnBookmarkedShopsToggled
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnBoundsChanged
@@ -97,6 +102,96 @@ import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class MapViewModelTest {
+    @Test
+    fun `차단 리뷰 한 건만 본 뒤 상세를 닫으면 다시 가린다`() =
+        coroutinesTest {
+            val shop = ramenShopFixture(id = "blocked-review-shop")
+            val blocked =
+                Review(
+                    id = "blocked-review",
+                    shopId = shop.id,
+                    body = "",
+                    createdAt = "2026-09-30T00:00:00Z",
+                    author = ReviewAuthor("blocked-author", ""),
+                    isBlocked = true,
+                )
+            val reviews = FakeMapReviewRepository().apply { blockedReview = blocked.copy(body = "공개 요청한 리뷰") }
+            val viewModel =
+                mapViewModel(
+                    ramenShopRepository = FakeRamenShopRepository(fetchByIdsResult = RamenShops(mapOf(shop.id to shop))),
+                    loginRepository = loggedInRepository(),
+                    profileRepository = FakeProfileRepository("viewer"),
+                    reviewRepository = reviews,
+                    detailUseCase = blockedReviewDetailUseCase(shop, blocked),
+                )
+
+            runCurrent()
+            viewModel.dispatch(OnShopSelected(shop))
+            runCurrent()
+            viewModel.dispatch(MapIntent.OnBlockedReviewViewRequested(blocked))
+            runCurrent()
+
+            assertEquals(listOf(blocked.id), reviews.requestedBlockedReviews)
+            assertEquals(
+                "공개 요청한 리뷰",
+                viewModel.uiState.value.revealedBlockedReviews[blocked.id]
+                    ?.body,
+            )
+            assertTrue(
+                viewModel.uiState.value.shopDetail
+                    ?.reviews
+                    ?.single()
+                    ?.isBlocked == true,
+            )
+
+            viewModel.dispatch(OnShopDetailDismissed)
+            runCurrent()
+            assertTrue(
+                viewModel.uiState.value.revealedBlockedReviews
+                    .isEmpty(),
+            )
+        }
+
+    @Test
+    fun `차단 리뷰 메뉴에서 확인한 경우에만 작성자를 차단 해제한다`() =
+        coroutinesTest {
+            val shop = ramenShopFixture(id = "blocked-review-shop")
+            val blocked =
+                Review(
+                    id = "blocked-review",
+                    shopId = shop.id,
+                    body = "",
+                    createdAt = "2026-09-30T00:00:00Z",
+                    author = ReviewAuthor("blocked-author", ""),
+                    isBlocked = true,
+                )
+            val community = FakeCommunityRepository()
+            val viewModel =
+                mapViewModel(
+                    ramenShopRepository = FakeRamenShopRepository(fetchByIdsResult = RamenShops(mapOf(shop.id to shop))),
+                    loginRepository = loggedInRepository(),
+                    profileRepository = FakeProfileRepository("viewer"),
+                    communityRepository = community,
+                    detailUseCase = blockedReviewDetailUseCase(shop, blocked),
+                )
+
+            runCurrent()
+            viewModel.dispatch(OnShopSelected(shop))
+            runCurrent()
+            viewModel.dispatch(MapIntent.OnBlockedReviewUnblockRequested(blocked))
+            runCurrent()
+            assertEquals(emptyList(), community.unblockedUserIds)
+            viewModel.dispatch(MapIntent.OnBlockedReviewUnblockDismissed)
+            runCurrent()
+            assertEquals(null, viewModel.uiState.value.pendingUnblockReview)
+
+            viewModel.dispatch(MapIntent.OnBlockedReviewUnblockRequested(blocked))
+            viewModel.dispatch(MapIntent.OnBlockedReviewUnblockConfirmed)
+            runCurrent()
+            assertEquals(listOf("blocked-author"), community.unblockedUserIds)
+            assertEquals(null, viewModel.uiState.value.pendingUnblockReview)
+        }
+
     @Test
     fun `같은 매장 상세 화면이 재구성되어도 상세 조회를 반복하지 않는다`() =
         coroutinesTest {
@@ -2742,6 +2837,9 @@ private fun mapViewModel(
     shopReportRepository: ShopReportRepository = FakeShopReportRepository(),
     notificationSettingsRepository: FakeNotificationSettingsRepository = FakeNotificationSettingsRepository(),
     detailUseCase: FetchShopDetailUseCase? = null,
+    reviewRepository: FakeMapReviewRepository = FakeMapReviewRepository(),
+    communityRepository: FakeCommunityRepository = FakeCommunityRepository(),
+    profileRepository: FakeProfileRepository = FakeProfileRepository(null),
 ): MapViewModel =
     MapViewModel(
         ramenShopRepository,
@@ -2758,10 +2856,37 @@ private fun mapViewModel(
         MapAnalytics(FakeAnalyticsTracker()),
         LoginAnalytics(FakeAnalyticsTracker(), FakeCrashReporter()),
         FakeOperatingNoticeRepository(),
-        FakeMapReviewRepository(),
-        FakeReviewCommunityRepository(),
-        FakeProfileRepository(null),
+        reviewRepository,
+        communityRepository,
+        profileRepository,
     )
+
+private fun blockedReviewDetailUseCase(
+    shop: RamenShop,
+    review: Review,
+): FetchShopDetailUseCase =
+    object : FetchShopDetailUseCase {
+        override suspend fun invoke(shopId: String): RamapResult<ShopDetail> =
+            RamapResult.Success(
+                ShopDetail(
+                    shop = shop,
+                    likeCount = 0L,
+                    waitingSystem = null,
+                    event = null,
+                    operatingNotice = null,
+                    reviews = listOf(review),
+                ),
+            )
+
+        override fun findCached(shopId: String): ShopDetailCacheLookup = ShopDetailCacheLookup.Miss
+
+        override fun clearCache() = Unit
+
+        override fun updateCachedLikeCount(
+            shopId: String,
+            enabled: Boolean,
+        ) = Unit
+    }
 
 private fun loggedInRepository(): FakeLoginRepository =
     FakeLoginRepository(

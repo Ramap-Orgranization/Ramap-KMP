@@ -6,8 +6,8 @@ import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.community.ProfileAccess
 import com.peto.ramap.domain.model.community.PublicProfile
+import com.peto.ramap.domain.repository.CommunityRepository
 import com.peto.ramap.domain.repository.ProfileRepository
-import com.peto.ramap.domain.repository.ReviewCommunityRepository
 import com.peto.ramap.ui.base.BaseViewModel
 import com.peto.ramap.ui.review.other.contract.OtherReviewsEffect
 import com.peto.ramap.ui.review.other.contract.OtherReviewsIntent
@@ -20,7 +20,7 @@ import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.review_action_failed
 
 class OtherReviewsViewModel(
-    private val community: ReviewCommunityRepository,
+    private val community: CommunityRepository,
     private val profiles: ProfileRepository,
 ) : BaseViewModel<OtherReviewsUiState, OtherReviewsIntent, OtherReviewsEffect>(OtherReviewsUiState()) {
     init {

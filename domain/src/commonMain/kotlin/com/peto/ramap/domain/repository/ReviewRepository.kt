@@ -7,6 +7,7 @@ import com.peto.ramap.domain.model.review.MyReviewVisibility
 import com.peto.ramap.domain.model.review.MyReviewsPage
 import com.peto.ramap.domain.model.review.Review
 import com.peto.ramap.domain.model.review.ReviewImage
+import com.peto.ramap.domain.model.review.ReviewLike
 import com.peto.ramap.domain.model.review.ShopReviewsPage
 import kotlinx.coroutines.flow.Flow
 
@@ -20,30 +21,18 @@ interface ReviewRepository {
 
     suspend fun fetchMyReview(reviewId: String): RamapResult<MyReview?>
 
-    suspend fun fetchShopReviews(
-        shopId: String,
-        offset: Long,
-    ): RamapResult<List<Review>>
-
     suspend fun fetchShopReviewsPage(
         shopId: String,
         offset: Long,
-    ): RamapResult<ShopReviewsPage> =
-        when (val result = fetchShopReviews(shopId, offset)) {
-            is RamapResult.Error -> result
-            is RamapResult.Success -> RamapResult.Success(ShopReviewsPage(result.data, result.data.size))
-        }
+    ): RamapResult<ShopReviewsPage>
 
-    suspend fun fetchProfileReviews(
-        userId: String?,
-        offset: Long,
-    ): RamapResult<List<Review>>
+    suspend fun fetchBlockedShopReviewOnce(reviewId: String): RamapResult<Review?>
 
     suspend fun submitReview(
         shopId: String,
         body: String,
         images: List<ReviewImage>,
-        isPublic: Boolean = true,
+        isPublic: Boolean = DEFAULT_IS_PUBLIC,
     ): RamapResult<Unit>
 
     suspend fun fetchEditableReview(reviewId: String): RamapResult<EditableReview?>
@@ -62,4 +51,8 @@ interface ReviewRepository {
         reviewId: String,
         liked: Boolean,
     ): RamapResult<ReviewLike>
+
+    companion object {
+        const val DEFAULT_IS_PUBLIC: Boolean = true
+    }
 }

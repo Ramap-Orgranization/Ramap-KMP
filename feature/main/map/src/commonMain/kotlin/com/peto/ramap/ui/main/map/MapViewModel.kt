@@ -25,11 +25,11 @@ import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.domain.model.shop.RamenShopFilter
 import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.domain.model.shop.SearchQuery
+import com.peto.ramap.domain.repository.CommunityRepository
 import com.peto.ramap.domain.repository.LoginRepository
 import com.peto.ramap.domain.repository.OperatingNoticeRepository
 import com.peto.ramap.domain.repository.ProfileRepository
 import com.peto.ramap.domain.repository.RamenShopRepository
-import com.peto.ramap.domain.repository.ReviewCommunityRepository
 import com.peto.ramap.domain.repository.ReviewRepository
 import com.peto.ramap.domain.repository.ShopReportRepository
 import com.peto.ramap.domain.store.PersonalizationBootstrapState
@@ -127,7 +127,7 @@ class MapViewModel(
     private val loginAnalytics: LoginAnalytics,
     private val operatingNoticeRepository: OperatingNoticeRepository,
     private val reviewRepository: ReviewRepository,
-    private val reviewCommunityRepository: ReviewCommunityRepository,
+    private val communityRepository: CommunityRepository,
     private val profileRepository: ProfileRepository,
 ) : BaseViewModel<MapUiState, MapIntent, MapSideEffect>(initialState = MapUiState()) {
     private val viewportShopLoader = ViewportShopLoader(ramenShopRepository, viewModelScope)
@@ -204,6 +204,7 @@ class MapViewModel(
             if (currentState.currentUserId != userId) {
                 profileVisibilityJob?.cancel()
                 cancelTask(REVIEW_ACTION_TASK_KEY)
+                cancelTask(BLOCKED_REVIEW_REVEAL_TASK_KEY)
                 dismissReviewReport()
                 cancelTask(SHOP_DETAIL_TASK_KEY)
                 fetchShopDetailUseCase.clearCache()
@@ -220,6 +221,9 @@ class MapViewModel(
                         currentUserId = userId,
                         currentProfileIsPublic = null,
                         actingReviewId = null,
+                        revealedBlockedReviews = emptyMap(),
+                        revealingBlockedReviewId = null,
+                        pendingUnblockReview = null,
                         shopDetailState =
                             selectedShopId?.let { ShopDetailSheetUiState.Loading(it, visibleShop) }
                                 ?: shopDetailState,
@@ -251,11 +255,96 @@ class MapViewModel(
             is MapIntent.OnReviewReportRequested -> requestReviewReport(intent.review)
             is MapIntent.OnReviewReportSubmitted -> submitReviewReport(intent.reason, intent.details)
             MapIntent.OnReviewReportDismissed -> dismissReviewReport()
+            is MapIntent.OnBlockedReviewViewRequested -> revealBlockedReview(intent.review)
+            is MapIntent.OnBlockedReviewUnblockRequested -> requestBlockedReviewUnblock(intent.review)
+            MapIntent.OnBlockedReviewUnblockConfirmed -> unblockBlockedReviewAuthor()
+            MapIntent.OnBlockedReviewUnblockDismissed -> dismissBlockedReviewUnblock()
             MapIntent.OnReviewsChanged -> refreshReviews()
             MapIntent.OnShopReviewsLoadMore -> loadMoreShopReviews()
             else -> return false
         }
         return true
+    }
+
+    private fun currentBlockedReview(review: Review): Review? =
+        currentState.shopDetail?.reviews?.firstOrNull {
+            it.id == review.id &&
+                it.shopId == review.shopId &&
+                it.author.userId == review.author.userId &&
+                it.isBlocked
+        }
+
+    private fun revealBlockedReview(review: Review) {
+        val blockedReview = currentBlockedReview(review) ?: return
+        val userId = currentState.currentUserId ?: return
+        if (currentState.revealedBlockedReviews.containsKey(review.id)) return
+        launchResultTask(
+            taskKey = BLOCKED_REVIEW_REVEAL_TASK_KEY,
+            loadKey = MapLoadKey.BlockedReviewReveal,
+            policy = TaskPolicy.IgnoreNew,
+            onStart = { copy(revealingBlockedReviewId = blockedReview.id) },
+            request = { reviewRepository.fetchBlockedShopReviewOnce(blockedReview.id) },
+            onSuccess = { revealed ->
+                if (
+                    !currentCoroutineContext().isActive ||
+                    currentState.currentUserId != userId ||
+                    currentBlockedReview(blockedReview) == null
+                ) {
+                    return@launchResultTask
+                }
+                reduce { copy(revealingBlockedReviewId = null) }
+                if (
+                    revealed == null ||
+                    !revealed.isBlocked ||
+                    revealed.id != blockedReview.id ||
+                    revealed.shopId != blockedReview.shopId ||
+                    revealed.author.userId != blockedReview.author.userId
+                ) {
+                    showToast(Res.string.review_action_failed, ToastType.ERROR)
+                    return@launchResultTask
+                }
+                reduce { copy(revealedBlockedReviews = revealedBlockedReviews + (revealed.id to revealed)) }
+            },
+            onError = {
+                if (currentState.currentUserId == userId) {
+                    reduce { copy(revealingBlockedReviewId = null) }
+                    showToast(Res.string.review_action_failed, ToastType.ERROR)
+                }
+            },
+        )
+    }
+
+    private fun requestBlockedReviewUnblock(review: Review) {
+        val blockedReview = currentBlockedReview(review) ?: return
+        if (currentState.currentUserId == null || currentState.isUnblockingReview) return
+        reduce { copy(pendingUnblockReview = blockedReview) }
+    }
+
+    private fun dismissBlockedReviewUnblock() {
+        if (currentState.isUnblockingReview) return
+        reduce { copy(pendingUnblockReview = null) }
+    }
+
+    private fun unblockBlockedReviewAuthor() {
+        val review = currentState.pendingUnblockReview ?: return
+        val userId = currentState.currentUserId ?: return
+        if (currentBlockedReview(review) == null || review.author.userId.isBlank()) return
+        launchResultTask(
+            taskKey = BLOCKED_REVIEW_UNBLOCK_TASK_KEY,
+            loadKey = MapLoadKey.BlockedReviewUnblock,
+            policy = TaskPolicy.IgnoreNew,
+            request = { communityRepository.unblockUser(review.author.userId) },
+            onSuccess = {
+                if (!currentCoroutineContext().isActive || currentState.currentUserId != userId) return@launchResultTask
+                reduce { copy(pendingUnblockReview = null) }
+                refreshReviews()
+            },
+            onError = {
+                if (currentState.currentUserId == userId) {
+                    showToast(Res.string.review_action_failed, ToastType.ERROR)
+                }
+            },
+        )
     }
 
     private fun requestReviewReport(review: Review) {
@@ -281,7 +370,7 @@ class MapViewModel(
             taskKey = REVIEW_REPORT_TASK_KEY,
             loadKey = MapLoadKey.ReviewReport,
             policy = TaskPolicy.IgnoreNew,
-            request = { reviewCommunityRepository.reportReview(review.id, reason, details) },
+            request = { communityRepository.reportReview(review.id, reason, details) },
             onSuccess = {
                 if (!isCurrentReviewReport(review, reportingUserId)) return@launchResultTask
                 reduce { copy(reportReview = null) }
@@ -404,6 +493,14 @@ class MapViewModel(
     }
 
     private fun refreshReviews() {
+        cancelTask(BLOCKED_REVIEW_REVEAL_TASK_KEY)
+        reduce {
+            copy(
+                revealedBlockedReviews = emptyMap(),
+                revealingBlockedReviewId = null,
+                pendingUnblockReview = null,
+            )
+        }
         fetchShopDetailUseCase.clearCache()
         currentState.selectedShop?.id?.let(::loadShopDetail)
     }
@@ -470,11 +567,15 @@ class MapViewModel(
 
     private fun dismissBottomSheet() {
         dismissReviewReport()
+        cancelTask(BLOCKED_REVIEW_REVEAL_TASK_KEY)
         cancelShopDetailLoad()
         cancelTask(SEARCH_TASK_KEY)
         reduce {
             copy(
                 shopDetailState = ShopDetailSheetUiState.Closed,
+                revealedBlockedReviews = emptyMap(),
+                revealingBlockedReviewId = null,
+                pendingUnblockReview = null,
                 search = search.reset(),
             )
         }
@@ -579,6 +680,7 @@ class MapViewModel(
         shouldFocus: Boolean = true,
     ) {
         dismissReviewReport()
+        cancelTask(BLOCKED_REVIEW_REVEAL_TASK_KEY)
         val cache = checkCachedShopDetail(shop.id)
         if (cache != null) recordRecentlyViewedShop(shop)
         val selectedShopState = createSelectedShopState(currentState, shop, shouldFocus, cache)
@@ -594,6 +696,9 @@ class MapViewModel(
     ): MapUiState =
         state.copy(
             shopDetailState = createSelectedShopDetailState(shop, cache),
+            revealedBlockedReviews = emptyMap(),
+            revealingBlockedReviewId = null,
+            pendingUnblockReview = null,
             shouldFocusSelectedShop = shouldFocus,
             shopWaiting =
                 cache?.let { state.shopWaiting + (shop.id to it.waitingSystem) }
@@ -623,10 +728,14 @@ class MapViewModel(
 
     private fun dismissShopDetail() {
         dismissReviewReport()
+        cancelTask(BLOCKED_REVIEW_REVEAL_TASK_KEY)
         cancelShopDetailLoad()
         reduce {
             copy(
                 shopDetailState = ShopDetailSheetUiState.Closed,
+                revealedBlockedReviews = emptyMap(),
+                revealingBlockedReviewId = null,
+                pendingUnblockReview = null,
                 search = if (search.results.size == 1) search.dismissResults() else search,
             )
         }
@@ -644,6 +753,14 @@ class MapViewModel(
         if (shopId.isBlank()) return
         if (isCurrentShopDetail(shopId)) return
         dismissReviewReport()
+        cancelTask(BLOCKED_REVIEW_REVEAL_TASK_KEY)
+        reduce {
+            copy(
+                revealedBlockedReviews = emptyMap(),
+                revealingBlockedReviewId = null,
+                pendingUnblockReview = null,
+            )
+        }
         consumeInitialLocationFocus()
         when (val lookup = fetchShopDetailUseCase.findCached(shopId)) {
             is ShopDetailCacheLookup.Hit -> {
@@ -748,11 +865,15 @@ class MapViewModel(
         query: String,
         clearFilters: Boolean,
     ) {
+        cancelTask(BLOCKED_REVIEW_REVEAL_TASK_KEY)
         cancelShopDetailLoad()
         reduce {
             copy(
                 search = search.updateInput(query),
                 shopDetailState = ShopDetailSheetUiState.Closed,
+                revealedBlockedReviews = emptyMap(),
+                revealingBlockedReviewId = null,
+                pendingUnblockReview = null,
                 filters = if (clearFilters) filters.clear() else filters,
                 isBookmarkedView = if (clearFilters) false else isBookmarkedView,
             )
@@ -1285,10 +1406,14 @@ class MapViewModel(
         query: SearchQuery,
         result: RamenShops,
     ) {
+        cancelTask(BLOCKED_REVIEW_REVEAL_TASK_KEY)
         reduce {
             copy(
                 search = search.updateResults(query, result),
                 shopDetailState = ShopDetailSheetUiState.Closed,
+                revealedBlockedReviews = emptyMap(),
+                revealingBlockedReviewId = null,
+                pendingUnblockReview = null,
             )
         }
     }
@@ -1518,6 +1643,8 @@ class MapViewModel(
         private const val SHOP_REVIEW_PAGE_TASK_KEY = "map-shop-reviews-page"
         private const val REVIEW_ACTION_TASK_KEY = "map-review-action"
         private const val REVIEW_REPORT_TASK_KEY = "map-review-report"
+        private const val BLOCKED_REVIEW_REVEAL_TASK_KEY = "map-blocked-review-reveal"
+        private const val BLOCKED_REVIEW_UNBLOCK_TASK_KEY = "map-blocked-review-unblock"
         private const val SHOP_REPORT_TASK_KEY = "map-shop-report"
         private const val SIGN_IN_TASK_KEY = "map-sign-in"
         private const val PERSONALIZED_SHOPS_TASK_KEY = "map-personalized-shops"

@@ -16,7 +16,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
@@ -55,9 +57,11 @@ import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.ic_heart_filled
 import ramap.shared.generated.resources.ic_heart_outline
 import ramap.shared.generated.resources.ic_more_vert
+import ramap.shared.generated.resources.ic_review_lock
 import ramap.shared.generated.resources.ic_review_private
 import ramap.shared.generated.resources.review_author_review_count
 import ramap.shared.generated.resources.review_author_unknown
+import ramap.shared.generated.resources.review_blocked_options
 import ramap.shared.generated.resources.review_blocked_review
 import ramap.shared.generated.resources.review_collapse
 import ramap.shared.generated.resources.review_delete
@@ -68,6 +72,8 @@ import ramap.shared.generated.resources.review_photo_description
 import ramap.shared.generated.resources.review_private_status
 import ramap.shared.generated.resources.review_report
 import ramap.shared.generated.resources.review_status_removed
+import ramap.shared.generated.resources.review_unblock_user
+import ramap.shared.generated.resources.review_view_blocked_once
 import ramap.shared.generated.resources.review_visit_number
 import ramap.shared.generated.resources.shop_detail_more_actions
 
@@ -85,9 +91,18 @@ fun ReviewCard(
     onDelete: (() -> Unit)? = null,
     isLikeLoading: Boolean = false,
     actionsEnabled: Boolean = true,
+    showBlockedContent: Boolean = false,
+    onViewBlockedReview: (() -> Unit)? = null,
+    onUnblockBlockedUser: (() -> Unit)? = null,
+    isBlockedReviewLoading: Boolean = false,
 ) {
-    if (review.isBlocked) {
-        BlockedReviewCard(modifier = modifier)
+    if (review.isBlocked && !showBlockedContent) {
+        BlockedReviewCard(
+            modifier = modifier,
+            onViewReview = onViewBlockedReview,
+            onUnblockUser = onUnblockBlockedUser,
+            isLoading = isBlockedReviewLoading,
+        )
         return
     }
     var expanded by remember(review.id, review.body) { mutableStateOf(false) }
@@ -118,7 +133,7 @@ fun ReviewCard(
                             .weight(1f)
                             .heightIn(min = 48.dp)
                             .noRippleClickable(
-                                enabled = review.author.userId.isNotBlank(),
+                                enabled = review.author.userId.isNotBlank() && !review.isBlocked,
                                 role = Role.Button,
                             ) {
                                 onOpenProfile(review.author.userId)
@@ -156,18 +171,28 @@ fun ReviewCard(
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                         )
-                        AppText(
-                            text = stringResource(Res.string.review_author_review_count, review.author.reviewCount),
-                            style = AppTextStyle.B2,
-                            color = GrayColor.C300,
-                        )
+                        if (!review.isBlocked) {
+                            AppText(
+                                text = stringResource(Res.string.review_author_review_count, review.author.reviewCount),
+                                style = AppTextStyle.B2,
+                                color = GrayColor.C300,
+                            )
+                        }
                     }
                 }
-                if (onEdit != null || onDelete != null || onReport != null) {
+                if (
+                    onEdit != null ||
+                    onDelete != null ||
+                    onReport != null ||
+                    (review.isBlocked && onUnblockBlockedUser != null)
+                ) {
                     Box {
                         Image(
                             painter = painterResource(Res.drawable.ic_more_vert),
-                            contentDescription = stringResource(Res.string.shop_detail_more_actions),
+                            contentDescription =
+                                stringResource(
+                                    if (review.isBlocked) Res.string.review_blocked_options else Res.string.shop_detail_more_actions,
+                                ),
                             modifier =
                                 Modifier
                                     .size(20.dp)
@@ -213,6 +238,15 @@ fun ReviewCard(
                                     },
                                 )
                             }
+                            if (review.isBlocked && onUnblockBlockedUser != null) {
+                                AppDropdownMenuItem(
+                                    text = stringResource(Res.string.review_unblock_user),
+                                    onClick = {
+                                        menuExpanded = false
+                                        onUnblockBlockedUser()
+                                    },
+                                )
+                            }
                         }
                     }
                 }
@@ -243,6 +277,13 @@ fun ReviewCard(
                 modifier = Modifier.padding(horizontal = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
+                if (review.isBlocked) {
+                    AppText(
+                        text = stringResource(Res.string.review_blocked_review),
+                        style = AppTextStyle.C1,
+                        color = GrayColor.C300,
+                    )
+                }
                 AppText(
                     text = review.body,
                     style = AppTextStyle.B2,
@@ -305,28 +346,30 @@ fun ReviewCard(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                Row(
-                    modifier =
-                        Modifier
-                            .noRippleClickable(
-                                enabled = onLike != null && !isLikeLoading && actionsEnabled,
-                            ) {
-                                onLike?.invoke()
-                            },
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                ) {
-                    Image(
-                        painter = painterResource(if (review.isLiked) Res.drawable.ic_heart_filled else Res.drawable.ic_heart_outline),
-                        contentDescription = stringResource(Res.string.review_like, review.likeCount),
-                        modifier = Modifier.size(20.dp),
-                        colorFilter = ColorFilter.tint(if (review.isLiked) SystemColor.Warning else GrayColor.C300),
-                    )
-                    AppText(
-                        text = review.likeCount.toString(),
-                        style = AppTextStyle.B2,
-                        color = GrayColor.C500,
-                    )
+                if (!review.isBlocked) {
+                    Row(
+                        modifier =
+                            Modifier
+                                .noRippleClickable(
+                                    enabled = onLike != null && !isLikeLoading && actionsEnabled,
+                                ) {
+                                    onLike?.invoke()
+                                },
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
+                        Image(
+                            painter = painterResource(if (review.isLiked) Res.drawable.ic_heart_filled else Res.drawable.ic_heart_outline),
+                            contentDescription = stringResource(Res.string.review_like, review.likeCount),
+                            modifier = Modifier.size(20.dp),
+                            colorFilter = ColorFilter.tint(if (review.isLiked) SystemColor.Warning else GrayColor.C300),
+                        )
+                        AppText(
+                            text = review.likeCount.toString(),
+                            style = AppTextStyle.B2,
+                            color = GrayColor.C500,
+                        )
+                    }
                 }
                 Spacer(modifier = Modifier.weight(1f))
                 Row(
@@ -363,15 +406,111 @@ fun ReviewCard(
 }
 
 @Composable
-private fun BlockedReviewCard(modifier: Modifier = Modifier) {
-    Column(modifier = modifier.fillMaxWidth()) {
-        AppText(
-            text = stringResource(Res.string.review_blocked_review),
-            style = AppTextStyle.B2,
-            color = GrayColor.C400,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 24.dp),
-        )
+private fun BlockedReviewCard(
+    modifier: Modifier = Modifier,
+    onViewReview: (() -> Unit)? = null,
+    onUnblockUser: (() -> Unit)? = null,
+    isLoading: Boolean = false,
+) {
+    var menuExpanded by remember { mutableStateOf(false) }
+    Column(
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .background(CommonColor.White),
+    ) {
+        Row(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 12.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(GrayColor.C050)
+                    .padding(horizontal = 16.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Box(
+                modifier =
+                    Modifier
+                        .size(36.dp)
+                        .background(CommonColor.White, CircleShape),
+                contentAlignment = Alignment.Center,
+            ) {
+                Image(
+                    painter = painterResource(Res.drawable.ic_review_lock),
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp),
+                    colorFilter = ColorFilter.tint(GrayColor.C300),
+                )
+            }
+            AppText(
+                text = stringResource(Res.string.review_blocked_review),
+                style = AppTextStyle.B1,
+                color = GrayColor.C400,
+                modifier = Modifier.weight(1f),
+            )
+            if (isLoading) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(20.dp),
+                    color = GrayColor.C300,
+                    strokeWidth = 2.dp,
+                )
+            } else if (onViewReview != null || onUnblockUser != null) {
+                Box {
+                    Image(
+                        painter = painterResource(Res.drawable.ic_more_vert),
+                        contentDescription = stringResource(Res.string.review_blocked_options),
+                        modifier =
+                            Modifier
+                                .size(20.dp)
+                                .noRippleClickable(role = Role.Button) { menuExpanded = true },
+                        colorFilter = ColorFilter.tint(GrayColor.C500),
+                    )
+                    AppDropdownMenu(
+                        expanded = menuExpanded,
+                        onDismissRequest = { menuExpanded = false },
+                    ) {
+                        if (onViewReview != null) {
+                            AppDropdownMenuItem(
+                                text = stringResource(Res.string.review_view_blocked_once),
+                                onClick = {
+                                    menuExpanded = false
+                                    onViewReview()
+                                },
+                            )
+                        }
+                        if (onUnblockUser != null) {
+                            AppDropdownMenuItem(
+                                text = stringResource(Res.string.review_unblock_user),
+                                onClick = {
+                                    menuExpanded = false
+                                    onUnblockUser()
+                                },
+                            )
+                        }
+                    }
+                }
+            }
+        }
         HorizontalDivider(color = GrayColor.C100)
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun BlockedReviewCardPreview(
+    @PreviewParameter(ReviewPreviewParameterProvider::class) review: Review,
+) {
+    RamapTheme {
+        Column {
+            ReviewCard(
+                review = review.copy(isBlocked = true),
+                onViewBlockedReview = {},
+                onUnblockBlockedUser = {},
+            )
+            ReviewCard(review = review)
+        }
     }
 }
 

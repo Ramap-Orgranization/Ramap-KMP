@@ -12,4 +12,12 @@ sealed interface MyTabIntent : Intent {
     data object OpenBlockedUsers : MyTabIntent
 
     data object DismissBlockedUsers : MyTabIntent
+
+    data class RequestUnblock(
+        val userId: String,
+    ) : MyTabIntent
+
+    data object DismissUnblock : MyTabIntent
+
+    data object ConfirmUnblock : MyTabIntent
 }

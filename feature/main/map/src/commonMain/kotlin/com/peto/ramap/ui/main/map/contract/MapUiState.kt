@@ -89,11 +89,16 @@ data class MapUiState(
     val currentUserId: String? = null,
     val currentProfileIsPublic: Boolean? = null,
     val actingReviewId: String? = null,
+    val revealedBlockedReviews: Map<String, Review> = emptyMap(),
+    val revealingBlockedReviewId: String? = null,
+    val pendingUnblockReview: Review? = null,
     val reportReview: Review? = null,
     val hasMoreShopReviews: Boolean = false,
 ) : LoadableState<MapUiState> {
     val isReportingReview: Boolean
         get() = loadState.isLoading(MapLoadKey.ReviewReport)
+    val isUnblockingReview: Boolean
+        get() = loadState.isLoading(MapLoadKey.BlockedReviewUnblock)
     val isLoadingMoreShopReviews: Boolean
         get() = loadState.isLoading(MapLoadKey.ShopReviewsPage)
     val selectedShop: RamenShop?

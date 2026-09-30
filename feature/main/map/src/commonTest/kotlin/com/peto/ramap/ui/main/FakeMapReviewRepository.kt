@@ -7,12 +7,16 @@ import com.peto.ramap.domain.model.review.MyReviewVisibility
 import com.peto.ramap.domain.model.review.MyReviewsPage
 import com.peto.ramap.domain.model.review.Review
 import com.peto.ramap.domain.model.review.ReviewImage
-import com.peto.ramap.domain.repository.ReviewLike
+import com.peto.ramap.domain.model.review.ReviewLike
+import com.peto.ramap.domain.model.review.ShopReviewsPage
 import com.peto.ramap.domain.repository.ReviewRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 
 class FakeMapReviewRepository : ReviewRepository {
+    var blockedReview: Review? = null
+    val requestedBlockedReviews = mutableListOf<String>()
+
     override fun observeChanges(): Flow<Unit> = emptyFlow()
 
     override suspend fun fetchMyReviews(
@@ -22,15 +26,15 @@ class FakeMapReviewRepository : ReviewRepository {
 
     override suspend fun fetchMyReview(reviewId: String): RamapResult<MyReview?> = RamapResult.Success(null)
 
-    override suspend fun fetchShopReviews(
+    override suspend fun fetchShopReviewsPage(
         shopId: String,
         offset: Long,
-    ): RamapResult<List<Review>> = RamapResult.Success(emptyList())
+    ): RamapResult<ShopReviewsPage> = RamapResult.Success(ShopReviewsPage(emptyList(), 0))
 
-    override suspend fun fetchProfileReviews(
-        userId: String?,
-        offset: Long,
-    ): RamapResult<List<Review>> = RamapResult.Success(emptyList())
+    override suspend fun fetchBlockedShopReviewOnce(reviewId: String): RamapResult<Review?> {
+        requestedBlockedReviews += reviewId
+        return RamapResult.Success(blockedReview)
+    }
 
     override suspend fun submitReview(
         shopId: String,

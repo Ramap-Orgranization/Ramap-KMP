@@ -9,4 +9,6 @@ sealed interface MyTabSideEffect : SideEffect {
     ) : MyTabSideEffect
 
     data object OpenBlockedUsersDialog : MyTabSideEffect
+
+    data object CloseBlockedUsersDialog : MyTabSideEffect
 }

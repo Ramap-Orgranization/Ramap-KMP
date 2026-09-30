@@ -13,6 +13,7 @@ import com.peto.ramap.data.datasource.waiting.ShopWaitingSystemDataSource
 import com.peto.ramap.data.repository.DefaultAppNoticeRepository
 import com.peto.ramap.data.repository.DefaultAppUpdateRepository
 import com.peto.ramap.data.repository.DefaultBookmarkRepository
+import com.peto.ramap.data.repository.DefaultCommunityRepository
 import com.peto.ramap.data.repository.DefaultHiddenShopRepository
 import com.peto.ramap.data.repository.DefaultImportationRepository
 import com.peto.ramap.data.repository.DefaultLoginRepository
@@ -22,7 +23,6 @@ import com.peto.ramap.data.repository.DefaultPlaceSearchRepository
 import com.peto.ramap.data.repository.DefaultProfileRepository
 import com.peto.ramap.data.repository.DefaultPushRegistrationRepository
 import com.peto.ramap.data.repository.DefaultRamenShopRepository
-import com.peto.ramap.data.repository.DefaultReviewCommunityRepository
 import com.peto.ramap.data.repository.DefaultReviewRepository
 import com.peto.ramap.data.repository.DefaultShopRankingRepository
 import com.peto.ramap.data.repository.DefaultShopReportRepository
@@ -33,6 +33,7 @@ import com.peto.ramap.data.store.DefaultShopPersonalizationStore
 import com.peto.ramap.domain.repository.AppNoticeRepository
 import com.peto.ramap.domain.repository.AppUpdateRepository
 import com.peto.ramap.domain.repository.BookmarkRepository
+import com.peto.ramap.domain.repository.CommunityRepository
 import com.peto.ramap.domain.repository.HiddenShopRepository
 import com.peto.ramap.domain.repository.ImportationRepository
 import com.peto.ramap.domain.repository.LoginRepository
@@ -42,7 +43,6 @@ import com.peto.ramap.domain.repository.PlaceSearchRepository
 import com.peto.ramap.domain.repository.ProfileRepository
 import com.peto.ramap.domain.repository.PushRegistrationRepository
 import com.peto.ramap.domain.repository.RamenShopRepository
-import com.peto.ramap.domain.repository.ReviewCommunityRepository
 import com.peto.ramap.domain.repository.ReviewRepository
 import com.peto.ramap.domain.repository.ShopRankingRepository
 import com.peto.ramap.domain.repository.ShopReportRepository
@@ -55,7 +55,7 @@ val repositoryModule =
     module {
         single<ProfileRepository> { DefaultProfileRepository(get(), get()) }
         single { ReviewChangeNotifier() }
-        single<ReviewCommunityRepository> { DefaultReviewCommunityRepository(get(), get()) }
+        single<CommunityRepository> { DefaultCommunityRepository(get(), get()) }
         single<ReviewRepository> { DefaultReviewRepository(get(), get()) }
         single<AppUpdateRepository> {
             DefaultAppUpdateRepository(get<AppUpdatePolicyDataSource>())

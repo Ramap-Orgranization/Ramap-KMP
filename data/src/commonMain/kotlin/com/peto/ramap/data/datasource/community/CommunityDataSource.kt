@@ -1,8 +1,8 @@
 package com.peto.ramap.data.datasource.community
 
+import com.peto.ramap.data.model.BlockedUserResponse
 import com.peto.ramap.data.model.MyCommunityProfileResponse
 import com.peto.ramap.data.model.ProfileAccessResponse
-import com.peto.ramap.data.model.PublicProfileResponse
 import com.peto.ramap.data.model.ReviewResponse
 
 internal interface CommunityDataSource {
@@ -15,7 +15,7 @@ internal interface CommunityDataSource {
         offset: Long,
     ): List<ReviewResponse>
 
-    suspend fun fetchBlockedUsers(): List<PublicProfileResponse>
+    suspend fun fetchBlockedUsers(): List<BlockedUserResponse>
 
     suspend fun report(
         targetType: String,

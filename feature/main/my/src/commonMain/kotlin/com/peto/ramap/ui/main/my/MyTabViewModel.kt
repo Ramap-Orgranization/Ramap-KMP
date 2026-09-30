@@ -4,8 +4,8 @@ import androidx.lifecycle.viewModelScope
 import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.review.MyReviewVisibility
+import com.peto.ramap.domain.repository.CommunityRepository
 import com.peto.ramap.domain.repository.ProfileRepository
-import com.peto.ramap.domain.repository.ReviewCommunityRepository
 import com.peto.ramap.domain.repository.ReviewRepository
 import com.peto.ramap.domain.store.PersonalizationBootstrapState
 import com.peto.ramap.domain.store.ShopPersonalizationStore
@@ -14,16 +14,18 @@ import com.peto.ramap.ui.main.my.contract.MyTabIntent
 import com.peto.ramap.ui.main.my.contract.MyTabLoadKey
 import com.peto.ramap.ui.main.my.contract.MyTabSideEffect
 import com.peto.ramap.ui.main.my.contract.MyTabUiState
+import com.peto.ramap.ui.task.TaskPolicy
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.data_load_failure_message
 import ramap.shared.generated.resources.profile_save_failed
+import ramap.shared.generated.resources.review_action_failed
 import ramap.shared.generated.resources.review_blocked_users_empty
 
 class MyTabViewModel(
     private val repository: ProfileRepository,
-    private val communityRepository: ReviewCommunityRepository,
+    private val communityRepository: CommunityRepository,
     private val personalizationStore: ShopPersonalizationStore,
     private val reviewRepository: ReviewRepository,
 ) : BaseViewModel<MyTabUiState, MyTabIntent, MyTabSideEffect>(MyTabUiState()) {
@@ -38,6 +40,7 @@ class MyTabViewModel(
                 cancelTask(BLOCKED_USERS)
                 cancelTask(REVIEW_COUNT)
                 cancelTask(BLOCKED_USER_COUNT)
+                cancelTask(UNBLOCK)
                 reduce { MyTabUiState(userId = userId, sessionResolved = userId == null) }
                 if (userId != null) refresh()
             }
@@ -76,8 +79,67 @@ class MyTabViewModel(
             MyTabIntent.Refresh -> refresh()
             is MyTabIntent.SaveVisibility -> saveVisibility(intent.isPublic)
             MyTabIntent.OpenBlockedUsers -> openBlockedUsers()
-            MyTabIntent.DismissBlockedUsers -> reduce { copy(blockedUsers = emptyList()) }
+            MyTabIntent.DismissBlockedUsers -> {
+                if (!currentState.unblocking) {
+                    reduce { copy(blockedUsers = emptyList(), pendingUnblockUser = null) }
+                }
+            }
+            is MyTabIntent.RequestUnblock -> requestUnblock(intent.userId)
+            MyTabIntent.DismissUnblock -> {
+                if (!currentState.unblocking) reduce { copy(pendingUnblockUser = null) }
+            }
+            MyTabIntent.ConfirmUnblock -> unblockUser()
         }
+    }
+
+    private fun requestUnblock(userId: String) {
+        if (currentState.unblocking) return
+        val target = currentState.blockedUsers.firstOrNull { it.profile.userId == userId } ?: return
+        reduce { copy(pendingUnblockUser = target.profile) }
+    }
+
+    private fun unblockUser() {
+        val currentUserId = currentState.userId ?: return
+        val target = currentState.pendingUnblockUser ?: return
+        if (currentState.unblocking || currentState.blockedUsers.none { it.profile.userId == target.userId }) return
+        launchResultTask(
+            taskKey = UNBLOCK,
+            loadKey = MyTabLoadKey.Unblock,
+            policy = TaskPolicy.IgnoreNew,
+            request = { communityRepository.unblockUser(target.userId) },
+            onSuccess = { completeUnblock(currentUserId, target.userId) },
+            onError = { showUnblockFailure(currentUserId) },
+        )
+    }
+
+    private suspend fun completeUnblock(
+        currentUserId: String,
+        targetUserId: String,
+    ) {
+        if (currentState.userId != currentUserId) return
+        reduce {
+            val remainingUsers = blockedUsers.filterNot { it.profile.userId == targetUserId }
+            copy(
+                blockedUsers = remainingUsers,
+                blockedUserCount = remainingUsers.size,
+                pendingUnblockUser = null,
+            )
+        }
+        if (currentState.blockedUsers.isEmpty()) {
+            postSideEffect(MyTabSideEffect.CloseBlockedUsersDialog)
+        }
+    }
+
+    private suspend fun showUnblockFailure(currentUserId: String) {
+        if (currentState.userId != currentUserId) return
+        postSideEffect(
+            MyTabSideEffect.ShowToast(
+                ToastData(
+                    message = Res.string.review_action_failed,
+                    type = ToastType.ERROR,
+                ),
+            ),
+        )
     }
 
     private fun openBlockedUsers() {
@@ -199,5 +261,6 @@ class MyTabViewModel(
         private const val BLOCKED_USERS = "my-tab-blocked-users"
         private const val REVIEW_COUNT = "my-tab-review-count"
         private const val BLOCKED_USER_COUNT = "my-tab-blocked-user-count"
+        private const val UNBLOCK = "my-tab-unblock-user"
     }
 }

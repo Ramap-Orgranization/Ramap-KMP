@@ -19,6 +19,7 @@ import com.peto.ramap.domain.model.notice.OperatingNotice
 import com.peto.ramap.navigation.deeplink.ShopShareLinkFactory
 import com.peto.ramap.platform.AppSettingsOpener
 import com.peto.ramap.platform.NotificationPermissionRequester
+import com.peto.ramap.ui.main.map.contract.MapIntent
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnBookmarkToggled
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnBookmarkedShopsToggled
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnBoundsChanged
@@ -200,6 +201,8 @@ fun MapRoute(
                 )
             },
             onReviewReport = { viewModel.dispatch(OnReviewReportRequested(it)) },
+            onViewBlockedReview = { viewModel.dispatch(MapIntent.OnBlockedReviewViewRequested(it)) },
+            onUnblockBlockedUser = { viewModel.dispatch(MapIntent.OnBlockedReviewUnblockRequested(it)) },
             hasMoreReviews = uiState.hasMoreShopReviews,
             isLoadingMoreReviews = uiState.isLoadingMoreShopReviews,
             onLoadMoreReviews = { viewModel.dispatch(OnShopReviewsLoadMore) },
@@ -209,6 +212,7 @@ fun MapRoute(
         )
     }
     MapReviewReportDialog(state = uiState, onIntent = viewModel::dispatch)
+    MapBlockedReviewUnblockDialog(state = uiState, onIntent = viewModel::dispatch)
 }
 
 private const val OPERATING_NOTICE_REFRESH_MILLIS = 60_000L

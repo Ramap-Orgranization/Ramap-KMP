@@ -38,6 +38,10 @@ internal fun ReviewsContent(
     currentUserId: String? = null,
     currentProfileIsPublic: Boolean? = null,
     actingReviewId: String? = null,
+    revealedBlockedReviews: Map<String, Review> = emptyMap(),
+    revealingBlockedReviewId: String? = null,
+    onViewBlockedReview: ((Review) -> Unit)? = null,
+    onUnblockBlockedUser: ((Review) -> Unit)? = null,
     onLike: (Review) -> Unit = {},
     onEdit: (Review) -> Unit = {},
     onDelete: (Review) -> Unit = {},
@@ -107,13 +111,34 @@ internal fun ReviewsContent(
             )
             reviews.forEach { review ->
                 key(review.id) {
+                    val revealedReview = revealedBlockedReviews[review.id]
+                    val displayedReview = revealedReview ?: review
                     ReviewCard(
-                        review = review,
+                        review = displayedReview,
+                        showBlockedContent = review.isBlocked && revealedReview != null,
+                        onViewBlockedReview =
+                            if (review.isBlocked && onViewBlockedReview != null) {
+                                { onViewBlockedReview(review) }
+                            } else {
+                                null
+                            },
+                        onUnblockBlockedUser =
+                            if (review.isBlocked && onUnblockBlockedUser != null) {
+                                { onUnblockBlockedUser(review) }
+                            } else {
+                                null
+                            },
+                        isBlockedReviewLoading = revealingBlockedReviewId == review.id,
                         currentUserId = currentUserId,
                         currentProfileIsPublic = currentProfileIsPublic,
                         onOpenProfile = onOpenProfile,
                         onLike =
-                            if (review.author.userId != currentUserId && review.isPublic && review.moderationStatus == ReviewModerationStatus.PUBLISHED) {
+                            if (
+                                !review.isBlocked &&
+                                review.author.userId != currentUserId &&
+                                review.isPublic &&
+                                review.moderationStatus == ReviewModerationStatus.PUBLISHED
+                            ) {
                                 { onLike(review) }
                             } else {
                                 null
@@ -133,7 +158,7 @@ internal fun ReviewsContent(
                                 null
                             },
                         onReport =
-                            if (review.author.userId.isNotBlank() && review.author.userId != currentUserId) {
+                            if (!review.isBlocked && review.author.userId.isNotBlank() && review.author.userId != currentUserId) {
                                 { onReport(review) }
                             } else {
                                 null

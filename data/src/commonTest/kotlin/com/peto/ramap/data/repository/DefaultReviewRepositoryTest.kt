@@ -48,6 +48,8 @@ class DefaultReviewRepositoryTest {
             offset: Long,
         ): List<ReviewResponse> = emptyList()
 
+        override suspend fun fetchBlockedShopReviewOnce(reviewId: String): ReviewResponse? = error("Unexpected blocked review fetch")
+
         override suspend fun fetchProfileReviews(
             userId: String?,
             offset: Long,

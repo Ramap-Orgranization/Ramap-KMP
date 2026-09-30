@@ -12,4 +12,6 @@ enum class MapLoadKey : LoadKey {
     ShopReviewsPage,
     ReviewAction,
     ReviewReport,
+    BlockedReviewReveal,
+    BlockedReviewUnblock,
 }

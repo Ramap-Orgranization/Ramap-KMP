@@ -1,14 +1,17 @@
 package com.peto.ramap.data.datasource.community
 
 import com.peto.ramap.data.datasource.review.ReviewDataSource
+import com.peto.ramap.data.model.BlockedUserResponse
 import com.peto.ramap.data.model.MyCommunityProfileResponse
 import com.peto.ramap.data.model.ProfileAccessResponse
-import com.peto.ramap.data.model.PublicProfileResponse
 import com.peto.ramap.data.model.ReviewResponse
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.storage.storage
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kotlin.time.Duration.Companion.minutes
@@ -53,7 +56,15 @@ internal class RemoteCommunityDataSource(
         offset: Long,
     ): List<ReviewResponse> = reviewDataSource.fetchProfileReviews(userId, offset)
 
-    override suspend fun fetchBlockedUsers(): List<PublicProfileResponse> = client.postgrest.rpc(RPC_FETCH_BLOCKED_COMMUNITY_PROFILES).decodeList()
+    override suspend fun fetchBlockedUsers(): List<BlockedUserResponse> =
+        coroutineScope {
+            client.postgrest
+                .rpc(RPC_FETCH_BLOCKED_COMMUNITY_PROFILES)
+                .decodeList<BlockedUserResponse>()
+                .map { profile ->
+                    async { profile.copy(avatarUrl = signedAvatar(profile.avatarPath)) }
+                }.awaitAll()
+        }
 
     override suspend fun report(
         targetType: String,
@@ -88,7 +99,7 @@ internal class RemoteCommunityDataSource(
     private companion object {
         const val RPC_FETCH_MY_COMMUNITY_MEMBERSHIP = "fetch_my_community_membership"
         const val RPC_FETCH_COMMUNITY_PROFILE_ACCESS = "fetch_community_profile_access"
-        const val RPC_FETCH_BLOCKED_COMMUNITY_PROFILES = "fetch_blocked_community_profiles"
+        const val RPC_FETCH_BLOCKED_COMMUNITY_PROFILES = "fetch_blocked_community_profiles_v2"
         const val RPC_REPORT_COMMUNITY_CONTENT = "report_community_content"
         const val RPC_CHANGE_COMMUNITY_BLOCK = "change_community_block"
 

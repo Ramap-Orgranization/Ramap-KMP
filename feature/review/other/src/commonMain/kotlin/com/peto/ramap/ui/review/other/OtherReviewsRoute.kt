@@ -21,7 +21,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.peto.ramap.designsystem.button.login.LoginButton
-import com.peto.ramap.designsystem.dialog.CommonDialog
 import com.peto.ramap.designsystem.dialog.LoginGuideDialog
 import com.peto.ramap.designsystem.indicator.RamenLoadingIndicator
 import com.peto.ramap.designsystem.profile.ProfileHeader
@@ -43,6 +42,7 @@ import com.peto.ramap.ui.loading.LoadState
 import com.peto.ramap.ui.paging.ObserveLoadMoreNearListEnd
 import com.peto.ramap.ui.review.other.component.OtherReviewsErrorContent
 import com.peto.ramap.ui.review.other.component.PrivateProfileCard
+import com.peto.ramap.ui.review.other.component.ProfileBlockConfirmDialog
 import com.peto.ramap.ui.review.other.component.ProfileBlockOverflowMenu
 import com.peto.ramap.ui.review.other.contract.OtherReviewsEffect
 import com.peto.ramap.ui.review.other.contract.OtherReviewsIntent
@@ -54,15 +54,10 @@ import org.koin.compose.viewmodel.koinViewModel
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.ic_profile_blocked
 import ramap.shared.generated.resources.my_reviews_summary
-import ramap.shared.generated.resources.review_block
-import ramap.shared.generated.resources.review_block_confirm
 import ramap.shared.generated.resources.review_blocked_empty
 import ramap.shared.generated.resources.review_profile_private
 import ramap.shared.generated.resources.review_profile_title
 import ramap.shared.generated.resources.review_profile_unavailable
-import ramap.shared.generated.resources.review_unblock
-import ramap.shared.generated.resources.review_unblock_confirm
-import ramap.shared.generated.resources.shop_review_cancel
 import ramap.shared.generated.resources.shop_review_empty
 
 @Composable
@@ -111,6 +106,13 @@ internal fun OtherReviewsContent(
 ) {
     val listState = rememberLazyListState()
     var confirmBlockAction by remember(state.userId) { mutableStateOf(false) }
+    val requestBlockAction: () -> Unit = {
+        if (state.currentUserId == null) {
+            onIntent(OtherReviewsIntent.ToggleBlock)
+        } else {
+            confirmBlockAction = true
+        }
+    }
 
     ObserveLoadMoreNearListEnd(
         listState = listState,
@@ -129,13 +131,7 @@ internal fun OtherReviewsContent(
                     userId = state.userId,
                     isBlocked = state.isBlocked,
                     enabled = !state.blocking,
-                    onToggleBlock = {
-                        if (state.currentUserId == null) {
-                            onIntent(OtherReviewsIntent.ToggleBlock)
-                        } else {
-                            confirmBlockAction = true
-                        }
-                    },
+                    onToggleBlock = requestBlockAction,
                 )
             }
         },
@@ -240,32 +236,17 @@ internal fun OtherReviewsContent(
             }
         }
     }
-    CommonDialog(
+    ProfileBlockConfirmDialog(
         visible = confirmBlockAction && state.currentUserId != null,
-        confirmText =
-            stringResource(
-                if (state.isBlocked) Res.string.review_unblock else Res.string.review_block,
-            ),
-        dismissText = stringResource(Res.string.shop_review_cancel),
-        confirmEnabled = !state.blocking,
-        confirmIsLoading = state.blocking,
-        onDismissRequest = { if (!state.blocking) confirmBlockAction = false },
+        isBlocked = state.isBlocked,
+        nickname = state.profile?.nickname.orEmpty(),
+        blocking = state.blocking,
         onDismiss = { confirmBlockAction = false },
         onConfirm = {
             onIntent(OtherReviewsIntent.ToggleBlock)
             confirmBlockAction = false
         },
-    ) {
-        AppText(
-            text =
-                stringResource(
-                    if (state.isBlocked) Res.string.review_unblock_confirm else Res.string.review_block_confirm,
-                    state.profile?.nickname.orEmpty(),
-                ),
-            style = AppTextStyle.B2,
-            color = GrayColor.C500,
-        )
-    }
+    )
 }
 
 private const val PREFETCH_ITEM_THRESHOLD = 3

@@ -13,6 +13,18 @@ import com.peto.ramap.ui.base.Intent
 import com.peto.ramap.ui.main.map.model.CameraPosition
 
 sealed interface MapIntent : Intent {
+    data class OnBlockedReviewViewRequested(
+        val review: Review,
+    ) : MapIntent
+
+    data class OnBlockedReviewUnblockRequested(
+        val review: Review,
+    ) : MapIntent
+
+    data object OnBlockedReviewUnblockConfirmed : MapIntent
+
+    data object OnBlockedReviewUnblockDismissed : MapIntent
+
     data class OnReviewLikeToggled(
         val review: Review,
     ) : MapIntent

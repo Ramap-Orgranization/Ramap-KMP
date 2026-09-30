@@ -76,6 +76,10 @@
     <string name="review_action_success_description">요청이 접수되었어요.</string>
     <string name="review_block_confirm">%1$s님을 차단할까요?</string>
     <string name="review_blocked_review">차단한 사용자의 리뷰입니다</string>
+    <string name="review_blocked_options">차단 리뷰 옵션</string>
+    <string name="review_view_blocked_once">이 리뷰만 보기</string>
+    <string name="review_unblock_user">차단 해제</string>
+    <string name="review_unblock_user_confirm">이 사용자의 차단을 해제하시겠어요?</string>
     <string name="review_blocked_empty">차단한 사용자입니다.</string>
     <string name="review_blocked_users">차단한 사용자</string>
     <string name="review_blocked_users_empty">차단한 사용자가 없어요</string>
@@ -113,8 +117,9 @@
     <string name="review_report_user">사용자 신고</string>
     <string name="review_retry">다시 시도</string>
     <string name="review_block">차단</string>
-    <string name="review_unblock">차단 해제</string>
-    <string name="review_unblock_confirm">%1$s님의 차단을 해제할까요?</string>
+    <string name="review_unblock">해제</string>
+    <string name="review_blocked_on">%1$s 차단됨</string>
+    <string name="review_unblock_confirm">%1$s님을 차단 해제하시겠어요?</string>
     <string name="shop_detail_more_actions">매장 메뉴 더보기</string>
     <string name="share_shop_action">공유하기</string>
     <string name="share_shop_chooser_title">매장 공유</string>

@@ -90,6 +90,16 @@ internal class RemoteReviewDataSource(
         return page.copy(reviews = signReviews(page.reviews))
     }
 
+    override suspend fun fetchBlockedShopReviewOnce(reviewId: String): ReviewResponse? {
+        val review =
+            client.postgrest
+                .rpc(
+                    RPC_FETCH_BLOCKED_SHOP_REVIEW_ONCE,
+                    buildJsonObject { put(PARAM_REVIEW_ID, reviewId) },
+                ).decodeAs<ReviewResponse?>() ?: return null
+        return signReviews(listOf(review)).single()
+    }
+
     override suspend fun fetchProfileReviews(
         userId: String?,
         offset: Long,
@@ -259,6 +269,7 @@ internal class RemoteReviewDataSource(
         const val RPC_FETCH_MY_REVIEW = "fetch_my_review"
         const val RPC_FETCH_SHOP_REVIEWS = "fetch_shop_reviews"
         const val RPC_FETCH_SHOP_REVIEWS_PAGE = "fetch_shop_reviews_page"
+        const val RPC_FETCH_BLOCKED_SHOP_REVIEW_ONCE = "fetch_blocked_shop_review_once"
         const val RPC_FETCH_PROFILE_REVIEWS = "fetch_profile_reviews"
         const val RPC_SUBMIT_SHOP_REVIEW = "submit_shop_review"
         const val RPC_FETCH_EDITABLE_REVIEW = "fetch_editable_shop_review"

@@ -30,6 +30,8 @@ internal interface ReviewDataSource {
         return ShopReviewsPageResponse(reviews = reviews, totalCount = reviews.size)
     }
 
+    suspend fun fetchBlockedShopReviewOnce(reviewId: String): ReviewResponse?
+
     suspend fun fetchProfileReviews(
         userId: String?,
         offset: Long,

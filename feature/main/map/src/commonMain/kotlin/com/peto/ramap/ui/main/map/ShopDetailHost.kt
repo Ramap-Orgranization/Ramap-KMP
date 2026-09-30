@@ -126,6 +126,10 @@ fun ShopDetailHost(
                 currentUserId = uiState.currentUserId,
                 currentProfileIsPublic = uiState.currentProfileIsPublic,
                 actingReviewId = uiState.actingReviewId,
+                revealedBlockedReviews = uiState.revealedBlockedReviews,
+                revealingBlockedReviewId = uiState.revealingBlockedReviewId,
+                onViewBlockedReview = { viewModel.dispatch(MapIntent.OnBlockedReviewViewRequested(it)) },
+                onUnblockBlockedUser = { viewModel.dispatch(MapIntent.OnBlockedReviewUnblockRequested(it)) },
                 onOpenProfile = onOpenProfile,
                 onReviewLike = { viewModel.dispatch(MapIntent.OnReviewLikeToggled(it)) },
                 onReviewEdit = { onEditReview(it.shopId, it.id) },
@@ -136,6 +140,7 @@ fun ShopDetailHost(
     }
 
     MapReviewReportDialog(state = uiState, onIntent = viewModel::dispatch)
+    MapBlockedReviewUnblockDialog(state = uiState, onIntent = viewModel::dispatch)
 
     selectedNotice?.let { notice ->
         OperatingNoticeBottomSheet(

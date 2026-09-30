@@ -23,6 +23,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -78,11 +79,14 @@ import ramap.shared.generated.resources.profile_visibility_private
 import ramap.shared.generated.resources.profile_visibility_public
 import ramap.shared.generated.resources.profile_visibility_status
 import ramap.shared.generated.resources.review_blocked_users
+import ramap.shared.generated.resources.review_unblock
+import ramap.shared.generated.resources.review_unblock_confirm
 import ramap.shared.generated.resources.settings_bookmarked_shops_menu
 import ramap.shared.generated.resources.settings_hidden_shops_menu
 import ramap.shared.generated.resources.settings_report_menu
 import ramap.shared.generated.resources.settings_subscribed_shops_menu
 import ramap.shared.generated.resources.settings_title
+import ramap.shared.generated.resources.shop_review_cancel
 
 @Composable
 fun MyTabRoute(
@@ -101,10 +105,14 @@ fun MyTabRoute(
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     var isVisibilityDialogOpen by rememberSaveable { mutableStateOf(false) }
     var isBlockedUsersDialogOpen by rememberSaveable { mutableStateOf(false) }
+    LaunchedEffect(state.userId) {
+        isBlockedUsersDialogOpen = false
+    }
     ObserveAsEvents(viewModel.sideEffect) { effect ->
         when (effect) {
             is MyTabSideEffect.ShowToast -> toastManager.show(effect.data)
             MyTabSideEffect.OpenBlockedUsersDialog -> isBlockedUsersDialogOpen = true
+            MyTabSideEffect.CloseBlockedUsersDialog -> isBlockedUsersDialogOpen = false
         }
     }
     MyTabContent(
@@ -128,6 +136,9 @@ fun MyTabRoute(
             viewModel.dispatch(MyTabIntent.DismissBlockedUsers)
             onOpenProfile(userId)
         },
+        onUnblockClick = { userId -> viewModel.dispatch(MyTabIntent.RequestUnblock(userId)) },
+        onUnblockDismiss = { viewModel.dispatch(MyTabIntent.DismissUnblock) },
+        onUnblockConfirm = { viewModel.dispatch(MyTabIntent.ConfirmUnblock) },
         onProfileClick = onProfileNavigate,
         onMyReviewsClick = onMyReviewsNavigate,
         onRetryClick = { viewModel.dispatch(MyTabIntent.Refresh) },
@@ -151,6 +162,9 @@ internal fun MyTabContent(
     onBlockedUsersClick: () -> Unit,
     onBlockedUsersDismiss: () -> Unit,
     onBlockedUserProfileClick: (String) -> Unit,
+    onUnblockClick: (String) -> Unit,
+    onUnblockDismiss: () -> Unit,
+    onUnblockConfirm: () -> Unit,
     onProfileClick: () -> Unit,
     onMyReviewsClick: () -> Unit = {},
     onRetryClick: () -> Unit,
@@ -240,11 +254,35 @@ internal fun MyTabContent(
             },
         )
         BlockedUsersDialog(
-            visible = isBlockedUsersDialogOpen,
+            visible = isBlockedUsersDialogOpen && state.pendingUnblockUser == null,
             users = state.blockedUsers,
             onDismiss = onBlockedUsersDismiss,
             onProfileClick = onBlockedUserProfileClick,
+            onUnblockClick = onUnblockClick,
         )
+        CommonDialog(
+            visible = isBlockedUsersDialogOpen && state.pendingUnblockUser != null,
+            confirmText = stringResource(Res.string.review_unblock),
+            dismissText = stringResource(Res.string.shop_review_cancel),
+            confirmEnabled = !state.unblocking,
+            confirmIsLoading = state.unblocking,
+            dismissEnabled = !state.unblocking,
+            dismissOnBackPress = !state.unblocking,
+            dismissOnClickOutside = !state.unblocking,
+            onDismissRequest = onUnblockDismiss,
+            onDismiss = onUnblockDismiss,
+            onConfirm = onUnblockConfirm,
+        ) {
+            AppText(
+                text =
+                    stringResource(
+                        Res.string.review_unblock_confirm,
+                        state.pendingUnblockUser?.nickname.orEmpty(),
+                    ),
+                style = AppTextStyle.B2,
+                color = GrayColor.C500,
+            )
+        }
         when {
             isLoading -> MyTabSkeleton()
 
@@ -403,6 +441,9 @@ private fun MyTabRoutePreview() {
             onBlockedUsersClick = {},
             onBlockedUsersDismiss = {},
             onBlockedUserProfileClick = {},
+            onUnblockClick = {},
+            onUnblockDismiss = {},
+            onUnblockConfirm = {},
             onProfileClick = {},
             onRetryClick = {},
             onBookmarkedShopsClick = {},

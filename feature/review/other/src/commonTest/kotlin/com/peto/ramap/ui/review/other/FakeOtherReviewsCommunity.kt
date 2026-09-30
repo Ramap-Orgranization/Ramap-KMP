@@ -5,10 +5,10 @@ import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.domain.model.community.ProfileAccess
 import com.peto.ramap.domain.model.community.PublicProfile
 import com.peto.ramap.domain.model.review.Review
-import com.peto.ramap.domain.repository.ReviewCommunityRepository
-import com.peto.ramap.fake.FakeReviewCommunityRepository
+import com.peto.ramap.domain.repository.CommunityRepository
+import com.peto.ramap.fake.FakeCommunityRepository
 
-class FakeOtherReviewsCommunity : ReviewCommunityRepository by FakeReviewCommunityRepository() {
+class FakeOtherReviewsCommunity : CommunityRepository by FakeCommunityRepository() {
     var profile: PublicProfile? = PublicProfile("author", "라멘팬")
     var profilePrivate = false
     var reviews: List<Review> = emptyList()

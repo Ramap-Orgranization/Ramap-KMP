@@ -9,7 +9,8 @@ import com.peto.ramap.domain.model.review.MyReviewVisibility
 import com.peto.ramap.domain.model.review.MyReviewsPage
 import com.peto.ramap.domain.model.review.Review
 import com.peto.ramap.domain.model.review.ReviewImage
-import com.peto.ramap.domain.repository.ReviewLike
+import com.peto.ramap.domain.model.review.ReviewLike
+import com.peto.ramap.domain.model.review.ShopReviewsPage
 import com.peto.ramap.domain.repository.ReviewRepository
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.NonCancellable
@@ -55,15 +56,12 @@ internal class FakeOwnerReviews(
         return deleteResult
     }
 
-    override suspend fun fetchShopReviews(
+    override suspend fun fetchShopReviewsPage(
         shopId: String,
         offset: Long,
-    ): RamapResult<List<Review>> = RamapResult.Success(emptyList())
+    ): RamapResult<ShopReviewsPage> = RamapResult.Success(ShopReviewsPage(emptyList(), 0))
 
-    override suspend fun fetchProfileReviews(
-        userId: String?,
-        offset: Long,
-    ): RamapResult<List<Review>> = RamapResult.Success(emptyList())
+    override suspend fun fetchBlockedShopReviewOnce(reviewId: String): RamapResult<Review?> = error("Unexpected blocked review fetch")
 
     override suspend fun submitReview(
         shopId: String,
