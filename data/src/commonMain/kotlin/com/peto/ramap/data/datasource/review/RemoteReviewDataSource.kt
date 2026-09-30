@@ -10,6 +10,7 @@ import com.peto.ramap.data.model.ShopReviewsPageResponse
 import com.peto.ramap.domain.model.review.ReviewImage
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
+import io.github.jan.supabase.exceptions.RestException
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.storage.storage
 import io.ktor.http.ContentType
@@ -128,7 +129,7 @@ internal class RemoteReviewDataSource(
                 },
             )
         } catch (error: Throwable) {
-            cleanup(paths)
+            cleanupIfRejected(paths, error)
             throw error
         }
     }
@@ -177,7 +178,7 @@ internal class RemoteReviewDataSource(
             )
             cleanup(oldPaths.filterNot { it in retainedImagePaths })
         } catch (error: Throwable) {
-            cleanup(uploadedPaths)
+            cleanupIfRejected(uploadedPaths, error)
             throw error
         }
     }
@@ -264,7 +265,16 @@ internal class RemoteReviewDataSource(
             paths.forEach { path -> runCatching { client.storage.from(BUCKET).delete(path) } }
         }
 
+    private suspend fun cleanupIfRejected(
+        paths: List<String>,
+        error: Throwable,
+    ) {
+        val status = (error as? RestException)?.statusCode
+        if (status in CONFIRMED_REJECTION_STATUSES) cleanup(paths)
+    }
+
     private companion object {
+        val CONFIRMED_REJECTION_STATUSES = setOf(400, 401, 403, 404, 409, 422, 429)
         const val RPC_FETCH_MY_REVIEWS = "fetch_my_reviews"
         const val RPC_FETCH_MY_REVIEW = "fetch_my_review"
         const val RPC_FETCH_SHOP_REVIEWS = "fetch_shop_reviews"
