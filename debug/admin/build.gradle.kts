@@ -12,6 +12,7 @@ kotlin {
     }
 
     sourceSets.androidMain.dependencies {
+        implementation(projects.data)
         implementation(projects.core.network)
         implementation(projects.core.designsystem)
         implementation(projects.core.ui)
@@ -29,5 +30,9 @@ kotlin {
         implementation(project.dependencies.platform(libs.koin.bom))
         implementation(libs.koin.android)
         implementation(libs.koin.compose.viewmodel)
+    }
+
+    sourceSets.androidHostTest.dependencies {
+        implementation(projects.core.testing)
     }
 }

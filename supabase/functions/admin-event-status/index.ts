@@ -1,6 +1,5 @@
+import { isAdministrator } from "../_shared/admin-auth.ts";
 import { createServiceClient } from "../_shared/event-notifications.ts";
-
-const ADMIN_TIMEOUT_MS = 3_000;
 
 Deno.serve(async (request) => {
   if (request.method !== "POST") return json({ code: "method_not_allowed" }, 405);
@@ -91,20 +90,6 @@ async function editEvent(body: Record<string, unknown>) {
 
 function koreaToday() {
   return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Seoul" }).format(new Date());
-}
-
-async function isAdministrator(request: Request): Promise<boolean> {
-  const token = request.headers.get("authorization")?.match(/^Bearer\s+(.+)$/i)?.[1]?.trim();
-  const url = Deno.env.get("SUPABASE_URL");
-  const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
-  const adminEmail = (Deno.env.get("ADMIN_EMAIL") ?? "uni070@naver.com").trim().toLowerCase();
-  if (!token || !url || !anonKey || !adminEmail) return false;
-  const response = await fetch(`${url}/auth/v1/user`, {
-    headers: { apikey: anonKey, Authorization: `Bearer ${token}` },
-    signal: AbortSignal.timeout(ADMIN_TIMEOUT_MS),
-  }).catch(() => null);
-  const user = response?.ok ? await response.json() as { email?: unknown } : null;
-  return typeof user?.email === "string" && user.email.toLowerCase() === adminEmail;
 }
 
 function isStatus(value: string | null): value is "sold_out" | "cancelled" {

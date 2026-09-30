@@ -1,7 +1,7 @@
+import { isAdministrator } from "../_shared/admin-auth.ts";
 import { createServiceClient } from "../_shared/event-notifications.ts";
 
 const OPENAI_URL = "https://api.openai.com/v1/chat/completions";
-const ADMIN_TIMEOUT_MS = 3_000;
 const EVENT_TYPES = ["collab", "popup", "limited_menu", "summer_limited", "new_menu", "store_renewal"] as const;
 const NOTICE_TYPES = ["operating_notice", "full_close", "early_close", "late_opening"] as const;
 type RegistrationType = "event" | "operating_notice";
@@ -144,15 +144,6 @@ function validateChanges(type: RegistrationType, value: unknown): Changes | null
   if (changes.schedule_override && (!changes.notice_type || changes.notice_type !== "operating_notice" || typeof changes.schedule_override !== "object")) return null;
   else changes.title = changes.event_type = null;
   return Object.values(changes).some((value) => value !== null) ? changes : null;
-}
-
-async function isAdministrator(request: Request): Promise<boolean> {
-  const token = request.headers.get("authorization")?.match(/^Bearer\s+(.+)$/i)?.[1]?.trim();
-  const url = Deno.env.get("SUPABASE_URL"), anonKey = Deno.env.get("SUPABASE_ANON_KEY"), adminEmail = (Deno.env.get("ADMIN_EMAIL") ?? "uni070@naver.com").trim().toLowerCase();
-  if (!token || !url || !anonKey || !adminEmail) return false;
-  const response = await fetch(`${url}/auth/v1/user`, { headers: { apikey: anonKey, Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(ADMIN_TIMEOUT_MS) }).catch(() => null);
-  const user = response?.ok ? await response.json() as { email?: unknown } : null;
-  return typeof user?.email === "string" && user.email.toLowerCase() === adminEmail;
 }
 
 function isRegistrationType(value: unknown): value is RegistrationType { return value === "event" || value === "operating_notice"; }

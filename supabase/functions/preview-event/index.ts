@@ -1,9 +1,9 @@
+import { isAdministrator } from "../_shared/admin-auth.ts";
 import { createServiceClient } from "../_shared/event-notifications.ts";
 import { normalizeMapUrl } from "../_shared/event-venue-url.ts";
 
 const OPENAI_URL = "https://api.openai.com/v1/chat/completions";
 const EVIDENCE_BUCKET = "news-report-evidence";
-const ADMIN_TIMEOUT_MS = 3_000;
 const EVENT_EXTRACTION_PROMPT =
   "라멘 매장의 이벤트 등록 초안을 추출하세요. 입력에 없는 사실은 절대 만들지 마세요. " +
   "원문 캡션이 있으면 description은 캡션의 문구, 이모지, 구두점, 줄바꿈을 그대로 보존하세요. " +
@@ -268,20 +268,6 @@ async function resolveShop(
     if (data?.length === 1) return { name: data[0].name as string, instagramUrl: data[0].instagram_url as string | null };
   }
   return null;
-}
-
-async function isAdministrator(request: Request): Promise<boolean> {
-  const token = request.headers.get("authorization")?.match(/^Bearer\s+(.+)$/i)?.[1]?.trim();
-  const url = Deno.env.get("SUPABASE_URL");
-  const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
-  const adminEmail = (Deno.env.get("ADMIN_EMAIL") ?? "uni070@naver.com").trim().toLowerCase();
-  if (!token || !url || !anonKey || !adminEmail) return false;
-  const response = await fetch(`${url}/auth/v1/user`, {
-    headers: { apikey: anonKey, Authorization: `Bearer ${token}` },
-    signal: AbortSignal.timeout(ADMIN_TIMEOUT_MS),
-  }).catch(() => null);
-  const user = response?.ok ? await response.json() as { email?: unknown } : null;
-  return typeof user?.email === "string" && user.email.toLowerCase() === adminEmail;
 }
 
 function isInstagramUrl(value: string) {

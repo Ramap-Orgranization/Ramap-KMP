@@ -1,10 +1,10 @@
+import { isAdministrator } from "../_shared/admin-auth.ts";
 import { assertKnownEventType, createServiceClient } from "../_shared/event-notifications.ts";
 import { normalizeMapUrl } from "../_shared/event-venue-url.ts";
 import { requiresExistingVenueSelection } from "../_shared/external-venue.ts";
 
 const EVIDENCE_BUCKET = "news-report-evidence";
 const EVENT_BUCKET = "event-images";
-const ADMIN_TIMEOUT_MS = 3_000;
 type Participant = { name: string; instagramUrl: string | null };
 
 Deno.serve(async (request) => {
@@ -300,7 +300,7 @@ async function registerOperatingNotice(
   const shopName = text(body.shop_name);
   const noticeType = text(body.notice_type);
   const startDate = text(body.start_date);
-  const endDate = text(body.end_date) ?? startDate;
+  const endDate = text(body.end_date);
   const startTime = text(body.start_time);
   const endTime = text(body.end_time);
   const scheduleOverride = body.schedule_override;
