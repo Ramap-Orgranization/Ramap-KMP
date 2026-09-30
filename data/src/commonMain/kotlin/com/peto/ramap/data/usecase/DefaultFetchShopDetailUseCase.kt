@@ -66,7 +66,14 @@ internal class DefaultFetchShopDetailUseCase(
         requestedVersion: Long,
     ): RamapResult<ShopDetail> {
         val refreshed =
-            when (val result = fetchDetailWithNoticesAndReviews(cached.shop.id, cached.reviews)) {
+            when (
+                val result =
+                    fetchDetailWithNoticesAndReviews(
+                        shopId = cached.shop.id,
+                        cachedReviews = cached.reviews,
+                        cachedReviewCount = cached.reviewCount,
+                    )
+            ) {
                 is RamapResult.Success -> result.data
                 is RamapResult.Error -> return RamapResult.Success(cached)
             }
@@ -78,6 +85,7 @@ internal class DefaultFetchShopDetailUseCase(
                 menuSections = refreshed.menuSections,
                 menuUpdatedAt = refreshed.menuUpdatedAt,
                 reviews = refreshed.reviews,
+                reviewCount = refreshed.reviewCount,
             )
         if (requestedVersion == cacheVersion) cache[cached.shop.id] = updated
         return RamapResult.Success(updated)
@@ -86,11 +94,12 @@ internal class DefaultFetchShopDetailUseCase(
     private suspend fun fetchDetailWithNoticesAndReviews(
         shopId: String,
         cachedReviews: List<Review> = emptyList(),
+        cachedReviewCount: Int = cachedReviews.size,
     ): RamapResult<ShopDetail> {
         val detail = ramenShopRepository.fetchShopDetail(shopId)
         if (detail !is RamapResult.Success) return detail
         val notices = operatingNoticeRepository.fetchActiveShopOperatingNotices(shopId)
-        val reviews = reviewRepository.fetchShopReviews(shopId, offset = 0L)
+        val reviews = reviewRepository.fetchShopReviewsPage(shopId, offset = 0L)
         val detailWithNotices =
             if (notices is RamapResult.Success) {
                 val now = Clock.System.now().toLocalDateTime(TimeZone.of(SEOUL_TIME_ZONE))
@@ -103,7 +112,8 @@ internal class DefaultFetchShopDetailUseCase(
             }
         return RamapResult.Success(
             detailWithNotices.copy(
-                reviews = if (reviews is RamapResult.Success) reviews.data else cachedReviews,
+                reviews = if (reviews is RamapResult.Success) reviews.data.reviews else cachedReviews,
+                reviewCount = if (reviews is RamapResult.Success) reviews.data.totalCount else cachedReviewCount,
             ),
         )
     }

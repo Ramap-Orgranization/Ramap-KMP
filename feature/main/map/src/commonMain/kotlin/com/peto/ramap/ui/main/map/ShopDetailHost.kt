@@ -106,6 +106,9 @@ fun ShopDetailHost(
                 },
                 onEventClick = onEventNavigate,
                 onOperatingNoticeClick = { selectedNotice = it },
+                hasMoreReviews = uiState.hasMoreShopReviews,
+                isLoadingMoreReviews = uiState.isLoadingMoreShopReviews,
+                onLoadMoreReviews = { viewModel.dispatch(MapIntent.OnShopReviewsLoadMore) },
                 onReportSubmit = { wrongFields, description ->
                     viewModel.dispatch(MapIntent.OnShopReportSubmitted(wrongFields, description))
                 },

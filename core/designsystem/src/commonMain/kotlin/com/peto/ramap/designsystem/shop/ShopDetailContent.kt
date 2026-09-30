@@ -84,6 +84,9 @@ fun ShopDetailContent(
     onReviewEdit: (Review) -> Unit = {},
     onReviewDelete: (Review) -> Unit = {},
     onReviewReport: (Review) -> Unit = {},
+    hasMoreReviews: Boolean = false,
+    isLoadingMoreReviews: Boolean = false,
+    onLoadMoreReviews: () -> Unit = {},
 ) {
     val selectedShop =
         when (state) {
@@ -113,7 +116,7 @@ fun ShopDetailContent(
             isBackEnabled = isBackEnabled,
             maxHeight = maxHeight,
             isNavigationBarPadded = isNavigationBarPadded,
-        ) {
+        ) { scrollState ->
             when (state) {
                 is ShopDetailSheetUiState.Loading ->
                     RamenLoadingIndicator(
@@ -140,6 +143,7 @@ fun ShopDetailContent(
                         menuSections = state.detail.menuSections,
                         menuUpdatedAt = state.detail.menuUpdatedAt,
                         reviews = state.detail.reviews,
+                        reviewScrollState = scrollState,
                         reviewCount = state.detail.reviewCount,
                         showReviewsOnOpen = showReviewsOnOpen,
                         menuItemCount = state.detail.menuItemCount,
@@ -169,6 +173,9 @@ fun ShopDetailContent(
                         onReviewEdit = onReviewEdit,
                         onReviewDelete = { deleteReview = it },
                         onReviewReport = onReviewReport,
+                        hasMoreReviews = hasMoreReviews,
+                        isLoadingMoreReviews = isLoadingMoreReviews,
+                        onLoadMoreReviews = onLoadMoreReviews,
                         menuFooter = {
                             onShowOnMap?.let { showOnMap ->
                                 AppButton(

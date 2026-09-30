@@ -1,5 +1,6 @@
 package com.peto.ramap.designsystem.shop
 
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -48,9 +49,10 @@ fun ShopDetailBottomSheet(
     isBackEnabled: Boolean,
     isNavigationBarPadded: Boolean,
     onDismissRequest: () -> Unit,
-    content: @Composable ColumnScope.() -> Unit,
+    content: @Composable ColumnScope.(ScrollState) -> Unit,
 ) {
     key(shopId) {
+        val scrollState = rememberScrollState()
         val bottomSheetState =
             rememberStandardBottomSheetState(
                 initialValue = SheetValue.PartiallyExpanded,
@@ -105,11 +107,11 @@ fun ShopDetailBottomSheet(
                                 .height(maxHeight)
                                 .run {
                                     if (isNavigationBarPadded) navigationBarsPadding() else this
-                                }.verticalScroll(rememberScrollState()),
+                                }.verticalScroll(scrollState),
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
                         ShopDetailSheetHandle()
-                        content()
+                        content(scrollState)
                     }
                 },
                 content = {},

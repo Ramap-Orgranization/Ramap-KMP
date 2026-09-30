@@ -1,22 +1,30 @@
 package com.peto.ramap.designsystem.review
 
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.key
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.peto.ramap.designsystem.component.LoadErrorContent
+import com.peto.ramap.designsystem.indicator.RamenLoadingIndicator
 import com.peto.ramap.domain.model.community.ReviewAuthor
 import com.peto.ramap.domain.model.community.ReviewModerationStatus
 import com.peto.ramap.domain.model.review.Review
 import com.peto.ramap.theme.RamapTheme
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
-import ramap.shared.generated.resources.laduck_error_confused
+import ramap.shared.generated.resources.review_empty_illustration
 import ramap.shared.generated.resources.shop_review_empty_description
 import ramap.shared.generated.resources.shop_review_empty_title
 
@@ -24,6 +32,7 @@ import ramap.shared.generated.resources.shop_review_empty_title
 internal fun ReviewsContent(
     shopName: String,
     reviews: List<Review>,
+    scrollState: ScrollState = rememberScrollState(),
     onOpenProfile: (String) -> Unit,
     onWriteReviewClick: () -> Unit,
     currentUserId: String? = null,
@@ -33,15 +42,45 @@ internal fun ReviewsContent(
     onEdit: (Review) -> Unit = {},
     onDelete: (Review) -> Unit = {},
     onReport: (Review) -> Unit = {},
+    hasMoreReviews: Boolean = false,
+    isLoadingMoreReviews: Boolean = false,
+    onLoadMoreReviews: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
+    val currentHasMoreReviews = rememberUpdatedState(hasMoreReviews)
+    val currentIsLoadingMoreReviews = rememberUpdatedState(isLoadingMoreReviews)
+    val currentOnLoadMoreReviews = rememberUpdatedState(onLoadMoreReviews)
+    val prefetchThresholdPx = with(LocalDensity.current) { 320.dp.roundToPx() }
+    LaunchedEffect(scrollState, prefetchThresholdPx) {
+        var canRequestAfterLeavingBottom = true
+        snapshotFlow {
+            val remainingScrollDistance = scrollState.maxValue - scrollState.value
+            val isNearBottom = scrollState.maxValue > 0 && remainingScrollDistance <= prefetchThresholdPx
+            Pair(
+                isNearBottom,
+                Pair(
+                    currentHasMoreReviews.value,
+                    !currentIsLoadingMoreReviews.value,
+                ),
+            )
+        }.collect { (isNearBottom, canLoadMore) ->
+            val (hasMore, isNotLoading) = canLoadMore
+            if (!isNearBottom) {
+                canRequestAfterLeavingBottom = true
+            } else if (canRequestAfterLeavingBottom && hasMore && isNotLoading) {
+                canRequestAfterLeavingBottom = false
+                currentOnLoadMoreReviews.value()
+            }
+        }
+    }
+
     Column(
         verticalArrangement = Arrangement.spacedBy(20.dp),
         modifier = modifier.fillMaxWidth(),
     ) {
         if (reviews.isEmpty()) {
             LoadErrorContent(
-                image = Res.drawable.laduck_error_confused,
+                image = Res.drawable.review_empty_illustration,
                 title = stringResource(Res.string.shop_review_empty_title),
                 description =
                     stringResource(
@@ -101,6 +140,14 @@ internal fun ReviewsContent(
                             },
                     )
                 }
+            }
+            if (hasMoreReviews && isLoadingMoreReviews) {
+                RamenLoadingIndicator(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .height(120.dp),
+                )
             }
         }
     }

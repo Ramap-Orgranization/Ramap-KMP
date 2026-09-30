@@ -90,6 +90,9 @@ internal fun MapContent(
     onReviewEdit: (Review) -> Unit = {},
     onReviewDelete: (Review) -> Unit = {},
     onReviewReport: (Review) -> Unit = {},
+    hasMoreReviews: Boolean = false,
+    isLoadingMoreReviews: Boolean = false,
+    onLoadMoreReviews: () -> Unit = {},
     onOperatingNoticeNavigate: (OperatingNotice) -> Unit = {},
     onReportSubmit: (Set<ShopInformationField>, String) -> Unit,
     onBookmarkedShopsToggle: () -> Unit,
@@ -277,11 +280,14 @@ internal fun MapContent(
             onReviewEdit = onReviewEdit,
             onReviewDelete = onReviewDelete,
             onReviewReport = onReviewReport,
+            hasMoreReviews = hasMoreReviews,
+            isLoadingMoreReviews = isLoadingMoreReviews,
+            onLoadMoreReviews = onLoadMoreReviews,
             onOperatingNoticeClick = { selectedNotice = it },
             onReportSubmit = onReportSubmit,
         )
 
-        if ((uiState.isShopDetailLoading && selectedShop == null) || uiState.isSearchLoading) {
+        if (uiState.showsLoadingOverlay) {
             RamenLoadingIndicator(modifier = Modifier.align(Alignment.Center))
         }
 

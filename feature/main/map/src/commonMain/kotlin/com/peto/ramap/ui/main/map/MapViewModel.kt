@@ -252,6 +252,7 @@ class MapViewModel(
             is MapIntent.OnReviewReportSubmitted -> submitReviewReport(intent.reason, intent.details)
             MapIntent.OnReviewReportDismissed -> dismissReviewReport()
             MapIntent.OnReviewsChanged -> refreshReviews()
+            MapIntent.OnShopReviewsLoadMore -> loadMoreShopReviews()
             else -> return false
         }
         return true
@@ -384,15 +385,18 @@ class MapViewModel(
     ) {
         reduce {
             val content = shopDetailState as? ShopDetailSheetUiState.Content ?: return@reduce this
+            val updatedReviews =
+                content.detail.reviews.mapNotNull { review ->
+                    if (review.id == reviewId) update(review) else review
+                }
+            val removedReviewCount = content.detail.reviews.size - updatedReviews.size
             copy(
                 shopDetailState =
                     content.copy(
                         detail =
                             content.detail.copy(
-                                reviews =
-                                    content.detail.reviews.mapNotNull { review ->
-                                        if (review.id == reviewId) update(review) else review
-                                    },
+                                reviews = updatedReviews,
+                                reviewCount = (content.detail.reviewCount - removedReviewCount).coerceAtLeast(0),
                             ),
                     ),
             )
@@ -402,6 +406,41 @@ class MapViewModel(
     private fun refreshReviews() {
         fetchShopDetailUseCase.clearCache()
         currentState.selectedShop?.id?.let(::loadShopDetail)
+    }
+
+    private fun loadMoreShopReviews() {
+        val detail = currentState.shopDetail ?: return
+        if (!currentState.hasMoreShopReviews || currentState.isLoadingMoreShopReviews) return
+
+        val shopId = detail.shop.id
+        val offset = detail.reviews.size.toLong()
+        launchResultTask(
+            taskKey = SHOP_REVIEW_PAGE_TASK_KEY,
+            loadKey = MapLoadKey.ShopReviewsPage,
+            policy = TaskPolicy.IgnoreNew,
+            request = { reviewRepository.fetchShopReviewsPage(shopId, offset) },
+            onSuccess = { page ->
+                reduce {
+                    val content = shopDetailState as? ShopDetailSheetUiState.Content ?: return@reduce this
+                    if (content.detail.shop.id != shopId) return@reduce this
+                    val loadedReviews =
+                        (content.detail.reviews + page.reviews)
+                            .distinctBy { it.id }
+                    copy(
+                        shopDetailState =
+                            content.copy(
+                                detail =
+                                    content.detail.copy(
+                                        reviews = loadedReviews,
+                                        reviewCount = page.totalCount,
+                                    ),
+                            ),
+                        hasMoreShopReviews = loadedReviews.size < page.totalCount,
+                    )
+                }
+            },
+            onError = { showToast(Res.string.data_load_failure_message, ToastType.ERROR) },
+        )
     }
 
     private fun handleViewportIntent(intent: MapIntent): Boolean {
@@ -603,6 +642,7 @@ class MapViewModel(
 
     private fun selectShop(shopId: String) {
         if (shopId.isBlank()) return
+        if (isCurrentShopDetail(shopId)) return
         dismissReviewReport()
         consumeInitialLocationFocus()
         when (val lookup = fetchShopDetailUseCase.findCached(shopId)) {
@@ -618,6 +658,14 @@ class MapViewModel(
 
         loadShopDetail(shopId, selectShopOnSuccess = true)
     }
+
+    private fun isCurrentShopDetail(shopId: String): Boolean =
+        when (val state = currentState.shopDetailState) {
+            ShopDetailSheetUiState.Closed -> false
+            is ShopDetailSheetUiState.Loading -> state.shopId == shopId
+            is ShopDetailSheetUiState.Content -> state.detail.shop.id == shopId
+            is ShopDetailSheetUiState.Error -> state.shopId == shopId
+        }
 
     private fun dismissRequestedShopLoad() {
         dismissShopDetail()
@@ -1250,6 +1298,7 @@ class MapViewModel(
         shopId: String,
         selectShopOnSuccess: Boolean = false,
     ) {
+        cancelTask(SHOP_REVIEW_PAGE_TASK_KEY)
         launchTask(
             taskKey = SHOP_DETAIL_TASK_KEY,
             loadKey = MapLoadKey.ShopDetail,
@@ -1340,6 +1389,7 @@ class MapViewModel(
     /** 상세 UI가 닫히거나 검색 상태가 바뀔 때 진행 중 상세 조회와 로딩을 함께 정리한다. */
     private fun cancelShopDetailLoad() {
         cancelTask(SHOP_DETAIL_TASK_KEY)
+        cancelTask(SHOP_REVIEW_PAGE_TASK_KEY)
     }
 
     private fun handleShopDetailSuccess(
@@ -1352,6 +1402,7 @@ class MapViewModel(
             copy(
                 shopWaiting = shopWaiting + (selectedShop.id to detail.waitingSystem),
                 shopDetailState = ShopDetailSheetUiState.Content(selectedDetail),
+                hasMoreShopReviews = selectedDetail.reviews.size < selectedDetail.reviewCount,
             )
         }
         recordRecentlyViewedShop(selectedDetail.shop)
@@ -1363,6 +1414,7 @@ class MapViewModel(
                 shouldFocusSelectedShop = true,
                 shopWaiting = shopWaiting + (detail.shop.id to detail.waitingSystem),
                 shopDetailState = ShopDetailSheetUiState.Content(detail),
+                hasMoreShopReviews = detail.reviews.size < detail.reviewCount,
             )
         }
         recordRecentlyViewedShop(detail.shop)
@@ -1463,6 +1515,7 @@ class MapViewModel(
         private const val SEARCH_RESULT_LIMIT = 50
         private const val SEARCH_TASK_KEY = "map-search"
         private const val SHOP_DETAIL_TASK_KEY = "map-shop-detail"
+        private const val SHOP_REVIEW_PAGE_TASK_KEY = "map-shop-reviews-page"
         private const val REVIEW_ACTION_TASK_KEY = "map-review-action"
         private const val REVIEW_REPORT_TASK_KEY = "map-review-report"
         private const val SHOP_REPORT_TASK_KEY = "map-shop-report"

@@ -90,9 +90,12 @@ data class MapUiState(
     val currentProfileIsPublic: Boolean? = null,
     val actingReviewId: String? = null,
     val reportReview: Review? = null,
+    val hasMoreShopReviews: Boolean = false,
 ) : LoadableState<MapUiState> {
     val isReportingReview: Boolean
         get() = loadState.isLoading(MapLoadKey.ReviewReport)
+    val isLoadingMoreShopReviews: Boolean
+        get() = loadState.isLoading(MapLoadKey.ShopReviewsPage)
     val selectedShop: RamenShop?
         get() =
             when (val state = shopDetailState) {
@@ -110,6 +113,9 @@ data class MapUiState(
 
     val isSearchLoading: Boolean
         get() = loadState.isLoading(MapLoadKey.Search)
+
+    val showsLoadingOverlay: Boolean
+        get() = (isShopDetailLoading && selectedShop == null) || isSearchLoading
 
     val hasShopDetailLoadFailed: Boolean
         get() = shopDetailState is ShopDetailSheetUiState.Error

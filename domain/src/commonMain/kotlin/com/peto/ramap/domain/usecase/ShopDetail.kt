@@ -17,7 +17,7 @@ data class ShopDetail(
     val menuSections: List<MenuSection> = emptyList(),
     val menuUpdatedAt: String? = null,
     val reviews: List<Review> = emptyList(),
+    val reviewCount: Int = reviews.size,
 ) {
-    val reviewCount: Int get() = reviews.size
     val menuItemCount: Int get() = menuSections.sumOf { it.items.size }
 }

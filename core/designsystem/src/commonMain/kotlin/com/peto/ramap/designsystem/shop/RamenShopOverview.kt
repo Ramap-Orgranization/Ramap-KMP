@@ -1,9 +1,11 @@
 package com.peto.ramap.designsystem.shop
 
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -65,6 +67,10 @@ fun RamenShopOverview(
     onReviewEdit: (Review) -> Unit = {},
     onReviewDelete: (Review) -> Unit = {},
     onReviewReport: (Review) -> Unit = {},
+    reviewScrollState: ScrollState = rememberScrollState(),
+    hasMoreReviews: Boolean = false,
+    isLoadingMoreReviews: Boolean = false,
+    onLoadMoreReviews: () -> Unit = {},
     menuFooter: @Composable () -> Unit = {},
 ) {
     var selectedTab by remember(shop.id, showReviewsOnOpen) {
@@ -145,6 +151,7 @@ fun RamenShopOverview(
                 ReviewsContent(
                     shopName = shop.name,
                     reviews = reviews,
+                    scrollState = reviewScrollState,
                     onOpenProfile = onOpenProfile,
                     onWriteReviewClick = onWriteReviewClick,
                     currentUserId = currentUserId,
@@ -154,6 +161,9 @@ fun RamenShopOverview(
                     onEdit = onReviewEdit,
                     onDelete = onReviewDelete,
                     onReport = onReviewReport,
+                    hasMoreReviews = hasMoreReviews,
+                    isLoadingMoreReviews = isLoadingMoreReviews,
+                    onLoadMoreReviews = onLoadMoreReviews,
                 )
             }
         }

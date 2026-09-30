@@ -26,6 +26,8 @@ import com.peto.ramap.domain.repository.ShopReportRepository
 import com.peto.ramap.domain.repository.ShopWaitingSystemRepository
 import com.peto.ramap.domain.store.PersonalizationBootstrapState
 import com.peto.ramap.domain.store.ShopPersonalizationStore
+import com.peto.ramap.domain.usecase.FetchShopDetailUseCase
+import com.peto.ramap.domain.usecase.ShopDetail
 import com.peto.ramap.fake.FakeAnalyticsTracker
 import com.peto.ramap.fake.FakeCrashReporter
 import com.peto.ramap.fake.FakeLoginRepository
@@ -95,6 +97,39 @@ import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class MapViewModelTest {
+    @Test
+    fun `같은 매장 상세 화면이 재구성되어도 상세 조회를 반복하지 않는다`() =
+        coroutinesTest {
+            val shop = ramenShopFixture(id = "restored-shop")
+            val repository = FakeRamenShopRepository(fetchByIdsResult = RamenShops(mapOf(shop.id to shop)))
+            val fakeDetailUseCase =
+                FakeFetchShopDetailUseCase(
+                    repository,
+                    FakeShopWaitingSystemRepository(),
+                    FakeOperatingNoticeRepository(),
+                )
+            val detailUseCase =
+                object : FetchShopDetailUseCase by fakeDetailUseCase {
+                    var requestCount = 0
+
+                    override suspend fun invoke(shopId: String): RamapResult<ShopDetail> {
+                        requestCount++
+                        return fakeDetailUseCase(shopId)
+                    }
+                }
+            val viewModel = mapViewModel(ramenShopRepository = repository, detailUseCase = detailUseCase)
+
+            viewModel.dispatch(OnShopIdSelected(shop.id))
+            runCurrent()
+            assertEquals(1, detailUseCase.requestCount)
+
+            viewModel.dispatch(OnShopIdSelected(shop.id))
+            runCurrent()
+
+            assertEquals(1, detailUseCase.requestCount)
+            assertEquals(shop, viewModel.uiState.value.selectedShop)
+        }
+
     @Test
     fun `랭킹 매장 상세를 연 뒤 지도 탭을 떠나면 모든 바텀시트를 닫는다`() =
         coroutinesTest {
@@ -2706,6 +2741,7 @@ private fun mapViewModel(
     loginRepository: FakeLoginRepository = FakeLoginRepository(),
     shopReportRepository: ShopReportRepository = FakeShopReportRepository(),
     notificationSettingsRepository: FakeNotificationSettingsRepository = FakeNotificationSettingsRepository(),
+    detailUseCase: FetchShopDetailUseCase? = null,
 ): MapViewModel =
     MapViewModel(
         ramenShopRepository,
@@ -2713,7 +2749,7 @@ private fun mapViewModel(
         CurrentLocationStore(),
         shopReportRepository,
         personalizationRepository,
-        FakeFetchShopDetailUseCase(
+        detailUseCase ?: FakeFetchShopDetailUseCase(
             ramenShopRepository,
             shopWaitingSystemRepository,
             FakeOperatingNoticeRepository(),

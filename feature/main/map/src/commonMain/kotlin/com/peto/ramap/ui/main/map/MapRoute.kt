@@ -46,6 +46,7 @@ import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopIdSelected
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopMapLinkClicked
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopNotificationToggled
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopReportSubmitted
+import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopReviewsLoadMore
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopSelected
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopShareClicked
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnStatusTimeRefreshed
@@ -99,11 +100,7 @@ fun MapRoute(
     }
 
     LaunchedEffect(requestedShopId) {
-        if (requestedShopId == null) {
-            viewModel.dispatch(OnRequestedShopDismissed)
-        } else {
-            viewModel.dispatch(OnShopIdSelected(requestedShopId))
-        }
+        requestedShopId?.let { viewModel.dispatch(OnShopIdSelected(it)) }
     }
 
     MapInteractionHost(
@@ -203,6 +200,9 @@ fun MapRoute(
                 )
             },
             onReviewReport = { viewModel.dispatch(OnReviewReportRequested(it)) },
+            hasMoreReviews = uiState.hasMoreShopReviews,
+            isLoadingMoreReviews = uiState.isLoadingMoreShopReviews,
+            onLoadMoreReviews = { viewModel.dispatch(OnShopReviewsLoadMore) },
             onOperatingNoticeNavigate = onOperatingNoticeNavigate,
             showShopDetail = shouldShowShopDetail,
             showReviewsOnOpen = shouldShowReviews,
