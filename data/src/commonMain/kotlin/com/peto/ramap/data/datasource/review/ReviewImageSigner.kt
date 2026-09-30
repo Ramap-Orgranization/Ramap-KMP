@@ -17,6 +17,11 @@ internal class ReviewImageSigner(
             paths.map { path -> async { signImage(path) } }.awaitAll().filterNotNull()
         }
 
+    suspend fun signImagesOrNull(paths: List<String>): List<String?> =
+        coroutineScope {
+            paths.map { path -> async { signImage(path) } }.awaitAll()
+        }
+
     private suspend fun signImage(path: String): String? =
         permits.withPermit {
             try {

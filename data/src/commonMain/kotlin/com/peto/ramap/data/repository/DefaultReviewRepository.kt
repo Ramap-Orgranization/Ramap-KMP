@@ -4,8 +4,12 @@ import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.data.datasource.review.ReviewDataSource
 import com.peto.ramap.data.model.ShopReviewRequest
 import com.peto.ramap.domain.model.review.EditableReview
+import com.peto.ramap.domain.model.review.MyReview
+import com.peto.ramap.domain.model.review.MyReviewVisibility
+import com.peto.ramap.domain.model.review.MyReviewsPage
 import com.peto.ramap.domain.model.review.Review
 import com.peto.ramap.domain.model.review.ReviewImage
+import com.peto.ramap.domain.model.review.ShopReviewsPage
 import com.peto.ramap.domain.repository.ReviewLike
 import com.peto.ramap.domain.repository.ReviewRepository
 import com.peto.ramap.network.execute.invokeRequest
@@ -17,10 +21,22 @@ internal class DefaultReviewRepository(
 ) : ReviewRepository {
     override fun observeChanges(): Flow<Unit> = changes.events
 
+    override suspend fun fetchMyReviews(
+        offset: Long,
+        visibility: MyReviewVisibility,
+    ): RamapResult<MyReviewsPage> = invokeRequest { dataSource.fetchMyReviews(offset, visibility.rpcValue).toDomain() }
+
+    override suspend fun fetchMyReview(reviewId: String): RamapResult<MyReview?> = invokeRequest { dataSource.fetchMyReview(reviewId)?.toDomain() }
+
     override suspend fun fetchShopReviews(
         shopId: String,
         offset: Long,
     ): RamapResult<List<Review>> = invokeRequest { dataSource.fetchShopReviews(shopId, offset).map { it.toDomain() } }
+
+    override suspend fun fetchShopReviewsPage(
+        shopId: String,
+        offset: Long,
+    ): RamapResult<ShopReviewsPage> = invokeRequest { dataSource.fetchShopReviewsPage(shopId, offset).toDomain() }
 
     override suspend fun fetchProfileReviews(
         userId: String?,

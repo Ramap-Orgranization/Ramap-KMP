@@ -2,6 +2,7 @@ package com.peto.ramap.data.repository
 
 import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.data.datasource.community.CommunityDataSource
+import com.peto.ramap.domain.model.community.ProfileAccess
 import com.peto.ramap.domain.model.community.PublicProfile
 import com.peto.ramap.domain.model.community.ReportReason
 import com.peto.ramap.domain.model.review.Review
@@ -16,7 +17,7 @@ internal class DefaultReviewCommunityRepository(
 
     override suspend fun fetchMyCommunityProfile(): RamapResult<PublicProfile?> = invokeRequest { dataSource.fetchMyCommunityProfile().toDomain() }
 
-    override suspend fun fetchPublicProfile(userId: String): RamapResult<PublicProfile?> = invokeRequest { dataSource.fetchPublicProfile(userId)?.toDomain() }
+    override suspend fun fetchProfileAccess(userId: String): RamapResult<ProfileAccess> = invokeRequest { dataSource.fetchProfileAccess(userId).toDomain() }
 
     override suspend fun fetchUserReviews(
         userId: String,

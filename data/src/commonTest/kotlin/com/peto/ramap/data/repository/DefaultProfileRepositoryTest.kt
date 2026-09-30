@@ -7,7 +7,10 @@ import com.peto.ramap.data.model.ProfileResponse
 import com.peto.ramap.domain.model.profile.AccountProfile
 import com.peto.ramap.domain.model.profile.ProfileImage
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -19,6 +22,18 @@ import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Instant
 
 class DefaultProfileRepositoryTest {
+    @Test
+    fun profileSavePublishesUpdatedProfile() =
+        runTest {
+            val repository = DefaultProfileRepository(ProfileDataSourceFake())
+            val update = async { repository.observeProfileUpdates().first() }
+            runCurrent()
+
+            val saved = assertIs<RamapResult.Success<AccountProfile>>(repository.updateMyProfile("새닉네임"))
+
+            assertEquals(saved.data, update.await())
+        }
+
     @Test
     fun returnsSignedPhotoAndCapturedOwner() =
         runTest {

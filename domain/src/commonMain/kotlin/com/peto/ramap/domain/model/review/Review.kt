@@ -15,6 +15,7 @@ data class Review(
     val visitNumber: Int = 1,
     val likeCount: Int = 0,
     val isLiked: Boolean = false,
+    val isBlocked: Boolean = false,
 ) {
     companion object {
         fun isValidBody(body: String): Boolean = codePointCount(body.trim()) in BODY_LENGTH

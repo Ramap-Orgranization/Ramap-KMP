@@ -1,6 +1,7 @@
 package com.peto.ramap.fake
 
 import com.peto.ramap.core.result.RamapResult
+import com.peto.ramap.domain.model.community.ProfileAccess
 import com.peto.ramap.domain.model.community.PublicProfile
 import com.peto.ramap.domain.model.community.ReportReason
 import com.peto.ramap.domain.model.review.Review
@@ -15,7 +16,7 @@ class FakeReviewCommunityRepository(
 
     override suspend fun fetchMyCommunityProfile(): RamapResult<PublicProfile?> = RamapResult.Success(PublicProfile("me", "나"))
 
-    override suspend fun fetchPublicProfile(userId: String): RamapResult<PublicProfile?> = RamapResult.Success(null)
+    override suspend fun fetchProfileAccess(userId: String): RamapResult<ProfileAccess> = RamapResult.Success(ProfileAccess.Unavailable)
 
     override suspend fun fetchUserReviews(
         userId: String,

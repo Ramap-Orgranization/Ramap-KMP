@@ -1,9 +1,12 @@
 package com.peto.ramap.data.datasource.review
 
 import com.peto.ramap.data.model.EditableReviewResponse
+import com.peto.ramap.data.model.MyReviewResponse
+import com.peto.ramap.data.model.MyReviewsPageResponse
 import com.peto.ramap.data.model.ReviewLikeResponse
 import com.peto.ramap.data.model.ReviewResponse
 import com.peto.ramap.data.model.ShopReviewRequest
+import com.peto.ramap.data.model.ShopReviewsPageResponse
 import com.peto.ramap.domain.model.review.ReviewImage
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
@@ -28,6 +31,37 @@ internal class RemoteReviewDataSource(
 ) : ReviewDataSource {
     private val imageSigner = ReviewImageSigner { path -> client.storage.from(BUCKET).createSignedUrl(path, SIGNED_URL_LIFETIME) }
 
+    override suspend fun fetchMyReviews(
+        offset: Long,
+        visibility: String,
+    ): MyReviewsPageResponse {
+        val page =
+            client.postgrest
+                .rpc(
+                    RPC_FETCH_MY_REVIEWS,
+                    buildJsonObject {
+                        put(PARAM_OFFSET, offset)
+                        put(PARAM_VISIBILITY, visibility)
+                    },
+                ).decodeAs<MyReviewsPageResponse>()
+        return page.copy(
+            reviews =
+                coroutineScope {
+                    page.reviews.map { review -> async { signMyReview(review) } }.awaitAll()
+                },
+        )
+    }
+
+    override suspend fun fetchMyReview(reviewId: String): MyReviewResponse? {
+        val review =
+            client.postgrest
+                .rpc(
+                    RPC_FETCH_MY_REVIEW,
+                    buildJsonObject { put(PARAM_REVIEW_ID, reviewId) },
+                ).decodeAs<MyReviewResponse?>() ?: return null
+        return signMyReview(review)
+    }
+
     override suspend fun fetchShopReviews(
         shopId: String,
         offset: Long,
@@ -39,6 +73,22 @@ internal class RemoteReviewDataSource(
                 put(PARAM_OFFSET, offset)
             },
         )
+
+    override suspend fun fetchShopReviewsPage(
+        shopId: String,
+        offset: Long,
+    ): ShopReviewsPageResponse {
+        val page =
+            client.postgrest
+                .rpc(
+                    RPC_FETCH_SHOP_REVIEWS_PAGE,
+                    buildJsonObject {
+                        put(PARAM_SHOP_ID, shopId)
+                        put(PARAM_OFFSET, offset)
+                    },
+                ).decodeAs<ShopReviewsPageResponse>()
+        return page.copy(reviews = signReviews(page.reviews))
+    }
 
     override suspend fun fetchProfileReviews(
         userId: String?,
@@ -150,11 +200,11 @@ internal class RemoteReviewDataSource(
     private suspend fun fetchReviews(
         rpc: String,
         parameters: kotlinx.serialization.json.JsonObject,
-    ): List<ReviewResponse> =
+    ): List<ReviewResponse> = signReviews(client.postgrest.rpc(rpc, parameters).decodeList<ReviewResponse>())
+
+    private suspend fun signReviews(reviews: List<ReviewResponse>): List<ReviewResponse> =
         coroutineScope {
-            client.postgrest
-                .rpc(rpc, parameters)
-                .decodeList<ReviewResponse>()
+            reviews
                 .map { review ->
                     async {
                         review.copy(
@@ -175,6 +225,12 @@ internal class RemoteReviewDataSource(
             null
         }
     }
+
+    private suspend fun signMyReview(review: MyReviewResponse): MyReviewResponse =
+        review.copy(
+            imageUrls = imageSigner.signImagesOrNull(review.imagePaths),
+            authorAvatarUrl = signedAvatar(review.authorAvatarPath),
+        )
 
     private suspend fun uploadImages(images: List<ReviewImage>): List<String> {
         val userId = requireNotNull(client.auth.currentUserOrNull()?.id) { "Missing authenticated user" }
@@ -199,7 +255,10 @@ internal class RemoteReviewDataSource(
         }
 
     private companion object {
+        const val RPC_FETCH_MY_REVIEWS = "fetch_my_reviews"
+        const val RPC_FETCH_MY_REVIEW = "fetch_my_review"
         const val RPC_FETCH_SHOP_REVIEWS = "fetch_shop_reviews"
+        const val RPC_FETCH_SHOP_REVIEWS_PAGE = "fetch_shop_reviews_page"
         const val RPC_FETCH_PROFILE_REVIEWS = "fetch_profile_reviews"
         const val RPC_SUBMIT_SHOP_REVIEW = "submit_shop_review"
         const val RPC_FETCH_EDITABLE_REVIEW = "fetch_editable_shop_review"
@@ -210,6 +269,7 @@ internal class RemoteReviewDataSource(
         const val PARAM_SHOP_ID = "p_shop_id"
         const val PARAM_USER_ID = "p_user_id"
         const val PARAM_OFFSET = "p_offset"
+        const val PARAM_VISIBILITY = "p_visibility"
         const val PARAM_BODY = "p_body"
         const val PARAM_IMAGE_PATHS = "p_image_paths"
         const val PARAM_IS_PUBLIC = "p_is_public"

@@ -14,6 +14,8 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.withContext
 import kotlin.time.Clock
 import kotlin.time.Instant
@@ -27,6 +29,9 @@ internal class DefaultProfileRepository(
     override val sessionUserIds = dataSource.sessionUserIds
 
     private var avatarCache: AvatarCache? = null
+    private val profileUpdates = MutableSharedFlow<AccountProfile>(extraBufferCapacity = 1)
+
+    override fun observeProfileUpdates() = profileUpdates.asSharedFlow()
 
     override suspend fun fetchMyProfile(): RamapResult<AccountProfile> =
         invokeRequest {
@@ -60,6 +65,7 @@ internal class DefaultProfileRepository(
             check(response.userId == userId) { ERROR_MISMATCHED_PROFILE_OWNER }
             changes.notifyChanged()
             accountProfile(userId, response, tolerateAvatarSigningFailure = true)
+                .also { profileUpdates.tryEmit(it) }
         }
 
     private suspend fun updateProfile(
@@ -83,6 +89,7 @@ internal class DefaultProfileRepository(
         check(response.userId == userId) { ERROR_MISMATCHED_PROFILE_OWNER }
         cleanUpPreviousAvatar(userId, previousAvatarPath, response.avatarPath)
         return accountProfile(userId, response, tolerateAvatarSigningFailure = true)
+            .also { profileUpdates.tryEmit(it) }
     }
 
     private suspend fun previousAvatarPath(

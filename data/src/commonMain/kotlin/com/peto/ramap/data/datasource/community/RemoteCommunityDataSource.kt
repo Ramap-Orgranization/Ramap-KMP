@@ -2,6 +2,7 @@ package com.peto.ramap.data.datasource.community
 
 import com.peto.ramap.data.datasource.review.ReviewDataSource
 import com.peto.ramap.data.model.MyCommunityProfileResponse
+import com.peto.ramap.data.model.ProfileAccessResponse
 import com.peto.ramap.data.model.PublicProfileResponse
 import com.peto.ramap.data.model.ReviewResponse
 import io.github.jan.supabase.SupabaseClient
@@ -24,14 +25,16 @@ internal class RemoteCommunityDataSource(
         return profile.copy(avatarUrl = signedAvatar(profile.avatarPath))
     }
 
-    override suspend fun fetchPublicProfile(userId: String): PublicProfileResponse? {
-        val profile =
+    override suspend fun fetchProfileAccess(userId: String): ProfileAccessResponse {
+        val access =
             client.postgrest
                 .rpc(
-                    RPC_FETCH_PUBLIC_COMMUNITY_PROFILE,
+                    RPC_FETCH_COMMUNITY_PROFILE_ACCESS,
                     buildJsonObject { put(PARAM_USER_ID, userId) },
-                ).decodeAs<PublicProfileResponse?>() ?: return null
-        return profile.copy(avatarUrl = signedAvatar(profile.avatarPath))
+                ).decodeAs<ProfileAccessResponse>()
+        if (access.status != ProfileAccessResponse.VISIBLE) return access
+        val profile = access.profile ?: return access
+        return access.copy(profile = profile.copy(avatarUrl = signedAvatar(profile.avatarPath)))
     }
 
     private suspend fun signedAvatar(path: String?): String? {
@@ -84,7 +87,7 @@ internal class RemoteCommunityDataSource(
 
     private companion object {
         const val RPC_FETCH_MY_COMMUNITY_MEMBERSHIP = "fetch_my_community_membership"
-        const val RPC_FETCH_PUBLIC_COMMUNITY_PROFILE = "fetch_public_community_profile"
+        const val RPC_FETCH_COMMUNITY_PROFILE_ACCESS = "fetch_community_profile_access"
         const val RPC_FETCH_BLOCKED_COMMUNITY_PROFILES = "fetch_blocked_community_profiles"
         const val RPC_REPORT_COMMUNITY_CONTENT = "report_community_content"
         const val RPC_CHANGE_COMMUNITY_BLOCK = "change_community_block"

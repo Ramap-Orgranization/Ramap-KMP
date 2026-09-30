@@ -1,6 +1,7 @@
 package com.peto.ramap.domain.repository
 
 import com.peto.ramap.core.result.RamapResult
+import com.peto.ramap.domain.model.community.ProfileAccess
 import com.peto.ramap.domain.model.community.PublicProfile
 import com.peto.ramap.domain.model.community.ReportReason
 import com.peto.ramap.domain.model.review.Review
@@ -11,7 +12,7 @@ interface ReviewCommunityRepository {
 
     suspend fun fetchMyCommunityProfile(): RamapResult<PublicProfile?>
 
-    suspend fun fetchPublicProfile(userId: String): RamapResult<PublicProfile?>
+    suspend fun fetchProfileAccess(userId: String): RamapResult<ProfileAccess>
 
     suspend fun fetchUserReviews(
         userId: String,

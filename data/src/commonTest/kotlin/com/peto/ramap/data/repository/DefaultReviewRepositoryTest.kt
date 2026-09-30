@@ -3,6 +3,8 @@ package com.peto.ramap.data.repository
 import com.peto.ramap.core.result.getOrThrow
 import com.peto.ramap.data.datasource.review.ReviewDataSource
 import com.peto.ramap.data.model.EditableReviewResponse
+import com.peto.ramap.data.model.MyReviewResponse
+import com.peto.ramap.data.model.MyReviewsPageResponse
 import com.peto.ramap.data.model.ReviewLikeResponse
 import com.peto.ramap.data.model.ReviewResponse
 import com.peto.ramap.data.model.ShopReviewRequest
@@ -33,6 +35,13 @@ class DefaultReviewRepositoryTest {
 
     private class FakeReviewDataSource : ReviewDataSource {
         var submittedReview: ShopReviewRequest? = null
+
+        override suspend fun fetchMyReviews(
+            offset: Long,
+            visibility: String,
+        ): MyReviewsPageResponse = error("Unexpected my reviews fetch")
+
+        override suspend fun fetchMyReview(reviewId: String): MyReviewResponse? = error("Unexpected my review fetch")
 
         override suspend fun fetchShopReviews(
             shopId: String,

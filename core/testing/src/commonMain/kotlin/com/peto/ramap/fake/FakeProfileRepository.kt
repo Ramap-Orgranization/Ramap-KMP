@@ -8,14 +8,18 @@ import kotlinx.coroutines.flow.MutableStateFlow
 
 class FakeProfileRepository(
     userId: String? = "me",
+    var isProfilePublic: Boolean = true,
 ) : ProfileRepository {
     override val sessionUserIds = MutableStateFlow(userId)
 
-    override suspend fun fetchMyProfile() = RamapResult.Success(AccountProfile(sessionUserIds.value.orEmpty(), "라멘러"))
+    override suspend fun fetchMyProfile() = RamapResult.Success(AccountProfile(sessionUserIds.value.orEmpty(), "라멘러", isPublic = isProfilePublic))
 
     override suspend fun isNicknameAvailable(nickname: String) = RamapResult.Success(true)
 
     override suspend fun updateMyProfile(draft: ProfileDraft) = fetchMyProfile()
 
-    override suspend fun updateProfileVisibility(isPublic: Boolean) = RamapResult.Success(AccountProfile(sessionUserIds.value.orEmpty(), "라멘러", isPublic = isPublic))
+    override suspend fun updateProfileVisibility(isPublic: Boolean): RamapResult<AccountProfile> {
+        isProfilePublic = isPublic
+        return RamapResult.Success(AccountProfile(sessionUserIds.value.orEmpty(), "라멘러", isPublic = isPublic))
+    }
 }

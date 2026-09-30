@@ -23,6 +23,7 @@ internal data class ReviewResponse(
     @SerialName("like_count") val likeCount: Int = 0,
     @SerialName("is_liked") val isLiked: Boolean = false,
     @SerialName("author_review_count") val authorReviewCount: Int = 0,
+    @SerialName("is_blocked") val isBlocked: Boolean = false,
     @Transient val imageUrls: List<String> = emptyList(),
     @Transient val avatarUrl: String? = null,
 ) {
@@ -39,5 +40,6 @@ internal data class ReviewResponse(
             visitNumber = visitNumber,
             likeCount = likeCount,
             isLiked = isLiked,
+            isBlocked = isBlocked,
         )
 }
