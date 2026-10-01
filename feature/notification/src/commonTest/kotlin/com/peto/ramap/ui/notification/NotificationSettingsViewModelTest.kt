@@ -120,8 +120,7 @@ class NotificationSettingsViewModelTest {
             val repository =
                 object :
                     NotificationSettingsRepository by FakeNotificationSettingsRepository(enabled = true) {
-                    override suspend fun updateEventNotificationsEnabled(enabled: Boolean): RamapResult<Unit> =
-                        RamapResult.Error(RamapError.Unknown(IllegalStateException("failure")))
+                    override suspend fun updateEventNotificationsEnabled(enabled: Boolean): RamapResult<Unit> = RamapResult.Error(RamapError.Unknown(IllegalStateException("failure")))
                 }
             val viewModel = NotificationSettingsViewModel(repository, FakeAnalyticsTracker())
             runCurrent()

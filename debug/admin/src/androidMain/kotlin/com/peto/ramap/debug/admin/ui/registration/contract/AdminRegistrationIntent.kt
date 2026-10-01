@@ -30,6 +30,15 @@ internal sealed interface AdminRegistrationIntent : Intent {
         val value: String,
     ) : AdminRegistrationIntent
 
+    data class OnDraftVenueChanged(
+        val name: String,
+        val address: String,
+        val externalVenueId: String,
+        val instagramUrl: String,
+        val naverMapUrl: String,
+        val kakaoMapUrl: String,
+    ) : AdminRegistrationIntent
+
     data object OnImageOnlyRegistrationClicked : AdminRegistrationIntent
 
     data class OnImageOnlyTitleChanged(
@@ -43,6 +52,29 @@ internal sealed interface AdminRegistrationIntent : Intent {
     data class OnDraftDescriptionChanged(
         val value: String,
     ) : AdminRegistrationIntent
+
+    data class OnDraftNoticeTimesChanged(
+        val startTime: String?,
+        val endTime: String?,
+    ) : AdminRegistrationIntent
+
+    data class OnDraftScheduleOverrideChanged(
+        val open: String?,
+        val close: String?,
+    ) : AdminRegistrationIntent
+
+    data class OnRegularSegmentSelected(
+        val open: String,
+        val close: String,
+    ) : AdminRegistrationIntent
+
+    data class OnDraftBreakTimeChanged(
+        val index: Int,
+        val start: String,
+        val end: String,
+    ) : AdminRegistrationIntent
+
+    data object OnDraftBreakTimesCleared : AdminRegistrationIntent
 
     data class OnEvidenceSelected(
         val evidence: AdminEvidence?,
@@ -58,6 +90,12 @@ internal sealed interface AdminRegistrationIntent : Intent {
     data object OnPreviewOrRegisterClicked : AdminRegistrationIntent
 
     data object OnManagedEventsRefreshed : AdminRegistrationIntent
+
+    data object OnDelayedOpeningsRefreshed : AdminRegistrationIntent
+
+    data class OnDelayedOpeningReleased(
+        val id: String,
+    ) : AdminRegistrationIntent
 
     data class OnManagedEventSelected(
         val eventId: String,
@@ -83,6 +121,20 @@ internal sealed interface AdminRegistrationIntent : Intent {
     data object OnEventStatusTodaySelected : AdminRegistrationIntent
 
     data object OnEventStatusSaved : AdminRegistrationIntent
+
+    data class OnManagedEventEditRequested(
+        val eventId: String,
+    ) : AdminRegistrationIntent
+
+    data class OnCorrectionRequestChanged(
+        val value: String,
+    ) : AdminRegistrationIntent
+
+    data object OnCorrectionPreviewRequested : AdminRegistrationIntent
+
+    data object OnCorrectionConfirmed : AdminRegistrationIntent
+
+    data object OnCorrectionPreviewDismissed : AdminRegistrationIntent
 
     data class OnTabSelected(
         val tab: AdminRegistrationTab,

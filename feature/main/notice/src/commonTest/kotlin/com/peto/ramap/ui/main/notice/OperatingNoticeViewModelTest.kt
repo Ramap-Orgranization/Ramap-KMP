@@ -7,33 +7,64 @@ import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.notice.OperatingNotice
 import com.peto.ramap.domain.model.notice.OperatingNoticeType
+import com.peto.ramap.fake.FakeAnalyticsTracker
 import com.peto.ramap.fake.FakeOperatingNoticeRepository
 import com.peto.ramap.fixture.ramenShopFixture
 import com.peto.ramap.ui.main.notice.contract.OperatingNoticeIntent
 import com.peto.ramap.ui.main.notice.contract.OperatingNoticeSideEffect
+import com.peto.ramap.ui.main.notice.log.OperatingNoticeAnalytics
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
+import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.plus
+import kotlinx.datetime.todayIn
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.event_list_refresh_failure_message
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
+import kotlin.time.Clock
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class OperatingNoticeViewModelTest {
+    @Test
+    fun `영업 공지를 선택하면 유형과 공지 식별자를 기록한다`() =
+        coroutinesTest {
+            val notice = operatingNotice()
+            val analyticsTracker = FakeAnalyticsTracker()
+            val viewModel =
+                OperatingNoticeViewModel(
+                    FakeOperatingNoticeRepository(),
+                    OperatingNoticeAnalytics(analyticsTracker),
+                )
+
+            viewModel.dispatch(OperatingNoticeIntent.OnNoticeClicked(notice))
+            runCurrent()
+
+            assertEquals("operating_notice_select", analyticsTracker.events.single().name)
+            assertEquals(
+                mapOf(
+                    "content_type" to "operating_notice",
+                    "operating_notice_id" to notice.id,
+                ),
+                analyticsTracker.events.single().params(),
+            )
+        }
+
     @Test
     fun `영업 공지를 불러오면 목록을 표시한다`() =
         coroutinesTest {
             val notice = operatingNotice()
             val repository = FakeOperatingNoticeRepository(notices = listOf(notice))
-            val viewModel = OperatingNoticeViewModel(repository)
+            val viewModel = operatingNoticeViewModel(repository)
 
             runCurrent()
 
-            assertEquals(listOf(notice), viewModel.uiState.value.operatingNotices)
+            assertEquals(listOf(notice), viewModel.uiState.value.todayOperatingNotices)
             assertFalse(viewModel.uiState.value.isLoading)
             assertEquals(1, repository.fetchCount)
         }
@@ -43,7 +74,7 @@ class OperatingNoticeViewModelTest {
         coroutinesTest {
             val notice = operatingNotice()
             val repository = FakeOperatingNoticeRepository(notices = listOf(notice))
-            val viewModel = OperatingNoticeViewModel(repository)
+            val viewModel = operatingNoticeViewModel(repository)
             runCurrent()
             repository.delayMillis = 1_000
 
@@ -51,7 +82,7 @@ class OperatingNoticeViewModelTest {
             runCurrent()
 
             assertEquals(2, repository.fetchCount)
-            assertEquals(listOf(notice), viewModel.uiState.value.operatingNotices)
+            assertEquals(listOf(notice), viewModel.uiState.value.todayOperatingNotices)
             assertTrue(viewModel.uiState.value.isRefreshing)
 
             advanceTimeBy(1_000)
@@ -65,7 +96,7 @@ class OperatingNoticeViewModelTest {
         coroutinesTest {
             val notice = operatingNotice()
             val repository = FakeOperatingNoticeRepository(notices = listOf(notice))
-            val viewModel = OperatingNoticeViewModel(repository)
+            val viewModel = operatingNoticeViewModel(repository)
             runCurrent()
             repository.error = RamapError.Unknown(IllegalStateException("failure"))
 
@@ -73,7 +104,7 @@ class OperatingNoticeViewModelTest {
                 viewModel.dispatch(OperatingNoticeIntent.OnRefreshed)
                 runCurrent()
 
-                assertEquals(listOf(notice), viewModel.uiState.value.operatingNotices)
+                assertEquals(listOf(notice), viewModel.uiState.value.todayOperatingNotices)
                 assertFalse(viewModel.uiState.value.isRefreshing)
                 assertEquals(
                     OperatingNoticeSideEffect.ShowToast(
@@ -87,16 +118,39 @@ class OperatingNoticeViewModelTest {
             }
         }
 
-    private fun operatingNotice(id: String = "notice") =
-        OperatingNotice(
-            id = id,
-            shop = ramenShopFixture(id = "shop", name = "매장", address = "서울"),
-            type = OperatingNoticeType.TEMPORARY_CLOSURE,
-            description = "내부 사정으로 쉽니다.",
-            startDate = LocalDate(2026, 8, 21),
-            endDate = LocalDate(2026, 8, 21),
-            startTime = null,
-            endTime = null,
-            sourceUrl = null,
+    @Test
+    fun `오늘 공지와 미래 공지를 각각 분리한다`() =
+        coroutinesTest {
+            val today = Clock.System.todayIn(TimeZone.of("Asia/Seoul"))
+            val current = operatingNotice(id = "today", startDate = today, endDate = today)
+            val scheduled = operatingNotice(id = "future", startDate = today.plus(1, DateTimeUnit.DAY), endDate = today.plus(1, DateTimeUnit.DAY))
+            val viewModel = operatingNoticeViewModel(FakeOperatingNoticeRepository(notices = listOf(current, scheduled)))
+
+            runCurrent()
+
+            assertEquals(listOf(current), viewModel.uiState.value.todayOperatingNotices)
+            assertEquals(listOf(scheduled), viewModel.uiState.value.scheduledOperatingNotices)
+        }
+
+    private fun operatingNotice(
+        id: String = "notice",
+        startDate: LocalDate = Clock.System.todayIn(TimeZone.of("Asia/Seoul")),
+        endDate: LocalDate? = startDate,
+    ) = OperatingNotice(
+        id = id,
+        shop = ramenShopFixture(id = "shop", name = "매장", address = "서울"),
+        type = OperatingNoticeType.TEMPORARY_CLOSURE,
+        description = "내부 사정으로 쉽니다.",
+        startDate = startDate,
+        endDate = endDate,
+        startTime = null,
+        endTime = null,
+        sourceUrl = null,
+    )
+
+    private fun operatingNoticeViewModel(repository: FakeOperatingNoticeRepository) =
+        OperatingNoticeViewModel(
+            repository,
+            OperatingNoticeAnalytics(FakeAnalyticsTracker()),
         )
 }

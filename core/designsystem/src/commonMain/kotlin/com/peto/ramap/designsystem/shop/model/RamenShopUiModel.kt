@@ -13,9 +13,6 @@ data class RamenShopUiModel(
     val reportFieldOptions: List<ReportFieldOption> =
         buildList {
             add(reportFieldOption(ShopInformationField.ADDRESS))
-            if (shop.phone != null) {
-                add(reportFieldOption(ShopInformationField.PHONE))
-            }
             if (shop.businessHoursDetails != null) {
                 add(reportFieldOption(ShopInformationField.BUSINESS_HOURS))
             }

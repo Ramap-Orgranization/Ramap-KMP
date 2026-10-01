@@ -1,6 +1,8 @@
 package com.peto.ramap.ui.main.map.contract
 
 import com.peto.ramap.designsystem.shop.model.ShopDetailSheetUiState
+import com.peto.ramap.domain.model.notice.OperatingNotice
+import com.peto.ramap.domain.model.review.Review
 import com.peto.ramap.domain.model.shop.Location
 import com.peto.ramap.domain.model.shop.MapBounds
 import com.peto.ramap.domain.model.shop.RamenShop
@@ -14,11 +16,13 @@ import com.peto.ramap.ui.main.map.model.CameraPosition
 import com.peto.ramap.ui.main.map.model.location.LocationFocusStatus
 import com.peto.ramap.ui.main.map.model.search.SearchResultGuide
 import com.peto.ramap.ui.main.map.model.search.SearchUiModel
+import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import kotlin.time.Clock
 
 data class MapUiState(
+    val currentDateTime: LocalDateTime = Clock.System.now().toLocalDateTime(TimeZone.of("Asia/Seoul")),
     val shopDetailState: ShopDetailSheetUiState = ShopDetailSheetUiState.Closed,
     /** 지도 화면의 작업별 로딩 카운트. */
     override val loadState: LoadState = LoadState(),
@@ -44,8 +48,10 @@ data class MapUiState(
      * 지도와 검색 결과에 적용 중인 매장 필터.
      */
     val filters: RamenShopFilter = RamenShopFilter(),
-    /** 영업중 필터의 시간 변화를 반영하기 위한 화면 갱신 버전. */
-    val openFilterRefreshVersion: Long = 0L,
+    /**
+     * 운영 공지 목록
+     */
+    val operatingNotices: List<OperatingNotice> = emptyList(),
     /**
      * 현재 지도 카메라가 보고 있는 영역.
      */
@@ -80,7 +86,23 @@ data class MapUiState(
      * 현재 사용자의 로그인 여부.
      */
     val isLoggedIn: Boolean = false,
+    val currentUserId: String? = null,
+    val currentProfileIsPublic: Boolean? = null,
+    val actingReviewId: String? = null,
+    val revealedBlockedReviews: Map<String, Review> = emptyMap(),
+    val revealingBlockedReviewId: String? = null,
+    val pendingUnblockReview: Review? = null,
+    val reportReview: Review? = null,
+    val hasMoreShopReviews: Boolean = false,
 ) : LoadableState<MapUiState> {
+    val isReportingReview: Boolean
+        get() = loadState.isLoading(MapLoadKey.ReviewReport)
+    val isUnblockingReview: Boolean
+        get() = loadState.isLoading(MapLoadKey.BlockedReviewUnblock)
+    val isLoadingMoreShopReviews: Boolean
+        get() = loadState.isLoading(MapLoadKey.ShopReviewsPage)
+    val isRetryingShopReviews: Boolean
+        get() = shopDetail?.hasReviewLoadFailure == true && loadState.isLoading(MapLoadKey.ShopDetail)
     val selectedShop: RamenShop?
         get() =
             when (val state = shopDetailState) {
@@ -98,6 +120,9 @@ data class MapUiState(
 
     val isSearchLoading: Boolean
         get() = loadState.isLoading(MapLoadKey.Search)
+
+    val showsLoadingOverlay: Boolean
+        get() = (isShopDetailLoading && selectedShop == null) || isSearchLoading
 
     val hasShopDetailLoadFailed: Boolean
         get() = shopDetailState is ShopDetailSheetUiState.Error
@@ -155,14 +180,20 @@ data class MapUiState(
         get() {
             val selectedMarkerShop =
                 selectedShop
-                    ?.let { shop -> mapOf(shop.id to shop) }
+                    ?.takeIf { shop ->
+                        !filters.isOpenSelected ||
+                            shop.isOpenAt(currentDateTime, operatingNotices)
+                    }?.let { shop -> mapOf(shop.id to shop) }
                     .orEmpty()
 
-            return if (search.hasLoadedResultsForInput) {
-                RamenShops(displaySearchResults + selectedMarkerShop)
-            } else {
-                RamenShops(displayFilteredShops + selectedMarkerShop)
-            }
+            val markerShops =
+                if (search.hasLoadedResultsForInput) {
+                    RamenShops(displaySearchResults + selectedMarkerShop)
+                } else {
+                    RamenShops(displayFilteredShops + selectedMarkerShop)
+                }
+
+            return markerShops.filterByOpenStatus(filters, currentDateTime, operatingNotices)
         }
 
     /**
@@ -233,7 +264,8 @@ data class MapUiState(
                 shops.filterNotHidden(hiddenShopIds)
             }.filterByOpenStatus(
                 filters,
-                Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()),
+                currentDateTime,
+                operatingNotices,
             )
 
     /**
@@ -247,7 +279,8 @@ data class MapUiState(
                 search.results
             }.filterByOpenStatus(
                 filters,
-                Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()),
+                currentDateTime,
+                operatingNotices,
             )
 
     /**

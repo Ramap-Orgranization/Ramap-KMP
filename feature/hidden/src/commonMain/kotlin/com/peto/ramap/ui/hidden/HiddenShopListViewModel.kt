@@ -9,7 +9,7 @@ import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.domain.repository.RamenShopRepository
 import com.peto.ramap.domain.store.PersonalizationBootstrapState
-import com.peto.ramap.domain.store.ShopPersonalizationStore
+import com.peto.ramap.domain.store.PersonalizationStore
 import com.peto.ramap.ui.base.BaseViewModel
 import com.peto.ramap.ui.hidden.contract.HiddenShopListIntent
 import com.peto.ramap.ui.hidden.contract.HiddenShopListSideEffect
@@ -25,7 +25,7 @@ import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.personalization_update_failure_message
 
 class HiddenShopListViewModel(
-    private val personalizationStore: ShopPersonalizationStore,
+    private val personalizationStore: PersonalizationStore,
     private val ramenShopRepository: RamenShopRepository,
     private val analyticsTracker: AnalyticsTracker,
 ) : BaseViewModel<

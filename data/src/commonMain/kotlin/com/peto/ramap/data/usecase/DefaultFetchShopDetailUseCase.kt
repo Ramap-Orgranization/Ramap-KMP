@@ -1,36 +1,40 @@
 package com.peto.ramap.data.usecase
 
-import com.peto.ramap.core.result.RamapError
 import com.peto.ramap.core.result.RamapResult
+import com.peto.ramap.domain.model.review.Review
 import com.peto.ramap.domain.repository.OperatingNoticeRepository
 import com.peto.ramap.domain.repository.RamenShopRepository
-import com.peto.ramap.domain.repository.ShopWaitingSystemRepository
+import com.peto.ramap.domain.repository.ReviewRepository
 import com.peto.ramap.domain.usecase.FetchShopDetailUseCase
 import com.peto.ramap.domain.usecase.ShopDetail
 import com.peto.ramap.domain.usecase.ShopDetailCacheLookup
-import kotlinx.coroutines.async
-import kotlinx.coroutines.coroutineScope
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
+import kotlin.time.Clock
 
 internal class DefaultFetchShopDetailUseCase(
     private val ramenShopRepository: RamenShopRepository,
-    private val waitingSystemRepository: ShopWaitingSystemRepository,
     private val operatingNoticeRepository: OperatingNoticeRepository,
+    private val reviewRepository: ReviewRepository,
 ) : FetchShopDetailUseCase {
     private val cache = mutableMapOf<String, ShopDetail>()
+    private var cacheVersion = 0L
 
     /**
      * 매장 상세를 조회한다.
      *
-     * 캐시에 매장·웨이팅 정보가 있으면 재사용하고 이벤트만 새로 조회해
-     * 종료·신규 이벤트가 즉시 반영되도록 한다.
-     * 이벤트 재조회 실패는 캐시된 이벤트를 그대로 사용한다.
+     * 캐시된 매장·좋아요·웨이팅은 유지하고 서버의 최신 이벤트·공지·메뉴·리뷰를 반영한다.
+     * 재검증 실패 시에는 캐시 전체를 그대로 사용한다.
      */
     override suspend fun invoke(shopId: String): RamapResult<ShopDetail> {
+        val requestedVersion = cacheVersion
         val cached = cache[shopId]
-        if (cached != null) return revalidateEvent(cached)
+        if (cached != null) return revalidateDetail(cached, requestedVersion)
 
-        val result = loadFresh(shopId)
-        if (result is RamapResult.Success) cache[result.data.shop.id] = result.data
+        val result = fetchDetailWithNoticesAndReviews(shopId)
+        if (result is RamapResult.Success && requestedVersion == cacheVersion) {
+            cache[result.data.shop.id] = result.data
+        }
         return result
     }
 
@@ -38,6 +42,11 @@ internal class DefaultFetchShopDetailUseCase(
         cache[shopId]
             ?.let(ShopDetailCacheLookup::Hit)
             ?: ShopDetailCacheLookup.Miss
+
+    override fun clearCache() {
+        cacheVersion++
+        cache.clear()
+    }
 
     override fun updateCachedLikeCount(
         shopId: String,
@@ -50,78 +59,68 @@ internal class DefaultFetchShopDetailUseCase(
     }
 
     /**
-     * 캐시된 매장·웨이팅은 유지하고 이벤트만 새로 조회해 상세를 갱신한다.
+     * 캐시된 매장·웨이팅은 유지하고 이벤트·공지·메뉴·리뷰를 새로 조회해 상세를 갱신한다.
      */
-    private suspend fun revalidateEvent(cached: ShopDetail): RamapResult<ShopDetail> {
-        val eventResult = ramenShopRepository.fetchActiveShopEvent(cached.shop.id)
-        val noticeResult = operatingNoticeRepository.fetchActiveShopOperatingNotice(cached.shop.id)
+    private suspend fun revalidateDetail(
+        cached: ShopDetail,
+        requestedVersion: Long,
+    ): RamapResult<ShopDetail> {
+        val refreshed =
+            when (
+                val result =
+                    fetchDetailWithNoticesAndReviews(
+                        shopId = cached.shop.id,
+                        cachedReviews = cached.reviews,
+                        cachedReviewCount = cached.reviewCount,
+                    )
+            ) {
+                is RamapResult.Success -> result.data
+                is RamapResult.Error -> return RamapResult.Success(cached)
+            }
         val updated =
             cached.copy(
-                event =
-                    when (eventResult) {
-                        is RamapResult.Success -> eventResult.data
-                        is RamapResult.Error -> cached.event
-                    },
-                operatingNotice =
-                    when (noticeResult) {
-                        is RamapResult.Success -> noticeResult.data
-                        is RamapResult.Error -> cached.operatingNotice
-                    },
+                event = refreshed.event,
+                operatingNotice = refreshed.operatingNotice,
+                operatingNotices = refreshed.operatingNotices,
+                menuSections = refreshed.menuSections,
+                menuUpdatedAt = refreshed.menuUpdatedAt,
+                reviews = refreshed.reviews,
+                reviewCount = refreshed.reviewCount,
+                hasReviewLoadFailure = refreshed.hasReviewLoadFailure,
             )
-        cache[cached.shop.id] = updated
+        if (requestedVersion == cacheVersion) cache[cached.shop.id] = updated
         return RamapResult.Success(updated)
     }
 
-    private suspend fun loadFresh(shopId: String): RamapResult<ShopDetail> =
-        coroutineScope {
-            val shopResult = async { ramenShopRepository.fetchRamenShops(setOf(shopId)) }
-            val likeCountResult = async { ramenShopRepository.fetchShopLikeCount(shopId) }
-            val waitingResult = async { waitingSystemRepository.fetchShopWaitingSystem(shopId) }
-            val eventResult = async { ramenShopRepository.fetchActiveShopEvent(shopId) }
-            val noticeResult = async { operatingNoticeRepository.fetchActiveShopOperatingNotice(shopId) }
-
-            when (val shops = shopResult.await()) {
-                is RamapResult.Error -> shops
-                is RamapResult.Success -> {
-                    val shop =
-                        shops.data[shopId]
-                            ?: return@coroutineScope missingShop(shopId)
-                    when (val waiting = waitingResult.await()) {
-                        is RamapResult.Error -> waiting
-                        is RamapResult.Success -> {
-                            val event = eventResult.await()
-                            val activeEvent =
-                                if (event is RamapResult.Success) {
-                                    event.data
-                                } else {
-                                    null
-                                }
-                            val notice = noticeResult.await()
-                            val activeNotice =
-                                if (notice is RamapResult.Success) {
-                                    notice.data
-                                } else {
-                                    null
-                                }
-                            RamapResult.Success(
-                                ShopDetail(
-                                    shop = shop,
-                                    likeCount = (likeCountResult.await() as? RamapResult.Success)?.data ?: 0L,
-                                    waitingSystem = waiting.data,
-                                    event = activeEvent,
-                                    operatingNotice = activeNotice,
-                                ),
-                            )
-                        }
-                    }
-                }
+    private suspend fun fetchDetailWithNoticesAndReviews(
+        shopId: String,
+        cachedReviews: List<Review> = emptyList(),
+        cachedReviewCount: Int = cachedReviews.size,
+    ): RamapResult<ShopDetail> {
+        val detail = ramenShopRepository.fetchShopDetail(shopId)
+        if (detail !is RamapResult.Success) return detail
+        val notices = operatingNoticeRepository.fetchActiveShopOperatingNotices(shopId)
+        val reviews = reviewRepository.fetchShopReviewsPage(shopId, offset = 0L)
+        val detailWithNotices =
+            if (notices is RamapResult.Success) {
+                val now = Clock.System.now().toLocalDateTime(TimeZone.of(SEOUL_TIME_ZONE))
+                detail.data.copy(
+                    operatingNotice = notices.data.firstOrNull { it.isCurrentOrScheduledAt(now) },
+                    operatingNotices = notices.data,
+                )
+            } else {
+                detail.data
             }
-        }
-
-    private fun missingShop(shopId: String): RamapResult.Error =
-        RamapResult.Error(
-            RamapError.Unknown(
-                IllegalStateException("매장 상세를 찾을 수 없습니다: $shopId"),
+        return RamapResult.Success(
+            detailWithNotices.copy(
+                reviews = if (reviews is RamapResult.Success) reviews.data.reviews else cachedReviews,
+                reviewCount = if (reviews is RamapResult.Success) reviews.data.totalCount else cachedReviewCount,
+                hasReviewLoadFailure = reviews is RamapResult.Error,
             ),
         )
+    }
+
+    private companion object {
+        const val SEOUL_TIME_ZONE = "Asia/Seoul"
+    }
 }

@@ -12,16 +12,6 @@ import kotlin.test.assertTrue
 
 class ShopEventTest {
     @Test
-    fun `이벤트 기간의 양 끝 날짜를 포함하고 잘못된 날짜를 거부한다`() {
-        val event = event(startDate = "2024-02-28", endDate = "2024-03-01")
-
-        assertTrue(event.occursOn(LocalDate(2024, 2, 28)))
-        assertTrue(event.occursOn(LocalDate(2024, 3, 1)))
-        assertFalse(event.occursOn(LocalDate(2024, 3, 2)))
-        assertFalse(event(startDate = "2024-02-30", endDate = null).occursOn(LocalDate(2024, 2, 29)))
-    }
-
-    @Test
     fun `매장 리뉴얼은 시작일부터 한 달간 진행한다`() {
         val renewal =
             event(
@@ -40,6 +30,34 @@ class ShopEventTest {
         val event = event(imageUrls = (1..6).map { "image-$it" })
 
         assertEquals((1..5).map { "image-$it" }, event.displayImageUrls)
+    }
+
+    @Test
+    fun `외부 장소는 ID를 우선하는 유형 구분 장소 키를 사용한다`() {
+        val first = event().copy(venue = EventVenue.External(id = "venue-1", name = "동명 장소"))
+        val second = event().copy(venue = EventVenue.External(id = "venue-2", name = "동명 장소"))
+        val legacy = event().copy(venue = EventVenue.External(id = null, name = "동명 장소"))
+
+        assertEquals("external:venue-1", first.venueKey)
+        assertEquals("external:venue-2", second.venueKey)
+        assertEquals("external:동명 장소", legacy.venueKey)
+        assertEquals("registered:shop", event().venueKey)
+    }
+
+    @Test
+    fun `한정 메뉴 기간을 포함 날짜 기준으로 분류한다`() {
+        assertEquals(
+            LimitedMenuDuration.ONE_DAY,
+            event(type = ShopEventType.LIMITED_MENU, startDate = "2026-09-01", endDate = "2026-09-01").limitedMenuDuration(),
+        )
+        assertEquals(
+            LimitedMenuDuration.SHORT_TERM,
+            event(type = ShopEventType.SUMMER_LIMITED, startDate = "2026-09-01", endDate = "2026-09-06").limitedMenuDuration(),
+        )
+        assertEquals(
+            LimitedMenuDuration.LONG_TERM,
+            event(type = ShopEventType.LIMITED_MENU, startDate = "2026-09-01", endDate = "2026-09-07").limitedMenuDuration(),
+        )
     }
 
     @Test
@@ -156,7 +174,7 @@ class ShopEventTest {
         sourceUrl = "https://instagram.com/p/event",
         isToday = false,
         isVenue = isVenue,
-        venueShop = shop("shop", venueShopName),
+        venue = EventVenue.Registered(shop("shop", venueShopName)),
         collaboratorShops =
             collaboratorShopId
                 ?.let { listOf(shop(it, collaboratorName.orEmpty())) }
@@ -182,13 +200,11 @@ class ShopEventTest {
     ): RamenShop =
         RamenShop(
             id = id,
-            kakaoPlaceId = null,
             name = name,
             address = "address",
             location = Location(37.5, 127.0),
             kakaoPlaceUrl = null,
             naverPlaceUrl = null,
-            phone = null,
             instagramUrl = null,
             menuCategories = MenuCategories(emptyList()),
             isVisible = true,

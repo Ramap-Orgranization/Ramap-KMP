@@ -10,8 +10,27 @@ import platform.CoreLocation.kCLAuthorizationStatusRestricted
 internal class IosLocationPermissionGenerator(
     private val locationManager: CLLocationManager,
     private val onResult: (PermissionStatus) -> Unit,
-    private val delegate: IosLocationPermissionDelegate = IosLocationPermissionDelegate(onResult),
 ) : LocationPermissionGenerator {
+    private var isPermissionRequestPending = false
+    private val delegate =
+        IosLocationPermissionDelegate { status ->
+            when (status) {
+                PermissionStatus.Granted -> {
+                    isPermissionRequestPending = false
+                    onResult(status)
+                }
+
+                PermissionStatus.Blocked -> {
+                    if (isPermissionRequestPending) {
+                        isPermissionRequestPending = false
+                        onResult(status)
+                    }
+                }
+
+                PermissionStatus.Denied -> Unit
+            }
+        }
+
     init {
         locationManager.delegate = delegate
     }
@@ -26,13 +45,22 @@ internal class IosLocationPermissionGenerator(
         when (locationManager.authorizationStatus) {
             kCLAuthorizationStatusAuthorizedWhenInUse,
             kCLAuthorizationStatusAuthorizedAlways,
-            -> onResult(PermissionStatus.Granted)
+            -> {
+                isPermissionRequestPending = false
+                onResult(PermissionStatus.Granted)
+            }
 
-            kCLAuthorizationStatusNotDetermined -> locationManager.requestWhenInUseAuthorization()
+            kCLAuthorizationStatusNotDetermined -> {
+                isPermissionRequestPending = true
+                locationManager.requestWhenInUseAuthorization()
+            }
 
             kCLAuthorizationStatusDenied,
             kCLAuthorizationStatusRestricted,
-            -> onResult(PermissionStatus.Blocked)
+            -> {
+                isPermissionRequestPending = false
+                onResult(PermissionStatus.Blocked)
+            }
 
             else -> onResult(PermissionStatus.Denied)
         }

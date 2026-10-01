@@ -17,6 +17,7 @@ import com.peto.ramap.domain.model.notice.OperatingNotice
 import com.peto.ramap.navigation.deeplink.ShopShareLinkFactory
 import com.peto.ramap.platform.AppSettingsOpener
 import com.peto.ramap.platform.NotificationPermissionRequester
+import com.peto.ramap.ui.main.map.contract.MapIntent
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnBookmarkToggled
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnBookmarkedShopsToggled
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnBoundsChanged
@@ -29,11 +30,13 @@ import com.peto.ramap.ui.main.map.contract.MapIntent.OnLoginSelectionDismissed
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnLoginTypeSelected
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnMyLocationChanged
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnOpenFilterToggled
+import com.peto.ramap.ui.main.map.contract.MapIntent.OnOperatingNoticesRefreshRequested
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnQueryChanged
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnRecentSearchDeleted
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnRecentSearchSelected
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnRecentSearchesCleared
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnRequestedShopDismissed
+import com.peto.ramap.ui.main.map.contract.MapIntent.OnReviewReportRequested
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnSearchResultsDismissed
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnSelectedShopFocusConsumed
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopDetailDismissed
@@ -42,9 +45,12 @@ import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopIdSelected
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopMapLinkClicked
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopNotificationToggled
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopReportSubmitted
+import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopReviewsLoadMore
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopSelected
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopShareClicked
+import com.peto.ramap.ui.main.map.contract.MapIntent.OnStatusTimeRefreshed
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnViewportLoadRetry
+import com.peto.ramap.ui.refresh.PeriodicRefreshEffect
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
@@ -53,12 +59,16 @@ import ramap.shared.generated.resources.current_location_timeout_message
 
 @Composable
 fun MapRoute(
+    onReviewNavigate: (String) -> Unit,
+    onOpenProfile: (String) -> Unit = {},
+    onEditReview: (String, String) -> Unit = { _, _ -> },
     isBackEnabled: Boolean = true,
     onDetailDismissed: () -> Unit = {},
     onEventNavigate: (ShopEvent) -> Unit = {},
     onOperatingNoticeNavigate: (OperatingNotice) -> Unit,
     requestedShopId: String? = null,
     showShopDetail: Boolean = true,
+    showReviewsOnOpen: Boolean = false,
     originSource: AnalyticsSource = AnalyticsSource.MAP,
     toastManager: ToastManager = koinInject(),
     appSettingsOpener: AppSettingsOpener = koinInject(),
@@ -69,14 +79,16 @@ fun MapRoute(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val coroutineScope = rememberCoroutineScope()
     var shouldShowShopDetail by remember(requestedShopId, showShopDetail) { mutableStateOf(showShopDetail) }
+    var shouldShowReviews by remember(requestedShopId, showReviewsOnOpen) { mutableStateOf(showReviewsOnOpen) }
     var detailSource by remember(requestedShopId, originSource) { mutableStateOf(originSource) }
 
+    PeriodicRefreshEffect(intervalMillis = OPERATING_NOTICE_REFRESH_MILLIS) {
+        viewModel.dispatch(OnStatusTimeRefreshed)
+        viewModel.dispatch(OnOperatingNoticesRefreshRequested)
+    }
+
     LaunchedEffect(requestedShopId) {
-        if (requestedShopId == null) {
-            viewModel.dispatch(OnRequestedShopDismissed)
-        } else {
-            viewModel.dispatch(OnShopIdSelected(requestedShopId))
-        }
+        requestedShopId?.let { viewModel.dispatch(OnShopIdSelected(it)) }
     }
 
     MapInteractionHost(
@@ -91,7 +103,7 @@ fun MapRoute(
         onNotificationToggled = { viewModel.dispatch(OnShopNotificationToggled(it, detailSource)) },
         onLoginTypeSelected = { viewModel.dispatch(OnLoginTypeSelected(it)) },
         onLoginDismissed = { viewModel.dispatch(OnLoginSelectionDismissed) },
-    ) { onShopNotificationToggled ->
+    ) { onShopNotificationToggled, onLoginGuideRequested ->
         MapContent(
             uiState = uiState,
             showNotificationActions = NotificationPermissionRequester.isSupported,
@@ -112,11 +124,13 @@ fun MapRoute(
             },
             onShopSelected = { shop, shouldFocus, source ->
                 shouldShowShopDetail = true
+                shouldShowReviews = false
                 detailSource = AnalyticsSource.MAP
                 viewModel.dispatch(OnShopSelected(shop, shouldFocus, source))
             },
             onShopDetailDismissed = {
                 detailSource = AnalyticsSource.MAP
+                shouldShowReviews = false
                 viewModel.dispatch(OnShopDetailDismissed)
                 onDetailDismissed()
             },
@@ -128,6 +142,7 @@ fun MapRoute(
                 }
             },
             onRequestedShopDismissed = {
+                shouldShowReviews = false
                 viewModel.dispatch(OnRequestedShopDismissed)
                 onDetailDismissed()
             },
@@ -151,8 +166,41 @@ fun MapRoute(
             },
             onBookmarkedShopsToggle = { viewModel.dispatch(OnBookmarkedShopsToggled) },
             onEventClick = onEventNavigate,
+            onReviewsClick = { shopId ->
+                if (uiState.isLoggedIn) {
+                    onReviewNavigate(shopId)
+                } else {
+                    onLoginGuideRequested()
+                }
+            },
+            onOpenProfile = onOpenProfile,
+            onReviewLike = {
+                viewModel.dispatch(
+                    com.peto.ramap.ui.main.map.contract.MapIntent
+                        .OnReviewLikeToggled(it),
+                )
+            },
+            onReviewEdit = { onEditReview(it.shopId, it.id) },
+            onReviewDelete = {
+                viewModel.dispatch(
+                    com.peto.ramap.ui.main.map.contract.MapIntent
+                        .OnReviewDeleted(it),
+                )
+            },
+            onReviewReport = { viewModel.dispatch(OnReviewReportRequested(it)) },
+            onViewBlockedReview = { viewModel.dispatch(MapIntent.OnBlockedReviewViewRequested(it)) },
+            onUnblockBlockedUser = { viewModel.dispatch(MapIntent.OnBlockedReviewUnblockRequested(it)) },
+            hasMoreReviews = uiState.hasMoreShopReviews,
+            isLoadingMoreReviews = uiState.isLoadingMoreShopReviews,
+            isRetryingReviews = uiState.isRetryingShopReviews,
+            onLoadMoreReviews = { viewModel.dispatch(OnShopReviewsLoadMore) },
             onOperatingNoticeNavigate = onOperatingNoticeNavigate,
             showShopDetail = shouldShowShopDetail,
+            showReviewsOnOpen = shouldShowReviews,
         )
     }
+    MapReviewReportDialog(state = uiState, onIntent = viewModel::dispatch)
+    MapBlockedReviewUnblockDialog(state = uiState, onIntent = viewModel::dispatch)
 }
+
+private const val OPERATING_NOTICE_REFRESH_MILLIS = 60_000L

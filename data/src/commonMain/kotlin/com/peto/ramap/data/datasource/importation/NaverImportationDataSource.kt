@@ -4,8 +4,8 @@ import com.peto.ramap.data.datasource.extension.asDouble
 import com.peto.ramap.data.datasource.extension.asText
 import com.peto.ramap.data.model.NaverBookmarkResponse
 import com.peto.ramap.data.model.NaverBookmarksResponse
-import com.peto.ramap.domain.repository.ImportationErrorCode
-import com.peto.ramap.domain.repository.ImportationException
+import com.peto.ramap.domain.model.ImportationErrorCode
+import com.peto.ramap.domain.model.ImportationException
 import com.peto.ramap.network.client.importation.ImportationFunctionClient
 import com.peto.ramap.network.client.importation.ImportationMatchRequest
 import com.peto.ramap.network.client.importation.ImportationPlaceRequest

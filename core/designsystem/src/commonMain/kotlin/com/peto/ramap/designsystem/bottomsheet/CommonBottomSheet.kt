@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -22,6 +21,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -193,17 +193,12 @@ private fun BottomSheetContent(
                 modifier =
                     Modifier
                         .fillMaxWidth()
-                        .navigationBarsPadding()
+                        .run { if (config.isNavigationBarPadded) navigationBarsPadding() else this }
                         .verticalScroll(rememberScrollState()),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 if (config.showHandle) {
-                    SheetHandle(
-                        config = config,
-                        dragModifier = dragModifier,
-                    )
-                } else {
-                    Spacer(Modifier.height(config.handleTopPadding + config.handleBottomPadding))
+                    SheetHandle(dragModifier = dragModifier)
                 }
                 content(if (config.isContentDraggable) dragModifier else Modifier)
             }
@@ -213,14 +208,13 @@ private fun BottomSheetContent(
 
 @Composable
 private fun SheetHandle(
-    config: CommonBottomSheetConfig,
     dragModifier: Modifier,
 ) {
     Box(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .height(config.handleTopPadding + 4.dp + config.handleBottomPadding)
+                .padding(top = 20.dp, bottom = 10.dp)
                 .then(dragModifier),
         contentAlignment = Alignment.Center,
     ) {

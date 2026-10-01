@@ -52,13 +52,27 @@ class UnregisteredPlaceReportTest {
         val shop =
             com.peto.ramap.fixture
                 .ramenShopFixture()
-                .copy(kakaoPlaceId = "1521564391")
+                .copy(kakaoPlaceUrl = "https://place.map.kakao.com/1521564391")
 
         assertTrue(
             PlaceReportTextParser.matchesResolvedPlace(
                 ResolvedPlaceLink(PlaceLinkProvider.KAKAO, placeId = "1521564391"),
                 shop,
             ),
+        )
+    }
+
+    @Test
+    fun `카카오 장소 URL에서 ID를 추출한다`() {
+        assertEquals(
+            "1521564391",
+            com.peto.ramap.domain.model.shop.KakaoPlaceUrl.extractPlaceId(
+                "https://place.map.kakao.com/1521564391?referrer=share",
+            ),
+        )
+        assertNull(
+            com.peto.ramap.domain.model.shop.KakaoPlaceUrl
+                .extractPlaceId("https://kko.to/example"),
         )
     }
 }

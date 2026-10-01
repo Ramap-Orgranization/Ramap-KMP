@@ -1,7 +1,6 @@
 package com.peto.ramap.domain.model.businesshour
 
 import kotlinx.datetime.DateTimeUnit
-import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.LocalTime
@@ -9,20 +8,10 @@ import kotlinx.datetime.plus
 
 internal object BusinessHoursStatusCalculator {
     /**
-     * 주어진 시각에 매장이 영업 중인지 반환한다.
-     *
-     * 당일 영업시간과 전날의 익일 마감 영업시간을 모두 확인한다.
-     */
-    fun isOpenAt(
-        businessHours: BusinessHours,
-        currentDateTime: LocalDateTime,
-    ): Boolean = findActiveBusinessHoursDayKey(businessHours, currentDateTime) != null
-
-    /**
      * 주어진 시각의 영업 상태를 계산한다.
      *
      * 영업 중이면 마지막 주문 시간 또는 마감 시간을 포함한 상태를 반환하고,
-     * 영업 전이거나 휴게시간이면 다음 영업시간을 반환한다.
+     * 휴게시간이면 휴게 종료 시간을, 영업 전이면 다음 영업시간을 반환한다.
      */
     fun statusAt(
         businessHours: BusinessHours,
@@ -30,15 +19,14 @@ internal object BusinessHoursStatusCalculator {
     ): BusinessHoursStatus? {
         val activeDayKey = findActiveBusinessHoursDayKey(businessHours, currentDateTime)
         if (activeDayKey != null) {
-            return openStatus(businessHours, activeDayKey)
+            return openStatus(businessHours, activeDayKey, currentDateTime.time)
         }
 
-        val nextOpenTime = findNextOpenTime(businessHours, currentDateTime)
-        return if (nextOpenTime == null) {
-            null
-        } else {
-            BusinessHoursStatus.Closed(nextOpenTime)
-        }
+        val breakEndTime = findBreakEndDuringCurrentHours(businessHours, currentDateTime)
+        if (breakEndTime != null) return BusinessHoursStatus.BreakTime(breakEndTime)
+
+        val nextOpenTime = findNextOpeningSchedule(businessHours, currentDateTime)
+        return nextOpenTime?.let(BusinessHoursStatus::Closed)
     }
 
     /**
@@ -47,13 +35,28 @@ internal object BusinessHoursStatusCalculator {
     private fun openStatus(
         businessHours: BusinessHours,
         dayKey: String,
+        currentTime: LocalTime,
     ): BusinessHoursStatus {
-        val lastOrder = businessHours.lastOrders[dayKey]?.firstOrNull()
+        val lastOrder = findActiveLastOrder(businessHours, dayKey, currentTime)
         if (lastOrder != null) return BusinessHoursStatus.OpenWithLastOrder(lastOrder)
 
         val closeTime = businessHours.weekly[dayKey]?.close ?: return BusinessHoursStatus.Open
 
         return BusinessHoursStatus.OpenUntil(closeTime)
+    }
+
+    private fun findActiveLastOrder(
+        businessHours: BusinessHours,
+        dayKey: String,
+        currentTime: LocalTime,
+    ): String? {
+        val lastOrders = businessHours.lastOrders[dayKey].orEmpty()
+        val nextBreakIndex =
+            businessHours.breakTimes[dayKey].orEmpty().indexOfFirst { breakTime ->
+                parseTime(breakTime.start)?.let { currentTime < it } == true
+            }
+        val activeLastOrderIndex = nextBreakIndex.takeIf { it >= 0 } ?: lastOrders.lastIndex
+        return lastOrders.getOrNull(activeLastOrderIndex) ?: lastOrders.lastOrNull()
     }
 
     /**
@@ -65,43 +68,30 @@ internal object BusinessHoursStatusCalculator {
         businessHours: BusinessHours,
         currentDateTime: LocalDateTime,
     ): String? {
-        val todayKey = dayKey(currentDateTime.date.dayOfWeek)
+        val today = BusinessDay.from(currentDateTime.date.dayOfWeek)
         if (isOpenDuring(
                 businessHours = businessHours,
-                dayKey = todayKey,
+                dayKey = today.key,
                 currentTime = currentDateTime.time,
                 isAfterMidnight = false,
             )
         ) {
-            return todayKey
+            return today.key
         }
 
-        val previousKey = previousDayKey(currentDateTime.date.dayOfWeek)
+        val previous = today.previous()
         if (isOpenDuring(
                 businessHours = businessHours,
-                dayKey = previousKey,
+                dayKey = previous.key,
                 currentTime = currentDateTime.time,
                 isAfterMidnight = true,
             )
         ) {
-            return previousKey
+            return previous.key
         }
 
         return null
     }
-
-    /**
-     * 현재 시각 기준으로 가장 가까운 다음 영업시간을 찾는다.
-     *
-     * 현재 영업일의 휴게시간 중이라면 휴게 종료 시간을 우선 반환하고,
-     * 그렇지 않으면 이후 영업일의 영업 시작 시간을 찾는다.
-     */
-    private fun findNextOpenTime(
-        businessHours: BusinessHours,
-        currentDateTime: LocalDateTime,
-    ): String? =
-        findBreakEndDuringCurrentHours(businessHours, currentDateTime)
-            ?: findNextOpeningSchedule(businessHours, currentDateTime)
 
     /**
      * 현재 시각이 휴게시간이면 해당 휴게시간의 종료 시각을 찾는다.
@@ -110,20 +100,20 @@ internal object BusinessHoursStatusCalculator {
         businessHours: BusinessHours,
         currentDateTime: LocalDateTime,
     ): String? {
-        val todayKey = dayKey(currentDateTime.date.dayOfWeek)
+        val today = BusinessDay.from(currentDateTime.date.dayOfWeek)
         val todayBreakEnd =
             findBreakEndIfWithinHours(
                 businessHours = businessHours,
-                dayKey = todayKey,
+                dayKey = today.key,
                 currentTime = currentDateTime.time,
                 isAfterMidnight = false,
             )
         if (todayBreakEnd != null) return todayBreakEnd
 
-        val previousKey = previousDayKey(currentDateTime.date.dayOfWeek)
+        val previous = today.previous()
         return findBreakEndIfWithinHours(
             businessHours = businessHours,
-            dayKey = previousKey,
+            dayKey = previous.key,
             currentTime = currentDateTime.time,
             isAfterMidnight = true,
         )
@@ -174,7 +164,7 @@ internal object BusinessHoursStatusCalculator {
         dayOffset: Int,
         currentTime: LocalTime,
     ): String? {
-        val day = businessHours.weekly[dayKey(date.dayOfWeek)] ?: return null
+        val day = businessHours.weekly[BusinessDay.from(date.dayOfWeek).key] ?: return null
         if (day.closed) return null
 
         val openTime = day.open ?: return null
@@ -195,6 +185,7 @@ internal object BusinessHoursStatusCalculator {
         isAfterMidnight: Boolean,
     ): Boolean {
         if (businessHoursDay == null || businessHoursDay.closed) return false
+        if (isAfterMidnight && !businessHoursDay.closeNextDay) return false
 
         val openValue = businessHoursDay.open ?: return false
         val closeValue = businessHoursDay.close ?: return false
@@ -269,32 +260,4 @@ internal object BusinessHoursStatusCalculator {
      * 형식이 올바르지 않으면 null을 반환한다.
      */
     private fun parseTime(value: String): LocalTime? = runCatching { LocalTime.parse(value) }.getOrNull()
-
-    /**
-     * [DayOfWeek]를 영업시간 데이터의 요일 키로 변환한다.
-     */
-    private fun dayKey(dayOfWeek: DayOfWeek): String =
-        when (dayOfWeek) {
-            DayOfWeek.MONDAY -> "mon"
-            DayOfWeek.TUESDAY -> "tue"
-            DayOfWeek.WEDNESDAY -> "wed"
-            DayOfWeek.THURSDAY -> "thu"
-            DayOfWeek.FRIDAY -> "fri"
-            DayOfWeek.SATURDAY -> "sat"
-            DayOfWeek.SUNDAY -> "sun"
-        }
-
-    /**
-     * 주어진 요일의 전날을 영업시간 데이터의 요일 키로 변환한다.
-     */
-    private fun previousDayKey(dayOfWeek: DayOfWeek): String =
-        when (dayOfWeek) {
-            DayOfWeek.MONDAY -> "sun"
-            DayOfWeek.TUESDAY -> "mon"
-            DayOfWeek.WEDNESDAY -> "tue"
-            DayOfWeek.THURSDAY -> "wed"
-            DayOfWeek.FRIDAY -> "thu"
-            DayOfWeek.SATURDAY -> "fri"
-            DayOfWeek.SUNDAY -> "sat"
-        }
 }

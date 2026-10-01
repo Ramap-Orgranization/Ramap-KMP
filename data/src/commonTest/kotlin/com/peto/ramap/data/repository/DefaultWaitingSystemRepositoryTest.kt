@@ -19,8 +19,6 @@ class DefaultWaitingSystemRepositoryTest {
                 FakeShopWaitingSystemDataSource(
                     response =
                         ShopWaitingSystemResponse(
-                            id = "waiting-1",
-                            shopId = "shop-1",
                             provider = "catchtable",
                             providerUrl = "https://app.catchtable.co.kr/ct/shop/shop-1",
                         ),
@@ -32,7 +30,7 @@ class DefaultWaitingSystemRepositoryTest {
             assertEquals("shop-1", dataSource.requestedShopId)
             assertEquals(
                 WaitingSystem(
-                    id = "waiting-1",
+                    id = "shop-1",
                     shopId = "shop-1",
                     provider = WaitingProvider.CATCHTABLE,
                     providerUrl = "https://app.catchtable.co.kr/ct/shop/shop-1",
@@ -49,8 +47,6 @@ class DefaultWaitingSystemRepositoryTest {
                     FakeShopWaitingSystemDataSource(
                         response =
                             ShopWaitingSystemResponse(
-                                id = "waiting-1",
-                                shopId = "shop-1",
                                 provider = "new_provider",
                             ),
                     ),
@@ -64,7 +60,10 @@ class DefaultWaitingSystemRepositoryTest {
     @Test
     fun `웨이팅 시스템이 없으면 null을 반환한다`() =
         runTest {
-            val repository = DefaultShopWaitingSystemRepository(FakeShopWaitingSystemDataSource())
+            val repository =
+                DefaultShopWaitingSystemRepository(
+                    FakeShopWaitingSystemDataSource(response = ShopWaitingSystemResponse()),
+                )
 
             val result = repository.fetchShopWaitingSystem("shop-1").getOrThrow()
 

@@ -4,14 +4,14 @@ import com.peto.ramap.core.result.RamapError
 import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.domain.model.personalization.ShopPersonalization
 import com.peto.ramap.domain.store.PersonalizationBootstrapState
-import com.peto.ramap.domain.store.ShopPersonalizationStore
+import com.peto.ramap.domain.store.PersonalizationStore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 class FakePersonalizationRepository(
     personalization: ShopPersonalization = ShopPersonalization(),
     initialState: PersonalizationBootstrapState = PersonalizationBootstrapState.Success(personalization),
-) : ShopPersonalizationStore {
+) : PersonalizationStore {
     private val mutableState = MutableStateFlow(initialState)
     override val state = mutableState.asStateFlow()
     val bookmarkedShopIds = MutableStateFlow(personalization.bookmarkedShopIds)

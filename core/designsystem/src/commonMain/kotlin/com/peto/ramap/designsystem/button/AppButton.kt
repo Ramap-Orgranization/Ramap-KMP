@@ -39,10 +39,15 @@ fun AppButton(
     border: BorderStroke? = null,
     icon: DrawableResource? = null,
     isLoading: Boolean = false,
+    disabledBackgroundColor: Color = GrayColor.C100,
+    disabledTextColor: Color = GrayColor.C300,
 ) {
+    val currentBackgroundColor = if (enabled) backgroundColor else disabledBackgroundColor
+    val currentTextColor = if (enabled) textColor else disabledTextColor
+
     Surface(
         modifier = modifier.height(52.dp),
-        color = backgroundColor,
+        color = currentBackgroundColor,
         shape = RoundedCornerShape(cornerRadius),
         border = border,
         onClick = onClick,
@@ -55,7 +60,7 @@ fun AppButton(
             if (isLoading) {
                 CircularProgressIndicator(
                     modifier = Modifier.size(20.dp),
-                    color = textColor,
+                    color = currentTextColor,
                     strokeWidth = 2.dp,
                 )
             } else {
@@ -68,7 +73,7 @@ fun AppButton(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                     }
-                    AppText(text = text, color = textColor, style = textStyle, textAlign = TextAlign.Center)
+                    AppText(text = text, color = currentTextColor, style = textStyle, textAlign = TextAlign.Center)
                 }
             }
         }

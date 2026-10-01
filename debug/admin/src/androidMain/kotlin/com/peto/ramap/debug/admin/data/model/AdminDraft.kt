@@ -7,6 +7,14 @@ import kotlinx.serialization.Serializable
 internal data class AdminDraft(
     @SerialName("shop_name") val shopName: String? = null,
     val title: String? = null,
+    @SerialName("event_type") val eventType: String? = null,
+    @SerialName("venue_name") val venueName: String? = null,
+    @SerialName("venue_address") val venueAddress: String? = null,
+    @SerialName("external_venue_id") val externalVenueId: String? = null,
+    @SerialName("venue_instagram_url") val venueInstagramUrl: String? = null,
+    @SerialName("venue_naver_map_url") val venueNaverMapUrl: String? = null,
+    @SerialName("venue_kakao_map_url") val venueKakaoMapUrl: String? = null,
+    val participants: List<AdminParticipant> = emptyList(),
     @SerialName("start_date") val startDate: String? = null,
     @SerialName("end_date") val endDate: String? = null,
     val description: String? = null,
@@ -16,4 +24,5 @@ internal data class AdminDraft(
     @SerialName("notice_type") val noticeType: String? = null,
     @SerialName("start_time") val startTime: String? = null,
     @SerialName("end_time") val endTime: String? = null,
+    @SerialName("schedule_override") val scheduleOverride: AdminScheduleOverride? = null,
 )

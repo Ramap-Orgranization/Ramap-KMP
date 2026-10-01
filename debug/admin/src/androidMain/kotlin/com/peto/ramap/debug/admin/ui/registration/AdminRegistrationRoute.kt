@@ -46,6 +46,12 @@ internal fun AdminRegistrationRoute(
             onImageOnlyTitleChanged = { viewModel.dispatch(AdminRegistrationIntent.OnImageOnlyTitleChanged(it)) },
             onDraftTitleChanged = { viewModel.dispatch(AdminRegistrationIntent.OnDraftTitleChanged(it)) },
             onDraftDescriptionChanged = { viewModel.dispatch(AdminRegistrationIntent.OnDraftDescriptionChanged(it)) },
+            onDraftVenueChanged = { name, address, externalVenueId, instagramUrl, naverMapUrl, kakaoMapUrl -> viewModel.dispatch(AdminRegistrationIntent.OnDraftVenueChanged(name, address, externalVenueId, instagramUrl, naverMapUrl, kakaoMapUrl)) },
+            onDraftNoticeTimesChanged = { start, end -> viewModel.dispatch(AdminRegistrationIntent.OnDraftNoticeTimesChanged(start, end)) },
+            onDraftScheduleOverrideChanged = { open, close -> viewModel.dispatch(AdminRegistrationIntent.OnDraftScheduleOverrideChanged(open, close)) },
+            onRegularSegmentSelected = { open, close -> viewModel.dispatch(AdminRegistrationIntent.OnRegularSegmentSelected(open, close)) },
+            onDraftBreakTimeChanged = { index, start, end -> viewModel.dispatch(AdminRegistrationIntent.OnDraftBreakTimeChanged(index, start, end)) },
+            onDraftBreakTimesCleared = { viewModel.dispatch(AdminRegistrationIntent.OnDraftBreakTimesCleared) },
             onEvidenceSelected = { viewModel.dispatch(AdminRegistrationIntent.OnEvidenceSelected(it)) },
             onDateRangeSelected = { startDate, endDate ->
                 viewModel.dispatch(AdminRegistrationIntent.OnDateRangeSelected(startDate, endDate))
@@ -53,6 +59,8 @@ internal fun AdminRegistrationRoute(
             onTodaySelected = { viewModel.dispatch(AdminRegistrationIntent.OnTodaySelected) },
             onPreviewOrRegisterClick = { viewModel.dispatch(AdminRegistrationIntent.OnPreviewOrRegisterClicked) },
             onManagedEventsRefresh = { viewModel.dispatch(AdminRegistrationIntent.OnManagedEventsRefreshed) },
+            onDelayedOpeningsRefresh = { viewModel.dispatch(AdminRegistrationIntent.OnDelayedOpeningsRefreshed) },
+            onDelayedOpeningReleased = { viewModel.dispatch(AdminRegistrationIntent.OnDelayedOpeningReleased(it)) },
             onManagedEventSelected = { viewModel.dispatch(AdminRegistrationIntent.OnManagedEventSelected(it)) },
             onEventStatusSelected = { status: AdminEventStatus ->
                 viewModel.dispatch(AdminRegistrationIntent.OnEventStatusSelected(status))
@@ -69,6 +77,11 @@ internal fun AdminRegistrationRoute(
             },
             onEventStatusTodaySelected = { viewModel.dispatch(AdminRegistrationIntent.OnEventStatusTodaySelected) },
             onEventStatusSave = { viewModel.dispatch(AdminRegistrationIntent.OnEventStatusSaved) },
+            onManagedEventEdit = { viewModel.dispatch(AdminRegistrationIntent.OnManagedEventEditRequested(it)) },
+            onCorrectionRequestChanged = { viewModel.dispatch(AdminRegistrationIntent.OnCorrectionRequestChanged(it)) },
+            onCorrectionPreviewRequested = { viewModel.dispatch(AdminRegistrationIntent.OnCorrectionPreviewRequested) },
+            onCorrectionConfirmed = { viewModel.dispatch(AdminRegistrationIntent.OnCorrectionConfirmed) },
+            onCorrectionPreviewDismissed = { viewModel.dispatch(AdminRegistrationIntent.OnCorrectionPreviewDismissed) },
             onTabSelected = { tab: AdminRegistrationTab ->
                 viewModel.dispatch(AdminRegistrationIntent.OnTabSelected(tab))
             },

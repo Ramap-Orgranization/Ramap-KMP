@@ -1,6 +1,7 @@
 package com.peto.ramap.ui.main.event.list.preview
 
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
+import com.peto.ramap.domain.model.event.EventVenue
 import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.model.event.ShopEventType
 import com.peto.ramap.domain.model.event.ShopEvents
@@ -133,7 +134,7 @@ class EventsPreviewParameterProvider : PreviewParameterProvider<EventsUiState> {
         sourceUrl = "https://instagram.com/event",
         isToday = isToday,
         isVenue = true,
-        venueShop = previewShop(venueShopId, venueShopName),
+        venue = EventVenue.Registered(previewShop(venueShopId, venueShopName)),
         waitingMethod = null,
         waitingUrl = null,
         isCancelledToday = isCancelledToday,
@@ -144,13 +145,11 @@ class EventsPreviewParameterProvider : PreviewParameterProvider<EventsUiState> {
         name: String,
     ) = RamenShop(
         id = id,
-        kakaoPlaceId = null,
         name = name,
         address = "서울 마포구",
         location = Location(37.5, 127.0),
         kakaoPlaceUrl = null,
         naverPlaceUrl = null,
-        phone = null,
         instagramUrl = null,
         menuCategories = MenuCategories(emptyList()),
         isVisible = true,

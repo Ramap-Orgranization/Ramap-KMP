@@ -14,7 +14,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.contentDescription
@@ -22,7 +21,6 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.peto.ramap.designsystem.button.AppButton
 import com.peto.ramap.designsystem.component.RamenShopSummaries
@@ -129,7 +127,7 @@ internal fun ImportationScreen(
                             contentDescription = guideActionDescription
                         },
             ) {
-                Text(text = "?", fontSize = 24.sp, color = GrayColor.C500)
+                AppText(text = "?", style = AppTextStyle.H3, color = GrayColor.C500)
             }
         },
     ) {
@@ -203,13 +201,13 @@ private fun ImportationInput(
                         onClick = { onUrlChange("") },
                         enabled = !uiState.isBusy,
                     ) {
-                        Text(
+                        AppText(
                             text = "×",
                             modifier =
                                 Modifier.semantics {
                                     contentDescription = clearActionDescription
                                 },
-                            fontSize = 25.sp,
+                            style = AppTextStyle.H3,
                             color = GrayColor.C300,
                         )
                     }

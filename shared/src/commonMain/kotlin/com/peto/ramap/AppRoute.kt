@@ -1,17 +1,32 @@
 package com.peto.ramap
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
+import androidx.compose.ui.Modifier
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigationevent.NavigationEventInfo
+import androidx.navigationevent.compose.NavigationBackHandler
+import androidx.navigationevent.compose.rememberNavigationEventState
 import com.peto.ramap.analytics.AnalyticsSource
 import com.peto.ramap.deeplink.DeepLinkEntryPoint
 import com.peto.ramap.deeplink.DeepLinkEvent
+import com.peto.ramap.designsystem.button.login.LoginButton
+import com.peto.ramap.designsystem.dialog.LoginGuideDialog
 import com.peto.ramap.designsystem.toast.ToastManager
 import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
+import com.peto.ramap.domain.model.auth.LoginType
 import com.peto.ramap.domain.repository.LoginRepository
 import com.peto.ramap.domain.store.PersonalizationBootstrapState
-import com.peto.ramap.domain.store.ShopPersonalizationStore
+import com.peto.ramap.domain.store.PersonalizationStore
 import com.peto.ramap.log.AppAnalytics
 import com.peto.ramap.log.analyticsScreenName
 import com.peto.ramap.navigation.BackPressController
@@ -26,13 +41,17 @@ import com.peto.ramap.navigation.rememberNavigationState
 import com.peto.ramap.notification.NotificationDeepLink
 import com.peto.ramap.notification.NotificationDeepLinkParser
 import com.peto.ramap.notification.NotificationLaunchDispatcher
+import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.ui.account.AccountSettingsRoute
+import com.peto.ramap.ui.account.AccountViewModel
 import com.peto.ramap.ui.account.InformationRoute
+import com.peto.ramap.ui.account.contract.AccountIntent
+import com.peto.ramap.ui.account.contract.AccountSideEffect
+import com.peto.ramap.ui.base.ObserveAsEvents
 import com.peto.ramap.ui.bookmark.importation.ImportationGuideRoute
 import com.peto.ramap.ui.bookmark.importation.ImportationRoute
 import com.peto.ramap.ui.bookmark.list.BookmarkedShopListRoute
 import com.peto.ramap.ui.hidden.HiddenShopListRoute
-import com.peto.ramap.ui.main.event.calendar.EventCalendarRoute
 import com.peto.ramap.ui.main.event.detail.EventDetailRoute
 import com.peto.ramap.ui.main.event.list.EventsRoute
 import com.peto.ramap.ui.main.map.MapRoute
@@ -43,7 +62,12 @@ import com.peto.ramap.ui.main.my.MyTabRoute
 import com.peto.ramap.ui.main.notice.OperatingNoticeRoute
 import com.peto.ramap.ui.main.ranking.RankingRoute
 import com.peto.ramap.ui.notification.NotificationSettingsRoute
+import com.peto.ramap.ui.profile.edit.ProfileEditRoute
 import com.peto.ramap.ui.report.PlaceReportRoute
+import com.peto.ramap.ui.review.my.MyReviewsRoute
+import com.peto.ramap.ui.review.other.OtherReviewsRoute
+import com.peto.ramap.ui.review.write.ShopReviewWriteRoute
+import com.peto.ramap.ui.settings.SettingsRoute
 import com.peto.ramap.ui.subscribed.SubscribedShopListRoute
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
@@ -63,7 +87,7 @@ internal fun AppRoute(
     deepLinkEntryPoint: DeepLinkEntryPoint = koinInject(),
     appAnalytics: AppAnalytics = koinInject(),
     loginRepository: LoginRepository = koinInject(),
-    personalizationStore: ShopPersonalizationStore = koinInject(),
+    personalizationStore: PersonalizationStore = koinInject(),
 ) {
     val mapViewModel = koinViewModel<MapViewModel>()
     val navigationState =
@@ -71,7 +95,25 @@ internal fun AppRoute(
             onMapTabExited = { mapViewModel.dispatch(OnMapTabExited) },
         )
 
-    HandleDeepLinkEvents(deepLinkEntryPoint, notificationLaunchDispatcher, shopDeepLinkDispatcher, appAnalytics)
+    val profileLoginViewModel = koinViewModel<AccountViewModel>(key = "profile-login")
+    val accountState by profileLoginViewModel.uiState.collectAsStateWithLifecycle()
+    var pendingProfileTarget by remember { mutableStateOf<Pair<String, Boolean>?>(null) }
+    var showProfileLoginGuide by remember { mutableStateOf(false) }
+    ObserveAsEvents(profileLoginViewModel.sideEffect) { effect ->
+        when (effect) {
+            is AccountSideEffect.ShowToast -> {
+                toastManager.show(effect.data)
+                if (effect.data.type == ToastType.ERROR) pendingProfileTarget = null
+            }
+        }
+    }
+
+    HandleDeepLinkEvents(
+        deepLinkEntryPoint,
+        notificationLaunchDispatcher,
+        shopDeepLinkDispatcher,
+        appAnalytics,
+    )
 
     TrackScreenViews(navigationState, appAnalytics)
 
@@ -101,192 +143,387 @@ internal fun AppRoute(
         toastManager = toastManager,
     )
 
-    NavigationRouter(
-        navigationState = navigationState,
-        mapScreen = { route ->
-            MapRoute(
-                isBackEnabled = route.returnTab == null,
-                onDetailDismissed = navigationState::consumeMapReturnOrigin,
-                onEventNavigate = { event ->
-                    navigationState.showEvent(event.id)
-                },
-                onOperatingNoticeNavigate = { notice ->
-                    navigationState.showShopOnMap(notice.shop.id)
-                },
-                requestedShopId = route.shopId,
-                showShopDetail = route.showShopDetail,
-                originSource =
-                    when (route.source) {
-                        NavigationSource.BOOKMARKED_SHOPS -> AnalyticsSource.BOOKMARKED_SHOPS
-                        NavigationSource.EVENT_DETAIL -> AnalyticsSource.EVENT_DETAIL
-                        NavigationSource.HIDDEN_SHOPS -> AnalyticsSource.HIDDEN_SHOPS
-                        NavigationSource.RANKING -> AnalyticsSource.RANKING
-                        NavigationSource.SUBSCRIBED_SHOPS -> AnalyticsSource.SUBSCRIBED_SHOPS
-                        NavigationSource.OPERATING_NOTICE -> AnalyticsSource.OPERATING_NOTICE
-                        NavigationSource.SHARED_LINK, null -> AnalyticsSource.MAP
-                    },
-                viewModel = mapViewModel,
-            )
-        },
-        rankingScreen = {
-            RankingRoute(
-                onFindShopClick = navigationState::showMap,
-                onShowShopOnMap = { navigationState.showMap() },
-                onEventNavigate = { event -> navigationState.showEvent(event.id) },
-                shopDetailContent = { shopId, onDismiss, onShowOnMap, onEventNavigate ->
-                    ShopDetailHost(
-                        shopId = shopId,
-                        viewModel = mapViewModel,
-                        onDismiss = onDismiss,
-                        onShowOnMap = onShowOnMap,
-                        onEventNavigate = { event -> onEventNavigate(event) },
-                        originSource = AnalyticsSource.RANKING,
-                    )
-                },
-            )
-        },
-        myScreen = {
-            MyTabRoute(
-                onAccountNavigate = navigationState::showAccountSettings,
-                onInformationNavigate = navigationState::showInformation,
-                onReportNavigate = navigationState::showPlaceReport,
-                onHiddenShopsNavigate = navigationState::showHiddenShops,
-                onNotificationSettingsNavigate =
-                    navigationState::showNotificationSettings,
-                onSubscribedShopsNavigate =
-                    navigationState::showSubscribedShops,
-                onBookmarkedShopsNavigate =
-                    navigationState::showBookmarkedShops,
-            )
-        },
-        accountSettingsScreen = {
-            AccountSettingsRoute(
-                onBack = navigationState::pop,
-            )
-        },
-        informationScreen = {
-            InformationRoute(
-                onBack = navigationState::pop,
-            )
-        },
-        placeReportScreen = {
-            PlaceReportRoute(
-                onBack = navigationState::pop,
-            )
-        },
-        eventListScreen = {
-            EventsRoute(
-                onClickEvent = { event ->
-                    navigationState.showEvent(event.id)
-                },
-                onClickNotice = navigationState::showOperatingNotice,
-            )
-        },
-        eventCalendarScreen = {
-            EventCalendarRoute(
-                onBack = navigationState::pop,
-                onEventClick = navigationState::showEvent,
-            )
-        },
-        operatingNoticeScreen = {
-            OperatingNoticeRoute(
-                onBack = navigationState::pop,
-                onEventListClick = navigationState::pop,
-                onShopClick = { shopId ->
-                    navigationState.showShopOnMap(
-                        shopId = shopId,
-                        source = NavigationSource.OPERATING_NOTICE,
-                    )
-                },
-            )
-        },
-        hiddenScreen = {
-            HiddenShopListRoute(
-                onBackClick = navigationState::pop,
-                onShopOpen = { shopId ->
-                    navigationState.showShopOnMap(
-                        shopId,
-                        source = NavigationSource.HIDDEN_SHOPS,
-                        returnTab = TabStatus.MY,
-                    )
-                },
-            )
-        },
-        notificationSettingsScreen = {
-            NotificationSettingsRoute(
-                onBack = navigationState::pop,
-            )
-        },
-        subscribedShopsScreen = {
-            SubscribedShopListRoute(
-                onBack = navigationState::pop,
-                onShopOpen = { shopId ->
-                    navigationState.showShopOnMap(
-                        shopId,
-                        source = NavigationSource.SUBSCRIBED_SHOPS,
-                        returnTab = TabStatus.MY,
-                    )
-                },
-                onEventOpen = navigationState::showEvent,
-            )
-        },
-        bookmarkedShopsScreen = {
-            BookmarkedShopListRoute(
-                onBack = navigationState::pop,
-                onImportationNavigate = navigationState::showImportation,
-                onShopOpen = { shopId ->
-                    navigationState.showShopOnMap(
-                        shopId,
-                        source = NavigationSource.BOOKMARKED_SHOPS,
-                        returnTab = TabStatus.MY,
-                    )
-                },
-            )
-        },
-        importationScreen = {
-            ImportationRoute(
-                onBack = navigationState::pop,
-                onGuideNavigate = navigationState::showImportationGuide,
-                onImportCompleted = navigationState::pop,
-            )
-        },
-        importationGuideScreen = {
-            ImportationGuideRoute(onBack = navigationState::pop)
-        },
-        eventScreen = { route ->
-            EventDetailRoute(
-                eventId = route.eventId,
-                onBack = navigationState::pop,
-                onUnavailable = {
-                    navigationState.showEventRoot()
+    var overlayProfileUserId by remember { mutableStateOf<String?>(null) }
+    var overlayReviewWriteArgs by remember { mutableStateOf<Pair<String, String?>?>(null) }
 
-                    toastManager.tryShow(
-                        ToastData(
-                            message = Res.string.event_not_found_message,
-                            type = ToastType.DEFAULT,
-                        ),
-                    )
-                },
-                onShopClick = { shopId ->
-                    navigationState.showShopOnMap(
-                        shopId = shopId,
-                        source = NavigationSource.EVENT_DETAIL,
-                    )
-                },
-                onEventNavigate = { event -> navigationState.showEvent(event.id) },
-                shopDetailContent = { shopId, onDismiss, onShowOnMap, onEventNavigate ->
-                    ShopDetailHost(
-                        shopId = shopId,
-                        viewModel = mapViewModel,
-                        onDismiss = onDismiss,
-                        onShowOnMap = onShowOnMap,
-                        onEventNavigate = onEventNavigate,
-                        originSource = AnalyticsSource.EVENT_DETAIL,
-                    )
-                },
-            )
+    fun openProfile(
+        userId: String,
+        asOverlay: Boolean,
+    ) {
+        if (userId.isBlank()) return
+        if (!loginRepository.hasSession()) {
+            pendingProfileTarget = userId to asOverlay
+            showProfileLoginGuide = true
+            return
+        }
+        if (asOverlay) overlayProfileUserId = userId else navigationState.showOtherReviews(userId)
+    }
+
+    LaunchedEffect(accountState.isLoggedIn, pendingProfileTarget) {
+        if (!accountState.isLoggedIn) return@LaunchedEffect
+        val (userId, asOverlay) = pendingProfileTarget ?: return@LaunchedEffect
+        pendingProfileTarget = null
+        showProfileLoginGuide = false
+        openProfile(userId, asOverlay)
+    }
+    val backEventState =
+        rememberNavigationEventState<NavigationEventInfo>(
+            currentInfo = NavigationEventInfo.None,
+        )
+
+    NavigationBackHandler(
+        state = backEventState,
+        isBackEnabled = overlayProfileUserId != null || overlayReviewWriteArgs != null,
+        onBackCompleted = {
+            if (overlayProfileUserId != null) {
+                overlayProfileUserId = null
+            } else if (overlayReviewWriteArgs != null) {
+                overlayReviewWriteArgs = null
+            }
         },
     )
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        NavigationRouter(
+            navigationState = navigationState,
+            mapScreen = { route ->
+                MapRoute(
+                    onReviewNavigate = { shopId -> overlayReviewWriteArgs = shopId to null },
+                    onEditReview = { shopId, reviewId -> overlayReviewWriteArgs = shopId to reviewId },
+                    onOpenProfile = { userId ->
+                        openProfile(userId, asOverlay = true)
+                    },
+                    isBackEnabled =
+                        route.returnTab == null &&
+                            overlayProfileUserId == null &&
+                            overlayReviewWriteArgs == null,
+                    onDetailDismissed = navigationState::consumeMapReturnOrigin,
+                    onEventNavigate = { event ->
+                        navigationState.showEvent(event.id)
+                    },
+                    onOperatingNoticeNavigate = { notice ->
+                        navigationState.showShopOnMap(notice.shop.id)
+                    },
+                    requestedShopId = route.shopId,
+                    showShopDetail = route.showShopDetail,
+                    showReviewsOnOpen = route.showReviews,
+                    originSource =
+                        when (route.source) {
+                            NavigationSource.BOOKMARKED_SHOPS -> AnalyticsSource.BOOKMARKED_SHOPS
+                            NavigationSource.EVENT_DETAIL -> AnalyticsSource.EVENT_DETAIL
+                            NavigationSource.HIDDEN_SHOPS -> AnalyticsSource.HIDDEN_SHOPS
+                            NavigationSource.RANKING -> AnalyticsSource.RANKING
+                            NavigationSource.SUBSCRIBED_SHOPS -> AnalyticsSource.SUBSCRIBED_SHOPS
+                            NavigationSource.OPERATING_NOTICE -> AnalyticsSource.OPERATING_NOTICE
+                            NavigationSource.SHARED_LINK, null -> AnalyticsSource.MAP
+                        },
+                    viewModel = mapViewModel,
+                )
+            },
+            rankingScreen = {
+                RankingRoute(
+                    onFindShopClick = navigationState::showMap,
+                    onShowShopOnMap = { shopId ->
+                        navigationState.showShopOnMap(
+                            shopId = shopId,
+                            source = NavigationSource.RANKING,
+                            showShopDetail = false,
+                        )
+                    },
+                    onEventNavigate = { event -> navigationState.showEvent(event.id) },
+                    shopDetailContent = { shopId, onDismiss, onShowOnMap, onEventNavigate ->
+                        ShopDetailHost(
+                            shopId = shopId,
+                            viewModel = mapViewModel,
+                            onDismiss = onDismiss,
+                            onShowOnMap = onShowOnMap,
+                            onReviewNavigate = { shopId -> overlayReviewWriteArgs = shopId to null },
+                            onEditReview = { shopId, reviewId -> overlayReviewWriteArgs = shopId to reviewId },
+                            onOpenProfile = { userId ->
+                                openProfile(userId, asOverlay = true)
+                            },
+                            onEventNavigate = { event -> onEventNavigate(event) },
+                            originSource = AnalyticsSource.RANKING,
+                        )
+                    },
+                )
+            },
+            myScreen = {
+                MyTabRoute(
+                    onProfileNavigate = navigationState::showProfileEdit,
+                    onMyReviewsNavigate = navigationState::showMyReviews,
+                    onOpenProfile = { userId -> openProfile(userId, asOverlay = false) },
+                    onSettingsNavigate = navigationState::showSettings,
+                    onReportNavigate = navigationState::showPlaceReport,
+                    onHiddenShopsNavigate = navigationState::showHiddenShops,
+                    onSubscribedShopsNavigate =
+                        navigationState::showSubscribedShops,
+                    onBookmarkedShopsNavigate =
+                        navigationState::showBookmarkedShops,
+                    onLoginClick = { type ->
+                        profileLoginViewModel.dispatch(
+                            when (type) {
+                                LoginType.KAKAO -> AccountIntent.OnKakaoLoginClick
+                                LoginType.APPLE -> AccountIntent.OnAppleLoginClick
+                            },
+                        )
+                    },
+                )
+            },
+            settingsScreen = {
+                SettingsRoute(
+                    onBack = navigationState::pop,
+                    onAccountNavigate = navigationState::showAccountSettings,
+                    onNotificationSettingsNavigate = navigationState::showNotificationSettings,
+                )
+            },
+            accountSettingsScreen = {
+                AccountSettingsRoute(
+                    onBack = navigationState::pop,
+                )
+            },
+            profileEditScreen = {
+                ProfileEditRoute(
+                    onBack = navigationState::pop,
+                    onLoginClick = { type ->
+                        profileLoginViewModel.dispatch(
+                            when (type) {
+                                LoginType.KAKAO -> AccountIntent.OnKakaoLoginClick
+                                LoginType.APPLE -> AccountIntent.OnAppleLoginClick
+                            },
+                        )
+                    },
+                )
+            },
+            myReviewsScreen = {
+                MyReviewsRoute(
+                    onBack = navigationState::pop,
+                    onShowShop = navigationState::showReviewShopOnMap,
+                    onEditReview = navigationState::showReviewEdit,
+                )
+            },
+            otherReviewsScreen = { route ->
+                OtherReviewsRoute(
+                    userId = route.userId,
+                    onBack = navigationState::pop,
+                    onLoginTypeSelected = { type ->
+                        profileLoginViewModel.dispatch(
+                            when (type) {
+                                LoginType.KAKAO -> AccountIntent.OnKakaoLoginClick
+                                LoginType.APPLE -> AccountIntent.OnAppleLoginClick
+                            },
+                        )
+                    },
+                    onShowShop = navigationState::showReviewShopOnMap,
+                )
+            },
+            reviewWriteScreen = { route ->
+                ShopReviewWriteRoute(
+                    shopId = route.shopId,
+                    reviewId = route.reviewId,
+                    onBack = navigationState::pop,
+                    onSubmitted = {
+                        if (route.reviewId == null) {
+                            navigationState.showShopOnMap(shopId = route.shopId, showReviews = true)
+                        } else {
+                            navigationState.pop()
+                        }
+                    },
+                    onLogin = navigationState::showMyRoot,
+                )
+            },
+            informationScreen = {
+                InformationRoute(
+                    onBack = navigationState::pop,
+                )
+            },
+            placeReportScreen = {
+                PlaceReportRoute(
+                    onBack = navigationState::pop,
+                )
+            },
+            eventListScreen = {
+                EventsRoute(
+                    onClickEvent = { event ->
+                        navigationState.showEvent(event.id)
+                    },
+                    onClickNotice = navigationState::showOperatingNotice,
+                )
+            },
+            operatingNoticeScreen = {
+                OperatingNoticeRoute(
+                    onBack = navigationState::pop,
+                    onEventListClick = navigationState::pop,
+                    onShopClick = { shopId ->
+                        navigationState.showShopOnMap(
+                            shopId = shopId,
+                            source = NavigationSource.OPERATING_NOTICE,
+                        )
+                    },
+                )
+            },
+            hiddenScreen = {
+                HiddenShopListRoute(
+                    onBackClick = navigationState::pop,
+                    onShopOpen = { shopId ->
+                        navigationState.showShopOnMap(
+                            shopId,
+                            source = NavigationSource.HIDDEN_SHOPS,
+                            returnTab = TabStatus.MY,
+                            showShopDetail = false,
+                        )
+                    },
+                )
+            },
+            notificationSettingsScreen = {
+                NotificationSettingsRoute(
+                    onBack = navigationState::pop,
+                )
+            },
+            subscribedShopsScreen = {
+                SubscribedShopListRoute(
+                    onBack = navigationState::pop,
+                    onShopOpen = { shopId ->
+                        navigationState.showShopOnMap(
+                            shopId,
+                            source = NavigationSource.SUBSCRIBED_SHOPS,
+                            returnTab = TabStatus.MY,
+                            showShopDetail = false,
+                        )
+                    },
+                    onEventOpen = navigationState::showEvent,
+                )
+            },
+            bookmarkedShopsScreen = {
+                BookmarkedShopListRoute(
+                    onBack = navigationState::pop,
+                    onImportationNavigate = navigationState::showImportation,
+                    onShopOpen = { shopId ->
+                        navigationState.showShopOnMap(
+                            shopId,
+                            source = NavigationSource.BOOKMARKED_SHOPS,
+                            returnTab = TabStatus.MY,
+                            showShopDetail = false,
+                        )
+                    },
+                )
+            },
+            importationScreen = {
+                ImportationRoute(
+                    onBack = navigationState::pop,
+                    onGuideNavigate = navigationState::showImportationGuide,
+                    onImportCompleted = navigationState::pop,
+                )
+            },
+            importationGuideScreen = {
+                ImportationGuideRoute(onBack = navigationState::pop)
+            },
+            eventScreen = { route ->
+                EventDetailRoute(
+                    eventId = route.eventId,
+                    onBack = navigationState::pop,
+                    onUnavailable = {
+                        navigationState.showEventRoot()
+
+                        toastManager.tryShow(
+                            ToastData(
+                                message = Res.string.event_not_found_message,
+                                type = ToastType.DEFAULT,
+                            ),
+                        )
+                    },
+                    onShopClick = { shopId ->
+                        navigationState.showShopOnMap(
+                            shopId = shopId,
+                            source = NavigationSource.EVENT_DETAIL,
+                            showShopDetail = false,
+                        )
+                    },
+                    onEventNavigate = { event -> navigationState.showEvent(event.id) },
+                    shopDetailContent = { shopId, onDismiss, onShowOnMap, onEventNavigate ->
+                        ShopDetailHost(
+                            shopId = shopId,
+                            viewModel = mapViewModel,
+                            onDismiss = onDismiss,
+                            onReviewNavigate = navigationState::showReviewWrite,
+                            onOpenProfile = { userId -> openProfile(userId, asOverlay = false) },
+                            onEditReview = navigationState::showReviewEdit,
+                            isNavigationBarPadded = true,
+                            onShowOnMap = onShowOnMap,
+                            onEventNavigate = onEventNavigate,
+                            originSource = AnalyticsSource.EVENT_DETAIL,
+                        )
+                    },
+                )
+            },
+        )
+
+        if (overlayProfileUserId != null) {
+            FullScreenOverlay {
+                OtherReviewsRoute(
+                    userId = overlayProfileUserId!!,
+                    onBack = { overlayProfileUserId = null },
+                    onLoginTypeSelected = { type ->
+                        profileLoginViewModel.dispatch(
+                            when (type) {
+                                LoginType.KAKAO -> AccountIntent.OnKakaoLoginClick
+                                LoginType.APPLE -> AccountIntent.OnAppleLoginClick
+                            },
+                        )
+                    },
+                    onShowShop = { shopId ->
+                        overlayProfileUserId = null
+                        navigationState.showShopOnMap(shopId)
+                    },
+                )
+            }
+        }
+
+        if (overlayReviewWriteArgs != null) {
+            val (shopId, reviewId) = overlayReviewWriteArgs!!
+            FullScreenOverlay {
+                ShopReviewWriteRoute(
+                    shopId = shopId,
+                    reviewId = reviewId,
+                    onBack = { overlayReviewWriteArgs = null },
+                    onSubmitted = {
+                        overlayReviewWriteArgs = null
+                    },
+                    onLogin = navigationState::showMyRoot,
+                )
+            }
+        }
+    }
+
+    LoginGuideDialog(
+        visible = showProfileLoginGuide,
+        onDismiss = {
+            showProfileLoginGuide = false
+            pendingProfileTarget = null
+        },
+        onLoginTypeSelected = { type ->
+            showProfileLoginGuide = false
+            profileLoginViewModel.dispatch(
+                when (type) {
+                    LoginType.KAKAO -> AccountIntent.OnKakaoLoginClick
+                    LoginType.APPLE -> AccountIntent.OnAppleLoginClick
+                },
+            )
+        },
+        loginButton = { type, onClick -> LoginButton(type, onClick) },
+    )
+}
+
+@Composable
+private fun FullScreenOverlay(content: @Composable () -> Unit) {
+    Box(
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .background(CommonColor.White),
+    ) {
+        content()
+    }
 }
 
 @Composable
@@ -358,7 +595,7 @@ private fun TrackScreenViews(
 private fun TrackUserProperties(
     appAnalytics: AppAnalytics,
     loginRepository: LoginRepository,
-    personalizationStore: ShopPersonalizationStore,
+    personalizationStore: PersonalizationStore,
 ) {
     LaunchedEffect(loginRepository) {
         loginRepository.sessionState.collect { state ->

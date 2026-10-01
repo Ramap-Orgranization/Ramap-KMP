@@ -19,7 +19,7 @@ import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.domain.repository.LoginRepository
 import com.peto.ramap.domain.repository.ShopRankingRepository
 import com.peto.ramap.domain.store.PersonalizationBootstrapState
-import com.peto.ramap.domain.store.ShopPersonalizationStore
+import com.peto.ramap.domain.store.PersonalizationStore
 import com.peto.ramap.ui.base.BaseViewModel
 import com.peto.ramap.ui.main.ranking.contract.RankingIntent
 import com.peto.ramap.ui.main.ranking.contract.RankingLoadKey
@@ -39,7 +39,7 @@ import ramap.shared.generated.resources.ranking_refresh_failure_message
 
 class RankingViewModel(
     private val shopRankRepository: ShopRankingRepository,
-    private val personalizationStore: ShopPersonalizationStore,
+    private val personalizationStore: PersonalizationStore,
     private val loginRepository: LoginRepository,
     private val rankingAnalytics: RankingAnalytics,
     private val loginAnalytics: LoginAnalytics,

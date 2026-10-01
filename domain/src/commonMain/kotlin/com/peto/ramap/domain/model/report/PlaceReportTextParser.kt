@@ -1,5 +1,6 @@
 package com.peto.ramap.domain.model.report
 
+import com.peto.ramap.domain.model.shop.KakaoPlaceUrl
 import com.peto.ramap.domain.model.shop.RamenShop
 
 object PlaceReportTextParser {
@@ -39,7 +40,7 @@ object PlaceReportTextParser {
         val sameKakaoPlace =
             place.provider == PlaceLinkProvider.KAKAO &&
                 place.placeId != null &&
-                place.placeId == shop.kakaoPlaceId
+                place.placeId == KakaoPlaceUrl.extractPlaceId(shop.kakaoPlaceUrl)
         val sameNaverPlace =
             place.provider == PlaceLinkProvider.NAVER &&
                 place.placeId != null &&

@@ -23,10 +23,14 @@ fun NavigationRouter(
     mapScreen: @Composable (ScreenRoutes.MapRoutes) -> Unit,
     rankingScreen: @Composable () -> Unit,
     eventListScreen: @Composable () -> Unit,
-    eventCalendarScreen: @Composable () -> Unit,
     operatingNoticeScreen: @Composable () -> Unit,
     myScreen: @Composable () -> Unit,
+    settingsScreen: @Composable () -> Unit,
     accountSettingsScreen: @Composable () -> Unit,
+    profileEditScreen: @Composable () -> Unit,
+    myReviewsScreen: @Composable () -> Unit,
+    otherReviewsScreen: @Composable (ScreenRoutes.OtherReviewsRoutes) -> Unit,
+    reviewWriteScreen: @Composable (ScreenRoutes.ReviewWriteRoutes) -> Unit,
     informationScreen: @Composable () -> Unit,
     placeReportScreen: @Composable () -> Unit,
     hiddenScreen: @Composable () -> Unit,
@@ -54,13 +58,6 @@ fun NavigationRouter(
                     content = eventListScreen,
                 )
             }
-            entry<ScreenRoutes.EventCalendarRoutes> {
-                BottonNavigationTabScreen(
-                    selectedTab = TabStatus.EVENT,
-                    onTabSelected = onTabSelected,
-                    content = eventCalendarScreen,
-                )
-            }
             entry<ScreenRoutes.OperatingNoticeRoutes> {
                 BottonNavigationTabScreen(
                     selectedTab = TabStatus.EVENT,
@@ -82,6 +79,11 @@ fun NavigationRouter(
                     content = myScreen,
                 )
             }
+            entry<ScreenRoutes.ProfileEditRoutes> { FullScreen(profileEditScreen) }
+            entry<ScreenRoutes.MyReviewsRoutes> { FullScreen(myReviewsScreen) }
+            entry<ScreenRoutes.OtherReviewsRoutes> { route -> FullScreen { otherReviewsScreen(route) } }
+            entry<ScreenRoutes.ReviewWriteRoutes> { route -> FullScreen { reviewWriteScreen(route) } }
+            entry<ScreenRoutes.SettingsRoutes> { FullScreen(settingsScreen) }
             entry<ScreenRoutes.AccountSettingsRoutes> { FullScreen(accountSettingsScreen) }
             entry<ScreenRoutes.InformationRoutes> { FullScreen(informationScreen) }
             entry<ScreenRoutes.PlaceReportRoutes> { FullScreen(placeReportScreen) }

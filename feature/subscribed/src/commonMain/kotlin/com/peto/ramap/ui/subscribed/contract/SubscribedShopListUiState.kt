@@ -32,4 +32,8 @@ data class SubscribedShopListUiState(
         loadState.isLoading(SubscribedShopLoadKey.REMOVE) ||
             loadState.isLoading(SubscribedShopLoadKey.SHOPS) ||
             loadState.isLoading(SubscribedShopLoadKey.EVENTS)
+
+    val showsEmptyContent: Boolean get() = shops.isEmpty() && subscribedEvents.isEmpty()
+    val showsSubscribedEvents: Boolean get() = subscribedEvents.isNotEmpty()
+    val showsShops: Boolean get() = shops.isNotEmpty()
 }

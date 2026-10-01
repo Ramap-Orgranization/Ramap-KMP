@@ -42,7 +42,7 @@ internal fun MapInteractionHost(
     onNotificationToggled: (RamenShop) -> Unit,
     onLoginTypeSelected: (LoginType) -> Unit,
     onLoginDismissed: () -> Unit,
-    content: @Composable ((RamenShop) -> Unit) -> Unit,
+    content: @Composable ((RamenShop) -> Unit, () -> Unit) -> Unit,
 ) {
     val coroutineScope = rememberCoroutineScope()
     var showLoginGuideDialog by remember { mutableStateOf(false) }
@@ -71,7 +71,7 @@ internal fun MapInteractionHost(
         }
     }
 
-    content { shop ->
+    content({ shop ->
         val canToggleWithoutPermission =
             !isLoggedIn ||
                 shop.id in hiddenShopIds ||
@@ -97,6 +97,8 @@ internal fun MapInteractionHost(
                 }
             }
         }
+    }) {
+        showLoginGuideDialog = true
     }
 
     LoginGuideDialog(

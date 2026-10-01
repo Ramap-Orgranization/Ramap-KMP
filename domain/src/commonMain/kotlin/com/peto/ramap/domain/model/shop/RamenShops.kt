@@ -1,5 +1,6 @@
 package com.peto.ramap.domain.model.shop
 
+import com.peto.ramap.domain.model.notice.OperatingNotice
 import kotlinx.datetime.LocalDateTime
 
 data class RamenShops(
@@ -33,9 +34,10 @@ data class RamenShops(
     fun filterByOpenStatus(
         filter: RamenShopFilter,
         currentDateTime: LocalDateTime,
+        operatingNotices: List<OperatingNotice> = emptyList(),
     ): RamenShops {
         if (filter.isEmpty()) return this
-        return RamenShops(shops.filterValues { shop -> shop.isOpened(filter, currentDateTime) })
+        return RamenShops(shops.filterValues { shop -> shop.isOpened(filter, currentDateTime, operatingNotices) })
     }
 
     /**

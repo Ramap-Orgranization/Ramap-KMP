@@ -15,12 +15,10 @@ fun ramenShopFixture(
 ): RamenShop =
     RamenShop(
         id = id,
-        kakaoPlaceId = "kakao-$id",
         name = name,
         address = address,
         location = location,
         kakaoPlaceUrl = null,
-        phone = null,
         instagramUrl = null,
         menuCategories = MenuCategories(menuCategories),
         isVisible = isVisible,

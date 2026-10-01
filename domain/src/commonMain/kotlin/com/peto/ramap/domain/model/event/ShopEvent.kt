@@ -2,6 +2,7 @@ package com.peto.ramap.domain.model.event
 
 import com.peto.ramap.domain.model.shop.RamenShop
 import kotlinx.datetime.LocalDate
+import kotlinx.datetime.daysUntil
 
 data class ShopEvent(
     val id: String,
@@ -13,7 +14,7 @@ data class ShopEvent(
     val sourceUrl: String,
     val isToday: Boolean,
     val isVenue: Boolean,
-    val venueShop: RamenShop,
+    val venue: EventVenue,
     val collaboratorShops: List<RamenShop> = emptyList(),
     val externalParticipants: List<ExternalParticipant> = emptyList(),
     val waitingMethod: String?,
@@ -29,19 +30,57 @@ data class ShopEvent(
     val imageUrls: List<String> = emptyList(),
     val isStartDateToday: Boolean = false,
 ) {
-    val venueShopId: String
-        get() = venueShop.id
+    val venueKey: String
+        get() =
+            when (venue) {
+                is EventVenue.Registered -> "registered:${venue.shop.id}"
+                is EventVenue.External -> "external:${venue.id ?: venue.name}"
+            }
 
-    val venueShopName: String
-        get() = venueShop.name
+    val venueDisplayName: String
+        get() =
+            when (venue) {
+                is EventVenue.Registered -> venue.shop.name
+                is EventVenue.External -> venue.name
+            }
 
     val venueProfileImageUrl: String?
-        get() = venueShop.instagramProfileImageUrl
+        get() = (venue as? EventVenue.Registered)?.shop?.instagramProfileImageUrl
+
+    val eventListShop: RamenShop?
+        get() =
+            when (venue) {
+                is EventVenue.Registered -> venue.shop
+                is EventVenue.External -> collaboratorShops.firstOrNull()
+            }
+
+    val eventListKey: String
+        get() = eventListShop?.id ?: venueKey
+
+    val eventListDisplayName: String
+        get() = eventListShop?.name ?: venueDisplayName
+
+    val eventListProfileImageUrl: String?
+        get() = eventListShop?.instagramProfileImageUrl ?: venueProfileImageUrl
+
+    fun limitedMenuDuration(): LimitedMenuDuration? {
+        if (type != ShopEventType.LIMITED_MENU && type != ShopEventType.SUMMER_LIMITED) return null
+
+        val start = LocalDate.parse(startDate)
+        val end = endDate?.let { LocalDate.parse(it) } ?: return null
+        if (end < start) return null
+
+        return when (start.daysUntil(end) + 1) {
+            1 -> LimitedMenuDuration.ONE_DAY
+            in 2 until LONG_TERM_MINIMUM_DAYS -> LimitedMenuDuration.SHORT_TERM
+            else -> LimitedMenuDuration.LONG_TERM
+        }
+    }
 
     fun occursOn(date: LocalDate): Boolean {
-        val start = runCatching { LocalDate.parse(startDate) }.getOrNull() ?: return false
+        val start = LocalDate.parse(startDate)
         if (type == ShopEventType.STORE_RENEWAL) return date == start
-        val end = runCatching { LocalDate.parse(endDate ?: startDate) }.getOrNull() ?: return false
+        val end = LocalDate.parse(endDate ?: startDate)
         return date in start..end
     }
 
@@ -65,11 +104,12 @@ data class ShopEvent(
             return if (isVenue) {
                 collaboratorShops.singleOrNull()?.name
             } else {
-                venueShop.name
+                venueDisplayName
             }
         }
 
     companion object {
         const val MAX_IMAGE_COUNT = 5
+        private const val LONG_TERM_MINIMUM_DAYS = 7
     }
 }

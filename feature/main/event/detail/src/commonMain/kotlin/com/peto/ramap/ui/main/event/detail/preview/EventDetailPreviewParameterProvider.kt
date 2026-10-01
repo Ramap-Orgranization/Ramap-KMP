@@ -1,6 +1,7 @@
 package com.peto.ramap.ui.main.event.detail.preview
 
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
+import com.peto.ramap.domain.model.event.EventVenue
 import com.peto.ramap.domain.model.event.ExternalParticipant
 import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.model.event.ShopEventType
@@ -49,6 +50,27 @@ class EventDetailPreviewParameterProvider : PreviewParameterProvider<EventDetail
                         waitingMethod = null,
                         waitingUrl = null,
                     ),
+            ),
+            EventDetailUiState(
+                event =
+                    previewEvent(
+                        type = ShopEventType.POPUP,
+                        title = "라멘 페스티벌 팝업",
+                        venueShop = null,
+                        venueName = "라멘 페스티벌",
+                        externalVenueId = "venue-ramen-festival",
+                        venueAddress = "서울시 마포구 월드컵로 1",
+                        venueImageUrl = "https://picsum.photos/120",
+                        venueInstagramUrl = "https://www.instagram.com/ramen_festival/",
+                        venueNaverMapUrl = "https://map.naver.com/p/entry/place/1",
+                        venueKakaoMapUrl = "https://place.map.kakao.com/1",
+                    ),
+            ),
+            EventDetailUiState(
+                event = previewEvent(type = ShopEventType.POPUP, title = "지도 장소 팝업", venueShop = null, venueName = "라멘 광장", venueNaverMapUrl = "https://map.naver.com/p/entry/place/1"),
+            ),
+            EventDetailUiState(
+                event = previewEvent(type = ShopEventType.POPUP, title = "장소명만 있는 팝업", venueShop = null, venueName = "라멘 전시장"),
             ),
             EventDetailUiState(
                 event =
@@ -103,6 +125,14 @@ class EventDetailPreviewParameterProvider : PreviewParameterProvider<EventDetail
         endDate: String? = "2026-08-16",
         sourceUrl: String = "https://www.instagram.com/ramap_official/",
         isToday: Boolean = true,
+        venueShop: RamenShop? = previewShop("shop1", "이리에 라멘"),
+        venueName: String? = null,
+        externalVenueId: String? = null,
+        venueAddress: String? = null,
+        venueImageUrl: String? = null,
+        venueInstagramUrl: String? = null,
+        venueNaverMapUrl: String? = null,
+        venueKakaoMapUrl: String? = null,
         collaboratorShops: List<RamenShop> = emptyList(),
         externalParticipants: List<ExternalParticipant> = emptyList(),
         waitingMethod: String? = "현장 대기",
@@ -120,7 +150,16 @@ class EventDetailPreviewParameterProvider : PreviewParameterProvider<EventDetail
         sourceUrl = sourceUrl,
         isToday = isToday,
         isVenue = true,
-        venueShop = previewShop("shop1", "이리에 라멘"),
+        venue =
+            venueShop?.let(EventVenue::Registered) ?: EventVenue.External(
+                id = externalVenueId,
+                name = requireNotNull(venueName),
+                address = venueAddress,
+                imageUrl = venueImageUrl,
+                instagramUrl = venueInstagramUrl,
+                naverMapUrl = venueNaverMapUrl,
+                kakaoMapUrl = venueKakaoMapUrl,
+            ),
         collaboratorShops = collaboratorShops,
         externalParticipants = externalParticipants,
         waitingMethod = waitingMethod,
@@ -136,13 +175,11 @@ class EventDetailPreviewParameterProvider : PreviewParameterProvider<EventDetail
     ): RamenShop =
         RamenShop(
             id = id,
-            kakaoPlaceId = null,
             name = name,
             address = "서울시 마포구",
             location = Location(37.5, 127.0),
             kakaoPlaceUrl = null,
             naverPlaceUrl = null,
-            phone = null,
             instagramUrl = null,
             menuCategories = MenuCategories(emptyList()),
             isVisible = true,

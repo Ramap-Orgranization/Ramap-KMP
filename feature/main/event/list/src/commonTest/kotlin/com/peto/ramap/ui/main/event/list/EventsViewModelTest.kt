@@ -6,6 +6,7 @@ import com.peto.ramap.coroutinesTest
 import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.event.EventFilter
+import com.peto.ramap.domain.model.event.EventVenue
 import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.model.event.ShopEventType
 import com.peto.ramap.domain.model.event.ShopEvents
@@ -32,6 +33,30 @@ import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class EventsViewModelTest {
+    @Test
+    fun `이벤트를 선택하면 이벤트 유형을 함께 기록한다`() =
+        coroutinesTest {
+            val analyticsTracker = FakeAnalyticsTracker()
+            val viewModel =
+                EventsViewModel(
+                    FakeRamenShopRepository(),
+                    FakeShopReportRepository(),
+                    EventsAnalytics(analyticsTracker),
+                )
+
+            viewModel.dispatch(EventsIntent.OnEventClicked(event()))
+            runCurrent()
+
+            assertEquals(
+                mapOf(
+                    "content_type" to "event",
+                    "event_id" to "event",
+                    "event_status" to "upcoming",
+                ),
+                analyticsTracker.events.single().params(),
+            )
+        }
+
     @Test
     fun `스토리 캡처만 있으면 새소식 제보를 제출할 수 있다`() {
         val state =
@@ -110,7 +135,7 @@ class EventsViewModelTest {
         }
 
     @Test
-    fun `연속 새로고침은 이전 요청을 교체하고 마지막 요청이 끝날 때 로딩을 해제한다`() =
+    fun `조회 중 연속 새로고침은 기존 요청 하나만 유지한다`() =
         coroutinesTest {
             val repository = FakeRamenShopRepository(activeEventsDelayMillis = 1_000)
             val viewModel = eventsViewModel(repository)
@@ -121,8 +146,8 @@ class EventsViewModelTest {
             viewModel.dispatch(EventsIntent.OnEventsRefreshed)
             runCurrent()
 
-            assertEquals(3, repository.activeEventsRequestCount)
-            assertTrue(viewModel.uiState.value.isRefreshing)
+            assertEquals(1, repository.activeEventsRequestCount)
+            assertTrue(viewModel.uiState.value.isLoading)
 
             advanceTimeBy(1_000)
             runCurrent()
@@ -291,7 +316,7 @@ class EventsViewModelTest {
         sourceUrl = "https://instagram.com/event",
         isToday = isToday,
         isVenue = true,
-        venueShop = ramenShopFixture(id = "shop", name = "매장", address = "서울"),
+        venue = EventVenue.Registered(ramenShopFixture(id = "shop", name = "매장", address = "서울")),
         waitingMethod = null,
         waitingUrl = null,
     )

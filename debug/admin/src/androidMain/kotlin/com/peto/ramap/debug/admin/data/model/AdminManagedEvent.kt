@@ -10,6 +10,8 @@ internal data class AdminManagedEvent(
     @SerialName("start_date") val startDate: String,
     @SerialName("end_date") val endDate: String? = null,
     @SerialName("shop_name") val shopName: String,
+    val description: String,
+    @SerialName("event_type") val eventType: String,
     @SerialName("cancelled_dates") val cancelledDates: List<String> = emptyList(),
     @SerialName("sold_out_dates") val soldOutDates: List<String> = emptyList(),
 )

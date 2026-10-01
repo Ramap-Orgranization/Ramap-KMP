@@ -10,6 +10,41 @@ import kotlin.test.assertTrue
 
 class NavigationStateTest {
     @Test
+    fun `리뷰 작성은 현재 탭에서 한 단계로 열리고 뒤로 가면 출발 화면으로 돌아간다`() {
+        for (tab in TabStatus.entries) {
+            val state = navigationState(selectedTab = tab)
+            val sourceRoute = state.currentRoute
+            val sourceStackSize = state.currentBackStack.size
+
+            state.showReviewWrite("shop")
+
+            assertEquals(ScreenRoutes.ReviewWriteRoutes("shop"), state.currentRoute)
+            assertEquals(sourceStackSize + 1, state.currentBackStack.size)
+
+            state.pop()
+
+            assertEquals(tab, state.selectedTab)
+            assertEquals(sourceRoute, state.currentRoute)
+            assertEquals(sourceStackSize, state.currentBackStack.size)
+        }
+    }
+
+    @Test
+    fun `리뷰 작성 중 로그인하면 마이 탭 스택을 초기화하고 루트로 이동한다`() {
+        for (tab in TabStatus.entries) {
+            val state = navigationState(selectedTab = TabStatus.MY)
+            state.showSettings()
+            state.selectTopLevelTab(tab)
+            state.showReviewWrite("shop")
+
+            state.showMyRoot()
+
+            assertEquals(TabStatus.MY, state.selectedTab)
+            assertEquals(listOf(ScreenRoutes.MyTabRoutes), state.backStacks.getValue(TabStatus.MY).toList())
+        }
+    }
+
+    @Test
     fun `네 개 탭은 지도 랭킹 이벤트 설정 순서와 독립 스택을 가진다`() {
         val navigationState = navigationState()
 
@@ -122,17 +157,6 @@ class NavigationStateTest {
         assertEquals(ScreenRoutes.EventDetailRoutes("event-id"), navigationState.currentRoute)
         assertEquals(1, navigationState.backStacks.getValue(TabStatus.MAP).size)
         assertEquals(2, navigationState.backStacks.getValue(TabStatus.EVENT).size)
-    }
-
-    @Test
-    fun `이벤트 캘린더에서 상세를 열고 뒤로 가면 캘린더로 돌아간다`() {
-        val navigationState = navigationState(selectedTab = TabStatus.EVENT)
-
-        navigationState.showEventCalendar()
-        navigationState.showEvent("event-id")
-        navigationState.pop()
-
-        assertEquals(ScreenRoutes.EventCalendarRoutes, navigationState.currentRoute)
     }
 
     @Test
@@ -318,8 +342,21 @@ class NavigationStateTest {
     }
 
     @Test
-    fun `설정 목록의 모든 하위 화면을 전체 화면 경로로 연다`() {
+    fun `프로필 탭과 설정의 하위 화면을 전체 화면 경로로 연다`() {
         val navigationState = navigationState(selectedTab = TabStatus.MY)
+
+        navigationState.showSettings()
+        navigationState.showSettings()
+        assertEquals(ScreenRoutes.SettingsRoutes, navigationState.currentRoute)
+        assertEquals(2, navigationState.currentBackStack.size)
+
+        navigationState.pop()
+
+        navigationState.showProfileEdit()
+        navigationState.showProfileEdit()
+        assertEquals(ScreenRoutes.ProfileEditRoutes, navigationState.currentRoute)
+        navigationState.pop()
+        assertEquals(ScreenRoutes.MyTabRoutes, navigationState.currentRoute)
 
         navigationState.showAccountSettings()
         assertEquals(ScreenRoutes.AccountSettingsRoutes, navigationState.currentRoute)

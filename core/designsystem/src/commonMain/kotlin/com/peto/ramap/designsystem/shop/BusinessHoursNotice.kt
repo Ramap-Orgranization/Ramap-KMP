@@ -1,11 +1,9 @@
 package com.peto.ramap.designsystem.shop
 
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -15,8 +13,10 @@ import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.RamapTheme
+import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
+import ramap.shared.generated.resources.ic_info
 import ramap.shared.generated.resources.shop_detail_business_hours_notice
 
 @Composable
@@ -26,23 +26,16 @@ internal fun BusinessHoursNotice(modifier: Modifier = Modifier) {
         horizontalArrangement = Arrangement.spacedBy(4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Box(
-            modifier =
-                Modifier
-                    .size(14.dp)
-                    .border(1.dp, GrayColor.C500, CircleShape),
-            contentAlignment = Alignment.Center,
-        ) {
-            AppText(
-                text = "!",
-                style = AppTextStyle.B4,
-                color = GrayColor.C500,
-            )
-        }
+        Icon(
+            painter = painterResource(Res.drawable.ic_info),
+            contentDescription = null,
+            modifier = Modifier.size(14.dp),
+            tint = GrayColor.C300,
+        )
         AppText(
             text = stringResource(Res.string.shop_detail_business_hours_notice),
-            style = AppTextStyle.B4,
-            color = GrayColor.C500,
+            style = AppTextStyle.C1,
+            color = GrayColor.C300,
         )
     }
 }

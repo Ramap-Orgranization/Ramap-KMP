@@ -69,7 +69,7 @@ fun EventCard(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 RemoteShopImage(
-                    url = event.venueShop.instagramProfileImageUrl,
+                    url = event.eventListProfileImageUrl,
                     modifier =
                         Modifier
                             .size(44.dp)
@@ -77,7 +77,7 @@ fun EventCard(
                             .clip(CircleShape),
                 )
                 AppText(
-                    text = event.venueShop.name,
+                    text = event.eventListDisplayName,
                     style = AppTextStyle.B1,
                     color = GrayColor.C400,
                     maxLines = 1,

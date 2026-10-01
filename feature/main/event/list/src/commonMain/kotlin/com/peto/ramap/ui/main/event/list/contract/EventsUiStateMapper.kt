@@ -17,9 +17,9 @@ internal fun mapEventsToUiState(state: EventsUiState): EventsUiState {
     val regularOngoingEvents = ongoingEvents.filterNot { it.type == ShopEventType.SUMMER_LIMITED }
 
     return state.copy(
-        summerLimitedEvents = ShopEvents.groupByVenue(summerLimitedEvents),
-        ongoingEvents = ShopEvents.groupByVenue(regularOngoingEvents),
-        upcomingEvents = ShopEvents.groupByVenue(upcomingEvents),
+        summerLimitedEvents = ShopEvents.groupByEventListShop(summerLimitedEvents),
+        ongoingEvents = ShopEvents.groupByEventListShop(regularOngoingEvents),
+        upcomingEvents = ShopEvents.groupByEventListShop(upcomingEvents),
     )
 }
 
@@ -28,7 +28,4 @@ internal fun selectEventFilter(
     filter: EventFilter,
 ): EventsUiState = mapEventsToUiState(state.copy(selectedFilter = filter))
 
-internal fun partitionBySchedule(events: List<ShopEvent>): Pair<List<ShopEvent>, List<ShopEvent>> =
-    events
-        .filterNot { event -> event.isToday && event.isCancelledToday }
-        .partition(ShopEvent::isToday)
+internal fun partitionBySchedule(events: List<ShopEvent>): Pair<List<ShopEvent>, List<ShopEvent>> = events.partition(ShopEvent::isToday)

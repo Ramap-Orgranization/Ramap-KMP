@@ -14,12 +14,9 @@ import com.peto.ramap.network.execute.invokeRequest
 internal class DefaultShopReportRepository(
     private val dataSource: ShopReportDataSource,
 ) : ShopReportRepository {
-    override suspend fun submitShopInformationReport(report: ShopInformationReport): RamapResult<Unit> =
-        invokeRequest { dataSource.submitShopInformationReport(ShopInformationReportRequest.from(report)) }
+    override suspend fun submitShopInformationReport(report: ShopInformationReport): RamapResult<Unit> = invokeRequest { dataSource.submitShopInformationReport(ShopInformationReportRequest.from(report)) }
 
-    override suspend fun submitUnregisteredPlaceReport(report: UnregisteredPlaceReport): RamapResult<Unit> =
-        invokeRequest { dataSource.submitUnregisteredPlaceReport(UnregisteredPlaceReportRequest.from(report)) }
+    override suspend fun submitUnregisteredPlaceReport(report: UnregisteredPlaceReport): RamapResult<Unit> = invokeRequest { dataSource.submitUnregisteredPlaceReport(UnregisteredPlaceReportRequest.from(report)) }
 
-    override suspend fun submitNewsReport(report: NewsReport): RamapResult<NewsReportSubmission> =
-        invokeRequest { dataSource.submitNewsReport(report) }
+    override suspend fun submitNewsReport(report: NewsReport): RamapResult<NewsReportSubmission> = invokeRequest { dataSource.submitNewsReport(report) }
 }

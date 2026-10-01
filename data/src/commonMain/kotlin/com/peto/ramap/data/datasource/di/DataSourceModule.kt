@@ -2,7 +2,8 @@ package com.peto.ramap.data.datasource.di
 
 import com.peto.ramap.data.datasource.appnotice.AppNoticeDataSource
 import com.peto.ramap.data.datasource.appnotice.RemoteAppNoticeDataSource
-import com.peto.ramap.data.datasource.geocoder.SupabaseReverseGeocoder
+import com.peto.ramap.data.datasource.community.CommunityDataSource
+import com.peto.ramap.data.datasource.community.RemoteCommunityDataSource
 import com.peto.ramap.data.datasource.importation.ImportationDataSource
 import com.peto.ramap.data.datasource.importation.KakaoImportationDataSource
 import com.peto.ramap.data.datasource.importation.NaverImportationDataSource
@@ -15,11 +16,15 @@ import com.peto.ramap.data.datasource.personalization.RemoteBookmarkShopDataSour
 import com.peto.ramap.data.datasource.personalization.RemoteHiddenShopDataSource
 import com.peto.ramap.data.datasource.place.PlaceSearchDataSource
 import com.peto.ramap.data.datasource.place.RemotePlaceSearchDataSource
+import com.peto.ramap.data.datasource.profile.ProfileDataSource
+import com.peto.ramap.data.datasource.profile.RemoteProfileDataSource
 import com.peto.ramap.data.datasource.ranking.RemoteShopRankingDataSource
 import com.peto.ramap.data.datasource.ranking.ShopRankingDataSource
 import com.peto.ramap.data.datasource.report.RemotePlaceLinkResolver
 import com.peto.ramap.data.datasource.report.RemoteShopReportDataSource
 import com.peto.ramap.data.datasource.report.ShopReportDataSource
+import com.peto.ramap.data.datasource.review.RemoteReviewDataSource
+import com.peto.ramap.data.datasource.review.ReviewDataSource
 import com.peto.ramap.data.datasource.shop.RamenShopDataSource
 import com.peto.ramap.data.datasource.shop.RemoteRamenShopDataSource
 import com.peto.ramap.data.datasource.update.AppUpdatePolicyDataSource
@@ -27,13 +32,15 @@ import com.peto.ramap.data.datasource.update.RemoteAppUpdatePolicyDataSource
 import com.peto.ramap.data.datasource.waiting.RemoteShopWaitingSystemDataSource
 import com.peto.ramap.data.datasource.waiting.ShopWaitingSystemDataSource
 import com.peto.ramap.domain.repository.PlaceLinkResolver
-import com.peto.ramap.domain.repository.ReverseGeocoder
 import io.github.jan.supabase.SupabaseClient
 import io.ktor.client.HttpClient
 import org.koin.dsl.module
 
 val dataSourceModule =
     module {
+        single<ProfileDataSource> { RemoteProfileDataSource(get()) }
+        single<CommunityDataSource> { RemoteCommunityDataSource(get(), get()) }
+        single<ReviewDataSource> { RemoteReviewDataSource(get()) }
         single { NaverImportationDataSource(get(), get<HttpClient>()) }
         single { KakaoImportationDataSource(get()) }
         single<ImportationDataSource> { RemoteImportationDataSource(get(), get()) }
@@ -62,7 +69,6 @@ val dataSourceModule =
             RemoteShopReportDataSource(get<SupabaseClient>())
         }
         single<PlaceLinkResolver> { RemotePlaceLinkResolver(get<HttpClient>()) }
-        single<ReverseGeocoder> { SupabaseReverseGeocoder(get()) }
         single<AppUpdatePolicyDataSource> {
             RemoteAppUpdatePolicyDataSource(get<SupabaseClient>())
         }

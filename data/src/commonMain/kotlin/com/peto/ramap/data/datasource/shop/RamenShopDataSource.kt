@@ -1,13 +1,17 @@
 package com.peto.ramap.data.datasource.shop
 
-import com.peto.ramap.data.model.CalendarEventPageResponse
 import com.peto.ramap.data.model.RamenShopResponse
+import com.peto.ramap.data.model.ShopDetailResponse
 import com.peto.ramap.data.model.ShopEventParticipantResponse
 import com.peto.ramap.data.model.ShopEventResponse
 import com.peto.ramap.domain.model.shop.MapBounds
 import com.peto.ramap.domain.model.shop.SearchQuery
 
 internal interface RamenShopDataSource {
+    suspend fun fetchShopDetail(shopId: String): ShopDetailResponse?
+
+    suspend fun fetchShopMenuUpdatedAt(shopId: String): String?
+
     suspend fun fetchShopLikeCount(shopId: String): Long
 
     suspend fun fetchRamenShops(bounds: MapBounds): List<RamenShopResponse>
@@ -17,13 +21,6 @@ internal interface RamenShopDataSource {
     suspend fun fetchActiveShopEvents(shopId: String): List<ShopEventResponse>
 
     suspend fun fetchActiveEvents(): List<ShopEventResponse>
-
-    suspend fun fetchCalendarEvents(
-        startDate: String,
-        endDate: String,
-    ): List<ShopEventResponse>
-
-    suspend fun fetchCalendarEventPage(monthStart: String): CalendarEventPageResponse
 
     suspend fun fetchActiveEvent(eventId: String): ShopEventResponse?
 

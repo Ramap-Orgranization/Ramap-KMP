@@ -30,6 +30,10 @@ fun ShopDetailHost(
     viewModel: MapViewModel,
     onDismiss: () -> Unit,
     onShowOnMap: (String) -> Unit,
+    onReviewNavigate: (String) -> Unit,
+    onOpenProfile: (String) -> Unit = {},
+    onEditReview: (String, String) -> Unit = { _, _ -> },
+    isNavigationBarPadded: Boolean = false,
     onEventNavigate: (ShopEvent) -> Unit = {},
     originSource: AnalyticsSource = AnalyticsSource.MAP,
     toastManager: ToastManager = koinInject(),
@@ -58,12 +62,13 @@ fun ShopDetailHost(
         },
         onLoginTypeSelected = { viewModel.dispatch(MapIntent.OnLoginTypeSelected(it)) },
         onLoginDismissed = { viewModel.dispatch(MapIntent.OnLoginSelectionDismissed) },
-    ) { onShopNotificationToggled ->
+    ) { onShopNotificationToggled, onLoginGuideRequested ->
         BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
             ShopDetailContent(
                 state = uiState.shopDetailState,
                 isBackEnabled = true,
                 maxHeight = maxHeight,
+                isNavigationBarPadded = isNavigationBarPadded,
                 showRequestedLoadingInSheet = true,
                 waitingSystem = uiState.selectedShop?.let { uiState.shopWaiting[it.id].toUiModel() },
                 isBookmarked = uiState.selectedShop?.id in uiState.bookmarkedShopIds,
@@ -87,9 +92,7 @@ fun ShopDetailHost(
                 onShopMapLinkClick = { shop, provider ->
                     viewModel.dispatch(MapIntent.OnShopMapLinkClicked(shop, provider))
                 },
-                onPhoneClick = { ExternalUriOpener.open("tel:$it") },
                 onWaitingClick = ExternalUriOpener::open,
-                shouldShowExternalLink = ExternalUriOpener::isSupportedWebUri,
                 onExternalLinkClick = ExternalUriOpener::open,
                 isAppleMapsAvailable = ExternalUriOpener.isAppleMapsAvailable,
                 onAppleMapsClick = { shop ->
@@ -103,6 +106,10 @@ fun ShopDetailHost(
                 },
                 onEventClick = onEventNavigate,
                 onOperatingNoticeClick = { selectedNotice = it },
+                hasMoreReviews = uiState.hasMoreShopReviews,
+                isLoadingMoreReviews = uiState.isLoadingMoreShopReviews,
+                isRetryingReviews = uiState.isRetryingShopReviews,
+                onLoadMoreReviews = { viewModel.dispatch(MapIntent.OnShopReviewsLoadMore) },
                 onReportSubmit = { wrongFields, description ->
                     viewModel.dispatch(MapIntent.OnShopReportSubmitted(wrongFields, description))
                 },
@@ -110,9 +117,31 @@ fun ShopDetailHost(
                     viewModel.dispatch(MapIntent.OnShopDetailDismissed)
                     onShowOnMap(selectedShopId)
                 },
+                onReviewsClick = { selectedShopId ->
+                    if (uiState.isLoggedIn) {
+                        onReviewNavigate(selectedShopId)
+                    } else {
+                        onLoginGuideRequested()
+                    }
+                },
+                currentUserId = uiState.currentUserId,
+                currentProfileIsPublic = uiState.currentProfileIsPublic,
+                actingReviewId = uiState.actingReviewId,
+                revealedBlockedReviews = uiState.revealedBlockedReviews,
+                revealingBlockedReviewId = uiState.revealingBlockedReviewId,
+                onViewBlockedReview = { viewModel.dispatch(MapIntent.OnBlockedReviewViewRequested(it)) },
+                onUnblockBlockedUser = { viewModel.dispatch(MapIntent.OnBlockedReviewUnblockRequested(it)) },
+                onOpenProfile = onOpenProfile,
+                onReviewLike = { viewModel.dispatch(MapIntent.OnReviewLikeToggled(it)) },
+                onReviewEdit = { onEditReview(it.shopId, it.id) },
+                onReviewDelete = { viewModel.dispatch(MapIntent.OnReviewDeleted(it)) },
+                onReviewReport = { viewModel.dispatch(MapIntent.OnReviewReportRequested(it)) },
             )
         }
     }
+
+    MapReviewReportDialog(state = uiState, onIntent = viewModel::dispatch)
+    MapBlockedReviewUnblockDialog(state = uiState, onIntent = viewModel::dispatch)
 
     selectedNotice?.let { notice ->
         OperatingNoticeBottomSheet(

@@ -1,6 +1,7 @@
 package com.peto.ramap.data.model
 
 import com.peto.ramap.data.extension.toLocalDate
+import com.peto.ramap.domain.model.event.EventVenue
 import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.model.event.ShopEventType
 import com.peto.ramap.network.config.RamapSecrets
@@ -18,7 +19,12 @@ internal data class ShopEventResponse(
     @SerialName("source_url") val sourceUrl: String,
     @SerialName("is_today") val isToday: Boolean,
     @SerialName("is_venue") val isVenue: Boolean,
-    @SerialName("venue_shop") val venueShop: RamenShopResponse,
+    @SerialName("venue_shop") val venueShop: RamenShopResponse? = null,
+    @SerialName("venue_name") val venueName: String? = null,
+    @SerialName("venue_instagram_url") val venueInstagramUrl: String? = null,
+    @SerialName("venue_naver_map_url") val venueNaverMapUrl: String? = null,
+    @SerialName("venue_kakao_map_url") val venueKakaoMapUrl: String? = null,
+    @SerialName("external_venue") val externalVenue: ExternalVenueResponse? = null,
     @SerialName("collaborator_shops") val collaboratorShops: List<RamenShopResponse> = emptyList(),
     @SerialName("external_participants") val externalParticipants: List<ExternalParticipantResponse> = emptyList(),
     @SerialName("waiting_method") val waitingMethod: String? = null,
@@ -45,7 +51,7 @@ internal data class ShopEventResponse(
             sourceUrl = sourceUrl,
             isToday = isToday,
             isVenue = isVenue,
-            venueShop = venueShop.toDomain(),
+            venue = venue(),
             collaboratorShops = collaboratorShops.map(RamenShopResponse::toDomain),
             externalParticipants = externalParticipants.map(ExternalParticipantResponse::toDomain),
             waitingMethod = waitingMethod,
@@ -59,6 +65,17 @@ internal data class ShopEventResponse(
             imageUrls = imagePaths.mapNotNull(::toPublicEventImageUrl).take(ShopEvent.MAX_IMAGE_COUNT),
         )
     }
+
+    private fun venue(): EventVenue =
+        venueShop?.let { EventVenue.Registered(it.toDomain()) }
+            ?: externalVenue?.toDomain()
+            ?: EventVenue.External(
+                id = null,
+                name = requireNotNull(venueName),
+                instagramUrl = venueInstagramUrl,
+                naverMapUrl = venueNaverMapUrl,
+                kakaoMapUrl = venueKakaoMapUrl,
+            )
 
     private fun toPublicEventImageUrl(path: String): String? {
         val normalizedPath = path.trim()
@@ -80,6 +97,49 @@ internal data class ShopEventResponse(
 
     private companion object {
         const val EVENT_IMAGE_BUCKET = "event-images"
+        const val STORAGE_PUBLIC_PATH = "/storage/v1/object/public/"
+    }
+}
+
+@Serializable
+internal data class ExternalVenueResponse(
+    val id: String,
+    val name: String,
+    val address: String? = null,
+    @SerialName("image_path") val imagePath: String? = null,
+    @SerialName("instagram_url") val instagramUrl: String? = null,
+    @SerialName("naver_map_url") val naverMapUrl: String? = null,
+    @SerialName("kakao_map_url") val kakaoMapUrl: String? = null,
+) {
+    fun toDomain() =
+        EventVenue.External(
+            id = id,
+            name = name,
+            address = address,
+            imageUrl = imagePath?.let(::toPublicVenueImageUrl),
+            instagramUrl = instagramUrl,
+            naverMapUrl = naverMapUrl,
+            kakaoMapUrl = kakaoMapUrl,
+        )
+
+    private fun toPublicVenueImageUrl(path: String): String? {
+        val normalizedPath = path.trim()
+        if (
+            normalizedPath.isBlank() ||
+            normalizedPath.startsWith('/') ||
+            normalizedPath.contains("..") ||
+            normalizedPath.contains('\\') ||
+            normalizedPath.contains("://") ||
+            normalizedPath.contains('?') ||
+            normalizedPath.contains('#')
+        ) {
+            return null
+        }
+        return "${RamapSecrets.supabaseUrl.trimEnd('/')}$STORAGE_PUBLIC_PATH$PROFILE_BUCKET/$normalizedPath"
+    }
+
+    private companion object {
+        const val PROFILE_BUCKET = "shop-profile-images"
         const val STORAGE_PUBLIC_PATH = "/storage/v1/object/public/"
     }
 }

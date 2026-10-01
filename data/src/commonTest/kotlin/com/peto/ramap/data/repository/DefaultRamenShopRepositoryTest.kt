@@ -2,7 +2,9 @@ package com.peto.ramap.data.repository
 
 import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.core.result.getOrThrow
-import com.peto.ramap.data.model.CalendarEventPageResponse
+import com.peto.ramap.data.model.MenuResponse
+import com.peto.ramap.data.model.MenuSectionResponse
+import com.peto.ramap.data.model.ShopDetailResponse
 import com.peto.ramap.data.model.ShopEventParticipantResponse
 import com.peto.ramap.data.model.ShopEventResponse
 import com.peto.ramap.domain.model.shop.Category
@@ -14,17 +16,143 @@ import com.peto.ramap.fake.FakeRamenShopDataSource
 import com.peto.ramap.fixture.BOUNDS_FIXTURE
 import com.peto.ramap.fixture.ramenShopResponseFixture
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.DateTimeUnit
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.minus
-import kotlinx.datetime.plus
-import kotlinx.datetime.todayIn
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
-import kotlin.time.Clock
 
 class DefaultRamenShopRepositoryTest {
+    @Test
+    fun `상세 RPC 응답도 기존 이벤트와 메뉴 규칙으로 변환한다`() =
+        runTest {
+            val response =
+                ShopDetailResponse(
+                    shop = ramenShopResponseFixture(id = "venue-shop"),
+                    likeCount = 3L,
+                    events = listOf(shopEventResponse()),
+                    eventParticipants =
+                        listOf(
+                            ShopEventParticipantResponse(eventId = "event", shopId = "partner-shop"),
+                            ShopEventParticipantResponse(eventId = "event", shopId = null),
+                        ),
+                    menuSections =
+                        listOf(
+                            MenuSectionResponse(
+                                id = "section",
+                                shopId = "venue-shop",
+                                title = "한정 메뉴",
+                                description = "하루 10그릇 한정",
+                                displayOrder = 0,
+                            ),
+                        ),
+                    menuItems =
+                        listOf(
+                            MenuResponse(
+                                id = "menu",
+                                sectionId = "section",
+                                name = "시오라멘",
+                                priceKrw = 10000,
+                                displayOrder = 0,
+                            ),
+                        ),
+                )
+            val repository =
+                DefaultRamenShopRepository(
+                    FakeRamenShopDataSource(shopDetailResponse = response),
+                )
+
+            val detail = repository.fetchShopDetail("venue-shop").getOrThrow()
+
+            assertEquals(2, detail.event?.collaborationPartnerCount)
+            assertEquals("하루 10그릇 한정", detail.menuSections.single().description)
+        }
+
+    @Test
+    fun `메뉴가 있는 상세는 메뉴 전용 갱신 시각을 반환한다`() =
+        runTest {
+            val response =
+                ShopDetailResponse(
+                    shop = ramenShopResponseFixture(id = "menu-update-shop"),
+                    likeCount = 0L,
+                    menuSections =
+                        listOf(
+                            MenuSectionResponse(
+                                id = "section",
+                                shopId = "menu-update-shop",
+                                title = "상시메뉴",
+                                displayOrder = 0,
+                            ),
+                        ),
+                    menuItems =
+                        listOf(
+                            MenuResponse(
+                                id = "menu",
+                                sectionId = "section",
+                                name = "쇼유라멘",
+                                displayOrder = 0,
+                            ),
+                        ),
+                )
+            val repository =
+                DefaultRamenShopRepository(
+                    FakeRamenShopDataSource(
+                        shopDetailResponse = response,
+                        shopMenuUpdatedAt = "2026-09-02T12:00:00Z",
+                    ),
+                )
+
+            val detail = repository.fetchShopDetail("menu-update-shop").getOrThrow()
+
+            assertEquals("2026-09-02T12:00:00Z", detail.menuUpdatedAt)
+        }
+
+    @Test
+    fun `이벤트 메뉴 섹션은 상시 메뉴보다 먼저 표시한다`() =
+        runTest {
+            val response =
+                ShopDetailResponse(
+                    shop = ramenShopResponseFixture(id = "menu-order-shop"),
+                    likeCount = 0L,
+                    menuSections =
+                        listOf(
+                            MenuSectionResponse(
+                                id = "permanent",
+                                shopId = "menu-order-shop",
+                                title = " 상시메뉴 ",
+                                displayOrder = 0,
+                            ),
+                            MenuSectionResponse(
+                                id = "event",
+                                shopId = "menu-order-shop",
+                                title = "기간 한정",
+                                displayOrder = 1,
+                            ),
+                        ),
+                    menuItems =
+                        listOf(
+                            MenuResponse(
+                                id = "permanent-item",
+                                sectionId = "permanent",
+                                name = "쇼유라멘",
+                                displayOrder = 0,
+                            ),
+                            MenuResponse(
+                                id = "event-item",
+                                sectionId = "event",
+                                name = "한정 라멘",
+                                displayOrder = 0,
+                            ),
+                        ),
+                )
+            val repository =
+                DefaultRamenShopRepository(
+                    FakeRamenShopDataSource(shopDetailResponse = response),
+                )
+
+            val detail = repository.fetchShopDetail("menu-order-shop").getOrThrow()
+
+            assertEquals(listOf("event", "permanent"), detail.menuSections.map { it.id })
+        }
+
     @Test
     fun `활성 이벤트가 없으면 성공 결과에 null을 반환한다`() =
         runTest {
@@ -59,144 +187,6 @@ class DefaultRamenShopRepositoryTest {
         }
 
     @Test
-    fun `활성 매장 리뉴얼은 시작일부터 한 달간 노출한다`() =
-        runTest {
-            val today = Clock.System.todayIn(TimeZone.of("Asia/Seoul"))
-            val repository =
-                DefaultRamenShopRepository(
-                    FakeRamenShopDataSource(
-                        activeEventsResponses =
-                            listOf(
-                                shopEventResponse(
-                                    id = "within-one-month-renewal",
-                                    eventType = "store_renewal",
-                                    startDate =
-                                        today
-                                            .minus(1, DateTimeUnit.MONTH)
-                                            .plus(1, DateTimeUnit.DAY)
-                                            .toString(),
-                                    endDate = null,
-                                ),
-                                shopEventResponse(
-                                    id = "today-renewal",
-                                    eventType = "store_renewal",
-                                    startDate = today.toString(),
-                                    endDate = null,
-                                ),
-                                shopEventResponse(
-                                    id = "upcoming-renewal",
-                                    eventType = "store_renewal",
-                                    startDate = today.plus(1, DateTimeUnit.DAY).toString(),
-                                    endDate = null,
-                                ),
-                                shopEventResponse(
-                                    id = "expired-renewal",
-                                    eventType = "store_renewal",
-                                    startDate = today.minus(1, DateTimeUnit.MONTH).toString(),
-                                    endDate = null,
-                                ),
-                            ),
-                    ),
-                )
-
-            val events = repository.fetchActiveEvents().getOrThrow()
-
-            assertEquals(
-                listOf("within-one-month-renewal", "today-renewal", "upcoming-renewal"),
-                events.map { it.id },
-            )
-            assertEquals(true, events.first().isToday)
-            assertEquals(true, events[1].isToday)
-            assertEquals(false, events.last().isToday)
-            assertEquals(false, events.first().isStartDateToday)
-            assertEquals(true, events[1].isStartDateToday)
-            assertEquals(false, events.last().isStartDateToday)
-        }
-
-    @Test
-    fun `신메뉴도 시작일 여부를 오늘 기준으로 계산한다`() =
-        runTest {
-            val today = Clock.System.todayIn(TimeZone.of("Asia/Seoul"))
-            val repository =
-                DefaultRamenShopRepository(
-                    FakeRamenShopDataSource(
-                        activeEventsResponses =
-                            listOf(
-                                shopEventResponse(
-                                    id = "today-new-menu",
-                                    eventType = "new_menu",
-                                    startDate = today.toString(),
-                                ),
-                            ),
-                    ),
-                )
-
-            val event = repository.fetchActiveEvents().getOrThrow().single()
-
-            assertEquals(true, event.isStartDateToday)
-        }
-
-    @Test
-    fun `종료된 이벤트도 캘린더 이벤트 조회와 상세 조회에 포함한다`() =
-        runTest {
-            val repository =
-                DefaultRamenShopRepository(
-                    FakeRamenShopDataSource(
-                        calendarEventsResponses =
-                            listOf(
-                                shopEventResponse().copy(
-                                    id = "ended-event",
-                                    startDate = "2026-01-01",
-                                    endDate = "2026-01-02",
-                                ),
-                            ),
-                    ),
-                )
-
-            val events = repository.fetchCalendarEvents("2026-01-01", "2026-01-31").getOrThrow()
-            val event = repository.fetchEvent("ended-event").getOrThrow()
-
-            assertEquals(listOf("ended-event"), events.map { it.id })
-            assertEquals("ended-event", event?.id)
-        }
-
-    @Test
-    fun `캘린더 페이지 응답에 잘못된 날짜 형식이 포함되어 있으면 실패한다`() =
-        runTest {
-            val repository =
-                DefaultRamenShopRepository(
-                    FakeRamenShopDataSource(
-                        calendarEventPageResponse =
-                            CalendarEventPageResponse(
-                                events = listOf(shopEventResponse()),
-                                hasPrevious = true,
-                                hasNext = false,
-                                notificationDates = listOf("2026-07-15", "invalid-date"),
-                            ),
-                    ),
-                )
-
-            val result = repository.fetchCalendarEventPage("2026-07-01")
-
-            assertTrue(result is RamapResult.Error)
-        }
-
-    @Test
-    fun `캘린더 페이지는 월별로 캐시하고 무효화하면 재조회한다`() =
-        runTest {
-            val dataSource = FakeRamenShopDataSource()
-            val repository = DefaultRamenShopRepository(dataSource)
-
-            repository.fetchCalendarEventPage("2026-07-01")
-            repository.fetchCalendarEventPage("2026-07-01")
-            assertEquals(1, dataSource.calendarEventPageRequestCount)
-
-            repository.invalidateCalendarEventPage("2026-07-01")
-            repository.fetchCalendarEventPage("2026-07-01")
-            assertEquals(2, dataSource.calendarEventPageRequestCount)
-        }
-
-    @Test
     fun `한 콜라보에 상대가 여러 명이면 특정 매장명을 노출하지 않는다`() =
         runTest {
             val repository =
@@ -205,8 +195,8 @@ class DefaultRamenShopRepositoryTest {
                         activeEventResponses = listOf(shopEventResponse()),
                         participantResponses =
                             listOf(
-                                ShopEventParticipantResponse(shopId = "partner-shop"),
-                                ShopEventParticipantResponse(shopId = null),
+                                ShopEventParticipantResponse(eventId = "event", shopId = "partner-shop"),
+                                ShopEventParticipantResponse(eventId = "event", shopId = null),
                             ),
                     ),
                 )
@@ -218,28 +208,37 @@ class DefaultRamenShopRepositoryTest {
         }
 
     @Test
-    fun `진행 중인 일반 리뉴얼보다 예정된 콜라보를 우선 선택한다`() =
+    fun `상세 RPC의 다른 활성 이벤트 참여자는 선택한 콜라보 인원에서 제외한다`() =
         runTest {
-            val today = Clock.System.todayIn(TimeZone.of("Asia/Seoul"))
+            val response =
+                ShopDetailResponse(
+                    shop = ramenShopResponseFixture(id = "venue-shop"),
+                    likeCount = 0L,
+                    events = listOf(shopEventResponse(id = "selected-collab")),
+                    eventParticipants =
+                        listOf(
+                            ShopEventParticipantResponse(
+                                eventId = "selected-collab",
+                                shopId = "selected-partner",
+                            ),
+                            ShopEventParticipantResponse(
+                                eventId = "another-active-event",
+                                shopId = "unrelated-partner",
+                            ),
+                            ShopEventParticipantResponse(
+                                eventId = "another-active-event",
+                                shopId = null,
+                            ),
+                        ),
+                )
             val repository =
                 DefaultRamenShopRepository(
-                    FakeRamenShopDataSource(
-                        activeEventResponses =
-                            listOf(
-                                shopEventResponse(
-                                    id = "ongoing-renewal",
-                                    eventType = "store_renewal",
-                                    startDate = today.minus(1, DateTimeUnit.DAY).toString(),
-                                    endDate = null,
-                                ),
-                                shopEventResponse(id = "upcoming-collab"),
-                            ),
-                    ),
+                    FakeRamenShopDataSource(shopDetailResponse = response),
                 )
 
-            val event = repository.fetchActiveShopEvent("venue-shop").getOrThrow()
+            val detail = repository.fetchShopDetail("venue-shop").getOrThrow()
 
-            assertEquals("upcoming-collab", event?.id)
+            assertEquals(1, detail.event?.collaborationPartnerCount)
         }
 
     @Test
@@ -256,10 +255,8 @@ class DefaultRamenShopRepositoryTest {
                             ),
                             ramenShopResponseFixture(
                                 id = "shop-2",
-                                kakaoPlaceId = null,
                                 name = "숨은 라멘집",
                                 kakaoPlaceUrl = null,
-                                phone = null,
                                 instagramUrl = null,
                                 menuCategoryIds = null,
                             ),
@@ -274,12 +271,10 @@ class DefaultRamenShopRepositoryTest {
                 listOf(
                     RamenShop(
                         id = "shop-1",
-                        kakaoPlaceId = "kakao-shop-1",
                         name = "라멘집",
                         address = "서울시 마포구 라멘로 1",
                         location = Location(lat = 37.551, lng = 126.921),
                         kakaoPlaceUrl = "https://place.map.kakao.com/shop-1",
-                        phone = "02-0000-0000",
                         instagramUrl = "https://instagram.com/ramen_shop",
                         menuCategories =
                             MenuCategories(
@@ -291,12 +286,10 @@ class DefaultRamenShopRepositoryTest {
                     ),
                     RamenShop(
                         id = "shop-2",
-                        kakaoPlaceId = null,
                         name = "숨은 라멘집",
                         address = "서울시 마포구 라멘로 1",
                         location = Location(lat = 37.551, lng = 126.921),
                         kakaoPlaceUrl = null,
-                        phone = null,
                         instagramUrl = null,
                         menuCategories = MenuCategories(emptyList()),
                         isVisible = true,
@@ -352,12 +345,10 @@ class DefaultRamenShopRepositoryTest {
                 listOf(
                     RamenShop(
                         id = "shop-1",
-                        kakaoPlaceId = "kakao-shop-1",
                         name = "시오라멘",
                         address = "서울시 마포구 라멘로 1",
                         location = Location(lat = 37.551, lng = 126.921),
                         kakaoPlaceUrl = "https://place.map.kakao.com/shop-1",
-                        phone = "02-0000-0000",
                         instagramUrl = "https://instagram.com/ramen_shop",
                         menuCategories = MenuCategories(listOf(Category.SHIO)),
                         isVisible = true,
@@ -366,12 +357,10 @@ class DefaultRamenShopRepositoryTest {
                     ),
                     RamenShop(
                         id = "shop-2",
-                        kakaoPlaceId = "kakao-shop-1",
                         name = "시오 라멘 연구소",
                         address = "서울시 마포구 라멘로 1",
                         location = Location(lat = 37.551, lng = 126.921),
                         kakaoPlaceUrl = "https://place.map.kakao.com/shop-1",
-                        phone = "02-0000-0000",
                         instagramUrl = "https://instagram.com/ramen_shop",
                         menuCategories = MenuCategories(emptyList()),
                         isVisible = true,

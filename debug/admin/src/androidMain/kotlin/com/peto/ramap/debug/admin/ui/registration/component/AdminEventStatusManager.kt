@@ -99,10 +99,11 @@ internal fun AdminEventStatusManager(
 
             val filteredEvents =
                 events.filter { event ->
-                    when (status) {
-                        AdminEventStatus.SOLD_OUT -> event.cancelledDates.isEmpty() || event.soldOutDates.isNotEmpty()
-                        AdminEventStatus.CANCELLED -> event.soldOutDates.isEmpty() || event.cancelledDates.isNotEmpty()
-                    }
+                    event.eventType !in NON_STATUS_EVENT_TYPES &&
+                        when (status) {
+                            AdminEventStatus.SOLD_OUT -> event.cancelledDates.isEmpty() || event.soldOutDates.isNotEmpty()
+                            AdminEventStatus.CANCELLED -> event.soldOutDates.isEmpty() || event.cancelledDates.isNotEmpty()
+                        }
                 }
 
             if (filteredEvents.isEmpty()) {
@@ -310,6 +311,8 @@ private fun AdminEventStatusManagerPreview() {
                         title = "이벤트 1",
                         startDate = "2024-05-01",
                         shopName = "오레노라멘",
+                        description = "이벤트 설명",
+                        eventType = "limited_menu",
                     ),
                 ),
             selectedEventId = "1",
@@ -330,3 +333,5 @@ private fun AdminEventStatusManagerPreview() {
         )
     }
 }
+
+private val NON_STATUS_EVENT_TYPES = setOf("new_menu", "store_renewal")

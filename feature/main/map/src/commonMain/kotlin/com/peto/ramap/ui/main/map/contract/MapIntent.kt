@@ -2,7 +2,9 @@ package com.peto.ramap.ui.main.map.contract
 
 import com.peto.ramap.analytics.AnalyticsSource
 import com.peto.ramap.domain.model.auth.LoginType
+import com.peto.ramap.domain.model.community.ReportReason
 import com.peto.ramap.domain.model.report.ShopInformationField
+import com.peto.ramap.domain.model.review.Review
 import com.peto.ramap.domain.model.shop.Category
 import com.peto.ramap.domain.model.shop.Location
 import com.peto.ramap.domain.model.shop.MapBounds
@@ -11,6 +13,41 @@ import com.peto.ramap.ui.base.Intent
 import com.peto.ramap.ui.main.map.model.CameraPosition
 
 sealed interface MapIntent : Intent {
+    data class OnBlockedReviewViewRequested(
+        val review: Review,
+    ) : MapIntent
+
+    data class OnBlockedReviewUnblockRequested(
+        val review: Review,
+    ) : MapIntent
+
+    data object OnBlockedReviewUnblockConfirmed : MapIntent
+
+    data object OnBlockedReviewUnblockDismissed : MapIntent
+
+    data class OnReviewLikeToggled(
+        val review: Review,
+    ) : MapIntent
+
+    data class OnReviewDeleted(
+        val review: Review,
+    ) : MapIntent
+
+    data class OnReviewReportRequested(
+        val review: Review,
+    ) : MapIntent
+
+    data class OnReviewReportSubmitted(
+        val reason: ReportReason,
+        val details: String,
+    ) : MapIntent
+
+    data object OnReviewReportDismissed : MapIntent
+
+    data object OnReviewsChanged : MapIntent
+
+    data object OnShopReviewsLoadMore : MapIntent
+
     data class OnBoundsChanged(
         val bounds: MapBounds,
     ) : MapIntent
@@ -30,6 +67,10 @@ sealed interface MapIntent : Intent {
     data object OnSelectedShopFocusConsumed : MapIntent
 
     data object OnMapTabExited : MapIntent
+
+    data object OnOperatingNoticesRefreshRequested : MapIntent
+
+    data object OnStatusTimeRefreshed : MapIntent
 
     data class OnShopSelected(
         val shop: RamenShop,

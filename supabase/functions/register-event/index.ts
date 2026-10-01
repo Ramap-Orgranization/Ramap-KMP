@@ -1,8 +1,10 @@
+import { isAdministrator } from "../_shared/admin-auth.ts";
 import { assertKnownEventType, createServiceClient } from "../_shared/event-notifications.ts";
+import { normalizeMapUrl } from "../_shared/event-venue-url.ts";
+import { requiresExistingVenueSelection } from "../_shared/external-venue.ts";
 
 const EVIDENCE_BUCKET = "news-report-evidence";
 const EVENT_BUCKET = "event-images";
-const ADMIN_TIMEOUT_MS = 3_000;
 type Participant = { name: string; instagramUrl: string | null };
 
 Deno.serve(async (request) => {
@@ -21,19 +23,27 @@ Deno.serve(async (request) => {
   const title = text(body?.title);
   const eventType = text(body?.event_type) ?? "limited_menu";
   const startDate = text(body?.start_date);
-  const endDate = text(body?.end_date) ?? startDate;
+  const requestedEndDate = text(body?.end_date) ?? startDate;
   const description = text(body?.description);
   const participants = parseParticipants(body?.participants);
+  let venueName = text(body?.venue_name);
+  let venueAddress = text(body?.venue_address);
+  const requestedExternalVenueId = text(body?.external_venue_id);
+  let venueInstagramUrl = normalizeInstagramProfileUrl(body?.venue_instagram_url);
+  let venueNaverMapUrl = normalizeMapUrl(body?.venue_naver_map_url, "naver");
+  let venueKakaoMapUrl = normalizeMapUrl(body?.venue_kakao_map_url, "kakao");
   const sourceUrl = normalizeInstagramUrl(text(body?.source_url));
   const evidencePath = text(body?.evidence_path);
   const imageOnly = body?.image_only === true;
-  if (!shopName || !title || !startDate || !validDate(startDate) || !validDate(endDate)) {
+  if (!shopName || !title || !startDate || !validDate(startDate) || !validDate(requestedEndDate)) {
     return json({ code: "invalid_draft" }, 400);
   }
   if (imageOnly ? !isEvidencePath(evidencePath) : !description || !sourceUrl || !isInstagramUrl(sourceUrl)) {
     return json({ code: "invalid_draft" }, 400);
   }
   if (!participants) return json({ code: "invalid_draft" }, 400);
+  if (body?.venue_instagram_url !== undefined && body?.venue_instagram_url !== null && !venueInstagramUrl) return json({ code: "invalid_draft" }, 400);
+  if ((body?.venue_naver_map_url != null && !venueNaverMapUrl) || (body?.venue_kakao_map_url != null && !venueKakaoMapUrl)) return json({ code: "invalid_draft" }, 400);
   const eventDescription = description ?? "";
   const eventSourceUrl = sourceUrl ?? "";
   try {
@@ -41,22 +51,90 @@ Deno.serve(async (request) => {
   } catch {
     return json({ code: "invalid_draft" }, 400);
   }
+  const endDate = eventType === "new_menu" ? dateAfterDays(startDate, 6) : requestedEndDate;
 
-  const { data: shops, error: shopError } = await supabase.from("shops").select("id").eq("name", shopName).limit(2);
+  const { data: shops, error: shopError } = await supabase.from("ramen_shops").select("id").eq("name", shopName).limit(2);
   if (shopError) return json({ code: "server_unavailable" }, 503);
   if (!shops || shops.length !== 1) return json({ code: "shop_not_resolved" }, 422);
   const shopId = shops[0].id as string;
 
-  const { data: duplicates, error: duplicateError } = await supabase
+  let externalVenueId = requestedExternalVenueId;
+  let createdExternalVenueId: string | null = null;
+  if (externalVenueId) {
+    const { data: externalVenue, error: externalVenueError } = await supabase
+      .from("external_venues")
+      .select("id,name,address,instagram_url,naver_map_url,kakao_map_url")
+      .eq("id", externalVenueId)
+      .maybeSingle();
+    if (externalVenueError || !externalVenue) return json({ code: "external_venue_not_found" }, 422);
+    venueName = externalVenue.name as string;
+    venueAddress = externalVenue.address as string | null;
+    venueInstagramUrl = externalVenue.instagram_url as string | null;
+    venueNaverMapUrl = externalVenue.naver_map_url as string | null;
+    venueKakaoMapUrl = externalVenue.kakao_map_url as string | null;
+  }
+  if (venueName && !externalVenueId) {
+    const { data: sameNameVenues, error: sameNameError } = await supabase
+      .from("external_venues")
+      .select("address,naver_map_url,kakao_map_url")
+      .eq("name", venueName)
+      .limit(100);
+    if (sameNameError) return json({ code: "server_unavailable" }, 503);
+    if (requiresExistingVenueSelection(sameNameVenues ?? [], venueAddress, venueNaverMapUrl, venueKakaoMapUrl)) {
+      return json({ code: "external_venue_selection_required" }, 422);
+    }
+    const mapVenueQueries = [
+      venueNaverMapUrl
+        ? supabase.from("external_venues").select("id").eq("naver_map_url", venueNaverMapUrl).limit(1)
+        : null,
+      venueKakaoMapUrl
+        ? supabase.from("external_venues").select("id").eq("kakao_map_url", venueKakaoMapUrl).limit(1)
+        : null,
+    ].filter((query): query is NonNullable<typeof query> => query !== null);
+    const mapVenueResults = await Promise.all(mapVenueQueries);
+    if (mapVenueResults.some(({ error }) => error)) return json({ code: "server_unavailable" }, 503);
+    if (mapVenueResults.some(({ data }) => data && data.length > 0)) {
+      return json({ code: "external_venue_selection_required" }, 422);
+    }
+    const { data: externalVenue, error: externalVenueError } = await supabase
+      .from("external_venues")
+      .insert({
+        name: venueName,
+        address: venueAddress,
+        instagram_url: venueInstagramUrl,
+        naver_map_url: venueNaverMapUrl,
+        kakao_map_url: venueKakaoMapUrl,
+      })
+      .select("id")
+      .single();
+    if (externalVenueError?.code === "23505") return json({ code: "external_venue_selection_required" }, 422);
+    if (externalVenueError || !externalVenue) return json({ code: "server_unavailable" }, 503);
+    externalVenueId = externalVenue.id as string;
+    createdExternalVenueId = externalVenueId;
+  }
+  if (externalVenueId && !venueName) return json({ code: "invalid_draft" }, 400);
+  const eventParticipants = participants.filter((participant) =>
+    !venueName || (
+      participant.name.toLowerCase() !== venueName.toLowerCase() &&
+      (!venueInstagramUrl || participant.instagramUrl !== venueInstagramUrl)
+    )
+  );
+
+  const duplicateQuery = supabase
     .from("shop_events")
     .select("id")
-    .eq("shop_id", shopId)
     .eq("source_url", eventSourceUrl)
     .eq("title", title)
-    .eq("start_date", startDate)
-    .limit(1);
-  if (duplicateError) return json({ code: "server_unavailable" }, 503);
+    .eq("start_date", startDate);
+  const { data: duplicates, error: duplicateError } = externalVenueId
+    ? await duplicateQuery.is("shop_id", null).eq("external_venue_id", externalVenueId).limit(1)
+    : await duplicateQuery.eq("shop_id", shopId).limit(1);
+  if (duplicateError) {
+    if (createdExternalVenueId) await supabase.from("external_venues").delete().eq("id", createdExternalVenueId);
+    return json({ code: "server_unavailable" }, 503);
+  }
   if (duplicates && duplicates.length > 0) {
+    if (createdExternalVenueId) await supabase.from("external_venues").delete().eq("id", createdExternalVenueId);
     await deleteEvidence(supabase, evidencePath);
     return json({ code: "duplicate" }, 409);
   }
@@ -74,11 +152,18 @@ Deno.serve(async (request) => {
         upsert: false,
       });
       if (uploadError) throw uploadError;
+    } else if (sourceUrl && /\/(?:p|reel)\//.test(sourceUrl)) {
+      imagePath = await copyInstagramImage(supabase, sourceUrl, eventId);
     }
 
     const { error: insertError } = await supabase.from("shop_events").insert({
       id: eventId,
-      shop_id: shopId,
+      shop_id: venueName ? null : shopId,
+      external_venue_id: externalVenueId,
+      venue_name: venueName,
+      venue_instagram_url: venueName ? venueInstagramUrl : null,
+      venue_naver_map_url: venueName ? venueNaverMapUrl : null,
+      venue_kakao_map_url: venueName ? venueKakaoMapUrl : null,
       title,
       description: eventDescription,
       start_date: startDate,
@@ -91,7 +176,7 @@ Deno.serve(async (request) => {
     });
     if (insertError) throw insertError;
     eventCreated = true;
-    await saveParticipants(supabase, eventId, shopId, participants);
+    await saveParticipants(supabase, eventId, venueName ? null : shopId, eventParticipants, venueName ? shopId : null);
     await deleteEvidence(supabase, evidencePath);
     return json({ id: eventId });
   } catch (error) {
@@ -99,6 +184,7 @@ Deno.serve(async (request) => {
       await supabase.from("shop_event_participants").delete().eq("event_id", eventId);
       await supabase.from("shop_events").delete().eq("id", eventId);
     }
+    if (createdExternalVenueId) await supabase.from("external_venues").delete().eq("id", createdExternalVenueId);
     if (imagePath) await supabase.storage.from(EVENT_BUCKET).remove([imagePath]);
     await deleteEvidence(supabase, evidencePath);
     console.error("register-event failed", error);
@@ -108,6 +194,42 @@ Deno.serve(async (request) => {
 
 async function deleteEvidence(supabase: ReturnType<typeof createServiceClient>, path: string | null) {
   if (isEvidencePath(path)) await supabase.storage.from(EVIDENCE_BUCKET).remove([path]);
+}
+
+async function copyInstagramImage(
+  supabase: ReturnType<typeof createServiceClient>,
+  sourceUrl: string,
+  eventId: string,
+): Promise<string | null> {
+  const post = await fetch(sourceUrl, { headers: { "User-Agent": "Mozilla/5.0" } }).catch(() => null);
+  if (!post?.ok) return null;
+  const imageUrl = extractOpenGraphImageUrl(await post.text());
+  if (!imageUrl) return null;
+
+  const image = await fetch(imageUrl).catch(() => null);
+  const contentType = image?.headers.get("content-type")?.split(";", 1)[0]?.toLowerCase() ?? "";
+  const extension = contentType === "image/jpeg" ? "jpg" : contentType === "image/png" ? "png" : null;
+  if (!image?.ok || !extension) return null;
+
+  const imagePath = `events/${eventId}/1.${extension}`;
+  const { error } = await supabase.storage.from(EVENT_BUCKET).upload(imagePath, await image.arrayBuffer(), {
+    contentType,
+    upsert: false,
+  });
+  if (error) throw error;
+  return imagePath;
+}
+
+function extractOpenGraphImageUrl(html: string): string | null {
+  const tag = html.match(/<meta\b[^>]*\bproperty=["']og:image["'][^>]*>/i)?.[0];
+  const value = tag?.match(/\bcontent=["']([^"']+)["']/i)?.[1];
+  if (!value) return null;
+  try {
+    const url = new URL(value.replaceAll("&amp;", "&"));
+    return url.protocol === "https:" ? url.toString() : null;
+  } catch {
+    return null;
+  }
 }
 
 function parseParticipants(value: unknown): Participant[] | null {
@@ -133,8 +255,9 @@ function parseParticipants(value: unknown): Participant[] | null {
 async function saveParticipants(
   supabase: ReturnType<typeof createServiceClient>,
   eventId: string,
-  hostShopId: string,
+  hostShopId: string | null,
   participants: Participant[],
+  requiredShopId: string | null,
 ) {
   const rows = [];
   const shopIds = new Set<string>();
@@ -146,6 +269,7 @@ async function saveParticipants(
       ? { event_id: eventId, shop_id: shopId, external_name: null, external_instagram_url: null }
       : { event_id: eventId, shop_id: null, external_name: participant.name, external_instagram_url: participant.instagramUrl });
   }
+  if (requiredShopId && !shopIds.has(requiredShopId)) rows.push({ event_id: eventId, shop_id: requiredShopId, external_name: null, external_instagram_url: null });
   if (rows.length === 0) return;
   const { error } = await supabase.from("shop_event_participants").insert(rows);
   if (error) throw error;
@@ -160,11 +284,11 @@ async function resolveParticipantShop(supabase: ReturnType<typeof createServiceC
       `https://instagram.com/${handle}`,
       `https://instagram.com/${handle}/`,
     ] : [];
-    const { data, error } = await supabase.from("shops").select("id").in("instagram_url", urls).limit(2);
+    const { data, error } = await supabase.from("ramen_shops").select("id").in("instagram_url", urls).limit(2);
     if (error) throw error;
     if (data?.length === 1) return data[0].id as string;
   }
-  const { data, error } = await supabase.from("shops").select("id").eq("name", participant.name).limit(2);
+  const { data, error } = await supabase.from("ramen_shops").select("id").eq("name", participant.name).limit(2);
   if (error) throw error;
   return data?.length === 1 ? data[0].id as string : null;
 }
@@ -176,19 +300,25 @@ async function registerOperatingNotice(
   const shopName = text(body.shop_name);
   const noticeType = text(body.notice_type);
   const startDate = text(body.start_date);
-  const endDate = text(body.end_date) ?? startDate;
+  const endDate = text(body.end_date);
   const startTime = text(body.start_time);
   const endTime = text(body.end_time);
+  const scheduleOverride = body.schedule_override;
   const description = text(body.description);
   const sourceUrl = normalizeInstagramUrl(text(body.source_url));
   const evidencePath = text(body.evidence_path);
   if (
-    !shopName || !isSupportedNoticeType(noticeType) || !startDate || !endDate || !description || !sourceUrl ||
-    !validDate(startDate) || !validDate(endDate) || (startTime && !validTime(startTime)) ||
-    (endTime && !validTime(endTime)) || !isInstagramUrl(sourceUrl)
+    !shopName || !isSupportedNoticeType(noticeType) || !startDate || !description || !sourceUrl ||
+    !validDate(startDate) || !endDate || !validDate(endDate) || endDate < startDate || (startTime && !validTime(startTime)) ||
+    (endTime && !validTime(endTime)) || !isInstagramUrl(sourceUrl) ||
+    (noticeType === "operating_notice" && !validScheduleOverride(scheduleOverride)) ||
+    (noticeType !== "operating_notice" && scheduleOverride != null) ||
+    (noticeType === "early_close" && !endTime) ||
+    (noticeType === "late_opening" && startTime !== null && !validTime(startTime)) ||
+    (noticeType === "operating_notice" && endDate !== null && startDate !== endDate)
   ) return json({ code: "invalid_operating_notice_draft" }, 400);
 
-  const { data: shops, error: shopError } = await supabase.from("shops").select("id,instagram_url").eq("name", shopName).limit(2);
+  const { data: shops, error: shopError } = await supabase.from("ramen_shops").select("id,instagram_url").eq("name", shopName).limit(2);
   if (shopError) return json({ code: "server_unavailable" }, 503);
   if (!shops || shops.length !== 1) return json({ code: "shop_not_resolved" }, 422);
   const shop = shops[0] as { id: string; instagram_url?: string | null };
@@ -207,6 +337,19 @@ async function registerOperatingNotice(
     return json({ code: "duplicate" }, 409);
   }
 
+  if (noticeType === "operating_notice") {
+    const { data: overrides, error: overrideError } = await supabase
+      .from("shop_operating_notices")
+      .select("id")
+      .eq("shop_id", shop.id)
+      .eq("notice_type", "operating_notice")
+      .eq("notice_date", startDate)
+      .not("schedule_override", "is", null)
+      .limit(1);
+    if (overrideError) return json({ code: "server_unavailable" }, 503);
+    if (overrides?.length) return json({ code: "duplicate" }, 409);
+  }
+
   try {
     const rawPostId = await ensureRawPost(supabase, shop.id, shop.instagram_url, sourceUrl, description);
     const { data: notice, error: insertError } = await supabase
@@ -220,6 +363,7 @@ async function registerOperatingNotice(
         end_date: endDate,
         start_time: startTime,
         end_time: endTime,
+        schedule_override: scheduleOverride,
         source_url: sourceUrl,
         review_note: "관리자 미리보기 승인 등록",
       })
@@ -266,15 +410,6 @@ async function ensureRawPost(
   return inserted.id as string;
 }
 
-async function isAdministrator(request: Request): Promise<boolean> {
-  const token = request.headers.get("authorization")?.match(/^Bearer\s+(.+)$/i)?.[1]?.trim();
-  const url = Deno.env.get("SUPABASE_URL"), anonKey = Deno.env.get("SUPABASE_ANON_KEY"), adminEmail = (Deno.env.get("ADMIN_EMAIL") ?? "uni070@naver.com").trim().toLowerCase();
-  if (!token || !url || !anonKey || !adminEmail) return false;
-  const response = await fetch(`${url}/auth/v1/user`, { headers: { apikey: anonKey, Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(ADMIN_TIMEOUT_MS) }).catch(() => null);
-  const user = response?.ok ? await response.json() as { email?: unknown } : null;
-  return typeof user?.email === "string" && user.email.toLowerCase() === adminEmail;
-}
-
 function isInstagramUrl(value: string) {
   try {
     const url = new URL(value);
@@ -285,6 +420,20 @@ function isInstagramUrl(value: string) {
 }
 function isEvidencePath(value: string | null): value is string { return value !== null && /^[\w-]+\.(?:jpe?g|png)$/i.test(value); }
 function validDate(value: string | null) { return typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value); }
+function validScheduleOverride(value: unknown) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const day = value as Record<string, unknown>;
+  if (typeof day.closed !== "boolean" || typeof day.close_next_day !== "boolean") return false;
+  if (day.open !== null && !validTime(day.open as string)) return false;
+  if (day.close !== null && !validTime(day.close as string)) return false;
+  if (day.break_times !== undefined && (!Array.isArray(day.break_times) || day.break_times.some((item) => !item || typeof item !== "object" || !validTime((item as Record<string, unknown>).start as string) || !validTime((item as Record<string, unknown>).end as string)))) return false;
+  return day.closed || (typeof day.open === "string" && typeof day.close === "string");
+}
+function dateAfterDays(value: string, days: number) {
+  const date = new Date(`${value}T00:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
+}
 function validTime(value: string | null) { return typeof value === "string" && /^([01]\d|2[0-3]):[0-5]\d$/.test(value); }
 function isSupportedNoticeType(value: string | null) { return value === "operating_notice" || value === "full_close" || value === "early_close" || value === "late_opening"; }
 function text(value: unknown): string | null { return typeof value === "string" && value.trim() !== "" ? value.trim() : null; }

@@ -3,6 +3,7 @@ package com.peto.ramap.data.datasource.waiting
 import com.peto.ramap.data.model.ShopWaitingSystemResponse
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.from
+import io.github.jan.supabase.postgrest.query.Columns
 
 internal class RemoteShopWaitingSystemDataSource(
     private val client: SupabaseClient,
@@ -11,9 +12,9 @@ internal class RemoteShopWaitingSystemDataSource(
         val result =
             client
                 .from(TABLE_NAME)
-                .select {
+                .select(columns = Columns.list(COLUMN_WAITING_PROVIDER, COLUMN_WAITING_PROVIDER_URL)) {
                     filter {
-                        eq(COLUMN_SHOP_ID, shopId)
+                        eq(COLUMN_ID, shopId)
                     }
                     limit(1)
                 }
@@ -22,7 +23,9 @@ internal class RemoteShopWaitingSystemDataSource(
     }
 
     companion object {
-        private const val TABLE_NAME = "shop_waiting_systems"
-        private const val COLUMN_SHOP_ID = "shop_id"
+        private const val TABLE_NAME = "ramen_shops"
+        private const val COLUMN_ID = "id"
+        private const val COLUMN_WAITING_PROVIDER = "waiting_provider"
+        private const val COLUMN_WAITING_PROVIDER_URL = "waiting_provider_url"
     }
 }

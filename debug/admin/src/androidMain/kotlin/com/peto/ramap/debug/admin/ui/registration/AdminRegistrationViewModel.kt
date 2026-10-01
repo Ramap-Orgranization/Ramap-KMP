@@ -2,6 +2,10 @@ package com.peto.ramap.debug.admin.ui.registration
 
 import androidx.lifecycle.viewModelScope
 import com.peto.ramap.debug.admin.data.datasource.AdminRegistrationDataSource
+import com.peto.ramap.debug.admin.data.model.AdminBreakTime
+import com.peto.ramap.debug.admin.data.model.AdminDraft
+import com.peto.ramap.debug.admin.data.model.AdminManagedEvent
+import com.peto.ramap.debug.admin.data.model.AdminScheduleOverride
 import com.peto.ramap.debug.admin.ui.registration.contract.AdminEventStatus
 import com.peto.ramap.debug.admin.ui.registration.contract.AdminEventStatusScope
 import com.peto.ramap.debug.admin.ui.registration.contract.AdminRegistrationIntent
@@ -18,6 +22,11 @@ import com.peto.ramap.ui.task.TaskPolicy
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.StringResource
 import ramap.shared.generated.resources.Res
+import ramap.shared.generated.resources.admin_correction_failure
+import ramap.shared.generated.resources.admin_correction_required
+import ramap.shared.generated.resources.admin_correction_success
+import ramap.shared.generated.resources.admin_delayed_opening_load_failure
+import ramap.shared.generated.resources.admin_delayed_opening_release_failure
 import ramap.shared.generated.resources.admin_event_status_event_required
 import ramap.shared.generated.resources.admin_event_status_period_required
 import ramap.shared.generated.resources.admin_event_status_reason_required
@@ -38,7 +47,9 @@ internal class AdminRegistrationViewModel(
 ) : BaseViewModel<AdminRegistrationUiState, AdminRegistrationIntent, AdminRegistrationSideEffect>(AdminRegistrationUiState()) {
     init {
         loadShopNames()
+        loadExternalVenues()
         loadManagedEvents()
+        loadDelayedOpenings()
     }
 
     override suspend fun handleIntent(intent: AdminRegistrationIntent) {
@@ -80,9 +91,16 @@ internal class AdminRegistrationViewModel(
                     )
                 }
 
-            is AdminRegistrationIntent.OnShopNameChanged -> reduce { copy(shopName = intent.value, draft = null, message = null) }
-            is AdminRegistrationIntent.OnSourceUrlChanged -> reduce { copy(sourceUrl = intent.value, draft = null, message = null) }
+            is AdminRegistrationIntent.OnShopNameChanged -> {
+                reduce { copy(shopName = intent.value, selectedShopHours = null, draft = if (editingEventId == null) null else draft, message = null) }
+                loadShopHours(intent.value)
+            }
+            is AdminRegistrationIntent.OnSourceUrlChanged -> reduce { copy(sourceUrl = intent.value, draft = if (editingEventId == null) null else draft, message = null) }
             is AdminRegistrationIntent.OnFeedbackChanged -> reduce { copy(feedback = intent.value, draft = null, message = null) }
+            is AdminRegistrationIntent.OnDraftVenueChanged ->
+                reduce {
+                    copy(draft = draft?.copy(venueName = intent.name.ifBlank { null }, venueAddress = intent.address.ifBlank { null }, externalVenueId = intent.externalVenueId.ifBlank { null }, venueInstagramUrl = intent.instagramUrl.ifBlank { null }, venueNaverMapUrl = intent.naverMapUrl.ifBlank { null }, venueKakaoMapUrl = intent.kakaoMapUrl.ifBlank { null }), message = null)
+                }
             AdminRegistrationIntent.OnImageOnlyRegistrationClicked ->
                 if (!currentState.isOperatingNotice) {
                     reduce { copy(isImageOnly = !isImageOnly, draft = null, message = null) }
@@ -92,13 +110,56 @@ internal class AdminRegistrationViewModel(
                 reduce { copy(draft = draft?.copy(title = intent.value), message = null) }
             is AdminRegistrationIntent.OnDraftDescriptionChanged ->
                 reduce { copy(draft = draft?.copy(description = intent.value), message = null) }
+            is AdminRegistrationIntent.OnDraftNoticeTimesChanged ->
+                reduce { copy(draft = draft?.copy(startTime = intent.startTime, endTime = intent.endTime), message = null) }
+            is AdminRegistrationIntent.OnDraftScheduleOverrideChanged ->
+                reduce {
+                    val existing = draft?.scheduleOverride
+                    val dayKey = selectedStartDate?.let(java.time.LocalDate::parse)?.dayOfWeek?.let(::dayKey)
+                    val regularBreaks = selectedShopHours?.breakTimes?.get(dayKey).orEmpty()
+                    copy(
+                        draft =
+                            draft?.copy(
+                                scheduleOverride =
+                                    AdminScheduleOverride(
+                                        open = intent.open,
+                                        close = intent.close,
+                                        breakTimes = existing?.breakTimes ?: regularBreaks,
+                                    ),
+                            ),
+                        message = null,
+                    )
+                }
+            is AdminRegistrationIntent.OnRegularSegmentSelected ->
+                reduce {
+                    copy(draft = draft?.copy(scheduleOverride = AdminScheduleOverride(open = intent.open, close = intent.close)), message = null)
+                }
+            is AdminRegistrationIntent.OnDraftBreakTimeChanged ->
+                reduce {
+                    val scheduleOverride = draft?.scheduleOverride ?: return@reduce this
+                    val breaks = scheduleOverride.breakTimes.toMutableList()
+                    if (intent.index !in breaks.indices) return@reduce this
+                    breaks[intent.index] = AdminBreakTime(intent.start, intent.end)
+                    copy(
+                        draft =
+                            draft.copy(
+                                scheduleOverride = scheduleOverride.copy(breakTimes = breaks),
+                            ),
+                        message = null,
+                    )
+                }
+            AdminRegistrationIntent.OnDraftBreakTimesCleared ->
+                reduce {
+                    copy(draft = draft?.copy(scheduleOverride = draft.scheduleOverride?.copy(breakTimes = emptyList())), message = null)
+                }
             is AdminRegistrationIntent.OnEvidenceSelected -> reduce { copy(evidence = intent.evidence, draft = null, message = null) }
             is AdminRegistrationIntent.OnDateRangeSelected ->
                 reduce {
+                    val endDate = if (isOperatingNotice) intent.startDate else intent.endDate
                     copy(
                         selectedStartDate = intent.startDate,
-                        selectedEndDate = intent.endDate,
-                        draft = draft?.copy(startDate = intent.startDate, endDate = intent.endDate),
+                        selectedEndDate = endDate,
+                        draft = draft?.copy(startDate = intent.startDate, endDate = endDate),
                         message = null,
                     )
                 }
@@ -106,6 +167,8 @@ internal class AdminRegistrationViewModel(
             AdminRegistrationIntent.OnTodaySelected -> selectToday()
             AdminRegistrationIntent.OnPreviewOrRegisterClicked -> previewOrRegister()
             AdminRegistrationIntent.OnManagedEventsRefreshed -> loadManagedEvents()
+            AdminRegistrationIntent.OnDelayedOpeningsRefreshed -> loadDelayedOpenings()
+            is AdminRegistrationIntent.OnDelayedOpeningReleased -> releaseDelayedOpening(intent.id)
             is AdminRegistrationIntent.OnManagedEventSelected ->
                 reduce {
                     copy(
@@ -141,6 +204,12 @@ internal class AdminRegistrationViewModel(
                 }
             AdminRegistrationIntent.OnEventStatusTodaySelected -> selectEventStatusToday()
             AdminRegistrationIntent.OnEventStatusSaved -> saveEventStatus()
+            is AdminRegistrationIntent.OnManagedEventEditRequested -> startEventEditing(intent.eventId)
+            is AdminRegistrationIntent.OnCorrectionRequestChanged ->
+                reduce { copy(correctionRequest = intent.value, correctionPreview = null) }
+            AdminRegistrationIntent.OnCorrectionPreviewRequested -> previewCorrection()
+            AdminRegistrationIntent.OnCorrectionConfirmed -> applyCorrection()
+            AdminRegistrationIntent.OnCorrectionPreviewDismissed -> reduce { copy(correctionPreview = null) }
             is AdminRegistrationIntent.OnTabSelected -> selectTab(intent.tab)
         }
     }
@@ -164,6 +233,9 @@ internal class AdminRegistrationViewModel(
                 eventStatusEndDate = null,
                 selectedEventStatus = AdminEventStatus.SOLD_OUT,
                 selectedEventStatusScope = AdminEventStatusScope.TODAY,
+                editingEventId = null,
+                correctionRequest = "",
+                correctionPreview = null,
             )
         }
     }
@@ -194,6 +266,21 @@ internal class AdminRegistrationViewModel(
         }
     }
 
+    private fun loadExternalVenues() {
+        launchTask(taskKey = EXTERNAL_VENUES_TASK_KEY, policy = TaskPolicy.IgnoreNew) {
+            runCatching { dataSource.fetchExternalVenues() }
+                .onSuccess { venues -> reduce { copy(externalVenues = venues) } }
+        }
+    }
+
+    private fun loadShopHours(shopName: String) {
+        if (shopName.isBlank()) return
+        launchTask(taskKey = SHOP_HOURS_TASK_KEY, policy = TaskPolicy.CancelPrevious) {
+            val hours = dataSource.fetchShopHours(shopName)
+            reduce { copy(selectedShopHours = hours) }
+        }
+    }
+
     private fun loadManagedEvents() {
         launchTask(taskKey = MANAGED_EVENTS_TASK_KEY, policy = TaskPolicy.CancelPrevious) {
             try {
@@ -201,6 +288,71 @@ internal class AdminRegistrationViewModel(
                 reduce { copy(managedEvents = events) }
             } catch (_: Throwable) {
                 showToast(Res.string.admin_registration_managed_events_load_failure)
+            }
+        }
+    }
+
+    private fun loadDelayedOpenings() {
+        launchTask(taskKey = DELAYED_OPENINGS_TASK_KEY, policy = TaskPolicy.CancelPrevious) {
+            try {
+                val delayedOpenings = dataSource.fetchDelayedOpenings()
+                reduce {
+                    copy(
+                        delayedOpenings = delayedOpenings.notices,
+                        delayedOpeningKoreaToday = delayedOpenings.koreaToday,
+                    )
+                }
+            } catch (_: Throwable) {
+                showToast(Res.string.admin_delayed_opening_load_failure)
+            }
+        }
+    }
+
+    private fun releaseDelayedOpening(id: String) {
+        launchTask(taskKey = DELAYED_OPENINGS_TASK_KEY, policy = TaskPolicy.IgnoreNew) {
+            reduce { copy(releasingDelayedOpeningId = id) }
+            try {
+                dataSource.releaseDelayedOpening(id)
+                loadDelayedOpenings()
+            } catch (_: Throwable) {
+                showToast(Res.string.admin_delayed_opening_release_failure)
+            } finally {
+                reduce { copy(releasingDelayedOpeningId = null) }
+            }
+        }
+    }
+
+    private fun previewCorrection() {
+        val request = currentState.correctionRequest.trim()
+        if (request.isEmpty()) {
+            showToast(Res.string.admin_correction_required)
+            return
+        }
+        launchTask(taskKey = CORRECTION_TASK_KEY, policy = TaskPolicy.IgnoreNew) {
+            reduce { copy(isCorrecting = true) }
+            try {
+                val preview = dataSource.previewCorrection(request)
+                reduce { copy(correctionPreview = preview) }
+            } catch (_: Throwable) {
+                showToast(Res.string.admin_correction_failure)
+            } finally {
+                reduce { copy(isCorrecting = false) }
+            }
+        }
+    }
+
+    private fun applyCorrection() {
+        val preview = currentState.correctionPreview ?: return
+        launchTask(taskKey = CORRECTION_TASK_KEY, policy = TaskPolicy.IgnoreNew) {
+            reduce { copy(isCorrecting = true) }
+            try {
+                dataSource.applyCorrection(preview, preview.changes)
+                reduce { copy(correctionPreview = null, correctionRequest = "") }
+                showToast(Res.string.admin_correction_success, ToastType.SUCCESS)
+            } catch (_: Throwable) {
+                showToast(Res.string.admin_correction_failure)
+            } finally {
+                reduce { copy(isCorrecting = false) }
             }
         }
     }
@@ -263,6 +415,23 @@ internal class AdminRegistrationViewModel(
         reduce { copy(eventStatusStartDate = today, eventStatusEndDate = today) }
     }
 
+    private fun startEventEditing(eventId: String) {
+        val event = currentState.managedEvents.firstOrNull { it.id == eventId } ?: return
+        val eventType = runCatching { ShopEventType.from(event.eventType) }.getOrNull() ?: return
+        reduce {
+            copy(
+                selectedTab = AdminRegistrationTab.EVENT_REGISTRATION,
+                editingEventId = event.id,
+                selectedEventType = eventType,
+                shopName = event.shopName,
+                selectedStartDate = event.startDate,
+                selectedEndDate = event.endDate,
+                draft = createEventDraft(event),
+                message = null,
+            )
+        }
+    }
+
     private fun previewOrRegister() {
         if (currentState.isImageOnly) {
             registerImageOnly()
@@ -294,22 +463,7 @@ internal class AdminRegistrationViewModel(
                         isOperatingNotice = currentState.isOperatingNotice,
                     )
                 reduce {
-                    copy(
-                        draft =
-                            result.copy(
-                                shopName = result.shopName ?: currentState.shopName.ifBlank { null },
-                                sourceUrl = result.sourceUrl ?: currentState.sourceUrl.ifBlank { null },
-                                startDate = selectedStartDate ?: result.startDate,
-                                endDate =
-                                    if (selectedEventType == ShopEventType.STORE_RENEWAL) {
-                                        null
-                                    } else {
-                                        selectedEndDate ?: result.endDate
-                                    },
-                                noticeType = selectedNoticeType?.toRequestValue() ?: result.noticeType,
-                            ),
-                        message = null,
-                    )
+                    AdminRegistrationPreviewStateReducer.reduce(this, result)
                 }
             } catch (_: Throwable) {
                 showToast(Res.string.admin_registration_preview_failure)
@@ -331,8 +485,15 @@ internal class AdminRegistrationViewModel(
         ) {
             reduce { copy(isSubmitting = true, message = null) }
             try {
-                dataSource.register(draft, currentState.isOperatingNotice, currentState.selectedEventType)
-                reduce { copy(draft = null, message = AdminRegistrationMessage.SUCCESS) }
+                val editingEventId = currentState.editingEventId
+                if (editingEventId == null) {
+                    dataSource.register(draft, currentState.isOperatingNotice, currentState.selectedEventType)
+                } else {
+                    dataSource.updateEvent(editingEventId, draft, currentState.selectedEventType)
+                }
+                reduce { copy(draft = null, editingEventId = null, message = AdminRegistrationMessage.SUCCESS) }
+                if (editingEventId != null) loadManagedEvents()
+                if (!currentState.isOperatingNotice && editingEventId == null) loadExternalVenues()
                 showToast(Res.string.admin_registration_success, ToastType.SUCCESS)
             } catch (_: Throwable) {
                 showToast(Res.string.admin_registration_register_failure)
@@ -393,9 +554,13 @@ internal class AdminRegistrationViewModel(
 
     private companion object {
         const val SHOP_NAMES_TASK_KEY = "admin-registration-shop-names"
+        const val EXTERNAL_VENUES_TASK_KEY = "admin-registration-external-venues"
+        const val SHOP_HOURS_TASK_KEY = "admin-registration-shop-hours"
         const val SUBMIT_TASK_KEY = "admin-registration-submit"
         const val MANAGED_EVENTS_TASK_KEY = "admin-managed-events"
         const val EVENT_STATUS_SAVE_TASK_KEY = "admin-event-status-save"
+        const val CORRECTION_TASK_KEY = "admin-correction"
+        const val DELAYED_OPENINGS_TASK_KEY = "admin-delayed-openings"
     }
 }
 
@@ -414,4 +579,25 @@ private fun OperatingNoticeType.toRequestValue(): String =
         OperatingNoticeType.TEMPORARY_CLOSURE -> "full_close"
         OperatingNoticeType.EARLY_CLOSING -> "early_close"
         OperatingNoticeType.LATE_OPENING -> "late_opening"
+    }
+
+private fun createEventDraft(event: AdminManagedEvent): AdminDraft =
+    AdminDraft(
+        shopName = event.shopName,
+        title = event.title,
+        eventType = event.eventType,
+        startDate = event.startDate,
+        endDate = event.endDate,
+        description = event.description,
+    )
+
+private fun dayKey(day: java.time.DayOfWeek): String =
+    when (day) {
+        java.time.DayOfWeek.MONDAY -> "mon"
+        java.time.DayOfWeek.TUESDAY -> "tue"
+        java.time.DayOfWeek.WEDNESDAY -> "wed"
+        java.time.DayOfWeek.THURSDAY -> "thu"
+        java.time.DayOfWeek.FRIDAY -> "fri"
+        java.time.DayOfWeek.SATURDAY -> "sat"
+        java.time.DayOfWeek.SUNDAY -> "sun"
     }

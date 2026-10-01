@@ -3,6 +3,7 @@ package com.peto.ramap.designsystem.resource.businesshours
 import com.peto.ramap.designsystem.resource.UiText
 import com.peto.ramap.domain.model.businesshour.BusinessHours
 import com.peto.ramap.domain.model.businesshour.BusinessHoursDay
+import kotlinx.datetime.DayOfWeek
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.shop_detail_business_hours_break_time_format
 import ramap.shared.generated.resources.shop_detail_business_hours_closed
@@ -12,6 +13,11 @@ import ramap.shared.generated.resources.shop_detail_business_hours_next_day_time
 import ramap.shared.generated.resources.shop_detail_business_hours_time_format
 
 object BusinessHoursResourceMapper {
+    fun today(
+        businessHours: BusinessHours,
+        dayOfWeek: DayOfWeek,
+    ): BusinessHoursResourceLine? = lines(businessHours, listOf(dayOfWeek.name.take(3).lowercase())).singleOrNull()
+
     fun all(businessHours: BusinessHours): List<BusinessHoursResourceLine> {
         val lines = mutableListOf<BusinessHoursResourceLine>()
         var startDayKey: String? = null

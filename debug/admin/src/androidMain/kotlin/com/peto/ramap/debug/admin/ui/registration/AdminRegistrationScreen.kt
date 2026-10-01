@@ -23,14 +23,19 @@ import com.peto.ramap.debug.admin.R
 import com.peto.ramap.debug.admin.data.model.AdminDraft
 import com.peto.ramap.debug.admin.data.model.AdminEvidence
 import com.peto.ramap.debug.admin.ui.registration.component.AdminBottomNavigation
+import com.peto.ramap.debug.admin.ui.registration.component.AdminCorrectionManager
+import com.peto.ramap.debug.admin.ui.registration.component.AdminDelayedOpeningManager
 import com.peto.ramap.debug.admin.ui.registration.component.AdminDraftPreview
+import com.peto.ramap.debug.admin.ui.registration.component.AdminEventEditManager
 import com.peto.ramap.debug.admin.ui.registration.component.AdminEventStatusManager
 import com.peto.ramap.debug.admin.ui.registration.component.AdminEventTypeSelector
 import com.peto.ramap.debug.admin.ui.registration.component.AdminEvidenceField
 import com.peto.ramap.debug.admin.ui.registration.component.AdminFeedbackField
 import com.peto.ramap.debug.admin.ui.registration.component.AdminFieldSection
+import com.peto.ramap.debug.admin.ui.registration.component.AdminNoticeTimeFields
 import com.peto.ramap.debug.admin.ui.registration.component.AdminNoticeTypeSelector
 import com.peto.ramap.debug.admin.ui.registration.component.AdminRegistrationDateRangeField
+import com.peto.ramap.debug.admin.ui.registration.component.AdminRegularScheduleSelector
 import com.peto.ramap.debug.admin.ui.registration.component.AdminShopNameField
 import com.peto.ramap.debug.admin.ui.registration.component.AdminSourceField
 import com.peto.ramap.debug.admin.ui.registration.component.AdminTitleField
@@ -59,11 +64,19 @@ internal fun AdminRegistrationScreen(
     onImageOnlyTitleChanged: (String) -> Unit,
     onDraftTitleChanged: (String) -> Unit,
     onDraftDescriptionChanged: (String) -> Unit,
+    onDraftVenueChanged: (String, String, String, String, String, String) -> Unit,
+    onDraftNoticeTimesChanged: (String?, String?) -> Unit,
+    onDraftScheduleOverrideChanged: (String?, String?) -> Unit,
+    onRegularSegmentSelected: (String, String) -> Unit,
+    onDraftBreakTimeChanged: (Int, String, String) -> Unit,
+    onDraftBreakTimesCleared: () -> Unit,
     onEvidenceSelected: (AdminEvidence?) -> Unit,
     onDateRangeSelected: (String, String) -> Unit,
     onTodaySelected: () -> Unit,
     onPreviewOrRegisterClick: () -> Unit,
     onManagedEventsRefresh: () -> Unit,
+    onDelayedOpeningsRefresh: () -> Unit,
+    onDelayedOpeningReleased: (String) -> Unit,
     onManagedEventSelected: (String) -> Unit,
     onEventStatusSelected: (AdminEventStatus) -> Unit,
     onEventStatusScopeSelected: (AdminEventStatusScope) -> Unit,
@@ -71,6 +84,11 @@ internal fun AdminRegistrationScreen(
     onEventStatusDateRangeSelected: (String, String) -> Unit,
     onEventStatusTodaySelected: () -> Unit,
     onEventStatusSave: () -> Unit,
+    onManagedEventEdit: (String) -> Unit,
+    onCorrectionRequestChanged: (String) -> Unit,
+    onCorrectionPreviewRequested: () -> Unit,
+    onCorrectionConfirmed: () -> Unit,
+    onCorrectionPreviewDismissed: () -> Unit,
     onTabSelected: (AdminRegistrationTab) -> Unit,
 ) {
     val context = LocalContext.current
@@ -111,6 +129,15 @@ internal fun AdminRegistrationScreen(
             verticalArrangement = Arrangement.spacedBy(24.dp),
         ) {
             if (uiState.selectedTab == AdminRegistrationTab.EVENT_MANAGEMENT) {
+                AdminFieldSection(label = stringResource(R.string.admin_delayed_opening_title)) {
+                    AdminDelayedOpeningManager(
+                        notices = uiState.delayedOpenings,
+                        koreaToday = uiState.delayedOpeningKoreaToday,
+                        releasingId = uiState.releasingDelayedOpeningId,
+                        onRefresh = onDelayedOpeningsRefresh,
+                        onRelease = onDelayedOpeningReleased,
+                    )
+                }
                 AdminFieldSection(label = "") {
                     AdminEventStatusManager(
                         events = uiState.managedEvents,
@@ -130,6 +157,21 @@ internal fun AdminRegistrationScreen(
                         onTodaySelected = onEventStatusTodaySelected,
                         onSave = onEventStatusSave,
                     )
+                }
+                AdminFieldSection(label = "") {
+                    AdminCorrectionManager(
+                        request = uiState.correctionRequest,
+                        preview = uiState.correctionPreview,
+                        isLoading = uiState.isCorrecting,
+                        onRequestChanged = onCorrectionRequestChanged,
+                        onPreviewRequested = onCorrectionPreviewRequested,
+                        onConfirm = onCorrectionConfirmed,
+                        onDismiss = onCorrectionPreviewDismissed,
+                    )
+                }
+            } else if (uiState.selectedTab == AdminRegistrationTab.EVENT_EDIT) {
+                AdminFieldSection(label = "") {
+                    AdminEventEditManager(events = uiState.managedEvents, onEdit = onManagedEventEdit)
                 }
             } else {
                 if (uiState.isOperatingNotice) {
@@ -155,6 +197,7 @@ internal fun AdminRegistrationScreen(
                         shopName = uiState.shopName,
                         shopNames = uiState.shopNames,
                         onShopNameChanged = onShopNameChanged,
+                        readOnly = uiState.editingEventId != null,
                     )
                 }
 
@@ -166,18 +209,19 @@ internal fun AdminRegistrationScreen(
                         )
                     }
                 } else {
-                    AdminFieldSection(label = stringResource(R.string.admin_registration_source)) {
-                        AdminSourceField(
-                            sourceUrl = uiState.sourceUrl,
-                            onSourceUrlChanged = onSourceUrlChanged,
-                        )
-                    }
-
-                    AdminFieldSection(label = stringResource(R.string.admin_registration_feedback)) {
-                        AdminFeedbackField(
-                            feedback = uiState.feedback,
-                            onFeedbackChanged = onFeedbackChanged,
-                        )
+                    if (uiState.editingEventId == null) {
+                        AdminFieldSection(label = stringResource(R.string.admin_registration_source)) {
+                            AdminSourceField(
+                                sourceUrl = uiState.sourceUrl,
+                                onSourceUrlChanged = onSourceUrlChanged,
+                            )
+                        }
+                        AdminFieldSection(label = stringResource(R.string.admin_registration_feedback)) {
+                            AdminFeedbackField(
+                                feedback = uiState.feedback,
+                                onFeedbackChanged = onFeedbackChanged,
+                            )
+                        }
                     }
                 }
 
@@ -189,12 +233,14 @@ internal fun AdminRegistrationScreen(
                     onTodayClick = onTodaySelected,
                 )
 
-                AdminFieldSection(label = stringResource(R.string.admin_registration_image)) {
-                    AdminEvidenceField(
-                        evidence = uiState.evidence,
-                        onAddClick = { imagePicker.launch("image/*") },
-                        onRemoveClick = { onEvidenceSelected(null) },
-                    )
+                if (uiState.editingEventId == null) {
+                    AdminFieldSection(label = stringResource(R.string.admin_registration_image)) {
+                        AdminEvidenceField(
+                            evidence = uiState.evidence,
+                            onAddClick = { imagePicker.launch("image/*") },
+                            onRemoveClick = { onEvidenceSelected(null) },
+                        )
+                    }
                 }
 
                 if (!uiState.isOperatingNotice && uiState.draft == null) {
@@ -218,7 +264,7 @@ internal fun AdminRegistrationScreen(
                     text =
                         stringResource(
                             if (uiState.isImageOnly || uiState.draft != null) {
-                                R.string.admin_registration_register
+                                if (uiState.editingEventId == null) R.string.admin_registration_register else R.string.admin_event_edit
                             } else {
                                 R.string.admin_registration_preview
                             },
@@ -239,16 +285,56 @@ internal fun AdminRegistrationScreen(
                     )
                 }
                 uiState.draft?.let { draft ->
+                    if (uiState.isOperatingNotice) {
+                        val dayKey =
+                            uiState.selectedStartDate
+                                ?.let { java.time.LocalDate.parse(it) }
+                                ?.dayOfWeek
+                                ?.let(::dayKey)
+                        uiState.selectedShopHours?.weekly?.get(dayKey)?.let { regularDay ->
+                            AdminFieldSection(label = stringResource(R.string.admin_notice_regular_segments)) {
+                                AdminRegularScheduleSelector(
+                                    day = regularDay.copy(breakTimes = uiState.selectedShopHours.breakTimes[dayKey].orEmpty()),
+                                    onSegmentSelected = onRegularSegmentSelected,
+                                )
+                            }
+                        }
+                        AdminNoticeTimeFields(
+                            type = uiState.selectedNoticeType ?: draft.noticeType?.let(::toOperatingNoticeType),
+                            startTime = draft.scheduleOverride?.open ?: draft.startTime,
+                            endTime = draft.scheduleOverride?.close ?: draft.endTime,
+                            onTimesChanged = onDraftNoticeTimesChanged,
+                            onScheduleChanged = onDraftScheduleOverrideChanged,
+                            breakTimes = draft.scheduleOverride?.breakTimes.orEmpty(),
+                            onBreakTimeChanged = onDraftBreakTimeChanged,
+                        )
+                        if (draft.scheduleOverride?.breakTimes?.isNotEmpty() == true) {
+                            AppButton(stringResource(R.string.admin_notice_clear_break), onDraftBreakTimesCleared, modifier = Modifier.fillMaxWidth())
+                        }
+                    }
                     AdminDraftPreview(
                         draft = draft,
                         onTitleChanged = onDraftTitleChanged,
                         onDescriptionChanged = onDraftDescriptionChanged,
+                        externalVenues = uiState.externalVenues,
+                        onVenueChanged = onDraftVenueChanged,
                     )
                 }
             }
         }
     }
 }
+
+private fun dayKey(day: java.time.DayOfWeek): String =
+    when (day) {
+        java.time.DayOfWeek.MONDAY -> "mon"
+        java.time.DayOfWeek.TUESDAY -> "tue"
+        java.time.DayOfWeek.WEDNESDAY -> "wed"
+        java.time.DayOfWeek.THURSDAY -> "thu"
+        java.time.DayOfWeek.FRIDAY -> "fri"
+        java.time.DayOfWeek.SATURDAY -> "sat"
+        java.time.DayOfWeek.SUNDAY -> "sun"
+    }
 
 private val SUPPORTED_MIME_TYPES = setOf("image/jpeg", "image/png")
 
@@ -275,11 +361,19 @@ private fun AdminRegistrationScreenPreview() {
             onImageOnlyTitleChanged = {},
             onDraftTitleChanged = {},
             onDraftDescriptionChanged = {},
+            onDraftVenueChanged = { _, _, _, _, _, _ -> },
+            onDraftNoticeTimesChanged = { _, _ -> },
+            onDraftScheduleOverrideChanged = { _, _ -> },
+            onRegularSegmentSelected = { _, _ -> },
+            onDraftBreakTimeChanged = { _, _, _ -> },
+            onDraftBreakTimesCleared = {},
             onEvidenceSelected = {},
             onDateRangeSelected = { _, _ -> },
             onTodaySelected = {},
             onPreviewOrRegisterClick = {},
             onManagedEventsRefresh = {},
+            onDelayedOpeningsRefresh = {},
+            onDelayedOpeningReleased = {},
             onManagedEventSelected = {},
             onEventStatusSelected = {},
             onEventStatusScopeSelected = {},
@@ -287,6 +381,11 @@ private fun AdminRegistrationScreenPreview() {
             onEventStatusDateRangeSelected = { _, _ -> },
             onEventStatusTodaySelected = {},
             onEventStatusSave = {},
+            onManagedEventEdit = {},
+            onCorrectionRequestChanged = {},
+            onCorrectionPreviewRequested = {},
+            onCorrectionConfirmed = {},
+            onCorrectionPreviewDismissed = {},
             onTabSelected = {},
         )
     }
@@ -300,20 +399,22 @@ private fun AdminRegistrationScreenWithDraftPreview() {
             uiState =
                 AdminRegistrationUiState(
                     shopName = "멘야준",
-                    isOperatingNotice = true,
+                    selectedEventType = ShopEventType.POPUP,
                     draft =
                         AdminDraft(
                             shopName = "멘야준",
-                            title = "임시 휴무",
+                            title = "라멘 페스티벌 팝업",
+                            eventType = "POPUP",
+                            venueName = "라멘 페스티벌",
+                            venueInstagramUrl = "https://www.instagram.com/ramen_festival/",
+                            venueNaverMapUrl = "https://map.naver.com/p/entry/place/1",
+                            venueKakaoMapUrl = "https://place.map.kakao.com/1",
                             startDate = "2024-05-10",
-                            endDate = "2024-05-10",
-                            description = "내부 공사로 인한 임시 휴무입니다.",
+                            endDate = "2024-05-16",
+                            description = "특별한 팝업 이벤트입니다.",
                             sourceUrl = "https://instagram.com/p/...",
-                            uncertainties = listOf("정확한 영업 재개일은 미정입니다."),
+                            uncertainties = listOf("운영 시간은 변동될 수 있습니다."),
                             evidencePath = "evidence/path.jpg",
-                            noticeType = "TEMPORARY_CLOSURE",
-                            startTime = "11:00",
-                            endTime = "21:00",
                         ),
                 ),
             onNoticeTypeSelected = {},
@@ -325,11 +426,19 @@ private fun AdminRegistrationScreenWithDraftPreview() {
             onImageOnlyTitleChanged = {},
             onDraftTitleChanged = {},
             onDraftDescriptionChanged = {},
+            onDraftVenueChanged = { _, _, _, _, _, _ -> },
+            onDraftNoticeTimesChanged = { _, _ -> },
+            onDraftScheduleOverrideChanged = { _, _ -> },
+            onRegularSegmentSelected = { _, _ -> },
+            onDraftBreakTimeChanged = { _, _, _ -> },
+            onDraftBreakTimesCleared = {},
             onEvidenceSelected = {},
             onDateRangeSelected = { _, _ -> },
             onTodaySelected = {},
             onPreviewOrRegisterClick = {},
             onManagedEventsRefresh = {},
+            onDelayedOpeningsRefresh = {},
+            onDelayedOpeningReleased = {},
             onManagedEventSelected = {},
             onEventStatusSelected = {},
             onEventStatusScopeSelected = {},
@@ -337,6 +446,11 @@ private fun AdminRegistrationScreenWithDraftPreview() {
             onEventStatusDateRangeSelected = { _, _ -> },
             onEventStatusTodaySelected = {},
             onEventStatusSave = {},
+            onManagedEventEdit = {},
+            onCorrectionRequestChanged = {},
+            onCorrectionPreviewRequested = {},
+            onCorrectionConfirmed = {},
+            onCorrectionPreviewDismissed = {},
             onTabSelected = {},
         )
     }

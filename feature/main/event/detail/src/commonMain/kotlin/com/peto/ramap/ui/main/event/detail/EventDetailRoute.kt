@@ -43,6 +43,9 @@ import com.peto.ramap.ui.main.event.detail.contract.EventDetailIntent.OnNotifica
 import com.peto.ramap.ui.main.event.detail.contract.EventDetailIntent.OnNotificationPermissionGranted
 import com.peto.ramap.ui.main.event.detail.contract.EventDetailIntent.OnRetry
 import com.peto.ramap.ui.main.event.detail.contract.EventDetailIntent.OnSourceLinkSelected
+import com.peto.ramap.ui.main.event.detail.contract.EventDetailIntent.OnVenueInstagramSelected
+import com.peto.ramap.ui.main.event.detail.contract.EventDetailIntent.OnVenueKakaoMapSelected
+import com.peto.ramap.ui.main.event.detail.contract.EventDetailIntent.OnVenueNaverMapSelected
 import com.peto.ramap.ui.main.event.detail.contract.EventDetailIntent.OnVenueShopSelected
 import com.peto.ramap.ui.main.event.detail.contract.EventDetailIntent.OnWaitingLinkSelected
 import com.peto.ramap.ui.main.event.detail.contract.EventDetailSideEffect.EventUnavailable
@@ -130,6 +133,18 @@ fun EventDetailRoute(
                 viewModel.dispatch(OnVenueShopSelected(shopId))
                 selectedShopId = shopId
             },
+            onVenueInstagramClick = { url ->
+                viewModel.dispatch(OnVenueInstagramSelected)
+                ExternalUriOpener.open(url)
+            },
+            onVenueNaverMapClick = { url ->
+                viewModel.dispatch(OnVenueNaverMapSelected)
+                ExternalUriOpener.open(url)
+            },
+            onVenueKakaoMapClick = { url ->
+                viewModel.dispatch(OnVenueKakaoMapSelected)
+                ExternalUriOpener.open(url)
+            },
             onCollaboratorShopClick = { shopId ->
                 viewModel.dispatch(OnCollaboratorShopSelected(shopId))
                 selectedShopId = shopId
@@ -174,6 +189,9 @@ internal fun EventDetailScreen(
     uiState: EventDetailUiState,
     onBack: () -> Unit,
     onVenueShopClick: (String) -> Unit,
+    onVenueInstagramClick: (String) -> Unit,
+    onVenueNaverMapClick: (String) -> Unit,
+    onVenueKakaoMapClick: (String) -> Unit,
     onCollaboratorShopClick: (String) -> Unit,
     onCollaboratorInstagramClick: (String) -> Unit,
     onWaitingLinkClick: (String) -> Unit,
@@ -229,6 +247,9 @@ internal fun EventDetailScreen(
                         event = uiState.event,
                         hasCollaborators = uiState.hasCollaborators,
                         onVenueShopClick = onVenueShopClick,
+                        onVenueInstagramClick = onVenueInstagramClick,
+                        onVenueNaverMapClick = onVenueNaverMapClick,
+                        onVenueKakaoMapClick = onVenueKakaoMapClick,
                         onCollaboratorShopClick = onCollaboratorShopClick,
                         onCollaboratorInstagramClick = onCollaboratorInstagramClick,
                         onWaitingLinkClick = onWaitingLinkClick,
@@ -261,6 +282,9 @@ private fun EventDetailRoutePreview(
             uiState = uiState,
             onBack = {},
             onVenueShopClick = {},
+            onVenueInstagramClick = {},
+            onVenueNaverMapClick = {},
+            onVenueKakaoMapClick = {},
             onCollaboratorShopClick = {},
             onCollaboratorInstagramClick = {},
             onWaitingLinkClick = {},

@@ -1,8 +1,9 @@
+import { isAdministrator } from "../_shared/admin-auth.ts";
 import { createServiceClient } from "../_shared/event-notifications.ts";
+import { normalizeMapUrl } from "../_shared/event-venue-url.ts";
 
 const OPENAI_URL = "https://api.openai.com/v1/chat/completions";
 const EVIDENCE_BUCKET = "news-report-evidence";
-const ADMIN_TIMEOUT_MS = 3_000;
 const EVENT_EXTRACTION_PROMPT =
   "라멘 매장의 이벤트 등록 초안을 추출하세요. 입력에 없는 사실은 절대 만들지 마세요. " +
   "원문 캡션이 있으면 description은 캡션의 문구, 이모지, 구두점, 줄바꿈을 그대로 보존하세요. " +
@@ -14,6 +15,7 @@ const EVENT_EXTRACTION_PROMPT =
   "store_renewal은 end_date를 null로 반환하세요. 그 외 날짜가 불명확하거나 누락되면 null과 한국어 uncertainties를 반환하세요. " +
   "event_type은 collab, popup, limited_menu, summer_limited, new_menu, store_renewal 중 하나를 반환하세요. 명시적으로 다른 매장·브랜드·셰프 등과 함께하는 콜라보 문맥일 때만 collab을 선택하세요. " +
   "participants에는 원문에서 이벤트 참여 또는 콜라보가 명시된 주체만 반환하세요. 각 항목은 name과 canonical Instagram 프로필 URL(알 수 없으면 null)을 가지며, 단순 재료·면·식자재 공급자나 납품업체는 참여자로 반환하지 마세요. " +
+  "venue_name에는 행사가 실제로 열리는 장소만 반환하세요. 등록 매장과 같은 장소면 null로 반환하고, 외부 장소면 venue_address에는 명시된 주소만 반환하세요. venue_instagram_url에 명확히 연결된 canonical Instagram 프로필 URL만 반환하세요. venue_naver_map_url과 venue_kakao_map_url은 각각 그 외부 장소로 명확히 연결된 지도 URL일 때만 반환하세요. 게시물·릴 URL, 불명확한 계정, 또는 근거 없는 주소·지도 URL은 null로 반환하세요. " +
   "매장명은 계정명으로 추측하지 말고 실제 매장명이 원문에 명시된 경우에만 반환하세요. " +
   "관리자 피드백은 원문 사실을 더 정확히 반영하기 위한 수정 지시로만 사용하고 새로운 사실의 근거로 사용하지 마세요.";
 const OPERATING_NOTICE_EXTRACTION_PROMPT =
@@ -36,11 +38,17 @@ type EventDraft = {
   end_date: string | null;
   description: string | null;
   event_type: string | null;
+  venue_name: string | null;
+  venue_address: string | null;
+  venue_instagram_url: string | null;
+  venue_naver_map_url: string | null;
+  venue_kakao_map_url: string | null;
   participants: EventParticipant[];
   uncertainties: string[];
   notice_type: string | null;
   start_time: string | null;
   end_time: string | null;
+  schedule_override: { closed: boolean; open: string | null; close: string | null; close_next_day: boolean; label: string | null; break_times: Array<{ start: string; end: string }> } | null;
 };
 type EventParticipant = { name: string; instagram_url: string | null };
 type InstagramCaption = { cleanText: string; handle: string | null; isExact: boolean };
@@ -78,6 +86,15 @@ Deno.serve(async (request) => {
     } else if (!isSupportedEventType(draft.event_type)) {
       draft.event_type = "limited_menu";
       draft.uncertainties.push("이벤트 유형을 확인하지 못해 한정 메뉴로 분류했습니다.");
+    }
+    draft.venue_instagram_url = normalizeInstagramProfileUrl(draft.venue_instagram_url);
+    draft.venue_naver_map_url = normalizeMapUrl(draft.venue_naver_map_url, "naver");
+    draft.venue_kakao_map_url = normalizeMapUrl(draft.venue_kakao_map_url, "kakao");
+    if (!draft.venue_name) {
+      draft.venue_address = null;
+      draft.venue_instagram_url = null;
+      draft.venue_naver_map_url = null;
+      draft.venue_kakao_map_url = null;
     }
     const resolvedShop = await resolveShop(supabase, caption?.handle, [requestedShopName, draft.shop_name]);
     if (resolvedShop) {
@@ -123,7 +140,7 @@ async function analyze(
         {
           role: "system",
           content: registrationType === "operating_notice"
-            ? "라멘 매장의 영업 변동 공지 초안을 추출하세요. 입력에 없는 사실은 절대 만들지 마세요. 관리자 피드백은 입력 사실을 더 정확히 반영하기 위한 수정 지시로만 사용하고, 새로운 사실을 추측하는 근거로 사용하지 마세요. notice_type은 operating_notice(일반 영업 변동), full_close(휴무), early_close(조기 마감), late_opening(오픈 지연) 중 하나만 선택하세요. title은 null로 반환하세요. description은 입력 캡션의 사실만 사용하고 홍보 문구로 바꾸지 마세요. 날짜는 YYYY-MM-DD, 시간은 HH:mm으로 변환합니다. 하루만 언급된 공지는 end_date를 start_date와 동일하게 반환하세요. 날짜·시간·유형이 확실하지 않으면 uncertainties에 한국어로 적습니다. 매장명은 계정명이 아니라 실제 매장명으로 추측하지 말고 null을 반환하세요."
+            ? "라멘 매장의 영업 변동 공지 초안을 추출하세요. 입력에 없는 사실은 절대 만들지 마세요. operating_notice면 schedule_override에 변경 영업 세그먼트만 넣고, early_close는 end_time이 필수이며, late_opening은 예정 시간이 없으면 start_time을 null로 두세요."
             : "라멘 매장의 이벤트 등록 초안을 추출하세요. 입력에 없는 사실은 절대 만들지 마세요. 관리자 피드백은 입력 사실을 더 정확히 반영하기 위한 수정 지시로만 사용하고, 새로운 사실을 추측하는 근거로 사용하지 마세요. title은 원문에 명시된 이벤트명이나 메뉴명만 짧게 적고, 원문에 없으면 null을 반환하세요. event_type은 collab, popup, limited_menu, summer_limited, new_menu, store_renewal 중 하나입니다. 다른 매장·브랜드·셰프 등이 이벤트에 함께 참여하거나 콜라보한다고 명시된 경우에만 collab을 선택하세요. participants에는 원문에서 이벤트 참여 또는 콜라보가 명시된 주체만 넣고, 각 항목에 name과 canonical Instagram 프로필 URL(알 수 없으면 null)을 넣으세요. 단순 재료·면·식자재 공급자나 납품업체는 참여자가 아닙니다. 날짜·회식·메뉴·수량·운영 시간을 추측하거나 추가하지 마세요. description은 입력 캡션의 사실만 사용하고 홍보 문구로 바꾸지 마세요. 매장명은 계정명이 아니라 실제 매장명으로 추측하지 말고 null을 반환하세요. 날짜는 YYYY-MM-DD로 변환합니다. 확실하지 않거나 누락된 필드는 uncertainties에 한국어로 적습니다.",
         },
         {
@@ -149,6 +166,7 @@ async function analyze(
               end_date: { type: ["string", "null"] },
               description: { type: ["string", "null"] },
               event_type: { type: ["string", "null"] },
+              venue_name: { type: ["string", "null"] }, venue_address: { type: ["string", "null"] }, venue_instagram_url: { type: ["string", "null"] }, venue_naver_map_url: { type: ["string", "null"] }, venue_kakao_map_url: { type: ["string", "null"] },
               participants: {
                 type: "array",
                 items: {
@@ -164,9 +182,10 @@ async function analyze(
               notice_type: { type: ["string", "null"] },
               start_time: { type: ["string", "null"] },
               end_time: { type: ["string", "null"] },
+              schedule_override: { type: ["object", "null"], additionalProperties: false, properties: { closed: { type: "boolean" }, open: { type: ["string", "null"] }, close: { type: ["string", "null"] }, close_next_day: { type: "boolean" }, label: { type: ["string", "null"] }, break_times: { type: "array", items: { type: "object", additionalProperties: false, properties: { start: { type: "string" }, end: { type: "string" } }, required: ["start", "end"] } } }, required: ["closed", "open", "close", "close_next_day", "label", "break_times"] },
               uncertainties: { type: "array", items: { type: "string" } },
             },
-            required: ["shop_name", "title", "start_date", "end_date", "description", "event_type", "participants", "notice_type", "start_time", "end_time", "uncertainties"],
+            required: ["shop_name", "title", "start_date", "end_date", "description", "event_type", "venue_name", "venue_address", "venue_instagram_url", "venue_naver_map_url", "venue_kakao_map_url", "participants", "notice_type", "start_time", "end_time", "schedule_override", "uncertainties"],
           },
         },
       },
@@ -184,6 +203,7 @@ async function analyze(
     end_date: validDate(draft.end_date) ? draft.end_date : null,
     description: text(draft.description),
     event_type: text(draft.event_type),
+    venue_name: text(draft.venue_name), venue_address: text(draft.venue_address), venue_instagram_url: normalizeInstagramProfileUrl(text(draft.venue_instagram_url)), venue_naver_map_url: normalizeMapUrl(draft.venue_naver_map_url, "naver"), venue_kakao_map_url: normalizeMapUrl(draft.venue_kakao_map_url, "kakao"),
     participants: Array.isArray(draft.participants)
       ? draft.participants.flatMap((participant) => {
         const name = text(participant?.name);
@@ -193,6 +213,7 @@ async function analyze(
     notice_type: text(draft.notice_type),
     start_time: validTime(draft.start_time) ? draft.start_time : null,
     end_time: validTime(draft.end_time) ? draft.end_time : null,
+    schedule_override: draft.notice_type === "operating_notice" ? draft.schedule_override : null,
     uncertainties: Array.isArray(draft.uncertainties) ? draft.uncertainties.filter((item) => typeof item === "string") : [],
   };
 }
@@ -227,7 +248,7 @@ async function resolveShop(
   candidates: Array<string | null>,
 ) {
   const findByName = async (candidate: string) => {
-    const { data } = await supabase.from("shops").select("name,instagram_url").eq("name", candidate).limit(2);
+    const { data } = await supabase.from("ramen_shops").select("name,instagram_url").eq("name", candidate).limit(2);
     return data?.length === 1 ? { name: data[0].name as string, instagramUrl: data[0].instagram_url as string | null } : null;
   };
   for (const candidate of candidates) {
@@ -243,24 +264,10 @@ async function resolveShop(
     `https://instagram.com/${handle}/`,
   ] : [];
   if (handles.length > 0) {
-    const { data } = await supabase.from("shops").select("name,instagram_url").in("instagram_url", handles).limit(2);
+    const { data } = await supabase.from("ramen_shops").select("name,instagram_url").in("instagram_url", handles).limit(2);
     if (data?.length === 1) return { name: data[0].name as string, instagramUrl: data[0].instagram_url as string | null };
   }
   return null;
-}
-
-async function isAdministrator(request: Request): Promise<boolean> {
-  const token = request.headers.get("authorization")?.match(/^Bearer\s+(.+)$/i)?.[1]?.trim();
-  const url = Deno.env.get("SUPABASE_URL");
-  const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
-  const adminEmail = (Deno.env.get("ADMIN_EMAIL") ?? "uni070@naver.com").trim().toLowerCase();
-  if (!token || !url || !anonKey || !adminEmail) return false;
-  const response = await fetch(`${url}/auth/v1/user`, {
-    headers: { apikey: anonKey, Authorization: `Bearer ${token}` },
-    signal: AbortSignal.timeout(ADMIN_TIMEOUT_MS),
-  }).catch(() => null);
-  const user = response?.ok ? await response.json() as { email?: unknown } : null;
-  return typeof user?.email === "string" && user.email.toLowerCase() === adminEmail;
 }
 
 function isInstagramUrl(value: string) {

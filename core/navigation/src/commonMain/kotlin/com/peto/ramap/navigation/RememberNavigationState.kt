@@ -56,16 +56,20 @@ private fun rememberNavigationConfiguration(): SavedStateConfiguration =
         }
     }
 
-private fun navKeySerializersModule(): SerializersModule =
+internal fun navKeySerializersModule(): SerializersModule =
     SerializersModule {
         polymorphic(NavKey::class) {
             subclass(ScreenRoutes.MapRoutes::class)
             subclass(ScreenRoutes.EventTabRoutes::class)
-            subclass(ScreenRoutes.EventCalendarRoutes::class)
             subclass(ScreenRoutes.OperatingNoticeRoutes::class)
             subclass(ScreenRoutes.RankingTabRoutes::class)
             subclass(ScreenRoutes.MyTabRoutes::class)
+            subclass(ScreenRoutes.SettingsRoutes::class)
             subclass(ScreenRoutes.AccountSettingsRoutes::class)
+            subclass(ScreenRoutes.ProfileEditRoutes::class)
+            subclass(ScreenRoutes.MyReviewsRoutes::class)
+            subclass(ScreenRoutes.OtherReviewsRoutes::class)
+            subclass(ScreenRoutes.ReviewWriteRoutes::class)
             subclass(ScreenRoutes.InformationRoutes::class)
             subclass(ScreenRoutes.PlaceReportRoutes::class)
             subclass(ScreenRoutes.HiddenShopListRoutes::class)

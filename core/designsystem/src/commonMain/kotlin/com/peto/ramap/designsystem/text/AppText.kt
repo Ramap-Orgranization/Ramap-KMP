@@ -6,6 +6,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
@@ -24,6 +25,7 @@ fun AppText(
     textDecoration: TextDecoration? = null,
     maxLines: Int = Int.MAX_VALUE,
     overflow: TextOverflow = TextOverflow.Clip,
+    onTextLayout: ((TextLayoutResult) -> Unit)? = null,
 ) {
     val typography = LocalAppTypography.current
     val baseStyle = style.toTextStyle(typography)
@@ -38,6 +40,7 @@ fun AppText(
             textDecoration = textDecoration,
             maxLines = maxLines,
             overflow = overflow,
+            onTextLayout = onTextLayout,
         )
     }
 }

@@ -12,8 +12,6 @@ import kotlinx.serialization.Serializable
 @Serializable
 internal data class RamenShopResponse(
     val id: String,
-    @SerialName("kakao_place_id")
-    val kakaoPlaceId: String? = null,
     val name: String,
     val address: String,
     val lat: Double,
@@ -22,7 +20,6 @@ internal data class RamenShopResponse(
     val kakaoPlaceUrl: String? = null,
     @SerialName("naver_place_url")
     val naverPlaceUrl: String? = null,
-    val phone: String? = null,
     @SerialName("business_hours_weekly")
     val businessHoursWeekly: Map<String, BusinessHoursDayResponse>? = null,
     @SerialName("business_hours_break_times")
@@ -47,13 +44,11 @@ internal data class RamenShopResponse(
     fun toDomain(): RamenShop =
         RamenShop(
             id = id,
-            kakaoPlaceId = kakaoPlaceId,
             name = name,
             address = address,
             location = Location(lat = lat, lng = lng),
             kakaoPlaceUrl = kakaoPlaceUrl,
             naverPlaceUrl = naverPlaceUrl,
-            phone = phone,
             instagramUrl = instagramUrl,
             instagramProfileImageUrl =
                 instagramProfileImagePath?.let { path ->

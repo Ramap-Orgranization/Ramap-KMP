@@ -7,16 +7,12 @@ import kotlinx.serialization.Serializable
 @Serializable
 internal data class UnregisteredPlaceReportRequest(
     @SerialName("place_url")
-    val placeUrl: String? = null,
-    val lat: Double? = null,
-    val lng: Double? = null,
+    val placeUrl: String,
 ) {
     companion object {
         fun from(report: UnregisteredPlaceReport): UnregisteredPlaceReportRequest =
             UnregisteredPlaceReportRequest(
                 placeUrl = report.placeUrl,
-                lat = report.location?.lat,
-                lng = report.location?.lng,
             )
     }
 }

@@ -1,6 +1,7 @@
 package com.peto.ramap.ui.main.event.list
 
 import com.peto.ramap.domain.model.event.EventFilter
+import com.peto.ramap.domain.model.event.EventVenue
 import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.model.event.ShopEventType
 import com.peto.ramap.domain.model.event.ShopEvents
@@ -55,13 +56,13 @@ class EventListGroupingTest {
     }
 
     @Test
-    fun `오늘 취소된 이벤트는 진행 중 목록에서 제외하고 취소가 끝나면 다시 노출한다`() {
+    fun `오늘 취소된 이벤트도 취소 상태를 유지한 채 진행 중 목록에 표시한다`() {
         val cancelledToday = event(id = "cancelled-today", isToday = true).copy(isCancelledToday = true)
         val ongoing = event(id = "ongoing", isToday = true)
 
         val (ongoingEvents, upcomingEvents) = partitionBySchedule(listOf(cancelledToday, ongoing))
 
-        assertEquals(listOf(ongoing), ongoingEvents)
+        assertEquals(listOf(cancelledToday, ongoing), ongoingEvents)
         assertEquals(emptyList(), upcomingEvents)
     }
 
@@ -110,7 +111,7 @@ class EventListGroupingTest {
         val firstShopThird = event(id = "first-shop-third", isToday = false, venueShopId = "first-shop")
 
         val groups =
-            ShopEvents.groupByVenue(
+            ShopEvents.groupByEventListShop(
                 listOf(
                     firstShopFirst,
                     secondShop,
@@ -145,6 +146,22 @@ class EventListGroupingTest {
         )
     }
 
+    @Test
+    fun `외부 행사 장소 이벤트는 등록된 참여 매장으로 묶는다`() {
+        val venueShopEvent = event(id = "venue-shop", isToday = false, venueShopId = "shop")
+        val externalVenueEvent =
+            event(id = "external-venue", isToday = false).copy(
+                venue = EventVenue.External(id = "external", name = "외부 행사장"),
+                collaboratorShops = listOf(ramenShopFixture(id = "shop", name = "매장", address = "서울")),
+            )
+
+        val groups = ShopEvents.groupByEventListShop(listOf(venueShopEvent, externalVenueEvent))
+
+        assertEquals(1, groups.size)
+        assertEquals(listOf(venueShopEvent, externalVenueEvent), groups.single().toList())
+        assertEquals("매장", externalVenueEvent.eventListDisplayName)
+    }
+
     private fun event(
         id: String,
         isToday: Boolean,
@@ -161,7 +178,7 @@ class EventListGroupingTest {
         sourceUrl = "https://instagram.com/event",
         isToday = isToday,
         isVenue = true,
-        venueShop = ramenShopFixture(id = venueShopId, name = "매장", address = "서울"),
+        venue = EventVenue.Registered(ramenShopFixture(id = venueShopId, name = "매장", address = "서울")),
         waitingMethod = null,
         waitingUrl = null,
     )

@@ -10,6 +10,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -79,23 +80,33 @@ fun Skeleton(
 fun ShopListSkeleton(modifier: Modifier = Modifier) {
     Column(modifier = modifier.fillMaxWidth()) {
         repeat(5) {
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 6.dp),
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-            ) {
-                Skeleton(
-                    modifier = Modifier.size(60.dp),
-                    shape = RoundedCornerShape(8.dp),
-                )
-                Column(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(6.dp),
-                ) {
-                    Skeleton(modifier = Modifier.fillMaxWidth(0.55f).height(16.dp))
-                    Skeleton(modifier = Modifier.fillMaxWidth(0.8f).height(12.dp))
-                    Skeleton(modifier = Modifier.fillMaxWidth(0.35f).height(12.dp))
-                }
-            }
+            RamenShopSummarySkeleton(
+                contentPadding = PaddingValues(horizontal = 24.dp, vertical = 6.dp),
+            )
+        }
+    }
+}
+
+@Composable
+fun RamenShopSummarySkeleton(
+    contentPadding: PaddingValues,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier.fillMaxWidth().padding(contentPadding),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        Skeleton(
+            modifier = Modifier.size(60.dp),
+            shape = RoundedCornerShape(8.dp),
+        )
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            Skeleton(modifier = Modifier.fillMaxWidth(0.55f).height(16.dp))
+            Skeleton(modifier = Modifier.fillMaxWidth(0.8f).height(12.dp))
+            Skeleton(modifier = Modifier.fillMaxWidth(0.35f).height(12.dp))
         }
     }
 }

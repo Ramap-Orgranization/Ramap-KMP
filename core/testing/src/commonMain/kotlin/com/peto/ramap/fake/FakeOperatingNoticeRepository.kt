@@ -25,8 +25,10 @@ class FakeOperatingNoticeRepository(
         return error?.let { RamapResult.Error(it) } ?: RamapResult.Success(notices)
     }
 
-    override suspend fun fetchActiveShopOperatingNotice(shopId: String): RamapResult<OperatingNotice?> {
+    override suspend fun fetchActiveShopOperatingNotices(shopId: String): RamapResult<List<OperatingNotice>> {
         _requestedActiveNoticeShopIds.add(shopId)
-        return activeNoticeError?.let { RamapResult.Error(it) } ?: RamapResult.Success(activeNotice)
+        return activeNoticeError?.let { RamapResult.Error(it) } ?: RamapResult.Success(
+            notices.filter { it.shop.id == shopId }.ifEmpty { activeNotice?.let(::listOf).orEmpty() },
+        )
     }
 }

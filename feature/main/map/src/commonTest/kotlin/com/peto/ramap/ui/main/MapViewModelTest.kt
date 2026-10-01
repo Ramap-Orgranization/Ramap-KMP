@@ -12,12 +12,15 @@ import com.peto.ramap.domain.model.auth.LoginSessionState
 import com.peto.ramap.domain.model.auth.LoginType
 import com.peto.ramap.domain.model.businesshour.BusinessHours
 import com.peto.ramap.domain.model.businesshour.BusinessHoursDay
+import com.peto.ramap.domain.model.community.ReviewAuthor
 import com.peto.ramap.domain.model.personalization.ShopPersonalization
 import com.peto.ramap.domain.model.report.ShopInformationField
 import com.peto.ramap.domain.model.report.ShopInformationReport
+import com.peto.ramap.domain.model.review.Review
 import com.peto.ramap.domain.model.shop.Category
 import com.peto.ramap.domain.model.shop.Location
 import com.peto.ramap.domain.model.shop.MapBounds
+import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.domain.model.shop.RamenShopFilter
 import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.domain.model.shop.SearchQuery
@@ -25,13 +28,18 @@ import com.peto.ramap.domain.repository.RamenShopRepository
 import com.peto.ramap.domain.repository.ShopReportRepository
 import com.peto.ramap.domain.repository.ShopWaitingSystemRepository
 import com.peto.ramap.domain.store.PersonalizationBootstrapState
-import com.peto.ramap.domain.store.ShopPersonalizationStore
+import com.peto.ramap.domain.store.PersonalizationStore
+import com.peto.ramap.domain.usecase.FetchShopDetailUseCase
+import com.peto.ramap.domain.usecase.ShopDetail
+import com.peto.ramap.domain.usecase.ShopDetailCacheLookup
 import com.peto.ramap.fake.FakeAnalyticsTracker
+import com.peto.ramap.fake.FakeCommunityRepository
 import com.peto.ramap.fake.FakeCrashReporter
 import com.peto.ramap.fake.FakeLoginRepository
 import com.peto.ramap.fake.FakeNotificationSettingsRepository
 import com.peto.ramap.fake.FakeOperatingNoticeRepository
 import com.peto.ramap.fake.FakePersonalizationRepository
+import com.peto.ramap.fake.FakeProfileRepository
 import com.peto.ramap.fake.FakeRamenShopRepository
 import com.peto.ramap.fake.FakeShopReportRepository
 import com.peto.ramap.fake.FakeShopWaitingSystemRepository
@@ -40,6 +48,7 @@ import com.peto.ramap.fixture.ramenShopFixture
 import com.peto.ramap.fixture.waitingSystemFixture
 import com.peto.ramap.ui.location.CurrentLocationStore
 import com.peto.ramap.ui.main.map.MapViewModel
+import com.peto.ramap.ui.main.map.contract.MapIntent
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnBookmarkToggled
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnBookmarkedShopsToggled
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnBoundsChanged
@@ -72,6 +81,7 @@ import com.peto.ramap.ui.main.map.model.CameraPosition
 import com.peto.ramap.ui.main.map.model.location.LocationFocusStatus
 import com.peto.ramap.ui.main.map.model.search.SearchResultGuide
 import com.peto.ramap.ui.main.map.model.search.SearchUiModel
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.delay
@@ -80,7 +90,6 @@ import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.withContext
 import org.jetbrains.compose.resources.StringResource
 import ramap.shared.generated.resources.Res
-import ramap.shared.generated.resources.filter_empty_visible_result_message
 import ramap.shared.generated.resources.hidden_shop_notification_unavailable_message
 import ramap.shared.generated.resources.hidden_shop_search_result_message
 import ramap.shared.generated.resources.hide_shop_success_message
@@ -90,9 +99,211 @@ import ramap.shared.generated.resources.shop_information_report_failure_message
 import ramap.shared.generated.resources.shop_information_report_success_message
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class MapViewModelTest {
+    @Test
+    fun `차단 리뷰 한 건만 본 뒤 상세를 닫으면 다시 가린다`() =
+        coroutinesTest {
+            val shop = ramenShopFixture(id = "blocked-review-shop")
+            val blocked =
+                Review(
+                    id = "blocked-review",
+                    shopId = shop.id,
+                    body = "",
+                    createdAt = "2026-09-30T00:00:00Z",
+                    author = ReviewAuthor("blocked-author", ""),
+                    isBlocked = true,
+                )
+            val reviews = FakeMapReviewRepository().apply { blockedReview = blocked.copy(body = "공개 요청한 리뷰") }
+            val viewModel =
+                mapViewModel(
+                    ramenShopRepository = FakeRamenShopRepository(fetchByIdsResult = RamenShops(mapOf(shop.id to shop))),
+                    loginRepository = loggedInRepository(),
+                    profileRepository = FakeProfileRepository("viewer"),
+                    reviewRepository = reviews,
+                    detailUseCase = blockedReviewDetailUseCase(shop, blocked),
+                )
+
+            runCurrent()
+            viewModel.dispatch(OnShopSelected(shop))
+            runCurrent()
+            viewModel.dispatch(MapIntent.OnBlockedReviewViewRequested(blocked))
+            runCurrent()
+
+            assertEquals(listOf(blocked.id), reviews.requestedBlockedReviews)
+            assertEquals(
+                "공개 요청한 리뷰",
+                viewModel.uiState.value.revealedBlockedReviews[blocked.id]
+                    ?.body,
+            )
+            assertTrue(
+                viewModel.uiState.value.shopDetail
+                    ?.reviews
+                    ?.single()
+                    ?.isBlocked == true,
+            )
+
+            viewModel.dispatch(OnShopDetailDismissed)
+            runCurrent()
+            assertTrue(
+                viewModel.uiState.value.revealedBlockedReviews
+                    .isEmpty(),
+            )
+        }
+
+    @Test
+    fun `차단 리뷰 메뉴에서 확인한 경우에만 작성자를 차단 해제한다`() =
+        coroutinesTest {
+            val shop = ramenShopFixture(id = "blocked-review-shop")
+            val blocked =
+                Review(
+                    id = "blocked-review",
+                    shopId = shop.id,
+                    body = "",
+                    createdAt = "2026-09-30T00:00:00Z",
+                    author = ReviewAuthor("blocked-author", ""),
+                    isBlocked = true,
+                )
+            val community = FakeCommunityRepository()
+            val viewModel =
+                mapViewModel(
+                    ramenShopRepository = FakeRamenShopRepository(fetchByIdsResult = RamenShops(mapOf(shop.id to shop))),
+                    loginRepository = loggedInRepository(),
+                    profileRepository = FakeProfileRepository("viewer"),
+                    communityRepository = community,
+                    detailUseCase = blockedReviewDetailUseCase(shop, blocked),
+                )
+
+            runCurrent()
+            viewModel.dispatch(OnShopSelected(shop))
+            runCurrent()
+            viewModel.dispatch(MapIntent.OnBlockedReviewUnblockRequested(blocked))
+            runCurrent()
+            assertEquals(emptyList(), community.unblockedUserIds)
+            viewModel.dispatch(MapIntent.OnBlockedReviewUnblockDismissed)
+            runCurrent()
+            assertEquals(null, viewModel.uiState.value.pendingUnblockReview)
+
+            viewModel.dispatch(MapIntent.OnBlockedReviewUnblockRequested(blocked))
+            viewModel.dispatch(MapIntent.OnBlockedReviewUnblockConfirmed)
+            runCurrent()
+            assertEquals(listOf("blocked-author"), community.unblockedUserIds)
+            assertEquals(null, viewModel.uiState.value.pendingUnblockReview)
+        }
+
+    @Test
+    fun `차단 해제 후 새 리뷰를 불러오는 동안 이전 가림 카드로 조회하지 않는다`() =
+        coroutinesTest {
+            val shop = ramenShopFixture(id = "unblocked-review-shop")
+            val blocked =
+                Review(
+                    id = "blocked-review",
+                    shopId = shop.id,
+                    body = "",
+                    createdAt = "2026-09-30T00:00:00Z",
+                    author = ReviewAuthor("blocked-author", ""),
+                    isBlocked = true,
+                )
+            val initialDetail =
+                ShopDetail(
+                    shop = shop,
+                    likeCount = 0L,
+                    waitingSystem = null,
+                    event = null,
+                    operatingNotice = null,
+                    reviews = listOf(blocked),
+                )
+            val refreshedDetail = CompletableDeferred<ShopDetail>()
+            var fetchCount = 0
+            val detailUseCase =
+                object : FetchShopDetailUseCase {
+                    override suspend fun invoke(shopId: String): RamapResult<ShopDetail> {
+                        fetchCount++
+                        return RamapResult.Success(
+                            if (fetchCount == 1) initialDetail else refreshedDetail.await(),
+                        )
+                    }
+
+                    override fun findCached(shopId: String): ShopDetailCacheLookup = ShopDetailCacheLookup.Miss
+
+                    override fun clearCache() = Unit
+
+                    override fun updateCachedLikeCount(
+                        shopId: String,
+                        enabled: Boolean,
+                    ) = Unit
+                }
+            val reviews = FakeMapReviewRepository()
+            val viewModel =
+                mapViewModel(
+                    ramenShopRepository = FakeRamenShopRepository(fetchByIdsResult = RamenShops(mapOf(shop.id to shop))),
+                    loginRepository = loggedInRepository(),
+                    profileRepository = FakeProfileRepository("viewer"),
+                    communityRepository = FakeCommunityRepository(),
+                    reviewRepository = reviews,
+                    detailUseCase = detailUseCase,
+                )
+
+            runCurrent()
+            viewModel.dispatch(OnShopSelected(shop))
+            runCurrent()
+            assertEquals(1, fetchCount)
+
+            viewModel.dispatch(MapIntent.OnBlockedReviewUnblockRequested(blocked))
+            viewModel.dispatch(MapIntent.OnBlockedReviewUnblockConfirmed)
+            runCurrent()
+
+            assertTrue(viewModel.uiState.value.shopDetailState is ShopDetailSheetUiState.Loading)
+            viewModel.dispatch(MapIntent.OnBlockedReviewViewRequested(blocked))
+            runCurrent()
+            assertTrue(reviews.requestedBlockedReviews.isEmpty())
+
+            refreshedDetail.complete(initialDetail.copy(reviews = listOf(blocked.copy(body = "공개 리뷰", isBlocked = false))))
+            runCurrent()
+            assertEquals(
+                "공개 리뷰",
+                viewModel.uiState.value.shopDetail
+                    ?.reviews
+                    ?.single()
+                    ?.body,
+            )
+        }
+
+    @Test
+    fun `같은 매장 상세 화면이 재구성되어도 상세 조회를 반복하지 않는다`() =
+        coroutinesTest {
+            val shop = ramenShopFixture(id = "restored-shop")
+            val repository = FakeRamenShopRepository(fetchByIdsResult = RamenShops(mapOf(shop.id to shop)))
+            val fakeDetailUseCase =
+                FakeFetchShopDetailUseCase(
+                    repository,
+                    FakeShopWaitingSystemRepository(),
+                    FakeOperatingNoticeRepository(),
+                )
+            val detailUseCase =
+                object : FetchShopDetailUseCase by fakeDetailUseCase {
+                    var requestCount = 0
+
+                    override suspend fun invoke(shopId: String): RamapResult<ShopDetail> {
+                        requestCount++
+                        return fakeDetailUseCase(shopId)
+                    }
+                }
+            val viewModel = mapViewModel(ramenShopRepository = repository, detailUseCase = detailUseCase)
+
+            viewModel.dispatch(OnShopIdSelected(shop.id))
+            runCurrent()
+            assertEquals(1, detailUseCase.requestCount)
+
+            viewModel.dispatch(OnShopIdSelected(shop.id))
+            runCurrent()
+
+            assertEquals(1, detailUseCase.requestCount)
+            assertEquals(shop, viewModel.uiState.value.selectedShop)
+        }
+
     @Test
     fun `랭킹 매장 상세를 연 뒤 지도 탭을 떠나면 모든 바텀시트를 닫는다`() =
         coroutinesTest {
@@ -496,6 +707,56 @@ class MapViewModelTest {
             assertEquals(false, viewModel.uiState.value.hasShopDetailLoadFailed)
             assertEquals(false, viewModel.uiState.value.isShopDetailLoading)
             assertEquals(3, repository.requestedShopIdsHistory.size)
+        }
+
+    @Test
+    fun `리뷰만 실패한 매장 상세에서 재시도하면 리뷰를 다시 조회한다`() =
+        coroutinesTest {
+            val shop = ramenShopFixture()
+            var requests = 0
+            val detailUseCase =
+                object : FetchShopDetailUseCase {
+                    override suspend fun invoke(shopId: String): RamapResult<ShopDetail> {
+                        requests++
+                        return RamapResult.Success(
+                            ShopDetail(
+                                shop,
+                                0L,
+                                null,
+                                null,
+                                null,
+                                hasReviewLoadFailure = requests == 1,
+                            ),
+                        )
+                    }
+
+                    override fun findCached(shopId: String): ShopDetailCacheLookup = ShopDetailCacheLookup.Miss
+
+                    override fun clearCache() = Unit
+
+                    override fun updateCachedLikeCount(
+                        shopId: String,
+                        enabled: Boolean,
+                    ) = Unit
+                }
+            val viewModel = mapViewModel(detailUseCase = detailUseCase)
+            viewModel.dispatch(OnShopSelected(shop))
+            runCurrent()
+            assertEquals(
+                true,
+                viewModel.uiState.value.shopDetail
+                    ?.hasReviewLoadFailure,
+            )
+
+            viewModel.dispatch(OnShopDetailRetry)
+            runCurrent()
+
+            assertEquals(2, requests)
+            assertEquals(
+                false,
+                viewModel.uiState.value.shopDetail
+                    ?.hasReviewLoadFailure,
+            )
         }
 
     @Test
@@ -1027,7 +1288,7 @@ class MapViewModelTest {
             viewModel.sideEffect.test {
                 viewModel.dispatch(
                     OnShopReportSubmitted(
-                        wrongFields = setOf(ShopInformationField.PHONE),
+                        wrongFields = setOf(ShopInformationField.ADDRESS),
                         description = "",
                     ),
                 )
@@ -2075,27 +2336,20 @@ class MapViewModelTest {
         }
 
     @Test
-    fun `영업중 필터가 켜져 있으면 주기적으로 목록을 갱신한다`() =
+    fun `검색어를 입력하면 카테고리 영업중 좋아요 필터를 해제한다`() =
         coroutinesTest {
-            val viewModel = mapViewModel()
-
+            val viewModel = mapViewModel(loginRepository = loggedInRepository())
+            runCurrent()
+            viewModel.dispatch(OnCategoryFilterToggled(Category.MAZESOBA))
             viewModel.dispatch(OnOpenFilterToggled)
-            runCurrent()
-            val initialVersion = viewModel.uiState.value.openFilterRefreshVersion
-
-            advanceTimeBy(60_000)
+            viewModel.dispatch(OnBookmarkedShopsToggled)
             runCurrent()
 
-            assertEquals(initialVersion + 1, viewModel.uiState.value.openFilterRefreshVersion)
-
-            viewModel.dispatch(OnOpenFilterToggled)
-            runCurrent()
-            val disabledVersion = viewModel.uiState.value.openFilterRefreshVersion
-
-            advanceTimeBy(60_000)
+            viewModel.dispatch(OnQueryChanged("라멘"))
             runCurrent()
 
-            assertEquals(disabledVersion, viewModel.uiState.value.openFilterRefreshVersion)
+            assertEquals(RamenShopFilter(), viewModel.uiState.value.filters)
+            assertEquals(false, viewModel.uiState.value.isBookmarkedView)
         }
 
     @Test
@@ -2115,9 +2369,10 @@ class MapViewModelTest {
             val ramenShopRepository = FakeRamenShopRepository(searchResult = searchShops)
             val viewModel = mapViewModel(ramenShopRepository)
 
-            viewModel.dispatch(OnCategoryFilterToggled(Category.MAZESOBA))
             viewModel.dispatch(OnQueryChanged("라멘"))
             advanceTimeBy(300)
+            runCurrent()
+            viewModel.dispatch(OnCategoryFilterToggled(Category.MAZESOBA))
             runCurrent()
 
             assertEquals(
@@ -2170,43 +2425,28 @@ class MapViewModelTest {
     }
 
     @Test
-    fun `필터와 맞지 않는 단일 검색 결과는 자동 선택하지 않는다`() =
-        coroutinesTest {
-            val shop =
-                ramenShopFixture(
-                    id = "jiro-shop",
-                    menuCategories = listOf(Category.JIRO),
-                )
-            val mapShop =
-                ramenShopFixture(
-                    id = "mazesoba-map-shop",
-                    menuCategories = listOf(Category.MAZESOBA),
-                )
-            val searchShops = RamenShops(listOf(shop).associateBy { it.id })
-            val ramenShopRepository =
-                FakeRamenShopRepository(
-                    result = RamenShops(mapOf(mapShop.id to mapShop)),
-                    searchResult = searchShops,
-                )
-            val viewModel = mapViewModel(ramenShopRepository)
+    fun `정기 휴무로 선택된 매장은 영업중 필터의 마커에 포함하지 않는다`() {
+        val closedShop =
+            ramenShopFixture(id = "regularly-closed-shop").copy(
+                businessHoursDetails =
+                    BusinessHours(
+                        weekly =
+                            listOf("mon", "tue", "wed", "thu", "fri", "sat", "sun").associateWith {
+                                BusinessHoursDay(true, null, null, false, "정기휴무")
+                            },
+                        breakTimes = emptyMap(),
+                        lastOrders = emptyMap(),
+                        notice = null,
+                    ),
+            )
+        val uiState =
+            MapUiState(
+                shopDetailState = ShopDetailSheetUiState.Loading(closedShop.id, closedShop),
+                filters = RamenShopFilter(isOpenSelected = true),
+            )
 
-            viewModel.sideEffect.test {
-                viewModel.dispatch(OnBoundsChanged(BOUNDS_FIXTURE))
-                advanceTimeBy(350)
-                runCurrent()
-                viewModel.dispatch(OnCategoryFilterToggled(Category.MAZESOBA))
-                viewModel.dispatch(OnQueryChanged("라멘"))
-                advanceTimeBy(300)
-                runCurrent()
-
-                assertEquals(null, viewModel.uiState.value.selectedShop)
-                assertEquals(RamenShops(emptyMap()), viewModel.uiState.value.searchResultShops)
-                assertEquals(
-                    showToastSideEffect(Res.string.filter_empty_visible_result_message),
-                    awaitItem(),
-                )
-            }
-        }
+        assertTrue(uiState.markerShops.isEmpty())
+    }
 
     @Test
     fun `검색 결과가 없으면 안내 바텀시트를 보여주지 않는다`() {
@@ -2637,7 +2877,7 @@ class MapViewModelTest {
         }
 
     @Test
-    fun `필터 적용 후 숨김 검색 결과만 남으면 상세를 열지 않고 숨김 안내를 보여준다`() =
+    fun `검색 후 필터 적용으로 숨김 검색 결과만 남으면 상세를 열지 않는다`() =
         coroutinesTest {
             val hiddenShop =
                 ramenShopFixture(
@@ -2660,34 +2900,25 @@ class MapViewModelTest {
                     shopWaitingSystemRepository = waitingSystemRepository,
                 )
 
-            viewModel.sideEffect.test {
-                viewModel.dispatch(OnCategoryFilterToggled(Category.MAZESOBA))
-                viewModel.dispatch(OnQueryChanged("라멘"))
-                advanceTimeBy(300)
-                runCurrent()
+            viewModel.dispatch(OnQueryChanged("라멘"))
+            advanceTimeBy(300)
+            runCurrent()
+            viewModel.dispatch(OnCategoryFilterToggled(Category.MAZESOBA))
+            runCurrent()
 
-                assertEquals(null, viewModel.uiState.value.selectedShop)
-                assertEquals(false, viewModel.uiState.value.showBottomSheet)
-                assertEquals(false, viewModel.uiState.value.showSearchResults)
-                assertEquals(
-                    SearchResultGuide.HiddenOnly,
-                    viewModel.uiState.value.searchResultGuide,
-                )
-                assertEquals(
-                    RamenShops(listOf(hiddenShop)),
-                    viewModel.uiState.value.searchResultShops,
-                )
-                assertEquals(RamenShops(listOf(hiddenShop)), viewModel.uiState.value.focusShops)
-                assertEquals(emptyList(), waitingSystemRepository.requestedShopIds)
-                assertEquals(
-                    showToastSideEffect(Res.string.filter_empty_visible_result_message),
-                    awaitItem(),
-                )
-                assertEquals(
-                    showToastSideEffect(Res.string.hidden_shop_search_result_message),
-                    awaitItem(),
-                )
-            }
+            assertEquals(null, viewModel.uiState.value.selectedShop)
+            assertEquals(false, viewModel.uiState.value.showBottomSheet)
+            assertEquals(false, viewModel.uiState.value.showSearchResults)
+            assertEquals(
+                SearchResultGuide.HiddenOnly,
+                viewModel.uiState.value.searchResultGuide,
+            )
+            assertEquals(
+                RamenShops(listOf(hiddenShop)),
+                viewModel.uiState.value.searchResultShops,
+            )
+            assertEquals(RamenShops(listOf(hiddenShop)), viewModel.uiState.value.focusShops)
+            assertEquals(emptyList(), waitingSystemRepository.requestedShopIds)
         }
 
     @Test
@@ -2730,10 +2961,14 @@ private fun showToastSideEffect(message: StringResource): ShowToast =
 private fun mapViewModel(
     ramenShopRepository: RamenShopRepository = FakeRamenShopRepository(),
     shopWaitingSystemRepository: ShopWaitingSystemRepository = FakeShopWaitingSystemRepository(),
-    personalizationRepository: ShopPersonalizationStore = FakePersonalizationRepository(),
+    personalizationRepository: PersonalizationStore = FakePersonalizationRepository(),
     loginRepository: FakeLoginRepository = FakeLoginRepository(),
     shopReportRepository: ShopReportRepository = FakeShopReportRepository(),
     notificationSettingsRepository: FakeNotificationSettingsRepository = FakeNotificationSettingsRepository(),
+    detailUseCase: FetchShopDetailUseCase? = null,
+    reviewRepository: FakeMapReviewRepository = FakeMapReviewRepository(),
+    communityRepository: FakeCommunityRepository = FakeCommunityRepository(),
+    profileRepository: FakeProfileRepository = FakeProfileRepository(null),
 ): MapViewModel =
     MapViewModel(
         ramenShopRepository,
@@ -2741,7 +2976,7 @@ private fun mapViewModel(
         CurrentLocationStore(),
         shopReportRepository,
         personalizationRepository,
-        FakeFetchShopDetailUseCase(
+        detailUseCase ?: FakeFetchShopDetailUseCase(
             ramenShopRepository,
             shopWaitingSystemRepository,
             FakeOperatingNoticeRepository(),
@@ -2749,7 +2984,38 @@ private fun mapViewModel(
         FakeMapSearchHistoryStorage(),
         MapAnalytics(FakeAnalyticsTracker()),
         LoginAnalytics(FakeAnalyticsTracker(), FakeCrashReporter()),
+        FakeOperatingNoticeRepository(),
+        reviewRepository,
+        communityRepository,
+        profileRepository,
     )
+
+private fun blockedReviewDetailUseCase(
+    shop: RamenShop,
+    review: Review,
+): FetchShopDetailUseCase =
+    object : FetchShopDetailUseCase {
+        override suspend fun invoke(shopId: String): RamapResult<ShopDetail> =
+            RamapResult.Success(
+                ShopDetail(
+                    shop = shop,
+                    likeCount = 0L,
+                    waitingSystem = null,
+                    event = null,
+                    operatingNotice = null,
+                    reviews = listOf(review),
+                ),
+            )
+
+        override fun findCached(shopId: String): ShopDetailCacheLookup = ShopDetailCacheLookup.Miss
+
+        override fun clearCache() = Unit
+
+        override fun updateCachedLikeCount(
+            shopId: String,
+            enabled: Boolean,
+        ) = Unit
+    }
 
 private fun loggedInRepository(): FakeLoginRepository =
     FakeLoginRepository(
@@ -2757,5 +3023,4 @@ private fun loggedInRepository(): FakeLoginRepository =
         userEmail = "test@ramap.com",
     )
 
-private fun personalization(repository: FakePersonalizationRepository): ShopPersonalization =
-    (repository.state.value as PersonalizationBootstrapState.Success).value
+private fun personalization(repository: FakePersonalizationRepository): ShopPersonalization = (repository.state.value as PersonalizationBootstrapState.Success).value

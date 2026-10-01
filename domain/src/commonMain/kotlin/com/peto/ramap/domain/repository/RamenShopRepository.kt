@@ -1,13 +1,15 @@
 package com.peto.ramap.domain.repository
 
 import com.peto.ramap.core.result.RamapResult
-import com.peto.ramap.domain.model.event.CalendarEventPage
 import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.model.shop.MapBounds
 import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.domain.model.shop.SearchQuery
+import com.peto.ramap.domain.usecase.ShopDetail
 
 interface RamenShopRepository {
+    suspend fun fetchShopDetail(shopId: String): RamapResult<ShopDetail>
+
     suspend fun fetchShopLikeCount(shopId: String): RamapResult<Long>
 
     suspend fun fetchRamenShops(bounds: MapBounds): RamapResult<RamenShops>
@@ -17,15 +19,6 @@ interface RamenShopRepository {
     suspend fun fetchActiveShopEvent(shopId: String): RamapResult<ShopEvent?>
 
     suspend fun fetchActiveEvents(): RamapResult<List<ShopEvent>>
-
-    suspend fun fetchCalendarEvents(
-        startDate: String,
-        endDate: String,
-    ): RamapResult<List<ShopEvent>>
-
-    suspend fun fetchCalendarEventPage(monthStart: String): RamapResult<CalendarEventPage>
-
-    fun invalidateCalendarEventPage(monthStart: String)
 
     /**
      * 딥링크로 들어왔을 때 이벤트가 없으면 [RamapResult.Success]에 `null`을 담고,

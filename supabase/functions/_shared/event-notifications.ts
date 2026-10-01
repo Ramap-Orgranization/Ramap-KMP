@@ -6,7 +6,7 @@ export type NotificationType = "new_event" | "day_before" | "event_day";
 export type EventType = "collab" | "popup" | "limited_menu" | "summer_limited" | "new_menu" | "store_renewal";
 export type ShopEvent = {
   id: string;
-  shop_id: string;
+  shop_id: string | null;
   title: string;
   event_type: EventType;
   start_date?: string;
@@ -141,7 +141,8 @@ async function resolveAudience(
     .eq("event_id", event.id)
     .not("shop_id", "is", null);
   if (participantError) throw participantError;
-  const shopIds = [...new Set([event.shop_id, ...(participants ?? []).map(({ shop_id }) => shop_id as string)])];
+  const shopIds = [...new Set([event.shop_id, ...(participants ?? []).map(({ shop_id }) => shop_id as string)].filter((shopId): shopId is string => shopId !== null))];
+  if (shopIds.length === 0) return [];
 
   const { data: subscriptions, error: subscriptionError } = await supabase
     .from("shop_event_notification_subscriptions")
@@ -191,7 +192,7 @@ async function sendMessage(
           notification_type: notificationType,
           event_type: event.event_type,
           event_id: event.id,
-          shop_id: event.shop_id,
+          shop_id: event.shop_id ?? "",
           deep_link: `ramap://notification/event?event_id=${encodeURIComponent(event.id)}`,
         },
         android: { notification: { sound: "default" } },

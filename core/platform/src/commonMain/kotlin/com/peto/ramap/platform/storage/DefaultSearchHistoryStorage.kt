@@ -60,7 +60,12 @@ class DefaultSearchHistoryStorage(
         }
     }
 
-    private fun String?.decode(): List<String> = this?.split(SEPARATOR)?.filter(String::isNotBlank).orEmpty()
+    private fun String?.decode(): List<String> =
+        this
+            ?.split(SEPARATOR)
+            ?.filter(String::isNotBlank)
+            ?.take(MAX_HISTORY_SIZE)
+            .orEmpty()
 
     private fun List<String>.encode(): String = take(MAX_HISTORY_SIZE).joinToString(SEPARATOR)
 

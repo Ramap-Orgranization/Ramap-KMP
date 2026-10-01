@@ -33,14 +33,12 @@ class MapAnalyticsTest {
         val shop =
             com.peto.ramap.domain.model.shop.RamenShop(
                 id = "shop-1",
-                kakaoPlaceId = null,
                 name = "라멘집",
                 address = "서울",
                 location =
                     com.peto.ramap.domain.model.shop
                         .Location(0.0, 0.0),
                 kakaoPlaceUrl = null,
-                phone = null,
                 instagramUrl = null,
                 menuCategories =
                     com.peto.ramap.domain.model.shop

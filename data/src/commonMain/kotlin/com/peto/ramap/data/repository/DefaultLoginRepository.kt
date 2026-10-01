@@ -4,6 +4,7 @@ import co.touchlab.kermit.Logger
 import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.data.auth.loginWithApple
 import com.peto.ramap.data.auth.loginWithKakao
+import com.peto.ramap.data.model.DeleteAccountResponse
 import com.peto.ramap.domain.model.auth.LoginSessionState
 import com.peto.ramap.domain.model.auth.LoginType
 import com.peto.ramap.domain.repository.LoginRepository
@@ -14,7 +15,9 @@ import io.github.jan.supabase.auth.providers.Apple
 import io.github.jan.supabase.auth.providers.Kakao
 import io.github.jan.supabase.auth.providers.builtin.IDToken
 import io.github.jan.supabase.auth.status.SessionStatus
+import io.github.jan.supabase.functions.functions
 import io.github.jan.supabase.postgrest.postgrest
+import io.ktor.client.call.body
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -89,8 +92,9 @@ internal class DefaultLoginRepository(
 
     override suspend fun deleteAccount(): RamapResult<Unit> =
         invokeRequest {
-            supabaseClient.postgrest.rpc(DELETE_CURRENT_USER_RPC)
-            supabaseClient.auth.signOut()
+            val response = supabaseClient.functions.invoke(DELETE_ACCOUNT_FUNCTION)
+            check(response.status.value in 200..299 && response.body<DeleteAccountResponse>().deleted) { ERROR_DELETE_ACCOUNT_FAILED }
+            supabaseClient.auth.clearSession()
         }
 
     private suspend fun unregisterPushRegistrations() {
@@ -104,7 +108,8 @@ internal class DefaultLoginRepository(
     }
 
     private companion object {
-        const val DELETE_CURRENT_USER_RPC = "delete_current_user"
+        const val DELETE_ACCOUNT_FUNCTION = "delete-account"
+        const val ERROR_DELETE_ACCOUNT_FAILED = "Account deletion did not complete"
         const val UNREGISTER_PUSH_REGISTRATIONS_RPC = "unregister_push_registrations"
     }
 }

@@ -30,6 +30,7 @@ internal fun AdminShopNameField(
     shopName: String,
     shopNames: List<String>,
     onShopNameChanged: (String) -> Unit,
+    readOnly: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     var showShopSuggestions by remember { mutableStateOf(false) }
@@ -37,7 +38,7 @@ internal fun AdminShopNameField(
 
     ExposedDropdownMenuBox(
         expanded = showShopSuggestions && suggestions.isNotEmpty(),
-        onExpandedChange = { showShopSuggestions = it },
+        onExpandedChange = { showShopSuggestions = !readOnly && it },
         modifier = modifier.fillMaxWidth(),
     ) {
         OutlinedTextField(
@@ -49,7 +50,8 @@ internal fun AdminShopNameField(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryEditable, enabled = true),
+                    .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryEditable, enabled = !readOnly),
+            readOnly = readOnly,
             placeholder = {
                 AppText(
                     text = stringResource(R.string.admin_registration_shop_placeholder),

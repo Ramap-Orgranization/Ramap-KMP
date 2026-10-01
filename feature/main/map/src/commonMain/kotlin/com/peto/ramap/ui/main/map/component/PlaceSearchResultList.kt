@@ -22,6 +22,7 @@ import com.peto.ramap.designsystem.resource.businesshours.BusinessHoursStatusRes
 import com.peto.ramap.designsystem.resource.format
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.domain.model.businesshour.BusinessHoursStatus
+import com.peto.ramap.domain.model.notice.OperatingNotice
 import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.preview.RamenShopsPreviewParameterProvider
@@ -36,16 +37,18 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
+import ramap.shared.generated.resources.map_search_result_break_time_label
 import ramap.shared.generated.resources.map_search_result_closed_label
 import kotlin.time.Clock
 
 @Composable
 internal fun SearchResultList(
     shops: RamenShops,
+    operatingNotices: List<OperatingNotice>,
     onShopClick: (RamenShop) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val currentDateTime = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
+    val currentDateTime = Clock.System.now().toLocalDateTime(TimeZone.of("Asia/Seoul"))
 
     Column(
         modifier =
@@ -58,6 +61,7 @@ internal fun SearchResultList(
             SearchResultItem(
                 shop = shop,
                 currentDateTime = currentDateTime,
+                operatingNotices = operatingNotices,
                 onClick = { onShopClick(shop) },
             )
             if (index != shops.size - 1) {
@@ -71,6 +75,7 @@ internal fun SearchResultList(
 private fun SearchResultItem(
     shop: RamenShop,
     currentDateTime: LocalDateTime,
+    operatingNotices: List<OperatingNotice>,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -105,18 +110,27 @@ private fun SearchResultItem(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
-                shop.businessHoursStatus(currentDateTime)?.let { status ->
+                shop.businessHoursStatus(currentDateTime, operatingNotices)?.let { status ->
                     val statusText = BusinessHoursStatusResourceMapper.status(status).format()
-                    if (status is BusinessHoursStatus.Closed) {
-                        val closedLabel = stringResource(Res.string.map_search_result_closed_label)
+                    val highlightedLabel =
+                        when (status) {
+                            is BusinessHoursStatus.BreakTime ->
+                                stringResource(Res.string.map_search_result_break_time_label)
+
+                            is BusinessHoursStatus.Closed ->
+                                stringResource(Res.string.map_search_result_closed_label)
+
+                            else -> null
+                        }
+                    if (highlightedLabel != null) {
                         Row {
                             AppText(
-                                text = closedLabel,
+                                text = highlightedLabel,
                                 style = AppTextStyle.B2,
                                 color = SystemColor.Warning,
                             )
                             AppText(
-                                text = statusText.removePrefix(closedLabel),
+                                text = statusText.removePrefix(highlightedLabel),
                                 style = AppTextStyle.B2,
                                 color = GrayColor.C500,
                             )
@@ -149,6 +163,7 @@ private fun SearchResultListPreview(
     RamapTheme {
         SearchResultList(
             shops = shops,
+            operatingNotices = emptyList(),
             onShopClick = {},
         )
     }

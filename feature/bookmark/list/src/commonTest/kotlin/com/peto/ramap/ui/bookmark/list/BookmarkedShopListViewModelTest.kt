@@ -12,7 +12,7 @@ import com.peto.ramap.domain.model.personalization.ShopPersonalization
 import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.domain.repository.RamenShopRepository
-import com.peto.ramap.domain.store.ShopPersonalizationStore
+import com.peto.ramap.domain.store.PersonalizationStore
 import com.peto.ramap.fake.FakeAnalyticsTracker
 import com.peto.ramap.fake.FakePersonalizationRepository
 import com.peto.ramap.fake.FakeRamenShopRepository
@@ -341,7 +341,7 @@ class BookmarkedShopListViewModelTest {
         coroutinesTest {
             val shop = ramenShopFixture(id = "bookmarked-shop")
             val repository =
-                object : ShopPersonalizationStore by FakePersonalizationRepository(
+                object : PersonalizationStore by FakePersonalizationRepository(
                     ShopPersonalization(bookmarkedShopIds = setOf(shop.id)),
                 ) {
                     override suspend fun updateBookmark(
@@ -372,7 +372,7 @@ class BookmarkedShopListViewModelTest {
 
 private fun bookmarkedShopListViewModel(
     shop: RamenShop,
-    personalizationRepository: ShopPersonalizationStore =
+    personalizationRepository: PersonalizationStore =
         FakePersonalizationRepository(
             ShopPersonalization(bookmarkedShopIds = setOf(shop.id)),
         ),

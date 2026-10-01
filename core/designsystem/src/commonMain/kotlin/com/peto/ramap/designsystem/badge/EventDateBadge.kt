@@ -21,7 +21,7 @@ import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.RamapTheme
 import org.jetbrains.compose.resources.painterResource
 import ramap.shared.generated.resources.Res
-import ramap.shared.generated.resources.ic_event_calendar
+import ramap.shared.generated.resources.ic_operating_notice_fab
 
 @Composable
 fun EventDateBadge(
@@ -40,7 +40,7 @@ fun EventDateBadge(
         horizontalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         Icon(
-            painter = painterResource(Res.drawable.ic_event_calendar),
+            painter = painterResource(Res.drawable.ic_operating_notice_fab),
             contentDescription = null,
             modifier = Modifier.size(12.dp),
             tint = GrayColor.C400,

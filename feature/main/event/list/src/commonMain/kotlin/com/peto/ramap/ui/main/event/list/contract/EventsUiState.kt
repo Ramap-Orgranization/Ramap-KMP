@@ -27,6 +27,9 @@ data class EventsUiState(
     val isRefreshing: Boolean
         get() = loadState.isLoading(EventsLoadKey.Refresh)
 
+    val isNewMenuFilter: Boolean
+        get() = selectedFilter == EventFilter.NEW_MENU
+
     val isEmpty: Boolean
         get() =
             summerLimitedEvents.isEmpty() &&

@@ -15,9 +15,9 @@ import com.peto.ramap.designsystem.component.RamenShopSummaries
 import com.peto.ramap.designsystem.component.ShopListCount
 import com.peto.ramap.designsystem.component.ShopListEmptyContent
 import com.peto.ramap.designsystem.resource.category.CategoryResourceMapper
+import com.peto.ramap.designsystem.resource.event.ShopEventResourceMapper
 import com.peto.ramap.designsystem.text.eventDateText
 import com.peto.ramap.domain.model.event.ShopEvent
-import com.peto.ramap.domain.model.event.ShopEventType
 import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.preview.RamenShopPreviewParameterProvider
@@ -38,7 +38,7 @@ internal fun SubscribedShopListContent(
     onEventOpen: (ShopEvent) -> Unit,
     onRemovalRequested: (SubscribedRemovalTarget) -> Unit,
 ) {
-    if (uiState.shops.isEmpty() && uiState.subscribedEvents.isEmpty()) {
+    if (uiState.showsEmptyContent) {
         ShopListEmptyContent(
             title = stringResource(Res.string.subscribed_shops_empty_title),
             modifier = Modifier.fillMaxSize(),
@@ -51,7 +51,7 @@ internal fun SubscribedShopListContent(
                     .verticalScroll(rememberScrollState()),
         ) {
             ShopListCount(count = uiState.shops.size)
-            if (uiState.subscribedEvents.isNotEmpty()) {
+            if (uiState.showsSubscribedEvents) {
                 SectionCard(
                     title = stringResource(Res.string.top_level_tab_event),
                     modifier = Modifier.padding(horizontal = 20.dp),
@@ -62,11 +62,7 @@ internal fun SubscribedShopListContent(
                             dateText =
                                 eventDateText(
                                     event.startDate,
-                                    if (event.type == ShopEventType.STORE_RENEWAL) {
-                                        event.startDate
-                                    } else {
-                                        event.endDate
-                                    },
+                                    ShopEventResourceMapper.displayEndDate(event),
                                 ),
                             onClick = { onEventOpen(event) },
                             actionLabel = stringResource(Res.string.notification_removal_confirm_action),
@@ -79,7 +75,7 @@ internal fun SubscribedShopListContent(
                 }
             }
 
-            if (uiState.shops.isNotEmpty()) {
+            if (uiState.showsShops) {
                 RamenShopSummaries(
                     shops = uiState.shops,
                     onShopClick = onShopOpen,

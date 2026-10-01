@@ -1,6 +1,6 @@
 export type Provider = "kakao" | "naver"
 export type ImportedPlace = { sourceId?: string; name: string; address?: string; lat?: number; lng?: number }
-export type Shop = { id: string; kakao_place_id?: string; name: string; address: string; lat: number; lng: number }
+export type Shop = { id: string; kakao_place_url?: string | null; name: string; address: string; lat: number; lng: number }
 
 export const MAX_PLACES = 100
 export const PROVIDER_HOSTS: Record<Provider, Set<string>> = {
@@ -98,7 +98,7 @@ function place(sourceId: unknown, name: unknown, address: unknown, lat: unknown,
   return { sourceId: text(sourceId), name: name.trim(), address: text(address), lat: number(lat), lng: number(lng) }
 }
 function uniqueShopId(place: ImportedPlace, shops: Shop[]): string | null {
-  const byId = place.sourceId === undefined ? [] : shops.filter((shop) => shop.kakao_place_id === place.sourceId)
+  const byId = place.sourceId === undefined ? [] : shops.filter((shop) => extractKakaoPlaceId(shop.kakao_place_url) === place.sourceId)
   if (byId.length === 1) return byId[0].id
   const address = place.address
   const byAddress = address === undefined ? [] : shops.filter((shop) => normalize(shop.address) === normalize(address))
@@ -107,6 +107,10 @@ function uniqueShopId(place: ImportedPlace, shops: Shop[]): string | null {
   const byNameNearby = nearbyShops(place, byName)
   if (byNameNearby.length === 1) return byNameNearby[0].id
   return nearestShopId(place, shops)
+}
+export function extractKakaoPlaceId(value: string | null | undefined): string | undefined {
+  const match = value?.trim().match(/^https?:\/\/place\.map\.kakao\.com\/(\d+)(?:[/?#]|$)/i)
+  return match?.[1]
 }
 function nearbyShops(place: ImportedPlace, shops: Shop[]): Shop[] {
   return place.lat === undefined || place.lng === undefined ? [] : shops.filter((shop) => meters(place.lat!, place.lng!, shop.lat, shop.lng) <= MAX_COORDINATE_DISTANCE_METERS)

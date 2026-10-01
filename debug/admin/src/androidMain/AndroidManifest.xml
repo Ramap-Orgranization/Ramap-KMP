@@ -3,7 +3,7 @@
         <activity
             android:name=".AdminRegistrationActivity"
             android:exported="true"
-            android:label="@string/admin_registration_title">
+            android:label="@string/admin_login_title">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />

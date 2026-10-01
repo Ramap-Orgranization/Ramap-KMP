@@ -27,7 +27,11 @@ fun LoadErrorContent(
     compact: Boolean = false,
 ) {
     Column(
-        modifier = modifier.padding(horizontal = 24.dp, vertical = if (compact) 20.dp else 32.dp),
+        modifier =
+            modifier.padding(
+                start = 15.dp,
+                end = 15.dp,
+            ),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement =
             Arrangement.spacedBy(
@@ -38,7 +42,7 @@ fun LoadErrorContent(
         Image(
             painter = painterResource(image),
             contentDescription = null,
-            modifier = Modifier.size(if (compact) 148.dp else 220.dp),
+            modifier = Modifier.size(if (compact) 130.dp else 200.dp),
         )
         AppText(
             text = title,

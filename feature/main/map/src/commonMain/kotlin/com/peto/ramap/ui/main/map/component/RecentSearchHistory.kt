@@ -6,9 +6,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -18,7 +15,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.peto.ramap.designsystem.component.RamenShopSummaries
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.domain.model.shop.Category
@@ -55,29 +51,31 @@ internal fun RecentSearchHistory(
 
     Column(
         modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         if (searches.isNotEmpty()) {
             HistoryHeader(
                 title = stringResource(Res.string.recent_searches_title),
                 action = stringResource(Res.string.recent_search_clear_all),
                 onAction = onSearchesCleared,
+                modifier = Modifier.padding(top = 15.dp),
             )
             searches.forEach { query ->
                 Row(
                     modifier =
                         Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 8.dp)
+                            .padding(horizontal = 5.dp)
                             .noRippleClickable { onSearchSelected(query) },
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Text(
+                    AppText(
                         text = "⌕",
                         modifier =
                             Modifier.semantics {
                                 contentDescription = searchIconDescription
                             },
-                        fontSize = 24.sp,
+                        style = AppTextStyle.H3,
                         color = GrayColor.C500,
                     )
                     AppText(
@@ -91,13 +89,12 @@ internal fun RecentSearchHistory(
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
-                    IconButton(onClick = { onSearchDeleted(query) }) {
-                        Icon(
-                            painter = painterResource(Res.drawable.ic_close),
-                            contentDescription = stringResource(Res.string.recent_search_delete_action),
-                            tint = GrayColor.C400,
-                        )
-                    }
+                    Icon(
+                        painter = painterResource(Res.drawable.ic_close),
+                        contentDescription = stringResource(Res.string.recent_search_delete_action),
+                        tint = GrayColor.C400,
+                        modifier = Modifier.noRippleClickable(onClick = { onSearchDeleted(query) }),
+                    )
                 }
             }
         }
@@ -127,15 +124,21 @@ private fun HistoryHeader(
         modifier =
             modifier
                 .fillMaxWidth()
-                .padding(start = 8.dp, end = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
+                .padding(horizontal = 5.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
-        AppText(text = title, style = AppTextStyle.T2, color = GrayColor.C500)
+        AppText(
+            text = title,
+            style = AppTextStyle.T2,
+            color = GrayColor.C500,
+        )
         if (action != null && onAction != null) {
-            TextButton(onClick = onAction) {
-                AppText(text = action, style = AppTextStyle.B2, color = GrayColor.C300)
-            }
+            AppText(
+                text = action,
+                style = AppTextStyle.B2,
+                color = GrayColor.C300,
+                modifier = Modifier.noRippleClickable(onClick = onAction),
+            )
         }
     }
 }

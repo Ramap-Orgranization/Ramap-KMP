@@ -22,7 +22,6 @@ import com.peto.ramap.designsystem.resource.event.ShopEventResourceMapper
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.designsystem.text.eventDateText
 import com.peto.ramap.domain.model.event.ShopEvent
-import com.peto.ramap.domain.model.event.ShopEventType
 import com.peto.ramap.domain.model.event.ShopEvents
 import com.peto.ramap.extension.noRippleClickable
 import com.peto.ramap.theme.AppTextStyle
@@ -56,9 +55,9 @@ fun EventShopGroupCard(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            RemoteShopImage(url = shop.venueProfileImageUrl, modifier = Modifier.size(44.dp))
+            RemoteShopImage(url = shop.eventListProfileImageUrl, modifier = Modifier.size(44.dp))
             AppText(
-                text = shop.venueShopName,
+                text = shop.eventListDisplayName,
                 modifier = Modifier.weight(1f),
                 style = AppTextStyle.B1,
                 color = GrayColor.C400,
@@ -119,7 +118,7 @@ fun EventShopGroupCard(
                     text =
                         eventDateText(
                             event.startDate,
-                            if (event.type == ShopEventType.STORE_RENEWAL) event.startDate else event.endDate,
+                            ShopEventResourceMapper.displayEndDate(event),
                         ),
                     style = AppTextStyle.B4,
                     color = GrayColor.C400,

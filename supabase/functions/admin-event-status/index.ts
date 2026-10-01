@@ -1,6 +1,5 @@
+import { isAdministrator } from "../_shared/admin-auth.ts";
 import { createServiceClient } from "../_shared/event-notifications.ts";
-
-const ADMIN_TIMEOUT_MS = 3_000;
 
 Deno.serve(async (request) => {
   if (request.method !== "POST") return json({ code: "method_not_allowed" }, 405);
@@ -9,6 +8,7 @@ Deno.serve(async (request) => {
   const body = await request.json().catch(() => null) as Record<string, unknown> | null;
   if (body?.action === "list") return listActiveEvents();
   if (body?.action === "update") return updateEventStatus(body);
+  if (body?.action === "edit") return editEvent(body);
   return json({ code: "invalid_action" }, 400);
 });
 
@@ -17,11 +17,9 @@ async function listActiveEvents() {
   const supabase = createServiceClient();
   const { data, error } = await supabase
     .from("shop_events")
-    .select("id,title,start_date,end_date,cancelled_dates,sold_out_dates,shops!inner(name)")
+    .select("id,title,description,event_type,start_date,end_date,cancelled_dates,sold_out_dates,venue_name,ramen_shops(name)")
     .lte("start_date", today)
     .or(`end_date.gte.${today},end_date.is.null`)
-    .neq("event_type", "new_menu")
-    .neq("event_type", "store_renewal")
     .order("end_date");
   if (error) return json({ code: "server_unavailable" }, 503);
   return json((data ?? []).map((event) => ({
@@ -29,7 +27,9 @@ async function listActiveEvents() {
     title: event.title,
     start_date: event.start_date,
     end_date: event.end_date,
-    shop_name: event.shops.name,
+    shop_name: event.ramen_shops?.name ?? event.venue_name ?? "외부 장소",
+    description: event.description,
+    event_type: event.event_type,
     cancelled_dates: event.cancelled_dates ?? [],
     sold_out_dates: event.sold_out_dates ?? [],
   })));
@@ -59,22 +59,37 @@ async function updateEventStatus(body: Record<string, unknown>) {
   return error ? json({ code: "update_failed" }, 422) : json({ success: true });
 }
 
-function koreaToday() {
-  return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Seoul" }).format(new Date());
+async function editEvent(body: Record<string, unknown>) {
+  const eventId = text(body.event_id);
+  const title = text(body.title);
+  const description = text(body.description);
+  const eventType = text(body.event_type);
+  const startDate = text(body.start_date);
+  const requestedEndDate = text(body.end_date) ?? startDate;
+  if (!eventId || !title || !description || !eventType || !startDate || !validDate(startDate) || !validDate(requestedEndDate) || requestedEndDate < startDate || !isEventType(eventType)) {
+    return json({ code: "invalid_request" }, 400);
+  }
+
+  const endDate = eventType === "new_menu" ? dateAfterDays(startDate, 6) : requestedEndDate;
+  const { data, error } = await createServiceClient()
+    .from("shop_events")
+    .update({
+      title,
+      description,
+      event_type: eventType,
+      start_date: startDate,
+      end_date: eventType === "store_renewal" ? null : endDate,
+    })
+    .eq("id", eventId)
+    .or(`end_date.gte.${koreaToday()},end_date.is.null`)
+    .select("id")
+    .maybeSingle();
+  if (error) return json({ code: "update_failed" }, 422);
+  return data ? json({ success: true }) : json({ code: "event_not_editable" }, 409);
 }
 
-async function isAdministrator(request: Request): Promise<boolean> {
-  const token = request.headers.get("authorization")?.match(/^Bearer\s+(.+)$/i)?.[1]?.trim();
-  const url = Deno.env.get("SUPABASE_URL");
-  const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
-  const adminEmail = (Deno.env.get("ADMIN_EMAIL") ?? "uni070@naver.com").trim().toLowerCase();
-  if (!token || !url || !anonKey || !adminEmail) return false;
-  const response = await fetch(`${url}/auth/v1/user`, {
-    headers: { apikey: anonKey, Authorization: `Bearer ${token}` },
-    signal: AbortSignal.timeout(ADMIN_TIMEOUT_MS),
-  }).catch(() => null);
-  const user = response?.ok ? await response.json() as { email?: unknown } : null;
-  return typeof user?.email === "string" && user.email.toLowerCase() === adminEmail;
+function koreaToday() {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Seoul" }).format(new Date());
 }
 
 function isStatus(value: string | null): value is "sold_out" | "cancelled" {
@@ -89,6 +104,16 @@ function validDate(value: string | null): value is string {
   if (value === null || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
   const date = new Date(`${value}T00:00:00Z`);
   return !Number.isNaN(date.valueOf()) && date.toISOString().startsWith(value);
+}
+
+function isEventType(value: string): boolean {
+  return ["collab", "popup", "limited_menu", "summer_limited", "new_menu", "store_renewal"].includes(value);
+}
+
+function dateAfterDays(value: string, days: number): string {
+  const date = new Date(`${value}T00:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
 }
 
 function text(value: unknown): string | null {

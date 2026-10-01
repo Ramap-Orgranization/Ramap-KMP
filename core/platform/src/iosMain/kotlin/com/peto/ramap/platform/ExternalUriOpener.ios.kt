@@ -60,7 +60,9 @@ actual object ExternalUriOpener {
             }
         }
 
-    private fun isSupportedUri(uri: String): Boolean = isSupportedWebUri(uri) || uri.lowercase().startsWith("tel:")
+    private fun isSupportedUri(uri: String): Boolean = isSupportedWebUri(uri) || isSupportedActionUri(uri)
+
+    private fun isSupportedActionUri(uri: String): Boolean = uri.lowercase().startsWith("tel:") || uri.lowercase().startsWith("mailto:")
 
     private const val HEX_DIGITS = "0123456789ABCDEF"
 }

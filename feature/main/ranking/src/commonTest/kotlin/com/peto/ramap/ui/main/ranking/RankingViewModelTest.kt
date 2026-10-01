@@ -24,7 +24,7 @@ import com.peto.ramap.domain.model.shop.MenuCategories
 import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.domain.repository.LoginRepository
 import com.peto.ramap.domain.store.PersonalizationBootstrapState
-import com.peto.ramap.domain.store.ShopPersonalizationStore
+import com.peto.ramap.domain.store.PersonalizationStore
 import com.peto.ramap.fake.FakeAnalyticsTracker
 import com.peto.ramap.fake.FakeCrashReporter
 import com.peto.ramap.fake.FakeLoginRepository
@@ -474,7 +474,7 @@ class RankingViewModelTest {
                     PersonalizationBootstrapState.Success(ShopPersonalization()),
                 )
             val store =
-                object : ShopPersonalizationStore by FakePersonalizationRepository() {
+                object : PersonalizationStore by FakePersonalizationRepository() {
                     override val state = mutablePersonalization.asStateFlow()
 
                     override suspend fun updateBookmark(
@@ -529,7 +529,7 @@ class RankingViewModelTest {
             val allowCompletion = CompletableDeferred<Unit>()
             val requests = mutableListOf<Pair<String, Boolean>>()
             val store =
-                object : ShopPersonalizationStore by FakePersonalizationRepository() {
+                object : PersonalizationStore by FakePersonalizationRepository() {
                     override val state = mutablePersonalization.asStateFlow()
 
                     override suspend fun updateBookmark(
@@ -742,12 +742,10 @@ class RankingViewModelTest {
     private fun ramenShop(id: String = "shop-id"): RamenShop =
         RamenShop(
             id = id,
-            kakaoPlaceId = null,
             name = "매장-$id",
             address = "서울특별시 마포구",
             location = Location(37.0, 127.0),
             kakaoPlaceUrl = null,
-            phone = null,
             instagramUrl = null,
             menuCategories =
                 MenuCategories(
@@ -761,7 +759,7 @@ class RankingViewModelTest {
 
 private fun rankingViewModel(
     repository: FakeShopRankingRepository = FakeShopRankingRepository(),
-    personalizationStore: ShopPersonalizationStore =
+    personalizationStore: PersonalizationStore =
         FakePersonalizationRepository(),
     loginRepository: LoginRepository =
         FakeLoginRepository(

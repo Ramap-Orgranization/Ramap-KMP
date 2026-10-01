@@ -34,6 +34,42 @@ class NavigationState(
         }
     }
 
+    fun showMyRoot() {
+        val myStack = backStacks.getValue(TabStatus.MY)
+        myStack.clear()
+        myStack.add(ScreenRoutes.MyTabRoutes)
+        selectTopLevelTab(TabStatus.MY)
+    }
+
+    fun showReviewShopOnMap(shopId: String) {
+        if (selectedTab == TabStatus.MAP) {
+            showOnce(ScreenRoutes.MapRoutes(shopId = shopId, showShopDetail = true))
+            return
+        }
+        val mapStack = backStacks.getValue(TabStatus.MAP)
+        mapStack.clear()
+        mapStack.add(ScreenRoutes.MapRoutes(shopId = shopId, returnTab = selectedTab, showShopDetail = true))
+        // Preserve the originating review stack, including the event tab, for Back.
+        selectedTab = TabStatus.MAP
+    }
+
+    fun showProfileEdit() = showOnce(ScreenRoutes.ProfileEditRoutes)
+
+    fun showMyReviews() = showOnce(ScreenRoutes.MyReviewsRoutes)
+
+    fun showOtherReviews(userId: String) {
+        if (userId.isNotBlank()) showOnce(ScreenRoutes.OtherReviewsRoutes(userId))
+    }
+
+    fun showReviewWrite(shopId: String) = showOnce(ScreenRoutes.ReviewWriteRoutes(shopId))
+
+    fun showReviewEdit(
+        shopId: String,
+        reviewId: String,
+    ) = showOnce(ScreenRoutes.ReviewWriteRoutes(shopId, reviewId))
+
+    fun showSettings() = showOnce(ScreenRoutes.SettingsRoutes)
+
     fun showAccountSettings() = showOnce(ScreenRoutes.AccountSettingsRoutes)
 
     fun showInformation() = showOnce(ScreenRoutes.InformationRoutes)
@@ -59,14 +95,11 @@ class NavigationState(
         currentBackStack.add(ScreenRoutes.EventDetailRoutes(eventId))
     }
 
-    fun showEventCalendar() = showOnce(ScreenRoutes.EventCalendarRoutes)
-
     fun showOperatingNotice() = showOnce(ScreenRoutes.OperatingNoticeRoutes)
 
     fun showEventRoot() {
         if (
-            currentBackStack.lastOrNull() is ScreenRoutes.EventDetailRoutes ||
-            currentBackStack.lastOrNull() is ScreenRoutes.EventCalendarRoutes
+            currentBackStack.lastOrNull() is ScreenRoutes.EventDetailRoutes
         ) {
             currentBackStack.removeLastOrNull()
         }
@@ -125,12 +158,14 @@ class NavigationState(
         source: NavigationSource? = null,
         returnTab: TabStatus? = null,
         showShopDetail: Boolean = true,
+        showReviews: Boolean = false,
     ) {
         val mapRoute =
             ScreenRoutes.MapRoutes(
                 shopId = shopId,
                 returnTab = returnTab,
                 showShopDetail = showShopDetail,
+                showReviews = showReviews,
                 source = source,
             )
         val mapBackStack = backStacks.getValue(TabStatus.MAP)
