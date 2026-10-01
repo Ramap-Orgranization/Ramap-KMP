@@ -32,7 +32,7 @@ import ramap.shared.generated.resources.shop_review_empty_description
 import ramap.shared.generated.resources.shop_review_empty_title
 
 @Composable
-internal fun ReviewsContent(
+fun ReviewsContent(
     shopName: String,
     reviews: List<Review>,
     hasReviewLoadFailure: Boolean = false,

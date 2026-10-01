@@ -1,4 +1,4 @@
-package com.peto.ramap.designsystem.shop.model
+package com.peto.ramap.ui.main.map.shop.model
 
 enum class ShopDetailTab {
     MENU,

@@ -1,4 +1,4 @@
-package com.peto.ramap.designsystem.shop
+package com.peto.ramap.ui.main.map.shop
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row

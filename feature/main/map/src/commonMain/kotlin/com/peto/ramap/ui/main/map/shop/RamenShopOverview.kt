@@ -1,4 +1,4 @@
-package com.peto.ramap.designsystem.shop
+package com.peto.ramap.ui.main.map.shop
 
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.layout.Arrangement
@@ -17,7 +17,6 @@ import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
 import com.peto.ramap.designsystem.resource.wating.WaitingSystemUiModel
 import com.peto.ramap.designsystem.review.ReviewsContent
-import com.peto.ramap.designsystem.shop.model.ShopDetailTab
 import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.model.menu.MenuSection
 import com.peto.ramap.domain.model.notice.OperatingNotice
@@ -25,6 +24,7 @@ import com.peto.ramap.domain.model.review.Review
 import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.preview.RamenShopPreviewParameterProvider
 import com.peto.ramap.theme.RamapTheme
+import com.peto.ramap.ui.main.map.shop.model.ShopDetailTab
 
 @Composable
 fun RamenShopOverview(

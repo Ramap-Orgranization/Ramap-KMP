@@ -1,4 +1,4 @@
-package com.peto.ramap.designsystem.resource
+package com.peto.ramap.ui.main.event.list.resource
 
 import com.peto.ramap.domain.model.event.EventFilter
 import org.jetbrains.compose.resources.StringResource

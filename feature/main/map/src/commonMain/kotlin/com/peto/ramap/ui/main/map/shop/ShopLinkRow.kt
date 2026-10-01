@@ -1,4 +1,4 @@
-package com.peto.ramap.designsystem.shop
+package com.peto.ramap.ui.main.map.shop
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background

@@ -1,4 +1,4 @@
-package com.peto.ramap.designsystem.shop
+package com.peto.ramap.ui.main.map.shop
 
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -17,11 +17,8 @@ import com.peto.ramap.designsystem.bottomsheet.CommonBottomSheetConfig
 import com.peto.ramap.designsystem.button.AppButton
 import com.peto.ramap.designsystem.component.LoadErrorContent
 import com.peto.ramap.designsystem.dialog.CommonDialog
-import com.peto.ramap.designsystem.dialog.ReportDialog
 import com.peto.ramap.designsystem.indicator.RamenLoadingIndicator
 import com.peto.ramap.designsystem.resource.wating.WaitingSystemUiModel
-import com.peto.ramap.designsystem.shop.model.RamenShopUiModel
-import com.peto.ramap.designsystem.shop.model.ShopDetailSheetUiState
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.model.notice.OperatingNotice
@@ -30,6 +27,9 @@ import com.peto.ramap.domain.model.review.Review
 import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.GrayColor
+import com.peto.ramap.ui.main.map.dialog.ReportDialog
+import com.peto.ramap.ui.main.map.shop.model.RamenShopUiModel
+import com.peto.ramap.ui.main.map.shop.model.ShopDetailSheetUiState
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.hide_shop_confirm_action

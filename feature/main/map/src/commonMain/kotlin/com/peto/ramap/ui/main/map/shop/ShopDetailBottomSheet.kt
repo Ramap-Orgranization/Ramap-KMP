@@ -1,4 +1,4 @@
-package com.peto.ramap.designsystem.shop
+package com.peto.ramap.ui.main.map.shop
 
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background

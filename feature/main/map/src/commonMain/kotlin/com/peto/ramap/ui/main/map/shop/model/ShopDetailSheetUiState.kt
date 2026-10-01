@@ -1,4 +1,4 @@
-package com.peto.ramap.designsystem.shop.model
+package com.peto.ramap.ui.main.map.shop.model
 
 import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.domain.usecase.ShopDetail

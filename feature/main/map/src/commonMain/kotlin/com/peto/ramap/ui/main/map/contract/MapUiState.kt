@@ -1,6 +1,5 @@
 package com.peto.ramap.ui.main.map.contract
 
-import com.peto.ramap.designsystem.shop.model.ShopDetailSheetUiState
 import com.peto.ramap.domain.model.notice.OperatingNotice
 import com.peto.ramap.domain.model.review.Review
 import com.peto.ramap.domain.model.shop.Location
@@ -16,6 +15,7 @@ import com.peto.ramap.ui.main.map.model.CameraPosition
 import com.peto.ramap.ui.main.map.model.location.LocationFocusStatus
 import com.peto.ramap.ui.main.map.model.search.SearchResultGuide
 import com.peto.ramap.ui.main.map.model.search.SearchUiModel
+import com.peto.ramap.ui.main.map.shop.model.ShopDetailSheetUiState
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
