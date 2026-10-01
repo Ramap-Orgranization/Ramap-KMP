@@ -56,7 +56,7 @@ class EventsViewModel(
         launchResultTask(
             taskKey = EVENTS_TASK_KEY,
             loadKey = EventsLoadKey.Fetch,
-            policy = TaskPolicy.CancelPrevious,
+            policy = TaskPolicy.IgnoreNew,
             onStart = { copy(showError = false) },
             retryOnNetworkError = true,
             request = ramenShopRepository::fetchActiveEvents,
@@ -69,7 +69,7 @@ class EventsViewModel(
         launchResultTask(
             taskKey = EVENTS_TASK_KEY,
             loadKey = EventsLoadKey.Refresh,
-            policy = TaskPolicy.CancelPrevious,
+            policy = TaskPolicy.IgnoreNew,
             onStart = { copy(showError = false) },
             retryOnNetworkError = true,
             request = ramenShopRepository::fetchActiveEvents,

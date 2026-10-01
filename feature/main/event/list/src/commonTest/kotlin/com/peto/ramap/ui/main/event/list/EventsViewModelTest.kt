@@ -135,7 +135,7 @@ class EventsViewModelTest {
         }
 
     @Test
-    fun `연속 새로고침은 이전 요청을 교체하고 마지막 요청이 끝날 때 로딩을 해제한다`() =
+    fun `조회 중 연속 새로고침은 기존 요청 하나만 유지한다`() =
         coroutinesTest {
             val repository = FakeRamenShopRepository(activeEventsDelayMillis = 1_000)
             val viewModel = eventsViewModel(repository)
@@ -146,8 +146,8 @@ class EventsViewModelTest {
             viewModel.dispatch(EventsIntent.OnEventsRefreshed)
             runCurrent()
 
-            assertEquals(3, repository.activeEventsRequestCount)
-            assertTrue(viewModel.uiState.value.isRefreshing)
+            assertEquals(1, repository.activeEventsRequestCount)
+            assertTrue(viewModel.uiState.value.isLoading)
 
             advanceTimeBy(1_000)
             runCurrent()

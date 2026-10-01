@@ -191,7 +191,33 @@ abstract class BaseViewModel<S : State, I : Intent, SE : SideEffect>(
         request: suspend () -> RamapResult<T>,
         onSuccess: suspend (T) -> Unit = {},
         onError: suspend (RamapError) -> Unit = {},
+    ): Job? =
+        launchResultTaskAttempt(
+            taskKey = taskKey,
+            loadKey = loadKey,
+            policy = policy,
+            onStart = onStart,
+            onFinish = onFinish,
+            retryOnNetworkError = retryOnNetworkError,
+            retryAttempt = 0,
+            request = request,
+            onSuccess = onSuccess,
+            onError = onError,
+        )
+
+    private fun <T> launchResultTaskAttempt(
+        taskKey: String,
+        loadKey: LoadKey?,
+        policy: TaskPolicy,
+        onStart: S.() -> S,
+        onFinish: S.() -> S,
+        retryOnNetworkError: Boolean,
+        retryAttempt: Int,
+        request: suspend () -> RamapResult<T>,
+        onSuccess: suspend (T) -> Unit,
+        onError: suspend (RamapError) -> Unit,
     ): Job? {
+        if (policy == TaskPolicy.IgnoreNew && tasks.containsKey(TaskKey(taskKey))) return null
         NetworkRetryGenerator.remove(this, taskKey)
         return launchTask(
             taskKey = taskKey,
@@ -208,14 +234,19 @@ abstract class BaseViewModel<S : State, I : Intent, SE : SideEffect>(
                 is RamapResult.Error -> {
                     handleError(result.error)
                     if (retryOnNetworkError && result.error is RamapError.Network) {
-                        NetworkRetryGenerator.enqueue(this@BaseViewModel, taskKey) {
-                            launchResultTask(
+                        NetworkRetryGenerator.enqueue(
+                            owner = this@BaseViewModel,
+                            taskKey = taskKey,
+                            retryAttempt = retryAttempt + 1,
+                        ) {
+                            launchResultTaskAttempt(
                                 taskKey = taskKey,
                                 loadKey = loadKey,
                                 policy = policy,
                                 onStart = onStart,
                                 onFinish = onFinish,
                                 retryOnNetworkError = retryOnNetworkError,
+                                retryAttempt = retryAttempt + 1,
                                 request = request,
                                 onSuccess = onSuccess,
                                 onError = onError,

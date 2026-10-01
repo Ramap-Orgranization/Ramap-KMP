@@ -42,7 +42,7 @@ class OperatingNoticeViewModel(
         launchResultTask(
             taskKey = OPERATING_NOTICES_TASK_KEY,
             loadKey = OperatingNoticeLoadKey.Fetch,
-            policy = TaskPolicy.CancelPrevious,
+            policy = TaskPolicy.IgnoreNew,
             onStart = { copy(showOperatingNoticeError = false) },
             retryOnNetworkError = true,
             request = operatingNoticeRepository::fetchCurrentOperatingNotices,
@@ -55,7 +55,7 @@ class OperatingNoticeViewModel(
         launchResultTask(
             taskKey = OPERATING_NOTICES_TASK_KEY,
             loadKey = OperatingNoticeLoadKey.Refresh,
-            policy = TaskPolicy.CancelPrevious,
+            policy = TaskPolicy.IgnoreNew,
             onStart = { copy(showOperatingNoticeError = false) },
             retryOnNetworkError = true,
             request = operatingNoticeRepository::fetchCurrentOperatingNotices,

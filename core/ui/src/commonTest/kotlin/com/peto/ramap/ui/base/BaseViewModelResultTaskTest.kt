@@ -143,6 +143,46 @@ class BaseViewModelResultTaskTest {
             assertFalse(viewModel.uiState.value.loadState.isAnyLoading)
         }
 
+    @Test
+    fun `연결 복구 재시도는 세 번 후 중단하고 수동 요청은 새 예산으로 시작한다`() =
+        viewModelTest {
+            val viewModel = TestViewModel()
+            viewModel.startNetworkResult(TestTaskKey.First, retryOnNetworkError = true)
+            runCurrent()
+
+            repeat(6) {
+                NetworkRetryGenerator.retryPending()
+                runCurrent()
+            }
+
+            assertEquals(4, viewModel.startedCount)
+            assertFalse(viewModel.uiState.value.loadState.isAnyLoading)
+
+            viewModel.startNetworkResult(TestTaskKey.First, retryOnNetworkError = true)
+            runCurrent()
+            viewModel.networkResult = RamapResult.Success("restored")
+            NetworkRetryGenerator.retryPending()
+            runCurrent()
+
+            assertEquals(6, viewModel.startedCount)
+            assertEquals(listOf("restored"), viewModel.uiState.value.results)
+        }
+
+    @Test
+    fun `서버 오류는 재시도를 허용한 조회도 연결 복구로 다시 실행하지 않는다`() =
+        viewModelTest {
+            val viewModel = TestViewModel()
+            viewModel.networkResult = RamapResult.Error(RamapError.Http(status = 429))
+            viewModel.startNetworkResult(TestTaskKey.First, retryOnNetworkError = true)
+            runCurrent()
+
+            NetworkRetryGenerator.retryPending()
+            runCurrent()
+
+            assertEquals(1, viewModel.startedCount)
+            assertEquals(1, viewModel.callbackResultErrors.size)
+        }
+
     private fun viewModelTest(testBody: suspend kotlinx.coroutines.test.TestScope.() -> Unit) =
         runTest {
             Dispatchers.setMain(StandardTestDispatcher(testScheduler))

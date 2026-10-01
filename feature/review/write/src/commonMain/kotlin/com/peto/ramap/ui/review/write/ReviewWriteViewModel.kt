@@ -153,6 +153,7 @@ class ReviewWriteViewModel(
         launchResultTask(
             taskKey = SHOP_TASK,
             loadKey = ReviewWriteLoadKey.Shop,
+            policy = TaskPolicy.IgnoreNew,
             onStart = { copy(shopLoadFailed = false) },
             request = { ramenShopRepository.fetchShopDetail(shopId) },
             onSuccess = { detail -> reduce { copy(shop = detail.shop) } },
@@ -175,7 +176,7 @@ class ReviewWriteViewModel(
         launchResultTask(
             taskKey = REVIEW_TASK,
             loadKey = ReviewWriteLoadKey.Review,
-            policy = TaskPolicy.CancelPrevious,
+            policy = TaskPolicy.IgnoreNew,
             onStart = { copy(reviewLoadFailed = false, reviewLoaded = false) },
             request = { reviewRepository.fetchEditableReview(reviewId) },
             onSuccess = { review -> handleEditableReviewSuccess(review, reviewId) },

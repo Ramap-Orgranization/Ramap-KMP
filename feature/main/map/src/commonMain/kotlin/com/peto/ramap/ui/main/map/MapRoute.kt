@@ -50,13 +50,12 @@ import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopSelected
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopShareClicked
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnStatusTimeRefreshed
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnViewportLoadRetry
-import kotlinx.coroutines.delay
+import com.peto.ramap.ui.refresh.PeriodicRefreshEffect
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.current_location_timeout_message
-import kotlin.time.Duration.Companion.milliseconds
 
 @Composable
 fun MapRoute(
@@ -83,12 +82,9 @@ fun MapRoute(
     var shouldShowReviews by remember(requestedShopId, showReviewsOnOpen) { mutableStateOf(showReviewsOnOpen) }
     var detailSource by remember(requestedShopId, originSource) { mutableStateOf(originSource) }
 
-    LaunchedEffect(Unit) {
-        while (true) {
-            delay(OPERATING_NOTICE_REFRESH_MILLIS.milliseconds)
-            viewModel.dispatch(OnStatusTimeRefreshed)
-            viewModel.dispatch(OnOperatingNoticesRefreshRequested)
-        }
+    PeriodicRefreshEffect(intervalMillis = OPERATING_NOTICE_REFRESH_MILLIS) {
+        viewModel.dispatch(OnStatusTimeRefreshed)
+        viewModel.dispatch(OnOperatingNoticesRefreshRequested)
     }
 
     LaunchedEffect(requestedShopId) {
