@@ -138,58 +138,61 @@ internal fun ReviewsContent(
                     val displayedReview = revealedReview ?: review
                     ReviewCard(
                         review = displayedReview,
+                        actions =
+                            ReviewCardActions(
+                                onOpenProfile = onOpenProfile,
+                                onLike =
+                                    if (
+                                        !review.isBlocked &&
+                                        review.author.userId != currentUserId &&
+                                        review.isPublic &&
+                                        review.moderationStatus == ReviewModerationStatus.PUBLISHED
+                                    ) {
+                                        { onLike(review) }
+                                    } else {
+                                        null
+                                    },
+                                onReport =
+                                    if (
+                                        (!review.isBlocked || revealedReview != null) &&
+                                        displayedReview.author.userId.isNotBlank() &&
+                                        displayedReview.author.userId != currentUserId
+                                    ) {
+                                        { onReport(displayedReview) }
+                                    } else {
+                                        null
+                                    },
+                                onEdit =
+                                    if (currentUserId != null && review.author.userId == currentUserId) {
+                                        { onEdit(review) }
+                                    } else {
+                                        null
+                                    },
+                                onDelete =
+                                    if (currentUserId != null && review.author.userId == currentUserId) {
+                                        { onDelete(review) }
+                                    } else {
+                                        null
+                                    },
+                                onViewBlockedReview =
+                                    if (review.isBlocked && onViewBlockedReview != null) {
+                                        { onViewBlockedReview(review) }
+                                    } else {
+                                        null
+                                    },
+                                onUnblockBlockedUser =
+                                    if (review.isBlocked && onUnblockBlockedUser != null) {
+                                        { onUnblockBlockedUser(review) }
+                                    } else {
+                                        null
+                                    },
+                            ),
                         showBlockedContent = review.isBlocked && revealedReview != null,
-                        onViewBlockedReview =
-                            if (review.isBlocked && onViewBlockedReview != null) {
-                                { onViewBlockedReview(review) }
-                            } else {
-                                null
-                            },
-                        onUnblockBlockedUser =
-                            if (review.isBlocked && onUnblockBlockedUser != null) {
-                                { onUnblockBlockedUser(review) }
-                            } else {
-                                null
-                            },
                         isBlockedReviewLoading = revealingBlockedReviewId == review.id,
                         currentUserId = currentUserId,
                         currentProfileIsPublic = currentProfileIsPublic,
-                        onOpenProfile = onOpenProfile,
-                        onLike =
-                            if (
-                                !review.isBlocked &&
-                                review.author.userId != currentUserId &&
-                                review.isPublic &&
-                                review.moderationStatus == ReviewModerationStatus.PUBLISHED
-                            ) {
-                                { onLike(review) }
-                            } else {
-                                null
-                            },
                         isLikeLoading = actingReviewId == review.id,
                         actionsEnabled = actingReviewId == null,
-                        onEdit =
-                            if (currentUserId != null && review.author.userId == currentUserId) {
-                                { onEdit(review) }
-                            } else {
-                                null
-                            },
-                        onDelete =
-                            if (currentUserId != null && review.author.userId == currentUserId) {
-                                { onDelete(review) }
-                            } else {
-                                null
-                            },
-                        onReport =
-                            if (
-                                (!review.isBlocked || revealedReview != null) &&
-                                displayedReview.author.userId.isNotBlank() &&
-                                displayedReview.author.userId != currentUserId
-                            ) {
-                                { onReport(displayedReview) }
-                            } else {
-                                null
-                            },
                     )
                 }
             }

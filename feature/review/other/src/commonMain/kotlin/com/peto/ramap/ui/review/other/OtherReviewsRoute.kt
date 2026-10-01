@@ -25,6 +25,7 @@ import com.peto.ramap.designsystem.dialog.LoginGuideDialog
 import com.peto.ramap.designsystem.indicator.RamenLoadingIndicator
 import com.peto.ramap.designsystem.profile.ProfileHeader
 import com.peto.ramap.designsystem.review.ReviewCard
+import com.peto.ramap.designsystem.review.ReviewCardActions
 import com.peto.ramap.designsystem.review.ReviewEmptyContent
 import com.peto.ramap.designsystem.review.ReviewPage
 import com.peto.ramap.designsystem.text.AppText
@@ -224,7 +225,10 @@ internal fun OtherReviewsContent(
             ) { review ->
                 ReviewCard(
                     review = review,
-                    onShopClick = { onShowShop(review.shopId) },
+                    actions =
+                        ReviewCardActions(
+                            onShopClick = { onShowShop(review.shopId) },
+                        ),
                 )
             }
             if (state.showsAppendLoading) {
