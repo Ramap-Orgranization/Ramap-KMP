@@ -6,7 +6,6 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
@@ -25,7 +24,6 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.GrayColor
@@ -93,10 +91,10 @@ internal fun SearchBar(
                     )
                 }
             } else {
-                Text(
+                AppText(
                     text = "⌕",
                     modifier = Modifier.semantics { contentDescription = searchIconDescription },
-                    fontSize = 28.sp,
+                    style = AppTextStyle.H2,
                     color = GrayColor.C500,
                 )
             }

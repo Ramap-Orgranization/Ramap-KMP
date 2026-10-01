@@ -115,6 +115,7 @@
     <string name="review_report_details_required">추가 설명 (필수, 최대 %1$d자)</string>
     <string name="review_report_title">리뷰 신고</string>
     <string name="review_report_send">신고 접수하기</string>
+    <string name="review_report_false_warning">허위 신고는 제재 대상입니다.</string>
     <string name="review_report_user">사용자 신고</string>
     <string name="review_retry">다시 시도</string>
     <string name="review_block">차단</string>

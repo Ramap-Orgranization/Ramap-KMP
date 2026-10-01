@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Icon
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -16,7 +15,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.peto.ramap.designsystem.component.RamenShopSummaries
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.domain.model.shop.Category
@@ -71,13 +69,13 @@ internal fun RecentSearchHistory(
                             .noRippleClickable { onSearchSelected(query) },
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Text(
+                    AppText(
                         text = "⌕",
                         modifier =
                             Modifier.semantics {
                                 contentDescription = searchIconDescription
                             },
-                        fontSize = 25.sp,
+                        style = AppTextStyle.H3,
                         color = GrayColor.C500,
                     )
                     AppText(
