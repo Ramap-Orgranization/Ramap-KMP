@@ -118,30 +118,6 @@ class MyReviewsViewModel(
         reduce { applyDeleteSuccess(reviewId = reviewId, review = review) }
     }
 
-    private fun MyReviewsUiState.applyDeleteSuccess(
-        reviewId: String,
-        review: MyReview,
-    ): MyReviewsUiState {
-        val updatedReviews = this.reviews.filterNot { it.id == reviewId }
-        val updatedTotalCount = (totalCount - 1).coerceAtLeast(0)
-        val updatedPublicCount = if (review.isPublic) (publicCount - 1).coerceAtLeast(0) else publicCount
-        val updatedPrivateCount = if (review.isPublic) privateCount else (privateCount - 1).coerceAtLeast(0)
-        val filteredCount =
-            when (filter) {
-                MyReviewVisibility.ALL -> updatedTotalCount
-                MyReviewVisibility.PUBLIC -> updatedPublicCount
-                MyReviewVisibility.PRIVATE -> updatedPrivateCount
-            }
-        return copy(
-            reviews = updatedReviews,
-            totalCount = updatedTotalCount,
-            publicCount = updatedPublicCount,
-            privateCount = updatedPrivateCount,
-            hasMore = updatedReviews.size < filteredCount,
-            actingReviewId = null,
-        )
-    }
-
     private suspend fun handleDeleteError() {
         postSideEffect(
             MyReviewsSideEffect.ShowToast(
@@ -175,28 +151,6 @@ class MyReviewsViewModel(
         reset: Boolean,
     ) {
         reduce { applyPageSuccess(page = page, reset = reset) }
-    }
-
-    private fun MyReviewsUiState.applyPageSuccess(
-        page: MyReviewsPage,
-        reset: Boolean,
-    ): MyReviewsUiState {
-        val merged = (if (reset) page.reviews else reviews + page.reviews).distinctBy { it.id }
-        return copy(
-            reviews = merged,
-            totalCount = page.totalCount,
-            publicCount = page.publicCount,
-            privateCount = page.privateCount,
-            profileIsPublic = page.profileIsPublic,
-            loaded = true,
-            hasMore =
-                merged.size <
-                    when (filter) {
-                        MyReviewVisibility.ALL -> page.totalCount
-                        MyReviewVisibility.PUBLIC -> page.publicCount
-                        MyReviewVisibility.PRIVATE -> page.privateCount
-                    },
-        )
     }
 
     private fun handlePageError(reset: Boolean) {

@@ -1,6 +1,5 @@
 package com.peto.ramap.ui.main.event.list
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -10,8 +9,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
@@ -27,6 +24,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.peto.ramap.designsystem.button.AppFloatingActionButton
 import com.peto.ramap.designsystem.component.LoadErrorContent
 import com.peto.ramap.designsystem.toast.ToastManager
 import com.peto.ramap.domain.model.event.EventFilter
@@ -48,7 +46,6 @@ import com.peto.ramap.ui.main.event.list.contract.EventsUiState
 import com.peto.ramap.ui.main.event.list.platform.rememberAdminRegistrationAction
 import com.peto.ramap.ui.main.event.list.platform.rememberNewsReportImagePicker
 import com.peto.ramap.ui.main.event.list.preview.EventsPreviewParameterProvider
-import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
@@ -234,22 +231,18 @@ internal fun EventsScreen(
                     }
                 }
             }
-            FloatingActionButton(
+            AppFloatingActionButton(
+                icon = Res.drawable.ic_operating_notice_fab,
+                contentDescription = stringResource(Res.string.operating_notice_open),
                 onClick = onClickNotice,
                 modifier =
                     Modifier
                         .align(Alignment.BottomEnd)
                         .padding(start = 5.dp)
                         .padding(20.dp),
-                shape = CircleShape,
                 containerColor = CommonColor.White,
-            ) {
-                Image(
-                    painter = painterResource(Res.drawable.ic_operating_notice_fab),
-                    contentDescription = stringResource(Res.string.operating_notice_open),
-                    modifier = Modifier.padding(start = 3.dp),
-                )
-            }
+                iconModifier = Modifier.padding(start = 3.dp),
+            )
             selectedEventGroup?.let { eventGroup ->
                 EventListBottomSheet(
                     events = eventGroup,

@@ -50,18 +50,15 @@
     <string name="shop_review_empty_title">아직 등록된 리뷰가 없어요</string>
     <string name="shop_review_empty_description">%1$s의 첫 번째 방문 후기를 남겨주세요!</string>
     <string name="shop_review_write">리뷰 작성</string>
-    <string name="shop_review_go_write">리뷰 쓰러가기 &gt;</string>
     <string name="shop_review_prompt_title">이곳에서의 식사는 어떠셨나요?</string>
     <string name="shop_review_write_action">방문 후기 작성하기</string>
     <string name="shop_review_placeholder">매장 경험을 알려주세요</string>
-    <string name="shop_review_invalid_body">리뷰는 5~30글자로 작성해 주세요</string>
     <string name="profanity_input_invalid">비속어가 포함되어 있어요. 내용을 수정해 주세요.</string>
     <string name="shop_review_image_limit">사진은 최대 3장까지 첨부할 수 있어요</string>
     <string name="shop_review_image_count">%1$d / %2$d장</string>
     <string name="shop_review_image_invalid">JPEG·PNG 형식의 5MB 이하 사진을 선택해 주세요</string>
     <string name="shop_review_image_add">사진 추가</string>
     <string name="shop_review_image_remove">사진 삭제</string>
-    <string name="shop_review_load_more">더 보기</string>
     <string name="shop_review_submit">등록</string>
     <string name="shop_review_cancel">취소</string>
     <string name="shop_review_failure_message">리뷰 등록에 실패했습니다</string>
@@ -69,12 +66,8 @@
     <string name="review_report">신고</string>
     <string name="review_photo_description">리뷰 사진 %1$d</string>
     <string name="review_status_removed">삭제된 리뷰</string>
-    <string name="review_status_pending">검토 중인 리뷰</string>
-    <string name="review_status_rejected">게시되지 않은 리뷰</string>
-    <string name="review_open_shop">매장 보기</string>
     <string name="review_action_failed">데이터 로딩에 실패했어요.\n잠시 후 다시 시도해 주세요.</string>
     <string name="review_action_success">신고가 완료되었습니다.</string>
-    <string name="review_action_success_description">요청이 접수되었어요.</string>
     <string name="review_block_confirm">%1$s님을 차단할까요?</string>
     <string name="review_blocked_review">차단한 사용자의 리뷰입니다</string>
     <string name="review_blocked_options">차단 리뷰 옵션</string>
@@ -85,10 +78,8 @@
     <string name="review_blocked_users">차단한 사용자</string>
     <string name="review_blocked_users_empty">차단한 사용자가 없어요</string>
     <string name="review_close">닫기</string>
-    <string name="review_feed_description">한 그릇에 담긴 경험을 함께 나눠요</string>
     <string name="community_guidelines_title">커뮤니티 가이드라인</string>
     <string name="review_load_failed">매장 정보를 불러오지 못했어요. 다시 시도해 주세요.</string>
-    <string name="review_loading">불러오는 중</string>
     <string name="review_body_required">*</string>
     <string name="review_body_count">%1$d / %2$d자</string>
     <string name="review_visibility_title">리뷰 공개 설정</string>
@@ -116,7 +107,6 @@
     <string name="review_report_title">리뷰 신고</string>
     <string name="review_report_send">신고 접수하기</string>
     <string name="review_report_false_warning">허위 신고는 제재 대상입니다.</string>
-    <string name="review_report_user">사용자 신고</string>
     <string name="review_retry">다시 시도</string>
     <string name="review_block">차단</string>
     <string name="review_unblock">해제</string>
@@ -194,10 +184,8 @@
     <string name="news_report_photo_label">사진 첨부</string>
 
     <!-- 영업 변동 화면 -->
-    <string name="operating_notice_title">영업 변동</string>
     <string name="operating_notice_open">영업 변동 보기</string>
     <string name="operating_notice_empty">현재 또는 예정된 영업 변동이 없어요</string>
-    <string name="operating_notice_section">운영 변동</string>
     <string name="operating_notice_today_section">오늘의 운영 변동</string>
     <string name="operating_notice_scheduled_section">예정된 운영 변동</string>
     <string name="operating_notice_error_title">영업 변동을 불러오지 못했어요</string>
@@ -227,7 +215,6 @@
     <string name="event_store_renewal_venue">변경 매장</string>
     <string name="event_collaborator_shop">콜라보</string>
     <string name="event_collaborator_person">함께하는 사람</string>
-    <string name="event_date">날짜</string>
     <string name="event_date_event">행사 기간</string>
     <string name="event_date_new_menu">출시일</string>
     <string name="event_date_store_renewal">변경일</string>
@@ -289,7 +276,6 @@
 
     <!-- 장소 제보 화면 -->
     <string name="place_report_description">네이버나 카카오맵의 공유 내용을 그대로 붙여주세요</string>
-    <string name="place_report_input_label">지도 링크 또는 공유 내용</string>
     <string name="place_report_placeholder">지도 링크 또는 공유 내용 붙여넣기</string>
     <string name="place_report_action">장소 제보하기</string>
     <string name="place_report_success_message">장소 제보가 접수되었습니다</string>
@@ -314,7 +300,6 @@
 
     <!-- 저장한 매장 화면 -->
     <string name="bookmarked_shops_empty_title">저장한 매장이 없어요</string>
-    <string name="bookmark_removal_confirm_title">저장을 해제하시겠습니까?</string>
     <string name="bookmark_removal_confirm_action">저장 해제</string>
     <string name="bookmark_removal_success_message">저장을 해제했어요</string>
     <string name="importation_add_action_description">지도 목록에서 매장 저장</string>
@@ -335,7 +320,6 @@
     <string name="importation_remove_candidate">추가 대상에서 제외</string>
     <string name="importation_input_label">카카오맵 또는 네이버 지도 목록 링크</string>
     <string name="importation_analyze">목록 찾기</string>
-    <string name="importation_preview_added_count">%1$d곳</string>
     <string name="importation_registered_count_label">기등록 매장</string>
     <string name="importation_hidden_count_label">숨김 제외</string>
     <string name="importation_unmatched_count_label">매칭 실패</string>
@@ -391,7 +375,6 @@
     <string name="logout_failure_message">로그아웃에 실패했습니다.</string>
     <string name="login_required_message">로그인이 필요한 기능입니다</string>
     <string name="login_required_description">로그인 후 저장과 숨김 기능을 사용할 수 있어요.</string>
-    <string name="login_required_action">로그인하기</string>
 
     <!-- 지도 화면 -->
     <string name="hide_shop_confirm_title">숨김 처리하시겠습니까?</string>
@@ -433,8 +416,6 @@
     <string name="top_level_tab_my">마이</string>
 
     <!-- 매장 랭킹 화면 -->
-    <string name="ranking_title">매장 랭킹</string>
-    <string name="ranking_region_filter">지역</string>
     <string name="ranking_all_regions">전국</string>
     <string name="ranking_area_all">%1$s 전체</string>
     <string name="ranking_district_label">%1$s</string>
@@ -497,21 +478,17 @@
     <string name="admin_event_status_reason_required">취소 사유를 입력해 주세요.</string>
     <string name="admin_event_status_period_required">적용 기간을 선택해 주세요.</string>
     <string name="admin_event_status_save_failure">이벤트 상태를 저장하지 못했어요.</string>
-    <string name="admin_correction_load_failure">수정할 등록 내용을 불러오지 못했어요.</string>
     <string name="admin_correction_required">수정할 항목과 요청 내용을 입력해 주세요.</string>
     <string name="admin_correction_failure">수정 요청을 처리하지 못했어요.</string>
     <string name="admin_correction_success">수정했어요.</string>
     <!-- Profile -->
     <string name="profile_title">내 프로필</string>
     <string name="profile_edit">프로필 편집</string>
-    <string name="profile_edit_action">수정</string>
-    <string name="profile_bio">한 줄 자기소개</string>
     <string name="profile_bio_short">한 줄 소개</string>
     <string name="profile_bio_empty">자기소개를 작성해주세요</string>
     <string name="profile_bio_placeholder">30자 이내로 입력해 주세요.</string>
     <string name="profile_bio_invalid">줄바꿈 없이 30자 이내로 입력해 주세요.</string>
     <string name="profile_bio_counter">%1$d / 30</string>
-    <string name="profile_daily_change_policy">닉네임과 자기소개는 각각 하루에 2번 변경할 수 있어요. 매일 한국 시간 자정에 초기화돼요.</string>
     <string name="profile_nickname_daily_change_limit_reached">오늘 닉네임 변경 횟수를 모두 사용했어요. 자정에 다시 변경할 수 있어요.</string>
     <string name="profile_bio_daily_change_limit_reached">오늘 자기소개 변경 횟수를 모두 사용했어요. 자정에 다시 변경할 수 있어요.</string>
     <string name="profile_nickname_check_rate_limited">닉네임 확인 요청이 많아요. 잠시 후 다시 시도해 주세요.</string>
@@ -528,14 +505,12 @@
     <string name="profile_nickname_clear">닉네임 지우기</string>
     <string name="profile_complete">완료</string>
     <string name="profile_counter">%1$d / 10</string>
-    <string name="profile_save">저장하기</string>
     <string name="profile_saved">프로필을 저장했어요.</string>
     <string name="profile_save_failed">프로필을 저장하지 못했어요. 다시 시도해 주세요.</string>
     <string name="profile_image_rejected">5MB 이하의 JPG, PNG 사진을 선택해 주세요.</string>
     <string name="profile_load_failed">프로필을 불러오지 못했어요.</string>
     <string name="profile_retry">다시 시도</string>
     <string name="profile_discard">취소</string>
-    <string name="profile_keep_editing">계속 수정</string>
     <string name="profile_visibility">프로필 공개</string>
     <string name="profile_visibility_body">프로필을 공개하면 다른 사용자가 내 프로필과 볼 수 있어요.</string>
     <string name="profile_visibility_status">현재 %1$s 상태예요.</string>
@@ -560,7 +535,6 @@
     <string name="review_like_failed">좋아요를 변경하지 못했습니다</string>
     <string name="my_reviews">내 리뷰</string>
     <string name="my_reviews_summary">작성한 리뷰</string>
-    <string name="my_reviews_count">%1$d개</string>
     <string name="my_reviews_all_filter">전체</string>
     <string name="my_reviews_public_filter">공개</string>
     <string name="my_reviews_private_filter">비공개</string>
@@ -568,17 +542,4 @@
     <string name="my_reviews_empty_public">공개 리뷰가 없어요</string>
     <string name="my_reviews_empty_private">비공개 리뷰가 없어요</string>
     <string name="my_reviews_filter_number">%1$d</string>
-    <string name="my_reviews_photo_count">▣ %1$d</string>
-    <string name="my_reviews_tile_description">%1$s, %2$s, %3$s, 사진 %4$d장</string>
-    <string name="my_review_edit">수정</string>
-    <string name="my_review_delete">삭제</string>
-    <string name="my_review_delete_question">리뷰를 삭제할까요?</string>
-    <string name="my_review_delete_warning">삭제한 리뷰는 복구할 수 없어요.</string>
-    <string name="my_review_status_reason">사유: %1$s</string>
-    <string name="my_review_not_found">리뷰를 찾을 수 없어요.</string>
-    <string name="my_review_more_options">리뷰 메뉴</string>
-    <string name="my_review_photo_position">%1$d / %2$d</string>
-    <string name="my_review_photo_failed">사진을 불러오지 못했어요.</string>
-    <string name="my_review_visibility_public">공개 리뷰</string>
-    <string name="my_review_visibility_private">비공개 리뷰</string>
 </resources>
