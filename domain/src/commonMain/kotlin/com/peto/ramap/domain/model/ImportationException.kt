@@ -1,4 +1,4 @@
-package com.peto.ramap.domain.repository
+package com.peto.ramap.domain.model
 
 class ImportationException(
     val code: ImportationErrorCode,

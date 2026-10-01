@@ -1,5 +1,6 @@
 package com.peto.ramap.ui.review.write.component
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -7,6 +8,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -19,11 +21,15 @@ import com.peto.ramap.designsystem.component.RamenShopSummarySkeleton
 import com.peto.ramap.designsystem.indicator.RamenLoadingIndicator
 import com.peto.ramap.designsystem.resource.category.CategoryResourceMapper
 import com.peto.ramap.designsystem.review.ReviewPage
+import com.peto.ramap.extension.noRippleClickable
 import com.peto.ramap.theme.RamapTheme
 import com.peto.ramap.ui.review.write.contract.ReviewWriteIntent
 import com.peto.ramap.ui.review.write.contract.ReviewWriteUiState
+import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
+import ramap.shared.generated.resources.community_guidelines_title
+import ramap.shared.generated.resources.ic_community_guidelines
 import ramap.shared.generated.resources.review_edit_title
 import ramap.shared.generated.resources.review_save
 import ramap.shared.generated.resources.shop_review_submit
@@ -35,11 +41,23 @@ internal fun ReviewWriteRouteContent(
     onBack: () -> Unit,
     onIntent: (ReviewWriteIntent) -> Unit,
     onPickImage: () -> Unit,
+    onOpenGuidelines: () -> Unit,
 ) {
     Box(modifier = Modifier.fillMaxSize()) {
         ReviewPage(
             title = stringResource(if (state.reviewId == null) Res.string.shop_review_write else Res.string.review_edit_title),
             onBack = onBack,
+            action = {
+                Image(
+                    painter = painterResource(Res.drawable.ic_community_guidelines),
+                    contentDescription = stringResource(Res.string.community_guidelines_title),
+                    modifier =
+                        Modifier
+                            .noRippleClickable(onClick = onOpenGuidelines)
+                            .padding(18.dp)
+                            .size(24.dp),
+                )
+            },
         ) {
             LazyColumn(
                 modifier =
@@ -116,6 +134,7 @@ private fun ReviewWriteRoutePreview() {
             onBack = {},
             onIntent = {},
             onPickImage = {},
+            onOpenGuidelines = {},
         )
     }
 }

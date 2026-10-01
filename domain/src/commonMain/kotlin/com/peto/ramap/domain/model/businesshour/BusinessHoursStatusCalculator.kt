@@ -8,16 +8,6 @@ import kotlinx.datetime.plus
 
 internal object BusinessHoursStatusCalculator {
     /**
-     * 주어진 시각에 매장이 영업 중인지 반환한다.
-     *
-     * 당일 영업시간과 전날의 익일 마감 영업시간을 모두 확인한다.
-     */
-    fun isOpenAt(
-        businessHours: BusinessHours,
-        currentDateTime: LocalDateTime,
-    ): Boolean = findActiveBusinessHoursDayKey(businessHours, currentDateTime) != null
-
-    /**
      * 주어진 시각의 영업 상태를 계산한다.
      *
      * 영업 중이면 마지막 주문 시간 또는 마감 시간을 포함한 상태를 반환하고,

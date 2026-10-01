@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.HorizontalDivider
@@ -29,11 +30,14 @@ import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.RamapTheme
+import com.peto.ramap.theme.SystemColor
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.ic_close
+import ramap.shared.generated.resources.ic_report_warning_circle
 import ramap.shared.generated.resources.review_close
+import ramap.shared.generated.resources.review_report_false_warning
 import ramap.shared.generated.resources.review_report_send
 import ramap.shared.generated.resources.review_report_title
 import ramap.shared.generated.resources.shop_review_cancel
@@ -132,6 +136,23 @@ private fun ReviewReportDialogContent(
                 modifier = Modifier.weight(1f).fillMaxWidth().padding(12.dp),
             )
             HorizontalDivider(color = GrayColor.C100)
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(start = 12.dp, end = 12.dp, top = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(
+                    painter = painterResource(Res.drawable.ic_report_warning_circle),
+                    contentDescription = null,
+                    tint = SystemColor.Warning,
+                    modifier = Modifier.size(18.dp),
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                AppText(
+                    text = stringResource(Res.string.review_report_false_warning),
+                    style = AppTextStyle.C1,
+                    color = SystemColor.Warning,
+                )
+            }
             Row(
                 modifier = Modifier.fillMaxWidth().padding(12.dp),
                 verticalAlignment = Alignment.CenterVertically,

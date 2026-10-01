@@ -15,6 +15,7 @@ import com.peto.ramap.designsystem.toast.model.ToastAction
 import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.review.ReviewImage
+import com.peto.ramap.platform.ExternalUriOpener
 import com.peto.ramap.platform.image.rememberImagesPicker
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.GrayColor
@@ -32,6 +33,9 @@ import ramap.shared.generated.resources.review_private_profile_confirmation
 import ramap.shared.generated.resources.review_private_profile_confirmation_title
 import ramap.shared.generated.resources.review_retry
 import ramap.shared.generated.resources.shop_review_image_invalid
+
+private const val COMMUNITY_GUIDELINES_URL =
+    "https://ramap-orgranization.github.io/Ramap-KMP/community-guidelines.html"
 
 @Composable
 fun ShopReviewWriteRoute(
@@ -81,6 +85,7 @@ fun ShopReviewWriteRoute(
         onBack = onBack,
         onIntent = viewModel::dispatch,
         onPickImage = imagePicker,
+        onOpenGuidelines = { ExternalUriOpener.open(COMMUNITY_GUIDELINES_URL) },
     )
     CommonDialog(
         visible = state.showPrivateProfileConfirmation,

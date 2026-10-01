@@ -181,8 +181,12 @@ internal fun ReviewsContent(
                                 null
                             },
                         onReport =
-                            if (!review.isBlocked && review.author.userId.isNotBlank() && review.author.userId != currentUserId) {
-                                { onReport(review) }
+                            if (
+                                (!review.isBlocked || revealedReview != null) &&
+                                displayedReview.author.userId.isNotBlank() &&
+                                displayedReview.author.userId != currentUserId
+                            ) {
+                                { onReport(displayedReview) }
                             } else {
                                 null
                             },

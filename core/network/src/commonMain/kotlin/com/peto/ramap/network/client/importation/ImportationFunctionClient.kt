@@ -1,7 +1,7 @@
 package com.peto.ramap.network.client.importation
 
-import com.peto.ramap.domain.repository.ImportationErrorCode
-import com.peto.ramap.domain.repository.ImportationException
+import com.peto.ramap.domain.model.ImportationErrorCode
+import com.peto.ramap.domain.model.ImportationException
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.exceptions.RestException
 import io.github.jan.supabase.functions.functions

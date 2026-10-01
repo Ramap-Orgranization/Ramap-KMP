@@ -1,8 +1,8 @@
 package com.peto.ramap.ui.bookmark.importation
 
 import com.peto.ramap.core.result.RamapError
-import com.peto.ramap.domain.repository.ImportationErrorCode
-import com.peto.ramap.domain.repository.ImportationException
+import com.peto.ramap.domain.model.ImportationErrorCode
+import com.peto.ramap.domain.model.ImportationException
 import com.peto.ramap.ui.bookmark.importation.contract.ImportationError
 import org.jetbrains.compose.resources.StringResource
 import ramap.shared.generated.resources.Res
