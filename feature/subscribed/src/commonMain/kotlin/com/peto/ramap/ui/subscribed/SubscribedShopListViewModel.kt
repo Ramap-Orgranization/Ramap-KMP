@@ -13,7 +13,7 @@ import com.peto.ramap.domain.model.notification.EventNotificationOverride
 import com.peto.ramap.domain.repository.NotificationSettingsRepository
 import com.peto.ramap.domain.repository.RamenShopRepository
 import com.peto.ramap.domain.store.PersonalizationBootstrapState
-import com.peto.ramap.domain.store.ShopPersonalizationStore
+import com.peto.ramap.domain.store.PersonalizationStore
 import com.peto.ramap.ui.base.BaseViewModel
 import com.peto.ramap.ui.subscribed.contract.SubscribedShopListIntent
 import com.peto.ramap.ui.subscribed.contract.SubscribedShopListIntent.OnRemovalConfirmed
@@ -35,7 +35,7 @@ import ramap.shared.generated.resources.personalization_update_failure_message
 class SubscribedShopListViewModel(
     private val notificationRepository: NotificationSettingsRepository,
     private val ramenShopRepository: RamenShopRepository,
-    private val personalizationStore: ShopPersonalizationStore,
+    private val personalizationStore: PersonalizationStore,
     private val analyticsTracker: AnalyticsTracker,
 ) : BaseViewModel<SubscribedShopListUiState, SubscribedShopListIntent, SubscribedShopListSideEffect>(
         initialState = SubscribedShopListUiState(),

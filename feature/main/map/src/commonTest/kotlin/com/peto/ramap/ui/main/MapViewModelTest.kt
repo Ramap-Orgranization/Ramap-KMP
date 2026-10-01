@@ -28,7 +28,7 @@ import com.peto.ramap.domain.repository.RamenShopRepository
 import com.peto.ramap.domain.repository.ShopReportRepository
 import com.peto.ramap.domain.repository.ShopWaitingSystemRepository
 import com.peto.ramap.domain.store.PersonalizationBootstrapState
-import com.peto.ramap.domain.store.ShopPersonalizationStore
+import com.peto.ramap.domain.store.PersonalizationStore
 import com.peto.ramap.domain.usecase.FetchShopDetailUseCase
 import com.peto.ramap.domain.usecase.ShopDetail
 import com.peto.ramap.domain.usecase.ShopDetailCacheLookup
@@ -2961,7 +2961,7 @@ private fun showToastSideEffect(message: StringResource): ShowToast =
 private fun mapViewModel(
     ramenShopRepository: RamenShopRepository = FakeRamenShopRepository(),
     shopWaitingSystemRepository: ShopWaitingSystemRepository = FakeShopWaitingSystemRepository(),
-    personalizationRepository: ShopPersonalizationStore = FakePersonalizationRepository(),
+    personalizationRepository: PersonalizationStore = FakePersonalizationRepository(),
     loginRepository: FakeLoginRepository = FakeLoginRepository(),
     shopReportRepository: ShopReportRepository = FakeShopReportRepository(),
     notificationSettingsRepository: FakeNotificationSettingsRepository = FakeNotificationSettingsRepository(),

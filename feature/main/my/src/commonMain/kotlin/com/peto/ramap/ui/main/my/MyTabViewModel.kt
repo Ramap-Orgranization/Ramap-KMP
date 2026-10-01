@@ -8,7 +8,7 @@ import com.peto.ramap.domain.repository.CommunityRepository
 import com.peto.ramap.domain.repository.ProfileRepository
 import com.peto.ramap.domain.repository.ReviewRepository
 import com.peto.ramap.domain.store.PersonalizationBootstrapState
-import com.peto.ramap.domain.store.ShopPersonalizationStore
+import com.peto.ramap.domain.store.PersonalizationStore
 import com.peto.ramap.ui.base.BaseViewModel
 import com.peto.ramap.ui.main.my.contract.MyTabIntent
 import com.peto.ramap.ui.main.my.contract.MyTabLoadKey
@@ -26,7 +26,7 @@ import ramap.shared.generated.resources.review_blocked_users_empty
 class MyTabViewModel(
     private val repository: ProfileRepository,
     private val communityRepository: CommunityRepository,
-    private val personalizationStore: ShopPersonalizationStore,
+    private val personalizationStore: PersonalizationStore,
     private val reviewRepository: ReviewRepository,
 ) : BaseViewModel<MyTabUiState, MyTabIntent, MyTabSideEffect>(MyTabUiState()) {
     private var requestGeneration = 0L

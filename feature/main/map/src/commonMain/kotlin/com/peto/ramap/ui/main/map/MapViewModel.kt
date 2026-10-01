@@ -33,7 +33,7 @@ import com.peto.ramap.domain.repository.RamenShopRepository
 import com.peto.ramap.domain.repository.ReviewRepository
 import com.peto.ramap.domain.repository.ShopReportRepository
 import com.peto.ramap.domain.store.PersonalizationBootstrapState
-import com.peto.ramap.domain.store.ShopPersonalizationStore
+import com.peto.ramap.domain.store.PersonalizationStore
 import com.peto.ramap.domain.usecase.FetchShopDetailUseCase
 import com.peto.ramap.domain.usecase.ShopDetail
 import com.peto.ramap.domain.usecase.ShopDetailCacheLookup
@@ -120,7 +120,7 @@ class MapViewModel(
     private val loginRepository: LoginRepository,
     private val currentLocationStore: CurrentLocationStore,
     private val shopReportRepository: ShopReportRepository,
-    private val personalizationStore: ShopPersonalizationStore,
+    private val personalizationStore: PersonalizationStore,
     private val fetchShopDetailUseCase: FetchShopDetailUseCase,
     private val mapSearchHistoryStorage: SearchHistoryStorage,
     private val mapAnalytics: MapAnalytics,
@@ -153,6 +153,7 @@ class MapViewModel(
     private fun loadOperatingNotices() {
         launchResultTask(
             taskKey = OPERATING_NOTICES_TASK_KEY,
+            policy = TaskPolicy.IgnoreNew,
             retryOnNetworkError = true,
             request = operatingNoticeRepository::fetchCurrentOperatingNotices,
             onSuccess = { notices -> reduce { copy(operatingNotices = notices) } },

@@ -20,12 +20,12 @@ import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class DefaultShopPersonalizationStoreTest {
+class DefaultPersonalizationStoreTest {
     @Test
     fun `초기 동기화 상태는 성공 전 로딩이고 성공 후 준비가 된다`() =
         runTest {
             val store =
-                DefaultShopPersonalizationStore(
+                DefaultPersonalizationStore(
                     FakeBookmarkRepository(),
                     FakeHiddenShopRepository(),
                     FakeSubscribedShopRepository(),
@@ -53,7 +53,7 @@ class DefaultShopPersonalizationStoreTest {
                     override suspend fun removeBookmark(shopId: String) = RamapResult.Success(Unit)
                 }
             val store =
-                DefaultShopPersonalizationStore(
+                DefaultPersonalizationStore(
                     bookmarkRepository,
                     FakeHiddenShopRepository(),
                     FakeSubscribedShopRepository(),
@@ -79,7 +79,7 @@ class DefaultShopPersonalizationStoreTest {
                     override suspend fun removeBookmark(shopId: String) = RamapResult.Success(Unit)
                 }
             val store =
-                DefaultShopPersonalizationStore(
+                DefaultPersonalizationStore(
                     bookmarkRepository,
                     FakeHiddenShopRepository(),
                     FakeSubscribedShopRepository(),
@@ -96,7 +96,7 @@ class DefaultShopPersonalizationStoreTest {
     fun `새로고침 결과를 하나의 상태로 발행한다`() =
         runTest {
             val store =
-                DefaultShopPersonalizationStore(
+                DefaultPersonalizationStore(
                     FakeBookmarkRepository(setOf("bookmark")),
                     FakeHiddenShopRepository(setOf("hidden")),
                     FakeSubscribedShopRepository(setOf("notification")),
@@ -121,7 +121,7 @@ class DefaultShopPersonalizationStoreTest {
             val hiddenShopRepository = FakeHiddenShopRepository()
             val subscribedShopRepository = FakeSubscribedShopRepository(setOf("shop"))
             val store =
-                DefaultShopPersonalizationStore(
+                DefaultPersonalizationStore(
                     bookmarkRepository,
                     hiddenShopRepository,
                     subscribedShopRepository,
@@ -145,7 +145,7 @@ class DefaultShopPersonalizationStoreTest {
             val hiddenShopRepository = FakeHiddenShopRepository(shouldFailUpdate = true)
             val subscribedShopRepository = FakeSubscribedShopRepository(setOf("shop"))
             val store =
-                DefaultShopPersonalizationStore(
+                DefaultPersonalizationStore(
                     bookmarkRepository,
                     hiddenShopRepository,
                     subscribedShopRepository,
@@ -173,7 +173,7 @@ class DefaultShopPersonalizationStoreTest {
                 )
             val subscribedShopRepository = FakeSubscribedShopRepository(setOf("shop"))
             val store =
-                DefaultShopPersonalizationStore(
+                DefaultPersonalizationStore(
                     FakeBookmarkRepository(setOf("shop")),
                     hiddenShopRepository,
                     subscribedShopRepository,
@@ -195,7 +195,7 @@ class DefaultShopPersonalizationStoreTest {
         runTest {
             val hiddenShopRepository = FakeHiddenShopRepository(setOf("shop"))
             val store =
-                DefaultShopPersonalizationStore(
+                DefaultPersonalizationStore(
                     FakeBookmarkRepository(),
                     hiddenShopRepository,
                     FakeSubscribedShopRepository(),
@@ -217,7 +217,7 @@ class DefaultShopPersonalizationStoreTest {
                     shouldFailUpdate = true,
                 )
             val store =
-                DefaultShopPersonalizationStore(
+                DefaultPersonalizationStore(
                     FakeBookmarkRepository(),
                     hiddenShopRepository,
                     FakeSubscribedShopRepository(),
@@ -236,7 +236,7 @@ class DefaultShopPersonalizationStoreTest {
         runTest {
             val bookmarkRepository = FakeBookmarkRepository(shouldFailUpdate = true)
             val store =
-                DefaultShopPersonalizationStore(
+                DefaultPersonalizationStore(
                     bookmarkRepository,
                     FakeHiddenShopRepository(),
                     FakeSubscribedShopRepository(),
@@ -252,7 +252,7 @@ class DefaultShopPersonalizationStoreTest {
         runTest {
             val bookmarkRepository = FakeBookmarkRepository()
             val store =
-                DefaultShopPersonalizationStore(
+                DefaultPersonalizationStore(
                     bookmarkRepository,
                     FakeHiddenShopRepository(),
                     FakeSubscribedShopRepository(),
@@ -273,7 +273,7 @@ class DefaultShopPersonalizationStoreTest {
     fun `여러 매장 중 저장 실패가 발생하면 공유 상태를 갱신하지 않는다`() =
         runTest {
             val store =
-                DefaultShopPersonalizationStore(
+                DefaultPersonalizationStore(
                     FakeBookmarkRepository(shouldFailUpdate = true),
                     FakeHiddenShopRepository(),
                     FakeSubscribedShopRepository(),
@@ -290,7 +290,7 @@ class DefaultShopPersonalizationStoreTest {
         runTest {
             val subscribedShopRepository = FakeSubscribedShopRepository()
             val store =
-                DefaultShopPersonalizationStore(
+                DefaultPersonalizationStore(
                     FakeBookmarkRepository(),
                     FakeHiddenShopRepository(),
                     subscribedShopRepository,
@@ -310,7 +310,7 @@ class DefaultShopPersonalizationStoreTest {
         runTest {
             val subscribedShopRepository = FakeSubscribedShopRepository(setOf("shop"))
             val store =
-                DefaultShopPersonalizationStore(
+                DefaultPersonalizationStore(
                     FakeBookmarkRepository(),
                     FakeHiddenShopRepository(),
                     subscribedShopRepository,
@@ -330,7 +330,7 @@ class DefaultShopPersonalizationStoreTest {
     fun `초기화하면 모든 개인화 상태를 비운다`() =
         runTest {
             val store =
-                DefaultShopPersonalizationStore(
+                DefaultPersonalizationStore(
                     FakeBookmarkRepository(setOf("shop")),
                     FakeHiddenShopRepository(),
                     FakeSubscribedShopRepository(),
@@ -347,7 +347,7 @@ class DefaultShopPersonalizationStoreTest {
         runTest {
             val subscribedShopRepository = FakeSubscribedShopRepository()
             val store =
-                DefaultShopPersonalizationStore(
+                DefaultPersonalizationStore(
                     FakeBookmarkRepository(),
                     FakeHiddenShopRepository(setOf("hidden")),
                     subscribedShopRepository,
@@ -362,5 +362,5 @@ class DefaultShopPersonalizationStoreTest {
             assertEquals(emptyList(), subscribedShopRepository.subscriptionRequests)
         }
 
-    private fun personalization(store: DefaultShopPersonalizationStore): ShopPersonalization = assertIs<PersonalizationBootstrapState.Success>(store.state.value).value
+    private fun personalization(store: DefaultPersonalizationStore): ShopPersonalization = assertIs<PersonalizationBootstrapState.Success>(store.state.value).value
 }

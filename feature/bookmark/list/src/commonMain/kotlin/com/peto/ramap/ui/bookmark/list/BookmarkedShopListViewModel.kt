@@ -9,7 +9,7 @@ import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.domain.repository.RamenShopRepository
 import com.peto.ramap.domain.store.PersonalizationBootstrapState
-import com.peto.ramap.domain.store.ShopPersonalizationStore
+import com.peto.ramap.domain.store.PersonalizationStore
 import com.peto.ramap.ui.base.BaseViewModel
 import com.peto.ramap.ui.bookmark.list.contract.BookmarkedShopListIntent
 import com.peto.ramap.ui.bookmark.list.contract.BookmarkedShopListSideEffect
@@ -26,7 +26,7 @@ import ramap.shared.generated.resources.bookmark_removal_success_message
 import ramap.shared.generated.resources.personalization_update_failure_message
 
 class BookmarkedShopListViewModel(
-    private val personalizationStore: ShopPersonalizationStore,
+    private val personalizationStore: PersonalizationStore,
     private val ramenShopRepository: RamenShopRepository,
     private val analyticsTracker: AnalyticsTracker,
 ) : BaseViewModel<BookmarkedShopListUiState, BookmarkedShopListIntent, BookmarkedShopListSideEffect>(

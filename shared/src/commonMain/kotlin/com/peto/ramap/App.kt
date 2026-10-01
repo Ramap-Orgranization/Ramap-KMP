@@ -10,7 +10,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.repeatOnLifecycle
 import com.peto.ramap.core.result.RamapError
 import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.designsystem.component.LoadErrorContent
@@ -22,7 +25,7 @@ import com.peto.ramap.domain.repository.AppNoticeRepository
 import com.peto.ramap.domain.repository.AppUpdateRepository
 import com.peto.ramap.domain.repository.LoginRepository
 import com.peto.ramap.domain.store.PersonalizationBootstrapState
-import com.peto.ramap.domain.store.ShopPersonalizationStore
+import com.peto.ramap.domain.store.PersonalizationStore
 import com.peto.ramap.platform.AppVersionProvider
 import com.peto.ramap.platform.network.NetworkConnectivityObserver
 import com.peto.ramap.platform.network.NetworkConnectivityStatus
@@ -50,7 +53,7 @@ fun App(
     appVersionProvider: AppVersionProvider = koinInject(),
     appNoticeStorage: AppNoticeStorage = koinInject(),
     loginRepository: LoginRepository = koinInject(),
-    personalizationStore: ShopPersonalizationStore = koinInject(),
+    personalizationStore: PersonalizationStore = koinInject(),
     toastManager: ToastManager = koinInject(),
     onExitRequested: (() -> Unit)? = null,
 ) {
@@ -78,12 +81,13 @@ fun App(
 @Composable
 private fun AppContent(
     loginRepository: LoginRepository,
-    personalizationStore: ShopPersonalizationStore,
+    personalizationStore: PersonalizationStore,
     toastManager: ToastManager,
     onExitRequested: (() -> Unit)?,
 ) {
     val retryRequests = remember { MutableSharedFlow<Unit>(extraBufferCapacity = 1) }
     val networkConnectivityObserver: NetworkConnectivityObserver = koinInject()
+    val lifecycleOwner = LocalLifecycleOwner.current
     val personalizationState by personalizationStore.state.collectAsStateWithLifecycle()
     // 구성 변경이 새로고침의 Loading 상태에서 끝나도 네비게이션 저장소를 다시 연결한다.
     var hasShownAppRoute by rememberSaveable { mutableStateOf(false) }
@@ -100,10 +104,12 @@ private fun AppContent(
         )
     }
 
-    LaunchedEffect(networkConnectivityObserver) {
-        networkConnectivityObserver.observe().collect { status ->
-            if (status == NetworkConnectivityStatus.Available) {
-                NetworkRetryGenerator.retryPending()
+    LaunchedEffect(networkConnectivityObserver, lifecycleOwner) {
+        lifecycleOwner.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+            networkConnectivityObserver.observe().distinctUntilChanged().collectLatest { status ->
+                if (status == NetworkConnectivityStatus.Available) {
+                    NetworkRetryGenerator.retryPending()
+                }
             }
         }
     }
@@ -145,7 +151,7 @@ internal fun shouldShowAppRoute(
 
 internal suspend fun observeSessionPersonalization(
     loginRepository: LoginRepository,
-    personalizationStore: ShopPersonalizationStore,
+    personalizationStore: PersonalizationStore,
     retryRequests: Flow<Unit> = emptyFlow(),
 ) {
     awaitSessionInitialization(loginRepository)
@@ -182,8 +188,11 @@ private suspend fun awaitSessionInitialization(loginRepository: LoginRepository)
     }
 }
 
-private suspend fun refreshPersonalization(personalizationStore: ShopPersonalizationStore) {
-    NetworkRetryGenerator.remove(personalizationStore, PERSONALIZATION_TASK_KEY)
+private suspend fun refreshPersonalization(
+    personalizationStore: PersonalizationStore,
+    retryAttempt: Int = 0,
+) {
+    if (retryAttempt == 0) NetworkRetryGenerator.remove(personalizationStore, PERSONALIZATION_TASK_KEY)
 
     try {
         when (val result = personalizationStore.refresh()) {
@@ -193,8 +202,9 @@ private suspend fun refreshPersonalization(personalizationStore: ShopPersonaliza
                     NetworkRetryGenerator.enqueue(
                         owner = personalizationStore,
                         taskKey = PERSONALIZATION_TASK_KEY,
+                        retryAttempt = retryAttempt + 1,
                     ) {
-                        refreshPersonalization(personalizationStore)
+                        refreshPersonalization(personalizationStore, retryAttempt + 1)
                     }
                 }
             }

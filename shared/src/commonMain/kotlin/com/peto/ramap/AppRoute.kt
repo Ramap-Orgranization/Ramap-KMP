@@ -26,7 +26,7 @@ import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.auth.LoginType
 import com.peto.ramap.domain.repository.LoginRepository
 import com.peto.ramap.domain.store.PersonalizationBootstrapState
-import com.peto.ramap.domain.store.ShopPersonalizationStore
+import com.peto.ramap.domain.store.PersonalizationStore
 import com.peto.ramap.log.AppAnalytics
 import com.peto.ramap.log.analyticsScreenName
 import com.peto.ramap.navigation.BackPressController
@@ -87,7 +87,7 @@ internal fun AppRoute(
     deepLinkEntryPoint: DeepLinkEntryPoint = koinInject(),
     appAnalytics: AppAnalytics = koinInject(),
     loginRepository: LoginRepository = koinInject(),
-    personalizationStore: ShopPersonalizationStore = koinInject(),
+    personalizationStore: PersonalizationStore = koinInject(),
 ) {
     val mapViewModel = koinViewModel<MapViewModel>()
     val navigationState =
@@ -595,7 +595,7 @@ private fun TrackScreenViews(
 private fun TrackUserProperties(
     appAnalytics: AppAnalytics,
     loginRepository: LoginRepository,
-    personalizationStore: ShopPersonalizationStore,
+    personalizationStore: PersonalizationStore,
 ) {
     LaunchedEffect(loginRepository) {
         loginRepository.sessionState.collect { state ->

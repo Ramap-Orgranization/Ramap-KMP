@@ -11,7 +11,7 @@ import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.domain.repository.ImportationRepository
 import com.peto.ramap.domain.repository.RamenShopRepository
 import com.peto.ramap.domain.store.PersonalizationBootstrapState
-import com.peto.ramap.domain.store.ShopPersonalizationStore
+import com.peto.ramap.domain.store.PersonalizationStore
 import com.peto.ramap.ui.base.BaseViewModel
 import com.peto.ramap.ui.bookmark.importation.contract.ImportationError
 import com.peto.ramap.ui.bookmark.importation.contract.ImportationIntent
@@ -24,7 +24,7 @@ import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.importation_completed
 
 class ImportationViewModel(
-    private val personalizationStore: ShopPersonalizationStore,
+    private val personalizationStore: PersonalizationStore,
     private val ramenShopRepository: RamenShopRepository,
     private val importationRepository: ImportationRepository,
     private val importationAnalytics: ImportationAnalytics,

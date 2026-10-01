@@ -29,7 +29,7 @@ import com.peto.ramap.data.repository.DefaultShopReportRepository
 import com.peto.ramap.data.repository.DefaultShopWaitingSystemRepository
 import com.peto.ramap.data.repository.DefaultSubscribedShopRepository
 import com.peto.ramap.data.repository.ReviewChangeNotifier
-import com.peto.ramap.data.store.DefaultShopPersonalizationStore
+import com.peto.ramap.data.store.DefaultPersonalizationStore
 import com.peto.ramap.domain.repository.AppNoticeRepository
 import com.peto.ramap.domain.repository.AppUpdateRepository
 import com.peto.ramap.domain.repository.BookmarkRepository
@@ -48,7 +48,7 @@ import com.peto.ramap.domain.repository.ShopRankingRepository
 import com.peto.ramap.domain.repository.ShopReportRepository
 import com.peto.ramap.domain.repository.ShopWaitingSystemRepository
 import com.peto.ramap.domain.repository.SubscribedShopRepository
-import com.peto.ramap.domain.store.ShopPersonalizationStore
+import com.peto.ramap.domain.store.PersonalizationStore
 import org.koin.dsl.module
 
 val repositoryModule =
@@ -84,8 +84,8 @@ val repositoryModule =
         single<BookmarkRepository> { DefaultBookmarkRepository(get<BookmarkShopDataSource>()) }
         single<HiddenShopRepository> { DefaultHiddenShopRepository(get<HiddenShopDataSource>()) }
         single<SubscribedShopRepository> { DefaultSubscribedShopRepository(get()) }
-        single<ShopPersonalizationStore> {
-            DefaultShopPersonalizationStore(get(), get(), get())
+        single<PersonalizationStore> {
+            DefaultPersonalizationStore(get(), get(), get())
         }
         single<ShopReportRepository> {
             DefaultShopReportRepository(get<ShopReportDataSource>())

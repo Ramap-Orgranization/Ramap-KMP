@@ -7,7 +7,7 @@ import com.peto.ramap.domain.repository.BookmarkRepository
 import com.peto.ramap.domain.repository.HiddenShopRepository
 import com.peto.ramap.domain.repository.SubscribedShopRepository
 import com.peto.ramap.domain.store.PersonalizationBootstrapState
-import com.peto.ramap.domain.store.ShopPersonalizationStore
+import com.peto.ramap.domain.store.PersonalizationStore
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.async
@@ -17,15 +17,15 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.withContext
 
 /**
- * 역할별 저장소를 조합해 [ShopPersonalizationStore]를 제공하는 기본 구현.
+ * 역할별 저장소를 조합해 [PersonalizationStore]를 제공하는 기본 구현.
  *
  * 역할별 저장소의 결과를 공유 개인화 상태로 발행하고, 원격 반영 실패 시 로컬 상태를 롤백한다.
  */
-internal class DefaultShopPersonalizationStore(
+internal class DefaultPersonalizationStore(
     private val bookmarkRepository: BookmarkRepository,
     private val hiddenShopRepository: HiddenShopRepository,
     private val subscribedShopRepository: SubscribedShopRepository,
-) : ShopPersonalizationStore {
+) : PersonalizationStore {
     private val _state =
         MutableStateFlow<PersonalizationBootstrapState>(PersonalizationBootstrapState.Loading)
     override val state = _state.asStateFlow()

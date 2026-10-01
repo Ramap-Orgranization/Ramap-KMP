@@ -5,7 +5,7 @@ import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.domain.model.auth.LoginSessionState
 import com.peto.ramap.domain.model.personalization.ShopPersonalization
 import com.peto.ramap.domain.store.PersonalizationBootstrapState
-import com.peto.ramap.domain.store.ShopPersonalizationStore
+import com.peto.ramap.domain.store.PersonalizationStore
 import com.peto.ramap.fake.FakeLoginRepository
 import com.peto.ramap.fake.FakePersonalizationRepository
 import com.peto.ramap.ui.retry.NetworkRetryGenerator
@@ -30,7 +30,7 @@ class AppPersonalizationTest {
             val fakeStore = FakePersonalizationRepository()
             var refreshCount = 0
             val store =
-                object : ShopPersonalizationStore by fakeStore {
+                object : PersonalizationStore by fakeStore {
                     override suspend fun refresh(): RamapResult<Unit> {
                         refreshCount++
                         fakeStore.updateBookmarkedShopIds(setOf("saved-shop"))
@@ -61,7 +61,7 @@ class AppPersonalizationTest {
         runTest {
             var refreshCount = 0
             val store =
-                object : ShopPersonalizationStore by FakePersonalizationRepository() {
+                object : PersonalizationStore by FakePersonalizationRepository() {
                     override suspend fun refresh(): RamapResult<Unit> {
                         refreshCount++
                         return RamapResult.Success(Unit)
@@ -123,7 +123,7 @@ class AppPersonalizationTest {
         runTest {
             var refreshCount = 0
             val store =
-                object : ShopPersonalizationStore by FakePersonalizationRepository(
+                object : PersonalizationStore by FakePersonalizationRepository(
                     initialState = PersonalizationBootstrapState.Loading,
                 ) {
                     override suspend fun refresh(): RamapResult<Unit> {
@@ -161,7 +161,7 @@ class AppPersonalizationTest {
         runTest {
             var refreshCount = 0
             val store =
-                object : ShopPersonalizationStore by FakePersonalizationRepository(
+                object : PersonalizationStore by FakePersonalizationRepository(
                     initialState = PersonalizationBootstrapState.Loading,
                 ) {
                     override suspend fun refresh(): RamapResult<Unit> {
@@ -201,7 +201,7 @@ class AppPersonalizationTest {
                     initialState = PersonalizationBootstrapState.Error,
                 )
             val store =
-                object : ShopPersonalizationStore by fakeStore {
+                object : PersonalizationStore by fakeStore {
                     override suspend fun refresh(): RamapResult<Unit> {
                         refreshCount += 1
                         return if (refreshCount == 1) {
@@ -242,7 +242,7 @@ class AppPersonalizationTest {
             val refreshStarted = CompletableDeferred<Unit>()
             var clearCount = 0
             val store =
-                object : ShopPersonalizationStore by FakePersonalizationRepository(
+                object : PersonalizationStore by FakePersonalizationRepository(
                     initialState = PersonalizationBootstrapState.Loading,
                 ) {
                     override suspend fun refresh(): RamapResult<Unit> {
