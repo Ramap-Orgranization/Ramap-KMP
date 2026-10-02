@@ -692,13 +692,16 @@ class MapViewModel(
         shop: RamenShop,
         shouldFocus: Boolean = true,
     ) {
+        if (isCurrentShopDetail(shop.id)) return
         dismissReviewReport()
         cancelTask(BLOCKED_REVIEW_REVEAL_TASK_KEY)
         val cache = checkCachedShopDetail(shop.id)
         if (cache != null) recordRecentlyViewedShop(shop)
         val selectedShopState = createSelectedShopState(currentState, shop, shouldFocus, cache)
         reduce { selectedShopState }
-        loadShopDetail(shop.id)
+        if (cache == null) {
+            loadShopDetail(shop.id)
+        }
     }
 
     private fun createSelectedShopState(
@@ -785,7 +788,6 @@ class MapViewModel(
             is ShopDetailCacheLookup.Hit -> {
                 cancelShopDetailLoad()
                 applyRequestedShopDetail(lookup.detail)
-                loadShopDetail(shopId, selectShopOnSuccess = true)
                 return
             }
 
@@ -800,7 +802,7 @@ class MapViewModel(
             ShopDetailSheetUiState.Closed -> false
             is ShopDetailSheetUiState.Loading -> state.shopId == shopId
             is ShopDetailSheetUiState.Content -> state.detail.shop.id == shopId
-            is ShopDetailSheetUiState.Error -> state.shopId == shopId
+            is ShopDetailSheetUiState.Error -> false
         }
 
     private fun dismissRequestedShopLoad() {
