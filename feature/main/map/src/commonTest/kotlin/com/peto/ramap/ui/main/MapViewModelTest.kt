@@ -31,6 +31,7 @@ import com.peto.ramap.domain.store.PersonalizationStore
 import com.peto.ramap.domain.usecase.FetchShopDetailUseCase
 import com.peto.ramap.domain.usecase.ShopDetail
 import com.peto.ramap.domain.usecase.ShopDetailCacheLookup
+import com.peto.ramap.domain.usecase.SignInUseCase
 import com.peto.ramap.fake.FakeAnalyticsTracker
 import com.peto.ramap.fake.FakeCommunityRepository
 import com.peto.ramap.fake.FakeCrashReporter
@@ -2984,6 +2985,7 @@ private fun mapViewModel(
         FakeMapSearchHistoryStorage(),
         MapAnalytics(FakeAnalyticsTracker()),
         LoginAnalytics(FakeAnalyticsTracker(), FakeCrashReporter()),
+        SignInUseCase(loginRepository, LoginAnalytics(FakeAnalyticsTracker(), FakeCrashReporter())),
         FakeOperatingNoticeRepository(),
         reviewRepository,
         communityRepository,

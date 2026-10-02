@@ -25,6 +25,7 @@ import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.domain.repository.LoginRepository
 import com.peto.ramap.domain.store.PersonalizationBootstrapState
 import com.peto.ramap.domain.store.PersonalizationStore
+import com.peto.ramap.domain.usecase.SignInUseCase
 import com.peto.ramap.fake.FakeAnalyticsTracker
 import com.peto.ramap.fake.FakeCrashReporter
 import com.peto.ramap.fake.FakeLoginRepository
@@ -779,5 +780,10 @@ private fun rankingViewModel(
             LoginAnalytics(
                 analyticsTracker,
                 FakeCrashReporter(),
+            ),
+        signInUseCase =
+            SignInUseCase(
+                loginRepository,
+                LoginAnalytics(analyticsTracker, FakeCrashReporter()),
             ),
     )
