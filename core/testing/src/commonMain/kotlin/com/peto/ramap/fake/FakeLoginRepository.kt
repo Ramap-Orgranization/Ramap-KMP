@@ -23,6 +23,7 @@ class FakeLoginRepository(
     var deleteAccountCallCount = 0
         private set
     var deleteAccountError: Throwable? = null
+    var signInResult: RamapResult<Unit> = RamapResult.Success(Unit)
 
     override val sessionState: Flow<LoginSessionState> = mutableSessionState
 
@@ -41,7 +42,7 @@ class FakeLoginRepository(
             LoginType.KAKAO -> signInWithKakaoCallCount += 1
             LoginType.APPLE -> signInWithAppleCallCount += 1
         }
-        return RamapResult.Success(Unit)
+        return signInResult
     }
 
     override suspend fun signOut(): RamapResult<Unit> {
