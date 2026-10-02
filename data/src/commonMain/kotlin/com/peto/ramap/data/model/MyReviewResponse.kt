@@ -19,6 +19,8 @@ internal data class MyReviewResponse(
     @SerialName("moderation_status") val moderationStatus: String,
     @SerialName("moderation_note") val moderationNote: String? = null,
     @SerialName("is_public") val isPublic: Boolean,
+    @SerialName("visit_number") val visitNumber: Int = 1,
+    @SerialName("author_review_count") val authorReviewCount: Int = 0,
     @Transient val imageUrls: List<String?> = emptyList(),
     @Transient val authorAvatarUrl: String? = null,
 ) {
@@ -36,5 +38,7 @@ internal data class MyReviewResponse(
                     ?: ReviewModerationStatus.PENDING,
             moderationNote = moderationNote,
             authorAvatarUrl = authorAvatarUrl,
+            visitNumber = visitNumber,
+            authorReviewCount = authorReviewCount,
         )
 }
