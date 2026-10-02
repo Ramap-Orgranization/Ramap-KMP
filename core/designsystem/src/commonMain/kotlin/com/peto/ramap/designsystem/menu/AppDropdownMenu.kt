@@ -6,14 +6,12 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
-import com.peto.ramap.theme.RamapTheme
 
 @Composable
 fun AppDropdownMenu(
@@ -57,28 +55,4 @@ fun AppDropdownMenuItem(
         leadingIcon = leadingIcon,
         trailingIcon = trailingIcon,
     )
-}
-
-@Preview(showBackground = true)
-@Composable
-private fun AppDropdownMenuPreview() {
-    RamapTheme {
-        AppDropdownMenu(
-            expanded = true,
-            onDismissRequest = {},
-        ) {
-            AppDropdownMenuItem(
-                text = "수정하기",
-                onClick = {},
-            )
-            AppDropdownMenuItem(
-                text = "삭제하기",
-                onClick = {},
-            )
-            AppDropdownMenuItem(
-                text = "신고하기",
-                onClick = {},
-            )
-        }
-    }
 }

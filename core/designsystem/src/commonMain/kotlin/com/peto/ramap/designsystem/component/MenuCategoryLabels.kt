@@ -1,7 +1,6 @@
 package com.peto.ramap.designsystem.component
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -15,7 +14,6 @@ import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.menu_category_separator
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun MenuCategoryLabels(
     menuCategories: MenuCategories,

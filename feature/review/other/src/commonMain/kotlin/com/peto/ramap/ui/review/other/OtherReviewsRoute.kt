@@ -148,7 +148,11 @@ internal fun OtherReviewsContent(
             if (state.showsProfileHeader) {
                 item {
                     state.profile?.let { profile ->
-                        ProfileHeader(profile = profile)
+                        ProfileHeader(
+                            nickname = profile.nickname,
+                            avatarUrl = profile.avatarUrl,
+                            bio = profile.bio,
+                        )
                     }
                 }
             }
