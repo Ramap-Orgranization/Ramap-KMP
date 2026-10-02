@@ -3,7 +3,6 @@ package com.peto.ramap.ui.main.ranking
 import androidx.lifecycle.viewModelScope
 import com.peto.ramap.analytics.AnalyticsSource
 import com.peto.ramap.analytics.common.login.LoginAnalytics
-import com.peto.ramap.analytics.common.login.LoginMethod
 import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.auth.LoginType
@@ -20,6 +19,7 @@ import com.peto.ramap.domain.repository.LoginRepository
 import com.peto.ramap.domain.repository.ShopRankingRepository
 import com.peto.ramap.domain.store.PersonalizationBootstrapState
 import com.peto.ramap.domain.store.PersonalizationStore
+import com.peto.ramap.domain.usecase.SignInUseCase
 import com.peto.ramap.ui.base.BaseViewModel
 import com.peto.ramap.ui.main.ranking.contract.RankingIntent
 import com.peto.ramap.ui.main.ranking.contract.RankingLoadKey
@@ -43,6 +43,7 @@ class RankingViewModel(
     private val loginRepository: LoginRepository,
     private val rankingAnalytics: RankingAnalytics,
     private val loginAnalytics: LoginAnalytics,
+    private val signInUseCase: SignInUseCase,
 ) : BaseViewModel<RankingUiState, RankingIntent, RankingSideEffect>(
         RankingUiState(),
     ) {
@@ -446,14 +447,11 @@ class RankingViewModel(
     }
 
     private fun signInWithKakao() {
-        loginAnalytics.logLoginStarted(AnalyticsSource.RANKING)
-
         launchResultTask(
             taskKey = SIGN_IN_TASK_KEY,
             policy = TaskPolicy.IgnoreNew,
-            request = { loginRepository.signIn(LoginType.KAKAO) },
+            request = { signInUseCase(LoginType.KAKAO, AnalyticsSource.RANKING) },
             onSuccess = {
-                loginAnalytics.logLoginSucceeded(AnalyticsSource.RANKING)
                 showToast(Res.string.login_success_message, ToastType.SUCCESS)
             },
             onError = { handleKakaoLoginFailure() },
@@ -461,18 +459,14 @@ class RankingViewModel(
     }
 
     private fun signInWithApple() {
-        loginAnalytics.logLoginStarted(AnalyticsSource.RANKING, LoginMethod.APPLE)
-
         launchResultTask(
             taskKey = SIGN_IN_TASK_KEY,
             policy = TaskPolicy.IgnoreNew,
-            request = { loginRepository.signIn(LoginType.APPLE) },
+            request = { signInUseCase(LoginType.APPLE, AnalyticsSource.RANKING) },
             onSuccess = {
-                loginAnalytics.logLoginSucceeded(AnalyticsSource.RANKING, LoginMethod.APPLE)
                 showToast(Res.string.login_success_message, ToastType.SUCCESS)
             },
             onError = {
-                loginAnalytics.logLoginFailed(AnalyticsSource.RANKING, LoginMethod.APPLE)
                 showToast(Res.string.apple_login_failure_message, ToastType.ERROR)
             },
         )

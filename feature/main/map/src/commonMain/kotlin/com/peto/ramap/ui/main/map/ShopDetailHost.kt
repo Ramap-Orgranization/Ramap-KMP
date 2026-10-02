@@ -23,14 +23,15 @@ import com.peto.ramap.platform.NotificationPermissionRequester
 import com.peto.ramap.ui.main.map.contract.MapIntent
 import com.peto.ramap.ui.main.map.shop.ShopDetailContent
 import org.koin.compose.koinInject
+import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 fun ShopDetailHost(
     shopId: String,
-    viewModel: MapViewModel,
     onDismiss: () -> Unit,
     onShowOnMap: (String) -> Unit,
     onReviewNavigate: (String) -> Unit,
+    viewModel: MapViewModel = koinViewModel(),
     onOpenProfile: (String) -> Unit = {},
     onEditReview: (String, String) -> Unit = { _, _ -> },
     isNavigationBarPadded: Boolean = false,

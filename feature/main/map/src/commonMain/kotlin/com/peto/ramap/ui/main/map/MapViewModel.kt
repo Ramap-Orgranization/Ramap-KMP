@@ -3,7 +3,6 @@ package com.peto.ramap.ui.main.map
 import androidx.lifecycle.viewModelScope
 import com.peto.ramap.analytics.AnalyticsSource
 import com.peto.ramap.analytics.common.login.LoginAnalytics
-import com.peto.ramap.analytics.common.login.LoginMethod
 import com.peto.ramap.core.result.RamapError
 import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.designsystem.toast.model.ToastAction
@@ -36,6 +35,7 @@ import com.peto.ramap.domain.store.PersonalizationStore
 import com.peto.ramap.domain.usecase.FetchShopDetailUseCase
 import com.peto.ramap.domain.usecase.ShopDetail
 import com.peto.ramap.domain.usecase.ShopDetailCacheLookup
+import com.peto.ramap.domain.usecase.SignInUseCase
 import com.peto.ramap.platform.storage.SearchHistoryStorage
 import com.peto.ramap.ui.base.BaseViewModel
 import com.peto.ramap.ui.location.CurrentLocationStore
@@ -125,6 +125,7 @@ class MapViewModel(
     private val mapSearchHistoryStorage: SearchHistoryStorage,
     private val mapAnalytics: MapAnalytics,
     private val loginAnalytics: LoginAnalytics,
+    private val signInUseCase: SignInUseCase,
     private val operatingNoticeRepository: OperatingNoticeRepository,
     private val reviewRepository: ReviewRepository,
     private val communityRepository: CommunityRepository,
@@ -1270,34 +1271,28 @@ class MapViewModel(
     }
 
     private fun signInWithKakao() {
-        loginAnalytics.logLoginStarted(AnalyticsSource.MAP)
         launchResultTask(
             taskKey = SIGN_IN_TASK_KEY,
             policy = TaskPolicy.IgnoreNew,
-            request = { loginRepository.signIn(LoginType.KAKAO) },
+            request = { signInUseCase(LoginType.KAKAO, AnalyticsSource.MAP) },
             onSuccess = {
-                loginAnalytics.logLoginSucceeded(AnalyticsSource.MAP)
                 showToast(Res.string.login_success_message)
             },
             onError = {
-                loginAnalytics.logLoginFailed(AnalyticsSource.MAP)
                 showKakaoLoginFailure()
             },
         )
     }
 
     private fun signInWithApple() {
-        loginAnalytics.logLoginStarted(AnalyticsSource.MAP, LoginMethod.APPLE)
         launchResultTask(
             taskKey = SIGN_IN_TASK_KEY,
             policy = TaskPolicy.IgnoreNew,
-            request = { loginRepository.signIn(LoginType.APPLE) },
+            request = { signInUseCase(LoginType.APPLE, AnalyticsSource.MAP) },
             onSuccess = {
-                loginAnalytics.logLoginSucceeded(AnalyticsSource.MAP, LoginMethod.APPLE)
                 showToast(Res.string.login_success_message)
             },
             onError = {
-                loginAnalytics.logLoginFailed(AnalyticsSource.MAP, LoginMethod.APPLE)
                 showAppleLoginFailure()
             },
         )
