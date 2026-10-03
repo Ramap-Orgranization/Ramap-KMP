@@ -1,3 +1,4 @@
+import { dailySchedulesSchema, validDailySchedules, type DailySchedule } from "../_shared/operating-notice-schedule.ts";
 import { isAdministrator } from "../_shared/admin-auth.ts";
 import { createServiceClient } from "../_shared/event-notifications.ts";
 import { normalizeMapUrl } from "../_shared/event-venue-url.ts";
@@ -23,6 +24,10 @@ const OPERATING_NOTICE_EXTRACTION_PROMPT =
   "description은 원문 캡션 또는 이미지의 문구, 이모지, 구두점, 줄바꿈을 그대로 보존하세요. " +
   "요약·번역·홍보 문구로 재작성하지 말고, OCR이 불확실하면 읽은 내용을 임의로 보정하지 말고 uncertainties에 적으세요. " +
   "notice_type은 operating_notice(일반 영업 변동), full_close(휴무), early_close(조기 마감), late_opening(오픈 지연) 중 하나만 선택하세요. " +
+  "월간 달력이나 떨어진 여러 날짜의 공지는 한 건의 operating_notice로 반환하고 daily_schedules에 원문에서 확인한 날짜만 넣으세요. " +
+  "daily_schedules의 closed는 휴무면 true, 정상영업이면 false입니다. 정상영업에 시간이 없으면 schedule_override는 null로 두고 시간을 추측하지 마세요. " +
+  "변경 시간이 명시된 날짜만 schedule_override에 시간을 넣으세요. 월간 공지의 최상위 schedule_override, start_time, end_time은 null이고 start_date와 end_date는 해당 월의 첫날과 마지막 날입니다. " +
+  "달력의 정상영업 표기도 빠짐없이 추출하되 빈칸의 의미를 추측하지 마세요. 단일 공지나 이벤트의 daily_schedules는 빈 배열입니다. " +
   "title은 null로 반환하세요. 날짜는 YYYY-MM-DD, 시간은 HH:mm으로 변환하세요. " +
   "오늘·내일 같은 상대 날짜는 게시일이나 관찰일을 알 수 없으면 추측하지 마세요. " +
   "종료일이 원문에 없으면 end_date를 null로 반환하고 uncertainties에 적으세요. " +
@@ -32,6 +37,7 @@ const OPERATING_NOTICE_EXTRACTION_PROMPT =
 
 type RequestBody = { registration_type?: unknown; shop_name?: unknown; feedback?: unknown; source_url?: unknown; evidence_path?: unknown };
 type EventDraft = {
+  daily_schedules: DailySchedule[];
   shop_name: string | null;
   title: string | null;
   start_date: string | null;
@@ -77,6 +83,13 @@ Deno.serve(async (request) => {
     const draft = await analyze(apiKey, registrationType, caption?.cleanText ?? null, imageUrl, feedback);
     if (caption?.isExact) draft.description = caption.cleanText;
     if (registrationType === "operating_notice") {
+      if (draft.daily_schedules.length > 0) {
+        if (!draft.start_date || !draft.end_date || !validDailySchedules(draft.daily_schedules, draft.start_date, draft.end_date)) throw new Error("Invalid monthly schedule");
+        draft.notice_type = "operating_notice";
+        draft.schedule_override = null;
+        draft.start_time = null;
+        draft.end_time = null;
+      }
       draft.event_type = null;
       draft.participants = [];
       if (!isSupportedNoticeType(draft.notice_type)) {
@@ -140,7 +153,7 @@ async function analyze(
         {
           role: "system",
           content: registrationType === "operating_notice"
-            ? "라멘 매장의 영업 변동 공지 초안을 추출하세요. 입력에 없는 사실은 절대 만들지 마세요. operating_notice면 schedule_override에 변경 영업 세그먼트만 넣고, early_close는 end_time이 필수이며, late_opening은 예정 시간이 없으면 start_time을 null로 두세요."
+            ? "라멘 매장의 영업 변동 공지 초안을 추출하세요. 입력에 없는 사실은 절대 만들지 마세요. 단일 operating_notice면 schedule_override에 변경 영업 세그먼트만 넣고, 월간 공지는 daily_schedules를 사용하며 최상위 schedule_override는 null로 두고, early_close는 end_time이 필수이며, late_opening은 예정 시간이 없으면 start_time을 null로 두세요."
             : "라멘 매장의 이벤트 등록 초안을 추출하세요. 입력에 없는 사실은 절대 만들지 마세요. 관리자 피드백은 입력 사실을 더 정확히 반영하기 위한 수정 지시로만 사용하고, 새로운 사실을 추측하는 근거로 사용하지 마세요. title은 원문에 명시된 이벤트명이나 메뉴명만 짧게 적고, 원문에 없으면 null을 반환하세요. event_type은 collab, popup, limited_menu, summer_limited, new_menu, store_renewal 중 하나입니다. 다른 매장·브랜드·셰프 등이 이벤트에 함께 참여하거나 콜라보한다고 명시된 경우에만 collab을 선택하세요. participants에는 원문에서 이벤트 참여 또는 콜라보가 명시된 주체만 넣고, 각 항목에 name과 canonical Instagram 프로필 URL(알 수 없으면 null)을 넣으세요. 단순 재료·면·식자재 공급자나 납품업체는 참여자가 아닙니다. 날짜·회식·메뉴·수량·운영 시간을 추측하거나 추가하지 마세요. description은 입력 캡션의 사실만 사용하고 홍보 문구로 바꾸지 마세요. 매장명은 계정명이 아니라 실제 매장명으로 추측하지 말고 null을 반환하세요. 날짜는 YYYY-MM-DD로 변환합니다. 확실하지 않거나 누락된 필드는 uncertainties에 한국어로 적습니다.",
         },
         {
@@ -183,9 +196,10 @@ async function analyze(
               start_time: { type: ["string", "null"] },
               end_time: { type: ["string", "null"] },
               schedule_override: { type: ["object", "null"], additionalProperties: false, properties: { closed: { type: "boolean" }, open: { type: ["string", "null"] }, close: { type: ["string", "null"] }, close_next_day: { type: "boolean" }, label: { type: ["string", "null"] }, break_times: { type: "array", items: { type: "object", additionalProperties: false, properties: { start: { type: "string" }, end: { type: "string" } }, required: ["start", "end"] } } }, required: ["closed", "open", "close", "close_next_day", "label", "break_times"] },
+              daily_schedules: dailySchedulesSchema,
               uncertainties: { type: "array", items: { type: "string" } },
             },
-            required: ["shop_name", "title", "start_date", "end_date", "description", "event_type", "venue_name", "venue_address", "venue_instagram_url", "venue_naver_map_url", "venue_kakao_map_url", "participants", "notice_type", "start_time", "end_time", "schedule_override", "uncertainties"],
+            required: ["shop_name", "title", "start_date", "end_date", "description", "event_type", "venue_name", "venue_address", "venue_instagram_url", "venue_naver_map_url", "venue_kakao_map_url", "participants", "notice_type", "start_time", "end_time", "schedule_override", "daily_schedules", "uncertainties"],
           },
         },
       },
@@ -197,6 +211,7 @@ async function analyze(
   if (!outputText) throw new Error("OpenAI returned no structured output");
   const draft = JSON.parse(outputText) as EventDraft;
   return {
+    daily_schedules: registrationType === "operating_notice" && Array.isArray(draft.daily_schedules) ? draft.daily_schedules : [],
     shop_name: text(draft.shop_name),
     title: text(draft.title),
     start_date: validDate(draft.start_date) ? draft.start_date : null,

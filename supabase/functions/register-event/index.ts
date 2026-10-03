@@ -1,3 +1,4 @@
+import { validDailySchedules } from "../_shared/operating-notice-schedule.ts";
 import { isAdministrator } from "../_shared/admin-auth.ts";
 import { assertKnownEventType, createServiceClient } from "../_shared/event-notifications.ts";
 import { normalizeMapUrl } from "../_shared/event-venue-url.ts";
@@ -304,6 +305,8 @@ async function registerOperatingNotice(
   const startTime = text(body.start_time);
   const endTime = text(body.end_time);
   const scheduleOverride = body.schedule_override;
+  const dailySchedules = body.daily_schedules ?? [];
+  const isMonthly = Array.isArray(dailySchedules) && dailySchedules.length > 0;
   const description = text(body.description);
   const sourceUrl = normalizeInstagramUrl(text(body.source_url));
   const evidencePath = text(body.evidence_path);
@@ -311,11 +314,13 @@ async function registerOperatingNotice(
     !shopName || !isSupportedNoticeType(noticeType) || !startDate || !description || !sourceUrl ||
     !validDate(startDate) || !endDate || !validDate(endDate) || endDate < startDate || (startTime && !validTime(startTime)) ||
     (endTime && !validTime(endTime)) || !isInstagramUrl(sourceUrl) ||
-    (noticeType === "operating_notice" && !validScheduleOverride(scheduleOverride)) ||
+    (isMonthly && (noticeType !== "operating_notice" || scheduleOverride != null || startTime != null || endTime != null || !validDailySchedules(dailySchedules, startDate, endDate))) ||
+    (!Array.isArray(dailySchedules)) ||
+    (!isMonthly && noticeType === "operating_notice" && !validScheduleOverride(scheduleOverride)) ||
     (noticeType !== "operating_notice" && scheduleOverride != null) ||
     (noticeType === "early_close" && !endTime) ||
     (noticeType === "late_opening" && startTime !== null && !validTime(startTime)) ||
-    (noticeType === "operating_notice" && endDate !== null && startDate !== endDate)
+    (!isMonthly && noticeType === "operating_notice" && endDate !== null && startDate !== endDate)
   ) return json({ code: "invalid_operating_notice_draft" }, 400);
 
   const { data: shops, error: shopError } = await supabase.from("ramen_shops").select("id,instagram_url").eq("name", shopName).limit(2);
@@ -337,7 +342,7 @@ async function registerOperatingNotice(
     return json({ code: "duplicate" }, 409);
   }
 
-  if (noticeType === "operating_notice") {
+  if (noticeType === "operating_notice" && !isMonthly) {
     const { data: overrides, error: overrideError } = await supabase
       .from("shop_operating_notices")
       .select("id")
@@ -364,6 +369,7 @@ async function registerOperatingNotice(
         start_time: startTime,
         end_time: endTime,
         schedule_override: scheduleOverride,
+        daily_schedules: dailySchedules,
         source_url: sourceUrl,
         review_note: "관리자 미리보기 승인 등록",
       })

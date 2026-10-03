@@ -141,7 +141,7 @@ as $$
         (select to_jsonb(notice) from public.shop_operating_notices notice where notice.shop_id = s.id and (notice.end_date is null or notice.end_date >= (current_timestamp at time zone 'Asia/Seoul')::date) order by notice.notice_date desc, notice.id limit 1),
         coalesce((select jsonb_agg(to_jsonb(section) order by case when trim(section.title) = '상시메뉴' then 1 else 0 end, section.display_order, section.id) from public.shop_menu_sections section where section.shop_id = s.id and section.is_visible), '[]'::jsonb),
         coalesce((select jsonb_agg(to_jsonb(item) order by item.display_order, item.id) from public.visible_shop_menu_items item where item.shop_id = s.id), '[]'::jsonb)
-    from public.shops s where s.id = p_shop_id and s.is_visible;
+    from public.ramen_shops s where s.id = p_shop_id and s.is_visible;
 $$;
 
 revoke all on function public.fetch_shop_detail_v2(uuid) from public;
@@ -190,7 +190,6 @@ cross join lateral (
 where event_context.shop_context_id is not null
 order by active.start_date;
 
-revoke all on public.ramen_shops, public.shops from public, anon, authenticated;
 grant select on public.active_events_v2, public.active_shop_events_v2 to anon, authenticated;
 
 commit;
