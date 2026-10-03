@@ -26,7 +26,6 @@ class ProfileEditViewModel(
     private val repository: ProfileRepository,
     private val loginRepository: LoginRepository,
 ) : BaseViewModel<ProfileUiState, ProfileIntent, ProfileSideEffect>(ProfileUiState()) {
-    private var nextDraftGeneration = 0L
 
     init {
         observeSession()
@@ -36,7 +35,7 @@ class ProfileEditViewModel(
         viewModelScope.launch {
             repository.sessionUserIds.distinctUntilChanged().collect { userId ->
                 cancelProfileTasks()
-                reduce { ProfileUiState(userId = userId, draftGeneration = ++nextDraftGeneration, loadState = LoadState()) }
+                reduce { ProfileUiState(userId = userId, loadState = LoadState()) }
                 if (userId != null) fetch()
             }
         }
@@ -79,6 +78,7 @@ class ProfileEditViewModel(
                         beginEdit(result.data)
                     }
                 }
+
                 is RamapResult.Error -> {
                     reduce { copy(failed = true) }
                 }
@@ -100,13 +100,12 @@ class ProfileEditViewModel(
                 nicknameAvailable = null,
                 nicknameCheckFailed = false,
                 checkedNickname = null,
-                draftGeneration = ++nextDraftGeneration,
             )
         }
     }
 
     private fun pickImage(intent: ProfileIntent.PickImage) {
-        if (!currentState.editing || currentState.saving || intent.generation != currentState.draftGeneration) return
+        if (!currentState.editing || currentState.saving) return
         if (!intent.image.isValid()) {
             showToast(Res.string.profile_image_rejected, ToastType.ERROR)
             return
@@ -142,7 +141,7 @@ class ProfileEditViewModel(
             onStart = { copy(nicknameCheckFailed = false, nicknameAvailable = null) },
         ) {
             val result = repository.isNicknameAvailable(nickname)
-            if (draft.draftGeneration != currentState.draftGeneration || nickname != currentState.nickname.trim()) return@launchTask
+            if (nickname != currentState.nickname.trim()) return@launchTask
             when (result) {
                 is RamapResult.Success -> reduce { copy(nicknameAvailable = result.data, checkedNickname = nickname) }
                 is RamapResult.Error -> {
@@ -169,11 +168,10 @@ class ProfileEditViewModel(
                         bio = draft.bio.trim(),
                     ),
                 )
-            if (draft.draftGeneration != currentState.draftGeneration) return@launchTask
             when (result) {
                 is RamapResult.Success ->
                     if (result.data.userId == currentState.userId) {
-                        reduce { copy(profile = result.data, editing = false, image = null, removePhoto = false, draftGeneration = ++nextDraftGeneration) }
+                        reduce { copy(profile = result.data, editing = false, image = null, removePhoto = false) }
                         showToast(Res.string.profile_saved, ToastType.SUCCESS)
                         trySideEffect(ProfileSideEffect.NavigateBack)
                     }
@@ -207,7 +205,7 @@ class ProfileEditViewModel(
         }
         if (draft.nicknameChanged) {
             val availability = repository.isNicknameAvailable(draft.nickname.trim())
-            if (draft.draftGeneration != currentState.draftGeneration || draft.userId != currentState.userId) return
+            if (draft.userId != currentState.userId) return
             if (availability is RamapResult.Success && !availability.data) {
                 reduce { copy(nicknameAvailable = false) }
                 return
@@ -254,9 +252,8 @@ class ProfileEditViewModel(
     }
 
     private fun endEdit() {
-        nextDraftGeneration++
         cancelProfileTasks()
-        reduce { copy(editing = false, nickname = "", bio = "", image = null, removePhoto = false, nicknameTouched = false, nicknameAvailable = null, nicknameCheckFailed = false, checkedNickname = null, draftGeneration = nextDraftGeneration) }
+        reduce { copy(editing = false, nickname = "", bio = "", image = null, removePhoto = false, nicknameTouched = false, nicknameAvailable = null, nicknameCheckFailed = false, checkedNickname = null) }
     }
 
     override fun handleError(throwable: Throwable) {

@@ -314,7 +314,7 @@ class ProfileEditViewModelTest {
             model.dispatch(ProfileIntent.ChangeBio("저장하려던 자기소개"))
             runCurrent()
             val image = ProfileImage(byteArrayOf(0xFF.toByte(), 0xD8.toByte(), 0xFF.toByte()), "image/jpeg")
-            model.dispatch(ProfileIntent.PickImage(image, model.uiState.value.draftGeneration))
+            model.dispatch(ProfileIntent.PickImage(image))
             model.dispatch(ProfileIntent.Save)
             runCurrent()
             repository.saveResult?.complete(
@@ -532,10 +532,9 @@ class ProfileEditViewModelTest {
             val model = ProfileEditViewModel(repository, FakeLoginRepository())
             runCurrent()
             runCurrent()
-            val generation = model.uiState.value.draftGeneration
             repository.sessionUserIds.value = null
             runCurrent()
-            model.dispatch(ProfileIntent.PickImage(ProfileImage(byteArrayOf(1), "image/jpeg"), generation))
+            model.dispatch(ProfileIntent.PickImage(ProfileImage(byteArrayOf(1), "image/jpeg")))
             runCurrent()
             assertNull(model.uiState.value.profile)
             assertNull(model.uiState.value.image)
