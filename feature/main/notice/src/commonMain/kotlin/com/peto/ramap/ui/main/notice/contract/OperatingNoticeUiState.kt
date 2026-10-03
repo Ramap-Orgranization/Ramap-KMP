@@ -21,5 +21,16 @@ data class OperatingNoticeUiState(
     val hasOperatingNotices: Boolean
         get() = todayOperatingNotices.isNotEmpty() || scheduledOperatingNotices.isNotEmpty()
 
+    val todayShops: List<OperatingNotice>
+        get() = todayOperatingNotices.distinctBy { it.shop.id }
+
+    val scheduledShops: List<OperatingNotice>
+        get() {
+            val todayShopIds = todayOperatingNotices.map { it.shop.id }.toSet()
+            return scheduledOperatingNotices.filterNot { it.shop.id in todayShopIds }.distinctBy { it.shop.id }
+        }
+
+    fun noticesForShop(shopId: String): List<OperatingNotice> = (todayOperatingNotices + scheduledOperatingNotices).filter { it.shop.id == shopId }
+
     override fun withLoadingState(loadState: LoadState): OperatingNoticeUiState = copy(loadState = loadState)
 }

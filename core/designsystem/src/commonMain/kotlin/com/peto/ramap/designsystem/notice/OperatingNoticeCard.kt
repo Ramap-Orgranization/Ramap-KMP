@@ -39,6 +39,7 @@ fun OperatingNoticeCard(
     onSourceClick: (String) -> Unit,
     onShopClick: (String) -> Unit,
     modifier: Modifier = Modifier,
+    showShop: Boolean = true,
 ) {
     Column(
         modifier =
@@ -47,14 +48,16 @@ fun OperatingNoticeCard(
                 .background(CommonColor.White),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        RamenShopSummary(
-            shop = notice.shop,
-            onClick = { onShopClick(notice.shop.id) },
-            categoryLabel = { category ->
-                stringResource(CategoryResourceMapper.label(category))
-            },
-            modifier = Modifier.padding(horizontal = 8.dp),
-        )
+        if (showShop) {
+            RamenShopSummary(
+                shop = notice.shop,
+                onClick = { onShopClick(notice.shop.id) },
+                categoryLabel = { category ->
+                    stringResource(CategoryResourceMapper.label(category))
+                },
+                modifier = Modifier.padding(horizontal = 8.dp),
+            )
+        }
         Column(
             modifier = Modifier.padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -77,6 +80,8 @@ fun OperatingNoticeCard(
                         ),
                 )
             }
+
+            OperatingNoticeSchedule(days = notice.dailySchedules, businessHours = notice.shop.businessHoursDetails)
 
             AppText(
                 text = notice.description,

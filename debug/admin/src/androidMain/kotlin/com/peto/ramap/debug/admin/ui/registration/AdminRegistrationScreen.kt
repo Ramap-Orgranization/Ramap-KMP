@@ -285,7 +285,7 @@ internal fun AdminRegistrationScreen(
                     )
                 }
                 uiState.draft?.let { draft ->
-                    if (uiState.isOperatingNotice) {
+                    if (uiState.isOperatingNotice && draft.dailySchedules.isEmpty()) {
                         val dayKey =
                             uiState.selectedStartDate
                                 ?.let { java.time.LocalDate.parse(it) }
@@ -314,6 +314,7 @@ internal fun AdminRegistrationScreen(
                     }
                     AdminDraftPreview(
                         draft = draft,
+                        businessHours = uiState.selectedShopHours?.toDomain(),
                         onTitleChanged = onDraftTitleChanged,
                         onDescriptionChanged = onDraftDescriptionChanged,
                         externalVenues = uiState.externalVenues,

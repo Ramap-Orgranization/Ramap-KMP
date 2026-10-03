@@ -54,6 +54,22 @@ class OperatingNoticeResponseTest {
         assertFails { response.toDomain(ramenShopFixture()) }
     }
 
+    @Test
+    fun `월간 일정의 날짜와 정상영업을 손실 없이 매핑한다`() {
+        val notice =
+            response(noticeType = "operating_notice")
+                .copy(
+                    dailySchedules =
+                        listOf(
+                            OperatingNoticeDayResponse("2026-08-21", false),
+                            OperatingNoticeDayResponse("2026-08-20", true),
+                        ),
+                ).toDomain(ramenShopFixture())
+        assertEquals(listOf("2026-08-20", "2026-08-21"), notice.dailySchedules.map { it.date.toString() })
+        assertEquals(listOf(true, false), notice.dailySchedules.map { it.closed })
+        assertEquals(null, notice.dailySchedules.last().scheduleOverride)
+    }
+
     private fun response(
         noticeType: String = "temporary_closure",
         startDate: String = "2026-08-20",

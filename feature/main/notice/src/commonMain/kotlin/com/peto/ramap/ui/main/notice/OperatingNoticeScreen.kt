@@ -127,7 +127,7 @@ internal fun OperatingNoticeScreen(
                                 addNoticeSection(
                                     listScope = this,
                                     title = todaySectionTitle,
-                                    notices = uiState.todayOperatingNotices,
+                                    notices = uiState.todayShops,
                                     onNoticeClick = {
                                         onNoticeClick(it)
                                         selectedNotice = it
@@ -136,7 +136,7 @@ internal fun OperatingNoticeScreen(
                                 addNoticeSection(
                                     listScope = this,
                                     title = scheduledSectionTitle,
-                                    notices = uiState.scheduledOperatingNotices,
+                                    notices = uiState.scheduledShops,
                                     onNoticeClick = {
                                         onNoticeClick(it)
                                         selectedNotice = it
@@ -161,6 +161,7 @@ internal fun OperatingNoticeScreen(
     selectedNotice?.let { notice ->
         OperatingNoticeBottomSheet(
             notice = notice,
+            notices = uiState.noticesForShop(notice.shop.id),
             isSourceUrlSupported = isSourceUrlSupported,
             onSourceClick = onSourceClick,
             onShopClick = onShopClick,

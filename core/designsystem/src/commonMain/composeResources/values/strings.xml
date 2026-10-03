@@ -183,6 +183,9 @@
     <string name="news_report_link_label">인스타그램 링크</string>
     <string name="news_report_photo_label">사진 첨부</string>
 
+    <string name="operating_notice_day_closed">휴무</string>
+    <string name="operating_notice_day_regular">정상영업</string>
+    <string name="operating_notice_hours_unknown">영업시간 미확인</string>
     <!-- 영업 변동 화면 -->
     <string name="operating_notice_open">영업 변동 보기</string>
     <string name="operating_notice_empty">현재 또는 예정된 영업 변동이 없어요</string>

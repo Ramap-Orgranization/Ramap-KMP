@@ -35,6 +35,8 @@ internal data class OperatingNoticeResponse(
     val sourceUrl: String?,
     @SerialName("updated_at")
     val updatedAt: String? = null,
+    @SerialName("daily_schedules")
+    val dailySchedules: List<OperatingNoticeDayResponse> = emptyList(),
 ) {
     fun toDomain(shop: RamenShop): OperatingNotice =
         OperatingNotice(
@@ -50,6 +52,7 @@ internal data class OperatingNoticeResponse(
             manuallyReleasedAt = manuallyReleasedAt,
             sourceUrl = sourceUrl,
             updatedAt = updatedAt,
+            dailySchedules = dailySchedules.map { it.toDomain() }.sortedBy { it.date },
         )
 }
 

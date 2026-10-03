@@ -30,7 +30,7 @@ internal class DefaultOperatingNoticeRepository(
                 .mapNotNull { response ->
                     val shop = shops[response.shopId]?.toDomain() ?: return@mapNotNull null
                     response.toDomain(shop)
-                }.filter { it.isCurrentOrScheduledAt(now) }
+                }.filter { it.isRelevantForBusinessHoursAt(now) }
         }
 
     override suspend fun fetchActiveShopOperatingNotices(shopId: String): RamapResult<List<OperatingNotice>> =

@@ -91,7 +91,7 @@ internal fun BusinessHoursCard(
         ) {
             BusinessHoursStatusSummary(
                 status = status,
-                operatingNotice = operatingNotice,
+                operatingNotice = operatingNotice?.takeIf { it.dailySchedules.isEmpty() },
                 onOperatingNoticeClick = onOperatingNoticeClick,
                 modifier = Modifier.padding(vertical = 5.dp),
             )
@@ -118,9 +118,21 @@ internal fun BusinessHoursCard(
             }
         }
 
+        operatingNotices
+            .filter { it.dailySchedules.isNotEmpty() && it.isCurrentOrScheduledAt(currentDateTime) }
+            .maxWithOrNull(compareBy<OperatingNotice> { it.isActiveAt(currentDateTime) }.thenBy { it.updatedAt.orEmpty() }.thenBy { it.id })
+            ?.let { monthlyNotice ->
+                BusinessHoursStatusSummary(
+                    status = null,
+                    operatingNotice = monthlyNotice,
+                    onOperatingNoticeClick = onOperatingNoticeClick,
+                    modifier = Modifier.padding(vertical = 5.dp),
+                )
+            }
+
         if (isExpanded && businessHours != null) {
             SectionCard {
-                shop.latestScheduleOverride(currentDateTime, operatingNotices)?.let { notice ->
+                shop.latestScheduleOverride(currentDateTime, operatingNotices)?.takeIf { it.dailySchedules.isEmpty() }?.let { notice ->
                     val override = notice.scheduleOverride!!
                     AppText(stringResource(Res.string.shop_detail_business_hours_override), AppTextStyle.B2, GrayColor.C500)
                     AppText(

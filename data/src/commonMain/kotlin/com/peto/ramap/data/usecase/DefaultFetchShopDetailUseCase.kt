@@ -1,6 +1,7 @@
 package com.peto.ramap.data.usecase
 
 import com.peto.ramap.core.result.RamapResult
+import com.peto.ramap.domain.model.notice.OperatingNotice
 import com.peto.ramap.domain.model.review.Review
 import com.peto.ramap.domain.repository.OperatingNoticeRepository
 import com.peto.ramap.domain.repository.RamenShopRepository
@@ -105,7 +106,11 @@ internal class DefaultFetchShopDetailUseCase(
             if (notices is RamapResult.Success) {
                 val now = Clock.System.now().toLocalDateTime(TimeZone.of(SEOUL_TIME_ZONE))
                 detail.data.copy(
-                    operatingNotice = notices.data.firstOrNull { it.isCurrentOrScheduledAt(now) },
+                    operatingNotice =
+                        notices.data
+                            .filter { it.isCurrentOrScheduledAt(now) }
+                            .sortedWith(compareByDescending<OperatingNotice> { it.isActiveAt(now) }.thenByDescending { it.updatedAt.orEmpty() }.thenBy { it.startDate }.thenBy { it.id })
+                            .firstOrNull(),
                     operatingNotices = notices.data,
                 )
             } else {

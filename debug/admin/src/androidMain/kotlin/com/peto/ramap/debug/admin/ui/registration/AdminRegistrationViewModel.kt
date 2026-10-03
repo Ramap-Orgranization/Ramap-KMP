@@ -73,7 +73,7 @@ internal class AdminRegistrationViewModel(
                 reduce {
                     copy(
                         selectedNoticeType = intent.noticeType,
-                        draft = draft?.copy(noticeType = intent.noticeType.toRequestValue()),
+                        draft = draft?.takeIf { it.dailySchedules.isEmpty() }?.copy(noticeType = intent.noticeType.toRequestValue()),
                         message = null,
                     )
                 }
@@ -159,7 +159,7 @@ internal class AdminRegistrationViewModel(
                     copy(
                         selectedStartDate = intent.startDate,
                         selectedEndDate = endDate,
-                        draft = draft?.copy(startDate = intent.startDate, endDate = endDate),
+                        draft = draft?.takeIf { it.dailySchedules.isEmpty() }?.copy(startDate = intent.startDate, endDate = endDate),
                         message = null,
                     )
                 }
