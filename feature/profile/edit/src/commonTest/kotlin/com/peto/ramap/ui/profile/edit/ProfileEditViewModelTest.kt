@@ -3,6 +3,7 @@ package com.peto.ramap.ui.profile.edit
 import com.peto.ramap.core.result.RamapError
 import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.coroutinesTest
+import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.profile.AccountProfile
 import com.peto.ramap.domain.model.profile.ProfileImage
 import com.peto.ramap.fake.FakeLoginRepository
@@ -334,7 +335,7 @@ class ProfileEditViewModelTest {
             )
             assertTrue(model.uiState.value.editing)
             assertEquals(
-                ProfileSideEffect.Toast(Res.string.profile_nickname_daily_change_limit_reached),
+                ProfileSideEffect.ShowToast(Res.string.profile_nickname_daily_change_limit_reached, ToastType.ERROR),
                 model.sideEffect.first(),
             )
         }
@@ -361,7 +362,7 @@ class ProfileEditViewModelTest {
             runCurrent()
 
             assertEquals(
-                ProfileSideEffect.Toast(Res.string.profile_bio_daily_change_limit_reached),
+                ProfileSideEffect.ShowToast(Res.string.profile_bio_daily_change_limit_reached, ToastType.ERROR),
                 model.sideEffect.first(),
             )
         }
@@ -431,7 +432,7 @@ class ProfileEditViewModelTest {
             assertFalse(model.uiState.value.nicknameCheckFailed)
             assertEquals(1, repository.nicknameCheckCalls)
             assertEquals(
-                ProfileSideEffect.Toast(Res.string.profile_nickname_check_rate_limited),
+                ProfileSideEffect.ShowToast(Res.string.profile_nickname_check_rate_limited, ToastType.ERROR),
                 model.sideEffect.first(),
             )
         }
@@ -456,7 +457,7 @@ class ProfileEditViewModelTest {
             assertTrue(model.uiState.value.canSave)
             assertEquals(1, repository.saveCalls)
             assertEquals(
-                ProfileSideEffect.Toast(Res.string.profile_save_rate_limited),
+                ProfileSideEffect.ShowToast(Res.string.profile_save_rate_limited, ToastType.ERROR),
                 model.sideEffect.first(),
             )
         }
@@ -478,7 +479,7 @@ class ProfileEditViewModelTest {
             runCurrent()
 
             assertEquals(
-                ProfileSideEffect.Toast(Res.string.profile_save_failed),
+                ProfileSideEffect.ShowToast(Res.string.profile_save_failed, ToastType.ERROR),
                 model.sideEffect.first(),
             )
         }

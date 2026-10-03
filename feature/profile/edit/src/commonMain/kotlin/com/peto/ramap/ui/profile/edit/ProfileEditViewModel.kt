@@ -3,6 +3,7 @@ package com.peto.ramap.ui.profile.edit
 import androidx.lifecycle.viewModelScope
 import com.peto.ramap.core.result.RamapError
 import com.peto.ramap.core.result.RamapResult
+import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.profile.AccountProfile
 import com.peto.ramap.domain.model.profile.ProfileDraft
 import com.peto.ramap.domain.repository.LoginRepository
@@ -28,6 +29,13 @@ class ProfileEditViewModel(
     private var sessionGeneration = 0L
     private var nextDraftGeneration = 0L
 
+    private fun showToast(
+        message: StringResource,
+        type: ToastType = ToastType.DEFAULT,
+    ) {
+        trySideEffect(ProfileSideEffect.ShowToast(message, type))
+    }
+
     init {
         viewModelScope.launch {
             repository.sessionUserIds.distinctUntilChanged().collect { userId ->
@@ -48,7 +56,7 @@ class ProfileEditViewModel(
             ProfileIntent.CheckNickname -> checkNickname()
             is ProfileIntent.ChangeBio -> if (currentState.editing && !currentState.saving) reduce { copy(bio = intent.value) }
             is ProfileIntent.PickImage -> pickImage(intent)
-            ProfileIntent.RejectImage -> trySideEffect(ProfileSideEffect.Toast(Res.string.profile_image_rejected))
+            ProfileIntent.RejectImage -> showToast(Res.string.profile_image_rejected, ToastType.ERROR)
             ProfileIntent.RemovePhoto -> if (!currentState.saving) reduce { copy(image = null, removePhoto = profile?.avatarUrl != null) }
             ProfileIntent.Save -> save()
             ProfileIntent.Back -> back()
@@ -65,6 +73,7 @@ class ProfileEditViewModel(
                     if (generation == sessionGeneration && result.data.userId == currentState.userId) {
                         beginEdit(result.data)
                     }
+
                 is RamapResult.Error -> if (generation == sessionGeneration) reduce { copy(failed = true) }
             }
         }
@@ -92,7 +101,7 @@ class ProfileEditViewModel(
     private fun pickImage(intent: ProfileIntent.PickImage) {
         if (!currentState.editing || currentState.saving || intent.generation != currentState.draftGeneration) return
         if (!intent.image.isValid()) {
-            trySideEffect(ProfileSideEffect.Toast(Res.string.profile_image_rejected))
+            showToast(Res.string.profile_image_rejected, ToastType.ERROR)
             return
         }
         reduce { copy(image = intent.image, removePhoto = false) }
@@ -132,7 +141,7 @@ class ProfileEditViewModel(
                 is RamapResult.Success -> reduce { copy(nicknameAvailable = result.data, checkedNickname = nickname) }
                 is RamapResult.Error -> {
                     if (isRateLimit(result.error)) {
-                        trySideEffect(ProfileSideEffect.Toast(Res.string.profile_nickname_check_rate_limited))
+                        showToast(Res.string.profile_nickname_check_rate_limited, ToastType.ERROR)
                     } else {
                         reduce { copy(nicknameCheckFailed = true) }
                     }
@@ -160,9 +169,10 @@ class ProfileEditViewModel(
                 is RamapResult.Success ->
                     if (result.data.userId == currentState.userId) {
                         reduce { copy(profile = result.data, editing = false, image = null, removePhoto = false, draftGeneration = ++nextDraftGeneration) }
-                        trySideEffect(ProfileSideEffect.Toast(Res.string.profile_saved))
+                        showToast(Res.string.profile_saved, ToastType.SUCCESS)
                         trySideEffect(ProfileSideEffect.NavigateBack)
                     }
+
                 is RamapResult.Error -> handleSaveFailure(draft, result.error)
             }
         }
@@ -173,11 +183,11 @@ class ProfileEditViewModel(
         error: RamapError,
     ) {
         if (isProfileSaveRateLimit(error)) {
-            trySideEffect(ProfileSideEffect.Toast(Res.string.profile_save_rate_limited))
+            showToast(Res.string.profile_save_rate_limited, ToastType.ERROR)
             return
         }
         if (isProfileDailyChangeLimit(error)) {
-            trySideEffect(ProfileSideEffect.Toast(dailyChangeLimitMessage(error)))
+            showToast(dailyChangeLimitMessage(error), ToastType.ERROR)
             return
         }
         if (isNicknameTaken(error)) {
@@ -198,7 +208,7 @@ class ProfileEditViewModel(
                 return
             }
         }
-        trySideEffect(ProfileSideEffect.Toast(Res.string.profile_save_failed))
+        showToast(Res.string.profile_save_failed, ToastType.ERROR)
     }
 
     private fun isProfileDailyChangeLimit(error: RamapError): Boolean {
@@ -250,7 +260,7 @@ class ProfileEditViewModel(
         if (currentState.profile == null) {
             reduce { copy(failed = true) }
         } else {
-            trySideEffect(ProfileSideEffect.Toast(Res.string.profile_save_failed))
+            showToast(Res.string.profile_save_failed, ToastType.ERROR)
         }
     }
 

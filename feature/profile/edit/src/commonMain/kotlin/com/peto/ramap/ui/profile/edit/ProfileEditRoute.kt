@@ -44,7 +44,7 @@ fun ProfileEditRoute(
     ObserveAsEvents(viewModel.sideEffect) {
         when (it) {
             ProfileSideEffect.NavigateBack -> onBack()
-            is ProfileSideEffect.Toast -> toastManager.show(ToastData(it.message, ToastType.DEFAULT))
+            is ProfileSideEffect.ShowToast -> toastManager.show(ToastData(it.message, it.type))
         }
     }
     ProfileEditRouteContent(
