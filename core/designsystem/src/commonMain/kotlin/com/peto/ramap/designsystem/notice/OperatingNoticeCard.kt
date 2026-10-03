@@ -69,7 +69,13 @@ fun OperatingNoticeCard(
                     contentColor = CommonColor.White,
                     textStyle = AppTextStyle.C2,
                 )
-                EventDateBadge(text = eventDateText("${notice.startDate}", "${notice.endDate}"))
+                EventDateBadge(
+                    text =
+                        eventDateText(
+                            startDate = notice.startDate.toString(),
+                            endDate = notice.endDate?.toString(),
+                        ),
+                )
             }
 
             AppText(
