@@ -26,27 +26,33 @@ class ProfileEditViewModel(
     private val repository: ProfileRepository,
     private val loginRepository: LoginRepository,
 ) : BaseViewModel<ProfileUiState, ProfileIntent, ProfileSideEffect>(ProfileUiState()) {
-    private var sessionGeneration = 0L
     private var nextDraftGeneration = 0L
+
+    init {
+        observeSession()
+    }
+
+    private fun observeSession() {
+        viewModelScope.launch {
+            repository.sessionUserIds.distinctUntilChanged().collect { userId ->
+                cancelProfileTasks()
+                reduce { ProfileUiState(userId = userId, draftGeneration = ++nextDraftGeneration, loadState = LoadState()) }
+                if (userId != null) fetch()
+            }
+        }
+    }
+
+    private fun cancelProfileTasks() {
+        cancelTask(FETCH)
+        cancelTask(SAVE)
+        cancelTask(CHECK_NICKNAME)
+    }
 
     private fun showToast(
         message: StringResource,
         type: ToastType = ToastType.DEFAULT,
     ) {
         trySideEffect(ProfileSideEffect.ShowToast(message, type))
-    }
-
-    init {
-        viewModelScope.launch {
-            repository.sessionUserIds.distinctUntilChanged().collect { userId ->
-                sessionGeneration++
-                cancelTask(FETCH)
-                cancelTask(SAVE)
-                cancelTask(CHECK_NICKNAME)
-                reduce { ProfileUiState(userId = userId, draftGeneration = ++nextDraftGeneration, loadState = LoadState()) }
-                if (userId != null) fetch()
-            }
-        }
     }
 
     override suspend fun handleIntent(intent: ProfileIntent) {
@@ -66,15 +72,16 @@ class ProfileEditViewModel(
 
     private fun fetch() {
         if (currentState.userId == null) return
-        val generation = sessionGeneration
         launchTask(FETCH, loadKey = ProfileLoadKey.Fetch, onStart = { copy(failed = false) }) {
             when (val result = repository.fetchMyProfile()) {
-                is RamapResult.Success ->
-                    if (generation == sessionGeneration && result.data.userId == currentState.userId) {
+                is RamapResult.Success -> {
+                    if (result.data.userId == currentState.userId) {
                         beginEdit(result.data)
                     }
-
-                is RamapResult.Error -> if (generation == sessionGeneration) reduce { copy(failed = true) }
+                }
+                is RamapResult.Error -> {
+                    reduce { copy(failed = true) }
+                }
             }
         }
     }
@@ -129,14 +136,13 @@ class ProfileEditViewModel(
         val draft = currentState
         if (!draft.canCheckNickname) return
         val nickname = draft.nickname.trim()
-        val generation = sessionGeneration
         launchTask(
             taskKey = CHECK_NICKNAME,
             loadKey = ProfileLoadKey.CheckNickname,
             onStart = { copy(nicknameCheckFailed = false, nicknameAvailable = null) },
         ) {
             val result = repository.isNicknameAvailable(nickname)
-            if (generation != sessionGeneration || draft.draftGeneration != currentState.draftGeneration || nickname != currentState.nickname.trim()) return@launchTask
+            if (draft.draftGeneration != currentState.draftGeneration || nickname != currentState.nickname.trim()) return@launchTask
             when (result) {
                 is RamapResult.Success -> reduce { copy(nicknameAvailable = result.data, checkedNickname = nickname) }
                 is RamapResult.Error -> {
@@ -153,7 +159,6 @@ class ProfileEditViewModel(
     private fun save() {
         val draft = currentState
         if (!draft.canSave) return
-        val generation = sessionGeneration
         launchTask(SAVE, loadKey = ProfileLoadKey.Save) {
             val result =
                 repository.updateMyProfile(
@@ -164,7 +169,7 @@ class ProfileEditViewModel(
                         bio = draft.bio.trim(),
                     ),
                 )
-            if (generation != sessionGeneration || draft.draftGeneration != currentState.draftGeneration) return@launchTask
+            if (draft.draftGeneration != currentState.draftGeneration) return@launchTask
             when (result) {
                 is RamapResult.Success ->
                     if (result.data.userId == currentState.userId) {
@@ -250,8 +255,7 @@ class ProfileEditViewModel(
 
     private fun endEdit() {
         nextDraftGeneration++
-        cancelTask(SAVE)
-        cancelTask(CHECK_NICKNAME)
+        cancelProfileTasks()
         reduce { copy(editing = false, nickname = "", bio = "", image = null, removePhoto = false, nicknameTouched = false, nicknameAvailable = null, nicknameCheckFailed = false, checkedNickname = null, draftGeneration = nextDraftGeneration) }
     }
 
