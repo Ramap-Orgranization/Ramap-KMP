@@ -154,6 +154,7 @@ fun ShopDetailContent(
                         isRetryingReviews = isRetryingReviews,
                         showReviewsOnOpen = showReviewsOnOpen,
                         menuItemCount = state.detail.menuItemCount,
+                        onDismissRequest = onDismissRequest,
                         onBookmarkClick = { onBookmarkToggled(shop) },
                         onNotificationClick = { onShopNotificationToggled(shop) },
                         onHiddenClick = {

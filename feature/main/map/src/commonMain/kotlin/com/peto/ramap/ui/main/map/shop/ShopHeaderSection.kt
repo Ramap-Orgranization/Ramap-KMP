@@ -37,7 +37,9 @@ import com.peto.ramap.theme.SystemColor
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
+import ramap.shared.generated.resources.ic_close
 import ramap.shared.generated.resources.ic_kid_star_filled
+import ramap.shared.generated.resources.review_close
 import ramap.shared.generated.resources.shop_detail_copy_address
 import ramap.shared.generated.resources.shop_detail_label_address
 
@@ -52,6 +54,7 @@ internal fun ShopHeaderSection(
     event: ShopEvent?,
     modifier: Modifier = Modifier,
     dragAreaModifier: Modifier = Modifier,
+    onDismissRequest: () -> Unit,
     onBookmarkClick: () -> Unit,
     onNotificationClick: () -> Unit,
     onHiddenClick: () -> Unit,
@@ -88,8 +91,10 @@ internal fun ShopHeaderSection(
                     modifier =
                         Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 20.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            .padding(
+                                start = 20.dp,
+                                end = 10.dp,
+                            ),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     RemoteShopImage(
@@ -104,7 +109,12 @@ internal fun ShopHeaderSection(
                                 ).size(45.dp)
                                 .clip(CircleShape),
                     )
-                    Column(modifier = Modifier.weight(1f)) {
+                    Column(
+                        modifier =
+                            Modifier
+                                .weight(1f)
+                                .padding(start = 5.dp),
+                    ) {
                         AppText(
                             text = shop.name,
                             style = AppTextStyle.H4,
@@ -139,6 +149,16 @@ internal fun ShopHeaderSection(
                         onHiddenClick = onHiddenClick,
                         onReportClick = onReportClick,
                         onShareClick = onShareClick,
+                    )
+                    Image(
+                        painter = painterResource(Res.drawable.ic_close),
+                        contentDescription = stringResource(Res.string.review_close),
+                        modifier =
+                            Modifier
+                                .size(40.dp)
+                                .noRippleClickable(onClick = onDismissRequest)
+                                .padding(vertical = 8.dp),
+                        colorFilter = ColorFilter.tint(GrayColor.C500),
                     )
                 }
 
@@ -187,6 +207,7 @@ private fun ShopHeaderSectionPreview(
             showNotificationActions = true,
             isHidden = false,
             event = null,
+            onDismissRequest = {},
             onBookmarkClick = {},
             onNotificationClick = {},
             onHiddenClick = {},
