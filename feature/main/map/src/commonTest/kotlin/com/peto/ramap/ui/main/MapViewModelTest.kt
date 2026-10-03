@@ -946,6 +946,50 @@ class MapViewModelTest {
         }
 
     @Test
+    fun `화면 복원으로 같은 매장 아이디가 다시 전달돼도 진행 중이거나 완료된 상세를 재조회하지 않는다`() =
+        coroutinesTest {
+            val shop = ramenShopFixture()
+            val repository =
+                FakeRamenShopRepository(fetchByIdsResult = RamenShops(mapOf(shop.id to shop)))
+            val delegate =
+                FakeFetchShopDetailUseCase(
+                    repository,
+                    FakeShopWaitingSystemRepository(),
+                    FakeOperatingNoticeRepository(),
+                )
+            var requestCount = 0
+            val useCase =
+                object : FetchShopDetailUseCase by delegate {
+                    override suspend fun invoke(shopId: String): RamapResult<ShopDetail> {
+                        requestCount++
+                        delay(1_000)
+                        return delegate(shopId)
+                    }
+                }
+            val viewModel = mapViewModel(detailUseCase = useCase)
+
+            viewModel.dispatch(OnShopIdSelected(shop.id))
+            runCurrent()
+            viewModel.dispatch(OnShopIdSelected(shop.id))
+            runCurrent()
+            assertEquals(1, requestCount)
+            assertTrue(viewModel.uiState.value.isShopDetailLoading)
+
+            advanceTimeBy(1_000)
+            runCurrent()
+            viewModel.dispatch(OnShopIdSelected(shop.id))
+            runCurrent()
+
+            assertEquals(1, requestCount)
+            assertEquals(
+                shop,
+                viewModel.uiState.value.shopDetail
+                    ?.shop,
+            )
+            assertEquals(listOf(setOf(shop.id)), repository.requestedShopIdsHistory)
+        }
+
+    @Test
     fun `아이디로 상세를 조회하는 동안 로딩하고 성공하면 매장 전체 상세를 선택하고 포커스한다`() =
         coroutinesTest {
             val shop = ramenShopFixture(id = "requested-shop")
