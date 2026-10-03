@@ -4,7 +4,9 @@ import com.peto.ramap.core.result.RamapError
 import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.domain.model.community.ProfileAccess
 import com.peto.ramap.domain.model.community.PublicProfile
+import com.peto.ramap.domain.model.community.PublicSavedShopsPage
 import com.peto.ramap.domain.model.review.Review
+import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.domain.repository.CommunityRepository
 import com.peto.ramap.fake.FakeCommunityRepository
 
@@ -12,6 +14,7 @@ class FakeOtherReviewsCommunity : CommunityRepository by FakeCommunityRepository
     var profile: PublicProfile? = PublicProfile("author", "라멘팬")
     var profilePrivate = false
     var reviews: List<Review> = emptyList()
+    var savedShops: List<RamenShop> = emptyList()
     var failNextPage = false
     var failNextBlock = false
     val blockedUserIds = mutableSetOf<String>()
@@ -54,5 +57,19 @@ class FakeOtherReviewsCommunity : CommunityRepository by FakeCommunityRepository
             return RamapResult.Error(RamapError.Unknown(IllegalStateException("page unavailable")))
         }
         return RamapResult.Success(reviews.drop(offset.toInt()).take(20))
+    }
+
+    override suspend fun fetchUserSavedShops(
+        userId: String,
+        offset: Long,
+    ): RamapResult<PublicSavedShopsPage> {
+        val target = profile?.takeIf { it.userId == userId } ?: return RamapResult.Success(PublicSavedShopsPage(ProfileAccess.Unavailable, emptyList()))
+        val access =
+            when {
+                userId in blockedUserIds -> ProfileAccess.Blocked(PublicProfile(target.userId, target.nickname))
+                profilePrivate -> ProfileAccess.Private
+                else -> ProfileAccess.Visible(target)
+            }
+        return RamapResult.Success(PublicSavedShopsPage(access, savedShops.drop(offset.toInt()).take(20)))
     }
 }
