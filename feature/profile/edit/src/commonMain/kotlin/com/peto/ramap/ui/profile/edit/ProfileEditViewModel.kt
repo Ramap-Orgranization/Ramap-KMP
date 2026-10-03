@@ -26,7 +26,6 @@ class ProfileEditViewModel(
     private val repository: ProfileRepository,
     private val loginRepository: LoginRepository,
 ) : BaseViewModel<ProfileUiState, ProfileIntent, ProfileSideEffect>(ProfileUiState()) {
-
     init {
         observeSession()
     }
