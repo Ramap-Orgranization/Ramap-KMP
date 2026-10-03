@@ -5,16 +5,70 @@ import KakaoSDKAuth
 import KakaoSDKCommon
 import KakaoSDKUser
 import FirebaseCore
+import FirebaseMessaging
 import AuthenticationServices
 import CryptoKit
 import Security
+import UserNotifications
 
-final class AppDelegate: NSObject, UIApplicationDelegate {
+final class AppDelegate:
+    NSObject,
+    UIApplicationDelegate,
+    UNUserNotificationCenterDelegate,
+    MessagingDelegate {
     func application(
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
     ) -> Bool {
+        UNUserNotificationCenter.current().delegate = self
+        Messaging.messaging().delegate = self
+        NotificationCenter.default.addObserver(
+            forName: Notification.Name("RegisterForRemoteNotifications"),
+            object: nil,
+            queue: .main
+        ) { _ in
+            application.registerForRemoteNotifications()
+        }
+        UNUserNotificationCenter.current().getNotificationSettings { settings in
+            let status = settings.authorizationStatus
+            guard status == .authorized || status == .provisional || status == .ephemeral else {
+                return
+            }
+            DispatchQueue.main.async {
+                application.registerForRemoteNotifications()
+            }
+        }
         return true
+    }
+
+    func application(
+        _ application: UIApplication,
+        didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data
+    ) {
+        Messaging.messaging().apnsToken = deviceToken
+    }
+
+    func messaging(_ messaging: Messaging, didReceiveRegistrationToken fcmToken: String?) {
+        guard let fcmToken, !fcmToken.isEmpty else { return }
+        IosNotificationBridgeKt.registerIosPushToken(token: fcmToken)
+    }
+
+    func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        willPresent notification: UNNotification,
+        withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
+    ) {
+        completionHandler([.banner, .sound, .badge])
+    }
+
+    func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        didReceive response: UNNotificationResponse,
+        withCompletionHandler completionHandler: @escaping () -> Void
+    ) {
+        let deepLink = response.notification.request.content.userInfo["deep_link"] as? String
+        IosNotificationBridgeKt.dispatchIosNotificationDeepLink(deepLink: deepLink)
+        completionHandler()
     }
 }
 
@@ -23,11 +77,7 @@ struct iOSApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
 
     init() {
-        if Bundle.main.path(forResource: "GoogleService-Info", ofType: "plist") != nil {
-            FirebaseApp.configure()
-        } else {
-            print("GoogleService-Info.plist not found. Firebase is not configured.")
-        }
+        configureFirebase()
         UnhandledExceptionLoggerKt.installUnhandledExceptionLogger()
         NMFAuthManager.shared().ncpKeyId = RamapSecrets.shared.naverMapNcpKeyId
         KakaoSDK.initSDK(appKey: RamapSecrets.shared.kakaoNativeAppKey)
@@ -92,6 +142,20 @@ struct iOSApp: App {
             }
             presenter.present(controller, animated: true)
         }
+    }
+
+    private func configureFirebase() {
+#if DEBUG
+        let configurationName = "GoogleService-Info"
+#else
+        let configurationName = "GoogleService-Info-Release"
+#endif
+        guard let path = Bundle.main.path(forResource: configurationName, ofType: "plist"),
+              let options = FirebaseOptions(contentsOfFile: path) else {
+            print("\(configurationName).plist not found. Firebase is not configured.")
+            return
+        }
+        FirebaseApp.configure(options: options)
     }
 
     var body: some Scene {
