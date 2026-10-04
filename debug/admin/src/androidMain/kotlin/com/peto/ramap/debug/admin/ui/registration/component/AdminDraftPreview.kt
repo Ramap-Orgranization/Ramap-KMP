@@ -21,8 +21,10 @@ import com.peto.ramap.debug.admin.data.model.AdminDraft
 import com.peto.ramap.debug.admin.data.model.AdminExternalVenue
 import com.peto.ramap.debug.admin.ui.registration.formatDateRange
 import com.peto.ramap.debug.admin.ui.registration.toOperatingNoticeType
+import com.peto.ramap.designsystem.notice.OperatingNoticeSchedule
 import com.peto.ramap.designsystem.resource.operatingnotice.ShopOperatingNoticeResourceMapper
 import com.peto.ramap.designsystem.text.AppText
+import com.peto.ramap.domain.model.businesshour.BusinessHours
 import com.peto.ramap.domain.model.notice.OperatingNoticeType
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.GrayColor
@@ -32,6 +34,7 @@ import org.jetbrains.compose.resources.stringResource as composeStringResource
 @Composable
 internal fun AdminDraftPreview(
     draft: AdminDraft,
+    businessHours: BusinessHours? = null,
     modifier: Modifier = Modifier,
     onTitleChanged: (String) -> Unit = {},
     onDescriptionChanged: (String) -> Unit = {},
@@ -81,6 +84,7 @@ internal fun AdminDraftPreview(
             stringResource(R.string.admin_registration_detailed_classification),
             draft.noticeType?.let { toOperatingNoticeType(it)?.label() },
         )
+        OperatingNoticeSchedule(days = draft.dailySchedules.map { it.toDomain() }, businessHours = businessHours)
         PreviewRow(stringResource(R.string.admin_registration_start_time), draft.startTime)
         PreviewRow(stringResource(R.string.admin_registration_end_time), draft.endTime)
         AppText(

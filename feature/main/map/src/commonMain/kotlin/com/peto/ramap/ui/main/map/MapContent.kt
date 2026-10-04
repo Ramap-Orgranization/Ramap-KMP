@@ -31,7 +31,6 @@ import com.peto.ramap.analytics.AnalyticsSource
 import com.peto.ramap.designsystem.indicator.RamenLoadingIndicator
 import com.peto.ramap.designsystem.notice.OperatingNoticeBottomSheet
 import com.peto.ramap.designsystem.resource.wating.toUiModel
-import com.peto.ramap.designsystem.shop.ShopDetailContent
 import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.model.notice.OperatingNotice
 import com.peto.ramap.domain.model.report.ShopInformationField
@@ -50,6 +49,7 @@ import com.peto.ramap.ui.main.map.component.ClusterShopList
 import com.peto.ramap.ui.main.map.component.SearchContent
 import com.peto.ramap.ui.main.map.contract.MapUiState
 import com.peto.ramap.ui.main.map.model.CameraPosition
+import com.peto.ramap.ui.main.map.shop.ShopDetailContent
 import com.skydoves.balloon.Balloon
 import com.skydoves.balloon.rememberBalloonBuilder
 import com.skydoves.balloon.rememberBalloonState

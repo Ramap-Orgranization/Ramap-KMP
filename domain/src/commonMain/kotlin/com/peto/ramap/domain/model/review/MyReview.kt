@@ -14,6 +14,8 @@ data class MyReview(
     val moderationStatus: ReviewModerationStatus,
     val moderationNote: String? = null,
     val authorAvatarUrl: String? = null,
+    val visitNumber: Int = 1,
+    val authorReviewCount: Int = 0,
 ) {
     fun toReview(): Review =
         Review(
@@ -27,8 +29,10 @@ data class MyReview(
                     userId = "",
                     nickname = shopName,
                     avatarUrl = authorAvatarUrl,
+                    reviewCount = authorReviewCount,
                 ),
             isPublic = isPublic,
             moderationStatus = moderationStatus,
+            visitNumber = visitNumber,
         )
 }

@@ -8,8 +8,14 @@ kotlin {
         commonMain {
             dependencies {
                 api(projects.core.common)
+                api(projects.core.analytics)
                 api(libs.kotlinx.coroutines.core)
                 implementation(libs.kotlinx.datetime)
+            }
+        }
+        commonTest {
+            dependencies {
+                implementation(projects.core.testing)
             }
         }
     }

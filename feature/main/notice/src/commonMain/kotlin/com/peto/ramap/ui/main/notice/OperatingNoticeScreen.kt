@@ -1,6 +1,5 @@
 package com.peto.ramap.ui.main.notice
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -16,8 +15,6 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
@@ -34,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigationevent.NavigationEventInfo
 import androidx.navigationevent.compose.NavigationBackHandler
 import androidx.navigationevent.compose.rememberNavigationEventState
+import com.peto.ramap.designsystem.button.AppFloatingActionButton
 import com.peto.ramap.designsystem.component.LoadErrorContent
 import com.peto.ramap.designsystem.component.ShopListEmptyContent
 import com.peto.ramap.designsystem.notice.OperatingNoticeBottomSheet
@@ -45,7 +43,6 @@ import com.peto.ramap.ui.main.notice.component.OngoingOperatingNoticeShop
 import com.peto.ramap.ui.main.notice.component.OperatingNoticeSectionTitle
 import com.peto.ramap.ui.main.notice.component.OperatingNoticeSkeleton
 import com.peto.ramap.ui.main.notice.contract.OperatingNoticeUiState
-import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.event_list_open
@@ -130,7 +127,7 @@ internal fun OperatingNoticeScreen(
                                 addNoticeSection(
                                     listScope = this,
                                     title = todaySectionTitle,
-                                    notices = uiState.todayOperatingNotices,
+                                    notices = uiState.todayShops,
                                     onNoticeClick = {
                                         onNoticeClick(it)
                                         selectedNotice = it
@@ -139,7 +136,7 @@ internal fun OperatingNoticeScreen(
                                 addNoticeSection(
                                     listScope = this,
                                     title = scheduledSectionTitle,
-                                    notices = uiState.scheduledOperatingNotices,
+                                    notices = uiState.scheduledShops,
                                     onNoticeClick = {
                                         onNoticeClick(it)
                                         selectedNotice = it
@@ -149,25 +146,22 @@ internal fun OperatingNoticeScreen(
                         }
                 }
             }
-            FloatingActionButton(
+            AppFloatingActionButton(
+                icon = Res.drawable.ic_event_fab,
+                contentDescription = stringResource(Res.string.event_list_open),
                 onClick = onEventListClick,
                 modifier =
                     Modifier
                         .align(Alignment.BottomEnd)
                         .padding(20.dp),
-                shape = CircleShape,
                 containerColor = CommonColor.White,
-            ) {
-                Image(
-                    painter = painterResource(Res.drawable.ic_event_fab),
-                    contentDescription = stringResource(Res.string.event_list_open),
-                )
-            }
+            )
         }
     }
     selectedNotice?.let { notice ->
         OperatingNoticeBottomSheet(
             notice = notice,
+            notices = uiState.noticesForShop(notice.shop.id),
             isSourceUrlSupported = isSourceUrlSupported,
             onSourceClick = onSourceClick,
             onShopClick = onShopClick,

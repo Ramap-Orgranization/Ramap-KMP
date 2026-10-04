@@ -43,21 +43,19 @@ data class RamenShop(
         operatingNotices: List<OperatingNotice> = emptyList(),
     ): Boolean =
         businessHoursStatus(currentDateTime, operatingNotices)?.let { status ->
-            status !is BusinessHoursStatus.Closed && status !is BusinessHoursStatus.BreakTime
+            !status.isNotOpening
         } == true
 
     fun businessHoursStatus(
         currentDateTime: LocalDateTime,
         operatingNotices: List<OperatingNotice> = emptyList(),
     ): BusinessHoursStatus? {
-        val hours = businessHoursDetails ?: return null
         val applicableNotices = operatingNotices.filter { it.shop.id == id }
-        val status = effectiveBusinessHours(hours, currentDateTime, applicableNotices).statusAt(currentDateTime) ?: return null
-        return if (hasOperatingNoticeBlockingOpening(currentDateTime, applicableNotices)) {
-            BusinessHoursStatus.Closed()
-        } else {
-            status
-        }
+        if (hasOperatingNoticeBlockingOpening(currentDateTime, applicableNotices)) return BusinessHoursStatus.Closed()
+        val hours = businessHoursDetails ?: BusinessHours(emptyMap(), emptyMap(), emptyMap(), null)
+        val effectiveHours = effectiveBusinessHours(hours, currentDateTime, applicableNotices)
+        if (effectiveHours.dateOverrides[currentDateTime.date]?.day?.closed == true) return BusinessHoursStatus.Closed()
+        return effectiveHours.statusAt(currentDateTime)
     }
 
     private fun hasOperatingNoticeBlockingOpening(
@@ -119,36 +117,31 @@ data class RamenShop(
         currentDateTime: LocalDateTime,
         notices: List<OperatingNotice>,
     ): BusinessHours {
-        val weekly = businessHours.weekly.toMutableMap()
-        val dates = listOf(currentDateTime.date, currentDateTime.date.minus(1, DateTimeUnit.DAY))
-        for (date in dates) {
-            val override = notices.latestScheduleOverrideFor(date, currentDateTime.time) ?: continue
-            weekly[BusinessDay.from(date.dayOfWeek).key] = override.scheduleOverride!!.day
+        val overrides = businessHours.dateOverrides.toMutableMap()
+        for (offset in -1..7) {
+            val date = currentDateTime.date.plus(offset, DateTimeUnit.DAY)
+            val notice = latestScheduleOverrideFor(notices, date) ?: continue
+            overrides[date] = notice.scheduleOn(date, businessHours) ?: continue
         }
-        val breakTimes = businessHours.breakTimes.toMutableMap()
-        for (date in dates) {
-            val override = notices.latestScheduleOverrideFor(date, currentDateTime.time) ?: continue
-            breakTimes[BusinessDay.from(date.dayOfWeek).key] = override.scheduleOverride!!.breakTimes
-        }
-        return businessHours.copy(weekly = weekly, breakTimes = breakTimes)
+        return businessHours.copy(dateOverrides = overrides)
     }
 
     fun latestScheduleOverride(
         currentDateTime: LocalDateTime,
         operatingNotices: List<OperatingNotice>,
-    ): OperatingNotice? =
-        operatingNotices
-            .filter { it.shop.id == id }
-            .latestScheduleOverrideFor(currentDateTime.date, currentDateTime.time)
+    ): OperatingNotice? {
+        val notice = latestScheduleOverrideFor(operatingNotices, currentDateTime.date) ?: return null
+        return notice.copy(scheduleOverride = notice.scheduleOn(currentDateTime.date, businessHoursDetails))
+    }
 
-    private fun List<OperatingNotice>.latestScheduleOverrideFor(
+    private fun latestScheduleOverrideFor(
+        notices: List<OperatingNotice>,
         date: LocalDate,
-        time: LocalTime,
     ): OperatingNotice? =
-        asSequence()
+        notices
             .filter {
-                it.type == OperatingNoticeType.OPERATING_NOTICE &&
-                    it.scheduleOverride != null &&
-                    it.isActiveAt(LocalDateTime(date, time))
-            }.maxByOrNull { it.updatedAt.orEmpty() }
+                it.shop.id == id &&
+                    it.type == OperatingNoticeType.OPERATING_NOTICE &&
+                    it.scheduleOn(date, businessHoursDetails) != null
+            }.maxWithOrNull(compareBy<OperatingNotice> { it.updatedAt.orEmpty() }.thenBy { it.id })
 }

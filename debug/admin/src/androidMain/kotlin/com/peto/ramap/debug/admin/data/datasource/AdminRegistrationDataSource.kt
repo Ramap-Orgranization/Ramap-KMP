@@ -105,6 +105,7 @@ internal class AdminRegistrationDataSource(
                 startTime = draft.startTime,
                 endTime = draft.endTime,
                 scheduleOverride = draft.scheduleOverride,
+                dailySchedules = draft.dailySchedules,
                 participants = draft.participants,
             ),
         )

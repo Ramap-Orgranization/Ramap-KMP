@@ -3,10 +3,8 @@ package com.peto.ramap.ui.main.map
 import androidx.lifecycle.viewModelScope
 import com.peto.ramap.analytics.AnalyticsSource
 import com.peto.ramap.analytics.common.login.LoginAnalytics
-import com.peto.ramap.analytics.common.login.LoginMethod
 import com.peto.ramap.core.result.RamapError
 import com.peto.ramap.core.result.RamapResult
-import com.peto.ramap.designsystem.shop.model.ShopDetailSheetUiState
 import com.peto.ramap.designsystem.toast.model.ToastAction
 import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
@@ -37,6 +35,7 @@ import com.peto.ramap.domain.store.PersonalizationStore
 import com.peto.ramap.domain.usecase.FetchShopDetailUseCase
 import com.peto.ramap.domain.usecase.ShopDetail
 import com.peto.ramap.domain.usecase.ShopDetailCacheLookup
+import com.peto.ramap.domain.usecase.SignInUseCase
 import com.peto.ramap.platform.storage.SearchHistoryStorage
 import com.peto.ramap.ui.base.BaseViewModel
 import com.peto.ramap.ui.location.CurrentLocationStore
@@ -81,6 +80,7 @@ import com.peto.ramap.ui.main.map.log.MapAnalytics
 import com.peto.ramap.ui.main.map.model.CameraPosition
 import com.peto.ramap.ui.main.map.model.PendingMapAction
 import com.peto.ramap.ui.main.map.model.location.LocationFocusStatus
+import com.peto.ramap.ui.main.map.shop.model.ShopDetailSheetUiState
 import com.peto.ramap.ui.main.map.viewport.ViewportLoadResult
 import com.peto.ramap.ui.main.map.viewport.ViewportShopLoader
 import com.peto.ramap.ui.task.TaskPolicy
@@ -125,6 +125,7 @@ class MapViewModel(
     private val mapSearchHistoryStorage: SearchHistoryStorage,
     private val mapAnalytics: MapAnalytics,
     private val loginAnalytics: LoginAnalytics,
+    private val signInUseCase: SignInUseCase,
     private val operatingNoticeRepository: OperatingNoticeRepository,
     private val reviewRepository: ReviewRepository,
     private val communityRepository: CommunityRepository,
@@ -692,13 +693,16 @@ class MapViewModel(
         shop: RamenShop,
         shouldFocus: Boolean = true,
     ) {
+        if (isCurrentShopDetail(shop.id)) return
         dismissReviewReport()
         cancelTask(BLOCKED_REVIEW_REVEAL_TASK_KEY)
         val cache = checkCachedShopDetail(shop.id)
         if (cache != null) recordRecentlyViewedShop(shop)
         val selectedShopState = createSelectedShopState(currentState, shop, shouldFocus, cache)
         reduce { selectedShopState }
-        loadShopDetail(shop.id)
+        if (cache == null) {
+            loadShopDetail(shop.id)
+        }
     }
 
     private fun createSelectedShopState(
@@ -785,7 +789,6 @@ class MapViewModel(
             is ShopDetailCacheLookup.Hit -> {
                 cancelShopDetailLoad()
                 applyRequestedShopDetail(lookup.detail)
-                loadShopDetail(shopId, selectShopOnSuccess = true)
                 return
             }
 
@@ -800,7 +803,7 @@ class MapViewModel(
             ShopDetailSheetUiState.Closed -> false
             is ShopDetailSheetUiState.Loading -> state.shopId == shopId
             is ShopDetailSheetUiState.Content -> state.detail.shop.id == shopId
-            is ShopDetailSheetUiState.Error -> state.shopId == shopId
+            is ShopDetailSheetUiState.Error -> false
         }
 
     private fun dismissRequestedShopLoad() {
@@ -1268,34 +1271,28 @@ class MapViewModel(
     }
 
     private fun signInWithKakao() {
-        loginAnalytics.logLoginStarted(AnalyticsSource.MAP)
         launchResultTask(
             taskKey = SIGN_IN_TASK_KEY,
             policy = TaskPolicy.IgnoreNew,
-            request = { loginRepository.signIn(LoginType.KAKAO) },
+            request = { signInUseCase(LoginType.KAKAO, AnalyticsSource.MAP) },
             onSuccess = {
-                loginAnalytics.logLoginSucceeded(AnalyticsSource.MAP)
                 showToast(Res.string.login_success_message)
             },
             onError = {
-                loginAnalytics.logLoginFailed(AnalyticsSource.MAP)
                 showKakaoLoginFailure()
             },
         )
     }
 
     private fun signInWithApple() {
-        loginAnalytics.logLoginStarted(AnalyticsSource.MAP, LoginMethod.APPLE)
         launchResultTask(
             taskKey = SIGN_IN_TASK_KEY,
             policy = TaskPolicy.IgnoreNew,
-            request = { loginRepository.signIn(LoginType.APPLE) },
+            request = { signInUseCase(LoginType.APPLE, AnalyticsSource.MAP) },
             onSuccess = {
-                loginAnalytics.logLoginSucceeded(AnalyticsSource.MAP, LoginMethod.APPLE)
                 showToast(Res.string.login_success_message)
             },
             onError = {
-                loginAnalytics.logLoginFailed(AnalyticsSource.MAP, LoginMethod.APPLE)
                 showAppleLoginFailure()
             },
         )

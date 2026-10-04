@@ -2,7 +2,9 @@ package com.peto.ramap.domain.model.businesshour
 
 sealed interface BusinessHoursStatus {
     val isNotOpening: Boolean
-        get() = this is BreakTime || this is Closed
+        get() = this is BreakTime || this is Closed || this is Unknown
+
+    data object Unknown : BusinessHoursStatus
 
     data object Open : BusinessHoursStatus
 

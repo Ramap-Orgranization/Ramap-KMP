@@ -175,17 +175,11 @@ fun MapRoute(
             },
             onOpenProfile = onOpenProfile,
             onReviewLike = {
-                viewModel.dispatch(
-                    com.peto.ramap.ui.main.map.contract.MapIntent
-                        .OnReviewLikeToggled(it),
-                )
+                viewModel.dispatch(MapIntent.OnReviewLikeToggled(it))
             },
             onReviewEdit = { onEditReview(it.shopId, it.id) },
             onReviewDelete = {
-                viewModel.dispatch(
-                    com.peto.ramap.ui.main.map.contract.MapIntent
-                        .OnReviewDeleted(it),
-                )
+                viewModel.dispatch(MapIntent.OnReviewDeleted(it))
             },
             onReviewReport = { viewModel.dispatch(OnReviewReportRequested(it)) },
             onViewBlockedReview = { viewModel.dispatch(MapIntent.OnBlockedReviewViewRequested(it)) },

@@ -24,8 +24,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.peto.ramap.designsystem.text.AppText
-import com.peto.ramap.domain.model.community.PublicProfile
-import com.peto.ramap.domain.model.profile.AccountProfile
 import com.peto.ramap.extension.noRippleClickable
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.ChromaticColor
@@ -46,13 +44,10 @@ fun ProfileHeader(
     nickname: String?,
     avatarUrl: String?,
     modifier: Modifier = Modifier,
+    bio: String? = null,
+    showEmptyBio: Boolean = false,
     onProfileClick: (() -> Unit)? = null,
-    avatarBadge: (@Composable BoxScope.() -> Unit)? = {
-        if (onProfileClick != null) {
-            ProfileEditBadge()
-        }
-    },
-    bioContent: (@Composable () -> Unit)? = null,
+    avatarBadge: (@Composable BoxScope.() -> Unit)? = null,
 ) {
     val profileEditDescription = stringResource(Res.string.profile_edit)
     Column(
@@ -87,7 +82,11 @@ fun ProfileHeader(
                     description = stringResource(Res.string.profile_photo),
                     modifier = Modifier.size(128.dp),
                 )
-                avatarBadge?.invoke(this)
+                if (avatarBadge != null) {
+                    avatarBadge()
+                } else if (onProfileClick != null) {
+                    ProfileEditBadge()
+                }
             }
         }
         AppText(
@@ -95,47 +94,11 @@ fun ProfileHeader(
             style = AppTextStyle.T1,
             color = GrayColor.C500,
         )
-        bioContent?.invoke()
+        ProfileBioText(
+            bio = bio.orEmpty(),
+            showEmptyBio = showEmptyBio,
+        )
     }
-}
-
-@Composable
-fun ProfileHeader(
-    profile: AccountProfile?,
-    failed: Boolean = false,
-    onProfileClick: (() -> Unit)? = null,
-    modifier: Modifier = Modifier,
-) {
-    ProfileHeader(
-        nickname = profile?.nickname,
-        avatarUrl = profile?.avatarUrl,
-        modifier = modifier,
-        onProfileClick = onProfileClick,
-        bioContent = {
-            ProfileBioText(
-                bio = profile?.bio.orEmpty(),
-                showEmptyBio = (profile != null) && !failed,
-            )
-        },
-    )
-}
-
-@Composable
-fun ProfileHeader(
-    profile: PublicProfile,
-    modifier: Modifier = Modifier,
-) {
-    ProfileHeader(
-        nickname = profile.nickname,
-        avatarUrl = profile.avatarUrl,
-        modifier = modifier,
-        bioContent = {
-            ProfileBioText(
-                bio = profile.bio,
-                showEmptyBio = false,
-            )
-        },
-    )
 }
 
 @Composable
@@ -189,8 +152,10 @@ private fun ProfileBioText(
 private fun MyProfileHeaderPreview() {
     RamapTheme {
         ProfileHeader(
-            profile = AccountProfile(userId = "preview", nickname = "느긋한차슈", bio = ""),
-            failed = false,
+            nickname = "느긋한차슈",
+            avatarUrl = null,
+            bio = "",
+            showEmptyBio = true,
             onProfileClick = {},
         )
     }
@@ -201,7 +166,9 @@ private fun MyProfileHeaderPreview() {
 private fun OtherProfileHeaderPreview() {
     RamapTheme {
         ProfileHeader(
-            profile = PublicProfile(userId = "preview", nickname = "느긋한차슈", bio = "라멘을 좋아해요"),
+            nickname = "느긋한차슈",
+            avatarUrl = null,
+            bio = "라멘을 좋아해요",
         )
     }
 }

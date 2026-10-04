@@ -13,7 +13,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.peto.ramap.analytics.AnalyticsSource
 import com.peto.ramap.designsystem.notice.OperatingNoticeBottomSheet
 import com.peto.ramap.designsystem.resource.wating.toUiModel
-import com.peto.ramap.designsystem.shop.ShopDetailContent
 import com.peto.ramap.designsystem.toast.ToastManager
 import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.model.notice.OperatingNotice
@@ -22,15 +21,17 @@ import com.peto.ramap.platform.AppSettingsOpener
 import com.peto.ramap.platform.ExternalUriOpener
 import com.peto.ramap.platform.NotificationPermissionRequester
 import com.peto.ramap.ui.main.map.contract.MapIntent
+import com.peto.ramap.ui.main.map.shop.ShopDetailContent
 import org.koin.compose.koinInject
+import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 fun ShopDetailHost(
     shopId: String,
-    viewModel: MapViewModel,
     onDismiss: () -> Unit,
     onShowOnMap: (String) -> Unit,
     onReviewNavigate: (String) -> Unit,
+    viewModel: MapViewModel = koinViewModel(),
     onOpenProfile: (String) -> Unit = {},
     onEditReview: (String, String) -> Unit = { _, _ -> },
     isNavigationBarPadded: Boolean = false,

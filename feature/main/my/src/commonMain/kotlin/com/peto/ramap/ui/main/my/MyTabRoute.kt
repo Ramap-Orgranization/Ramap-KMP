@@ -290,8 +290,10 @@ internal fun MyTabContent(
 
             else ->
                 ProfileHeader(
-                    profile = state.profile,
-                    failed = state.failed,
+                    nickname = state.profile?.nickname,
+                    avatarUrl = state.profile?.avatarUrl,
+                    bio = state.profile?.bio,
+                    showEmptyBio = (state.profile != null) && !state.failed,
                     onProfileClick = onProfileClick,
                 )
         }

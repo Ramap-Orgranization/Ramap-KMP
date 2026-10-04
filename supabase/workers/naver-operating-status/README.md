@@ -1,6 +1,6 @@
 # Naver 영업 상태 Playwright 워커
 
-Cloud Run에서 Chromium을 실행해 `shops.naver_place_url`의 네이버 지도 영업 상태를 읽고 `shop_operating_status`에 저장합니다.
+Cloud Run에서 Chromium을 실행해 `ramen_shops.naver_place_url`의 네이버 지도 영업 상태를 읽고 `shop_operating_status`에 저장합니다.
 
 ## 로컬 실행
 

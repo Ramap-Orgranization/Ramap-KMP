@@ -16,6 +16,7 @@ fun OperatingNoticeBottomSheet(
     onSourceClick: (String) -> Unit,
     onShopClick: (String) -> Unit,
     onDismiss: () -> Unit,
+    notices: List<OperatingNotice> = listOf(notice),
 ) {
     CommonBottomSheet(
         visible = true,
@@ -29,12 +30,15 @@ fun OperatingNoticeBottomSheet(
                     .padding(bottom = 20.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            OperatingNoticeCard(
-                notice = notice,
-                isSourceUrlSupported = isSourceUrlSupported,
-                onSourceClick = onSourceClick,
-                onShopClick = onShopClick,
-            )
+            notices.forEachIndexed { index, item ->
+                OperatingNoticeCard(
+                    notice = item,
+                    isSourceUrlSupported = isSourceUrlSupported,
+                    onSourceClick = onSourceClick,
+                    onShopClick = onShopClick,
+                    showShop = index == 0,
+                )
+            }
         }
     }
 }

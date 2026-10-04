@@ -10,6 +10,7 @@ import ramap.shared.generated.resources.map_search_result_closed_label
 import ramap.shared.generated.resources.map_search_result_open
 import ramap.shared.generated.resources.map_search_result_open_close_format
 import ramap.shared.generated.resources.map_search_result_open_last_order_format
+import ramap.shared.generated.resources.operating_notice_hours_unknown
 
 object BusinessHoursStatusResourceMapper {
     fun noticeLabel(status: BusinessHoursStatus): UiText? =
@@ -21,6 +22,7 @@ object BusinessHoursStatusResourceMapper {
 
     fun status(status: BusinessHoursStatus): UiText =
         when (status) {
+            BusinessHoursStatus.Unknown -> UiText(Res.string.operating_notice_hours_unknown)
             BusinessHoursStatus.Open -> UiText(Res.string.map_search_result_open)
             is BusinessHoursStatus.OpenWithLastOrder ->
                 UiText(Res.string.map_search_result_open_last_order_format, listOf(status.time))

@@ -47,13 +47,13 @@ fun ShopReviewWriteRoute(
     toastManager: ToastManager = koinInject(),
     viewModel: ReviewWriteViewModel = koinViewModel(),
 ) {
-    val state by viewModel.uiState.collectAsStateWithLifecycle()
-    LaunchedEffect(shopId, reviewId) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    LaunchedEffect(Unit) {
         viewModel.dispatch(ReviewWriteIntent.Open(shopId, reviewId))
     }
     val imagePicker =
         rememberImagesPicker(
-            maxSelectionCount = if (state.canEdit) ReviewImage.MAX_COUNT - state.images.size - state.existingImages.size else 0,
+            maxSelectionCount = if (uiState.canEdit) ReviewImage.MAX_COUNT - uiState.images.size - uiState.existingImages.size else 0,
             onImagesPicked = { images ->
                 for ((bytes, mimeType) in images) {
                     viewModel.dispatch(ReviewWriteIntent.AddImage(ReviewImage(bytes, mimeType)))
@@ -81,14 +81,14 @@ fun ShopReviewWriteRoute(
         }
     }
     ReviewWriteRouteContent(
-        state = state,
+        state = uiState,
         onBack = onBack,
         onIntent = viewModel::dispatch,
         onPickImage = imagePicker,
         onOpenGuidelines = { ExternalUriOpener.open(COMMUNITY_GUIDELINES_URL) },
     )
     CommonDialog(
-        visible = state.showPrivateProfileConfirmation,
+        visible = uiState.showPrivateProfileConfirmation,
         confirmText = stringResource(Res.string.profile_visibility_public),
         dismissText = stringResource(Res.string.profile_visibility_private),
         onDismissRequest = { viewModel.dispatch(ReviewWriteIntent.CancelPrivateProfileConfirmation) },

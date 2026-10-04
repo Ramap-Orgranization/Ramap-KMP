@@ -23,6 +23,7 @@ import com.peto.ramap.designsystem.button.AppButton
 import com.peto.ramap.designsystem.dialog.CommonDialog
 import com.peto.ramap.designsystem.indicator.RamenLoadingIndicator
 import com.peto.ramap.designsystem.review.ReviewCard
+import com.peto.ramap.designsystem.review.ReviewCardActions
 import com.peto.ramap.designsystem.review.ReviewPage
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.designsystem.toast.ToastManager
@@ -165,9 +166,12 @@ fun MyReviewsContent(
                 ) { review ->
                     ReviewCard(
                         review = review.toReview(),
-                        onShopClick = { onShowShop(review.shopId) },
-                        onEdit = { onEditReview(review.shopId, review.id) },
-                        onDelete = { deleteTargetReview = review },
+                        actions =
+                            ReviewCardActions(
+                                onShopClick = { onShowShop(review.shopId) },
+                                onEdit = { onEditReview(review.shopId, review.id) },
+                                onDelete = { deleteTargetReview = review },
+                            ),
                         actionsEnabled = state.actingReviewId == null,
                     )
                 }
