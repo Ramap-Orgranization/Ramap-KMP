@@ -1,8 +1,8 @@
 package com.peto.ramap.ui.review.other.contract
 
 import com.peto.ramap.domain.model.community.ProfileAccess
+import com.peto.ramap.domain.model.community.ProfileReview
 import com.peto.ramap.domain.model.community.PublicProfile
-import com.peto.ramap.domain.model.review.Review
 import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.ui.loading.LoadState
 import com.peto.ramap.ui.loading.LoadableState
@@ -12,7 +12,7 @@ data class OtherReviewsUiState(
     val currentUserId: String? = null,
     val sessionResolved: Boolean = false,
     val profileAccess: ProfileAccess? = null,
-    val reviews: List<Review> = emptyList(),
+    val reviews: List<ProfileReview> = emptyList(),
     val reviewsOffset: Long = 0L,
     val selectedTab: OtherReviewsTab = OtherReviewsTab.Reviews,
     val savedShops: List<RamenShop> = emptyList(),
