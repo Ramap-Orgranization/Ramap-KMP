@@ -51,6 +51,12 @@ internal fun ShopExternalLinksRow(
                         icon = Res.drawable.instagram_icon,
                         label = stringResource(Res.string.shop_detail_link_instagram),
                         onClick = { onExternalLinkClick(url) },
+                        containerColor = GrayColor.C050,
+                        contentColor = GrayColor.C500,
+                        shape = RoundedCornerShape(8.dp),
+                        iconSize = 20.dp,
+                        iconSpacing = 8.dp,
+                        horizontalPadding = 16.dp,
                         modifier = Modifier.weight(1f),
                     )
                 }
@@ -59,13 +65,19 @@ internal fun ShopExternalLinksRow(
                         label = stringResource(Res.string.shop_detail_label_waiting),
                         icon = waiting.icon,
                         onClick = { onWaitingClick(waiting.providerUrl) },
+                        containerColor = GrayColor.C050,
+                        contentColor = GrayColor.C500,
+                        shape = RoundedCornerShape(8.dp),
+                        iconSize = 20.dp,
+                        iconSpacing = 8.dp,
+                        horizontalPadding = 16.dp,
                         modifier = Modifier.weight(1f),
                     )
                 }
             }
         }
 
-        if (shop.kakaoPlaceUrl != null || shop.naverPlaceUrl != null) {
+        if (shop.kakaoPlaceUrl != null || shop.naverPlaceUrl != null || isAppleMapsAvailable) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -77,6 +89,9 @@ internal fun ShopExternalLinksRow(
                         containerColor = SocialColor.Kakao,
                         contentColor = GrayColor.C500,
                         shape = RoundedCornerShape(100.dp),
+                        iconSize = 16.dp,
+                        iconSpacing = 4.dp,
+                        horizontalPadding = 6.dp,
                         onClick = {
                             onMapLinkClick("kakao")
                             onExternalLinkClick(url)
@@ -91,6 +106,9 @@ internal fun ShopExternalLinksRow(
                         containerColor = SocialColor.Naver,
                         contentColor = CommonColor.White,
                         shape = RoundedCornerShape(100.dp),
+                        iconSize = 16.dp,
+                        iconSpacing = 4.dp,
+                        horizontalPadding = 6.dp,
                         onClick = {
                             onMapLinkClick("naver")
                             onExternalLinkClick(url)
@@ -98,19 +116,24 @@ internal fun ShopExternalLinksRow(
                         modifier = Modifier.weight(1f),
                     )
                 }
+                if (isAppleMapsAvailable) {
+                    ShopLinkRow(
+                        icon = Res.drawable.apple_maps_icon,
+                        label = stringResource(Res.string.shop_detail_link_apple_maps),
+                        containerColor = CommonColor.Black,
+                        contentColor = CommonColor.White,
+                        shape = RoundedCornerShape(100.dp),
+                        iconSize = 16.dp,
+                        iconSpacing = 4.dp,
+                        horizontalPadding = 6.dp,
+                        onClick = {
+                            onMapLinkClick("apple")
+                            onAppleMapsClick(shop)
+                        },
+                        modifier = Modifier.weight(1f),
+                    )
+                }
             }
-        }
-
-        if (isAppleMapsAvailable) {
-            ShopLinkRow(
-                icon = Res.drawable.apple_maps_icon,
-                label = stringResource(Res.string.shop_detail_link_apple_maps),
-                onClick = {
-                    onMapLinkClick("apple")
-                    onAppleMapsClick(shop)
-                },
-                modifier = Modifier.fillMaxWidth(),
-            )
         }
     }
 }

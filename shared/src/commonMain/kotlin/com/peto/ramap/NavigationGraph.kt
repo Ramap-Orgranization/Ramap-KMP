@@ -139,6 +139,20 @@ internal fun NavigationGraph(
                 onBack = navigationState::pop,
                 onLoginTypeSelected = onLoginTypeSelected,
                 onShowShop = navigationState::showReviewShopOnMap,
+                onEventNavigate = { event -> navigationState.showEvent(event.id) },
+                shopDetailContent = { shopId, onDismiss, onShowOnMap, onEventNavigate ->
+                    ShopDetailHost(
+                        shopId = shopId,
+                        onDismiss = onDismiss,
+                        onShowOnMap = onShowOnMap,
+                        onReviewNavigate = onOpenReviewWriteOverlay,
+                        onEditReview = onOpenReviewEditOverlay,
+                        onOpenProfile = { userId -> openProfile(userId, true) },
+                        onEventNavigate = onEventNavigate,
+                        isNavigationBarPadded = true,
+                        originSource = AnalyticsSource.REVIEW_PROFILE,
+                    )
+                },
             )
         },
         reviewWriteScreen = { route ->

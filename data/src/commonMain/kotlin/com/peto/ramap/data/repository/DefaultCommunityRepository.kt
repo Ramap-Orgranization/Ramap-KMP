@@ -5,6 +5,7 @@ import com.peto.ramap.data.datasource.community.CommunityDataSource
 import com.peto.ramap.domain.model.community.BlockedUser
 import com.peto.ramap.domain.model.community.ProfileAccess
 import com.peto.ramap.domain.model.community.PublicProfile
+import com.peto.ramap.domain.model.community.PublicSavedShopsPage
 import com.peto.ramap.domain.model.community.ReportReason
 import com.peto.ramap.domain.model.review.Review
 import com.peto.ramap.domain.repository.CommunityRepository
@@ -24,6 +25,11 @@ internal class DefaultCommunityRepository(
         userId: String,
         offset: Long,
     ): RamapResult<List<Review>> = invokeRequest { dataSource.fetchUserReviews(userId, offset).map { it.toDomain() } }
+
+    override suspend fun fetchUserSavedShops(
+        userId: String,
+        offset: Long,
+    ): RamapResult<PublicSavedShopsPage> = invokeRequest { dataSource.fetchUserSavedShops(userId, offset).toDomain() }
 
     override suspend fun fetchBlockedUsers(): RamapResult<List<BlockedUser>> = invokeRequest { dataSource.fetchBlockedUsers().map { it.toDomain() } }
 

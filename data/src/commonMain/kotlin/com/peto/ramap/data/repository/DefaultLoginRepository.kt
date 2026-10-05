@@ -20,6 +20,7 @@ import io.github.jan.supabase.postgrest.postgrest
 import io.ktor.client.call.body
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.filterNot
 import kotlinx.coroutines.flow.map
 
 /**
@@ -36,7 +37,10 @@ internal class DefaultLoginRepository(
      * 앱이 Supabase 구현을 알지 않고 인증 여부에 반응할 수 있도록 세션 상태를 변환합니다.
      */
     override val sessionState: Flow<LoginSessionState> =
-        supabaseClient.auth.sessionStatus.map(::loginSessionState)
+        supabaseClient.auth.sessionStatus
+            // 백그라운드 전환 중의 세션 복원 상태는 로그아웃이 아니다.
+            .filterNot { it is SessionStatus.Initializing }
+            .map(::loginSessionState)
 
     /**
      * Supabase가 로컬 저장소의 기존 세션 복원을 마칠 때까지 기다립니다.

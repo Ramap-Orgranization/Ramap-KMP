@@ -1,5 +1,6 @@
 package com.peto.ramap.di
 
+import com.peto.ramap.AppUpdateGateViewModel
 import com.peto.ramap.analytics.di.analyticsModule
 import com.peto.ramap.deeplink.DeepLinkEntryPoint
 import com.peto.ramap.log.AppAnalytics
@@ -30,6 +31,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import org.koin.core.module.dsl.singleOf
+import org.koin.core.module.dsl.viewModelOf
 import org.koin.dsl.module
 
 internal val appModule =
@@ -59,6 +61,7 @@ internal val appModule =
             CoroutineScope(SupervisorJob() + Dispatchers.Default)
         }
         singleOf(::AppAnalytics)
+        viewModelOf(::AppUpdateGateViewModel)
         singleOf(::DeepLinkEntryPoint)
         single {
             ShopLinkConfig(

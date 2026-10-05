@@ -4,6 +4,7 @@ import com.peto.ramap.data.datasource.review.ReviewDataSource
 import com.peto.ramap.data.model.BlockedUserResponse
 import com.peto.ramap.data.model.MyCommunityProfileResponse
 import com.peto.ramap.data.model.ProfileAccessResponse
+import com.peto.ramap.data.model.PublicSavedShopsPageResponse
 import com.peto.ramap.data.model.ReviewResponse
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
@@ -56,6 +57,19 @@ internal class RemoteCommunityDataSource(
         offset: Long,
     ): List<ReviewResponse> = reviewDataSource.fetchProfileReviews(userId, offset)
 
+    override suspend fun fetchUserSavedShops(
+        userId: String,
+        offset: Long,
+    ): PublicSavedShopsPageResponse =
+        client.postgrest
+            .rpc(
+                RPC_FETCH_PROFILE_SAVED_SHOPS,
+                buildJsonObject {
+                    put(PARAM_USER_ID, userId)
+                    put(PARAM_OFFSET, offset)
+                },
+            ).decodeAs<PublicSavedShopsPageResponse>()
+
     override suspend fun fetchBlockedUsers(): List<BlockedUserResponse> =
         coroutineScope {
             client.postgrest
@@ -103,6 +117,8 @@ internal class RemoteCommunityDataSource(
         const val RPC_REPORT_COMMUNITY_CONTENT = "report_community_content"
         const val RPC_CHANGE_COMMUNITY_BLOCK = "change_community_block"
 
+        const val RPC_FETCH_PROFILE_SAVED_SHOPS = "fetch_profile_saved_shops"
+        const val PARAM_OFFSET = "p_offset"
         const val PARAM_USER_ID = "p_user_id"
         const val PARAM_TARGET_TYPE = "p_target_type"
         const val PARAM_TARGET_ID = "p_target_id"

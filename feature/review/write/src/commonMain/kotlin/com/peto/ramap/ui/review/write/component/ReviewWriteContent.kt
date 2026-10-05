@@ -22,6 +22,7 @@ import com.peto.ramap.designsystem.indicator.RamenLoadingIndicator
 import com.peto.ramap.designsystem.resource.category.CategoryResourceMapper
 import com.peto.ramap.designsystem.review.ReviewPage
 import com.peto.ramap.extension.noRippleClickable
+import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.RamapTheme
 import com.peto.ramap.ui.review.write.contract.ReviewWriteIntent
 import com.peto.ramap.ui.review.write.contract.ReviewWriteUiState
@@ -73,6 +74,8 @@ internal fun ReviewWriteRouteContent(
                             RamenShopSummary(
                                 shop = state.shop,
                                 categoryLabel = { category -> stringResource(CategoryResourceMapper.label(category)) },
+                                containerColor = CommonColor.White,
+                                leadingContent = {},
                             )
                         }
                     }

@@ -5,17 +5,142 @@ import KakaoSDKAuth
 import KakaoSDKCommon
 import KakaoSDKUser
 import FirebaseCore
+import FirebaseMessaging
 import AuthenticationServices
 import CryptoKit
 import Security
+import UserNotifications
 
-final class AppDelegate: NSObject, UIApplicationDelegate {
+final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate, MessagingDelegate {
+    private var isKoinReady = false
+    private var pendingFCMToken: String?
+    private var pendingNotificationDeepLink: String?
+
     func application(
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
     ) -> Bool {
+        if let userInfo = launchOptions?[.remoteNotification] as? [AnyHashable: Any] {
+            pendingNotificationDeepLink = userInfo["deep_link"] as? String
+        }
+        configureFirebaseIfNeeded()
+        guard FirebaseApp.app() != nil else { return true }
+
+        UNUserNotificationCenter.current().delegate = self
+        Messaging.messaging().delegate = self
+        UNUserNotificationCenter.current().getNotificationSettings { settings in
+            let status = settings.authorizationStatus
+            guard status == .authorized || status == .provisional || status == .ephemeral else {
+                return
+            }
+            DispatchQueue.main.async {
+                application.registerForRemoteNotifications()
+            }
+        }
         return true
     }
+
+    func configureNotificationHandling() {
+        guard FirebaseApp.app() != nil else { return }
+        UNUserNotificationCenter.current().delegate = self
+        Messaging.messaging().delegate = self
+        isKoinReady = true
+        NotificationCenter.default.addObserver(
+            forName: Notification.Name("RegisterForRemoteNotifications"),
+            object: nil,
+            queue: .main
+        ) { _ in
+            UIApplication.shared.registerForRemoteNotifications()
+        }
+        if let token = Messaging.messaging().fcmToken ?? pendingFCMToken {
+            trackFCMToken(token)
+        }
+        dispatchPendingNotificationDeepLink()
+    }
+
+    func application(
+        _ application: UIApplication,
+        didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data
+    ) {
+        Messaging.messaging().setAPNSToken(deviceToken, type: .unknown)
+        print("APNs registration succeeded; Firebase will detect the token environment.")
+        Messaging.messaging().token { [weak self] token, error in
+            if let error {
+                print("FCM token retrieval failed after APNs registration: \(error.localizedDescription)")
+                return
+            }
+            guard let token else { return }
+            self?.trackFCMToken(token)
+        }
+    }
+
+    func application(
+        _ application: UIApplication,
+        didFailToRegisterForRemoteNotificationsWithError error: Error
+    ) {
+        print("APNs registration failed: \(error.localizedDescription)")
+    }
+
+    func application(
+        _ application: UIApplication,
+        didReceiveRemoteNotification userInfo: [AnyHashable: Any],
+        fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void
+    ) {
+        completionHandler(.noData)
+    }
+
+    func messaging(_ messaging: Messaging, didReceiveRegistrationToken fcmToken: String?) {
+        guard let fcmToken else { return }
+        trackFCMToken(fcmToken)
+    }
+
+    func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        willPresent notification: UNNotification,
+        withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
+    ) {
+        print("Remote notification reached the foreground notification delegate.")
+        completionHandler([.banner, .list, .badge, .sound])
+    }
+
+    func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        didReceive response: UNNotificationResponse,
+        withCompletionHandler completionHandler: @escaping () -> Void
+    ) {
+        let userInfo = response.notification.request.content.userInfo
+        print("User opened a remote notification.")
+        pendingNotificationDeepLink = userInfo["deep_link"] as? String
+        dispatchPendingNotificationDeepLink()
+        completionHandler()
+    }
+
+    private func trackFCMToken(_ token: String) {
+        pendingFCMToken = token
+        guard isKoinReady else { return }
+        IosNotificationBridgeKt.trackIosPushToken(token: token)
+    }
+
+    private func dispatchPendingNotificationDeepLink() {
+        guard isKoinReady, let deepLink = pendingNotificationDeepLink else { return }
+        IosNotificationBridgeKt.dispatchNotificationDeepLink(rawUrl: deepLink)
+        pendingNotificationDeepLink = nil
+    }
+}
+
+private func configureFirebaseIfNeeded() {
+    guard FirebaseApp.app() == nil else { return }
+#if DEBUG
+    let configurationName = "GoogleService-Info"
+#else
+    let configurationName = "GoogleService-Info-Release"
+#endif
+    guard let path = Bundle.main.path(forResource: configurationName, ofType: "plist"),
+          let options = FirebaseOptions(contentsOfFile: path) else {
+        print("\(configurationName).plist not found. Firebase is not configured.")
+        return
+    }
+    FirebaseApp.configure(options: options)
 }
 
 @main
@@ -23,15 +148,12 @@ struct iOSApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
 
     init() {
-        if Bundle.main.path(forResource: "GoogleService-Info", ofType: "plist") != nil {
-            FirebaseApp.configure()
-        } else {
-            print("GoogleService-Info.plist not found. Firebase is not configured.")
-        }
+        configureFirebaseIfNeeded()
         UnhandledExceptionLoggerKt.installUnhandledExceptionLogger()
         NMFAuthManager.shared().ncpKeyId = RamapSecrets.shared.naverMapNcpKeyId
         KakaoSDK.initSDK(appKey: RamapSecrets.shared.kakaoNativeAppKey)
         KoinInitializerKt.doInitKoin(appDeclaration: { _ in })
+        appDelegate.configureNotificationHandling()
         NotificationCenter.default.addObserver(
             forName: Notification.Name("KakaoLoginRequest"),
             object: nil,

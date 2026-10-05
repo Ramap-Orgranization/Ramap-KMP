@@ -6,14 +6,18 @@ import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.community.ProfileAccess
 import com.peto.ramap.domain.model.community.PublicProfile
+import com.peto.ramap.domain.model.community.PublicSavedShopsPage
 import com.peto.ramap.domain.repository.CommunityRepository
 import com.peto.ramap.domain.repository.ProfileRepository
 import com.peto.ramap.ui.base.BaseViewModel
 import com.peto.ramap.ui.review.other.contract.OtherReviewsEffect
 import com.peto.ramap.ui.review.other.contract.OtherReviewsIntent
 import com.peto.ramap.ui.review.other.contract.OtherReviewsLoadKey
+import com.peto.ramap.ui.review.other.contract.OtherReviewsTab
 import com.peto.ramap.ui.review.other.contract.OtherReviewsUiState
 import com.peto.ramap.ui.task.TaskPolicy
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import ramap.shared.generated.resources.Res
@@ -36,6 +40,7 @@ class OtherReviewsViewModel(
                 .collect { currentUserId ->
                     val targetId = currentState.userId
                     cancelTask(PAGE_TASK)
+                    cancelTask(SAVED_SHOPS_TASK)
                     cancelTask(BLOCK_TASK)
                     reduce {
                         OtherReviewsUiState(
@@ -61,6 +66,7 @@ class OtherReviewsViewModel(
 
     override suspend fun handleIntent(intent: OtherReviewsIntent) {
         when (intent) {
+            is OtherReviewsIntent.SelectTab -> selectTab(intent.tab)
             is OtherReviewsIntent.OpenProfile -> openProfile(intent.userId)
             OtherReviewsIntent.LoadMore -> handleLoadMore()
             OtherReviewsIntent.Retry -> handleRetry()
@@ -69,18 +75,30 @@ class OtherReviewsViewModel(
     }
 
     private fun handleLoadMore() {
+        if (currentState.selectedTab == OtherReviewsTab.SavedShops) {
+            if (currentState.savedShopsHasMore && !currentState.savedShopsLoading && !currentState.savedShopsFailed) {
+                loadSavedShops()
+            }
+            return
+        }
         if (currentState.hasMore && !currentState.loading && !currentState.failed) {
             loadPage(reset = false)
         }
     }
 
     private fun handleRetry() {
+        if (currentState.selectedTab == OtherReviewsTab.SavedShops && currentState.profileAccess is ProfileAccess.Visible) {
+            loadSavedShops()
+            return
+        }
         loadPage(reset = currentState.reviews.isEmpty())
     }
 
     private fun openProfile(userId: String) {
         if (userId.isBlank() || currentState.userId == userId) return
         cancelTask(PAGE_TASK)
+        cancelTask(SAVED_SHOPS_TASK)
+        cancelTask(BLOCK_TASK)
         reduce {
             OtherReviewsUiState(
                 userId = userId,
@@ -94,14 +112,26 @@ class OtherReviewsViewModel(
     private fun loadPage(reset: Boolean) {
         val userId = currentState.userId ?: return
         if (!currentState.sessionResolved || (!reset && currentState.profileAccess !is ProfileAccess.Visible)) return
-        val offset = if (reset) 0L else currentState.reviews.size.toLong()
+        if (reset) cancelTask(SAVED_SHOPS_TASK)
+        val offset = if (reset) 0L else currentState.reviewsOffset
         launchTask(
             taskKey = PAGE_TASK,
             loadKey = OtherReviewsLoadKey.Page,
             policy = if (reset) TaskPolicy.CancelPrevious else TaskPolicy.IgnoreNew,
             onStart = {
                 if (reset) {
-                    copy(profileAccess = null, reviews = emptyList(), failed = false, hasMore = false)
+                    copy(
+                        profileAccess = null,
+                        reviews = emptyList(),
+                        reviewsOffset = 0L,
+                        failed = false,
+                        hasMore = false,
+                        savedShops = emptyList(),
+                        savedShopsLoaded = false,
+                        savedShopsFailed = false,
+                        savedShopsHasMore = false,
+                        savedShopsOffset = 0L,
+                    )
                 } else {
                     copy(failed = false)
                 }
@@ -112,10 +142,16 @@ class OtherReviewsViewModel(
     }
 
     private suspend fun loadInitialPage(userId: String) {
-        when (val result = community.fetchProfileAccess(userId)) {
+        val result = community.fetchProfileAccess(userId)
+        currentCoroutineContext().ensureActive()
+        when (result) {
             is RamapResult.Success ->
                 when (val access = result.data) {
-                    is ProfileAccess.Visible -> fetchAndApplyUserReviews(userId, access.profile, 0L, reset = true)
+                    is ProfileAccess.Visible -> {
+                        reduce { copy(profileAccess = access) }
+                        if (currentState.currentUserId != null) loadSavedShops()
+                        fetchAndApplyUserReviews(userId, access.profile, 0L, reset = true)
+                    }
                     else -> applyProfileAccess(userId, access)
                 }
             is RamapResult.Error -> fail(userId)
@@ -135,7 +171,20 @@ class OtherReviewsViewModel(
         access: ProfileAccess,
     ) {
         if (currentState.userId != userId) return
-        reduce { copy(profileAccess = access, reviews = emptyList(), hasMore = false) }
+        reduce {
+            copy(
+                profileAccess = access,
+                reviews = emptyList(),
+                reviewsOffset = 0L,
+                hasMore = false,
+                failed = false,
+                savedShops = emptyList(),
+                savedShopsLoaded = false,
+                savedShopsFailed = false,
+                savedShopsHasMore = false,
+                savedShopsOffset = 0L,
+            )
+        }
     }
 
     private suspend fun fetchAndApplyUserReviews(
@@ -144,7 +193,9 @@ class OtherReviewsViewModel(
         offset: Long,
         reset: Boolean,
     ) {
-        when (val result = community.fetchUserReviews(userId, offset)) {
+        val result = community.fetchUserReviews(userId, offset)
+        currentCoroutineContext().ensureActive()
+        when (result) {
             is RamapResult.Success -> {
                 if (currentState.userId != userId) return
                 reduce {
@@ -152,6 +203,7 @@ class OtherReviewsViewModel(
                         profileAccess = ProfileAccess.Visible(profile),
                         reviews = (if (reset) result.data else reviews + result.data).distinctBy { it.id },
                         hasMore = result.data.size == PAGE_SIZE,
+                        reviewsOffset = offset + result.data.size,
                     )
                 }
             }
@@ -199,6 +251,8 @@ class OtherReviewsViewModel(
         wasBlocked: Boolean,
     ) {
         if (currentState.userId != targetProfile.userId || currentState.currentUserId != currentUserId) return
+        cancelTask(PAGE_TASK)
+        cancelTask(SAVED_SHOPS_TASK)
         reduce {
             copy(
                 profileAccess =
@@ -208,7 +262,14 @@ class OtherReviewsViewModel(
                         ProfileAccess.Blocked(PublicProfile(targetProfile.userId, targetProfile.nickname))
                     },
                 reviews = emptyList(),
+                reviewsOffset = 0L,
                 hasMore = false,
+                failed = false,
+                savedShops = emptyList(),
+                savedShopsLoaded = false,
+                savedShopsFailed = false,
+                savedShopsHasMore = false,
+                savedShopsOffset = 0L,
             )
         }
         if (wasBlocked) loadPage(reset = true)
@@ -227,7 +288,54 @@ class OtherReviewsViewModel(
         }
     }
 
+    private fun selectTab(tab: OtherReviewsTab) {
+        if (tab == OtherReviewsTab.SavedShops && currentState.currentUserId == null) {
+            trySideEffect(OtherReviewsEffect.LoginRequired)
+            return
+        }
+        reduce { copy(selectedTab = tab) }
+        if (tab == OtherReviewsTab.SavedShops && !currentState.savedShopsLoaded) loadSavedShops()
+    }
+
+    private fun loadSavedShops() {
+        val userId = currentState.userId ?: return
+        if (currentState.currentUserId == null || currentState.profileAccess !is ProfileAccess.Visible) return
+        val offset = currentState.savedShopsOffset
+        launchResultTask(
+            taskKey = SAVED_SHOPS_TASK,
+            loadKey = OtherReviewsLoadKey.SavedShops,
+            policy = TaskPolicy.IgnoreNew,
+            onStart = { copy(savedShopsFailed = false) },
+            request = { community.fetchUserSavedShops(userId, offset) },
+            onSuccess = { page ->
+                currentCoroutineContext().ensureActive()
+                if (currentState.userId == userId) applySavedShopsPage(page)
+            },
+            onError = {
+                currentCoroutineContext().ensureActive()
+                if (currentState.userId == userId) reduce { copy(savedShopsFailed = true) }
+            },
+        )
+    }
+
+    private fun applySavedShopsPage(page: PublicSavedShopsPage) {
+        if (page.access !is ProfileAccess.Visible) {
+            cancelTask(PAGE_TASK)
+            applyProfileAccess(currentState.userId ?: return, page.access)
+            return
+        }
+        reduce {
+            copy(
+                savedShops = (savedShops + page.shops).distinctBy { it.id },
+                savedShopsLoaded = true,
+                savedShopsHasMore = page.shops.size == PAGE_SIZE,
+                savedShopsOffset = savedShopsOffset + page.shops.size,
+            )
+        }
+    }
+
     private companion object {
+        const val SAVED_SHOPS_TASK = "other-profile-saved-shops"
         const val PAGE_TASK = "other-reviews-page"
         const val BLOCK_TASK = "other-reviews-block"
         const val PAGE_SIZE = 20

@@ -4,6 +4,7 @@ import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.domain.model.community.BlockedUser
 import com.peto.ramap.domain.model.community.ProfileAccess
 import com.peto.ramap.domain.model.community.PublicProfile
+import com.peto.ramap.domain.model.community.PublicSavedShopsPage
 import com.peto.ramap.domain.model.community.ReportReason
 import com.peto.ramap.domain.model.review.Review
 import com.peto.ramap.domain.repository.CommunityRepository
@@ -26,6 +27,11 @@ class FakeCommunityRepository(
         userId: String,
         offset: Long,
     ): RamapResult<List<Review>> = RamapResult.Success(emptyList())
+
+    override suspend fun fetchUserSavedShops(
+        userId: String,
+        offset: Long,
+    ): RamapResult<PublicSavedShopsPage> = RamapResult.Success(PublicSavedShopsPage(ProfileAccess.Unavailable, emptyList()))
 
     override suspend fun fetchBlockedUsers(): RamapResult<List<BlockedUser>> = blockedUsersResult
 

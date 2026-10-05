@@ -44,6 +44,8 @@ fun EventDetailHeader(
             }
             NewsBadge(
                 text = stringResource(ShopEventResourceMapper.typeLabel(event.type)),
+                containerColor = ChromaticColor.Yellow400,
+                contentColor = GrayColor.C500,
                 textStyle = AppTextStyle.T3,
             )
         }

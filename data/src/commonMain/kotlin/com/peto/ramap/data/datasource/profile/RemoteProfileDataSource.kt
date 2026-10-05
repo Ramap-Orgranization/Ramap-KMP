@@ -9,6 +9,7 @@ import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.storage.storage
 import io.ktor.http.ContentType
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filterNot
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
@@ -19,6 +20,8 @@ internal class RemoteProfileDataSource(
 ) : ProfileDataSource {
     override val sessionUserIds =
         client.auth.sessionStatus
+            // 백그라운드 전환 중의 세션 복원 상태는 로그아웃이 아니다.
+            .filterNot { it is SessionStatus.Initializing }
             .map { status ->
                 (status as? SessionStatus.Authenticated)?.session?.user?.id
             }.distinctUntilChanged()

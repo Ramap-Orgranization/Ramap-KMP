@@ -29,6 +29,7 @@ kotlin {
 
         pod("NMapsMap")
         pod("FirebaseCore")
+        pod("FirebaseMessaging")
         pod("FirebaseAnalytics")
         pod("FirebaseCrashlytics")
         pod("FirebaseInstallations")
@@ -142,6 +143,10 @@ kotlin {
             implementation(libs.kotlinx.coroutines.test)
             implementation(libs.turbine)
             implementation(libs.compose.ui.test)
+        }
+        getByName("androidHostTest").dependencies {
+            implementation(libs.androidx.activity.compose)
+            implementation(libs.robolectric)
         }
     }
 }

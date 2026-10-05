@@ -18,6 +18,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.extension.noRippleClickable
@@ -38,10 +39,13 @@ internal fun ShopLinkRow(
     icon: DrawableResource,
     label: String,
     onClick: () -> Unit,
+    containerColor: Color,
+    contentColor: Color,
+    shape: Shape,
+    iconSize: Dp,
+    iconSpacing: Dp,
+    horizontalPadding: Dp,
     modifier: Modifier = Modifier,
-    containerColor: Color = GrayColor.C050,
-    contentColor: Color = GrayColor.C500,
-    shape: Shape = RoundedCornerShape(8.dp),
 ) {
     Row(
         modifier =
@@ -49,16 +53,16 @@ internal fun ShopLinkRow(
                 .clip(shape)
                 .background(containerColor)
                 .noRippleClickable(onClick = onClick)
-                .padding(vertical = 12.dp, horizontal = 16.dp),
+                .padding(vertical = 12.dp, horizontal = horizontalPadding),
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Image(
             painter = painterResource(icon),
             contentDescription = null,
-            modifier = Modifier.size(20.dp),
+            modifier = Modifier.size(iconSize),
         )
-        Spacer(modifier = Modifier.width(8.dp))
+        Spacer(modifier = Modifier.width(iconSpacing))
         AppText(
             text = label,
             style = AppTextStyle.B1,
@@ -79,6 +83,12 @@ private fun ShopLinkRowPreview() {
                 icon = Res.drawable.ic_close,
                 label = "닫기",
                 onClick = {},
+                containerColor = GrayColor.C050,
+                contentColor = GrayColor.C500,
+                shape = RoundedCornerShape(8.dp),
+                iconSize = 20.dp,
+                iconSpacing = 8.dp,
+                horizontalPadding = 16.dp,
                 modifier = Modifier.fillMaxWidth(),
             )
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -88,6 +98,9 @@ private fun ShopLinkRowPreview() {
                     containerColor = SocialColor.Kakao,
                     contentColor = GrayColor.C500,
                     shape = RoundedCornerShape(100.dp),
+                    iconSize = 16.dp,
+                    iconSpacing = 4.dp,
+                    horizontalPadding = 6.dp,
                     onClick = {},
                     modifier = Modifier.weight(1f),
                 )
@@ -97,6 +110,9 @@ private fun ShopLinkRowPreview() {
                     containerColor = SocialColor.Naver,
                     contentColor = CommonColor.White,
                     shape = RoundedCornerShape(100.dp),
+                    iconSize = 16.dp,
+                    iconSpacing = 4.dp,
+                    horizontalPadding = 6.dp,
                     onClick = {},
                     modifier = Modifier.weight(1f),
                 )
