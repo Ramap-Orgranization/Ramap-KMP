@@ -515,7 +515,7 @@
     <string name="profile_retry">다시 시도</string>
     <string name="profile_discard">취소</string>
     <string name="profile_visibility">프로필 공개</string>
-    <string name="profile_visibility_body">프로필을 공개하면 다른 사용자가 내 프로필과 볼 수 있어요.</string>
+    <string name="profile_visibility_body">프로필을 공개하면 다른 사용자가 내 프로필과 저장한 매장을 볼 수 있어요.</string>
     <string name="profile_visibility_status">현재 %1$s 상태예요.</string>
     <string name="profile_visibility_public">공개</string>
     <string name="profile_visibility_private">비공개</string>
@@ -545,4 +545,6 @@
     <string name="my_reviews_empty_public">공개 리뷰가 없어요</string>
     <string name="my_reviews_empty_private">비공개 리뷰가 없어요</string>
     <string name="my_reviews_filter_number">%1$d</string>
+    <string name="review_profile_reviews_tab">작성한 리뷰</string>
+    <string name="review_profile_saved_shops_tab">저장한 매장</string>
 </resources>

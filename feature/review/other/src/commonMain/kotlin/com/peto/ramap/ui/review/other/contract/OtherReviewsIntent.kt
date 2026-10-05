@@ -7,6 +7,10 @@ sealed interface OtherReviewsIntent : Intent {
         val userId: String,
     ) : OtherReviewsIntent
 
+    data class SelectTab(
+        val tab: OtherReviewsTab,
+    ) : OtherReviewsIntent
+
     data object LoadMore : OtherReviewsIntent
 
     data object Retry : OtherReviewsIntent

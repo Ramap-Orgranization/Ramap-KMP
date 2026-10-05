@@ -3,6 +3,7 @@ package com.peto.ramap.data.datasource.community
 import com.peto.ramap.data.model.BlockedUserResponse
 import com.peto.ramap.data.model.MyCommunityProfileResponse
 import com.peto.ramap.data.model.ProfileAccessResponse
+import com.peto.ramap.data.model.PublicSavedShopsPageResponse
 import com.peto.ramap.data.model.ReviewResponse
 
 internal interface CommunityDataSource {
@@ -14,6 +15,11 @@ internal interface CommunityDataSource {
         userId: String,
         offset: Long,
     ): List<ReviewResponse>
+
+    suspend fun fetchUserSavedShops(
+        userId: String,
+        offset: Long,
+    ): PublicSavedShopsPageResponse
 
     suspend fun fetchBlockedUsers(): List<BlockedUserResponse>
 

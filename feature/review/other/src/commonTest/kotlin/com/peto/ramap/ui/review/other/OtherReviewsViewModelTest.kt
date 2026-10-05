@@ -5,8 +5,10 @@ import com.peto.ramap.coroutinesTest
 import com.peto.ramap.domain.model.community.ReviewAuthor
 import com.peto.ramap.domain.model.review.Review
 import com.peto.ramap.fake.FakeProfileRepository
+import com.peto.ramap.fixture.ramenShopFixture
 import com.peto.ramap.ui.review.other.contract.OtherReviewsEffect
 import com.peto.ramap.ui.review.other.contract.OtherReviewsIntent
+import com.peto.ramap.ui.review.other.contract.OtherReviewsTab
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runCurrent
 import kotlin.test.Test
@@ -59,6 +61,49 @@ class OtherReviewsViewModelTest {
         }
 
     @Test
+    fun `saved shops tab loads public shops in pages`() =
+        coroutinesTest {
+            val community = FakeOtherReviewsCommunity()
+            community.savedShops = (1..23).map { ramenShopFixture(id = "shop-$it") }
+            val viewModel = OtherReviewsViewModel(community, FakeProfileRepository())
+            runCurrent()
+
+            viewModel.dispatch(OtherReviewsIntent.OpenProfile("author"))
+            runCurrent()
+            viewModel.dispatch(OtherReviewsIntent.SelectTab(OtherReviewsTab.SavedShops))
+            runCurrent()
+
+            assertEquals(OtherReviewsTab.SavedShops, viewModel.uiState.value.selectedTab)
+            assertEquals(20, viewModel.uiState.value.savedShops.size)
+            assertTrue(viewModel.uiState.value.savedShopsHasMore)
+
+            viewModel.dispatch(OtherReviewsIntent.LoadMore)
+            runCurrent()
+
+            assertEquals(listOf(0L, 20L), community.requestedSavedShopOffsets)
+            assertEquals(23, viewModel.uiState.value.savedShops.size)
+            assertFalse(viewModel.uiState.value.savedShopsHasMore)
+        }
+
+    @Test
+    fun `guest saved shops tab requests login without fetching shops`() =
+        coroutinesTest {
+            val community = FakeOtherReviewsCommunity()
+            val viewModel = OtherReviewsViewModel(community, FakeProfileRepository(userId = null))
+            runCurrent()
+            viewModel.dispatch(OtherReviewsIntent.OpenProfile("author"))
+            runCurrent()
+
+            viewModel.sideEffect.test {
+                viewModel.dispatch(OtherReviewsIntent.SelectTab(OtherReviewsTab.SavedShops))
+                assertEquals(OtherReviewsEffect.LoginRequired, awaitItem())
+            }
+
+            assertEquals(OtherReviewsTab.Reviews, viewModel.uiState.value.selectedTab)
+            assertTrue(community.requestedSavedShopOffsets.isEmpty())
+        }
+
+    @Test
     fun `unavailable profile does not request reviews`() =
         coroutinesTest {
             val community = FakeOtherReviewsCommunity()
@@ -95,6 +140,7 @@ class OtherReviewsViewModelTest {
                     .isEmpty(),
             )
             assertTrue(community.requestedOffsets.isEmpty())
+            assertTrue(community.requestedSavedShopOffsets.isEmpty())
         }
 
     @Test
