@@ -20,6 +20,7 @@ class FakeOtherReviewsCommunity : CommunityRepository by FakeCommunityRepository
     val blockedUserIds = mutableSetOf<String>()
     val requestedProfileUserIds = mutableListOf<String>()
     val requestedOffsets = mutableListOf<Long>()
+    val requestedSavedShopOffsets = mutableListOf<Long>()
 
     override suspend fun fetchProfileAccess(userId: String): RamapResult<ProfileAccess> {
         requestedProfileUserIds += userId
@@ -63,6 +64,7 @@ class FakeOtherReviewsCommunity : CommunityRepository by FakeCommunityRepository
         userId: String,
         offset: Long,
     ): RamapResult<PublicSavedShopsPage> {
+        requestedSavedShopOffsets += offset
         val target = profile?.takeIf { it.userId == userId } ?: return RamapResult.Success(PublicSavedShopsPage(ProfileAccess.Unavailable, emptyList()))
         val access =
             when {
