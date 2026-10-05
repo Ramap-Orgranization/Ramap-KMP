@@ -51,6 +51,12 @@ internal fun ShopExternalLinksRow(
                         icon = Res.drawable.instagram_icon,
                         label = stringResource(Res.string.shop_detail_link_instagram),
                         onClick = { onExternalLinkClick(url) },
+                        containerColor = GrayColor.C050,
+                        contentColor = GrayColor.C500,
+                        shape = RoundedCornerShape(8.dp),
+                        iconSize = 20.dp,
+                        iconSpacing = 8.dp,
+                        horizontalPadding = 16.dp,
                         modifier = Modifier.weight(1f),
                     )
                 }
@@ -59,6 +65,12 @@ internal fun ShopExternalLinksRow(
                         label = stringResource(Res.string.shop_detail_label_waiting),
                         icon = waiting.icon,
                         onClick = { onWaitingClick(waiting.providerUrl) },
+                        containerColor = GrayColor.C050,
+                        contentColor = GrayColor.C500,
+                        shape = RoundedCornerShape(8.dp),
+                        iconSize = 20.dp,
+                        iconSpacing = 8.dp,
+                        horizontalPadding = 16.dp,
                         modifier = Modifier.weight(1f),
                     )
                 }
