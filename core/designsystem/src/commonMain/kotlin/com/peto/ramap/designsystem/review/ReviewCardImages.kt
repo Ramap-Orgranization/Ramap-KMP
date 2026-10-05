@@ -25,9 +25,10 @@ import ramap.shared.generated.resources.review_photo_description
 fun ReviewCardImages(
     imageUrls: List<String>,
     modifier: Modifier = Modifier,
+    photoViewerEnabled: Boolean = true,
 ) {
     if (imageUrls.isEmpty()) return
-    var selectedIndex by remember(imageUrls) { mutableStateOf<Int?>(null) }
+    var selectedIndex by remember(imageUrls, photoViewerEnabled) { mutableStateOf<Int?>(null) }
 
     LazyRow(
         modifier = modifier.fillMaxWidth(),
@@ -47,7 +48,13 @@ fun ReviewCardImages(
                     Modifier
                         .size(220.dp)
                         .clip(RoundedCornerShape(12.dp))
-                        .clickable(role = Role.Button) { selectedIndex = index },
+                        .then(
+                            if (photoViewerEnabled) {
+                                Modifier.clickable(role = Role.Button) { selectedIndex = index }
+                            } else {
+                                Modifier
+                            },
+                        ),
             )
         }
     }
