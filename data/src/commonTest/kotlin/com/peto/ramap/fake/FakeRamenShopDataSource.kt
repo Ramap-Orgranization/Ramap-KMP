@@ -46,6 +46,8 @@ internal class FakeRamenShopDataSource(
         private set
     val requestedBoundsHistory = mutableListOf<MapBounds>()
 
+    val requestedShopIdsHistory = mutableListOf<Set<String>>()
+
     var requestedShopIds: Set<String>? = null
         private set
 
@@ -64,6 +66,7 @@ internal class FakeRamenShopDataSource(
 
     override suspend fun fetchRamenShopsByIds(shopIds: Set<String>): List<RamenShopResponse> {
         requestedShopIds = shopIds
+        requestedShopIdsHistory += shopIds
         error?.let { throw it }
         return fetchByIdsResponses
     }

@@ -3,9 +3,9 @@ package com.peto.ramap.ui.review.other
 import com.peto.ramap.core.result.RamapError
 import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.domain.model.community.ProfileAccess
+import com.peto.ramap.domain.model.community.ProfileReview
 import com.peto.ramap.domain.model.community.PublicProfile
 import com.peto.ramap.domain.model.community.PublicSavedShopsPage
-import com.peto.ramap.domain.model.review.Review
 import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.domain.repository.CommunityRepository
 import com.peto.ramap.fake.FakeCommunityRepository
@@ -13,7 +13,7 @@ import com.peto.ramap.fake.FakeCommunityRepository
 class FakeOtherReviewsCommunity : CommunityRepository by FakeCommunityRepository() {
     var profile: PublicProfile? = PublicProfile("author", "라멘팬")
     var profilePrivate = false
-    var reviews: List<Review> = emptyList()
+    var reviews: List<ProfileReview> = emptyList()
     var savedShops: List<RamenShop> = emptyList()
     var failNextPage = false
     var failNextBlock = false
@@ -51,7 +51,7 @@ class FakeOtherReviewsCommunity : CommunityRepository by FakeCommunityRepository
     override suspend fun fetchUserReviews(
         userId: String,
         offset: Long,
-    ): RamapResult<List<Review>> {
+    ): RamapResult<List<ProfileReview>> {
         requestedOffsets += offset
         if (failNextPage) {
             failNextPage = false

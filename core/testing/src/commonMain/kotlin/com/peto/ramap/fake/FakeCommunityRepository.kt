@@ -3,10 +3,10 @@ package com.peto.ramap.fake
 import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.domain.model.community.BlockedUser
 import com.peto.ramap.domain.model.community.ProfileAccess
+import com.peto.ramap.domain.model.community.ProfileReview
 import com.peto.ramap.domain.model.community.PublicProfile
 import com.peto.ramap.domain.model.community.PublicSavedShopsPage
 import com.peto.ramap.domain.model.community.ReportReason
-import com.peto.ramap.domain.model.review.Review
 import com.peto.ramap.domain.repository.CommunityRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
@@ -26,7 +26,7 @@ class FakeCommunityRepository(
     override suspend fun fetchUserReviews(
         userId: String,
         offset: Long,
-    ): RamapResult<List<Review>> = RamapResult.Success(emptyList())
+    ): RamapResult<List<ProfileReview>> = RamapResult.Success(emptyList())
 
     override suspend fun fetchUserSavedShops(
         userId: String,

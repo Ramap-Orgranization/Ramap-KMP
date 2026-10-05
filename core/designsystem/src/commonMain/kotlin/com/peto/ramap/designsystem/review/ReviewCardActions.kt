@@ -9,4 +9,5 @@ data class ReviewCardActions(
     val onDelete: (() -> Unit)? = null,
     val onViewBlockedReview: (() -> Unit)? = null,
     val onUnblockBlockedUser: (() -> Unit)? = null,
+    val onReviewClick: (() -> Unit)? = null,
 )

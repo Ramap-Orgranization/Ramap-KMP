@@ -14,6 +14,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
 import com.peto.ramap.domain.model.review.Review
+import com.peto.ramap.extension.noRippleClickable
 import com.peto.ramap.preview.ReviewPreviewParameterProvider
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
@@ -30,6 +31,7 @@ fun ReviewCard(
     actionsEnabled: Boolean = true,
     showBlockedContent: Boolean = false,
     isBlockedReviewLoading: Boolean = false,
+    header: @Composable () -> Unit,
 ) {
     if (review.isBlocked && !showBlockedContent) {
         BlockedReviewCard(
@@ -42,21 +44,28 @@ fun ReviewCard(
     }
 
     Surface(
-        modifier = modifier.fillMaxWidth(),
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .then(
+                    actions.onReviewClick?.let { onReviewClick ->
+                        Modifier.noRippleClickable(
+                            enabled = actionsEnabled,
+                            onClick = onReviewClick,
+                        )
+                    } ?: Modifier,
+                ),
         shape = RectangleShape,
         color = CommonColor.White,
     ) {
         Column(
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            ReviewCardHeader(
-                review = review,
-                actions = actions,
-                actionsEnabled = actionsEnabled,
-            )
+            header()
 
             ReviewCardImages(
                 imageUrls = review.imageUrls,
+                photoViewerEnabled = actions.onReviewClick == null,
             )
 
             ReviewCardContent(
@@ -92,8 +101,28 @@ private fun BlockedReviewCardPreview(
                         onViewBlockedReview = {},
                         onUnblockBlockedUser = {},
                     ),
+                header = {
+                    ReviewCardHeader(
+                        review = review.copy(isBlocked = true),
+                        actions =
+                            ReviewCardActions(
+                                onViewBlockedReview = {},
+                                onUnblockBlockedUser = {},
+                            ),
+                        actionsEnabled = true,
+                    )
+                },
             )
-            ReviewCard(review = review)
+            ReviewCard(
+                review = review,
+                header = {
+                    ReviewCardHeader(
+                        review = review,
+                        actions = ReviewCardActions(),
+                        actionsEnabled = true,
+                    )
+                },
+            )
         }
     }
 }
