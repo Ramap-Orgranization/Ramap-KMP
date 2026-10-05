@@ -8,9 +8,11 @@ import androidx.compose.ui.Modifier
 import androidx.navigationevent.NavigationEventInfo
 import androidx.navigationevent.compose.NavigationBackHandler
 import androidx.navigationevent.compose.rememberNavigationEventState
+import com.peto.ramap.analytics.AnalyticsSource
 import com.peto.ramap.domain.model.auth.LoginType
 import com.peto.ramap.navigation.NavigationState
 import com.peto.ramap.theme.CommonColor
+import com.peto.ramap.ui.main.map.ShopDetailHost
 import com.peto.ramap.ui.review.other.OtherReviewsRoute
 import com.peto.ramap.ui.review.write.ShopReviewWriteRoute
 
@@ -46,6 +48,29 @@ internal fun OverlayHost(
                 onShowShop = { shopId ->
                     overlayState.overlayProfileUserId = null
                     navigationState.showShopOnMap(shopId)
+                },
+                onEventNavigate = { event ->
+                    overlayState.overlayProfileUserId = null
+                    navigationState.showEvent(event.id)
+                },
+                shopDetailContent = { shopId, onDismiss, onShowOnMap, onEventNavigate ->
+                    ShopDetailHost(
+                        shopId = shopId,
+                        onDismiss = onDismiss,
+                        onShowOnMap = onShowOnMap,
+                        onReviewNavigate = { selectedShopId ->
+                            overlayState.overlayProfileUserId = null
+                            overlayState.overlayReviewWriteArgs = selectedShopId to null
+                        },
+                        onEditReview = { selectedShopId, reviewId ->
+                            overlayState.overlayProfileUserId = null
+                            overlayState.overlayReviewWriteArgs = selectedShopId to reviewId
+                        },
+                        onOpenProfile = { userId -> overlayState.openProfile(userId, true) },
+                        onEventNavigate = onEventNavigate,
+                        isNavigationBarPadded = true,
+                        originSource = AnalyticsSource.REVIEW_PROFILE,
+                    )
                 },
             )
         }

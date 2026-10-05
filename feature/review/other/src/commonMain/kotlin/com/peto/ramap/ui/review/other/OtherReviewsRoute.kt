@@ -3,9 +3,11 @@ package com.peto.ramap.ui.review.other
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -20,6 +22,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -42,6 +45,7 @@ import com.peto.ramap.domain.model.auth.LoginType
 import com.peto.ramap.domain.model.community.ProfileAccess
 import com.peto.ramap.domain.model.community.PublicProfile
 import com.peto.ramap.domain.model.community.ReviewAuthor
+import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.model.review.Review
 import com.peto.ramap.extension.noRippleClickable
 import com.peto.ramap.theme.AppTextStyle
@@ -81,11 +85,14 @@ fun OtherReviewsRoute(
     onBack: () -> Unit,
     onLoginTypeSelected: (LoginType) -> Unit,
     onShowShop: (String) -> Unit,
+    onEventNavigate: (ShopEvent) -> Unit,
+    shopDetailContent: @Composable (String, () -> Unit, (String) -> Unit, (ShopEvent) -> Unit) -> Unit,
     viewModel: OtherReviewsViewModel = koinViewModel(),
     toastManager: ToastManager = koinInject(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     var showLoginGuide by remember { mutableStateOf(false) }
+    var selectedSavedShopId by rememberSaveable(userId) { mutableStateOf<String?>(null) }
     ObserveAsEvents(viewModel.sideEffect) { effect ->
         when (effect) {
             OtherReviewsEffect.LoginRequired -> showLoginGuide = true
@@ -95,12 +102,29 @@ fun OtherReviewsRoute(
     LaunchedEffect(userId) {
         viewModel.dispatch(OtherReviewsIntent.OpenProfile(userId))
     }
-    OtherReviewsContent(
-        state = state,
-        onBack = onBack,
-        onShowShop = onShowShop,
-        onIntent = viewModel::dispatch,
-    )
+    Box(modifier = Modifier.fillMaxSize()) {
+        OtherReviewsContent(
+            state = state,
+            onBack = onBack,
+            onShowShop = onShowShop,
+            onShowSavedShop = { selectedSavedShopId = it },
+            onIntent = viewModel::dispatch,
+        )
+        selectedSavedShopId?.let { shopId ->
+            shopDetailContent(
+                shopId,
+                { selectedSavedShopId = null },
+                { selectedShopId ->
+                    selectedSavedShopId = null
+                    onShowShop(selectedShopId)
+                },
+                { event ->
+                    selectedSavedShopId = null
+                    onEventNavigate(event)
+                },
+            )
+        }
+    }
     LoginGuideDialog(
         visible = showLoginGuide,
         onDismiss = { showLoginGuide = false },
@@ -117,6 +141,7 @@ internal fun OtherReviewsContent(
     state: OtherReviewsUiState,
     onBack: () -> Unit,
     onShowShop: (String) -> Unit,
+    onShowSavedShop: (String) -> Unit,
     onIntent: (OtherReviewsIntent) -> Unit,
 ) {
     val reviewListState = rememberLazyListState()
@@ -273,7 +298,7 @@ internal fun OtherReviewsContent(
                 RamenShopSummary(
                     shop = shop,
                     categoryLabel = { stringResource(CategoryResourceMapper.label(it)) },
-                    onClick = { onShowShop(shop.id) },
+                    onClick = { onShowSavedShop(shop.id) },
                     modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
                 )
             }
@@ -325,6 +350,7 @@ private fun OtherReviewsContentPreview() {
                 ),
             onBack = {},
             onShowShop = {},
+            onShowSavedShop = {},
             onIntent = {},
         )
     }
@@ -341,6 +367,7 @@ private fun OtherReviewsContentLoadingPreview() {
                 ),
             onBack = {},
             onShowShop = {},
+            onShowSavedShop = {},
             onIntent = {},
         )
     }
@@ -361,6 +388,7 @@ private fun OtherReviewsContentEmptyPreview() {
                 ),
             onBack = {},
             onShowShop = {},
+            onShowSavedShop = {},
             onIntent = {},
         )
     }
@@ -379,6 +407,7 @@ private fun OtherReviewsContentBlockedPreview() {
                 ),
             onBack = {},
             onShowShop = {},
+            onShowSavedShop = {},
             onIntent = {},
         )
     }
@@ -396,6 +425,7 @@ private fun OtherReviewsContentPrivatePreview() {
                 ),
             onBack = {},
             onShowShop = {},
+            onShowSavedShop = {},
             onIntent = {},
         )
     }
@@ -412,6 +442,7 @@ private fun OtherReviewsContentUnavailablePreview() {
                 ),
             onBack = {},
             onShowShop = {},
+            onShowSavedShop = {},
             onIntent = {},
         )
     }
@@ -432,6 +463,7 @@ private fun OtherReviewsContentFailedPreview() {
                 ),
             onBack = {},
             onShowShop = {},
+            onShowSavedShop = {},
             onIntent = {},
         )
     }
