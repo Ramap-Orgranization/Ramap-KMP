@@ -25,6 +25,7 @@ import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.model.event.ShopEvents
 import com.peto.ramap.extension.noRippleClickable
 import com.peto.ramap.theme.AppTextStyle
+import com.peto.ramap.theme.ChromaticColor
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.SystemColor
@@ -111,6 +112,8 @@ fun EventShopGroupCard(
                         }
                     NewsBadge(
                         text = stringResource(ShopEventResourceMapper.typeLabel(event.type)),
+                        containerColor = ChromaticColor.Yellow400,
+                        contentColor = GrayColor.C500,
                         textStyle = AppTextStyle.B3,
                     )
                 }

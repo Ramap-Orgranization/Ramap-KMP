@@ -298,6 +298,8 @@ internal fun OtherReviewsContent(
                 RamenShopSummary(
                     shop = shop,
                     categoryLabel = { stringResource(CategoryResourceMapper.label(it)) },
+                    containerColor = CommonColor.White,
+                    leadingContent = {},
                     onClick = { onShowSavedShop(shop.id) },
                     modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
                 )

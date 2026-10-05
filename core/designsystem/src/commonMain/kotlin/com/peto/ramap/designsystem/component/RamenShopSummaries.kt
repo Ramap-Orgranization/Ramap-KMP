@@ -10,6 +10,7 @@ import com.peto.ramap.domain.model.shop.Category
 import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.preview.RamenShopsPreviewParameterProvider
+import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.RamapTheme
 
 @Composable
@@ -31,6 +32,8 @@ fun RamenShopSummaries(
                 shop = shop,
                 onClick = { onShopClick(shop) },
                 categoryLabel = categoryLabel,
+                containerColor = CommonColor.White,
+                leadingContent = {},
                 actionLabel = itemActionLabel?.invoke(shop),
                 onAction = onItemAction?.let { action -> { action(shop) } },
             )

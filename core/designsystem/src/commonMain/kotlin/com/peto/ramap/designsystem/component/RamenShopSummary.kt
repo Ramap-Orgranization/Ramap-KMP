@@ -39,10 +39,10 @@ import ramap.shared.generated.resources.ic_close
 fun RamenShopSummary(
     shop: RamenShop,
     categoryLabel: @Composable (Category) -> String,
+    containerColor: Color,
+    leadingContent: @Composable () -> Unit,
     modifier: Modifier = Modifier,
     onClick: (() -> Unit)? = null,
-    containerColor: Color = CommonColor.White,
-    leadingContent: @Composable () -> Unit = {},
     actionLabel: String? = null,
     onAction: (() -> Unit)? = null,
 ) {
@@ -68,8 +68,8 @@ fun RamenShopSummary(
             leadingContent()
             RemoteShopImage(
                 url = shop.instagramProfileImageUrl,
-                modifier = Modifier.size(60.dp),
                 shape = RoundedCornerShape(8.dp),
+                modifier = Modifier.size(60.dp),
             )
             Column(
                 modifier = Modifier.weight(1f),
@@ -137,6 +137,8 @@ private fun RamenShopSummaryPreview(
         RamenShopSummary(
             shop = shop,
             categoryLabel = { it.name },
+            containerColor = CommonColor.White,
+            leadingContent = {},
         )
     }
 }
@@ -150,6 +152,8 @@ private fun RamenShopSummaryActionPreview(
         RamenShopSummary(
             shop = shop,
             categoryLabel = { it.name },
+            containerColor = CommonColor.White,
+            leadingContent = {},
             actionLabel = "삭제",
             onAction = {},
         )
