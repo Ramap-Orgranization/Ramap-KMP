@@ -13,7 +13,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
@@ -32,6 +34,9 @@ internal fun ReviewPhoto(
     url: String,
     contentDescription: String,
     modifier: Modifier = Modifier,
+    contentScale: ContentScale = ContentScale.Crop,
+    shape: Shape = RoundedCornerShape(12.dp),
+    backgroundColor: Color = GrayColor.C050,
 ) {
     val context = LocalPlatformContext.current
     val request =
@@ -45,13 +50,11 @@ internal fun ReviewPhoto(
     var imageState by remember(url) {
         mutableStateOf<AsyncImagePainter.State>(AsyncImagePainter.State.Empty)
     }
-    val shape = RoundedCornerShape(12.dp)
-
     Box(
         modifier =
             modifier
                 .clip(shape)
-                .background(GrayColor.C050),
+                .background(backgroundColor),
         contentAlignment = Alignment.Center,
     ) {
         if (imageState is AsyncImagePainter.State.Empty ||
@@ -72,7 +75,7 @@ internal fun ReviewPhoto(
             model = request,
             contentDescription = contentDescription,
             modifier = Modifier.matchParentSize(),
-            contentScale = ContentScale.Crop,
+            contentScale = contentScale,
             onState = { imageState = it },
         )
         if (imageState is AsyncImagePainter.State.Error) {
