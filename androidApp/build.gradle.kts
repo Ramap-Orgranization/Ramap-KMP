@@ -102,8 +102,8 @@ android {
             libs.versions.android.target.sdk
                 .get()
                 .toInt()
-        versionCode = 25
-        versionName = "1.1.7"
+        versionCode = 26
+        versionName = "1.1.8"
         manifestPlaceholders["KAKAO_NATIVE_APP_KEY"] = kakaoNativeAppKey
     }
     packaging {
