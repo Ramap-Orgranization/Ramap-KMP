@@ -18,6 +18,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.extension.noRippleClickable
@@ -42,6 +43,9 @@ internal fun ShopLinkRow(
     containerColor: Color = GrayColor.C050,
     contentColor: Color = GrayColor.C500,
     shape: Shape = RoundedCornerShape(8.dp),
+    iconSize: Dp = 20.dp,
+    iconSpacing: Dp = 8.dp,
+    horizontalPadding: Dp = 16.dp,
 ) {
     Row(
         modifier =
@@ -49,16 +53,16 @@ internal fun ShopLinkRow(
                 .clip(shape)
                 .background(containerColor)
                 .noRippleClickable(onClick = onClick)
-                .padding(vertical = 12.dp, horizontal = 16.dp),
+                .padding(vertical = 12.dp, horizontal = horizontalPadding),
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Image(
             painter = painterResource(icon),
             contentDescription = null,
-            modifier = Modifier.size(20.dp),
+            modifier = Modifier.size(iconSize),
         )
-        Spacer(modifier = Modifier.width(8.dp))
+        Spacer(modifier = Modifier.width(iconSpacing))
         AppText(
             text = label,
             style = AppTextStyle.B1,

@@ -65,7 +65,7 @@ internal fun ShopExternalLinksRow(
             }
         }
 
-        if (shop.kakaoPlaceUrl != null || shop.naverPlaceUrl != null) {
+        if (shop.kakaoPlaceUrl != null || shop.naverPlaceUrl != null || isAppleMapsAvailable) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -77,6 +77,9 @@ internal fun ShopExternalLinksRow(
                         containerColor = SocialColor.Kakao,
                         contentColor = GrayColor.C500,
                         shape = RoundedCornerShape(100.dp),
+                        iconSize = 16.dp,
+                        iconSpacing = 4.dp,
+                        horizontalPadding = 6.dp,
                         onClick = {
                             onMapLinkClick("kakao")
                             onExternalLinkClick(url)
@@ -91,6 +94,9 @@ internal fun ShopExternalLinksRow(
                         containerColor = SocialColor.Naver,
                         contentColor = CommonColor.White,
                         shape = RoundedCornerShape(100.dp),
+                        iconSize = 16.dp,
+                        iconSpacing = 4.dp,
+                        horizontalPadding = 6.dp,
                         onClick = {
                             onMapLinkClick("naver")
                             onExternalLinkClick(url)
@@ -98,19 +104,24 @@ internal fun ShopExternalLinksRow(
                         modifier = Modifier.weight(1f),
                     )
                 }
+                if (isAppleMapsAvailable) {
+                    ShopLinkRow(
+                        icon = Res.drawable.apple_maps_icon,
+                        label = stringResource(Res.string.shop_detail_link_apple_maps),
+                        containerColor = CommonColor.Black,
+                        contentColor = CommonColor.White,
+                        shape = RoundedCornerShape(100.dp),
+                        iconSize = 16.dp,
+                        iconSpacing = 4.dp,
+                        horizontalPadding = 6.dp,
+                        onClick = {
+                            onMapLinkClick("apple")
+                            onAppleMapsClick(shop)
+                        },
+                        modifier = Modifier.weight(1f),
+                    )
+                }
             }
-        }
-
-        if (isAppleMapsAvailable) {
-            ShopLinkRow(
-                icon = Res.drawable.apple_maps_icon,
-                label = stringResource(Res.string.shop_detail_link_apple_maps),
-                onClick = {
-                    onMapLinkClick("apple")
-                    onAppleMapsClick(shop)
-                },
-                modifier = Modifier.fillMaxWidth(),
-            )
         }
     }
 }

@@ -18,7 +18,6 @@ sealed interface ProfileIntent : Intent {
 
     data class PickImage(
         val image: ProfileImage,
-        val generation: Long,
     ) : ProfileIntent
 
     data object RejectImage : ProfileIntent

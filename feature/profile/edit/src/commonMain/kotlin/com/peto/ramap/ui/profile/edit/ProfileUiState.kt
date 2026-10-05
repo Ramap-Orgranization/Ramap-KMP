@@ -21,7 +21,6 @@ data class ProfileUiState(
     val nicknameAvailable: Boolean? = null,
     val nicknameCheckFailed: Boolean = false,
     val checkedNickname: String? = null,
-    val draftGeneration: Long = 0,
     override val loadState: LoadState = LoadState.loading(ProfileLoadKey.Fetch),
 ) : LoadableState<ProfileUiState> {
     val loading: Boolean get() = loadState.isLoading(ProfileLoadKey.Fetch)

@@ -3,9 +3,6 @@ package com.peto.ramap.ui.profile.edit
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigationevent.NavigationEventInfo
@@ -13,7 +10,6 @@ import androidx.navigationevent.compose.NavigationBackHandler
 import androidx.navigationevent.compose.rememberNavigationEventState
 import com.peto.ramap.designsystem.toast.ToastManager
 import com.peto.ramap.designsystem.toast.model.ToastData
-import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.auth.LoginType
 import com.peto.ramap.domain.model.profile.AccountProfile
 import com.peto.ramap.domain.model.profile.ProfileImage
@@ -32,10 +28,9 @@ fun ProfileEditRoute(
     toastManager: ToastManager = koinInject(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-    var pickerGeneration by remember { mutableStateOf(-1L) }
     val pickImage =
         rememberImagePicker(
-            onImagePicked = { viewModel.dispatch(ProfileIntent.PickImage(ProfileImage(it.bytes, it.mimeType), pickerGeneration)) },
+            onImagePicked = { viewModel.dispatch(ProfileIntent.PickImage(ProfileImage(it.bytes, it.mimeType))) },
             onRejected = { viewModel.dispatch(ProfileIntent.RejectImage) },
         )
     DisposableEffect(viewModel) {
@@ -44,7 +39,7 @@ fun ProfileEditRoute(
     ObserveAsEvents(viewModel.sideEffect) {
         when (it) {
             ProfileSideEffect.NavigateBack -> onBack()
-            is ProfileSideEffect.Toast -> toastManager.show(ToastData(it.message, ToastType.DEFAULT))
+            is ProfileSideEffect.ShowToast -> toastManager.show(ToastData(it.message, it.type))
         }
     }
     ProfileEditRouteContent(
@@ -53,7 +48,6 @@ fun ProfileEditRoute(
         onLoginClick = onLoginClick,
         onPickImage = {
             if (!state.saving) {
-                pickerGeneration = state.draftGeneration
                 pickImage()
             }
         },

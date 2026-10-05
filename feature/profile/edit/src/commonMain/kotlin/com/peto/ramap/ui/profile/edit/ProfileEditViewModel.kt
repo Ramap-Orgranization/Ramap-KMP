@@ -3,6 +3,7 @@ package com.peto.ramap.ui.profile.edit
 import androidx.lifecycle.viewModelScope
 import com.peto.ramap.core.result.RamapError
 import com.peto.ramap.core.result.RamapResult
+import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.profile.AccountProfile
 import com.peto.ramap.domain.model.profile.ProfileDraft
 import com.peto.ramap.domain.repository.LoginRepository
@@ -25,20 +26,31 @@ class ProfileEditViewModel(
     private val repository: ProfileRepository,
     private val loginRepository: LoginRepository,
 ) : BaseViewModel<ProfileUiState, ProfileIntent, ProfileSideEffect>(ProfileUiState()) {
-    private var sessionGeneration = 0L
-    private var nextDraftGeneration = 0L
-
     init {
+        observeSession()
+    }
+
+    private fun observeSession() {
         viewModelScope.launch {
             repository.sessionUserIds.distinctUntilChanged().collect { userId ->
-                sessionGeneration++
-                cancelTask(FETCH)
-                cancelTask(SAVE)
-                cancelTask(CHECK_NICKNAME)
-                reduce { ProfileUiState(userId = userId, draftGeneration = ++nextDraftGeneration, loadState = LoadState()) }
+                cancelProfileTasks()
+                reduce { ProfileUiState(userId = userId, loadState = LoadState()) }
                 if (userId != null) fetch()
             }
         }
+    }
+
+    private fun cancelProfileTasks() {
+        cancelTask(FETCH)
+        cancelTask(SAVE)
+        cancelTask(CHECK_NICKNAME)
+    }
+
+    private fun showToast(
+        message: StringResource,
+        type: ToastType = ToastType.DEFAULT,
+    ) {
+        trySideEffect(ProfileSideEffect.ShowToast(message, type))
     }
 
     override suspend fun handleIntent(intent: ProfileIntent) {
@@ -48,7 +60,7 @@ class ProfileEditViewModel(
             ProfileIntent.CheckNickname -> checkNickname()
             is ProfileIntent.ChangeBio -> if (currentState.editing && !currentState.saving) reduce { copy(bio = intent.value) }
             is ProfileIntent.PickImage -> pickImage(intent)
-            ProfileIntent.RejectImage -> trySideEffect(ProfileSideEffect.Toast(Res.string.profile_image_rejected))
+            ProfileIntent.RejectImage -> showToast(Res.string.profile_image_rejected, ToastType.ERROR)
             ProfileIntent.RemovePhoto -> if (!currentState.saving) reduce { copy(image = null, removePhoto = profile?.avatarUrl != null) }
             ProfileIntent.Save -> save()
             ProfileIntent.Back -> back()
@@ -58,14 +70,17 @@ class ProfileEditViewModel(
 
     private fun fetch() {
         if (currentState.userId == null) return
-        val generation = sessionGeneration
         launchTask(FETCH, loadKey = ProfileLoadKey.Fetch, onStart = { copy(failed = false) }) {
             when (val result = repository.fetchMyProfile()) {
-                is RamapResult.Success ->
-                    if (generation == sessionGeneration && result.data.userId == currentState.userId) {
+                is RamapResult.Success -> {
+                    if (result.data.userId == currentState.userId) {
                         beginEdit(result.data)
                     }
-                is RamapResult.Error -> if (generation == sessionGeneration) reduce { copy(failed = true) }
+                }
+
+                is RamapResult.Error -> {
+                    reduce { copy(failed = true) }
+                }
             }
         }
     }
@@ -84,15 +99,14 @@ class ProfileEditViewModel(
                 nicknameAvailable = null,
                 nicknameCheckFailed = false,
                 checkedNickname = null,
-                draftGeneration = ++nextDraftGeneration,
             )
         }
     }
 
     private fun pickImage(intent: ProfileIntent.PickImage) {
-        if (!currentState.editing || currentState.saving || intent.generation != currentState.draftGeneration) return
+        if (!currentState.editing || currentState.saving) return
         if (!intent.image.isValid()) {
-            trySideEffect(ProfileSideEffect.Toast(Res.string.profile_image_rejected))
+            showToast(Res.string.profile_image_rejected, ToastType.ERROR)
             return
         }
         reduce { copy(image = intent.image, removePhoto = false) }
@@ -120,19 +134,18 @@ class ProfileEditViewModel(
         val draft = currentState
         if (!draft.canCheckNickname) return
         val nickname = draft.nickname.trim()
-        val generation = sessionGeneration
         launchTask(
             taskKey = CHECK_NICKNAME,
             loadKey = ProfileLoadKey.CheckNickname,
             onStart = { copy(nicknameCheckFailed = false, nicknameAvailable = null) },
         ) {
             val result = repository.isNicknameAvailable(nickname)
-            if (generation != sessionGeneration || draft.draftGeneration != currentState.draftGeneration || nickname != currentState.nickname.trim()) return@launchTask
+            if (nickname != currentState.nickname.trim()) return@launchTask
             when (result) {
                 is RamapResult.Success -> reduce { copy(nicknameAvailable = result.data, checkedNickname = nickname) }
                 is RamapResult.Error -> {
                     if (isRateLimit(result.error)) {
-                        trySideEffect(ProfileSideEffect.Toast(Res.string.profile_nickname_check_rate_limited))
+                        showToast(Res.string.profile_nickname_check_rate_limited, ToastType.ERROR)
                     } else {
                         reduce { copy(nicknameCheckFailed = true) }
                     }
@@ -144,7 +157,6 @@ class ProfileEditViewModel(
     private fun save() {
         val draft = currentState
         if (!draft.canSave) return
-        val generation = sessionGeneration
         launchTask(SAVE, loadKey = ProfileLoadKey.Save) {
             val result =
                 repository.updateMyProfile(
@@ -155,14 +167,14 @@ class ProfileEditViewModel(
                         bio = draft.bio.trim(),
                     ),
                 )
-            if (generation != sessionGeneration || draft.draftGeneration != currentState.draftGeneration) return@launchTask
             when (result) {
                 is RamapResult.Success ->
                     if (result.data.userId == currentState.userId) {
-                        reduce { copy(profile = result.data, editing = false, image = null, removePhoto = false, draftGeneration = ++nextDraftGeneration) }
-                        trySideEffect(ProfileSideEffect.Toast(Res.string.profile_saved))
+                        reduce { copy(profile = result.data, editing = false, image = null, removePhoto = false) }
+                        showToast(Res.string.profile_saved, ToastType.SUCCESS)
                         trySideEffect(ProfileSideEffect.NavigateBack)
                     }
+
                 is RamapResult.Error -> handleSaveFailure(draft, result.error)
             }
         }
@@ -173,11 +185,11 @@ class ProfileEditViewModel(
         error: RamapError,
     ) {
         if (isProfileSaveRateLimit(error)) {
-            trySideEffect(ProfileSideEffect.Toast(Res.string.profile_save_rate_limited))
+            showToast(Res.string.profile_save_rate_limited, ToastType.ERROR)
             return
         }
         if (isProfileDailyChangeLimit(error)) {
-            trySideEffect(ProfileSideEffect.Toast(dailyChangeLimitMessage(error)))
+            showToast(dailyChangeLimitMessage(error), ToastType.ERROR)
             return
         }
         if (isNicknameTaken(error)) {
@@ -192,13 +204,13 @@ class ProfileEditViewModel(
         }
         if (draft.nicknameChanged) {
             val availability = repository.isNicknameAvailable(draft.nickname.trim())
-            if (draft.draftGeneration != currentState.draftGeneration || draft.userId != currentState.userId) return
+            if (draft.userId != currentState.userId) return
             if (availability is RamapResult.Success && !availability.data) {
                 reduce { copy(nicknameAvailable = false) }
                 return
             }
         }
-        trySideEffect(ProfileSideEffect.Toast(Res.string.profile_save_failed))
+        showToast(Res.string.profile_save_failed, ToastType.ERROR)
     }
 
     private fun isProfileDailyChangeLimit(error: RamapError): Boolean {
@@ -239,10 +251,8 @@ class ProfileEditViewModel(
     }
 
     private fun endEdit() {
-        nextDraftGeneration++
-        cancelTask(SAVE)
-        cancelTask(CHECK_NICKNAME)
-        reduce { copy(editing = false, nickname = "", bio = "", image = null, removePhoto = false, nicknameTouched = false, nicknameAvailable = null, nicknameCheckFailed = false, checkedNickname = null, draftGeneration = nextDraftGeneration) }
+        cancelProfileTasks()
+        reduce { copy(editing = false, nickname = "", bio = "", image = null, removePhoto = false, nicknameTouched = false, nicknameAvailable = null, nicknameCheckFailed = false, checkedNickname = null) }
     }
 
     override fun handleError(throwable: Throwable) {
@@ -250,7 +260,7 @@ class ProfileEditViewModel(
         if (currentState.profile == null) {
             reduce { copy(failed = true) }
         } else {
-            trySideEffect(ProfileSideEffect.Toast(Res.string.profile_save_failed))
+            showToast(Res.string.profile_save_failed, ToastType.ERROR)
         }
     }
 

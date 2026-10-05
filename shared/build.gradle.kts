@@ -143,6 +143,10 @@ kotlin {
             implementation(libs.turbine)
             implementation(libs.compose.ui.test)
         }
+        getByName("androidHostTest").dependencies {
+            implementation(libs.androidx.activity.compose)
+            implementation(libs.robolectric)
+        }
     }
 }
 
