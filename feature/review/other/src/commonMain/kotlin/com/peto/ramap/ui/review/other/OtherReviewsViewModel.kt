@@ -201,7 +201,7 @@ class OtherReviewsViewModel(
                 reduce {
                     copy(
                         profileAccess = ProfileAccess.Visible(profile),
-                        reviews = (if (reset) result.data else reviews + result.data).distinctBy { it.id },
+                        reviews = (if (reset) result.data else reviews + result.data).distinctBy { it.review.id },
                         hasMore = result.data.size == PAGE_SIZE,
                         reviewsOffset = offset + result.data.size,
                     )

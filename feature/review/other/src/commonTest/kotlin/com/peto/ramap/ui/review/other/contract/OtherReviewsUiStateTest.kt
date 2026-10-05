@@ -1,6 +1,7 @@
 package com.peto.ramap.ui.review.other.contract
 
 import com.peto.ramap.domain.model.community.ProfileAccess
+import com.peto.ramap.domain.model.community.ProfileReview
 import com.peto.ramap.domain.model.community.PublicProfile
 import com.peto.ramap.domain.model.community.ReviewAuthor
 import com.peto.ramap.domain.model.review.Review
@@ -12,12 +13,15 @@ import kotlin.test.assertTrue
 class OtherReviewsUiStateTest {
     private val sampleProfile = PublicProfile(userId = "user-1", nickname = "라멘마니아")
     private val sampleReview =
-        Review(
-            id = "review-1",
-            shopId = "shop-1",
-            body = "맛있는 라멘",
-            createdAt = "2026-03-31T00:00:00Z",
-            author = ReviewAuthor(userId = "user-1", nickname = "라멘마니아"),
+        ProfileReview(
+            review =
+                Review(
+                    id = "review-1",
+                    shopId = "shop-1",
+                    body = "맛있는 라멘",
+                    createdAt = "2026-03-31T00:00:00Z",
+                    author = ReviewAuthor(userId = "user-1", nickname = "라멘마니아"),
+                ),
         )
 
     @Test

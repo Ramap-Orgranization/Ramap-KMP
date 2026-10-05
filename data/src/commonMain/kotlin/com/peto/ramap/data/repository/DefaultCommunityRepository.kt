@@ -2,18 +2,22 @@ package com.peto.ramap.data.repository
 
 import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.data.datasource.community.CommunityDataSource
+import com.peto.ramap.data.datasource.shop.RamenShopDataSource
 import com.peto.ramap.domain.model.community.BlockedUser
 import com.peto.ramap.domain.model.community.ProfileAccess
+import com.peto.ramap.domain.model.community.ProfileReview
 import com.peto.ramap.domain.model.community.PublicProfile
 import com.peto.ramap.domain.model.community.PublicSavedShopsPage
 import com.peto.ramap.domain.model.community.ReportReason
 import com.peto.ramap.domain.model.review.Review
+import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.domain.repository.CommunityRepository
 import com.peto.ramap.network.execute.invokeRequest
 
 internal class DefaultCommunityRepository(
     private val dataSource: CommunityDataSource,
     private val changes: ReviewChangeNotifier,
+    private val shopDataSource: RamenShopDataSource,
 ) : CommunityRepository {
     override fun observeChanges() = changes.events
 
@@ -24,7 +28,25 @@ internal class DefaultCommunityRepository(
     override suspend fun fetchUserReviews(
         userId: String,
         offset: Long,
-    ): RamapResult<List<Review>> = invokeRequest { dataSource.fetchUserReviews(userId, offset).map { it.toDomain() } }
+    ): RamapResult<List<ProfileReview>> =
+        invokeRequest {
+            val reviews = dataSource.fetchUserReviews(userId, offset).map { it.toDomain() }
+            val shopsById = fetchReviewShops(reviews)
+            reviews.map { ProfileReview(review = it, shop = shopsById[it.shopId]) }
+        }
+
+    private suspend fun fetchReviewShops(reviews: List<Review>): Map<String, RamenShop> {
+        if (reviews.isEmpty()) return emptyMap()
+        val shopIds = reviews.map { it.shopId }.toSet()
+        val result =
+            invokeRequest {
+                shopDataSource.fetchRamenShopsByIds(shopIds).map { it.toDomain() }.associateBy { it.id }
+            }
+        return when (result) {
+            is RamapResult.Success -> result.data
+            is RamapResult.Error -> emptyMap()
+        }
+    }
 
     override suspend fun fetchUserSavedShops(
         userId: String,

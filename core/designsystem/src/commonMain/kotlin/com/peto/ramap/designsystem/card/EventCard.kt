@@ -44,11 +44,11 @@ fun EventCard(
     event: ShopEvent,
     dateText: String,
     onClick: () -> Unit,
+    isCancelled: Boolean,
+    isSoldOut: Boolean,
     modifier: Modifier = Modifier,
     actionLabel: String? = null,
     onAction: (() -> Unit)? = null,
-    isCancelled: Boolean = event.isCancelledToday,
-    isSoldOut: Boolean = event.isSoldOutToday,
 ) {
     val cardShape = RoundedCornerShape(16.dp)
 
@@ -135,18 +135,22 @@ private fun EventCardPreview(
                 event = event,
                 dateText = "2026.08.12 ~ 2026.08.16",
                 onClick = {},
+                isCancelled = false,
+                isSoldOut = false,
             )
 
             EventCard(
                 event = event,
                 dateText = "2026.08.12 ~ 2026.08.16",
                 isCancelled = true,
+                isSoldOut = false,
                 onClick = {},
             )
 
             EventCard(
                 event = event,
                 dateText = "2026.08.12 ~ 2026.08.16",
+                isCancelled = false,
                 isSoldOut = true,
                 onClick = {},
             )
@@ -154,6 +158,8 @@ private fun EventCardPreview(
             EventCard(
                 event = event,
                 dateText = "2026.08.12 ~ 2026.08.16",
+                isCancelled = false,
+                isSoldOut = false,
                 actionLabel = "삭제",
                 onAction = {},
                 onClick = {},

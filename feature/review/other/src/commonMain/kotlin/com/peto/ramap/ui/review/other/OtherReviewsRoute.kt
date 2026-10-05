@@ -43,10 +43,15 @@ import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.designsystem.toast.ToastManager
 import com.peto.ramap.domain.model.auth.LoginType
 import com.peto.ramap.domain.model.community.ProfileAccess
+import com.peto.ramap.domain.model.community.ProfileReview
 import com.peto.ramap.domain.model.community.PublicProfile
 import com.peto.ramap.domain.model.community.ReviewAuthor
 import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.model.review.Review
+import com.peto.ramap.domain.model.shop.Category
+import com.peto.ramap.domain.model.shop.Location
+import com.peto.ramap.domain.model.shop.MenuCategories
+import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.extension.noRippleClickable
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.CommonColor
@@ -72,6 +77,7 @@ import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.bookmarked_shops_empty_title
 import ramap.shared.generated.resources.bookmarked_shops_toggle
 import ramap.shared.generated.resources.ic_profile_blocked
+import ramap.shared.generated.resources.map_shop_detail_error_title
 import ramap.shared.generated.resources.review_blocked_empty
 import ramap.shared.generated.resources.review_profile_private
 import ramap.shared.generated.resources.review_profile_title
@@ -92,7 +98,7 @@ fun OtherReviewsRoute(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     var showLoginGuide by remember { mutableStateOf(false) }
-    var selectedSavedShopId by rememberSaveable(userId) { mutableStateOf<String?>(null) }
+    var selectedShopId by rememberSaveable(userId) { mutableStateOf<String?>(null) }
     ObserveAsEvents(viewModel.sideEffect) { effect ->
         when (effect) {
             OtherReviewsEffect.LoginRequired -> showLoginGuide = true
@@ -106,20 +112,19 @@ fun OtherReviewsRoute(
         OtherReviewsContent(
             state = state,
             onBack = onBack,
-            onShowShop = onShowShop,
-            onShowSavedShop = { selectedSavedShopId = it },
+            onOpenShopDetail = { selectedShopId = it },
             onIntent = viewModel::dispatch,
         )
-        selectedSavedShopId?.let { shopId ->
+        selectedShopId?.let { shopId ->
             shopDetailContent(
                 shopId,
-                { selectedSavedShopId = null },
-                { selectedShopId ->
-                    selectedSavedShopId = null
-                    onShowShop(selectedShopId)
+                { selectedShopId = null },
+                { targetShopId ->
+                    selectedShopId = null
+                    onShowShop(targetShopId)
                 },
                 { event ->
-                    selectedSavedShopId = null
+                    selectedShopId = null
                     onEventNavigate(event)
                 },
             )
@@ -140,8 +145,7 @@ fun OtherReviewsRoute(
 internal fun OtherReviewsContent(
     state: OtherReviewsUiState,
     onBack: () -> Unit,
-    onShowShop: (String) -> Unit,
-    onShowSavedShop: (String) -> Unit,
+    onOpenShopDetail: (String) -> Unit,
     onIntent: (OtherReviewsIntent) -> Unit,
 ) {
     val reviewListState = rememberLazyListState()
@@ -210,7 +214,7 @@ internal fun OtherReviewsContent(
                         onSavedShopClick = { onIntent(OtherReviewsIntent.SelectTab(OtherReviewsTab.SavedShops)) },
                     )
                 }
-                item {
+                stickyHeader(key = "profile-tabs") {
                     OtherProfileTabs(
                         selectedTab = state.selectedTab,
                         onSelect = { onIntent(OtherReviewsIntent.SelectTab(it)) },
@@ -276,14 +280,23 @@ internal fun OtherReviewsContent(
             }
             items(
                 items = if (state.selectedTab == OtherReviewsTab.Reviews) state.reviews else emptyList(),
-                key = { it.id },
-            ) { review ->
+                key = { it.review.id },
+            ) { profileReview ->
                 ReviewCard(
-                    review = review,
+                    review = profileReview.review,
                     actions =
                         ReviewCardActions(
-                            onShopClick = { onShowShop(review.shopId) },
+                            onReviewClick =
+                                profileReview.review.shopId.takeIf { it.isNotBlank() }?.let { shopId ->
+                                    { onOpenShopDetail(shopId) }
+                                },
                         ),
+                    header = {
+                        ProfileReviewShopHeader(
+                            profileReview = profileReview,
+                            onOpenShopDetail = onOpenShopDetail,
+                        )
+                    },
                 )
             }
             if (state.showsEmptySavedShops) {
@@ -326,11 +339,59 @@ internal fun OtherReviewsContent(
     )
 }
 
+@Composable
+private fun ProfileReviewShopHeader(
+    profileReview: ProfileReview,
+    onOpenShopDetail: (String) -> Unit,
+) {
+    val shop = profileReview.shop
+    val modifier = Modifier.padding(horizontal = 5.dp, vertical = 8.dp)
+    if (shop != null) {
+        RamenShopSummary(
+            shop = shop,
+            categoryLabel = { stringResource(CategoryResourceMapper.label(it)) },
+            containerColor = CommonColor.White,
+            leadingContent = {},
+            onClick = { onOpenShopDetail(shop.id) },
+            modifier = modifier,
+        )
+        return
+    }
+    AppText(
+        text = stringResource(Res.string.map_shop_detail_error_title),
+        style = AppTextStyle.B1,
+        color = GrayColor.C300,
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .then(
+                    if (profileReview.review.shopId.isNotBlank()) {
+                        Modifier.noRippleClickable { onOpenShopDetail(profileReview.review.shopId) }
+                    } else {
+                        Modifier
+                    },
+                ),
+    )
+}
+
 private const val PREFETCH_ITEM_THRESHOLD = 3
 
 @Preview(showBackground = true)
 @Composable
 private fun OtherReviewsContentPreview() {
+    val shop =
+        RamenShop(
+            id = "preview-shop",
+            name = "라멘 키레이",
+            address = "서울 마포구 동교로9길 23",
+            location = Location(lat = 37.55, lng = 126.91),
+            kakaoPlaceUrl = null,
+            instagramUrl = null,
+            menuCategories = MenuCategories(Category.entries.take(2)),
+            isVisible = true,
+            createdAt = "2026-09-30T12:00:00Z",
+            updatedAt = "2026-09-30T12:00:00Z",
+        )
     RamapTheme {
         OtherReviewsContent(
             state =
@@ -341,19 +402,43 @@ private fun OtherReviewsContentPreview() {
                         ),
                     reviews =
                         listOf(
-                            Review(
-                                id = "review-1",
-                                shopId = "shop-1",
-                                body = "국물이 아주 진하고 맛있는 돈코츠 라멘입니다.",
-                                createdAt = "2026-09-30T12:00:00Z",
-                                author = ReviewAuthor("author", "느긋한차슈"),
+                            ProfileReview(
+                                review =
+                                    Review(
+                                        id = "review-1",
+                                        shopId = shop.id,
+                                        body = "국물이 아주 진하고 맛있는 돈코츠 라멘입니다.",
+                                        createdAt = "2026-09-30T12:00:00Z",
+                                        author = ReviewAuthor("author", "느긋한차슈"),
+                                    ),
+                                shop = shop,
                             ),
                         ),
                 ),
             onBack = {},
-            onShowShop = {},
-            onShowSavedShop = {},
+            onOpenShopDetail = {},
             onIntent = {},
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun ProfileReviewMissingShopPreview() {
+    RamapTheme {
+        ProfileReviewShopHeader(
+            profileReview =
+                ProfileReview(
+                    review =
+                        Review(
+                            id = "review-missing-shop",
+                            shopId = "missing-shop",
+                            body = "맛있는 라멘이에요",
+                            createdAt = "2026-09-30T12:00:00Z",
+                            author = ReviewAuthor("author", "느긋한차슈"),
+                        ),
+                ),
+            onOpenShopDetail = {},
         )
     }
 }
@@ -368,8 +453,7 @@ private fun OtherReviewsContentLoadingPreview() {
                     loadState = LoadState.loading(OtherReviewsLoadKey.Page),
                 ),
             onBack = {},
-            onShowShop = {},
-            onShowSavedShop = {},
+            onOpenShopDetail = {},
             onIntent = {},
         )
     }
@@ -389,8 +473,7 @@ private fun OtherReviewsContentEmptyPreview() {
                     reviews = emptyList(),
                 ),
             onBack = {},
-            onShowShop = {},
-            onShowSavedShop = {},
+            onOpenShopDetail = {},
             onIntent = {},
         )
     }
@@ -408,8 +491,7 @@ private fun OtherReviewsContentBlockedPreview() {
                     profileAccess = ProfileAccess.Blocked(PublicProfile(userId = "preview", nickname = "느긋한차슈")),
                 ),
             onBack = {},
-            onShowShop = {},
-            onShowSavedShop = {},
+            onOpenShopDetail = {},
             onIntent = {},
         )
     }
@@ -426,8 +508,7 @@ private fun OtherReviewsContentPrivatePreview() {
                     profileAccess = ProfileAccess.Private,
                 ),
             onBack = {},
-            onShowShop = {},
-            onShowSavedShop = {},
+            onOpenShopDetail = {},
             onIntent = {},
         )
     }
@@ -443,8 +524,7 @@ private fun OtherReviewsContentUnavailablePreview() {
                     profileAccess = ProfileAccess.Unavailable,
                 ),
             onBack = {},
-            onShowShop = {},
-            onShowSavedShop = {},
+            onOpenShopDetail = {},
             onIntent = {},
         )
     }
@@ -464,8 +544,7 @@ private fun OtherReviewsContentFailedPreview() {
                     failed = true,
                 ),
             onBack = {},
-            onShowShop = {},
-            onShowSavedShop = {},
+            onOpenShopDetail = {},
             onIntent = {},
         )
     }

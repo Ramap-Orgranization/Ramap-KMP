@@ -55,7 +55,7 @@ val repositoryModule =
     module {
         single<ProfileRepository> { DefaultProfileRepository(get(), get()) }
         single { ReviewChangeNotifier() }
-        single<CommunityRepository> { DefaultCommunityRepository(get(), get()) }
+        single<CommunityRepository> { DefaultCommunityRepository(get(), get(), get<RamenShopDataSource>()) }
         single<ReviewRepository> { DefaultReviewRepository(get(), get()) }
         single<AppUpdateRepository> {
             DefaultAppUpdateRepository(get<AppUpdatePolicyDataSource>())

@@ -65,6 +65,8 @@ internal fun SubscribedShopListContent(
                                     ShopEventResourceMapper.displayEndDate(event),
                                 ),
                             onClick = { onEventOpen(event) },
+                            isCancelled = event.isCancelledToday,
+                            isSoldOut = event.isSoldOutToday,
                             actionLabel = stringResource(Res.string.notification_removal_confirm_action),
                             onAction = {
                                 onRemovalRequested(SubscribedRemovalTarget.EventOverride(event.id))

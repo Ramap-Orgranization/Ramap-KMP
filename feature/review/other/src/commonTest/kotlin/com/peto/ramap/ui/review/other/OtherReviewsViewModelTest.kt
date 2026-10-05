@@ -2,6 +2,7 @@ package com.peto.ramap.ui.review.other
 
 import app.cash.turbine.test
 import com.peto.ramap.coroutinesTest
+import com.peto.ramap.domain.model.community.ProfileReview
 import com.peto.ramap.domain.model.community.ReviewAuthor
 import com.peto.ramap.domain.model.review.Review
 import com.peto.ramap.fake.FakeProfileRepository
@@ -56,7 +57,28 @@ class OtherReviewsViewModelTest {
             runCurrent()
             assertEquals(listOf("author"), community.requestedProfileUserIds)
             assertEquals(listOf(0L, 20L), community.requestedOffsets)
+            assertEquals(community.reviews, viewModel.uiState.value.reviews)
             assertEquals(23, viewModel.uiState.value.reviews.size)
+            assertFalse(viewModel.uiState.value.hasMore)
+        }
+
+    @Test
+    fun `duplicate reviews across pages retain the original shop and consume the page offset`() =
+        coroutinesTest {
+            val community = FakeOtherReviewsCommunity()
+            val firstPage = (1..20).map(::review)
+            community.reviews = firstPage + firstPage.first().copy(shop = ramenShopFixture(id = "shop-1"))
+            val viewModel = OtherReviewsViewModel(community, FakeProfileRepository())
+            runCurrent()
+
+            viewModel.dispatch(OtherReviewsIntent.OpenProfile("author"))
+            runCurrent()
+            viewModel.dispatch(OtherReviewsIntent.LoadMore)
+            runCurrent()
+
+            assertEquals(firstPage, viewModel.uiState.value.reviews)
+            assertEquals(21L, viewModel.uiState.value.reviewsOffset)
+            assertEquals(listOf(0L, 20L), community.requestedOffsets)
             assertFalse(viewModel.uiState.value.hasMore)
         }
 
@@ -235,11 +257,15 @@ class OtherReviewsViewModelTest {
         }
 
     private fun review(number: Int) =
-        Review(
-            id = "review-$number",
-            shopId = "shop-$number",
-            body = "맛있는 라멘이에요",
-            createdAt = "2026-09-30T12:00:00Z",
-            author = ReviewAuthor("author", "라멘팬"),
+        ProfileReview(
+            review =
+                Review(
+                    id = "review-$number",
+                    shopId = "shop-$number",
+                    body = "맛있는 라멘이에요",
+                    createdAt = "2026-09-30T12:00:00Z",
+                    author = ReviewAuthor("author", "라멘팬"),
+                ),
+            shop = if (number % 2 == 0) ramenShopFixture(id = "shop-$number") else null,
         )
 }

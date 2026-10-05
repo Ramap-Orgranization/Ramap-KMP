@@ -45,12 +45,14 @@ fun ReviewCardFooter(
         if (!review.isBlocked) {
             Row(
                 modifier =
-                    Modifier
-                        .noRippleClickable(
-                            enabled = onLike != null && !isLikeLoading && actionsEnabled,
-                        ) {
-                            onLike?.invoke()
-                        },
+                    if (onLike != null) {
+                        Modifier.noRippleClickable(
+                            enabled = !isLikeLoading && actionsEnabled,
+                            onClick = onLike,
+                        )
+                    } else {
+                        Modifier
+                    },
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(4.dp),
             ) {
