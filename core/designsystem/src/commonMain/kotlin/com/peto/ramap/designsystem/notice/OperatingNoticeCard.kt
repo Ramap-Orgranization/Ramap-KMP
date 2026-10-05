@@ -55,6 +55,8 @@ fun OperatingNoticeCard(
                 categoryLabel = { category ->
                     stringResource(CategoryResourceMapper.label(category))
                 },
+                containerColor = CommonColor.White,
+                leadingContent = {},
                 modifier = Modifier.padding(horizontal = 8.dp),
             )
         }
