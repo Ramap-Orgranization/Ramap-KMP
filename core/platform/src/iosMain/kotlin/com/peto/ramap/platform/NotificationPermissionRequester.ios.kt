@@ -19,10 +19,11 @@ actual object NotificationPermissionRequester {
             UNUserNotificationCenter
                 .currentNotificationCenter()
                 .getNotificationSettingsWithCompletionHandler { settings ->
+                    val status = settings?.authorizationStatus
                     continuation.resume(
-                        settings?.authorizationStatus == UNAuthorizationStatusAuthorized ||
-                            settings?.authorizationStatus == UNAuthorizationStatusProvisional ||
-                            settings?.authorizationStatus == UNAuthorizationStatusEphemeral,
+                        status == UNAuthorizationStatusAuthorized ||
+                            status == UNAuthorizationStatusProvisional ||
+                            status == UNAuthorizationStatusEphemeral,
                     )
                 }
         }
@@ -32,6 +33,7 @@ actual object NotificationPermissionRequester {
             notifyToRegisterForRemoteNotifications()
             return true
         }
+
         val options =
             UNAuthorizationOptionAlert or
                 UNAuthorizationOptionBadge or

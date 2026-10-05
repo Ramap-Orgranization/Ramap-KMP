@@ -13,6 +13,7 @@ Pod::Spec.new do |spec|
     spec.dependency 'FirebaseCore'
     spec.dependency 'FirebaseCrashlytics'
     spec.dependency 'FirebaseInstallations'
+    spec.dependency 'FirebaseMessaging'
     spec.dependency 'GoogleDataTransport'
     spec.dependency 'GoogleUtilities'
     spec.dependency 'NMapsMap'
