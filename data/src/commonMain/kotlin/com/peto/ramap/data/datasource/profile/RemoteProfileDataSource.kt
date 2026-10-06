@@ -2,6 +2,7 @@ package com.peto.ramap.data.datasource.profile
 
 import com.peto.ramap.data.model.ProfileResponse
 import com.peto.ramap.domain.model.profile.ProfileImage
+import com.peto.ramap.domain.model.profile.ProfileVisibility
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.status.SessionStatus
@@ -66,6 +67,17 @@ internal class RemoteProfileDataSource(
             .rpc(
                 FUNCTION_UPDATE_MY_PROFILE_VISIBILITY,
                 buildJsonObject { put(PARAMETER_IS_PUBLIC, isPublic) },
+            ).decodeAs()
+
+    override suspend fun updateProfileVisibility(visibility: ProfileVisibility): ProfileResponse =
+        client.postgrest
+            .rpc(
+                "update_my_profile_visibility_v2",
+                buildJsonObject {
+                    put("p_is_public", visibility.isPublic)
+                    put("p_followers_can_read_reviews", visibility.followersCanReadReviews)
+                    put("p_followers_can_read_saved_shops", visibility.followersCanReadSavedShops)
+                },
             ).decodeAs()
 
     override suspend fun uploadPhoto(

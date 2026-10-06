@@ -11,16 +11,12 @@ import com.peto.ramap.domain.model.review.ReviewImage
 import com.peto.ramap.domain.model.review.ReviewLike
 import com.peto.ramap.domain.model.review.ShopReviewsPage
 import com.peto.ramap.domain.repository.ReviewRepository
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.emptyFlow
 
 class FakeReviewRepository(
     var reviews: List<Review> = emptyList(),
     var error: RamapError? = null,
 ) : ReviewRepository {
     val requestedShopReviews = mutableListOf<Pair<String, Long>>()
-
-    override fun observeChanges(): Flow<Unit> = emptyFlow()
 
     override suspend fun fetchMyReviews(
         offset: Long,

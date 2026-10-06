@@ -13,14 +13,10 @@ import com.peto.ramap.domain.model.review.ReviewLike
 import com.peto.ramap.domain.model.review.ShopReviewsPage
 import com.peto.ramap.domain.repository.ReviewRepository
 import com.peto.ramap.network.execute.invokeRequest
-import kotlinx.coroutines.flow.Flow
 
 internal class DefaultReviewRepository(
     private val dataSource: ReviewDataSource,
-    private val changes: ReviewChangeNotifier,
 ) : ReviewRepository {
-    override fun observeChanges(): Flow<Unit> = changes.events
-
     override suspend fun fetchMyReviews(
         offset: Long,
         visibility: MyReviewVisibility,
@@ -55,7 +51,6 @@ internal class DefaultReviewRepository(
                 ),
                 images,
             )
-            changes.notifyChanged()
         }
 
     override suspend fun fetchEditableReview(reviewId: String): RamapResult<EditableReview?> =
@@ -75,13 +70,11 @@ internal class DefaultReviewRepository(
             require(retainedImagePaths.size + newImages.size <= ReviewImage.MAX_COUNT) { ERROR_TOO_MANY_IMAGES }
             require(newImages.all(ReviewImage::isValid)) { ERROR_INVALID_REVIEW_IMAGES }
             dataSource.updateReview(reviewId, body.trim(), retainedImagePaths, newImages, isPublic)
-            changes.notifyChanged()
         }
 
     override suspend fun deleteReview(reviewId: String): RamapResult<Unit> =
         invokeRequest {
             dataSource.deleteReview(reviewId)
-            changes.notifyChanged()
         }
 
     override suspend fun setReviewLike(

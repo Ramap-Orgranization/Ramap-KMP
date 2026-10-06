@@ -3,6 +3,7 @@ package com.peto.ramap.data.usecase
 import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.domain.model.notice.OperatingNotice
 import com.peto.ramap.domain.model.review.Review
+import com.peto.ramap.domain.model.review.ShopReviewsPage
 import com.peto.ramap.domain.repository.OperatingNoticeRepository
 import com.peto.ramap.domain.repository.RamenShopRepository
 import com.peto.ramap.domain.repository.ReviewRepository
@@ -43,6 +44,16 @@ internal class DefaultFetchShopDetailUseCase(
         cache[shopId]
             ?.let(ShopDetailCacheLookup::Hit)
             ?: ShopDetailCacheLookup.Miss
+
+    override fun updateCachedReviews(
+        shopId: String,
+        page: ShopReviewsPage,
+    ) {
+        cacheVersion++
+        cache[shopId]?.let { detail ->
+            cache[shopId] = detail.copy(reviews = page.reviews, reviewCount = page.totalCount, hasReviewLoadFailure = false)
+        }
+    }
 
     override fun clearCache() {
         cacheVersion++

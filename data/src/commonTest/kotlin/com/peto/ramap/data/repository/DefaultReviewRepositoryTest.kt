@@ -22,7 +22,7 @@ class DefaultReviewRepositoryTest {
     fun `비속어 리뷰는 데이터 소스 호출 전에 등록과 수정을 거부한다`() =
         runTest {
             val dataSource = FakeReviewDataSource()
-            val repository = DefaultReviewRepository(dataSource, ReviewChangeNotifier())
+            val repository = DefaultReviewRepository(dataSource)
             val submitted = assertIs<RamapResult.Error>(repository.submitReview("shop", "씨발 맛없어요", emptyList(), true))
             val updated = assertIs<RamapResult.Error>(repository.updateReview("review", "씨.발 맛없어요", emptyList(), emptyList(), false))
             assertIs<IllegalArgumentException>(assertIs<RamapError.Unknown>(submitted.error).cause)
@@ -34,7 +34,7 @@ class DefaultReviewRepositoryTest {
     fun `비공개 리뷰 제출 시 공개 설정을 요청에 전달한다`() =
         runTest {
             val dataSource = FakeReviewDataSource()
-            val repository = DefaultReviewRepository(dataSource, ReviewChangeNotifier())
+            val repository = DefaultReviewRepository(dataSource)
 
             repository.submitReview("shop", "  review  ", emptyList(), isPublic = false).getOrThrow()
 
@@ -65,6 +65,11 @@ class DefaultReviewRepositoryTest {
         ): List<ReviewResponse> = emptyList()
 
         override suspend fun fetchBlockedShopReviewOnce(reviewId: String): ReviewResponse? = error("Unexpected blocked review fetch")
+
+        override suspend fun fetchProfileReviewsPage(
+            userId: String,
+            offset: Long,
+        ): com.peto.ramap.data.model.ProfileReviewsPageResponse = error("Unexpected profile page")
 
         override suspend fun fetchProfileReviews(
             userId: String?,
