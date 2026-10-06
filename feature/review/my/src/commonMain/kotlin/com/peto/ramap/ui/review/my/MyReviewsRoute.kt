@@ -12,6 +12,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -39,6 +40,7 @@ import com.peto.ramap.theme.SystemColor
 import com.peto.ramap.ui.base.ObserveAsEvents
 import com.peto.ramap.ui.loading.LoadState
 import com.peto.ramap.ui.paging.ObserveLoadMoreNearListEnd
+import com.peto.ramap.ui.refresh.RefreshOnReturnEffect
 import com.peto.ramap.ui.review.my.component.MyReviewCardSkeleton
 import com.peto.ramap.ui.review.my.component.MyReviewEmpty
 import com.peto.ramap.ui.review.my.component.MyReviewFilterHeader
@@ -68,6 +70,13 @@ fun MyReviewsRoute(
     viewModel: MyReviewsViewModel = koinViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    var returningFromReviewScreen by rememberSaveable { mutableStateOf(false) }
+    RefreshOnReturnEffect {
+        if (returningFromReviewScreen) {
+            returningFromReviewScreen = false
+            viewModel.dispatch(MyReviewsIntent.ReturnedToScreen)
+        }
+    }
     ObserveAsEvents(viewModel.sideEffect) { effect ->
         when (effect) {
             is MyReviewsSideEffect.ShowToast -> toastManager.show(effect.data)
@@ -76,8 +85,14 @@ fun MyReviewsRoute(
     MyReviewsContent(
         state = state,
         onBack = onBack,
-        onShowShop = onShowShop,
-        onEditReview = onEditReview,
+        onShowShop = { shopId ->
+            returningFromReviewScreen = true
+            onShowShop(shopId)
+        },
+        onEditReview = { shopId, reviewId ->
+            returningFromReviewScreen = true
+            onEditReview(shopId, reviewId)
+        },
         onIntent = viewModel::dispatch,
     )
 }

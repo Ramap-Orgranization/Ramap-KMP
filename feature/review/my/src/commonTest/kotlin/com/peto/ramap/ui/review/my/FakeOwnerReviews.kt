@@ -14,20 +14,16 @@ import com.peto.ramap.domain.model.review.ShopReviewsPage
 import com.peto.ramap.domain.repository.ReviewRepository
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.NonCancellable
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.withContext
 
 internal class FakeOwnerReviews(
     private val total: Int = 12,
 ) : ReviewRepository {
     val calls = mutableListOf<Pair<Long, MyReviewVisibility>>()
-    val changed = MutableSharedFlow<Unit>()
     var failNext = false
     var deleteResult: RamapResult<Unit> = RamapResult.Success(Unit)
     val pendingResults = mutableListOf<CompletableDeferred<RamapResult<MyReviewsPage>>>()
     var deleteCalls = 0
-
-    override fun observeChanges() = changed
 
     override suspend fun fetchMyReviews(
         offset: Long,

@@ -4,10 +4,13 @@ import androidx.lifecycle.viewModelScope
 import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
+import com.peto.ramap.domain.model.community.FollowAction
+import com.peto.ramap.domain.model.community.FollowState
 import com.peto.ramap.domain.model.community.ProfileAccess
 import com.peto.ramap.domain.model.community.PublicProfile
 import com.peto.ramap.domain.model.community.PublicSavedShopsPage
 import com.peto.ramap.domain.repository.CommunityRepository
+import com.peto.ramap.domain.repository.FollowRepository
 import com.peto.ramap.domain.repository.ProfileRepository
 import com.peto.ramap.ui.base.BaseViewModel
 import com.peto.ramap.ui.review.other.contract.OtherReviewsEffect
@@ -26,10 +29,10 @@ import ramap.shared.generated.resources.review_action_failed
 class OtherReviewsViewModel(
     private val community: CommunityRepository,
     private val profiles: ProfileRepository,
+    private val follows: FollowRepository,
 ) : BaseViewModel<OtherReviewsUiState, OtherReviewsIntent, OtherReviewsEffect>(OtherReviewsUiState()) {
     init {
         observeSessionUserIds()
-        observeCommunityChanges()
     }
 
     private fun observeSessionUserIds() {
@@ -42,6 +45,8 @@ class OtherReviewsViewModel(
                     cancelTask(PAGE_TASK)
                     cancelTask(SAVED_SHOPS_TASK)
                     cancelTask(BLOCK_TASK)
+                    cancelTask(FOLLOW_TASK)
+                    cancelTask(FOLLOW_ACCESS_TASK)
                     reduce {
                         OtherReviewsUiState(
                             userId = targetId,
@@ -54,16 +59,6 @@ class OtherReviewsViewModel(
         }
     }
 
-    private fun observeCommunityChanges() {
-        viewModelScope.launch {
-            community.observeChanges().collect {
-                if (currentState.userId != null && currentState.sessionResolved) {
-                    loadPage(reset = true)
-                }
-            }
-        }
-    }
-
     override suspend fun handleIntent(intent: OtherReviewsIntent) {
         when (intent) {
             is OtherReviewsIntent.SelectTab -> selectTab(intent.tab)
@@ -71,6 +66,7 @@ class OtherReviewsViewModel(
             OtherReviewsIntent.LoadMore -> handleLoadMore()
             OtherReviewsIntent.Retry -> handleRetry()
             OtherReviewsIntent.ToggleBlock -> toggleBlock()
+            OtherReviewsIntent.ToggleFollow -> toggleFollow()
         }
     }
 
@@ -99,6 +95,8 @@ class OtherReviewsViewModel(
         cancelTask(PAGE_TASK)
         cancelTask(SAVED_SHOPS_TASK)
         cancelTask(BLOCK_TASK)
+        cancelTask(FOLLOW_TASK)
+        cancelTask(FOLLOW_ACCESS_TASK)
         reduce {
             OtherReviewsUiState(
                 userId = userId,
@@ -112,7 +110,10 @@ class OtherReviewsViewModel(
     private fun loadPage(reset: Boolean) {
         val userId = currentState.userId ?: return
         if (!currentState.sessionResolved || (!reset && currentState.profileAccess !is ProfileAccess.Visible)) return
-        if (reset) cancelTask(SAVED_SHOPS_TASK)
+        if (reset) {
+            cancelTask(SAVED_SHOPS_TASK)
+            cancelTask(FOLLOW_ACCESS_TASK)
+        }
         val offset = if (reset) 0L else currentState.reviewsOffset
         launchTask(
             taskKey = PAGE_TASK,
@@ -150,7 +151,7 @@ class OtherReviewsViewModel(
                     is ProfileAccess.Visible -> {
                         reduce { copy(profileAccess = access) }
                         if (currentState.currentUserId != null) loadSavedShops()
-                        fetchAndApplyUserReviews(userId, access.profile, 0L, reset = true)
+                        if (access.canReadReviews) fetchAndApplyUserReviews(userId, 0L, reset = true)
                     }
                     else -> applyProfileAccess(userId, access)
                 }
@@ -163,7 +164,7 @@ class OtherReviewsViewModel(
         offset: Long,
     ) {
         val access = currentState.profileAccess as? ProfileAccess.Visible ?: return
-        fetchAndApplyUserReviews(userId, access.profile, offset, reset = false)
+        if (access.canReadReviews) fetchAndApplyUserReviews(userId, offset, reset = false)
     }
 
     private fun applyProfileAccess(
@@ -189,21 +190,35 @@ class OtherReviewsViewModel(
 
     private suspend fun fetchAndApplyUserReviews(
         userId: String,
-        profile: PublicProfile,
         offset: Long,
         reset: Boolean,
     ) {
-        val result = community.fetchUserReviews(userId, offset)
+        val result = community.fetchProfileReviewsPage(userId, offset)
         currentCoroutineContext().ensureActive()
         when (result) {
             is RamapResult.Success -> {
                 if (currentState.userId != userId) return
+                val page = result.data
+                val access = page.access as? ProfileAccess.Visible
+                if (access == null) {
+                    cancelTask(SAVED_SHOPS_TASK)
+                    applyProfileAccess(userId, page.access)
+                    return
+                }
+                if (!access.canReadReviews || !access.canReadSavedShops) cancelTask(SAVED_SHOPS_TASK)
                 reduce {
                     copy(
-                        profileAccess = ProfileAccess.Visible(profile),
-                        reviews = (if (reset) result.data else reviews + result.data).distinctBy { it.review.id },
-                        hasMore = result.data.size == PAGE_SIZE,
-                        reviewsOffset = offset + result.data.size,
+                        profileAccess = access.copy(profile = profile ?: access.profile),
+                        reviews =
+                            if (access.canReadReviews) {
+                                (if (reset) page.reviews else reviews + page.reviews).distinctBy { it.review.id }
+                            } else {
+                                emptyList()
+                            },
+                        hasMore = access.canReadReviews && page.reviews.size == PAGE_SIZE,
+                        reviewsOffset = if (access.canReadReviews) offset + page.reviews.size else 0L,
+                        savedShops = if (access.canReadSavedShops) savedShops else emptyList(),
+                        savedShopsHasMore = access.canReadSavedShops && savedShopsHasMore,
                     )
                 }
             }
@@ -214,6 +229,29 @@ class OtherReviewsViewModel(
 
     private fun fail(userId: String) {
         if (currentState.userId == userId) reduce { copy(failed = true) }
+    }
+
+    private fun toggleFollow() {
+        val access = currentState.profileAccess as? ProfileAccess.Visible ?: return
+        val currentUserId = currentState.currentUserId
+        if (currentUserId == null) {
+            trySideEffect(OtherReviewsEffect.LoginRequired)
+            return
+        }
+        if (access.profile.userId == currentUserId || currentState.following) return
+        val action = if (access.followState == FollowState.NONE) FollowAction.FOLLOW else FollowAction.UNFOLLOW
+        launchResultTask(
+            taskKey = FOLLOW_TASK,
+            loadKey = OtherReviewsLoadKey.Follow,
+            policy = TaskPolicy.IgnoreNew,
+            request = { follows.changeFollow(access.profile.userId, action) },
+            onSuccess = {
+                if (currentState.currentUserId == currentUserId && currentState.userId == access.profile.userId) {
+                    refreshFollowAccess(access.profile.userId)
+                }
+            },
+            onError = { handleToggleBlockError(access.profile.userId) },
+        )
     }
 
     private fun toggleBlock() {
@@ -245,6 +283,70 @@ class OtherReviewsViewModel(
         )
     }
 
+    private fun refreshFollowAccess(userId: String) {
+        val previousAccess = currentState.profileAccess as? ProfileAccess.Visible ?: return
+        val currentUserId = currentState.currentUserId
+        val resumeReviews = currentState.loading
+        val resumeSavedShops = currentState.savedShopsLoading
+        // Discard in-flight pages carrying the old follow state or permissions.
+        cancelTask(PAGE_TASK)
+        cancelTask(SAVED_SHOPS_TASK)
+        launchResultTask(
+            taskKey = FOLLOW_ACCESS_TASK,
+            loadKey = OtherReviewsLoadKey.Follow,
+            policy = TaskPolicy.CancelPrevious,
+            request = { community.fetchProfileAccess(userId) },
+            onSuccess = { access ->
+                if (currentState.currentUserId != currentUserId || currentState.userId != userId) return@launchResultTask
+                applyFollowAccess(userId, access)
+                if (access !is ProfileAccess.Visible) return@launchResultTask
+                if (access.canReadReviews &&
+                    (
+                        !previousAccess.canReadReviews ||
+                            resumeReviews ||
+                            (currentState.reviewsOffset == 0L && !currentState.failed && access.reviewCount != 0L)
+                    )
+                ) {
+                    loadPage(reset = false)
+                }
+                if (access.canReadSavedShops &&
+                    (
+                        !previousAccess.canReadSavedShops ||
+                            resumeSavedShops ||
+                            (!currentState.savedShopsLoaded && !currentState.savedShopsFailed)
+                    )
+                ) {
+                    loadSavedShops()
+                }
+            },
+            onError = { handleToggleBlockError(userId) },
+        )
+    }
+
+    private fun applyFollowAccess(
+        userId: String,
+        access: ProfileAccess,
+    ) {
+        if (access !is ProfileAccess.Visible) {
+            applyProfileAccess(userId, access)
+            return
+        }
+        reduce {
+            copy(
+                profileAccess = access.copy(profile = profile ?: access.profile),
+                reviews = if (access.canReadReviews) reviews else emptyList(),
+                reviewsOffset = if (access.canReadReviews) reviewsOffset else 0L,
+                hasMore = access.canReadReviews && hasMore,
+                failed = access.canReadReviews && failed,
+                savedShops = if (access.canReadSavedShops) savedShops else emptyList(),
+                savedShopsOffset = if (access.canReadSavedShops) savedShopsOffset else 0L,
+                savedShopsLoaded = access.canReadSavedShops && savedShopsLoaded,
+                savedShopsHasMore = access.canReadSavedShops && savedShopsHasMore,
+                savedShopsFailed = access.canReadSavedShops && savedShopsFailed,
+            )
+        }
+    }
+
     private fun handleToggleBlockSuccess(
         targetProfile: PublicProfile,
         currentUserId: String,
@@ -253,6 +355,7 @@ class OtherReviewsViewModel(
         if (currentState.userId != targetProfile.userId || currentState.currentUserId != currentUserId) return
         cancelTask(PAGE_TASK)
         cancelTask(SAVED_SHOPS_TASK)
+        cancelTask(FOLLOW_ACCESS_TASK)
         reduce {
             copy(
                 profileAccess =
@@ -299,7 +402,7 @@ class OtherReviewsViewModel(
 
     private fun loadSavedShops() {
         val userId = currentState.userId ?: return
-        if (currentState.currentUserId == null || currentState.profileAccess !is ProfileAccess.Visible) return
+        if (currentState.currentUserId == null || (currentState.profileAccess as? ProfileAccess.Visible)?.canReadSavedShops != true) return
         val offset = currentState.savedShopsOffset
         launchResultTask(
             taskKey = SAVED_SHOPS_TASK,
@@ -319,24 +422,31 @@ class OtherReviewsViewModel(
     }
 
     private fun applySavedShopsPage(page: PublicSavedShopsPage) {
-        if (page.access !is ProfileAccess.Visible) {
+        val access = page.access as? ProfileAccess.Visible
+        if (access == null) {
             cancelTask(PAGE_TASK)
             applyProfileAccess(currentState.userId ?: return, page.access)
             return
         }
+        if (!access.canReadReviews || !access.canReadSavedShops) cancelTask(PAGE_TASK)
         reduce {
             copy(
-                savedShops = (savedShops + page.shops).distinctBy { it.id },
+                profileAccess = access.copy(profile = profile ?: access.profile),
+                reviews = if (access.canReadReviews) reviews else emptyList(),
+                hasMore = access.canReadReviews && hasMore,
+                savedShops = if (access.canReadSavedShops) (savedShops + page.shops).distinctBy { it.id } else emptyList(),
                 savedShopsLoaded = true,
-                savedShopsHasMore = page.shops.size == PAGE_SIZE,
+                savedShopsHasMore = access.canReadSavedShops && page.shops.size == PAGE_SIZE,
                 savedShopsOffset = savedShopsOffset + page.shops.size,
             )
         }
     }
 
     private companion object {
+        const val FOLLOW_ACCESS_TASK = "other-profile-follow-access"
         const val SAVED_SHOPS_TASK = "other-profile-saved-shops"
         const val PAGE_TASK = "other-reviews-page"
+        const val FOLLOW_TASK = "other-profile-follow"
         const val BLOCK_TASK = "other-reviews-block"
         const val PAGE_SIZE = 20
     }

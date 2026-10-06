@@ -3,6 +3,7 @@ package com.peto.ramap.ui.profile.edit
 import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.domain.model.profile.AccountProfile
 import com.peto.ramap.domain.model.profile.ProfileDraft
+import com.peto.ramap.domain.model.profile.ProfileVisibility
 import com.peto.ramap.domain.repository.ProfileRepository
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.NonCancellable
@@ -38,6 +39,8 @@ class FakeProfileRepository : ProfileRepository {
         if (pending == null) return RamapResult.Success(AccountProfile(sessionUserIds.value.orEmpty(), draft.nickname.value, bio = draft.bio?.value.orEmpty()))
         return if (ignoreCancellation) withContext(NonCancellable) { pending.await() } else pending.await()
     }
+
+    override suspend fun updateProfileVisibility(visibility: ProfileVisibility): RamapResult<AccountProfile> = updateProfileVisibility(visibility.isPublic)
 
     override suspend fun updateProfileVisibility(isPublic: Boolean): RamapResult<AccountProfile> = RamapResult.Success(AccountProfile(sessionUserIds.value.orEmpty(), "느긋한차슈", isPublic = isPublic))
 }

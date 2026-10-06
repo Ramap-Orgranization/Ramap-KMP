@@ -10,15 +10,10 @@ import com.peto.ramap.domain.model.review.ReviewImage
 import com.peto.ramap.domain.model.review.ReviewLike
 import com.peto.ramap.domain.model.review.ShopReviewsPage
 import com.peto.ramap.domain.repository.ReviewRepository
-import kotlinx.coroutines.flow.MutableSharedFlow
 
 internal class FakeMyTabReviewRepository(
     var totalCount: Int = 0,
 ) : ReviewRepository {
-    val changes = MutableSharedFlow<Unit>()
-
-    override fun observeChanges() = changes
-
     override suspend fun fetchMyReviews(
         offset: Long,
         visibility: MyReviewVisibility,

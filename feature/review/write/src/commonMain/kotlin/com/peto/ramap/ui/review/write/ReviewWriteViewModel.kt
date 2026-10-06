@@ -252,7 +252,7 @@ class ReviewWriteViewModel(
                 ) {
                     return@launchResultTask
                 }
-                if (draft.isPublic && !profile.isPublic) {
+                if (draft.isPublic && !profile.isPublic && !profile.followersCanReadReviews) {
                     reduce { copy(showPrivateProfileConfirmation = true) }
                 } else {
                     submitDraft(draft)

@@ -16,6 +16,7 @@ import com.peto.ramap.domain.model.personalization.ShopPersonalization
 import com.peto.ramap.domain.model.report.ShopInformationField
 import com.peto.ramap.domain.model.report.ShopInformationReport
 import com.peto.ramap.domain.model.review.Review
+import com.peto.ramap.domain.model.review.ShopReviewsPage
 import com.peto.ramap.domain.model.shop.Category
 import com.peto.ramap.domain.model.shop.Location
 import com.peto.ramap.domain.model.shop.MapBounds
@@ -139,12 +140,6 @@ class MapViewModel(
     init {
         viewModelScope.launch { observeSessionState() }
         viewModelScope.launch { observeReviewSession() }
-        viewModelScope.launch {
-            reviewRepository.observeChanges().collect {
-                refreshReviews()
-                refreshCurrentProfileVisibility()
-            }
-        }
         viewModelScope.launch { observePersonalization() }
         viewModelScope.launch { observeRecentSearches() }
         viewModelScope.launch { observeRecentlyViewedShops() }
@@ -261,7 +256,13 @@ class MapViewModel(
             is MapIntent.OnBlockedReviewUnblockRequested -> requestBlockedReviewUnblock(intent.review)
             MapIntent.OnBlockedReviewUnblockConfirmed -> unblockBlockedReviewAuthor()
             MapIntent.OnBlockedReviewUnblockDismissed -> dismissBlockedReviewUnblock()
-            MapIntent.OnReviewsChanged -> refreshReviews()
+            MapIntent.OnReviewsChanged -> {
+                if (currentState.actingReviewId == null && !currentState.isUnblockingReview) refreshReviews()
+            }
+            MapIntent.OnScreenReturned -> {
+                if (currentState.actingReviewId == null && !currentState.isUnblockingReview) refreshReviews()
+                refreshCurrentProfileVisibility()
+            }
             MapIntent.OnShopReviewsLoadMore -> loadMoreShopReviews()
             else -> return false
         }
@@ -339,18 +340,7 @@ class MapViewModel(
             request = { communityRepository.unblockUser(review.author.userId) },
             onSuccess = {
                 if (!currentCoroutineContext().isActive || currentState.currentUserId != userId) return@launchResultTask
-                val selectedShop = currentState.selectedShop
-                reduce {
-                    copy(
-                        pendingUnblockReview = null,
-                        shopDetailState =
-                            if (selectedShop?.id == review.shopId) {
-                                ShopDetailSheetUiState.Loading(review.shopId, selectedShop)
-                            } else {
-                                shopDetailState
-                            },
-                    )
-                }
+                reduce { copy(pendingUnblockReview = null) }
                 refreshReviews()
             },
             onError = {
@@ -448,6 +438,7 @@ class MapViewModel(
                     return@launchOptimisticTask
                 }
                 updateVisibleReview(review.id) { it.copy(likeCount = result.likeCount, isLiked = result.isLiked) }
+                cacheVisibleReviews()
                 reduce { copy(actingReviewId = null) }
             },
             onError = {
@@ -459,8 +450,10 @@ class MapViewModel(
     }
 
     private fun deleteReview(review: Review) {
-        if (review.author.userId != currentState.currentUserId) return
+        if (review.author.userId != currentState.currentUserId || currentState.actingReviewId != null) return
         val actingUserId = currentState.currentUserId
+        cancelTask(SHOP_REVIEW_PAGE_TASK_KEY)
+        cancelTask(SHOP_DETAIL_TASK_KEY)
         launchResultTask(
             taskKey = REVIEW_ACTION_TASK_KEY,
             loadKey = MapLoadKey.ReviewAction,
@@ -472,6 +465,7 @@ class MapViewModel(
                     return@launchResultTask
                 }
                 updateVisibleReview(review.id) { null }
+                cacheVisibleReviews()
                 reduce { copy(actingReviewId = null) }
             },
             onError = {
@@ -506,7 +500,18 @@ class MapViewModel(
         }
     }
 
+    private fun cacheVisibleReviews() {
+        currentState.shopDetail?.let { detail ->
+            fetchShopDetailUseCase.updateCachedReviews(detail.shop.id, ShopReviewsPage(detail.reviews, detail.reviewCount))
+        }
+    }
+
     private fun refreshReviews() {
+        val detail = currentState.shopDetail ?: return
+        val shopId = detail.shop.id
+        val userId = currentState.currentUserId
+        val targetSize = detail.reviews.size.coerceAtLeast(1)
+        cancelTask(SHOP_DETAIL_TASK_KEY)
         cancelTask(BLOCKED_REVIEW_REVEAL_TASK_KEY)
         reduce {
             copy(
@@ -515,13 +520,69 @@ class MapViewModel(
                 pendingUnblockReview = null,
             )
         }
-        fetchShopDetailUseCase.clearCache()
-        currentState.selectedShop?.id?.let(::loadShopDetail)
+        launchResultTask(
+            taskKey = SHOP_REVIEW_PAGE_TASK_KEY,
+            loadKey = MapLoadKey.ShopReviewsPage,
+            request = { fetchReviewExtent(shopId, targetSize) },
+            onSuccess = { page ->
+                if (currentState.currentUserId != userId) return@launchResultTask
+                reduce {
+                    val content = shopDetailState as? ShopDetailSheetUiState.Content ?: return@reduce this
+                    if (content.detail.shop.id != shopId) return@reduce this
+                    copy(
+                        shopDetailState =
+                            content.copy(
+                                detail =
+                                    content.detail.copy(
+                                        reviews = page.reviews,
+                                        reviewCount = page.totalCount,
+                                        hasReviewLoadFailure = false,
+                                    ),
+                            ),
+                        hasMoreShopReviews = page.reviews.size < page.totalCount,
+                    )
+                }
+                fetchShopDetailUseCase.updateCachedReviews(shopId, page)
+            },
+            onError = {
+                if (currentState.currentUserId != userId) return@launchResultTask
+                reduce {
+                    val content = shopDetailState as? ShopDetailSheetUiState.Content ?: return@reduce this
+                    if (content.detail.shop.id != shopId) return@reduce this
+                    copy(shopDetailState = content.copy(detail = content.detail.copy(hasReviewLoadFailure = true)))
+                }
+            },
+        )
+    }
+
+    private suspend fun fetchReviewExtent(
+        shopId: String,
+        targetSize: Int,
+    ): RamapResult<ShopReviewsPage> {
+        val reviews = mutableListOf<Review>()
+        var totalCount: Int
+        do {
+            when (val result = reviewRepository.fetchShopReviewsPage(shopId, reviews.size.toLong())) {
+                is RamapResult.Error -> return result
+                is RamapResult.Success -> {
+                    reviews += result.data.reviews
+                    totalCount = result.data.totalCount
+                    if (result.data.reviews.isEmpty()) break
+                }
+            }
+        } while (reviews.size < targetSize && reviews.size < totalCount)
+        return RamapResult.Success(ShopReviewsPage(reviews, totalCount))
     }
 
     private fun loadMoreShopReviews() {
         val detail = currentState.shopDetail ?: return
-        if (!currentState.hasMoreShopReviews || currentState.isLoadingMoreShopReviews) return
+        if (!currentState.hasMoreShopReviews ||
+            currentState.isLoadingMoreShopReviews ||
+            currentState.actingReviewId != null ||
+            currentState.isUnblockingReview
+        ) {
+            return
+        }
 
         val shopId = detail.shop.id
         val offset = detail.reviews.size.toLong()
@@ -702,6 +763,8 @@ class MapViewModel(
         reduce { selectedShopState }
         if (cache == null) {
             loadShopDetail(shop.id)
+        } else {
+            refreshReviews()
         }
     }
 
@@ -766,7 +829,7 @@ class MapViewModel(
                     selectShopOnSuccess = state.shop == null,
                 )
             is ShopDetailSheetUiState.Content -> {
-                if (state.detail.hasReviewLoadFailure) loadShopDetail(state.detail.shop.id)
+                if (state.detail.hasReviewLoadFailure) refreshReviews()
             }
             else -> Unit
         }
@@ -789,6 +852,7 @@ class MapViewModel(
             is ShopDetailCacheLookup.Hit -> {
                 cancelShopDetailLoad()
                 applyRequestedShopDetail(lookup.detail)
+                refreshReviews()
                 return
             }
 

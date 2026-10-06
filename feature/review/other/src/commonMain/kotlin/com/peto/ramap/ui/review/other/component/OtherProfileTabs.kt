@@ -11,12 +11,16 @@ import com.peto.ramap.ui.review.other.contract.OtherReviewsTab
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.review_profile_reviews_tab
+import ramap.shared.generated.resources.review_profile_reviews_tab_count
 import ramap.shared.generated.resources.review_profile_saved_shops_tab
+import ramap.shared.generated.resources.review_profile_saved_shops_tab_count
 
 @Composable
 internal fun OtherProfileTabs(
     selectedTab: OtherReviewsTab,
     onSelect: (OtherReviewsTab) -> Unit,
+    reviewCount: Long?,
+    savedShopCount: Long?,
 ) {
     PrimaryTabRow(
         selectedTabIndex = selectedTab.ordinal,
@@ -30,13 +34,12 @@ internal fun OtherProfileTabs(
                 text = {
                     AppText(
                         text =
-                            stringResource(
-                                if (tab == OtherReviewsTab.Reviews) {
-                                    Res.string.review_profile_reviews_tab
-                                } else {
-                                    Res.string.review_profile_saved_shops_tab
-                                },
-                            ),
+                            when {
+                                tab == OtherReviewsTab.Reviews && reviewCount != null -> stringResource(Res.string.review_profile_reviews_tab_count, reviewCount)
+                                tab == OtherReviewsTab.SavedShops && savedShopCount != null -> stringResource(Res.string.review_profile_saved_shops_tab_count, savedShopCount)
+                                tab == OtherReviewsTab.Reviews -> stringResource(Res.string.review_profile_reviews_tab)
+                                else -> stringResource(Res.string.review_profile_saved_shops_tab)
+                            },
                         style = AppTextStyle.T2,
                         color = if (selectedTab == tab) GrayColor.C500 else GrayColor.C300,
                     )

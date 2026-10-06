@@ -16,6 +16,7 @@ data class MyTabUiState(
     val hiddenCount: Int? = null,
     val reviewCount: Int? = null,
     val blockedUserCount: Int? = null,
+    val hasPendingFollowRequests: Boolean = false,
     val blockedUsers: List<BlockedUser> = emptyList(),
     val pendingUnblockUser: PublicProfile? = null,
     override val loadState: LoadState = LoadState(),

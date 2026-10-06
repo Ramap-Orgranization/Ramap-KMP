@@ -32,7 +32,7 @@ class MyReviewsViewModelTest {
         }
 
     @Test
-    fun `failed notifier refresh retries from zero and restores loaded extent`() =
+    fun `failed return refresh retries from zero and restores loaded extent`() =
         coroutinesTest {
             val repository = FakeOwnerReviews(total = 75)
             val viewModel = MyReviewsViewModel(repository, FakeProfileRepository())
@@ -41,7 +41,7 @@ class MyReviewsViewModelTest {
             runCurrent()
             assertEquals(60, viewModel.uiState.value.reviews.size)
             repository.failNext = true
-            repository.changed.emit(Unit)
+            viewModel.dispatch(MyReviewsIntent.ReturnedToScreen)
             runCurrent()
             assertTrue(viewModel.uiState.value.failed)
             assertEquals(60, viewModel.uiState.value.reviews.size)
