@@ -9,11 +9,8 @@ import com.peto.ramap.domain.model.review.Review
 import com.peto.ramap.domain.model.review.ReviewImage
 import com.peto.ramap.domain.model.review.ReviewLike
 import com.peto.ramap.domain.model.review.ShopReviewsPage
-import kotlinx.coroutines.flow.Flow
 
 interface ReviewRepository {
-    fun observeChanges(): Flow<Unit>
-
     suspend fun fetchMyReviews(
         offset: Long,
         visibility: MyReviewVisibility,
