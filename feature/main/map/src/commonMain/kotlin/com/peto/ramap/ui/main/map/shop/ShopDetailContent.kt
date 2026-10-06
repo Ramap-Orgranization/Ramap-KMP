@@ -121,7 +121,7 @@ fun ShopDetailContent(
             isBackEnabled = isBackEnabled,
             maxHeight = maxHeight,
             isNavigationBarPadded = isNavigationBarPadded,
-        ) { scrollState ->
+        ) { listState, handleDragModifier ->
             when (state) {
                 is ShopDetailSheetUiState.Loading ->
                     RamenLoadingIndicator(
@@ -148,7 +148,8 @@ fun ShopDetailContent(
                         menuSections = state.detail.menuSections,
                         menuUpdatedAt = state.detail.menuUpdatedAt,
                         reviews = state.detail.reviews,
-                        reviewScrollState = scrollState,
+                        listState = listState,
+                        dragAreaModifier = handleDragModifier,
                         reviewCount = state.detail.reviewCount,
                         hasReviewLoadFailure = state.detail.hasReviewLoadFailure,
                         isRetryingReviews = isRetryingReviews,

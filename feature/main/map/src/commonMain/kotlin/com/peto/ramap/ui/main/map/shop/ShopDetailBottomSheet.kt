@@ -1,6 +1,5 @@
 package com.peto.ramap.ui.main.map.shop
 
-import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.Orientation
@@ -21,9 +20,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.BottomSheetScaffold
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.SheetValue
@@ -57,10 +56,10 @@ fun ShopDetailBottomSheet(
     isBackEnabled: Boolean,
     isNavigationBarPadded: Boolean,
     onDismissRequest: () -> Unit,
-    content: @Composable ColumnScope.(ScrollState) -> Unit,
+    content: @Composable ColumnScope.(LazyListState, Modifier) -> Unit,
 ) {
     key(shopId) {
-        val scrollState = rememberScrollState()
+        val listState = rememberLazyListState()
         val bottomSheetState =
             rememberStandardBottomSheetState(
                 initialValue = SheetValue.PartiallyExpanded,
@@ -144,11 +143,10 @@ fun ShopDetailBottomSheet(
                                 .height(maxHeight)
                                 .run {
                                     if (isNavigationBarPadded) navigationBarsPadding() else this
-                                }.verticalScroll(scrollState),
+                                },
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
-                        ShopDetailSheetHandle(dragModifier = handleDragModifier)
-                        content(scrollState)
+                        content(listState, handleDragModifier)
                     }
                 },
                 content = {},
@@ -158,7 +156,7 @@ fun ShopDetailBottomSheet(
 }
 
 @Composable
-private fun ShopDetailSheetHandle(dragModifier: Modifier) {
+internal fun ShopDetailSheetHandle(dragModifier: Modifier) {
     Box(
         modifier =
             Modifier
