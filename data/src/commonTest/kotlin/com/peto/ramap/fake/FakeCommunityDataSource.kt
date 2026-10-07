@@ -13,6 +13,13 @@ internal class FakeCommunityDataSource(
 ) : CommunityDataSource {
     val requestedReviewPages = mutableListOf<Pair<String, Long>>()
 
+    override suspend fun fetchProfileReviewsPage(
+        userId: String,
+        offset: Long,
+    ): com.peto.ramap.data.model.ProfileReviewsPageResponse =
+        com.peto.ramap.data.model
+            .ProfileReviewsPageResponse(fetchProfileAccess(userId), fetchUserReviews(userId, offset))
+
     override suspend fun fetchUserReviews(
         userId: String,
         offset: Long,

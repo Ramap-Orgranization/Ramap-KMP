@@ -41,7 +41,14 @@ data class OtherReviewsUiState(
                 !savedShopsLoading &&
                 !savedShopsFailed &&
                 savedShops.isEmpty() &&
+                !contentRestricted &&
                 profileAccess is ProfileAccess.Visible
+    val following: Boolean get() = loadState.isLoading(OtherReviewsLoadKey.Follow)
+    val contentRestricted: Boolean
+        get() =
+            (profileAccess as? ProfileAccess.Visible)?.let {
+                if (selectedTab == OtherReviewsTab.Reviews) !it.canReadReviews else !it.canReadSavedShops
+            } ?: false
     val blocking: Boolean get() = loadState.isLoading(OtherReviewsLoadKey.Block)
 
     val profile: PublicProfile?
@@ -70,7 +77,8 @@ data class OtherReviewsUiState(
                 !loading &&
                 !failed &&
                 profileAccess is ProfileAccess.Visible &&
-                reviews.isEmpty()
+                reviews.isEmpty() &&
+                !contentRestricted
 
     override fun withLoadingState(loadState: LoadState): OtherReviewsUiState = copy(loadState = loadState)
 }

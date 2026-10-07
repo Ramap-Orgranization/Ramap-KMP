@@ -12,6 +12,8 @@ internal data class ProfileResponse(
     val avatarPath: String? = null,
     val bio: String = "",
     @SerialName("is_public") val isPublic: Boolean = false,
+    @SerialName("followers_can_read_reviews") val followersCanReadReviews: Boolean = true,
+    @SerialName("followers_can_read_saved_shops") val followersCanReadSavedShops: Boolean = true,
     @SerialName("nickname_changes_remaining") val nicknameChangesRemaining: Int = DAILY_CHANGE_LIMIT,
     @SerialName("bio_changes_remaining") val bioChangesRemaining: Int = DAILY_CHANGE_LIMIT,
 )

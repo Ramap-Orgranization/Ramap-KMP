@@ -229,6 +229,11 @@ class MapViewModelTest {
 
                     override fun findCached(shopId: String): ShopDetailCacheLookup = ShopDetailCacheLookup.Miss
 
+                    override fun updateCachedReviews(
+                        shopId: String,
+                        page: com.peto.ramap.domain.model.review.ShopReviewsPage,
+                    ) = Unit
+
                     override fun clearCache() = Unit
 
                     override fun updateCachedLikeCount(
@@ -732,6 +737,11 @@ class MapViewModelTest {
                     }
 
                     override fun findCached(shopId: String): ShopDetailCacheLookup = ShopDetailCacheLookup.Miss
+
+                    override fun updateCachedReviews(
+                        shopId: String,
+                        page: com.peto.ramap.domain.model.review.ShopReviewsPage,
+                    ) = Unit
 
                     override fun clearCache() = Unit
 
@@ -3054,6 +3064,11 @@ private fun blockedReviewDetailUseCase(
             )
 
         override fun findCached(shopId: String): ShopDetailCacheLookup = ShopDetailCacheLookup.Miss
+
+        override fun updateCachedReviews(
+            shopId: String,
+            page: com.peto.ramap.domain.model.review.ShopReviewsPage,
+        ) = Unit
 
         override fun clearCache() = Unit
 

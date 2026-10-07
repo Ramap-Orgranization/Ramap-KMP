@@ -14,6 +14,7 @@ import com.peto.ramap.data.repository.DefaultAppNoticeRepository
 import com.peto.ramap.data.repository.DefaultAppUpdateRepository
 import com.peto.ramap.data.repository.DefaultBookmarkRepository
 import com.peto.ramap.data.repository.DefaultCommunityRepository
+import com.peto.ramap.data.repository.DefaultFollowRepository
 import com.peto.ramap.data.repository.DefaultHiddenShopRepository
 import com.peto.ramap.data.repository.DefaultImportationRepository
 import com.peto.ramap.data.repository.DefaultLoginRepository
@@ -28,12 +29,12 @@ import com.peto.ramap.data.repository.DefaultShopRankingRepository
 import com.peto.ramap.data.repository.DefaultShopReportRepository
 import com.peto.ramap.data.repository.DefaultShopWaitingSystemRepository
 import com.peto.ramap.data.repository.DefaultSubscribedShopRepository
-import com.peto.ramap.data.repository.ReviewChangeNotifier
 import com.peto.ramap.data.store.DefaultPersonalizationStore
 import com.peto.ramap.domain.repository.AppNoticeRepository
 import com.peto.ramap.domain.repository.AppUpdateRepository
 import com.peto.ramap.domain.repository.BookmarkRepository
 import com.peto.ramap.domain.repository.CommunityRepository
+import com.peto.ramap.domain.repository.FollowRepository
 import com.peto.ramap.domain.repository.HiddenShopRepository
 import com.peto.ramap.domain.repository.ImportationRepository
 import com.peto.ramap.domain.repository.LoginRepository
@@ -53,10 +54,10 @@ import org.koin.dsl.module
 
 val repositoryModule =
     module {
-        single<ProfileRepository> { DefaultProfileRepository(get(), get()) }
-        single { ReviewChangeNotifier() }
-        single<CommunityRepository> { DefaultCommunityRepository(get(), get(), get<RamenShopDataSource>()) }
-        single<ReviewRepository> { DefaultReviewRepository(get(), get()) }
+        single<FollowRepository> { DefaultFollowRepository(get()) }
+        single<ProfileRepository> { DefaultProfileRepository(get()) }
+        single<CommunityRepository> { DefaultCommunityRepository(get(), get<RamenShopDataSource>()) }
+        single<ReviewRepository> { DefaultReviewRepository(get()) }
         single<AppUpdateRepository> {
             DefaultAppUpdateRepository(get<AppUpdatePolicyDataSource>())
         }

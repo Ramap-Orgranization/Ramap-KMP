@@ -5,6 +5,7 @@ import com.peto.ramap.coroutinesTest
 import com.peto.ramap.domain.model.community.ProfileReview
 import com.peto.ramap.domain.model.community.ReviewAuthor
 import com.peto.ramap.domain.model.review.Review
+import com.peto.ramap.fake.FakeFollowRepository
 import com.peto.ramap.fake.FakeProfileRepository
 import com.peto.ramap.fixture.ramenShopFixture
 import com.peto.ramap.ui.review.other.contract.OtherReviewsEffect
@@ -23,7 +24,7 @@ class OtherReviewsViewModelTest {
     fun `guest block request opens login without blocking the author`() =
         coroutinesTest {
             val community = FakeOtherReviewsCommunity()
-            val viewModel = OtherReviewsViewModel(community, FakeProfileRepository(userId = null))
+            val viewModel = OtherReviewsViewModel(community, FakeProfileRepository(userId = null), FakeFollowRepository())
             runCurrent()
             viewModel.dispatch(OtherReviewsIntent.OpenProfile("author"))
             runCurrent()
@@ -40,7 +41,7 @@ class OtherReviewsViewModelTest {
         coroutinesTest {
             val community = FakeOtherReviewsCommunity()
             community.reviews = (1..23).map(::review)
-            val viewModel = OtherReviewsViewModel(community, FakeProfileRepository())
+            val viewModel = OtherReviewsViewModel(community, FakeProfileRepository(), FakeFollowRepository())
             runCurrent()
 
             viewModel.dispatch(OtherReviewsIntent.OpenProfile("author"))
@@ -68,7 +69,7 @@ class OtherReviewsViewModelTest {
             val community = FakeOtherReviewsCommunity()
             val firstPage = (1..20).map(::review)
             community.reviews = firstPage + firstPage.first().copy(shop = ramenShopFixture(id = "shop-1"))
-            val viewModel = OtherReviewsViewModel(community, FakeProfileRepository())
+            val viewModel = OtherReviewsViewModel(community, FakeProfileRepository(), FakeFollowRepository())
             runCurrent()
 
             viewModel.dispatch(OtherReviewsIntent.OpenProfile("author"))
@@ -87,7 +88,7 @@ class OtherReviewsViewModelTest {
         coroutinesTest {
             val community = FakeOtherReviewsCommunity()
             community.savedShops = (1..23).map { ramenShopFixture(id = "shop-$it") }
-            val viewModel = OtherReviewsViewModel(community, FakeProfileRepository())
+            val viewModel = OtherReviewsViewModel(community, FakeProfileRepository(), FakeFollowRepository())
             runCurrent()
 
             viewModel.dispatch(OtherReviewsIntent.OpenProfile("author"))
@@ -111,7 +112,7 @@ class OtherReviewsViewModelTest {
     fun `guest saved shops tab requests login without fetching shops`() =
         coroutinesTest {
             val community = FakeOtherReviewsCommunity()
-            val viewModel = OtherReviewsViewModel(community, FakeProfileRepository(userId = null))
+            val viewModel = OtherReviewsViewModel(community, FakeProfileRepository(userId = null), FakeFollowRepository())
             runCurrent()
             viewModel.dispatch(OtherReviewsIntent.OpenProfile("author"))
             runCurrent()
@@ -130,7 +131,7 @@ class OtherReviewsViewModelTest {
         coroutinesTest {
             val community = FakeOtherReviewsCommunity()
             community.profile = null
-            val viewModel = OtherReviewsViewModel(community, FakeProfileRepository())
+            val viewModel = OtherReviewsViewModel(community, FakeProfileRepository(), FakeFollowRepository())
             runCurrent()
 
             viewModel.dispatch(OtherReviewsIntent.OpenProfile("author"))
@@ -148,7 +149,7 @@ class OtherReviewsViewModelTest {
             val community = FakeOtherReviewsCommunity()
             community.profilePrivate = true
             community.reviews = listOf(review(1))
-            val viewModel = OtherReviewsViewModel(community, FakeProfileRepository())
+            val viewModel = OtherReviewsViewModel(community, FakeProfileRepository(), FakeFollowRepository())
             runCurrent()
 
             viewModel.dispatch(OtherReviewsIntent.OpenProfile("author"))
@@ -171,7 +172,7 @@ class OtherReviewsViewModelTest {
             val community = FakeOtherReviewsCommunity()
             community.blockedUserIds += "author"
             community.reviews = listOf(review(1))
-            val viewModel = OtherReviewsViewModel(community, FakeProfileRepository())
+            val viewModel = OtherReviewsViewModel(community, FakeProfileRepository(), FakeFollowRepository())
             runCurrent()
 
             viewModel.dispatch(OtherReviewsIntent.OpenProfile("author"))
@@ -197,7 +198,7 @@ class OtherReviewsViewModelTest {
         coroutinesTest {
             val community = FakeOtherReviewsCommunity()
             community.reviews = (1..23).map(::review)
-            val viewModel = OtherReviewsViewModel(community, FakeProfileRepository())
+            val viewModel = OtherReviewsViewModel(community, FakeProfileRepository(), FakeFollowRepository())
             runCurrent()
             viewModel.dispatch(OtherReviewsIntent.OpenProfile("author"))
             runCurrent()
@@ -219,7 +220,7 @@ class OtherReviewsViewModelTest {
         coroutinesTest {
             val community = FakeOtherReviewsCommunity()
             community.reviews = listOf(review(1))
-            val viewModel = OtherReviewsViewModel(community, FakeProfileRepository())
+            val viewModel = OtherReviewsViewModel(community, FakeProfileRepository(), FakeFollowRepository())
             runCurrent()
             viewModel.dispatch(OtherReviewsIntent.OpenProfile("author"))
             runCurrent()
@@ -244,7 +245,7 @@ class OtherReviewsViewModelTest {
         coroutinesTest {
             val community = FakeOtherReviewsCommunity()
             community.reviews = listOf(review(1))
-            val viewModel = OtherReviewsViewModel(community, FakeProfileRepository())
+            val viewModel = OtherReviewsViewModel(community, FakeProfileRepository(), FakeFollowRepository())
             runCurrent()
             viewModel.dispatch(OtherReviewsIntent.OpenProfile("author"))
             runCurrent()

@@ -2,6 +2,7 @@ package com.peto.ramap.ui.main.my.component
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -9,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
@@ -17,12 +19,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.peto.ramap.designsystem.component.Skeleton
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.ChromaticColor
+import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.RamapTheme
 import org.jetbrains.compose.resources.DrawableResource
@@ -30,7 +35,10 @@ import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
+import ramap.shared.generated.resources.follow_manage
+import ramap.shared.generated.resources.follow_requests
 import ramap.shared.generated.resources.ic_chevron_right
+import ramap.shared.generated.resources.ic_person
 import ramap.shared.generated.resources.ic_profile_bookmark
 import ramap.shared.generated.resources.settings_bookmarked_shops_menu
 
@@ -43,31 +51,49 @@ internal fun MyMenuRow(
     iconTint: Color,
     hasCount: Boolean = true,
     isLoading: Boolean = false,
+    notification: StringResource? = null,
     onClick: () -> Unit,
 ) {
+    val notificationDescription = notification?.let { stringResource(it) }
     Row(
         modifier =
             Modifier
                 .fillMaxWidth()
                 .height(52.dp)
                 .clickable(role = Role.Button, onClick = onClick)
-                .padding(horizontal = 12.dp),
+                .semantics {
+                    if (notificationDescription != null) stateDescription = notificationDescription
+                }.padding(horizontal = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(
-            modifier =
-                Modifier
-                    .size(32.dp)
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(iconBackground),
-            contentAlignment = Alignment.Center,
+            modifier = Modifier.size(32.dp),
         ) {
-            Icon(
-                painter = painterResource(icon),
-                contentDescription = null,
-                modifier = Modifier.size(18.dp),
-                tint = iconTint,
-            )
+            Box(
+                modifier =
+                    Modifier
+                        .matchParentSize()
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(iconBackground),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    painter = painterResource(icon),
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp),
+                    tint = iconTint,
+                )
+            }
+            if (notification != null) {
+                Box(
+                    modifier =
+                        Modifier
+                            .align(Alignment.TopEnd)
+                            .size(10.dp)
+                            .background(iconTint, CircleShape)
+                            .border(1.dp, CommonColor.White, CircleShape),
+                )
+            }
         }
         AppText(
             text = stringResource(title),
@@ -116,6 +142,39 @@ private fun MyMenuRowPreview() {
             count = 12,
             iconBackground = ChromaticColor.Orange050,
             iconTint = ChromaticColor.Orange300,
+            onClick = {},
+        )
+    }
+}
+
+@Preview(name = "팔로우 관리 · 받은 요청 있음", showBackground = true, widthDp = 360)
+@Composable
+private fun MyFollowMenuRowWithRequestsPreview() {
+    RamapTheme {
+        MyMenuRow(
+            icon = Res.drawable.ic_person,
+            title = Res.string.follow_manage,
+            count = null,
+            iconBackground = ChromaticColor.Orange050,
+            iconTint = ChromaticColor.Orange400,
+            hasCount = false,
+            notification = Res.string.follow_requests,
+            onClick = {},
+        )
+    }
+}
+
+@Preview(name = "팔로우 관리 · 받은 요청 없음", showBackground = true, widthDp = 360)
+@Composable
+private fun MyFollowMenuRowWithoutRequestsPreview() {
+    RamapTheme {
+        MyMenuRow(
+            icon = Res.drawable.ic_person,
+            title = Res.string.follow_manage,
+            count = null,
+            iconBackground = ChromaticColor.Orange050,
+            iconTint = ChromaticColor.Orange400,
+            hasCount = false,
             onClick = {},
         )
     }

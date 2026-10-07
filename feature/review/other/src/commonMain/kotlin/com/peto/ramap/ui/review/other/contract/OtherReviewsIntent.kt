@@ -15,5 +15,7 @@ sealed interface OtherReviewsIntent : Intent {
 
     data object Retry : OtherReviewsIntent
 
+    data object ToggleFollow : OtherReviewsIntent
+
     data object ToggleBlock : OtherReviewsIntent
 }

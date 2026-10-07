@@ -48,6 +48,23 @@ class FakeOtherReviewsCommunity : CommunityRepository by FakeCommunityRepository
         return RamapResult.Success(Unit)
     }
 
+    override suspend fun fetchProfileReviewsPage(
+        userId: String,
+        offset: Long,
+    ): RamapResult<com.peto.ramap.domain.model.community.ProfileReviewsPage> {
+        val result = fetchUserReviews(userId, offset)
+        return when (result) {
+            is RamapResult.Error -> result
+            is RamapResult.Success ->
+                RamapResult.Success(
+                    com.peto.ramap.domain.model.community.ProfileReviewsPage(
+                        profile?.let { ProfileAccess.Visible(it) } ?: ProfileAccess.Unavailable,
+                        result.data,
+                    ),
+                )
+        }
+    }
+
     override suspend fun fetchUserReviews(
         userId: String,
         offset: Long,

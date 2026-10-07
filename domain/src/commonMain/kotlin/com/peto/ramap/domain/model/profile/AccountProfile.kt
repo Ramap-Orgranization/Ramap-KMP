@@ -6,6 +6,8 @@ data class AccountProfile(
     val avatarUrl: String? = null,
     val bio: String = "",
     val isPublic: Boolean = false,
+    val followersCanReadReviews: Boolean = true,
+    val followersCanReadSavedShops: Boolean = true,
     val nicknameChangesRemaining: Int = DAILY_CHANGE_LIMIT,
     val bioChangesRemaining: Int = DAILY_CHANGE_LIMIT,
 )

@@ -53,6 +53,8 @@ class NavigationState(
         selectedTab = TabStatus.MAP
     }
 
+    fun showFollows() = showOnce(ScreenRoutes.FollowRoutes)
+
     fun showProfileEdit() = showOnce(ScreenRoutes.ProfileEditRoutes)
 
     fun showMyReviews() = showOnce(ScreenRoutes.MyReviewsRoutes)

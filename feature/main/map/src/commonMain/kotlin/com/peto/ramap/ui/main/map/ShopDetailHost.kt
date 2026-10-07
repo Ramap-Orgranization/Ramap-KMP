@@ -7,6 +7,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -22,6 +23,7 @@ import com.peto.ramap.platform.ExternalUriOpener
 import com.peto.ramap.platform.NotificationPermissionRequester
 import com.peto.ramap.ui.main.map.contract.MapIntent
 import com.peto.ramap.ui.main.map.shop.ShopDetailContent
+import com.peto.ramap.ui.refresh.RefreshOnReturnEffect
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -37,12 +39,19 @@ fun ShopDetailHost(
     isNavigationBarPadded: Boolean = false,
     onEventNavigate: (ShopEvent) -> Unit = {},
     originSource: AnalyticsSource = AnalyticsSource.MAP,
+    isUncovered: Boolean = true,
     toastManager: ToastManager = koinInject(),
     appSettingsOpener: AppSettingsOpener = koinInject(),
     shopShareLinkFactory: ShopShareLinkFactory = koinInject(),
     requestNotificationPermission: suspend () -> Boolean = NotificationPermissionRequester::request,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    var returningFromReviewScreen by rememberSaveable { mutableStateOf(false) }
+    RefreshOnReturnEffect(isUncovered = isUncovered) {
+        val intent = if (returningFromReviewScreen) MapIntent.OnReviewsChanged else MapIntent.OnScreenReturned
+        returningFromReviewScreen = false
+        viewModel.dispatch(intent)
+    }
     var selectedNotice by remember { mutableStateOf<OperatingNotice?>(null) }
 
     LaunchedEffect(shopId) {
@@ -120,6 +129,7 @@ fun ShopDetailHost(
                 },
                 onReviewsClick = { selectedShopId ->
                     if (uiState.isLoggedIn) {
+                        returningFromReviewScreen = true
                         onReviewNavigate(selectedShopId)
                     } else {
                         onLoginGuideRequested()
@@ -132,9 +142,15 @@ fun ShopDetailHost(
                 revealingBlockedReviewId = uiState.revealingBlockedReviewId,
                 onViewBlockedReview = { viewModel.dispatch(MapIntent.OnBlockedReviewViewRequested(it)) },
                 onUnblockBlockedUser = { viewModel.dispatch(MapIntent.OnBlockedReviewUnblockRequested(it)) },
-                onOpenProfile = onOpenProfile,
+                onOpenProfile = { userId ->
+                    returningFromReviewScreen = true
+                    onOpenProfile(userId)
+                },
                 onReviewLike = { viewModel.dispatch(MapIntent.OnReviewLikeToggled(it)) },
-                onReviewEdit = { onEditReview(it.shopId, it.id) },
+                onReviewEdit = {
+                    returningFromReviewScreen = true
+                    onEditReview(it.shopId, it.id)
+                },
                 onReviewDelete = { viewModel.dispatch(MapIntent.OnReviewDeleted(it)) },
                 onReviewReport = { viewModel.dispatch(MapIntent.OnReviewReportRequested(it)) },
             )
