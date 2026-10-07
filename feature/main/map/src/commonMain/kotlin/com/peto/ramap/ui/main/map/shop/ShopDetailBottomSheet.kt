@@ -56,6 +56,7 @@ fun ShopDetailBottomSheet(
     isBackEnabled: Boolean,
     isNavigationBarPadded: Boolean,
     onDismissRequest: () -> Unit,
+    floatingAction: (@Composable () -> Unit)? = null,
     content: @Composable ColumnScope.(LazyListState, Modifier) -> Unit,
 ) {
     key(shopId) {
@@ -151,6 +152,20 @@ fun ShopDetailBottomSheet(
                 },
                 content = {},
             )
+
+            if (floatingAction != null) {
+                Box(
+                    modifier =
+                        Modifier
+                            .align(Alignment.BottomEnd)
+                            .run {
+                                if (isNavigationBarPadded) navigationBarsPadding() else this
+                            }.padding(end = 20.dp, bottom = 12.dp)
+                            .graphicsLayer { translationY = handleDragOffsetPx },
+                ) {
+                    floatingAction()
+                }
+            }
         }
     }
 }
