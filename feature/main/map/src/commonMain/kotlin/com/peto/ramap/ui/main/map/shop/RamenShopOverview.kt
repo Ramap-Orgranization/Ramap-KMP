@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -22,24 +23,27 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.peto.ramap.designsystem.component.LoadErrorContent
 import com.peto.ramap.designsystem.indicator.RamenLoadingIndicator
-import com.peto.ramap.designsystem.resource.wating.WaitingSystemUiModel
 import com.peto.ramap.designsystem.review.ReviewCard
 import com.peto.ramap.designsystem.review.ReviewCardActions
 import com.peto.ramap.designsystem.review.ReviewCardHeader
 import com.peto.ramap.designsystem.review.ReviewWriteCard
 import com.peto.ramap.domain.model.community.ReviewModerationStatus
-import com.peto.ramap.domain.model.event.ShopEvent
-import com.peto.ramap.domain.model.menu.MenuSection
-import com.peto.ramap.domain.model.notice.OperatingNotice
-import com.peto.ramap.domain.model.review.Review
 import com.peto.ramap.domain.model.shop.RamenShop
+import com.peto.ramap.domain.usecase.ShopDetail
 import com.peto.ramap.preview.RamenShopPreviewParameterProvider
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.RamapTheme
+import com.peto.ramap.ui.main.map.shop.model.RamenShopOverviewActions
+import com.peto.ramap.ui.main.map.shop.model.RamenShopOverviewUiState
 import com.peto.ramap.ui.main.map.shop.model.ShopDetailTab
+import com.peto.ramap.ui.main.map.shop.model.ShopOverviewExternalLinkActions
+import com.peto.ramap.ui.main.map.shop.model.ShopOverviewHeaderActions
+import com.peto.ramap.ui.main.map.shop.model.ShopOverviewHeaderUiState
+import com.peto.ramap.ui.main.map.shop.model.ShopOverviewReviewActions
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.data_load_failure_message
@@ -51,66 +55,28 @@ import ramap.shared.generated.resources.shop_review_empty_title
 
 @Composable
 fun RamenShopOverview(
-    shop: RamenShop,
-    likeCount: Long,
-    waitingSystem: WaitingSystemUiModel?,
-    isBookmarked: Boolean,
-    isNotificationEnabled: Boolean,
-    showNotificationActions: Boolean,
-    isHidden: Boolean,
-    isAppleMapsAvailable: Boolean,
-    event: ShopEvent?,
-    operatingNotice: OperatingNotice?,
-    operatingNotices: List<OperatingNotice>,
-    menuSections: List<MenuSection>,
-    menuUpdatedAt: String?,
-    reviews: List<Review>,
-    reviewCount: Int,
-    hasReviewLoadFailure: Boolean = false,
-    isRetryingReviews: Boolean = false,
-    menuItemCount: Int,
-    showReviewsOnOpen: Boolean = false,
+    uiState: RamenShopOverviewUiState,
+    actions: RamenShopOverviewActions,
     modifier: Modifier = Modifier,
     dragAreaModifier: Modifier = Modifier,
-    onDismissRequest: () -> Unit,
-    onBookmarkClick: () -> Unit,
-    onNotificationClick: () -> Unit,
-    onHiddenClick: () -> Unit,
-    onReportClick: () -> Unit,
-    onShareClick: () -> Unit,
-    onMapLinkClick: (String) -> Unit,
-    onWaitingClick: (String) -> Unit,
-    onExternalLinkClick: (String) -> Unit,
-    onAppleMapsClick: (RamenShop) -> Unit,
-    onEventClick: (ShopEvent) -> Unit,
-    onOperatingNoticeClick: (OperatingNotice) -> Unit,
-    onOpenProfile: (String) -> Unit,
-    onWriteReviewClick: () -> Unit,
-    onReviewRetry: () -> Unit = {},
-    currentUserId: String? = null,
-    currentProfileIsPublic: Boolean? = null,
-    actingReviewId: String? = null,
-    revealedBlockedReviews: Map<String, Review> = emptyMap(),
-    revealingBlockedReviewId: String? = null,
-    onViewBlockedReview: ((Review) -> Unit)? = null,
-    onUnblockBlockedUser: ((Review) -> Unit)? = null,
-    onReviewLike: (Review) -> Unit = {},
-    onReviewEdit: (Review) -> Unit = {},
-    onReviewDelete: (Review) -> Unit = {},
-    onReviewReport: (Review) -> Unit = {},
     listState: LazyListState = rememberLazyListState(),
-    hasMoreReviews: Boolean = false,
-    isLoadingMoreReviews: Boolean = false,
-    onLoadMoreReviews: () -> Unit = {},
-    menuFooter: @Composable () -> Unit = {},
+    bottomContentPadding: Dp = 0.dp,
 ) {
-    var selectedTab by remember(shop.id, showReviewsOnOpen) {
-        mutableStateOf(if (showReviewsOnOpen) ShopDetailTab.REVIEW else ShopDetailTab.MENU)
+    val shop = uiState.detail.shop
+    val headerState = uiState.headerState
+    val reviewPagingState = uiState.reviewPagingState
+    val userContext = uiState.userContext
+    val headerActions = actions.headerActions
+    val externalLinkActions = actions.externalLinkActions
+    val reviewActions = actions.reviewActions
+
+    var selectedTab by remember(shop.id, reviewPagingState.showReviewsOnOpen) {
+        mutableStateOf(if (reviewPagingState.showReviewsOnOpen) ShopDetailTab.REVIEW else ShopDetailTab.MENU)
     }
 
-    val currentHasMoreReviews = rememberUpdatedState(hasMoreReviews)
-    val currentIsLoadingMoreReviews = rememberUpdatedState(isLoadingMoreReviews)
-    val currentOnLoadMoreReviews = rememberUpdatedState(onLoadMoreReviews)
+    val currentHasMoreReviews = rememberUpdatedState(reviewPagingState.hasMoreReviews)
+    val currentIsLoadingMoreReviews = rememberUpdatedState(reviewPagingState.isLoadingMoreReviews)
+    val currentOnLoadMoreReviews = rememberUpdatedState(reviewActions.onLoadMoreReviews)
 
     LaunchedEffect(listState) {
         var canRequestAfterLeavingBottom = true
@@ -144,6 +110,7 @@ fun RamenShopOverview(
                 .fillMaxWidth()
                 .padding(bottom = 15.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
+        contentPadding = PaddingValues(bottom = bottomContentPadding),
     ) {
         item {
             ShopDetailSheetHandle(dragModifier = dragAreaModifier)
@@ -151,24 +118,24 @@ fun RamenShopOverview(
         item {
             ShopHeaderSection(
                 shop = shop,
-                likeCount = likeCount,
-                isBookmarked = isBookmarked,
-                isNotificationEnabled = isNotificationEnabled,
-                showNotificationActions = showNotificationActions,
-                isHidden = isHidden,
-                event = event,
+                likeCount = uiState.detail.likeCount,
+                isBookmarked = headerState.isBookmarked,
+                isNotificationEnabled = headerState.isNotificationEnabled,
+                showNotificationActions = headerState.showNotificationActions,
+                isHidden = headerState.isHidden,
+                event = uiState.detail.event,
                 dragAreaModifier = Modifier,
-                onDismissRequest = onDismissRequest,
-                onBookmarkClick = onBookmarkClick,
-                onNotificationClick = onNotificationClick,
-                onHiddenClick = onHiddenClick,
-                onReportClick = onReportClick,
-                onShareClick = onShareClick,
-                onEventClick = onEventClick,
+                onDismissRequest = headerActions.onDismissRequest,
+                onBookmarkClick = headerActions.onBookmarkClick,
+                onNotificationClick = headerActions.onNotificationClick,
+                onHiddenClick = headerActions.onHiddenClick,
+                onReportClick = headerActions.onReportClick,
+                onShareClick = headerActions.onShareClick,
+                onEventClick = headerActions.onEventClick,
             )
         }
 
-        if (shop.businessHoursDetails != null || operatingNotice != null) {
+        if (shop.businessHoursDetails != null || uiState.detail.operatingNotice != null) {
             item {
                 Column(
                     verticalArrangement = Arrangement.spacedBy(10.dp),
@@ -176,9 +143,9 @@ fun RamenShopOverview(
                 ) {
                     BusinessHoursCard(
                         shop = shop,
-                        operatingNotice = operatingNotice,
-                        operatingNotices = operatingNotices,
-                        onOperatingNoticeClick = onOperatingNoticeClick,
+                        operatingNotice = uiState.detail.operatingNotice,
+                        operatingNotices = uiState.detail.operatingNotices,
+                        onOperatingNoticeClick = headerActions.onOperatingNoticeClick,
                     )
                 }
             }
@@ -187,12 +154,12 @@ fun RamenShopOverview(
         item {
             ShopExternalLinksRow(
                 shop = shop,
-                waitingSystem = waitingSystem,
-                isAppleMapsAvailable = isAppleMapsAvailable,
-                onMapLinkClick = onMapLinkClick,
-                onWaitingClick = onWaitingClick,
-                onExternalLinkClick = onExternalLinkClick,
-                onAppleMapsClick = onAppleMapsClick,
+                waitingSystem = headerState.waitingSystem,
+                isAppleMapsAvailable = headerState.isAppleMapsAvailable,
+                onMapLinkClick = externalLinkActions.onMapLinkClick,
+                onWaitingClick = externalLinkActions.onWaitingClick,
+                onExternalLinkClick = externalLinkActions.onExternalLinkClick,
+                onAppleMapsClick = externalLinkActions.onAppleMapsClick,
             )
         }
 
@@ -205,8 +172,8 @@ fun RamenShopOverview(
                         .padding(horizontal = 20.dp, vertical = 6.dp),
             ) {
                 ShopDetailTabRow(
-                    menuCount = menuItemCount,
-                    reviewCount = reviewCount,
+                    menuCount = uiState.detail.menuItemCount,
+                    reviewCount = uiState.detail.reviewCount,
                     selectedTab = selectedTab,
                     onTabSelected = { selectedTab = it },
                 )
@@ -221,18 +188,15 @@ fun RamenShopOverview(
                         modifier = Modifier.padding(horizontal = 20.dp),
                     ) {
                         ShopMenuContent(
-                            sections = menuSections,
-                            updatedAt = menuUpdatedAt,
-                            onMenuSourceClick = onExternalLinkClick,
+                            sections = uiState.detail.menuSections,
+                            updatedAt = uiState.detail.menuUpdatedAt,
+                            onMenuSourceClick = externalLinkActions.onExternalLinkClick,
                         )
                     }
                 }
-                item {
-                    menuFooter()
-                }
             }
             ShopDetailTab.REVIEW -> {
-                if (hasReviewLoadFailure && isRetryingReviews) {
+                if (uiState.detail.hasReviewLoadFailure && reviewPagingState.isRetryingReviews) {
                     item {
                         RamenLoadingIndicator(
                             modifier =
@@ -241,19 +205,19 @@ fun RamenShopOverview(
                                     .height(120.dp),
                         )
                     }
-                } else if (hasReviewLoadFailure) {
+                } else if (uiState.detail.hasReviewLoadFailure) {
                     item {
                         LoadErrorContent(
                             image = Res.drawable.laduck_error_crying,
                             title = stringResource(Res.string.data_load_failure_message),
                             description = stringResource(Res.string.map_shop_detail_error_description),
-                            onRetry = onReviewRetry,
+                            onRetry = reviewActions.onReviewRetry,
                             compact = true,
                             modifier = Modifier.fillMaxWidth(),
                         )
                     }
                 }
-                if (reviews.isEmpty() && !hasReviewLoadFailure) {
+                if (uiState.detail.reviews.isEmpty() && !uiState.detail.hasReviewLoadFailure) {
                     item {
                         LoadErrorContent(
                             image = Res.drawable.review_empty_illustration,
@@ -269,7 +233,7 @@ fun RamenShopOverview(
                     }
                     item {
                         ReviewWriteCard(
-                            onClick = onWriteReviewClick,
+                            onClick = reviewActions.onWriteReviewClick,
                             modifier =
                                 Modifier
                                     .fillMaxWidth()
@@ -279,27 +243,27 @@ fun RamenShopOverview(
                 } else {
                     item {
                         ReviewWriteCard(
-                            onClick = onWriteReviewClick,
+                            onClick = reviewActions.onWriteReviewClick,
                             modifier =
                                 Modifier
                                     .fillMaxWidth()
                                     .padding(horizontal = 16.dp),
                         )
                     }
-                    items(reviews, key = { it.id }) { review ->
-                        val revealedReview = revealedBlockedReviews[review.id]
+                    items(uiState.detail.reviews, key = { it.id }) { review ->
+                        val revealedReview = userContext.revealedBlockedReviews[review.id]
                         val displayedReview = revealedReview ?: review
-                        val reviewActions =
+                        val cardActions =
                             ReviewCardActions(
-                                onOpenProfile = onOpenProfile,
+                                onOpenProfile = reviewActions.onOpenProfile,
                                 onLike =
                                     if (
                                         !review.isBlocked &&
-                                        review.author.userId != currentUserId &&
+                                        review.author.userId != userContext.currentUserId &&
                                         review.isPublic &&
                                         review.moderationStatus == ReviewModerationStatus.PUBLISHED
                                     ) {
-                                        { onReviewLike(review) }
+                                        { reviewActions.onReviewLike(review) }
                                     } else {
                                         null
                                     },
@@ -307,57 +271,57 @@ fun RamenShopOverview(
                                     if (
                                         (!review.isBlocked || revealedReview != null) &&
                                         displayedReview.author.userId.isNotBlank() &&
-                                        displayedReview.author.userId != currentUserId
+                                        displayedReview.author.userId != userContext.currentUserId
                                     ) {
-                                        { onReviewReport(displayedReview) }
+                                        { reviewActions.onReviewReport(displayedReview) }
                                     } else {
                                         null
                                     },
                                 onEdit =
-                                    if (currentUserId != null && review.author.userId == currentUserId) {
-                                        { onReviewEdit(review) }
+                                    if (userContext.currentUserId != null && review.author.userId == userContext.currentUserId) {
+                                        { reviewActions.onReviewEdit(review) }
                                     } else {
                                         null
                                     },
                                 onDelete =
-                                    if (currentUserId != null && review.author.userId == currentUserId) {
-                                        { onReviewDelete(review) }
+                                    if (userContext.currentUserId != null && review.author.userId == userContext.currentUserId) {
+                                        { reviewActions.onReviewDelete(review) }
                                     } else {
                                         null
                                     },
                                 onViewBlockedReview =
-                                    if (review.isBlocked && onViewBlockedReview != null) {
-                                        { onViewBlockedReview(review) }
+                                    if (review.isBlocked && reviewActions.onViewBlockedReview != null) {
+                                        { reviewActions.onViewBlockedReview.invoke(review) }
                                     } else {
                                         null
                                     },
                                 onUnblockBlockedUser =
-                                    if (review.isBlocked && onUnblockBlockedUser != null) {
-                                        { onUnblockBlockedUser(review) }
+                                    if (review.isBlocked && reviewActions.onUnblockBlockedUser != null) {
+                                        { reviewActions.onUnblockBlockedUser.invoke(review) }
                                     } else {
                                         null
                                     },
                             )
                         ReviewCard(
                             review = displayedReview,
-                            actions = reviewActions,
+                            actions = cardActions,
                             header = {
                                 ReviewCardHeader(
                                     review = displayedReview,
-                                    actions = reviewActions,
-                                    actionsEnabled = actingReviewId == null,
+                                    actions = cardActions,
+                                    actionsEnabled = userContext.actingReviewId == null,
                                 )
                             },
                             showBlockedContent = review.isBlocked && revealedReview != null,
-                            isBlockedReviewLoading = revealingBlockedReviewId == review.id,
-                            currentUserId = currentUserId,
-                            currentProfileIsPublic = currentProfileIsPublic,
-                            isLikeLoading = actingReviewId == review.id,
-                            actionsEnabled = actingReviewId == null,
+                            isBlockedReviewLoading = userContext.revealingBlockedReviewId == review.id,
+                            currentUserId = userContext.currentUserId,
+                            currentProfileIsPublic = userContext.currentProfileIsPublic,
+                            isLikeLoading = userContext.actingReviewId == review.id,
+                            actionsEnabled = userContext.actingReviewId == null,
                             modifier = Modifier.padding(horizontal = 16.dp),
                         )
                     }
-                    if (hasMoreReviews && isLoadingMoreReviews) {
+                    if (reviewPagingState.hasMoreReviews && reviewPagingState.isLoadingMoreReviews) {
                         item {
                             RamenLoadingIndicator(
                                 modifier =
@@ -380,37 +344,37 @@ private fun RamenShopOverviewPreview(
 ) {
     RamapTheme {
         RamenShopOverview(
-            shop = shop,
-            likeCount = 0L,
-            waitingSystem = null,
-            isBookmarked = false,
-            isNotificationEnabled = false,
-            showNotificationActions = true,
-            isHidden = false,
-            isAppleMapsAvailable = true,
-            event = null,
-            operatingNotice = null,
-            operatingNotices = emptyList(),
-            menuSections = emptyList(),
-            menuUpdatedAt = null,
-            reviews = emptyList(),
-            reviewCount = 0,
-            menuItemCount = 0,
-            onDismissRequest = {},
+            uiState =
+                RamenShopOverviewUiState(
+                    detail = ShopDetail(shop = shop, likeCount = 0L, waitingSystem = null, event = null, operatingNotice = null),
+                    headerState = ShopOverviewHeaderUiState(isAppleMapsAvailable = true),
+                ),
+            actions =
+                RamenShopOverviewActions(
+                    headerActions =
+                        ShopOverviewHeaderActions(
+                            onDismissRequest = {},
+                            onBookmarkClick = {},
+                            onNotificationClick = {},
+                            onHiddenClick = {},
+                            onReportClick = {},
+                            onShareClick = {},
+                            onEventClick = {},
+                        ),
+                    externalLinkActions =
+                        ShopOverviewExternalLinkActions(
+                            onMapLinkClick = {},
+                            onWaitingClick = {},
+                            onExternalLinkClick = {},
+                            onAppleMapsClick = {},
+                        ),
+                    reviewActions =
+                        ShopOverviewReviewActions(
+                            onOpenProfile = {},
+                            onWriteReviewClick = {},
+                        ),
+                ),
             dragAreaModifier = Modifier,
-            onBookmarkClick = {},
-            onNotificationClick = {},
-            onHiddenClick = {},
-            onReportClick = {},
-            onShareClick = {},
-            onMapLinkClick = {},
-            onWaitingClick = {},
-            onExternalLinkClick = {},
-            onAppleMapsClick = {},
-            onEventClick = {},
-            onOperatingNoticeClick = {},
-            onOpenProfile = {},
-            onWriteReviewClick = {},
         )
     }
 }
