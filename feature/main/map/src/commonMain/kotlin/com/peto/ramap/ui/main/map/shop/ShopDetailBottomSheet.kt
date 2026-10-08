@@ -57,6 +57,7 @@ fun ShopDetailBottomSheet(
     isBackEnabled: Boolean,
     isNavigationBarPadded: Boolean,
     onDismissRequest: () -> Unit,
+    floatingAction: (@Composable () -> Unit)? = null,
     content: @Composable ColumnScope.(ScrollState) -> Unit,
 ) {
     key(shopId) {
@@ -153,6 +154,24 @@ fun ShopDetailBottomSheet(
                 },
                 content = {},
             )
+
+            val isFullyExpanded =
+                bottomSheetState.currentValue == SheetValue.Expanded &&
+                    bottomSheetState.targetValue == SheetValue.Expanded &&
+                    !bottomSheetState.isAnimationRunning
+            if (floatingAction != null && isFullyExpanded) {
+                Box(
+                    modifier =
+                        Modifier
+                            .align(Alignment.BottomCenter)
+                            .run {
+                                if (isNavigationBarPadded) navigationBarsPadding() else this
+                            }.padding(bottom = 12.dp)
+                            .graphicsLayer { translationY = handleDragOffsetPx },
+                ) {
+                    floatingAction()
+                }
+            }
         }
     }
 }

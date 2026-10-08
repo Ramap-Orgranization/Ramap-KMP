@@ -14,6 +14,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.peto.ramap.designsystem.review.ReviewsContent
 import com.peto.ramap.domain.model.shop.RamenShop
@@ -35,7 +36,7 @@ fun RamenShopOverview(
     modifier: Modifier = Modifier,
     dragAreaModifier: Modifier = Modifier,
     reviewScrollState: ScrollState = rememberScrollState(),
-    menuFooter: @Composable () -> Unit = {},
+    bottomContentPadding: Dp = 0.dp,
 ) {
     val shop = uiState.detail.shop
     val headerState = uiState.headerState
@@ -53,7 +54,7 @@ fun RamenShopOverview(
         modifier =
             modifier
                 .fillMaxWidth()
-                .padding(bottom = 15.dp),
+                .padding(bottom = 5.dp + bottomContentPadding),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         ShopHeaderSection(
@@ -118,7 +119,6 @@ fun RamenShopOverview(
                         onMenuSourceClick = externalLinkActions.onExternalLinkClick,
                     )
                 }
-                menuFooter()
             }
             ShopDetailTab.REVIEW -> {
                 ReviewsContent(

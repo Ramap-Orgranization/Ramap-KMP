@@ -14,7 +14,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.peto.ramap.designsystem.bottomsheet.CommonBottomSheet
 import com.peto.ramap.designsystem.bottomsheet.CommonBottomSheetConfig
-import com.peto.ramap.designsystem.button.AppButton
+import com.peto.ramap.designsystem.button.AppExtendedFloatingActionButton
 import com.peto.ramap.designsystem.component.LoadErrorContent
 import com.peto.ramap.designsystem.dialog.CommonDialog
 import com.peto.ramap.designsystem.indicator.RamenLoadingIndicator
@@ -44,6 +44,7 @@ import ramap.shared.generated.resources.hide_shop_confirm_action
 import ramap.shared.generated.resources.hide_shop_confirm_description
 import ramap.shared.generated.resources.hide_shop_confirm_dismiss
 import ramap.shared.generated.resources.hide_shop_confirm_title
+import ramap.shared.generated.resources.ic_map_outline
 import ramap.shared.generated.resources.laduck_error_crying
 import ramap.shared.generated.resources.map_shop_detail_error_description
 import ramap.shared.generated.resources.map_shop_detail_error_title
@@ -123,12 +124,28 @@ fun ShopDetailContent(
         }
 
     if (visible && shouldShowMainSheet && state !is ShopDetailSheetUiState.Error) {
+        val mapAction =
+            if (state is ShopDetailSheetUiState.Content && onShowOnMap != null) {
+                { onShowOnMap(state.detail.shop.id) }
+            } else {
+                null
+            }
         ShopDetailBottomSheet(
             shopId = requireNotNull(mainSheetShopId),
             onDismissRequest = onDismissRequest,
             isBackEnabled = isBackEnabled,
             maxHeight = maxHeight,
             isNavigationBarPadded = isNavigationBarPadded,
+            floatingAction =
+                mapAction?.let { showOnMap ->
+                    {
+                        AppExtendedFloatingActionButton(
+                            text = stringResource(Res.string.ranking_show_shop_on_map),
+                            icon = Res.drawable.ic_map_outline,
+                            onClick = showOnMap,
+                        )
+                    }
+                },
         ) { scrollState ->
             when (state) {
                 is ShopDetailSheetUiState.Loading ->
@@ -213,19 +230,7 @@ fun ShopDetailContent(
                         uiState = overviewUiState,
                         actions = overviewActions,
                         reviewScrollState = scrollState,
-                        menuFooter = {
-                            onShowOnMap?.let { showOnMap ->
-                                AppButton(
-                                    text = stringResource(Res.string.ranking_show_shop_on_map),
-                                    modifier =
-                                        Modifier
-                                            .fillMaxWidth()
-                                            .padding(bottom = 2.dp)
-                                            .padding(horizontal = 20.dp),
-                                    onClick = { showOnMap(shop.id) },
-                                )
-                            }
-                        },
+                        bottomContentPadding = if (mapAction != null) 50.dp else 0.dp,
                     )
                 }
 
