@@ -28,8 +28,16 @@ import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.ui.main.map.dialog.ReportDialog
+import com.peto.ramap.ui.main.map.shop.model.RamenShopOverviewActions
+import com.peto.ramap.ui.main.map.shop.model.RamenShopOverviewUiState
 import com.peto.ramap.ui.main.map.shop.model.RamenShopUiModel
 import com.peto.ramap.ui.main.map.shop.model.ShopDetailSheetUiState
+import com.peto.ramap.ui.main.map.shop.model.ShopOverviewExternalLinkActions
+import com.peto.ramap.ui.main.map.shop.model.ShopOverviewHeaderActions
+import com.peto.ramap.ui.main.map.shop.model.ShopOverviewHeaderUiState
+import com.peto.ramap.ui.main.map.shop.model.ShopOverviewReviewActions
+import com.peto.ramap.ui.main.map.shop.model.ShopOverviewReviewPagingUiState
+import com.peto.ramap.ui.main.map.shop.model.ShopOverviewUserContext
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.hide_shop_confirm_action
@@ -133,62 +141,78 @@ fun ShopDetailContent(
 
                 is ShopDetailSheetUiState.Content -> {
                     val shop = state.detail.shop
+                    val overviewUiState =
+                        RamenShopOverviewUiState(
+                            detail = state.detail,
+                            headerState =
+                                ShopOverviewHeaderUiState(
+                                    waitingSystem = waitingSystem,
+                                    isBookmarked = isBookmarked,
+                                    isNotificationEnabled = isNotificationEnabled,
+                                    showNotificationActions = showNotificationActions,
+                                    isHidden = isHidden,
+                                    isAppleMapsAvailable = isAppleMapsAvailable,
+                                ),
+                            reviewPagingState =
+                                ShopOverviewReviewPagingUiState(
+                                    isRetryingReviews = isRetryingReviews,
+                                    showReviewsOnOpen = showReviewsOnOpen,
+                                    hasMoreReviews = hasMoreReviews,
+                                    isLoadingMoreReviews = isLoadingMoreReviews,
+                                ),
+                            userContext =
+                                ShopOverviewUserContext(
+                                    currentUserId = currentUserId,
+                                    currentProfileIsPublic = currentProfileIsPublic,
+                                    actingReviewId = actingReviewId,
+                                    revealedBlockedReviews = revealedBlockedReviews,
+                                    revealingBlockedReviewId = revealingBlockedReviewId,
+                                ),
+                        )
+                    val overviewActions =
+                        RamenShopOverviewActions(
+                            headerActions =
+                                ShopOverviewHeaderActions(
+                                    onDismissRequest = onDismissRequest,
+                                    onBookmarkClick = { onBookmarkToggled(shop) },
+                                    onNotificationClick = { onShopNotificationToggled(shop) },
+                                    onHiddenClick = {
+                                        if (isLoggedIn && !isHidden) {
+                                            hideConfirmShop = shop
+                                        } else {
+                                            onHiddenToggled(shop)
+                                        }
+                                    },
+                                    onReportClick = { showReportDialog = true },
+                                    onShareClick = { onShopShareClick(shop) },
+                                    onEventClick = onEventClick,
+                                    onOperatingNoticeClick = onOperatingNoticeClick,
+                                ),
+                            externalLinkActions =
+                                ShopOverviewExternalLinkActions(
+                                    onMapLinkClick = { provider -> onShopMapLinkClick(shop, provider) },
+                                    onWaitingClick = onWaitingClick,
+                                    onExternalLinkClick = onExternalLinkClick,
+                                    onAppleMapsClick = onAppleMapsClick,
+                                ),
+                            reviewActions =
+                                ShopOverviewReviewActions(
+                                    onOpenProfile = onOpenProfile,
+                                    onWriteReviewClick = { onReviewsClick(shop.id) },
+                                    onReviewRetry = onRetry,
+                                    onViewBlockedReview = onViewBlockedReview,
+                                    onUnblockBlockedUser = onUnblockBlockedUser,
+                                    onReviewLike = onReviewLike,
+                                    onReviewEdit = onReviewEdit,
+                                    onReviewDelete = { deleteReview = it },
+                                    onReviewReport = onReviewReport,
+                                    onLoadMoreReviews = onLoadMoreReviews,
+                                ),
+                        )
                     RamenShopOverview(
-                        shop = shop,
-                        likeCount = state.detail.likeCount,
-                        waitingSystem = waitingSystem,
-                        isBookmarked = isBookmarked,
-                        isNotificationEnabled = isNotificationEnabled,
-                        showNotificationActions = showNotificationActions,
-                        isHidden = isHidden,
-                        isAppleMapsAvailable = isAppleMapsAvailable,
-                        event = state.detail.event,
-                        operatingNotice = state.detail.operatingNotice,
-                        operatingNotices = state.detail.operatingNotices,
-                        menuSections = state.detail.menuSections,
-                        menuUpdatedAt = state.detail.menuUpdatedAt,
-                        reviews = state.detail.reviews,
+                        uiState = overviewUiState,
+                        actions = overviewActions,
                         reviewScrollState = scrollState,
-                        reviewCount = state.detail.reviewCount,
-                        hasReviewLoadFailure = state.detail.hasReviewLoadFailure,
-                        isRetryingReviews = isRetryingReviews,
-                        showReviewsOnOpen = showReviewsOnOpen,
-                        menuItemCount = state.detail.menuItemCount,
-                        onDismissRequest = onDismissRequest,
-                        onBookmarkClick = { onBookmarkToggled(shop) },
-                        onNotificationClick = { onShopNotificationToggled(shop) },
-                        onHiddenClick = {
-                            if (isLoggedIn && !isHidden) {
-                                hideConfirmShop = shop
-                            } else {
-                                onHiddenToggled(shop)
-                            }
-                        },
-                        onReportClick = { showReportDialog = true },
-                        onShareClick = { onShopShareClick(shop) },
-                        onMapLinkClick = { provider -> onShopMapLinkClick(shop, provider) },
-                        onWaitingClick = onWaitingClick,
-                        onExternalLinkClick = onExternalLinkClick,
-                        onAppleMapsClick = onAppleMapsClick,
-                        onEventClick = onEventClick,
-                        onOperatingNoticeClick = onOperatingNoticeClick,
-                        onOpenProfile = onOpenProfile,
-                        onWriteReviewClick = { onReviewsClick(shop.id) },
-                        onReviewRetry = onRetry,
-                        currentUserId = currentUserId,
-                        currentProfileIsPublic = currentProfileIsPublic,
-                        actingReviewId = actingReviewId,
-                        revealedBlockedReviews = revealedBlockedReviews,
-                        revealingBlockedReviewId = revealingBlockedReviewId,
-                        onViewBlockedReview = onViewBlockedReview,
-                        onUnblockBlockedUser = onUnblockBlockedUser,
-                        onReviewLike = onReviewLike,
-                        onReviewEdit = onReviewEdit,
-                        onReviewDelete = { deleteReview = it },
-                        onReviewReport = onReviewReport,
-                        hasMoreReviews = hasMoreReviews,
-                        isLoadingMoreReviews = isLoadingMoreReviews,
-                        onLoadMoreReviews = onLoadMoreReviews,
                         menuFooter = {
                             onShowOnMap?.let { showOnMap ->
                                 AppButton(
