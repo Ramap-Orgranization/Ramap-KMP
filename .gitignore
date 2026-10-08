@@ -50,6 +50,10 @@ AGENTS.md
 /distribution/
 /marketing
 tools/
+# Local menu-refresh tools, compatibility link, and historical outputs.
+/skills/menu-refresh
+/output/menu-refresh-skill.zip
+/output/menu-refresh-pilot-2026-10-07.md
 outputs/
 /artifacts
 iosApp/iosApp/GoogleService-Info-Release.plist
