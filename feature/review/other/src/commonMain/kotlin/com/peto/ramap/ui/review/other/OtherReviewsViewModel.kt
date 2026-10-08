@@ -150,7 +150,7 @@ class OtherReviewsViewModel(
                     is ProfileAccess.Visible -> {
                         reduce { copy(profileAccess = access) }
                         if (currentState.currentUserId != null) loadSavedShops()
-                        fetchAndApplyUserReviews(userId, access.profile, 0L, reset = true)
+                        fetchAndApplyUserReviews(userId, 0L, reset = true)
                     }
                     else -> applyProfileAccess(userId, access)
                 }
@@ -162,8 +162,8 @@ class OtherReviewsViewModel(
         userId: String,
         offset: Long,
     ) {
-        val access = currentState.profileAccess as? ProfileAccess.Visible ?: return
-        fetchAndApplyUserReviews(userId, access.profile, offset, reset = false)
+        if (currentState.profileAccess !is ProfileAccess.Visible) return
+        fetchAndApplyUserReviews(userId, offset, reset = false)
     }
 
     private fun applyProfileAccess(
@@ -189,7 +189,6 @@ class OtherReviewsViewModel(
 
     private suspend fun fetchAndApplyUserReviews(
         userId: String,
-        profile: PublicProfile,
         offset: Long,
         reset: Boolean,
     ) {
@@ -200,7 +199,6 @@ class OtherReviewsViewModel(
                 if (currentState.userId != userId) return
                 reduce {
                     copy(
-                        profileAccess = ProfileAccess.Visible(profile),
                         reviews = (if (reset) result.data else reviews + result.data).distinctBy { it.review.id },
                         hasMore = result.data.size == PAGE_SIZE,
                         reviewsOffset = offset + result.data.size,

@@ -15,7 +15,10 @@ class FakeOtherReviewsCommunity : CommunityRepository by FakeCommunityRepository
     var profilePrivate = false
     var reviews: List<ProfileReview> = emptyList()
     var savedShops: List<RamenShop> = emptyList()
+    var reviewCount: Int? = null
+    var savedShopCount: Int? = null
     var failNextPage = false
+    var failNextSavedShops = false
     var failNextBlock = false
     val blockedUserIds = mutableSetOf<String>()
     val requestedProfileUserIds = mutableListOf<String>()
@@ -29,7 +32,7 @@ class FakeOtherReviewsCommunity : CommunityRepository by FakeCommunityRepository
             when {
                 userId in blockedUserIds -> ProfileAccess.Blocked(PublicProfile(target.userId, target.nickname))
                 profilePrivate -> ProfileAccess.Private
-                else -> ProfileAccess.Visible(target)
+                else -> ProfileAccess.Visible(target, reviewCount, savedShopCount)
             }
         return RamapResult.Success(access)
     }
@@ -65,12 +68,16 @@ class FakeOtherReviewsCommunity : CommunityRepository by FakeCommunityRepository
         offset: Long,
     ): RamapResult<PublicSavedShopsPage> {
         requestedSavedShopOffsets += offset
+        if (failNextSavedShops) {
+            failNextSavedShops = false
+            return RamapResult.Error(RamapError.Unknown(IllegalStateException("saved shops unavailable")))
+        }
         val target = profile?.takeIf { it.userId == userId } ?: return RamapResult.Success(PublicSavedShopsPage(ProfileAccess.Unavailable, emptyList()))
         val access =
             when {
                 userId in blockedUserIds -> ProfileAccess.Blocked(PublicProfile(target.userId, target.nickname))
                 profilePrivate -> ProfileAccess.Private
-                else -> ProfileAccess.Visible(target)
+                else -> ProfileAccess.Visible(target, reviewCount, savedShopCount)
             }
         return RamapResult.Success(PublicSavedShopsPage(access, savedShops.drop(offset.toInt()).take(20)))
     }

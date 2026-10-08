@@ -7,7 +7,9 @@ import com.peto.ramap.domain.model.community.ReviewAuthor
 import com.peto.ramap.domain.model.review.Review
 import com.peto.ramap.ui.loading.LoadState
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class OtherReviewsUiStateTest {
@@ -29,6 +31,34 @@ class OtherReviewsUiStateTest {
         val state = OtherReviewsUiState(profileAccess = ProfileAccess.Visible(sampleProfile))
 
         assertTrue(state.showsProfileHeader)
+    }
+
+    @Test
+    fun `unknown totals stay absent even when a page has loaded`() {
+        val state =
+            OtherReviewsUiState(
+                profileAccess = ProfileAccess.Visible(sampleProfile),
+                reviews = listOf(sampleReview),
+                failed = true,
+                savedShopsFailed = true,
+            )
+
+        assertNull(state.reviewCount)
+        assertNull(state.savedShopCount)
+    }
+
+    @Test
+    fun `zero totals remain distinct from unavailable profile totals`() {
+        val visible = OtherReviewsUiState(profileAccess = ProfileAccess.Visible(sampleProfile, reviewCount = 0, savedShopCount = 0))
+        val blocked = visible.copy(profileAccess = ProfileAccess.Blocked(sampleProfile))
+        val unavailable = visible.copy(profileAccess = ProfileAccess.Unavailable)
+
+        assertEquals(0, visible.reviewCount)
+        assertEquals(0, visible.savedShopCount)
+        assertNull(blocked.reviewCount)
+        assertNull(blocked.savedShopCount)
+        assertNull(unavailable.reviewCount)
+        assertNull(unavailable.savedShopCount)
     }
 
     @Test

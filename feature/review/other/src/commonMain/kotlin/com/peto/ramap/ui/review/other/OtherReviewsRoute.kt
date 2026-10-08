@@ -208,8 +208,8 @@ internal fun OtherReviewsContent(
             if (state.profileAccess is ProfileAccess.Visible) {
                 item {
                     ProfileStatsCard(
-                        reviewCount = state.reviews.size,
-                        savedShopCount = state.savedShops.size,
+                        reviewCount = state.reviewCount,
+                        savedShopCount = state.savedShopCount,
                         onReviewClick = { onIntent(OtherReviewsIntent.SelectTab(OtherReviewsTab.Reviews)) },
                         onSavedShopClick = { onIntent(OtherReviewsIntent.SelectTab(OtherReviewsTab.SavedShops)) },
                     )
@@ -552,8 +552,8 @@ private fun OtherReviewsContentFailedPreview() {
 
 @Composable
 private fun ProfileStatsCard(
-    reviewCount: Int,
-    savedShopCount: Int,
+    reviewCount: Int?,
+    savedShopCount: Int?,
     onReviewClick: () -> Unit,
     onSavedShopClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -578,7 +578,7 @@ private fun ProfileStatsCard(
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
             AppText(
-                text = reviewCount.toString(),
+                text = reviewCount?.toString().orEmpty(),
                 style = AppTextStyle.T1,
                 color = GrayColor.C500,
             )
@@ -602,7 +602,7 @@ private fun ProfileStatsCard(
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
             AppText(
-                text = savedShopCount.toString(),
+                text = savedShopCount?.toString().orEmpty(),
                 style = AppTextStyle.T1,
                 color = GrayColor.C500,
             )

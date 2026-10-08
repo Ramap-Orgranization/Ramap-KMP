@@ -1,16 +1,26 @@
 package com.peto.ramap.data.model
 
 import com.peto.ramap.domain.model.community.ProfileAccess
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
 internal data class ProfileAccessResponse(
     val status: String,
     val profile: PublicProfileResponse? = null,
+    @SerialName("review_count")
+    val reviewCount: Int? = null,
+    @SerialName("saved_shop_count")
+    val savedShopCount: Int? = null,
 ) {
     fun toDomain(): ProfileAccess =
         when (status) {
-            VISIBLE -> ProfileAccess.Visible(requireNotNull(profile).toDomain())
+            VISIBLE ->
+                ProfileAccess.Visible(
+                    profile = requireNotNull(profile).toDomain(),
+                    reviewCount = reviewCount,
+                    savedShopCount = savedShopCount,
+                )
             BLOCKED -> ProfileAccess.Blocked(requireNotNull(profile).toDomain())
             PRIVATE -> ProfileAccess.Private
             UNAVAILABLE -> ProfileAccess.Unavailable

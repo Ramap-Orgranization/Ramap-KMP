@@ -43,6 +43,8 @@ data class OtherReviewsUiState(
                 savedShops.isEmpty() &&
                 profileAccess is ProfileAccess.Visible
     val blocking: Boolean get() = loadState.isLoading(OtherReviewsLoadKey.Block)
+    val reviewCount: Int? get() = (profileAccess as? ProfileAccess.Visible)?.reviewCount
+    val savedShopCount: Int? get() = (profileAccess as? ProfileAccess.Visible)?.savedShopCount
 
     val profile: PublicProfile?
         get() =
