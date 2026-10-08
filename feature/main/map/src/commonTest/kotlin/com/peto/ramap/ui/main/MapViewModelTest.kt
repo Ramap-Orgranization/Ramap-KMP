@@ -761,37 +761,17 @@ class MapViewModelTest {
         }
 
     @Test
-    fun `이미 조회한 가게를 다시 선택하면 상세를 중복 조회하지 않고 즉시 표시한다`() =
-        coroutinesTest {
-            val shop = ramenShopFixture()
-            val ramenShopRepository =
-                FakeRamenShopRepository(fetchByIdsResult = RamenShops(mapOf(shop.id to shop)))
-            val waitingSystemRepository =
-                FakeShopWaitingSystemRepository(result = waitingSystemFixture(shop.id))
-            val viewModel =
-                mapViewModel(
-                    ramenShopRepository = ramenShopRepository,
-                    shopWaitingSystemRepository = waitingSystemRepository,
-                )
+    fun `가게를 다시 선택하면 캐시를 표시한 뒤 최신 상세로 갱신한다`() = verifyCachedShopDetailRefresh(selectShop = { OnShopSelected(it) })
 
-            viewModel.dispatch(OnShopSelected(shop))
-            runCurrent()
-            viewModel.dispatch(OnShopDetailDismissed)
-            runCurrent()
-            viewModel.dispatch(OnShopSelected(shop))
-            runCurrent()
+    @Test
+    fun `아이디로 가게를 다시 열면 캐시를 표시한 뒤 최신 상세로 갱신한다`() = verifyCachedShopDetailRefresh(selectShop = { OnShopIdSelected(it.id) })
 
-            assertEquals(listOf(setOf(shop.id)), ramenShopRepository.requestedShopIdsHistory)
-            assertEquals(listOf(shop.id), waitingSystemRepository.requestedShopIds)
-            assertEquals(listOf(shop.id), ramenShopRepository.requestedActiveEventShopIds)
-            assertEquals(
-                shop,
-                viewModel.uiState.value
-                    .shopDetail
-                    ?.shop,
-            )
-            assertEquals(false, viewModel.uiState.value.isShopDetailLoading)
-        }
+    @Test
+    fun `가게 상세 재조회가 실패하면 표시 중인 캐시를 유지한다`() =
+        verifyCachedShopDetailRefresh(
+            selectShop = { OnShopSelected(it) },
+            refreshFails = true,
+        )
 
     @Test
     fun `매장 상세를 닫으면 진행 중인 상세 조회를 취소한다`() =
@@ -2982,6 +2962,58 @@ class MapViewModelTest {
             assertEquals(null, viewModel.uiState.value.searchResultGuide)
             assertEquals(false, viewModel.uiState.value.showSearchResults)
         }
+}
+
+@OptIn(ExperimentalCoroutinesApi::class)
+private fun verifyCachedShopDetailRefresh(
+    selectShop: (RamenShop) -> MapIntent,
+    refreshFails: Boolean = false,
+) = coroutinesTest {
+    val shop = ramenShopFixture()
+    val delegate =
+        FakeFetchShopDetailUseCase(
+            FakeRamenShopRepository(fetchByIdsResult = RamenShops(mapOf(shop.id to shop))),
+            FakeShopWaitingSystemRepository(),
+            FakeOperatingNoticeRepository(),
+        )
+    val refreshResult = CompletableDeferred<RamapResult<ShopDetail>>()
+    var requests = 0
+    val useCase =
+        object : FetchShopDetailUseCase by delegate {
+            override suspend fun invoke(shopId: String): RamapResult<ShopDetail> {
+                requests++
+                return if (requests == 1) delegate(shopId) else refreshResult.await()
+            }
+        }
+    val viewModel = mapViewModel(detailUseCase = useCase)
+    viewModel.dispatch(selectShop(shop))
+    runCurrent()
+    val cached = requireNotNull(viewModel.uiState.value.shopDetail)
+    val refreshed = cached.copy(menuUpdatedAt = "2026-10-09T01:00:00Z", reviewCount = 23)
+
+    viewModel.dispatch(OnShopDetailDismissed)
+    runCurrent()
+    viewModel.dispatch(selectShop(shop))
+    runCurrent()
+
+    assertEquals(cached, viewModel.uiState.value.shopDetail)
+    assertEquals(2, requests)
+    viewModel.dispatch(selectShop(shop))
+    viewModel.dispatch(OnSelectedShopFocusConsumed)
+    runCurrent()
+    assertEquals(2, requests)
+
+    refreshResult.complete(
+        if (refreshFails) {
+            RamapResult.Error(RamapError.Unknown(IllegalStateException("offline")))
+        } else {
+            RamapResult.Success(refreshed)
+        },
+    )
+    runCurrent()
+
+    assertEquals(if (refreshFails) cached else refreshed, viewModel.uiState.value.shopDetail)
+    assertEquals(false, viewModel.uiState.value.shouldFocusSelectedShop)
 }
 
 private fun loadedSearchUiModel(

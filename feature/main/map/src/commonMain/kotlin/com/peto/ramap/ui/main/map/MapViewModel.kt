@@ -700,9 +700,7 @@ class MapViewModel(
         if (cache != null) recordRecentlyViewedShop(shop)
         val selectedShopState = createSelectedShopState(currentState, shop, shouldFocus, cache)
         reduce { selectedShopState }
-        if (cache == null) {
-            loadShopDetail(shop.id)
-        }
+        loadShopDetail(shop.id)
     }
 
     private fun createSelectedShopState(
@@ -789,6 +787,7 @@ class MapViewModel(
             is ShopDetailCacheLookup.Hit -> {
                 cancelShopDetailLoad()
                 applyRequestedShopDetail(lookup.detail)
+                loadShopDetail(shopId)
                 return
             }
 
