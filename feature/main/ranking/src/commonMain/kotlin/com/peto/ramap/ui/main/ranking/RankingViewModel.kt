@@ -5,6 +5,7 @@ import com.peto.ramap.analytics.AnalyticsSource
 import com.peto.ramap.analytics.common.login.LoginAnalytics
 import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
+import com.peto.ramap.domain.model.auth.LoginSessionState
 import com.peto.ramap.domain.model.auth.LoginType
 import com.peto.ramap.domain.model.rank.RankedShops
 import com.peto.ramap.domain.model.rank.RankingCursor
@@ -113,7 +114,9 @@ class RankingViewModel(
 
     private fun observeSessionState() {
         viewModelScope.launch {
-            loginRepository.sessionState.collectLatest {
+            loginRepository.sessionState.collectLatest { sessionState ->
+                if (sessionState == LoginSessionState.AUTHENTICATED) return@collectLatest
+
                 observedBookmarkedShopIds = null
                 reduce {
                     copy(
