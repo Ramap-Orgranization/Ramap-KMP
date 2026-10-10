@@ -42,6 +42,8 @@
 
 ## 프로젝트 구조
 
+개발을 시작할 때 [Ramap LLM 위키](docs/wiki/README.md)에서 관련 코드와 검증 경로를 찾습니다. 작업 중 확정된 지식은 [유지보수 정책](docs/wiki/maintenance.md)에 따라 갱신합니다.
+
 | 계층 | 모듈 | 역할 |
 |---|---|---|
 | Application | `androidApp` | Android 앱 진입점, Firebase·Kakao·Naver SDK 초기화 |

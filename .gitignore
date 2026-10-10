@@ -26,7 +26,8 @@ captures
 **/xcshareddata/WorkspaceSettings.xcsettings
 node_modules/
 iosApp/Pods/
-docs/
+/docs/*
+!/docs/wiki/
 AGENTS.md
 .scratch/
 **/__pycache__/
