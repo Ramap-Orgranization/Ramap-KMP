@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -34,6 +33,7 @@ import org.jetbrains.compose.resources.stringResource as composeStringResource
 @Composable
 internal fun AdminDraftPreview(
     draft: AdminDraft,
+    showVenueFields: Boolean = true,
     businessHours: BusinessHours? = null,
     modifier: Modifier = Modifier,
     onTitleChanged: (String) -> Unit = {},
@@ -61,16 +61,18 @@ internal fun AdminDraftPreview(
         )
         AdminTitleField(draft.title, onTitleChanged)
         PreviewRow(stringResource(R.string.admin_registration_shop), draft.shopName)
-        AdminExternalVenueField(
-            venueName = draft.venueName.orEmpty(),
-            venues = externalVenues,
-            onNewVenueNameChanged = { onVenueChanged(it, draft.venueAddress.orEmpty(), "", draft.venueInstagramUrl.orEmpty(), draft.venueNaverMapUrl.orEmpty(), draft.venueKakaoMapUrl.orEmpty()) },
-            onVenueSelected = { venue -> onVenueChanged(venue.name, venue.address.orEmpty(), venue.id, venue.instagramUrl.orEmpty(), venue.naverMapUrl.orEmpty(), venue.kakaoMapUrl.orEmpty()) },
-        )
-        AdminSourceField(draft.venueAddress.orEmpty(), { onVenueChanged(draft.venueName.orEmpty(), it, "", draft.venueInstagramUrl.orEmpty(), draft.venueNaverMapUrl.orEmpty(), draft.venueKakaoMapUrl.orEmpty()) }, R.string.admin_registration_venue_address_placeholder, readOnly = draft.externalVenueId != null)
-        AdminSourceField(draft.venueInstagramUrl.orEmpty(), { onVenueChanged(draft.venueName.orEmpty(), draft.venueAddress.orEmpty(), "", it, draft.venueNaverMapUrl.orEmpty(), draft.venueKakaoMapUrl.orEmpty()) }, R.string.admin_registration_venue_instagram_placeholder, readOnly = draft.externalVenueId != null)
-        AdminSourceField(draft.venueNaverMapUrl.orEmpty(), { onVenueChanged(draft.venueName.orEmpty(), draft.venueAddress.orEmpty(), "", draft.venueInstagramUrl.orEmpty(), it, draft.venueKakaoMapUrl.orEmpty()) }, R.string.admin_registration_venue_naver_map_placeholder, readOnly = draft.externalVenueId != null)
-        AdminSourceField(draft.venueKakaoMapUrl.orEmpty(), { onVenueChanged(draft.venueName.orEmpty(), draft.venueAddress.orEmpty(), "", draft.venueInstagramUrl.orEmpty(), draft.venueNaverMapUrl.orEmpty(), it) }, R.string.admin_registration_venue_kakao_map_placeholder, readOnly = draft.externalVenueId != null)
+        if (showVenueFields) {
+            AdminExternalVenueField(
+                venueName = draft.venueName.orEmpty(),
+                venues = externalVenues,
+                onNewVenueNameChanged = { onVenueChanged(it, draft.venueAddress.orEmpty(), "", draft.venueInstagramUrl.orEmpty(), draft.venueNaverMapUrl.orEmpty(), draft.venueKakaoMapUrl.orEmpty()) },
+                onVenueSelected = { venue -> onVenueChanged(venue.name, venue.address.orEmpty(), venue.id, venue.instagramUrl.orEmpty(), venue.naverMapUrl.orEmpty(), venue.kakaoMapUrl.orEmpty()) },
+            )
+            AdminSourceField(draft.venueAddress.orEmpty(), { onVenueChanged(draft.venueName.orEmpty(), it, "", draft.venueInstagramUrl.orEmpty(), draft.venueNaverMapUrl.orEmpty(), draft.venueKakaoMapUrl.orEmpty()) }, R.string.admin_registration_venue_address_placeholder, readOnly = draft.externalVenueId != null)
+            AdminSourceField(draft.venueInstagramUrl.orEmpty(), { onVenueChanged(draft.venueName.orEmpty(), draft.venueAddress.orEmpty(), "", it, draft.venueNaverMapUrl.orEmpty(), draft.venueKakaoMapUrl.orEmpty()) }, R.string.admin_registration_venue_instagram_placeholder, readOnly = draft.externalVenueId != null)
+            AdminSourceField(draft.venueNaverMapUrl.orEmpty(), { onVenueChanged(draft.venueName.orEmpty(), draft.venueAddress.orEmpty(), "", draft.venueInstagramUrl.orEmpty(), it, draft.venueKakaoMapUrl.orEmpty()) }, R.string.admin_registration_venue_naver_map_placeholder, readOnly = draft.externalVenueId != null)
+            AdminSourceField(draft.venueKakaoMapUrl.orEmpty(), { onVenueChanged(draft.venueName.orEmpty(), draft.venueAddress.orEmpty(), "", draft.venueInstagramUrl.orEmpty(), draft.venueNaverMapUrl.orEmpty(), it) }, R.string.admin_registration_venue_kakao_map_placeholder, readOnly = draft.externalVenueId != null)
+        }
         PreviewRow(
             stringResource(R.string.admin_registration_collaborators),
             draft.participants.joinToString(", ") { participant -> participant.name },
@@ -99,7 +101,8 @@ internal fun AdminDraftPreview(
             minLines = 4,
             maxLines = 10,
             placeholder = {
-                Text(
+                AppText(
+                    style = AppTextStyle.B2,
                     text = stringResource(R.string.admin_registration_preview_empty),
                     color = GrayColor.C200,
                 )
@@ -130,7 +133,8 @@ internal fun AdminTitleField(
         modifier = modifier.fillMaxWidth(),
         singleLine = true,
         placeholder = {
-            Text(
+            AppText(
+                style = AppTextStyle.B2,
                 text = stringResource(R.string.admin_registration_title_placeholder),
                 color = GrayColor.C200,
             )

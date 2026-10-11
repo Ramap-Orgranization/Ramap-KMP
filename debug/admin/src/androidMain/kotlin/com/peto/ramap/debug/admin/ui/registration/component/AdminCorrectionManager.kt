@@ -32,6 +32,7 @@ internal fun AdminCorrectionManager(
         AppText(stringResource(R.string.admin_correction_title), AppTextStyle.B1, GrayColor.C500)
         OutlinedTextField(
             value = request,
+            enabled = !isLoading,
             onValueChange = onRequestChanged,
             modifier = Modifier.fillMaxWidth(),
             label = { AppText(stringResource(R.string.admin_correction_request), AppTextStyle.B4, GrayColor.C400) },
@@ -47,11 +48,11 @@ internal fun AdminCorrectionManager(
     }
     if (preview != null) {
         AlertDialog(
-            onDismissRequest = onDismiss,
+            onDismissRequest = { if (!isLoading) onDismiss() },
             title = { AppText(stringResource(R.string.admin_correction_confirm_title), AppTextStyle.T2, GrayColor.C500) },
             text = { AppText(preview.summary, AppTextStyle.B3, GrayColor.C400) },
-            confirmButton = { TextButton(onClick = onConfirm) { AppText(stringResource(R.string.admin_correction_confirm), AppTextStyle.B2, GrayColor.C500) } },
-            dismissButton = { TextButton(onClick = onDismiss) { AppText(stringResource(R.string.admin_registration_cancel), AppTextStyle.B2, GrayColor.C400) } },
+            confirmButton = { TextButton(onClick = onConfirm, enabled = !isLoading) { AppText(stringResource(R.string.admin_correction_confirm), AppTextStyle.B2, GrayColor.C500) } },
+            dismissButton = { TextButton(onClick = onDismiss, enabled = !isLoading) { AppText(stringResource(R.string.admin_registration_cancel), AppTextStyle.B2, GrayColor.C400) } },
         )
     }
 }

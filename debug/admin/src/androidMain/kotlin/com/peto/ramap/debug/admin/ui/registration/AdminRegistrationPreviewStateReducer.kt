@@ -11,15 +11,23 @@ internal object AdminRegistrationPreviewStateReducer {
         preview: AdminDraft,
     ): AdminRegistrationUiState {
         val isMonthly = state.isOperatingNotice && preview.dailySchedules.isNotEmpty()
-        val resolvedEventType = resolveEventType(preview.eventType, state.selectedEventType)
+        val resolvedEventType = if (state.hasSelectedEventType) state.selectedEventType else resolveEventType(preview.eventType, state.selectedEventType)
         val resolvedEndDate =
             if (!state.isOperatingNotice && resolvedEventType == ShopEventType.STORE_RENEWAL) {
                 null
+            } else if (!state.isOperatingNotice && resolvedEventType == ShopEventType.NEW_MENU) {
+                (state.selectedStartDate ?: preview.startDate)?.let {
+                    java.time.LocalDate
+                        .parse(it)
+                        .plusDays(6)
+                        .toString()
+                }
             } else {
                 if (isMonthly) preview.endDate else state.selectedEndDate ?: preview.endDate
             }
 
         return state.copy(
+            shopName = preview.shopName ?: state.shopName,
             draft =
                 preview.copy(
                     shopName = preview.shopName ?: state.shopName.ifBlank { null },
@@ -30,8 +38,8 @@ internal object AdminRegistrationPreviewStateReducer {
                 ),
             selectedEventType = resolvedEventType,
             selectedNoticeType = if (isMonthly) OperatingNoticeType.OPERATING_NOTICE else state.selectedNoticeType,
-            selectedStartDate = if (isMonthly) preview.startDate else state.selectedStartDate,
-            selectedEndDate = if (isMonthly) preview.endDate else state.selectedEndDate,
+            selectedStartDate = if (isMonthly) preview.startDate else state.selectedStartDate ?: preview.startDate,
+            selectedEndDate = resolvedEndDate,
             message = null,
         )
     }

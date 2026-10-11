@@ -6,6 +6,10 @@ import com.peto.ramap.domain.model.notice.OperatingNoticeType
 import com.peto.ramap.ui.base.Intent
 
 internal sealed interface AdminRegistrationIntent : Intent {
+    data object OnResumed : AdminRegistrationIntent
+
+    data object OnEvidenceReadFailed : AdminRegistrationIntent
+
     data class OnRegistrationTypeSelected(
         val isOperatingNotice: Boolean,
     ) : AdminRegistrationIntent
