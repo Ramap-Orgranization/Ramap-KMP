@@ -1,3 +1,4 @@
+import { effectiveEndDate, isManageableEvent } from "../_shared/admin-event-policy.ts";
 import { isAdministrator } from "../_shared/admin-auth.ts";
 import { createServiceClient } from "../_shared/event-notifications.ts";
 
@@ -64,11 +65,11 @@ async function findActiveCandidates(supabase: ReturnType<typeof createServiceCli
   if (error || !shops?.length) return [];
   const shopIds = shops.map((shop) => shop.id), today = koreaToday();
   const [events, notices] = await Promise.all([
-    target.registration_type === "operating_notice" ? Promise.resolve({ data: [] }) : supabase.from("shop_events").select("id,title").in("shop_id", shopIds).or(`end_date.is.null,end_date.gte.${today}`).limit(5),
-    target.registration_type === "event" ? Promise.resolve({ data: [] }) : supabase.from("shop_operating_notices").select("id,notice_type,description,notice_date,end_date").in("shop_id", shopIds).or(`and(end_date.is.null,notice_date.gte.${today}),end_date.gte.${today}`).limit(5),
+    target.registration_type === "operating_notice" ? Promise.resolve({ data: [] }) : supabase.from("shop_events").select("id,title,event_type,start_date,end_date").in("shop_id", shopIds).ilike("title", `%${escapeLike(target.title_context ?? "")}%`).or(`end_date.is.null,end_date.gte.${today}`).limit(100),
+    target.registration_type === "event" ? Promise.resolve({ data: [] }) : supabase.from("shop_operating_notices").select("id,notice_type,description,notice_date,end_date").in("shop_id", shopIds).or(`and(end_date.is.null,notice_date.gte.${today}),end_date.gte.${today}`).limit(100),
   ]);
   const matches = [
-    ...(events.data ?? []).filter((event) => matchesContext(event.title, target.title_context)).map((event) => ({ id: event.id, registration_type: "event" as const })),
+    ...(events.data ?? []).filter((event) => isManageableEvent(event, today) && matchesContext(event.title, target.title_context)).map((event) => ({ id: event.id, registration_type: "event" as const })),
     ...(notices.data ?? []).filter((notice) => matchesContext(`${notice.notice_type} ${notice.description ?? ""}`, target.title_context)).map((notice) => ({ id: notice.id, registration_type: "operating_notice" as const })),
   ];
   return matches;
@@ -83,7 +84,10 @@ async function applyCorrection(type: RegistrationType, id: string, value: unknow
   const current = await findRecord(createServiceClient(), type, id);
   if (!current || !isActiveRecord(type, current)) return json({ code: "active_target_not_found" }, 404);
   const startDate = changes.start_date ?? (type === "event" ? current.start_date : current.notice_date) as string;
-  const endDate = changes.end_date ?? current.end_date as string | null;
+  const eventType = changes.event_type ?? current.event_type as string;
+  const endDate = type === "event" && eventType === "new_menu"
+    ? effectiveEndDate({ event_type: eventType, start_date: startDate, end_date: null })
+    : type === "event" && eventType === "store_renewal" ? null : changes.end_date ?? current.end_date as string | null;
   if (!validDate(startDate) || (endDate !== null && (!validDate(endDate) || startDate > endDate))) {
     return json({ code: "invalid_date_range" }, 400);
   }
@@ -91,6 +95,8 @@ async function applyCorrection(type: RegistrationType, id: string, value: unknow
     ? { title: changes.title, description: changes.description, start_date: changes.start_date, end_date: changes.end_date, event_type: changes.event_type }
     : { description: changes.description, notice_date: changes.start_date, end_date: changes.end_date, notice_type: changes.notice_type, start_time: changes.start_time, end_time: changes.end_time, schedule_override: changes.schedule_override };
   const filtered = Object.fromEntries(Object.entries(update).filter(([, value]) => value !== null));
+  if (type === "event" && (eventType === "new_menu" || eventType === "store_renewal")) filtered.end_date = endDate;
+  if (type === "operating_notice" && changes.schedule_override && (changes.notice_type ?? current.notice_type) !== "operating_notice") return json({ code: "invalid_changes" }, 400);
   if (Object.keys(filtered).length === 0) return json({ code: "no_supported_changes" }, 422);
   const table = type === "event" ? "shop_events" : "shop_operating_notices";
   const { error } = await createServiceClient().from(table).update(filtered).eq("id", id);
@@ -107,8 +113,8 @@ async function findRecord(supabase: ReturnType<typeof createServiceClient>, type
 
 function isActiveRecord(type: RegistrationType, record: Record<string, unknown>): boolean {
   const today = koreaToday(), endDate = text(record.end_date);
-  if (endDate) return endDate >= today;
-  return type === "event" || (text(record.notice_date) ?? "") >= today;
+  if (type === "event") return isManageableEvent({ event_type: text(record.event_type) ?? "", start_date: text(record.start_date) ?? "", end_date: endDate }, today);
+  return (endDate ?? text(record.notice_date) ?? "") >= today;
 }
 
 async function analyze(apiKey: string, type: RegistrationType, record: unknown, instruction: string): Promise<{ summary: string; changes: Changes }> {
@@ -140,9 +146,12 @@ function validateChanges(type: RegistrationType, value: unknown): Changes | null
   if (changes.start_date === "" || changes.end_date === "" || changes.start_time === "" || changes.end_time === "") return null;
   if (changes.event_type && !EVENT_TYPES.includes(changes.event_type as typeof EVENT_TYPES[number])) return null;
   if (changes.notice_type && !NOTICE_TYPES.includes(changes.notice_type as typeof NOTICE_TYPES[number])) return null;
-  if (type === "event") changes.notice_type = changes.start_time = changes.end_time = changes.schedule_override = null;
-  if (changes.schedule_override && (!changes.notice_type || changes.notice_type !== "operating_notice" || typeof changes.schedule_override !== "object")) return null;
-  else changes.title = changes.event_type = null;
+  if (type === "event") {
+    changes.notice_type = changes.start_time = changes.end_time = changes.schedule_override = null;
+  } else {
+    changes.title = changes.event_type = null;
+    if (changes.schedule_override && ((changes.notice_type !== null && changes.notice_type !== "operating_notice") || typeof changes.schedule_override !== "object" || Array.isArray(changes.schedule_override))) return null;
+  }
   return Object.values(changes).some((value) => value !== null) ? changes : null;
 }
 
