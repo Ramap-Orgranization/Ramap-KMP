@@ -1,4 +1,4 @@
-import { validDailySchedules } from "../_shared/operating-notice-schedule.ts";
+import { validCalendarDate, validDailySchedules } from "../_shared/operating-notice-schedule.ts";
 import { isAdministrator } from "../_shared/admin-auth.ts";
 import { assertKnownEventType, createServiceClient } from "../_shared/event-notifications.ts";
 import { normalizeMapUrl } from "../_shared/event-venue-url.ts";
@@ -36,7 +36,7 @@ Deno.serve(async (request) => {
   const sourceUrl = normalizeInstagramUrl(text(body?.source_url));
   const evidencePath = text(body?.evidence_path);
   const imageOnly = body?.image_only === true;
-  if (!shopName || !title || !startDate || !validDate(startDate) || !validDate(requestedEndDate)) {
+  if (!shopName || !title || !validCalendarDate(startDate) || !validCalendarDate(requestedEndDate) || requestedEndDate < startDate) {
     return json({ code: "invalid_draft" }, 400);
   }
   if (imageOnly ? !isEvidencePath(evidencePath) : !description || !sourceUrl || !isInstagramUrl(sourceUrl)) {
@@ -312,15 +312,14 @@ async function registerOperatingNotice(
   const evidencePath = text(body.evidence_path);
   if (
     !shopName || !isSupportedNoticeType(noticeType) || !startDate || !description || !sourceUrl ||
-    !validDate(startDate) || !endDate || !validDate(endDate) || endDate < startDate || (startTime && !validTime(startTime)) ||
+    !validCalendarDate(startDate) || !validCalendarDate(endDate) || endDate < startDate || (startTime && !validTime(startTime)) ||
     (endTime && !validTime(endTime)) || !isInstagramUrl(sourceUrl) ||
     (isMonthly && (noticeType !== "operating_notice" || scheduleOverride != null || startTime != null || endTime != null || !validDailySchedules(dailySchedules, startDate, endDate))) ||
     (!Array.isArray(dailySchedules)) ||
     (!isMonthly && noticeType === "operating_notice" && !validScheduleOverride(scheduleOverride)) ||
     (noticeType !== "operating_notice" && scheduleOverride != null) ||
     (noticeType === "early_close" && !endTime) ||
-    (noticeType === "late_opening" && startTime !== null && !validTime(startTime)) ||
-    (!isMonthly && noticeType === "operating_notice" && endDate !== null && startDate !== endDate)
+    (noticeType === "late_opening" && startTime !== null && !validTime(startTime))
   ) return json({ code: "invalid_operating_notice_draft" }, 400);
 
   const { data: shops, error: shopError } = await supabase.from("ramen_shops").select("id,instagram_url").eq("name", shopName).limit(2);
@@ -348,7 +347,8 @@ async function registerOperatingNotice(
       .select("id")
       .eq("shop_id", shop.id)
       .eq("notice_type", "operating_notice")
-      .eq("notice_date", startDate)
+      .lte("notice_date", endDate)
+      .or(`end_date.gte.${startDate},end_date.is.null`)
       .not("schedule_override", "is", null)
       .limit(1);
     if (overrideError) return json({ code: "server_unavailable" }, 503);
@@ -425,7 +425,6 @@ function isInstagramUrl(value: string) {
   }
 }
 function isEvidencePath(value: string | null): value is string { return value !== null && /^[\w-]+\.(?:jpe?g|png)$/i.test(value); }
-function validDate(value: string | null) { return typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value); }
 function validScheduleOverride(value: unknown) {
   if (!value || typeof value !== "object" || Array.isArray(value)) return false;
   const day = value as Record<string, unknown>;

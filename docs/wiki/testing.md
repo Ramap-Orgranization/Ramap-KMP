@@ -2,7 +2,7 @@
 authority: reference
 status: active
 last_verified: 2026-10-11
-source_ref: 33a0d49c2731e42144f2c79704748d7c7e0cf68b
+source_ref: 009f67d2924a285353213d1aa91ade5406e87324 + working-tree
 ---
 
 # 검증 안내
@@ -20,6 +20,8 @@ source_ref: 33a0d49c2731e42144f2c79704748d7c7e0cf68b
 | 지도 흐름 | `./gradlew :feature:main:map:testAndroidHostTest` |
 | 도메인·데이터 경계 | `./gradlew :domain:testAndroidHostTest :data:testAndroidHostTest` |
 | 관리자 모델·상태 | `./gradlew :debug:admin:testAndroidHostTest` |
+| 관리자 화면 조작·연속 날짜 등록 | `./gradlew :debug:admin:connectedAndroidDeviceTest` — [기기 테스트](../../debug/admin/src/androidDeviceTest/kotlin/com/peto/ramap/debug/admin/AdminRegistrationFlowTest.kt)는 테스트 데이터로 실행하며 운영 데이터에 쓰지 않습니다. |
+| 관리자 등록 API·날짜 검증 | `node --test supabase/functions/register-event/handler.test.mjs supabase/functions/_shared/operating-notice-schedule.test.mjs` |
 | 영업 상태 worker | `npm --prefix supabase/workers/naver-operating-status test` |
 | 앱 공통 조립·내비게이션 | `./gradlew :shared:testAndroidHostTest :core:navigation:testAndroidHostTest` |
 | Android 앱 연결 | `./gradlew :androidApp:assembleDebug` |

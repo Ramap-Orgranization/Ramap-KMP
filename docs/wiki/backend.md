@@ -2,7 +2,7 @@
 authority: reference
 status: active
 last_verified: 2026-10-11
-source_ref: 33a0d49c2731e42144f2c79704748d7c7e0cf68b
+source_ref: 009f67d2924a285353213d1aa91ade5406e87324 + working-tree
 ---
 
 # 백엔드와 운영 탐색
@@ -30,6 +30,14 @@ source_ref: 33a0d49c2731e42144f2c79704748d7c7e0cf68b
 | Android 디버그 관리 화면 | [debug/admin](../../debug/admin) |
 
 migration 디렉터리만으로 DB 전체를 재현할 수 있다고 가정하지 않습니다. 파일이 존재하는 것과 배포되었다는 것은 별개입니다. API 변경은 앱 소비자·함수·migration·검증 근거를 함께 기록합니다.
+
+## 관리자 연속 날짜 등록
+
+이번 working-tree에서 확인한 범위는 관리자 날짜 선택·미리보기·등록 요청과 `register-event`의 날짜 검증입니다. 일반 이벤트는 선택한 시작일과 종료일을 유지합니다. 신메뉴의 7일 기간과 리뉴얼의 종료일 없음은 기존 규칙을 유지합니다. 일반 영업 변동의 `schedule_override`는 시작일부터 종료일까지 적용하며 월을 넘길 수 있습니다. 날짜 순서가 뒤집혔거나 실제 달력에 없는 날짜는 등록 전에 거부하고, 기존 변경 영업시간과의 중복은 선택한 기간 전체로 확인합니다.
+
+앱 상태·전송 범위는 [관리자 ViewModel 테스트](../../debug/admin/src/androidHostTest/kotlin/com/peto/ramap/debug/admin/ui/registration/AdminRegistrationViewModelTest.kt), 실제 달력 선택은 [기기 테스트](../../debug/admin/src/androidDeviceTest/kotlin/com/peto/ramap/debug/admin/AdminRegistrationFlowTest.kt), 서버 저장 값은 [등록 handler 테스트](../../supabase/functions/register-event/handler.test.mjs), 영업 상태 적용은 [공지 도메인 테스트](../../domain/src/commonTest/kotlin/com/peto/ramap/domain/model/notice/MonthlyOperatingNoticeTest.kt)가 검증합니다.
+
+2026-10-11에 `register-event` 운영 버전 19와 `add_operating_notice_daily_schedules` 스키마 반영을 확인했습니다. 이 함수가 사용하는 `daily_schedules` 컬럼은 [기존 migration](../../supabase/migrations/20261003032631_add_operating_notice_daily_schedules.sql)이 정의하며, 빈 배열은 기존 연속 공지 동작을 유지합니다. 운영 API는 존재하지 않는 검증용 매장명으로 날짜 검증 통과 후 저장 전에 중단되는 응답을 확인했습니다. 실제 저장은 격리한 handler·DB 테스트로 확인했으며 운영 공지를 추가하지 않았습니다.
 
 ## 로컬 등록 절차 찾기
 
