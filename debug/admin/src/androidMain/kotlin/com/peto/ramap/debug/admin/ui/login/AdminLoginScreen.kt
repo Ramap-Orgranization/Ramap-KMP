@@ -56,7 +56,7 @@ internal fun AdminLoginScreen(
             contentAlignment = Alignment.Center,
         ) {
             Column(
-                modifier = Modifier.fillMaxWidth().widthIn(max = 360.dp),
+                modifier = Modifier.widthIn(max = 360.dp).fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {

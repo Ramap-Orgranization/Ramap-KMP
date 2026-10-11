@@ -5,8 +5,10 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import com.naver.maps.map.NaverMapSdk
 import com.peto.ramap.data.auth.KakaoLoginActivityProvider
 import com.peto.ramap.deeplink.DeepLinkEntryPoint
+import com.peto.ramap.network.config.RamapSecrets
 import com.peto.ramap.notification.DeepLinkKey
 import com.peto.ramap.platform.ExternalUriOpener
 import com.peto.ramap.platform.NotificationPermissionRequester
@@ -36,6 +38,8 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
+        NaverMapSdk.getInstance(applicationContext).client =
+            NaverMapSdk.NcpKeyClient(RamapSecrets.naverMapNcpKeyId)
         handleAuthDeepLink(intent)
         dispatchDeepLinks(intent)
 

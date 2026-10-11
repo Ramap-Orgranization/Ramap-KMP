@@ -96,6 +96,25 @@ class MonthlyOperatingNoticeTest {
         assertEquals(BusinessHoursStatus.OpenUntil("22:00"), shop.businessHoursStatus(at("2026-10-15T12:00"), listOf(changed)))
     }
 
+    @Test
+    fun `연속 영업 변경은 월을 넘겨 종료일까지 적용되고 기간 밖에는 적용하지 않는다`() {
+        val notice =
+            monthly(emptyList()).copy(
+                startDate = LocalDate.parse("2026-10-30"),
+                endDate = LocalDate.parse("2026-11-02"),
+                scheduleOverride = BusinessHoursScheduleOverride(regularDay.copy(open = "18:00", close = "20:00")),
+            )
+        for (date in listOf("2026-10-30", "2026-10-31", "2026-11-01", "2026-11-02")) {
+            assertFalse(shop.isOpenAt(at("${date}T12:00"), listOf(notice)))
+            assertTrue(shop.isOpenAt(at("${date}T19:00"), listOf(notice)))
+            assertFalse(shop.isOpenAt(at("${date}T21:00"), listOf(notice)))
+        }
+        for (date in listOf("2026-10-29", "2026-11-03")) {
+            assertTrue(shop.isOpenAt(at("${date}T12:00"), listOf(notice)))
+            assertTrue(shop.isOpenAt(at("${date}T21:00"), listOf(notice)))
+        }
+    }
+
     private fun monthly(days: List<OperatingNoticeDay>) =
         OperatingNotice(
             id = "monthly",
