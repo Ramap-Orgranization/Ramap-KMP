@@ -30,6 +30,7 @@ fun ReviewCard(
     actionsEnabled: Boolean = true,
     showBlockedContent: Boolean = false,
     isBlockedReviewLoading: Boolean = false,
+    photoViewerEnabled: Boolean = actions.onReviewClick == null,
     header: @Composable () -> Unit,
 ) {
     if (review.isBlocked && !showBlockedContent) {
@@ -65,7 +66,7 @@ fun ReviewCard(
             if (review.imageUrls.isNotEmpty()) {
                 ReviewCardImages(
                     imageUrls = review.imageUrls,
-                    photoViewerEnabled = actions.onReviewClick == null,
+                    photoViewerEnabled = photoViewerEnabled,
                 )
                 Spacer(modifier = Modifier.height(10.dp))
             }
