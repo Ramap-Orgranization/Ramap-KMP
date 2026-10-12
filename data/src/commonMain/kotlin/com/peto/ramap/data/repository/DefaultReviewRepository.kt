@@ -15,6 +15,7 @@ import com.peto.ramap.domain.model.review.ReviewImage
 import com.peto.ramap.domain.model.review.ReviewLike
 import com.peto.ramap.domain.model.review.ShopReviewsPage
 import com.peto.ramap.domain.model.review.change.ReviewChange
+import com.peto.ramap.domain.model.review.change.ReviewSnapshot
 import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.domain.repository.ReviewRepository
 import com.peto.ramap.network.execute.invokeRequest
@@ -31,9 +32,9 @@ internal class DefaultReviewRepository(
     private val dataSource: ReviewDataSource,
     private val shopDataSource: RamenShopDataSource,
     private val changes: DefaultReviewChangeStore,
+    private val hydrationScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
 ) : ReviewRepository {
     private val writes = Mutex()
-    private val hydrationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     override suspend fun fetchMyReviews(
         offset: Long,
@@ -41,16 +42,16 @@ internal class DefaultReviewRepository(
     ): RamapResult<MyReviewsPage> =
         invokeRequest {
             val page = dataSource.fetchMyReviews(offset, visibility.rpcValue).toDomain()
-            val shops = fetchReviewShops(page.reviews)
+            val shops = fetchReviewShops(page.reviews.map { it.shopId }.toSet())
             page.copy(reviews = page.reviews.map { it.copy(shop = shops[it.shopId]) })
         }
 
-    private suspend fun fetchReviewShops(reviews: List<MyReview>): Map<String, RamenShop> {
-        val shopIds = reviews.map { it.shopId }.filter { it.isNotBlank() }.toSet()
-        if (shopIds.isEmpty()) return emptyMap()
+    private suspend fun fetchReviewShops(shopIds: Set<String>): Map<String, RamenShop> {
+        val nonblankIds = shopIds.filter { it.isNotBlank() }.toSet()
+        if (nonblankIds.isEmpty()) return emptyMap()
         val result =
             invokeRequest {
-                shopDataSource.fetchRamenShopsByIds(shopIds).map { it.toDomain() }.associateBy { it.id }
+                shopDataSource.fetchRamenShopsByIds(nonblankIds).map { it.toDomain() }.associateBy { it.id }
             }
         return when (result) {
             is RamapResult.Success -> result.data
@@ -58,7 +59,12 @@ internal class DefaultReviewRepository(
         }
     }
 
-    override suspend fun fetchMyReview(reviewId: String): RamapResult<MyReview?> = invokeRequest { dataSource.fetchMyReview(reviewId)?.toDomain() }
+    override suspend fun fetchMyReview(reviewId: String): RamapResult<MyReview?> =
+        invokeRequest {
+            dataSource.fetchMyReview(reviewId)?.toDomain()?.let { review ->
+                review.copy(shop = fetchReviewShops(setOf(review.shopId))[review.shopId])
+            }
+        }
 
     override suspend fun fetchShopReviewsPage(
         shopId: String,
@@ -124,21 +130,28 @@ internal class DefaultReviewRepository(
             invokeRequest {
                 val epoch = changes.synchronizeSession()
                 val receipt = request()
-                changes.publish(receipt.toDomain(), epoch)
-                hydrate(receipt, epoch)
+                val written = receipt.toDomain()
+                val shop = written.after?.let { fetchMutationShop(it.review.shopId) }
+                changes.publish(written.copy(after = written.after?.copy(shop = shop)), epoch)
+                hydrate(receipt, epoch, shop)
             }
         }
 
     private suspend fun hydrate(
         receipt: ReviewMutationResponse,
         epoch: Long,
+        shop: RamenShop?,
     ) {
-        val completed = hydrateOnce(receipt, epoch)
-        if (completed || receipt.after == null) return
+        val hydrated = hydrateOnce(receipt, epoch, shop)
+        if (isHydrated(hydrated) || receipt.after == null) return
         hydrationScope.launch {
+            var knownShop = hydrated?.shop ?: shop
             repeat(HYDRATION_RETRIES) { attempt ->
                 delay(HYDRATION_RETRY_DELAY_MS * (attempt + 1))
-                if (changes.synchronizeSession() != epoch || hydrateOnce(receipt, epoch)) return@launch
+                if (changes.synchronizeSession() != epoch) return@launch
+                val retried = hydrateOnce(receipt, epoch, knownShop)
+                knownShop = retried?.shop ?: knownShop
+                if (isHydrated(retried)) return@launch
             }
         }
     }
@@ -146,16 +159,29 @@ internal class DefaultReviewRepository(
     private suspend fun hydrateOnce(
         receipt: ReviewMutationResponse,
         epoch: Long,
-    ): Boolean =
+        shop: RamenShop?,
+    ): ReviewSnapshot? =
         try {
-            val hydrated = dataSource.hydrateMutation(receipt).toDomain().after
+            val hydrated =
+                dataSource.hydrateMutation(receipt).toDomain().after?.let { snapshot ->
+                    snapshot.copy(shop = shop ?: fetchMutationShop(snapshot.review.shopId))
+                }
             if (hydrated != null) changes.publish(ReviewChange.Hydrated(hydrated), epoch)
-            hydrated?.review?.images?.all { it.url != null } != false
+            hydrated
         } catch (_: CancellationException) {
-            false
+            null
         } catch (_: Exception) {
-            false
+            null
         }
+
+    private suspend fun fetchMutationShop(shopId: String): RamenShop? =
+        try {
+            fetchReviewShops(setOf(shopId))[shopId]
+        } catch (_: CancellationException) {
+            null
+        }
+
+    private fun isHydrated(snapshot: ReviewSnapshot?): Boolean = snapshot != null && snapshot.shop != null && snapshot.review.images.all { it.url != null }
 
     private companion object {
         const val HYDRATION_RETRIES = 3

@@ -13,6 +13,7 @@ import com.peto.ramap.domain.model.review.ReviewImage
 
 internal class FakeMyReviewsDataSource(
     private val myReviewsPage: MyReviewsPageResponse? = null,
+    private val myReview: MyReviewResponse? = null,
 ) : ReviewDataSource {
     var submittedReview: ShopReviewRequest? = null
     var hydrationFailure: Exception? = null
@@ -27,7 +28,7 @@ internal class FakeMyReviewsDataSource(
         visibility: String,
     ): MyReviewsPageResponse = myReviewsPage ?: error("Unexpected my reviews fetch")
 
-    override suspend fun fetchMyReview(reviewId: String): MyReviewResponse? = error("Unexpected my review fetch")
+    override suspend fun fetchMyReview(reviewId: String): MyReviewResponse? = myReview?.takeIf { it.id == reviewId }
 
     override suspend fun fetchShopReviews(
         shopId: String,
