@@ -32,7 +32,6 @@ internal class RemoteImageUrlDataSource(
     private val json = Json { ignoreUnknownKeys = true }
     private val permits = Semaphore(MAX_CONCURRENT_BATCHES)
 
-    // Use the SDK's current JWT/anon resolution, with a nullable DTO for per-object failures.
     private val api by lazy { client.authenticatedSupabaseApi(client.storage) }
 
     override suspend fun fetchUrls(images: List<SignedImageRequest>): Map<SignedImageRequest, SignedImageUrl?> {
@@ -59,11 +58,11 @@ internal class RemoteImageUrlDataSource(
                 val expiresAt = Instant.fromEpochSeconds(Clock.System.now().epochSeconds) + SIGNED_URL_LIFETIME
                 val response =
                     api.postJson(
-                        url = "object/sign/${images.first().bucket}",
+                        url = "$SIGN_ENDPOINT/${images.first().bucket}",
                         body =
                             buildJsonObject {
-                                putJsonArray("paths") { images.forEach { add(it.path) } }
-                                put("expiresIn", SIGNED_URL_LIFETIME.inWholeSeconds)
+                                putJsonArray(REQUEST_PATHS_FIELD) { images.forEach { add(it.path) } }
+                                put(REQUEST_EXPIRATION_FIELD, SIGNED_URL_LIFETIME.inWholeSeconds)
                             },
                     )
                 val responses = json.decodeFromString<List<StorageSignedImageResponse>>(response.bodyAsText()).groupBy { it.path }
@@ -82,10 +81,10 @@ internal class RemoteImageUrlDataSource(
     ): SignedImageUrl? {
         if (response == null || response.error != null) return null
         val relativeUrl = response.signedUrl ?: return null
-        val objectPath = "object/sign/${image.bucket}/${image.path}"
+        val objectPath = "$SIGN_ENDPOINT/${image.bucket}/${image.path}"
         if (!relativeUrl.startsWith("/$objectPath?")) return null
         val url = runCatching { Url(client.storage.resolveUrl(relativeUrl.removePrefix("/"))) }.getOrNull() ?: return null
-        if (url.encodedPath != Url(client.storage.resolveUrl(objectPath)).encodedPath || url.fragment.isNotEmpty() || url.parameters["token"].isNullOrBlank()) return null
+        if (url.encodedPath != Url(client.storage.resolveUrl(objectPath)).encodedPath || url.fragment.isNotEmpty() || url.parameters[SIGNED_URL_TOKEN_PARAMETER].isNullOrBlank()) return null
         if (expiresAt <= Clock.System.now() + REFRESH_MARGIN) return null
         return SignedImageUrl(url.toString(), expiresAt)
     }
@@ -94,6 +93,10 @@ internal class RemoteImageUrlDataSource(
         const val MAX_IMAGES_PER_REQUEST = 64
         const val MAX_CONCURRENT_BATCHES = 2
         const val ERROR_SESSION_CHANGED = "Image session changed"
+        const val SIGN_ENDPOINT = "object/sign"
+        const val REQUEST_PATHS_FIELD = "paths"
+        const val REQUEST_EXPIRATION_FIELD = "expiresIn"
+        const val SIGNED_URL_TOKEN_PARAMETER = "token"
         val SIGNED_URL_LIFETIME = 5.minutes
         val REFRESH_MARGIN = 1.minutes
         val BUCKETS = setOf("profile-avatars", "shop-review-images")
