@@ -46,7 +46,7 @@ val dataSourceModule =
         single<ImageUrlDataSource> { RemoteImageUrlDataSource(get()) }
         single<ProfileDataSource> { RemoteProfileDataSource(get(), get()) }
         single<CommunityDataSource> { RemoteCommunityDataSource(get(), get(), get()) }
-        single<ReviewDataSource> { RemoteReviewDataSource(get(), get()) }
+        single<ReviewDataSource> { RemoteReviewDataSource(get(), get(), get()) }
         single { NaverImportationDataSource(get(), get<HttpClient>()) }
         single { KakaoImportationDataSource(get()) }
         single<ImportationDataSource> { RemoteImportationDataSource(get(), get()) }

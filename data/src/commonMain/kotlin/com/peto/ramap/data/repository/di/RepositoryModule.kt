@@ -6,6 +6,7 @@ import com.peto.ramap.data.datasource.notice.OperatingNoticeDataSource
 import com.peto.ramap.data.datasource.personalization.BookmarkShopDataSource
 import com.peto.ramap.data.datasource.personalization.HiddenShopDataSource
 import com.peto.ramap.data.datasource.place.PlaceSearchDataSource
+import com.peto.ramap.data.datasource.profile.ProfileDataSource
 import com.peto.ramap.data.datasource.report.ShopReportDataSource
 import com.peto.ramap.data.datasource.shop.RamenShopDataSource
 import com.peto.ramap.data.datasource.update.AppUpdatePolicyDataSource
@@ -30,6 +31,7 @@ import com.peto.ramap.data.repository.DefaultShopReportRepository
 import com.peto.ramap.data.repository.DefaultShopWaitingSystemRepository
 import com.peto.ramap.data.repository.DefaultSubscribedShopRepository
 import com.peto.ramap.data.store.DefaultPersonalizationStore
+import com.peto.ramap.data.store.DefaultReviewChangeStore
 import com.peto.ramap.domain.repository.AppNoticeRepository
 import com.peto.ramap.domain.repository.AppUpdateRepository
 import com.peto.ramap.domain.repository.BookmarkRepository
@@ -50,14 +52,17 @@ import com.peto.ramap.domain.repository.ShopReportRepository
 import com.peto.ramap.domain.repository.ShopWaitingSystemRepository
 import com.peto.ramap.domain.repository.SubscribedShopRepository
 import com.peto.ramap.domain.store.PersonalizationStore
+import com.peto.ramap.domain.store.ReviewChangeStore
 import org.koin.dsl.module
 
 val repositoryModule =
     module {
-        single<FollowRepository> { DefaultFollowRepository(get()) }
-        single<ProfileRepository> { DefaultProfileRepository(get()) }
-        single<CommunityRepository> { DefaultCommunityRepository(get(), get<RamenShopDataSource>()) }
-        single<ReviewRepository> { DefaultReviewRepository(get()) }
+        single { DefaultReviewChangeStore(get<ProfileDataSource>().sessionUserIds, get<ProfileDataSource>()::currentUserId) }
+        single<ReviewChangeStore> { get<DefaultReviewChangeStore>() }
+        single<FollowRepository> { DefaultFollowRepository(get(), get()) }
+        single<ProfileRepository> { DefaultProfileRepository(get(), get()) }
+        single<CommunityRepository> { DefaultCommunityRepository(get(), get<RamenShopDataSource>(), get()) }
+        single<ReviewRepository> { DefaultReviewRepository(get(), get<RamenShopDataSource>(), get()) }
         single<AppUpdateRepository> {
             DefaultAppUpdateRepository(get<AppUpdatePolicyDataSource>())
         }
