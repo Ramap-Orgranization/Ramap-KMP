@@ -43,7 +43,7 @@ play-services-location = "21.4.0"
 play-app-update = "2.1.0"
 
 # Authentication
-kakao = "2.24.0"
+kakao = "2.25.0"
 
 # Firebase
 firebase-bom = "34.16.0"
