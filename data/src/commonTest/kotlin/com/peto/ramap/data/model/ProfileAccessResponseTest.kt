@@ -38,8 +38,8 @@ class ProfileAccessResponseTest {
 
         val access = assertIs<ProfileAccess.Visible>(response.toDomain())
 
-        assertEquals(43, access.reviewCount)
-        assertEquals(67, access.savedShopCount)
+        assertEquals(43L, access.reviewCount)
+        assertEquals(67L, access.savedShopCount)
     }
 
     @Test
@@ -53,7 +53,7 @@ class ProfileAccessResponseTest {
 
         assertNull(missing.reviewCount)
         assertNull(missing.savedShopCount)
-        assertEquals(0, access.reviewCount)
+        assertEquals(0L, access.reviewCount)
         assertNull(access.savedShopCount)
     }
 }

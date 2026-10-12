@@ -29,7 +29,7 @@ source_ref: 33a0d49c2731e42144f2c79704748d7c7e0cf68b
 
 [PersonalizationStore](../../domain/src/commonMain/kotlin/com/peto/ramap/domain/store/PersonalizationStore.kt)는 북마크·숨김 등 개인화의 공유 진입점입니다. 북마크 목록과 지도 등은 이 상태를 구독합니다. 프로필 관련 화면은 `ProfileRepository.sessionUserIds` 전환 때 진행 작업과 화면 상태를 초기화하며 이전 계정의 늦은 결과가 새 계정에 반영되지 않도록 확인합니다.
 
-리뷰와 차단 변경은 [ReviewChangeNotifier](../../data/src/commonMain/kotlin/com/peto/ramap/data/repository/ReviewChangeNotifier.kt)를 거쳐 관련 화면의 재조회로 이어집니다. 이벤트 알림 설정과 OS 알림 권한은 별개의 상태입니다. 푸시 등록 수명은 [NotificationRegistry](../../core/notification/src/commonMain/kotlin/com/peto/ramap/notification/NotificationRegistry.kt)에서 확인합니다.
+이벤트 알림 설정과 OS 알림 권한은 별개의 상태입니다. 푸시 등록 수명은 [NotificationRegistry](../../core/notification/src/commonMain/kotlin/com/peto/ramap/notification/NotificationRegistry.kt)에서 확인합니다.
 
 
 ## 대표 검증 경로
