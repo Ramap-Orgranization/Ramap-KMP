@@ -5,6 +5,7 @@ import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.data.datasource.profile.ProfileDataSource
 import com.peto.ramap.data.model.ProfileResponse
 import com.peto.ramap.data.model.SignedImageUrl
+import com.peto.ramap.data.testReviewChanges
 import com.peto.ramap.domain.model.profile.AccountProfile
 import com.peto.ramap.domain.model.profile.ProfileImage
 import com.peto.ramap.domain.model.profile.ProfileVisibility
@@ -27,7 +28,7 @@ class DefaultProfileRepositoryTest {
     fun rejectsProfaneNicknameBeforeAvailabilityRequestOrPhotoUpload() =
         runTest {
             val source = ProfileDataSourceFake()
-            val repository = DefaultProfileRepository(source)
+            val repository = DefaultProfileRepository(source, changes = testReviewChanges())
             assertIs<RamapResult.Error>(repository.isNicknameAvailable("씨_발"))
             assertIs<RamapResult.Error>(repository.updateMyProfile("씨_발", photo()))
             assertEquals(0, source.nicknameCheckCount)
@@ -38,7 +39,7 @@ class DefaultProfileRepositoryTest {
     @Test
     fun profileSaveReturnsUpdatedProfile() =
         runTest {
-            val repository = DefaultProfileRepository(ProfileDataSourceFake())
+            val repository = DefaultProfileRepository(ProfileDataSourceFake(), changes = testReviewChanges())
 
             val saved = assertIs<RamapResult.Success<AccountProfile>>(repository.updateMyProfile("새닉네임"))
 
@@ -49,7 +50,7 @@ class DefaultProfileRepositoryTest {
     fun returnsSignedPhotoAndCapturedOwner() =
         runTest {
             val source = ProfileDataSourceFake()
-            val result = assertIs<RamapResult.Success<AccountProfile>>(DefaultProfileRepository(source).fetchMyProfile())
+            val result = assertIs<RamapResult.Success<AccountProfile>>(DefaultProfileRepository(source, changes = testReviewChanges()).fetchMyProfile())
             assertEquals("owner", source.requestOwner)
             assertEquals(AccountProfile("owner", "라멘", "signed:owner/old.jpg"), result.data)
         }
@@ -58,7 +59,7 @@ class DefaultProfileRepositoryTest {
     fun rejectsInvalidInputBeforeUploading() =
         runTest {
             val source = ProfileDataSourceFake()
-            val repository = DefaultProfileRepository(source)
+            val repository = DefaultProfileRepository(source, changes = testReviewChanges())
             assertIs<RamapResult.Error>(repository.updateMyProfile("a", photo()))
             assertIs<RamapResult.Error>(repository.updateMyProfile("라멘", photo(), true))
             assertTrue(source.uploaded.isEmpty())
@@ -68,7 +69,7 @@ class DefaultProfileRepositoryTest {
     fun savesFetchesPreservesAndClearsBio() =
         runTest {
             val source = ProfileDataSourceFake()
-            val repository = DefaultProfileRepository(source)
+            val repository = DefaultProfileRepository(source, changes = testReviewChanges())
             val bio = "🍜".repeat(30)
             val saved = assertIs<RamapResult.Success<AccountProfile>>(repository.updateMyProfile("라멘", bio = bio))
             assertEquals(bio, saved.data.bio)
@@ -81,7 +82,7 @@ class DefaultProfileRepositoryTest {
     fun rejectsInvalidBioBeforeNetworkOrPhotoUpload() =
         runTest {
             val source = ProfileDataSourceFake()
-            val repository = DefaultProfileRepository(source)
+            val repository = DefaultProfileRepository(source, changes = testReviewChanges())
             for (bio in listOf("가".repeat(31), "한 줄\n두 줄")) {
                 assertIs<RamapResult.Error>(repository.updateMyProfile("라멘", photo(), bio = bio))
             }
@@ -96,7 +97,7 @@ class DefaultProfileRepositoryTest {
             val failure = IllegalStateException("save rejected")
             val source = ProfileDataSourceFake().apply { updateFailure = failure }
 
-            val result = assertIs<RamapResult.Error>(DefaultProfileRepository(source).updateMyProfile("라멘", photo()))
+            val result = assertIs<RamapResult.Error>(DefaultProfileRepository(source, changes = testReviewChanges()).updateMyProfile("라멘", photo()))
 
             assertSame(failure, assertIs<RamapError.Unknown>(result.error).cause)
             assertTrue(source.deleted.isEmpty())
@@ -110,7 +111,7 @@ class DefaultProfileRepositoryTest {
             val source = ProfileDataSourceFake()
             val path = "owner/new.jpg"
             source.uploaded += path
-            val repository = DefaultProfileRepository(source)
+            val repository = DefaultProfileRepository(source, changes = testReviewChanges())
 
             val thrown =
                 assertFailsWith<IllegalStateException> {
@@ -126,7 +127,7 @@ class DefaultProfileRepositoryTest {
         runTest {
             val failure = IllegalStateException("HTTP 429")
             val source = ProfileDataSourceFake().apply { deleteFailure = IllegalStateException("cleanup failed") }
-            val repository = DefaultProfileRepository(source)
+            val repository = DefaultProfileRepository(source, changes = testReviewChanges())
 
             val thrown =
                 assertFailsWith<IllegalStateException> {
@@ -141,7 +142,7 @@ class DefaultProfileRepositoryTest {
     fun timeoutAndServerErrorsDoNotDeleteAnUploadedPhoto() =
         runTest {
             val source = ProfileDataSourceFake()
-            val repository = DefaultProfileRepository(source)
+            val repository = DefaultProfileRepository(source, changes = testReviewChanges())
             val failure = IllegalStateException("response unknown")
 
             for (status in listOf(408, 500, null)) {
@@ -161,7 +162,7 @@ class DefaultProfileRepositoryTest {
             val source = ProfileDataSourceFake().apply { updateFailure = CancellationException("cancelled") }
 
             assertFailsWith<CancellationException> {
-                DefaultProfileRepository(source).updateMyProfile("라멘", photo())
+                DefaultProfileRepository(source, changes = testReviewChanges()).updateMyProfile("라멘", photo())
             }
 
             assertEquals(1, source.uploaded.size)
@@ -173,7 +174,7 @@ class DefaultProfileRepositoryTest {
         runTest {
             val source = ProfileDataSourceFake()
             source.afterSignedUrl = { error("image unavailable") }
-            val saved = assertIs<RamapResult.Success<AccountProfile>>(DefaultProfileRepository(source).updateProfileVisibility(true))
+            val saved = assertIs<RamapResult.Success<AccountProfile>>(DefaultProfileRepository(source, changes = testReviewChanges()).updateProfileVisibility(true))
             assertTrue(saved.data.isPublic)
             assertEquals(null, saved.data.avatarUrl)
         }
@@ -185,7 +186,7 @@ class DefaultProfileRepositoryTest {
             source.afterSignedUrl = { throw CancellationException() }
 
             assertFailsWith<CancellationException> {
-                DefaultProfileRepository(source).updateProfileVisibility(true)
+                DefaultProfileRepository(source, changes = testReviewChanges()).updateProfileVisibility(true)
             }
         }
 
@@ -194,7 +195,7 @@ class DefaultProfileRepositoryTest {
         runTest {
             val source = ProfileDataSourceFake().apply { afterSignedUrl = { error("image unavailable") } }
 
-            val saved = assertIs<RamapResult.Success<AccountProfile>>(DefaultProfileRepository(source).updateMyProfile("라멘"))
+            val saved = assertIs<RamapResult.Success<AccountProfile>>(DefaultProfileRepository(source, changes = testReviewChanges()).updateMyProfile("라멘"))
 
             assertEquals("라멘", saved.data.nickname)
             assertEquals(null, saved.data.avatarUrl)
@@ -207,7 +208,7 @@ class DefaultProfileRepositoryTest {
             val source = ProfileDataSourceFake().apply { signedExpiry = { currentTime + 5.minutes } }
             var signedCount = 0
             source.afterSignedUrl = { signedCount++ }
-            val repository = DefaultProfileRepository(source) { currentTime }
+            val repository = DefaultProfileRepository(source, changes = testReviewChanges()) { currentTime }
 
             repository.fetchMyProfile()
             currentTime += 3.minutes
@@ -223,7 +224,7 @@ class DefaultProfileRepositoryTest {
         runTest {
             val source = ProfileDataSourceFake()
 
-            assertIs<RamapResult.Success<AccountProfile>>(DefaultProfileRepository(source).updateMyProfile("라멘", photo()))
+            assertIs<RamapResult.Success<AccountProfile>>(DefaultProfileRepository(source, changes = testReviewChanges()).updateMyProfile("라멘", photo()))
 
             assertEquals(listOf("owner/old.jpg"), source.deleted)
         }
@@ -233,7 +234,7 @@ class DefaultProfileRepositoryTest {
         runTest {
             val source = ProfileDataSourceFake()
 
-            assertIs<RamapResult.Success<AccountProfile>>(DefaultProfileRepository(source).updateMyProfile("라멘", removePhoto = true))
+            assertIs<RamapResult.Success<AccountProfile>>(DefaultProfileRepository(source, changes = testReviewChanges()).updateMyProfile("라멘", removePhoto = true))
 
             assertEquals(listOf("owner/old.jpg"), source.deleted)
         }
@@ -243,7 +244,7 @@ class DefaultProfileRepositoryTest {
         runTest {
             val source = ProfileDataSourceFake().apply { deleteFailure = IllegalStateException("cleanup failed") }
 
-            val saved = assertIs<RamapResult.Success<AccountProfile>>(DefaultProfileRepository(source).updateMyProfile("라멘", removePhoto = true))
+            val saved = assertIs<RamapResult.Success<AccountProfile>>(DefaultProfileRepository(source, changes = testReviewChanges()).updateMyProfile("라멘", removePhoto = true))
 
             assertEquals("라멘", saved.data.nickname)
             assertEquals(listOf("owner/old.jpg"), source.deleted)
@@ -258,7 +259,7 @@ class DefaultProfileRepositoryTest {
 
             val result =
                 assertIs<RamapResult.Success<AccountProfile>>(
-                    DefaultProfileRepository(source).updateProfileVisibility(true),
+                    DefaultProfileRepository(source, changes = testReviewChanges()).updateProfileVisibility(true),
                 )
 
             assertEquals("owner", source.visibilityOwner)
@@ -271,7 +272,7 @@ class DefaultProfileRepositoryTest {
             val source = ProfileDataSourceFake()
             var signedCount = 0
             source.afterSignedUrl = { signedCount++ }
-            val repository = DefaultProfileRepository(source)
+            val repository = DefaultProfileRepository(source, changes = testReviewChanges())
 
             val first = assertIs<RamapResult.Success<AccountProfile>>(repository.fetchMyProfile())
             val second = assertIs<RamapResult.Success<AccountProfile>>(repository.fetchMyProfile())

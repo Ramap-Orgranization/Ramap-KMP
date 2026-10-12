@@ -2,15 +2,18 @@ package com.peto.ramap.data.repository
 
 import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.data.datasource.follow.FollowDataSource
+import com.peto.ramap.data.store.DefaultReviewChangeStore
 import com.peto.ramap.domain.model.community.FollowAction
 import com.peto.ramap.domain.model.community.FollowCounts
 import com.peto.ramap.domain.model.community.FollowList
 import com.peto.ramap.domain.model.community.PublicProfile
+import com.peto.ramap.domain.model.review.change.ReviewChange
 import com.peto.ramap.domain.repository.FollowRepository
 import com.peto.ramap.network.execute.invokeRequest
 
 internal class DefaultFollowRepository(
     private val dataSource: FollowDataSource,
+    private val changes: DefaultReviewChangeStore,
 ) : FollowRepository {
     override suspend fun fetchCounts(): RamapResult<FollowCounts> = invokeRequest { dataSource.fetchCounts().toDomain() }
 
@@ -27,6 +30,8 @@ internal class DefaultFollowRepository(
         action: FollowAction,
     ): RamapResult<Unit> =
         invokeRequest {
+            val epoch = changes.synchronizeSession()
             dataSource.changeFollow(userId, action.name.lowercase())
+            changes.publish(ReviewChange.AccessChanged(userId), epoch)
         }
 }

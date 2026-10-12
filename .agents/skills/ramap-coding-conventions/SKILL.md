@@ -22,6 +22,7 @@ Apply this skill to code quality and team habits only. Read the sibling Ramap sk
 - Use 4-space indentation, LF line endings, UTF-8, and a final newline.
 - Keep packages under `com.peto.ramap`.
 - Keep one class or interface per file, except for an established sealed-class or interface grouping. Do not declare private classes.
+- Prefer ordinary classes with constructor injection for business rules and services. Let DI own their lifetime. Use `object` for singleton values such as sealed state variants when that is their intended role.
 - Keep domain rules and state changes on the responsible type or collaborator. Use extension functions only for a necessary external-library adapter or pure presentation conversion when the owning type cannot be changed; explain the exception in the handoff.
 - Prefer code that reveals intent. Add a short comment only when the code cannot express the intent clearly.
 - Avoid nesting beyond two levels; use guard clauses, early returns, or focused functions.
@@ -60,10 +61,13 @@ Apply this skill to code quality and team habits only. Read the sibling Ramap sk
 - Use `kotlin.test` for common tests and the repository's existing coroutine, Turbine, Compose UI, and Robolectric utilities as applicable.
 - Put shared logic tests in `commonTest`, Android-specific behavior in `androidHostTest`, and iOS-specific behavior in `iosTest`.
 - Name tests after the subject and behavior, such as `SampleRepositoryTest`.
+- Write test-case function names, natural-language descriptions, and assertion messages in Korean. Use backtick function names to describe the condition and observable result; keep technical class names and fixture identifiers meaningful.
 - Keep Supabase values, API keys, signing values, and machine-specific configuration out of source and commits.
 
 ## Finish the change
 
+- Record every modification task in the local-only `docs/change-history/CHANGELOG.md`: date (Asia/Seoul), reason, changed files or server functions, validation commands and results, actual deployment version or undeployed state, and remaining limitations. Append corrections and follow-up outcomes without erasing earlier evidence. Keep credentials and personal data out of the log; put detailed security evidence in local-only audit artifacts and reference their paths. This requirement was explicitly requested by the user on 2026-10-12.
+- Keep pending wiki facts, policy decisions, and candidates in that local change record during implementation and validation. Consolidate wiki updates and run the wiki check only at final PR preparation under `docs/wiki/maintenance.md`, unless the user explicitly requests a wiki or maintenance-rule edit. Confirmed changes to their owning instructions take effect immediately. This timing was explicitly requested by the user on 2026-10-13.
 - Inspect tracked and untracked changes against the acceptance criteria before reporting completion. Preserve pre-existing user changes, and call out any necessary supporting change that extends beyond the requested surface.
 - Check changed Compose UI for direct `Text` usage and confirm any exception to the `AppText` rule. Formatting and compilation checks do not enforce this convention.
 - Run the smallest relevant Gradle test and `git diff --check`. Android host tasks use `:<module>:testAndroidHostTest`; iOS simulator tasks use `:<module>:iosSimulatorArm64Test`. Select app builds or shared integration checks only when the affected platform or dependency path requires them.

@@ -7,11 +7,15 @@ import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.community.FollowAction
 import com.peto.ramap.domain.model.community.FollowState
 import com.peto.ramap.domain.model.community.ProfileAccess
+import com.peto.ramap.domain.model.community.ProfileReview
 import com.peto.ramap.domain.model.community.PublicProfile
 import com.peto.ramap.domain.model.community.PublicSavedShopsPage
+import com.peto.ramap.domain.model.review.change.ReviewChange
+import com.peto.ramap.domain.model.review.change.ReviewChangeReducer
 import com.peto.ramap.domain.repository.CommunityRepository
 import com.peto.ramap.domain.repository.FollowRepository
 import com.peto.ramap.domain.repository.ProfileRepository
+import com.peto.ramap.domain.store.ReviewChangeStore
 import com.peto.ramap.ui.base.BaseViewModel
 import com.peto.ramap.ui.review.other.contract.OtherReviewsEffect
 import com.peto.ramap.ui.review.other.contract.OtherReviewsIntent
@@ -30,9 +34,62 @@ class OtherReviewsViewModel(
     private val community: CommunityRepository,
     private val profiles: ProfileRepository,
     private val follows: FollowRepository,
+    private val changes: ReviewChangeStore,
+    private val reviewChangeReducer: ReviewChangeReducer,
 ) : BaseViewModel<OtherReviewsUiState, OtherReviewsIntent, OtherReviewsEffect>(OtherReviewsUiState()) {
+    private var generation = 0L
+
     init {
+        observeChanges()
         observeSessionUserIds()
+    }
+
+    private fun observeChanges() {
+        viewModelScope.launch {
+            var epoch = changes.journal.value.epoch
+            var revision = changes.journal.value.revision
+            changes.journal.collect { journal ->
+                if (epoch != journal.epoch) {
+                    epoch = journal.epoch
+                    revision = journal.revision
+                    return@collect
+                }
+                if (journal.hasGapAfter(revision)) {
+                    revision = journal.revision
+                    loadPage(reset = true)
+                    return@collect
+                }
+                for (record in journal.changesAfter(revision)) {
+                    val change = record.change
+                    val targetId = currentState.userId
+                    if (change is ReviewChange.AccessChanged && change.userId == targetId) {
+                        generation++
+                        val extent = currentState.reviews.size
+                        reduce { copy(reviews = emptyList(), profileAccess = null, hasMore = false) }
+                        loadPage(reset = true, requestedReviewExtent = extent)
+                    } else {
+                        reduce {
+                            val access = profileAccess as? ProfileAccess.Visible ?: return@reduce this
+                            if (!access.canReadReviews) return@reduce this
+                            val metadata = reviews.associateBy { it.review.id }
+                            val patched =
+                                reviewChangeReducer.patch(reviews.map { it.review }, change, hasMore) { receipt, review ->
+                                    receipt.userId == targetId && (targetId == currentUserId || reviewChangeReducer.isPublicPublished(review))
+                                }
+                            val ownerCounts = (change as? ReviewChange.Written)?.takeIf { it.userId == targetId }?.counts
+                            val count = ownerCounts?.let { if (targetId == currentUserId) it.totalCount else it.publishedCount }
+                            copy(
+                                reviews = patched.map { ProfileReview(it, metadata[it.id]?.shop) },
+                                reviewsOffset = patched.size.toLong(),
+                                profileAccess = access.copy(reviewCount = count?.toLong() ?: access.reviewCount),
+                                hasMore = count?.let { patched.size < it } ?: hasMore,
+                            )
+                        }
+                    }
+                    revision = record.revision
+                }
+            }
+        }
     }
 
     private fun observeSessionUserIds() {
@@ -41,6 +98,7 @@ class OtherReviewsViewModel(
                 .sessionUserIds
                 .distinctUntilChanged()
                 .collect { currentUserId ->
+                    generation++
                     val targetId = currentState.userId
                     cancelTask(PAGE_TASK)
                     cancelTask(SAVED_SHOPS_TASK)
@@ -92,6 +150,7 @@ class OtherReviewsViewModel(
 
     private fun openProfile(userId: String) {
         if (userId.isBlank() || currentState.userId == userId) return
+        generation++
         cancelTask(PAGE_TASK)
         cancelTask(SAVED_SHOPS_TASK)
         cancelTask(BLOCK_TASK)
@@ -107,7 +166,10 @@ class OtherReviewsViewModel(
         if (currentState.sessionResolved) loadPage(reset = true)
     }
 
-    private fun loadPage(reset: Boolean) {
+    private fun loadPage(
+        reset: Boolean,
+        requestedReviewExtent: Int = if (reset) currentState.reviews.size else 0,
+    ) {
         val userId = currentState.userId ?: return
         if (!currentState.sessionResolved || (!reset && currentState.profileAccess !is ProfileAccess.Visible)) return
         if (reset) {
@@ -118,7 +180,7 @@ class OtherReviewsViewModel(
         launchTask(
             taskKey = PAGE_TASK,
             loadKey = OtherReviewsLoadKey.Page,
-            policy = if (reset) TaskPolicy.CancelPrevious else TaskPolicy.IgnoreNew,
+            policy = TaskPolicy.CancelPrevious,
             onStart = {
                 if (reset) {
                     copy(
@@ -138,20 +200,32 @@ class OtherReviewsViewModel(
                 }
             },
         ) {
-            if (reset) loadInitialPage(userId) else loadNextPage(userId, offset)
+            if (reset) loadInitialPage(userId, requestedReviewExtent) else loadNextPage(userId, offset)
         }
     }
 
-    private suspend fun loadInitialPage(userId: String) {
+    private suspend fun loadInitialPage(
+        userId: String,
+        requestedReviewExtent: Int,
+    ) {
+        val requestedGeneration = generation
         val result = community.fetchProfileAccess(userId)
         currentCoroutineContext().ensureActive()
+        if (requestedGeneration != generation) return
         when (result) {
             is RamapResult.Success ->
                 when (val access = result.data) {
                     is ProfileAccess.Visible -> {
                         reduce { copy(profileAccess = access) }
                         if (currentState.currentUserId != null) loadSavedShops()
-                        if (access.canReadReviews) fetchAndApplyUserReviews(userId, 0L, reset = true)
+                        if (access.canReadReviews) {
+                            fetchAndApplyUserReviews(userId, 0L, reset = true)
+                            while (currentState.reviews.size < requestedReviewExtent && currentState.hasMore && !currentState.failed) {
+                                val offset = currentState.reviewsOffset
+                                fetchAndApplyUserReviews(userId, offset, reset = false)
+                                if (currentState.reviewsOffset == offset) break
+                            }
+                        }
                     }
                     else -> applyProfileAccess(userId, access)
                 }
@@ -193,12 +267,32 @@ class OtherReviewsViewModel(
         offset: Long,
         reset: Boolean,
     ) {
+        val requestedGeneration = generation
+        val baseline = changes.journal.value
         val result = community.fetchProfileReviewsPage(userId, offset)
         currentCoroutineContext().ensureActive()
+        if (requestedGeneration != generation || baseline.epoch != changes.journal.value.epoch) return
+        if (changes.journal.value.hasGapAfter(baseline.revision) ||
+            changes.journal.value
+                .changesAfter(baseline.revision)
+                .any { (it.change as? ReviewChange.Written)?.userId == userId || (it.change as? ReviewChange.AccessChanged)?.userId == userId }
+        ) {
+            loadPage(reset)
+            return
+        }
         when (result) {
             is RamapResult.Success -> {
                 if (currentState.userId != userId) return
-                val page = result.data
+                val original = result.data
+                val metadata = original.reviews.associateBy { it.review.id }
+                var rows = original.reviews.map { it.review }
+                for (record in changes.journal.value.changesAfter(baseline.revision)) {
+                    rows =
+                        reviewChangeReducer.patch(rows, record.change, original.reviews.size == PAGE_SIZE) { receipt, review ->
+                            receipt.userId == userId && (userId == currentState.currentUserId || reviewChangeReducer.isPublicPublished(review))
+                        }
+                }
+                val page = original.copy(reviews = rows.map { ProfileReview(it, metadata[it.id]?.shop) })
                 val access = page.access as? ProfileAccess.Visible
                 if (access == null) {
                     cancelTask(SAVED_SHOPS_TASK)

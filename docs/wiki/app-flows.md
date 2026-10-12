@@ -1,8 +1,8 @@
 ---
 authority: reference
 status: active
-last_verified: 2026-10-11
-source_ref: 33a0d49c2731e42144f2c79704748d7c7e0cf68b
+last_verified: 2026-10-13
+source_ref: c559e52c3248076dacab2f2928622d9d787bc1e5
 ---
 
 # 앱 실행 흐름
@@ -42,3 +42,13 @@ source_ref: 33a0d49c2731e42144f2c79704748d7c7e0cf68b
 - 플랫폼 지도: 공통 [RamapMapView](../../feature/main/map/src/commonMain/kotlin/com/peto/ramap/ui/main/map/RamapMapView.kt)와 각 플랫폼 소스 세트를 함께 확인합니다.
 
 상태 전이의 중심 근거는 [MapViewModelTest](../../feature/main/map/src/commonTest/kotlin/com/peto/ramap/ui/main/MapViewModelTest.kt)입니다. 숫자 설정이나 취소 정책을 바꾸면 ViewModel뿐 아니라 loader·상태·관련 테스트까지 확인합니다.
+
+## 리뷰 목록에서 가게 상세
+
+2026-10-12 작업 트리에서 [MyReviewsRoute](../../feature/review/my/src/commonMain/kotlin/com/peto/ramap/ui/review/my/MyReviewsRoute.kt)와 [OtherReviewsRoute](../../feature/review/other/src/commonMain/kotlin/com/peto/ramap/ui/review/other/OtherReviewsRoute.kt)의 카드 선택 경로를 확인했습니다. 두 화면은 선택한 가게 ID를 저장하고 목록 위에 상세 슬롯을 렌더링합니다. [NavigationGraph](../../shared/src/commonMain/kotlin/com/peto/ramap/NavigationGraph.kt)가 슬롯에 기존 [ShopDetailHost](../../feature/main/map/src/commonMain/kotlin/com/peto/ramap/ui/main/map/ShopDetailHost.kt)를 연결해 feature 간 직접 의존을 피합니다.
+
+내 리뷰의 상세를 변경 없이 닫으면 현재 리뷰 목록과 이미지 상태를 유지하고 다시 조회하지 않습니다. 상세에서 본인 리뷰를 삭제하면 해당 항목과 집계를 현재 목록 상태에서 바로 반영합니다. 리뷰 작성·수정 성공은 공통 변경 기록으로 현재 목록에 반영하며, 새 리뷰도 매장 thumbnail·주소·카테고리를 포함한 snapshot으로 표시합니다. 계정이 바뀌면 선택 상태를 초기화합니다. 상세의 지도 보기만 `showReviewShopOnMap`으로 이동합니다. 동작의 승인 근거는 [DEC-0006](decisions.md#dec-0006-리뷰-목록의-가게-카드와-상세-표시-통합), [DEC-0007](decisions.md#dec-0007-내-리뷰-상세-닫기에서-목록-재조회-제외), [DEC-0008](decisions.md#dec-0008-리뷰-변경-기록으로-화면-동기화)입니다.
+
+### 리뷰 화면 복귀와 변경 반영
+
+내 리뷰, 다른 사용자 리뷰, 지도 상세와 마이 리뷰 개수는 공통 리뷰 변경 기록을 구독합니다. 상세 닫기, 작성 취소, 프로필·이벤트·사진 화면에서 돌아오는 동작은 리뷰 전체 조회나 이미지 URL 재서명을 시작하지 않습니다. 중첩한 작성·수정 화면에서 성공한 변경도 기록을 구독하는 부모와 상세에 적용합니다. 기존 상세의 최초 열기 재검증은 유지합니다. 이전 삭제 콜백 전달 경로는 공통 기록 구독으로 교체했습니다. 이번 변경에서 추가 확인한 범위는 [NavigationGraph](../../shared/src/commonMain/kotlin/com/peto/ramap/NavigationGraph.kt), [ShopDetailHost](../../feature/main/map/src/commonMain/kotlin/com/peto/ramap/ui/main/map/ShopDetailHost.kt), [내 리뷰 ViewModel](../../feature/review/my/src/commonMain/kotlin/com/peto/ramap/ui/review/my/MyReviewsViewModel.kt)입니다.

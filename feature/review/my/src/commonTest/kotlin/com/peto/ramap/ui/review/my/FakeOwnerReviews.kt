@@ -24,6 +24,7 @@ internal class FakeOwnerReviews(
     var deleteResult: RamapResult<Unit> = RamapResult.Success(Unit)
     val pendingResults = mutableListOf<CompletableDeferred<RamapResult<MyReviewsPage>>>()
     var deleteCalls = 0
+    val removedIds = mutableSetOf<String>()
 
     override suspend fun fetchMyReviews(
         offset: Long,
@@ -35,14 +36,14 @@ internal class FakeOwnerReviews(
             failNext = false
             return RamapResult.Error(RamapError.Network(IllegalStateException("offline")))
         }
-        val all = (0 until total).map { review(it) }
+        val all = (0 until total).map { review(it) }.filterNot { it.id in removedIds }
         val filtered =
             when (visibility) {
                 MyReviewVisibility.ALL -> all
                 MyReviewVisibility.PUBLIC -> all.filter { it.isPublic }
                 MyReviewVisibility.PRIVATE -> all.filterNot { it.isPublic }
             }
-        return RamapResult.Success(MyReviewsPage(filtered.drop(offset.toInt()).take(30), total, total - 2, 2, false))
+        return RamapResult.Success(MyReviewsPage(filtered.drop(offset.toInt()).take(30), all.size, all.count { it.isPublic }, all.count { !it.isPublic }, false))
     }
 
     override suspend fun fetchMyReview(reviewId: String) = RamapResult.Success(review(reviewId.toInt()))

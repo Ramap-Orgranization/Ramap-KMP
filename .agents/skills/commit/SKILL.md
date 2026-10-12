@@ -27,6 +27,7 @@ The assigned agent executes the workflow below without delegating it again. When
 3. Split changes into the smallest practical atomic commits before staging.
    - Do not combine build/dependency changes, file moves, base architecture, feature behavior, tests, and formatting in one commit unless they are inseparable.
    - Prefer multiple small commits over one broad commit when a later revert or review would naturally target only part of the change.
+   - When preparing changes for PRs, align commit groups with the purpose and dependencies defined in the [PR skill's small PR rules](../pr/SKILL.md#small-prs).
    - If a staged commit touches many areas, stop and restate the intended commit groups before committing.
 4. Exclude unrelated files, generated files, local config, and crash logs unless explicitly requested. Never commit secrets. Inspect existing staged changes and preserve anything outside the authorized commit scope; do not unstage or include it automatically.
 5. Run only the checks explicitly requested by the user and report the results. If a requested check fails, report the command and failure before committing; continue only when the user has authorized committing despite that failure.

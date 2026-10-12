@@ -1,7 +1,7 @@
 ---
 authority: canonical
 status: active
-last_verified: 2026-10-12
+last_verified: 2026-10-13
 ---
 
 # 결정 기록
@@ -57,3 +57,73 @@ last_verified: 2026-10-12
 - 반영: [AGENTS.md](../../AGENTS.md), [역할 정의](../../.codex/agents), 관련 스킬·명령·UI metadata, [목차](README.md), [유지보수 정책](maintenance.md), 메뉴 최신화 스킬의 독립 검토자 참조.
 - 적용 상태: 10개 역할의 설정과 지침을 통합하고 기존 상세 역할 계약 및 런타임 모델·추론 수준을 유지했습니다. 구현·릴리스·게시 승인 절차와 앱 동작은 변경하지 않았습니다.
 - 대체한 결정: 없음. DEC-0004의 공유 범위를 유지하면서 역할 정의 구조와 이름 규칙을 구체화합니다.
+
+## DEC-0006 리뷰 목록의 가게 카드와 상세 표시 통합
+
+- 기록일: 2026-10-12 (Asia/Seoul).
+- 결정: 내 리뷰와 다른 사람 리뷰 목록에서 공통 가게 리뷰 카드를 사용합니다. 내 리뷰를 선택하면 현재 목록 위에 기존 가게 상세 바텀시트를 표시하고, 상세의 지도 보기에서 지도 화면으로 이동합니다.
+- 이유: 두 리뷰 목록에서 같은 가게 정보를 보여주고 리뷰를 탐색하는 동안 현재 목록의 필터·스크롤 상태를 유지합니다.
+- 근거: [이슈 #265](https://github.com/Ramap-Orgranization/Ramap-KMP/issues/265)의 범위와 사용자 계획 승인.
+- 반영: [제품 정책](product-policy.md), [앱 실행 흐름](app-flows.md#리뷰-목록에서-가게-상세), [디자인시스템](design-system.md#가게-리뷰-목록-카드), 공통 카드·데이터 조회·리뷰 목록과 내비게이션 연결.
+- 적용 상태: 구현은 [검증된 PR 코드 커밋](../../feature/review/my/src/commonMain/kotlin/com/peto/ramap/ui/review/my/MyReviewsRoute.kt) `c559e52c3248076dacab2f2928622d9d787bc1e5`에 반영됐습니다. 최종 PR 코드에서 Android APK와 iOS Simulator framework 빌드, 관련 모듈 lint가 통과했습니다. 스토어 앱 배포를 뜻하지 않습니다.
+- 대체한 결정: 없음.
+
+## DEC-0007 내 리뷰 상세 닫기에서 목록 재조회 제외
+
+- 기록일: 2026-10-12 (Asia/Seoul).
+- 결정: 내 리뷰에서 매장 상세를 변경 없이 닫을 때는 리뷰 목록을 다시 조회하지 않습니다. 상세에서 본인 리뷰를 삭제하면 해당 항목과 집계를 현재 목록 상태에 반영하고, 리뷰 작성·수정 화면에서 복귀할 때는 기존 목록 갱신 동작을 유지합니다.
+- 이유: 단순 상세 열람은 리뷰 목록을 바꾸지 않으며, 재조회하면 새 서명 이미지 URL로 인해 기존 리뷰 사진까지 다시 로드됩니다.
+- 근거: 사용자가 상세를 열고 닫을 때 전체 리뷰 이미지가 갱신되는 현상을 보고하고, 단순 닫기 시 재조회를 제외하는 수정에 동의했습니다.
+- 반영: [제품 정책](product-policy.md), [앱 실행 흐름](app-flows.md#리뷰-목록에서-가게-상세), [MyReviewsRoute](../../feature/review/my/src/commonMain/kotlin/com/peto/ramap/ui/review/my/MyReviewsRoute.kt).
+- 적용 상태: 구현은 검증된 PR 코드 커밋 `c559e52c3248076dacab2f2928622d9d787bc1e5`에 반영됐습니다. 닫기·복귀 경로의 실기기 확인은 이전 `1.1.9-debug` APK 기준이며, 최종 dialog 포함 코드를 기기에 재설치한 결과는 아닙니다. 스토어 앱 릴리스를 뜻하지 않습니다.
+- 대체한 결정: 없음.
+
+## DEC-0008 리뷰 변경 기록으로 화면 동기화
+
+- 기록일: 2026-10-12 (Asia/Seoul).
+- 결정: 성공한 리뷰 변경은 repository가 한 번 발행하고 화면·상세 캐시가 cursor로 적용합니다. 세션 전환은 기록을 초기화하고 접근 변경·기록 공백은 필요한 조회를 복구합니다. passive 복귀는 리뷰 조회·서명을 시작하지 않습니다.
+- 이유: 중첩 작성·수정·삭제의 부모 목록 누락과 전체 이미지 재로딩을 함께 해결하고 페이지·필터·스크롤을 유지합니다.
+- 근거: 사용자가 공통 ReviewChangeStore revision journal 방식을 승인하고, 정상 변경마다 전체 목록을 조회하지 않도록 요청했습니다.
+- 반영: [설계 패턴](design-patterns.md#리뷰-변경-기록과-화면-구독), [실행 흐름](app-flows.md#리뷰-화면-복귀와-변경-반영), [제품 정책](product-policy.md), [백엔드](backend.md).
+- 적용 상태: 앱 구현은 검증된 PR 코드 커밋 `c559e52c3248076dacab2f2928622d9d787bc1e5`에 반영됐으며 앱 스토어에는 배포하지 않았습니다. 리뷰 v2 RPC는 2026-10-13에 migration `20261012151044`로 운영 배포됐고 기존 UUID v1 API를 유지합니다. 메타데이터 보완 이후 domain 126 + data 145 + MyReviews feature 8, 총 279개 Android host test가 통과했습니다. 이 279건에는 OtherReviews 테스트가 포함되지 않습니다. 이전 463개 host test와 10개 모듈 lint·debug APK·iOS framework 결과는 메타데이터 보완 전 코드 기준입니다. Android 16 실기기에서는 리뷰 목록 복귀·상태·v2 임시 쓰기·사진 교체·계정 전환과 새 리뷰 매장 요약 첫 렌더를 이전 `1.1.9-debug` APK에서 확인했습니다. 최종 코드 그룹 1–9의 branch check는 모두 exit 0이며 `compileAndroidHostTest` 작업은 테스트 코드를 컴파일했지만 실행하지 않았습니다. PR9 코드에서는 Android APK, iOS Simulator framework 및 관련 lint도 통과했습니다. 상세 한계는 [백엔드](backend.md)와 [이미지 URL](image-url-cache.md)에 기록합니다.
+- 대체한 결정: [DEC-0007](#dec-0007-내-리뷰-상세-닫기에서-목록-재조회-제외).
+
+## DEC-0009 위키 갱신 시점
+
+- 기록일: 2026-10-13 (Asia/Seoul).
+- 결정: 구현·검증 작업마다 위키를 갱신하지 않고, 최종 PR 작성 단계에 누적된 로컬 변경 이력과 최종 diff를 대조해 관련 위키 내용을 모아 갱신합니다. 명시적으로 요청된 위키 수정은 요청 시 처리합니다.
+- 이유: 진행 중인 작업의 반복적 문서 수정을 줄이면서 최종 코드·검증 결과와 위키 설명을 PR에서 함께 검토할 수 있게 합니다.
+- 근거: 사용자가 최종 PR 준비 단계에서만 위키 사실·결정·후보를 갱신하도록 명시적으로 요청했습니다. 기록은 로컬 `docs/change-history/CHANGELOG.md`에 유지합니다.
+- 반영: [유지보수 정책](maintenance.md), [PR 템플릿](../../.github/PULL_REQUEST_TEMPLATE.md).
+- 적용 상태: 이 문서와 PR template, repository instructions/skills에 procedure가 반영됐습니다. 구현 규칙은 소유 Ramap 스킬에 유지합니다.
+- 대체한 결정: 없음.
+
+## DEC-0010 변경 목적별 작은 PR과 의존 관계
+
+- 기록일: 2026-10-13 (Asia/Seoul).
+- 결정: PR 분리와 의존 관계의 기준은 [PR 스킬](../../.agents/skills/pr/SKILL.md#small-prs)이 소유하고, 커밋 스킬·저장소 지침·PR 템플릿에서 연결합니다.
+- 이유: 여러 책임의 변경을 목적별로 검토하고 순서대로 반영할 수 있도록 이번 리뷰 개선의 분리 방식을 이후 작업에도 적용합니다.
+- 근거: 사용자가 리뷰 개선을 작은 PR 10개로 나눈 결과를 확인한 뒤 같은 분리 규칙을 추가하도록 명시적으로 요청했습니다. 구체적인 적용 사례는 [PR #266](https://github.com/Ramap-Orgranization/Ramap-KMP/pull/266)부터 [PR #275](https://github.com/Ramap-Orgranization/Ramap-KMP/pull/275)입니다.
+- 반영: [PR 스킬](../../.agents/skills/pr/SKILL.md#small-prs), [커밋 스킬](../../.agents/skills/commit/SKILL.md), [AGENTS.md](../../AGENTS.md), [PR 템플릿](../../.github/PULL_REQUEST_TEMPLATE.md).
+- 적용 상태: 소유 스킬과 연결 지침에 반영했습니다. 문서 갱신 시점은 DEC-0009를 유지하며 코드 변경의 검증 결과는 각 PR의 실제 기준 커밋으로 구분합니다.
+- 대체한 결정: 없음.
+
+## DEC-0011 비즈니스 규칙의 일반 클래스와 생성자 주입
+
+- 기록일: 2026-10-13 (Asia/Seoul).
+- 결정: 일반 클래스·생성자 주입과 `object` 사용 범위의 기준은 [코딩 규칙](../../.agents/skills/ramap-coding-conventions/SKILL.md#kotlin-style)이 소유합니다.
+- 이유: 리뷰 변경 반영기를 정적으로 호출하던 경로를 명시적인 협력 객체로 연결하고 객체 수명을 DI에서 관리합니다.
+- 근거: 사용자가 [PR #267](https://github.com/Ramap-Orgranization/Ramap-KMP/pull/267) 리뷰에서 `ReviewChangeReducer`의 일반 클래스 전환·DI 주입과 함수 작성 규칙 확인을 요청했습니다.
+- 반영: [코딩 규칙](../../.agents/skills/ramap-coding-conventions/SKILL.md), [설계 패턴](design-patterns.md#리뷰-변경-기록과-화면-구독), reducer와 use case·ViewModel 생성자 및 Koin 등록.
+- 적용 상태: 소유 스킬에 반영했고 앱 코드는 `afe2511050f20a60dfdefa369151ec456d2b6c1c`에 반영했습니다. 운영 API나 앱 릴리스를 변경하지 않았습니다.
+- 대체한 결정: 없음.
+
+## DEC-0012 한국어 테스트 이름과 설명
+
+- 기록일: 2026-10-13 (Asia/Seoul).
+- 결정: 테스트 이름·설명·검증 메시지의 언어와 기술 식별자의 기준은 [코딩 규칙](../../.agents/skills/ramap-coding-conventions/SKILL.md#text-tests-and-safety)이 소유합니다.
+- 이유: 테스트의 조건과 기대 결과를 코드 리뷰에서 한국어로 읽을 수 있게 합니다.
+- 근거: 사용자가 PR #267 리뷰에서 테스트 코드를 한국어로 작성하도록 요청했습니다.
+- 반영: [코딩 규칙](../../.agents/skills/ramap-coding-conventions/SKILL.md), [검증 안내](testing.md), reducer·매장 상세·지도·내 리뷰·다른 사용자 리뷰의 이번 변경에 관련된 기존 테스트.
+- 적용 상태: 소유 스킬과 해당 테스트 이름에 반영했습니다. 테스트 소스 컴파일과 테스트 실행 결과는 구분하며, 이번 후속 수정에서는 테스트를 실행하지 않았습니다.
+- 대체한 결정: 없음.

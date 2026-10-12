@@ -139,9 +139,25 @@ internal fun NavigationGraph(
         },
         myReviewsScreen = {
             MyReviewsRoute(
+                isUncovered = !hasActiveOverlay,
                 onBack = navigationState::pop,
                 onShowShop = navigationState::showReviewShopOnMap,
                 onEditReview = navigationState::showReviewEdit,
+                onEventNavigate = { event -> navigationState.showEvent(event.id) },
+                shopDetailContent = { shopId, onDismiss, onShowOnMap, onEventNavigate ->
+                    ShopDetailHost(
+                        isUncovered = !hasActiveOverlay,
+                        shopId = shopId,
+                        onDismiss = onDismiss,
+                        onShowOnMap = onShowOnMap,
+                        onReviewNavigate = onOpenReviewWriteOverlay,
+                        onEditReview = onOpenReviewEditOverlay,
+                        onOpenProfile = { userId -> openProfile(userId, true) },
+                        onEventNavigate = onEventNavigate,
+                        isNavigationBarPadded = true,
+                        originSource = AnalyticsSource.REVIEW_PROFILE,
+                    )
+                },
             )
         },
         otherReviewsScreen = { route ->

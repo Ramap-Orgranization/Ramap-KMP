@@ -9,6 +9,7 @@ source_ref: 009f67d2924a285353213d1aa91ade5406e87324 + working-tree
 
 이 문서는 실행할 검사를 고르는 안내입니다. 테스트 파일의 존재나 아래 명령 목록은 테스트가 이미 통과했다는 뜻이 아닙니다. 검증 결과에는 실행 명령·결과·환경 제약을 남깁니다.
 
+테스트 이름·설명·검증 메시지의 작성 기준은 [코딩 규칙](../../.agents/skills/ramap-coding-conventions/SKILL.md#text-tests-and-safety)이 소유합니다. 한국어 작성 기준의 확정 이유는 [DEC-0012](decisions.md#dec-0012-한국어-테스트-이름과-설명)에서 확인합니다.
 
 ## 변경 범위별 명령
 
