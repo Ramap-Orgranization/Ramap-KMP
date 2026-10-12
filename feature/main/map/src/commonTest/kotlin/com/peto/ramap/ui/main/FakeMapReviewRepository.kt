@@ -13,6 +13,8 @@ import com.peto.ramap.domain.repository.ReviewRepository
 
 class FakeMapReviewRepository : ReviewRepository {
     var blockedReview: Review? = null
+    var reviews: List<Review> = emptyList()
+    val pageOffsets = mutableListOf<Long>()
     val requestedBlockedReviews = mutableListOf<String>()
 
     override suspend fun fetchMyReviews(
@@ -25,7 +27,10 @@ class FakeMapReviewRepository : ReviewRepository {
     override suspend fun fetchShopReviewsPage(
         shopId: String,
         offset: Long,
-    ): RamapResult<ShopReviewsPage> = RamapResult.Success(ShopReviewsPage(emptyList(), 0))
+    ): RamapResult<ShopReviewsPage> {
+        pageOffsets += offset
+        return RamapResult.Success(ShopReviewsPage(reviews.drop(offset.toInt()).take(20), reviews.size))
+    }
 
     override suspend fun fetchBlockedShopReviewOnce(reviewId: String): RamapResult<Review?> {
         requestedBlockedReviews += reviewId

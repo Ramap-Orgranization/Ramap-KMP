@@ -41,6 +41,7 @@ import com.peto.ramap.fake.FakeOperatingNoticeRepository
 import com.peto.ramap.fake.FakePersonalizationRepository
 import com.peto.ramap.fake.FakeProfileRepository
 import com.peto.ramap.fake.FakeRamenShopRepository
+import com.peto.ramap.fake.FakeReviewChangeStore
 import com.peto.ramap.fake.FakeShopReportRepository
 import com.peto.ramap.fake.FakeShopWaitingSystemRepository
 import com.peto.ramap.fixture.BOUNDS_FIXTURE
@@ -104,6 +105,78 @@ import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class MapViewModelTest {
+    @Test
+    fun `forty loaded shop reviews survive journal gap recovery and ordinary delete has no query`() =
+        coroutinesTest {
+            val shop = ramenShopFixture()
+            val rows = (40 downTo 1).map { index -> Review("review-$index", shop.id, "리뷰 본문", index.toString().padStart(2, '0'), author = ReviewAuthor("owner", "작성자")) }
+            val repository = FakeMapReviewRepository().apply { reviews = rows }
+            val changes = FakeReviewChangeStore()
+            val viewModel =
+                mapViewModel(
+                    detailUseCase = blockedReviewDetailUseCase(shop, rows.first(), rows.take(20), 40),
+                    reviewRepository = repository,
+                    profileRepository = FakeProfileRepository("owner"),
+                    reviewChanges = changes,
+                )
+            runCurrent()
+            viewModel.dispatch(OnShopSelected(shop))
+            runCurrent()
+            viewModel.dispatch(MapIntent.OnShopReviewsLoadMore)
+            runCurrent()
+            assertEquals(
+                40,
+                viewModel.uiState.value.shopDetail
+                    ?.reviews
+                    ?.size,
+            )
+            repeat(130) {
+                changes.publish(
+                    com.peto.ramap.domain.model.review.change.ReviewChange
+                        .Liked(
+                            "unrelated-$it",
+                            com.peto.ramap.domain.model.review
+                                .ReviewLike(0, false),
+                        ),
+                )
+            }
+            runCurrent()
+            assertEquals(
+                40,
+                viewModel.uiState.value.shopDetail
+                    ?.reviews
+                    ?.size,
+            )
+            assertEquals(listOf(20L, 20L), repository.pageOffsets)
+            val deleted = rows.first()
+            changes.publish(
+                com.peto.ramap.domain.model.review.change.ReviewChange
+                    .Written(
+                        deleted.id,
+                        "owner",
+                        shop.id,
+                        com.peto.ramap.domain.model.review.change
+                            .ReviewSnapshot(deleted, "매장"),
+                        null,
+                        com.peto.ramap.domain.model.review.change
+                            .ReviewOwnerCounts(39, 39, 0, 39, true),
+                    ),
+            )
+            runCurrent()
+            assertEquals(
+                39,
+                viewModel.uiState.value.shopDetail
+                    ?.reviews
+                    ?.size,
+            )
+            assertEquals(
+                39,
+                viewModel.uiState.value.shopDetail
+                    ?.reviewCount,
+            )
+            assertEquals(listOf(20L, 20L), repository.pageOffsets)
+        }
+
     @Test
     fun `차단 리뷰 한 건만 본 뒤 상세를 닫으면 다시 가린다`() =
         coroutinesTest {
@@ -3056,6 +3129,7 @@ private fun mapViewModel(
     reviewRepository: FakeMapReviewRepository = FakeMapReviewRepository(),
     communityRepository: FakeCommunityRepository = FakeCommunityRepository(),
     profileRepository: FakeProfileRepository = FakeProfileRepository(null),
+    reviewChanges: FakeReviewChangeStore = FakeReviewChangeStore(),
 ): MapViewModel =
     MapViewModel(
         ramenShopRepository,
@@ -3076,11 +3150,14 @@ private fun mapViewModel(
         reviewRepository,
         communityRepository,
         profileRepository,
+        reviewChanges = reviewChanges,
     )
 
 private fun blockedReviewDetailUseCase(
     shop: RamenShop,
     review: Review,
+    reviews: List<Review> = listOf(review),
+    reviewCount: Int = reviews.size,
 ): FetchShopDetailUseCase =
     object : FetchShopDetailUseCase {
         override suspend fun invoke(shopId: String): RamapResult<ShopDetail> =
@@ -3091,7 +3168,8 @@ private fun blockedReviewDetailUseCase(
                     waitingSystem = null,
                     event = null,
                     operatingNotice = null,
-                    reviews = listOf(review),
+                    reviews = reviews,
+                    reviewCount = reviewCount,
                 ),
             )
 
