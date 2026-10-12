@@ -13,9 +13,9 @@ Read the relevant skills before changing production code. Do not recreate their 
 
 ## LLM Wiki maintenance
 
-Start with `docs/wiki/README.md` and read only the pages relevant to the task. Follow `docs/wiki/maintenance.md` at task completion: update verified implementation facts, record explicitly confirmed policy changes in the owning source and `docs/wiki/decisions.md`, and keep unresolved reusable knowledge in `docs/wiki/inbox/`. Do not promote suggestions, repeated observations, or another repository's rules into approved Ramap policy. The four project skills above remain the source of truth for implementation rules; the wiki connects their responsibilities without duplicating them.
+Start with `docs/wiki/README.md` and read only the pages relevant to the task. During implementation and validation, keep findings, results, and pending wiki changes in the local-only `docs/change-history/CHANGELOG.md`; do not update wiki pages, decisions, or candidates after each task. At final PR preparation, consolidate the final diff and accumulated records under `docs/wiki/maintenance.md`: update verified implementation facts, record explicitly confirmed policy changes in `docs/wiki/decisions.md`, and keep unresolved reusable knowledge in `docs/wiki/inbox/`. Confirmed instructions in their owning source take effect immediately; an explicit request to edit wiki content or its maintenance rules can be handled when requested. Do not promote suggestions, repeated observations, or another repository's rules into approved Ramap policy. The four project skills above remain the source of truth for implementation rules; the wiki connects their responsibilities without duplicating them.
 
-Run `python3 scripts/check_wiki.py` when changing the wiki or before a PR, and report affected pages or why no update is needed. This is part of the current task, not a background job. Do not publish local-only documents, secrets, or unrelated working-tree changes. `AGENTS.md`, `.codex/`, project skills, and the reusable `tools/menu-refresh/` skill are shared through Git; personal settings, runtime data, and historical outputs remain local-only. Shared maintenance instructions live in the tracked wiki and PR template.
+Run `python3 scripts/check_wiki.py` after an explicitly requested wiki edit and at final PR preparation; report affected pages or why no update is needed in the PR. Routine task completion does not require a wiki edit or wiki check. Do not publish local-only documents, secrets, or unrelated working-tree changes. `AGENTS.md`, `.codex/`, project skills, and the reusable `tools/menu-refresh/` skill are shared through Git; personal settings, runtime data, and historical outputs remain local-only. Shared maintenance instructions live in the tracked wiki and PR template.
 
 ## Build, Test, and Development Commands
 
@@ -57,6 +57,10 @@ When the user invokes `/release`, `$release`, or asks to prepare or publish a ne
 ## Coding style and testing
 
 Use `.agents/skills/ramap-coding-conventions/SKILL.md` for coding style, naming, test placement, security, and validation. Use `.agents/skills/ramap-design-patterns/SKILL.md` for the established implementation patterns.
+
+## Modification records
+
+For every code, database, deployment, or documentation modification, follow the change-record requirement owned by `.agents/skills/ramap-coding-conventions/SKILL.md` under `Finish the change`. Keep the continuing local history in `docs/change-history/CHANGELOG.md`.
 
 ## User-visible UI content
 
