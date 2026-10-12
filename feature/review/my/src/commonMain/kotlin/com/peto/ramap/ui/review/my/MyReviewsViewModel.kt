@@ -27,6 +27,7 @@ class MyReviewsViewModel(
     private val reviews: ReviewRepository,
     private val profiles: ProfileRepository,
     private val changes: ReviewChangeStore,
+    private val reviewChangeReducer: ReviewChangeReducer,
 ) : BaseViewModel<MyReviewsUiState, MyReviewsIntent, MyReviewsSideEffect>(MyReviewsUiState()) {
     private var generation = 0L
     private var epoch = changes.journal.value.epoch
@@ -57,7 +58,7 @@ class MyReviewsViewModel(
                         loadPage(reset = true)
                     } else if (change is ReviewChange.Written && change.userId == currentState.userId || change is ReviewChange.Hydrated) {
                         reduce {
-                            val updated = ReviewChangeReducer.ownerRows(reviews, change, filter, hasMore)
+                            val updated = reviewChangeReducer.updateOwnerRows(reviews, change, filter, hasMore)
                             val counts = (change as? ReviewChange.Written)?.counts
                             val total = counts?.totalCount ?: totalCount
                             val public = counts?.publicCount ?: publicCount

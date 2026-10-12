@@ -4,6 +4,7 @@ import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.coroutinesTest
 import com.peto.ramap.domain.model.review.MyReviewVisibility
 import com.peto.ramap.domain.model.review.MyReviewsPage
+import com.peto.ramap.domain.model.review.change.ReviewChangeReducer
 import com.peto.ramap.fake.FakeProfileRepository
 import com.peto.ramap.fake.FakeReviewChangeStore
 import com.peto.ramap.ui.review.my.contract.MyReviewsIntent
@@ -18,10 +19,16 @@ import kotlin.test.assertTrue
 @OptIn(ExperimentalCoroutinesApi::class)
 class MyReviewsViewModelTest {
     @Test
-    fun `filter uses saved review visibility and keeps owner counts`() =
+    fun `필터는 저장된 공개 여부를 사용하며 작성자 집계를 유지한다`() =
         coroutinesTest {
             val repository = FakeOwnerReviews()
-            val viewModel = MyReviewsViewModel(repository, FakeProfileRepository(), changes = FakeReviewChangeStore())
+            val viewModel =
+                MyReviewsViewModel(
+                    reviews = repository,
+                    profiles = FakeProfileRepository(),
+                    changes = FakeReviewChangeStore(),
+                    reviewChangeReducer = ReviewChangeReducer(),
+                )
             runCurrent()
             viewModel.dispatch(MyReviewsIntent.SelectFilter(MyReviewVisibility.PRIVATE))
             runCurrent()
@@ -33,10 +40,16 @@ class MyReviewsViewModelTest {
         }
 
     @Test
-    fun `passive return preserves sixty loaded reviews without another query`() =
+    fun `변경 없이 복귀하면 재조회 없이 기존 리뷰 예순 개를 유지한다`() =
         coroutinesTest {
             val repository = FakeOwnerReviews(total = 75)
-            val viewModel = MyReviewsViewModel(repository, FakeProfileRepository(), changes = FakeReviewChangeStore())
+            val viewModel =
+                MyReviewsViewModel(
+                    reviews = repository,
+                    profiles = FakeProfileRepository(),
+                    changes = FakeReviewChangeStore(),
+                    reviewChangeReducer = ReviewChangeReducer(),
+                )
             runCurrent()
             viewModel.dispatch(MyReviewsIntent.LoadMore)
             runCurrent()
@@ -51,10 +64,16 @@ class MyReviewsViewModelTest {
         }
 
     @Test
-    fun `pagination failure retries failed offset while keeping tiles`() =
+    fun `다음 페이지 조회 실패 시 기존 항목을 유지하며 실패한 위치를 다시 조회한다`() =
         coroutinesTest {
             val repository = FakeOwnerReviews(total = 75)
-            val viewModel = MyReviewsViewModel(repository, FakeProfileRepository(), changes = FakeReviewChangeStore())
+            val viewModel =
+                MyReviewsViewModel(
+                    reviews = repository,
+                    profiles = FakeProfileRepository(),
+                    changes = FakeReviewChangeStore(),
+                    reviewChangeReducer = ReviewChangeReducer(),
+                )
             runCurrent()
             repository.failNext = true
             viewModel.dispatch(MyReviewsIntent.LoadMore)
@@ -68,11 +87,17 @@ class MyReviewsViewModelTest {
         }
 
     @Test
-    fun `late filter response does not replace newly selected private grid`() =
+    fun `늦은 필터 응답은 새로 선택한 비공개 리뷰 목록을 덮어쓰지 않는다`() =
         coroutinesTest {
             val repository = FakeOwnerReviews()
             val pending = CompletableDeferred<RamapResult<MyReviewsPage>>()
-            val viewModel = MyReviewsViewModel(repository, FakeProfileRepository(), changes = FakeReviewChangeStore())
+            val viewModel =
+                MyReviewsViewModel(
+                    reviews = repository,
+                    profiles = FakeProfileRepository(),
+                    changes = FakeReviewChangeStore(),
+                    reviewChangeReducer = ReviewChangeReducer(),
+                )
             runCurrent()
             repository.pendingResults += pending
             viewModel.dispatch(MyReviewsIntent.SelectFilter(MyReviewVisibility.PUBLIC))
@@ -87,12 +112,18 @@ class MyReviewsViewModelTest {
         }
 
     @Test
-    fun `late first account response cannot replace a new first account epoch after A B A`() =
+    fun `계정을 전환했다가 돌아온 뒤 이전 세션의 늦은 응답은 새 세션을 덮어쓰지 않는다`() =
         coroutinesTest {
             val repository = FakeOwnerReviews()
             val profiles = FakeProfileRepository("first")
             val pending = CompletableDeferred<RamapResult<MyReviewsPage>>()
-            val viewModel = MyReviewsViewModel(repository, profiles, changes = FakeReviewChangeStore())
+            val viewModel =
+                MyReviewsViewModel(
+                    reviews = repository,
+                    profiles = profiles,
+                    changes = FakeReviewChangeStore(),
+                    reviewChangeReducer = ReviewChangeReducer(),
+                )
             runCurrent()
             repository.pendingResults += pending
             viewModel.dispatch(MyReviewsIntent.Retry)
@@ -109,13 +140,25 @@ class MyReviewsViewModelTest {
         }
 
     @Test
-    fun `two covered owner screens consume retained mutations outside filter without another query`() =
+    fun `두 작성자 화면은 필터 밖의 변경도 재조회 없이 반영한다`() =
         coroutinesTest {
             val store = FakeReviewChangeStore()
             val firstRepository = FakeOwnerReviews(total = 75)
             val secondRepository = FakeOwnerReviews(total = 75)
-            val first = MyReviewsViewModel(firstRepository, FakeProfileRepository("owner"), store)
-            val second = MyReviewsViewModel(secondRepository, FakeProfileRepository("owner"), store)
+            val first =
+                MyReviewsViewModel(
+                    reviews = firstRepository,
+                    profiles = FakeProfileRepository("owner"),
+                    changes = store,
+                    reviewChangeReducer = ReviewChangeReducer(),
+                )
+            val second =
+                MyReviewsViewModel(
+                    reviews = secondRepository,
+                    profiles = FakeProfileRepository("owner"),
+                    changes = store,
+                    reviewChangeReducer = ReviewChangeReducer(),
+                )
             runCurrent()
             first.dispatch(MyReviewsIntent.LoadMore)
             second.dispatch(MyReviewsIntent.SelectFilter(MyReviewVisibility.PRIVATE))
@@ -171,11 +214,17 @@ class MyReviewsViewModelTest {
         }
 
     @Test
-    fun `late append cannot resurrect a deleted review and retries only pending page`() =
+    fun `늦은 다음 페이지 응답은 삭제된 리뷰를 복원하지 않으며 미완료 페이지만 재시도한다`() =
         coroutinesTest {
             val store = FakeReviewChangeStore()
             val repository = FakeOwnerReviews(total = 75)
-            val viewModel = MyReviewsViewModel(repository, FakeProfileRepository("owner"), store)
+            val viewModel =
+                MyReviewsViewModel(
+                    reviews = repository,
+                    profiles = FakeProfileRepository("owner"),
+                    changes = store,
+                    reviewChangeReducer = ReviewChangeReducer(),
+                )
             runCurrent()
             val pending = CompletableDeferred<RamapResult<MyReviewsPage>>()
             repository.pendingResults += pending

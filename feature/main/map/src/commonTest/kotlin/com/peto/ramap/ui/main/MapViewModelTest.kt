@@ -16,6 +16,7 @@ import com.peto.ramap.domain.model.personalization.ShopPersonalization
 import com.peto.ramap.domain.model.report.ShopInformationField
 import com.peto.ramap.domain.model.report.ShopInformationReport
 import com.peto.ramap.domain.model.review.Review
+import com.peto.ramap.domain.model.review.change.ReviewChangeReducer
 import com.peto.ramap.domain.model.shop.Category
 import com.peto.ramap.domain.model.shop.Location
 import com.peto.ramap.domain.model.shop.MapBounds
@@ -106,7 +107,7 @@ import kotlin.test.assertTrue
 @OptIn(ExperimentalCoroutinesApi::class)
 class MapViewModelTest {
     @Test
-    fun `forty loaded shop reviews survive journal gap recovery and ordinary delete has no query`() =
+    fun `조회한 매장 리뷰 마흔 개는 기록 공백 복구 후 유지되며 일반 삭제는 재조회하지 않는다`() =
         coroutinesTest {
             val shop = ramenShopFixture()
             val rows = (40 downTo 1).map { index -> Review("review-$index", shop.id, "리뷰 본문", index.toString().padStart(2, '0'), author = ReviewAuthor("owner", "작성자")) }
@@ -3132,25 +3133,27 @@ private fun mapViewModel(
     reviewChanges: FakeReviewChangeStore = FakeReviewChangeStore(),
 ): MapViewModel =
     MapViewModel(
-        ramenShopRepository,
-        loginRepository,
-        CurrentLocationStore(),
-        shopReportRepository,
-        personalizationRepository,
-        detailUseCase ?: FakeFetchShopDetailUseCase(
-            ramenShopRepository,
-            shopWaitingSystemRepository,
-            FakeOperatingNoticeRepository(),
-        ),
-        FakeMapSearchHistoryStorage(),
-        MapAnalytics(FakeAnalyticsTracker()),
-        LoginAnalytics(FakeAnalyticsTracker(), FakeCrashReporter()),
-        SignInUseCase(loginRepository, LoginAnalytics(FakeAnalyticsTracker(), FakeCrashReporter())),
-        FakeOperatingNoticeRepository(),
-        reviewRepository,
-        communityRepository,
-        profileRepository,
+        ramenShopRepository = ramenShopRepository,
+        loginRepository = loginRepository,
+        currentLocationStore = CurrentLocationStore(),
+        shopReportRepository = shopReportRepository,
+        personalizationStore = personalizationRepository,
+        fetchShopDetailUseCase =
+            detailUseCase ?: FakeFetchShopDetailUseCase(
+                ramenShopRepository,
+                shopWaitingSystemRepository,
+                FakeOperatingNoticeRepository(),
+            ),
+        mapSearchHistoryStorage = FakeMapSearchHistoryStorage(),
+        mapAnalytics = MapAnalytics(FakeAnalyticsTracker()),
+        loginAnalytics = LoginAnalytics(FakeAnalyticsTracker(), FakeCrashReporter()),
+        signInUseCase = SignInUseCase(loginRepository, LoginAnalytics(FakeAnalyticsTracker(), FakeCrashReporter())),
+        operatingNoticeRepository = FakeOperatingNoticeRepository(),
+        reviewRepository = reviewRepository,
+        communityRepository = communityRepository,
+        profileRepository = profileRepository,
         reviewChanges = reviewChanges,
+        reviewChangeReducer = ReviewChangeReducer(),
     )
 
 private fun blockedReviewDetailUseCase(
