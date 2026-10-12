@@ -4,6 +4,7 @@ import com.peto.ramap.core.result.RamapError
 import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.data.datasource.profile.ProfileDataSource
 import com.peto.ramap.data.model.ProfileResponse
+import com.peto.ramap.data.model.SignedImageUrl
 import com.peto.ramap.domain.model.profile.AccountProfile
 import com.peto.ramap.domain.model.profile.ProfileImage
 import kotlinx.coroutines.CancellationException
@@ -18,6 +19,7 @@ import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
+import kotlin.time.Clock
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Instant
 
@@ -202,16 +204,16 @@ class DefaultProfileRepositoryTest {
         }
 
     @Test
-    fun refreshesSignedPhotoUrlBeforeItsThirtyMinuteExpiry() =
+    fun refreshesSignedPhotoUrlBeforeItsReturnedExpiry() =
         runTest {
             var currentTime = Instant.fromEpochSeconds(0)
-            val source = ProfileDataSourceFake()
+            val source = ProfileDataSourceFake().apply { signedExpiry = { currentTime + 5.minutes } }
             var signedCount = 0
             source.afterSignedUrl = { signedCount++ }
             val repository = DefaultProfileRepository(source) { currentTime }
 
             repository.fetchMyProfile()
-            currentTime += 28.minutes
+            currentTime += 3.minutes
             repository.fetchMyProfile()
             currentTime += 1.minutes
             repository.fetchMyProfile()
@@ -297,6 +299,7 @@ internal class ProfileDataSourceFake : ProfileDataSource {
     val uploaded = mutableListOf<String>()
     val deleted = mutableListOf<String>()
     var afterSignedUrl: () -> Unit = {}
+    var signedExpiry: () -> Instant = { Clock.System.now() + 5.minutes }
     var visibilityOwner: String? = null
 
     override fun currentUserId() = userId
@@ -347,9 +350,9 @@ internal class ProfileDataSourceFake : ProfileDataSource {
     override suspend fun signedPhotoUrl(
         userId: String,
         path: String,
-    ): String {
+    ): SignedImageUrl {
         afterSignedUrl()
-        return "signed:$path"
+        return SignedImageUrl(url = "signed:$path", expiresAt = signedExpiry())
     }
 
     override suspend fun updateProfileVisibility(isPublic: Boolean): ProfileResponse {
