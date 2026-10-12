@@ -25,7 +25,7 @@ import kotlin.time.Duration.Companion.minutes
 @OptIn(SupabaseInternal::class)
 class RemoteReviewDataSourceMutationTest {
     @Test
-    fun `same paths retain URLs while new and previously failed paths alone request signing`() =
+    fun `같은 경로의 URL은 유지하고 새 경로와 발급에 실패한 경로만 서명한다`() =
         runTest {
             val calls = mutableListOf<List<SignedImageRequest>>()
             var rejectNew = true

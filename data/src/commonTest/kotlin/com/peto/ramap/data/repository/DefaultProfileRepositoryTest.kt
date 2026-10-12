@@ -25,7 +25,7 @@ import kotlin.time.Instant
 
 class DefaultProfileRepositoryTest {
     @Test
-    fun rejectsProfaneNicknameBeforeAvailabilityRequestOrPhotoUpload() =
+    fun `금칙어 닉네임은 중복 검사와 사진 업로드 전에 거부한다`() =
         runTest {
             val source = ProfileDataSourceFake()
             val repository = DefaultProfileRepository(source, changes = testReviewChanges())
@@ -37,7 +37,7 @@ class DefaultProfileRepositoryTest {
         }
 
     @Test
-    fun profileSaveReturnsUpdatedProfile() =
+    fun `프로필 저장은 갱신된 프로필을 반환한다`() =
         runTest {
             val repository = DefaultProfileRepository(ProfileDataSourceFake(), changes = testReviewChanges())
 
@@ -47,7 +47,7 @@ class DefaultProfileRepositoryTest {
         }
 
     @Test
-    fun returnsSignedPhotoAndCapturedOwner() =
+    fun `서명된 사진과 요청 시점의 소유자를 반환한다`() =
         runTest {
             val source = ProfileDataSourceFake()
             val result = assertIs<RamapResult.Success<AccountProfile>>(DefaultProfileRepository(source, changes = testReviewChanges()).fetchMyProfile())
@@ -56,7 +56,7 @@ class DefaultProfileRepositoryTest {
         }
 
     @Test
-    fun rejectsInvalidInputBeforeUploading() =
+    fun `잘못된 입력은 사진 업로드 전에 거부한다`() =
         runTest {
             val source = ProfileDataSourceFake()
             val repository = DefaultProfileRepository(source, changes = testReviewChanges())
@@ -66,7 +66,7 @@ class DefaultProfileRepositoryTest {
         }
 
     @Test
-    fun savesFetchesPreservesAndClearsBio() =
+    fun `소개글을 저장하고 조회하며 유지하거나 비울 수 있다`() =
         runTest {
             val source = ProfileDataSourceFake()
             val repository = DefaultProfileRepository(source, changes = testReviewChanges())
@@ -79,7 +79,7 @@ class DefaultProfileRepositoryTest {
         }
 
     @Test
-    fun rejectsInvalidBioBeforeNetworkOrPhotoUpload() =
+    fun `잘못된 소개글은 네트워크 요청과 사진 업로드 전에 거부한다`() =
         runTest {
             val source = ProfileDataSourceFake()
             val repository = DefaultProfileRepository(source, changes = testReviewChanges())
@@ -92,7 +92,7 @@ class DefaultProfileRepositoryTest {
         }
 
     @Test
-    fun uncertainProfileSaveFailureKeepsUploadedPhotoAndOriginalError() =
+    fun `저장 여부가 불확실한 실패는 업로드한 사진과 원래 오류를 유지한다`() =
         runTest {
             val failure = IllegalStateException("save rejected")
             val source = ProfileDataSourceFake().apply { updateFailure = failure }
@@ -105,7 +105,7 @@ class DefaultProfileRepositoryTest {
         }
 
     @Test
-    fun confirmedRateLimitDeletesOnlyTheNewUploadAndPreservesOriginalError() =
+    fun `요청 제한이 확인되면 새로 업로드한 사진만 삭제하고 원래 오류를 유지한다`() =
         runTest {
             val failure = IllegalStateException("HTTP 429")
             val source = ProfileDataSourceFake()
@@ -123,7 +123,7 @@ class DefaultProfileRepositoryTest {
         }
 
     @Test
-    fun cleanupFailureDoesNotReplaceConfirmedSaveRejection() =
+    fun `사진 정리 실패는 확인된 저장 거부 오류를 바꾸지 않는다`() =
         runTest {
             val failure = IllegalStateException("HTTP 429")
             val source = ProfileDataSourceFake().apply { deleteFailure = IllegalStateException("cleanup failed") }
@@ -139,7 +139,7 @@ class DefaultProfileRepositoryTest {
         }
 
     @Test
-    fun timeoutAndServerErrorsDoNotDeleteAnUploadedPhoto() =
+    fun `시간 초과와 서버 오류는 업로드한 사진을 삭제하지 않는다`() =
         runTest {
             val source = ProfileDataSourceFake()
             val repository = DefaultProfileRepository(source, changes = testReviewChanges())
@@ -157,7 +157,7 @@ class DefaultProfileRepositoryTest {
         }
 
     @Test
-    fun profileSaveCancellationDoesNotDeleteUploadedPhotoAndStillPropagates() =
+    fun `프로필 저장 취소는 업로드한 사진을 삭제하지 않고 전파한다`() =
         runTest {
             val source = ProfileDataSourceFake().apply { updateFailure = CancellationException("cancelled") }
 
@@ -170,7 +170,7 @@ class DefaultProfileRepositoryTest {
         }
 
     @Test
-    fun visibilitySaveSucceedsWhenAvatarSigningFails() =
+    fun `아바타 서명이 실패해도 공개 범위 저장은 성공한다`() =
         runTest {
             val source = ProfileDataSourceFake()
             source.afterSignedUrl = { error("image unavailable") }
@@ -180,7 +180,7 @@ class DefaultProfileRepositoryTest {
         }
 
     @Test
-    fun visibilitySavePropagatesAvatarSigningCancellation() =
+    fun `공개 범위 저장은 아바타 서명 취소를 전파한다`() =
         runTest {
             val source = ProfileDataSourceFake()
             source.afterSignedUrl = { throw CancellationException() }
@@ -191,7 +191,7 @@ class DefaultProfileRepositoryTest {
         }
 
     @Test
-    fun profileSaveSucceedsWhenAvatarSigningFailsAfterTheRpcCommit() =
+    fun `저장 응답 이후 아바타 서명이 실패해도 프로필 저장은 성공한다`() =
         runTest {
             val source = ProfileDataSourceFake().apply { afterSignedUrl = { error("image unavailable") } }
 
@@ -202,7 +202,7 @@ class DefaultProfileRepositoryTest {
         }
 
     @Test
-    fun refreshesSignedPhotoUrlBeforeItsReturnedExpiry() =
+    fun `반환된 사진 URL이 만료되기 전에 서명을 갱신한다`() =
         runTest {
             var currentTime = Instant.fromEpochSeconds(0)
             val source = ProfileDataSourceFake().apply { signedExpiry = { currentTime + 5.minutes } }
@@ -220,7 +220,7 @@ class DefaultProfileRepositoryTest {
         }
 
     @Test
-    fun successfulPhotoReplacementDeletesThePreviousPhoto() =
+    fun `사진 교체가 성공하면 이전 사진을 삭제한다`() =
         runTest {
             val source = ProfileDataSourceFake()
 
@@ -230,7 +230,7 @@ class DefaultProfileRepositoryTest {
         }
 
     @Test
-    fun successfulPhotoRemovalDeletesThePreviousPhoto() =
+    fun `사진 제거가 성공하면 이전 사진을 삭제한다`() =
         runTest {
             val source = ProfileDataSourceFake()
 
@@ -240,7 +240,7 @@ class DefaultProfileRepositoryTest {
         }
 
     @Test
-    fun oldPhotoCleanupFailureDoesNotTurnASuccessfulSaveIntoAFailure() =
+    fun `이전 사진 정리 실패는 성공한 저장을 실패로 바꾸지 않는다`() =
         runTest {
             val source = ProfileDataSourceFake().apply { deleteFailure = IllegalStateException("cleanup failed") }
 
@@ -253,7 +253,7 @@ class DefaultProfileRepositoryTest {
     private fun photo() = ProfileImage(byteArrayOf(0xff.toByte(), 0xd8.toByte(), 0xff.toByte()), "image/jpeg")
 
     @Test
-    fun updatesProfileVisibilityWithTheCurrentAccount() =
+    fun `현재 계정으로 프로필 공개 범위를 변경한다`() =
         runTest {
             val source = ProfileDataSourceFake()
 
@@ -267,7 +267,7 @@ class DefaultProfileRepositoryTest {
         }
 
     @Test
-    fun reusesSignedPhotoUrlWhenAvatarPathIsUnchanged() =
+    fun `아바타 경로가 같으면 서명된 사진 URL을 재사용한다`() =
         runTest {
             val source = ProfileDataSourceFake()
             var signedCount = 0

@@ -9,7 +9,7 @@ import kotlin.test.assertTrue
 
 class DefaultReviewChangeStoreTest {
     @Test
-    fun `conflated delivery retains revisions and exposes bounded overflow`() {
+    fun `방출이 합쳐져도 변경 순서를 유지하고 보관 범위 초과를 알린다`() {
         val sessions = MutableStateFlow<String?>("owner")
         val store = DefaultReviewChangeStore(sessions, { sessions.value })
         val epoch = store.synchronizeSession()
@@ -22,7 +22,7 @@ class DefaultReviewChangeStoreTest {
     }
 
     @Test
-    fun `request start observes account switch and rejects old same account epoch completion`() {
+    fun `요청 시작은 계정 전환을 확인하고 이전 세션의 같은 계정 응답을 거부한다`() {
         val sessions = MutableStateFlow<String?>("first")
         val store = DefaultReviewChangeStore(sessions, { sessions.value })
         val firstEpoch = store.synchronizeSession()

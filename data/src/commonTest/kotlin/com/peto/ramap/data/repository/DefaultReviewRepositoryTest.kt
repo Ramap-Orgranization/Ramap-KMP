@@ -28,7 +28,7 @@ import kotlin.test.assertTrue
 @OptIn(ExperimentalCoroutinesApi::class)
 class DefaultReviewRepositoryTest {
     @Test
-    fun `committed review remains successful when post commit signing or cleanup fails`() =
+    fun `저장 이후 서명이나 정리가 실패해도 리뷰 저장은 성공한다`() =
         runTest {
             val source = FakeMyReviewsDataSource().apply { hydrationFailure = IllegalStateException("signing unavailable") }
             val changes = testReviewChanges()
@@ -46,7 +46,7 @@ class DefaultReviewRepositoryTest {
         }
 
     @Test
-    fun `new review publishes complete shop in written and hydrated changes without fetching review lists`() =
+    fun `새 리뷰는 목록 재조회 없이 저장과 보완 변경에 전체 매장 정보를 포함한다`() =
         runTest {
             val response = shop("new-shop").copy(instagramProfileImagePath = "shop/avatar.jpg", menuCategoryIds = listOf("shoyu"))
             val shops = FakeRamenShopDataSource(fetchByIdsResponses = listOf(response))
@@ -72,7 +72,7 @@ class DefaultReviewRepositoryTest {
         }
 
     @Test
-    fun `temporary shop lookup failure is recovered during hydration without retrying the write`() =
+    fun `일시적인 매장 조회 실패는 저장 재시도 없이 보완 과정에서 복구한다`() =
         runTest {
             val delegate = FakeRamenShopDataSource(fetchByIdsResponses = listOf(shop("new-shop")))
             var attempts = 0
@@ -114,7 +114,7 @@ class DefaultReviewRepositoryTest {
         }
 
     @Test
-    fun `missing shop is retried in background and retains committed review success`() =
+    fun `누락된 매장은 백그라운드에서 다시 조회하고 리뷰 저장 성공을 유지한다`() =
         runTest {
             val delegate = FakeRamenShopDataSource(fetchByIdsResponses = listOf(shop("new-shop")))
             var attempts = 0
@@ -161,7 +161,7 @@ class DefaultReviewRepositoryTest {
         }
 
     @Test
-    fun `shop lookup cancellation after commit keeps write successful and published`() =
+    fun `저장 이후 매장 조회가 취소돼도 저장 성공과 변경 발행을 유지한다`() =
         runTest {
             val shops = FakeRamenShopDataSource(error = CancellationException("shop lookup cancelled"))
             val changes = testReviewChanges()
@@ -176,7 +176,7 @@ class DefaultReviewRepositoryTest {
         }
 
     @Test
-    fun `single owner projection includes shop and skips shop lookup for absent review`() =
+    fun `내 리뷰 단건 조회는 매장을 포함하고 리뷰가 없으면 매장을 조회하지 않는다`() =
         runTest {
             val source = FakeMyReviewsDataSource(myReview = review("new-review", "new-shop"))
             val shops = FakeRamenShopDataSource(fetchByIdsResponses = listOf(shop("new-shop")))
@@ -219,7 +219,7 @@ class DefaultReviewRepositoryTest {
         }
 
     @Test
-    fun `my reviews enrich shops in one deduplicated nonblank batch and preserve page metadata`() =
+    fun `내 리뷰는 비어 있지 않은 매장 ID를 중복 제거해 한 번 보완하고 페이지 정보를 유지한다`() =
         runTest {
             val response = page(listOf(review("first", "shop-a"), review("second", "shop-b"), review("third", "shop-a"), review("blank", "")))
             val shops = FakeRamenShopDataSource(fetchByIdsResponses = listOf(shop("shop-b"), shop("shop-a")))
@@ -233,7 +233,7 @@ class DefaultReviewRepositoryTest {
         }
 
     @Test
-    fun `missing my review shops retain reviews and shop names`() =
+    fun `내 리뷰의 매장이 없어도 리뷰와 매장 이름을 유지한다`() =
         runTest {
             val response = page(listOf(review("first", "missing"), review("second", "shop-b")))
             val shops = FakeRamenShopDataSource(fetchByIdsResponses = listOf(shop("shop-b")))
@@ -249,7 +249,7 @@ class DefaultReviewRepositoryTest {
         }
 
     @Test
-    fun `shop lookup failure preserves my reviews page`() =
+    fun `매장 조회가 실패해도 내 리뷰 페이지를 유지한다`() =
         runTest {
             val response = page(listOf(review("first", "shop-a")))
             val shops = FakeRamenShopDataSource(error = IllegalStateException("shops unavailable"))
@@ -262,7 +262,7 @@ class DefaultReviewRepositoryTest {
         }
 
     @Test
-    fun `empty and blank shop ids skip my review shop lookup`() =
+    fun `리뷰가 없거나 매장 ID가 비어 있으면 내 리뷰의 매장을 조회하지 않는다`() =
         runTest {
             val shops = FakeRamenShopDataSource()
             for (reviews in listOf(emptyList(), listOf(review("blank", " ")))) {
@@ -277,7 +277,7 @@ class DefaultReviewRepositoryTest {
         }
 
     @Test
-    fun `shop lookup cancellation propagates from my reviews`() =
+    fun `내 리뷰의 매장 조회 취소는 그대로 전파한다`() =
         runTest {
             val shops = FakeRamenShopDataSource(error = CancellationException("cancelled"))
             val repository = DefaultReviewRepository(FakeMyReviewsDataSource(page(listOf(review("first", "shop-a")))), shops, changes = testReviewChanges())
