@@ -27,3 +27,13 @@ last_verified: 2026-10-11
 - 반영: 로컬 `ramap-architecture`, `ramap-module-structure`, `ramap-design-patterns` 스킬, [아키텍처](architecture.md), [모듈 구조](module-structure.md), [디자인시스템](design-system.md), [승격한 후보](inbox/source-alignment.md).
 - 적용 상태: 소유 스킬과 위키에 반영했습니다. 앱 코드의 동작과 모듈 배치는 변경하지 않았습니다.
 - 대체한 결정: 없음. DEC-0001의 스킬 소유권 원칙을 유지하며 초기 후보를 해소합니다.
+
+## DEC-0003 프로필·리뷰 이미지 URL 기본 배치 발급 채택
+
+- 기록일: 2026-10-12 (Asia/Seoul).
+- 결정: 프로필·리뷰 이미지 URL은 Supabase Storage 기본 배치 API로 발급합니다. 앱 발급 경로는 Edge Function과 Redis에 의존하지 않으며 호출자의 JWT와 기존 Storage RLS 검사를 사용합니다.
+- 이유: 검토 후 사용자가 기본 배치 방식을 선택했습니다. 이 경로는 별도 캐시 서비스 없이 여러 경로를 한 요청으로 묶으면서 기존 권한 검사를 유지합니다.
+- 근거: 사용자의 기본 배치 방식 선택 및 적용 요청.
+- 반영: [이미지 URL 구현](image-url-cache.md), [백엔드 탐색](backend.md), 공통 데이터 소스와 회귀 테스트.
+- 적용 상태: 앱 코드에 적용했습니다. 이 기록만으로 앱 릴리스나 운영 성능 개선을 주장하지 않습니다.
+- 대체한 결정: 없음.

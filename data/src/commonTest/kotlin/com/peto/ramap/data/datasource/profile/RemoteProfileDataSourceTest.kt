@@ -1,6 +1,7 @@
 package com.peto.ramap.data.datasource.profile
 
 import app.cash.turbine.test
+import com.peto.ramap.data.datasource.image.RemoteImageUrlDataSource
 import com.peto.ramap.fixture.authenticatedSessionFixture
 import com.peto.ramap.fixture.withSupabaseSessionFixture
 import io.github.jan.supabase.annotations.SupabaseInternal
@@ -18,7 +19,7 @@ class RemoteProfileDataSourceTest {
         runTest {
             withSupabaseSessionFixture { client ->
                 client.auth.setSessionStatus(authenticatedSessionFixture())
-                RemoteProfileDataSource(client).sessionUserIds.test {
+                RemoteProfileDataSource(client, RemoteImageUrlDataSource(client)).sessionUserIds.test {
                     assertEquals("viewer", awaitItem())
 
                     client.auth.setSessionStatus(SessionStatus.Initializing)
@@ -38,7 +39,7 @@ class RemoteProfileDataSourceTest {
     fun `초기 세션 복원이 끝난 뒤에만 게스트 상태를 알린다`() =
         runTest {
             withSupabaseSessionFixture { client ->
-                RemoteProfileDataSource(client).sessionUserIds.test {
+                RemoteProfileDataSource(client, RemoteImageUrlDataSource(client)).sessionUserIds.test {
                     expectNoEvents()
                     client.auth.setSessionStatus(SessionStatus.NotAuthenticated())
                     assertNull(awaitItem())

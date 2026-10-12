@@ -1,5 +1,6 @@
 package com.peto.ramap.data.datasource.review
 
+import com.peto.ramap.data.datasource.image.ImageUrlDataSource
 import com.peto.ramap.data.model.EditableReviewResponse
 import com.peto.ramap.data.model.MyReviewResponse
 import com.peto.ramap.data.model.MyReviewsPageResponse
@@ -8,6 +9,8 @@ import com.peto.ramap.data.model.ReviewLikeResponse
 import com.peto.ramap.data.model.ReviewResponse
 import com.peto.ramap.data.model.ShopReviewRequest
 import com.peto.ramap.data.model.ShopReviewsPageResponse
+import com.peto.ramap.data.model.SignedImageRequest
+import com.peto.ramap.data.model.SignedImageUrl
 import com.peto.ramap.domain.model.review.ReviewImage
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
@@ -15,24 +18,18 @@ import io.github.jan.supabase.exceptions.RestException
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.storage.storage
 import io.ktor.http.ContentType
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.NonCancellable
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
-import kotlin.time.Duration.Companion.minutes
 import kotlin.uuid.Uuid
 
 internal class RemoteReviewDataSource(
     private val client: SupabaseClient,
+    private val imageUrlDataSource: ImageUrlDataSource,
 ) : ReviewDataSource {
-    private val imageSigner = ReviewImageSigner { path -> client.storage.from(BUCKET).createSignedUrl(path, SIGNED_URL_LIFETIME) }
-
     override suspend fun fetchMyReviews(
         offset: Long,
         visibility: String,
@@ -46,12 +43,7 @@ internal class RemoteReviewDataSource(
                         put(PARAM_VISIBILITY, visibility)
                     },
                 ).decodeAs<MyReviewsPageResponse>()
-        return page.copy(
-            reviews =
-                coroutineScope {
-                    page.reviews.map { review -> async { signMyReview(review) } }.awaitAll()
-                },
-        )
+        return page.copy(reviews = signMyReviews(page.reviews))
     }
 
     override suspend fun fetchMyReview(reviewId: String): MyReviewResponse? {
@@ -61,7 +53,7 @@ internal class RemoteReviewDataSource(
                     RPC_FETCH_MY_REVIEW,
                     buildJsonObject { put(PARAM_REVIEW_ID, reviewId) },
                 ).decodeAs<MyReviewResponse?>() ?: return null
-        return signMyReview(review)
+        return signMyReviews(listOf(review)).single()
     }
 
     override suspend fun fetchShopReviews(
@@ -159,17 +151,9 @@ internal class RemoteReviewDataSource(
                     buildJsonObject { put(PARAM_REVIEW_ID, reviewId) },
                 ).decodeList<EditableReviewResponse>()
                 .singleOrNull() ?: return null
-        val urls =
-            review.imagePaths.map { path ->
-                try {
-                    client.storage.from(BUCKET).createSignedUrl(path, SIGNED_URL_LIFETIME)
-                } catch (exception: CancellationException) {
-                    throw exception
-                } catch (_: Exception) {
-                    null
-                }
-            }
-        return review to urls
+        val images = review.imagePaths.map { SignedImageRequest(bucket = BUCKET, path = it) }
+        val urls = imageUrlDataSource.fetchUrls(images)
+        return review to images.map { urls[it]?.url }
     }
 
     override suspend fun updateReview(
@@ -230,35 +214,44 @@ internal class RemoteReviewDataSource(
         parameters: kotlinx.serialization.json.JsonObject,
     ): List<ReviewResponse> = signReviews(client.postgrest.rpc(rpc, parameters).decodeList<ReviewResponse>())
 
-    private suspend fun signReviews(reviews: List<ReviewResponse>): List<ReviewResponse> =
-        coroutineScope {
-            reviews
-                .map { review ->
-                    async {
-                        review.copy(
-                            imageUrls = imageSigner.signImages(review.imagePaths),
-                            avatarUrl = signedAvatar(review.avatarPath),
-                        )
-                    }
-                }.awaitAll()
-        }
-
-    private suspend fun signedAvatar(path: String?): String? {
-        if (path == null) return null
-        return try {
-            client.storage.from(AVATAR_BUCKET).createSignedUrl(path, SIGNED_URL_LIFETIME)
-        } catch (exception: CancellationException) {
-            throw exception
-        } catch (_: Exception) {
-            null
+    private suspend fun signReviews(reviews: List<ReviewResponse>): List<ReviewResponse> {
+        val images =
+            buildList {
+                for (review in reviews) {
+                    addAll(review.imagePaths.map { SignedImageRequest(bucket = BUCKET, path = it) })
+                    review.avatarPath?.let { add(SignedImageRequest(bucket = AVATAR_BUCKET, path = it)) }
+                }
+            }
+        val urls = imageUrlDataSource.fetchUrls(images)
+        return reviews.map { review ->
+            review.copy(
+                imageUrls = review.imagePaths.mapNotNull { urls[SignedImageRequest(BUCKET, it)]?.url },
+                avatarUrl = avatarUrl(review.avatarPath, urls),
+            )
         }
     }
 
-    private suspend fun signMyReview(review: MyReviewResponse): MyReviewResponse =
-        review.copy(
-            imageUrls = imageSigner.signImagesOrNull(review.imagePaths),
-            authorAvatarUrl = signedAvatar(review.authorAvatarPath),
-        )
+    private suspend fun signMyReviews(reviews: List<MyReviewResponse>): List<MyReviewResponse> {
+        val images =
+            buildList {
+                for (review in reviews) {
+                    addAll(review.imagePaths.map { SignedImageRequest(bucket = BUCKET, path = it) })
+                    review.authorAvatarPath?.let { add(SignedImageRequest(bucket = AVATAR_BUCKET, path = it)) }
+                }
+            }
+        val urls = imageUrlDataSource.fetchUrls(images)
+        return reviews.map { review ->
+            review.copy(
+                imageUrls = review.imagePaths.map { urls[SignedImageRequest(BUCKET, it)]?.url },
+                authorAvatarUrl = avatarUrl(review.authorAvatarPath, urls),
+            )
+        }
+    }
+
+    private fun avatarUrl(
+        path: String?,
+        urls: Map<SignedImageRequest, SignedImageUrl?>,
+    ): String? = path?.let { urls[SignedImageRequest(bucket = AVATAR_BUCKET, path = it)]?.url }
 
     private suspend fun uploadImages(images: List<ReviewImage>): List<String> {
         val userId = requireNotNull(client.auth.currentUserOrNull()?.id) { "Missing authenticated user" }
@@ -316,6 +309,5 @@ internal class RemoteReviewDataSource(
 
         const val BUCKET = "shop-review-images"
         const val AVATAR_BUCKET = "profile-avatars"
-        val SIGNED_URL_LIFETIME = 5.minutes
     }
 }

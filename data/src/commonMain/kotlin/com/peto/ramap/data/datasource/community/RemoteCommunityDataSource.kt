@@ -1,5 +1,6 @@
 package com.peto.ramap.data.datasource.community
 
+import com.peto.ramap.data.datasource.image.ImageUrlDataSource
 import com.peto.ramap.data.datasource.review.ReviewDataSource
 import com.peto.ramap.data.model.BlockedUserResponse
 import com.peto.ramap.data.model.MyCommunityProfileResponse
@@ -7,14 +8,11 @@ import com.peto.ramap.data.model.ProfileAccessResponse
 import com.peto.ramap.data.model.ProfileReviewsPageResponse
 import com.peto.ramap.data.model.PublicSavedShopsPageResponse
 import com.peto.ramap.data.model.ReviewResponse
+import com.peto.ramap.data.model.SignedImageRequest
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.postgrest
-import io.github.jan.supabase.storage.storage
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.json.buildJsonObject
@@ -25,6 +23,7 @@ import kotlin.time.Duration.Companion.minutes
 internal class RemoteCommunityDataSource(
     private val client: SupabaseClient,
     private val reviewDataSource: ReviewDataSource,
+    private val imageUrlDataSource: ImageUrlDataSource,
 ) : CommunityDataSource {
     private val profileAvatarMutex = Mutex()
     private var profileAvatarUrl: ProfileAvatarUrl? = null
@@ -73,7 +72,8 @@ internal class RemoteCommunityDataSource(
     private suspend fun signedAvatar(path: String?): String? {
         if (path == null) return null
         return try {
-            client.storage.from(BUCKET_PROFILE_AVATARS).createSignedUrl(path, SIGNED_URL_LIFETIME)
+            val image = SignedImageRequest(BUCKET_PROFILE_AVATARS, path)
+            imageUrlDataSource.fetchUrls(listOf(image))[image]?.url
         } catch (exception: CancellationException) {
             throw exception
         } catch (_: Exception) {
@@ -110,15 +110,17 @@ internal class RemoteCommunityDataSource(
         return page.copy(access = signProfileAccess(page.access))
     }
 
-    override suspend fun fetchBlockedUsers(): List<BlockedUserResponse> =
-        coroutineScope {
+    override suspend fun fetchBlockedUsers(): List<BlockedUserResponse> {
+        val profiles =
             client.postgrest
                 .rpc(RPC_FETCH_BLOCKED_COMMUNITY_PROFILES)
                 .decodeList<BlockedUserResponse>()
-                .map { profile ->
-                    async { profile.copy(avatarUrl = signedAvatar(profile.avatarPath)) }
-                }.awaitAll()
+        val images = profiles.mapNotNull { it.avatarPath }.map { SignedImageRequest(BUCKET_PROFILE_AVATARS, it) }
+        val urls = imageUrlDataSource.fetchUrls(images)
+        return profiles.map { profile ->
+            profile.copy(avatarUrl = profile.avatarPath?.let { urls[SignedImageRequest(BUCKET_PROFILE_AVATARS, it)]?.url })
         }
+    }
 
     override suspend fun report(
         targetType: String,
@@ -167,7 +169,6 @@ internal class RemoteCommunityDataSource(
         const val PARAM_BLOCKED = "p_blocked"
 
         const val BUCKET_PROFILE_AVATARS = "profile-avatars"
-        val SIGNED_URL_LIFETIME = 5.minutes
         val SIGNED_URL_REFRESH_AFTER = 4.minutes
     }
 }

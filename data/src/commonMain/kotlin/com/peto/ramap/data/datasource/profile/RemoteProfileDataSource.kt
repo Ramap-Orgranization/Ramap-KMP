@@ -1,6 +1,9 @@
 package com.peto.ramap.data.datasource.profile
 
+import com.peto.ramap.data.datasource.image.ImageUrlDataSource
 import com.peto.ramap.data.model.ProfileResponse
+import com.peto.ramap.data.model.SignedImageRequest
+import com.peto.ramap.data.model.SignedImageUrl
 import com.peto.ramap.domain.model.profile.ProfileImage
 import com.peto.ramap.domain.model.profile.ProfileVisibility
 import io.github.jan.supabase.SupabaseClient
@@ -14,10 +17,10 @@ import kotlinx.coroutines.flow.filterNot
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
-import kotlin.time.Duration.Companion.minutes
 
 internal class RemoteProfileDataSource(
     private val client: SupabaseClient,
+    private val imageUrlDataSource: ImageUrlDataSource,
 ) : ProfileDataSource {
     override val sessionUserIds =
         client.auth.sessionStatus
@@ -102,9 +105,10 @@ internal class RemoteProfileDataSource(
     override suspend fun signedPhotoUrl(
         userId: String,
         path: String,
-    ): String {
+    ): SignedImageUrl {
         checkOwner(userId, path)
-        return client.storage.from(BUCKET).createSignedUrl(path, URL_LIFETIME)
+        val image = SignedImageRequest(bucket = BUCKET, path = path)
+        return requireNotNull(imageUrlDataSource.fetchUrls(listOf(image))[image]) { ERROR_IMAGE_UNAVAILABLE }
     }
 
     private fun checkOwner(
@@ -116,7 +120,7 @@ internal class RemoteProfileDataSource(
 
     private companion object {
         const val BUCKET = "profile-avatars"
-        val URL_LIFETIME = 30.minutes
+        const val ERROR_IMAGE_UNAVAILABLE = "Profile image is unavailable"
 
         const val FUNCTION_FETCH_OR_CREATE_MY_PROFILE = "fetch_or_create_my_profile"
         const val FUNCTION_IS_PROFILE_NICKNAME_AVAILABLE = "is_profile_nickname_available"
