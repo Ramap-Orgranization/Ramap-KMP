@@ -1,5 +1,6 @@
 package com.peto.ramap.domain.model.review.change
 
+import com.peto.ramap.domain.model.community.ProfileReview
 import com.peto.ramap.domain.model.community.ReviewAuthor
 import com.peto.ramap.domain.model.community.ReviewModerationStatus
 import com.peto.ramap.domain.model.review.MyReview
@@ -236,6 +237,29 @@ class ReviewChangeReducer {
     ): Boolean = review.author.userId == viewerId || isPublicPublished(review) && change.counts.profileIsPublic
 
     fun isPublicPublished(review: Review): Boolean = review.isPublic && review.moderationStatus == ReviewModerationStatus.PUBLISHED
+
+    fun updateProfileRows(
+        rows: List<ProfileReview>,
+        change: ReviewChange,
+        hasMore: Boolean,
+        accepts: (ReviewChange.Written, Review) -> Boolean,
+    ): List<ProfileReview> {
+        val previous = rows.associateBy { it.review.id }
+        val snapshot = findSnapshot(change)
+        val patched =
+            patch(
+                rows = rows.map { it.review },
+                change = change,
+                hasMore = hasMore,
+                accepts = accepts,
+            )
+        return patched.map { review ->
+            ProfileReview(
+                review = review,
+                shop = snapshot?.takeIf { it.review.id == review.id }?.shop ?: previous[review.id]?.shop,
+            )
+        }
+    }
 
     fun updateOwnerRows(
         rows: List<MyReview>,

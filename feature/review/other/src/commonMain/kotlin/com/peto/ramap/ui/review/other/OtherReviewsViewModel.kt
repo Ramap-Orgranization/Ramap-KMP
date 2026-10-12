@@ -7,7 +7,6 @@ import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.community.FollowAction
 import com.peto.ramap.domain.model.community.FollowState
 import com.peto.ramap.domain.model.community.ProfileAccess
-import com.peto.ramap.domain.model.community.ProfileReview
 import com.peto.ramap.domain.model.community.PublicProfile
 import com.peto.ramap.domain.model.community.PublicSavedShopsPage
 import com.peto.ramap.domain.model.review.change.ReviewChange
@@ -71,15 +70,19 @@ class OtherReviewsViewModel(
                         reduce {
                             val access = profileAccess as? ProfileAccess.Visible ?: return@reduce this
                             if (!access.canReadReviews) return@reduce this
-                            val metadata = reviews.associateBy { it.review.id }
                             val patched =
-                                reviewChangeReducer.patch(reviews.map { it.review }, change, hasMore) { receipt, review ->
-                                    receipt.userId == targetId && (targetId == currentUserId || reviewChangeReducer.isPublicPublished(review))
-                                }
+                                reviewChangeReducer.updateProfileRows(
+                                    rows = reviews,
+                                    change = change,
+                                    hasMore = hasMore,
+                                    accepts = { receipt, review ->
+                                        receipt.userId == targetId && (targetId == currentUserId || reviewChangeReducer.isPublicPublished(review))
+                                    },
+                                )
                             val ownerCounts = (change as? ReviewChange.Written)?.takeIf { it.userId == targetId }?.counts
                             val count = ownerCounts?.let { if (targetId == currentUserId) it.totalCount else it.publishedCount }
                             copy(
-                                reviews = patched.map { ProfileReview(it, metadata[it.id]?.shop) },
+                                reviews = patched,
                                 reviewsOffset = patched.size.toLong(),
                                 profileAccess = access.copy(reviewCount = count?.toLong() ?: access.reviewCount),
                                 hasMore = count?.let { patched.size < it } ?: hasMore,
@@ -271,7 +274,11 @@ class OtherReviewsViewModel(
         val baseline = changes.journal.value
         val result = community.fetchProfileReviewsPage(userId, offset)
         currentCoroutineContext().ensureActive()
-        if (requestedGeneration != generation || baseline.epoch != changes.journal.value.epoch) return
+        if (requestedGeneration != generation) return
+        if (baseline.epoch != changes.journal.value.epoch) {
+            loadPage(reset = true)
+            return
+        }
         if (changes.journal.value.hasGapAfter(baseline.revision) ||
             changes.journal.value
                 .changesAfter(baseline.revision)
@@ -284,15 +291,19 @@ class OtherReviewsViewModel(
             is RamapResult.Success -> {
                 if (currentState.userId != userId) return
                 val original = result.data
-                val metadata = original.reviews.associateBy { it.review.id }
-                var rows = original.reviews.map { it.review }
+                var rows = original.reviews
                 for (record in changes.journal.value.changesAfter(baseline.revision)) {
                     rows =
-                        reviewChangeReducer.patch(rows, record.change, original.reviews.size == PAGE_SIZE) { receipt, review ->
-                            receipt.userId == userId && (userId == currentState.currentUserId || reviewChangeReducer.isPublicPublished(review))
-                        }
+                        reviewChangeReducer.updateProfileRows(
+                            rows = rows,
+                            change = record.change,
+                            hasMore = original.reviews.size == PAGE_SIZE,
+                            accepts = { receipt, review ->
+                                receipt.userId == userId && (userId == currentState.currentUserId || reviewChangeReducer.isPublicPublished(review))
+                            },
+                        )
                 }
-                val page = original.copy(reviews = rows.map { ProfileReview(it, metadata[it.id]?.shop) })
+                val page = original.copy(reviews = rows)
                 val access = page.access as? ProfileAccess.Visible
                 if (access == null) {
                     cancelTask(SAVED_SHOPS_TASK)

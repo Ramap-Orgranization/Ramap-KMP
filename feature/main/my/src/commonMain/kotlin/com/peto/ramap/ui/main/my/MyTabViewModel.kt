@@ -299,7 +299,11 @@ class MyTabViewModel(
             request = { reviewRepository.fetchMyReviews(0, MyReviewVisibility.ALL) },
             onSuccess = { page ->
                 val journal = changes.journal.value
-                if (generation != sessionGeneration || baseline.epoch != journal.epoch || currentState.userId != userId) return@launchResultTask
+                if (generation != sessionGeneration || currentState.userId != userId) return@launchResultTask
+                if (baseline.epoch != journal.epoch) {
+                    refreshReviewCount()
+                    return@launchResultTask
+                }
                 val latest = journal.changesAfter(baseline.revision).mapNotNull { it.change as? ReviewChange.Written }.lastOrNull { it.userId == userId }
                 if (journal.hasGapAfter(baseline.revision)) {
                     refreshReviewCount()

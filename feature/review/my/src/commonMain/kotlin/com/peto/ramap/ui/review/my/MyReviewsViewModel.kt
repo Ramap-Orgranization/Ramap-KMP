@@ -54,7 +54,6 @@ class MyReviewsViewModel(
                 for (record in journal.changesAfter(revision)) {
                     val change = record.change
                     if (change is ReviewChange.AccessChanged && change.userId == currentState.userId) {
-                        reduce { copy(reviews = emptyList()) }
                         loadPage(reset = true)
                     } else if (change is ReviewChange.Written && change.userId == currentState.userId || change is ReviewChange.Hydrated) {
                         reduce {

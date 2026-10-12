@@ -1535,7 +1535,15 @@ class MapViewModel(
                     initial
                 }
             if (currentCoroutineContext().isActive) {
-                if (generation != reviewGeneration || baseline.epoch != reviewChanges.journal.value.epoch) return@launchTask
+                if (generation != reviewGeneration) return@launchTask
+                if (baseline.epoch != reviewChanges.journal.value.epoch) {
+                    loadShopDetail(
+                        shopId = shopId,
+                        selectShopOnSuccess = selectShopOnSuccess,
+                        requestedReviewExtent = requestedReviewExtent,
+                    )
+                    return@launchTask
+                }
                 if (reviewChanges.journal.value.hasGapAfter(baseline.revision) ||
                     reviewChanges.journal.value
                         .changesAfter(baseline.revision)
