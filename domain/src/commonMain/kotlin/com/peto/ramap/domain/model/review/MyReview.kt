@@ -2,6 +2,7 @@ package com.peto.ramap.domain.model.review
 
 import com.peto.ramap.domain.model.community.ReviewAuthor
 import com.peto.ramap.domain.model.community.ReviewModerationStatus
+import com.peto.ramap.domain.model.shop.RamenShop
 
 data class MyReview(
     val id: String,
@@ -16,6 +17,8 @@ data class MyReview(
     val authorAvatarUrl: String? = null,
     val visitNumber: Int = 1,
     val authorReviewCount: Int = 0,
+    val shop: RamenShop? = null,
+    val author: ReviewAuthor? = null,
 ) {
     fun toReview(): Review =
         Review(
@@ -24,13 +27,15 @@ data class MyReview(
             body = body,
             createdAt = createdAt,
             imageUrls = images.mapNotNull { it.url },
+            images = images,
             author =
-                ReviewAuthor(
-                    userId = "",
-                    nickname = shopName,
-                    avatarUrl = authorAvatarUrl,
-                    reviewCount = authorReviewCount,
-                ),
+                author
+                    ?: ReviewAuthor(
+                        userId = "",
+                        nickname = shopName,
+                        avatarUrl = authorAvatarUrl,
+                        reviewCount = authorReviewCount,
+                    ),
             isPublic = isPublic,
             moderationStatus = moderationStatus,
             visitNumber = visitNumber,
