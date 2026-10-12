@@ -107,3 +107,23 @@ last_verified: 2026-10-13
 - 반영: [PR 스킬](../../.agents/skills/pr/SKILL.md#small-prs), [커밋 스킬](../../.agents/skills/commit/SKILL.md), [AGENTS.md](../../AGENTS.md), [PR 템플릿](../../.github/PULL_REQUEST_TEMPLATE.md).
 - 적용 상태: 소유 스킬과 연결 지침에 반영했습니다. 문서 갱신 시점은 DEC-0009를 유지하며 코드 변경의 검증 결과는 각 PR의 실제 기준 커밋으로 구분합니다.
 - 대체한 결정: 없음.
+
+## DEC-0011 비즈니스 규칙의 일반 클래스와 생성자 주입
+
+- 기록일: 2026-10-13 (Asia/Seoul).
+- 결정: 일반 클래스·생성자 주입과 `object` 사용 범위의 기준은 [코딩 규칙](../../.agents/skills/ramap-coding-conventions/SKILL.md#kotlin-style)이 소유합니다.
+- 이유: 리뷰 변경 반영기를 정적으로 호출하던 경로를 명시적인 협력 객체로 연결하고 객체 수명을 DI에서 관리합니다.
+- 근거: 사용자가 [PR #267](https://github.com/Ramap-Orgranization/Ramap-KMP/pull/267) 리뷰에서 `ReviewChangeReducer`의 일반 클래스 전환·DI 주입과 함수 작성 규칙 확인을 요청했습니다.
+- 반영: [코딩 규칙](../../.agents/skills/ramap-coding-conventions/SKILL.md), [설계 패턴](design-patterns.md#리뷰-변경-기록과-화면-구독), reducer와 use case·ViewModel 생성자 및 Koin 등록.
+- 적용 상태: 소유 스킬에 반영했고 앱 코드는 `afe2511050f20a60dfdefa369151ec456d2b6c1c`에 반영했습니다. 운영 API나 앱 릴리스를 변경하지 않았습니다.
+- 대체한 결정: 없음.
+
+## DEC-0012 한국어 테스트 이름과 설명
+
+- 기록일: 2026-10-13 (Asia/Seoul).
+- 결정: 테스트 이름·설명·검증 메시지의 언어와 기술 식별자의 기준은 [코딩 규칙](../../.agents/skills/ramap-coding-conventions/SKILL.md#text-tests-and-safety)이 소유합니다.
+- 이유: 테스트의 조건과 기대 결과를 코드 리뷰에서 한국어로 읽을 수 있게 합니다.
+- 근거: 사용자가 PR #267 리뷰에서 테스트 코드를 한국어로 작성하도록 요청했습니다.
+- 반영: [코딩 규칙](../../.agents/skills/ramap-coding-conventions/SKILL.md), [검증 안내](testing.md), reducer·매장 상세·지도·내 리뷰·다른 사용자 리뷰의 이번 변경에 관련된 기존 테스트.
+- 적용 상태: 소유 스킬과 해당 테스트 이름에 반영했습니다. 테스트 소스 컴파일과 테스트 실행 결과는 구분하며, 이번 후속 수정에서는 테스트를 실행하지 않았습니다.
+- 대체한 결정: 없음.

@@ -2,7 +2,7 @@
 authority: reference
 status: active
 last_verified: 2026-10-13
-source_ref: c559e52c3248076dacab2f2928622d9d787bc1e5
+source_ref: afe2511050f20a60dfdefa369151ec456d2b6c1c
 ---
 
 # 프로필·리뷰 이미지 서명 URL
@@ -22,7 +22,7 @@ source_ref: c559e52c3248076dacab2f2928622d9d787bc1e5
 
 이번 변경 범위인 [RemoteReviewDataSource](../../data/src/commonMain/kotlin/com/peto/ramap/data/datasource/review/RemoteReviewDataSource.kt)는 리뷰 조회로 얻은 URL을 세션별로 최대 512개 보관하고, 만료 여유가 1분 이하인 경로와 새 경로만 공통 서명 발급기에 요청합니다. 계정 epoch 변경, 기록 공백과 해당 작성자의 접근 변경은 보관 URL을 폐기합니다. 일부 새 사진의 발급이 실패하면 성공한 경로를 유지한 채 같은 리뷰 receipt의 미해결 경로를 재시도합니다. 전체 이미지 발급기의 기본 배치 정책은 유지합니다.
 
-[MyReviewPhoto](../../domain/src/commonMain/kotlin/com/peto/ramap/domain/model/review/MyReviewPhoto.kt)는 경로·nullable URL·만료 시각을 함께 유지하고 [ReviewAuthor](../../domain/src/commonMain/kotlin/com/peto/ramap/domain/model/community/ReviewAuthor.kt)는 아바타 경로·만료 시각을 갖습니다. [ReviewChangeReducer](../../domain/src/commonMain/kotlin/com/peto/ramap/domain/model/review/change/ReviewChangeReducer.kt)는 같은 경로의 아직 유효한 URL을 보존하고, 만료 URL이나 바뀐 아바타 경로에는 최신 결과를 적용합니다. 상세 닫기·취소·단순 화면 복귀는 리뷰 URL 서명 발급을 시작하지 않습니다. 앱 코드는 출시 전 구현입니다. 리뷰 v2 서버 API의 운영 배포 상태는 [백엔드 문서](backend.md#리뷰-변경-응답과-배포-호환성)에 기록합니다.
+[MyReviewPhoto](../../domain/src/commonMain/kotlin/com/peto/ramap/domain/model/review/MyReviewPhoto.kt)는 경로·nullable URL·만료 시각을 함께 유지하고 [ReviewAuthor](../../domain/src/commonMain/kotlin/com/peto/ramap/domain/model/community/ReviewAuthor.kt)는 아바타 경로·만료 시각을 갖습니다. [ReviewChangeReducer](../../domain/src/commonMain/kotlin/com/peto/ramap/domain/model/review/change/ReviewChangeReducer.kt)의 `retainMedia`는 같은 경로의 아직 유효한 URL을 보존하고, 만료 URL이나 바뀐 아바타 경로에는 최신 결과를 적용합니다. 작성 응답의 리뷰 개수를 반영할 때도 보존된 author를 복사하므로 기존 아바타 URL과 만료 시각을 유지합니다. 상세 닫기·취소·단순 화면 복귀는 리뷰 URL 서명 발급을 시작하지 않습니다. 앱 코드는 출시 전 구현입니다. 리뷰 v2 서버 API의 운영 배포 상태는 [백엔드 문서](backend.md#리뷰-변경-응답과-배포-호환성)에 기록합니다.
 
 2026-10-13(Asia/Seoul)에 `4736aa00 + working-tree`의 `1.1.9-debug`를 Android 16 실기기(SM_S931N)에서 확인했습니다. 내 리뷰의 매장 상세 닫기(전체 필터와 스크롤한 공개 필터), 편집 취소 복귀, 타인 리뷰의 매장 상세 닫기, 지도 매장 리뷰에서 작성자 프로필 복귀 구간에서 리뷰 조회·서명 발급 메서드의 추가 호출이 0이었습니다. 상세·프로필 복귀 전후 목록·사진 영역의 픽셀이 동일했고 필터와 스크롤이 유지됐습니다. 임시 비공개 리뷰의 본문을 수정한 뒤에도 다른 리뷰 행과 기존 사진 영역이 동일했습니다. 생성·수정에서는 해당 변경 응답의 아바타 URL 발급이 관찰됐으므로 모든 쓰기에서 서명 발급이 0이라는 검증은 아닙니다. 메서드 관찰은 코루틴 재진입을 포함하므로 양수 호출 수를 실제 HTTP 요청 수로 해석하지 않습니다.
 

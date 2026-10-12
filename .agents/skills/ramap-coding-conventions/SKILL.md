@@ -22,6 +22,7 @@ Apply this skill to code quality and team habits only. Read the sibling Ramap sk
 - Use 4-space indentation, LF line endings, UTF-8, and a final newline.
 - Keep packages under `com.peto.ramap`.
 - Keep one class or interface per file, except for an established sealed-class or interface grouping. Do not declare private classes.
+- Prefer ordinary classes with constructor injection for business rules and services. Let DI own their lifetime. Use `object` for singleton values such as sealed state variants when that is their intended role.
 - Keep domain rules and state changes on the responsible type or collaborator. Use extension functions only for a necessary external-library adapter or pure presentation conversion when the owning type cannot be changed; explain the exception in the handoff.
 - Prefer code that reveals intent. Add a short comment only when the code cannot express the intent clearly.
 - Avoid nesting beyond two levels; use guard clauses, early returns, or focused functions.
@@ -60,6 +61,7 @@ Apply this skill to code quality and team habits only. Read the sibling Ramap sk
 - Use `kotlin.test` for common tests and the repository's existing coroutine, Turbine, Compose UI, and Robolectric utilities as applicable.
 - Put shared logic tests in `commonTest`, Android-specific behavior in `androidHostTest`, and iOS-specific behavior in `iosTest`.
 - Name tests after the subject and behavior, such as `SampleRepositoryTest`.
+- Write test-case function names, natural-language descriptions, and assertion messages in Korean. Use backtick function names to describe the condition and observable result; keep technical class names and fixture identifiers meaningful.
 - Keep Supabase values, API keys, signing values, and machine-specific configuration out of source and commits.
 
 ## Finish the change

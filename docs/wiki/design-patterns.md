@@ -2,7 +2,7 @@
 authority: reference
 status: active
 last_verified: 2026-10-13
-source_ref: c559e52c3248076dacab2f2928622d9d787bc1e5
+source_ref: afe2511050f20a60dfdefa369151ec456d2b6c1c
 ---
 
 # 설계 패턴 탐색
@@ -27,5 +27,7 @@ Koin 등록 위치는 [앱 조립](architecture.md), typed route와 탭 상태�
 이번 변경에서 확인한 범위는 리뷰 변경 전파입니다. [ReviewChangeStore](../../domain/src/commonMain/kotlin/com/peto/ramap/domain/store/ReviewChangeStore.kt)의 읽기 계약과 [DefaultReviewChangeStore](../../data/src/commonMain/kotlin/com/peto/ramap/data/store/DefaultReviewChangeStore.kt)의 단일 인스턴스는 세션 epoch, revision, 최대 128개 변경 기록을 유지합니다. StateFlow가 중간 방출을 합쳐도 화면 cursor 이후의 기록을 차례로 적용합니다. 보관 범위를 넘으면 해당 화면은 명시적 복구 조회를 수행합니다.
 
 [ReviewChangeReducer](../../domain/src/commonMain/kotlin/com/peto/ramap/domain/model/review/change/ReviewChangeReducer.kt)는 before/after를 이용해 현재 카드, 작성자 공개·게시 리뷰 수, 같은 매장의 이후 방문 번호와 정렬된 조회 범위를 반영합니다. 쓰기 결과와 이미지 hydration은 다른 변경 타입이므로 URL 준비가 개수와 방문 번호를 다시 갱신하지 않습니다. [DefaultReviewRepository](../../data/src/commonMain/kotlin/com/peto/ramap/data/repository/DefaultReviewRepository.kt)는 쓰기를 직렬화하고 저장 결과를 이미지 서명·삭제 정리 전에 발행합니다. 후속 실패는 저장된 리뷰를 실패로 보고하지 않습니다.
+
+Reducer는 일반 클래스이며 [useCaseModule](../../data/src/commonMain/kotlin/com/peto/ramap/data/usecase/di/UseCaseModule.kt)의 `singleOf` 등록으로 수명을 관리합니다. 매장 상세 use case와 Map·OtherReviews·MyReviews ViewModel은 생성자로 같은 반영기를 주입받습니다. 목록 변경, 작성자 집계, 조회 범위 판단, 이미지·아바타 보존을 각각의 함수에서 처리하고 내 리뷰 변환은 `MyReview.toReview()`를 재사용합니다. 클래스·주입에 관한 팀 규칙의 소유 위치는 [코딩 규칙](../../.agents/skills/ramap-coding-conventions/SKILL.md#kotlin-style)이며 변경 이유는 [DEC-0011](decisions.md#dec-0011-비즈니스-규칙의-일반-클래스와-생성자-주입)에 기록합니다.
 
 화면은 조회를 시작할 때 epoch, revision과 요청 세대를 기록합니다. 진행 중인 관련 조회와 변경이 겹치면 그 조회를 다시 시작하고, 정상 변경은 보유 중인 페이지에 적용합니다. 프로필·팔로우·차단 변경은 해당 작성자의 접근을 재확인하는 별도 변경으로 발행합니다. 근거: [순수 reducer 테스트](../../domain/src/commonTest/kotlin/com/peto/ramap/domain/model/review/ReviewChangeReducerTest.kt), [journal 테스트](../../data/src/commonTest/kotlin/com/peto/ramap/data/store/DefaultReviewChangeStoreTest.kt), [내 리뷰 테스트](../../feature/review/my/src/commonTest/kotlin/com/peto/ramap/ui/review/my/MyReviewsViewModelTest.kt).

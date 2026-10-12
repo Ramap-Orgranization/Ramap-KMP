@@ -5,6 +5,7 @@ import com.peto.ramap.coroutinesTest
 import com.peto.ramap.domain.model.community.ProfileReview
 import com.peto.ramap.domain.model.community.ReviewAuthor
 import com.peto.ramap.domain.model.review.Review
+import com.peto.ramap.domain.model.review.change.ReviewChangeReducer
 import com.peto.ramap.fake.FakeFollowRepository
 import com.peto.ramap.fake.FakeProfileRepository
 import com.peto.ramap.fake.FakeReviewChangeStore
@@ -22,7 +23,7 @@ import kotlin.test.assertTrue
 @OptIn(ExperimentalCoroutinesApi::class)
 class OtherReviewsViewModelTest {
     @Test
-    fun `own profile retains private pending create update delete and total summary without refetch`() =
+    fun `본인 프로필은 비공개 미게시 리뷰의 등록과 수정과 삭제 및 집계를 재조회 없이 반영한다`() =
         coroutinesTest {
             val changes = FakeReviewChangeStore()
             val community =
@@ -32,7 +33,14 @@ class OtherReviewsViewModelTest {
                             .PublicProfile("owner", "작성자")
                     reviewCount = 0
                 }
-            val viewModel = OtherReviewsViewModel(community, FakeProfileRepository("owner"), FakeFollowRepository(), changes)
+            val viewModel =
+                OtherReviewsViewModel(
+                    community = community,
+                    profiles = FakeProfileRepository("owner"),
+                    follows = FakeFollowRepository(),
+                    changes = changes,
+                    reviewChangeReducer = ReviewChangeReducer(),
+                )
             runCurrent()
             viewModel.dispatch(OtherReviewsIntent.OpenProfile("owner"))
             runCurrent()
@@ -86,10 +94,17 @@ class OtherReviewsViewModelTest {
         }
 
     @Test
-    fun `guest block request opens login without blocking the author`() =
+    fun `비로그인 사용자의 차단 요청은 작성자를 차단하지 않고 로그인을 안내한다`() =
         coroutinesTest {
             val community = FakeOtherReviewsCommunity()
-            val viewModel = OtherReviewsViewModel(community, FakeProfileRepository(userId = null), FakeFollowRepository(), changes = FakeReviewChangeStore())
+            val viewModel =
+                OtherReviewsViewModel(
+                    community = community,
+                    profiles = FakeProfileRepository(userId = null),
+                    follows = FakeFollowRepository(),
+                    changes = FakeReviewChangeStore(),
+                    reviewChangeReducer = ReviewChangeReducer(),
+                )
             runCurrent()
             viewModel.dispatch(OtherReviewsIntent.OpenProfile("author"))
             runCurrent()
@@ -102,12 +117,19 @@ class OtherReviewsViewModelTest {
         }
 
     @Test
-    fun `profile reviews load in pages and stop at the end`() =
+    fun `프로필 리뷰는 페이지 단위로 조회하며 마지막 페이지에서 멈춘다`() =
         coroutinesTest {
             val community = FakeOtherReviewsCommunity()
             community.reviews = (1..23).map(::review)
             community.reviewCount = 23L
-            val viewModel = OtherReviewsViewModel(community, FakeProfileRepository(), FakeFollowRepository(), changes = FakeReviewChangeStore())
+            val viewModel =
+                OtherReviewsViewModel(
+                    community = community,
+                    profiles = FakeProfileRepository(),
+                    follows = FakeFollowRepository(),
+                    changes = FakeReviewChangeStore(),
+                    reviewChangeReducer = ReviewChangeReducer(),
+                )
             runCurrent()
 
             viewModel.dispatch(OtherReviewsIntent.OpenProfile("author"))
@@ -130,12 +152,19 @@ class OtherReviewsViewModelTest {
         }
 
     @Test
-    fun `duplicate reviews across pages retain the original shop and consume the page offset`() =
+    fun `페이지 사이의 중복 리뷰는 기존 매장을 유지하며 조회 위치를 증가시킨다`() =
         coroutinesTest {
             val community = FakeOtherReviewsCommunity()
             val firstPage = (1..20).map(::review)
             community.reviews = firstPage + firstPage.first().copy(shop = ramenShopFixture(id = "shop-1"))
-            val viewModel = OtherReviewsViewModel(community, FakeProfileRepository(), FakeFollowRepository(), changes = FakeReviewChangeStore())
+            val viewModel =
+                OtherReviewsViewModel(
+                    community = community,
+                    profiles = FakeProfileRepository(),
+                    follows = FakeFollowRepository(),
+                    changes = FakeReviewChangeStore(),
+                    reviewChangeReducer = ReviewChangeReducer(),
+                )
             runCurrent()
 
             viewModel.dispatch(OtherReviewsIntent.OpenProfile("author"))
@@ -150,12 +179,19 @@ class OtherReviewsViewModelTest {
         }
 
     @Test
-    fun `saved shops tab loads public shops in pages`() =
+    fun `저장한 매장 탭은 공개 매장을 페이지 단위로 조회한다`() =
         coroutinesTest {
             val community = FakeOtherReviewsCommunity()
             community.savedShops = (1..23).map { ramenShopFixture(id = "shop-$it") }
             community.savedShopCount = 23L
-            val viewModel = OtherReviewsViewModel(community, FakeProfileRepository(), FakeFollowRepository(), changes = FakeReviewChangeStore())
+            val viewModel =
+                OtherReviewsViewModel(
+                    community = community,
+                    profiles = FakeProfileRepository(),
+                    follows = FakeFollowRepository(),
+                    changes = FakeReviewChangeStore(),
+                    reviewChangeReducer = ReviewChangeReducer(),
+                )
             runCurrent()
 
             viewModel.dispatch(OtherReviewsIntent.OpenProfile("author"))
@@ -176,10 +212,17 @@ class OtherReviewsViewModelTest {
         }
 
     @Test
-    fun `guest saved shops tab requests login without fetching shops`() =
+    fun `비로그인 사용자의 저장한 매장 탭은 매장을 조회하지 않고 로그인을 안내한다`() =
         coroutinesTest {
             val community = FakeOtherReviewsCommunity()
-            val viewModel = OtherReviewsViewModel(community, FakeProfileRepository(userId = null), FakeFollowRepository(), changes = FakeReviewChangeStore())
+            val viewModel =
+                OtherReviewsViewModel(
+                    community = community,
+                    profiles = FakeProfileRepository(userId = null),
+                    follows = FakeFollowRepository(),
+                    changes = FakeReviewChangeStore(),
+                    reviewChangeReducer = ReviewChangeReducer(),
+                )
             runCurrent()
             viewModel.dispatch(OtherReviewsIntent.OpenProfile("author"))
             runCurrent()
@@ -194,11 +237,18 @@ class OtherReviewsViewModelTest {
         }
 
     @Test
-    fun `unavailable profile does not request reviews`() =
+    fun `이용할 수 없는 프로필은 리뷰를 조회하지 않는다`() =
         coroutinesTest {
             val community = FakeOtherReviewsCommunity()
             community.profile = null
-            val viewModel = OtherReviewsViewModel(community, FakeProfileRepository(), FakeFollowRepository(), changes = FakeReviewChangeStore())
+            val viewModel =
+                OtherReviewsViewModel(
+                    community = community,
+                    profiles = FakeProfileRepository(),
+                    follows = FakeFollowRepository(),
+                    changes = FakeReviewChangeStore(),
+                    reviewChangeReducer = ReviewChangeReducer(),
+                )
             runCurrent()
 
             viewModel.dispatch(OtherReviewsIntent.OpenProfile("author"))
@@ -211,12 +261,19 @@ class OtherReviewsViewModelTest {
         }
 
     @Test
-    fun `private profile hides identity and reviews`() =
+    fun `비공개 프로필은 사용자 정보와 리뷰를 숨긴다`() =
         coroutinesTest {
             val community = FakeOtherReviewsCommunity()
             community.profilePrivate = true
             community.reviews = listOf(review(1))
-            val viewModel = OtherReviewsViewModel(community, FakeProfileRepository(), FakeFollowRepository(), changes = FakeReviewChangeStore())
+            val viewModel =
+                OtherReviewsViewModel(
+                    community = community,
+                    profiles = FakeProfileRepository(),
+                    follows = FakeFollowRepository(),
+                    changes = FakeReviewChangeStore(),
+                    reviewChangeReducer = ReviewChangeReducer(),
+                )
             runCurrent()
 
             viewModel.dispatch(OtherReviewsIntent.OpenProfile("author"))
@@ -234,12 +291,19 @@ class OtherReviewsViewModelTest {
         }
 
     @Test
-    fun `blocked profile keeps identity but hides reviews`() =
+    fun `차단한 프로필은 사용자 정보를 유지하고 리뷰를 숨긴다`() =
         coroutinesTest {
             val community = FakeOtherReviewsCommunity()
             community.blockedUserIds += "author"
             community.reviews = listOf(review(1))
-            val viewModel = OtherReviewsViewModel(community, FakeProfileRepository(), FakeFollowRepository(), changes = FakeReviewChangeStore())
+            val viewModel =
+                OtherReviewsViewModel(
+                    community = community,
+                    profiles = FakeProfileRepository(),
+                    follows = FakeFollowRepository(),
+                    changes = FakeReviewChangeStore(),
+                    reviewChangeReducer = ReviewChangeReducer(),
+                )
             runCurrent()
 
             viewModel.dispatch(OtherReviewsIntent.OpenProfile("author"))
@@ -261,12 +325,19 @@ class OtherReviewsViewModelTest {
         }
 
     @Test
-    fun `failed next page retries the same offset`() =
+    fun `다음 페이지 조회 실패 시 같은 위치를 재시도한다`() =
         coroutinesTest {
             val community = FakeOtherReviewsCommunity()
             community.reviews = (1..23).map(::review)
             community.reviewCount = 23L
-            val viewModel = OtherReviewsViewModel(community, FakeProfileRepository(), FakeFollowRepository(), changes = FakeReviewChangeStore())
+            val viewModel =
+                OtherReviewsViewModel(
+                    community = community,
+                    profiles = FakeProfileRepository(),
+                    follows = FakeFollowRepository(),
+                    changes = FakeReviewChangeStore(),
+                    reviewChangeReducer = ReviewChangeReducer(),
+                )
             runCurrent()
             viewModel.dispatch(OtherReviewsIntent.OpenProfile("author"))
             runCurrent()
@@ -284,11 +355,18 @@ class OtherReviewsViewModelTest {
         }
 
     @Test
-    fun `blocking replaces profile reviews and unblocking restores them`() =
+    fun `차단하면 프로필 리뷰를 숨기고 차단을 해제하면 복원한다`() =
         coroutinesTest {
             val community = FakeOtherReviewsCommunity()
             community.reviews = listOf(review(1))
-            val viewModel = OtherReviewsViewModel(community, FakeProfileRepository(), FakeFollowRepository(), changes = FakeReviewChangeStore())
+            val viewModel =
+                OtherReviewsViewModel(
+                    community = community,
+                    profiles = FakeProfileRepository(),
+                    follows = FakeFollowRepository(),
+                    changes = FakeReviewChangeStore(),
+                    reviewChangeReducer = ReviewChangeReducer(),
+                )
             runCurrent()
             viewModel.dispatch(OtherReviewsIntent.OpenProfile("author"))
             runCurrent()
@@ -309,11 +387,18 @@ class OtherReviewsViewModelTest {
         }
 
     @Test
-    fun `failed block leaves reviews visible`() =
+    fun `차단 실패 시 리뷰를 계속 표시한다`() =
         coroutinesTest {
             val community = FakeOtherReviewsCommunity()
             community.reviews = listOf(review(1))
-            val viewModel = OtherReviewsViewModel(community, FakeProfileRepository(), FakeFollowRepository(), changes = FakeReviewChangeStore())
+            val viewModel =
+                OtherReviewsViewModel(
+                    community = community,
+                    profiles = FakeProfileRepository(),
+                    follows = FakeFollowRepository(),
+                    changes = FakeReviewChangeStore(),
+                    reviewChangeReducer = ReviewChangeReducer(),
+                )
             runCurrent()
             viewModel.dispatch(OtherReviewsIntent.OpenProfile("author"))
             runCurrent()

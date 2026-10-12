@@ -134,6 +134,7 @@ class MapViewModel(
     private val communityRepository: CommunityRepository,
     private val profileRepository: ProfileRepository,
     private val reviewChanges: ReviewChangeStore,
+    private val reviewChangeReducer: ReviewChangeReducer,
 ) : BaseViewModel<MapUiState, MapIntent, MapSideEffect>(initialState = MapUiState()) {
     private val viewportShopLoader = ViewportShopLoader(ramenShopRepository, viewModelScope)
     private var pendingMapAction: PendingMapAction? = null
@@ -236,12 +237,12 @@ class MapViewModel(
             refreshReviews(reviewExtent = detail.reviews.size)
             return
         }
-        val beforeVisible = (change as? ReviewChange.Written)?.before?.review?.let { it.shopId == detail.shop.id && ReviewChangeReducer.shopVisible(change, it, currentState.currentUserId) } == true
-        val afterVisible = (change as? ReviewChange.Written)?.after?.review?.let { it.shopId == detail.shop.id && ReviewChangeReducer.shopVisible(change, it, currentState.currentUserId) } == true
+        val beforeVisible = (change as? ReviewChange.Written)?.before?.review?.let { it.shopId == detail.shop.id && reviewChangeReducer.isShopVisible(change, it, currentState.currentUserId) } == true
+        val afterVisible = (change as? ReviewChange.Written)?.after?.review?.let { it.shopId == detail.shop.id && reviewChangeReducer.isShopVisible(change, it, currentState.currentUserId) } == true
         val count = (detail.reviewCount + (if (afterVisible) 1 else 0) - (if (beforeVisible) 1 else 0)).coerceAtLeast(0)
         val rows =
-            ReviewChangeReducer.patch(detail.reviews, change, currentState.hasMoreShopReviews) { receipt, review ->
-                review.shopId == detail.shop.id && ReviewChangeReducer.shopVisible(receipt, review, currentState.currentUserId)
+            reviewChangeReducer.patch(detail.reviews, change, currentState.hasMoreShopReviews) { receipt, review ->
+                review.shopId == detail.shop.id && reviewChangeReducer.isShopVisible(receipt, review, currentState.currentUserId)
             }
         reduce {
             val content = shopDetailState as? ShopDetailSheetUiState.Content ?: return@reduce this
@@ -605,8 +606,8 @@ class MapViewModel(
                     var loadedReviews = (content.detail.reviews + page.reviews).distinctBy { it.id }
                     for (record in reviewChanges.journal.value.changesAfter(baseline.revision)) {
                         loadedReviews =
-                            ReviewChangeReducer.patch(loadedReviews, record.change, loadedReviews.size < page.totalCount) { receipt, review ->
-                                review.shopId == shopId && ReviewChangeReducer.shopVisible(receipt, review, currentUserId)
+                            reviewChangeReducer.patch(loadedReviews, record.change, loadedReviews.size < page.totalCount) { receipt, review ->
+                                review.shopId == shopId && reviewChangeReducer.isShopVisible(receipt, review, currentUserId)
                             }
                     }
                     copy(
@@ -1550,11 +1551,11 @@ class MapViewModel(
                                 ?.reviews
                                 .orEmpty()
                                 .associateBy { it.id }
-                        var rows = result.data.reviews.map { ReviewChangeReducer.mergeImages(it, known[it.id]) }
+                        var rows = result.data.reviews.map { reviewChangeReducer.retainMedia(it, known[it.id]) }
                         for (record in reviewChanges.journal.value.changesAfter(baseline.revision)) {
                             rows =
-                                ReviewChangeReducer.patch(rows, record.change, rows.size < result.data.reviewCount) { receipt, review ->
-                                    review.shopId == shopId && ReviewChangeReducer.shopVisible(receipt, review, currentState.currentUserId)
+                                reviewChangeReducer.patch(rows, record.change, rows.size < result.data.reviewCount) { receipt, review ->
+                                    review.shopId == shopId && reviewChangeReducer.isShopVisible(receipt, review, currentState.currentUserId)
                                 }
                         }
                         RamapResult.Success(result.data.copy(reviews = rows))
