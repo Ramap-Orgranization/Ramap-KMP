@@ -2,7 +2,7 @@
 authority: reference
 status: active
 last_verified: 2026-10-13
-source_ref: ec5832588539ce8386688b3d8527e3d8036941db
+source_ref: 1523e5767db461a633d05ac8d983fbec5cebf37e
 ---
 
 # 설계 패턴 탐색
@@ -25,6 +25,8 @@ Koin 등록 위치는 [앱 조립](architecture.md), typed route와 탭 상태�
 ## 리뷰 변경 기록과 화면 구독
 
 2026-10-13에 다시 확인한 범위는 리뷰 변경 전파와 목록·집계의 세션 복구입니다. 나머지 패턴 탐색 경로의 직전 확인 기준은 `afe2511050f20a60dfdefa369151ec456d2b6c1c`입니다. [ReviewChangeStore](../../domain/src/commonMain/kotlin/com/peto/ramap/domain/store/ReviewChangeStore.kt)의 읽기 계약과 [DefaultReviewChangeStore](../../data/src/commonMain/kotlin/com/peto/ramap/data/store/DefaultReviewChangeStore.kt)의 단일 인스턴스는 세션 epoch, revision, 최대 128개 변경 기록을 유지합니다. StateFlow가 중간 방출을 합쳐도 화면 cursor 이후의 기록을 차례로 적용합니다. 보관 범위를 넘으면 해당 화면은 명시적 복구 조회를 수행합니다.
+
+세션 동기화는 `state.update`의 변환 내부에서 현재 계정을 읽습니다. CAS가 재시도될 때도 계정을 다시 읽어, 지연된 collector가 이전 계정 값으로 최신 변경 기록을 초기화하지 않도록 합니다.
 
 [ReviewChangeReducer](../../domain/src/commonMain/kotlin/com/peto/ramap/domain/model/review/change/ReviewChangeReducer.kt)는 before/after를 이용해 현재 카드, 작성자 공개·게시 리뷰 수, 같은 매장의 이후 방문 번호와 정렬된 조회 범위를 반영합니다. 쓰기 결과와 이미지 hydration은 다른 변경 타입이므로 URL 준비가 개수와 방문 번호를 다시 갱신하지 않습니다. [DefaultReviewRepository](../../data/src/commonMain/kotlin/com/peto/ramap/data/repository/DefaultReviewRepository.kt)는 쓰기를 직렬화하고 저장 결과를 이미지 서명·삭제 정리 전에 발행합니다. 후속 실패는 저장된 리뷰를 실패로 보고하지 않습니다.
 
