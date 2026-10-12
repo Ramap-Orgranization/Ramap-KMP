@@ -22,6 +22,7 @@ internal class DefaultFetchShopDetailUseCase(
     private val operatingNoticeRepository: OperatingNoticeRepository,
     private val reviewRepository: ReviewRepository,
     private val changes: ReviewChangeStore,
+    private val reviewChangeReducer: ReviewChangeReducer,
 ) : FetchShopDetailUseCase {
     private val cache = mutableMapOf<String, ShopDetail>()
     private var cacheVersion = 0L
@@ -88,13 +89,13 @@ internal class DefaultFetchShopDetailUseCase(
                     if (detail.reviews.any { it.author.userId == change.userId }) cache.remove(shopId)
                     continue
                 }
-                val before = (change as? ReviewChange.Written)?.before?.review?.let { it.shopId == shopId && ReviewChangeReducer.shopVisible(change, it, journal.userId) } == true
-                val after = (change as? ReviewChange.Written)?.after?.review?.let { it.shopId == shopId && ReviewChangeReducer.shopVisible(change, it, journal.userId) } == true
+                val before = (change as? ReviewChange.Written)?.before?.review?.let { it.shopId == shopId && reviewChangeReducer.isShopVisible(change, it, journal.userId) } == true
+                val after = (change as? ReviewChange.Written)?.after?.review?.let { it.shopId == shopId && reviewChangeReducer.isShopVisible(change, it, journal.userId) } == true
                 cache[shopId] =
                     detail.copy(
                         reviews =
-                            ReviewChangeReducer.patch(detail.reviews, change, detail.reviews.size < detail.reviewCount) { receipt, review ->
-                                review.shopId == shopId && ReviewChangeReducer.shopVisible(receipt, review, journal.userId)
+                            reviewChangeReducer.patch(detail.reviews, change, detail.reviews.size < detail.reviewCount) { receipt, review ->
+                                review.shopId == shopId && reviewChangeReducer.isShopVisible(receipt, review, journal.userId)
                             },
                         reviewCount = (detail.reviewCount + (if (after) 1 else 0) - (if (before) 1 else 0)).coerceAtLeast(0),
                     )
