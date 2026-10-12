@@ -28,6 +28,19 @@ node_modules/
 iosApp/Pods/
 /docs/*
 !/docs/wiki/
+!/docs/performance/
+/docs/performance/*
+!/docs/performance/image-url-cache/
+/docs/performance/image-url-cache/*
+!/docs/performance/image-url-cache/*.md
+!/docs/performance/image-url-cache/pilot.json
+!/docs/performance/image-url-cache/controlled-20261012.json
+!/docs/performance/image-url-cache/controlled-sydney-20261012.json
+!/docs/performance/image-url-cache/controlled-comparison-20261012.json
+!/docs/performance/image-url-cache/controlled-analysis-20261012.json
+!/docs/performance/image-url-cache/controlled-verification-20261012.json
+!/docs/performance/image-url-cache/sdk-comparison-20261012.json
+!/docs/performance/image-url-cache/sdk-summary-20261012.json
 AGENTS.md
 .scratch/
 **/__pycache__/
@@ -50,7 +63,11 @@ AGENTS.md
 /androidApp/release/
 /distribution/
 /marketing
-tools/
+/tools/*
+!/tools/image-url-benchmark/
+/tools/image-url-benchmark/*
+!/tools/image-url-benchmark/*.mjs
+!/tools/image-url-benchmark/README.md
 # Local menu-refresh tools, compatibility link, and historical outputs.
 /skills/menu-refresh
 /output/menu-refresh-skill.zip
@@ -61,3 +78,7 @@ iosApp/iosApp/GoogleService-Info-Release.plist
 tools/menu-snapshot-data.js
 
 !/supabase/
+
+# Archived image cache experiment sources (not deployable functions).
+!/tools/image-url-benchmark/archived-functions/
+!/tools/image-url-benchmark/archived-functions/**
