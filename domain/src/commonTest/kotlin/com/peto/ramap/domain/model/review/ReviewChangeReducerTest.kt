@@ -16,15 +16,42 @@ import kotlin.test.assertFalse
 import kotlin.test.assertSame
 
 class ReviewChangeReducerTest {
-    @Test
-    fun `new owner row includes shop image address and categories for a previously unloaded shop`() {
-        val image = MyReviewPhoto("retained-url", "path")
-        val existing = ownerRow("existing", "01", shop("existing-shop")).copy(images = listOf(image))
-        val created = row("new", "02", shop = "new-shop").copy(isPublic = false)
-        val newShop = shop("new-shop")
-        val change = write(null, created, 1).let { it.copy(after = it.after?.copy(shop = newShop)) }
+    private val reducer = ReviewChangeReducer()
 
-        val result = ReviewChangeReducer.ownerRows(listOf(existing), change, MyReviewVisibility.ALL, false)
+    @Test
+    fun `처음 등록한 매장의 내 리뷰에는 사진과 주소와 카테고리가 포함된다`() {
+        val image =
+            MyReviewPhoto(
+                url = "retained-url",
+                reference = "path",
+            )
+        val existing =
+            createMyReview(
+                id = "existing",
+                created = "01",
+                shop = createShop("existing-shop"),
+            ).copy(images = listOf(image))
+        val created =
+            createReview(
+                id = "new",
+                created = "02",
+                shop = "new-shop",
+            ).copy(isPublic = false)
+        val newShop = createShop("new-shop")
+        val change =
+            createWrittenChange(
+                before = null,
+                after = created,
+                published = 1,
+            ).let { it.copy(after = it.after?.copy(shop = newShop)) }
+
+        val result =
+            reducer.updateOwnerRows(
+                rows = listOf(existing),
+                change = change,
+                filter = MyReviewVisibility.ALL,
+                hasMore = false,
+            )
 
         assertEquals(listOf("new", "existing"), result.map { it.id })
         assertSame(newShop, result.first().shop)
@@ -43,18 +70,52 @@ class ReviewChangeReducerTest {
     }
 
     @Test
-    fun `shop hydration repairs an owner row without replacing existing photo or body`() {
-        val current = ownerRow("review", "01", null).copy(body = "현재 본문", images = listOf(MyReviewPhoto("stable", "path")))
-        val hydrated = row("review", "01").copy(body = "이전 본문", images = listOf(MyReviewPhoto("rotated", "path")))
-        val shop = shop("shop")
+    fun `매장 정보 보완은 기존 내 리뷰의 사진과 본문을 유지한다`() {
+        val current =
+            createMyReview(
+                id = "review",
+                created = "01",
+                shop = null,
+            ).copy(
+                body = "현재 본문",
+                images =
+                    listOf(
+                        MyReviewPhoto(
+                            url = "stable",
+                            reference = "path",
+                        ),
+                    ),
+            )
+        val hydrated =
+            createReview(
+                id = "review",
+                created = "01",
+            ).copy(
+                body = "이전 본문",
+                images =
+                    listOf(
+                        MyReviewPhoto(
+                            url = "rotated",
+                            reference = "path",
+                        ),
+                    ),
+            )
+        val shop = createShop("shop")
 
         val result =
-            ReviewChangeReducer
-                .ownerRows(
-                    listOf(current),
-                    ReviewChange.Hydrated(ReviewSnapshot(hydrated, "매장", shop = shop)),
-                    MyReviewVisibility.ALL,
-                    false,
+            reducer
+                .updateOwnerRows(
+                    rows = listOf(current),
+                    change =
+                        ReviewChange.Hydrated(
+                            ReviewSnapshot(
+                                review = hydrated,
+                                shopName = "매장",
+                                shop = shop,
+                            ),
+                        ),
+                    filter = MyReviewVisibility.ALL,
+                    hasMore = false,
                 ).single()
 
         assertSame(shop, result.shop)
@@ -63,25 +124,98 @@ class ReviewChangeReducerTest {
     }
 
     @Test
-    fun `write and hydration without shop retain loaded owner row shop`() {
-        val shop = shop("shop")
-        val current = ownerRow("review", "01", shop)
-        val edited = row("review", "01").copy(body = "수정 본문")
-        val written = ReviewChangeReducer.ownerRows(listOf(current), write(row("review", "01"), edited, 1), MyReviewVisibility.ALL, false)
-        val hydrated = ReviewChangeReducer.ownerRows(written, ReviewChange.Hydrated(ReviewSnapshot(edited, "매장")), MyReviewVisibility.ALL, false)
+    fun `매장 정보가 없는 쓰기와 보완은 기존 내 리뷰의 매장을 유지한다`() {
+        val shop = createShop("shop")
+        val current =
+            createMyReview(
+                id = "review",
+                created = "01",
+                shop = shop,
+            )
+        val edited =
+            createReview(
+                id = "review",
+                created = "01",
+            ).copy(body = "수정 본문")
+        val written =
+            reducer.updateOwnerRows(
+                rows = listOf(current),
+                change =
+                    createWrittenChange(
+                        before =
+                            createReview(
+                                id = "review",
+                                created = "01",
+                            ),
+                        after = edited,
+                        published = 1,
+                    ),
+                filter = MyReviewVisibility.ALL,
+                hasMore = false,
+            )
+        val hydrated =
+            reducer.updateOwnerRows(
+                rows = written,
+                change =
+                    ReviewChange.Hydrated(
+                        ReviewSnapshot(
+                            review = edited,
+                            shopName = "매장",
+                        ),
+                    ),
+                filter = MyReviewVisibility.ALL,
+                hasMore = false,
+            )
 
         assertSame(shop, written.single().shop)
         assertSame(shop, hydrated.single().shop)
     }
 
     @Test
-    fun `delete patches subsequent visits and every sibling public count without changing image identities`() {
-        val earlier = row("earlier", "01", visit = 1)
-        val deleted = row("deleted", "02", visit = 2)
-        val later = row("later", "03", visit = 3)
-        val image = MyReviewPhoto("retained-url", "path")
-        val unrelated = row("unrelated", "04", shop = "other").copy(images = listOf(image), imageUrls = listOf("retained-url"))
-        val result = ReviewChangeReducer.patch(listOf(unrelated, later, deleted, earlier), write(deleted, null, 2), true) { _, _ -> true }
+    fun `리뷰 삭제는 사진을 유지하며 이후 방문 번호와 작성자의 공개 리뷰 개수를 갱신한다`() {
+        val earlier =
+            createReview(
+                id = "earlier",
+                created = "01",
+                visit = 1,
+            )
+        val deleted =
+            createReview(
+                id = "deleted",
+                created = "02",
+                visit = 2,
+            )
+        val later =
+            createReview(
+                id = "later",
+                created = "03",
+                visit = 3,
+            )
+        val image =
+            MyReviewPhoto(
+                url = "retained-url",
+                reference = "path",
+            )
+        val unrelated =
+            createReview(
+                id = "unrelated",
+                created = "04",
+                shop = "other",
+            ).copy(
+                images = listOf(image),
+                imageUrls = listOf("retained-url"),
+            )
+        val result =
+            reducer.patch(
+                rows = listOf(unrelated, later, deleted, earlier),
+                change =
+                    createWrittenChange(
+                        before = deleted,
+                        after = null,
+                        published = 2,
+                    ),
+                hasMore = true,
+            ) { _, _ -> true }
         assertEquals(listOf("unrelated", "later", "earlier"), result.map { it.id })
         assertEquals(2, result.first { it.id == "later" }.visitNumber)
         assertEquals(1, result.last().visitNumber)
@@ -90,77 +224,356 @@ class ReviewChangeReducerTest {
     }
 
     @Test
-    fun `private create and body edit do not increment subsequent public visits`() {
-        val later = row("later", "03", visit = 2)
-        val private = row("private", "02").copy(isPublic = false)
-        val created = ReviewChangeReducer.patch(listOf(later), write(null, private, 2), true) { _, _ -> true }
+    fun `비공개 리뷰 등록과 본문 수정은 공개 방문 번호와 유효한 아바타를 유지한다`() {
+        val later =
+            createReview(
+                id = "later",
+                created = "03",
+                visit = 2,
+            )
+        val avatarExpiresAt = kotlin.time.Instant.parse("2099-01-01T00:00:00Z")
+        val private =
+            createReview(
+                id = "private",
+                created = "02",
+            ).copy(
+                isPublic = false,
+                author =
+                    ReviewAuthor(
+                        userId = "owner",
+                        nickname = "작성자",
+                        avatarUrl = "retained-avatar",
+                        avatarReference = "avatar",
+                        avatarExpiresAt = avatarExpiresAt,
+                    ),
+            )
+        val created =
+            reducer.patch(
+                rows = listOf(later),
+                change =
+                    createWrittenChange(
+                        before = null,
+                        after = private,
+                        published = 2,
+                    ),
+                hasMore = false,
+            ) { _, _ -> true }
         assertEquals(2, created.first().visitNumber)
-        val edited = private.copy(body = "새로운 본문")
-        val updated = ReviewChangeReducer.patch(created, write(private, edited, 2), true) { _, _ -> true }
+        val edited =
+            private.copy(
+                body = "새로운 본문",
+                author =
+                    private.author.copy(
+                        avatarUrl = null,
+                        avatarExpiresAt = null,
+                    ),
+            )
+        val updated =
+            reducer.patch(
+                rows = created,
+                change =
+                    createWrittenChange(
+                        before = private,
+                        after = edited,
+                        published = 2,
+                    ),
+                hasMore = true,
+            ) { _, _ -> true }
         assertEquals(2, updated.first().visitNumber)
+        assertEquals(
+            expected = "retained-avatar",
+            actual = updated.first { it.id == "private" }.author.avatarUrl,
+        )
+        assertEquals(
+            expected = avatarExpiresAt,
+            actual = updated.first { it.id == "private" }.author.avatarExpiresAt,
+        )
         val published = edited.copy(isPublic = true)
-        val visible = ReviewChangeReducer.patch(updated, write(edited, published, 3), true) { _, _ -> true }
+        val visible =
+            reducer.patch(
+                rows = updated,
+                change =
+                    createWrittenChange(
+                        before = edited,
+                        after = published,
+                        published = 3,
+                    ),
+                hasMore = true,
+            ) { _, _ -> true }
         assertEquals(3, visible.first().visitNumber)
     }
 
     @Test
-    fun `insertion outside incomplete loaded boundary does not skip later pagination`() {
-        val rows = (40 downTo 1).map { row("id-$it", it.toString().padStart(2, '0')) }
-        val old = row("unloaded", "00")
-        assertEquals(rows.map { it.id }, ReviewChangeReducer.patch(rows, write(null, old, 0), true) { _, _ -> true }.map { it.id })
-        val newest = row("newest", "41")
-        assertEquals(41, ReviewChangeReducer.patch(rows, write(null, newest, 0), true) { _, _ -> true }.size)
+    fun `조회 범위 밖의 리뷰 등록은 다음 페이지의 리뷰를 건너뛰지 않는다`() {
+        val rows =
+            (40 downTo 1).map {
+                createReview(
+                    id = "id-$it",
+                    created = it.toString().padStart(2, '0'),
+                )
+            }
+        val old =
+            createReview(
+                id = "unloaded",
+                created = "00",
+            )
+        assertEquals(
+            rows.map { it.id },
+            reducer
+                .patch(
+                    rows = rows,
+                    change =
+                        createWrittenChange(
+                            before = null,
+                            after = old,
+                            published = 0,
+                        ),
+                    hasMore = true,
+                ) { _, _ -> true }
+                .map { it.id },
+        )
+        val newest =
+            createReview(
+                id = "newest",
+                created = "41",
+            )
+        assertEquals(
+            41,
+            reducer
+                .patch(
+                    rows = rows,
+                    change =
+                        createWrittenChange(
+                            before = null,
+                            after = newest,
+                            published = 0,
+                        ),
+                    hasMore = true,
+                ) { _, _ -> true }
+                .size,
+        )
     }
 
     @Test
-    fun `hydration preserves retained paths and cannot overwrite later edits`() {
-        val current = row("review", "01").copy(body = "현재 본문", images = listOf(MyReviewPhoto("stable", "keep"), MyReviewPhoto(null, "new")))
-        val hydrated = current.copy(body = "이전 본문", images = listOf(MyReviewPhoto("rotated", "keep"), MyReviewPhoto("hydrated", "new")))
-        val result = ReviewChangeReducer.patch(listOf(current), ReviewChange.Hydrated(ReviewSnapshot(hydrated, "shop")), false) { _, _ -> true }.single()
+    fun `사진 보완은 기존 경로를 유지하고 이후 본문 수정을 덮어쓰지 않는다`() {
+        val current =
+            createReview(
+                id = "review",
+                created = "01",
+            ).copy(
+                body = "현재 본문",
+                images =
+                    listOf(
+                        MyReviewPhoto(
+                            url = "stable",
+                            reference = "keep",
+                        ),
+                        MyReviewPhoto(
+                            url = null,
+                            reference = "new",
+                        ),
+                    ),
+            )
+        val hydrated =
+            current.copy(
+                body = "이전 본문",
+                images =
+                    listOf(
+                        MyReviewPhoto(
+                            url = "rotated",
+                            reference = "keep",
+                        ),
+                        MyReviewPhoto(
+                            url = "hydrated",
+                            reference = "new",
+                        ),
+                    ),
+            )
+        val result =
+            reducer
+                .patch(
+                    rows = listOf(current),
+                    change =
+                        ReviewChange.Hydrated(
+                            ReviewSnapshot(
+                                review = hydrated,
+                                shopName = "shop",
+                            ),
+                        ),
+                    hasMore = false,
+                ) { _, _ -> true }
+                .single()
         assertEquals("현재 본문", result.body)
         assertEquals(listOf("stable", "hydrated"), result.imageUrls)
-        val replaced = current.copy(images = listOf(MyReviewPhoto(null, "replacement")))
-        assertEquals(replaced, ReviewChangeReducer.patch(listOf(replaced), ReviewChange.Hydrated(ReviewSnapshot(hydrated, "shop")), false) { _, _ -> true }.single())
+        val replaced =
+            current.copy(
+                images =
+                    listOf(
+                        MyReviewPhoto(
+                            url = null,
+                            reference = "replacement",
+                        ),
+                    ),
+            )
+        assertEquals(
+            replaced,
+            reducer
+                .patch(
+                    rows = listOf(replaced),
+                    change =
+                        ReviewChange.Hydrated(
+                            ReviewSnapshot(
+                                review = hydrated,
+                                shopName = "shop",
+                            ),
+                        ),
+                    hasMore = false,
+                ) { _, _ -> true }
+                .single(),
+        )
     }
 
     @Test
-    fun `owner receipt never exposes private or unpublished review to another viewer`() {
-        val private = row("private", "01").copy(isPublic = false)
-        val pending = row("pending", "01").copy(moderationStatus = ReviewModerationStatus.PENDING)
-        assertFalse(ReviewChangeReducer.shopVisible(write(null, private, 0), private, "other"))
-        assertFalse(ReviewChangeReducer.shopVisible(write(null, pending, 0), pending, "other"))
+    fun `소유자의 변경 응답은 비공개나 미게시 리뷰를 다른 사용자에게 노출하지 않는다`() {
+        val private =
+            createReview(
+                id = "private",
+                created = "01",
+            ).copy(isPublic = false)
+        val pending =
+            createReview(
+                id = "pending",
+                created = "01",
+            ).copy(moderationStatus = ReviewModerationStatus.PENDING)
+        assertFalse(
+            reducer.isShopVisible(
+                change =
+                    createWrittenChange(
+                        before = null,
+                        after = private,
+                        published = 0,
+                    ),
+                review = private,
+                viewerId = "other",
+            ),
+        )
+        assertFalse(
+            reducer.isShopVisible(
+                change =
+                    createWrittenChange(
+                        before = null,
+                        after = pending,
+                        published = 0,
+                    ),
+                review = pending,
+                viewerId = "other",
+            ),
+        )
     }
 
     @Test
-    fun `expired retained image uses new signed URL and changed avatar path uses new avatar`() {
+    fun `만료된 사진 URL과 경로가 바뀐 아바타는 새로운 값을 사용한다`() {
         val expired = kotlin.time.Instant.parse("2020-01-01T00:00:00Z")
         val valid = kotlin.time.Instant.parse("2099-01-01T00:00:00Z")
-        val previous = row("review", "01").copy(images = listOf(MyReviewPhoto("expired", "path", expired)), author = ReviewAuthor("owner", "작성자", "old-avatar", avatarReference = "old", avatarExpiresAt = valid))
-        val latest = previous.copy(images = listOf(MyReviewPhoto("renewed", "path", valid)), author = previous.author.copy(avatarUrl = "new-avatar", avatarReference = "new"))
-        val merged = ReviewChangeReducer.mergeImages(latest, previous)
+        val previous =
+            createReview(
+                id = "review",
+                created = "01",
+            ).copy(
+                images =
+                    listOf(
+                        MyReviewPhoto(
+                            url = "expired",
+                            reference = "path",
+                            expiresAt = expired,
+                        ),
+                    ),
+                author =
+                    ReviewAuthor(
+                        userId = "owner",
+                        nickname = "작성자",
+                        avatarUrl = "old-avatar",
+                        avatarReference = "old",
+                        avatarExpiresAt = valid,
+                    ),
+            )
+        val latest =
+            previous.copy(
+                images =
+                    listOf(
+                        MyReviewPhoto(
+                            url = "renewed",
+                            reference = "path",
+                            expiresAt = valid,
+                        ),
+                    ),
+                author =
+                    previous.author.copy(
+                        avatarUrl = "new-avatar",
+                        avatarReference = "new",
+                    ),
+            )
+        val merged =
+            reducer.retainMedia(
+                next = latest,
+                previous = previous,
+            )
         assertEquals("renewed", merged.images.single().url)
         assertEquals("new-avatar", merged.author.avatarUrl)
     }
 
-    private fun row(
+    private fun createReview(
         id: String,
         created: String,
         shop: String = "shop",
         visit: Int = 1,
-    ) = Review(id, shop, "리뷰 본문", created, author = ReviewAuthor("owner", "작성자", reviewCount = 3), visitNumber = visit)
+    ): Review =
+        Review(
+            id = id,
+            shopId = shop,
+            body = "리뷰 본문",
+            createdAt = created,
+            author =
+                ReviewAuthor(
+                    userId = "owner",
+                    nickname = "작성자",
+                    reviewCount = 3,
+                ),
+            visitNumber = visit,
+        )
 
-    private fun ownerRow(
+    private fun createMyReview(
         id: String,
         created: String,
         shop: RamenShop?,
-    ) = MyReview(id, shop?.id ?: "shop", "매장", "리뷰 본문", created, emptyList(), true, ReviewModerationStatus.PUBLISHED, shop = shop, author = ReviewAuthor("owner", "작성자"))
+    ): MyReview =
+        MyReview(
+            id = id,
+            shopId = shop?.id ?: "shop",
+            shopName = "매장",
+            body = "리뷰 본문",
+            createdAt = created,
+            images = emptyList(),
+            isPublic = true,
+            moderationStatus = ReviewModerationStatus.PUBLISHED,
+            shop = shop,
+            author =
+                ReviewAuthor(
+                    userId = "owner",
+                    nickname = "작성자",
+                ),
+        )
 
-    private fun shop(id: String) =
+    private fun createShop(id: String): RamenShop =
         RamenShop(
             id = id,
             name = "매장",
             address = "서울 마포구",
-            location = Location(37.0, 127.0),
+            location =
+                Location(
+                    lat = 37.0,
+                    lng = 127.0,
+                ),
             kakaoPlaceUrl = null,
             instagramUrl = null,
             menuCategories = MenuCategories(listOf(Category.SHOYU)),
@@ -170,9 +583,38 @@ class ReviewChangeReducerTest {
             instagramProfileImageUrl = "shop-image",
         )
 
-    private fun write(
+    private fun createWrittenChange(
         before: Review?,
         after: Review?,
         published: Int,
-    ) = ReviewChange.Written((after ?: before)!!.id, "owner", (after ?: before)!!.shopId, before?.let { ReviewSnapshot(it, "shop") }, after?.let { ReviewSnapshot(it, "shop") }, ReviewOwnerCounts(2, 2, 0, published, true))
+    ): ReviewChange.Written {
+        val review = requireNotNull(after ?: before)
+        return ReviewChange.Written(
+            reviewId = review.id,
+            userId = "owner",
+            shopId = review.shopId,
+            before =
+                before?.let {
+                    ReviewSnapshot(
+                        review = it,
+                        shopName = "shop",
+                    )
+                },
+            after =
+                after?.let {
+                    ReviewSnapshot(
+                        review = it,
+                        shopName = "shop",
+                    )
+                },
+            counts =
+                ReviewOwnerCounts(
+                    totalCount = 2,
+                    publicCount = 2,
+                    privateCount = 0,
+                    publishedCount = published,
+                    profileIsPublic = true,
+                ),
+        )
+    }
 }
