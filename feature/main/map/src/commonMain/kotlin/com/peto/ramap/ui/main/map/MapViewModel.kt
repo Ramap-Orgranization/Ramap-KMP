@@ -16,6 +16,8 @@ import com.peto.ramap.domain.model.personalization.ShopPersonalization
 import com.peto.ramap.domain.model.report.ShopInformationField
 import com.peto.ramap.domain.model.report.ShopInformationReport
 import com.peto.ramap.domain.model.review.Review
+import com.peto.ramap.domain.model.review.change.ReviewChange
+import com.peto.ramap.domain.model.review.change.ReviewChangeReducer
 import com.peto.ramap.domain.model.shop.Category
 import com.peto.ramap.domain.model.shop.Location
 import com.peto.ramap.domain.model.shop.MapBounds
@@ -32,6 +34,7 @@ import com.peto.ramap.domain.repository.ReviewRepository
 import com.peto.ramap.domain.repository.ShopReportRepository
 import com.peto.ramap.domain.store.PersonalizationBootstrapState
 import com.peto.ramap.domain.store.PersonalizationStore
+import com.peto.ramap.domain.store.ReviewChangeStore
 import com.peto.ramap.domain.usecase.FetchShopDetailUseCase
 import com.peto.ramap.domain.usecase.ShopDetail
 import com.peto.ramap.domain.usecase.ShopDetailCacheLookup
@@ -130,13 +133,19 @@ class MapViewModel(
     private val reviewRepository: ReviewRepository,
     private val communityRepository: CommunityRepository,
     private val profileRepository: ProfileRepository,
+    private val reviewChanges: ReviewChangeStore,
+    private val reviewChangeReducer: ReviewChangeReducer,
 ) : BaseViewModel<MapUiState, MapIntent, MapSideEffect>(initialState = MapUiState()) {
     private val viewportShopLoader = ViewportShopLoader(ramenShopRepository, viewModelScope)
     private var pendingMapAction: PendingMapAction? = null
     private var observedBookmarkedShopIds: Set<String>? = null
     private var profileVisibilityJob: Job? = null
+    private var reviewEpoch = reviewChanges.journal.value.epoch
+    private var reviewRevision = reviewChanges.journal.value.revision
+    private var reviewGeneration = 0L
 
     init {
+        viewModelScope.launch { observeReviewChanges() }
         viewModelScope.launch { observeSessionState() }
         viewModelScope.launch { observeReviewSession() }
         viewModelScope.launch { observePersonalization() }
@@ -195,9 +204,65 @@ class MapViewModel(
         }
     }
 
+    private suspend fun observeReviewChanges() {
+        reviewChanges.journal.collect { journal ->
+            if (reviewEpoch != journal.epoch) {
+                reviewEpoch = journal.epoch
+                reviewRevision = journal.revision
+                return@collect
+            }
+            if (journal.hasGapAfter(reviewRevision)) {
+                reviewRevision = journal.revision
+                refreshReviews()
+                return@collect
+            }
+            for (record in journal.changesAfter(reviewRevision)) {
+                applyReviewChange(record.change)
+                reviewRevision = record.revision
+            }
+        }
+    }
+
+    private fun applyReviewChange(change: ReviewChange) {
+        val detail = currentState.shopDetail ?: return
+        if (change is ReviewChange.AccessChanged) {
+            if (detail.reviews.none { it.author.userId == change.userId }) return
+            reduce {
+                val content = shopDetailState as? ShopDetailSheetUiState.Content ?: return@reduce this
+                copy(
+                    revealedBlockedReviews = emptyMap(),
+                    shopDetailState = content.copy(detail = content.detail.copy(reviews = content.detail.reviews.filterNot { it.author.userId == change.userId })),
+                )
+            }
+            refreshReviews(reviewExtent = detail.reviews.size)
+            return
+        }
+        val beforeVisible = (change as? ReviewChange.Written)?.before?.review?.let { it.shopId == detail.shop.id && reviewChangeReducer.isShopVisible(change, it, currentState.currentUserId) } == true
+        val afterVisible = (change as? ReviewChange.Written)?.after?.review?.let { it.shopId == detail.shop.id && reviewChangeReducer.isShopVisible(change, it, currentState.currentUserId) } == true
+        val count = (detail.reviewCount + (if (afterVisible) 1 else 0) - (if (beforeVisible) 1 else 0)).coerceAtLeast(0)
+        val rows =
+            reviewChangeReducer.patch(detail.reviews, change, currentState.hasMoreShopReviews) { receipt, review ->
+                review.shopId == detail.shop.id && reviewChangeReducer.isShopVisible(receipt, review, currentState.currentUserId)
+            }
+        reduce {
+            val content = shopDetailState as? ShopDetailSheetUiState.Content ?: return@reduce this
+            copy(
+                shopDetailState = content.copy(detail = content.detail.copy(reviews = rows, reviewCount = count)),
+                hasMoreShopReviews = rows.size < count,
+                currentProfileIsPublic = (change as? ReviewChange.Written)?.takeIf { it.userId == currentUserId }?.counts?.profileIsPublic ?: currentProfileIsPublic,
+            )
+        }
+        fetchShopDetailUseCase.updateCachedReviews(
+            detail.shop.id,
+            com.peto.ramap.domain.model.review
+                .ShopReviewsPage(rows, count),
+        )
+    }
+
     private suspend fun observeReviewSession() {
         profileRepository.sessionUserIds.collectLatest { userId ->
             if (currentState.currentUserId != userId) {
+                reviewGeneration++
                 profileVisibilityJob?.cancel()
                 cancelTask(REVIEW_ACTION_TASK_KEY)
                 cancelTask(BLOCKED_REVIEW_REVEAL_TASK_KEY)
@@ -255,7 +320,6 @@ class MapViewModel(
             is MapIntent.OnBlockedReviewUnblockRequested -> requestBlockedReviewUnblock(intent.review)
             MapIntent.OnBlockedReviewUnblockConfirmed -> unblockBlockedReviewAuthor()
             MapIntent.OnBlockedReviewUnblockDismissed -> dismissBlockedReviewUnblock()
-            MapIntent.OnReviewsChanged -> refreshReviews()
             MapIntent.OnShopReviewsLoadMore -> loadMoreShopReviews()
             else -> return false
         }
@@ -324,6 +388,7 @@ class MapViewModel(
 
     private fun unblockBlockedReviewAuthor() {
         val review = currentState.pendingUnblockReview ?: return
+        val reviewExtent = currentState.shopDetail?.reviews?.size ?: 0
         val userId = currentState.currentUserId ?: return
         if (currentBlockedReview(review) == null || review.author.userId.isBlank()) return
         launchResultTask(
@@ -345,7 +410,7 @@ class MapViewModel(
                             },
                     )
                 }
-                refreshReviews()
+                refreshReviews(reviewExtent)
             },
             onError = {
                 if (currentState.currentUserId == userId) {
@@ -465,7 +530,6 @@ class MapViewModel(
                 if (!currentCoroutineContext().isActive || currentState.currentUserId != actingUserId) {
                     return@launchResultTask
                 }
-                updateVisibleReview(review.id) { null }
                 reduce { copy(actingReviewId = null) }
             },
             onError = {
@@ -500,7 +564,7 @@ class MapViewModel(
         }
     }
 
-    private fun refreshReviews() {
+    private fun refreshReviews(reviewExtent: Int = currentState.shopDetail?.reviews?.size ?: 0) {
         cancelTask(BLOCKED_REVIEW_REVEAL_TASK_KEY)
         reduce {
             copy(
@@ -510,27 +574,42 @@ class MapViewModel(
             )
         }
         fetchShopDetailUseCase.clearCache()
-        currentState.selectedShop?.id?.let(::loadShopDetail)
+        currentState.selectedShop?.id?.let { loadShopDetail(it, requestedReviewExtent = reviewExtent) }
     }
 
-    private fun loadMoreShopReviews() {
+    private fun loadMoreShopReviews(retryAfterConflict: Boolean = false) {
         val detail = currentState.shopDetail ?: return
-        if (!currentState.hasMoreShopReviews || currentState.isLoadingMoreShopReviews) return
+        if (!currentState.hasMoreShopReviews || currentState.isLoadingMoreShopReviews && !retryAfterConflict) return
 
         val shopId = detail.shop.id
         val offset = detail.reviews.size.toLong()
+        val baseline = reviewChanges.journal.value
+        val generation = reviewGeneration
         launchResultTask(
             taskKey = SHOP_REVIEW_PAGE_TASK_KEY,
             loadKey = MapLoadKey.ShopReviewsPage,
-            policy = TaskPolicy.IgnoreNew,
+            policy = TaskPolicy.CancelPrevious,
             request = { reviewRepository.fetchShopReviewsPage(shopId, offset) },
             onSuccess = { page ->
+                if (generation != reviewGeneration || baseline.epoch != reviewChanges.journal.value.epoch) return@launchResultTask
+                if (reviewChanges.journal.value.hasGapAfter(baseline.revision) ||
+                    reviewChanges.journal.value
+                        .changesAfter(baseline.revision)
+                        .any { (it.change as? ReviewChange.Written)?.shopId == shopId || it.change is ReviewChange.AccessChanged }
+                ) {
+                    loadMoreShopReviews(retryAfterConflict = true)
+                    return@launchResultTask
+                }
                 reduce {
                     val content = shopDetailState as? ShopDetailSheetUiState.Content ?: return@reduce this
                     if (content.detail.shop.id != shopId) return@reduce this
-                    val loadedReviews =
-                        (content.detail.reviews + page.reviews)
-                            .distinctBy { it.id }
+                    var loadedReviews = (content.detail.reviews + page.reviews).distinctBy { it.id }
+                    for (record in reviewChanges.journal.value.changesAfter(baseline.revision)) {
+                        loadedReviews =
+                            reviewChangeReducer.patch(loadedReviews, record.change, loadedReviews.size < page.totalCount) { receipt, review ->
+                                review.shopId == shopId && reviewChangeReducer.isShopVisible(receipt, review, currentUserId)
+                            }
+                    }
                     copy(
                         shopDetailState =
                             content.copy(
@@ -1431,8 +1510,11 @@ class MapViewModel(
     private fun loadShopDetail(
         shopId: String,
         selectShopOnSuccess: Boolean = false,
+        requestedReviewExtent: Int = 0,
     ) {
         cancelTask(SHOP_REVIEW_PAGE_TASK_KEY)
+        val baseline = reviewChanges.journal.value
+        val generation = ++reviewGeneration
         launchTask(
             taskKey = SHOP_DETAIL_TASK_KEY,
             loadKey = MapLoadKey.ShopDetail,
@@ -1445,11 +1527,67 @@ class MapViewModel(
                 }
             },
         ) {
-            val result = fetchShopDetailUseCase(shopId)
+            val initial = fetchShopDetailUseCase(shopId)
+            val result =
+                if (initial is RamapResult.Success && requestedReviewExtent > initial.data.reviews.size) {
+                    RamapResult.Success(recoverReviewExtent(initial.data, requestedReviewExtent))
+                } else {
+                    initial
+                }
             if (currentCoroutineContext().isActive) {
-                handleShopDetailResult(shopId, selectShopOnSuccess, result)
+                if (generation != reviewGeneration) return@launchTask
+                if (baseline.epoch != reviewChanges.journal.value.epoch) {
+                    loadShopDetail(
+                        shopId = shopId,
+                        selectShopOnSuccess = selectShopOnSuccess,
+                        requestedReviewExtent = requestedReviewExtent,
+                    )
+                    return@launchTask
+                }
+                if (reviewChanges.journal.value.hasGapAfter(baseline.revision) ||
+                    reviewChanges.journal.value
+                        .changesAfter(baseline.revision)
+                        .any { (it.change as? ReviewChange.Written)?.shopId == shopId || it.change is ReviewChange.AccessChanged }
+                ) {
+                    loadShopDetail(shopId, selectShopOnSuccess, requestedReviewExtent)
+                    return@launchTask
+                }
+                val replayed =
+                    if (result is RamapResult.Success) {
+                        val known =
+                            currentState.shopDetail
+                                ?.reviews
+                                .orEmpty()
+                                .associateBy { it.id }
+                        var rows = result.data.reviews.map { reviewChangeReducer.retainMedia(it, known[it.id]) }
+                        for (record in reviewChanges.journal.value.changesAfter(baseline.revision)) {
+                            rows =
+                                reviewChangeReducer.patch(rows, record.change, rows.size < result.data.reviewCount) { receipt, review ->
+                                    review.shopId == shopId && reviewChangeReducer.isShopVisible(receipt, review, currentState.currentUserId)
+                                }
+                        }
+                        RamapResult.Success(result.data.copy(reviews = rows))
+                    } else {
+                        result
+                    }
+                handleShopDetailResult(shopId, selectShopOnSuccess, replayed)
             }
         }
+    }
+
+    private suspend fun recoverReviewExtent(
+        detail: ShopDetail,
+        targetSize: Int,
+    ): ShopDetail {
+        var recovered = detail
+        while (recovered.reviews.size < targetSize && recovered.reviews.size < recovered.reviewCount) {
+            val result = reviewRepository.fetchShopReviewsPage(recovered.shop.id, recovered.reviews.size.toLong())
+            if (result !is RamapResult.Success || result.data.reviews.isEmpty()) break
+            val rows = (recovered.reviews + result.data.reviews).distinctBy { it.id }
+            if (rows.size == recovered.reviews.size) break
+            recovered = recovered.copy(reviews = rows, reviewCount = result.data.totalCount)
+        }
+        return recovered
     }
 
     private fun hasContentFor(shopId: String): Boolean =

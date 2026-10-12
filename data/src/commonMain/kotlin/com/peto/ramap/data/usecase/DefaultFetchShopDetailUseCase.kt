@@ -4,9 +4,12 @@ import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.domain.model.notice.OperatingNotice
 import com.peto.ramap.domain.model.review.Review
 import com.peto.ramap.domain.model.review.ShopReviewsPage
+import com.peto.ramap.domain.model.review.change.ReviewChange
+import com.peto.ramap.domain.model.review.change.ReviewChangeReducer
 import com.peto.ramap.domain.repository.OperatingNoticeRepository
 import com.peto.ramap.domain.repository.RamenShopRepository
 import com.peto.ramap.domain.repository.ReviewRepository
+import com.peto.ramap.domain.store.ReviewChangeStore
 import com.peto.ramap.domain.usecase.FetchShopDetailUseCase
 import com.peto.ramap.domain.usecase.ShopDetail
 import com.peto.ramap.domain.usecase.ShopDetailCacheLookup
@@ -18,9 +21,13 @@ internal class DefaultFetchShopDetailUseCase(
     private val ramenShopRepository: RamenShopRepository,
     private val operatingNoticeRepository: OperatingNoticeRepository,
     private val reviewRepository: ReviewRepository,
+    private val changes: ReviewChangeStore,
+    private val reviewChangeReducer: ReviewChangeReducer,
 ) : FetchShopDetailUseCase {
     private val cache = mutableMapOf<String, ShopDetail>()
     private var cacheVersion = 0L
+    private var epoch = changes.journal.value.epoch
+    private var revision = changes.journal.value.revision
 
     /**
      * 매장 상세를 조회한다.
@@ -29,29 +36,72 @@ internal class DefaultFetchShopDetailUseCase(
      * 재검증 실패 시에는 캐시 전체를 그대로 사용한다.
      */
     override suspend fun invoke(shopId: String): RamapResult<ShopDetail> {
+        synchronizeChanges()
+        val baseline = changes.journal.value
         val requestedVersion = cacheVersion
         val cached = cache[shopId]
         if (cached != null) return revalidateDetail(cached, requestedVersion)
 
         val result = fetchDetailWithNoticesAndReviews(shopId)
-        if (result is RamapResult.Success && requestedVersion == cacheVersion) {
+        if (result is RamapResult.Success && requestedVersion == cacheVersion && baseline == changes.journal.value) {
             cache[result.data.shop.id] = result.data
         }
         return result
     }
 
-    override fun findCached(shopId: String): ShopDetailCacheLookup =
-        cache[shopId]
-            ?.let(ShopDetailCacheLookup::Hit)
-            ?: ShopDetailCacheLookup.Miss
+    override fun findCached(shopId: String): ShopDetailCacheLookup {
+        synchronizeChanges()
+        return cache[shopId]?.let(ShopDetailCacheLookup::Hit) ?: ShopDetailCacheLookup.Miss
+    }
 
     override fun updateCachedReviews(
         shopId: String,
         page: ShopReviewsPage,
     ) {
+        synchronizeChanges()
         cacheVersion++
         cache[shopId]?.let { detail ->
-            cache[shopId] = detail.copy(reviews = page.reviews, reviewCount = page.totalCount, hasReviewLoadFailure = false)
+            val rows =
+                if (detail.reviews.size > page.reviews.size) {
+                    val updates = page.reviews.associateBy { it.id }
+                    (detail.reviews.map { updates[it.id] ?: it } + page.reviews)
+                        .distinctBy { it.id }
+                        .sortedWith(compareByDescending<Review> { it.createdAt }.thenByDescending { it.id })
+                } else {
+                    page.reviews
+                }
+            cache[shopId] = detail.copy(reviews = rows, reviewCount = page.totalCount, hasReviewLoadFailure = false)
+        }
+    }
+
+    private fun synchronizeChanges() {
+        val journal = changes.journal.value
+        if (epoch != journal.epoch || journal.hasGapAfter(revision)) {
+            clearCache()
+            epoch = journal.epoch
+            revision = journal.revision
+            return
+        }
+        for (record in journal.changesAfter(revision)) {
+            val change = record.change
+            for ((shopId, detail) in cache.toMap()) {
+                if (change is ReviewChange.AccessChanged) {
+                    if (detail.reviews.any { it.author.userId == change.userId }) cache.remove(shopId)
+                    continue
+                }
+                val before = (change as? ReviewChange.Written)?.before?.review?.let { it.shopId == shopId && reviewChangeReducer.isShopVisible(change, it, journal.userId) } == true
+                val after = (change as? ReviewChange.Written)?.after?.review?.let { it.shopId == shopId && reviewChangeReducer.isShopVisible(change, it, journal.userId) } == true
+                cache[shopId] =
+                    detail.copy(
+                        reviews =
+                            reviewChangeReducer.patch(detail.reviews, change, detail.reviews.size < detail.reviewCount) { receipt, review ->
+                                review.shopId == shopId && reviewChangeReducer.isShopVisible(receipt, review, journal.userId)
+                            },
+                        reviewCount = (detail.reviewCount + (if (after) 1 else 0) - (if (before) 1 else 0)).coerceAtLeast(0),
+                    )
+            }
+            cacheVersion++
+            revision = record.revision
         }
     }
 
@@ -77,6 +127,7 @@ internal class DefaultFetchShopDetailUseCase(
         cached: ShopDetail,
         requestedVersion: Long,
     ): RamapResult<ShopDetail> {
+        val baseline = changes.journal.value
         val refreshed =
             when (
                 val result =
@@ -100,7 +151,7 @@ internal class DefaultFetchShopDetailUseCase(
                 reviewCount = refreshed.reviewCount,
                 hasReviewLoadFailure = refreshed.hasReviewLoadFailure,
             )
-        if (requestedVersion == cacheVersion) cache[cached.shop.id] = updated
+        if (requestedVersion == cacheVersion && baseline == changes.journal.value) cache[cached.shop.id] = updated
         return RamapResult.Success(updated)
     }
 

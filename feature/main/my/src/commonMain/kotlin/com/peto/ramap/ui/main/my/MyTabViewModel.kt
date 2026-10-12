@@ -5,12 +5,14 @@ import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.profile.ProfileVisibility
 import com.peto.ramap.domain.model.review.MyReviewVisibility
+import com.peto.ramap.domain.model.review.change.ReviewChange
 import com.peto.ramap.domain.repository.CommunityRepository
 import com.peto.ramap.domain.repository.FollowRepository
 import com.peto.ramap.domain.repository.ProfileRepository
 import com.peto.ramap.domain.repository.ReviewRepository
 import com.peto.ramap.domain.store.PersonalizationBootstrapState
 import com.peto.ramap.domain.store.PersonalizationStore
+import com.peto.ramap.domain.store.ReviewChangeStore
 import com.peto.ramap.ui.base.BaseViewModel
 import com.peto.ramap.ui.main.my.contract.MyTabIntent
 import com.peto.ramap.ui.main.my.contract.MyTabLoadKey
@@ -31,13 +33,32 @@ class MyTabViewModel(
     private val personalizationStore: PersonalizationStore,
     private val reviewRepository: ReviewRepository,
     private val followRepository: FollowRepository,
+    private val changes: ReviewChangeStore,
 ) : BaseViewModel<MyTabUiState, MyTabIntent, MyTabSideEffect>(MyTabUiState()) {
     private var requestGeneration = 0L
+    private var sessionGeneration = 0L
 
     init {
         viewModelScope.launch {
+            var epoch = changes.journal.value.epoch
+            var revision = changes.journal.value.revision
+            changes.journal.collect { journal ->
+                if (epoch != journal.epoch) {
+                    epoch = journal.epoch
+                    revision = journal.revision
+                }
+                if (journal.hasGapAfter(revision)) refreshReviewCount()
+                for (record in journal.changesAfter(revision)) {
+                    val change = record.change as? ReviewChange.Written ?: continue
+                    if (change.userId == currentState.userId) reduce { copy(reviewCount = change.counts.totalCount) }
+                }
+                revision = journal.revision
+            }
+        }
+        viewModelScope.launch {
             repository.sessionUserIds.distinctUntilChanged().collect { userId ->
                 requestGeneration++
+                sessionGeneration++
                 cancelTask(FETCH)
                 cancelTask(VISIBILITY)
                 cancelTask(BLOCKED_USERS)
@@ -67,7 +88,6 @@ class MyTabViewModel(
         when (intent) {
             MyTabIntent.Refresh -> refresh()
             MyTabIntent.ReturnedToScreen -> {
-                refreshReviewCount()
                 refreshBlockedUserCount()
                 refreshPendingFollowRequests()
             }
@@ -76,7 +96,6 @@ class MyTabViewModel(
                 refreshPendingFollowRequests()
             }
             MyTabIntent.ReturnedFromReviews -> {
-                refreshReviewCount()
                 refreshPendingFollowRequests()
             }
             MyTabIntent.ReturnedFromBlockedProfile -> {
@@ -272,12 +291,25 @@ class MyTabViewModel(
 
     private fun refreshReviewCount() {
         val userId = currentState.userId ?: return
+        val generation = sessionGeneration
+        val baseline = changes.journal.value
         launchResultTask(
             taskKey = REVIEW_COUNT,
             loadKey = MyTabLoadKey.ReviewCount,
             request = { reviewRepository.fetchMyReviews(0, MyReviewVisibility.ALL) },
             onSuccess = { page ->
-                if (currentState.userId == userId) reduce { copy(reviewCount = page.totalCount) }
+                val journal = changes.journal.value
+                if (generation != sessionGeneration || currentState.userId != userId) return@launchResultTask
+                if (baseline.epoch != journal.epoch) {
+                    refreshReviewCount()
+                    return@launchResultTask
+                }
+                val latest = journal.changesAfter(baseline.revision).mapNotNull { it.change as? ReviewChange.Written }.lastOrNull { it.userId == userId }
+                if (journal.hasGapAfter(baseline.revision)) {
+                    refreshReviewCount()
+                } else {
+                    reduce { copy(reviewCount = latest?.counts?.totalCount ?: page.totalCount) }
+                }
             },
         )
     }

@@ -10,6 +10,7 @@ data class Review(
     val body: String,
     val createdAt: String,
     val imageUrls: List<String> = emptyList(),
+    val images: List<MyReviewPhoto> = emptyList(),
     val author: ReviewAuthor = ReviewAuthor("", ""),
     val moderationStatus: ReviewModerationStatus = ReviewModerationStatus.PUBLISHED,
     val isPublic: Boolean = true,

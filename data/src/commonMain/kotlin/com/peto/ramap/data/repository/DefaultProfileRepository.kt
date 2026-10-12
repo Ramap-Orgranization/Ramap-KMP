@@ -3,11 +3,13 @@ package com.peto.ramap.data.repository
 import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.data.datasource.profile.ProfileDataSource
 import com.peto.ramap.data.model.ProfileResponse
+import com.peto.ramap.data.store.DefaultReviewChangeStore
 import com.peto.ramap.domain.model.profile.AccountProfile
 import com.peto.ramap.domain.model.profile.ProfileDraft
 import com.peto.ramap.domain.model.profile.ProfileImage
 import com.peto.ramap.domain.model.profile.ProfileNickname
 import com.peto.ramap.domain.model.profile.ProfileVisibility
+import com.peto.ramap.domain.model.review.change.ReviewChange
 import com.peto.ramap.domain.repository.ProfileRepository
 import com.peto.ramap.network.execute.invokeRequest
 import io.github.jan.supabase.exceptions.RestException
@@ -22,6 +24,7 @@ import kotlin.uuid.Uuid
 
 internal class DefaultProfileRepository(
     private val dataSource: ProfileDataSource,
+    private val changes: DefaultReviewChangeStore,
     private val currentTime: () -> Instant = { Clock.System.now() },
 ) : ProfileRepository {
     override val sessionUserIds = dataSource.sessionUserIds
@@ -56,16 +59,20 @@ internal class DefaultProfileRepository(
     override suspend fun updateProfileVisibility(isPublic: Boolean): RamapResult<AccountProfile> =
         invokeRequest {
             val userId = requireNotNull(dataSource.currentUserId()) { ERROR_MISSING_AUTHENTICATED_USER }
+            val epoch = changes.synchronizeSession()
             val response = dataSource.updateProfileVisibility(isPublic)
             check(response.userId == userId) { ERROR_MISMATCHED_PROFILE_OWNER }
+            changes.publish(ReviewChange.AccessChanged(userId), epoch)
             accountProfile(userId, response, tolerateAvatarSigningFailure = true)
         }
 
     override suspend fun updateProfileVisibility(visibility: ProfileVisibility): RamapResult<AccountProfile> =
         invokeRequest {
             val userId = requireNotNull(dataSource.currentUserId()) { ERROR_MISSING_AUTHENTICATED_USER }
+            val epoch = changes.synchronizeSession()
             val response = dataSource.updateProfileVisibility(visibility)
             check(response.userId == userId) { ERROR_MISMATCHED_PROFILE_OWNER }
+            changes.publish(ReviewChange.AccessChanged(userId), epoch)
             accountProfile(userId, response, tolerateAvatarSigningFailure = true)
         }
 

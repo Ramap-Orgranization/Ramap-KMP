@@ -1,5 +1,6 @@
 package com.peto.ramap.data.model
 
+import com.peto.ramap.domain.model.community.ReviewAuthor
 import com.peto.ramap.domain.model.community.ReviewModerationStatus
 import com.peto.ramap.domain.model.review.MyReview
 import com.peto.ramap.domain.model.review.MyReviewPhoto
@@ -10,6 +11,8 @@ import kotlinx.serialization.Transient
 @Serializable
 internal data class MyReviewResponse(
     val id: String,
+    @SerialName("user_id") val userId: String = "",
+    val nickname: String = "",
     @SerialName("shop_id") val shopId: String,
     @SerialName("shop_name") val shopName: String,
     @SerialName("avatar_path") val authorAvatarPath: String? = null,
@@ -21,8 +24,10 @@ internal data class MyReviewResponse(
     @SerialName("is_public") val isPublic: Boolean,
     @SerialName("visit_number") val visitNumber: Int = 1,
     @SerialName("author_review_count") val authorReviewCount: Int = 0,
+    @Transient val imageReferences: List<MyReviewPhoto> = emptyList(),
     @Transient val imageUrls: List<String?> = emptyList(),
     @Transient val authorAvatarUrl: String? = null,
+    @Transient val authorAvatarExpiresAt: kotlin.time.Instant? = null,
 ) {
     fun toDomain(): MyReview =
         MyReview(
@@ -31,7 +36,7 @@ internal data class MyReviewResponse(
             shopName = shopName,
             body = body,
             createdAt = createdAt,
-            images = imagePaths.mapIndexed { index, path -> MyReviewPhoto(imageUrls.getOrNull(index), path) },
+            images = imageReferences.ifEmpty { imagePaths.mapIndexed { index, path -> MyReviewPhoto(imageUrls.getOrNull(index), path) } },
             isPublic = isPublic,
             moderationStatus =
                 ReviewModerationStatus.entries.find { it.name.equals(moderationStatus, ignoreCase = true) }
@@ -40,5 +45,6 @@ internal data class MyReviewResponse(
             authorAvatarUrl = authorAvatarUrl,
             visitNumber = visitNumber,
             authorReviewCount = authorReviewCount,
+            author = ReviewAuthor(userId, nickname, authorAvatarUrl, authorReviewCount, authorAvatarPath, authorAvatarExpiresAt),
         )
 }

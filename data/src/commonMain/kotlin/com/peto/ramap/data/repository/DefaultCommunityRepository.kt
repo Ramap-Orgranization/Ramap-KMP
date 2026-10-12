@@ -3,6 +3,7 @@ package com.peto.ramap.data.repository
 import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.data.datasource.community.CommunityDataSource
 import com.peto.ramap.data.datasource.shop.RamenShopDataSource
+import com.peto.ramap.data.store.DefaultReviewChangeStore
 import com.peto.ramap.domain.model.community.BlockedUser
 import com.peto.ramap.domain.model.community.ProfileAccess
 import com.peto.ramap.domain.model.community.ProfileReview
@@ -11,6 +12,7 @@ import com.peto.ramap.domain.model.community.PublicProfile
 import com.peto.ramap.domain.model.community.PublicSavedShopsPage
 import com.peto.ramap.domain.model.community.ReportReason
 import com.peto.ramap.domain.model.review.Review
+import com.peto.ramap.domain.model.review.change.ReviewChange
 import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.domain.repository.CommunityRepository
 import com.peto.ramap.network.execute.invokeRequest
@@ -18,6 +20,7 @@ import com.peto.ramap.network.execute.invokeRequest
 internal class DefaultCommunityRepository(
     private val dataSource: CommunityDataSource,
     private val shopDataSource: RamenShopDataSource,
+    private val changes: DefaultReviewChangeStore,
 ) : CommunityRepository {
     override suspend fun fetchMyCommunityProfile(): RamapResult<PublicProfile?> = invokeRequest { dataSource.fetchMyCommunityProfile().toDomain() }
 
@@ -99,7 +102,9 @@ internal class DefaultCommunityRepository(
         blocked: Boolean,
     ): RamapResult<Unit> =
         invokeRequest {
+            val epoch = changes.synchronizeSession()
             dataSource.changeBlock(userId, blocked)
+            changes.publish(ReviewChange.AccessChanged(userId), epoch)
         }
 
     private companion object {
