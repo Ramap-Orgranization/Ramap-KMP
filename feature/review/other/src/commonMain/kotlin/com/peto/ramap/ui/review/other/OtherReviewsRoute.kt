@@ -1,5 +1,7 @@
 package com.peto.ramap.ui.review.other
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,6 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
@@ -73,6 +76,7 @@ import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.bookmarked_shops_empty_title
+import ramap.shared.generated.resources.bookmarked_shops_toggle
 import ramap.shared.generated.resources.follow_content_private
 import ramap.shared.generated.resources.follow_followers
 import ramap.shared.generated.resources.follow_following
@@ -83,6 +87,7 @@ import ramap.shared.generated.resources.review_profile_private
 import ramap.shared.generated.resources.review_profile_title
 import ramap.shared.generated.resources.review_profile_unavailable
 import ramap.shared.generated.resources.shop_review_empty
+import ramap.shared.generated.resources.shop_review_title
 
 @Composable
 fun OtherReviewsRoute(
@@ -232,6 +237,12 @@ internal fun OtherReviewsContent(
                     ProfileFollowCounts(
                         followerCount = state.profileAccess.followerCount,
                         followingCount = state.profileAccess.followingCount,
+                    )
+                    ProfileStatsCard(
+                        reviewCount = state.reviewCount,
+                        savedShopCount = state.savedShopCount,
+                        onReviewClick = { onIntent(OtherReviewsIntent.SelectTab(OtherReviewsTab.Reviews)) },
+                        onSavedShopClick = { onIntent(OtherReviewsIntent.SelectTab(OtherReviewsTab.SavedShops)) },
                     )
                 }
                 stickyHeader(key = "profile-tabs") {
@@ -603,6 +614,71 @@ private fun ProfileFollowCounts(
                 count = followingCount,
                 label = stringResource(Res.string.follow_following),
                 modifier = Modifier.weight(1f),
+            )
+        }
+    }
+}
+
+@Composable
+private fun ProfileStatsCard(
+    reviewCount: Long?,
+    savedShopCount: Long?,
+    onReviewClick: () -> Unit,
+    onSavedShopClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp, vertical = 12.dp)
+                .background(CommonColor.White, RoundedCornerShape(16.dp))
+                .border(1.dp, GrayColor.C100, RoundedCornerShape(16.dp))
+                .padding(vertical = 16.dp),
+        horizontalArrangement = Arrangement.SpaceEvenly,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(
+            modifier =
+                Modifier
+                    .weight(1f)
+                    .noRippleClickable(onClick = onReviewClick),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            AppText(
+                text = reviewCount?.toString().orEmpty(),
+                style = AppTextStyle.T1,
+                color = GrayColor.C500,
+            )
+            AppText(
+                text = stringResource(Res.string.shop_review_title),
+                style = AppTextStyle.C1,
+                color = GrayColor.C400,
+            )
+        }
+        VerticalDivider(
+            modifier = Modifier.height(24.dp),
+            thickness = 1.dp,
+            color = GrayColor.C100,
+        )
+        Column(
+            modifier =
+                Modifier
+                    .weight(1f)
+                    .noRippleClickable(onClick = onSavedShopClick),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            AppText(
+                text = savedShopCount?.toString().orEmpty(),
+                style = AppTextStyle.T1,
+                color = GrayColor.C500,
+            )
+            AppText(
+                text = stringResource(Res.string.bookmarked_shops_toggle),
+                style = AppTextStyle.C1,
+                color = GrayColor.C400,
             )
         }
     }

@@ -41,6 +41,7 @@ class OtherReviewsViewModelTest {
         coroutinesTest {
             val community = FakeOtherReviewsCommunity()
             community.reviews = (1..23).map(::review)
+            community.reviewCount = 23L
             val viewModel = OtherReviewsViewModel(community, FakeProfileRepository(), FakeFollowRepository())
             runCurrent()
 
@@ -88,6 +89,7 @@ class OtherReviewsViewModelTest {
         coroutinesTest {
             val community = FakeOtherReviewsCommunity()
             community.savedShops = (1..23).map { ramenShopFixture(id = "shop-$it") }
+            community.savedShopCount = 23L
             val viewModel = OtherReviewsViewModel(community, FakeProfileRepository(), FakeFollowRepository())
             runCurrent()
 
@@ -198,6 +200,7 @@ class OtherReviewsViewModelTest {
         coroutinesTest {
             val community = FakeOtherReviewsCommunity()
             community.reviews = (1..23).map(::review)
+            community.reviewCount = 23L
             val viewModel = OtherReviewsViewModel(community, FakeProfileRepository(), FakeFollowRepository())
             runCurrent()
             viewModel.dispatch(OtherReviewsIntent.OpenProfile("author"))

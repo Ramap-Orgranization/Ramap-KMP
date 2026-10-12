@@ -3,7 +3,6 @@ package com.peto.ramap.ui.main.map.shop
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -15,7 +14,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.peto.ramap.designsystem.bottomsheet.CommonBottomSheet
 import com.peto.ramap.designsystem.bottomsheet.CommonBottomSheetConfig
-import com.peto.ramap.designsystem.button.AppFloatingActionButton
+import com.peto.ramap.designsystem.button.AppExtendedFloatingActionButton
 import com.peto.ramap.designsystem.component.LoadErrorContent
 import com.peto.ramap.designsystem.dialog.CommonDialog
 import com.peto.ramap.designsystem.indicator.RamenLoadingIndicator
@@ -27,7 +26,6 @@ import com.peto.ramap.domain.model.report.ShopInformationField
 import com.peto.ramap.domain.model.review.Review
 import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.theme.AppTextStyle
-import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.ui.main.map.dialog.ReportDialog
 import com.peto.ramap.ui.main.map.shop.model.RamenShopOverviewActions
@@ -141,18 +139,14 @@ fun ShopDetailContent(
             floatingAction =
                 mapAction?.let { showOnMap ->
                     {
-                        AppFloatingActionButton(
+                        AppExtendedFloatingActionButton(
+                            text = stringResource(Res.string.ranking_show_shop_on_map),
                             icon = Res.drawable.ic_map_outline,
-                            contentDescription = stringResource(Res.string.ranking_show_shop_on_map),
                             onClick = showOnMap,
-                            modifier = Modifier.size(48.dp),
-                            containerColor = GrayColor.C500,
-                            iconModifier = Modifier.size(24.dp),
-                            iconTint = CommonColor.White,
                         )
                     }
                 },
-        ) { listState, handleDragModifier ->
+        ) { scrollState ->
             when (state) {
                 is ShopDetailSheetUiState.Loading ->
                     RamenLoadingIndicator(
@@ -235,8 +229,7 @@ fun ShopDetailContent(
                     RamenShopOverview(
                         uiState = overviewUiState,
                         actions = overviewActions,
-                        listState = listState,
-                        dragAreaModifier = handleDragModifier,
+                        reviewScrollState = scrollState,
                         bottomContentPadding = if (mapAction != null) 50.dp else 0.dp,
                     )
                 }

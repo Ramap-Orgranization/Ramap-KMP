@@ -1,5 +1,6 @@
 package com.peto.ramap.ui.main.map.shop
 
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.Orientation
@@ -20,9 +21,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.BottomSheetScaffold
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.SheetValue
@@ -57,10 +58,10 @@ fun ShopDetailBottomSheet(
     isNavigationBarPadded: Boolean,
     onDismissRequest: () -> Unit,
     floatingAction: (@Composable () -> Unit)? = null,
-    content: @Composable ColumnScope.(LazyListState, Modifier) -> Unit,
+    content: @Composable ColumnScope.(ScrollState) -> Unit,
 ) {
     key(shopId) {
-        val listState = rememberLazyListState()
+        val scrollState = rememberScrollState()
         val bottomSheetState =
             rememberStandardBottomSheetState(
                 initialValue = SheetValue.PartiallyExpanded,
@@ -144,23 +145,28 @@ fun ShopDetailBottomSheet(
                                 .height(maxHeight)
                                 .run {
                                     if (isNavigationBarPadded) navigationBarsPadding() else this
-                                },
+                                }.verticalScroll(scrollState),
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
-                        content(listState, handleDragModifier)
+                        ShopDetailSheetHandle(dragModifier = handleDragModifier)
+                        content(scrollState)
                     }
                 },
                 content = {},
             )
 
-            if (floatingAction != null) {
+            val isFullyExpanded =
+                bottomSheetState.currentValue == SheetValue.Expanded &&
+                    bottomSheetState.targetValue == SheetValue.Expanded &&
+                    !bottomSheetState.isAnimationRunning
+            if (floatingAction != null && isFullyExpanded) {
                 Box(
                     modifier =
                         Modifier
-                            .align(Alignment.BottomEnd)
+                            .align(Alignment.BottomCenter)
                             .run {
                                 if (isNavigationBarPadded) navigationBarsPadding() else this
-                            }.padding(end = 20.dp, bottom = 12.dp)
+                            }.padding(bottom = 12.dp)
                             .graphicsLayer { translationY = handleDragOffsetPx },
                 ) {
                     floatingAction()
@@ -171,7 +177,7 @@ fun ShopDetailBottomSheet(
 }
 
 @Composable
-internal fun ShopDetailSheetHandle(dragModifier: Modifier) {
+private fun ShopDetailSheetHandle(dragModifier: Modifier) {
     Box(
         modifier =
             Modifier
