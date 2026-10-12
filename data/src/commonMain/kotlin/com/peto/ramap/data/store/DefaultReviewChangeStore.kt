@@ -32,8 +32,8 @@ internal class DefaultReviewChangeStore(
     }
 
     fun synchronizeSession(): Long {
-        val userId = currentUserId()
         state.update { current ->
+            val userId = currentUserId()
             if (current.userId == userId) current else ReviewChangeJournal(epoch = current.epoch + 1, userId = userId)
         }
         return state.value.epoch
