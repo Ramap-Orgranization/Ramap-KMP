@@ -1,7 +1,9 @@
 package com.peto.ramap.ui.review.my
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -16,6 +18,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
@@ -23,12 +26,12 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.peto.ramap.designsystem.button.AppButton
 import com.peto.ramap.designsystem.dialog.CommonDialog
 import com.peto.ramap.designsystem.indicator.RamenLoadingIndicator
-import com.peto.ramap.designsystem.review.ReviewCard
 import com.peto.ramap.designsystem.review.ReviewCardActions
-import com.peto.ramap.designsystem.review.ReviewCardHeader
 import com.peto.ramap.designsystem.review.ReviewPage
+import com.peto.ramap.designsystem.review.ShopReviewCard
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.designsystem.toast.ToastManager
+import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.model.review.MyReview
 import com.peto.ramap.domain.model.review.MyReviewVisibility
 import com.peto.ramap.domain.model.review.MyReviewsPage
@@ -40,7 +43,6 @@ import com.peto.ramap.theme.SystemColor
 import com.peto.ramap.ui.base.ObserveAsEvents
 import com.peto.ramap.ui.loading.LoadState
 import com.peto.ramap.ui.paging.ObserveLoadMoreNearListEnd
-import com.peto.ramap.ui.refresh.RefreshOnReturnEffect
 import com.peto.ramap.ui.review.my.component.MyReviewCardSkeleton
 import com.peto.ramap.ui.review.my.component.MyReviewEmpty
 import com.peto.ramap.ui.review.my.component.MyReviewFilterHeader
@@ -66,42 +68,53 @@ fun MyReviewsRoute(
     onBack: () -> Unit,
     onShowShop: (String) -> Unit,
     onEditReview: (String, String) -> Unit,
+    onEventNavigate: (ShopEvent) -> Unit,
+    shopDetailContent: @Composable (String, () -> Unit, (String) -> Unit, (ShopEvent) -> Unit) -> Unit,
+    isUncovered: Boolean = true,
     toastManager: ToastManager = koinInject(),
     viewModel: MyReviewsViewModel = koinViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-    var returningFromReviewScreen by rememberSaveable { mutableStateOf(false) }
-    RefreshOnReturnEffect {
-        if (returningFromReviewScreen) {
-            returningFromReviewScreen = false
-            viewModel.dispatch(MyReviewsIntent.ReturnedToScreen)
-        }
-    }
+    var selectedShopId by rememberSaveable(state.userId) { mutableStateOf<String?>(null) }
     ObserveAsEvents(viewModel.sideEffect) { effect ->
         when (effect) {
             is MyReviewsSideEffect.ShowToast -> toastManager.show(effect.data)
         }
     }
-    MyReviewsContent(
-        state = state,
-        onBack = onBack,
-        onShowShop = { shopId ->
-            returningFromReviewScreen = true
-            onShowShop(shopId)
-        },
-        onEditReview = { shopId, reviewId ->
-            returningFromReviewScreen = true
-            onEditReview(shopId, reviewId)
-        },
-        onIntent = viewModel::dispatch,
-    )
+    Box(modifier = Modifier.fillMaxSize()) {
+        MyReviewsContent(
+            state = state,
+            onBack = onBack,
+            onOpenShopDetail = { selectedShopId = it },
+            onEditReview = { shopId, reviewId ->
+                onEditReview(shopId, reviewId)
+            },
+            onIntent = viewModel::dispatch,
+        )
+        selectedShopId?.let { shopId ->
+            shopDetailContent(
+                shopId,
+                {
+                    selectedShopId = null
+                },
+                { targetShopId ->
+                    selectedShopId = null
+                    onShowShop(targetShopId)
+                },
+                { event ->
+                    selectedShopId = null
+                    onEventNavigate(event)
+                },
+            )
+        }
+    }
 }
 
 @Composable
 fun MyReviewsContent(
     state: MyReviewsUiState,
     onBack: () -> Unit,
-    onShowShop: (String) -> Unit,
+    onOpenShopDetail: (String) -> Unit,
     onEditReview: (String, String) -> Unit,
     onIntent: (MyReviewsIntent) -> Unit,
     modifier: Modifier = Modifier,
@@ -182,20 +195,15 @@ fun MyReviewsContent(
                 ) { review ->
                     val reviewActions =
                         ReviewCardActions(
-                            onShopClick = { onShowShop(review.shopId) },
                             onEdit = { onEditReview(review.shopId, review.id) },
                             onDelete = { deleteTargetReview = review },
                         )
-                    ReviewCard(
+                    ShopReviewCard(
                         review = review.toReview(),
+                        shop = review.shop,
+                        shopName = review.shopName,
+                        onOpenShopDetail = onOpenShopDetail,
                         actions = reviewActions,
-                        header = {
-                            ReviewCardHeader(
-                                review = review.toReview(),
-                                actions = reviewActions,
-                                actionsEnabled = state.actingReviewId == null,
-                            )
-                        },
                         actionsEnabled = state.actingReviewId == null,
                     )
                 }
@@ -231,12 +239,14 @@ fun MyReviewsContent(
             text = stringResource(Res.string.review_delete_confirm_title),
             style = AppTextStyle.T1,
             color = GrayColor.C500,
+            textAlign = TextAlign.Center,
         )
         AppText(
             text = stringResource(Res.string.review_delete_confirm),
             modifier = Modifier.padding(top = 8.dp),
             style = AppTextStyle.B2,
             color = GrayColor.C500,
+            textAlign = TextAlign.Center,
         )
     }
 }
@@ -261,7 +271,7 @@ private fun MyReviewsContentPreview(
                     loaded = true,
                 ),
             onBack = {},
-            onShowShop = {},
+            onOpenShopDetail = {},
             onEditReview = { _, _ -> },
             onIntent = {},
         )
@@ -280,7 +290,7 @@ private fun MyReviewsContentLoadingPreview() {
                     loadState = LoadState.loading(MyReviewsLoadKey.Page),
                 ),
             onBack = {},
-            onShowShop = {},
+            onOpenShopDetail = {},
             onEditReview = { _, _ -> },
             onIntent = {},
         )
@@ -302,7 +312,7 @@ private fun MyReviewsContentEmptyPreview() {
                     loaded = true,
                 ),
             onBack = {},
-            onShowShop = {},
+            onOpenShopDetail = {},
             onEditReview = { _, _ -> },
             onIntent = {},
         )

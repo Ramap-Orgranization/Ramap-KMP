@@ -22,6 +22,10 @@ class MyReviewsModuleTest {
                     modules(
                         reviewMyModule,
                         module {
+                            single<com.peto.ramap.domain.store.ReviewChangeStore> {
+                                com.peto.ramap.fake
+                                    .FakeReviewChangeStore()
+                            }
                             single<ReviewRepository> { FakeOwnerReviews() }
                             single<ProfileRepository> { FakeProfileRepository() }
                         },

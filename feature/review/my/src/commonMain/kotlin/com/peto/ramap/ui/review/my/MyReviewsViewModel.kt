@@ -7,8 +7,11 @@ import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.review.MyReview
 import com.peto.ramap.domain.model.review.MyReviewVisibility
 import com.peto.ramap.domain.model.review.MyReviewsPage
+import com.peto.ramap.domain.model.review.change.ReviewChange
+import com.peto.ramap.domain.model.review.change.ReviewChangeReducer
 import com.peto.ramap.domain.repository.ProfileRepository
 import com.peto.ramap.domain.repository.ReviewRepository
+import com.peto.ramap.domain.store.ReviewChangeStore
 import com.peto.ramap.ui.base.BaseViewModel
 import com.peto.ramap.ui.review.my.contract.MyReviewsIntent
 import com.peto.ramap.ui.review.my.contract.MyReviewsLoadKey
@@ -23,14 +26,68 @@ import ramap.shared.generated.resources.review_delete_failed
 class MyReviewsViewModel(
     private val reviews: ReviewRepository,
     private val profiles: ProfileRepository,
+    private val changes: ReviewChangeStore,
 ) : BaseViewModel<MyReviewsUiState, MyReviewsIntent, MyReviewsSideEffect>(MyReviewsUiState()) {
+    private var generation = 0L
+    private var epoch = changes.journal.value.epoch
+    private var revision = changes.journal.value.revision
+
     init {
+        observeChanges()
         observeSessionUserIds()
+    }
+
+    private fun observeChanges() {
+        viewModelScope.launch {
+            changes.journal.collect { journal ->
+                if (epoch != journal.epoch) {
+                    epoch = journal.epoch
+                    revision = journal.revision
+                    return@collect
+                }
+                if (journal.hasGapAfter(revision)) {
+                    revision = journal.revision
+                    if (currentState.userId != null) loadPage(reset = true)
+                    return@collect
+                }
+                for (record in journal.changesAfter(revision)) {
+                    val change = record.change
+                    if (change is ReviewChange.AccessChanged && change.userId == currentState.userId) {
+                        reduce { copy(reviews = emptyList()) }
+                        loadPage(reset = true)
+                    } else if (change is ReviewChange.Written && change.userId == currentState.userId || change is ReviewChange.Hydrated) {
+                        reduce {
+                            val updated = ReviewChangeReducer.ownerRows(reviews, change, filter, hasMore)
+                            val counts = (change as? ReviewChange.Written)?.counts
+                            val total = counts?.totalCount ?: totalCount
+                            val public = counts?.publicCount ?: publicCount
+                            val private = counts?.privateCount ?: privateCount
+                            val filtered =
+                                when (filter) {
+                                    MyReviewVisibility.ALL -> total
+                                    MyReviewVisibility.PUBLIC -> public
+                                    MyReviewVisibility.PRIVATE -> private
+                                }
+                            copy(
+                                reviews = updated,
+                                totalCount = total,
+                                publicCount = public,
+                                privateCount = private,
+                                profileIsPublic = counts?.profileIsPublic ?: profileIsPublic,
+                                hasMore = updated.size < filtered,
+                            )
+                        }
+                    }
+                    revision = record.revision
+                }
+            }
+        }
     }
 
     private fun observeSessionUserIds() {
         viewModelScope.launch {
             profiles.sessionUserIds.distinctUntilChanged().collect { userId ->
+                generation++
                 cancelTask(PAGE_TASK)
                 reduce { MyReviewsUiState(userId = userId) }
                 if (userId != null) loadPage(reset = true)
@@ -42,7 +99,7 @@ class MyReviewsViewModel(
         when (intent) {
             is MyReviewsIntent.SelectFilter -> handleSelectFilter(intent.filter)
             MyReviewsIntent.Retry -> handleRetry()
-            MyReviewsIntent.ReturnedToScreen -> loadPage(reset = true)
+            MyReviewsIntent.ReturnedToScreen -> Unit
             MyReviewsIntent.LoadMore -> handleLoadMore()
             is MyReviewsIntent.DeleteReview -> handleDeleteReview(intent.reviewId)
         }
@@ -78,10 +135,9 @@ class MyReviewsViewModel(
     }
 
     private fun deleteReview(reviewId: String) {
-        val review = currentState.reviews.firstOrNull { it.id == reviewId } ?: return
+        if (currentState.reviews.none { it.id == reviewId }) return
         val actingUserId = currentState.userId ?: return
         if (currentState.actingReviewId != null) return
-        cancelTask(PAGE_TASK)
 
         launchResultTask(
             taskKey = DELETE_TASK,
@@ -90,7 +146,7 @@ class MyReviewsViewModel(
             request = { reviews.deleteReview(reviewId) },
             onSuccess = {
                 if (currentState.userId == actingUserId) {
-                    handleDeleteSuccess(reviewId = reviewId, review = review)
+                    reduce { copy(actingReviewId = null) }
                 }
             },
             onError = {
@@ -102,13 +158,6 @@ class MyReviewsViewModel(
                 if (actingReviewId == reviewId) copy(actingReviewId = null) else this
             },
         )
-    }
-
-    private fun handleDeleteSuccess(
-        reviewId: String,
-        review: MyReview,
-    ) {
-        reduce { applyDeleteSuccess(reviewId = reviewId, review = review) }
     }
 
     private suspend fun handleDeleteError() {
@@ -124,6 +173,8 @@ class MyReviewsViewModel(
         val filter = currentState.filter
         val offset = if (reset) 0L else currentState.reviews.size.toLong()
         val targetSize = if (reset) maxOf(PAGE_SIZE, currentState.reviews.size) else PAGE_SIZE
+        val requestedGeneration = ++generation
+        val baseline = changes.journal.value
 
         launchResultTask(
             taskKey = PAGE_TASK,
@@ -131,11 +182,21 @@ class MyReviewsViewModel(
             onStart = { copy(failed = false, failedReset = false) },
             request = { fetchExtent(offset, filter, targetSize) },
             onSuccess = { page ->
+                if (requestedGeneration != generation || userId != currentState.userId || filter != currentState.filter) return@launchResultTask
+                if (baseline.epoch != changes.journal.value.epoch ||
+                    changes.journal.value.hasGapAfter(baseline.revision) ||
+                    changes.journal.value
+                        .changesAfter(baseline.revision)
+                        .any { (it.change as? ReviewChange.Written)?.userId == userId || (it.change as? ReviewChange.AccessChanged)?.userId == userId }
+                ) {
+                    loadPage(reset)
+                    return@launchResultTask
+                }
                 if (userId == currentState.userId && filter == currentState.filter) {
                     handlePageSuccess(page = page, reset = reset)
                 }
             },
-            onError = { handlePageError(reset = reset) },
+            onError = { if (requestedGeneration == generation) handlePageError(reset = reset) },
         )
     }
 
