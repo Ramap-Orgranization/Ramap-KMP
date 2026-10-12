@@ -35,6 +35,7 @@ class OtherReviewsViewModel(
     private val profiles: ProfileRepository,
     private val follows: FollowRepository,
     private val changes: ReviewChangeStore,
+    private val reviewChangeReducer: ReviewChangeReducer,
 ) : BaseViewModel<OtherReviewsUiState, OtherReviewsIntent, OtherReviewsEffect>(OtherReviewsUiState()) {
     private var generation = 0L
 
@@ -72,8 +73,8 @@ class OtherReviewsViewModel(
                             if (!access.canReadReviews) return@reduce this
                             val metadata = reviews.associateBy { it.review.id }
                             val patched =
-                                ReviewChangeReducer.patch(reviews.map { it.review }, change, hasMore) { receipt, review ->
-                                    receipt.userId == targetId && (targetId == currentUserId || ReviewChangeReducer.publicPublished(review))
+                                reviewChangeReducer.patch(reviews.map { it.review }, change, hasMore) { receipt, review ->
+                                    receipt.userId == targetId && (targetId == currentUserId || reviewChangeReducer.isPublicPublished(review))
                                 }
                             val ownerCounts = (change as? ReviewChange.Written)?.takeIf { it.userId == targetId }?.counts
                             val count = ownerCounts?.let { if (targetId == currentUserId) it.totalCount else it.publishedCount }
@@ -287,8 +288,8 @@ class OtherReviewsViewModel(
                 var rows = original.reviews.map { it.review }
                 for (record in changes.journal.value.changesAfter(baseline.revision)) {
                     rows =
-                        ReviewChangeReducer.patch(rows, record.change, original.reviews.size == PAGE_SIZE) { receipt, review ->
-                            receipt.userId == userId && (userId == currentState.currentUserId || ReviewChangeReducer.publicPublished(review))
+                        reviewChangeReducer.patch(rows, record.change, original.reviews.size == PAGE_SIZE) { receipt, review ->
+                            receipt.userId == userId && (userId == currentState.currentUserId || reviewChangeReducer.isPublicPublished(review))
                         }
                 }
                 val page = original.copy(reviews = rows.map { ProfileReview(it, metadata[it.id]?.shop) })
