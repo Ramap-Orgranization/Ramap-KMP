@@ -72,6 +72,8 @@ Commit messages follow `<type>: <subject>` and are normally written in Korean. C
 
 PR titles should summarize the work in Korean without `feat:` or `fix:` prefixes. Fill out `.github/PULL_REQUEST_TEMPLATE.md`, including overview, change list, test results, related issues, and screenshots or recordings for UI changes.
 
+Follow the `Small PRs` section in `.agents/skills/pr/SKILL.md` for PR scope, commit grouping, branch dependencies, and merge-order reporting.
+
 ## Security & Configuration Tips
 
 Supabase values are injected through BuildKonfig from `SUPABASE_URL` and `SUPABASE_ANON_KEY`, or from `local.properties` keys `supabase.url` and `supabase.anon_key`. Do not commit secrets or machine-specific local configuration.

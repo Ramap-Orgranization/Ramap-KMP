@@ -97,3 +97,13 @@ last_verified: 2026-10-13
 - 반영: [유지보수 정책](maintenance.md), [PR 템플릿](../../.github/PULL_REQUEST_TEMPLATE.md).
 - 적용 상태: 이 문서와 PR template, repository instructions/skills에 procedure가 반영됐습니다. 구현 규칙은 소유 Ramap 스킬에 유지합니다.
 - 대체한 결정: 없음.
+
+## DEC-0010 변경 목적별 작은 PR과 의존 관계
+
+- 기록일: 2026-10-13 (Asia/Seoul).
+- 결정: PR 분리와 의존 관계의 기준은 [PR 스킬](../../.agents/skills/pr/SKILL.md#small-prs)이 소유하고, 커밋 스킬·저장소 지침·PR 템플릿에서 연결합니다.
+- 이유: 여러 책임의 변경을 목적별로 검토하고 순서대로 반영할 수 있도록 이번 리뷰 개선의 분리 방식을 이후 작업에도 적용합니다.
+- 근거: 사용자가 리뷰 개선을 작은 PR 10개로 나눈 결과를 확인한 뒤 같은 분리 규칙을 추가하도록 명시적으로 요청했습니다. 구체적인 적용 사례는 [PR #266](https://github.com/Ramap-Orgranization/Ramap-KMP/pull/266)부터 [PR #275](https://github.com/Ramap-Orgranization/Ramap-KMP/pull/275)입니다.
+- 반영: [PR 스킬](../../.agents/skills/pr/SKILL.md#small-prs), [커밋 스킬](../../.agents/skills/commit/SKILL.md), [AGENTS.md](../../AGENTS.md), [PR 템플릿](../../.github/PULL_REQUEST_TEMPLATE.md).
+- 적용 상태: 소유 스킬과 연결 지침에 반영했습니다. 문서 갱신 시점은 DEC-0009를 유지하며 코드 변경의 검증 결과는 각 PR의 실제 기준 커밋으로 구분합니다.
+- 대체한 결정: 없음.
