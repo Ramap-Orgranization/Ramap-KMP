@@ -7,6 +7,7 @@ plugins {
 kotlin {
     sourceSets.commonTest.dependencies {
         implementation(projects.core.testing)
+        implementation(libs.ktor.client.mock)
     }
     sourceSets.commonMain.dependencies {
         api(projects.domain)

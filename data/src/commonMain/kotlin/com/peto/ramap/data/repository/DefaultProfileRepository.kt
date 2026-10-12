@@ -174,7 +174,7 @@ internal class DefaultProfileRepository(
         if (currentCache != null && currentCache.matches(userId, path, currentTime())) {
             return currentCache.url
         }
-        val url =
+        val signedImage =
             try {
                 dataSource.signedPhotoUrl(userId, path)
             } catch (exception: CancellationException) {
@@ -183,8 +183,8 @@ internal class DefaultProfileRepository(
                 if (!tolerateFailure) throw exception
                 return null
             }
-        avatarCache = AvatarCache(userId = userId, path = path, url = url, signedAt = currentTime())
-        return url
+        avatarCache = AvatarCache(userId = userId, path = path, url = signedImage.url, expiresAt = signedImage.expiresAt)
+        return signedImage.url
     }
 
     private fun clearAvatarCache() {

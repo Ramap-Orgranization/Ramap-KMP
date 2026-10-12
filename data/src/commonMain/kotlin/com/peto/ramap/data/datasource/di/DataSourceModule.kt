@@ -4,6 +4,8 @@ import com.peto.ramap.data.datasource.appnotice.AppNoticeDataSource
 import com.peto.ramap.data.datasource.appnotice.RemoteAppNoticeDataSource
 import com.peto.ramap.data.datasource.community.CommunityDataSource
 import com.peto.ramap.data.datasource.community.RemoteCommunityDataSource
+import com.peto.ramap.data.datasource.image.ImageUrlDataSource
+import com.peto.ramap.data.datasource.image.RemoteImageUrlDataSource
 import com.peto.ramap.data.datasource.importation.ImportationDataSource
 import com.peto.ramap.data.datasource.importation.KakaoImportationDataSource
 import com.peto.ramap.data.datasource.importation.NaverImportationDataSource
@@ -38,9 +40,10 @@ import org.koin.dsl.module
 
 val dataSourceModule =
     module {
-        single<ProfileDataSource> { RemoteProfileDataSource(get()) }
-        single<CommunityDataSource> { RemoteCommunityDataSource(get(), get()) }
-        single<ReviewDataSource> { RemoteReviewDataSource(get()) }
+        single<ImageUrlDataSource> { RemoteImageUrlDataSource(get()) }
+        single<ProfileDataSource> { RemoteProfileDataSource(get(), get()) }
+        single<CommunityDataSource> { RemoteCommunityDataSource(get(), get(), get()) }
+        single<ReviewDataSource> { RemoteReviewDataSource(get(), get()) }
         single { NaverImportationDataSource(get(), get<HttpClient>()) }
         single { KakaoImportationDataSource(get()) }
         single<ImportationDataSource> { RemoteImportationDataSource(get(), get()) }
