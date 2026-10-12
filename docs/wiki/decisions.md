@@ -27,3 +27,14 @@ last_verified: 2026-10-11
 - 반영: 로컬 `ramap-architecture`, `ramap-module-structure`, `ramap-design-patterns` 스킬, [아키텍처](architecture.md), [모듈 구조](module-structure.md), [디자인시스템](design-system.md), [승격한 후보](inbox/source-alignment.md).
 - 적용 상태: 소유 스킬과 위키에 반영했습니다. 앱 코드의 동작과 모듈 배치는 변경하지 않았습니다.
 - 대체한 결정: 없음. DEC-0001의 스킬 소유권 원칙을 유지하며 초기 후보를 해소합니다.
+
+
+## DEC-0003 이미지 링크 기본 배치 발급 채택
+
+- 기록일: 2026-10-12 (Asia/Seoul).
+- 결정: 프로필·리뷰 이미지 URL은 경로 중복 제거 후 버킷별 Storage 기본 배치 API로 발급한다. 앱의 이미지 발급에서 Edge·Redis 의존성을 제외하고 호출자의 JWT와 기존 RLS를 유지한다.
+- 이유: 기본 배치와 Redis 없는 Edge 배치가 현재 공유 캐시보다 빨랐으며, 캐시 적중에도 이미지별 권한 조회가 남아 있었다. 추가 운영 복잡성을 정당화할 이득이 확인되지 않았다.
+- 근거: 사용자의 “Redis 빼고 1번 기본 배치 발급 방식으로 앱 수정…기존 권한 검증 유지…적용 후 성능 비교” 요청, [대안 비교](../performance/image-url-cache/CONTROLLED-COMPARISON.md), [Kotlin 적용 후 비교](../performance/image-url-cache/APPLIED-BATCH.md).
+- 반영: [이미지 발급 탐색](image-url-cache.md), [백엔드](backend.md), [처리 후보](inbox/signed-image-cache-evidence.md), 공통 데이터 소스와 테스트.
+- 적용 상태: 로컬 앱 코드 적용 및 검증 완료. Kotlin HTTP 측정 p50 669.756→192.056ms. 앱 릴리스·실기기 UI·Disk IO 개선은 미검증. 후속 사용자 요청과 삭제 확인에 따라 미사용 운영 캐시·연결 확인·임시 벤치마크 함수, Upstash DB, 전용 Secrets를 제거했다. [정리 근거와 범위](../performance/image-url-cache/CLEANUP.md), 과거 소스와 측정 원본은 보존한다.
+- 대체한 결정: 없음. 기존 Redis 구현은 확정된 팀 정책으로 등록되지 않았다.

@@ -1,0 +1,41 @@
+{
+  "recordedAt": "2026-10-12T01:30:24.083531+00:00",
+  "experiment": {
+    "name": "image-url-benchmark-f7003c2e",
+    "measuredVersion": 1,
+    "measuredDeploymentSha256": "af843bba4566e9f8743259571f397884335b157e37524fd4bea58f9916c18df1",
+    "verifyJwt": true
+  },
+  "logCorroboration": {
+    "source": "Supabase query_logs / function_logs.event_message",
+    "start": "2026-10-12T01:20:07.380Z",
+    "end": "2026-10-12T01:25:19.389Z",
+    "filter": "Exact requestId set from the 93 Edge responses, no direct batch requests",
+    "logRows": 93,
+    "distinctRequestIds": 93,
+    "issued": 1188,
+    "cacheHits": 792,
+    "responseMetricsAgree": true
+  },
+  "production": {
+    "name": "image-signed-urls",
+    "version": 2,
+    "deploymentSha256": "585518cb77b64d519a0766c1639d45dc37f1c7c3b3eaaae6591f735a2ef73075",
+    "originalLocalModulesUnchanged": true
+  },
+  "cleanup": {
+    "deleted": false,
+    "deleteBlocker": "Supabase CLI LegacyPlatformAuthRequiredError; no local management token",
+    "replacementVersion": 2,
+    "replacementDeploymentSha256": "a10ef5a83c6128e323c126e66fcd16834e81b1f14167cfc417247d9c09003934",
+    "statusInManagementList": "ACTIVE",
+    "behavior": "Always return HTTP 410; current source has no Storage/Redis access",
+    "verifiedHttpStatus": 410,
+    "verifiedRemoteSource": true,
+    "privateDeploymentDirectoryRemoved": true,
+    "redisNamespaceIsolated": true,
+    "redisTtlUpperBoundSeconds": 240,
+    "redisExpiryObserved": false,
+    "latestExpectedValueExpiryBefore": "2026-10-12T01:29:19.389000+00:00"
+  }
+}

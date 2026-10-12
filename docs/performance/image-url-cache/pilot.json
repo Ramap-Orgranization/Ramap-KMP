@@ -1,0 +1,583 @@
+{
+  "schemaVersion": 1,
+  "startedAt": "2026-10-10T23:18:49.380Z",
+  "environment": {
+    "node": "v24.18.0",
+    "platform": "darwin",
+    "architecture": "arm64",
+    "timezone": "Asia/Seoul",
+    "projectFingerprint": "db1ffb79e6fc8d494fa27b0fc921dc2b03394ddfd9603c400a8bd298d57ac496",
+    "functionRegion": "ap-southeast-2",
+    "authRole": "anon"
+  },
+  "source": {
+    "baselineCommit": "33a0d49c2731e42144f2c79704748d7c7e0cf68b",
+    "serverSourceSha256": "4740258612fa7140af643f433c0ac4184bba89c3b32af4787b710848d79efd08",
+    "benchmarkSha256": "7c4689d4344aaf0ac34a06d20ac85efaf6e7fbc4c59601a96ea3935338d117a5",
+    "fixtureSha256": "689db329934b230dc0db88d90346dd3110a1b988b3f8e4c5f7cf6be0034c3d01"
+  },
+  "workload": {
+    "reviews": 20,
+    "occurrences": 41,
+    "uniqueImages": 22,
+    "avatarOccurrences": 20,
+    "reviewImageOccurrences": 21,
+    "uniqueAvatars": 1,
+    "uniqueReviewImages": 21
+  },
+  "protocol": {
+    "rounds": 6,
+    "delayMs": 4000,
+    "maximumExpectedStorageRequests": 556,
+    "requestBudget": 600,
+    "signLifetimeSeconds": 300,
+    "imageConcurrency": 4,
+    "order": [
+      "legacy,dedup,redis",
+      "dedup,redis,legacy",
+      "redis,legacy,dedup",
+      "redis,dedup,legacy",
+      "dedup,legacy,redis",
+      "legacy,redis,dedup"
+    ],
+    "retries": 0,
+    "notes": [
+      "HTTP link resolution only; no image download, rendering, app SDK, or device timing",
+      "Legacy review photos have concurrency 4; each review avatar follows its photos, with no avatar semaphore",
+      "Dedup uses the same flow, sharing promises only within one page; no cross-page cache",
+      "Redis receives the same distinct images as the new app, executes in Sydney and checks caller RLS on every hit",
+      "Operation durationSumMs adds overlapping request durations; it is not elapsed page time",
+      "Redis requests count REST commands including EVAL, not billing units or internal Lua operations",
+      "Small production pilot; not a load test or evidence of a Disk IO decrease"
+    ]
+  },
+  "preparation": [
+    {
+      "kind": "transport-warmup",
+      "status": 200,
+      "wallMs": 867.75
+    },
+    {
+      "kind": "transport-warmup",
+      "status": 200,
+      "wallMs": 199.28
+    },
+    {
+      "variant": "initial",
+      "round": 0,
+      "startedAt": "2026-10-10T23:18:50.496Z",
+      "wallMs": 2214.51,
+      "clientHttpRequests": 1,
+      "signRequests": 22,
+      "signSuccesses": 22,
+      "errors": 0,
+      "statusCounts": {
+        "200": 1
+      },
+      "server": {
+        "schemaVersion": 1,
+        "requestId": "a3e86823-4d32-49e0-b72a-39925bc8efd9",
+        "requested": 22,
+        "unique": 22,
+        "cacheHits": 0,
+        "issued": 22,
+        "cacheBypasses": 0,
+        "denied": 0,
+        "failed": 0,
+        "lockWaits": 0,
+        "totalMs": 830.11,
+        "operations": {
+          "authorize": {
+            "requests": 22,
+            "failures": 0,
+            "durationSumMs": 4582.72
+          },
+          "sign": {
+            "requests": 22,
+            "failures": 0,
+            "durationSumMs": 1328.85
+          },
+          "redis": {
+            "requests": 88,
+            "failures": 0,
+            "durationSumMs": 282.72
+          }
+        }
+      }
+    }
+  ],
+  "samples": [
+    {
+      "variant": "legacy",
+      "round": 1,
+      "startedAt": "2026-10-10T23:18:56.717Z",
+      "clientHttpRequests": 41,
+      "signRequests": 41,
+      "signSuccesses": 41,
+      "errors": 0,
+      "statusCounts": {
+        "200": 41
+      },
+      "requestDurationSumMs": 10993.85,
+      "wallMs": 1917.47
+    },
+    {
+      "variant": "dedup",
+      "round": 1,
+      "startedAt": "2026-10-10T23:19:02.636Z",
+      "clientHttpRequests": 22,
+      "signRequests": 22,
+      "signSuccesses": 22,
+      "errors": 0,
+      "statusCounts": {
+        "200": 22
+      },
+      "requestDurationSumMs": 4785.08,
+      "wallMs": 1188.94
+    },
+    {
+      "variant": "redis",
+      "round": 1,
+      "startedAt": "2026-10-10T23:19:07.826Z",
+      "wallMs": 771.92,
+      "clientHttpRequests": 1,
+      "signRequests": 0,
+      "signSuccesses": 0,
+      "errors": 0,
+      "statusCounts": {
+        "200": 1
+      },
+      "server": {
+        "schemaVersion": 1,
+        "requestId": "ef5bed4d-5831-413d-a81f-d8588556a847",
+        "requested": 22,
+        "unique": 22,
+        "cacheHits": 22,
+        "issued": 0,
+        "cacheBypasses": 0,
+        "denied": 0,
+        "failed": 0,
+        "lockWaits": 0,
+        "totalMs": 215.25,
+        "operations": {
+          "authorize": {
+            "requests": 22,
+            "failures": 0,
+            "durationSumMs": 1318.1
+          },
+          "sign": {
+            "requests": 0,
+            "failures": 0,
+            "durationSumMs": 0
+          },
+          "redis": {
+            "requests": 22,
+            "failures": 0,
+            "durationSumMs": 68.02
+          }
+        }
+      }
+    },
+    {
+      "variant": "dedup",
+      "round": 2,
+      "startedAt": "2026-10-10T23:19:12.599Z",
+      "clientHttpRequests": 22,
+      "signRequests": 22,
+      "signSuccesses": 22,
+      "errors": 0,
+      "statusCounts": {
+        "200": 22
+      },
+      "requestDurationSumMs": 6534.54,
+      "wallMs": 1483.29
+    },
+    {
+      "variant": "redis",
+      "round": 2,
+      "startedAt": "2026-10-10T23:19:18.084Z",
+      "wallMs": 1050.6,
+      "clientHttpRequests": 1,
+      "signRequests": 0,
+      "signSuccesses": 0,
+      "errors": 0,
+      "statusCounts": {
+        "200": 1
+      },
+      "server": {
+        "schemaVersion": 1,
+        "requestId": "da76531e-7b57-45fd-9710-5d95e1eb51e6",
+        "requested": 22,
+        "unique": 22,
+        "cacheHits": 22,
+        "issued": 0,
+        "cacheBypasses": 0,
+        "denied": 0,
+        "failed": 0,
+        "lockWaits": 0,
+        "totalMs": 541.22,
+        "operations": {
+          "authorize": {
+            "requests": 22,
+            "failures": 0,
+            "durationSumMs": 3277.88
+          },
+          "sign": {
+            "requests": 0,
+            "failures": 0,
+            "durationSumMs": 0
+          },
+          "redis": {
+            "requests": 22,
+            "failures": 0,
+            "durationSumMs": 119.82
+          }
+        }
+      }
+    },
+    {
+      "variant": "legacy",
+      "round": 2,
+      "startedAt": "2026-10-10T23:19:23.137Z",
+      "clientHttpRequests": 41,
+      "signRequests": 41,
+      "signSuccesses": 41,
+      "errors": 0,
+      "statusCounts": {
+        "200": 41
+      },
+      "requestDurationSumMs": 8618.58,
+      "wallMs": 1344.33
+    },
+    {
+      "variant": "redis",
+      "round": 3,
+      "startedAt": "2026-10-10T23:19:28.483Z",
+      "wallMs": 709.67,
+      "clientHttpRequests": 1,
+      "signRequests": 0,
+      "signSuccesses": 0,
+      "errors": 0,
+      "statusCounts": {
+        "200": 1
+      },
+      "server": {
+        "schemaVersion": 1,
+        "requestId": "8df86061-a4a3-43c0-8ee3-346361763cda",
+        "requested": 22,
+        "unique": 22,
+        "cacheHits": 22,
+        "issued": 0,
+        "cacheBypasses": 0,
+        "denied": 0,
+        "failed": 0,
+        "lockWaits": 0,
+        "totalMs": 188.65,
+        "operations": {
+          "authorize": {
+            "requests": 22,
+            "failures": 0,
+            "durationSumMs": 1110.94
+          },
+          "sign": {
+            "requests": 0,
+            "failures": 0,
+            "durationSumMs": 0
+          },
+          "redis": {
+            "requests": 22,
+            "failures": 0,
+            "durationSumMs": 138.11
+          }
+        }
+      }
+    },
+    {
+      "variant": "legacy",
+      "round": 3,
+      "startedAt": "2026-10-10T23:19:33.193Z",
+      "clientHttpRequests": 41,
+      "signRequests": 41,
+      "signSuccesses": 41,
+      "errors": 0,
+      "statusCounts": {
+        "200": 41
+      },
+      "requestDurationSumMs": 8274.59,
+      "wallMs": 1449.23
+    },
+    {
+      "variant": "dedup",
+      "round": 3,
+      "startedAt": "2026-10-10T23:19:38.643Z",
+      "clientHttpRequests": 22,
+      "signRequests": 22,
+      "signSuccesses": 22,
+      "errors": 0,
+      "statusCounts": {
+        "200": 22
+      },
+      "requestDurationSumMs": 4691.76,
+      "wallMs": 1291.26
+    },
+    {
+      "variant": "redis",
+      "round": 4,
+      "startedAt": "2026-10-10T23:19:43.935Z",
+      "wallMs": 442.89,
+      "clientHttpRequests": 1,
+      "signRequests": 0,
+      "signSuccesses": 0,
+      "errors": 0,
+      "statusCounts": {
+        "200": 1
+      },
+      "server": {
+        "schemaVersion": 1,
+        "requestId": "5989a7dc-ad93-4a44-90a6-de93540845fb",
+        "requested": 22,
+        "unique": 22,
+        "cacheHits": 22,
+        "issued": 0,
+        "cacheBypasses": 0,
+        "denied": 0,
+        "failed": 0,
+        "lockWaits": 0,
+        "totalMs": 206.53,
+        "operations": {
+          "authorize": {
+            "requests": 22,
+            "failures": 0,
+            "durationSumMs": 1201.46
+          },
+          "sign": {
+            "requests": 0,
+            "failures": 0,
+            "durationSumMs": 0
+          },
+          "redis": {
+            "requests": 22,
+            "failures": 0,
+            "durationSumMs": 122.69
+          }
+        }
+      }
+    },
+    {
+      "variant": "dedup",
+      "round": 4,
+      "startedAt": "2026-10-10T23:19:48.379Z",
+      "clientHttpRequests": 22,
+      "signRequests": 22,
+      "signSuccesses": 22,
+      "errors": 0,
+      "statusCounts": {
+        "200": 22
+      },
+      "requestDurationSumMs": 4678.87,
+      "wallMs": 1198.38
+    },
+    {
+      "variant": "legacy",
+      "round": 4,
+      "startedAt": "2026-10-10T23:19:53.579Z",
+      "clientHttpRequests": 41,
+      "signRequests": 41,
+      "signSuccesses": 41,
+      "errors": 0,
+      "statusCounts": {
+        "200": 41
+      },
+      "requestDurationSumMs": 8417.34,
+      "wallMs": 1238
+    },
+    {
+      "variant": "dedup",
+      "round": 5,
+      "startedAt": "2026-10-10T23:19:58.818Z",
+      "clientHttpRequests": 22,
+      "signRequests": 22,
+      "signSuccesses": 22,
+      "errors": 0,
+      "statusCounts": {
+        "200": 22
+      },
+      "requestDurationSumMs": 3904.17,
+      "wallMs": 1038.28
+    },
+    {
+      "variant": "legacy",
+      "round": 5,
+      "startedAt": "2026-10-10T23:20:03.857Z",
+      "clientHttpRequests": 41,
+      "signRequests": 41,
+      "signSuccesses": 41,
+      "errors": 0,
+      "statusCounts": {
+        "200": 41
+      },
+      "requestDurationSumMs": 8310.85,
+      "wallMs": 1415.6
+    },
+    {
+      "variant": "redis",
+      "round": 5,
+      "startedAt": "2026-10-10T23:20:09.273Z",
+      "wallMs": 728.26,
+      "clientHttpRequests": 1,
+      "signRequests": 0,
+      "signSuccesses": 0,
+      "errors": 0,
+      "statusCounts": {
+        "200": 1
+      },
+      "server": {
+        "schemaVersion": 1,
+        "requestId": "13d68e16-8fe1-4bd8-bfee-315e7c9d13f8",
+        "requested": 22,
+        "unique": 22,
+        "cacheHits": 22,
+        "issued": 0,
+        "cacheBypasses": 0,
+        "denied": 0,
+        "failed": 0,
+        "lockWaits": 0,
+        "totalMs": 218.13,
+        "operations": {
+          "authorize": {
+            "requests": 22,
+            "failures": 0,
+            "durationSumMs": 1222.45
+          },
+          "sign": {
+            "requests": 0,
+            "failures": 0,
+            "durationSumMs": 0
+          },
+          "redis": {
+            "requests": 22,
+            "failures": 0,
+            "durationSumMs": 147.07
+          }
+        }
+      }
+    },
+    {
+      "variant": "legacy",
+      "round": 6,
+      "startedAt": "2026-10-10T23:20:14.004Z",
+      "clientHttpRequests": 41,
+      "signRequests": 41,
+      "signSuccesses": 41,
+      "errors": 0,
+      "statusCounts": {
+        "200": 41
+      },
+      "requestDurationSumMs": 9149.54,
+      "wallMs": 1539.26
+    },
+    {
+      "variant": "redis",
+      "round": 6,
+      "startedAt": "2026-10-10T23:20:19.545Z",
+      "wallMs": 1121.67,
+      "clientHttpRequests": 1,
+      "signRequests": 0,
+      "signSuccesses": 0,
+      "errors": 0,
+      "statusCounts": {
+        "200": 1
+      },
+      "server": {
+        "schemaVersion": 1,
+        "requestId": "746bb997-67d9-40c7-92b0-8a60eec03bda",
+        "requested": 22,
+        "unique": 22,
+        "cacheHits": 22,
+        "issued": 0,
+        "cacheBypasses": 0,
+        "denied": 0,
+        "failed": 0,
+        "lockWaits": 0,
+        "totalMs": 623.54,
+        "operations": {
+          "authorize": {
+            "requests": 22,
+            "failures": 0,
+            "durationSumMs": 2981.67
+          },
+          "sign": {
+            "requests": 0,
+            "failures": 0,
+            "durationSumMs": 0
+          },
+          "redis": {
+            "requests": 22,
+            "failures": 0,
+            "durationSumMs": 66.61
+          }
+        }
+      }
+    },
+    {
+      "variant": "dedup",
+      "round": 6,
+      "startedAt": "2026-10-10T23:20:24.669Z",
+      "clientHttpRequests": 22,
+      "signRequests": 22,
+      "signSuccesses": 22,
+      "errors": 0,
+      "statusCounts": {
+        "200": 22
+      },
+      "requestDurationSumMs": 4282.45,
+      "wallMs": 1123.22
+    }
+  ],
+  "completed": true,
+  "finishedAt": "2026-10-10T23:20:25.793Z",
+  "summary": {
+    "legacy": {
+      "samples": 6,
+      "p50Ms": 1432.42,
+      "p95Ms": 1917.47,
+      "minMs": 1238,
+      "maxMs": 1917.47,
+      "clientHttpRequests": 246,
+      "signRequests": 246,
+      "signSuccesses": 246,
+      "errors": 0,
+      "cacheHits": 0,
+      "authorizeRequests": 0,
+      "redisRestRequests": 0
+    },
+    "dedup": {
+      "samples": 6,
+      "p50Ms": 1193.66,
+      "p95Ms": 1483.29,
+      "minMs": 1038.28,
+      "maxMs": 1483.29,
+      "clientHttpRequests": 132,
+      "signRequests": 132,
+      "signSuccesses": 132,
+      "errors": 0,
+      "cacheHits": 0,
+      "authorizeRequests": 0,
+      "redisRestRequests": 0
+    },
+    "redis": {
+      "samples": 6,
+      "p50Ms": 750.09,
+      "p95Ms": 1121.67,
+      "minMs": 442.89,
+      "maxMs": 1121.67,
+      "clientHttpRequests": 6,
+      "signRequests": 0,
+      "signSuccesses": 0,
+      "errors": 0,
+      "cacheHits": 132,
+      "authorizeRequests": 132,
+      "redisRestRequests": 132
+    }
+  }
+}

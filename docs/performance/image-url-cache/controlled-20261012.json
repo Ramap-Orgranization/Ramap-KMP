@@ -1,0 +1,215 @@
+{
+  "schemaVersion": 2,
+  "startedAt": "2026-10-12T01:18:08.712Z",
+  "completed": false,
+  "environment": {
+    "node": "v24.18.0",
+    "platform": "darwin",
+    "architecture": "arm64",
+    "timezone": "Asia/Seoul",
+    "authRole": "anon",
+    "projectFingerprint": "db1ffb79e6fc8d494fa27b0fc921dc2b03394ddfd9603c400a8bd298d57ac496",
+    "storageRegion": "ap-southeast-2",
+    "redisRegion": "ap-southeast-2"
+  },
+  "source": {
+    "head": "44f6d4ac2952f9d77766b0a19bf8618f5af374c2",
+    "fixtureSha256": "689db329934b230dc0db88d90346dd3110a1b988b3f8e4c5f7cf6be0034c3d01",
+    "originalServerHashes": {
+      "handler.ts": "6876120c8d43f46f414bec09127ea423affb0018ac2ab2655431db0b1ded119c",
+      "storage.ts": "b5e325dc00fdb8c2e8021619b1da66520f8f161f5c9c0c3f5b1f8ddad8af155a",
+      "redis.ts": "32f16c858e31a17000635d2cea57e94ba9a857f7b2f4e89a854ce51471de2546",
+      "metrics.ts": "1b908921846bcc6cca01f1d1616266d8898d78792ed69ed8f5590c659da1cd4b"
+    },
+    "experimentBundleSha256": "8acd0b06ed78c7495b241c7c55e67f919de6c62113a07ab25dd8104e2144285b",
+    "runnerSha256": "394d695e97afc92eb43ba74e08fb61d0bba4d5a973027b0d56567e0f57d84f26",
+    "batchHelperSha256": "2d8a4584a0c106718f6a5ed05fd102c2912f86c3c51a84be3ebbe157e4604874",
+    "functionName": "image-url-benchmark-f7003c2e"
+  },
+  "workload": {
+    "reviews": 20,
+    "occurrences": 41,
+    "uniqueImages": 22,
+    "buckets": 2,
+    "uniqueAvatars": 1,
+    "uniqueReviewImages": 21
+  },
+  "protocol": {
+    "mainRounds": 30,
+    "coldSamples": 6,
+    "mixedSamples": 6,
+    "uncachedControlSamples": 10,
+    "order": [
+      [
+        "direct_batch",
+        "edge_batch",
+        "redis_warm"
+      ],
+      [
+        "edge_batch",
+        "redis_warm",
+        "direct_batch"
+      ],
+      [
+        "redis_warm",
+        "direct_batch",
+        "edge_batch"
+      ],
+      [
+        "redis_warm",
+        "edge_batch",
+        "direct_batch"
+      ],
+      [
+        "edge_batch",
+        "direct_batch",
+        "redis_warm"
+      ],
+      [
+        "direct_batch",
+        "redis_warm",
+        "edge_batch"
+      ]
+    ],
+    "delayMs": 2000,
+    "storageRequestBudget": 2500,
+    "lifetimeSeconds": 300,
+    "cacheRefreshMarginSeconds": 60,
+    "cacheConcurrency": 8,
+    "batchConcurrency": 2,
+    "pageConcurrency": 1,
+    "retries": 0,
+    "notes": [
+      "Same fixture, anonymous RLS caller, TTL, client machine, Node fetch and no image downloads",
+      "Direct and Edge use the identical batch helper",
+      "Batch needs two bucket requests, cached implementation uses per-image checks; intrinsic architectural differences remain",
+      "Same protected experimental Edge Function serves batch, cached and uncached controls",
+      "Private cache namespace; independent cold/mixed slots; prime warm cache every ten rounds",
+      "Cold means signed URL cache cold, not cold database buffers or cold Edge runtime",
+      "All failures and preparation samples are retained; HTTP200 partial failures are errors",
+      "API latency only, not UI, image transfer or physical database IO",
+      "Redis REST operations are not verified billable command units"
+    ]
+  },
+  "preparation": [
+    {
+      "variant": "unauthorized_guard",
+      "status": 403
+    },
+    {
+      "variant": "direct_batch",
+      "round": 0,
+      "startedAt": "2026-10-12T01:18:11.955Z",
+      "imageCount": 22,
+      "status": 200,
+      "errors": 0,
+      "server": {
+        "requested": 22,
+        "unique": 22,
+        "issued": 22,
+        "cacheHits": 0,
+        "failed": 0,
+        "cacheBypasses": 0,
+        "operations": {
+          "authorize": {
+            "requests": 0
+          },
+          "sign": {
+            "requests": 2,
+            "failures": 0
+          },
+          "redis": {
+            "requests": 0
+          }
+        },
+        "totalMs": 564.07
+      },
+      "clientHttpRequests": 2,
+      "wallMs": 565.19,
+      "storageHttpRequests": 2
+    },
+    {
+      "variant": "edge_batch",
+      "round": 0,
+      "startedAt": "2026-10-12T01:18:14.521Z",
+      "imageCount": 22,
+      "status": 200,
+      "errors": 0,
+      "clientHttpRequests": 1,
+      "edgeRegion": "ap-northeast-2",
+      "serverWallMs": 840.67,
+      "server": {
+        "requested": 22,
+        "unique": 22,
+        "issued": 22,
+        "cacheHits": 0,
+        "failed": 0,
+        "cacheBypasses": 0,
+        "operations": {
+          "authorize": {
+            "requests": 0
+          },
+          "sign": {
+            "requests": 2,
+            "failures": 0
+          },
+          "redis": {
+            "requests": 0
+          }
+        },
+        "totalMs": 837.47,
+        "requestId": "57be7336-14ea-44ee-b21d-3e72dabba814"
+      },
+      "wallMs": 934.44,
+      "storageHttpRequests": 2
+    },
+    {
+      "variant": "edge_uncached_control",
+      "round": 0,
+      "startedAt": "2026-10-12T01:18:17.458Z",
+      "imageCount": 22,
+      "status": 200,
+      "errors": 1,
+      "clientHttpRequests": 1,
+      "edgeRegion": "ap-northeast-2",
+      "serverWallMs": 5033.5,
+      "server": {
+        "schemaVersion": 1,
+        "requestId": "f39d1db9-111f-44c2-a35f-847d8e6f61b1",
+        "requested": 22,
+        "unique": 22,
+        "cacheHits": 0,
+        "issued": 21,
+        "cacheBypasses": 21,
+        "denied": 0,
+        "failed": 1,
+        "lockWaits": 0,
+        "totalMs": 5027.32,
+        "operations": {
+          "authorize": {
+            "requests": 22,
+            "failures": 1,
+            "durationSumMs": 16840.29
+          },
+          "sign": {
+            "requests": 21,
+            "failures": 0,
+            "durationSumMs": 10401.19
+          },
+          "redis": {
+            "requests": 0,
+            "failures": 0,
+            "durationSumMs": 0
+          }
+        }
+      },
+      "wallMs": 5131.82,
+      "storageHttpRequests": 43
+    }
+  ],
+  "samples": [],
+  "storageHttpRequests": 47,
+  "failure": "Stopped on an error, cache-state mismatch or budget limit; no failed samples were removed",
+  "finishedAt": "2026-10-12T01:18:22.590Z",
+  "summary": {}
+}

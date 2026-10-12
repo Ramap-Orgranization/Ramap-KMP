@@ -21,6 +21,7 @@ source_ref: 009f67d2924a285353213d1aa91ade5406e87324 + working-tree
 | --- | --- |
 | 저장소에 기록된 스키마 변경 | [migrations](../../supabase/migrations), [운영 공지 SQL 테스트](../../supabase/tests/operating_notice_daily_schedules.sql) |
 | 계정 삭제 | [delete-account](../../supabase/functions/delete-account/index.ts), [handler 테스트](../../supabase/functions/delete-account/handler.test.mjs) |
+| 프로필·리뷰 임시 링크 | [기본 배치 발급](image-url-cache.md): 기존 RLS 유지, Kotlin 적용 후 비교 |
 | 이벤트 미리보기·등록 | [preview-event](../../supabase/functions/preview-event/index.ts), [register-event](../../supabase/functions/register-event/index.ts) |
 | 관리자 수정·상태·영업 공지 | [admin-correct-registration](../../supabase/functions/admin-correct-registration/index.ts), [admin-event-status](../../supabase/functions/admin-event-status/index.ts), [admin-operating-notice](../../supabase/functions/admin-operating-notice/index.ts) |
 | 이벤트 알림 | [notify-event-reminders](../../supabase/functions/notify-event-reminders/index.ts), [notify-shop-event](../../supabase/functions/notify-shop-event/index.ts) |

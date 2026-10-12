@@ -1,0 +1,35 @@
+{
+  "native_batch": {
+    "n": 30,
+    "p50Ms": 192.056,
+    "p95Ms": 548.643,
+    "meanMs": 283.976,
+    "errors": 0
+  },
+  "redis_warm": {
+    "n": 30,
+    "p50Ms": 669.756,
+    "p95Ms": 1144.839,
+    "meanMs": 726.105,
+    "errors": 0
+  },
+  "reductionPercent": 71.324,
+  "p95ReductionPercent": 52.077,
+  "directFasterPairs": 28,
+  "startedAt": "2026-10-12T01:55:08.499018Z",
+  "endedAt": "2026-10-12T01:57:15.484716Z",
+  "storageHttpAttempts": 766,
+  "redisRestRequests": 748,
+  "preparation": [
+    {
+      "variant": "native_batch",
+      "wallMs": 1544.849,
+      "issued": 22
+    },
+    {
+      "variant": "redis_warm",
+      "wallMs": 1513.424,
+      "issued": 22
+    }
+  ]
+}

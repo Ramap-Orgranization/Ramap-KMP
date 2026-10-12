@@ -1,0 +1,206 @@
+{
+  "startedAt": "2026-10-12T01:20:07.380Z",
+  "finishedAt": "2026-10-12T01:25:19.389Z",
+  "summary": {
+    "redis_cold": {
+      "n": 6,
+      "errors": 0,
+      "failedPages": 0,
+      "cacheStateMismatches": 0,
+      "p50Ms": 860.36,
+      "p95Ms": 1043.22,
+      "meanMs": 840.7,
+      "minMs": 553.25,
+      "maxMs": 1056.07
+    },
+    "direct_batch": {
+      "n": 30,
+      "errors": 0,
+      "failedPages": 0,
+      "cacheStateMismatches": 0,
+      "p50Ms": 207.54,
+      "p95Ms": 501.04,
+      "meanMs": 270.89,
+      "minMs": 175.82,
+      "maxMs": 561.78
+    },
+    "edge_batch": {
+      "n": 30,
+      "errors": 0,
+      "failedPages": 0,
+      "cacheStateMismatches": 0,
+      "p50Ms": 317.62,
+      "p95Ms": 579.12,
+      "meanMs": 396.23,
+      "minMs": 253.3,
+      "maxMs": 751.97
+    },
+    "redis_warm": {
+      "n": 30,
+      "errors": 0,
+      "failedPages": 0,
+      "cacheStateMismatches": 0,
+      "p50Ms": 685.35,
+      "p95Ms": 926.79,
+      "meanMs": 645.17,
+      "minMs": 434.8,
+      "maxMs": 1139.02
+    },
+    "edge_uncached_control": {
+      "n": 10,
+      "errors": 0,
+      "failedPages": 0,
+      "cacheStateMismatches": 0,
+      "p50Ms": 628.24,
+      "p95Ms": 857.4,
+      "meanMs": 669.02,
+      "minMs": 518.34,
+      "maxMs": 870.49
+    },
+    "redis_mixed": {
+      "n": 6,
+      "errors": 0,
+      "failedPages": 0,
+      "cacheStateMismatches": 0,
+      "p50Ms": 658.96,
+      "p95Ms": 801.54,
+      "meanMs": 668.67,
+      "minMs": 539.11,
+      "maxMs": 812.87
+    }
+  },
+  "paired": [
+    {
+      "first": "direct_batch",
+      "second": "edge_batch",
+      "n": 30,
+      "firstFaster": 25,
+      "pairsWithErrors": 0,
+      "meanSecondMinusFirstMs": 125.34,
+      "medianSecondMinusFirstMs": 93.21,
+      "bootstrapMeanDifference95PercentIntervalMs": [
+        57.92,
+        192.87
+      ]
+    },
+    {
+      "first": "direct_batch",
+      "second": "redis_warm",
+      "n": 30,
+      "firstFaster": 28,
+      "pairsWithErrors": 0,
+      "meanSecondMinusFirstMs": 374.28,
+      "medianSecondMinusFirstMs": 348.7,
+      "bootstrapMeanDifference95PercentIntervalMs": [
+        304.13,
+        445.26
+      ]
+    },
+    {
+      "first": "edge_batch",
+      "second": "redis_warm",
+      "n": 30,
+      "firstFaster": 25,
+      "pairsWithErrors": 0,
+      "meanSecondMinusFirstMs": 248.94,
+      "medianSecondMinusFirstMs": 240.09,
+      "bootstrapMeanDifference95PercentIntervalMs": [
+        165.99,
+        332.51
+      ]
+    },
+    {
+      "first": "redis_warm",
+      "second": "edge_uncached_control",
+      "n": 10,
+      "firstFaster": 7,
+      "pairsWithErrors": 0,
+      "meanSecondMinusFirstMs": 28.84,
+      "medianSecondMinusFirstMs": 38.33,
+      "bootstrapMeanDifference95PercentIntervalMs": [
+        -65.78,
+        120.47
+      ]
+    }
+  ],
+  "counts": {
+    "measuredPages": 112,
+    "preparationPages": 12,
+    "edgeInvocations": 94,
+    "operationCounts": {
+      "authorize": 1298,
+      "sign": 630,
+      "redis": 1848
+    },
+    "issued": 1870,
+    "cacheHits": 792,
+    "imageErrors": 0
+  },
+  "perVariant": {
+    "redis_cold": {
+      "meanIssued": 22,
+      "meanCacheHits": 0,
+      "meanStorageHttpRequests": 44,
+      "meanRedisRestRequests": 88,
+      "instrumentedWorkP50Ms": 420.43,
+      "timingScope": "Edge handler",
+      "regions": [
+        "ap-southeast-2"
+      ]
+    },
+    "direct_batch": {
+      "meanIssued": 22,
+      "meanCacheHits": 0,
+      "meanStorageHttpRequests": 2,
+      "meanRedisRestRequests": 0,
+      "instrumentedWorkP50Ms": 207.32,
+      "timingScope": "client batch helper",
+      "regions": []
+    },
+    "edge_batch": {
+      "meanIssued": 22,
+      "meanCacheHits": 0,
+      "meanStorageHttpRequests": 2,
+      "meanRedisRestRequests": 0,
+      "instrumentedWorkP50Ms": 55.63,
+      "timingScope": "Edge handler",
+      "regions": [
+        "ap-southeast-2"
+      ]
+    },
+    "redis_warm": {
+      "meanIssued": 0,
+      "meanCacheHits": 22,
+      "meanStorageHttpRequests": 22,
+      "meanRedisRestRequests": 22,
+      "instrumentedWorkP50Ms": 240.77,
+      "timingScope": "Edge handler",
+      "regions": [
+        "ap-southeast-2"
+      ]
+    },
+    "edge_uncached_control": {
+      "meanIssued": 22,
+      "meanCacheHits": 0,
+      "meanStorageHttpRequests": 44,
+      "meanRedisRestRequests": 0,
+      "instrumentedWorkP50Ms": 327.65,
+      "timingScope": "Edge handler",
+      "regions": [
+        "ap-southeast-2"
+      ]
+    },
+    "redis_mixed": {
+      "meanIssued": 11,
+      "meanCacheHits": 11,
+      "meanStorageHttpRequests": 33,
+      "meanRedisRestRequests": 55,
+      "instrumentedWorkP50Ms": 333.03,
+      "timingScope": "Edge handler",
+      "regions": [
+        "ap-southeast-2"
+      ]
+    }
+  },
+  "caveat": "Paired bootstrap resamples sequential rounds from one run; it does not cover other clients, times, workloads or traffic. Response percentiles include failures if any."
+}

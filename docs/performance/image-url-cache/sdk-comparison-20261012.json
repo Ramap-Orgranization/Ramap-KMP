@@ -1,0 +1,1537 @@
+{
+    "schemaVersion": 1,
+    "startedAt": "2026-10-12T01:55:08.499018Z",
+    "updatedAt": "2026-10-12T01:57:15.484716Z",
+    "completed": true,
+    "platform": "Android host JVM / macOS / OkHttp; not an emulator or UI timing",
+    "fixtureSha256": "689db329934b230dc0db88d90346dd3110a1b988b3f8e4c5f7cf6be0034c3d01",
+    "productionSourceSha256": "e0322bcd2d02bc73a6284b691596a350d5ae98f2cd94d3e11e7bc37acdd945eb",
+    "legacySourceSha256": "3c8915cb2a4a9d423bf9596e76d9251a153787143652fe93aeb72549dd804760",
+    "benchmarkSourceSha256": "acf955100188c6d29a49ddac6db6e88848769e3b36b88b80614bf1428ecae3b7",
+    "occurrences": 41,
+    "unique": 22,
+    "rounds": 30,
+    "delayMs": 1500,
+    "retries": 0,
+    "samples": [
+        {
+            "variant": "native_batch",
+            "round": 0,
+            "at": "2026-10-12T01:55:11.569542Z",
+            "wallMs": 1544.849,
+            "errors": 0,
+            "storageHttpRequests": 2,
+            "edgeHttpRequests": 0,
+            "server": null
+        },
+        {
+            "variant": "redis_warm",
+            "round": 0,
+            "at": "2026-10-12T01:55:14.590098Z",
+            "wallMs": 1513.424,
+            "errors": 0,
+            "storageHttpRequests": 0,
+            "edgeHttpRequests": 1,
+            "server": {
+                "schemaVersion": 1,
+                "requestId": "bc2360cd-206a-4bb3-ae2e-a8ed78c9be83",
+                "requested": 22,
+                "unique": 22,
+                "cacheHits": 0,
+                "issued": 22,
+                "cacheBypasses": 0,
+                "denied": 0,
+                "failed": 0,
+                "lockWaits": 0,
+                "totalMs": 914.9,
+                "operations": {
+                    "authorize": {
+                        "requests": 22,
+                        "failures": 0,
+                        "durationSumMs": 5970.45
+                    },
+                    "sign": {
+                        "requests": 22,
+                        "failures": 0,
+                        "durationSumMs": 705.42
+                    },
+                    "redis": {
+                        "requests": 88,
+                        "failures": 0,
+                        "durationSumMs": 321.6
+                    }
+                }
+            }
+        },
+        {
+            "variant": "native_batch",
+            "round": 1,
+            "at": "2026-10-12T01:55:16.292798Z",
+            "wallMs": 198.119,
+            "errors": 0,
+            "storageHttpRequests": 2,
+            "edgeHttpRequests": 0,
+            "server": null
+        },
+        {
+            "variant": "redis_warm",
+            "round": 1,
+            "at": "2026-10-12T01:55:18.283623Z",
+            "wallMs": 485.476,
+            "errors": 0,
+            "storageHttpRequests": 0,
+            "edgeHttpRequests": 1,
+            "server": {
+                "schemaVersion": 1,
+                "requestId": "bc1cdf6c-a98f-489b-bad3-693adfd073d3",
+                "requested": 22,
+                "unique": 22,
+                "cacheHits": 22,
+                "issued": 0,
+                "cacheBypasses": 0,
+                "denied": 0,
+                "failed": 0,
+                "lockWaits": 0,
+                "totalMs": 248.84,
+                "operations": {
+                    "authorize": {
+                        "requests": 22,
+                        "failures": 0,
+                        "durationSumMs": 1496.94
+                    },
+                    "sign": {
+                        "requests": 0,
+                        "failures": 0,
+                        "durationSumMs": 0
+                    },
+                    "redis": {
+                        "requests": 22,
+                        "failures": 0,
+                        "durationSumMs": 65.34
+                    }
+                }
+            }
+        },
+        {
+            "variant": "redis_warm",
+            "round": 2,
+            "at": "2026-10-12T01:55:20.994547Z",
+            "wallMs": 1202.117,
+            "errors": 0,
+            "storageHttpRequests": 0,
+            "edgeHttpRequests": 1,
+            "server": {
+                "schemaVersion": 1,
+                "requestId": "113d33e4-125c-499f-8884-c9410c05b0e5",
+                "requested": 22,
+                "unique": 22,
+                "cacheHits": 22,
+                "issued": 0,
+                "cacheBypasses": 0,
+                "denied": 0,
+                "failed": 0,
+                "lockWaits": 0,
+                "totalMs": 604.64,
+                "operations": {
+                    "authorize": {
+                        "requests": 22,
+                        "failures": 0,
+                        "durationSumMs": 2036.76
+                    },
+                    "sign": {
+                        "requests": 0,
+                        "failures": 0,
+                        "durationSumMs": 0
+                    },
+                    "redis": {
+                        "requests": 22,
+                        "failures": 0,
+                        "durationSumMs": 122.11
+                    }
+                }
+            }
+        },
+        {
+            "variant": "native_batch",
+            "round": 2,
+            "at": "2026-10-12T01:55:22.675311Z",
+            "wallMs": 172.525,
+            "errors": 0,
+            "storageHttpRequests": 2,
+            "edgeHttpRequests": 0,
+            "server": null
+        },
+        {
+            "variant": "native_batch",
+            "round": 3,
+            "at": "2026-10-12T01:55:24.675404Z",
+            "wallMs": 496.502,
+            "errors": 0,
+            "storageHttpRequests": 2,
+            "edgeHttpRequests": 0,
+            "server": null
+        },
+        {
+            "variant": "redis_warm",
+            "round": 3,
+            "at": "2026-10-12T01:55:26.857263Z",
+            "wallMs": 676.417,
+            "errors": 0,
+            "storageHttpRequests": 0,
+            "edgeHttpRequests": 1,
+            "server": {
+                "schemaVersion": 1,
+                "requestId": "8e62978c-67f6-46e1-a580-f735aec676a0",
+                "requested": 22,
+                "unique": 22,
+                "cacheHits": 22,
+                "issued": 0,
+                "cacheBypasses": 0,
+                "denied": 0,
+                "failed": 0,
+                "lockWaits": 0,
+                "totalMs": 449.16,
+                "operations": {
+                    "authorize": {
+                        "requests": 22,
+                        "failures": 0,
+                        "durationSumMs": 2088.86
+                    },
+                    "sign": {
+                        "requests": 0,
+                        "failures": 0,
+                        "durationSumMs": 0
+                    },
+                    "redis": {
+                        "requests": 22,
+                        "failures": 0,
+                        "durationSumMs": 147.55
+                    }
+                }
+            }
+        },
+        {
+            "variant": "redis_warm",
+            "round": 4,
+            "at": "2026-10-12T01:55:29.072285Z",
+            "wallMs": 707.77,
+            "errors": 0,
+            "storageHttpRequests": 0,
+            "edgeHttpRequests": 1,
+            "server": {
+                "schemaVersion": 1,
+                "requestId": "371aefde-02eb-41d7-9554-7cc41fca3a27",
+                "requested": 22,
+                "unique": 22,
+                "cacheHits": 22,
+                "issued": 0,
+                "cacheBypasses": 0,
+                "denied": 0,
+                "failed": 0,
+                "lockWaits": 0,
+                "totalMs": 220.22,
+                "operations": {
+                    "authorize": {
+                        "requests": 22,
+                        "failures": 0,
+                        "durationSumMs": 1416.95
+                    },
+                    "sign": {
+                        "requests": 0,
+                        "failures": 0,
+                        "durationSumMs": 0
+                    },
+                    "redis": {
+                        "requests": 22,
+                        "failures": 0,
+                        "durationSumMs": 82.78
+                    }
+                }
+            }
+        },
+        {
+            "variant": "native_batch",
+            "round": 4,
+            "at": "2026-10-12T01:55:30.758119Z",
+            "wallMs": 177.674,
+            "errors": 0,
+            "storageHttpRequests": 2,
+            "edgeHttpRequests": 0,
+            "server": null
+        },
+        {
+            "variant": "native_batch",
+            "round": 5,
+            "at": "2026-10-12T01:55:32.588275Z",
+            "wallMs": 320.659,
+            "errors": 0,
+            "storageHttpRequests": 2,
+            "edgeHttpRequests": 0,
+            "server": null
+        },
+        {
+            "variant": "redis_warm",
+            "round": 5,
+            "at": "2026-10-12T01:55:34.549888Z",
+            "wallMs": 449.934,
+            "errors": 0,
+            "storageHttpRequests": 0,
+            "edgeHttpRequests": 1,
+            "server": {
+                "schemaVersion": 1,
+                "requestId": "2096b438-9760-4c8d-84ad-f3804bff4c9c",
+                "requested": 22,
+                "unique": 22,
+                "cacheHits": 22,
+                "issued": 0,
+                "cacheBypasses": 0,
+                "denied": 0,
+                "failed": 0,
+                "lockWaits": 0,
+                "totalMs": 215.43,
+                "operations": {
+                    "authorize": {
+                        "requests": 22,
+                        "failures": 0,
+                        "durationSumMs": 1240.8
+                    },
+                    "sign": {
+                        "requests": 0,
+                        "failures": 0,
+                        "durationSumMs": 0
+                    },
+                    "redis": {
+                        "requests": 22,
+                        "failures": 0,
+                        "durationSumMs": 128.04
+                    }
+                }
+            }
+        },
+        {
+            "variant": "redis_warm",
+            "round": 6,
+            "at": "2026-10-12T01:55:36.914352Z",
+            "wallMs": 844.302,
+            "errors": 0,
+            "storageHttpRequests": 0,
+            "edgeHttpRequests": 1,
+            "server": {
+                "schemaVersion": 1,
+                "requestId": "233dab3e-cc60-4cbb-bbfc-2ed02342e4f1",
+                "requested": 22,
+                "unique": 22,
+                "cacheHits": 22,
+                "issued": 0,
+                "cacheBypasses": 0,
+                "denied": 0,
+                "failed": 0,
+                "lockWaits": 0,
+                "totalMs": 322.51,
+                "operations": {
+                    "authorize": {
+                        "requests": 22,
+                        "failures": 0,
+                        "durationSumMs": 2021.11
+                    },
+                    "sign": {
+                        "requests": 0,
+                        "failures": 0,
+                        "durationSumMs": 0
+                    },
+                    "redis": {
+                        "requests": 22,
+                        "failures": 0,
+                        "durationSumMs": 149.12
+                    }
+                }
+            }
+        },
+        {
+            "variant": "native_batch",
+            "round": 6,
+            "at": "2026-10-12T01:55:38.612701Z",
+            "wallMs": 179.575,
+            "errors": 0,
+            "storageHttpRequests": 2,
+            "edgeHttpRequests": 0,
+            "server": null
+        },
+        {
+            "variant": "native_batch",
+            "round": 7,
+            "at": "2026-10-12T01:55:40.442949Z",
+            "wallMs": 318.881,
+            "errors": 0,
+            "storageHttpRequests": 2,
+            "edgeHttpRequests": 0,
+            "server": null
+        },
+        {
+            "variant": "redis_warm",
+            "round": 7,
+            "at": "2026-10-12T01:55:42.500280Z",
+            "wallMs": 545.954,
+            "errors": 0,
+            "storageHttpRequests": 0,
+            "edgeHttpRequests": 1,
+            "server": {
+                "schemaVersion": 1,
+                "requestId": "98c487cb-639d-49cb-817c-9e972da6f8d2",
+                "requested": 22,
+                "unique": 22,
+                "cacheHits": 22,
+                "issued": 0,
+                "cacheBypasses": 0,
+                "denied": 0,
+                "failed": 0,
+                "lockWaits": 0,
+                "totalMs": 300.87,
+                "operations": {
+                    "authorize": {
+                        "requests": 22,
+                        "failures": 0,
+                        "durationSumMs": 1460.3
+                    },
+                    "sign": {
+                        "requests": 0,
+                        "failures": 0,
+                        "durationSumMs": 0
+                    },
+                    "redis": {
+                        "requests": 22,
+                        "failures": 0,
+                        "durationSumMs": 134.7
+                    }
+                }
+            }
+        },
+        {
+            "variant": "redis_warm",
+            "round": 8,
+            "at": "2026-10-12T01:55:44.554969Z",
+            "wallMs": 543.526,
+            "errors": 0,
+            "storageHttpRequests": 0,
+            "edgeHttpRequests": 1,
+            "server": {
+                "schemaVersion": 1,
+                "requestId": "b3a6134a-2dea-4be2-a017-aa7e20f2c60c",
+                "requested": 22,
+                "unique": 22,
+                "cacheHits": 22,
+                "issued": 0,
+                "cacheBypasses": 0,
+                "denied": 0,
+                "failed": 0,
+                "lockWaits": 0,
+                "totalMs": 315.6,
+                "operations": {
+                    "authorize": {
+                        "requests": 22,
+                        "failures": 0,
+                        "durationSumMs": 1536.12
+                    },
+                    "sign": {
+                        "requests": 0,
+                        "failures": 0,
+                        "durationSumMs": 0
+                    },
+                    "redis": {
+                        "requests": 22,
+                        "failures": 0,
+                        "durationSumMs": 160.67
+                    }
+                }
+            }
+        },
+        {
+            "variant": "native_batch",
+            "round": 8,
+            "at": "2026-10-12T01:55:46.405901Z",
+            "wallMs": 338.922,
+            "errors": 0,
+            "storageHttpRequests": 2,
+            "edgeHttpRequests": 0,
+            "server": null
+        },
+        {
+            "variant": "native_batch",
+            "round": 9,
+            "at": "2026-10-12T01:55:48.340969Z",
+            "wallMs": 425.679,
+            "errors": 0,
+            "storageHttpRequests": 2,
+            "edgeHttpRequests": 0,
+            "server": null
+        },
+        {
+            "variant": "redis_warm",
+            "round": 9,
+            "at": "2026-10-12T01:55:50.640988Z",
+            "wallMs": 791.472,
+            "errors": 0,
+            "storageHttpRequests": 0,
+            "edgeHttpRequests": 1,
+            "server": {
+                "schemaVersion": 1,
+                "requestId": "4bb3b25c-d4f6-44fe-9241-9bab51c69a7a",
+                "requested": 22,
+                "unique": 22,
+                "cacheHits": 22,
+                "issued": 0,
+                "cacheBypasses": 0,
+                "denied": 0,
+                "failed": 0,
+                "lockWaits": 0,
+                "totalMs": 263.87,
+                "operations": {
+                    "authorize": {
+                        "requests": 22,
+                        "failures": 0,
+                        "durationSumMs": 1458.76
+                    },
+                    "sign": {
+                        "requests": 0,
+                        "failures": 0,
+                        "durationSumMs": 0
+                    },
+                    "redis": {
+                        "requests": 22,
+                        "failures": 0,
+                        "durationSumMs": 286.38
+                    }
+                }
+            }
+        },
+        {
+            "variant": "redis_warm",
+            "round": 10,
+            "at": "2026-10-12T01:55:52.632175Z",
+            "wallMs": 477.366,
+            "errors": 0,
+            "storageHttpRequests": 0,
+            "edgeHttpRequests": 1,
+            "server": {
+                "schemaVersion": 1,
+                "requestId": "52cfae32-0cc7-4916-a8f3-9c45af63cfd3",
+                "requested": 22,
+                "unique": 22,
+                "cacheHits": 22,
+                "issued": 0,
+                "cacheBypasses": 0,
+                "denied": 0,
+                "failed": 0,
+                "lockWaits": 0,
+                "totalMs": 249.18,
+                "operations": {
+                    "authorize": {
+                        "requests": 22,
+                        "failures": 0,
+                        "durationSumMs": 1271.93
+                    },
+                    "sign": {
+                        "requests": 0,
+                        "failures": 0,
+                        "durationSumMs": 0
+                    },
+                    "redis": {
+                        "requests": 22,
+                        "failures": 0,
+                        "durationSumMs": 217.19
+                    }
+                }
+            }
+        },
+        {
+            "variant": "native_batch",
+            "round": 10,
+            "at": "2026-10-12T01:55:54.704430Z",
+            "wallMs": 558.821,
+            "errors": 0,
+            "storageHttpRequests": 2,
+            "edgeHttpRequests": 0,
+            "server": null
+        },
+        {
+            "variant": "native_batch",
+            "round": 11,
+            "at": "2026-10-12T01:55:56.390053Z",
+            "wallMs": 173.631,
+            "errors": 0,
+            "storageHttpRequests": 2,
+            "edgeHttpRequests": 0,
+            "server": null
+        },
+        {
+            "variant": "redis_warm",
+            "round": 11,
+            "at": "2026-10-12T01:55:58.531345Z",
+            "wallMs": 629.461,
+            "errors": 0,
+            "storageHttpRequests": 0,
+            "edgeHttpRequests": 1,
+            "server": {
+                "schemaVersion": 1,
+                "requestId": "132f4d16-9c26-4c87-a69d-05697d81fe5c",
+                "requested": 22,
+                "unique": 22,
+                "cacheHits": 22,
+                "issued": 0,
+                "cacheBypasses": 0,
+                "denied": 0,
+                "failed": 0,
+                "lockWaits": 0,
+                "totalMs": 397.3,
+                "operations": {
+                    "authorize": {
+                        "requests": 22,
+                        "failures": 0,
+                        "durationSumMs": 2047.52
+                    },
+                    "sign": {
+                        "requests": 0,
+                        "failures": 0,
+                        "durationSumMs": 0
+                    },
+                    "redis": {
+                        "requests": 22,
+                        "failures": 0,
+                        "durationSumMs": 204.45
+                    }
+                }
+            }
+        },
+        {
+            "variant": "redis_warm",
+            "round": 12,
+            "at": "2026-10-12T01:56:00.846156Z",
+            "wallMs": 799.752,
+            "errors": 0,
+            "storageHttpRequests": 0,
+            "edgeHttpRequests": 1,
+            "server": {
+                "schemaVersion": 1,
+                "requestId": "9c3ec79b-4b4c-49e1-a80f-150004097d5b",
+                "requested": 22,
+                "unique": 22,
+                "cacheHits": 22,
+                "issued": 0,
+                "cacheBypasses": 0,
+                "denied": 0,
+                "failed": 0,
+                "lockWaits": 0,
+                "totalMs": 465.46,
+                "operations": {
+                    "authorize": {
+                        "requests": 22,
+                        "failures": 0,
+                        "durationSumMs": 2536.53
+                    },
+                    "sign": {
+                        "requests": 0,
+                        "failures": 0,
+                        "durationSumMs": 0
+                    },
+                    "redis": {
+                        "requests": 22,
+                        "failures": 0,
+                        "durationSumMs": 203.38
+                    }
+                }
+            }
+        },
+        {
+            "variant": "native_batch",
+            "round": 12,
+            "at": "2026-10-12T01:56:02.527299Z",
+            "wallMs": 171.48,
+            "errors": 0,
+            "storageHttpRequests": 2,
+            "edgeHttpRequests": 0,
+            "server": null
+        },
+        {
+            "variant": "native_batch",
+            "round": 13,
+            "at": "2026-10-12T01:56:04.219738Z",
+            "wallMs": 182.415,
+            "errors": 0,
+            "storageHttpRequests": 2,
+            "edgeHttpRequests": 0,
+            "server": null
+        },
+        {
+            "variant": "redis_warm",
+            "round": 13,
+            "at": "2026-10-12T01:56:06.807444Z",
+            "wallMs": 1074.832,
+            "errors": 0,
+            "storageHttpRequests": 0,
+            "edgeHttpRequests": 1,
+            "server": {
+                "schemaVersion": 1,
+                "requestId": "db28fa67-853b-45a2-9d8f-3ff25742845f",
+                "requested": 22,
+                "unique": 22,
+                "cacheHits": 22,
+                "issued": 0,
+                "cacheBypasses": 0,
+                "denied": 0,
+                "failed": 0,
+                "lockWaits": 0,
+                "totalMs": 577.38,
+                "operations": {
+                    "authorize": {
+                        "requests": 22,
+                        "failures": 0,
+                        "durationSumMs": 2798.02
+                    },
+                    "sign": {
+                        "requests": 0,
+                        "failures": 0,
+                        "durationSumMs": 0
+                    },
+                    "redis": {
+                        "requests": 22,
+                        "failures": 0,
+                        "durationSumMs": 48.15
+                    }
+                }
+            }
+        },
+        {
+            "variant": "redis_warm",
+            "round": 14,
+            "at": "2026-10-12T01:56:09.833138Z",
+            "wallMs": 1523.522,
+            "errors": 0,
+            "storageHttpRequests": 0,
+            "edgeHttpRequests": 1,
+            "server": {
+                "schemaVersion": 1,
+                "requestId": "b40475e4-3d59-4015-bc7b-e1d17fc1b291",
+                "requested": 22,
+                "unique": 22,
+                "cacheHits": 22,
+                "issued": 0,
+                "cacheBypasses": 0,
+                "denied": 0,
+                "failed": 0,
+                "lockWaits": 0,
+                "totalMs": 1017.41,
+                "operations": {
+                    "authorize": {
+                        "requests": 22,
+                        "failures": 0,
+                        "durationSumMs": 2048.65
+                    },
+                    "sign": {
+                        "requests": 0,
+                        "failures": 0,
+                        "durationSumMs": 0
+                    },
+                    "redis": {
+                        "requests": 22,
+                        "failures": 0,
+                        "durationSumMs": 165.63
+                    }
+                }
+            }
+        },
+        {
+            "variant": "native_batch",
+            "round": 14,
+            "at": "2026-10-12T01:56:11.892289Z",
+            "wallMs": 548.271,
+            "errors": 0,
+            "storageHttpRequests": 2,
+            "edgeHttpRequests": 0,
+            "server": null
+        },
+        {
+            "variant": "native_batch",
+            "round": 15,
+            "at": "2026-10-12T01:56:13.950199Z",
+            "wallMs": 546.256,
+            "errors": 0,
+            "storageHttpRequests": 2,
+            "edgeHttpRequests": 0,
+            "server": null
+        },
+        {
+            "variant": "redis_warm",
+            "round": 15,
+            "at": "2026-10-12T01:56:15.934533Z",
+            "wallMs": 480.763,
+            "errors": 0,
+            "storageHttpRequests": 0,
+            "edgeHttpRequests": 1,
+            "server": {
+                "schemaVersion": 1,
+                "requestId": "632f909f-2c20-4f23-9156-ff404620eceb",
+                "requested": 22,
+                "unique": 22,
+                "cacheHits": 22,
+                "issued": 0,
+                "cacheBypasses": 0,
+                "denied": 0,
+                "failed": 0,
+                "lockWaits": 0,
+                "totalMs": 261.61,
+                "operations": {
+                    "authorize": {
+                        "requests": 22,
+                        "failures": 0,
+                        "durationSumMs": 1479.92
+                    },
+                    "sign": {
+                        "requests": 0,
+                        "failures": 0,
+                        "durationSumMs": 0
+                    },
+                    "redis": {
+                        "requests": 22,
+                        "failures": 0,
+                        "durationSumMs": 196.04
+                    }
+                }
+            }
+        },
+        {
+            "variant": "redis_warm",
+            "round": 16,
+            "at": "2026-10-12T01:56:17.916757Z",
+            "wallMs": 472.86,
+            "errors": 0,
+            "storageHttpRequests": 0,
+            "edgeHttpRequests": 1,
+            "server": {
+                "schemaVersion": 1,
+                "requestId": "77fa74c6-155a-46b0-914c-31f06986c9ea",
+                "requested": 22,
+                "unique": 22,
+                "cacheHits": 22,
+                "issued": 0,
+                "cacheBypasses": 0,
+                "denied": 0,
+                "failed": 0,
+                "lockWaits": 0,
+                "totalMs": 249.58,
+                "operations": {
+                    "authorize": {
+                        "requests": 22,
+                        "failures": 0,
+                        "durationSumMs": 1547.36
+                    },
+                    "sign": {
+                        "requests": 0,
+                        "failures": 0,
+                        "durationSumMs": 0
+                    },
+                    "redis": {
+                        "requests": 22,
+                        "failures": 0,
+                        "durationSumMs": 152.58
+                    }
+                }
+            }
+        },
+        {
+            "variant": "native_batch",
+            "round": 16,
+            "at": "2026-10-12T01:56:19.688190Z",
+            "wallMs": 260.72,
+            "errors": 0,
+            "storageHttpRequests": 2,
+            "edgeHttpRequests": 0,
+            "server": null
+        },
+        {
+            "variant": "native_batch",
+            "round": 17,
+            "at": "2026-10-12T01:56:21.381818Z",
+            "wallMs": 183.283,
+            "errors": 0,
+            "storageHttpRequests": 2,
+            "edgeHttpRequests": 0,
+            "server": null
+        },
+        {
+            "variant": "redis_warm",
+            "round": 17,
+            "at": "2026-10-12T01:56:23.868984Z",
+            "wallMs": 973.942,
+            "errors": 0,
+            "storageHttpRequests": 0,
+            "edgeHttpRequests": 1,
+            "server": {
+                "schemaVersion": 1,
+                "requestId": "fcb065e1-5180-4e95-b48a-84fdea4e3e14",
+                "requested": 22,
+                "unique": 22,
+                "cacheHits": 22,
+                "issued": 0,
+                "cacheBypasses": 0,
+                "denied": 0,
+                "failed": 0,
+                "lockWaits": 0,
+                "totalMs": 640.25,
+                "operations": {
+                    "authorize": {
+                        "requests": 22,
+                        "failures": 0,
+                        "durationSumMs": 2327.98
+                    },
+                    "sign": {
+                        "requests": 0,
+                        "failures": 0,
+                        "durationSumMs": 0
+                    },
+                    "redis": {
+                        "requests": 22,
+                        "failures": 0,
+                        "durationSumMs": 85.17
+                    }
+                }
+            }
+        },
+        {
+            "variant": "redis_warm",
+            "round": 18,
+            "at": "2026-10-12T01:56:26.047085Z",
+            "wallMs": 670.639,
+            "errors": 0,
+            "storageHttpRequests": 0,
+            "edgeHttpRequests": 1,
+            "server": {
+                "schemaVersion": 1,
+                "requestId": "9fd6ec43-0680-4942-8602-1336628983ad",
+                "requested": 22,
+                "unique": 22,
+                "cacheHits": 22,
+                "issued": 0,
+                "cacheBypasses": 0,
+                "denied": 0,
+                "failed": 0,
+                "lockWaits": 0,
+                "totalMs": 435.82,
+                "operations": {
+                    "authorize": {
+                        "requests": 22,
+                        "failures": 0,
+                        "durationSumMs": 2844.12
+                    },
+                    "sign": {
+                        "requests": 0,
+                        "failures": 0,
+                        "durationSumMs": 0
+                    },
+                    "redis": {
+                        "requests": 22,
+                        "failures": 0,
+                        "durationSumMs": 187.43
+                    }
+                }
+            }
+        },
+        {
+            "variant": "native_batch",
+            "round": 18,
+            "at": "2026-10-12T01:56:27.731850Z",
+            "wallMs": 173.592,
+            "errors": 0,
+            "storageHttpRequests": 2,
+            "edgeHttpRequests": 0,
+            "server": null
+        },
+        {
+            "variant": "native_batch",
+            "round": 19,
+            "at": "2026-10-12T01:56:29.418804Z",
+            "wallMs": 178.861,
+            "errors": 0,
+            "storageHttpRequests": 2,
+            "edgeHttpRequests": 0,
+            "server": null
+        },
+        {
+            "variant": "redis_warm",
+            "round": 19,
+            "at": "2026-10-12T01:56:31.886125Z",
+            "wallMs": 961.56,
+            "errors": 0,
+            "storageHttpRequests": 0,
+            "edgeHttpRequests": 1,
+            "server": {
+                "schemaVersion": 1,
+                "requestId": "f4592131-f666-494d-bae6-a2e1d621571d",
+                "requested": 22,
+                "unique": 22,
+                "cacheHits": 22,
+                "issued": 0,
+                "cacheBypasses": 0,
+                "denied": 0,
+                "failed": 0,
+                "lockWaits": 0,
+                "totalMs": 729.1,
+                "operations": {
+                    "authorize": {
+                        "requests": 22,
+                        "failures": 0,
+                        "durationSumMs": 3686.59
+                    },
+                    "sign": {
+                        "requests": 0,
+                        "failures": 0,
+                        "durationSumMs": 0
+                    },
+                    "redis": {
+                        "requests": 22,
+                        "failures": 0,
+                        "durationSumMs": 57.5
+                    }
+                }
+            }
+        },
+        {
+            "variant": "redis_warm",
+            "round": 20,
+            "at": "2026-10-12T01:56:34.152845Z",
+            "wallMs": 760.747,
+            "errors": 0,
+            "storageHttpRequests": 0,
+            "edgeHttpRequests": 1,
+            "server": {
+                "schemaVersion": 1,
+                "requestId": "bf667f2c-f4a8-4c77-9817-5cd9dd0e84c2",
+                "requested": 22,
+                "unique": 22,
+                "cacheHits": 22,
+                "issued": 0,
+                "cacheBypasses": 0,
+                "denied": 0,
+                "failed": 0,
+                "lockWaits": 0,
+                "totalMs": 527.09,
+                "operations": {
+                    "authorize": {
+                        "requests": 22,
+                        "failures": 0,
+                        "durationSumMs": 2759.45
+                    },
+                    "sign": {
+                        "requests": 0,
+                        "failures": 0,
+                        "durationSumMs": 0
+                    },
+                    "redis": {
+                        "requests": 22,
+                        "failures": 0,
+                        "durationSumMs": 148.64
+                    }
+                }
+            }
+        },
+        {
+            "variant": "native_batch",
+            "round": 20,
+            "at": "2026-10-12T01:56:35.845003Z",
+            "wallMs": 181.585,
+            "errors": 0,
+            "storageHttpRequests": 2,
+            "edgeHttpRequests": 0,
+            "server": null
+        },
+        {
+            "variant": "native_batch",
+            "round": 21,
+            "at": "2026-10-12T01:56:37.569266Z",
+            "wallMs": 217.3,
+            "errors": 0,
+            "storageHttpRequests": 2,
+            "edgeHttpRequests": 0,
+            "server": null
+        },
+        {
+            "variant": "redis_warm",
+            "round": 21,
+            "at": "2026-10-12T01:56:39.591393Z",
+            "wallMs": 510.66,
+            "errors": 0,
+            "storageHttpRequests": 0,
+            "edgeHttpRequests": 1,
+            "server": {
+                "schemaVersion": 1,
+                "requestId": "92dcd537-2117-43ed-8231-7f4b726e8246",
+                "requested": 22,
+                "unique": 22,
+                "cacheHits": 22,
+                "issued": 0,
+                "cacheBypasses": 0,
+                "denied": 0,
+                "failed": 0,
+                "lockWaits": 0,
+                "totalMs": 286.75,
+                "operations": {
+                    "authorize": {
+                        "requests": 22,
+                        "failures": 0,
+                        "durationSumMs": 1831.17
+                    },
+                    "sign": {
+                        "requests": 0,
+                        "failures": 0,
+                        "durationSumMs": 0
+                    },
+                    "redis": {
+                        "requests": 22,
+                        "failures": 0,
+                        "durationSumMs": 185.96
+                    }
+                }
+            }
+        },
+        {
+            "variant": "redis_warm",
+            "round": 22,
+            "at": "2026-10-12T01:56:41.687043Z",
+            "wallMs": 586.133,
+            "errors": 0,
+            "storageHttpRequests": 0,
+            "edgeHttpRequests": 1,
+            "server": {
+                "schemaVersion": 1,
+                "requestId": "3029afca-62fa-4ce1-81f2-b934f53fb478",
+                "requested": 22,
+                "unique": 22,
+                "cacheHits": 22,
+                "issued": 0,
+                "cacheBypasses": 0,
+                "denied": 0,
+                "failed": 0,
+                "lockWaits": 0,
+                "totalMs": 361.23,
+                "operations": {
+                    "authorize": {
+                        "requests": 22,
+                        "failures": 0,
+                        "durationSumMs": 2321.67
+                    },
+                    "sign": {
+                        "requests": 0,
+                        "failures": 0,
+                        "durationSumMs": 0
+                    },
+                    "redis": {
+                        "requests": 22,
+                        "failures": 0,
+                        "durationSumMs": 172.01
+                    }
+                }
+            }
+        },
+        {
+            "variant": "native_batch",
+            "round": 22,
+            "at": "2026-10-12T01:56:43.361494Z",
+            "wallMs": 163.979,
+            "errors": 0,
+            "storageHttpRequests": 2,
+            "edgeHttpRequests": 0,
+            "server": null
+        },
+        {
+            "variant": "native_batch",
+            "round": 23,
+            "at": "2026-10-12T01:56:45.417923Z",
+            "wallMs": 548.948,
+            "errors": 0,
+            "storageHttpRequests": 2,
+            "edgeHttpRequests": 0,
+            "server": null
+        },
+        {
+            "variant": "redis_warm",
+            "round": 23,
+            "at": "2026-10-12T01:56:47.929438Z",
+            "wallMs": 999.573,
+            "errors": 0,
+            "storageHttpRequests": 0,
+            "edgeHttpRequests": 1,
+            "server": {
+                "schemaVersion": 1,
+                "requestId": "461b622e-c8b4-4678-9f74-7cfe1488c3e0",
+                "requested": 22,
+                "unique": 22,
+                "cacheHits": 22,
+                "issued": 0,
+                "cacheBypasses": 0,
+                "denied": 0,
+                "failed": 0,
+                "lockWaits": 0,
+                "totalMs": 667.02,
+                "operations": {
+                    "authorize": {
+                        "requests": 22,
+                        "failures": 0,
+                        "durationSumMs": 2352.27
+                    },
+                    "sign": {
+                        "requests": 0,
+                        "failures": 0,
+                        "durationSumMs": 0
+                    },
+                    "redis": {
+                        "requests": 22,
+                        "failures": 0,
+                        "durationSumMs": 148.54
+                    }
+                }
+            }
+        },
+        {
+            "variant": "redis_warm",
+            "round": 24,
+            "at": "2026-10-12T01:56:49.974523Z",
+            "wallMs": 529.654,
+            "errors": 0,
+            "storageHttpRequests": 0,
+            "edgeHttpRequests": 1,
+            "server": {
+                "schemaVersion": 1,
+                "requestId": "7161e90a-d2d2-4590-bc74-5a4adb0dee63",
+                "requested": 22,
+                "unique": 22,
+                "cacheHits": 22,
+                "issued": 0,
+                "cacheBypasses": 0,
+                "denied": 0,
+                "failed": 0,
+                "lockWaits": 0,
+                "totalMs": 303.58,
+                "operations": {
+                    "authorize": {
+                        "requests": 22,
+                        "failures": 0,
+                        "durationSumMs": 1755.32
+                    },
+                    "sign": {
+                        "requests": 0,
+                        "failures": 0,
+                        "durationSumMs": 0
+                    },
+                    "redis": {
+                        "requests": 22,
+                        "failures": 0,
+                        "durationSumMs": 222.03
+                    }
+                }
+            }
+        },
+        {
+            "variant": "native_batch",
+            "round": 24,
+            "at": "2026-10-12T01:56:51.664442Z",
+            "wallMs": 185.992,
+            "errors": 0,
+            "storageHttpRequests": 2,
+            "edgeHttpRequests": 0,
+            "server": null
+        },
+        {
+            "variant": "native_batch",
+            "round": 25,
+            "at": "2026-10-12T01:56:53.600321Z",
+            "wallMs": 432.111,
+            "errors": 0,
+            "storageHttpRequests": 2,
+            "edgeHttpRequests": 0,
+            "server": null
+        },
+        {
+            "variant": "redis_warm",
+            "round": 25,
+            "at": "2026-10-12T01:56:55.586781Z",
+            "wallMs": 479.286,
+            "errors": 0,
+            "storageHttpRequests": 0,
+            "edgeHttpRequests": 1,
+            "server": {
+                "schemaVersion": 1,
+                "requestId": "768cc260-7e32-4d65-9452-4deb11b78cc9",
+                "requested": 22,
+                "unique": 22,
+                "cacheHits": 22,
+                "issued": 0,
+                "cacheBypasses": 0,
+                "denied": 0,
+                "failed": 0,
+                "lockWaits": 0,
+                "totalMs": 252.7,
+                "operations": {
+                    "authorize": {
+                        "requests": 22,
+                        "failures": 0,
+                        "durationSumMs": 1374.57
+                    },
+                    "sign": {
+                        "requests": 0,
+                        "failures": 0,
+                        "durationSumMs": 0
+                    },
+                    "redis": {
+                        "requests": 22,
+                        "failures": 0,
+                        "durationSumMs": 206.97
+                    }
+                }
+            }
+        },
+        {
+            "variant": "redis_warm",
+            "round": 26,
+            "at": "2026-10-12T01:56:57.857042Z",
+            "wallMs": 755.928,
+            "errors": 0,
+            "storageHttpRequests": 0,
+            "edgeHttpRequests": 1,
+            "server": {
+                "schemaVersion": 1,
+                "requestId": "bbc3726c-549f-41af-aba8-4eaac61eb6be",
+                "requested": 22,
+                "unique": 22,
+                "cacheHits": 22,
+                "issued": 0,
+                "cacheBypasses": 0,
+                "denied": 0,
+                "failed": 0,
+                "lockWaits": 0,
+                "totalMs": 260.04,
+                "operations": {
+                    "authorize": {
+                        "requests": 22,
+                        "failures": 0,
+                        "durationSumMs": 1497.18
+                    },
+                    "sign": {
+                        "requests": 0,
+                        "failures": 0,
+                        "durationSumMs": 0
+                    },
+                    "redis": {
+                        "requests": 22,
+                        "failures": 0,
+                        "durationSumMs": 141.44
+                    }
+                }
+            }
+        },
+        {
+            "variant": "native_batch",
+            "round": 26,
+            "at": "2026-10-12T01:56:59.533548Z",
+            "wallMs": 166.547,
+            "errors": 0,
+            "storageHttpRequests": 2,
+            "edgeHttpRequests": 0,
+            "server": null
+        },
+        {
+            "variant": "native_batch",
+            "round": 27,
+            "at": "2026-10-12T01:57:01.480815Z",
+            "wallMs": 439.141,
+            "errors": 0,
+            "storageHttpRequests": 2,
+            "edgeHttpRequests": 0,
+            "server": null
+        },
+        {
+            "variant": "redis_warm",
+            "round": 27,
+            "at": "2026-10-12T01:57:03.906652Z",
+            "wallMs": 922.479,
+            "errors": 0,
+            "storageHttpRequests": 0,
+            "edgeHttpRequests": 1,
+            "server": {
+                "schemaVersion": 1,
+                "requestId": "4b50f8a6-dff1-4d33-8404-11250744c32e",
+                "requested": 22,
+                "unique": 22,
+                "cacheHits": 22,
+                "issued": 0,
+                "cacheBypasses": 0,
+                "denied": 0,
+                "failed": 0,
+                "lockWaits": 0,
+                "totalMs": 698.02,
+                "operations": {
+                    "authorize": {
+                        "requests": 22,
+                        "failures": 0,
+                        "durationSumMs": 2432.03
+                    },
+                    "sign": {
+                        "requests": 0,
+                        "failures": 0,
+                        "durationSumMs": 0
+                    },
+                    "redis": {
+                        "requests": 22,
+                        "failures": 0,
+                        "durationSumMs": 172.96
+                    }
+                }
+            }
+        },
+        {
+            "variant": "redis_warm",
+            "round": 28,
+            "at": "2026-10-12T01:57:06.009190Z",
+            "wallMs": 590.891,
+            "errors": 0,
+            "storageHttpRequests": 0,
+            "edgeHttpRequests": 1,
+            "server": {
+                "schemaVersion": 1,
+                "requestId": "0feff3f1-7357-4201-954e-3a6f970a1944",
+                "requested": 22,
+                "unique": 22,
+                "cacheHits": 22,
+                "issued": 0,
+                "cacheBypasses": 0,
+                "denied": 0,
+                "failed": 0,
+                "lockWaits": 0,
+                "totalMs": 366.24,
+                "operations": {
+                    "authorize": {
+                        "requests": 22,
+                        "failures": 0,
+                        "durationSumMs": 1989.34
+                    },
+                    "sign": {
+                        "requests": 0,
+                        "failures": 0,
+                        "durationSumMs": 0
+                    },
+                    "redis": {
+                        "requests": 22,
+                        "failures": 0,
+                        "durationSumMs": 98.35
+                    }
+                }
+            }
+        },
+        {
+            "variant": "native_batch",
+            "round": 28,
+            "at": "2026-10-12T01:57:07.752676Z",
+            "wallMs": 235.495,
+            "errors": 0,
+            "storageHttpRequests": 2,
+            "edgeHttpRequests": 0,
+            "server": null
+        },
+        {
+            "variant": "native_batch",
+            "round": 29,
+            "at": "2026-10-12T01:57:09.440517Z",
+            "wallMs": 171.066,
+            "errors": 0,
+            "storageHttpRequests": 2,
+            "edgeHttpRequests": 0,
+            "server": null
+        },
+        {
+            "variant": "redis_warm",
+            "round": 29,
+            "at": "2026-10-12T01:57:11.619277Z",
+            "wallMs": 668.873,
+            "errors": 0,
+            "storageHttpRequests": 0,
+            "edgeHttpRequests": 1,
+            "server": {
+                "schemaVersion": 1,
+                "requestId": "d381dd0c-c059-4e6b-bf3d-b7d16fd28f8a",
+                "requested": 22,
+                "unique": 22,
+                "cacheHits": 22,
+                "issued": 0,
+                "cacheBypasses": 0,
+                "denied": 0,
+                "failed": 0,
+                "lockWaits": 0,
+                "totalMs": 452.91,
+                "operations": {
+                    "authorize": {
+                        "requests": 22,
+                        "failures": 0,
+                        "durationSumMs": 2189.43
+                    },
+                    "sign": {
+                        "requests": 0,
+                        "failures": 0,
+                        "durationSumMs": 0
+                    },
+                    "redis": {
+                        "requests": 22,
+                        "failures": 0,
+                        "durationSumMs": 168.83
+                    }
+                }
+            }
+        },
+        {
+            "variant": "redis_warm",
+            "round": 30,
+            "at": "2026-10-12T01:57:13.798540Z",
+            "wallMs": 667.261,
+            "errors": 0,
+            "storageHttpRequests": 0,
+            "edgeHttpRequests": 1,
+            "server": {
+                "schemaVersion": 1,
+                "requestId": "5eac3981-acb1-4e4b-9452-80ade75b38bc",
+                "requested": 22,
+                "unique": 22,
+                "cacheHits": 22,
+                "issued": 0,
+                "cacheBypasses": 0,
+                "denied": 0,
+                "failed": 0,
+                "lockWaits": 0,
+                "totalMs": 423.19,
+                "operations": {
+                    "authorize": {
+                        "requests": 22,
+                        "failures": 0,
+                        "durationSumMs": 2212.42
+                    },
+                    "sign": {
+                        "requests": 0,
+                        "failures": 0,
+                        "durationSumMs": 0
+                    },
+                    "redis": {
+                        "requests": 22,
+                        "failures": 0,
+                        "durationSumMs": 214.74
+                    }
+                }
+            }
+        },
+        {
+            "variant": "native_batch",
+            "round": 30,
+            "at": "2026-10-12T01:57:15.482862Z",
+            "wallMs": 171.254,
+            "errors": 0,
+            "storageHttpRequests": 2,
+            "edgeHttpRequests": 0,
+            "server": null
+        }
+    ]
+}
