@@ -12,8 +12,6 @@ import com.peto.ramap.domain.model.review.ShopReviewsPage
 import com.peto.ramap.domain.repository.ReviewRepository
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.NonCancellable
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.withContext
 
 internal class FakeReviewRepository(
@@ -25,8 +23,6 @@ internal class FakeReviewRepository(
     var editableReview: EditableReview? = null
     var editResult: RamapResult<Unit> = RamapResult.Success(Unit)
     val updates = mutableListOf<Update>()
-
-    override fun observeChanges(): Flow<Unit> = emptyFlow()
 
     override suspend fun fetchMyReviews(
         offset: Long,

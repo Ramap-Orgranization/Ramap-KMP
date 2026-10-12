@@ -46,6 +46,8 @@ sealed interface MapIntent : Intent {
 
     data object OnReviewsChanged : MapIntent
 
+    data object OnScreenReturned : MapIntent
+
     data object OnShopReviewsLoadMore : MapIntent
 
     data class OnBoundsChanged(

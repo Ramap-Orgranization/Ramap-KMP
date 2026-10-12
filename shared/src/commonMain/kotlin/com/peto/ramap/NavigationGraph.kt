@@ -25,6 +25,7 @@ import com.peto.ramap.ui.main.notice.OperatingNoticeRoute
 import com.peto.ramap.ui.main.ranking.RankingRoute
 import com.peto.ramap.ui.notification.NotificationSettingsRoute
 import com.peto.ramap.ui.profile.edit.ProfileEditRoute
+import com.peto.ramap.ui.profile.follow.FollowRoute
 import com.peto.ramap.ui.report.PlaceReportRoute
 import com.peto.ramap.ui.review.my.MyReviewsRoute
 import com.peto.ramap.ui.review.other.OtherReviewsRoute
@@ -48,6 +49,7 @@ internal fun NavigationGraph(
         navigationState = navigationState,
         mapScreen = { route ->
             MapRoute(
+                isUncovered = !hasActiveOverlay,
                 onReviewNavigate = { shopId -> onOpenReviewWriteOverlay(shopId) },
                 onEditReview = { shopId, reviewId -> onOpenReviewEditOverlay(shopId, reviewId) },
                 onOpenProfile = { userId -> openProfile(userId, true) },
@@ -83,6 +85,7 @@ internal fun NavigationGraph(
                 onEventNavigate = { event -> navigationState.showEvent(event.id) },
                 shopDetailContent = { shopId, onDismiss, onShowOnMap, onEventNavigate ->
                     ShopDetailHost(
+                        isUncovered = !hasActiveOverlay,
                         shopId = shopId,
                         onDismiss = onDismiss,
                         onShowOnMap = onShowOnMap,
@@ -98,6 +101,7 @@ internal fun NavigationGraph(
         myScreen = {
             MyTabRoute(
                 onProfileNavigate = navigationState::showProfileEdit,
+                onFollowNavigate = navigationState::showFollows,
                 onMyReviewsNavigate = navigationState::showMyReviews,
                 onOpenProfile = { userId -> openProfile(userId, false) },
                 onSettingsNavigate = navigationState::showSettings,
@@ -118,6 +122,13 @@ internal fun NavigationGraph(
         accountSettingsScreen = {
             AccountSettingsRoute(
                 onBack = navigationState::pop,
+            )
+        },
+        followScreen = {
+            FollowRoute(
+                isUncovered = !hasActiveOverlay,
+                onBack = navigationState::pop,
+                onOpenProfile = { userId -> openProfile(userId, true) },
             )
         },
         profileEditScreen = {
@@ -142,6 +153,7 @@ internal fun NavigationGraph(
                 onEventNavigate = { event -> navigationState.showEvent(event.id) },
                 shopDetailContent = { shopId, onDismiss, onShowOnMap, onEventNavigate ->
                     ShopDetailHost(
+                        isUncovered = !hasActiveOverlay,
                         shopId = shopId,
                         onDismiss = onDismiss,
                         onShowOnMap = onShowOnMap,
@@ -280,6 +292,7 @@ internal fun NavigationGraph(
                 onEventNavigate = { event -> navigationState.showEvent(event.id) },
                 shopDetailContent = { shopId, onDismiss, onShowOnMap, onEventNavigate ->
                     ShopDetailHost(
+                        isUncovered = !hasActiveOverlay,
                         shopId = shopId,
                         onDismiss = onDismiss,
                         onReviewNavigate = navigationState::showReviewWrite,

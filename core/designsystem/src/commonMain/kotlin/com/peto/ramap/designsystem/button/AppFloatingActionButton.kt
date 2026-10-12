@@ -6,6 +6,7 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import com.peto.ramap.theme.CommonColor
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
@@ -18,6 +19,7 @@ fun AppFloatingActionButton(
     modifier: Modifier = Modifier,
     containerColor: Color = CommonColor.White,
     iconModifier: Modifier = Modifier,
+    iconTint: Color? = null,
 ) {
     FloatingActionButton(
         onClick = onClick,
@@ -29,6 +31,7 @@ fun AppFloatingActionButton(
             painter = painterResource(icon),
             contentDescription = contentDescription,
             modifier = iconModifier,
+            colorFilter = iconTint?.let { ColorFilter.tint(it) },
         )
     }
 }

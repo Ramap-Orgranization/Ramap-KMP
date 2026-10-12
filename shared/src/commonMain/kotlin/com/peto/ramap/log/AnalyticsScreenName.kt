@@ -17,6 +17,7 @@ val ScreenRoutes.analyticsScreenName: String
             is ScreenRoutes.MyTabRoutes -> "my"
             is ScreenRoutes.SettingsRoutes -> "settings"
             is ScreenRoutes.AccountSettingsRoutes -> "account_settings"
+            is ScreenRoutes.FollowRoutes -> "my_follows"
             is ScreenRoutes.ProfileEditRoutes -> "my_profile"
             ScreenRoutes.MyReviewsRoutes -> "my_reviews"
             is ScreenRoutes.OtherReviewsRoutes -> "other_reviews"

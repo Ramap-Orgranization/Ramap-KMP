@@ -4,6 +4,7 @@ import com.peto.ramap.data.datasource.image.ImageUrlDataSource
 import com.peto.ramap.data.model.EditableReviewResponse
 import com.peto.ramap.data.model.MyReviewResponse
 import com.peto.ramap.data.model.MyReviewsPageResponse
+import com.peto.ramap.data.model.ProfileReviewsPageResponse
 import com.peto.ramap.data.model.ReviewLikeResponse
 import com.peto.ramap.data.model.ReviewResponse
 import com.peto.ramap.data.model.ShopReviewRequest
@@ -91,6 +92,22 @@ internal class RemoteReviewDataSource(
                     buildJsonObject { put(PARAM_REVIEW_ID, reviewId) },
                 ).decodeAs<ReviewResponse?>() ?: return null
         return signReviews(listOf(review)).single()
+    }
+
+    override suspend fun fetchProfileReviewsPage(
+        userId: String,
+        offset: Long,
+    ): ProfileReviewsPageResponse {
+        val page =
+            client.postgrest
+                .rpc(
+                    "fetch_profile_reviews_page_v2",
+                    buildJsonObject {
+                        put(PARAM_USER_ID, userId)
+                        put(PARAM_OFFSET, offset)
+                    },
+                ).decodeAs<ProfileReviewsPageResponse>()
+        return page.copy(reviews = signReviews(page.reviews))
     }
 
     override suspend fun fetchProfileReviews(

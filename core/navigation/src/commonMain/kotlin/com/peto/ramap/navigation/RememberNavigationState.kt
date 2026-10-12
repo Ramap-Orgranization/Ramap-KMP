@@ -69,6 +69,7 @@ internal fun navKeySerializersModule(): SerializersModule =
             subclass(ScreenRoutes.SettingsRoutes::class)
             subclass(ScreenRoutes.AccountSettingsRoutes::class)
             subclass(ScreenRoutes.ProfileEditRoutes::class)
+            subclass(ScreenRoutes.FollowRoutes::class)
             subclass(ScreenRoutes.MyReviewsRoutes::class)
             subclass(ScreenRoutes.OtherReviewsRoutes::class)
             subclass(ScreenRoutes.ReviewWriteRoutes::class)

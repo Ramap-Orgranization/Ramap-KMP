@@ -139,12 +139,6 @@ class MapViewModel(
     init {
         viewModelScope.launch { observeSessionState() }
         viewModelScope.launch { observeReviewSession() }
-        viewModelScope.launch {
-            reviewRepository.observeChanges().collect {
-                refreshReviews()
-                refreshCurrentProfileVisibility()
-            }
-        }
         viewModelScope.launch { observePersonalization() }
         viewModelScope.launch { observeRecentSearches() }
         viewModelScope.launch { observeRecentlyViewedShops() }
