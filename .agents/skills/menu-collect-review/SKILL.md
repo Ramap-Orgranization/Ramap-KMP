@@ -7,7 +7,7 @@ description: Review a completed Naver Place ramen-menu collection for scope, des
 
 Review the just-completed `menu-collect` result before the user sees the final collection report. This is a read-only quality gate: never modify Naver, Ramap, or the collected source values.
 
-Apply `AGENTS.md` and `docs/menu-registration-policy.md`. The primary agent performs this collection check automatically; do not invoke the post-registration role in `.codex/agents/sol/menu-registration-reviewer.md` for a collection-only request.
+Apply `AGENTS.md` and `docs/menu-registration-policy.md`. The primary agent performs this collection check automatically; do not invoke the post-registration role in `.codex/agents/menu-registration-reviewer.toml` for a collection-only request.
 
 ## Inputs
 

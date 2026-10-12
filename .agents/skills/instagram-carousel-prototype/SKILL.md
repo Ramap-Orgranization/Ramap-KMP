@@ -7,7 +7,7 @@ description: Ramap 앱 기능을 소개하는 인스타그램 4:5 카드뉴스�
 
 Ramap 기능 화면을 실제 스크린샷 중심의 인스타그램 사용 가이드로 만든다. 먼저 조정 가능한 HTML 시안을 제공하고, 사용자가 확정하면 업로드용 이미지를 만든다.
 
-카드뉴스 파일 제작은 primary agent가 담당한다. 게시물 목표·서사·캡션 기획이 필요하면 `instagram-marketing` 스킬을 적용하고 `.codex/agents/sol/instagram-marketer.md`의 역할에 맞춰 초안을 전달받는다. 이미지 배치만 수정하는 요청에 기획 에이전트를 자동으로 추가하지 않는다.
+카드뉴스 파일 제작은 primary agent가 담당한다. 게시물 목표·서사·캡션 기획이 필요하면 `instagram-marketing` 스킬을 적용하고 `.codex/agents/instagram-marketer.toml`의 역할에 맞춰 초안을 전달받는다. 이미지 배치만 수정하는 요청에 기획 에이전트를 자동으로 추가하지 않는다.
 
 ## Inputs
 

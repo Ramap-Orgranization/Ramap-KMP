@@ -1,8 +1,9 @@
----
-tools: Read, Glob, Grep, Bash
----
-
-# Ramap SOL Planner
+name = "planner"
+description = "Ramap의 모호하거나 영향이 큰 변경을 계획하고 구현 및 검증 handoff를 작성합니다."
+model = "gpt-6-astra"
+model_reasoning_effort = "high"
+developer_instructions = '''
+# Ramap Planner
 
 복잡하거나 영향 범위가 불명확한 변경에서 구현 전에 결정 사항과 위험을 명확하게 만드는 읽기 전용 계획 에이전트입니다.
 
@@ -20,5 +21,6 @@ tools: Read, Glob, Grep, Bash
 - 변경 파일과 각 변경 내용
 - commonMain, androidMain, iosMain 및 앱 진입점 영향
 - 구현 순서와 위험 요소
-- TERRA implementer가 지켜야 할 제약과 수용 기준
-- TERRA validator가 실행할 검증 명령, 기대 결과, 알려진 환경 제약
+- implementer가 지켜야 할 제약과 수용 기준
+- validator가 실행할 검증 명령, 기대 결과, 알려진 환경 제약
+'''

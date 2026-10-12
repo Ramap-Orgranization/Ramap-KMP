@@ -5,7 +5,7 @@ description: Ramap Android 새 버전을 release 브랜치에서 준비하고 Gi
 
 # Ramap Release
 
-Android 릴리스는 전용 `terra_release_manager` 서브에이전트로 버전 결정부터 AAB 첨부, 공개 검증, 후속 PR 작성까지 수행한다. 아래 Orchestration, Required Gates와 Release Contract는 Android 절차이며, iOS 요청은 별도의 TestFlight 절차를 적용한다.
+Android 릴리스는 전용 `release_manager` 서브에이전트로 버전 결정부터 AAB 첨부, 공개 검증, 후속 PR 작성까지 수행한다. 아래 Orchestration, Required Gates와 Release Contract는 Android 절차이며, iOS 요청은 별도의 TestFlight 절차를 적용한다.
 
 ## Invocation
 
@@ -27,20 +27,20 @@ Firebase App Distribution CD에는 Firebase 앱과 Google 인증, 서명 및 빌
 
 ## Orchestration
 
-1. `.codex/commands/release.md`, `AGENTS.md`, `.codex/agents/sol/terra-release-manager.toml`, `.codex/agents/sol/release-manager.md`를 읽는다. TOML은 실행 모델과 추론 수준을 정하고, Markdown은 릴리스 매니저의 역할 지침이다.
-2. Named role `terra_release_manager`에 전체 Android 릴리스 작업을 위임한다. Named role을 사용할 수 없으면 TOML의 모델과 추론 수준으로 별도 에이전트를 생성한다. 담당 에이전트는 같은 작업을 다시 위임하지 않고 준비부터 승인 대기·게시·후속 PR까지 소유한다.
+1. `.codex/commands/release.md`, `AGENTS.md`, `.codex/agents/release-manager.toml`을 읽는다. 이 TOML에 실행 모델·추론 수준과 `developer_instructions`의 역할 지침이 함께 있다.
+2. Named role `release_manager`에 전체 Android 릴리스 작업을 위임한다. Named role을 사용할 수 없으면 TOML의 모델과 추론 수준으로 별도 에이전트를 생성한다. 담당 에이전트는 같은 작업을 다시 위임하지 않고 준비부터 승인 대기·게시·후속 PR까지 소유한다.
 3. 서브에이전트가 현재 Supabase Android 최소 빌드 번호와 새 `versionCode`를 포함한 배포 미리보기와 확인 요청을 반환하면 사용자에게 그대로 제시한다.
 4. 사용자가 최신 미리보기와 DB 정책 갱신 여부를 명시적으로 승인하면 같은 서브에이전트에 승인을 전달해 계속한다.
 5. 최종 결과에서 브랜치, 태그, 버전, 커밋, 릴리스 URL, 후속 PR URL·상태, AAB 경로·크기·SHA-256과 검증 결과를 확인해 보고한다.
 
-릴리스 준비나 게시 작업을 메인 에이전트와 서브에이전트가 나누어 동시에 수행하지 않는다. 릴리스 매니저는 `commit`·`pr` 스킬의 절차와 규칙을 직접 적용하고, 이 하위 작업을 별도 LUNA 에이전트에 다시 나누지 않는다.
+릴리스 준비나 게시 작업을 메인 에이전트와 서브에이전트가 나누어 동시에 수행하지 않는다. 릴리스 매니저는 `commit`·`pr` 스킬의 절차와 규칙을 직접 적용하고, 이 하위 작업을 별도 Git 에이전트에 다시 나누지 않는다.
 
 ## Required Gates
 
 - dirty worktree, 병합 충돌, 원격 브랜치 divergence, 이미 존재하는 다른 커밋의 태그, 테스트 실패, 서명 설정 누락이 있으면 자동으로 우회하지 않고 중단한다.
 - 최신 안정 태그 이후 배포할 commit이 없으면 기본 `/release`는 빈 버전을 만들지 않고 no-op으로 끝낸다. version-only 배포는 사용자가 명시적으로 요청해야 한다.
 - 강제업데이트 정책 갱신 여부는 릴리스마다 사용자에게 확인한다. 승인된 경우에만 새 Android `versionCode`를 `app_update_policies.minimum_build_number`에 반영한다.
-- 로컬 준비 단계에서는 `release` 병합, 버전 변경, 테스트, AAB 빌드·검증과 `.codex/agents/sol/release-manager.md`에 정한 로컬 커밋을 준비한다. 병합 커밋과 버전 파일만 포함한 버전 커밋을 분리한다.
+- 로컬 준비 단계에서는 `release` 병합, 버전 변경, 테스트, AAB 빌드·검증과 `.codex/agents/release-manager.toml`에 정한 로컬 커밋을 준비한다. 병합 커밋과 버전 파일만 포함한 버전 커밋을 분리한다.
 - `--dry-run`은 fetch·checkout·edit·build·commit을 포함한 변경 명령을 실행하지 않는다.
 - 원격 `release` push, 태그 생성, AAB 업로드, GitHub Release 게시와 후속 PR 작성 전에는 하나의 배포 미리보기를 보여주고 명시적 승인을 받는다.
 - 승인 후 `release` push가 완료되면 설정된 GitHub Actions가 서명된 `androidApp-release.aab`를 Firebase App Distribution에 업로드할 수 있다. 실행 결과를 확인해 보고하며, 미설정·실패 상태는 릴리스를 중단하는 사유가 아니다. 로컬에서 Firebase 업로드를 별도로 수행하지 않는다.

@@ -7,7 +7,7 @@ description: Register or update menu sections and items for an existing Ramap sh
 
 Add verified menu data to an existing `public.ramen_shops` row. Before every registration, read and apply [`docs/menu-registration-policy.md`](../../../docs/menu-registration-policy.md). It is the source of truth for menu scope, lifecycle status, duplicate handling, and safe mutation. Menu names and prices are required; descriptions and images are optional.
 
-Read `AGENTS.md` and apply the available `supabase:supabase` skill for schema access and authenticated writes. The primary agent performs preview and approved registration; the separate SOL reviewer owns only Phase 3. A menu registration request does not start a product-code implementation workflow.
+Read `AGENTS.md` and apply the available `supabase:supabase` skill for schema access and authenticated writes. The primary agent performs preview and approved registration; the separate reviewer owns only Phase 3. A menu registration request does not start a product-code implementation workflow.
 
 ## Usage
 
@@ -45,7 +45,7 @@ Never write menu rows during Phase 1.
 
 ## Phase 3: Independent Final Review
 
-After Phase 2's database transaction succeeds, delegate the final read-only check to the named role `terra_menu_registration_reviewer` configured in `.codex/agents/sol/terra-menu-registration-reviewer.toml` and described in [`.codex/agents/sol/menu-registration-reviewer.md`](../../../.codex/agents/sol/menu-registration-reviewer.md). Read both role files; the TOML selects the runtime model and reasoning effort, while the Markdown supplies review instructions. If the named role is unavailable, spawn an agent with the TOML's runtime settings. Give it the exact approved source objects, source URL and snapshot time, scope/exclusion and manual-override decisions, and the post-transaction `visible_shop_menu_items` rows. The assigned reviewer does not delegate this review again. Wait for its result before claiming registration is complete; the database commit does not authorize a Git commit.
+After Phase 2's database transaction succeeds, delegate the final read-only check to the named role `menu_registration_reviewer` defined in [`.codex/agents/menu-registration-reviewer.toml`](../../../.codex/agents/menu-registration-reviewer.toml). This standalone TOML includes the runtime settings and `developer_instructions` for the review. If the named role is unavailable, spawn an agent with the TOML's runtime settings. Give it the exact approved source objects, source URL and snapshot time, scope/exclusion and manual-override decisions, and the post-transaction `visible_shop_menu_items` rows. The assigned reviewer does not delegate this review again. Wait for its result before claiming registration is complete; the database commit does not authorize a Git commit.
 
 The reviewer must independently confirm the source-presented ramen-scope sequence maps one-to-one to the visible DB rows in the same `display_order`, and that every source menu item with a valid image has the same non-empty DB `image_url`. A source item without an image is informational, not a failure. The reviewer must report source-only, DB-only, order, name/price, and image mismatches separately. If source evidence is insufficient or any mismatch remains, stop and report it; do not retry, mutate, or claim completion.
 

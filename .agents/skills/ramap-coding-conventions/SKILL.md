@@ -70,4 +70,4 @@ Apply this skill to code quality and team habits only. Read the sibling Ramap sk
 - Use `./gradlew ktlintCheck` when formatting or broad Kotlin style is affected.
 - Run app-level E2E flows or control a connected device only when the user explicitly requests that verification.
 - Report the command, result, and whether any failure is from the implementation, environment, or pre-existing changes.
-- For a dedicated SOL implementation, follow `.codex/agents/sol/implementer.md` and hand the commands, expected results, and known constraints to the separate validator defined in `.codex/agents/sol/test-validator.md`. Test and lint success do not replace the read-only UI and ViewModel pattern checks required by those role documents.
+- For a dedicated implementation, follow `.codex/agents/implementer.toml` and hand the commands, expected results, and known constraints to the separate validator defined in `.codex/agents/test-validator.toml`. Test and lint success do not replace the read-only UI and ViewModel pattern checks required by those role documents.

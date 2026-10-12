@@ -35,6 +35,8 @@ Ramap은 Android와 iOS에서 라멘 가게 탐색, 저장, 리뷰, 이벤트와
 
 개발 규칙은 기존 `.agents/skills/ramap-{architecture,module-structure,design-patterns,coding-conventions}/SKILL.md`가 계속 소유합니다. 위키에서 규칙을 복제하거나 스킬과 다른 우선순위를 만들지 않습니다. 스킬이 없는 환경에서는 코드의 위치는 탐색할 수 있지만 팀 규칙을 확인했다고 보고하지 않습니다.
 
+Codex 역할은 [.codex/agents](../../.codex/agents)의 독립 TOML 파일에서 관리합니다. 각 파일에 모델·추론 수준과 `developer_instructions`를 함께 두며 역할 이름과 경로에는 모델 접두사를 붙이지 않습니다([DEC-0005](decisions.md#dec-0005-codex-역할-정의-통합과-모델-독립-이름)). 역할별 실행 절차는 해당 스킬에서 읽습니다.
+
 2026-10-11 기준 커밋 `33a0d49c2731e42144f2c79704748d7c7e0cf68b`의 소스를 확인해 갱신했습니다. 각 reference 페이지의 `source_ref`는 코드 확인 기준이며 운영 배포 버전은 아닙니다.
 
 초기 미확정 항목 세 가지는 사용자 요청에 따라 현재 구현을 기준으로 확정하고 소유 스킬에 반영했습니다([DEC-0002](decisions.md#dec-0002-현재-구현을-기준으로-개발-규칙-정합성-확정)). 현재 미해결 후보는 없습니다.

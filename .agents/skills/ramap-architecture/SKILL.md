@@ -60,4 +60,4 @@ Do not add direct feature-to-feature dependencies or production dependencies on 
 
 Before moving behavior across layers, inspect all callers, dependency declarations, DI modules, platform source sets, and tests. Treat a new dependency edge or a new cross-layer contract as an architectural change, not a local refactor.
 
-Architecture analysis does not itself require a planner or implementation subagent. Follow `AGENTS.md` for routing; use `source-command-impl` only for an explicitly requested staged plan and approval workflow. When a dedicated implementer is assigned, `.codex/agents/sol/implementer.md` defines its role and this skill remains the source for layer rules.
+Architecture analysis does not itself require a planner or implementation subagent. Follow `AGENTS.md` for routing; use `source-command-impl` only for an explicitly requested staged plan and approval workflow. When a dedicated implementer is assigned, `.codex/agents/implementer.toml` defines its role and this skill remains the source for layer rules.

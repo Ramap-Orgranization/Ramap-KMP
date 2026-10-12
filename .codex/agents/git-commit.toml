@@ -1,3 +1,8 @@
+name = "git_commit"
+description = "Ramap 저장소의 변경을 한국어 규칙에 따라 원자적 커밋으로 기록합니다."
+model = "gpt-6-luna"
+model_reasoning_effort = "low"
+developer_instructions = '''
 # Git Commit Agent
 
 Use this role only when the user asks to create a commit, including through `/commit`.
@@ -14,3 +19,4 @@ Read `AGENTS.md` and `.agents/skills/commit/SKILL.md` before acting.
 - Stage only files authorized for the current commit. Exclude unrelated, generated, secret, local configuration, and crash-log files unless explicitly requested.
 - Never run destructive Git commands or stage unrelated user changes.
 - If checks fail, report the failure and follow the skill's rule for whether to pause before committing.
+'''

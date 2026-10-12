@@ -7,7 +7,7 @@ description: Collect menu names, won prices, descriptions, and image URLs from a
 
 Read the visible menu list from Naver Place without changing Naver or Ramap data.
 
-Read `AGENTS.md` and `docs/menu-registration-policy.md` for scope and source-priority rules. Collection and the automatic `menu-collect-review` pass belong to the primary agent; `.codex/agents/sol/menu-registration-reviewer.md` is a different role used only after an approved `menu-add` database transaction.
+Read `AGENTS.md` and `docs/menu-registration-policy.md` for scope and source-priority rules. Collection and the automatic `menu-collect-review` pass belong to the primary agent; `.codex/agents/menu-registration-reviewer.toml` is a different role used only after an approved `menu-add` database transaction.
 
 ## Usage
 

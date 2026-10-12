@@ -52,4 +52,4 @@ Reuse these patterns before inventing a new abstraction. Keep architectural plac
 - Test repositories with data-owned fakes and test doubles; use `core/testing` only for reusable cross-module fixtures and fakes.
 - Test feature ViewModels through typed intents, emitted state, and side effects. Name tests after the subject and behavior.
 - Before handoff, check changed ViewModels for `BaseViewModel` and, when they expose asynchronous loading, `LoadableState`/`LoadKey` usage. Tests and ktlint do not verify this pattern.
-- For a dedicated SOL workflow, include these pattern checks alongside the Gradle commands in the handoff to `.codex/agents/sol/test-validator.md`. For ordinary implementation, the primary agent performs them as part of its own validation under `AGENTS.md`.
+- For a dedicated implementation workflow, include these pattern checks alongside the Gradle commands in the handoff to `.codex/agents/test-validator.toml`. For ordinary implementation, the primary agent performs them as part of its own validation under `AGENTS.md`.

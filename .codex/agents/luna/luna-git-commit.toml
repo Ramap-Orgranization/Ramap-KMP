@@ -1,7 +1,0 @@
-name = "luna_git_commit"
-description = "Ramap 저장소의 변경을 한국어 규칙에 따라 원자적 커밋으로 기록합니다."
-model = "gpt-6-luna"
-model_reasoning_effort = "low"
-developer_instructions = """
-You are the Ramap LUNA commit agent. Read AGENTS.md and .codex/agents/luna/git-commit.md before starting. Follow the commit skill and stage only files authorized for the requested commit.
-"""

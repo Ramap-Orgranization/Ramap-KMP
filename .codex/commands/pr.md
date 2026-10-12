@@ -11,4 +11,4 @@ Create a pull request following this repository's Korean PR convention.
 
 ## Instructions
 
-Use the `pr` skill and route the work to the `luna_git_pr` subagent. The skill is the source of truth for branch checks, verification, pushing, and PR formatting.
+Use the `pr` skill and route the work to the `git_pr` subagent. The skill is the source of truth for branch checks, verification, pushing, and PR formatting.

@@ -60,6 +60,8 @@ git diff --check
 
 사용자의 Codex 설정 공유 요청에 따라 `AGENTS.md`, `.codex/`, `.agents/`를 Git으로 공유합니다. 메뉴 스킬 실행에 필요한 `docs/menu-registration-policy.md`, `tools/menu-refresh/`의 스킬·역할 안내·참조 문서·실행 코드·테스트·템플릿과 `skills/menu-refresh` 호환 연결도 공유합니다([DEC-0004](decisions.md#dec-0004-codex-설정과-프로젝트-스킬-git-공유)). 개발 규칙의 소유권은 기존 Ramap 스킬에 유지합니다.
 
+Codex 역할의 런타임 설정과 지침은 `.codex/agents/`의 역할별 독립 TOML이 함께 소유합니다. 별도 Markdown 역할 파일과 모델군별 폴더를 만들지 않으며, 역할 이름과 파일명에는 모델 접두사를 사용하지 않습니다([DEC-0005](decisions.md#dec-0005-codex-역할-정의-통합과-모델-독립-이름)). 역할 이름·경로를 바꾸면 `AGENTS.md`, 스킬의 호출 지침과 UI metadata, 명령 파일, 관련 운영 스킬의 참조를 같은 변경에서 갱신합니다.
+
 개인 설정, 비밀값, 캐시와 생성 파일, `tools/menu-refresh/data/`의 DB 캐시, `tools/menu-refresh/work-files/`의 과거 작업 자료, `.artifacts/`의 운영 산출물은 로컬에 유지합니다. 그 밖의 로컬 전용 문서는 경로를 코드 표기로 안내하며 존재를 전제로 한 Markdown 링크를 만들지 않습니다. 토큰, 사용자 데이터, 비공개 URL, 원본 대화는 옮기지 않습니다.
 
 `LLM Wiki` CI는 PR마다 메타데이터·로컬 링크·문서 앵커·결정 ID·후보 상태를 검사합니다. 검사기의 회귀 테스트도 실행합니다. 외부 URL 접속, 제품 의미, 배포 상태, 코드와 설명의 일치, 링크 대상의 Git 추적 여부 전체를 보증하지 않습니다. `git status --short --untracked-files=all`로 새 근거 파일이 포함되는지 확인하고, 로컬 전용 파일이 없는 checkout에서도 검사합니다. CI 필수 검사 지정은 GitHub 저장소 설정에서 별도로 관리합니다.

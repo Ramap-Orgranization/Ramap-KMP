@@ -47,4 +47,4 @@ Use this skill when a change creates, moves, or wires code across Gradle modules
 3. Check the module's existing dependencies and nearby files.
 4. Add the smallest dependency edge that preserves the direction above.
 5. Register DI at the module boundary and include it from the composition root when needed.
-6. Place any necessary tests beside the changed module and choose its narrowest relevant `testAndroidHostTest` or `iosSimulatorArm64Test` task. Follow `.codex/agents/sol/implementer.md` for a dedicated implementation handoff; module placement alone does not require delegation.
+6. Place any necessary tests beside the changed module and choose its narrowest relevant `testAndroidHostTest` or `iosSimulatorArm64Test` task. Follow `.codex/agents/implementer.toml` for a dedicated implementation handoff; module placement alone does not require delegation.

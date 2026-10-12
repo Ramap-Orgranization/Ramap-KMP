@@ -20,11 +20,11 @@ Examples:
 
 ## Instructions
 
-Use the `release` skill and the dedicated `release-manager` subagent.
+Use the `release` skill and the dedicated `release_manager` subagent.
 
 The command must:
 
-1. Read `AGENTS.md`, `.agents/skills/release/SKILL.md`, and `.codex/agents/sol/release-manager.md`.
+1. Read `AGENTS.md`, `.agents/skills/release/SKILL.md`, and `.codex/agents/release-manager.toml`.
 2. Require a clean worktree and synchronized `release` branch.
 3. Default to the next patch version and increment Android `versionCode` by one.
 4. Stop as a no-op when there are no commits after the latest stable tag unless the user explicitly requests a version-only release.

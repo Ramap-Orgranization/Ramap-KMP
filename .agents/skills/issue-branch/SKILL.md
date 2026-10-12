@@ -9,9 +9,9 @@ Create a GitHub issue and switch to a matching local branch for this repository.
 
 ## Agent routing
 
-The primary agent follows `.codex/commands/issue-branch.md` and delegates to the named role `luna_git_issue_branch`. Use `.codex/agents/luna/luna-git-issue-branch.toml` as the source for its model and reasoning effort and `.codex/agents/luna/git-issue-branch.md` for its responsibilities. If the named role is unavailable, spawn an agent with the TOML's runtime settings.
+The primary agent follows `.codex/commands/issue-branch.md` and delegates to the named role `git_issue_branch`. Use `.codex/agents/git-issue-branch.toml` for its runtime settings and `developer_instructions`. If the named role is unavailable, spawn an agent with the TOML's runtime settings.
 
-The assigned LUNA agent executes the workflow below without delegating it again. An approved `source-command-impl` plan that includes issue and branch creation supplies the work description and authorization for this step.
+The assigned agent executes the workflow below without delegating it again. An approved `source-command-impl` plan that includes issue and branch creation supplies the work description and authorization for this step.
 
 ## Usage
 
@@ -29,7 +29,7 @@ Examples:
 
 ## Workflow
 
-1. Read `AGENTS.md`, `.codex/agents/luna/luna-git-issue-branch.toml`, `.codex/agents/luna/git-issue-branch.md`, and the relevant issue template in `.github/ISSUE_TEMPLATE`. The TOML selects the runtime model and reasoning effort; the Markdown file supplies role-specific instructions.
+1. Read `AGENTS.md`, `.codex/agents/git-issue-branch.toml`, and the relevant issue template in `.github/ISSUE_TEMPLATE`. The standalone TOML includes the runtime settings and role-specific instructions.
 2. Inspect the current branch and worktree with:
 
 ```bash

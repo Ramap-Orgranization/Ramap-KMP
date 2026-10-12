@@ -1,6 +1,6 @@
 ---
 name: instagram-marketing
-description: Ramap 공식 인스타그램용 문제-공감-해결형 게시물을 전담 SOL 에이전트로 기획하고 승인용 초안을 만든다. `/instagram-marketing` 또는 게시물 기획·캡션 초안 요청에 사용한다.
+description: Ramap 공식 인스타그램용 문제-공감-해결형 게시물을 전담 콘텐츠 기획 에이전트로 기획하고 승인용 초안을 만든다. `/instagram-marketing` 또는 게시물 기획·캡션 초안 요청에 사용한다.
 ---
 
 # Instagram Marketing
@@ -9,7 +9,7 @@ Ramap 공식 인스타그램 게시물 초안을 만든다. 기존 계정의 정
 
 ## Agent routing
 
-Primary agent는 `AGENTS.md`, `.codex/agents/sol/terra-instagram-marketer.toml`, `.codex/agents/sol/instagram-marketer.md`와 이 스킬을 읽고 named role `terra_instagram_marketer`에 초안 기획을 위임한다. 모델과 추론 수준은 TOML을 기준으로 선택하며, named role을 사용할 수 없으면 같은 설정으로 별도 에이전트를 생성한다.
+Primary agent는 `AGENTS.md`, `.codex/agents/instagram-marketer.toml`과 이 스킬을 읽고 named role `instagram_marketer`에 초안 기획을 위임한다. 모델과 추론 수준은 TOML을 기준으로 선택하며, named role을 사용할 수 없으면 같은 설정으로 별도 에이전트를 생성한다.
 
 홍보 대상, 확인된 사실, 타깃, CTA, 제공 이미지와 확정 문구를 전달한다. 담당 에이전트는 같은 작업을 다시 위임하지 않고 요청된 초안만 작성한다. 결과를 기다린 뒤 사실 확인 항목과 게시 승인 여부를 사용자에게 함께 전달한다. HTML 카드뉴스 시안과 PNG·ZIP 제작 요청은 `instagram-carousel-prototype` 스킬을 적용한다.
 

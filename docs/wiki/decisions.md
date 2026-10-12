@@ -47,3 +47,13 @@ last_verified: 2026-10-12
 - 반영: [AGENTS.md](../../AGENTS.md), [.gitignore](../../.gitignore), [목차](README.md), [유지보수 정책](maintenance.md), Codex 역할·명령, 프로젝트 스킬, 메뉴 최신화 도구와 메뉴 등록 정책.
 - 적용 상태: 설정과 스킬의 공유 범위를 반영했습니다. 앱 코드와 스킬의 실행 동작은 변경하지 않았습니다.
 - 대체한 결정: DEC-0001의 로컬 전용 공유 범위를 변경합니다. 위키 유지보수 절차와 스킬 소유권 원칙은 유지합니다.
+
+## DEC-0005 Codex 역할 정의 통합과 모델 독립 이름
+
+- 기록일: 2026-10-12 (Asia/Seoul).
+- 결정: Codex 역할의 설정과 상세 지침을 `.codex/agents/`의 역할별 독립 TOML로 통합합니다. 모델군별 폴더와 접두사를 제거하고 `planner`, `implementer`, `git_commit`처럼 역할 기반 이름을 사용합니다. 모델과 추론 수준은 각 TOML의 설정값에서 관리합니다.
+- 이유: 역할별 설정·지침의 중복을 없애고 모델 변경 때문에 역할 이름과 호출 경로를 다시 바꾸지 않도록 합니다.
+- 근거: 사용자의 중복 제거·모델 접두사 금지·레거시 역할 명칭 최신화 요청, [OpenAI 공식 Subagents 문서](https://learn.chatgpt.com/docs/agent-configuration/subagents)의 독립 TOML 정의와 필수 `name`·`description`·`developer_instructions` 형식.
+- 반영: [AGENTS.md](../../AGENTS.md), [역할 정의](../../.codex/agents), 관련 스킬·명령·UI metadata, [목차](README.md), [유지보수 정책](maintenance.md), 메뉴 최신화 스킬의 독립 검토자 참조.
+- 적용 상태: 10개 역할의 설정과 지침을 통합하고 기존 상세 역할 계약 및 런타임 모델·추론 수준을 유지했습니다. 구현·릴리스·게시 승인 절차와 앱 동작은 변경하지 않았습니다.
+- 대체한 결정: 없음. DEC-0004의 공유 범위를 유지하면서 역할 정의 구조와 이름 규칙을 구체화합니다.

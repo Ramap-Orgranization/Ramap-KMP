@@ -9,9 +9,9 @@ Create atomic commits for the changes the user authorized in this repository.
 
 ## Agent routing
 
-For a commit request, the primary agent follows `.codex/commands/commit.md` and delegates to the named role `luna_git_commit`. Read `.codex/agents/luna/luna-git-commit.toml` for its model and reasoning effort, and `.codex/agents/luna/git-commit.md` for its responsibilities. If the named role is unavailable, spawn an agent with the runtime settings from that TOML; a task label does not select the role.
+For a commit request, the primary agent follows `.codex/commands/commit.md` and delegates to the named role `git_commit`. Read `.codex/agents/git-commit.toml` for its runtime settings and `developer_instructions`. If the named role is unavailable, spawn an agent with the runtime settings from that TOML; a task label does not select the role.
 
-The assigned LUNA agent executes the workflow below without delegating it again. When the release manager uses this skill as part of its own release workflow, it applies the commit rules directly and retains ownership of that workflow.
+The assigned agent executes the workflow below without delegating it again. When the release manager uses this skill as part of its own release workflow, it applies the commit rules directly and retains ownership of that workflow.
 
 ## Usage
 
@@ -22,7 +22,7 @@ The assigned LUNA agent executes the workflow below without delegating it again.
 
 ## Workflow
 
-1. Read `AGENTS.md`, `.codex/agents/luna/luna-git-commit.toml`, and `.codex/agents/luna/git-commit.md`. The TOML selects the runtime model and reasoning effort; the Markdown file supplies role-specific instructions.
+1. Read `AGENTS.md` and `.codex/agents/git-commit.toml`. The standalone TOML includes the runtime settings and role-specific instructions.
 2. Inspect `git status --short` and focused diffs.
 3. Split changes into the smallest practical atomic commits before staging.
    - Do not combine build/dependency changes, file moves, base architecture, feature behavior, tests, and formatting in one commit unless they are inseparable.
