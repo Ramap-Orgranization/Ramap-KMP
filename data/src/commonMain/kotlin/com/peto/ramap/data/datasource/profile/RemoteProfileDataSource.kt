@@ -1,7 +1,6 @@
 package com.peto.ramap.data.datasource.profile
 
 import com.peto.ramap.data.datasource.image.ImageUrlDataSource
-import com.peto.ramap.data.datasource.image.RemoteImageUrlDataSource
 import com.peto.ramap.data.model.ProfileResponse
 import com.peto.ramap.data.model.SignedImageRequest
 import com.peto.ramap.data.model.SignedImageUrl
@@ -21,7 +20,7 @@ import kotlinx.serialization.json.put
 
 internal class RemoteProfileDataSource(
     private val client: SupabaseClient,
-    private val imageUrlDataSource: ImageUrlDataSource = RemoteImageUrlDataSource(client),
+    private val imageUrlDataSource: ImageUrlDataSource,
 ) : ProfileDataSource {
     override val sessionUserIds =
         client.auth.sessionStatus
