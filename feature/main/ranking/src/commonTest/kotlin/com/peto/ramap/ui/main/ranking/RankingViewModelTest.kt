@@ -35,7 +35,9 @@ import com.peto.ramap.ui.main.ranking.contract.RankingSideEffect
 import com.peto.ramap.ui.main.ranking.log.RankingAnalytics
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.yield
@@ -626,6 +628,74 @@ class RankingViewModelTest {
         }
 
     @Test
+    fun `세션 복원으로 인증 상태가 다시 전달돼도 저장 표시와 좋아요 수를 유지한다`() =
+        coroutinesTest {
+            val shop = ramenShop()
+            val sessionStates =
+                MutableSharedFlow<LoginSessionState>(replay = 1).apply {
+                    tryEmit(LoginSessionState.AUTHENTICATED)
+                }
+            val loginRepository =
+                object : LoginRepository by FakeLoginRepository(LoginSessionState.AUTHENTICATED) {
+                    override val sessionState = sessionStates.asSharedFlow()
+                }
+            val personalizationStore = FakePersonalizationRepository()
+            val viewModel =
+                rankingViewModel(
+                    repository = FakeShopRankingRepository(pageOf(shopRanking(likeCount = 3))),
+                    personalizationStore = personalizationStore,
+                    loginRepository = loginRepository,
+                )
+            runCurrent()
+            viewModel.dispatch(RankingIntent.OnBookmarkChanged(shop, enabled = true))
+            runCurrent()
+            val stateBeforeRestore = viewModel.uiState.value
+            assertEquals(setOf(shop.id), stateBeforeRestore.bookmarkedShopIds)
+            assertEquals(4L, stateBeforeRestore.displayedLikeCount(stateBeforeRestore.shops[0]))
+
+            sessionStates.emit(LoginSessionState.AUTHENTICATED)
+            runCurrent()
+
+            assertEquals(stateBeforeRestore, viewModel.uiState.value)
+
+            viewModel.dispatch(RankingIntent.OnBookmarkChanged(shop, enabled = false))
+            runCurrent()
+
+            assertEquals(listOf(shop.id to true, shop.id to false), personalizationStore.bookmarkUpdateRequests)
+            assertEquals(emptySet(), viewModel.uiState.value.bookmarkedShopIds)
+            assertEquals(emptyMap(), viewModel.uiState.value.bookmarkLikeCountDeltas)
+            assertEquals(3L, viewModel.uiState.value.displayedLikeCount(viewModel.uiState.value.shops[0]))
+        }
+
+    @Test
+    fun `개인화 상태보다 늦게 인증 상태가 전달돼도 기존 저장 표시를 유지한다`() =
+        coroutinesTest {
+            val shop = ramenShop()
+            val sessionStates = MutableSharedFlow<LoginSessionState>()
+            val loginRepository =
+                object : LoginRepository by FakeLoginRepository(LoginSessionState.AUTHENTICATED) {
+                    override val sessionState = sessionStates.asSharedFlow()
+                }
+            val viewModel =
+                rankingViewModel(
+                    repository = FakeShopRankingRepository(pageOf(shopRanking(likeCount = 3))),
+                    personalizationStore =
+                        FakePersonalizationRepository(
+                            ShopPersonalization(bookmarkedShopIds = setOf(shop.id)),
+                        ),
+                    loginRepository = loginRepository,
+                )
+            runCurrent()
+            assertEquals(setOf(shop.id), viewModel.uiState.value.bookmarkedShopIds)
+
+            sessionStates.emit(LoginSessionState.AUTHENTICATED)
+            runCurrent()
+
+            assertEquals(setOf(shop.id), viewModel.uiState.value.bookmarkedShopIds)
+            assertEquals(3L, viewModel.uiState.value.displayedLikeCount(viewModel.uiState.value.shops[0]))
+        }
+
+    @Test
     fun `로그아웃 후 로그인하면 기존 저장 매장의 좋아요 수를 다시 더하지 않는다`() =
         coroutinesTest {
             val shop = ramenShop()
@@ -652,6 +722,7 @@ class RankingViewModelTest {
             runCurrent()
 
             assertEquals(emptyList(), personalizationStore.bookmarkUpdateRequests)
+            assertEquals(setOf(shop.id), viewModel.uiState.value.bookmarkedShopIds)
             assertEquals(
                 3L,
                 viewModel.uiState.value
@@ -679,6 +750,8 @@ class RankingViewModelTest {
             loginRepository.updateSessionState(LoginSessionState.NOT_AUTHENTICATED)
             personalizationStore.clear()
             runCurrent()
+            assertEquals(emptySet(), viewModel.uiState.value.bookmarkedShopIds)
+            assertEquals(emptyMap(), viewModel.uiState.value.bookmarkLikeCountDeltas)
             viewModel.dispatch(RankingIntent.OnRefreshed)
             runCurrent()
 

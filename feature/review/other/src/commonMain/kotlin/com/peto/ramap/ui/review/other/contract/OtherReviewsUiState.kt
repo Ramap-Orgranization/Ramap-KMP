@@ -50,6 +50,8 @@ data class OtherReviewsUiState(
                 if (selectedTab == OtherReviewsTab.Reviews) !it.canReadReviews else !it.canReadSavedShops
             } ?: false
     val blocking: Boolean get() = loadState.isLoading(OtherReviewsLoadKey.Block)
+    val reviewCount: Int? get() = (profileAccess as? ProfileAccess.Visible)?.reviewCount
+    val savedShopCount: Int? get() = (profileAccess as? ProfileAccess.Visible)?.savedShopCount
 
     val profile: PublicProfile?
         get() =

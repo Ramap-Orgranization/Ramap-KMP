@@ -36,12 +36,14 @@ import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.ic_add
 import ramap.shared.generated.resources.ic_list
 import ramap.shared.generated.resources.ic_notification
+import ramap.shared.generated.resources.ic_profile_edit
 
 @Composable
 internal fun AdminBottomNavigation(
     selectedTab: AdminRegistrationTab,
     onTabSelected: (AdminRegistrationTab) -> Unit,
     modifier: Modifier = Modifier,
+    enabled: Boolean = true,
 ) {
     Column(
         modifier =
@@ -54,7 +56,7 @@ internal fun AdminBottomNavigation(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .height(58.dp)
+                    .height(72.dp)
                     .background(CommonColor.White),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -62,7 +64,8 @@ internal fun AdminBottomNavigation(
                 AdminBottomNavigationItem(
                     tab = tab,
                     selected = selectedTab == tab,
-                    onClick = { onTabSelected(tab) },
+                    onClick = { if (enabled) onTabSelected(tab) },
+                    enabled = enabled,
                     modifier = Modifier.weight(1f),
                 )
             }
@@ -74,6 +77,7 @@ internal fun AdminBottomNavigation(
 private fun AdminBottomNavigationItem(
     tab: AdminRegistrationTab,
     selected: Boolean,
+    enabled: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -83,7 +87,7 @@ private fun AdminBottomNavigationItem(
     val icon =
         when (tab) {
             AdminRegistrationTab.EVENT_MANAGEMENT -> Res.drawable.ic_list
-            AdminRegistrationTab.EVENT_EDIT -> Res.drawable.ic_list
+            AdminRegistrationTab.EVENT_EDIT -> Res.drawable.ic_profile_edit
             AdminRegistrationTab.EVENT_REGISTRATION -> Res.drawable.ic_add
             AdminRegistrationTab.OPERATING_NOTICE -> Res.drawable.ic_notification
         }
@@ -93,9 +97,10 @@ private fun AdminBottomNavigationItem(
                 .fillMaxHeight()
                 .selectable(
                     selected = selected,
+                    enabled = enabled,
                     role = Role.Tab,
                     interactionSource = interactionSource,
-                    indication = null,
+                    indication = androidx.compose.foundation.LocalIndication.current,
                 ) {
                     haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                     onClick()

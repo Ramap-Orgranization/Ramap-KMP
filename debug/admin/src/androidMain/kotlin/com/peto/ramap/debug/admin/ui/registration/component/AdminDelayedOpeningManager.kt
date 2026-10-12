@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import com.peto.ramap.debug.admin.R
 import com.peto.ramap.debug.admin.data.model.AdminDelayedOpening
 import com.peto.ramap.designsystem.button.AppButton
@@ -20,14 +21,25 @@ internal fun AdminDelayedOpeningManager(
     releasingId: String?,
     onRefresh: () -> Unit,
     onRelease: (String) -> Unit,
+    isLoading: Boolean = false,
+    hasFailed: Boolean = false,
 ) {
-    AppButton(stringResource(R.string.admin_event_status_refresh), onRefresh, modifier = Modifier.fillMaxWidth())
+    AppButton(stringResource(R.string.admin_event_status_refresh), onRefresh, modifier = Modifier.fillMaxWidth(), isLoading = isLoading, enabled = !isLoading && releasingId == null)
+    if (hasFailed) {
+        AppText(stringResource(R.string.admin_delayed_opening_load_failure), style = AppTextStyle.B2, color = com.peto.ramap.theme.SystemColor.Warning)
+        return
+    }
+    if (isLoading && notices.isEmpty()) return
     if (notices.isEmpty()) {
         AppText(stringResource(R.string.admin_delayed_opening_empty), style = AppTextStyle.B2, color = GrayColor.C500)
         return
     }
     val (today, scheduled) = partitionByKoreaToday(notices, koreaToday)
-    Column {
+    Column(
+        verticalArrangement =
+            androidx.compose.foundation.layout.Arrangement
+                .spacedBy(16.dp),
+    ) {
         DelayedOpeningSection(
             title = stringResource(R.string.admin_delayed_opening_today),
             emptyMessage = stringResource(R.string.admin_delayed_opening_today_empty),

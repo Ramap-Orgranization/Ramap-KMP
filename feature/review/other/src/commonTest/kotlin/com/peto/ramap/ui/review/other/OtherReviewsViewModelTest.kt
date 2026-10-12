@@ -53,6 +53,7 @@ class OtherReviewsViewModelTest {
                     ?.nickname,
             )
             assertEquals(20, viewModel.uiState.value.reviews.size)
+            assertEquals(23, viewModel.uiState.value.reviewCount)
             assertTrue(viewModel.uiState.value.hasMore)
 
             viewModel.dispatch(OtherReviewsIntent.LoadMore)
@@ -61,6 +62,7 @@ class OtherReviewsViewModelTest {
             assertEquals(listOf(0L, 20L), community.requestedOffsets)
             assertEquals(community.reviews, viewModel.uiState.value.reviews)
             assertEquals(23, viewModel.uiState.value.reviews.size)
+            assertEquals(23, viewModel.uiState.value.reviewCount)
             assertFalse(viewModel.uiState.value.hasMore)
         }
 
@@ -100,6 +102,7 @@ class OtherReviewsViewModelTest {
 
             assertEquals(OtherReviewsTab.SavedShops, viewModel.uiState.value.selectedTab)
             assertEquals(20, viewModel.uiState.value.savedShops.size)
+            assertEquals(23, viewModel.uiState.value.savedShopCount)
             assertTrue(viewModel.uiState.value.savedShopsHasMore)
 
             viewModel.dispatch(OtherReviewsIntent.LoadMore)
@@ -107,7 +110,38 @@ class OtherReviewsViewModelTest {
 
             assertEquals(listOf(0L, 20L), community.requestedSavedShopOffsets)
             assertEquals(23, viewModel.uiState.value.savedShops.size)
+            assertEquals(23, viewModel.uiState.value.savedShopCount)
             assertFalse(viewModel.uiState.value.savedShopsHasMore)
+        }
+
+    @Test
+    fun `profile totals remain available when review and saved shop pages fail`() =
+        coroutinesTest {
+            val community =
+                FakeOtherReviewsCommunity().apply {
+                    reviewCount = 43
+                    savedShopCount = 67
+                    failNextPage = true
+                    failNextSavedShops = true
+                }
+            val viewModel = OtherReviewsViewModel(community, FakeProfileRepository())
+            runCurrent()
+
+            viewModel.dispatch(OtherReviewsIntent.OpenProfile("author"))
+            runCurrent()
+
+            assertTrue(viewModel.uiState.value.failed)
+            assertTrue(viewModel.uiState.value.savedShopsFailed)
+            assertTrue(
+                viewModel.uiState.value.reviews
+                    .isEmpty(),
+            )
+            assertTrue(
+                viewModel.uiState.value.savedShops
+                    .isEmpty(),
+            )
+            assertEquals(43, viewModel.uiState.value.reviewCount)
+            assertEquals(67, viewModel.uiState.value.savedShopCount)
         }
 
     @Test
