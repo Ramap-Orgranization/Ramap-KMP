@@ -7,6 +7,7 @@ import com.peto.ramap.domain.model.community.ReviewAuthor
 import com.peto.ramap.domain.model.review.Review
 import com.peto.ramap.fake.FakeFollowRepository
 import com.peto.ramap.fake.FakeProfileRepository
+import com.peto.ramap.fake.FakeReviewChangeStore
 import com.peto.ramap.fixture.ramenShopFixture
 import com.peto.ramap.ui.review.other.contract.OtherReviewsEffect
 import com.peto.ramap.ui.review.other.contract.OtherReviewsIntent
@@ -21,10 +22,74 @@ import kotlin.test.assertTrue
 @OptIn(ExperimentalCoroutinesApi::class)
 class OtherReviewsViewModelTest {
     @Test
+    fun `own profile retains private pending create update delete and total summary without refetch`() =
+        coroutinesTest {
+            val changes = FakeReviewChangeStore()
+            val community =
+                FakeOtherReviewsCommunity().apply {
+                    profile =
+                        com.peto.ramap.domain.model.community
+                            .PublicProfile("owner", "작성자")
+                    reviewCount = 0
+                }
+            val viewModel = OtherReviewsViewModel(community, FakeProfileRepository("owner"), FakeFollowRepository(), changes)
+            runCurrent()
+            viewModel.dispatch(OtherReviewsIntent.OpenProfile("owner"))
+            runCurrent()
+            val original = Review("private", "shop", "비공개 본문", "2026-10-12", author = ReviewAuthor("owner", "작성자"), isPublic = false, moderationStatus = com.peto.ramap.domain.model.community.ReviewModerationStatus.PENDING)
+
+            fun write(
+                before: Review?,
+                after: Review?,
+                total: Int,
+            ) = com.peto.ramap.domain.model.review.change.ReviewChange
+                .Written(
+                    "private",
+                    "owner",
+                    "shop",
+                    before?.let {
+                        com.peto.ramap.domain.model.review.change
+                            .ReviewSnapshot(it, "매장")
+                    },
+                    after?.let {
+                        com.peto.ramap.domain.model.review.change
+                            .ReviewSnapshot(it, "매장")
+                    },
+                    com.peto.ramap.domain.model.review.change
+                        .ReviewOwnerCounts(total, 0, total, 0, false),
+                )
+            changes.publish(write(null, original, 1))
+            runCurrent()
+            assertEquals(
+                listOf("private"),
+                viewModel.uiState.value.reviews
+                    .map { it.review.id },
+            )
+            assertEquals(1L, (viewModel.uiState.value.profileAccess as com.peto.ramap.domain.model.community.ProfileAccess.Visible).reviewCount)
+            val edited = original.copy(body = "수정된 비공개 본문")
+            changes.publish(write(original, edited, 1))
+            runCurrent()
+            assertEquals(
+                "수정된 비공개 본문",
+                viewModel.uiState.value.reviews
+                    .single()
+                    .review.body,
+            )
+            changes.publish(write(edited, null, 0))
+            runCurrent()
+            assertTrue(
+                viewModel.uiState.value.reviews
+                    .isEmpty(),
+            )
+            assertEquals(0L, (viewModel.uiState.value.profileAccess as com.peto.ramap.domain.model.community.ProfileAccess.Visible).reviewCount)
+            assertEquals(listOf(0L), community.requestedOffsets)
+        }
+
+    @Test
     fun `guest block request opens login without blocking the author`() =
         coroutinesTest {
             val community = FakeOtherReviewsCommunity()
-            val viewModel = OtherReviewsViewModel(community, FakeProfileRepository(userId = null), FakeFollowRepository())
+            val viewModel = OtherReviewsViewModel(community, FakeProfileRepository(userId = null), FakeFollowRepository(), changes = FakeReviewChangeStore())
             runCurrent()
             viewModel.dispatch(OtherReviewsIntent.OpenProfile("author"))
             runCurrent()
@@ -42,7 +107,7 @@ class OtherReviewsViewModelTest {
             val community = FakeOtherReviewsCommunity()
             community.reviews = (1..23).map(::review)
             community.reviewCount = 23L
-            val viewModel = OtherReviewsViewModel(community, FakeProfileRepository(), FakeFollowRepository())
+            val viewModel = OtherReviewsViewModel(community, FakeProfileRepository(), FakeFollowRepository(), changes = FakeReviewChangeStore())
             runCurrent()
 
             viewModel.dispatch(OtherReviewsIntent.OpenProfile("author"))
@@ -70,7 +135,7 @@ class OtherReviewsViewModelTest {
             val community = FakeOtherReviewsCommunity()
             val firstPage = (1..20).map(::review)
             community.reviews = firstPage + firstPage.first().copy(shop = ramenShopFixture(id = "shop-1"))
-            val viewModel = OtherReviewsViewModel(community, FakeProfileRepository(), FakeFollowRepository())
+            val viewModel = OtherReviewsViewModel(community, FakeProfileRepository(), FakeFollowRepository(), changes = FakeReviewChangeStore())
             runCurrent()
 
             viewModel.dispatch(OtherReviewsIntent.OpenProfile("author"))
@@ -90,7 +155,7 @@ class OtherReviewsViewModelTest {
             val community = FakeOtherReviewsCommunity()
             community.savedShops = (1..23).map { ramenShopFixture(id = "shop-$it") }
             community.savedShopCount = 23L
-            val viewModel = OtherReviewsViewModel(community, FakeProfileRepository(), FakeFollowRepository())
+            val viewModel = OtherReviewsViewModel(community, FakeProfileRepository(), FakeFollowRepository(), changes = FakeReviewChangeStore())
             runCurrent()
 
             viewModel.dispatch(OtherReviewsIntent.OpenProfile("author"))
@@ -114,7 +179,7 @@ class OtherReviewsViewModelTest {
     fun `guest saved shops tab requests login without fetching shops`() =
         coroutinesTest {
             val community = FakeOtherReviewsCommunity()
-            val viewModel = OtherReviewsViewModel(community, FakeProfileRepository(userId = null), FakeFollowRepository())
+            val viewModel = OtherReviewsViewModel(community, FakeProfileRepository(userId = null), FakeFollowRepository(), changes = FakeReviewChangeStore())
             runCurrent()
             viewModel.dispatch(OtherReviewsIntent.OpenProfile("author"))
             runCurrent()
@@ -133,7 +198,7 @@ class OtherReviewsViewModelTest {
         coroutinesTest {
             val community = FakeOtherReviewsCommunity()
             community.profile = null
-            val viewModel = OtherReviewsViewModel(community, FakeProfileRepository(), FakeFollowRepository())
+            val viewModel = OtherReviewsViewModel(community, FakeProfileRepository(), FakeFollowRepository(), changes = FakeReviewChangeStore())
             runCurrent()
 
             viewModel.dispatch(OtherReviewsIntent.OpenProfile("author"))
@@ -151,7 +216,7 @@ class OtherReviewsViewModelTest {
             val community = FakeOtherReviewsCommunity()
             community.profilePrivate = true
             community.reviews = listOf(review(1))
-            val viewModel = OtherReviewsViewModel(community, FakeProfileRepository(), FakeFollowRepository())
+            val viewModel = OtherReviewsViewModel(community, FakeProfileRepository(), FakeFollowRepository(), changes = FakeReviewChangeStore())
             runCurrent()
 
             viewModel.dispatch(OtherReviewsIntent.OpenProfile("author"))
@@ -174,7 +239,7 @@ class OtherReviewsViewModelTest {
             val community = FakeOtherReviewsCommunity()
             community.blockedUserIds += "author"
             community.reviews = listOf(review(1))
-            val viewModel = OtherReviewsViewModel(community, FakeProfileRepository(), FakeFollowRepository())
+            val viewModel = OtherReviewsViewModel(community, FakeProfileRepository(), FakeFollowRepository(), changes = FakeReviewChangeStore())
             runCurrent()
 
             viewModel.dispatch(OtherReviewsIntent.OpenProfile("author"))
@@ -201,7 +266,7 @@ class OtherReviewsViewModelTest {
             val community = FakeOtherReviewsCommunity()
             community.reviews = (1..23).map(::review)
             community.reviewCount = 23L
-            val viewModel = OtherReviewsViewModel(community, FakeProfileRepository(), FakeFollowRepository())
+            val viewModel = OtherReviewsViewModel(community, FakeProfileRepository(), FakeFollowRepository(), changes = FakeReviewChangeStore())
             runCurrent()
             viewModel.dispatch(OtherReviewsIntent.OpenProfile("author"))
             runCurrent()
@@ -223,7 +288,7 @@ class OtherReviewsViewModelTest {
         coroutinesTest {
             val community = FakeOtherReviewsCommunity()
             community.reviews = listOf(review(1))
-            val viewModel = OtherReviewsViewModel(community, FakeProfileRepository(), FakeFollowRepository())
+            val viewModel = OtherReviewsViewModel(community, FakeProfileRepository(), FakeFollowRepository(), changes = FakeReviewChangeStore())
             runCurrent()
             viewModel.dispatch(OtherReviewsIntent.OpenProfile("author"))
             runCurrent()
@@ -248,7 +313,7 @@ class OtherReviewsViewModelTest {
         coroutinesTest {
             val community = FakeOtherReviewsCommunity()
             community.reviews = listOf(review(1))
-            val viewModel = OtherReviewsViewModel(community, FakeProfileRepository(), FakeFollowRepository())
+            val viewModel = OtherReviewsViewModel(community, FakeProfileRepository(), FakeFollowRepository(), changes = FakeReviewChangeStore())
             runCurrent()
             viewModel.dispatch(OtherReviewsIntent.OpenProfile("author"))
             runCurrent()
