@@ -4,23 +4,31 @@ import com.peto.ramap.data.datasource.review.ReviewDataSource
 import com.peto.ramap.data.model.BlockedUserResponse
 import com.peto.ramap.data.model.MyCommunityProfileResponse
 import com.peto.ramap.data.model.ProfileAccessResponse
+import com.peto.ramap.data.model.ProfileReviewsPageResponse
 import com.peto.ramap.data.model.PublicSavedShopsPageResponse
 import com.peto.ramap.data.model.ReviewResponse
 import io.github.jan.supabase.SupabaseClient
+import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.storage.storage
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
+import kotlin.time.Clock
 import kotlin.time.Duration.Companion.minutes
 
 internal class RemoteCommunityDataSource(
     private val client: SupabaseClient,
     private val reviewDataSource: ReviewDataSource,
 ) : CommunityDataSource {
+    private val profileAvatarMutex = Mutex()
+    private var profileAvatarUrl: ProfileAvatarUrl? = null
+
     override suspend fun fetchMyCommunityProfile(): MyCommunityProfileResponse {
         val profile =
             client.postgrest
@@ -36,10 +44,31 @@ internal class RemoteCommunityDataSource(
                     RPC_FETCH_COMMUNITY_PROFILE_ACCESS,
                     buildJsonObject { put(PARAM_USER_ID, userId) },
                 ).decodeAs<ProfileAccessResponse>()
+        return signProfileAccess(access)
+    }
+
+    private suspend fun signProfileAccess(access: ProfileAccessResponse): ProfileAccessResponse {
         if (access.status != ProfileAccessResponse.VISIBLE) return access
         val profile = access.profile ?: return access
-        return access.copy(profile = profile.copy(avatarUrl = signedAvatar(profile.avatarPath)))
+        return access.copy(profile = profile.copy(avatarUrl = signedProfileAvatar(profile.avatarPath)))
     }
+
+    private suspend fun signedProfileAvatar(path: String?): String? =
+        profileAvatarMutex.withLock {
+            if (path == null) {
+                profileAvatarUrl = null
+                return@withLock null
+            }
+            val viewerId = client.auth.currentUserOrNull()?.id
+            val now = Clock.System.now()
+            val cached = profileAvatarUrl
+            if (cached?.matches(viewerId, path, now) == true) return@withLock cached.url
+            val url = signedAvatar(path) ?: return@withLock null
+            if (client.auth.currentUserOrNull()?.id == viewerId) {
+                profileAvatarUrl = ProfileAvatarUrl(viewerId, path, url, now + SIGNED_URL_REFRESH_AFTER)
+            }
+            url
+        }
 
     private suspend fun signedAvatar(path: String?): String? {
         if (path == null) return null
@@ -52,6 +81,14 @@ internal class RemoteCommunityDataSource(
         }
     }
 
+    override suspend fun fetchProfileReviewsPage(
+        userId: String,
+        offset: Long,
+    ): ProfileReviewsPageResponse {
+        val page = reviewDataSource.fetchProfileReviewsPage(userId, offset)
+        return page.copy(access = signProfileAccess(page.access))
+    }
+
     override suspend fun fetchUserReviews(
         userId: String,
         offset: Long,
@@ -60,15 +97,18 @@ internal class RemoteCommunityDataSource(
     override suspend fun fetchUserSavedShops(
         userId: String,
         offset: Long,
-    ): PublicSavedShopsPageResponse =
-        client.postgrest
-            .rpc(
-                RPC_FETCH_PROFILE_SAVED_SHOPS,
-                buildJsonObject {
-                    put(PARAM_USER_ID, userId)
-                    put(PARAM_OFFSET, offset)
-                },
-            ).decodeAs<PublicSavedShopsPageResponse>()
+    ): PublicSavedShopsPageResponse {
+        val page =
+            client.postgrest
+                .rpc(
+                    RPC_FETCH_PROFILE_SAVED_SHOPS,
+                    buildJsonObject {
+                        put(PARAM_USER_ID, userId)
+                        put(PARAM_OFFSET, offset)
+                    },
+                ).decodeAs<PublicSavedShopsPageResponse>()
+        return page.copy(access = signProfileAccess(page.access))
+    }
 
     override suspend fun fetchBlockedUsers(): List<BlockedUserResponse> =
         coroutineScope {
@@ -128,5 +168,6 @@ internal class RemoteCommunityDataSource(
 
         const val BUCKET_PROFILE_AVATARS = "profile-avatars"
         val SIGNED_URL_LIFETIME = 5.minutes
+        val SIGNED_URL_REFRESH_AFTER = 4.minutes
     }
 }

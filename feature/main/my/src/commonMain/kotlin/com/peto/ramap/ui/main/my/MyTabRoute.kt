@@ -21,11 +21,13 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.Switch
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -42,6 +44,7 @@ import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.designsystem.toast.ToastManager
 import com.peto.ramap.domain.model.auth.LoginType
 import com.peto.ramap.domain.model.profile.AccountProfile
+import com.peto.ramap.domain.model.profile.ProfileVisibility
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.ChromaticColor
 import com.peto.ramap.theme.CommonColor
@@ -55,12 +58,18 @@ import com.peto.ramap.ui.main.my.component.MyTabSkeleton
 import com.peto.ramap.ui.main.my.contract.MyTabIntent
 import com.peto.ramap.ui.main.my.contract.MyTabSideEffect
 import com.peto.ramap.ui.main.my.contract.MyTabUiState
+import com.peto.ramap.ui.refresh.RefreshOnReturnEffect
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 import ramap.shared.generated.resources.Res
+import ramap.shared.generated.resources.follow_manage
+import ramap.shared.generated.resources.follow_requests
+import ramap.shared.generated.resources.follow_reviews_visibility
+import ramap.shared.generated.resources.follow_saved_shops_visibility
 import ramap.shared.generated.resources.ic_notification
+import ramap.shared.generated.resources.ic_person
 import ramap.shared.generated.resources.ic_profile_blocked
 import ramap.shared.generated.resources.ic_profile_bookmark
 import ramap.shared.generated.resources.ic_profile_private
@@ -74,11 +83,9 @@ import ramap.shared.generated.resources.profile_discard
 import ramap.shared.generated.resources.profile_load_failed
 import ramap.shared.generated.resources.profile_retry
 import ramap.shared.generated.resources.profile_visibility
-import ramap.shared.generated.resources.profile_visibility_body
-import ramap.shared.generated.resources.profile_visibility_private
 import ramap.shared.generated.resources.profile_visibility_public
-import ramap.shared.generated.resources.profile_visibility_status
 import ramap.shared.generated.resources.review_blocked_users
+import ramap.shared.generated.resources.review_save
 import ramap.shared.generated.resources.review_unblock
 import ramap.shared.generated.resources.review_unblock_confirm
 import ramap.shared.generated.resources.settings_bookmarked_shops_menu
@@ -96,6 +103,7 @@ fun MyTabRoute(
     onSubscribedShopsNavigate: () -> Unit,
     onBookmarkedShopsNavigate: () -> Unit,
     onProfileNavigate: () -> Unit,
+    onFollowNavigate: () -> Unit = {},
     onMyReviewsNavigate: () -> Unit,
     onOpenProfile: (String) -> Unit = {},
     onLoginClick: (LoginType) -> Unit,
@@ -103,14 +111,37 @@ fun MyTabRoute(
     viewModel: MyTabViewModel = koinViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    var returningFromProfileEdit by rememberSaveable { mutableStateOf(false) }
+    var returningFromReviews by rememberSaveable { mutableStateOf(false) }
+    var returningFromBlockedProfile by rememberSaveable { mutableStateOf(false) }
+    var returningFromFollows by rememberSaveable { mutableStateOf(false) }
+    RefreshOnReturnEffect {
+        if (returningFromProfileEdit) {
+            returningFromProfileEdit = false
+            viewModel.dispatch(MyTabIntent.ReturnedFromProfileEdit)
+        } else if (returningFromReviews) {
+            returningFromReviews = false
+            viewModel.dispatch(MyTabIntent.ReturnedFromReviews)
+        } else if (returningFromBlockedProfile) {
+            returningFromBlockedProfile = false
+            viewModel.dispatch(MyTabIntent.ReturnedFromBlockedProfile)
+        } else if (returningFromFollows) {
+            returningFromFollows = false
+            viewModel.dispatch(MyTabIntent.ReturnedFromFollows)
+        } else {
+            viewModel.dispatch(MyTabIntent.ReturnedToScreen)
+        }
+    }
     var isVisibilityDialogOpen by rememberSaveable { mutableStateOf(false) }
     var isBlockedUsersDialogOpen by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(state.userId) {
+        isVisibilityDialogOpen = false
         isBlockedUsersDialogOpen = false
     }
     ObserveAsEvents(viewModel.sideEffect) { effect ->
         when (effect) {
             is MyTabSideEffect.ShowToast -> toastManager.show(effect.data)
+            MyTabSideEffect.VisibilitySaved -> isVisibilityDialogOpen = false
             MyTabSideEffect.OpenBlockedUsersDialog -> isBlockedUsersDialogOpen = true
             MyTabSideEffect.CloseBlockedUsersDialog -> isBlockedUsersDialogOpen = false
         }
@@ -122,9 +153,12 @@ fun MyTabRoute(
         onSettingsClick = onSettingsNavigate,
         onVisibilityClick = { if (state.profile != null) isVisibilityDialogOpen = true },
         onVisibilityDismiss = { if (!state.savingVisibility) isVisibilityDialogOpen = false },
-        onVisibilitySave = { isPublic ->
-            isVisibilityDialogOpen = false
-            viewModel.dispatch(MyTabIntent.SaveVisibility(isPublic))
+        onVisibilitySave = { visibility ->
+            viewModel.dispatch(MyTabIntent.SaveProfileVisibility(visibility))
+        },
+        onFollowClick = {
+            returningFromFollows = true
+            onFollowNavigate()
         },
         onBlockedUsersClick = { viewModel.dispatch(MyTabIntent.OpenBlockedUsers) },
         onBlockedUsersDismiss = {
@@ -134,13 +168,20 @@ fun MyTabRoute(
         onBlockedUserProfileClick = { userId ->
             isBlockedUsersDialogOpen = false
             viewModel.dispatch(MyTabIntent.DismissBlockedUsers)
+            returningFromBlockedProfile = true
             onOpenProfile(userId)
         },
         onUnblockClick = { userId -> viewModel.dispatch(MyTabIntent.RequestUnblock(userId)) },
         onUnblockDismiss = { viewModel.dispatch(MyTabIntent.DismissUnblock) },
         onUnblockConfirm = { viewModel.dispatch(MyTabIntent.ConfirmUnblock) },
-        onProfileClick = onProfileNavigate,
-        onMyReviewsClick = onMyReviewsNavigate,
+        onProfileClick = {
+            returningFromProfileEdit = true
+            onProfileNavigate()
+        },
+        onMyReviewsClick = {
+            returningFromReviews = true
+            onMyReviewsNavigate()
+        },
         onRetryClick = { viewModel.dispatch(MyTabIntent.Refresh) },
         onBookmarkedShopsClick = onBookmarkedShopsNavigate,
         onSubscribedShopsClick = onSubscribedShopsNavigate,
@@ -158,7 +199,8 @@ internal fun MyTabContent(
     onSettingsClick: () -> Unit,
     onVisibilityClick: () -> Unit,
     onVisibilityDismiss: () -> Unit,
-    onVisibilitySave: (Boolean) -> Unit,
+    onVisibilitySave: (ProfileVisibility) -> Unit,
+    onFollowClick: () -> Unit = {},
     onBlockedUsersClick: () -> Unit,
     onBlockedUsersDismiss: () -> Unit,
     onBlockedUserProfileClick: (String) -> Unit,
@@ -177,6 +219,13 @@ internal fun MyTabContent(
     val isLoading = !state.sessionResolved || (state.loading && state.profile == null)
     val isGuest = state.sessionResolved && state.userId == null
     val isPublic = state.profile?.isPublic == true
+    var draftPublic by remember(isVisibilityDialogOpen, state.profile) { mutableStateOf(isPublic) }
+    var draftReviews by remember(isVisibilityDialogOpen, state.profile) {
+        mutableStateOf(state.profile?.followersCanReadReviews ?: true)
+    }
+    var draftSavedShops by remember(isVisibilityDialogOpen, state.profile) {
+        mutableStateOf(state.profile?.followersCanReadSavedShops ?: true)
+    }
     Column(
         modifier =
             Modifier
@@ -215,14 +264,13 @@ internal fun MyTabContent(
         }
         CommonDialog(
             visible = isVisibilityDialogOpen,
-            confirmText =
-                stringResource(
-                    if (isPublic) Res.string.profile_visibility_private else Res.string.profile_visibility_public,
-                ),
+            confirmText = stringResource(Res.string.review_save),
             dismissText = stringResource(Res.string.profile_discard),
             confirmEnabled = !state.savingVisibility,
             onDismissRequest = onVisibilityDismiss,
-            onConfirm = { onVisibilitySave(!isPublic) },
+            onConfirm = {
+                onVisibilitySave(ProfileVisibility(draftPublic, draftReviews, draftSavedShops))
+            },
             onDismiss = onVisibilityDismiss,
             content = {
                 AppText(
@@ -231,25 +279,23 @@ internal fun MyTabContent(
                     color = GrayColor.C500,
                     textAlign = TextAlign.Center,
                 )
-                AppText(
-                    text = stringResource(Res.string.profile_visibility_body),
-                    style = AppTextStyle.B2,
-                    color = GrayColor.C400,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(top = 8.dp),
+                VisibilitySwitch(
+                    label = stringResource(Res.string.profile_visibility_public),
+                    checked = draftPublic,
+                    enabled = !state.savingVisibility,
+                    onCheckedChange = { draftPublic = it },
                 )
-                AppText(
-                    text =
-                        stringResource(
-                            Res.string.profile_visibility_status,
-                            stringResource(
-                                if (isPublic) Res.string.profile_visibility_public else Res.string.profile_visibility_private,
-                            ),
-                        ),
-                    style = AppTextStyle.B2,
-                    color = GrayColor.C400,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(top = 4.dp),
+                VisibilitySwitch(
+                    label = stringResource(Res.string.follow_reviews_visibility),
+                    checked = draftReviews,
+                    enabled = !state.savingVisibility,
+                    onCheckedChange = { draftReviews = it },
+                )
+                VisibilitySwitch(
+                    label = stringResource(Res.string.follow_saved_shops_visibility),
+                    checked = draftSavedShops,
+                    enabled = !state.savingVisibility,
+                    onCheckedChange = { draftSavedShops = it },
                 )
             },
         )
@@ -328,6 +374,21 @@ internal fun MyTabContent(
                         .clip(RoundedCornerShape(16.dp)),
             ) {
                 if (!isGuest) {
+                    MyMenuRow(
+                        icon = Res.drawable.ic_person,
+                        title = Res.string.follow_manage,
+                        count = null,
+                        iconBackground = ChromaticColor.Orange050,
+                        iconTint = ChromaticColor.Orange400,
+                        hasCount = false,
+                        notification = if (state.hasPendingFollowRequests) Res.string.follow_requests else null,
+                        onClick = onFollowClick,
+                    )
+                    HorizontalDivider(
+                        modifier = Modifier.padding(start = 16.dp),
+                        thickness = 1.dp,
+                        color = GrayColor.C100,
+                    )
                     MyMenuRow(
                         icon = Res.drawable.ic_review,
                         title = Res.string.my_reviews,
@@ -435,6 +496,7 @@ private fun MyTabRoutePreview() {
                     hiddenCount = 0,
                     reviewCount = 8,
                     blockedUserCount = 2,
+                    hasPendingFollowRequests = true,
                 ),
             onSettingsClick = {},
             onVisibilityClick = {},
@@ -454,5 +516,22 @@ private fun MyTabRoutePreview() {
             onReportClick = {},
             onLoginClick = {},
         )
+    }
+}
+
+@Composable
+private fun VisibilitySwitch(
+    label: String,
+    checked: Boolean,
+    enabled: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        AppText(text = label, style = AppTextStyle.B2, color = GrayColor.C500, modifier = Modifier.weight(1f))
+        Switch(checked = checked, enabled = enabled, onCheckedChange = onCheckedChange)
     }
 }

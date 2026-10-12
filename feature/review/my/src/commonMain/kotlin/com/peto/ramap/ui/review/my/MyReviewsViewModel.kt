@@ -26,7 +26,6 @@ class MyReviewsViewModel(
 ) : BaseViewModel<MyReviewsUiState, MyReviewsIntent, MyReviewsSideEffect>(MyReviewsUiState()) {
     init {
         observeSessionUserIds()
-        observeReviewChanges()
     }
 
     private fun observeSessionUserIds() {
@@ -39,18 +38,11 @@ class MyReviewsViewModel(
         }
     }
 
-    private fun observeReviewChanges() {
-        viewModelScope.launch {
-            reviews.observeChanges().collect {
-                if (currentState.userId != null) loadPage(reset = true)
-            }
-        }
-    }
-
     override suspend fun handleIntent(intent: MyReviewsIntent) {
         when (intent) {
             is MyReviewsIntent.SelectFilter -> handleSelectFilter(intent.filter)
             MyReviewsIntent.Retry -> handleRetry()
+            MyReviewsIntent.ReturnedToScreen -> loadPage(reset = true)
             MyReviewsIntent.LoadMore -> handleLoadMore()
             is MyReviewsIntent.DeleteReview -> handleDeleteReview(intent.reviewId)
         }
@@ -89,6 +81,7 @@ class MyReviewsViewModel(
         val review = currentState.reviews.firstOrNull { it.id == reviewId } ?: return
         val actingUserId = currentState.userId ?: return
         if (currentState.actingReviewId != null) return
+        cancelTask(PAGE_TASK)
 
         launchResultTask(
             taskKey = DELETE_TASK,

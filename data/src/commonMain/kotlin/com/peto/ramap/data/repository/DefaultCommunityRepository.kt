@@ -6,6 +6,7 @@ import com.peto.ramap.data.datasource.shop.RamenShopDataSource
 import com.peto.ramap.domain.model.community.BlockedUser
 import com.peto.ramap.domain.model.community.ProfileAccess
 import com.peto.ramap.domain.model.community.ProfileReview
+import com.peto.ramap.domain.model.community.ProfileReviewsPage
 import com.peto.ramap.domain.model.community.PublicProfile
 import com.peto.ramap.domain.model.community.PublicSavedShopsPage
 import com.peto.ramap.domain.model.community.ReportReason
@@ -16,14 +17,25 @@ import com.peto.ramap.network.execute.invokeRequest
 
 internal class DefaultCommunityRepository(
     private val dataSource: CommunityDataSource,
-    private val changes: ReviewChangeNotifier,
     private val shopDataSource: RamenShopDataSource,
 ) : CommunityRepository {
-    override fun observeChanges() = changes.events
-
     override suspend fun fetchMyCommunityProfile(): RamapResult<PublicProfile?> = invokeRequest { dataSource.fetchMyCommunityProfile().toDomain() }
 
     override suspend fun fetchProfileAccess(userId: String): RamapResult<ProfileAccess> = invokeRequest { dataSource.fetchProfileAccess(userId).toDomain() }
+
+    override suspend fun fetchProfileReviewsPage(
+        userId: String,
+        offset: Long,
+    ): RamapResult<ProfileReviewsPage> =
+        invokeRequest {
+            val page = dataSource.fetchProfileReviewsPage(userId, offset)
+            val reviews = page.reviews.map { it.toDomain() }
+            val shops = fetchReviewShops(reviews)
+            ProfileReviewsPage(
+                access = page.access.toDomain(),
+                reviews = reviews.map { ProfileReview(review = it, shop = shops[it.shopId]) },
+            )
+        }
 
     override suspend fun fetchUserReviews(
         userId: String,
@@ -88,7 +100,6 @@ internal class DefaultCommunityRepository(
     ): RamapResult<Unit> =
         invokeRequest {
             dataSource.changeBlock(userId, blocked)
-            changes.notifyChanged()
         }
 
     private companion object {

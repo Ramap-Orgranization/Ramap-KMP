@@ -6,4 +6,5 @@ enum class OtherReviewsLoadKey : LoadKey {
     Page,
     SavedShops,
     Block,
+    Follow,
 }

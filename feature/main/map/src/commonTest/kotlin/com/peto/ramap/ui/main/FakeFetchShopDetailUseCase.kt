@@ -19,6 +19,15 @@ internal class FakeFetchShopDetailUseCase(
 ) : FetchShopDetailUseCase {
     private val cache = mutableMapOf<String, ShopDetail>()
 
+    override fun updateCachedReviews(
+        shopId: String,
+        page: com.peto.ramap.domain.model.review.ShopReviewsPage,
+    ) {
+        cache[shopId]?.let { detail ->
+            cache[shopId] = detail.copy(reviews = page.reviews, reviewCount = page.totalCount)
+        }
+    }
+
     override fun clearCache() {
         cache.clear()
     }

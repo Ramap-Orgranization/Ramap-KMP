@@ -8,8 +8,6 @@ import com.peto.ramap.domain.model.community.PublicProfile
 import com.peto.ramap.domain.model.community.PublicSavedShopsPage
 import com.peto.ramap.domain.model.community.ReportReason
 import com.peto.ramap.domain.repository.CommunityRepository
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.emptyFlow
 
 class FakeCommunityRepository(
     var blockedUsersResult: RamapResult<List<BlockedUser>> = RamapResult.Success(emptyList()),
@@ -17,11 +15,18 @@ class FakeCommunityRepository(
     var unblockResult: RamapResult<Unit> = RamapResult.Success(Unit)
     val unblockedUserIds = mutableListOf<String>()
 
-    override fun observeChanges(): Flow<Unit> = emptyFlow()
-
     override suspend fun fetchMyCommunityProfile(): RamapResult<PublicProfile?> = RamapResult.Success(PublicProfile("me", "나"))
 
     override suspend fun fetchProfileAccess(userId: String): RamapResult<ProfileAccess> = RamapResult.Success(ProfileAccess.Unavailable)
+
+    override suspend fun fetchProfileReviewsPage(
+        userId: String,
+        offset: Long,
+    ): RamapResult<com.peto.ramap.domain.model.community.ProfileReviewsPage> =
+        RamapResult.Success(
+            com.peto.ramap.domain.model.community
+                .ProfileReviewsPage(ProfileAccess.Unavailable, emptyList()),
+        )
 
     override suspend fun fetchUserReviews(
         userId: String,

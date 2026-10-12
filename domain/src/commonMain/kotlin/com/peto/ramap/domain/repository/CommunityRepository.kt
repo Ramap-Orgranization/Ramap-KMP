@@ -4,17 +4,20 @@ import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.domain.model.community.BlockedUser
 import com.peto.ramap.domain.model.community.ProfileAccess
 import com.peto.ramap.domain.model.community.ProfileReview
+import com.peto.ramap.domain.model.community.ProfileReviewsPage
 import com.peto.ramap.domain.model.community.PublicProfile
 import com.peto.ramap.domain.model.community.PublicSavedShopsPage
 import com.peto.ramap.domain.model.community.ReportReason
-import kotlinx.coroutines.flow.Flow
 
 interface CommunityRepository {
-    fun observeChanges(): Flow<Unit>
-
     suspend fun fetchMyCommunityProfile(): RamapResult<PublicProfile?>
 
     suspend fun fetchProfileAccess(userId: String): RamapResult<ProfileAccess>
+
+    suspend fun fetchProfileReviewsPage(
+        userId: String,
+        offset: Long,
+    ): RamapResult<ProfileReviewsPage>
 
     suspend fun fetchUserReviews(
         userId: String,

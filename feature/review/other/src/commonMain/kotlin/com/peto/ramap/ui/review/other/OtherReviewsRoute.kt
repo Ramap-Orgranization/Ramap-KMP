@@ -65,6 +65,7 @@ import com.peto.ramap.ui.review.other.component.OtherReviewsErrorContent
 import com.peto.ramap.ui.review.other.component.PrivateProfileCard
 import com.peto.ramap.ui.review.other.component.ProfileBlockConfirmDialog
 import com.peto.ramap.ui.review.other.component.ProfileBlockOverflowMenu
+import com.peto.ramap.ui.review.other.component.ProfileFollowButton
 import com.peto.ramap.ui.review.other.contract.OtherReviewsEffect
 import com.peto.ramap.ui.review.other.contract.OtherReviewsIntent
 import com.peto.ramap.ui.review.other.contract.OtherReviewsLoadKey
@@ -76,6 +77,9 @@ import org.koin.compose.viewmodel.koinViewModel
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.bookmarked_shops_empty_title
 import ramap.shared.generated.resources.bookmarked_shops_toggle
+import ramap.shared.generated.resources.follow_content_private
+import ramap.shared.generated.resources.follow_followers
+import ramap.shared.generated.resources.follow_following
 import ramap.shared.generated.resources.ic_profile_blocked
 import ramap.shared.generated.resources.map_shop_detail_error_title
 import ramap.shared.generated.resources.review_blocked_empty
@@ -205,8 +209,35 @@ internal fun OtherReviewsContent(
                     }
                 }
             }
+            val visibleAccess = state.profileAccess as? ProfileAccess.Visible
+            if (visibleAccess != null && visibleAccess.profile.userId != state.currentUserId) {
+                item {
+                    Box(
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 20.dp, vertical = 8.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        ProfileFollowButton(
+                            state = visibleAccess.followState,
+                            isLoading = state.following,
+                            onClick = { onIntent(OtherReviewsIntent.ToggleFollow) },
+                        )
+                    }
+                }
+            }
+            if (state.contentRestricted) {
+                item {
+                    PrivateProfileCard(text = stringResource(Res.string.follow_content_private))
+                }
+            }
             if (state.profileAccess is ProfileAccess.Visible) {
                 item {
+                    ProfileFollowCounts(
+                        followerCount = state.profileAccess.followerCount,
+                        followingCount = state.profileAccess.followingCount,
+                    )
                     ProfileStatsCard(
                         reviewCount = state.reviewCount,
                         savedShopCount = state.savedShopCount,
@@ -217,6 +248,8 @@ internal fun OtherReviewsContent(
                 stickyHeader(key = "profile-tabs") {
                     OtherProfileTabs(
                         selectedTab = state.selectedTab,
+                        reviewCount = state.profileAccess.reviewCount.takeIf { state.profileAccess.canReadReviews },
+                        savedShopCount = state.profileAccess.savedShopCount.takeIf { state.profileAccess.canReadSavedShops },
                         onSelect = { onIntent(OtherReviewsIntent.SelectTab(it)) },
                     )
                 }
@@ -345,7 +378,7 @@ private fun ProfileReviewShopHeader(
     onOpenShopDetail: (String) -> Unit,
 ) {
     val shop = profileReview.shop
-    val modifier = Modifier.padding(horizontal = 5.dp, vertical = 8.dp)
+    val modifier = Modifier.padding(horizontal = 5.dp).padding(top = 8.dp)
     if (shop != null) {
         RamenShopSummary(
             shop = shop,
@@ -551,9 +584,45 @@ private fun OtherReviewsContentFailedPreview() {
 }
 
 @Composable
+private fun ProfileFollowCounts(
+    followerCount: Long?,
+    followingCount: Long?,
+    modifier: Modifier = Modifier,
+) {
+    if (followerCount == null || followingCount == null) return
+    Column(
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp, vertical = 12.dp),
+    ) {
+        HorizontalDivider(color = GrayColor.C100)
+        Row(
+            modifier = Modifier.padding(vertical = 20.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            ProfileFollowCount(
+                count = followerCount,
+                label = stringResource(Res.string.follow_followers),
+                modifier = Modifier.weight(1f),
+            )
+            VerticalDivider(
+                modifier = Modifier.height(36.dp),
+                color = GrayColor.C100,
+            )
+            ProfileFollowCount(
+                count = followingCount,
+                label = stringResource(Res.string.follow_following),
+                modifier = Modifier.weight(1f),
+            )
+        }
+    }
+}
+
+@Composable
 private fun ProfileStatsCard(
-    reviewCount: Int?,
-    savedShopCount: Int?,
+    reviewCount: Long?,
+    savedShopCount: Long?,
     onReviewClick: () -> Unit,
     onSavedShopClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -612,5 +681,29 @@ private fun ProfileStatsCard(
                 color = GrayColor.C400,
             )
         }
+    }
+}
+
+@Composable
+private fun ProfileFollowCount(
+    count: Long,
+    label: String,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        AppText(
+            text = count.toString(),
+            style = AppTextStyle.T1,
+            color = GrayColor.C500,
+        )
+        AppText(
+            text = label,
+            style = AppTextStyle.C1,
+            color = GrayColor.C300,
+        )
     }
 }

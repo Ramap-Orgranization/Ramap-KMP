@@ -4,6 +4,8 @@ import com.peto.ramap.data.datasource.appnotice.AppNoticeDataSource
 import com.peto.ramap.data.datasource.appnotice.RemoteAppNoticeDataSource
 import com.peto.ramap.data.datasource.community.CommunityDataSource
 import com.peto.ramap.data.datasource.community.RemoteCommunityDataSource
+import com.peto.ramap.data.datasource.follow.FollowDataSource
+import com.peto.ramap.data.datasource.follow.RemoteFollowDataSource
 import com.peto.ramap.data.datasource.importation.ImportationDataSource
 import com.peto.ramap.data.datasource.importation.KakaoImportationDataSource
 import com.peto.ramap.data.datasource.importation.NaverImportationDataSource
@@ -38,6 +40,7 @@ import org.koin.dsl.module
 
 val dataSourceModule =
     module {
+        single<FollowDataSource> { RemoteFollowDataSource(get()) }
         single<ProfileDataSource> { RemoteProfileDataSource(get()) }
         single<CommunityDataSource> { RemoteCommunityDataSource(get(), get()) }
         single<ReviewDataSource> { RemoteReviewDataSource(get()) }

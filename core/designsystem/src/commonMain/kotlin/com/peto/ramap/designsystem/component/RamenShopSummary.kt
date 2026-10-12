@@ -55,7 +55,7 @@ fun RamenShopSummary(
                 .then(
                     if (onClick != null) Modifier.noRippleClickable(onClick = onClick) else Modifier,
                 ).background(containerColor)
-                .padding(start = 8.dp, bottom = 5.dp),
+                .padding(start = 8.dp),
     ) {
         Row(
             modifier =

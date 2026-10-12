@@ -8,6 +8,8 @@ sealed interface MyTabSideEffect : SideEffect {
         val data: ToastData,
     ) : MyTabSideEffect
 
+    data object VisibilitySaved : MyTabSideEffect
+
     data object OpenBlockedUsersDialog : MyTabSideEffect
 
     data object CloseBlockedUsersDialog : MyTabSideEffect

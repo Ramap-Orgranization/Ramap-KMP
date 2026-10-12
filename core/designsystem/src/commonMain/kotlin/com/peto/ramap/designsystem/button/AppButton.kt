@@ -16,6 +16,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -41,12 +42,15 @@ fun AppButton(
     isLoading: Boolean = false,
     disabledBackgroundColor: Color = GrayColor.C100,
     disabledTextColor: Color = GrayColor.C300,
+    iconSize: Dp = 24.dp,
+    iconTint: Color? = null,
+    height: Dp = 52.dp,
 ) {
     val currentBackgroundColor = if (enabled) backgroundColor else disabledBackgroundColor
     val currentTextColor = if (enabled) textColor else disabledTextColor
 
     Surface(
-        modifier = modifier.height(52.dp),
+        modifier = modifier.height(height),
         color = currentBackgroundColor,
         shape = RoundedCornerShape(cornerRadius),
         border = border,
@@ -69,7 +73,8 @@ fun AppButton(
                         Image(
                             painter = painterResource(it),
                             contentDescription = null,
-                            modifier = Modifier.size(24.dp),
+                            modifier = Modifier.size(iconSize),
+                            colorFilter = iconTint?.let { color -> ColorFilter.tint(color) },
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                     }

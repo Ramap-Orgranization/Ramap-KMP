@@ -3,6 +3,7 @@ package com.peto.ramap.data.datasource.review
 import com.peto.ramap.data.model.EditableReviewResponse
 import com.peto.ramap.data.model.MyReviewResponse
 import com.peto.ramap.data.model.MyReviewsPageResponse
+import com.peto.ramap.data.model.ProfileReviewsPageResponse
 import com.peto.ramap.data.model.ReviewLikeResponse
 import com.peto.ramap.data.model.ReviewResponse
 import com.peto.ramap.data.model.ShopReviewRequest
@@ -31,6 +32,11 @@ internal interface ReviewDataSource {
     }
 
     suspend fun fetchBlockedShopReviewOnce(reviewId: String): ReviewResponse?
+
+    suspend fun fetchProfileReviewsPage(
+        userId: String,
+        offset: Long,
+    ): ProfileReviewsPageResponse
 
     suspend fun fetchProfileReviews(
         userId: String?,

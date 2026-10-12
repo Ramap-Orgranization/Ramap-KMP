@@ -6,11 +6,10 @@ import com.peto.ramap.data.datasource.profile.ProfileDataSource
 import com.peto.ramap.data.model.ProfileResponse
 import com.peto.ramap.domain.model.profile.AccountProfile
 import com.peto.ramap.domain.model.profile.ProfileImage
+import com.peto.ramap.domain.model.profile.ProfileVisibility
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -35,15 +34,13 @@ class DefaultProfileRepositoryTest {
         }
 
     @Test
-    fun profileSavePublishesUpdatedProfile() =
+    fun profileSaveReturnsUpdatedProfile() =
         runTest {
             val repository = DefaultProfileRepository(ProfileDataSourceFake())
-            val update = async { repository.observeProfileUpdates().first() }
-            runCurrent()
 
             val saved = assertIs<RamapResult.Success<AccountProfile>>(repository.updateMyProfile("새닉네임"))
 
-            assertEquals(saved.data, update.await())
+            assertEquals("새닉네임", saved.data.nickname)
         }
 
     @Test
@@ -351,6 +348,8 @@ internal class ProfileDataSourceFake : ProfileDataSource {
         afterSignedUrl()
         return "signed:$path"
     }
+
+    override suspend fun updateProfileVisibility(visibility: ProfileVisibility): ProfileResponse = updateProfileVisibility(visibility.isPublic)
 
     override suspend fun updateProfileVisibility(isPublic: Boolean): ProfileResponse {
         val owner = requireNotNull(userId)

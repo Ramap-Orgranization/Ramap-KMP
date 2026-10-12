@@ -22,7 +22,7 @@ class DefaultCommunityRepositoryTest {
             val reviews = listOf(review("first", "shop-a"), review("second", "shop-b"), review("third", "shop-a"))
             val community = FakeCommunityDataSource(reviews)
             val shops = FakeRamenShopDataSource(fetchByIdsResponses = listOf(shop("shop-b"), shop("shop-a")))
-            val repository = DefaultCommunityRepository(community, ReviewChangeNotifier(), shops)
+            val repository = DefaultCommunityRepository(community, shops)
 
             val page = assertIs<RamapResult.Success<List<ProfileReview>>>(repository.fetchUserReviews("author", 20L)).data
 
@@ -37,7 +37,7 @@ class DefaultCommunityRepositoryTest {
         runTest {
             val reviews = listOf(review("first", "shop-a"), review("second", "shop-b"))
             val shops = FakeRamenShopDataSource(fetchByIdsResponses = listOf(shop("shop-b")))
-            val repository = DefaultCommunityRepository(FakeCommunityDataSource(reviews), ReviewChangeNotifier(), shops)
+            val repository = DefaultCommunityRepository(FakeCommunityDataSource(reviews), shops)
 
             val page = assertIs<RamapResult.Success<List<ProfileReview>>>(repository.fetchUserReviews("author", 0L)).data
 
@@ -51,7 +51,7 @@ class DefaultCommunityRepositoryTest {
         runTest {
             val reviews = listOf(review("first", "shop-a"), review("second", "shop-b"))
             val shops = FakeRamenShopDataSource(error = IllegalStateException("shops unavailable"))
-            val repository = DefaultCommunityRepository(FakeCommunityDataSource(reviews), ReviewChangeNotifier(), shops)
+            val repository = DefaultCommunityRepository(FakeCommunityDataSource(reviews), shops)
 
             val page = assertIs<RamapResult.Success<List<ProfileReview>>>(repository.fetchUserReviews("author", 0L)).data
 
@@ -63,7 +63,7 @@ class DefaultCommunityRepositoryTest {
     fun `empty review page skips the shop request`() =
         runTest {
             val shops = FakeRamenShopDataSource()
-            val repository = DefaultCommunityRepository(FakeCommunityDataSource(), ReviewChangeNotifier(), shops)
+            val repository = DefaultCommunityRepository(FakeCommunityDataSource(), shops)
 
             val page = assertIs<RamapResult.Success<List<ProfileReview>>>(repository.fetchUserReviews("author", 0L)).data
 
@@ -76,7 +76,7 @@ class DefaultCommunityRepositoryTest {
         runTest {
             val community = FakeCommunityDataSource(reviewError = IllegalStateException("reviews unavailable"))
             val shops = FakeRamenShopDataSource()
-            val repository = DefaultCommunityRepository(community, ReviewChangeNotifier(), shops)
+            val repository = DefaultCommunityRepository(community, shops)
 
             assertIs<RamapResult.Error>(repository.fetchUserReviews("author", 0L))
             assertTrue(shops.requestedShopIdsHistory.isEmpty())
@@ -87,7 +87,7 @@ class DefaultCommunityRepositoryTest {
         runTest {
             val community = FakeCommunityDataSource(listOf(review("first", "shop-a")))
             val shops = FakeRamenShopDataSource(error = CancellationException("cancelled"))
-            val repository = DefaultCommunityRepository(community, ReviewChangeNotifier(), shops)
+            val repository = DefaultCommunityRepository(community, shops)
 
             assertFailsWith<CancellationException> { repository.fetchUserReviews("author", 0L) }
         }
@@ -97,7 +97,7 @@ class DefaultCommunityRepositoryTest {
         runTest {
             val community = FakeCommunityDataSource(reviewError = CancellationException("cancelled"))
             val shops = FakeRamenShopDataSource()
-            val repository = DefaultCommunityRepository(community, ReviewChangeNotifier(), shops)
+            val repository = DefaultCommunityRepository(community, shops)
 
             assertFailsWith<CancellationException> { repository.fetchUserReviews("author", 0L) }
             assertTrue(shops.requestedShopIdsHistory.isEmpty())
