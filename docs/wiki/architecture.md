@@ -7,7 +7,7 @@ source_ref: 33a0d49c2731e42144f2c79704748d7c7e0cf68b
 
 # 아키텍처 탐색
 
-계층 책임과 허용 의존성의 규칙은 로컬 `.agents/skills/ramap-architecture/SKILL.md`가 소유합니다. 아래는 현재 코드를 읽기 위한 지도입니다.
+계층 책임과 허용 의존성의 규칙은 `.agents/skills/ramap-architecture/SKILL.md`가 소유합니다. 아래는 현재 코드를 읽기 위한 지도입니다.
 
 ## 조립과 호출 경계
 

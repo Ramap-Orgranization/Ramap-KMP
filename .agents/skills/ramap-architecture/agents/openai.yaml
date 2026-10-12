@@ -1,0 +1,4 @@
+interface:
+  display_name: "Ramap Architecture"
+  short_description: "Ramap layers and responsibility boundaries"
+  default_prompt: "Use $ramap-architecture to place this change in the correct Ramap layer."

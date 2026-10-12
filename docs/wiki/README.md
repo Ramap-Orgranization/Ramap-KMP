@@ -10,7 +10,7 @@ Ramap은 Android와 iOS에서 라멘 가게 탐색, 저장, 리뷰, 이벤트와
 
 ## 읽는 순서
 
-1. 로컬 `AGENTS.md`와 해당 프로젝트 스킬을 읽습니다. 일반 Git checkout에는 이 로컬 파일들이 없을 수 있습니다.
+1. 저장소의 [AGENTS.md](../../AGENTS.md)와 해당 프로젝트 스킬을 읽습니다. Codex 설정과 프로젝트 스킬은 Git으로 함께 공유합니다.
 2. 아래에서 작업과 관련된 문서만 읽고, 연결된 코드·호출부·테스트를 확인합니다.
 3. 변경 후 [유지보수 정책](maintenance.md)에 따라 문서 영향을 판단하고 `python3 scripts/check_wiki.py`를 실행합니다.
 

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Ramap Design Patterns"
+  short_description: "Ramap implementation patterns and flows"
+  default_prompt: "Use $ramap-design-patterns to apply Ramap's existing state, task, data, DI, and navigation patterns within this change's scope."

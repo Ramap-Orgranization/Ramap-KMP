@@ -1,0 +1,4 @@
+interface:
+  display_name: "Source Command Impl"
+  short_description: "ASTRA 계획 승인 후 LUNA 이슈 생성과 SOL 구현·검증"
+  default_prompt: "Use $source-command-impl to plan this Ramap change, wait for approval, then create its issue and branch, implement it, and validate it with the designated agents."

@@ -15,8 +15,6 @@ GoogleService-Info.plist
 captures
 .externalNativeBuild
 .cxx
-.codex
-.agents
 .artifacts
 *.xcodeproj/*
 !*.xcodeproj/project.pbxproj
@@ -28,7 +26,7 @@ node_modules/
 iosApp/Pods/
 /docs/*
 !/docs/wiki/
-AGENTS.md
+!/docs/menu-registration-policy.md
 .scratch/
 **/__pycache__/
 *.pyc
@@ -50,9 +48,22 @@ AGENTS.md
 /androidApp/release/
 /distribution/
 /marketing
-tools/
-# Local menu-refresh tools, compatibility link, and historical outputs.
-/skills/menu-refresh
+# Shared Codex menu-refresh skill; runtime data and historical outputs stay local.
+/tools/*
+!/tools/menu-refresh/
+/tools/menu-refresh/*
+!/tools/menu-refresh/SKILL.md
+!/tools/menu-refresh/README.md
+!/tools/menu-refresh/agents/
+!/tools/menu-refresh/agents/*.yaml
+!/tools/menu-refresh/references/
+!/tools/menu-refresh/references/*.md
+!/tools/menu-refresh/scripts/
+!/tools/menu-refresh/scripts/*.py
+!/tools/menu-refresh/scripts/*.js
+!/tools/menu-refresh/assets/
+!/tools/menu-refresh/assets/*.html
+# Historical menu-refresh outputs.
 /output/menu-refresh-skill.zip
 /output/menu-refresh-pilot-2026-10-07.md
 outputs/

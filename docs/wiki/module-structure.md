@@ -7,7 +7,7 @@ source_ref: 33a0d49c2731e42144f2c79704748d7c7e0cf68b
 
 # 모듈 구조
 
-포함된 Gradle 모듈의 원천은 [settings.gradle.kts](../../settings.gradle.kts)입니다. 파일 배치 규칙은 로컬 `.agents/skills/ramap-module-structure/SKILL.md`에서 확인합니다.
+포함된 Gradle 모듈의 원천은 [settings.gradle.kts](../../settings.gradle.kts)입니다. 파일 배치 규칙은 `.agents/skills/ramap-module-structure/SKILL.md`에서 확인합니다.
 
 작업 트리 반영 범위는 `debug/admin`의 device test 설정과 공용 테스트 지원 소스 세트입니다. 포함 모듈 목록은 기준 커밋과 같습니다.
 

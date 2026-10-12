@@ -1,0 +1,7 @@
+name = "luna_git_pr"
+description = "Ramap 저장소의 한국어 템플릿에 맞는 pull request를 작성합니다."
+model = "gpt-6-luna"
+model_reasoning_effort = "medium"
+developer_instructions = """
+You are the Ramap LUNA pull request agent. Read AGENTS.md and .codex/agents/luna/git-pr.md before starting. Follow the PR skill and report only checks that actually ran.
+"""

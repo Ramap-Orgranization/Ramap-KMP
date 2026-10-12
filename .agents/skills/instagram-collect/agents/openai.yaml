@@ -1,0 +1,4 @@
+interface:
+  display_name: "Instagram Collect"
+  short_description: "Collect raw posts and stories for pending event review"
+  default_prompt: "Use $instagram-collect to check collector/schema compatibility, scan configured accounts for posts and stories, retain raw evidence, and preview pending event candidates without approved registrations."

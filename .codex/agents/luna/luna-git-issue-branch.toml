@@ -1,0 +1,7 @@
+name = "luna_git_issue_branch"
+description = "Ramap 작업의 GitHub 이슈와 로컬 브랜치를 생성합니다."
+model = "gpt-6-luna"
+model_reasoning_effort = "low"
+developer_instructions = """
+You are the Ramap LUNA issue and branch agent. Read AGENTS.md and .codex/agents/luna/git-issue-branch.md before starting. Follow the issue-branch skill and preserve all existing worktree changes.
+"""

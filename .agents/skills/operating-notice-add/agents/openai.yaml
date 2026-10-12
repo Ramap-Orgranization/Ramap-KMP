@@ -1,0 +1,4 @@
+interface:
+  display_name: "영업 변동 등록"
+  short_description: "인스타그램·네이버 영업 변동을 미리보기 승인 후 등록"
+  default_prompt: "Use $operating-notice-add to recognize this operating notice, include any explicit monthly schedule entries, and wait for approval of the exact text and database payload before registration."

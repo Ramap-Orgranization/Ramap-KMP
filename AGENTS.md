@@ -1,0 +1,72 @@
+# Repository Guidelines
+
+## Project structure and implementation source of truth
+
+This is a modularized Kotlin Multiplatform project targeting Android and iOS. Keep the detailed rules in separate skills so they can be evaluated and updated independently:
+
+- `.agents/skills/ramap-coding-conventions/SKILL.md`: formatting, naming, tests, security, and change hygiene.
+- `.agents/skills/ramap-architecture/SKILL.md`: layer responsibility, ownership, and dependency direction.
+- `.agents/skills/ramap-module-structure/SKILL.md`: Gradle modules, source sets, package paths, and placement.
+- `.agents/skills/ramap-design-patterns/SKILL.md`: established ViewModel, data, DI, navigation, resource, and platform patterns.
+
+Read the relevant skills before changing production code. Do not recreate their rules in another agent document; update the owning skill when a team rule changes.
+
+## LLM Wiki maintenance
+
+Start with `docs/wiki/README.md` and read only the pages relevant to the task. Follow `docs/wiki/maintenance.md` at task completion: update verified implementation facts, record explicitly confirmed policy changes in the owning source and `docs/wiki/decisions.md`, and keep unresolved reusable knowledge in `docs/wiki/inbox/`. Do not promote suggestions, repeated observations, or another repository's rules into approved Ramap policy. The four project skills above remain the source of truth for implementation rules; the wiki connects their responsibilities without duplicating them.
+
+Run `python3 scripts/check_wiki.py` when changing the wiki or before a PR, and report affected pages or why no update is needed. This is part of the current task, not a background job. Do not publish local-only documents, secrets, or unrelated working-tree changes. `AGENTS.md`, `.codex/`, project skills, and the reusable `tools/menu-refresh/` skill are shared through Git; personal settings, runtime data, and historical outputs remain local-only. Shared maintenance instructions live in the tracked wiki and PR template.
+
+## Build, Test, and Development Commands
+
+- `./gradlew testAndroidHostTest`: run Android host tests across all KMP modules; this is the CI unit-test command.
+- `./gradlew iosSimulatorArm64Test`: run iOS simulator tests across all KMP modules.
+- `./gradlew :<module>:testAndroidHostTest`: run Android host tests for one module, for example `:feature:main:map`.
+- `./gradlew :shared:iosSimulatorArm64Test`: run shared iOS integration tests, including transitive Compose resources.
+- `./gradlew :shared:linkDebugFrameworkIosSimulatorArm64`: link the iOS Simulator framework.
+- `./gradlew :androidApp:assembleDebug`: build the Android debug APK.
+
+Run the iOS app from Xcode by opening `iosApp`.
+
+## Implementation Agent Routing
+
+The primary agent owns ordinary implementation requests from investigation through code changes and validation. Read the relevant project skills, inspect the existing behavior, make routine implementation decisions, and complete the request. Do not spawn SOL, TERRA, or a validator merely because a request spans modules, touches Supabase, or needs a plan to organize the work. Do not announce a SOL → TERRA sequence for an ordinary implementation request.
+
+Use subagents when the user explicitly requests delegation or a dedicated workflow below requires one. Choose by the actual task:
+
+- **SOL (Frontier):** substantial unresolved product or architectural decisions, an explicitly requested staged plan, and dedicated code reviews. Definitions live in `.codex/agents/astra`.
+- **TERRA (Balanced):** implementation with a clear assignment, release workflows, and independent validation when requested by a dedicated workflow. Definitions live in the `gpt-6.1-sol` package at `.codex/agents/sol`.
+- **LUNA (Affordable):** Git workflow tasks such as commits, issue branches, and pull requests. Use the corresponding LUNA role and task skill for commits, issue branches, and pull requests. Each role has its own TOML runtime configuration and Markdown instructions in `.codex/agents/luna`.
+
+When a subagent is required, spawn the matching named role from its model package under `.codex/agents` (for example, `astra/astra-planner.toml` or `sol/terra-implementer.toml`). The TOML is the single source for runtime model and reasoning effort; its paired Markdown file contains the role instructions. A `task_name` is only the displayed task label and does not select the role or model. If a named role is unavailable in the current session, use an explicit model and reasoning effort from its TOML file when spawning a new agent. Existing agent turns keep the model selected when they started.
+
+An implementation subagent must read its own instruction file, this file, the four Ramap project skills above, and any approved planner handoff before editing code. Give it exact files or responsibility and acceptance criteria; it must preserve concurrent changes.
+
+When the user invokes `/impl` or explicitly requests a plan-approval and implementation workflow, use `.agents/skills/source-command-impl/SKILL.md`. Follow the SOL planner → user approval → TERRA implementer → TERRA validation sequence and do not begin implementation before approval.
+
+For a direct implementation request that does not require that staged workflow, the primary agent implements and runs checks appropriate to the change. Documentation-only, research, review, Git, database registration, and event registration requests continue to use their dedicated workflows.
+
+When the user invokes `/menu-refresh`, `$menu-refresh`, or asks to refresh existing shop menus by database date or shop list, use `tools/menu-refresh/SKILL.md`. Reuse the tools, templates, and data in `tools/menu-refresh/`; `skills/menu-refresh` is a compatibility symlink. This is the complete workflow; `.agents/skills/menu-refresh/SKILL.md` is an unfinished placeholder. Keep menu registration policy in `docs/menu-registration-policy.md` and use the refresh skill's collection, guarded writes, and independent verification procedure.
+
+When the user invokes `/ramap-review`, `$ramap-review`, or requests a code review, use `.agents/skills/ramap-review/SKILL.md` and route the review to the `astra_code_reviewer` role configured by `.codex/agents/astra/astra-code-reviewer.toml` and instructed by `.codex/agents/astra/code-reviewer.md`. The TOML configuration selects `gpt-6-astra` with high reasoning effort. The review agent is read-only by default and must inspect the diff, related call paths, state transitions, tests, design-system reuse opportunities, and object-oriented design concerns before reporting severity-ranked findings.
+
+When the user invokes `/release`, `$release`, or asks to prepare or publish a new Android release, use `.agents/skills/release/SKILL.md` and route the entire workflow to the TERRA agent defined in `.codex/agents/sol/release-manager.md`. The release manager owns the `develop` → `release` merge, version bump, tests, signed AAB, patch notes, GitHub Release verification, and the post-release `release` → `develop` pull request. It must stop for explicit approval after the local preview and before any remote push, tag, asset upload, publication, or pull request creation.
+
+## Coding style and testing
+
+Use `.agents/skills/ramap-coding-conventions/SKILL.md` for coding style, naming, test placement, security, and validation. Use `.agents/skills/ramap-design-patterns/SKILL.md` for the established implementation patterns.
+
+## User-visible UI content
+
+- Do not add, remove, or rewrite user-visible UI text unless the user explicitly requests that text change. When a visual request leaves copy ambiguous, preserve existing text and ask before introducing new labels.
+
+## Commit & Pull Request Guidelines
+
+Commit messages follow `<type>: <subject>` and are normally written in Korean. Common types include `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`, `design`, `rename`, and `remove`.
+
+PR titles should summarize the work in Korean without `feat:` or `fix:` prefixes. Fill out `.github/PULL_REQUEST_TEMPLATE.md`, including overview, change list, test results, related issues, and screenshots or recordings for UI changes.
+
+## Security & Configuration Tips
+
+Supabase values are injected through BuildKonfig from `SUPABASE_URL` and `SUPABASE_ANON_KEY`, or from `local.properties` keys `supabase.url` and `supabase.anon_key`. Do not commit secrets or machine-specific local configuration.
+Supabase credentials are already configured in the ignored `local.properties`; do not ask for or print the anon key again unless an actual command fails.

@@ -1,7 +1,7 @@
 ---
 authority: canonical
 status: active
-last_verified: 2026-10-11
+last_verified: 2026-10-12
 ---
 
 # LLM 위키 유지보수 정책
@@ -13,7 +13,7 @@ last_verified: 2026-10-11
 | 새로 알게 된 내용 | 소유하는 위치 | 기록 조건 |
 | --- | --- | --- |
 | 코드·테스트로 확인한 동작과 경로 | 관련 reference 페이지 | 근거 링크, 적용 범위, 확인 날짜와 기준 ref |
-| 구현 규칙의 확정된 변경 | 해당 로컬 Ramap 스킬 | 스킬을 먼저 수정하고 위키에는 위치·영향만 연결 |
+| 구현 규칙의 확정된 변경 | 해당 Ramap 스킬 | 스킬을 먼저 수정하고 위키에는 위치·영향만 연결 |
 | 제품 정책의 확정된 변경 | [제품 정책](product-policy.md) 및 코드·테스트 | 사용자 확정 근거와 구현 상태 구분 |
 | 위키 운영 절차 변경 | 이 문서 | 변경 이유를 결정 기록에 연결 |
 | 확정 정책의 도입·변경·폐기 이유 | [결정 기록](decisions.md) | 분야 문서와 같은 변경에서 추가 |
@@ -58,6 +58,8 @@ git diff --check
 
 ## 공유 범위와 검사 한계
 
-이 위키는 `docs/wiki/`만 새로 Git 추적 대상에 추가합니다. 기존 로컬 문서·운영 산출물·`AGENTS.md`·`.agents/`의 공유 범위는 바꾸지 않습니다. 로컬 전용 문서는 경로를 코드 표기로 안내하며 존재를 전제로 한 Markdown 링크를 만들지 않습니다. 토큰, 사용자 데이터, 비공개 URL, 원본 대화는 옮기지 않습니다.
+사용자의 Codex 설정 공유 요청에 따라 `AGENTS.md`, `.codex/`, `.agents/`를 Git으로 공유합니다. 메뉴 스킬 실행에 필요한 `docs/menu-registration-policy.md`, `tools/menu-refresh/`의 스킬·역할 안내·참조 문서·실행 코드·테스트·템플릿과 `skills/menu-refresh` 호환 연결도 공유합니다([DEC-0004](decisions.md#dec-0004-codex-설정과-프로젝트-스킬-git-공유)). 개발 규칙의 소유권은 기존 Ramap 스킬에 유지합니다.
+
+개인 설정, 비밀값, 캐시와 생성 파일, `tools/menu-refresh/data/`의 DB 캐시, `tools/menu-refresh/work-files/`의 과거 작업 자료, `.artifacts/`의 운영 산출물은 로컬에 유지합니다. 그 밖의 로컬 전용 문서는 경로를 코드 표기로 안내하며 존재를 전제로 한 Markdown 링크를 만들지 않습니다. 토큰, 사용자 데이터, 비공개 URL, 원본 대화는 옮기지 않습니다.
 
 `LLM Wiki` CI는 PR마다 메타데이터·로컬 링크·문서 앵커·결정 ID·후보 상태를 검사합니다. 검사기의 회귀 테스트도 실행합니다. 외부 URL 접속, 제품 의미, 배포 상태, 코드와 설명의 일치, 링크 대상의 Git 추적 여부 전체를 보증하지 않습니다. `git status --short --untracked-files=all`로 새 근거 파일이 포함되는지 확인하고, 로컬 전용 파일이 없는 checkout에서도 검사합니다. CI 필수 검사 지정은 GitHub 저장소 설정에서 별도로 관리합니다.

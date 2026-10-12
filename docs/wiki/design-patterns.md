@@ -7,7 +7,7 @@ source_ref: 33a0d49c2731e42144f2c79704748d7c7e0cf68b
 
 # 설계 패턴 탐색
 
-새 구현에 적용할 규칙은 로컬 `.agents/skills/ramap-design-patterns/SKILL.md`, 이름·서식·문자열·테스트 규칙은 `ramap-coding-conventions/SKILL.md`에서 읽습니다. 아래 링크는 패턴의 실제 API와 검증 사례입니다.
+새 구현에 적용할 규칙은 `.agents/skills/ramap-design-patterns/SKILL.md`, 이름·서식·문자열·테스트 규칙은 `ramap-coding-conventions/SKILL.md`에서 읽습니다. 아래 링크는 패턴의 실제 API와 검증 사례입니다.
 
 | 찾는 동작 | 구현 | 검증 |
 | --- | --- | --- |

@@ -42,6 +42,6 @@ migration 디렉터리만으로 DB 전체를 재현할 수 있다고 가정하�
 
 ## 로컬 등록 절차 찾기
 
-매장·메뉴·영업시간·이벤트 등록은 로컬 `.agents/skills/`의 `db-add`, `menu-add`, `work-time`, `event-add`, `operating-notice-add`가 담당합니다. 메뉴 갱신의 실제 진입점은 `tools/menu-refresh/SKILL.md`, 정책은 `docs/menu-registration-policy.md`입니다. `.agents/skills/menu-refresh/SKILL.md`의 미완성 placeholder를 완성된 절차로 사용하지 않습니다.
+매장·메뉴·영업시간·이벤트 등록은 `.agents/skills/`의 `db-add`, `menu-add`, `work-time`, `event-add`, `operating-notice-add`가 담당합니다. 메뉴 갱신의 실제 진입점은 `tools/menu-refresh/SKILL.md`, 정책은 `docs/menu-registration-policy.md`입니다. `.agents/skills/menu-refresh/SKILL.md`의 미완성 placeholder를 완성된 절차로 사용하지 않습니다.
 
 이 경로들은 일반 checkout에 없을 수 있습니다. 위키는 등록·배포 승인 절차를 대체하지 않으며, 로컬 자료를 임의로 공개하지 않습니다. 운영 동작을 바꾼 뒤에는 코드 확인과 실제 배포 확인을 구분해 기록합니다.

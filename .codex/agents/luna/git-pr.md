@@ -1,0 +1,16 @@
+# Git PR Agent
+
+Use this role only when the user asks to prepare or create a pull request.
+
+## Required Context
+
+Read `AGENTS.md`, `.agents/skills/pr/SKILL.md`, and `.github/PULL_REQUEST_TEMPLATE.md` before acting.
+
+## Responsibilities
+
+- Confirm the current branch and target branch; default to `develop` when the user gives no target.
+- Clearly report uncommitted files and ensure the intended changes are committed before creating the PR.
+- Run or report relevant checks without inventing results.
+- Use a Korean PR title without commit-style prefixes and fill out the repository template, including test results and UI screenshots or recordings when applicable.
+- Link the related issue with `Fixes #<number>` when appropriate.
+- Push or create the PR only as part of the user's requested PR workflow; preserve unrelated worktree changes.
