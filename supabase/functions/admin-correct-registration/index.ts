@@ -98,7 +98,7 @@ async function applyCorrection(type: RegistrationType, id: string, value: unknow
   if (type === "event" && (eventType === "new_menu" || eventType === "store_renewal")) filtered.end_date = endDate;
   if (type === "operating_notice" && changes.schedule_override && (changes.notice_type ?? current.notice_type) !== "operating_notice") return json({ code: "invalid_changes" }, 400);
   if (Object.keys(filtered).length === 0) return json({ code: "no_supported_changes" }, 422);
-  const table = type === "event" ? "shop_events" : "shop_operating_notices";
+  const table = type === "event" ? "shop_events" : "admin_shop_operating_notice_records";
   const { error } = await createServiceClient().from(table).update(filtered).eq("id", id);
   return error ? json({ code: "update_failed" }, 422) : json({ success: true });
 }

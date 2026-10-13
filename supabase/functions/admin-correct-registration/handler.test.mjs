@@ -8,14 +8,15 @@ import { effectiveEndDate, isManageableEvent } from "../_shared/admin-event-poli
 const source = stripTypeScriptTypes((await readFile(new URL("./index.ts", import.meta.url), "utf8")).replace(/^import .*;\n/gm, ""));
 function harness(record = { event_type: "limited_menu", start_date: "2026-01-01", end_date: null }) {
   const updates = [];
+  const tables = [];
   const query = {
     select() { return this; }, eq() { return this; },
     async maybeSingle() { return { data: record, error: null }; },
     update(value) { updates.push(value); return { eq: async () => ({ error: null }) }; },
   };
-  const context = { Deno: { serve() {} }, Response, Date, Intl, effectiveEndDate, isManageableEvent, createServiceClient: () => ({ from: () => query }) };
+  const context = { Deno: { serve() {} }, Response, Date, Intl, effectiveEndDate, isManageableEvent, createServiceClient: () => ({ from: (table) => { tables.push(table); return query; } }) };
   runInNewContext(source + "\nglobalThis.api = { validateChanges, applyCorrection, isActiveRecord };", context);
-  return { ...context.api, updates };
+  return { ...context.api, updates, tables };
 }
 test("event title and type corrections are retained instead of dropped by the notice branch", () => {
   const api = harness();
@@ -39,6 +40,13 @@ test("schedule override cannot be applied to a closure", async () => {
   const api = harness({ notice_type: "full_close", notice_date: "2099-01-01", end_date: null });
   assert.equal((await api.applyCorrection("operating_notice", "notice", { schedule_override: { open: "11:00" } })).status, 400);
   assert.equal(api.updates.length, 0);
+});
+test("영업 공지 보정은 공개 조회 경로 대신 서비스 전용 경로에 저장한다", async () => {
+  const api = harness({ notice_type: "operating_notice", notice_date: "2099-01-01", end_date: null });
+  const response = await api.applyCorrection("operating_notice", "notice", { description: "변경 공지" });
+  assert.equal(response.status, 200);
+  assert.equal(api.tables.at(-1), "admin_shop_operating_notice_records");
+  assert.equal(api.updates[0].description, "변경 공지");
 });
 test("expired renewal and new-menu records cannot be corrected", () => {
   const api = harness();

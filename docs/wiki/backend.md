@@ -2,7 +2,7 @@
 authority: reference
 status: active
 last_verified: 2026-10-13
-source_ref: c559e52c3248076dacab2f2928622d9d787bc1e5
+source_ref: 7b4e63f45ae73a10ed33fa63088b6ace0af1813d
 ---
 
 # 백엔드와 운영 탐색
@@ -31,6 +31,16 @@ source_ref: c559e52c3248076dacab2f2928622d9d787bc1e5
 | Android 디버그 관리 화면 | [debug/admin](../../debug/admin) |
 
 migration 디렉터리만으로 DB 전체를 재현할 수 있다고 가정하지 않습니다. 파일이 존재하는 것과 배포되었다는 것은 별개입니다. API 변경은 앱 소비자·함수·migration·검증 근거를 함께 기록합니다.
+
+## 2026-10-13 서버 보안 보완
+
+검증한 source ref `7b4e63f45ae73a10ed33fa63088b6ace0af1813d`에는 서버 보안 변경이 반영되어 있습니다. 이 항목은 저장소 코드와 테스트 경로를 설명하며, 각 migration·함수·worker가 어느 환경에 배포되었는지 나타내는 상태표는 아닙니다.
+
+신고 증거 bucket은 비공개이며 신고자 본인과 별도로 등록한 관리자만 사진을 읽을 수 있습니다. 신고자는 아직 신고에 연결되지 않은 본인 사진만 지울 수 있고, 연결된 사진은 관리자가 정리합니다. 동작은 [신고 증거 접근 migration](../../supabase/migrations/20261012165359_restrict_news_report_evidence_access.sql)과 [회귀 검사](../../supabase/tests/news_report_evidence_access_test.py)에서 확인합니다. 공지 공개 응답에서는 내부 OCR·검수 필드를 분리하고, 숨김 매장은 공개 조회에서 제외합니다. 영업 상태 테이블은 공개 투영에서 `shop_id`, `status`, `checked_at`만 읽을 수 있고 수집 진단 필드는 서버 전용입니다. 관련 구현은 [운영 공지 필드 분리](../../supabase/migrations/20261013015718_separate_operating_notice_internal_fields.sql), [숨김 매장 공개 제한](../../supabase/migrations/20261013025446_enforce_hidden_shop_visibility.sql), [상태 진단 정보 제한](../../supabase/migrations/20261013041226_restrict_operating_status_diagnostics.sql) migration과 각각의 `supabase/tests/` 회귀 검사에서 찾을 수 있습니다.
+
+관리자 Edge Function은 공통 인증 검사를 사용합니다. 공개 신고·리뷰 제출 재시도와 푸시 등록에는 서버 측 증가 제한이 있고, 장소 검색 provider 요청은 서버 예산으로 제한됩니다. 앱은 검색 제한 응답을 분류해 전용 안내를 표시합니다. 상세 구현과 단위 검사는 [공통 관리자 인증](../../supabase/functions/_shared/admin-auth.ts), [장소 검색 함수](../../supabase/functions/place-search/index.ts), [검색 오류 안내](../../core/designsystem/src/commonMain/kotlin/com/peto/ramap/designsystem/place/PlaceSearchErrorToast.kt) 및 인접 테스트에서 확인합니다.
+
+프로필 RPC는 자기소개 입력 오류를 HTTP 400 계약으로 반환하고 제거 대상 Instagram 필드를 정리합니다. 나머지 서버 계약 migration은 입력 검증과 실행 권한을 보완하며, 알림 webhook은 요청 본문 형식을 검증합니다. 운영 상태 worker는 미사용 관측 RPC를 호출하지 않고, 요청 본문을 JSON 객체와 64 KiB 이하로 제한합니다. 이 동작은 해당 migration·함수·worker 파일과 각 폴더의 회귀 테스트에서 확인합니다.
 
 ## 리뷰 변경 응답과 배포 호환성
 

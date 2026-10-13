@@ -30,7 +30,7 @@ function harness({ allowed = true, overlapping = false } = {}) {
       then(resolve, reject) {
         calls.filters.push({ table, filters });
         const data = table === "ramen_shops" ? [{ id: "shop" }] :
-          !inserted && table === "shop_operating_notices" && overlapping && filters.some(([op]) => op === "not") ? [{ id: "overlap" }] : [];
+          !inserted && table === "admin_shop_operating_notice_records" && overlapping && filters.some(([op]) => op === "not") ? [{ id: "overlap" }] : [];
         return Promise.resolve({ data, error: null }).then(resolve, reject);
       },
     };
@@ -69,7 +69,7 @@ for (const type of ["limited_menu", "popup"]) {
 }
 
 for (const type of ["operating_notice", "full_close", "early_close", "late_opening"]) {
-  test(`${type} retains a continuous multi-day range`, async () => {
+  test(`${type} 공지는 관리자 전용 경로에 연속 기간과 검토 메모를 저장한다`, async () => {
     const app = harness();
     const body = { ...base, registration_type: "operating_notice", notice_type: type,
       schedule_override: type === "operating_notice" ? schedule : null,
@@ -77,10 +77,11 @@ for (const type of ["operating_notice", "full_close", "early_close", "late_openi
       end_time: type === "early_close" ? "18:00" : null };
     const response = await app.invoke(body);
     assert.equal(response.status, 200, JSON.stringify(await response.json()));
-    const row = app.calls.inserts.find(({ table }) => table === "shop_operating_notices").value;
+    const row = app.calls.inserts.find(({ table }) => table === "admin_shop_operating_notice_records").value;
     assert.equal(row.notice_date, base.start_date);
     assert.equal(row.end_date, base.end_date);
     assert.equal(JSON.stringify(row.schedule_override), JSON.stringify(body.schedule_override));
+    assert.equal(row.review_note, "관리자 미리보기 승인 등록");
   });
 }
 

@@ -328,7 +328,7 @@ async function registerOperatingNotice(
   const shop = shops[0] as { id: string; instagram_url?: string | null };
 
   const { data: duplicates, error: duplicateError } = await supabase
-    .from("shop_operating_notices")
+    .from("admin_shop_operating_notice_records")
     .select("id")
     .eq("shop_id", shop.id)
     .eq("source_url", sourceUrl)
@@ -343,7 +343,7 @@ async function registerOperatingNotice(
 
   if (noticeType === "operating_notice" && !isMonthly) {
     const { data: overrides, error: overrideError } = await supabase
-      .from("shop_operating_notices")
+      .from("admin_shop_operating_notice_records")
       .select("id")
       .eq("shop_id", shop.id)
       .eq("notice_type", "operating_notice")
@@ -358,7 +358,7 @@ async function registerOperatingNotice(
   try {
     const rawPostId = await ensureRawPost(supabase, shop.id, shop.instagram_url, sourceUrl, description);
     const { data: notice, error: insertError } = await supabase
-      .from("shop_operating_notices")
+      .from("admin_shop_operating_notice_records")
       .insert({
         shop_id: shop.id,
         raw_post_id: rawPostId,
