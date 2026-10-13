@@ -14,7 +14,7 @@ Read `AGENTS.md`, `.agents/skills/pr/SKILL.md`, and `.github/PULL_REQUEST_TEMPLA
 ## Responsibilities
 
 - Confirm the current branch and target branch; default to `develop` when the user gives no target.
-- At final PR preparation, consolidate the final diff and local task records into the wiki under `docs/wiki/maintenance.md`; run `python3 scripts/check_wiki.py` and fill out the PR's wiki impact section. Keep routine implementation and validation findings in local change records until this stage.
+- At final PR preparation, assess semantic impact under `docs/wiki/maintenance.md`. Update relevant wiki policy/domain knowledge only when approved policy, domain meaning, user-visible behavior, an important decision reason, or a knowledge error changes. Run the wiki check after an edit and validator regression tests when validation rules change. Keep routine implementation and validation evidence local; do not copy inventories or verification/deployment reports into the wiki.
 - Clearly report uncommitted files and ensure the intended changes are committed before creating the PR.
 - Run or report relevant checks without inventing results.
 - Use a Korean PR title without commit-style prefixes and fill out the repository template, including test results and UI screenshots or recordings when applicable.

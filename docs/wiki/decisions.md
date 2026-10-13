@@ -24,7 +24,7 @@ last_verified: 2026-10-13
 - 결정: 미확정이었던 모듈 목록, resource mapper 소유권, domain의 analytics 의존성을 현재 구현 기준으로 확정합니다. settings에 없는 profile/follow 표기를 제거하고, core/ui와 core/designsystem의 mapper 분담 및 domain → core/analytics의 공통 API 사용을 소유 스킬에 반영합니다.
 - 이유: 이후 작업에서 실제 모듈과 다른 경로를 찾거나 공통 mapper를 잘못 이동하지 않도록 개발 규칙과 코드를 일치시킵니다.
 - 근거: 사용자의 “미확정은 모두 현재 기준으로 맞추고 최신화” 요청, [settings](../../settings.gradle.kts), [domain build](../../domain/build.gradle.kts), [core/ui build](../../core/ui/build.gradle.kts), [designsystem build](../../core/designsystem/build.gradle.kts), [SignInUseCase](../../domain/src/commonMain/kotlin/com/peto/ramap/domain/usecase/SignInUseCase.kt), [RankingFilters](../../feature/main/ranking/src/commonMain/kotlin/com/peto/ramap/ui/main/ranking/component/RankingFilters.kt).
-- 반영: 로컬 `ramap-architecture`, `ramap-module-structure`, `ramap-design-patterns` 스킬, [아키텍처](architecture.md), [모듈 구조](module-structure.md), [디자인시스템](design-system.md), [승격한 후보](inbox/source-alignment.md).
+- 반영: 로컬 `ramap-architecture`, `ramap-module-structure`, `ramap-design-patterns` 스킬, [아키텍처](engineering.md), [모듈 구조](engineering.md), [디자인시스템](engineering.md), [승격한 후보](inbox/source-alignment.md).
 - 적용 상태: 소유 스킬과 위키에 반영했습니다. 앱 코드의 동작과 모듈 배치는 변경하지 않았습니다.
 - 대체한 결정: 없음. DEC-0001의 스킬 소유권 원칙을 유지하며 초기 후보를 해소합니다.
 
@@ -34,7 +34,7 @@ last_verified: 2026-10-13
 - 결정: 프로필·리뷰 이미지 URL은 Supabase Storage 기본 배치 API로 발급합니다. 앱 발급 경로는 Edge Function과 Redis에 의존하지 않으며 호출자의 JWT와 기존 Storage RLS 검사를 사용합니다.
 - 이유: 검토 후 사용자가 기본 배치 방식을 선택했습니다. 이 경로는 별도 캐시 서비스 없이 여러 경로를 한 요청으로 묶으면서 기존 권한 검사를 유지합니다.
 - 근거: 사용자의 기본 배치 방식 선택 및 적용 요청.
-- 반영: [이미지 URL 구현](image-url-cache.md), [백엔드 탐색](backend.md), 공통 데이터 소스와 회귀 테스트.
+- 반영: [이미지 URL 구현](backend.md), [백엔드 탐색](backend.md), 공통 데이터 소스와 회귀 테스트.
 - 적용 상태: 앱 코드에 적용했습니다. 이 기록만으로 앱 릴리스나 운영 성능 개선을 주장하지 않습니다.
 - 대체한 결정: 없음.
 
@@ -64,7 +64,7 @@ last_verified: 2026-10-13
 - 결정: 내 리뷰와 다른 사람 리뷰 목록에서 공통 가게 리뷰 카드를 사용합니다. 내 리뷰를 선택하면 현재 목록 위에 기존 가게 상세 바텀시트를 표시하고, 상세의 지도 보기에서 지도 화면으로 이동합니다.
 - 이유: 두 리뷰 목록에서 같은 가게 정보를 보여주고 리뷰를 탐색하는 동안 현재 목록의 필터·스크롤 상태를 유지합니다.
 - 근거: [이슈 #265](https://github.com/Ramap-Orgranization/Ramap-KMP/issues/265)의 범위와 사용자 계획 승인.
-- 반영: [제품 정책](product-policy.md), [앱 실행 흐름](app-flows.md#리뷰-목록에서-가게-상세), [디자인시스템](design-system.md#가게-리뷰-목록-카드), 공통 카드·데이터 조회·리뷰 목록과 내비게이션 연결.
+- 반영: [제품 정책](product-policy.md), [앱 실행 흐름](app-flows.md#리뷰-작성저장복귀), [디자인시스템](feature-map.md), 공통 카드·데이터 조회·리뷰 목록과 내비게이션 연결.
 - 적용 상태: 구현은 [검증된 PR 코드 커밋](../../feature/review/my/src/commonMain/kotlin/com/peto/ramap/ui/review/my/MyReviewsRoute.kt) `c559e52c3248076dacab2f2928622d9d787bc1e5`에 반영됐습니다. 최종 PR 코드에서 Android APK와 iOS Simulator framework 빌드, 관련 모듈 lint가 통과했습니다. 스토어 앱 배포를 뜻하지 않습니다.
 - 대체한 결정: 없음.
 
@@ -74,7 +74,7 @@ last_verified: 2026-10-13
 - 결정: 내 리뷰에서 매장 상세를 변경 없이 닫을 때는 리뷰 목록을 다시 조회하지 않습니다. 상세에서 본인 리뷰를 삭제하면 해당 항목과 집계를 현재 목록 상태에 반영하고, 리뷰 작성·수정 화면에서 복귀할 때는 기존 목록 갱신 동작을 유지합니다.
 - 이유: 단순 상세 열람은 리뷰 목록을 바꾸지 않으며, 재조회하면 새 서명 이미지 URL로 인해 기존 리뷰 사진까지 다시 로드됩니다.
 - 근거: 사용자가 상세를 열고 닫을 때 전체 리뷰 이미지가 갱신되는 현상을 보고하고, 단순 닫기 시 재조회를 제외하는 수정에 동의했습니다.
-- 반영: [제품 정책](product-policy.md), [앱 실행 흐름](app-flows.md#리뷰-목록에서-가게-상세), [MyReviewsRoute](../../feature/review/my/src/commonMain/kotlin/com/peto/ramap/ui/review/my/MyReviewsRoute.kt).
+- 반영: [제품 정책](product-policy.md), [앱 실행 흐름](app-flows.md#리뷰-작성저장복귀), [MyReviewsRoute](../../feature/review/my/src/commonMain/kotlin/com/peto/ramap/ui/review/my/MyReviewsRoute.kt).
 - 적용 상태: 구현은 검증된 PR 코드 커밋 `c559e52c3248076dacab2f2928622d9d787bc1e5`에 반영됐습니다. 닫기·복귀 경로의 실기기 확인은 이전 `1.1.9-debug` APK 기준이며, 최종 dialog 포함 코드를 기기에 재설치한 결과는 아닙니다. 스토어 앱 릴리스를 뜻하지 않습니다.
 - 대체한 결정: 없음.
 
@@ -84,8 +84,8 @@ last_verified: 2026-10-13
 - 결정: 성공한 리뷰 변경은 repository가 한 번 발행하고 화면·상세 캐시가 cursor로 적용합니다. 세션 전환은 기록을 초기화하고 접근 변경·기록 공백은 필요한 조회를 복구합니다. passive 복귀는 리뷰 조회·서명을 시작하지 않습니다.
 - 이유: 중첩 작성·수정·삭제의 부모 목록 누락과 전체 이미지 재로딩을 함께 해결하고 페이지·필터·스크롤을 유지합니다.
 - 근거: 사용자가 공통 ReviewChangeStore revision journal 방식을 승인하고, 정상 변경마다 전체 목록을 조회하지 않도록 요청했습니다.
-- 반영: [설계 패턴](design-patterns.md#리뷰-변경-기록과-화면-구독), [실행 흐름](app-flows.md#리뷰-화면-복귀와-변경-반영), [제품 정책](product-policy.md), [백엔드](backend.md).
-- 적용 상태: 앱 구현은 검증된 PR 코드 커밋 `c559e52c3248076dacab2f2928622d9d787bc1e5`에 반영됐으며 앱 스토어에는 배포하지 않았습니다. 리뷰 v2 RPC는 2026-10-13에 migration `20261012151044`로 운영 배포됐고 기존 UUID v1 API를 유지합니다. 메타데이터 보완 이후 domain 126 + data 145 + MyReviews feature 8, 총 279개 Android host test가 통과했습니다. 이 279건에는 OtherReviews 테스트가 포함되지 않습니다. 이전 463개 host test와 10개 모듈 lint·debug APK·iOS framework 결과는 메타데이터 보완 전 코드 기준입니다. Android 16 실기기에서는 리뷰 목록 복귀·상태·v2 임시 쓰기·사진 교체·계정 전환과 새 리뷰 매장 요약 첫 렌더를 이전 `1.1.9-debug` APK에서 확인했습니다. 최종 코드 그룹 1–9의 branch check는 모두 exit 0이며 `compileAndroidHostTest` 작업은 테스트 코드를 컴파일했지만 실행하지 않았습니다. PR9 코드에서는 Android APK, iOS Simulator framework 및 관련 lint도 통과했습니다. 상세 한계는 [백엔드](backend.md)와 [이미지 URL](image-url-cache.md)에 기록합니다.
+- 반영: [설계 패턴](app-flows.md#리뷰-작성저장복귀), [실행 흐름](app-flows.md#리뷰-작성저장복귀), [제품 정책](product-policy.md), [백엔드](backend.md).
+- 적용 상태: 앱 구현은 검증된 PR 코드 커밋 `c559e52c3248076dacab2f2928622d9d787bc1e5`에 반영됐으며 앱 스토어에는 배포하지 않았습니다. 리뷰 v2 RPC는 2026-10-13에 migration `20261012151044`로 운영 배포됐고 기존 UUID v1 API를 유지합니다. 메타데이터 보완 이후 domain 126 + data 145 + MyReviews feature 8, 총 279개 Android host test가 통과했습니다. 이 279건에는 OtherReviews 테스트가 포함되지 않습니다. 이전 463개 host test와 10개 모듈 lint·debug APK·iOS framework 결과는 메타데이터 보완 전 코드 기준입니다. Android 16 실기기에서는 리뷰 목록 복귀·상태·v2 임시 쓰기·사진 교체·계정 전환과 새 리뷰 매장 요약 첫 렌더를 이전 `1.1.9-debug` APK에서 확인했습니다. 최종 코드 그룹 1–9의 branch check는 모두 exit 0이며 `compileAndroidHostTest` 작업은 테스트 코드를 컴파일했지만 실행하지 않았습니다. PR9 코드에서는 Android APK, iOS Simulator framework 및 관련 lint도 통과했습니다. 상세 한계는 [백엔드](backend.md)와 [이미지 URL](backend.md)에 기록합니다.
 - 대체한 결정: [DEC-0007](#dec-0007-내-리뷰-상세-닫기에서-목록-재조회-제외).
 
 ## DEC-0009 위키 갱신 시점
@@ -114,7 +114,7 @@ last_verified: 2026-10-13
 - 결정: 일반 클래스·생성자 주입과 `object` 사용 범위의 기준은 [코딩 규칙](../../.agents/skills/ramap-coding-conventions/SKILL.md#kotlin-style)이 소유합니다.
 - 이유: 리뷰 변경 반영기를 정적으로 호출하던 경로를 명시적인 협력 객체로 연결하고 객체 수명을 DI에서 관리합니다.
 - 근거: 사용자가 [PR #267](https://github.com/Ramap-Orgranization/Ramap-KMP/pull/267) 리뷰에서 `ReviewChangeReducer`의 일반 클래스 전환·DI 주입과 함수 작성 규칙 확인을 요청했습니다.
-- 반영: [코딩 규칙](../../.agents/skills/ramap-coding-conventions/SKILL.md), [설계 패턴](design-patterns.md#리뷰-변경-기록과-화면-구독), reducer와 use case·ViewModel 생성자 및 Koin 등록.
+- 반영: [코딩 규칙](../../.agents/skills/ramap-coding-conventions/SKILL.md), [설계 패턴](app-flows.md#리뷰-작성저장복귀), reducer와 use case·ViewModel 생성자 및 Koin 등록.
 - 적용 상태: 소유 스킬에 반영했고 앱 코드는 `afe2511050f20a60dfdefa369151ec456d2b6c1c`에 반영했습니다. 운영 API나 앱 릴리스를 변경하지 않았습니다.
 - 대체한 결정: 없음.
 
@@ -124,6 +124,58 @@ last_verified: 2026-10-13
 - 결정: 테스트 이름·설명·검증 메시지의 언어와 기술 식별자의 기준은 [코딩 규칙](../../.agents/skills/ramap-coding-conventions/SKILL.md#text-tests-and-safety)이 소유합니다.
 - 이유: 테스트의 조건과 기대 결과를 코드 리뷰에서 한국어로 읽을 수 있게 합니다.
 - 근거: 사용자가 PR #267 리뷰에서 테스트 코드를 한국어로 작성하도록 요청했습니다.
-- 반영: [코딩 규칙](../../.agents/skills/ramap-coding-conventions/SKILL.md), [검증 안내](testing.md), reducer·매장 상세·지도·내 리뷰·다른 사용자 리뷰의 이번 변경에 관련된 기존 테스트.
+- 반영: [코딩 규칙](../../.agents/skills/ramap-coding-conventions/SKILL.md), [검증 안내](engineering.md), reducer·매장 상세·지도·내 리뷰·다른 사용자 리뷰의 이번 변경에 관련된 기존 테스트.
 - 적용 상태: 소유 스킬과 해당 테스트 이름에 반영했습니다. 테스트 소스 컴파일과 테스트 실행 결과는 구분하며, 이번 후속 수정에서는 테스트를 실행하지 않았습니다.
 - 대체한 결정: 없음.
+
+## DEC-0013 일본 Google 지도 화면 추가
+
+- 기록일: 2026-10-12 (Asia/Seoul).
+- 결정: Android와 iOS 하단 내비게이션은 한국·랭킹·새소식·마이 네 탭으로 구성합니다. 한국 지도의 내 위치 버튼 위에 일본 지도 FAB를 추가하고 일본 화면의 한국 지도 FAB와 뒤로 가기로 복귀합니다. 지도 전환 FAB에는 사용자 제공 이미지의 윤곽을 기준으로 만든 벡터 아이콘을 적용합니다. 일본 Google 지도는 도쿄역에서 시작하고 각 지도의 카메라를 보존하며, 키 미설정 시 준비 문구를 표시합니다. 매장 데이터는 후속 작업입니다.
+- 이유: 지도 전환을 기존 지도 화면에서 제공하면서 추후 일본 매장 데이터 연결 지점을 마련합니다.
+- 근거: [기능 이슈 #263](https://github.com/Ramap-Orgranization/Ramap-KMP/issues/263)의 범위, 사용자 계획 승인과 2026-10-12의 한국 탭 이름 변경·FAB 화면 전환 요청.
+- 진입 후속 변경: 2026-10-12 사용자가 하단 일본 탭 대신 지도 화면 내 위치 버튼 위의 FAB로 화면을 전환하도록 요청하여 지도 탭 내부 경로로 바꿨습니다.
+- 아이콘 후속 변경: 2026-10-12 사용자의 이미지 깨짐 개선·벡터 제작 요청에 따라 최초 PNG를 곡선 윤곽선의 공통 VectorDrawable로 교체했습니다. 24dp 표시 크기와 선택 상태 색상은 기존 내비게이션을 따릅니다.
+- 반영: [제품 정책](product-policy.md), [앱 실행 흐름](app-flows.md#한국일본-지도-전환), [기능 지도](feature-map.md), [모듈 구조](engineering.md), `feature/main/japan`과 플랫폼 SDK 설정.
+- 적용 상태: 로컬 구현. 앱 빌드·회귀 검증 결과는 작업 보고에서 확인하며, 키가 없는 환경의 실제 타일·인증은 미검증입니다. 원격 배포를 뜻하지 않습니다.
+- 대체한 결정: 없음.
+
+## DEC-0014 수정 작업 이력 기록 의무 도입
+
+- 기록일: 2026-10-12 (Asia/Seoul).
+- 결정: 이후 수정 작업마다 이유·변경 범위·검증 결과·배포 상태·남은 제한을 로컬 전용 `docs/change-history/CHANGELOG.md`에 기록합니다. 이전 근거를 지우지 않고 후속 수정·검증 결과를 이어 남깁니다.
+- 이유: 실제 적용 여부와 검증 범위를 다음 작업에서도 확인할 수 있도록 합니다.
+- 근거: 사용자의 “반영해줘 앞으로 작업하는 수정 작업은 기록을 남겨줘” 요청.
+- 반영: 로컬 `ramap-coding-conventions` 스킬의 `Finish the change`, [유지보수 정책](maintenance.md).
+- 적용 상태: 기록 규칙을 반영하고 제거된 `shops`를 조회하던 서버 함수 수정부터 이력을 남깁니다. 상세 감사 자료와 자격 증명은 공유 위키에 옮기지 않습니다.
+- 대체한 결정: 없음. DEC-0001의 로컬 운영 자료 분리 원칙을 유지합니다.
+
+## DEC-0015 비공개 계정의 닉네임·프로필 사진 공개 확정
+
+- 기록일: 2026-10-13 (Asia/Seoul).
+- 결정: 비공개 계정에서도 닉네임과 현재 프로필 사진은 공개합니다. 비공개 설정은 리뷰·저장 목록의 열람 범위를 제한하며, 공개 신원 정보와 콘텐츠 접근 권한은 구분합니다.
+- 이유: 사용자는 비공개 계정에서도 기본 신원 정보는 보여야 한다고 확인했습니다.
+- 승인 근거: 사용자가 비공개 계정의 닉네임·프로필 사진 공개를 의도한 정책으로 확인하고 보안 취약점 목록에서 제외하도록 요청했습니다.
+- 반영: [제품 정책](product-policy.md), [백엔드 정책](backend.md).
+- 적용 상태: 공개 신원 정보는 취약점으로 분류하지 않습니다. 리뷰·저장 목록의 접근 제한이나 차단·정지·탈퇴 조건을 해제하는 결정은 아닙니다.
+- 대체한 결정: 없음. 공개 신원 정보와 비공개 콘텐츠의 경계를 명확히 합니다.
+
+## DEC-0016 제보 사진의 제보자·관리자 열람 제한
+
+- 기록일: 2026-10-13 (Asia/Seoul).
+- 결정: 제보 사진은 공개하지 않습니다. 사진을 올린 제보자 본인과 별도 등록된 관리자만 사진을 열람할 수 있습니다. 제보에 사진을 첨부할 때는 제보자의 소유권을 확인합니다. 사진 없이 URL만 제출하는 제보는 유지합니다.
+- 이유: 제보 사진에는 개인정보나 검토 중인 자료가 포함될 수 있으므로 제보 범위를 넘어 공개하지 않습니다.
+- 승인 근거: 사용자가 “1번 제보 사진부터 수정해줘. 제보자랑 관리자만 볼 수 있게 해줘”라고 요청했습니다.
+- 반영: [제품 정책](product-policy.md), [백엔드 정책](backend.md).
+- 적용 상태: 열람 정책을 확정합니다. 제출 전 사진의 소유자 열람, 제출 후 관리자 삭제, 소유자가 불명확한 사진의 관리자 접근 및 이미 발급한 서명 링크의 유효 기간 한계는 제품 정책에서 구분합니다.
+- 대체한 결정: 없음. 제보 사진의 열람 범위를 공개 링크에서 제한된 접근으로 변경합니다.
+
+## DEC-0017 정책·도메인 중심 위키와 의미 변경 갱신
+
+- 기록일: 2026-10-13 (Asia/Seoul).
+- 결정: 위키의 중심을 제품 정책·도메인 용어와 관계·사용자 흐름·운영 경계·결정 이유로 바꿉니다. 코드 탐색 목록은 개발 참고로 합치고, 정책이나 도메인 의미가 바뀔 때만 관련 위키를 갱신합니다. 모든 문서의 코드 커밋 해시 갱신을 요구하지 않습니다.
+- 이유: 파일·함수·배포·검사 변경을 문서에 복제하는 부담을 줄이고 오래 유지할 지식에 집중합니다.
+- 승인 근거: 사용자가 위키의 목적을 지속 가능한 정책·도메인 지식으로 명시하고, 이 중심으로 재정리 및 앞으로의 갱신 규칙 변경을 요청했습니다.
+- 반영: [목차](README.md), [제품 정책](product-policy.md), [도메인 지식](domain.md), [개발 참고](engineering.md), [유지보수 규칙](maintenance.md), 저장소 작업 지침·PR 스킬·PR 에이전트·PR 템플릿과 위키 검사기.
+- 적용 상태: 문서와 갱신 지침을 로컬에 반영합니다. 기존 제품 정책과 개발 규칙의 소유권은 유지하고 앱·서버 동작은 바꾸지 않습니다.
+- 대체한 결정: DEC-0001의 코드 탐색 중심 구성과 DEC-0009에서 구현·검증 결과를 위키에 동기화하던 범위를 대체합니다. 최종 PR 단계에서 의미 변경 여부를 검토하는 시점, 명시적인 위키 수정 요청의 즉시 처리, DEC-0002의 개발 규칙 소유권과 DEC-0014의 로컬 수정 이력 기록은 유지합니다.

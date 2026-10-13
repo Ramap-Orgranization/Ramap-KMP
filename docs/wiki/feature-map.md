@@ -1,47 +1,26 @@
 ---
 authority: reference
 status: active
-last_verified: 2026-10-11
-source_ref: 33a0d49c2731e42144f2c79704748d7c7e0cf68b
+last_verified: 2026-10-13
 ---
 
-# 기능 지도
+# 기능과 도메인
 
-화면에서 domain 계약과 data 구현으로 이동하는 탐색표입니다. 정확한 route 인자와 앱 연결은 [ScreenRoutes](../../core/navigation/src/commonMain/kotlin/com/peto/ramap/navigation/ScreenRoutes.kt), [NavigationGraph](../../shared/src/commonMain/kotlin/com/peto/ramap/NavigationGraph.kt)에 있습니다.
+화면·클래스 목록 대신 각 기능의 사용자 목적과 연결되는 도메인을 정리합니다. 정확한 입력 조건과 권한은 [제품 정책](product-policy.md)과 [운영·보안 규칙](backend.md)이 소유합니다.
 
-
-| 기능 | 화면 진입과 상태 | 계약과 데이터 구현 |
+| 기능 | 사용자 목적 | 연결되는 개념 |
 | --- | --- | --- |
-| 계정·로그인 | [AccountViewModel](../../feature/account/src/commonMain/kotlin/com/peto/ramap/ui/account/AccountViewModel.kt) | [LoginRepository](../../domain/src/commonMain/kotlin/com/peto/ramap/domain/repository/LoginRepository.kt) → [DefaultLoginRepository](../../data/src/commonMain/kotlin/com/peto/ramap/data/repository/DefaultLoginRepository.kt) |
-| 마이·프로필 편집 | [MyTabViewModel](../../feature/main/my/src/commonMain/kotlin/com/peto/ramap/ui/main/my/MyTabViewModel.kt), [ProfileEditViewModel](../../feature/profile/edit/src/commonMain/kotlin/com/peto/ramap/ui/profile/edit/ProfileEditViewModel.kt) | [ProfileRepository](../../domain/src/commonMain/kotlin/com/peto/ramap/domain/repository/ProfileRepository.kt) → [DefaultProfileRepository](../../data/src/commonMain/kotlin/com/peto/ramap/data/repository/DefaultProfileRepository.kt) |
-| 리뷰 작성·수정·내 리뷰 | [ReviewWriteViewModel](../../feature/review/write/src/commonMain/kotlin/com/peto/ramap/ui/review/write/ReviewWriteViewModel.kt), [MyReviewsViewModel](../../feature/review/my/src/commonMain/kotlin/com/peto/ramap/ui/review/my/MyReviewsViewModel.kt) | [ReviewRepository](../../domain/src/commonMain/kotlin/com/peto/ramap/domain/repository/ReviewRepository.kt) → [DefaultReviewRepository](../../data/src/commonMain/kotlin/com/peto/ramap/data/repository/DefaultReviewRepository.kt) |
-| 다른 사용자 프로필·리뷰·차단 | [OtherReviewsViewModel](../../feature/review/other/src/commonMain/kotlin/com/peto/ramap/ui/review/other/OtherReviewsViewModel.kt) | [CommunityRepository](../../domain/src/commonMain/kotlin/com/peto/ramap/domain/repository/CommunityRepository.kt) → [DefaultCommunityRepository](../../data/src/commonMain/kotlin/com/peto/ramap/data/repository/DefaultCommunityRepository.kt) |
-| 북마크 목록·가져오기 | [BookmarkedShopListViewModel](../../feature/bookmark/list/src/commonMain/kotlin/com/peto/ramap/ui/bookmark/list/BookmarkedShopListViewModel.kt), [ImportationViewModel](../../feature/bookmark/importation/src/commonMain/kotlin/com/peto/ramap/ui/bookmark/importation/ImportationViewModel.kt) | [BookmarkRepository](../../domain/src/commonMain/kotlin/com/peto/ramap/domain/repository/BookmarkRepository.kt) → [DefaultBookmarkRepository](../../data/src/commonMain/kotlin/com/peto/ramap/data/repository/DefaultBookmarkRepository.kt); [ImportationRepository](../../domain/src/commonMain/kotlin/com/peto/ramap/domain/repository/ImportationRepository.kt) → [DefaultImportationRepository](../../data/src/commonMain/kotlin/com/peto/ramap/data/repository/DefaultImportationRepository.kt) |
-| 이벤트 목록·상세 | [EventsViewModel](../../feature/main/event/list/src/commonMain/kotlin/com/peto/ramap/ui/main/event/list/EventsViewModel.kt), [EventDetailViewModel](../../feature/main/event/detail/src/commonMain/kotlin/com/peto/ramap/ui/main/event/detail/EventDetailViewModel.kt) | [RamenShopRepository](../../domain/src/commonMain/kotlin/com/peto/ramap/domain/repository/RamenShopRepository.kt) → [DefaultRamenShopRepository](../../data/src/commonMain/kotlin/com/peto/ramap/data/repository/DefaultRamenShopRepository.kt) |
-| 영업 공지 | [OperatingNoticeViewModel](../../feature/main/notice/src/commonMain/kotlin/com/peto/ramap/ui/main/notice/OperatingNoticeViewModel.kt) | [OperatingNoticeRepository](../../domain/src/commonMain/kotlin/com/peto/ramap/domain/repository/OperatingNoticeRepository.kt) → [DefaultOperatingNoticeRepository](../../data/src/commonMain/kotlin/com/peto/ramap/data/repository/DefaultOperatingNoticeRepository.kt) |
-| 랭킹 | [RankingViewModel](../../feature/main/ranking/src/commonMain/kotlin/com/peto/ramap/ui/main/ranking/RankingViewModel.kt) | [ShopRankingRepository](../../domain/src/commonMain/kotlin/com/peto/ramap/domain/repository/ShopRankingRepository.kt) → [DefaultShopRankingRepository](../../data/src/commonMain/kotlin/com/peto/ramap/data/repository/DefaultShopRankingRepository.kt) |
-| 알림 설정·푸시 | [NotificationSettingsViewModel](../../feature/notification/src/commonMain/kotlin/com/peto/ramap/ui/notification/NotificationSettingsViewModel.kt) | [NotificationSettingsRepository](../../domain/src/commonMain/kotlin/com/peto/ramap/domain/repository/NotificationSettingsRepository.kt), [PushRegistrationRepository](../../domain/src/commonMain/kotlin/com/peto/ramap/domain/repository/PushRegistrationRepository.kt) → [DefaultNotificationSettingsRepository](../../data/src/commonMain/kotlin/com/peto/ramap/data/repository/DefaultNotificationSettingsRepository.kt), [DefaultPushRegistrationRepository](../../data/src/commonMain/kotlin/com/peto/ramap/data/repository/DefaultPushRegistrationRepository.kt) |
+| 지도·검색 | 원하는 지역의 매장을 발견하고 상세 보기 | 매장, 검색 후보, 서비스 공개 여부 |
+| 일본 지도 | 한국 지도에서 일본 지도 탐색으로 전환하기 | 지도 위치, 화면 복귀, 카메라 보존 |
+| 저장·가져오기 | 나중에 방문할 매장을 모으기 | 북마크, 개인 숨김, 중복 후보 |
+| 리뷰 작성·수정 | 방문 경험을 기록하기 | 작성자, 매장, 공개 여부, 게시 상태 |
+| 내 리뷰 | 자신의 방문 기록을 확인하고 관리하기 | 본인 열람 범위, 목록, 전체 집계 |
+| 다른 사용자 리뷰 | 허용된 다른 사람의 기록 보기 | 프로필, 공개·비공개, 차단 |
+| 랭킹 | 매장의 순위를 비교하기 | 순위, 페이지 중복, 북마크 표시 |
+| 새소식·이벤트 | 매장의 소식과 이벤트 확인하기 | 이벤트 기간, 상세, 알림 설정 |
+| 영업 공지 | 방문 날짜의 영업 여부 확인하기 | 정규 시간, 휴무, 날짜별 변경 |
+| 제보 | 매장 정보나 증거를 전달하기 | 제보자, 증거 사진, 관리자 검토 |
+| 마이·프로필 | 자신의 신원 정보와 공개 범위 관리하기 | 계정, 닉네임, 사진, 콘텐츠 공개 설정 |
+| 알림 설정 | 원하는 이벤트 소식을 받도록 설정하기 | 설정 시간 창, OS 권한, 푸시 등록 |
 
-지도·검색은 [앱 실행 흐름](app-flows.md)을 읽습니다. 숨김·구독·신고·설정의 모듈 위치는 [모듈 구조](module-structure.md)에 있습니다.
-
-
-## 기능 사이를 연결하는 상태
-
-[PersonalizationStore](../../domain/src/commonMain/kotlin/com/peto/ramap/domain/store/PersonalizationStore.kt)는 북마크·숨김 등 개인화의 공유 진입점입니다. 북마크 목록과 지도 등은 이 상태를 구독합니다. 프로필 관련 화면은 `ProfileRepository.sessionUserIds` 전환 때 진행 작업과 화면 상태를 초기화하며 이전 계정의 늦은 결과가 새 계정에 반영되지 않도록 확인합니다.
-
-이벤트 알림 설정과 OS 알림 권한은 별개의 상태입니다. 푸시 등록 수명은 [NotificationRegistry](../../core/notification/src/commonMain/kotlin/com/peto/ramap/notification/NotificationRegistry.kt)에서 확인합니다.
-
-
-## 대표 검증 경로
-
-| 경계 | 테스트 |
-| --- | --- |
-| 로그인 초기화·세션 상태 | [LoginSessionStateTest](../../data/src/commonTest/kotlin/com/peto/ramap/data/repository/LoginSessionStateTest.kt) |
-| 프로필 편집·계정 전환 | [ProfileEditViewModelTest](../../feature/profile/edit/src/commonTest/kotlin/com/peto/ramap/ui/profile/edit/ProfileEditViewModelTest.kt) |
-| 리뷰 입력·저장·취소 | [ReviewWriteViewModelTest](../../feature/review/write/src/commonTest/kotlin/com/peto/ramap/ui/review/write/ReviewWriteViewModelTest.kt) |
-| 개인화·가져오기 | [DefaultPersonalizationStoreTest](../../data/src/commonTest/kotlin/com/peto/ramap/data/store/DefaultPersonalizationStoreTest.kt), [ImportationViewModelTest](../../feature/bookmark/importation/src/commonTest/kotlin/com/peto/ramap/ui/bookmark/importation/ImportationViewModelTest.kt) |
-| 이벤트 상세·알림 권한 | [EventDetailViewModelTest](../../feature/main/event/detail/src/commonTest/kotlin/com/peto/ramap/ui/main/event/detail/EventDetailViewModelTest.kt) |
-| 랭킹 페이지·순위 | [RankingViewModelTest](../../feature/main/ranking/src/commonTest/kotlin/com/peto/ramap/ui/main/ranking/RankingViewModelTest.kt), [RankedShopsTest](../../domain/src/commonTest/kotlin/com/peto/ramap/domain/model/rank/RankedShopsTest.kt) |
-| 푸시 세션 등록 | [NotificationRegistryTest](../../core/notification/src/commonTest/kotlin/com/peto/ramap/notification/NotificationRegistryTest.kt) |
-
-테스트 실행 명령은 [검증 안내](testing.md)에 있습니다. 링크된 파일이 바뀌면 페이지의 기준 ref 이후 diff도 확인합니다.
+북마크·개인 숨김 등은 여러 화면에서 같은 사용자의 상태를 나타냅니다. 계정이 바뀌면 이전 사용자에게 속한 상태나 늦게 도착한 결과가 새 사용자에게 섞이지 않아야 합니다. 이 경계는 [사용자 흐름](app-flows.md)에서 함께 읽습니다.

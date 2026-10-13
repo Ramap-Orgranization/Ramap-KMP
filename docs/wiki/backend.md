@@ -2,76 +2,52 @@
 authority: reference
 status: active
 last_verified: 2026-10-13
-source_ref: 7b4e63f45ae73a10ed33fa63088b6ace0af1813d
 ---
 
-# 백엔드와 운영 탐색
+# 운영·보안 규칙
 
-이 문서는 저장소의 Supabase 연결과 운영 코드 위치를 설명합니다. 운영 DB 스키마 전체, 배포된 Edge Function 버전, 현재 접근 권한을 확인한 문서가 아닙니다. Supabase 작업에서는 해당 스킬을 읽고 작업 범위의 실제 계약을 확인합니다.
+이 문서는 운영에서 지켜야 할 정보 공개와 신뢰 경계를 설명합니다. 실시간 서버 상태표나 배포 이력은 아닙니다. 접근 권한을 수정할 때는 기존 규칙과 실제 서버 동작을 함께 확인합니다.
 
-## 앱에서 서버까지
+## 역할과 신뢰 경계
 
-[SupabaseClient](../../core/network/src/commonMain/kotlin/com/peto/ramap/network/SupabaseClient.kt)는 Auth, PostgREST, Storage, Functions를 설치합니다. [NetworkModule](../../core/network/src/commonMain/kotlin/com/peto/ramap/network/di/NetworkModule.kt)이 client와 네트워크 서비스를 DI에 연결합니다. 설정 값의 입력 지점은 [core/network/build](../../core/network/build.gradle.kts)와 [RamapSecrets](../../core/network/src/commonMain/kotlin/com/peto/ramap/network/config/RamapSecrets.kt)입니다.
-
-앱 계약은 [domain/repository](../../domain/src/commonMain/kotlin/com/peto/ramap/domain/repository), 실제 조회·RPC·함수 호출은 [data](../../data/src/commonMain/kotlin/com/peto/ramap/data)에 있습니다. 메서드 이름만으로 서버 필터나 권한을 추정하지 않습니다. 예를 들어 [RemoteOperatingNoticeDataSource](../../data/src/commonMain/kotlin/com/peto/ramap/data/datasource/notice/RemoteOperatingNoticeDataSource.kt)의 Approved 이름과 별개로 클라이언트 조회에는 승인 조건이 없으므로 공개 범위는 서버 원천과 함께 확인해야 합니다.
-
-## 서버와 운영 코드
-
-| 목적 | 시작점 |
+| 역할 | 권한을 판단할 때 확인할 것 |
 | --- | --- |
-| 저장소에 기록된 스키마 변경 | [migrations](../../supabase/migrations), [운영 공지 SQL 테스트](../../supabase/tests/operating_notice_daily_schedules.sql) |
-| 계정 삭제 | [delete-account](../../supabase/functions/delete-account/index.ts), [handler 테스트](../../supabase/functions/delete-account/handler.test.mjs) |
-| 프로필·리뷰 임시 이미지 URL | [기본 배치 발급 구현](image-url-cache.md) |
-| 이벤트 미리보기·등록 | [preview-event](../../supabase/functions/preview-event/index.ts), [register-event](../../supabase/functions/register-event/index.ts) |
-| 관리자 수정·상태·영업 공지 | [admin-correct-registration](../../supabase/functions/admin-correct-registration/index.ts), [admin-event-status](../../supabase/functions/admin-event-status/index.ts), [admin-operating-notice](../../supabase/functions/admin-operating-notice/index.ts) |
-| 이벤트 알림 | [notify-event-reminders](../../supabase/functions/notify-event-reminders/index.ts), [notify-shop-event](../../supabase/functions/notify-shop-event/index.ts) |
-| 외부 저장 목록 가져오기 | [importation-match](../../supabase/functions/importation-match/index.ts), [kakao-importation](../../supabase/functions/kakao-importation/index.ts) |
-| 관리자 인증의 공통 구현 | [admin-auth](../../supabase/functions/_shared/admin-auth.ts), [테스트](../../supabase/functions/_shared/admin-auth.test.mjs) |
-| 네이버 영업 상태 수집 작업 | [worker 안내](../../supabase/workers/naver-operating-status/README.md), [package.json](../../supabase/workers/naver-operating-status/package.json) |
-| Android 디버그 관리 화면 | [debug/admin](../../debug/admin) |
+| 비회원 | 공개 정보와 해당 기능에서 허용한 익명 입력만 이용합니다. |
+| 로그인한 회원 | 로그인 여부에 더해 본인 소유권·공개 범위·차단 등 행동별 조건을 확인합니다. |
+| 관리자 | 회원이 직접 변경할 수 없는 서버 측 관리자 등록으로 확인합니다. |
+| 신뢰된 서버·수집 작업 | 일반 회원에게 공개하지 않는 자료와 내부 처리를 담당합니다. |
 
-migration 디렉터리만으로 DB 전체를 재현할 수 있다고 가정하지 않습니다. 파일이 존재하는 것과 배포되었다는 것은 별개입니다. API 변경은 앱 소비자·함수·migration·검증 근거를 함께 기록합니다.
+이메일 기본값이나 회원이 편집할 수 있는 프로필 metadata만으로 관리자 권한을 부여하지 않습니다. 관리자에게 허용된 API라고 해서 모든 역할에 실행 권한을 열지 않습니다.
 
-## 2026-10-13 서버 보안 보완
+## 공개 정보와 내부 정보
 
-검증한 source ref `7b4e63f45ae73a10ed33fa63088b6ace0af1813d`에는 서버 보안 변경이 반영되어 있습니다. 이 항목은 저장소 코드와 테스트 경로를 설명하며, 각 migration·함수·worker가 어느 환경에 배포되었는지 나타내는 상태표는 아닙니다.
+- 서비스 비공개 매장은 공개 조회에서 제외합니다. 개인 숨김과는 다른 경계입니다.
+- 영업 공지의 공개 정보와 OCR·검수 등 내부 자료는 분리합니다.
+- 영업 상태의 공개 정보는 매장 식별자·상태·확인 시점입니다. 오류·수집 원천·재시도·다음 수집 일정 등 내부 진단은 서버 전용입니다.
+- 비공개 프로필의 닉네임·현재 사진은 공개할 수 있지만 리뷰·저장 목록과 차단·정지·탈퇴 조건은 별도로 적용합니다. [제품 정책](product-policy.md#프로필과-다른-사용자-접근)
 
-신고 증거 bucket은 비공개이며 신고자 본인과 별도로 등록한 관리자만 사진을 읽을 수 있습니다. 신고자는 아직 신고에 연결되지 않은 본인 사진만 지울 수 있고, 연결된 사진은 관리자가 정리합니다. 동작은 [신고 증거 접근 migration](../../supabase/migrations/20261012165359_restrict_news_report_evidence_access.sql)과 [회귀 검사](../../supabase/tests/news_report_evidence_access_test.py)에서 확인합니다. 공지 공개 응답에서는 내부 OCR·검수 필드를 분리하고, 숨김 매장은 공개 조회에서 제외합니다. 영업 상태 테이블은 공개 투영에서 `shop_id`, `status`, `checked_at`만 읽을 수 있고 수집 진단 필드는 서버 전용입니다. 관련 구현은 [운영 공지 필드 분리](../../supabase/migrations/20261013015718_separate_operating_notice_internal_fields.sql), [숨김 매장 공개 제한](../../supabase/migrations/20261013025446_enforce_hidden_shop_visibility.sql), [상태 진단 정보 제한](../../supabase/migrations/20261013041226_restrict_operating_status_diagnostics.sql) migration과 각각의 `supabase/tests/` 회귀 검사에서 찾을 수 있습니다.
+## 제보 사진과 프로필의 공개 범위
 
-관리자 Edge Function은 공통 인증 검사를 사용합니다. 공개 신고·리뷰 제출 재시도와 푸시 등록에는 서버 측 증가 제한이 있고, 장소 검색 provider 요청은 서버 예산으로 제한됩니다. 앱은 검색 제한 응답을 분류해 전용 안내를 표시합니다. 상세 구현과 단위 검사는 [공통 관리자 인증](../../supabase/functions/_shared/admin-auth.ts), [장소 검색 함수](../../supabase/functions/place-search/index.ts), [검색 오류 안내](../../core/designsystem/src/commonMain/kotlin/com/peto/ramap/designsystem/place/PlaceSearchErrorToast.kt) 및 인접 테스트에서 확인합니다.
+제보 사진은 본인과 등록 관리자만 열람합니다. 로그인과 소유권을 확인하며 제출된 증거는 관리자만 정리합니다. 소유자 불명 자료를 임의의 회원에게 연결하지 않습니다. 세부 허용·거절 조건은 [제보 사진 정책](product-policy.md#제보-사진)이 소유합니다.
 
-프로필 RPC는 자기소개 입력 오류를 HTTP 400 계약으로 반환하고 제거 대상 Instagram 필드를 정리합니다. 나머지 서버 계약 migration은 입력 검증과 실행 권한을 보완하며, 알림 webhook은 요청 본문 형식을 검증합니다. 운영 상태 worker는 미사용 관측 RPC를 호출하지 않고, 요청 본문을 JSON 객체와 64 KiB 이하로 제한합니다. 이 동작은 해당 migration·함수·worker 파일과 각 폴더의 회귀 테스트에서 확인합니다.
+비공개 프로필의 신원 정보 공개와 제보 증거 사진의 열람 제한은 서로 다른 정책입니다. 둘을 같은 이미지 공개 규칙으로 묶지 않습니다.
 
-## 리뷰 변경 응답과 배포 호환성
+## 이미지 링크
 
-2026-10-13(Asia/Seoul)에 운영 `submit_shop_review`, `update_shop_review`, `delete_shop_review`의 UUID 반환을 재확인했습니다. [v2 migration](../../supabase/migrations/20261012151044_review_mutation_receipts_v2.sql)은 이 함수들의 이름·인자·반환·권한을 유지하고, 별도 `*_v2` 함수에서 기존 쓰기를 호출합니다. 새 응답은 리뷰 ID, 작성자와 가게 ID, 변경 전후 단건 projection, 변경 후 본인 집계입니다. 변경된 리뷰와 집계를 로컬에서 반영하기 위한 계약이며 리뷰 목록 전체를 반환하지 않습니다.
+임시 링크를 발급할 때 기존 열람 권한을 유지합니다. 캐시나 일괄 발급이 권한 검사를 우회하는 이유가 되어서는 안 됩니다. 계정이 바뀌거나 이미지가 교체되면 이전 결과의 재사용 범위도 확인합니다.
 
-projection에는 작성자 정보·사진 경로·공개 여부·moderation·좋아요·작성자 공개 게시 리뷰 수·방문 번호가 포함됩니다. 본인 `public_count`는 모든 공개 리뷰이고 `published_count`는 공개이면서 `published`인 리뷰이므로 구분합니다. 삭제 응답은 삭제 전 projection을 보존합니다. `fetch_my_review_projection_v2`는 본인 단건 보완 조회이며 다른 작성자의 리뷰는 반환하지 않습니다. 이미지 URL은 기존 Storage 배치 발급 경로를 사용합니다.
+프로필·리뷰 이미지 링크는 기본 일괄 발급을 채택했습니다. Redis를 쓰는 공유 캐시는 현재 선택의 전제가 아닙니다. [DEC-0003](decisions.md#dec-0003-프로필리뷰-이미지-url-기본-배치-발급-채택)
 
-[격리 SQL 회귀 검사](../../supabase/tests/review_mutation_receipts_v2.sql)는 기존 UUID 응답과 함수 정의·권한 보존, v2 생성·수정·삭제 projection과 집계, 타인 소유권 거절, 누락 이미지 거절을 확인합니다. 로컬 PostgreSQL 17.11에서 운영 v1 함수 정의와 최소 fixture로 통과했습니다. fixture의 인증 helper는 운영 계정 정지·삭제·회원 자격 정책 전체를 재현하지 않습니다.
+이미 발급된 서명 링크는 만료 전 소지자가 사용할 수 있습니다. 권한 변경과 링크 수명, 이미 내려받은 파일의 회수 가능성은 같은 보장이 아닙니다. 구체적인 만료 시간·배치 크기·동시성 수치는 구현에서 관리합니다.
 
-2026-10-13(Asia/Seoul)에 운영 `ramap` DB에 `review_mutation_receipts_v2`를 적용했습니다. 운영 migration 버전은 `20261012151044`이며 로컬 파일명도 이 버전과 일치합니다. 배포 전후 기존 함수 3개의 OID·정의 해시·인자·UUID 반환·권한·search_path가 동일합니다. 새 공개 RPC 4개는 JSONB를 반환하고 anon 실행을 거절하며, 내부 helper 2개는 일반 호출자에게 실행 권한이 없습니다. 운영 기본 권한에 따라 공개 RPC는 authenticated와 service_role에 실행 권한이 있으며 함수 내부에서 현재 사용자 신원을 검사합니다.
+## 요청 남용과 입력 오류
 
-운영 REST에서 기존·신규 RPC 7개의 anon 요청이 모두 HTTP 401 / SQLSTATE 42501로 거절됐고, DB의 authenticated 역할에 사용자 신원이 없는 호출 7개도 `Authentication required`로 거절됐습니다. 보안 점검에는 의도된 [authenticated SECURITY DEFINER 알림](https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable) 4개가 추가됐으며, anon 실행 허용·가변 search_path 항목은 늘지 않았습니다. 이 문단의 재확인 범위는 리뷰 v2 배포이며 기준 소스는 `4736aa00 + working-tree`입니다.
+신고·리뷰 재시도·푸시 등록·외부 장소 검색에는 서버 측 제한을 적용합니다. 앱 검증만으로 서버 접근을 보호했다고 판단하지 않습니다. 제한 응답은 일반 서버 장애와 구분하고, 앱에서는 필요한 재시도 안내를 제공합니다.
 
-같은 날짜에 Android 16 실기기(SM_S931N)의 `1.1.9-debug` 앱과 기존 로그인 세션으로 사진 없는 임시 비공개 리뷰의 v2 생성·본문 수정·삭제를 확인했습니다. 목록 전체 조회 없이 해당 행과 본인 집계가 반영됐고, 삭제 후 집계가 원래 값으로 돌아왔으며 운영 DB의 임시 리뷰 잔존 수는 0입니다. 내 리뷰·타인 리뷰의 매장 상세 닫기, 내 리뷰 편집 취소 복귀, 지도 매장 리뷰에서 작성자 프로필 복귀도 확인했습니다. 이 선행 검증의 상세 숫자와 호출 관찰은 로컬 전용 `docs/change-history/review-device-e2e-20261013/`에 기록했습니다. 단말 검증의 기준 소스도 `4736aa00 + working-tree`입니다.
+잘못된 자기소개 등 사용자 입력은 입력 오류로 처리합니다. 알림 webhook은 허용한 출처와 본문을 확인하고, 영업 상태 worker는 인증과 요청 형식·크기를 확인한 뒤 작업을 시작합니다. 거절된 입력으로 발송이나 수집을 시작하지 않습니다.
 
-이어진 같은 기기 검증에서는 임시 리뷰에 테스트 사진을 올리고 다른 사진으로 교체한 뒤 비공개→공개→비공개로 저장했습니다. 각 저장 구간의 전체 리뷰 목록 조회는 0이었고 공개·비공개 집계와 필터의 행 포함 여부가 반영됐습니다. 교체 전 사진의 Storage 객체는 제거됐고 새 사진 객체만 리뷰에 연결됐습니다. 사용자가 직접 다른 계정으로 로그인하자 그 계정의 본인 집계가 표시됐으며, 타인 프로필과 동일 매장 상세에서도 임시 비공개 리뷰가 숨겨졌습니다. 작성 계정으로 돌아오면 임시 리뷰와 사진이 다시 표시됐고, 마지막 삭제 뒤 운영 리뷰 행과 두 테스트 사진 객체의 잔존 수는 모두 0입니다. 상세 증거는 로컬 전용 `docs/change-history/review-device-photo-session-20261013/`에 기록했습니다. 사진은 한 장씩 올렸으며 다중 사진·최대 용량·업로드 실패·계정 전환 중 진행 중 요청과 기록 공백 복구는 단말에서 확인하지 않았습니다.
+## 변경과 검증의 의미
 
-같은 날짜의 metadata 후속 수정에서는 내 리뷰에 새 행을 추가한 직후 매장 thumbnail·주소·카테고리가 첫 화면에 표시되는 것을 Android 16 실기기에서 확인했습니다. 목록에 없던 매장은 reducer/repository 테스트로 확인했습니다. 이 보완은 앱 구현이며 신규 서버 API나 DB 배포를 포함하지 않습니다. 새 앱 버전은 스토어에 배포하지 않았습니다.
+Supabase의 스키마·권한·서버 함수·worker 코드는 Git에서 변경 이력을 관리합니다. Git에 파일이 있다는 사실은 운영 적용을 뜻하지 않습니다. DB 전체를 현재 migration 폴더만으로 재현할 수 있다고 가정하지 않습니다.
 
-앱 구현은 검증된 PR 코드 커밋 `c559e52c3248076dacab2f2928622d9d787bc1e5`에 반영됐으며 스토어에 새 앱 버전을 배포하지 않았습니다. 새 앱이 v2 쓰기에 실패했을 때 v1 쓰기를 자동으로 재시도하면 이중 생성 위험이 있어 사용하지 않습니다. 앱 배포 후에도 구버전 지원이 끝날 때까지 v1을 유지합니다.
-
-## 관리자 연속 날짜 등록
-
-관리자 날짜 선택·미리보기·등록 요청과 `register-event`의 날짜 검증에서 확인한 범위입니다. 일반 이벤트는 선택한 시작일과 종료일을 유지합니다. 신메뉴의 7일 기간과 리뉴얼의 종료일 없음은 기존 규칙을 유지합니다. 일반 영업 변동의 `schedule_override`는 시작일부터 종료일까지 적용하며 월을 넘길 수 있습니다. 날짜 순서가 뒤집혔거나 실제 달력에 없는 날짜는 등록 전에 거부하고, 기존 변경 영업시간과의 중복은 선택한 기간 전체로 확인합니다.
-
-앱 상태·전송 범위는 [관리자 ViewModel 테스트](../../debug/admin/src/androidHostTest/kotlin/com/peto/ramap/debug/admin/ui/registration/AdminRegistrationViewModelTest.kt), 실제 달력 선택은 [기기 테스트](../../debug/admin/src/androidDeviceTest/kotlin/com/peto/ramap/debug/admin/AdminRegistrationFlowTest.kt), 서버 저장 값은 [등록 handler 테스트](../../supabase/functions/register-event/handler.test.mjs), 영업 상태 적용은 [공지 도메인 테스트](../../domain/src/commonTest/kotlin/com/peto/ramap/domain/model/notice/MonthlyOperatingNoticeTest.kt)가 검증합니다.
-
-2026-10-11에 `register-event` 운영 버전 19와 `add_operating_notice_daily_schedules` 스키마 반영을 확인했습니다. 이 함수가 사용하는 `daily_schedules` 컬럼은 [기존 migration](../../supabase/migrations/20261003032631_add_operating_notice_daily_schedules.sql)이 정의하며, 빈 배열은 기존 연속 공지 동작을 유지합니다. 운영 API는 존재하지 않는 검증용 매장명으로 날짜 검증 통과 후 저장 전에 중단되는 응답을 확인했습니다. 실제 저장은 격리한 handler·DB 테스트로 확인했으며 운영 공지를 추가하지 않았습니다.
-
-## 로컬 등록 절차 찾기
-
-매장·메뉴·영업시간·이벤트 등록은 `.agents/skills/`의 `db-add`, `menu-add`, `work-time`, `event-add`, `operating-notice-add`가 담당합니다. 메뉴 갱신의 실제 진입점은 `tools/menu-refresh/SKILL.md`, 정책은 `docs/menu-registration-policy.md`입니다. `.agents/skills/menu-refresh/SKILL.md`의 미완성 placeholder를 완성된 절차로 사용하지 않습니다.
-
-이 경로들은 일반 checkout에 없을 수 있습니다. 위키는 등록·배포 승인 절차를 대체하지 않으며, 로컬 자료를 임의로 공개하지 않습니다. 운영 동작을 바꾼 뒤에는 코드 확인과 실제 배포 확인을 구분해 기록합니다.
+테스트 코드의 존재, HTTP 성공 응답, 실제 데이터 변경, 외부 provider 정상 동작, 기기 수신은 각각 다른 근거입니다. 현재 배포 상태와 작업별 결과는 PR·배포 기록·로컬 변경 이력에서 확인합니다. 일반 운영 자료나 실제 사용자 정보는 위키에 옮기지 않습니다.
