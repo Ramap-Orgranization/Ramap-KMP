@@ -31,7 +31,7 @@ class WikiValidationTest(unittest.TestCase):
         self.directory = tempfile.TemporaryDirectory()
         self.addCleanup(self.directory.cleanup)
         self.root = Path(self.directory.name)
-        for name in ("README.md", "maintenance.md", "decisions.md", "inbox/README.md"):
+        for name in ("README.md", "maintenance.md", "decisions.md", "product-policy.md", "domain.md", "inbox/README.md"):
             self.write(f"docs/wiki/{name}", ACTIVE + "# 문서\n")
         self.write("docs/wiki/decisions.md", ACTIVE + "# Decisions\n\n## DEC-0001 Initial wiki\n")
         self.write("docs/wiki/templates/knowledge-candidate.md", "---\nauthority: none\nstatus: template\ncreated_at: YYYY-MM-DD\n---\n# Template\n")
@@ -52,10 +52,9 @@ class WikiValidationTest(unittest.TestCase):
         (self.root / "docs/wiki/maintenance.md").unlink()
         self.assertIn("required page is missing", self.errors())
 
-    def test_malformed_metadata_and_missing_reference_evidence(self):
+    def test_malformed_metadata_is_rejected(self):
         for replacement, expected in (
             ("authority: [canonical]", "invalid scalar"),
-            ("authority: reference", "reference pages require source_ref"),
             ("authority: canonical\nstatus: rejected", "duplicate metadata key status"),
             ("authority canonical", "expected a scalar"),
         ):
@@ -64,6 +63,17 @@ class WikiValidationTest(unittest.TestCase):
                 self.assertIn(expected, self.errors())
         self.write("docs/wiki/README.md", ACTIVE.replace("2026-10-11", "2026-02-30"))
         self.assertIn("must be an ISO date", self.errors())
+
+    def test_domain_reference_does_not_require_a_code_commit(self):
+        self.write("docs/wiki/domain.md", ACTIVE.replace("authority: canonical", "authority: reference") + "# 도메인 용어\n")
+        self.assertEqual([], CHECK_WIKI.validate(self.root))
+
+    def test_optional_source_ref_is_validated_only_when_supplied(self):
+        reference = ACTIVE.replace("authority: canonical", "authority: reference")
+        self.write("docs/wiki/domain.md", reference.replace("status: active", "status: active\nsource_ref: abc123"))
+        self.assertEqual([], CHECK_WIKI.validate(self.root))
+        self.write("docs/wiki/domain.md", reference.replace("status: active", "status: active\nsource_ref: null"))
+        self.assertIn("optional source_ref must be nonempty", self.errors())
 
     def test_broken_links_and_anchors_are_reported_in_entrypoints(self):
         self.write("README.md", "[wiki](docs/wiki/README.md#missing)\n")

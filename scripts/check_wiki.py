@@ -19,6 +19,8 @@ REQUIRED_PAGES = (
     "README.md",
     "maintenance.md",
     "decisions.md",
+    "product-policy.md",
+    "domain.md",
     "inbox/README.md",
     "templates/knowledge-candidate.md",
 )
@@ -256,8 +258,8 @@ def validate(root: Path | str) -> list[str]:
             if metadata.get("authority") not in ("canonical", "reference") or metadata.get("status") != "active":
                 errors.append(f"{label}: active pages require authority canonical/reference and status active")
             valid_date(metadata, "last_verified", label, errors)
-            if metadata.get("authority") == "reference" and not str(metadata.get("source_ref") or "").strip():
-                errors.append(f"{label}: reference pages require source_ref")
+            if "source_ref" in metadata and not str(metadata.get("source_ref") or "").strip():
+                errors.append(f"{label}: optional source_ref must be nonempty when provided")
     documents = {path: body for path, (_, body) in pages.items()}
     for relative in ("README.md", ".github/PULL_REQUEST_TEMPLATE.md"):
         path = root / relative
