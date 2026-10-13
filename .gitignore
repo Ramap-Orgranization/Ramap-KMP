@@ -73,5 +73,9 @@ tools/menu-snapshot-data.js
 
 !/supabase/
 # Place lookup implementation and schema regression tests.
+!/supabase/functions/place-search/place_search.ts
+!/supabase/tests/shops_schema_test.ts
 !/supabase/tests/news_report_evidence_access_test.py
 !/supabase/tests/admin_access_test.py
+!/supabase/functions/place-search/search_budget.ts
+!/supabase/tests/place_search_budget_test.py
