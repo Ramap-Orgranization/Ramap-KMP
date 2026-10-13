@@ -42,35 +42,6 @@ export function parseTime(value) {
   return hour * 60 + minute
 }
 
-export function classifyAnomaly({ status, now = new Date(), weekly, breakTimes = {} }) {
-  if (typeof status !== "string" || !weekly) return null
-
-  const local = seoulParts(now)
-  const dayKey = DAY_KEYS[new Date(Date.UTC(local.year, local.month - 1, local.day)).getUTCDay()]
-  const schedule = weekly[dayKey]
-  if (!schedule || schedule.closed) return null
-
-  const open = parseTime(schedule.open)
-  const close = parseTime(schedule.close)
-  if (open === null || close === null) return null
-
-  const minute = local.hour * 60 + local.minute
-  const closeAbsolute = schedule.close_next_day && close <= open ? close + 24 * 60 : close
-  const normalizedStatus = status.replace(/\s+/g, "")
-  const currentBreak = (breakTimes[dayKey] ?? []).map(normalizeBreak).find((item) => item && minute >= item.start && minute < item.end)
-  if (currentBreak) return null
-
-  if (normalizedStatus.includes("휴무")) {
-    return { type: "unexpected_close", minutesEarly: null }
-  }
-
-  if ((normalizedStatus.includes("영업종료") || normalizedStatus.includes("마감")) && minute >= open && minute < closeAbsolute - 30) {
-    return { type: "early_close", minutesEarly: closeAbsolute - minute }
-  }
-
-  return null
-}
-
 export function nextCheckAt({ now = new Date(), weekly, breakTimes = {}, intervalMinutes = DEFAULT_CHECK_INTERVAL_MINUTES }) {
   if (!weekly || Object.keys(weekly).length !== 7) {
     return { at: new Date(now.getTime() + intervalMinutes * 60_000), reason: "missing_schedule" }
@@ -214,11 +185,11 @@ async function claimDueShops(config, limit) {
   })
 }
 
-async function processShop(config, shop) {
+export async function processShop(config, shop) {
   const sourceUrl = shop.naver_place_url
   const sourcePlaceId = typeof sourceUrl === "string" ? extractNaverPlaceId(sourceUrl) : null
   const checkedAt = new Date().toISOString()
-  const intervalMinutes = shop.check_reason === "retry" ? DEFAULT_CHECK_INTERVAL_MINUTES : shop.check_interval_minutes ?? DEFAULT_CHECK_INTERVAL_MINUTES
+  const intervalMinutes = DEFAULT_CHECK_INTERVAL_MINUTES
 
   try {
     const schedule = nextCheckAt({
@@ -244,23 +215,6 @@ async function processShop(config, shop) {
     } finally {
       await browser.close()
     }
-    const anomaly = classifyAnomaly({
-      status: scraped.status,
-      now: new Date(checkedAt),
-      weekly: shop.business_hours_weekly,
-      breakTimes: shop.business_hours_break_times,
-    })
-    const pacing = await recordOperatingObservation(config, {
-      shopId: String(shop.id),
-      status: scraped.status,
-      sourceUrl,
-      anomaly,
-      observedAt: checkedAt,
-    }).catch((error) => {
-      console.error(`Failed to persist operating anomaly for ${shop.id}`, error)
-      return { check_interval_minutes: intervalMinutes, check_reason: "open" }
-    })
-    const nextIntervalMinutes = pacing.check_interval_minutes ?? intervalMinutes
     await upsertStatus(config, {
       shop_id: String(shop.id),
       naver_place_id: scraped.placeId,
@@ -271,10 +225,10 @@ async function processShop(config, shop) {
       next_check_at: nextCheckAt({
         weekly: shop.business_hours_weekly,
         breakTimes: shop.business_hours_break_times,
-        intervalMinutes: nextIntervalMinutes,
+        intervalMinutes,
       }).at.toISOString(),
-      check_interval_minutes: nextIntervalMinutes,
-      check_reason: pacing.check_reason ?? "open",
+      check_interval_minutes: intervalMinutes,
+      check_reason: "open",
       consecutive_failures: 0,
     })
     return { shop_id: String(shop.id), name: shop.name, status: scraped.status }
@@ -293,21 +247,6 @@ async function processShop(config, shop) {
     }).catch((upsertError) => console.error("Failed to persist crawl error", upsertError))
     return { shop_id: String(shop.id), name: shop.name, status: null, error: message }
   }
-}
-
-async function recordOperatingObservation(config, { shopId, status, sourceUrl, anomaly, observedAt }) {
-  const rows = await supabaseRequest(config, "/rest/v1/rpc/record_shop_operating_observation", {
-    method: "POST",
-    body: JSON.stringify({
-      p_shop_id: shopId,
-      p_status: status,
-      p_source_url: sourceUrl,
-      p_anomaly_type: anomaly?.type ?? null,
-      p_minutes_early: anomaly?.minutesEarly ?? null,
-      p_observed_at: observedAt,
-    }),
-  })
-  return rows[0] ?? {}
 }
 
 function retryMinutes(consecutiveFailures) {
