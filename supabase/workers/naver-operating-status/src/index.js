@@ -327,7 +327,7 @@ async function supabaseRequest(config, path, options = {}) {
   return body === "" ? [] : JSON.parse(body)
 }
 
-function createHttpServer() {
+export function createHttpServer() {
   return createServer(async (request, response) => {
     if (request.method === "GET" && request.url === "/health") return sendJson(response, 200, { ok: true })
     if (request.method !== "POST" || request.url !== "/run") return sendJson(response, 404, { error: "Not found" })
@@ -343,33 +343,53 @@ function createHttpServer() {
       const result = await runBatch(parseLimit(payload?.limit))
       return sendJson(response, 200, result)
     } catch (error) {
+      if (error instanceof RequestBodyError) {
+        if (error.status === 413) response.setHeader("Connection", "close")
+        return sendJson(response, error.status, { error: error.message })
+      }
       console.error(error)
       return sendJson(response, 500, { error: error instanceof Error ? error.message : String(error) })
     }
   })
 }
 
+class RequestBodyError extends Error {
+  constructor(status, message) {
+    super(message)
+    this.status = status
+  }
+}
+
 function readJson(request) {
   return new Promise((resolve, reject) => {
     let size = 0
-    let body = ""
-    request.setEncoding("utf8")
+    let chunks = []
+    let tooLarge = false
     request.on("data", (chunk) => {
-      size += Buffer.byteLength(chunk)
+      if (tooLarge) return
+      size += chunk.length
       if (size > MAX_BODY_BYTES) {
-        reject(new Error("Request body is too large"))
-        request.destroy()
+        tooLarge = true
+        chunks = []
+        reject(new RequestBodyError(413, "Request body is too large"))
         return
       }
-      body += chunk
+      chunks.push(chunk)
     })
     request.on("end", () => {
+      if (tooLarge) return
+      const body = Buffer.concat(chunks, size).toString("utf8")
       if (body.trim() === "") return resolve({})
+      let payload
       try {
-        resolve(JSON.parse(body))
+        payload = JSON.parse(body)
       } catch {
-        reject(new Error("Invalid JSON"))
+        return reject(new RequestBodyError(400, "Invalid JSON"))
       }
+      if (payload === null || typeof payload !== "object" || Array.isArray(payload)) {
+        return reject(new RequestBodyError(400, "Request body must be a JSON object"))
+      }
+      resolve(payload)
     })
     request.on("error", reject)
   })
