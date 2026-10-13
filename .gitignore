@@ -86,3 +86,4 @@ tools/menu-snapshot-data.js
 !/supabase/tests/hidden_shop_visibility_test.py
 !/supabase/tests/operating_status_worker_access_test.py
 !/supabase/tests/operating_status_diagnostics_test.py
+!/supabase/tests/profile_bio_instagram_cleanup_test.py
