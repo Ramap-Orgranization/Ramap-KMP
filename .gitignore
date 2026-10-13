@@ -72,3 +72,5 @@ iosApp/iosApp/GoogleService-Info-Release.plist
 tools/menu-snapshot-data.js
 
 !/supabase/
+# Place lookup implementation and schema regression tests.
+!/supabase/tests/news_report_evidence_access_test.py
