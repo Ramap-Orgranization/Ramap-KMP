@@ -79,3 +79,4 @@ tools/menu-snapshot-data.js
 !/supabase/tests/admin_access_test.py
 !/supabase/functions/place-search/search_budget.ts
 !/supabase/tests/place_search_budget_test.py
+!/supabase/tests/report_submission_abuse_test.py
