@@ -9,4 +9,5 @@ data class ToastData(
     val type: ToastType,
     val durationMills: Long = 2_000L,
     val action: ToastAction? = null,
+    val formatArguments: List<String> = emptyList(),
 )

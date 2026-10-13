@@ -568,4 +568,16 @@
     <string name="follow_reviews_visibility">팔로워에게 리뷰 공개</string>
     <string name="follow_saved_shops_visibility">팔로워에게 저장한 매장 공개</string>
     <string name="follow_content_private">공개하지 않은 콘텐츠예요</string>
+    <string name="place_search_rate_limited">검색 요청이 많아요. 잠시 후 다시 시도해 주세요.</string>
+    <string name="place_search_rate_limited_seconds">검색 요청이 많아요. %1$s초 후 다시 시도해 주세요.</string>
+    <string name="place_search_rate_limited_minutes">검색 요청이 많아요. 약 %1$s분 후 다시 시도해 주세요.</string>
+    <string name="place_search_rate_limited_hours">검색 요청이 많아요. 약 %1$s시간 후 다시 시도해 주세요.</string>
+    <string name="place_search_daily_limited">오늘의 장소 검색 한도를 모두 사용했어요. 한국 시각 자정 이후 다시 이용해 주세요.</string>
+    <string name="place_search_daily_limited_seconds">오늘의 장소 검색 한도를 모두 사용했어요. %1$s초 후 다시 시도해 주세요.</string>
+    <string name="place_search_daily_limited_minutes">오늘의 장소 검색 한도를 모두 사용했어요. 약 %1$s분 후 다시 시도해 주세요.</string>
+    <string name="place_search_daily_limited_hours">오늘의 장소 검색 한도를 모두 사용했어요. 약 %1$s시간 후 다시 시도해 주세요.</string>
+    <string name="place_search_unavailable">장소 검색을 잠시 이용할 수 없어요. 잠시 후 다시 시도해 주세요.</string>
+    <string name="place_search_unavailable_seconds">장소 검색을 잠시 이용할 수 없어요. %1$s초 후 다시 시도해 주세요.</string>
+    <string name="place_search_unavailable_minutes">장소 검색을 잠시 이용할 수 없어요. 약 %1$s분 후 다시 시도해 주세요.</string>
+    <string name="place_search_unavailable_hours">장소 검색을 잠시 이용할 수 없어요. 약 %1$s시간 후 다시 시도해 주세요.</string>
 </resources>

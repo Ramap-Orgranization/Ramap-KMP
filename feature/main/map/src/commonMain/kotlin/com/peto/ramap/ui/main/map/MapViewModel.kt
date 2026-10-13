@@ -5,6 +5,7 @@ import com.peto.ramap.analytics.AnalyticsSource
 import com.peto.ramap.analytics.common.login.LoginAnalytics
 import com.peto.ramap.core.result.RamapError
 import com.peto.ramap.core.result.RamapResult
+import com.peto.ramap.designsystem.place.PlaceSearchErrorToast
 import com.peto.ramap.designsystem.toast.model.ToastAction
 import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
@@ -1457,6 +1458,11 @@ class MapViewModel(
 
     private fun handleFailedSearchResult(error: RamapError) {
         handleError(error)
+        val searchErrorToast = PlaceSearchErrorToast.resolve(error)
+        if (searchErrorToast != null) {
+            trySideEffect(ShowToast(searchErrorToast))
+            return
+        }
         showDataLoadFailure()
     }
 

@@ -189,7 +189,12 @@ private fun ToastItem(
             Spacer(Modifier.width(3.5.dp))
 
             AppText(
-                text = stringResource(data.message),
+                text =
+                    if (data.formatArguments.isEmpty()) {
+                        stringResource(data.message)
+                    } else {
+                        stringResource(data.message, *data.formatArguments.toTypedArray())
+                    },
                 style = AppTextStyle.B1,
                 color = GrayColor.C500,
                 modifier = Modifier.weight(1f),

@@ -13,6 +13,8 @@ import com.peto.ramap.domain.model.businesshour.BusinessHours
 import com.peto.ramap.domain.model.businesshour.BusinessHoursDay
 import com.peto.ramap.domain.model.community.ReviewAuthor
 import com.peto.ramap.domain.model.personalization.ShopPersonalization
+import com.peto.ramap.domain.model.place.PlaceSearchErrorCode
+import com.peto.ramap.domain.model.place.PlaceSearchException
 import com.peto.ramap.domain.model.report.ShopInformationField
 import com.peto.ramap.domain.model.report.ShopInformationReport
 import com.peto.ramap.domain.model.review.Review
@@ -93,9 +95,12 @@ import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.withContext
 import org.jetbrains.compose.resources.StringResource
 import ramap.shared.generated.resources.Res
+import ramap.shared.generated.resources.data_load_failure_message
 import ramap.shared.generated.resources.hidden_shop_notification_unavailable_message
 import ramap.shared.generated.resources.hidden_shop_search_result_message
 import ramap.shared.generated.resources.hide_shop_success_message
+import ramap.shared.generated.resources.place_search_daily_limited_minutes
+import ramap.shared.generated.resources.place_search_rate_limited
 import ramap.shared.generated.resources.search_result_empty_message
 import ramap.shared.generated.resources.search_result_hidden_only_message
 import ramap.shared.generated.resources.shop_information_report_failure_message
@@ -176,6 +181,48 @@ class MapViewModelTest {
                     ?.reviewCount,
             )
             assertEquals(listOf(20L, 20L), repository.pageOffsets)
+        }
+
+    @Test
+    fun `현재 DB 검색도 429 응답이면 전용 제한 안내를 보여준다`() =
+        coroutinesTest {
+            val repository = FakeRamenShopRepository(error = RamapError.Http(429))
+            val viewModel = mapViewModel(repository)
+            viewModel.sideEffect.test {
+                viewModel.dispatch(OnQueryChanged("라멘"))
+                runCurrent()
+                assertEquals(ShowToast(ToastData(Res.string.place_search_rate_limited, ToastType.ERROR, durationMills = 6000L)), awaitItem())
+                assertEquals(listOf(SearchQuery("라멘")), repository.requestedSearchQueries)
+            }
+        }
+
+    @Test
+    fun `검색 제한 오류는 한도와 대기 시간이 있는 안내 토스트로 표시한다`() =
+        coroutinesTest {
+            val repository = FakeRamenShopRepository(error = RamapError.Unknown(PlaceSearchException(PlaceSearchErrorCode.DAILY_LIMIT, 120)))
+            val viewModel = mapViewModel(repository)
+            viewModel.sideEffect.test {
+                viewModel.dispatch(OnQueryChanged("라멘"))
+                runCurrent()
+                assertEquals(
+                    ShowToast(ToastData(Res.string.place_search_daily_limited_minutes, ToastType.ERROR, durationMills = 6000L, formatArguments = listOf("2"))),
+                    awaitItem(),
+                )
+                assertEquals(false, viewModel.uiState.value.isSearchLoading)
+                assertEquals(listOf(SearchQuery("라멘")), repository.requestedSearchQueries)
+                expectNoEvents()
+            }
+        }
+
+    @Test
+    fun `다른 검색 오류는 기존 실패 토스트를 유지한다`() =
+        coroutinesTest {
+            val viewModel = mapViewModel(FakeRamenShopRepository(error = RamapError.Http(500)))
+            viewModel.sideEffect.test {
+                viewModel.dispatch(OnQueryChanged("라멘"))
+                runCurrent()
+                assertEquals(ShowToast(ToastData(Res.string.data_load_failure_message, ToastType.ERROR)), awaitItem())
+            }
         }
 
     @Test
