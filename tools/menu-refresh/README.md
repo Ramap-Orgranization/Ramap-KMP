@@ -1,6 +1,6 @@
 # 메뉴 최신화 작업 도구
 
-이 폴더에 메뉴 최신화 과정에서 만든 재사용 도구와 작업 코드 보관본을 모았다. 다음 작업은 [SKILL.md](SKILL.md)의 기준을 적용하고 공통 도구를 재사용한다. 기존 `skills/menu-refresh`는 이 폴더로 연결된다.
+이 폴더에 메뉴 최신화 과정에서 만든 재사용 도구와 작업 코드 보관본을 모았다. 다음 작업은 [SKILL.md](SKILL.md)의 기준을 적용하고 `tools/menu-refresh/`의 공통 도구를 직접 재사용한다.
 
 | 위치 | 내용 |
 | --- | --- |
@@ -11,7 +11,7 @@
 | [references/pending-review.md](references/pending-review.md) | 보류 점검, 승인표 생성, 선택만 반영, 통합 목록 갱신 |
 | `work-files/menu-refresh/`, `menu-review/`, `shop-maintenance/` | 수집 중 작성한 배치별 코드와 실험 코드 보관본 |
 | `work-files/output/` | 당시 파일럿 보고서와 스킬 ZIP |
-| [work-files/manifest.json](work-files/manifest.json) | 보관본의 원래 경로·SHA-256·용도 |
+| [work-files/manifest.json](work-files/manifest.json) | 보관본의 원래 경로·현재 SHA-256·용도와 경로 전환 전 원본 해시 |
 
 Ramap 루트에서 실행한다.
 

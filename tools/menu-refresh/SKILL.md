@@ -9,9 +9,9 @@ description: Refresh existing Ramap shop menus by database cutoff date or shop l
 
 ## 시작과 기준 문서
 
-먼저 Ramap 저장소의 `AGENTS.md`와 [메뉴 등록 정책](../../docs/menu-registration-policy.md)을 읽는다. 공통 판정과 매장별 사용자 결정은 이 정책이 소유한다. 스킬 설치 위치가 달라도 저장소 파일은 작업 중인 Ramap 루트에서 찾는다. `.agents/skills/menu-refresh/SKILL.md`의 미완성 파일 대신 이 스킬을 사용한다.
+먼저 Ramap 저장소의 `AGENTS.md`와 [메뉴 등록 정책](../../docs/menu-registration-policy.md)을 읽는다. 공통 판정과 매장별 사용자 결정은 이 정책이 소유한다. 스킬 설치 위치가 달라도 저장소 파일은 작업 중인 Ramap 루트에서 찾는다. 작업 진입점은 `tools/menu-refresh/SKILL.md`다.
 
-재사용 파일의 실제 위치는 `tools/menu-refresh/`이고 `skills/menu-refresh`는 기존 참조를 유지하는 연결이다. 다음 작업은 이 폴더의 실행 코드·템플릿·데이터를 먼저 재사용한다. 지난 수집 과정의 배치별 코드는 `work-files/manifest.json`의 원래 경로·해시로 찾아 참고하며, 새 실행에는 `scripts/`의 공통 도구를 사용한다. 동결된 실행·승인·SQL 결과는 기존 `.artifacts/`에 보존한다.
+재사용 파일의 위치는 `tools/menu-refresh/`다. 다음 작업은 이 폴더의 실행 코드·템플릿·데이터를 직접 재사용한다. 지난 수집 과정의 배치별 코드는 `work-files/manifest.json`의 원래 경로·해시로 찾아 참고하며, 새 실행에는 `scripts/`의 공통 도구를 사용한다. 경로를 전환한 보관본은 현재 해시와 전환 전 원본 해시를 구분한다. 동결된 실행·승인·SQL 결과는 기존 `.artifacts/`에 보존한다.
 
 | 요청 | 읽고 사용할 절차 |
 | --- | --- |

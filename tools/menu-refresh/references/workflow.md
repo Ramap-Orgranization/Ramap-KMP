@@ -30,7 +30,7 @@ supabase db query --linked --file state.sql --output json > baseline.json
 
 ## 실행기
 
-`refresh_run.py`는 같은 실행의 상태를 `manifest.json`에 원자적으로 보존한다. `context.json`에는 정책·실행 코드의 해시와 별도로 입력한 사용자 범위 확인이 있으며 각 매장의 `assignment.json`에 수집 경로와 계약이 있다. 전체 원본 JSON을 대화에 다시 출력할 필요가 없다. `.agents/skills/menu-refresh`의 TODO 파일 대신 이 스킬의 실제 경로를 작업자에게 전달한다.
+`refresh_run.py`는 같은 실행의 상태를 `manifest.json`에 원자적으로 보존한다. `context.json`에는 정책·실행 코드의 해시와 별도로 입력한 사용자 범위 확인이 있으며 각 매장의 `assignment.json`에 수집 경로와 계약이 있다. 전체 원본 JSON을 대화에 다시 출력할 필요가 없다. 작업자에게 진입점인 `tools/menu-refresh/SKILL.md`를 직접 전달한다.
 
 ```bash
 python3 tools/menu-refresh/scripts/refresh_run.py init \
