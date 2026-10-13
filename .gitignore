@@ -81,3 +81,4 @@ tools/menu-snapshot-data.js
 !/supabase/tests/place_search_budget_test.py
 !/supabase/tests/report_submission_abuse_test.py
 !/supabase/tests/review_submission_retry_test.py
+!/supabase/tests/push_registration_growth_test.py
