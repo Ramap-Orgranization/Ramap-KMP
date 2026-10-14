@@ -2,7 +2,6 @@ package com.peto.ramap.domain.usecase
 
 import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.model.notice.OperatingNotice
-import com.peto.ramap.domain.model.review.Review
 import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.domain.model.shop.WaitingSystem
 
@@ -13,7 +12,6 @@ data class ShopDetail(
     val event: ShopEvent?,
     val operatingNotice: OperatingNotice?,
     val operatingNotices: List<OperatingNotice> = operatingNotice?.let(::listOf).orEmpty(),
-    val reviews: List<Review> = emptyList(),
-    val reviewCount: Int = reviews.size,
-    val hasReviewLoadFailure: Boolean = false,
-)
+) {
+    fun updateBookmarkCount(enabled: Boolean): ShopDetail = copy(likeCount = (likeCount + if (enabled) 1L else -1L).coerceAtLeast(0L))
+}

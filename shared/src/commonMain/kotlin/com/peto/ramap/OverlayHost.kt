@@ -12,9 +12,9 @@ import com.peto.ramap.analytics.AnalyticsSource
 import com.peto.ramap.domain.model.auth.LoginType
 import com.peto.ramap.navigation.NavigationState
 import com.peto.ramap.theme.CommonColor
-import com.peto.ramap.ui.main.map.ShopDetailHost
 import com.peto.ramap.ui.review.other.OtherReviewsRoute
 import com.peto.ramap.ui.review.write.ShopReviewWriteRoute
+import com.peto.ramap.ui.shop.ShopDetailHost
 
 @Composable
 internal fun OverlayHost(

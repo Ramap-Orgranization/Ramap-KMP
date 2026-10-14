@@ -124,6 +124,10 @@ class ShopReviewViewModel(
             if (epoch != journal.epoch) {
                 epoch = journal.epoch
                 revision = journal.revision
+                cancelReviewTasks()
+                loadReviews.clearCache()
+                reduce { copy(page = ShopReviewsPage(emptyList(), 0), hasLoaded = false, hasReviewLoadFailure = false, hasPageLoadFailure = false) }
+                loadPage(append = false)
                 return@collect
             }
             if (journal.hasGapAfter(revision)) {

@@ -6,6 +6,8 @@ import com.peto.ramap.domain.model.review.Review
 import com.peto.ramap.domain.model.review.ShopReviewsPage
 import com.peto.ramap.domain.model.review.change.ReviewChange
 import com.peto.ramap.domain.model.review.change.ReviewChangeReducer
+import com.peto.ramap.domain.model.review.change.ReviewOwnerCounts
+import com.peto.ramap.domain.model.review.change.ReviewSnapshot
 import com.peto.ramap.domain.repository.ReviewRepository
 import com.peto.ramap.fake.FakeReviewChangeStore
 import com.peto.ramap.fake.FakeShopReviewRepository
@@ -76,6 +78,34 @@ class LoadShopReviewsUseCaseTest {
             val page = LoadShopReviewsUseCase(repository, FakeReviewChangeStore(), ReviewChangeReducer())("shop", null, ShopReviewsPage(listOf(first), 2), true).getOrThrow()
             assertEquals(listOf(first, second), page.reviews)
             assertEquals(2, page.totalCount)
+        }
+
+    @Test
+    fun `추가 조회 도중 기존 리뷰가 삭제되면 첫 페이지부터 복구해 삭제된 행과 누락을 남기지 않는다`() =
+        runTest {
+            val fake = FakeShopReviewRepository()
+            val changes = FakeReviewChangeStore()
+            val deleted = Review("deleted", "shop", "삭제할 리뷰", "2026-10-14")
+            val rows = (1..4).map { Review("review-$it", "shop", "리뷰 본문", "2026-10-13") }
+            val offsets = mutableListOf<Long>()
+            val repository =
+                object : ReviewRepository by fake {
+                    override suspend fun fetchShopReviewsPage(
+                        shopId: String,
+                        offset: Long,
+                    ): RamapResult<ShopReviewsPage> {
+                        offsets += offset
+                        if (offsets.size == 1) {
+                            changes.publish(ReviewChange.Written(deleted.id, "author", "shop", ReviewSnapshot(deleted, "매장"), null, ReviewOwnerCounts(4, 4, 0, 4, true)))
+                            return RamapResult.Success(ShopReviewsPage(rows.drop(1).take(2), 4))
+                        }
+                        return RamapResult.Success(ShopReviewsPage(rows.drop(offset.toInt()).take(2), 4))
+                    }
+                }
+            val page = LoadShopReviewsUseCase(repository, changes, ReviewChangeReducer())("shop", null, ShopReviewsPage(listOf(deleted), 5), true).getOrThrow()
+            assertEquals(listOf(1L, 0L, 2L), offsets)
+            assertEquals(rows, page.reviews)
+            assertEquals(4, page.totalCount)
         }
 
     @Test

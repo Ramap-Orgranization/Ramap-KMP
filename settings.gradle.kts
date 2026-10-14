@@ -70,3 +70,5 @@ include(":feature:subscribed")
 include(":feature:shop:menu")
 
 include(":feature:shop:review")
+
+include(":feature:shop:overview")

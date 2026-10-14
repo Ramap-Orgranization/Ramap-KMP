@@ -5,6 +5,7 @@ import com.peto.ramap.domain.model.review.change.ReviewChangeReducer
 import com.peto.ramap.domain.usecase.FetchShopDetailUseCase
 import com.peto.ramap.domain.usecase.LoadShopReviewsUseCase
 import com.peto.ramap.domain.usecase.LoginSessionUseCase
+import com.peto.ramap.domain.usecase.SearchRamenShopsUseCase
 import com.peto.ramap.domain.usecase.SignInUseCase
 import org.koin.core.module.dsl.factoryOf
 import org.koin.core.module.dsl.singleOf
@@ -17,12 +18,10 @@ val useCaseModule =
             DefaultFetchShopDetailUseCase(
                 ramenShopRepository = get(),
                 operatingNoticeRepository = get(),
-                reviewRepository = get(),
-                changes = get(),
-                reviewChangeReducer = get(),
             )
         }
         factoryOf(::LoadShopReviewsUseCase)
+        factoryOf(::SearchRamenShopsUseCase)
         factoryOf(::SignInUseCase)
         factoryOf(::LoginSessionUseCase)
     }

@@ -187,6 +187,42 @@ class ShopReviewViewModelTest {
             assertEquals(listOf(0L, 0L), fake.pageOffsets)
         }
 
+    @Test
+    fun `사용자 관찰자가 먼저 조회한 뒤 변경 저장소 수명이 바뀌어도 리뷰를 다시 완료한다`() =
+        coroutinesTest {
+            val fake = FakeShopReviewRepository()
+            val profile = FakeProfileRepository(null)
+            val changes = FakeReviewChangeStore()
+            val pending = CompletableDeferred<ShopReviewsPage>()
+            var calls = 0
+            val repository =
+                object : ReviewRepository by fake {
+                    override suspend fun fetchShopReviewsPage(
+                        shopId: String,
+                        offset: Long,
+                    ): RamapResult<ShopReviewsPage> {
+                        calls++
+                        return when (calls) {
+                            2 -> RamapResult.Success(pending.await())
+                            else -> RamapResult.Success(ShopReviewsPage(listOf(review(shopId)), 1))
+                        }
+                    }
+                }
+            val viewModel = viewModel(repository, profile, changes)
+            viewModel.dispatch(ShopReviewIntent.OnShopSelected("shop"))
+            runCurrent()
+            profile.sessionUserIds.value = "new-user"
+            runCurrent()
+            assertTrue(viewModel.uiState.value.isLoading)
+            changes.reset("new-user")
+            runCurrent()
+            assertEquals(3, calls)
+            assertEquals("new-user", viewModel.uiState.value.currentUserId)
+            assertEquals(1, viewModel.uiState.value.reviewCount)
+            assertFalse(viewModel.uiState.value.isLoading)
+            assertFalse(viewModel.uiState.value.hasReviewLoadFailure)
+        }
+
     private fun viewModel(
         repository: ReviewRepository,
         profile: FakeProfileRepository = FakeProfileRepository(null),

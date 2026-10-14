@@ -10,6 +10,37 @@ data class ShopPersonalization(
     val hiddenShopIds: Set<String> = emptySet(),
     val notificationShopIds: Set<String> = emptySet(),
 ) {
+    fun visibilityChange(
+        shopId: String?,
+        previous: ShopPersonalization,
+    ): ShopVisibilityChange =
+        when {
+            shopId == null -> ShopVisibilityChange.Unchanged
+            shopId !in previous.hiddenShopIds && shopId in hiddenShopIds -> ShopVisibilityChange.Hidden
+            shopId in previous.hiddenShopIds && shopId !in hiddenShopIds -> ShopVisibilityChange.Visible
+            else -> ShopVisibilityChange.Unchanged
+        }
+
+    fun bookmarkChangesSince(previousIds: Set<String>?): List<ShopBookmarkChange> {
+        if (previousIds == null) return emptyList()
+        return (bookmarkedShopIds - previousIds).map { ShopBookmarkChange(it, true) } +
+            (previousIds - bookmarkedShopIds).map { ShopBookmarkChange(it, false) }
+    }
+
+    fun nextBookmarkEnabled(shopId: String): Boolean = shopId !in bookmarkedShopIds
+
+    fun nextHiddenEnabled(shopId: String): Boolean = shopId !in hiddenShopIds
+
+    fun hasBookmark(shopId: String): Boolean = shopId in bookmarkedShopIds
+
+    /** 숨김 매장의 변경을 차단하고 그 외에는 현재 구독을 반전한다. */
+    fun notificationToggle(shopId: String): ShopNotificationToggle =
+        if (shopId in hiddenShopIds) {
+            ShopNotificationToggle.HiddenShop
+        } else {
+            ShopNotificationToggle.Allowed(enabled = shopId !in notificationShopIds)
+        }
+
     /**
      * 특정 매장의 북마크 상태를 [isBookmarked]로 변경한다.
      *
