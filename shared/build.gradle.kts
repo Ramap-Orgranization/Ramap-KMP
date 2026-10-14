@@ -97,6 +97,7 @@ kotlin {
             implementation(projects.data)
             implementation(projects.feature.main)
             implementation(projects.feature.shop.menu)
+            implementation(projects.feature.shop.review)
             implementation(projects.feature.profile.edit)
             implementation(projects.feature.profile.follow)
             implementation(projects.feature.review.my)
