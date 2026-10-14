@@ -12,15 +12,144 @@ import com.peto.ramap.domain.model.shop.Location
 import com.peto.ramap.domain.model.shop.MenuCategories
 import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.domain.model.shop.SearchQuery
+import com.peto.ramap.domain.model.shop.WaitingProvider
+import com.peto.ramap.domain.model.shop.WaitingSystem
 import com.peto.ramap.fake.FakeRamenShopDataSource
 import com.peto.ramap.fixture.BOUNDS_FIXTURE
 import com.peto.ramap.fixture.ramenShopResponseFixture
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class DefaultRamenShopRepositoryTest {
+    private val json = Json { ignoreUnknownKeys = true }
+
+    @Test
+    fun `상세 RPC의 매장 컬럼에서 웨이팅을 읽고 기존 중첩 응답은 무시한다`() =
+        runTest {
+            val response =
+                json.decodeFromString<ShopDetailResponse>(
+                    """
+                    {
+                        "shop": {
+                            "id": "shop-1",
+                            "name": "라멘집",
+                            "address": "서울",
+                            "lat": 37.5,
+                            "lng": 127.0,
+                            "created_at": "2026-06-01T00:00:00Z",
+                            "updated_at": "2026-06-02T00:00:00Z",
+                            "waiting_provider": "catchtable",
+                            "waiting_provider_url": "https://app.catchtable.co.kr/ct/shop/shop-1"
+                        },
+                        "like_count": 3,
+                        "waiting_system": {
+                            "id": "old-waiting",
+                            "shop_id": "shop-1",
+                            "provider": "tabling",
+                            "provider_url": "https://example.com/old-waiting"
+                        }
+                    }
+                    """.trimIndent(),
+                )
+            val repository = DefaultRamenShopRepository(FakeRamenShopDataSource(shopDetailResponse = response))
+
+            val detail = repository.fetchShopDetail("shop-1").getOrThrow()
+
+            assertEquals(
+                WaitingSystem(
+                    id = "shop-1",
+                    shopId = "shop-1",
+                    provider = WaitingProvider.CATCHTABLE,
+                    providerUrl = "https://app.catchtable.co.kr/ct/shop/shop-1",
+                ),
+                detail.waitingSystem,
+            )
+            assertEquals(3L, detail.likeCount)
+            assertEquals("shop-1", detail.shop.id)
+        }
+
+    @Test
+    fun `상세 웨이팅은 모든 제공자와 알 수 없는 제공자 및 URL 없음을 유지한다`() =
+        runTest {
+            val providers =
+                listOf(
+                    "catchtable" to WaitingProvider.CATCHTABLE,
+                    "tabling" to WaitingProvider.TABLING,
+                    "syrup_friends" to WaitingProvider.SYRUP_FRIENDS,
+                    "new_provider" to WaitingProvider.UNKNOWN,
+                )
+            for ((providerId, expectedProvider) in providers) {
+                val response =
+                    ShopDetailResponse(
+                        shop = ramenShopResponseFixture(id = "shop-1").copy(waitingProvider = providerId),
+                        likeCount = 0L,
+                    )
+                val repository = DefaultRamenShopRepository(FakeRamenShopDataSource(shopDetailResponse = response))
+
+                val detail = repository.fetchShopDetail("shop-1").getOrThrow()
+
+                assertEquals(
+                    WaitingSystem(
+                        id = "shop-1",
+                        shopId = "shop-1",
+                        provider = expectedProvider,
+                        providerUrl = null,
+                    ),
+                    detail.waitingSystem,
+                )
+            }
+        }
+
+    @Test
+    fun `상세 매장에 웨이팅 컬럼이 없으면 웨이팅 없이 조회한다`() =
+        runTest {
+            val response =
+                json.decodeFromString<ShopDetailResponse>(
+                    """
+                    {
+                        "shop": {
+                            "id": "shop-1",
+                            "name": "라멘집",
+                            "address": "서울",
+                            "lat": 37.5,
+                            "lng": 127.0,
+                            "created_at": "2026-06-01T00:00:00Z",
+                            "updated_at": "2026-06-02T00:00:00Z"
+                        },
+                        "like_count": 0,
+                        "waiting_system": null
+                    }
+                    """.trimIndent(),
+                )
+            val repository = DefaultRamenShopRepository(FakeRamenShopDataSource(shopDetailResponse = response))
+
+            val detail = repository.fetchShopDetail("shop-1").getOrThrow()
+
+            assertEquals(null, detail.waitingSystem)
+        }
+
+    @Test
+    fun `상세 매장에 URL만 있고 웨이팅 제공자가 null이면 웨이팅 없음으로 유지한다`() =
+        runTest {
+            val response =
+                ShopDetailResponse(
+                    shop =
+                        ramenShopResponseFixture(id = "shop-1").copy(
+                            waitingProvider = null,
+                            waitingProviderUrl = "https://example.com/waiting",
+                        ),
+                    likeCount = 0L,
+                )
+            val repository = DefaultRamenShopRepository(FakeRamenShopDataSource(shopDetailResponse = response))
+
+            val detail = repository.fetchShopDetail("shop-1").getOrThrow()
+
+            assertEquals(null, detail.waitingSystem)
+        }
+
     @Test
     fun `상세 RPC 응답도 기존 이벤트와 메뉴 규칙으로 변환한다`() =
         runTest {

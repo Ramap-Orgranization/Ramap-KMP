@@ -82,7 +82,7 @@ internal class DefaultRamenShopRepository(
         return ShopDetail(
             shop = domainShop,
             likeCount = response.likeCount,
-            waitingSystem = response.waitingSystem?.toDomain(),
+            waitingSystem = response.shop.toWaitingSystem(),
             event = activeShopEvent(activeEvents, response.eventParticipants, shopId),
             operatingNotice = response.operatingNotice?.toDomain(domainShop),
             menuSections = menuSections(response.menuSections, response.menuItems),

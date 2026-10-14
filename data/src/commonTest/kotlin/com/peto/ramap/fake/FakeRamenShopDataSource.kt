@@ -29,8 +29,7 @@ internal class FakeRamenShopDataSource(
 
     override suspend fun fetchActiveShopEvents(shopId: String): List<ShopEventResponse> = activeEventResponses
 
-    override suspend fun fetchEvents(eventId: String?): List<ShopEventResponse> =
-        if (eventId == null) activeEventsResponses else activeEventsResponses.filter { it.id == eventId }
+    override suspend fun fetchEvents(eventId: String?): List<ShopEventResponse> = if (eventId == null) activeEventsResponses else activeEventsResponses.filter { it.id == eventId }
 
     override suspend fun fetchShopEventParticipants(eventId: String): List<ShopEventParticipantResponse> = participantResponses
 

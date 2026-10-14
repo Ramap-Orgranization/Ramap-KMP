@@ -36,9 +36,10 @@ internal class RemoteRamenShopDataSource(
         client.postgrest
             .rpc(
                 function = FETCH_ACTIVE_EVENTS_RPC,
-                parameters = buildJsonObject {
-                    put(EVENT_ID_PARAMETER, eventId?.let { JsonPrimitive(it) } ?: JsonNull)
-                },
+                parameters =
+                    buildJsonObject {
+                        put(EVENT_ID_PARAMETER, eventId?.let { JsonPrimitive(it) } ?: JsonNull)
+                    },
             ).decodeList()
 
     override suspend fun fetchShopEventParticipants(eventId: String): List<ShopEventParticipantResponse> =
