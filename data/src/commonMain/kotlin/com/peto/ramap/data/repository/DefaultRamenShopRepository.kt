@@ -36,6 +36,8 @@ internal class DefaultRamenShopRepository(
             shopDetail(response, shopId)
         }
 
+    override suspend fun fetchShopLikeCount(shopId: String): RamapResult<Long> = invokeRequest { dataSource.fetchShopDetail(shopId).likeCount }
+
     override suspend fun fetchActiveEvent(eventId: String): RamapResult<ShopEvent?> =
         invokeRequest {
             dataSource.fetchEvents(eventId).singleOrNull()?.let(::toDomain)?.takeIf(::isVisibleInActiveEvents)

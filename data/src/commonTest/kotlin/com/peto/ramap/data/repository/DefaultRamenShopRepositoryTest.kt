@@ -73,6 +73,7 @@ class DefaultRamenShopRepositoryTest {
                 ShopDetailResponse(
                     shop = ramenShopResponseFixture(id = "menu-update-shop"),
                     likeCount = 0L,
+                    menuUpdatedAt = "2026-09-02T12:00:00Z",
                     menuSections =
                         listOf(
                             MenuSectionResponse(
@@ -96,7 +97,6 @@ class DefaultRamenShopRepositoryTest {
                 DefaultRamenShopRepository(
                     FakeRamenShopDataSource(
                         shopDetailResponse = response,
-                        shopMenuUpdatedAt = "2026-09-02T12:00:00Z",
                     ),
                 )
 

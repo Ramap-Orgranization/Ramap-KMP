@@ -19,4 +19,6 @@ internal data class ShopDetailResponse(
     val menuSections: List<MenuSectionResponse> = emptyList(),
     @SerialName("menu_items")
     val menuItems: List<MenuResponse> = emptyList(),
+    @SerialName("menu_updated_at")
+    val menuUpdatedAt: String? = null,
 )
