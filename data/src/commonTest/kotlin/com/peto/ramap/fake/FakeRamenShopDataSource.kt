@@ -2,14 +2,14 @@ package com.peto.ramap.fake
 
 import com.peto.ramap.data.datasource.shop.RamenShopDataSource
 import com.peto.ramap.data.model.RamenShopResponse
-import com.peto.ramap.data.model.ShopDetailResponse
 import com.peto.ramap.data.model.ShopEventParticipantResponse
 import com.peto.ramap.data.model.ShopEventResponse
+import com.peto.ramap.data.model.ShopOverviewResponse
 import com.peto.ramap.domain.model.shop.MapBounds
 import com.peto.ramap.domain.model.shop.SearchQuery
 
 internal class FakeRamenShopDataSource(
-    private val shopDetailResponse: ShopDetailResponse? = null,
+    private val shopOverviewResponse: ShopOverviewResponse? = null,
     private val responses: List<RamenShopResponse> = emptyList(),
     private val searchResponses: List<RamenShopResponse> = emptyList(),
     private val fetchByIdsResponses: List<RamenShopResponse> = emptyList(),
@@ -21,10 +21,10 @@ internal class FakeRamenShopDataSource(
     var shopDetailRequestCount = 0
         private set
 
-    override suspend fun fetchShopDetail(shopId: String): ShopDetailResponse {
+    override suspend fun fetchShopOverview(shopId: String): ShopOverviewResponse {
         shopDetailRequestCount += 1
         error?.let { throw it }
-        return checkNotNull(shopDetailResponse) { "Missing fake shop detail" }
+        return checkNotNull(shopOverviewResponse) { "Missing fake shop detail" }
     }
 
     override suspend fun fetchActiveShopEvents(shopId: String): List<ShopEventResponse> = activeEventResponses

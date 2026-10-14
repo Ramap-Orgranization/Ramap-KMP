@@ -1,11 +1,9 @@
-package com.peto.ramap.domain.usecase
+package com.peto.ramap.domain.model.shop
 
 import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.model.notice.OperatingNotice
-import com.peto.ramap.domain.model.shop.RamenShop
-import com.peto.ramap.domain.model.shop.WaitingSystem
 
-data class ShopDetail(
+data class ShopOverView(
     val shop: RamenShop,
     val likeCount: Long,
     val waitingSystem: WaitingSystem?,
@@ -13,5 +11,5 @@ data class ShopDetail(
     val operatingNotice: OperatingNotice?,
     val operatingNotices: List<OperatingNotice> = operatingNotice?.let(::listOf).orEmpty(),
 ) {
-    fun updateBookmarkCount(enabled: Boolean): ShopDetail = copy(likeCount = (likeCount + if (enabled) 1L else -1L).coerceAtLeast(0L))
+    fun updateBookmarkCount(enabled: Boolean): ShopOverView = copy(likeCount = (likeCount + if (enabled) 1L else -1L).coerceAtLeast(0L))
 }

@@ -3,30 +3,30 @@ package com.peto.ramap.ui.main
 import com.peto.ramap.core.result.RamapError
 import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.core.result.retryOnce
+import com.peto.ramap.domain.model.shop.ShopOverView
 import com.peto.ramap.domain.repository.OperatingNoticeRepository
 import com.peto.ramap.domain.repository.RamenShopRepository
 import com.peto.ramap.domain.repository.ShopWaitingSystemRepository
-import com.peto.ramap.domain.usecase.FetchShopDetailUseCase
-import com.peto.ramap.domain.usecase.ShopDetail
-import com.peto.ramap.domain.usecase.ShopDetailCacheLookup
+import com.peto.ramap.domain.usecase.FetchShopOverviewUseCase
+import com.peto.ramap.domain.usecase.ShopOverviewCacheLookup
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 
-internal class FakeFetchShopDetailUseCase(
+internal class FakeFetchShopOverviewUseCase(
     private val ramenShopRepository: RamenShopRepository,
     private val waitingSystemRepository: ShopWaitingSystemRepository,
     private val operatingNoticeRepository: OperatingNoticeRepository,
-) : FetchShopDetailUseCase {
-    private val cache = mutableMapOf<String, ShopDetail>()
+) : FetchShopOverviewUseCase {
+    private val cache = mutableMapOf<String, ShopOverView>()
 
     override fun clearCache() {
         cache.clear()
     }
 
-    override suspend fun invoke(shopId: String): RamapResult<ShopDetail> {
+    override suspend fun invoke(shopId: String): RamapResult<ShopOverView> {
         when (val lookup = findCached(shopId)) {
-            is ShopDetailCacheLookup.Hit -> return RamapResult.Success(lookup.detail)
-            ShopDetailCacheLookup.Miss -> Unit
+            is ShopOverviewCacheLookup.Hit -> return RamapResult.Success(lookup.overview)
+            ShopOverviewCacheLookup.Miss -> Unit
         }
 
         val result = retryOnce { fetchDetail(shopId) }
@@ -34,22 +34,22 @@ internal class FakeFetchShopDetailUseCase(
         return result
     }
 
-    override fun findCached(shopId: String): ShopDetailCacheLookup =
+    override fun findCached(shopId: String): ShopOverviewCacheLookup =
         cache[shopId]
-            ?.let(ShopDetailCacheLookup::Hit)
-            ?: ShopDetailCacheLookup.Miss
+            ?.let(ShopOverviewCacheLookup::Hit)
+            ?: ShopOverviewCacheLookup.Miss
 
     override fun updateCachedLikeCount(
         shopId: String,
         enabled: Boolean,
     ) {
         val likeCountDelta = if (enabled) 1L else -1L
-        cache[shopId]?.let { detail ->
-            cache[shopId] = detail.copy(likeCount = (detail.likeCount + likeCountDelta).coerceAtLeast(0L))
+        cache[shopId]?.let { overview ->
+            cache[shopId] = overview.copy(likeCount = (overview.likeCount + likeCountDelta).coerceAtLeast(0L))
         }
     }
 
-    private suspend fun fetchDetail(shopId: String): RamapResult<ShopDetail> =
+    private suspend fun fetchDetail(shopId: String): RamapResult<ShopOverView> =
         coroutineScope {
             val shopsResult = async { ramenShopRepository.fetchRamenShops(setOf(shopId)) }
             val likeCountResult = async { ramenShopRepository.fetchShopLikeCount(shopId) }
@@ -68,7 +68,7 @@ internal class FakeFetchShopDetailUseCase(
                             val event = eventResult.await()
                             val notice = noticeResult.await()
                             RamapResult.Success(
-                                ShopDetail(
+                                ShopOverView(
                                     shop = shop,
                                     likeCount = (likeCountResult.await() as? RamapResult.Success)?.data ?: 0L,
                                     waitingSystem = waiting.data,

@@ -150,7 +150,7 @@ fun ShopDetailHost(
         }
 
         LaunchedEffect(uiState.hasLoadFailure) {
-            if (uiState.hasLoadFailure && uiState.shopDetail == null) onShopLoadFailed(shopId)
+            if (uiState.hasLoadFailure && uiState.shopOverview == null) onShopLoadFailed(shopId)
         }
 
         MapInteractionHost(
@@ -176,7 +176,7 @@ fun ShopDetailHost(
                 ShopDetailContent(
                     uiState =
                         ShopDetailContentUiState(
-                            sheetState = uiState.shopDetailState,
+                            sheetState = uiState.overviewState,
                             headerState =
                                 HeaderUiState(
                                     waitingSystem = uiState.selectedShop?.let { uiState.shopWaiting[it.id].toUiModel() },
@@ -218,7 +218,7 @@ fun ShopDetailHost(
                     actions =
                         ShopDetailActions(
                             onDismissRequest = dismiss,
-                            onRetry = { overview.dispatch(ShopOverviewIntent.OnShopDetailRetry) },
+                            onRetry = { overview.dispatch(ShopOverviewIntent.OnOverviewRetry) },
                             onMenuRetry = { menu.dispatch(ShopMenuIntent.OnRetry) },
                             onReviewsRetry = { reviews.dispatch(ShopReviewIntent.OnRetry) },
                             shopActions =

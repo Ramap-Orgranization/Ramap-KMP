@@ -9,7 +9,7 @@ import com.peto.ramap.ui.shop.review.contract.ShopReviewUiState
 
 @Immutable
 data class ShopDetailContentUiState(
-    val sheetState: ShopDetailSheetUiState,
+    val sheetState: ShopOverviewUiState,
     val headerState: HeaderUiState,
     val reviewPagingState: ReviewPagingUiState,
     val userContext: UserContext,

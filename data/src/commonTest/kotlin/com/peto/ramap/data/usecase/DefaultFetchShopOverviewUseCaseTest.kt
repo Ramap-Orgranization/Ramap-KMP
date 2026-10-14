@@ -8,8 +8,8 @@ import com.peto.ramap.domain.model.event.ShopEventType
 import com.peto.ramap.domain.model.notice.OperatingNotice
 import com.peto.ramap.domain.model.notice.OperatingNoticeType
 import com.peto.ramap.domain.model.review.Review
-import com.peto.ramap.domain.usecase.ShopDetail
-import com.peto.ramap.domain.usecase.ShopDetailCacheLookup
+import com.peto.ramap.domain.model.shop.ShopOverView
+import com.peto.ramap.domain.usecase.ShopOverviewCacheLookup
 import com.peto.ramap.fake.FakeOperatingNoticeRepository
 import com.peto.ramap.fake.FakeRamenShopRepository
 import com.peto.ramap.fixture.ramenShopFixture
@@ -27,14 +27,14 @@ import kotlin.test.assertIs
 import kotlin.test.assertNull
 import kotlin.time.Clock
 
-class DefaultFetchShopDetailUseCaseTest {
+class DefaultFetchShopOverviewUseCaseTest {
     @Test
     fun `최초 조회와 캐시 재검증은 각각 상세 RPC를 한 번 요청한다`() =
         runTest {
-            val initial = detail()
-            val repository = FakeRamenShopRepository(shopDetail = initial)
+            val initial = overview()
+            val repository = FakeRamenShopRepository(shopOverview = initial)
             val useCase =
-                DefaultFetchShopDetailUseCase(
+                DefaultFetchShopOverviewUseCase(
                     ramenShopRepository = repository,
                     operatingNoticeRepository = FakeOperatingNoticeRepository(),
                 )
@@ -42,29 +42,29 @@ class DefaultFetchShopDetailUseCaseTest {
             useCase(initial.shop.id)
             useCase(initial.shop.id)
 
-            assertEquals(listOf(initial.shop.id, initial.shop.id), repository.requestedShopDetailIds)
+            assertEquals(listOf(initial.shop.id, initial.shop.id), repository.requestedShopOverviewIds)
         }
 
     @Test
     fun `캐시 재검증은 매장 좋아요 웨이팅을 유지하고 나머지만 갱신한다`() =
         runTest {
-            val initial = detail()
+            val initial = overview()
             val refreshed =
-                detail(
+                overview(
                     shopId = initial.shop.id,
                     likeCount = 99L,
                     event = event(initial.shop.id),
                 )
-            val repository = FakeRamenShopRepository(shopDetail = initial)
+            val repository = FakeRamenShopRepository(shopOverview = initial)
             val useCase =
-                DefaultFetchShopDetailUseCase(
+                DefaultFetchShopOverviewUseCase(
                     ramenShopRepository = repository,
                     operatingNoticeRepository = FakeOperatingNoticeRepository(),
                 )
             useCase(initial.shop.id)
-            repository.shopDetail = refreshed
+            repository.shopOverview = refreshed
 
-            val result = assertIs<RamapResult.Success<ShopDetail>>(useCase(initial.shop.id)).data
+            val result = assertIs<RamapResult.Success<ShopOverView>>(useCase(initial.shop.id)).data
 
             assertEquals(initial.shop, result.shop)
             assertEquals(initial.likeCount, result.likeCount)
@@ -75,17 +75,17 @@ class DefaultFetchShopDetailUseCaseTest {
     @Test
     fun `캐시 재검증 실패는 캐시 전체를 성공으로 유지한다`() =
         runTest {
-            val initial = detail(event = event("shop"))
-            val repository = FakeRamenShopRepository(shopDetail = initial)
+            val initial = overview(event = event("shop"))
+            val repository = FakeRamenShopRepository(shopOverview = initial)
             val useCase =
-                DefaultFetchShopDetailUseCase(
+                DefaultFetchShopOverviewUseCase(
                     ramenShopRepository = repository,
                     operatingNoticeRepository = FakeOperatingNoticeRepository(),
                 )
             useCase(initial.shop.id)
-            repository.shopDetailError = RamapError.Unknown(IllegalStateException("failed"))
+            repository.shopOverviewError = RamapError.Unknown(IllegalStateException("failed"))
 
-            val result = assertIs<RamapResult.Success<ShopDetail>>(useCase(initial.shop.id))
+            val result = assertIs<RamapResult.Success<ShopOverView>>(useCase(initial.shop.id))
 
             assertEquals(initial, result.data)
         }
@@ -95,10 +95,10 @@ class DefaultFetchShopDetailUseCaseTest {
         runTest {
             val repository =
                 FakeRamenShopRepository(
-                    shopDetailError = RamapError.Unknown(IllegalStateException("failed")),
+                    shopOverviewError = RamapError.Unknown(IllegalStateException("failed")),
                 )
             val useCase =
-                DefaultFetchShopDetailUseCase(
+                DefaultFetchShopOverviewUseCase(
                     ramenShopRepository = repository,
                     operatingNoticeRepository = FakeOperatingNoticeRepository(),
                 )
@@ -106,17 +106,17 @@ class DefaultFetchShopDetailUseCaseTest {
             val result = useCase("shop")
 
             assertIs<RamapResult.Error>(result)
-            assertEquals(listOf("shop"), repository.requestedShopDetailIds)
-            assertIs<ShopDetailCacheLookup.Miss>(useCase.findCached("shop"))
+            assertEquals(listOf("shop"), repository.requestedShopOverviewIds)
+            assertIs<ShopOverviewCacheLookup.Miss>(useCase.findCached("shop"))
         }
 
     @Test
     fun `캐시된 상세의 좋아요 수를 저장 상태 변경에 맞춰 갱신한다`() =
         runTest {
-            val initial = detail(likeCount = 1L)
+            val initial = overview(likeCount = 1L)
             val useCase =
-                DefaultFetchShopDetailUseCase(
-                    ramenShopRepository = FakeRamenShopRepository(shopDetail = initial),
+                DefaultFetchShopOverviewUseCase(
+                    ramenShopRepository = FakeRamenShopRepository(shopOverview = initial),
                     operatingNoticeRepository = FakeOperatingNoticeRepository(),
                 )
             useCase(initial.shop.id)
@@ -124,30 +124,30 @@ class DefaultFetchShopDetailUseCaseTest {
             useCase.updateCachedLikeCount(initial.shop.id, enabled = false)
             useCase.updateCachedLikeCount(initial.shop.id, enabled = false)
 
-            val cached = assertIs<ShopDetailCacheLookup.Hit>(useCase.findCached(initial.shop.id)).detail
+            val cached = assertIs<ShopOverviewCacheLookup.Hit>(useCase.findCached(initial.shop.id)).overview
             assertEquals(0L, cached.likeCount)
         }
 
     @Test
     fun `만료된 공지 다음의 진행 중 공지를 대표 공지로 선택한다`() =
         runTest {
-            val shopDetail = detail()
+            val shopOverview = overview()
             val today = seoulToday()
             val expired =
                 operatingNotice(
                     "expired",
-                    shopDetail,
+                    shopOverview,
                     today.minus(2, DateTimeUnit.DAY),
                     today.minus(1, DateTimeUnit.DAY),
                 )
-            val current = operatingNotice("current", shopDetail, today, today)
+            val current = operatingNotice("current", shopOverview, today, today)
             val useCase =
-                DefaultFetchShopDetailUseCase(
-                    ramenShopRepository = FakeRamenShopRepository(shopDetail = shopDetail),
+                DefaultFetchShopOverviewUseCase(
+                    ramenShopRepository = FakeRamenShopRepository(shopOverview = shopOverview),
                     operatingNoticeRepository = FakeOperatingNoticeRepository(notices = listOf(expired, current)),
                 )
 
-            val result = assertIs<RamapResult.Success<ShopDetail>>(useCase(shopDetail.shop.id)).data
+            val result = assertIs<RamapResult.Success<ShopOverView>>(useCase(shopOverview.shop.id)).data
 
             assertEquals(current, result.operatingNotice)
             assertEquals(listOf(expired, current), result.operatingNotices)
@@ -156,22 +156,22 @@ class DefaultFetchShopDetailUseCaseTest {
     @Test
     fun `만료된 공지만 있으면 대표 공지를 비운다`() =
         runTest {
-            val shopDetail = detail()
+            val shopOverview = overview()
             val today = seoulToday()
             val expired =
                 operatingNotice(
                     "expired",
-                    shopDetail,
+                    shopOverview,
                     today.minus(2, DateTimeUnit.DAY),
                     today.minus(1, DateTimeUnit.DAY),
                 )
             val useCase =
-                DefaultFetchShopDetailUseCase(
-                    ramenShopRepository = FakeRamenShopRepository(shopDetail = shopDetail),
+                DefaultFetchShopOverviewUseCase(
+                    ramenShopRepository = FakeRamenShopRepository(shopOverview = shopOverview),
                     operatingNoticeRepository = FakeOperatingNoticeRepository(notices = listOf(expired)),
                 )
 
-            val result = assertIs<RamapResult.Success<ShopDetail>>(useCase(shopDetail.shop.id)).data
+            val result = assertIs<RamapResult.Success<ShopOverView>>(useCase(shopOverview.shop.id)).data
 
             assertNull(result.operatingNotice)
             assertEquals(listOf(expired), result.operatingNotices)
@@ -180,22 +180,22 @@ class DefaultFetchShopDetailUseCaseTest {
     @Test
     fun `종료일이 오늘인 공지를 대표 공지로 선택한다`() =
         runTest {
-            val shopDetail = detail()
+            val shopOverview = overview()
             val today = seoulToday()
             val endingToday =
                 operatingNotice(
                     "ending-today",
-                    shopDetail,
+                    shopOverview,
                     today.minus(1, DateTimeUnit.DAY),
                     today,
                 )
             val useCase =
-                DefaultFetchShopDetailUseCase(
-                    ramenShopRepository = FakeRamenShopRepository(shopDetail = shopDetail),
+                DefaultFetchShopOverviewUseCase(
+                    ramenShopRepository = FakeRamenShopRepository(shopOverview = shopOverview),
                     operatingNoticeRepository = FakeOperatingNoticeRepository(notices = listOf(endingToday)),
                 )
 
-            val result = assertIs<RamapResult.Success<ShopDetail>>(useCase(shopDetail.shop.id)).data
+            val result = assertIs<RamapResult.Success<ShopOverView>>(useCase(shopOverview.shop.id)).data
 
             assertEquals(endingToday, result.operatingNotice)
         }
@@ -203,32 +203,32 @@ class DefaultFetchShopDetailUseCaseTest {
     @Test
     fun `예정 공지를 대표 공지로 선택한다`() =
         runTest {
-            val shopDetail = detail()
+            val shopOverview = overview()
             val today = seoulToday()
             val scheduled =
                 operatingNotice(
                     "scheduled",
-                    shopDetail,
+                    shopOverview,
                     today.plus(1, DateTimeUnit.DAY),
                     today.plus(2, DateTimeUnit.DAY),
                 )
             val useCase =
-                DefaultFetchShopDetailUseCase(
-                    ramenShopRepository = FakeRamenShopRepository(shopDetail = shopDetail),
+                DefaultFetchShopOverviewUseCase(
+                    ramenShopRepository = FakeRamenShopRepository(shopOverview = shopOverview),
                     operatingNoticeRepository = FakeOperatingNoticeRepository(notices = listOf(scheduled)),
                 )
 
-            val result = assertIs<RamapResult.Success<ShopDetail>>(useCase(shopDetail.shop.id)).data
+            val result = assertIs<RamapResult.Success<ShopOverView>>(useCase(shopOverview.shop.id)).data
 
             assertEquals(scheduled, result.operatingNotice)
         }
 
-    private fun detail(
+    private fun overview(
         shopId: String = "shop",
         likeCount: Long = 7L,
         event: ShopEvent? = null,
-    ): ShopDetail =
-        ShopDetail(
+    ): ShopOverView =
+        ShopOverView(
             shop = ramenShopFixture(id = shopId),
             likeCount = likeCount,
             waitingSystem = waitingSystemFixture(shopId),
@@ -238,12 +238,12 @@ class DefaultFetchShopDetailUseCaseTest {
 
     private fun operatingNotice(
         id: String,
-        shopDetail: ShopDetail,
+        shopOverview: ShopOverView,
         startDate: LocalDate,
         endDate: LocalDate,
     ) = OperatingNotice(
         id = id,
-        shop = shopDetail.shop,
+        shop = shopOverview.shop,
         type = OperatingNoticeType.TEMPORARY_CLOSURE,
         description = "임시 휴무",
         startDate = startDate,

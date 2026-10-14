@@ -4,7 +4,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-internal data class ShopDetailResponse(
+internal data class ShopOverviewResponse(
     val shop: RamenShopResponse,
     @SerialName("like_count")
     val likeCount: Long,

@@ -2,9 +2,9 @@ package com.peto.ramap.data.repository
 
 import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.core.result.getOrThrow
-import com.peto.ramap.data.model.ShopDetailResponse
 import com.peto.ramap.data.model.ShopEventParticipantResponse
 import com.peto.ramap.data.model.ShopEventResponse
+import com.peto.ramap.data.model.ShopOverviewResponse
 import com.peto.ramap.domain.model.shop.Category
 import com.peto.ramap.domain.model.shop.Location
 import com.peto.ramap.domain.model.shop.MenuCategories
@@ -28,7 +28,7 @@ class DefaultRamenShopRepositoryTest {
     fun `상세 RPC의 매장 컬럼에서 웨이팅을 읽고 기존 중첩 응답은 무시한다`() =
         runTest {
             val response =
-                json.decodeFromString<ShopDetailResponse>(
+                json.decodeFromString<ShopOverviewResponse>(
                     """
                     {
                         "shop": {
@@ -52,9 +52,9 @@ class DefaultRamenShopRepositoryTest {
                     }
                     """.trimIndent(),
                 )
-            val repository = DefaultRamenShopRepository(FakeRamenShopDataSource(shopDetailResponse = response))
+            val repository = DefaultRamenShopRepository(FakeRamenShopDataSource(shopOverviewResponse = response))
 
-            val detail = repository.fetchShopDetail("shop-1").getOrThrow()
+            val detail = repository.fetchShopOverview("shop-1").getOrThrow()
 
             assertEquals(
                 WaitingSystem(
@@ -81,13 +81,13 @@ class DefaultRamenShopRepositoryTest {
                 )
             for ((providerId, expectedProvider) in providers) {
                 val response =
-                    ShopDetailResponse(
+                    ShopOverviewResponse(
                         shop = ramenShopResponseFixture(id = "shop-1").copy(waitingProvider = providerId),
                         likeCount = 0L,
                     )
-                val repository = DefaultRamenShopRepository(FakeRamenShopDataSource(shopDetailResponse = response))
+                val repository = DefaultRamenShopRepository(FakeRamenShopDataSource(shopOverviewResponse = response))
 
-                val detail = repository.fetchShopDetail("shop-1").getOrThrow()
+                val detail = repository.fetchShopOverview("shop-1").getOrThrow()
 
                 assertEquals(
                     WaitingSystem(
@@ -105,7 +105,7 @@ class DefaultRamenShopRepositoryTest {
     fun `상세 매장에 웨이팅 컬럼이 없으면 웨이팅 없이 조회한다`() =
         runTest {
             val response =
-                json.decodeFromString<ShopDetailResponse>(
+                json.decodeFromString<ShopOverviewResponse>(
                     """
                     {
                         "shop": {
@@ -122,9 +122,9 @@ class DefaultRamenShopRepositoryTest {
                     }
                     """.trimIndent(),
                 )
-            val repository = DefaultRamenShopRepository(FakeRamenShopDataSource(shopDetailResponse = response))
+            val repository = DefaultRamenShopRepository(FakeRamenShopDataSource(shopOverviewResponse = response))
 
-            val detail = repository.fetchShopDetail("shop-1").getOrThrow()
+            val detail = repository.fetchShopOverview("shop-1").getOrThrow()
 
             assertEquals(null, detail.waitingSystem)
         }
@@ -133,7 +133,7 @@ class DefaultRamenShopRepositoryTest {
     fun `상세 매장에 URL만 있고 웨이팅 제공자가 null이면 웨이팅 없음으로 유지한다`() =
         runTest {
             val response =
-                ShopDetailResponse(
+                ShopOverviewResponse(
                     shop =
                         ramenShopResponseFixture(id = "shop-1").copy(
                             waitingProvider = null,
@@ -141,9 +141,9 @@ class DefaultRamenShopRepositoryTest {
                         ),
                     likeCount = 0L,
                 )
-            val repository = DefaultRamenShopRepository(FakeRamenShopDataSource(shopDetailResponse = response))
+            val repository = DefaultRamenShopRepository(FakeRamenShopDataSource(shopOverviewResponse = response))
 
-            val detail = repository.fetchShopDetail("shop-1").getOrThrow()
+            val detail = repository.fetchShopOverview("shop-1").getOrThrow()
 
             assertEquals(null, detail.waitingSystem)
         }
@@ -152,7 +152,7 @@ class DefaultRamenShopRepositoryTest {
     fun `상세 RPC 응답을 기존 이벤트 규칙으로 변환한다`() =
         runTest {
             val response =
-                ShopDetailResponse(
+                ShopOverviewResponse(
                     shop = ramenShopResponseFixture(id = "venue-shop"),
                     likeCount = 3L,
                     events = listOf(shopEventResponse()),
@@ -164,10 +164,10 @@ class DefaultRamenShopRepositoryTest {
                 )
             val repository =
                 DefaultRamenShopRepository(
-                    FakeRamenShopDataSource(shopDetailResponse = response),
+                    FakeRamenShopDataSource(shopOverviewResponse = response),
                 )
 
-            val detail = repository.fetchShopDetail("venue-shop").getOrThrow()
+            val detail = repository.fetchShopOverview("venue-shop").getOrThrow()
 
             assertEquals(2, detail.event?.collaborationPartnerCount)
         }
@@ -230,7 +230,7 @@ class DefaultRamenShopRepositoryTest {
     fun `상세 RPC의 다른 활성 이벤트 참여자는 선택한 콜라보 인원에서 제외한다`() =
         runTest {
             val response =
-                ShopDetailResponse(
+                ShopOverviewResponse(
                     shop = ramenShopResponseFixture(id = "venue-shop"),
                     likeCount = 0L,
                     events = listOf(shopEventResponse(id = "selected-collab")),
@@ -252,10 +252,10 @@ class DefaultRamenShopRepositoryTest {
                 )
             val repository =
                 DefaultRamenShopRepository(
-                    FakeRamenShopDataSource(shopDetailResponse = response),
+                    FakeRamenShopDataSource(shopOverviewResponse = response),
                 )
 
-            val detail = repository.fetchShopDetail("venue-shop").getOrThrow()
+            val detail = repository.fetchShopOverview("venue-shop").getOrThrow()
 
             assertEquals(1, detail.event?.collaborationPartnerCount)
         }

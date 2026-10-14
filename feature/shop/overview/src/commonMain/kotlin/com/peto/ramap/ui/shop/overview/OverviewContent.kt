@@ -8,7 +8,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.peto.ramap.domain.usecase.ShopDetail
+import com.peto.ramap.domain.model.shop.ShopOverView
 import com.peto.ramap.preview.RamenShopPreviewParameterProvider
 import com.peto.ramap.ui.shop.overview.component.BusinessHoursCard
 import com.peto.ramap.ui.shop.overview.component.ExternalLinksRow
@@ -26,7 +26,7 @@ fun OverviewContent(
     modifier: Modifier = Modifier,
     dragAreaModifier: Modifier = Modifier,
 ) {
-    val shop = uiState.detail.shop
+    val shop = uiState.overview.shop
     val headerState = uiState.headerState
     val headerActions = actions.headerActions
     val externalLinkActions = actions.externalLinkActions
@@ -37,12 +37,12 @@ fun OverviewContent(
     ) {
         ShopHeaderSection(
             shop = shop,
-            likeCount = uiState.detail.likeCount,
+            likeCount = uiState.overview.likeCount,
             isBookmarked = headerState.isBookmarked,
             isNotificationEnabled = headerState.isNotificationEnabled,
             showNotificationActions = headerState.showNotificationActions,
             isHidden = headerState.isHidden,
-            event = uiState.detail.event,
+            event = uiState.overview.event,
             dragAreaModifier = dragAreaModifier,
             onDismissRequest = headerActions.onDismissRequest,
             onBookmarkClick = headerActions.onBookmarkClick,
@@ -57,11 +57,11 @@ fun OverviewContent(
             verticalArrangement = Arrangement.spacedBy(10.dp),
             modifier = Modifier.padding(horizontal = 20.dp),
         ) {
-            if (shop.businessHoursDetails != null || uiState.detail.operatingNotice != null) {
+            if (shop.businessHoursDetails != null || uiState.overview.operatingNotice != null) {
                 BusinessHoursCard(
                     shop = shop,
-                    operatingNotice = uiState.detail.operatingNotice,
-                    operatingNotices = uiState.detail.operatingNotices,
+                    operatingNotice = uiState.overview.operatingNotice,
+                    operatingNotices = uiState.overview.operatingNotices,
                     onOperatingNoticeClick = headerActions.onOperatingNoticeClick,
                 )
             }
@@ -87,8 +87,8 @@ private fun OverviewContentPreview() {
     OverviewContent(
         uiState =
             OverviewUiState(
-                detail =
-                    ShopDetail(
+                overview =
+                    ShopOverView(
                         shop = shop,
                         likeCount = 128L,
                         waitingSystem = null,

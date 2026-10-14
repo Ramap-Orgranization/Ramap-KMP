@@ -155,7 +155,7 @@ class ReviewWriteViewModel(
             loadKey = ReviewWriteLoadKey.Shop,
             policy = TaskPolicy.IgnoreNew,
             onStart = { copy(shopLoadFailed = false) },
-            request = { ramenShopRepository.fetchShopDetail(shopId) },
+            request = { ramenShopRepository.fetchShopOverview(shopId) },
             onSuccess = { detail -> reduce { copy(shop = detail.shop) } },
             onError = { handleShopLoadError() },
         )

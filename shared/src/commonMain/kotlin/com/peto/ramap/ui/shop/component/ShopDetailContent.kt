@@ -29,8 +29,8 @@ import com.peto.ramap.ui.shop.menu.ShopMenuContent
 import com.peto.ramap.ui.shop.model.ShopDetailActions
 import com.peto.ramap.ui.shop.model.ShopDetailContentUiState
 import com.peto.ramap.ui.shop.model.ShopDetailSheetConfig
-import com.peto.ramap.ui.shop.model.ShopDetailSheetUiState
 import com.peto.ramap.ui.shop.model.ShopDetailTab
+import com.peto.ramap.ui.shop.model.ShopOverviewUiState
 import com.peto.ramap.ui.shop.overview.OverviewContent
 import com.peto.ramap.ui.shop.overview.model.ExternalLinkActions
 import com.peto.ramap.ui.shop.overview.model.HeaderActions
@@ -60,13 +60,13 @@ fun ShopDetailContent(
     modifier: Modifier = Modifier,
 ) {
     val state = uiState.sheetState
-    if (state is ShopDetailSheetUiState.Closed) return
+    if (state is ShopOverviewUiState.Closed) return
     val selectedShop =
         when (state) {
-            ShopDetailSheetUiState.Closed -> null
-            is ShopDetailSheetUiState.Loading -> state.shop
-            is ShopDetailSheetUiState.Content -> state.detail.shop
-            is ShopDetailSheetUiState.Error -> state.shop
+            ShopOverviewUiState.Closed -> null
+            is ShopOverviewUiState.Loading -> state.shop
+            is ShopOverviewUiState.Content -> state.overview.shop
+            is ShopOverviewUiState.Error -> state.shop
         }
     var hideConfirmShop by remember { mutableStateOf<RamenShop?>(null) }
     var showReportDialog by remember(selectedShop?.id) { mutableStateOf(false) }
@@ -77,19 +77,19 @@ fun ShopDetailContent(
 
     val hasOtherContent = !uiState.isShopUnavailable && (uiState.menuState != null || uiState.reviewState != null)
     val shouldShowMainSheet =
-        selectedShop != null || hasOtherContent || (config.showRequestedLoadingInSheet && state is ShopDetailSheetUiState.Loading)
+        selectedShop != null || hasOtherContent || (config.showRequestedLoadingInSheet && state is ShopOverviewUiState.Loading)
     val mainSheetShopId =
         when (state) {
-            ShopDetailSheetUiState.Closed -> null
-            is ShopDetailSheetUiState.Loading -> state.shopId
-            is ShopDetailSheetUiState.Content -> state.detail.shop.id
-            is ShopDetailSheetUiState.Error -> state.shopId
+            ShopOverviewUiState.Closed -> null
+            is ShopOverviewUiState.Loading -> state.shopId
+            is ShopOverviewUiState.Content -> state.overview.shop.id
+            is ShopOverviewUiState.Error -> state.shopId
         }
 
-    if (config.visible && shouldShowMainSheet && (state !is ShopDetailSheetUiState.Error || hasOtherContent)) {
+    if (config.visible && shouldShowMainSheet && (state !is ShopOverviewUiState.Error || hasOtherContent)) {
         val mapAction =
-            if (state is ShopDetailSheetUiState.Content && actions.externalLinkActions.onShowOnMap != null) {
-                { actions.externalLinkActions.onShowOnMap.invoke(state.detail.shop.id) }
+            if (state is ShopOverviewUiState.Content && actions.externalLinkActions.onShowOnMap != null) {
+                { actions.externalLinkActions.onShowOnMap.invoke(state.overview.shop.id) }
             } else {
                 null
             }
@@ -111,7 +111,7 @@ fun ShopDetailContent(
                 },
         ) { scrollState ->
             when (state) {
-                is ShopDetailSheetUiState.Loading ->
+                is ShopOverviewUiState.Loading ->
                     RamenLoadingIndicator(
                         modifier =
                             Modifier
@@ -119,11 +119,11 @@ fun ShopDetailContent(
                                 .heightIn(min = 240.dp),
                     )
 
-                is ShopDetailSheetUiState.Content -> {
-                    val shop = state.detail.shop
+                is ShopOverviewUiState.Content -> {
+                    val shop = state.overview.shop
                     val overviewUiState =
                         OverviewUiState(
-                            detail = state.detail,
+                            overview = state.overview,
                             headerState = uiState.headerState,
                         )
                     val overviewActions =
@@ -159,11 +159,11 @@ fun ShopDetailContent(
                     )
                 }
 
-                is ShopDetailSheetUiState.Error -> RegionLoadError(onRetry = actions.onRetry)
-                ShopDetailSheetUiState.Closed -> Unit
+                is ShopOverviewUiState.Error -> RegionLoadError(onRetry = actions.onRetry)
+                ShopOverviewUiState.Closed -> Unit
             }
-            if (uiState.overviewHasLoadFailure && state is ShopDetailSheetUiState.Content) RegionLoadError(actions.onRetry)
-            if (state is ShopDetailSheetUiState.Content || uiState.reviewState != null) {
+            if (uiState.overviewHasLoadFailure && state is ShopOverviewUiState.Content) RegionLoadError(actions.onRetry)
+            if (state is ShopOverviewUiState.Content || uiState.reviewState != null) {
                 ShopDetailSections(
                     uiState = uiState,
                     actions = actions,
@@ -178,7 +178,7 @@ fun ShopDetailContent(
         }
     }
 
-    if (config.visible && state is ShopDetailSheetUiState.Error && !hasOtherContent) {
+    if (config.visible && state is ShopOverviewUiState.Error && !hasOtherContent) {
         CommonBottomSheet(
             visible = config.visible,
             onDismissRequest = actions.onDismissRequest,

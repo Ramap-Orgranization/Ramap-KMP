@@ -1,8 +1,8 @@
 package com.peto.ramap.data.usecase.di
 
-import com.peto.ramap.data.usecase.DefaultFetchShopDetailUseCase
+import com.peto.ramap.data.usecase.DefaultFetchShopOverviewUseCase
 import com.peto.ramap.domain.model.review.change.ReviewChangeReducer
-import com.peto.ramap.domain.usecase.FetchShopDetailUseCase
+import com.peto.ramap.domain.usecase.FetchShopOverviewUseCase
 import com.peto.ramap.domain.usecase.LoadShopReviewsUseCase
 import com.peto.ramap.domain.usecase.LoginSessionUseCase
 import com.peto.ramap.domain.usecase.SearchRamenShopsUseCase
@@ -14,8 +14,8 @@ import org.koin.dsl.module
 val useCaseModule =
     module {
         singleOf(::ReviewChangeReducer)
-        factory<FetchShopDetailUseCase> {
-            DefaultFetchShopDetailUseCase(
+        factory<FetchShopOverviewUseCase> {
+            DefaultFetchShopOverviewUseCase(
                 ramenShopRepository = get(),
                 operatingNoticeRepository = get(),
             )

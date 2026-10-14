@@ -80,7 +80,7 @@ class ShopSheetCompositionTest {
                 assertNotSame(first.second, requireNotNull(models).second)
                 assertNotSame(first.third, requireNotNull(models).third)
                 assertNull(
-                    models!!
+                    requireNotNull(models)
                         .second.uiState.value.menu,
                 )
                 queries.menuGate!!.complete(ShopMenu(emptyList()))
@@ -114,12 +114,12 @@ class ShopSheetCompositionTest {
                 runCurrent()
                 assertEquals(
                     "second",
-                    models!!
+                    requireNotNull(models)
                         .second.uiState.value.shopId,
                 )
                 assertEquals(
                     "2026-10-14",
-                    models!!
+                    requireNotNull(models)
                         .second.uiState.value.menu
                         ?.updatedAt,
                 )
@@ -176,10 +176,10 @@ class ShopSheetCompositionTest {
                 assertTrue(menu.uiState.value.hasLoadFailure)
                 assertTrue(reviews.uiState.value.hasReviewLoadFailure)
                 queries.overviewResult = null
-                overview.dispatch(ShopOverviewIntent.OnShopDetailRetry)
+                overview.dispatch(ShopOverviewIntent.OnOverviewRetry)
                 runCurrent()
                 assertFalse(overview.uiState.value.hasLoadFailure)
-                val overviewData = overview.uiState.value.shopDetail
+                val overviewData = overview.uiState.value.shopOverview
                 assertEquals(2, queries.overviewCalls.size)
                 assertEquals(1, queries.menuCalls.size)
                 assertEquals(1, queries.reviewCalls.size)
@@ -199,7 +199,7 @@ class ShopSheetCompositionTest {
                 runCurrent()
                 assertFalse(reviews.uiState.value.hasReviewLoadFailure)
                 assertEquals(2, queries.reviewCalls.size)
-                assertEquals(overviewData, overview.uiState.value.shopDetail)
+                assertEquals(overviewData, overview.uiState.value.shopOverview)
                 assertEquals(2, queries.overviewCalls.size)
                 assertEquals(2, queries.menuCalls.size)
             } finally {

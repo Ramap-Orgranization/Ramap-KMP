@@ -1,10 +1,10 @@
 package com.peto.ramap.ui.shop.overview.model
 
 import androidx.compose.runtime.Immutable
-import com.peto.ramap.domain.usecase.ShopDetail
+import com.peto.ramap.domain.model.shop.ShopOverView
 
 @Immutable
 data class OverviewUiState(
-    val detail: ShopDetail,
+    val overview: ShopOverView,
     val headerState: HeaderUiState,
 )

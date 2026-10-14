@@ -1,14 +1,14 @@
 package com.peto.ramap.data.datasource.shop
 
 import com.peto.ramap.data.model.RamenShopResponse
-import com.peto.ramap.data.model.ShopDetailResponse
 import com.peto.ramap.data.model.ShopEventParticipantResponse
 import com.peto.ramap.data.model.ShopEventResponse
+import com.peto.ramap.data.model.ShopOverviewResponse
 import com.peto.ramap.domain.model.shop.MapBounds
 import com.peto.ramap.domain.model.shop.SearchQuery
 
 internal interface RamenShopDataSource {
-    suspend fun fetchShopDetail(shopId: String): ShopDetailResponse
+    suspend fun fetchShopOverview(shopId: String): ShopOverviewResponse
 
     suspend fun fetchRamenShops(bounds: MapBounds): List<RamenShopResponse>
 
