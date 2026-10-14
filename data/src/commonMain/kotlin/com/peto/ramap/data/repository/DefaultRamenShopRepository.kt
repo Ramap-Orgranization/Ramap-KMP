@@ -20,7 +20,6 @@ import com.peto.ramap.domain.model.shop.SearchQuery
 import com.peto.ramap.domain.repository.RamenShopRepository
 import com.peto.ramap.domain.usecase.ShopDetail
 import com.peto.ramap.network.execute.invokeRequest
-import kotlinx.coroutines.CancellationException
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
@@ -33,45 +32,26 @@ internal class DefaultRamenShopRepository(
 ) : RamenShopRepository {
     override suspend fun fetchShopDetail(shopId: String): RamapResult<ShopDetail> =
         invokeRequest {
-            val response =
-                dataSource.fetchShopDetail(shopId)
-                    ?: error("매장 상세를 찾을 수 없습니다: $shopId")
-            val menuUpdatedAt =
-                response.menuSections
-                    .takeIf(List<MenuSectionResponse>::isNotEmpty)
-                    ?.let {
-                        try {
-                            dataSource.fetchShopMenuUpdatedAt(shopId)
-                        } catch (exception: CancellationException) {
-                            throw exception
-                        } catch (_: Throwable) {
-                            null
-                        }
-                    }
-            shopDetail(response, shopId, menuUpdatedAt)
-        }
-
-    override suspend fun fetchShopLikeCount(shopId: String): RamapResult<Long> =
-        invokeRequest {
-            dataSource.fetchShopLikeCount(shopId)
+            val response = dataSource.fetchShopDetail(shopId)
+            shopDetail(response, shopId)
         }
 
     override suspend fun fetchActiveEvent(eventId: String): RamapResult<ShopEvent?> =
         invokeRequest {
-            dataSource.fetchActiveEvent(eventId)?.let(::toDomain)?.takeIf(::isVisibleInActiveEvents)
+            dataSource.fetchEvents(eventId).singleOrNull()?.let(::toDomain)?.takeIf(::isVisibleInActiveEvents)
         }
 
     override suspend fun fetchActiveEvents(): RamapResult<List<ShopEvent>> =
         invokeRequest {
             dataSource
-                .fetchActiveEvents()
+                .fetchEvents(eventId = null)
                 .map(::toDomain)
                 .filter(::isVisibleInActiveEvents)
         }
 
     override suspend fun fetchEvent(eventId: String): RamapResult<ShopEvent?> =
         invokeRequest {
-            dataSource.fetchEvent(eventId)?.let(::toDomain)
+            dataSource.fetchEvents(eventId).singleOrNull()?.let(::toDomain)
         }
 
     override suspend fun fetchActiveShopEvent(shopId: String): RamapResult<ShopEvent?> =
@@ -90,7 +70,6 @@ internal class DefaultRamenShopRepository(
     private fun shopDetail(
         response: ShopDetailResponse,
         shopId: String,
-        menuUpdatedAt: String?,
     ): ShopDetail {
         val domainShop = response.shop.toDomain()
         val activeEvents = activeShopEvents(response.events)
@@ -101,7 +80,7 @@ internal class DefaultRamenShopRepository(
             event = activeShopEvent(activeEvents, response.eventParticipants, shopId),
             operatingNotice = response.operatingNotice?.toDomain(domainShop),
             menuSections = menuSections(response.menuSections, response.menuItems),
-            menuUpdatedAt = menuUpdatedAt,
+            menuUpdatedAt = response.menuUpdatedAt,
         )
     }
 
