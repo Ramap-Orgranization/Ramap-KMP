@@ -8,11 +8,7 @@ import com.peto.ramap.domain.model.shop.MapBounds
 import com.peto.ramap.domain.model.shop.SearchQuery
 
 internal interface RamenShopDataSource {
-    suspend fun fetchShopDetail(shopId: String): ShopDetailResponse?
-
-    suspend fun fetchShopMenuUpdatedAt(shopId: String): String?
-
-    suspend fun fetchShopLikeCount(shopId: String): Long
+    suspend fun fetchShopDetail(shopId: String): ShopDetailResponse
 
     suspend fun fetchRamenShops(bounds: MapBounds): List<RamenShopResponse>
 
@@ -20,11 +16,7 @@ internal interface RamenShopDataSource {
 
     suspend fun fetchActiveShopEvents(shopId: String): List<ShopEventResponse>
 
-    suspend fun fetchActiveEvents(): List<ShopEventResponse>
-
-    suspend fun fetchActiveEvent(eventId: String): ShopEventResponse?
-
-    suspend fun fetchEvent(eventId: String): ShopEventResponse?
+    suspend fun fetchEvents(eventId: String?): List<ShopEventResponse>
 
     suspend fun fetchShopEventParticipants(eventId: String): List<ShopEventParticipantResponse>
 
