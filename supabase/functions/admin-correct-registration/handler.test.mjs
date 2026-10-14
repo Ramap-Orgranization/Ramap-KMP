@@ -15,7 +15,7 @@ function harness(record = { event_type: "limited_menu", start_date: "2026-01-01"
     update(value) { updates.push(value); return { eq: async () => ({ error: null }) }; },
   };
   const context = { Deno: { serve() {} }, Response, Date, Intl, effectiveEndDate, isManageableEvent, createServiceClient: () => ({ from: (table) => { tables.push(table); return query; } }) };
-  runInNewContext(source + "\nglobalThis.api = { validateChanges, applyCorrection, isActiveRecord };", context);
+  runInNewContext(source + "\nglobalThis.api = { validateChanges, applyCorrection, isActiveRecord, matchesNoticeDate };", context);
   return { ...context.api, updates, tables };
 }
 test("event title and type corrections are retained instead of dropped by the notice branch", () => {
@@ -30,11 +30,11 @@ test("title-only correction updates the event", async () => {
   assert.equal(response.status, 200);
   assert.equal(api.updates[0].title, "Changed");
 });
-test("schedule-only correction preserves an existing operating notice type", async () => {
+test("제거된 영업시간 변경 보정은 거절한다", async () => {
   const api = harness({ notice_type: "operating_notice", notice_date: "2099-01-01", end_date: null });
   const response = await api.applyCorrection("operating_notice", "notice", { schedule_override: { open: "11:00", close: "21:00" } });
-  assert.equal(response.status, 200);
-  assert.equal(api.updates[0].schedule_override.open, "11:00");
+  assert.equal(response.status, 400);
+  assert.equal(api.updates.length, 0);
 });
 test("schedule override cannot be applied to a closure", async () => {
   const api = harness({ notice_type: "full_close", notice_date: "2099-01-01", end_date: null });
@@ -42,7 +42,7 @@ test("schedule override cannot be applied to a closure", async () => {
   assert.equal(api.updates.length, 0);
 });
 test("영업 공지 보정은 공개 조회 경로 대신 서비스 전용 경로에 저장한다", async () => {
-  const api = harness({ notice_type: "operating_notice", notice_date: "2099-01-01", end_date: null });
+  const api = harness({ notice_type: "full_close", notice_date: "2099-01-01", end_date: null });
   const response = await api.applyCorrection("operating_notice", "notice", { description: "변경 공지" });
   assert.equal(response.status, 200);
   assert.equal(api.tables.at(-1), "admin_shop_operating_notice_records");
@@ -52,4 +52,22 @@ test("expired renewal and new-menu records cannot be corrected", () => {
   const api = harness();
   assert.equal(api.isActiveRecord("event", { event_type: "store_renewal", start_date: "2020-01-01", end_date: null }), false);
   assert.equal(api.isActiveRecord("event", { event_type: "new_menu", start_date: "2020-01-01", end_date: null }), false);
+});
+
+test("조기 마감으로 변경할 때 확인된 마감 시각이 필요하다", async () => {
+  const api = harness({ notice_type: "full_close", notice_date: "2099-01-01", end_date: null });
+  assert.equal((await api.applyCorrection("operating_notice", "notice", { notice_type: "early_close" })).status, 400);
+  assert.equal((await api.applyCorrection("operating_notice", "notice", { notice_type: "early_close", end_time: "15:00" })).status, 200);
+  assert.equal(api.updates[0].end_time, "15:00");
+});
+test("임시 휴무로 변경하면 이전 조기 마감 시각을 비운다", async () => {
+  const api = harness({ notice_type: "early_close", notice_date: "2099-01-01", end_date: null, end_time: "15:00:00" });
+  assert.equal((await api.applyCorrection("operating_notice", "notice", { notice_type: "full_close" })).status, 200);
+  assert.equal(api.updates[0].end_time, null);
+});
+
+test("같은 달력에서 분리한 휴무 공지는 요청한 대상 날짜로 구분한다", () => {
+  const api = harness();
+  assert.equal(api.matchesNoticeDate({ notice_date: "2099-10-21", end_date: "2099-10-21" }, "2099-10-21"), true);
+  assert.equal(api.matchesNoticeDate({ notice_date: "2099-10-28", end_date: "2099-10-28" }, "2099-10-21"), false);
 });

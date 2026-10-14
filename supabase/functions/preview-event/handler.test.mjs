@@ -1,0 +1,45 @@
+import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
+import { stripTypeScriptTypes } from "node:module";
+import { runInNewContext } from "node:vm";
+import test from "node:test";
+import { dailySchedulesSchema, validClosureSchedules } from "../_shared/operating-notice-schedule.ts";
+
+const source = stripTypeScriptTypes((await readFile(new URL("./index.ts", import.meta.url), "utf8")).replace(/^import .*;\n/gm, ""));
+function harness(draft) {
+  let handler;
+  const query = {
+    select() { return this; }, eq() { return this; },
+    async limit() { return { data: [{ name: "테스트 매장", instagram_url: "https://www.instagram.com/test_shop/" }] }; },
+  };
+  runInNewContext(source, {
+    Deno: { serve(value) { handler = value; }, env: { get() { return "synthetic"; } } },
+    Request, Response, URL, Date, console,
+    dailySchedulesSchema, validClosureSchedules,
+    isAdministrator: async () => true,
+    createServiceClient: () => ({ from: () => query, storage: { from: () => ({ createSignedUrl: async () => ({ data: { signedUrl: "https://example.invalid/evidence.png" }, error: null }) }) } }),
+    normalizeMapUrl: () => null,
+    fetch: async () => Response.json({ choices: [{ message: { content: JSON.stringify({ description: "점심만 영업", start_date: "2099-10-14", end_date: "2099-10-14", daily_schedules: [], uncertainties: [], ...draft }) } }] }),
+  });
+  return async () => {
+    const response = await handler(new Request("https://example.invalid/preview", { method: "POST", body: JSON.stringify({ registration_type: "operating_notice", shop_name: "테스트 매장", evidence_path: "proof.png" }) }));
+    assert.equal(response.status, 200);
+    return response.json();
+  };
+}
+
+test("점심만 영업의 마감 시각이 없으면 확인이 필요한 조기 마감 초안으로 남긴다", async () => {
+  const draft = await harness({ notice_type: "early_close", end_time: null })();
+  assert.equal(draft.notice_type, "early_close");
+  assert.equal(draft.end_time, null);
+  assert.ok(draft.uncertainties.some((item) => item.includes("마감 시각")));
+});
+
+test("제거한 공지 유형은 미리보기에서 등록 가능한 유형으로 통과시키지 않는다", async () => {
+  for (const notice_type of ["operating_notice", "late_opening"]) {
+    const draft = await harness({ notice_type, start_time: "12:00", schedule_override: { open: "12:00", close: "18:00" } })();
+    assert.equal(draft.notice_type, null);
+    assert.equal(draft.start_time, null);
+    assert.equal(draft.schedule_override, null);
+  }
+});

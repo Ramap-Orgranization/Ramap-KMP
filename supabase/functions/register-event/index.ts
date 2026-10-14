@@ -1,4 +1,4 @@
-import { validCalendarDate, validDailySchedules } from "../_shared/operating-notice-schedule.ts";
+import { validCalendarDate, validClosureSchedules } from "../_shared/operating-notice-schedule.ts";
 import { isAdministrator } from "../_shared/admin-auth.ts";
 import { assertKnownEventType, createServiceClient } from "../_shared/event-notifications.ts";
 import { normalizeMapUrl } from "../_shared/event-venue-url.ts";
@@ -314,70 +314,50 @@ async function registerOperatingNotice(
     !shopName || !isSupportedNoticeType(noticeType) || !startDate || !description || !sourceUrl ||
     !validCalendarDate(startDate) || !validCalendarDate(endDate) || endDate < startDate || (startTime && !validTime(startTime)) ||
     (endTime && !validTime(endTime)) || !isInstagramUrl(sourceUrl) ||
-    (isMonthly && (noticeType !== "operating_notice" || scheduleOverride != null || startTime != null || endTime != null || !validDailySchedules(dailySchedules, startDate, endDate))) ||
+    (isMonthly && (noticeType !== "full_close" || scheduleOverride != null || startTime != null || endTime != null || !validClosureSchedules(dailySchedules, startDate, endDate))) ||
     (!Array.isArray(dailySchedules)) ||
-    (!isMonthly && noticeType === "operating_notice" && !validScheduleOverride(scheduleOverride)) ||
-    (noticeType !== "operating_notice" && scheduleOverride != null) ||
-    (noticeType === "early_close" && !endTime) ||
-    (noticeType === "late_opening" && startTime !== null && !validTime(startTime))
+    (scheduleOverride != null || startTime != null) ||
+    (noticeType === "full_close" && endTime != null) ||
+    (noticeType === "early_close" && (!endTime || isMonthly))
   ) return json({ code: "invalid_operating_notice_draft" }, 400);
+
+  const closureDates = isMonthly ? (dailySchedules as Array<{ date: string; closed: boolean }>).filter((day) => day.closed).map((day) => day.date) : [];
 
   const { data: shops, error: shopError } = await supabase.from("ramen_shops").select("id,instagram_url").eq("name", shopName).limit(2);
   if (shopError) return json({ code: "server_unavailable" }, 503);
   if (!shops || shops.length !== 1) return json({ code: "shop_not_resolved" }, 422);
   const shop = shops[0] as { id: string; instagram_url?: string | null };
 
-  const { data: duplicates, error: duplicateError } = await supabase
+  const duplicateNoticeQuery = supabase
     .from("admin_shop_operating_notice_records")
     .select("id")
     .eq("shop_id", shop.id)
     .eq("source_url", sourceUrl)
-    .eq("notice_type", noticeType)
-    .eq("notice_date", startDate)
-    .limit(1);
+    .eq("notice_type", noticeType);
+  const { data: duplicates, error: duplicateError } = await (isMonthly
+    ? duplicateNoticeQuery.in("notice_date", closureDates)
+    : duplicateNoticeQuery.eq("notice_date", startDate)).limit(1);
   if (duplicateError) return json({ code: "server_unavailable" }, 503);
   if (duplicates && duplicates.length > 0) {
     await deleteEvidence(supabase, evidencePath);
     return json({ code: "duplicate" }, 409);
   }
 
-  if (noticeType === "operating_notice" && !isMonthly) {
-    const { data: overrides, error: overrideError } = await supabase
-      .from("admin_shop_operating_notice_records")
-      .select("id")
-      .eq("shop_id", shop.id)
-      .eq("notice_type", "operating_notice")
-      .lte("notice_date", endDate)
-      .or(`end_date.gte.${startDate},end_date.is.null`)
-      .not("schedule_override", "is", null)
-      .limit(1);
-    if (overrideError) return json({ code: "server_unavailable" }, 503);
-    if (overrides?.length) return json({ code: "duplicate" }, 409);
-  }
 
   try {
     const rawPostId = await ensureRawPost(supabase, shop.id, shop.instagram_url, sourceUrl, description);
-    const { data: notice, error: insertError } = await supabase
-      .from("admin_shop_operating_notice_records")
-      .insert({
-        shop_id: shop.id,
-        raw_post_id: rawPostId,
-        notice_type: noticeType,
-        description,
-        notice_date: startDate,
-        end_date: endDate,
-        start_time: startTime,
-        end_time: endTime,
-        schedule_override: scheduleOverride,
-        daily_schedules: dailySchedules,
-        source_url: sourceUrl,
-        review_note: "관리자 미리보기 승인 등록",
-      })
-      .select("id")
-      .single();
-    if (insertError || !notice) throw insertError ?? new Error("Operating notice was not created");
+    const baseNotice = {
+      shop_id: shop.id, raw_post_id: rawPostId, notice_type: noticeType, description,
+      notice_date: startDate, end_date: endDate, start_time: null, end_time: endTime,
+      schedule_override: null, daily_schedules: [], source_url: sourceUrl,
+      review_note: "관리자 미리보기 승인 등록",
+    };
+    // Store calendar closures as individual days so older app versions do not close the whole month.
+    const rows = isMonthly ? closureDates.map((date) => ({ ...baseNotice, notice_date: date, end_date: date })) : [baseNotice];
+    const { data: notices, error: insertError } = await supabase.from("admin_shop_operating_notice_records").insert(rows).select("id");
+    if (insertError || !notices?.length) throw insertError ?? new Error("Operating notice was not created");
     await deleteEvidence(supabase, evidencePath);
-    return json({ id: notice.id });
+    return json({ id: notices[0].id, ids: notices.map((notice: { id: string }) => notice.id) });
   } catch (error) {
     console.error("register-operating-notice failed", error);
     return json({ code: "registration_failed" }, 422);
@@ -425,22 +405,13 @@ function isInstagramUrl(value: string) {
   }
 }
 function isEvidencePath(value: string | null): value is string { return value !== null && /^[\w-]+\.(?:jpe?g|png)$/i.test(value); }
-function validScheduleOverride(value: unknown) {
-  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
-  const day = value as Record<string, unknown>;
-  if (typeof day.closed !== "boolean" || typeof day.close_next_day !== "boolean") return false;
-  if (day.open !== null && !validTime(day.open as string)) return false;
-  if (day.close !== null && !validTime(day.close as string)) return false;
-  if (day.break_times !== undefined && (!Array.isArray(day.break_times) || day.break_times.some((item) => !item || typeof item !== "object" || !validTime((item as Record<string, unknown>).start as string) || !validTime((item as Record<string, unknown>).end as string)))) return false;
-  return day.closed || (typeof day.open === "string" && typeof day.close === "string");
-}
 function dateAfterDays(value: string, days: number) {
   const date = new Date(`${value}T00:00:00Z`);
   date.setUTCDate(date.getUTCDate() + days);
   return date.toISOString().slice(0, 10);
 }
 function validTime(value: string | null) { return typeof value === "string" && /^([01]\d|2[0-3]):[0-5]\d$/.test(value); }
-function isSupportedNoticeType(value: string | null) { return value === "operating_notice" || value === "full_close" || value === "early_close" || value === "late_opening"; }
+function isSupportedNoticeType(value: string | null) { return value === "full_close" || value === "early_close"; }
 function text(value: unknown): string | null { return typeof value === "string" && value.trim() !== "" ? value.trim() : null; }
 function normalizeInstagramUrl(value: string | null) {
   if (!value) return null;

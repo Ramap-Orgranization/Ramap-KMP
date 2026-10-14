@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import { stripTypeScriptTypes } from "node:module";
 import { runInNewContext } from "node:vm";
 import test from "node:test";
-import { validCalendarDate, validDailySchedules } from "../_shared/operating-notice-schedule.ts";
+import { validCalendarDate, validClosureSchedules } from "../_shared/operating-notice-schedule.ts";
 
 const source = stripTypeScriptTypes((await readFile(new URL("./index.ts", import.meta.url), "utf8")).replace(/^import .*;\n/gm, ""));
 const schedule = { closed: false, open: "11:00", close: "20:00", close_next_day: false, label: null, break_times: [] };
@@ -18,6 +18,7 @@ function harness({ allowed = true, overlapping = false } = {}) {
     const query = {
       select() { return this; },
       eq(key, value) { filters.push(["eq", key, value]); return this; },
+      in(key, value) { filters.push(["in", key, value]); return this; },
       lte(key, value) { filters.push(["lte", key, value]); return this; },
       or(value) { filters.push(["or", value]); return this; },
       not(...args) { filters.push(["not", ...args]); return this; },
@@ -29,7 +30,7 @@ function harness({ allowed = true, overlapping = false } = {}) {
       async single() { return { data: { id: "notice" }, error: null }; },
       then(resolve, reject) {
         calls.filters.push({ table, filters });
-        const data = table === "ramen_shops" ? [{ id: "shop" }] :
+        const data = table === "ramen_shops" ? [{ id: "shop" }] : inserted ? [{ id: "notice" }] :
           !inserted && table === "admin_shop_operating_notice_records" && overlapping && filters.some(([op]) => op === "not") ? [{ id: "overlap" }] : [];
         return Promise.resolve({ data, error: null }).then(resolve, reject);
       },
@@ -39,7 +40,7 @@ function harness({ allowed = true, overlapping = false } = {}) {
   runInNewContext(source, {
     Deno: { serve: (value) => { handler = value; } },
     Request, Response, URL, Date, crypto, console,
-    validCalendarDate, validDailySchedules,
+    validCalendarDate, validClosureSchedules,
     isAdministrator: async () => allowed,
     createServiceClient: () => { calls.clients++; return { from }; },
     assertKnownEventType: (value) => { assert.ok(["collab", "popup", "limited_menu", "summer_limited", "new_menu", "store_renewal"].includes(value)); },
@@ -68,36 +69,33 @@ for (const type of ["limited_menu", "popup"]) {
   });
 }
 
-for (const type of ["operating_notice", "full_close", "early_close", "late_opening"]) {
-  test(`${type} 공지는 관리자 전용 경로에 연속 기간과 검토 메모를 저장한다`, async () => {
+for (const type of ["full_close", "early_close"]) {
+  test(`${type} 공지는 관리자 경로에 연속 기간과 검토 메모를 저장한다`, async () => {
     const app = harness();
-    const body = { ...base, registration_type: "operating_notice", notice_type: type,
-      schedule_override: type === "operating_notice" ? schedule : null,
-      start_time: type === "late_opening" ? "12:00" : null,
-      end_time: type === "early_close" ? "18:00" : null };
+    const body = { ...base, registration_type: "operating_notice", notice_type: type, end_time: type === "early_close" ? "15:00" : null };
     const response = await app.invoke(body);
     assert.equal(response.status, 200, JSON.stringify(await response.json()));
-    const row = app.calls.inserts.find(({ table }) => table === "admin_shop_operating_notice_records").value;
+    const row = app.calls.inserts.find(({ table }) => table === "admin_shop_operating_notice_records").value[0];
     assert.equal(row.notice_date, base.start_date);
     assert.equal(row.end_date, base.end_date);
-    assert.equal(JSON.stringify(row.schedule_override), JSON.stringify(body.schedule_override));
     assert.equal(row.review_note, "관리자 미리보기 승인 등록");
   });
 }
 
-test("a one-day operating change remains valid", async () => {
-  const app = harness();
-  assert.equal((await app.invoke({ ...base, end_date: base.start_date, registration_type: "operating_notice", notice_type: "operating_notice", schedule_override: schedule })).status, 200);
+test("제거한 공지 유형과 마감 시각 없는 조기 마감은 쓰기 전에 거절한다", async () => {
+  for (const notice_type of ["operating_notice", "late_opening", "early_close"]) {
+    const app = harness();
+    assert.equal((await app.invoke({ ...base, registration_type: "operating_notice", notice_type })).status, 400);
+    assert.equal(app.calls.inserts.length, 0);
+  }
 });
 
-test("a conflicting operating schedule is checked across the whole range", async () => {
-  const app = harness({ overlapping: true });
-  const response = await app.invoke({ ...base, registration_type: "operating_notice", notice_type: "operating_notice", schedule_override: schedule });
-  assert.equal(response.status, 409);
-  assert.equal(app.calls.inserts.length, 0);
-  const query = app.calls.filters.find(({ filters }) => filters.some(([op]) => op === "not"));
-  assert.ok(query.filters.some(([op, key, value]) => op === "lte" && key === "notice_date" && value === base.end_date));
-  assert.ok(query.filters.some(([op, value]) => op === "or" && value === `end_date.gte.${base.start_date},end_date.is.null`));
+test("임시 휴무에는 시간이나 변경 영업시간을 저장하지 않는다", async () => {
+  for (const fields of [{ start_time: "12:00" }, { end_time: "15:00" }, { schedule_override: schedule }]) {
+    const app = harness();
+    assert.equal((await app.invoke({ ...base, registration_type: "operating_notice", notice_type: "full_close", ...fields })).status, 400);
+    assert.equal(app.calls.inserts.length, 0);
+  }
 });
 
 test("reversed and impossible ranges are rejected before any write", async () => {
@@ -111,10 +109,23 @@ test("reversed and impossible ranges are rejected before any write", async () =>
   }
 });
 
-test("explicit monthly dates remain separate from a continuous override", async () => {
+test("월간 휴무는 명시된 휴무일만 개별 공지로 한 번에 저장한다", async () => {
   const app = harness();
-  const daily_schedules = [{ date: "2026-10-12", closed: true, schedule_override: null }];
-  const response = await app.invoke({ ...base, registration_type: "operating_notice", notice_type: "operating_notice", start_date: "2026-10-01", end_date: "2026-10-31", daily_schedules });
+  const daily_schedules = [
+    { date: "2026-10-06", closed: true, schedule_override: null },
+    { date: "2026-10-08", closed: false, schedule_override: null },
+    { date: "2026-10-13", closed: true, schedule_override: null },
+  ];
+  const response = await app.invoke({ ...base, registration_type: "operating_notice", notice_type: "full_close", start_date: "2026-10-01", end_date: "2026-10-31", daily_schedules });
   assert.equal(response.status, 200);
-  assert.equal(JSON.stringify(app.calls.inserts[0].value.daily_schedules), JSON.stringify(daily_schedules));
+  const rows = app.calls.inserts[0].value;
+  assert.equal(JSON.stringify(rows.map((row) => [row.notice_date, row.end_date, row.daily_schedules])), JSON.stringify([["2026-10-06", "2026-10-06", []], ["2026-10-13", "2026-10-13", []]]));
+});
+
+test("잘못된 달력 항목은 예외 없이 쓰기 전에 거절한다", async () => {
+  for (const daily_schedules of [[null], [{ date: "2026-10-14", closed: false, schedule_override: null }]]) {
+    const app = harness();
+    assert.equal((await app.invoke({ ...base, registration_type: "operating_notice", notice_type: "full_close", start_date: "2026-10-01", end_date: "2026-10-31", daily_schedules })).status, 400);
+    assert.equal(app.calls.inserts.length, 0);
+  }
 });
