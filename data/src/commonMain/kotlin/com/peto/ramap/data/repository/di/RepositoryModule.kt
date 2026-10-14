@@ -2,6 +2,7 @@ package com.peto.ramap.data.repository.di
 
 import com.peto.ramap.data.datasource.appnotice.AppNoticeDataSource
 import com.peto.ramap.data.datasource.importation.ImportationDataSource
+import com.peto.ramap.data.datasource.menu.ShopMenuDataSource
 import com.peto.ramap.data.datasource.notice.OperatingNoticeDataSource
 import com.peto.ramap.data.datasource.personalization.BookmarkShopDataSource
 import com.peto.ramap.data.datasource.personalization.HiddenShopDataSource
@@ -81,7 +82,7 @@ val repositoryModule =
         single<RamenShopRepository> {
             DefaultRamenShopRepository(get<RamenShopDataSource>())
         }
-        single<ShopMenuRepository> { DefaultShopMenuRepository(get<RamenShopRepository>()) }
+        single<ShopMenuRepository> { DefaultShopMenuRepository(get<ShopMenuDataSource>()) }
         single<OperatingNoticeRepository> {
             DefaultOperatingNoticeRepository(get<OperatingNoticeDataSource>(), get<RamenShopDataSource>())
         }

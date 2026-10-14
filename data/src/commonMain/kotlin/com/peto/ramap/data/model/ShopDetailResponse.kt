@@ -13,10 +13,4 @@ internal data class ShopDetailResponse(
     val eventParticipants: List<ShopEventParticipantResponse> = emptyList(),
     @SerialName("operating_notice")
     val operatingNotice: OperatingNoticeResponse? = null,
-    @SerialName("menu_sections")
-    val menuSections: List<MenuSectionResponse> = emptyList(),
-    @SerialName("menu_items")
-    val menuItems: List<MenuResponse> = emptyList(),
-    @SerialName("menu_updated_at")
-    val menuUpdatedAt: String? = null,
 )

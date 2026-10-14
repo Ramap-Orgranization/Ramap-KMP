@@ -113,7 +113,7 @@ internal class RemoteRamenShopDataSource(
         private const val TABLE_NAME = "ramen_shops"
         private const val FETCH_ACTIVE_EVENTS_RPC = "fetch_active_events"
         private const val FETCH_ACTIVE_SHOP_EVENTS_RPC = "fetch_active_shop_events"
-        private const val FETCH_SHOP_DETAIL_RPC = "fetch_shop_detail_v2"
+        private const val FETCH_SHOP_DETAIL_RPC = "fetch_shop_detail_v3"
         private const val SHOP_ID_PARAMETER = "p_shop_id"
         private const val EVENT_ID_PARAMETER = "p_event_id"
         private const val EVENT_PARTICIPANT_TABLE = "shop_event_participants"

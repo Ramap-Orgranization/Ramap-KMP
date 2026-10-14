@@ -32,7 +32,7 @@ internal class DefaultFetchShopDetailUseCase(
     /**
      * 매장 상세를 조회한다.
      *
-     * 캐시된 매장·좋아요·웨이팅은 유지하고 서버의 최신 이벤트·공지·메뉴·리뷰를 반영한다.
+     * 캐시된 매장·좋아요·웨이팅은 유지하고 서버의 최신 이벤트·공지·리뷰를 반영한다.
      * 재검증 실패 시에는 캐시 전체를 그대로 사용한다.
      */
     override suspend fun invoke(shopId: String): RamapResult<ShopDetail> {
@@ -121,7 +121,7 @@ internal class DefaultFetchShopDetailUseCase(
     }
 
     /**
-     * 캐시된 매장·웨이팅은 유지하고 이벤트·공지·메뉴·리뷰를 새로 조회해 상세를 갱신한다.
+     * 캐시된 매장·웨이팅은 유지하고 이벤트·공지·리뷰를 새로 조회해 상세를 갱신한다.
      */
     private suspend fun revalidateDetail(
         cached: ShopDetail,
@@ -145,8 +145,6 @@ internal class DefaultFetchShopDetailUseCase(
                 event = refreshed.event,
                 operatingNotice = refreshed.operatingNotice,
                 operatingNotices = refreshed.operatingNotices,
-                menuSections = refreshed.menuSections,
-                menuUpdatedAt = refreshed.menuUpdatedAt,
                 reviews = refreshed.reviews,
                 reviewCount = refreshed.reviewCount,
                 hasReviewLoadFailure = refreshed.hasReviewLoadFailure,

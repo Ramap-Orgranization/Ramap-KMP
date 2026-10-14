@@ -1,16 +1,15 @@
 package com.peto.ramap.data.repository
 
 import com.peto.ramap.core.result.RamapResult
+import com.peto.ramap.data.datasource.menu.ShopMenuDataSource
 import com.peto.ramap.domain.model.menu.ShopMenu
-import com.peto.ramap.domain.repository.RamenShopRepository
 import com.peto.ramap.domain.repository.ShopMenuRepository
+import com.peto.ramap.network.execute.invokeRequest
 
 internal class DefaultShopMenuRepository(
-    private val ramenShopRepository: RamenShopRepository,
+    private val dataSource: ShopMenuDataSource,
 ) : ShopMenuRepository {
-    override suspend fun fetchShopMenu(shopId: String): RamapResult<ShopMenu> =
-        when (val result = ramenShopRepository.fetchShopDetail(shopId)) {
-            is RamapResult.Success -> RamapResult.Success(ShopMenu(result.data.menuSections, result.data.menuUpdatedAt))
-            is RamapResult.Error -> result
-        }
+    override suspend fun fetchShopMenu(shopId: String): RamapResult<ShopMenu> = invokeRequest {
+        dataSource.fetchShopMenu(shopId).toDomain()
+    }
 }

@@ -12,6 +12,8 @@ import com.peto.ramap.data.datasource.importation.ImportationDataSource
 import com.peto.ramap.data.datasource.importation.KakaoImportationDataSource
 import com.peto.ramap.data.datasource.importation.NaverImportationDataSource
 import com.peto.ramap.data.datasource.importation.RemoteImportationDataSource
+import com.peto.ramap.data.datasource.menu.RemoteShopMenuDataSource
+import com.peto.ramap.data.datasource.menu.ShopMenuDataSource
 import com.peto.ramap.data.datasource.notice.OperatingNoticeDataSource
 import com.peto.ramap.data.datasource.notice.RemoteOperatingNoticeDataSource
 import com.peto.ramap.data.datasource.personalization.BookmarkShopDataSource
@@ -56,6 +58,7 @@ val dataSourceModule =
         single<RamenShopDataSource> {
             RemoteRamenShopDataSource(get<SupabaseClient>())
         }
+        single<ShopMenuDataSource> { RemoteShopMenuDataSource(get<SupabaseClient>()) }
         single<OperatingNoticeDataSource> {
             RemoteOperatingNoticeDataSource(get<SupabaseClient>())
         }
