@@ -7,4 +7,5 @@ data class RamenShopOverviewActions(
     val headerActions: ShopOverviewHeaderActions,
     val externalLinkActions: ShopOverviewExternalLinkActions,
     val reviewActions: ShopOverviewReviewActions,
+    val onMenuRetry: () -> Unit = {},
 )

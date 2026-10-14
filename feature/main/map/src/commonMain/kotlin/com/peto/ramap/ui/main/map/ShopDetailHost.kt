@@ -21,6 +21,7 @@ import com.peto.ramap.platform.AppSettingsOpener
 import com.peto.ramap.platform.ExternalUriOpener
 import com.peto.ramap.platform.NotificationPermissionRequester
 import com.peto.ramap.ui.main.map.contract.MapIntent
+import com.peto.ramap.ui.main.map.contract.MapLoadKey
 import com.peto.ramap.ui.main.map.shop.ShopDetailContent
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
@@ -67,6 +68,10 @@ fun ShopDetailHost(
     ) { onShopNotificationToggled, onLoginGuideRequested ->
         BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
             ShopDetailContent(
+                menu = uiState.shopMenu,
+                isMenuLoading = uiState.loadState.isLoading(MapLoadKey.ShopMenu),
+                hasMenuLoadFailure = uiState.hasShopMenuLoadFailure,
+                onMenuRetry = { viewModel.dispatch(MapIntent.OnShopMenuRetry) },
                 state = uiState.shopDetailState,
                 isBackEnabled = true,
                 maxHeight = maxHeight,

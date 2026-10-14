@@ -9,7 +9,8 @@ import com.peto.ramap.network.execute.invokeRequest
 internal class DefaultShopMenuRepository(
     private val dataSource: ShopMenuDataSource,
 ) : ShopMenuRepository {
-    override suspend fun fetchShopMenu(shopId: String): RamapResult<ShopMenu> = invokeRequest {
-        dataSource.fetchShopMenu(shopId).toDomain()
-    }
+    override suspend fun fetchShopMenu(shopId: String): RamapResult<ShopMenu> =
+        invokeRequest {
+            dataSource.fetchShopMenu(shopId).toDomain()
+        }
 }

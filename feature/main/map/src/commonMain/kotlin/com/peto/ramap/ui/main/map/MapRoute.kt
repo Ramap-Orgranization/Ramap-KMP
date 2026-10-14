@@ -138,6 +138,7 @@ fun MapRoute(
                 viewModel.dispatch(OnShopDetailDismissed)
                 onDetailDismissed()
             },
+            onShopMenuRetry = { viewModel.dispatch(MapIntent.OnShopMenuRetry) },
             onShopDetailRetry = {
                 if (uiState.selectedShop != null) {
                     viewModel.dispatch(OnShopDetailRetry)

@@ -21,6 +21,7 @@ import com.peto.ramap.designsystem.indicator.RamenLoadingIndicator
 import com.peto.ramap.designsystem.resource.wating.WaitingSystemUiModel
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.domain.model.event.ShopEvent
+import com.peto.ramap.domain.model.menu.ShopMenu
 import com.peto.ramap.domain.model.notice.OperatingNotice
 import com.peto.ramap.domain.model.report.ShopInformationField
 import com.peto.ramap.domain.model.review.Review
@@ -57,6 +58,10 @@ import ramap.shared.generated.resources.shop_review_cancel
 @Composable
 fun ShopDetailContent(
     state: ShopDetailSheetUiState,
+    menu: ShopMenu? = null,
+    isMenuLoading: Boolean = false,
+    hasMenuLoadFailure: Boolean = false,
+    onMenuRetry: () -> Unit = {},
     isBackEnabled: Boolean,
     maxHeight: Dp,
     isNavigationBarPadded: Boolean = false,
@@ -161,6 +166,9 @@ fun ShopDetailContent(
                     val overviewUiState =
                         RamenShopOverviewUiState(
                             detail = state.detail,
+                            menu = menu,
+                            isMenuLoading = isMenuLoading,
+                            hasMenuLoadFailure = hasMenuLoadFailure,
                             headerState =
                                 ShopOverviewHeaderUiState(
                                     waitingSystem = waitingSystem,
@@ -188,6 +196,7 @@ fun ShopDetailContent(
                         )
                     val overviewActions =
                         RamenShopOverviewActions(
+                            onMenuRetry = onMenuRetry,
                             headerActions =
                                 ShopOverviewHeaderActions(
                                     onDismissRequest = onDismissRequest,

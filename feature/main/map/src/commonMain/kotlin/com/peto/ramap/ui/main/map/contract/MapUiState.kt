@@ -1,5 +1,6 @@
 package com.peto.ramap.ui.main.map.contract
 
+import com.peto.ramap.domain.model.menu.ShopMenu
 import com.peto.ramap.domain.model.notice.OperatingNotice
 import com.peto.ramap.domain.model.review.Review
 import com.peto.ramap.domain.model.shop.Location
@@ -24,6 +25,9 @@ import kotlin.time.Clock
 data class MapUiState(
     val currentDateTime: LocalDateTime = Clock.System.now().toLocalDateTime(TimeZone.of("Asia/Seoul")),
     val shopDetailState: ShopDetailSheetUiState = ShopDetailSheetUiState.Closed,
+    val shopMenuShopId: String? = null,
+    val shopMenu: ShopMenu? = null,
+    val hasShopMenuLoadFailure: Boolean = false,
     /** 지도 화면의 작업별 로딩 카운트. */
     override val loadState: LoadState = LoadState(),
     /**
