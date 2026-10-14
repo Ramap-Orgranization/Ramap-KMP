@@ -66,3 +66,5 @@ include(":feature:hidden")
 include(":feature:notification")
 include(":feature:report")
 include(":feature:subscribed")
+
+include(":feature:shop:menu")

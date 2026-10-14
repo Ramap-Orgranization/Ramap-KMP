@@ -14,6 +14,7 @@
     <string name="map_search_result_closed_label">영업 종료</string>
     <string name="map_search_result_closed_format">영업 종료 · %1$s에 영업 시작</string>
     <string name="shop_menu_title">메뉴판</string>
+    <string name="shop_menu_load_failure_message">메뉴 정보를 불러오지 못했어요</string>
     <string name="shop_menu_updated_at">%1$s 업데이트</string>
     <string name="shop_menu_representative">대표</string>
     <string name="shop_menu_price">%1$s원</string>

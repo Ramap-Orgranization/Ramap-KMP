@@ -27,6 +27,7 @@ import com.peto.ramap.ui.review.my.di.reviewMyModule
 import com.peto.ramap.ui.review.other.di.reviewOtherModule
 import com.peto.ramap.ui.review.write.di.reviewWriteModule
 import com.peto.ramap.ui.settings.di.settingsModule
+import com.peto.ramap.ui.shop.menu.di.shopMenuModule
 import com.peto.ramap.ui.subscribed.di.subscribedModule
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -57,6 +58,7 @@ internal val appModule =
             reviewOtherModule,
             settingsModule,
             subscribedModule,
+            shopMenuModule,
             analyticsModule,
         )
         single<CoroutineScope> {
