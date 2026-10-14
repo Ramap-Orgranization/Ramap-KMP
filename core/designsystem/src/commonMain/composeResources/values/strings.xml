@@ -47,6 +47,7 @@
     <string name="shop_detail_link_apple_maps">애플 지도</string>
     <string name="shop_detail_link_report">제보하기</string>
     <string name="shop_review_title">리뷰</string>
+    <string name="shop_review_load_failure_message">리뷰를 불러오지 못했어요</string>
     <string name="shop_review_empty">아직 작성한 리뷰가 없어요</string>
     <string name="shop_review_empty_title">아직 등록된 리뷰가 없어요</string>
     <string name="shop_review_empty_description">%1$s의 첫 번째 방문 후기를 남겨주세요!</string>
