@@ -3,16 +3,16 @@ package com.peto.ramap.data.repository
 import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.data.datasource.shop.RamenShopDataSource
 import com.peto.ramap.data.extension.toLocalDate
-import com.peto.ramap.data.model.ShopDetailResponse
 import com.peto.ramap.data.model.ShopEventParticipantResponse
 import com.peto.ramap.data.model.ShopEventResponse
+import com.peto.ramap.data.model.ShopOverviewResponse
 import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.model.event.ShopEventType
 import com.peto.ramap.domain.model.shop.MapBounds
 import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.domain.model.shop.SearchQuery
+import com.peto.ramap.domain.model.shop.ShopOverView
 import com.peto.ramap.domain.repository.RamenShopRepository
-import com.peto.ramap.domain.usecase.ShopDetail
 import com.peto.ramap.network.execute.invokeRequest
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
@@ -24,13 +24,13 @@ import kotlin.time.Clock
 internal class DefaultRamenShopRepository(
     private val dataSource: RamenShopDataSource,
 ) : RamenShopRepository {
-    override suspend fun fetchShopDetail(shopId: String): RamapResult<ShopDetail> =
+    override suspend fun fetchShopOverview(shopId: String): RamapResult<ShopOverView> =
         invokeRequest {
-            val response = dataSource.fetchShopDetail(shopId)
-            shopDetail(response, shopId)
+            val response = dataSource.fetchShopOverview(shopId)
+            shopOverview(response, shopId)
         }
 
-    override suspend fun fetchShopLikeCount(shopId: String): RamapResult<Long> = invokeRequest { dataSource.fetchShopDetail(shopId).likeCount }
+    override suspend fun fetchShopLikeCount(shopId: String): RamapResult<Long> = invokeRequest { dataSource.fetchShopOverview(shopId).likeCount }
 
     override suspend fun fetchActiveEvent(eventId: String): RamapResult<ShopEvent?> =
         invokeRequest {
@@ -67,13 +67,13 @@ internal class DefaultRamenShopRepository(
             activeShopEvent(events, participants, shopId)
         }
 
-    private fun shopDetail(
-        response: ShopDetailResponse,
+    private fun shopOverview(
+        response: ShopOverviewResponse,
         shopId: String,
-    ): ShopDetail {
+    ): ShopOverView {
         val domainShop = response.shop.toDomain()
         val activeEvents = activeShopEvents(response.events)
-        return ShopDetail(
+        return ShopOverView(
             shop = domainShop,
             likeCount = response.likeCount,
             waitingSystem = response.shop.toWaitingSystem(),

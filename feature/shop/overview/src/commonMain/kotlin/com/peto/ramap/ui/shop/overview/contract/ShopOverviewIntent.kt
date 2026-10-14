@@ -28,9 +28,9 @@ sealed interface ShopOverviewIntent : Intent {
 
     data object OnRequestedShopDismissed : ShopOverviewIntent
 
-    data object OnShopDetailDismissed : ShopOverviewIntent
+    data object OnDismissed : ShopOverviewIntent
 
-    data object OnShopDetailRetry : ShopOverviewIntent
+    data object OnOverviewRetry : ShopOverviewIntent
 
     data class OnBookmarkToggled(
         val shop: RamenShop,

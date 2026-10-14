@@ -27,6 +27,7 @@ import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.domain.model.shop.RamenShopFilter
 import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.domain.model.shop.SearchQuery
+import com.peto.ramap.domain.model.shop.ShopOverView
 import com.peto.ramap.domain.repository.RamenShopRepository
 import com.peto.ramap.domain.repository.ReviewRepository
 import com.peto.ramap.domain.repository.ShopMenuRepository
@@ -34,9 +35,8 @@ import com.peto.ramap.domain.repository.ShopReportRepository
 import com.peto.ramap.domain.repository.ShopWaitingSystemRepository
 import com.peto.ramap.domain.store.PersonalizationBootstrapState
 import com.peto.ramap.domain.store.PersonalizationStore
-import com.peto.ramap.domain.usecase.FetchShopDetailUseCase
-import com.peto.ramap.domain.usecase.ShopDetail
-import com.peto.ramap.domain.usecase.ShopDetailCacheLookup
+import com.peto.ramap.domain.usecase.FetchShopOverviewUseCase
+import com.peto.ramap.domain.usecase.ShopOverviewCacheLookup
 import com.peto.ramap.domain.usecase.SignInUseCase
 import com.peto.ramap.fake.FakeAnalyticsTracker
 import com.peto.ramap.fake.FakeCommunityRepository
@@ -84,10 +84,10 @@ import com.peto.ramap.ui.shop.contract.ShopInteractionEffect.ShowLoginGuide
 import com.peto.ramap.ui.shop.contract.ShopInteractionEffect.ShowToast
 import com.peto.ramap.ui.shop.menu.contract.ShopMenuIntent
 import com.peto.ramap.ui.shop.menu.contract.ShopMenuLoadKey
-import com.peto.ramap.ui.shop.model.ShopDetailSheetUiState
+import com.peto.ramap.ui.shop.model.ShopOverviewUiState
 import com.peto.ramap.ui.shop.overview.contract.ShopOverviewIntent.OnBookmarkToggled
 import com.peto.ramap.ui.shop.overview.contract.ShopOverviewIntent.OnHiddenToggled
-import com.peto.ramap.ui.shop.overview.contract.ShopOverviewIntent.OnShopDetailRetry
+import com.peto.ramap.ui.shop.overview.contract.ShopOverviewIntent.OnOverviewRetry
 import com.peto.ramap.ui.shop.overview.contract.ShopOverviewIntent.OnShopNotificationToggled
 import com.peto.ramap.ui.shop.overview.contract.ShopOverviewIntent.OnShopReportSubmitted
 import com.peto.ramap.ui.shop.overview.contract.ShopOverviewIntent.OnShopShareClicked
@@ -125,11 +125,11 @@ class MapShopSectionsRegressionTest {
         coroutinesTest {
             val shop = ramenShopFixture()
             val source = FakeRamenShopRepository(fetchByIdsResult = RamenShops(listOf(shop)))
-            val delegate = FakeFetchShopDetailUseCase(source, FakeShopWaitingSystemRepository(), FakeOperatingNoticeRepository())
+            val delegate = FakeFetchShopOverviewUseCase(source, FakeShopWaitingSystemRepository(), FakeOperatingNoticeRepository())
             var detailCalls = 0
             val detailUseCase =
-                object : FetchShopDetailUseCase by delegate {
-                    override suspend fun invoke(shopId: String): RamapResult<ShopDetail> {
+                object : FetchShopOverviewUseCase by delegate {
+                    override suspend fun invoke(shopId: String): RamapResult<ShopOverView> {
                         detailCalls++
                         return delegate(shopId)
                     }
@@ -147,7 +147,7 @@ class MapShopSectionsRegressionTest {
             viewModel.dispatch(OnShopSelected(shop))
             runCurrent()
 
-            val detail = requireNotNull(viewModel.uiState.value.shopDetail)
+            val overview = requireNotNull(viewModel.uiState.value.shopOverview)
             assertEquals(
                 true,
                 viewModel.uiState.value.menuState.loadState
@@ -155,7 +155,7 @@ class MapShopSectionsRegressionTest {
             )
             response.complete(RamapResult.Error(RamapError.Unknown(IllegalStateException("메뉴 조회 실패"))))
             runCurrent()
-            assertEquals(detail, viewModel.uiState.value.shopDetail)
+            assertEquals(overview, viewModel.uiState.value.shopOverview)
             assertEquals(true, viewModel.uiState.value.hasShopMenuLoadFailure)
 
             viewModel.dispatch(ShopMenuIntent.OnRetry)
@@ -195,7 +195,7 @@ class MapShopSectionsRegressionTest {
             assertEquals(listOf(shop.id, shop.id), menus.requestedShopIds)
             assertEquals(
                 shop.id,
-                viewModel.uiState.value.shopDetail
+                viewModel.uiState.value.shopOverview
                     ?.shop
                     ?.id,
             )
@@ -233,7 +233,7 @@ class MapShopSectionsRegressionTest {
             assertEquals(currentMenu, viewModel.uiState.value.shopMenu)
             assertEquals(
                 second.id,
-                viewModel.uiState.value.shopDetail
+                viewModel.uiState.value.shopOverview
                     ?.shop
                     ?.id,
             )
@@ -273,7 +273,7 @@ class MapShopSectionsRegressionTest {
                 viewModel.uiState.value.menuState.loadState
                     .isLoading(ShopMenuLoadKey.Menu),
             )
-            assertEquals(ShopDetailSheetUiState.Closed, viewModel.uiState.value.shopDetailState)
+            assertEquals(ShopOverviewUiState.Closed, viewModel.uiState.value.overviewState)
         }
 
     @Test
@@ -298,7 +298,7 @@ class MapShopSectionsRegressionTest {
             assertEquals(
                 40,
                 viewModel.uiState.value.reviewState.reviews
-                    ?.size,
+                    .size,
             )
             repeat(130) {
                 changes.publish(
@@ -314,7 +314,7 @@ class MapShopSectionsRegressionTest {
             assertEquals(
                 40,
                 viewModel.uiState.value.reviewState.reviews
-                    ?.size,
+                    .size,
             )
             assertEquals(listOf(0L, 20L, 0L, 20L), repository.pageOffsets)
             val deleted = rows.first()
@@ -335,7 +335,7 @@ class MapShopSectionsRegressionTest {
             assertEquals(
                 39,
                 viewModel.uiState.value.reviewState.reviews
-                    ?.size,
+                    .size,
             )
             assertEquals(
                 39,
@@ -506,7 +506,7 @@ class MapShopSectionsRegressionTest {
             viewModel.dispatch(ShopReviewIntent.OnBlockedReviewUnblockConfirmed)
             runCurrent()
             assertTrue(viewModel.uiState.value.reviewState.isLoading)
-            assertTrue(viewModel.uiState.value.shopDetailState is ShopDetailSheetUiState.Content)
+            assertTrue(viewModel.uiState.value.overviewState is ShopOverviewUiState.Content)
             viewModel.dispatch(ShopReviewIntent.OnBlockedReviewViewRequested(blocked))
             runCurrent()
             assertTrue(fake.requestedBlockedReviews.isEmpty())
@@ -526,16 +526,16 @@ class MapShopSectionsRegressionTest {
             val shop = ramenShopFixture(id = "restored-shop")
             val repository = FakeRamenShopRepository(fetchByIdsResult = RamenShops(mapOf(shop.id to shop)))
             val fakeDetailUseCase =
-                FakeFetchShopDetailUseCase(
+                FakeFetchShopOverviewUseCase(
                     repository,
                     FakeShopWaitingSystemRepository(),
                     FakeOperatingNoticeRepository(),
                 )
             val detailUseCase =
-                object : FetchShopDetailUseCase by fakeDetailUseCase {
+                object : FetchShopOverviewUseCase by fakeDetailUseCase {
                     var requestCount = 0
 
-                    override suspend fun invoke(shopId: String): RamapResult<ShopDetail> {
+                    override suspend fun invoke(shopId: String): RamapResult<ShopOverView> {
                         requestCount++
                         return fakeDetailUseCase(shopId)
                     }
@@ -913,11 +913,11 @@ class MapShopSectionsRegressionTest {
             runCurrent()
 
             assertEquals(
-                ShopDetailSheetUiState.Error(shop.id, shop),
-                viewModel.uiState.value.shopDetailState,
+                ShopOverviewUiState.Error(shop.id, shop),
+                viewModel.uiState.value.overviewState,
             )
             assertEquals(shop, viewModel.uiState.value.selectedShop)
-            assertEquals(null, viewModel.uiState.value.shopDetail)
+            assertEquals(null, viewModel.uiState.value.shopOverview)
             assertEquals(true, viewModel.uiState.value.hasShopDetailLoadFailed)
             assertEquals(true, viewModel.uiState.value.showBottomSheet)
             assertEquals(false, viewModel.uiState.value.isShopDetailLoading)
@@ -925,7 +925,7 @@ class MapShopSectionsRegressionTest {
             viewModel.dispatch(OnShopDetailDismissed)
             runCurrent()
 
-            assertEquals(ShopDetailSheetUiState.Closed, viewModel.uiState.value.shopDetailState)
+            assertEquals(ShopOverviewUiState.Closed, viewModel.uiState.value.overviewState)
             assertEquals(null, viewModel.uiState.value.selectedShop)
             assertEquals(false, viewModel.uiState.value.hasShopDetailLoadFailed)
             assertEquals(false, viewModel.uiState.value.showBottomSheet)
@@ -945,13 +945,13 @@ class MapShopSectionsRegressionTest {
             viewModel.dispatch(OnShopSelected(shop))
             runCurrent()
             repository.error = null
-            viewModel.dispatch(OnShopDetailRetry)
+            viewModel.dispatch(OnOverviewRetry)
             runCurrent()
 
             assertEquals(
                 shop.id,
                 viewModel.uiState.value
-                    .shopDetail
+                    .shopOverview
                     ?.shop
                     ?.id,
             )
@@ -982,12 +982,12 @@ class MapShopSectionsRegressionTest {
                 )
             viewModel.dispatch(OnShopSelected(shop))
             runCurrent()
-            val overview = viewModel.uiState.value.shopDetail
+            val overview = viewModel.uiState.value.shopOverview
             assertTrue(viewModel.uiState.value.reviewState.hasReviewLoadFailure)
             viewModel.dispatch(ShopReviewIntent.OnRetry)
             runCurrent()
             assertEquals(2, requests)
-            assertEquals(overview, viewModel.uiState.value.shopDetail)
+            assertEquals(overview, viewModel.uiState.value.shopOverview)
             assertFalse(viewModel.uiState.value.reviewState.hasReviewLoadFailure)
         }
 
@@ -1038,7 +1038,7 @@ class MapShopSectionsRegressionTest {
             runCurrent()
 
             assertEquals(null, viewModel.uiState.value.selectedShop)
-            assertEquals(null, viewModel.uiState.value.shopDetail)
+            assertEquals(null, viewModel.uiState.value.shopOverview)
             assertEquals(false, viewModel.uiState.value.isShopDetailLoading)
             assertEquals(false, didCompleteWaitingSystemLoad)
         }
@@ -1079,7 +1079,7 @@ class MapShopSectionsRegressionTest {
             assertEquals(
                 firstShop,
                 viewModel.uiState.value
-                    .shopDetail
+                    .shopOverview
                     ?.shop,
             )
         }
@@ -1100,7 +1100,7 @@ class MapShopSectionsRegressionTest {
             runCurrent()
 
             assertEquals(4, ramenShopRepository.requestedShopIdsHistory.size)
-            assertEquals(null, viewModel.uiState.value.shopDetail)
+            assertEquals(null, viewModel.uiState.value.shopOverview)
         }
 
     @Test
@@ -1125,7 +1125,7 @@ class MapShopSectionsRegressionTest {
             assertEquals(
                 null,
                 viewModel.uiState.value
-                    .shopDetail
+                    .shopOverview
                     ?.event,
             )
         }
@@ -1151,7 +1151,7 @@ class MapShopSectionsRegressionTest {
             assertEquals(
                 shop,
                 viewModel.uiState.value
-                    .shopDetail
+                    .shopOverview
                     ?.shop,
             )
         }
@@ -1163,15 +1163,15 @@ class MapShopSectionsRegressionTest {
             val repository =
                 FakeRamenShopRepository(fetchByIdsResult = RamenShops(mapOf(shop.id to shop)))
             val delegate =
-                FakeFetchShopDetailUseCase(
+                FakeFetchShopOverviewUseCase(
                     repository,
                     FakeShopWaitingSystemRepository(),
                     FakeOperatingNoticeRepository(),
                 )
             var requestCount = 0
             val useCase =
-                object : FetchShopDetailUseCase by delegate {
-                    override suspend fun invoke(shopId: String): RamapResult<ShopDetail> {
+                object : FetchShopOverviewUseCase by delegate {
+                    override suspend fun invoke(shopId: String): RamapResult<ShopOverView> {
                         requestCount++
                         delay(1_000)
                         return delegate(shopId)
@@ -1194,7 +1194,7 @@ class MapShopSectionsRegressionTest {
             assertEquals(1, requestCount)
             assertEquals(
                 shop,
-                viewModel.uiState.value.shopDetail
+                viewModel.uiState.value.shopOverview
                     ?.shop,
             )
             assertEquals(listOf(setOf(shop.id)), repository.requestedShopIdsHistory)
@@ -1225,8 +1225,8 @@ class MapShopSectionsRegressionTest {
             runCurrent()
 
             assertEquals(
-                ShopDetailSheetUiState.Loading(shop.id, shop = null),
-                viewModel.uiState.value.shopDetailState,
+                ShopOverviewUiState.Loading(shop.id, shop = null),
+                viewModel.uiState.value.overviewState,
             )
             assertEquals(true, viewModel.uiState.value.isShopDetailLoading)
             assertEquals(null, viewModel.uiState.value.selectedShop)
@@ -1241,7 +1241,7 @@ class MapShopSectionsRegressionTest {
             assertEquals(
                 shop,
                 viewModel.uiState.value
-                    .shopDetail
+                    .shopOverview
                     ?.shop,
             )
             assertEquals(waitingSystem, viewModel.uiState.value.shopWaiting[shop.id])
@@ -1308,7 +1308,7 @@ class MapShopSectionsRegressionTest {
             assertEquals(true, viewModel.uiState.value.hasShopDetailLoadFailed)
 
             repository.error = null
-            viewModel.dispatch(OnShopDetailRetry)
+            viewModel.dispatch(OnOverviewRetry)
             runCurrent()
 
             assertEquals(
@@ -1388,7 +1388,7 @@ class MapShopSectionsRegressionTest {
             assertEquals(
                 selectedShop,
                 viewModel.uiState.value
-                    .shopDetail
+                    .shopOverview
                     ?.shop,
             )
 
@@ -1399,7 +1399,7 @@ class MapShopSectionsRegressionTest {
             assertEquals(
                 selectedShop,
                 viewModel.uiState.value
-                    .shopDetail
+                    .shopOverview
                     ?.shop,
             )
             assertEquals(false, viewModel.uiState.value.hasShopDetailLoadFailed)
@@ -1432,7 +1432,7 @@ class MapShopSectionsRegressionTest {
 
             assertEquals(false, viewModel.uiState.value.isShopDetailLoading)
             assertEquals(null, viewModel.uiState.value.selectedShop)
-            assertEquals(null, viewModel.uiState.value.shopDetail)
+            assertEquals(null, viewModel.uiState.value.shopOverview)
             assertEquals(false, viewModel.uiState.value.hasShopDetailLoadFailed)
         }
 
@@ -2867,7 +2867,7 @@ class MapShopSectionsRegressionTest {
             assertEquals(
                 3L,
                 viewModel.uiState.value
-                    .shopDetail
+                    .shopOverview
                     ?.likeCount,
             )
 
@@ -2876,7 +2876,7 @@ class MapShopSectionsRegressionTest {
             assertEquals(
                 4L,
                 viewModel.uiState.value
-                    .shopDetail
+                    .shopOverview
                     ?.likeCount,
             )
 
@@ -2885,7 +2885,7 @@ class MapShopSectionsRegressionTest {
             assertEquals(
                 3L,
                 viewModel.uiState.value
-                    .shopDetail
+                    .shopOverview
                     ?.likeCount,
             )
         }
@@ -2917,7 +2917,7 @@ class MapShopSectionsRegressionTest {
 
             assertEquals(
                 2L,
-                viewModel.uiState.value.shopDetail
+                viewModel.uiState.value.shopOverview
                     ?.likeCount,
             )
 
@@ -2927,7 +2927,7 @@ class MapShopSectionsRegressionTest {
 
             assertEquals(
                 2L,
-                viewModel.uiState.value.shopDetail
+                viewModel.uiState.value.shopOverview
                     ?.likeCount,
             )
         }
@@ -2956,7 +2956,7 @@ class MapShopSectionsRegressionTest {
 
             assertEquals(
                 4L,
-                viewModel.uiState.value.shopDetail
+                viewModel.uiState.value.shopOverview
                     ?.likeCount,
             )
 
@@ -2966,7 +2966,7 @@ class MapShopSectionsRegressionTest {
 
             assertEquals(
                 4L,
-                viewModel.uiState.value.shopDetail
+                viewModel.uiState.value.shopOverview
                     ?.likeCount,
             )
         }
@@ -3002,7 +3002,7 @@ class MapShopSectionsRegressionTest {
 
             assertEquals(
                 2L,
-                viewModel.uiState.value.shopDetail
+                viewModel.uiState.value.shopOverview
                     ?.likeCount,
             )
         }
@@ -3031,7 +3031,7 @@ class MapShopSectionsRegressionTest {
             assertEquals(
                 1L,
                 viewModel.uiState.value
-                    .shopDetail
+                    .shopOverview
                     ?.likeCount,
             )
 
@@ -3058,7 +3058,7 @@ class MapShopSectionsRegressionTest {
             assertEquals(
                 1L,
                 viewModel.uiState.value
-                    .shopDetail
+                    .shopOverview
                     ?.likeCount,
             )
         }
@@ -3208,16 +3208,16 @@ private fun verifyCachedShopDetailRefresh(
 ) = coroutinesTest {
     val shop = ramenShopFixture()
     val delegate =
-        FakeFetchShopDetailUseCase(
+        FakeFetchShopOverviewUseCase(
             FakeRamenShopRepository(fetchByIdsResult = RamenShops(mapOf(shop.id to shop))),
             FakeShopWaitingSystemRepository(),
             FakeOperatingNoticeRepository(),
         )
-    val refreshResult = CompletableDeferred<RamapResult<ShopDetail>>()
+    val refreshResult = CompletableDeferred<RamapResult<ShopOverView>>()
     var requests = 0
     val useCase =
-        object : FetchShopDetailUseCase by delegate {
-            override suspend fun invoke(shopId: String): RamapResult<ShopDetail> {
+        object : FetchShopOverviewUseCase by delegate {
+            override suspend fun invoke(shopId: String): RamapResult<ShopOverView> {
                 requests++
                 return if (requests == 1) delegate(shopId) else refreshResult.await()
             }
@@ -3225,13 +3225,13 @@ private fun verifyCachedShopDetailRefresh(
     val viewModel = mapViewModel(detailUseCase = useCase)
     viewModel.dispatch(selectShop(shop))
     runCurrent()
-    val cached = requireNotNull(viewModel.uiState.value.shopDetail)
+    val cached = requireNotNull(viewModel.uiState.value.shopOverview)
     val refreshed = cached.copy(shop = cached.shop.copy(name = "갱신된 매장"))
 
-    viewModel.dispatch(OnShopDetailRetry)
+    viewModel.dispatch(OnOverviewRetry)
     runCurrent()
 
-    assertEquals(cached, viewModel.uiState.value.shopDetail)
+    assertEquals(cached, viewModel.uiState.value.shopOverview)
     assertEquals(2, requests)
     viewModel.dispatch(selectShop(shop))
     viewModel.uiState.value.selectedShopFocusRequest
@@ -3248,7 +3248,7 @@ private fun verifyCachedShopDetailRefresh(
     )
     runCurrent()
 
-    assertEquals(if (refreshFails) cached else refreshed, viewModel.uiState.value.shopDetail)
+    assertEquals(if (refreshFails) cached else refreshed, viewModel.uiState.value.shopOverview)
     assertEquals(false, viewModel.uiState.value.shouldFocusSelectedShop)
 }
 
@@ -3278,7 +3278,7 @@ private fun TestScope.mapViewModel(
     loginRepository: FakeLoginRepository = FakeLoginRepository(),
     shopReportRepository: ShopReportRepository = FakeShopReportRepository(),
     notificationSettingsRepository: FakeNotificationSettingsRepository = FakeNotificationSettingsRepository(),
-    detailUseCase: FetchShopDetailUseCase? = null,
+    detailUseCase: FetchShopOverviewUseCase? = null,
     reviewRepository: ReviewRepository? = null,
     communityRepository: FakeCommunityRepository = FakeCommunityRepository(),
     profileRepository: FakeProfileRepository = FakeProfileRepository(null),
@@ -3301,8 +3301,8 @@ private fun TestScope.mapViewModel(
                 return if (result is RamapResult.Success) RamapResult.Success(result.data + delta) else result
             }
         }
-    val detail = detailUseCase ?: FakeFetchShopDetailUseCase(remote, shopWaitingSystemRepository, FakeOperatingNoticeRepository())
-    val seeded = seededReviewPages[detail]
+    val overview = detailUseCase ?: FakeFetchShopOverviewUseCase(remote, shopWaitingSystemRepository, FakeOperatingNoticeRepository())
+    val seeded = seededReviewPages[overview]
     if (reviewRepository is FakeMapReviewRepository && reviewRepository.reviews.isEmpty() && seeded != null) reviewRepository.reviews = seeded.reviews
     val reviews =
         reviewRepository ?: object : ReviewRepository by FakeMapReviewRepository() {
@@ -3330,7 +3330,7 @@ private fun TestScope.mapViewModel(
         login = loginRepository,
         reports = shopReportRepository,
         personalization = personalizationRepository,
-        overviewQuery = detail,
+        overviewQuery = overview,
         profile = profileRepository,
         reviews = reviews,
         community = communityRepository,
@@ -3339,18 +3339,18 @@ private fun TestScope.mapViewModel(
     )
 }
 
-private val seededReviewPages = mutableMapOf<FetchShopDetailUseCase, ShopReviewsPage>()
+private val seededReviewPages = mutableMapOf<FetchShopOverviewUseCase, ShopReviewsPage>()
 
 private fun blockedReviewDetailUseCase(
     shop: RamenShop,
     review: Review,
     reviews: List<Review> = listOf(review),
     reviewCount: Int = reviews.size,
-): FetchShopDetailUseCase =
-    object : FetchShopDetailUseCase {
-        override suspend fun invoke(shopId: String): RamapResult<ShopDetail> =
+): FetchShopOverviewUseCase =
+    object : FetchShopOverviewUseCase {
+        override suspend fun invoke(shopId: String): RamapResult<ShopOverView> =
             RamapResult.Success(
-                ShopDetail(
+                ShopOverView(
                     shop = shop,
                     likeCount = 0L,
                     waitingSystem = null,
@@ -3359,7 +3359,7 @@ private fun blockedReviewDetailUseCase(
                 ),
             )
 
-        override fun findCached(shopId: String): ShopDetailCacheLookup = ShopDetailCacheLookup.Miss
+        override fun findCached(shopId: String): ShopOverviewCacheLookup = ShopOverviewCacheLookup.Miss
 
         override fun clearCache() = Unit
 

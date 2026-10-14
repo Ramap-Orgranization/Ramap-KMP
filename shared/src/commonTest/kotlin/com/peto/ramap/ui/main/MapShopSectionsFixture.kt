@@ -11,7 +11,7 @@ import com.peto.ramap.domain.repository.ShopMenuRepository
 import com.peto.ramap.domain.repository.ShopReportRepository
 import com.peto.ramap.domain.store.PersonalizationStore
 import com.peto.ramap.domain.store.ReviewChangeStore
-import com.peto.ramap.domain.usecase.FetchShopDetailUseCase
+import com.peto.ramap.domain.usecase.FetchShopOverviewUseCase
 import com.peto.ramap.domain.usecase.LoadShopReviewsUseCase
 import com.peto.ramap.domain.usecase.SignInUseCase
 import com.peto.ramap.fake.FakeAnalyticsTracker
@@ -47,7 +47,7 @@ class MapShopSectionsFixture(
     private val login: LoginRepository,
     private val reports: ShopReportRepository,
     private val personalization: PersonalizationStore,
-    private val overviewQuery: FetchShopDetailUseCase,
+    private val overviewQuery: FetchShopOverviewUseCase,
     private val profile: ProfileRepository,
     private val reviews: ReviewRepository,
     private val community: CommunityRepository,
@@ -94,7 +94,7 @@ class MapShopSectionsFixture(
                 scope.launch {
                     combine(overviewVm.uiState, menuVm.uiState, reviewVm.uiState) { a, b, c -> Triple(a, b, c) }.collect { (a, b, c) ->
                         uiState.value = uiState.value.copy(overview = a, menuState = b, reviewState = c)
-                        if (shopId != null && a.hasLoadFailure && a.shopDetail == null) map.dispatch(MapIntent.OnShopLoadFailed(shopId))
+                        if (shopId != null && a.hasLoadFailure && a.shopOverview == null) map.dispatch(MapIntent.OnShopLoadFailed(shopId))
                     }
                 },
                 scope.launch {

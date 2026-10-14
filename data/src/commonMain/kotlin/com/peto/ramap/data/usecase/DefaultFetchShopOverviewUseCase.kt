@@ -2,26 +2,26 @@ package com.peto.ramap.data.usecase
 
 import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.domain.model.notice.OperatingNotice
+import com.peto.ramap.domain.model.shop.ShopOverView
 import com.peto.ramap.domain.repository.OperatingNoticeRepository
 import com.peto.ramap.domain.repository.RamenShopRepository
-import com.peto.ramap.domain.usecase.FetchShopDetailUseCase
-import com.peto.ramap.domain.usecase.ShopDetail
-import com.peto.ramap.domain.usecase.ShopDetailCacheLookup
+import com.peto.ramap.domain.usecase.FetchShopOverviewUseCase
+import com.peto.ramap.domain.usecase.ShopOverviewCacheLookup
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import kotlin.time.Clock
 
-internal class DefaultFetchShopDetailUseCase(
+internal class DefaultFetchShopOverviewUseCase(
     private val ramenShopRepository: RamenShopRepository,
     private val operatingNoticeRepository: OperatingNoticeRepository,
-) : FetchShopDetailUseCase {
-    private val cache = mutableMapOf<String, ShopDetail>()
+) : FetchShopOverviewUseCase {
+    private val cache = mutableMapOf<String, ShopOverView>()
     private var generation = 0L
 
-    override suspend fun invoke(shopId: String): RamapResult<ShopDetail> {
+    override suspend fun invoke(shopId: String): RamapResult<ShopOverView> {
         val requestedGeneration = generation
         val cached = cache[shopId]
-        val result = ramenShopRepository.fetchShopDetail(shopId)
+        val result = ramenShopRepository.fetchShopOverview(shopId)
         if (result !is RamapResult.Success) return cached?.let { RamapResult.Success(it) } ?: result
         val notices = operatingNoticeRepository.fetchActiveShopOperatingNotices(shopId)
         val fetched =
@@ -44,7 +44,7 @@ internal class DefaultFetchShopDetailUseCase(
         return RamapResult.Success(updated)
     }
 
-    override fun findCached(shopId: String): ShopDetailCacheLookup = cache[shopId]?.let(ShopDetailCacheLookup::Hit) ?: ShopDetailCacheLookup.Miss
+    override fun findCached(shopId: String): ShopOverviewCacheLookup = cache[shopId]?.let(ShopOverviewCacheLookup::Hit) ?: ShopOverviewCacheLookup.Miss
 
     override fun clearCache() {
         generation++

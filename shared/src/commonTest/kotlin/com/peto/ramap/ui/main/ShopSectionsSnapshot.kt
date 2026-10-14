@@ -50,7 +50,7 @@ data class ShopSectionsSnapshot(
     val shopWaiting get() = overview.shopWaiting
     val currentUserId get() = reviewState.currentUserId
     val currentProfileIsPublic get() = reviewState.currentProfileIsPublic
-    val shopDetailState get() = overview.shopDetailState
+    val overviewState get() = overview.overviewState
     val actingReviewId get() = reviewState.actingReviewId
     val revealedBlockedReviews get() = reviewState.revealedBlockedReviews
     val revealingBlockedReviewId get() = reviewState.revealingBlockedReviewId
@@ -61,7 +61,7 @@ data class ShopSectionsSnapshot(
     val isUnblockingReview get() = reviewState.isUnblockingReview
     val isLoadingMoreShopReviews get() = reviewState.isLoadingMoreReviews
     val isRetryingShopReviews get() = reviewState.isLoading
-    val shopDetail get() = overview.shopDetail
+    val shopOverview get() = overview.shopOverview
     val isShopDetailLoading get() = overview.isLoading
     val hasShopDetailLoadFailed get() = overview.hasLoadFailure
     val shopMenu get() = menuState.menu

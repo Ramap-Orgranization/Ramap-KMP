@@ -74,7 +74,7 @@ class ShopReadDataSourceTest {
                     install(Postgrest)
                 }
             try {
-                val detail = RemoteRamenShopDataSource(client).fetchShopDetail("shop")
+                val detail = RemoteRamenShopDataSource(client).fetchShopOverview("shop")
 
                 assertEquals(listOf("/rest/v1/rpc/fetch_shop_detail_v3"), paths)
                 assertEquals(7L, detail.likeCount)
