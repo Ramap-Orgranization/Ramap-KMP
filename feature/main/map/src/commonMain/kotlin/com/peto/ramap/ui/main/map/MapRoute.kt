@@ -50,6 +50,7 @@ import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopSelected
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopShareClicked
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnStatusTimeRefreshed
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnViewportLoadRetry
+import com.peto.ramap.ui.refresh.BusinessHoursStatusRefreshEffect
 import com.peto.ramap.ui.refresh.PeriodicRefreshEffect
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
@@ -83,8 +84,10 @@ fun MapRoute(
     var shouldShowReviews by remember(requestedShopId, showReviewsOnOpen) { mutableStateOf(showReviewsOnOpen) }
     var detailSource by remember(requestedShopId, originSource) { mutableStateOf(originSource) }
 
-    PeriodicRefreshEffect(intervalMillis = OPERATING_NOTICE_REFRESH_MILLIS) {
+    BusinessHoursStatusRefreshEffect(currentDateTime = uiState.currentDateTime, notices = uiState.operatingNotices) {
         viewModel.dispatch(OnStatusTimeRefreshed)
+    }
+    PeriodicRefreshEffect(intervalMillis = OPERATING_NOTICE_REFRESH_MILLIS) {
         viewModel.dispatch(OnOperatingNoticesRefreshRequested)
     }
 

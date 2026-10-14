@@ -30,7 +30,6 @@ import com.peto.ramap.debug.admin.data.model.AdminDraft
 import com.peto.ramap.debug.admin.data.model.AdminEvidence
 import com.peto.ramap.debug.admin.ui.registration.component.AdminBottomNavigation
 import com.peto.ramap.debug.admin.ui.registration.component.AdminCorrectionManager
-import com.peto.ramap.debug.admin.ui.registration.component.AdminDelayedOpeningManager
 import com.peto.ramap.debug.admin.ui.registration.component.AdminDraftPreview
 import com.peto.ramap.debug.admin.ui.registration.component.AdminEventEditManager
 import com.peto.ramap.debug.admin.ui.registration.component.AdminEventStatusManager
@@ -77,17 +76,12 @@ internal fun AdminRegistrationScreen(
     onDraftDescriptionChanged: (String) -> Unit,
     onDraftVenueChanged: (String, String, String, String, String, String) -> Unit,
     onDraftNoticeTimesChanged: (String?, String?) -> Unit,
-    onDraftScheduleOverrideChanged: (String?, String?) -> Unit,
     onRegularSegmentSelected: (String, String) -> Unit,
-    onDraftBreakTimeChanged: (Int, String, String) -> Unit,
-    onDraftBreakTimesCleared: () -> Unit,
     onEvidenceSelected: (AdminEvidence?) -> Unit,
     onDateRangeSelected: (String, String) -> Unit,
     onTodaySelected: () -> Unit,
     onPreviewOrRegisterClick: () -> Unit,
     onManagedEventsRefresh: () -> Unit,
-    onDelayedOpeningsRefresh: () -> Unit,
-    onDelayedOpeningReleased: (String) -> Unit,
     onManagedEventSelected: (String) -> Unit,
     onEventStatusSelected: (AdminEventStatus) -> Unit,
     onEventStatusScopeSelected: (AdminEventStatusScope) -> Unit,
@@ -160,7 +154,7 @@ internal fun AdminRegistrationScreen(
                                     },
                                 ),
                             onClick = onPreviewOrRegisterClick,
-                            enabled = !uiState.isSubmitting,
+                            enabled = !uiState.isSubmitting && (!uiState.isOperatingNotice || uiState.draft?.canRegisterOperatingNotice() != false),
                             isLoading = uiState.isSubmitting,
                             modifier = Modifier.fillMaxWidth(),
                             backgroundColor = CommonColor.Black,
@@ -264,19 +258,6 @@ internal fun AdminRegistrationScreen(
                         )
                     } else {
                         if (uiState.isOperatingNotice) {
-                            AdminFieldSection(label = stringResource(R.string.admin_delayed_opening_title)) {
-                                AdminDelayedOpeningManager(
-                                    notices = uiState.delayedOpenings,
-                                    isLoading = uiState.isLoadingDelayedOpenings,
-                                    hasFailed = uiState.delayedOpeningsLoadFailed,
-                                    koreaToday = uiState.delayedOpeningKoreaToday,
-                                    releasingId = uiState.releasingDelayedOpeningId,
-                                    onRefresh = onDelayedOpeningsRefresh,
-                                    onRelease = onDelayedOpeningReleased,
-                                )
-                            }
-                        }
-                        if (uiState.isOperatingNotice) {
                             AdminFieldSection(label = stringResource(R.string.admin_registration_detailed_classification)) {
                                 AdminNoticeTypeSelector(
                                     selectedNoticeType =
@@ -372,7 +353,7 @@ internal fun AdminRegistrationScreen(
                             )
                         }
                         uiState.draft?.let { draft ->
-                            if (uiState.isOperatingNotice && draft.dailySchedules.isEmpty()) {
+                            if (uiState.isOperatingNotice && draft.noticeType == "early_close") {
                                 val dayKey =
                                     (uiState.selectedStartDate ?: draft.startDate)
                                         ?.let { java.time.LocalDate.parse(it) }
@@ -388,16 +369,10 @@ internal fun AdminRegistrationScreen(
                                 }
                                 AdminNoticeTimeFields(
                                     type = uiState.selectedNoticeType ?: draft.noticeType?.let(::toOperatingNoticeType),
-                                    startTime = draft.scheduleOverride?.open ?: draft.startTime,
-                                    endTime = draft.scheduleOverride?.close ?: draft.endTime,
+                                    endTime = draft.endTime,
+                                    isError = !draft.canRegisterOperatingNotice(),
                                     onTimesChanged = onDraftNoticeTimesChanged,
-                                    onScheduleChanged = onDraftScheduleOverrideChanged,
-                                    breakTimes = draft.scheduleOverride?.breakTimes.orEmpty(),
-                                    onBreakTimeChanged = onDraftBreakTimeChanged,
                                 )
-                                if (draft.scheduleOverride?.breakTimes?.isNotEmpty() == true) {
-                                    AppButton(stringResource(R.string.admin_notice_clear_break), onDraftBreakTimesCleared, modifier = Modifier.fillMaxWidth())
-                                }
                             }
                             AdminDraftPreview(
                                 draft = draft,
@@ -454,17 +429,12 @@ private fun AdminRegistrationScreenPreview() {
             onDraftDescriptionChanged = {},
             onDraftVenueChanged = { _, _, _, _, _, _ -> },
             onDraftNoticeTimesChanged = { _, _ -> },
-            onDraftScheduleOverrideChanged = { _, _ -> },
             onRegularSegmentSelected = { _, _ -> },
-            onDraftBreakTimeChanged = { _, _, _ -> },
-            onDraftBreakTimesCleared = {},
             onEvidenceSelected = {},
             onDateRangeSelected = { _, _ -> },
             onTodaySelected = {},
             onPreviewOrRegisterClick = {},
             onManagedEventsRefresh = {},
-            onDelayedOpeningsRefresh = {},
-            onDelayedOpeningReleased = {},
             onManagedEventSelected = {},
             onEventStatusSelected = {},
             onEventStatusScopeSelected = {},
@@ -519,17 +489,12 @@ private fun AdminRegistrationScreenWithDraftPreview() {
             onDraftDescriptionChanged = {},
             onDraftVenueChanged = { _, _, _, _, _, _ -> },
             onDraftNoticeTimesChanged = { _, _ -> },
-            onDraftScheduleOverrideChanged = { _, _ -> },
             onRegularSegmentSelected = { _, _ -> },
-            onDraftBreakTimeChanged = { _, _, _ -> },
-            onDraftBreakTimesCleared = {},
             onEvidenceSelected = {},
             onDateRangeSelected = { _, _ -> },
             onTodaySelected = {},
             onPreviewOrRegisterClick = {},
             onManagedEventsRefresh = {},
-            onDelayedOpeningsRefresh = {},
-            onDelayedOpeningReleased = {},
             onManagedEventSelected = {},
             onEventStatusSelected = {},
             onEventStatusScopeSelected = {},

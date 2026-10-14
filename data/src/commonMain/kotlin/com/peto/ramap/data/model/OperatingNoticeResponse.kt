@@ -38,11 +38,13 @@ internal data class OperatingNoticeResponse(
     @SerialName("daily_schedules")
     val dailySchedules: List<OperatingNoticeDayResponse> = emptyList(),
 ) {
-    fun toDomain(shop: RamenShop): OperatingNotice =
-        OperatingNotice(
+    fun toDomain(shop: RamenShop): OperatingNotice? {
+        val type = OperatingNoticeType.fromOrNull(noticeType) ?: return null
+        if (type == OperatingNoticeType.EARLY_CLOSING && endTime == null) return null
+        return OperatingNotice(
             id = id,
             shop = shop,
-            type = OperatingNoticeType.from(noticeType),
+            type = type,
             description = description,
             startDate = startDate.toLocalDate(),
             endDate = endDate?.toLocalDate(),
@@ -54,6 +56,7 @@ internal data class OperatingNoticeResponse(
             updatedAt = updatedAt,
             dailySchedules = dailySchedules.map { it.toDomain() }.sortedBy { it.date },
         )
+    }
 }
 
 @Serializable

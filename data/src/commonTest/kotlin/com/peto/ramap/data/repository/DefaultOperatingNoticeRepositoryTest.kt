@@ -29,6 +29,8 @@ class DefaultOperatingNoticeRepositoryTest {
                             override suspend fun fetchApprovedOperatingNotices(today: LocalDate) =
                                 listOf(
                                     response(id = "current", endDate = today.toString()),
+                                    response(id = "removed", endDate = today.toString()).copy(noticeType = "operating_notice"),
+                                    response(id = "missing-time", endDate = today.toString()).copy(noticeType = "early_close"),
                                     response(
                                         id = "expired",
                                         startDate = today.minus(2, DateTimeUnit.DAY).toString(),

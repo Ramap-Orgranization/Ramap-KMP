@@ -5,8 +5,6 @@ import com.peto.ramap.ui.loading.LoadKey
 internal enum class AdminRegistrationLoadKey : LoadKey {
     Submission,
     ManagedEvents,
-    DelayedOpenings,
     EventStatus,
     Correction,
-    Release,
 }

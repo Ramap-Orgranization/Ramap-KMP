@@ -45,11 +45,10 @@ import kotlin.time.Clock
 internal fun SearchResultList(
     shops: RamenShops,
     operatingNotices: List<OperatingNotice>,
+    currentDateTime: LocalDateTime,
     onShopClick: (RamenShop) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val currentDateTime = Clock.System.now().toLocalDateTime(TimeZone.of("Asia/Seoul"))
-
     Column(
         modifier =
             modifier
@@ -164,6 +163,7 @@ private fun SearchResultListPreview(
         SearchResultList(
             shops = shops,
             operatingNotices = emptyList(),
+            currentDateTime = Clock.System.now().toLocalDateTime(TimeZone.of("Asia/Seoul")),
             onShopClick = {},
         )
     }

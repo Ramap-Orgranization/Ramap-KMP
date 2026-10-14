@@ -15,6 +15,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -41,6 +42,7 @@ import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.RamapTheme
 import com.peto.ramap.theme.SystemColor
+import com.peto.ramap.ui.refresh.BusinessHoursStatusRefreshEffect
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
@@ -48,11 +50,8 @@ import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.ic_keyboard_arrow_down
-import ramap.shared.generated.resources.shop_detail_business_hours_break_removed
 import ramap.shared.generated.resources.shop_detail_business_hours_collapse
 import ramap.shared.generated.resources.shop_detail_business_hours_expand
-import ramap.shared.generated.resources.shop_detail_business_hours_override
-import ramap.shared.generated.resources.shop_detail_business_hours_override_reason
 import ramap.shared.generated.resources.shop_detail_operating_notice_action_suffix
 import kotlin.time.Clock
 
@@ -65,7 +64,10 @@ internal fun BusinessHoursCard(
     onOperatingNoticeClick: (OperatingNotice) -> Unit = {},
 ) {
     var isExpanded by rememberSaveable { mutableStateOf(false) }
-    val currentDateTime = Clock.System.now().toLocalDateTime(TimeZone.of("Asia/Seoul"))
+    var currentDateTime by remember { mutableStateOf(Clock.System.now().toLocalDateTime(TimeZone.of("Asia/Seoul"))) }
+    BusinessHoursStatusRefreshEffect(currentDateTime = currentDateTime, notices = operatingNotices) {
+        currentDateTime = Clock.System.now().toLocalDateTime(TimeZone.of("Asia/Seoul"))
+    }
     val status = shop.businessHoursStatus(currentDateTime, operatingNotices)
     val businessHours = shop.businessHoursDetails
     val lines = businessHours?.let(BusinessHoursResourceMapper::all).orEmpty()
@@ -132,21 +134,6 @@ internal fun BusinessHoursCard(
 
         if (isExpanded && businessHours != null) {
             SectionCard {
-                shop.latestScheduleOverride(currentDateTime, operatingNotices)?.takeIf { it.dailySchedules.isEmpty() }?.let { notice ->
-                    val override = notice.scheduleOverride!!
-                    AppText(stringResource(Res.string.shop_detail_business_hours_override), AppTextStyle.B2, GrayColor.C500)
-                    AppText(
-                        text = "${override.day.open.orEmpty()} ~ ${override.day.close.orEmpty()}",
-                        style = AppTextStyle.B1,
-                        color = SystemColor.Warning,
-                    )
-                    AppText(
-                        text = override.breakTimes.joinToString { "${it.start} ~ ${it.end}" }.ifBlank { stringResource(Res.string.shop_detail_business_hours_break_removed) },
-                        style = AppTextStyle.B2,
-                        color = GrayColor.C500,
-                    )
-                    AppText(stringResource(Res.string.shop_detail_business_hours_override_reason, notice.description), AppTextStyle.B2, GrayColor.C500)
-                }
                 lines.forEachIndexed { index, line ->
                     BusinessHoursCardRow(
                         line = line,
@@ -165,51 +152,51 @@ private fun BusinessHoursStatusSummary(
     onOperatingNoticeClick: (OperatingNotice) -> Unit,
     modifier: Modifier,
 ) {
-    if (operatingNotice != null && status !is BusinessHoursStatus.Closed) {
-        val noticeText = ShopOperatingNoticeResourceMapper.notice(operatingNotice).format()
-        Row(
-            modifier = modifier.noRippleClickable { onOperatingNoticeClick(operatingNotice) },
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            AppText(
-                text = noticeText,
-                style = AppTextStyle.B1,
-                color = SystemColor.Warning,
-            )
-            Spacer(modifier = Modifier.width(4.dp))
-            AppText(
-                text = stringResource(Res.string.shop_detail_operating_notice_action_suffix),
-                style = AppTextStyle.B1,
-                color = SystemColor.Warning,
-            )
-        }
-        return
-    }
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        val statusText = status?.let(BusinessHoursStatusResourceMapper::status)?.format()
+        val highlightedLabel = status?.let(BusinessHoursStatusResourceMapper::noticeLabel)?.format()
 
-    val statusText = status?.let(BusinessHoursStatusResourceMapper::status)?.format()
-    val highlightedLabel = status?.let(BusinessHoursStatusResourceMapper::noticeLabel)?.format()
-
-    if (statusText == null) {
-        Spacer(modifier = modifier)
-    } else if (highlightedLabel == null) {
-        AppText(
-            text = statusText,
-            modifier = modifier,
-            style = AppTextStyle.B2,
-            color = GrayColor.C400,
-        )
-    } else {
-        Row(modifier = modifier) {
+        if (statusText == null) {
+            Spacer(modifier = Modifier)
+        } else if (highlightedLabel == null) {
             AppText(
-                text = highlightedLabel,
-                style = AppTextStyle.B1,
-                color = SystemColor.Warning,
-            )
-            AppText(
-                text = statusText.removePrefix(highlightedLabel),
+                text = statusText,
+                modifier = Modifier,
                 style = AppTextStyle.B2,
                 color = GrayColor.C400,
             )
+        } else {
+            Row {
+                AppText(
+                    text = highlightedLabel,
+                    style = AppTextStyle.B1,
+                    color = SystemColor.Warning,
+                )
+                AppText(
+                    text = statusText.removePrefix(highlightedLabel),
+                    style = AppTextStyle.B2,
+                    color = GrayColor.C400,
+                )
+            }
+        }
+        if (operatingNotice != null && operatingNotice.type != OperatingNoticeType.EARLY_CLOSING) {
+            val noticeText = ShopOperatingNoticeResourceMapper.notice(operatingNotice).format()
+            Row(
+                modifier = Modifier.noRippleClickable { onOperatingNoticeClick(operatingNotice) },
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                AppText(
+                    text = noticeText,
+                    style = AppTextStyle.B1,
+                    color = SystemColor.Warning,
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                AppText(
+                    text = stringResource(Res.string.shop_detail_operating_notice_action_suffix),
+                    style = AppTextStyle.B1,
+                    color = SystemColor.Warning,
+                )
+            }
         }
     }
 }

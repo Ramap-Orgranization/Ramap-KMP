@@ -206,6 +206,7 @@ internal fun MapContent(
                         ClusterShopList(
                             shops = overlappingClusterShops,
                             operatingNotices = uiState.operatingNotices,
+                            currentDateTime = uiState.currentDateTime,
                             onShopClick = { shop ->
                                 clusterBalloonState.dismiss()
                                 onShopSelected(shop, false, AnalyticsSource.MARKER)

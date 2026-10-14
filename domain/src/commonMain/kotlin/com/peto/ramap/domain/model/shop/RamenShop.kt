@@ -1,15 +1,14 @@
 package com.peto.ramap.domain.model.shop
 
-import com.peto.ramap.domain.model.businesshour.BusinessDay
 import com.peto.ramap.domain.model.businesshour.BusinessHours
+import com.peto.ramap.domain.model.businesshour.BusinessHoursDay
+import com.peto.ramap.domain.model.businesshour.BusinessHoursScheduleOverride
 import com.peto.ramap.domain.model.businesshour.BusinessHoursStatus
 import com.peto.ramap.domain.model.notice.OperatingNotice
 import com.peto.ramap.domain.model.notice.OperatingNoticeType
 import kotlinx.datetime.DateTimeUnit
-import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.LocalTime
-import kotlinx.datetime.minus
 import kotlinx.datetime.plus
 
 data class RamenShop(
@@ -68,49 +67,9 @@ data class RamenShop(
             .any { (notice, businessDate) ->
                 when (notice.type) {
                     OperatingNoticeType.TEMPORARY_CLOSURE -> true
-                    OperatingNoticeType.EARLY_CLOSING -> hasEarlyClosingStarted(notice, businessDate, currentDateTime)
-                    OperatingNoticeType.LATE_OPENING ->
-                        notice.manuallyReleasedAt == null &&
-                            (notice.startTime == null || currentDateTime < LocalDateTime(businessDate, notice.startTime))
-                    OperatingNoticeType.OPERATING_NOTICE -> false
+                    OperatingNoticeType.EARLY_CLOSING -> notice.closingAt(businessDate)?.let { currentDateTime >= it } == true
                 }
             }
-
-    private fun hasEarlyClosingStarted(
-        notice: OperatingNotice,
-        businessDate: LocalDate,
-        currentDateTime: LocalDateTime,
-    ): Boolean {
-        val endTime = notice.endTime ?: return false
-        val businessDay = businessHoursDetails?.weekly?.get(BusinessDay.from(businessDate.dayOfWeek).key)
-        val openTime = businessDay?.open?.let { runCatching { LocalTime.parse(it) }.getOrNull() }
-        val closingDate =
-            if (businessDay?.closeNextDay == true && openTime != null && endTime < openTime) {
-                businessDate.plus(1, DateTimeUnit.DAY)
-            } else {
-                businessDate
-            }
-        return currentDateTime >= LocalDateTime(closingDate, endTime)
-    }
-
-    private fun OperatingNotice.businessDateAt(currentDateTime: LocalDateTime) =
-        when {
-            isActiveAt(currentDateTime) -> currentDateTime.date
-            appliesToPreviousDaySession(this, currentDateTime) -> currentDateTime.date.minus(1, DateTimeUnit.DAY)
-            else -> null
-        }
-
-    private fun appliesToPreviousDaySession(
-        notice: OperatingNotice,
-        currentDateTime: LocalDateTime,
-    ): Boolean {
-        val previousDate = currentDateTime.date.minus(1, DateTimeUnit.DAY)
-        if (notice.endDate != previousDate) return false
-        val previousHours = businessHoursDetails?.weekly?.get(BusinessDay.from(previousDate.dayOfWeek).key) ?: return false
-        if (!previousHours.closeNextDay) return false
-        val closeTime = previousHours.close?.let { runCatching { LocalTime.parse(it) }.getOrNull() } ?: return false
-        return currentDateTime.time < closeTime
-    }
 
     private fun effectiveBusinessHours(
         businessHours: BusinessHours,
@@ -120,28 +79,22 @@ data class RamenShop(
         val overrides = businessHours.dateOverrides.toMutableMap()
         for (offset in -1..7) {
             val date = currentDateTime.date.plus(offset, DateTimeUnit.DAY)
-            val notice = latestScheduleOverrideFor(notices, date) ?: continue
-            overrides[date] = notice.scheduleOn(date, businessHours) ?: continue
+            val closure = notices.firstOrNull { it.type == OperatingNoticeType.TEMPORARY_CLOSURE && it.appliesOn(date) }
+            if (closure != null) {
+                overrides[date] = BusinessHoursScheduleOverride(BusinessHoursDay(true, null, null, false, null))
+                continue
+            }
+            val earlyClose = notices.filter { it.type == OperatingNoticeType.EARLY_CLOSING && it.appliesOn(date) }.mapNotNull { it.closingAt(date) }.minOrNull() ?: continue
+            val day = businessHours.dayAt(date) ?: continue
+            val regularCloseTime = day.close?.let { runCatching { LocalTime.parse(it) }.getOrNull() } ?: continue
+            val regularCloseDate = if (day.closeNextDay) date.plus(1, DateTimeUnit.DAY) else date
+            if (day.closed || earlyClose >= LocalDateTime(regularCloseDate, regularCloseTime)) continue
+            overrides[date] =
+                BusinessHoursScheduleOverride(
+                    day = day.copy(close = earlyClose.time.toString(), closeNextDay = earlyClose.date > date),
+                    breakTimes = businessHours.breaksAt(date),
+                )
         }
         return businessHours.copy(dateOverrides = overrides)
     }
-
-    fun latestScheduleOverride(
-        currentDateTime: LocalDateTime,
-        operatingNotices: List<OperatingNotice>,
-    ): OperatingNotice? {
-        val notice = latestScheduleOverrideFor(operatingNotices, currentDateTime.date) ?: return null
-        return notice.copy(scheduleOverride = notice.scheduleOn(currentDateTime.date, businessHoursDetails))
-    }
-
-    private fun latestScheduleOverrideFor(
-        notices: List<OperatingNotice>,
-        date: LocalDate,
-    ): OperatingNotice? =
-        notices
-            .filter {
-                it.shop.id == id &&
-                    it.type == OperatingNoticeType.OPERATING_NOTICE &&
-                    it.scheduleOn(date, businessHoursDetails) != null
-            }.maxWithOrNull(compareBy<OperatingNotice> { it.updatedAt.orEmpty() }.thenBy { it.id })
 }

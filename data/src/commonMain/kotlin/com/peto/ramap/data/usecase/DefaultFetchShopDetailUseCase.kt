@@ -170,8 +170,8 @@ internal class DefaultFetchShopDetailUseCase(
                 detail.data.copy(
                     operatingNotice =
                         notices.data
-                            .filter { it.isCurrentOrScheduledAt(now) }
-                            .sortedWith(compareByDescending<OperatingNotice> { it.isActiveAt(now) }.thenByDescending { it.updatedAt.orEmpty() }.thenBy { it.startDate }.thenBy { it.id })
+                            .filter { it.isRelevantForBusinessHoursAt(now) }
+                            .sortedWith(compareByDescending<OperatingNotice> { it.businessDateAt(now) != null }.thenByDescending { it.updatedAt.orEmpty() }.thenBy { it.startDate }.thenBy { it.id })
                             .firstOrNull(),
                     operatingNotices = notices.data,
                 )

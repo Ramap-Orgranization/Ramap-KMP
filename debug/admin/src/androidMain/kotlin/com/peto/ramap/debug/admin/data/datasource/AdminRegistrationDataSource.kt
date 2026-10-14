@@ -1,7 +1,6 @@
 package com.peto.ramap.debug.admin.data.datasource
 
 import com.peto.ramap.debug.admin.data.model.AdminCorrectionPreview
-import com.peto.ramap.debug.admin.data.model.AdminDelayedOpenings
 import com.peto.ramap.debug.admin.data.model.AdminDraft
 import com.peto.ramap.debug.admin.data.model.AdminEvidence
 import com.peto.ramap.debug.admin.data.model.AdminExternalVenue
@@ -40,10 +39,6 @@ internal interface AdminRegistrationDataSource {
     )
 
     suspend fun fetchManagedEvents(): List<AdminManagedEvent>
-
-    suspend fun fetchDelayedOpenings(): AdminDelayedOpenings
-
-    suspend fun releaseDelayedOpening(id: String)
 
     suspend fun saveEventStatus(
         eventId: String,
