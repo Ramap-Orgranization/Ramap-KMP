@@ -151,11 +151,11 @@ PODS:
   - PromisesSwift (2.4.1):
     - PromisesObjC (= 2.4.1)
   - shared (1.0.0):
-    - FirebaseAnalytics
-    - FirebaseCore
-    - FirebaseCrashlytics
-    - FirebaseInstallations
-    - FirebaseMessaging
+    - FirebaseAnalytics (= 11.15.0)
+    - FirebaseCore (= 11.15.0)
+    - FirebaseCrashlytics (= 11.15.0)
+    - FirebaseInstallations (= 11.15.0)
+    - FirebaseMessaging (= 11.15.0)
     - GoogleDataTransport
     - GoogleUtilities
     - nanopb
@@ -218,7 +218,7 @@ SPEC CHECKSUMS:
   NMapsMap: 7d479b7b7141b1559b77c72c2553117ecd933d84
   PromisesObjC: 752c3227f599e3467650e47ea36f433eeb10c273
   PromisesSwift: 217dea0fd5d2ad65222a109c48698add13cc1c5b
-  shared: d79aabf644b00248b55cdd9ee57e3ebd10e67c23
+  shared: 686eb17e7d7a67b4cc81edff85a29f94d3610c2d
 
 PODFILE CHECKSUM: 4e8b1dbf3f7d094f0ec371d3eb833bc150447765
 
