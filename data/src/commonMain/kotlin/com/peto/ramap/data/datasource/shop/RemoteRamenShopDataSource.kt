@@ -117,6 +117,7 @@ internal class RemoteRamenShopDataSource(
         private const val EVENT_ID_PARAMETER = "p_event_id"
         private const val EVENT_PARTICIPANT_TABLE = "shop_event_participants"
         private const val COLUMN_EVENT_ID = "event_id"
+        private const val COLUMN_ID = "id"
 
         private const val COLUMN_LAT = "lat"
         private const val COLUMN_LNG = "lng"
