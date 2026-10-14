@@ -7,11 +7,75 @@ import com.peto.ramap.domain.model.review.MyReview
 import com.peto.ramap.domain.model.review.MyReviewPhoto
 import com.peto.ramap.domain.model.review.MyReviewVisibility
 import com.peto.ramap.domain.model.review.Review
+import com.peto.ramap.domain.model.review.ShopReviewsPage
 import kotlin.time.Clock
 import kotlin.time.Instant
 
 class ReviewChangeReducer {
     private val reviewOrder = compareByDescending<Review> { it.createdAt }.thenByDescending { it.id }
+
+    fun updateShopPage(
+        page: ShopReviewsPage,
+        change: ReviewChange,
+        shopId: String,
+        viewerId: String?,
+        hasMore: Boolean,
+    ): ShopReviewsPage {
+        val written = change as? ReviewChange.Written
+        val beforeVisible = written?.before?.review?.let { it.shopId == shopId && isShopVisible(written, it, viewerId) } == true
+        val afterVisible = written?.after?.review?.let { it.shopId == shopId && isShopVisible(written, it, viewerId) } == true
+        val count = (page.totalCount + (if (afterVisible) 1 else 0) - (if (beforeVisible) 1 else 0)).coerceAtLeast(0)
+        val rows =
+            patch(
+                rows = page.reviews,
+                change = change,
+                hasMore = hasMore,
+            ) { receipt, review ->
+                review.shopId == shopId && isShopVisible(receipt, review, viewerId)
+            }
+        return ShopReviewsPage(
+            reviews = rows,
+            totalCount = count,
+        )
+    }
+
+    fun appendShopPage(
+        rows: List<Review>,
+        page: ShopReviewsPage,
+        changes: List<ReviewChange>,
+        shopId: String,
+        viewerId: String?,
+    ): ShopReviewsPage =
+        replayShopPage(
+            page = page.copy(reviews = (rows + page.reviews).distinctBy { it.id }),
+            knownRows = emptyList(),
+            changes = changes,
+            shopId = shopId,
+            viewerId = viewerId,
+        )
+
+    /** 조회 중 목록 구성이 바뀐 경우는 호출자가 재조회하며, 여기서는 서버 집계와 기존 미디어를 유지한다. */
+    fun replayShopPage(
+        page: ShopReviewsPage,
+        knownRows: List<Review>,
+        changes: List<ReviewChange>,
+        shopId: String,
+        viewerId: String?,
+    ): ShopReviewsPage {
+        val known = knownRows.associateBy { it.id }
+        var rows = page.reviews.map { retainMedia(it, known[it.id]) }
+        for (change in changes) {
+            rows =
+                patch(
+                    rows = rows,
+                    change = change,
+                    hasMore = rows.size < page.totalCount,
+                ) { receipt, review ->
+                    review.shopId == shopId && isShopVisible(receipt, review, viewerId)
+                }
+        }
+        return page.copy(reviews = rows)
+    }
 
     fun patch(
         rows: List<Review>,
