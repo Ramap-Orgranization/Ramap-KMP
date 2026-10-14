@@ -11,11 +11,11 @@ import kotlinx.serialization.Serializable
 @Serializable
 internal data class ShopMenuResponse(
     @SerialName("menu_sections")
-    val menuSections: List<MenuSectionResponse>,
+    val menuSections: List<MenuSectionResponse> = emptyList(),
     @SerialName("menu_items")
-    val menuItems: List<MenuResponse>,
+    val menuItems: List<MenuResponse> = emptyList(),
     @SerialName("menu_updated_at")
-    val menuUpdatedAt: String,
+    val menuUpdatedAt: String = "",
 ) {
     fun toDomain(): ShopMenu =
         ShopMenu(

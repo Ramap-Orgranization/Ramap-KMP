@@ -52,7 +52,7 @@ class ShopMenuViewModelTest {
             assertNull(viewModel.uiState.value.menu)
             assertTrue(viewModel.uiState.value.isLoading)
             assertEquals(listOf("first", "next"), repository.calls)
-            response.complete(RamapResult.Success(ShopMenu(emptyList())))
+            response.complete(RamapResult.Success(ShopMenu(emptyList(), "next")))
             runCurrent()
         }
 
