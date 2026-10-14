@@ -40,7 +40,11 @@ internal class DefaultRamenShopRepository(
 
     override suspend fun fetchActiveEvent(eventId: String): RamapResult<ShopEvent?> =
         invokeRequest {
-            dataSource.fetchEvents(eventId).singleOrNull()?.let(::toDomain)?.takeIf(::isVisibleInActiveEvents)
+            dataSource
+                .fetchEvents(eventId)
+                .singleOrNull()
+                ?.let(::toDomain)
+                ?.takeIf(::isVisibleInActiveEvents)
         }
 
     override suspend fun fetchActiveEvents(): RamapResult<List<ShopEvent>> =
