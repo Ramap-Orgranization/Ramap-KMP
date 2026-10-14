@@ -102,6 +102,7 @@ kotlin {
             implementation(projects.feature.main)
             implementation(projects.feature.shop.menu)
             implementation(projects.feature.shop.review)
+            implementation(projects.feature.shop.overview)
             implementation(projects.feature.profile.edit)
             implementation(projects.feature.profile.follow)
             implementation(projects.feature.review.my)

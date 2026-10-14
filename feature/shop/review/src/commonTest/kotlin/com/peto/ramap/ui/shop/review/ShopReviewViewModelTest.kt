@@ -3,6 +3,7 @@ package com.peto.ramap.ui.shop.review
 import com.peto.ramap.core.result.RamapError
 import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.coroutinesTest
+import com.peto.ramap.domain.model.auth.LoginSessionState
 import com.peto.ramap.domain.model.community.ReviewAuthor
 import com.peto.ramap.domain.model.review.Review
 import com.peto.ramap.domain.model.review.ShopReviewsPage
@@ -28,6 +29,57 @@ import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ShopReviewViewModelTest {
+    @Test
+    fun `생성 직후 매장을 선택해도 첫 조회에 로그인 사용자를 반영하고 중복 조회하지 않는다`() =
+        coroutinesTest {
+            val fake = FakeShopReviewRepository()
+            val profile = FakeProfileRepository("owner", isProfilePublic = false)
+            val login = FakeLoginRepository(LoginSessionState.AUTHENTICATED)
+            var viewModel: ShopReviewViewModel? = null
+            val requestedViewers = mutableListOf<String?>()
+            val requestedLoginStates = mutableListOf<Boolean>()
+            val repository =
+                object : ReviewRepository by fake {
+                    override suspend fun fetchShopReviewsPage(
+                        shopId: String,
+                        offset: Long,
+                    ): RamapResult<ShopReviewsPage> {
+                        val state = requireNotNull(viewModel).uiState.value
+                        requestedViewers += state.currentUserId
+                        requestedLoginStates += state.isLoggedIn
+                        return fake.fetchShopReviewsPage(shopId, offset)
+                    }
+                }
+            viewModel = viewModel(repository, profile, login = login)
+            viewModel.dispatch(ShopReviewIntent.OnShopSelected("shop"))
+            runCurrent()
+            assertEquals(listOf<String?>("owner"), requestedViewers.toList())
+            assertEquals(listOf(true), requestedLoginStates)
+            assertEquals(listOf(0L), fake.pageOffsets)
+            assertEquals(false, viewModel.uiState.value.currentProfileIsPublic)
+            assertFalse(viewModel.uiState.value.isLoading)
+        }
+
+    @Test
+    fun `관찰 시작 전에 로그아웃해도 최신 세션과 변경 저장소 수명으로 한 번만 조회한다`() =
+        coroutinesTest {
+            val fake = FakeShopReviewRepository()
+            val profile = FakeProfileRepository("old-user")
+            val login = FakeLoginRepository(LoginSessionState.AUTHENTICATED)
+            val changes = FakeReviewChangeStore()
+            val viewModel = viewModel(fake, profile, changes, login)
+            profile.sessionUserIds.value = null
+            login.updateSessionState(LoginSessionState.NOT_AUTHENTICATED)
+            changes.reset(null)
+            viewModel.dispatch(ShopReviewIntent.OnShopSelected("shop"))
+            runCurrent()
+            assertEquals(null, viewModel.uiState.value.currentUserId)
+            assertEquals(null, viewModel.uiState.value.currentProfileIsPublic)
+            assertFalse(viewModel.uiState.value.isLoggedIn)
+            assertEquals(listOf(0L), fake.pageOffsets)
+            assertFalse(viewModel.uiState.value.isLoading)
+        }
+
     @Test
     fun `리뷰 최초 실패와 재시도를 독립 상태로 관리한다`() =
         coroutinesTest {
@@ -187,13 +239,50 @@ class ShopReviewViewModelTest {
             assertEquals(listOf(0L, 0L), fake.pageOffsets)
         }
 
+    @Test
+    fun `사용자 관찰자가 먼저 조회한 뒤 변경 저장소 수명이 바뀌어도 리뷰를 다시 완료한다`() =
+        coroutinesTest {
+            val fake = FakeShopReviewRepository()
+            val profile = FakeProfileRepository(null)
+            val changes = FakeReviewChangeStore()
+            val pending = CompletableDeferred<ShopReviewsPage>()
+            var calls = 0
+            val repository =
+                object : ReviewRepository by fake {
+                    override suspend fun fetchShopReviewsPage(
+                        shopId: String,
+                        offset: Long,
+                    ): RamapResult<ShopReviewsPage> {
+                        calls++
+                        return when (calls) {
+                            2 -> RamapResult.Success(pending.await())
+                            else -> RamapResult.Success(ShopReviewsPage(listOf(review(shopId)), 1))
+                        }
+                    }
+                }
+            val viewModel = viewModel(repository, profile, changes)
+            viewModel.dispatch(ShopReviewIntent.OnShopSelected("shop"))
+            runCurrent()
+            profile.sessionUserIds.value = "new-user"
+            runCurrent()
+            assertTrue(viewModel.uiState.value.isLoading)
+            changes.reset("new-user")
+            runCurrent()
+            assertEquals(3, calls)
+            assertEquals("new-user", viewModel.uiState.value.currentUserId)
+            assertEquals(1, viewModel.uiState.value.reviewCount)
+            assertFalse(viewModel.uiState.value.isLoading)
+            assertFalse(viewModel.uiState.value.hasReviewLoadFailure)
+        }
+
     private fun viewModel(
         repository: ReviewRepository,
         profile: FakeProfileRepository = FakeProfileRepository(null),
         changes: FakeReviewChangeStore = FakeReviewChangeStore(),
+        login: FakeLoginRepository = FakeLoginRepository(),
     ): ShopReviewViewModel {
         val reducer = ReviewChangeReducer()
-        return ShopReviewViewModel(repository, FakeCommunityRepository(), profile, FakeLoginRepository(), changes, reducer, LoadShopReviewsUseCase(repository, changes, reducer))
+        return ShopReviewViewModel(repository, FakeCommunityRepository(), profile, login, changes, reducer, LoadShopReviewsUseCase(repository, changes, reducer))
     }
 
     private fun review(

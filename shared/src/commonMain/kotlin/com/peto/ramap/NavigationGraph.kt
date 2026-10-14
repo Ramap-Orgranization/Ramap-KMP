@@ -19,7 +19,6 @@ import com.peto.ramap.ui.hidden.HiddenShopListRoute
 import com.peto.ramap.ui.main.event.detail.EventDetailRoute
 import com.peto.ramap.ui.main.event.list.EventsRoute
 import com.peto.ramap.ui.main.map.MapRoute
-import com.peto.ramap.ui.main.map.ShopDetailHost
 import com.peto.ramap.ui.main.my.MyTabRoute
 import com.peto.ramap.ui.main.notice.OperatingNoticeRoute
 import com.peto.ramap.ui.main.ranking.RankingRoute
@@ -31,6 +30,7 @@ import com.peto.ramap.ui.review.my.MyReviewsRoute
 import com.peto.ramap.ui.review.other.OtherReviewsRoute
 import com.peto.ramap.ui.review.write.ShopReviewWriteRoute
 import com.peto.ramap.ui.settings.SettingsRoute
+import com.peto.ramap.ui.shop.ShopDetailHost
 import com.peto.ramap.ui.subscribed.SubscribedShopListRoute
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.event_not_found_message
@@ -49,6 +49,7 @@ internal fun NavigationGraph(
         navigationState = navigationState,
         mapScreen = { route ->
             MapRoute(
+                detailContent = { request -> MapShopDetail(request) },
                 isUncovered = !hasActiveOverlay,
                 onReviewNavigate = { shopId -> onOpenReviewWriteOverlay(shopId) },
                 onEditReview = { shopId, reviewId -> onOpenReviewEditOverlay(shopId, reviewId) },

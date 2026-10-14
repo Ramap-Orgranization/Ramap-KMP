@@ -29,28 +29,19 @@ import androidx.navigationevent.compose.NavigationBackHandler
 import androidx.navigationevent.compose.rememberNavigationEventState
 import com.peto.ramap.analytics.AnalyticsSource
 import com.peto.ramap.designsystem.indicator.RamenLoadingIndicator
-import com.peto.ramap.designsystem.notice.OperatingNoticeBottomSheet
-import com.peto.ramap.designsystem.resource.wating.toUiModel
-import com.peto.ramap.domain.model.event.ShopEvent
-import com.peto.ramap.domain.model.notice.OperatingNotice
-import com.peto.ramap.domain.model.report.ShopInformationField
-import com.peto.ramap.domain.model.review.Review
 import com.peto.ramap.domain.model.shop.Category
 import com.peto.ramap.domain.model.shop.Location
 import com.peto.ramap.domain.model.shop.MapBounds
 import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.domain.model.shop.RamenShops
-import com.peto.ramap.platform.ExternalUriOpener
 import com.peto.ramap.preview.RamenShopsPreviewParameterProvider
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.RamapTheme
 import com.peto.ramap.ui.main.map.component.ClusterShopList
 import com.peto.ramap.ui.main.map.component.SearchContent
-import com.peto.ramap.ui.main.map.contract.MapLoadKey
 import com.peto.ramap.ui.main.map.contract.MapUiState
 import com.peto.ramap.ui.main.map.model.CameraPosition
-import com.peto.ramap.ui.main.map.shop.ShopDetailContent
 import com.skydoves.balloon.Balloon
 import com.skydoves.balloon.rememberBalloonBuilder
 import com.skydoves.balloon.rememberBalloonState
@@ -66,9 +57,6 @@ internal fun MapContent(
     onCurrentLocationTimeout: () -> Unit,
     onShopSelected: (RamenShop, Boolean, AnalyticsSource) -> Unit,
     onShopDetailDismissed: () -> Unit,
-    onShopDetailRetry: () -> Unit,
-    onShopMenuRetry: () -> Unit = {},
-    onRequestedShopDismissed: () -> Unit,
     onQueryChanged: (String) -> Unit,
     onRecentSearchSelected: (String) -> Unit,
     onRecentSearchDeleted: (String) -> Unit,
@@ -79,37 +67,13 @@ internal fun MapContent(
     onCategoryFilterToggled: (Category) -> Unit,
     onOpenFilterToggled: () -> Unit,
     onViewportLoadRetry: () -> Unit,
-    onBookmarkToggled: (RamenShop) -> Unit,
-    onShopNotificationToggled: (RamenShop) -> Unit,
-    showNotificationActions: Boolean = true,
-    onHiddenToggled: (RamenShop) -> Unit,
-    onShopShareClick: (RamenShop) -> Unit,
-    onShopMapLinkClick: (RamenShop, String) -> Unit,
-    onEventClick: (ShopEvent) -> Unit,
-    onReviewsClick: (String) -> Unit,
-    onOpenProfile: (String) -> Unit = {},
-    onReviewLike: (Review) -> Unit = {},
-    onReviewEdit: (Review) -> Unit = {},
-    onReviewDelete: (Review) -> Unit = {},
-    onReviewReport: (Review) -> Unit = {},
-    onViewBlockedReview: ((Review) -> Unit)? = null,
-    onUnblockBlockedUser: ((Review) -> Unit)? = null,
-    hasMoreReviews: Boolean = false,
-    isLoadingMoreReviews: Boolean = false,
-    isRetryingReviews: Boolean = false,
-    onLoadMoreReviews: () -> Unit = {},
-    onOperatingNoticeNavigate: (OperatingNotice) -> Unit = {},
-    onReportSubmit: (Set<ShopInformationField>, String) -> Unit,
     onBookmarkedShopsToggle: () -> Unit,
-    showShopDetail: Boolean,
-    showReviewsOnOpen: Boolean = false,
 ) {
     val selectedShop: RamenShop? = uiState.selectedShop
     val focusManager = LocalFocusManager.current
     val density = LocalDensity.current
     val isImeVisible = WindowInsets.ime.getBottom(density) > 0
     var isSearchFocused by remember { mutableStateOf(false) }
-    var selectedNotice by remember { mutableStateOf<OperatingNotice?>(null) }
     var overlappingClusterShops by remember { mutableStateOf(emptyList<RamenShop>()) }
     var clusterMenuOffset by remember { mutableStateOf<IntOffset?>(null) }
     val clusterBalloonStyle =
@@ -149,13 +113,13 @@ internal fun MapContent(
         NavigationBackHandler(
             state = backEventState,
             isBackEnabled =
-                isBackEnabled && (clusterBalloonState.isVisible || isSearchFocused || uiState.showBottomSheet),
+                isBackEnabled && (clusterBalloonState.isVisible || isSearchFocused || uiState.selectedShopId != null),
             onBackCompleted = {
                 when {
                     clusterBalloonState.isVisible -> clusterBalloonState.dismiss()
                     isSearchFocused -> focusManager.clearFocus()
                     selectedShop != null -> onShopDetailDismissed()
-                    uiState.hasShopDetailLoadFailed -> onRequestedShopDismissed()
+                    uiState.selectedShopId != null -> onShopDetailDismissed()
 
                     else -> onSearchResultsDismissed()
                 }
@@ -242,83 +206,8 @@ internal fun MapContent(
             onBookmarkedShopsToggle = onBookmarkedShopsToggle,
         )
 
-        ShopDetailContent(
-            menu = uiState.shopMenu,
-            isMenuLoading = uiState.loadState.isLoading(MapLoadKey.ShopMenu),
-            hasMenuLoadFailure = uiState.hasShopMenuLoadFailure,
-            onMenuRetry = onShopMenuRetry,
-            state =
-                uiState.shopDetailState,
-            visible = showShopDetail,
-            showReviewsOnOpen = showReviewsOnOpen,
-            isBackEnabled = isBackEnabled,
-            maxHeight = maxHeight,
-            waitingSystem = selectedShop?.let { uiState.shopWaiting[it.id].toUiModel() },
-            isBookmarked = selectedShop?.id in uiState.bookmarkedShopIds,
-            isNotificationEnabled = selectedShop?.id in uiState.notificationShopIds,
-            showNotificationActions = showNotificationActions,
-            isHidden = selectedShop?.id in uiState.hiddenShopIds,
-            isLoggedIn = uiState.isLoggedIn,
-            onDismissRequest = {
-                if (selectedShop != null) onShopDetailDismissed() else onRequestedShopDismissed()
-            },
-            onRetry = onShopDetailRetry,
-            onBookmarkToggled = onBookmarkToggled,
-            onShopNotificationToggled = onShopNotificationToggled,
-            onHiddenToggled = onHiddenToggled,
-            onShopShareClick = onShopShareClick,
-            onShopMapLinkClick = onShopMapLinkClick,
-            onWaitingClick = ExternalUriOpener::open,
-            onExternalLinkClick = ExternalUriOpener::open,
-            isAppleMapsAvailable = ExternalUriOpener.isAppleMapsAvailable,
-            onAppleMapsClick = { shop ->
-                onShopMapLinkClick(shop, "apple")
-                ExternalUriOpener.openAppleMaps(
-                    name = shop.name,
-                    address = shop.address,
-                    latitude = shop.location.lat,
-                    longitude = shop.location.lng,
-                )
-            },
-            onEventClick = onEventClick,
-            onReviewsClick = onReviewsClick,
-            currentUserId = uiState.currentUserId,
-            currentProfileIsPublic = uiState.currentProfileIsPublic,
-            actingReviewId = uiState.actingReviewId,
-            revealedBlockedReviews = uiState.revealedBlockedReviews,
-            revealingBlockedReviewId = uiState.revealingBlockedReviewId,
-            onViewBlockedReview = onViewBlockedReview,
-            onUnblockBlockedUser = onUnblockBlockedUser,
-            onOpenProfile = onOpenProfile,
-            onReviewLike = onReviewLike,
-            onReviewEdit = onReviewEdit,
-            onReviewDelete = onReviewDelete,
-            onReviewReport = onReviewReport,
-            hasMoreReviews = hasMoreReviews,
-            isLoadingMoreReviews = isLoadingMoreReviews,
-            isRetryingReviews = isRetryingReviews,
-            onLoadMoreReviews = onLoadMoreReviews,
-            onOperatingNoticeClick = { selectedNotice = it },
-            onReportSubmit = onReportSubmit,
-        )
-
         if (uiState.showsLoadingOverlay) {
             RamenLoadingIndicator(modifier = Modifier.align(Alignment.Center))
-        }
-
-        selectedNotice?.let { notice ->
-            OperatingNoticeBottomSheet(
-                notice = notice,
-                isSourceUrlSupported = ExternalUriOpener::isSupportedWebUri,
-                onSourceClick = ExternalUriOpener::open,
-                onShopClick = {
-                    if (it != selectedShop?.id) {
-                        onOperatingNoticeNavigate(notice)
-                    }
-                    selectedNotice = null
-                },
-                onDismiss = { selectedNotice = null },
-            )
         }
     }
 }
@@ -339,8 +228,6 @@ private fun MapContentPreview(
             onCurrentLocationTimeout = {},
             onShopSelected = { _, _, _ -> },
             onShopDetailDismissed = {},
-            onShopDetailRetry = {},
-            onRequestedShopDismissed = {},
             onQueryChanged = {},
             onRecentSearchSelected = {},
             onRecentSearchDeleted = {},
@@ -351,16 +238,7 @@ private fun MapContentPreview(
             onCategoryFilterToggled = {},
             onOpenFilterToggled = {},
             onViewportLoadRetry = {},
-            onBookmarkToggled = {},
-            onShopNotificationToggled = {},
-            onHiddenToggled = {},
-            onShopShareClick = {},
-            onShopMapLinkClick = { _, _ -> },
-            onEventClick = {},
-            onReviewsClick = {},
-            onReportSubmit = { _, _ -> },
             onBookmarkedShopsToggle = {},
-            showShopDetail = false,
         )
     }
 }

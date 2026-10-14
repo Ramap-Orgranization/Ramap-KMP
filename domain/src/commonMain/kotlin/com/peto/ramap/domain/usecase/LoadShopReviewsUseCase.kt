@@ -61,15 +61,18 @@ class LoadShopReviewsUseCase(
         retained: ShopReviewsPage,
         append: Boolean,
     ): RamapResult<ShopReviewsPage> {
+        var retainedPage = retained
+        var isAppending = append
+        var targetSize = retained.reviews.size
         while (true) {
             currentCoroutineContext().ensureActive()
             val baseline = changes.journal.value
-            val offset = if (append) retained.reviews.size.toLong() else 0L
+            val offset = if (isAppending) retainedPage.reviews.size.toLong() else 0L
             val result = repository.fetchShopReviewsPage(shopId, offset)
             if (result !is RamapResult.Success) return result
             var page = result.data
-            if (!append) {
-                while (page.reviews.size < retained.reviews.size && page.hasMore) {
+            if (!isAppending) {
+                while (page.reviews.size < targetSize && page.hasMore) {
                     val next = repository.fetchShopReviewsPage(shopId, page.reviews.size.toLong())
                     if (next !is RamapResult.Success) return next
                     val merged = reducer.appendShopPage(page.reviews, next.data, emptyList(), shopId, viewerId)
@@ -79,13 +82,18 @@ class LoadShopReviewsUseCase(
             }
             val journal = changes.journal.value
             if (baseline.epoch != journal.epoch) throw CancellationException(SESSION_CHANGED)
-            if (journal.requiresShopReloadAfter(baseline.revision, shopId)) continue
             val events = journal.changesAfter(baseline.revision).map { it.change }
+            if (journal.requiresShopReloadAfter(baseline.revision, shopId)) {
+                if (isAppending) targetSize += page.reviews.size
+                retainedPage = reducer.replayShopPage(retainedPage, retainedPage.reviews, events, shopId, viewerId)
+                isAppending = false
+                continue
+            }
             val applied =
-                if (append) {
-                    reducer.appendShopPage(retained.reviews, page, events, shopId, viewerId)
+                if (isAppending) {
+                    reducer.appendShopPage(retainedPage.reviews, page, events, shopId, viewerId)
                 } else {
-                    reducer.replayShopPage(page, retained.reviews, events, shopId, viewerId)
+                    reducer.replayShopPage(page, retainedPage.reviews, events, shopId, viewerId)
                 }
             return RamapResult.Success(applied)
         }

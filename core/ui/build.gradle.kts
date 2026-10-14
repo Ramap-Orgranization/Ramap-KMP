@@ -9,6 +9,8 @@ kotlin {
         api(projects.core.common)
         api(projects.domain)
         api(libs.kotlinx.datetime)
+        implementation(projects.core.platform)
+        implementation(projects.core.navigation)
         implementation(projects.core.designsystem)
         implementation(libs.compose.components.resources)
         implementation(libs.androidx.lifecycle.viewmodel.compose)

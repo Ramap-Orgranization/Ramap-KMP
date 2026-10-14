@@ -6,6 +6,8 @@ import kotlin.jvm.JvmInline
 value class SearchQuery(
     val value: String,
 ) {
+    fun isValidForShopSearch(): Boolean = normalizeShopSearchQuery().value.length in SHOP_SEARCH_LENGTH
+
     /**
      * 검색 비교에 사용할 표준 형태의 검색어를 반환한다.
      *
@@ -41,4 +43,8 @@ value class SearchQuery(
                 }
             }
         }
+
+    companion object {
+        private val SHOP_SEARCH_LENGTH = 2..15
+    }
 }

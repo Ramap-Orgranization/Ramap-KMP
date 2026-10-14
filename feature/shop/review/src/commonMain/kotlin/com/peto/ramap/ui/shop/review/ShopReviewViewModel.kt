@@ -22,7 +22,6 @@ import com.peto.ramap.ui.shop.review.contract.ShopReviewLoadKey
 import com.peto.ramap.ui.shop.review.contract.ShopReviewSideEffect
 import com.peto.ramap.ui.shop.review.contract.ShopReviewUiState
 import com.peto.ramap.ui.task.TaskPolicy
-import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.flow.collect
@@ -51,9 +50,9 @@ class ShopReviewViewModel(
     private var profileJob: Job? = null
 
     init {
-        viewModelScope.launch(start = CoroutineStart.UNDISPATCHED) { observeChanges() }
-        viewModelScope.launch(start = CoroutineStart.UNDISPATCHED) { observeSession() }
-        viewModelScope.launch(start = CoroutineStart.UNDISPATCHED) {
+        viewModelScope.launch { observeChanges() }
+        viewModelScope.launch { observeSession() }
+        viewModelScope.launch {
             loginRepository.sessionState.collect { session ->
                 val authenticated = session == LoginSessionState.AUTHENTICATED
                 if (currentState.isLoggedIn && !authenticated) cancelReviewTasks()
@@ -124,6 +123,10 @@ class ShopReviewViewModel(
             if (epoch != journal.epoch) {
                 epoch = journal.epoch
                 revision = journal.revision
+                cancelReviewTasks()
+                loadReviews.clearCache()
+                reduce { copy(page = ShopReviewsPage(emptyList(), 0), hasLoaded = false, hasReviewLoadFailure = false, hasPageLoadFailure = false) }
+                loadPage(append = false)
                 return@collect
             }
             if (journal.hasGapAfter(revision)) {
