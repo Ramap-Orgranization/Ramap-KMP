@@ -95,6 +95,8 @@ sealed interface MapIntent : Intent {
 
     data object OnShopDetailRetry : MapIntent
 
+    data object OnShopMenuRetry : MapIntent
+
     data object OnSearchResultsDismissed : MapIntent
 
     data class OnQueryChanged(

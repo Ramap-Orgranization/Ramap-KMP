@@ -24,12 +24,12 @@ import com.peto.ramap.domain.model.review.Review
 import com.peto.ramap.theme.RamapTheme
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
-import ramap.shared.generated.resources.data_load_failure_message
-import ramap.shared.generated.resources.laduck_error_crying
 import ramap.shared.generated.resources.map_shop_detail_error_description
 import ramap.shared.generated.resources.review_empty_illustration
+import ramap.shared.generated.resources.review_load_error_illustration
 import ramap.shared.generated.resources.shop_review_empty_description
 import ramap.shared.generated.resources.shop_review_empty_title
+import ramap.shared.generated.resources.shop_review_load_failure_message
 
 @Composable
 fun ReviewsContent(
@@ -97,8 +97,8 @@ fun ReviewsContent(
             )
         } else if (hasReviewLoadFailure) {
             LoadErrorContent(
-                image = Res.drawable.laduck_error_crying,
-                title = stringResource(Res.string.data_load_failure_message),
+                image = Res.drawable.review_load_error_illustration,
+                title = stringResource(Res.string.shop_review_load_failure_message),
                 description = stringResource(Res.string.map_shop_detail_error_description),
                 onRetry = onRetry,
                 compact = true,

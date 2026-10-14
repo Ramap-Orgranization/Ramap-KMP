@@ -3,17 +3,11 @@ package com.peto.ramap.data.repository
 import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.data.datasource.shop.RamenShopDataSource
 import com.peto.ramap.data.extension.toLocalDate
-import com.peto.ramap.data.model.MenuResponse
-import com.peto.ramap.data.model.MenuSectionResponse
 import com.peto.ramap.data.model.ShopDetailResponse
 import com.peto.ramap.data.model.ShopEventParticipantResponse
 import com.peto.ramap.data.model.ShopEventResponse
 import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.model.event.ShopEventType
-import com.peto.ramap.domain.model.menu.Menu
-import com.peto.ramap.domain.model.menu.MenuSection
-import com.peto.ramap.domain.model.menu.Menus
-import com.peto.ramap.domain.model.menu.Price
 import com.peto.ramap.domain.model.shop.MapBounds
 import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.domain.model.shop.SearchQuery
@@ -36,9 +30,15 @@ internal class DefaultRamenShopRepository(
             shopDetail(response, shopId)
         }
 
+    override suspend fun fetchShopLikeCount(shopId: String): RamapResult<Long> = invokeRequest { dataSource.fetchShopDetail(shopId).likeCount }
+
     override suspend fun fetchActiveEvent(eventId: String): RamapResult<ShopEvent?> =
         invokeRequest {
-            dataSource.fetchEvents(eventId).singleOrNull()?.let(::toDomain)?.takeIf(::isVisibleInActiveEvents)
+            dataSource
+                .fetchEvents(eventId)
+                .singleOrNull()
+                ?.let(::toDomain)
+                ?.takeIf(::isVisibleInActiveEvents)
         }
 
     override suspend fun fetchActiveEvents(): RamapResult<List<ShopEvent>> =
@@ -76,11 +76,9 @@ internal class DefaultRamenShopRepository(
         return ShopDetail(
             shop = domainShop,
             likeCount = response.likeCount,
-            waitingSystem = response.waitingSystem?.toDomain(),
+            waitingSystem = response.shop.toWaitingSystem(),
             event = activeShopEvent(activeEvents, response.eventParticipants, shopId),
             operatingNotice = response.operatingNotice?.toDomain(domainShop),
-            menuSections = menuSections(response.menuSections, response.menuItems),
-            menuUpdatedAt = response.menuUpdatedAt,
         )
     }
 
@@ -108,47 +106,6 @@ internal class DefaultRamenShopRepository(
             }
         return event.copy(activeEventCount = 1, collaborationPartnerCount = partnerCount)
     }
-
-    private fun menuSections(
-        sections: List<MenuSectionResponse>,
-        items: List<MenuResponse>,
-    ): List<MenuSection> {
-        val itemsBySection = items.groupBy { it.sectionId }
-        return sections
-            .sortedWith(
-                compareBy<MenuSectionResponse>(::menuSectionPriority)
-                    .thenBy { it.displayOrder }
-                    .thenBy { it.id },
-            ).map { menuSection(it, itemsBySection[it.id].orEmpty()) }
-            .filter { it.items.isNotEmpty() }
-    }
-
-    private fun menuSectionPriority(section: MenuSectionResponse): Int = if (section.title.trim() == PERMANENT_MENU_SECTION_TITLE) 1 else 0
-
-    private fun menuSection(
-        section: MenuSectionResponse,
-        items: List<MenuResponse>,
-    ): MenuSection =
-        MenuSection(
-            id = section.id,
-            title = section.title,
-            description = section.description,
-            displayOrder = section.displayOrder,
-            items = Menus(items.sortedBy { it.displayOrder }.map(::menuItem)),
-        )
-
-    private fun menuItem(item: MenuResponse): Menu =
-        Menu(
-            id = item.id,
-            name = item.name,
-            priceKrw = item.priceKrw?.let(::Price),
-            priceText = item.priceText,
-            description = item.description,
-            imageUrl = item.imageUrl,
-            sourceUrl = item.sourceUrl,
-            displayOrder = item.displayOrder,
-            isRepresentative = item.isRepresentative,
-        )
 
     private fun toDomain(response: ShopEventResponse): ShopEvent {
         val event = response.toDomain()
@@ -220,7 +177,6 @@ internal class DefaultRamenShopRepository(
         }
 
     private companion object {
-        const val PERMANENT_MENU_SECTION_TITLE = "상시메뉴"
         const val SEOUL_TIME_ZONE = "Asia/Seoul"
     }
 }

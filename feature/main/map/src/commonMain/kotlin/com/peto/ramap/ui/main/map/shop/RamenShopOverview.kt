@@ -16,6 +16,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.peto.ramap.designsystem.component.LoadErrorContent
+import com.peto.ramap.designsystem.indicator.RamenLoadingIndicator
 import com.peto.ramap.designsystem.review.ReviewsContent
 import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.domain.usecase.ShopDetail
@@ -28,6 +30,11 @@ import com.peto.ramap.ui.main.map.shop.model.ShopOverviewExternalLinkActions
 import com.peto.ramap.ui.main.map.shop.model.ShopOverviewHeaderActions
 import com.peto.ramap.ui.main.map.shop.model.ShopOverviewHeaderUiState
 import com.peto.ramap.ui.main.map.shop.model.ShopOverviewReviewActions
+import org.jetbrains.compose.resources.stringResource
+import ramap.shared.generated.resources.Res
+import ramap.shared.generated.resources.map_shop_detail_error_description
+import ramap.shared.generated.resources.menu_load_error_illustration
+import ramap.shared.generated.resources.shop_menu_load_failure_message
 
 @Composable
 fun RamenShopOverview(
@@ -100,7 +107,7 @@ fun RamenShopOverview(
         )
 
         ShopDetailTabRow(
-            menuCount = uiState.detail.menuItemCount,
+            menuCount = uiState.menu?.itemCount ?: 0,
             reviewCount = uiState.detail.reviewCount,
             selectedTab = selectedTab,
             onTabSelected = { selectedTab = it },
@@ -113,11 +120,24 @@ fun RamenShopOverview(
                     verticalArrangement = Arrangement.spacedBy(10.dp),
                     modifier = Modifier.padding(horizontal = 20.dp),
                 ) {
-                    ShopMenuContent(
-                        sections = uiState.detail.menuSections,
-                        updatedAt = uiState.detail.menuUpdatedAt,
-                        onMenuSourceClick = externalLinkActions.onExternalLinkClick,
-                    )
+                    when {
+                        uiState.menu != null ->
+                            ShopMenuContent(
+                                sections = uiState.menu.sections,
+                                updatedAt = uiState.menu.updatedAt,
+                                onMenuSourceClick = externalLinkActions.onExternalLinkClick,
+                            )
+                        uiState.isMenuLoading -> RamenLoadingIndicator(modifier = Modifier.fillMaxWidth())
+                        uiState.hasMenuLoadFailure ->
+                            LoadErrorContent(
+                                image = Res.drawable.menu_load_error_illustration,
+                                title = stringResource(Res.string.shop_menu_load_failure_message),
+                                description = stringResource(Res.string.map_shop_detail_error_description),
+                                onRetry = actions.onMenuRetry,
+                                modifier = Modifier.fillMaxWidth(),
+                                compact = true,
+                            )
+                    }
                 }
             }
             ShopDetailTab.REVIEW -> {

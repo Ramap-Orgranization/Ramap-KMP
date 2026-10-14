@@ -5,8 +5,6 @@ import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.domain.model.event.EventVenue
 import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.model.event.ShopEventType
-import com.peto.ramap.domain.model.menu.MenuSection
-import com.peto.ramap.domain.model.menu.Menus
 import com.peto.ramap.domain.model.notice.OperatingNotice
 import com.peto.ramap.domain.model.notice.OperatingNoticeType
 import com.peto.ramap.domain.model.review.Review
@@ -138,7 +136,6 @@ class DefaultFetchShopDetailUseCaseTest {
 
             assertEquals(listOf(review), result.reviews)
             assertEquals(1, result.reviewCount)
-            assertEquals(0, result.menuItemCount)
             assertEquals(listOf(initial.shop.id to 0L), reviews.requestedShopReviews)
         }
 
@@ -182,7 +179,6 @@ class DefaultFetchShopDetailUseCaseTest {
                     shopId = initial.shop.id,
                     likeCount = 99L,
                     event = event(initial.shop.id),
-                    menuSections = listOf(menuSection()),
                 )
             val repository = FakeRamenShopRepository(shopDetail = initial)
             val useCase =
@@ -202,7 +198,6 @@ class DefaultFetchShopDetailUseCaseTest {
             assertEquals(initial.likeCount, result.likeCount)
             assertEquals(initial.waitingSystem, result.waitingSystem)
             assertEquals(refreshed.event, result.event)
-            assertEquals(refreshed.menuSections, result.menuSections)
         }
 
     @Test
@@ -381,7 +376,6 @@ class DefaultFetchShopDetailUseCaseTest {
         shopId: String = "shop",
         likeCount: Long = 7L,
         event: ShopEvent? = null,
-        menuSections: List<MenuSection> = emptyList(),
     ): ShopDetail =
         ShopDetail(
             shop = ramenShopFixture(id = shopId),
@@ -389,7 +383,6 @@ class DefaultFetchShopDetailUseCaseTest {
             waitingSystem = waitingSystemFixture(shopId),
             event = event,
             operatingNotice = null,
-            menuSections = menuSections,
         )
 
     private fun operatingNotice(
@@ -414,14 +407,6 @@ class DefaultFetchShopDetailUseCaseTest {
             .now()
             .toLocalDateTime(TimeZone.of("Asia/Seoul"))
             .date
-
-    private fun menuSection() =
-        MenuSection(
-            id = "section",
-            title = "메뉴",
-            displayOrder = 0,
-            items = Menus(emptyList()),
-        )
 
     private fun event(shopId: String) =
         ShopEvent(

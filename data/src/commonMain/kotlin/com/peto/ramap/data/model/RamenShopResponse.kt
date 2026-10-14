@@ -5,6 +5,7 @@ import com.peto.ramap.domain.model.shop.Category
 import com.peto.ramap.domain.model.shop.Location
 import com.peto.ramap.domain.model.shop.MenuCategories
 import com.peto.ramap.domain.model.shop.RamenShop
+import com.peto.ramap.domain.model.shop.WaitingSystem
 import com.peto.ramap.network.config.RamapSecrets
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -20,6 +21,10 @@ internal data class RamenShopResponse(
     val kakaoPlaceUrl: String? = null,
     @SerialName("naver_place_url")
     val naverPlaceUrl: String? = null,
+    @SerialName("waiting_provider")
+    val waitingProvider: String? = null,
+    @SerialName("waiting_provider_url")
+    val waitingProviderUrl: String? = null,
     @SerialName("business_hours_weekly")
     val businessHoursWeekly: Map<String, BusinessHoursDayResponse>? = null,
     @SerialName("business_hours_break_times")
@@ -41,6 +46,12 @@ internal data class RamenShopResponse(
     @SerialName("updated_at")
     val updatedAt: String,
 ) {
+    fun toWaitingSystem(): WaitingSystem? =
+        ShopWaitingSystemResponse(
+            provider = waitingProvider,
+            providerUrl = waitingProviderUrl,
+        ).toDomain(id)
+
     fun toDomain(): RamenShop =
         RamenShop(
             id = id,

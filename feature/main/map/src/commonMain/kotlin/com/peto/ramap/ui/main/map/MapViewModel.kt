@@ -13,6 +13,7 @@ import com.peto.ramap.domain.model.auth.LoginSessionState
 import com.peto.ramap.domain.model.auth.LoginType
 import com.peto.ramap.domain.model.community.ReportReason
 import com.peto.ramap.domain.model.community.ReviewModerationStatus
+import com.peto.ramap.domain.model.menu.ShopMenu
 import com.peto.ramap.domain.model.personalization.ShopPersonalization
 import com.peto.ramap.domain.model.report.ShopInformationField
 import com.peto.ramap.domain.model.report.ShopInformationReport
@@ -32,6 +33,7 @@ import com.peto.ramap.domain.repository.OperatingNoticeRepository
 import com.peto.ramap.domain.repository.ProfileRepository
 import com.peto.ramap.domain.repository.RamenShopRepository
 import com.peto.ramap.domain.repository.ReviewRepository
+import com.peto.ramap.domain.repository.ShopMenuRepository
 import com.peto.ramap.domain.repository.ShopReportRepository
 import com.peto.ramap.domain.store.PersonalizationBootstrapState
 import com.peto.ramap.domain.store.PersonalizationStore
@@ -136,8 +138,10 @@ class MapViewModel(
     private val profileRepository: ProfileRepository,
     private val reviewChanges: ReviewChangeStore,
     private val reviewChangeReducer: ReviewChangeReducer,
+    private val shopMenuRepository: ShopMenuRepository,
 ) : BaseViewModel<MapUiState, MapIntent, MapSideEffect>(initialState = MapUiState()) {
     private val viewportShopLoader = ViewportShopLoader(ramenShopRepository, viewModelScope)
+    private val shopMenus = mutableMapOf<String, ShopMenu>()
     private var pendingMapAction: PendingMapAction? = null
     private var observedBookmarkedShopIds: Set<String>? = null
     private var profileVisibilityJob: Job? = null
@@ -687,6 +691,8 @@ class MapViewModel(
             OnRequestedShopDismissed -> dismissRequestedShopLoad()
             is OnShopDetailDismissed -> dismissShopDetail()
             OnShopDetailRetry -> retryShopDetailLoad()
+
+            MapIntent.OnShopMenuRetry -> currentState.shopMenuShopId?.let(::loadShopMenu)
             else -> return false
         }
         return true
@@ -1518,6 +1524,7 @@ class MapViewModel(
         selectShopOnSuccess: Boolean = false,
         requestedReviewExtent: Int = 0,
     ) {
+        loadShopMenu(shopId)
         cancelTask(SHOP_REVIEW_PAGE_TASK_KEY)
         val baseline = reviewChanges.journal.value
         val generation = ++reviewGeneration
@@ -1579,6 +1586,32 @@ class MapViewModel(
                 handleShopDetailResult(shopId, selectShopOnSuccess, replayed)
             }
         }
+    }
+
+    private fun loadShopMenu(shopId: String) {
+        launchResultTask(
+            taskKey = SHOP_MENU_TASK_KEY,
+            loadKey = MapLoadKey.ShopMenu,
+            policy = TaskPolicy.CancelPrevious,
+            onStart = {
+                copy(
+                    shopMenuShopId = shopId,
+                    shopMenu = shopMenus[shopId],
+                    hasShopMenuLoadFailure = false,
+                )
+            },
+            request = { shopMenuRepository.fetchShopMenu(shopId) },
+            onSuccess = { menu ->
+                if (!currentCoroutineContext().isActive || currentState.shopMenuShopId != shopId) return@launchResultTask
+                shopMenus[shopId] = menu
+                reduce { copy(shopMenu = menu, hasShopMenuLoadFailure = false) }
+            },
+            onError = {
+                if (currentCoroutineContext().isActive && currentState.shopMenuShopId == shopId) {
+                    reduce { copy(hasShopMenuLoadFailure = true) }
+                }
+            },
+        )
     }
 
     private suspend fun recoverReviewExtent(
@@ -1666,6 +1699,8 @@ class MapViewModel(
 
     /** 상세 UI가 닫히거나 검색 상태가 바뀔 때 진행 중 상세 조회와 로딩을 함께 정리한다. */
     private fun cancelShopDetailLoad() {
+        cancelTask(SHOP_MENU_TASK_KEY)
+        reduce { copy(shopMenuShopId = null, shopMenu = null, hasShopMenuLoadFailure = false) }
         cancelTask(SHOP_DETAIL_TASK_KEY)
         cancelTask(SHOP_REVIEW_PAGE_TASK_KEY)
     }
@@ -1792,6 +1827,7 @@ class MapViewModel(
         private val SEARCH_QUERY_LENGTH = 2..15
         private const val SEARCH_RESULT_LIMIT = 50
         private const val SEARCH_TASK_KEY = "map-search"
+        private const val SHOP_MENU_TASK_KEY = "map-shop-menu"
         private const val SHOP_DETAIL_TASK_KEY = "map-shop-detail"
         private const val SHOP_REVIEW_PAGE_TASK_KEY = "map-shop-reviews-page"
         private const val REVIEW_ACTION_TASK_KEY = "map-review-action"

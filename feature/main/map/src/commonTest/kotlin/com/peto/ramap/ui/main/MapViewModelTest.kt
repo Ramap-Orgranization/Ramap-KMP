@@ -12,6 +12,7 @@ import com.peto.ramap.domain.model.auth.LoginType
 import com.peto.ramap.domain.model.businesshour.BusinessHours
 import com.peto.ramap.domain.model.businesshour.BusinessHoursDay
 import com.peto.ramap.domain.model.community.ReviewAuthor
+import com.peto.ramap.domain.model.menu.ShopMenu
 import com.peto.ramap.domain.model.personalization.ShopPersonalization
 import com.peto.ramap.domain.model.place.PlaceSearchErrorCode
 import com.peto.ramap.domain.model.place.PlaceSearchException
@@ -27,6 +28,7 @@ import com.peto.ramap.domain.model.shop.RamenShopFilter
 import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.domain.model.shop.SearchQuery
 import com.peto.ramap.domain.repository.RamenShopRepository
+import com.peto.ramap.domain.repository.ShopMenuRepository
 import com.peto.ramap.domain.repository.ShopReportRepository
 import com.peto.ramap.domain.repository.ShopWaitingSystemRepository
 import com.peto.ramap.domain.store.PersonalizationBootstrapState
@@ -111,6 +113,161 @@ import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class MapViewModelTest {
+    @Test
+    fun `상세 성공은 메뉴 로딩과 실패를 기다리지 않고 메뉴만 재시도한다`() =
+        coroutinesTest {
+            val shop = ramenShopFixture()
+            val source = FakeRamenShopRepository(fetchByIdsResult = RamenShops(listOf(shop)))
+            val delegate = FakeFetchShopDetailUseCase(source, FakeShopWaitingSystemRepository(), FakeOperatingNoticeRepository())
+            var detailCalls = 0
+            val detailUseCase =
+                object : FetchShopDetailUseCase by delegate {
+                    override suspend fun invoke(shopId: String): RamapResult<ShopDetail> {
+                        detailCalls++
+                        return delegate(shopId)
+                    }
+                }
+            val response = CompletableDeferred<RamapResult<ShopMenu>>()
+            var menuCalls = 0
+            val menus =
+                object : ShopMenuRepository {
+                    override suspend fun fetchShopMenu(shopId: String): RamapResult<ShopMenu> {
+                        menuCalls++
+                        return if (menuCalls == 1) response.await() else RamapResult.Success(ShopMenu(emptyList(), "2026-10-14"))
+                    }
+                }
+            val viewModel = mapViewModel(detailUseCase = detailUseCase, menuRepository = menus)
+            viewModel.dispatch(OnShopSelected(shop))
+            runCurrent()
+
+            val detail = requireNotNull(viewModel.uiState.value.shopDetail)
+            assertEquals(
+                true,
+                viewModel.uiState.value.loadState
+                    .isLoading(MapLoadKey.ShopMenu),
+            )
+            response.complete(RamapResult.Error(RamapError.Unknown(IllegalStateException("메뉴 조회 실패"))))
+            runCurrent()
+            assertEquals(detail, viewModel.uiState.value.shopDetail)
+            assertEquals(true, viewModel.uiState.value.hasShopMenuLoadFailure)
+
+            viewModel.dispatch(MapIntent.OnShopMenuRetry)
+            runCurrent()
+            assertEquals(1, detailCalls)
+            assertEquals(2, menuCalls)
+            assertEquals(
+                "2026-10-14",
+                viewModel.uiState.value.shopMenu
+                    ?.updatedAt,
+            )
+            assertEquals(false, viewModel.uiState.value.hasShopMenuLoadFailure)
+        }
+
+    @Test
+    fun `메뉴 성공 뒤 재열기 조회 실패는 캐시된 메뉴와 갱신일을 유지한다`() =
+        coroutinesTest {
+            val shop = ramenShopFixture()
+            val menu = ShopMenu(emptyList(), "2026-10-14")
+            val menus = FakeMapShopMenuRepository(RamapResult.Success(menu))
+            val viewModel =
+                mapViewModel(
+                    ramenShopRepository = FakeRamenShopRepository(fetchByIdsResult = RamenShops(listOf(shop))),
+                    menuRepository = menus,
+                )
+            viewModel.dispatch(OnShopSelected(shop))
+            runCurrent()
+            viewModel.dispatch(OnShopDetailDismissed)
+            runCurrent()
+            assertEquals(null, viewModel.uiState.value.shopMenu)
+            menus.result = RamapResult.Error(RamapError.Unknown(IllegalStateException("메뉴 갱신 실패")))
+            viewModel.dispatch(OnShopSelected(shop))
+            runCurrent()
+
+            assertEquals(menu, viewModel.uiState.value.shopMenu)
+            assertEquals(listOf(shop.id, shop.id), menus.requestedShopIds)
+            assertEquals(
+                shop.id,
+                viewModel.uiState.value.shopDetail
+                    ?.shop
+                    ?.id,
+            )
+        }
+
+    @Test
+    fun `매장 전환 후 취소를 무시한 이전 메뉴 응답은 새 메뉴를 덮어쓰지 않는다`() =
+        coroutinesTest {
+            val first = ramenShopFixture(id = "first")
+            val second = ramenShopFixture(id = "second")
+            val oldResponse = CompletableDeferred<ShopMenu>()
+            val currentMenu = ShopMenu(emptyList(), "2026-10-14")
+            val menus =
+                object : ShopMenuRepository {
+                    override suspend fun fetchShopMenu(shopId: String): RamapResult<ShopMenu> =
+                        if (shopId == first.id) {
+                            withContext(NonCancellable) { RamapResult.Success(oldResponse.await()) }
+                        } else {
+                            RamapResult.Success(currentMenu)
+                        }
+                }
+            val viewModel =
+                mapViewModel(
+                    ramenShopRepository = FakeRamenShopRepository(fetchByIdsResult = RamenShops(listOf(first, second))),
+                    menuRepository = menus,
+                )
+            viewModel.dispatch(OnShopSelected(first))
+            runCurrent()
+            viewModel.dispatch(OnShopSelected(second))
+            runCurrent()
+            oldResponse.complete(ShopMenu(emptyList(), "2020-01-01"))
+            runCurrent()
+
+            assertEquals(second.id, viewModel.uiState.value.shopMenuShopId)
+            assertEquals(currentMenu, viewModel.uiState.value.shopMenu)
+            assertEquals(
+                second.id,
+                viewModel.uiState.value.shopDetail
+                    ?.shop
+                    ?.id,
+            )
+        }
+
+    @Test
+    fun `상세를 닫은 뒤 이전 메뉴 응답과 메뉴 재시도는 상태를 다시 만들지 않는다`() =
+        coroutinesTest {
+            val shop = ramenShopFixture()
+            val oldResponse = CompletableDeferred<ShopMenu>()
+            var calls = 0
+            val menus =
+                object : ShopMenuRepository {
+                    override suspend fun fetchShopMenu(shopId: String): RamapResult<ShopMenu> {
+                        calls++
+                        return withContext(NonCancellable) { RamapResult.Success(oldResponse.await()) }
+                    }
+                }
+            val viewModel =
+                mapViewModel(
+                    ramenShopRepository = FakeRamenShopRepository(fetchByIdsResult = RamenShops(listOf(shop))),
+                    menuRepository = menus,
+                )
+            viewModel.dispatch(OnShopSelected(shop))
+            runCurrent()
+            viewModel.dispatch(OnShopDetailDismissed)
+            runCurrent()
+            oldResponse.complete(ShopMenu(emptyList(), "2020-01-01"))
+            viewModel.dispatch(MapIntent.OnShopMenuRetry)
+            runCurrent()
+
+            assertEquals(1, calls)
+            assertEquals(null, viewModel.uiState.value.shopMenuShopId)
+            assertEquals(null, viewModel.uiState.value.shopMenu)
+            assertEquals(
+                false,
+                viewModel.uiState.value.loadState
+                    .isLoading(MapLoadKey.ShopMenu),
+            )
+            assertEquals(ShopDetailSheetUiState.Closed, viewModel.uiState.value.shopDetailState)
+        }
+
     @Test
     fun `조회한 매장 리뷰 마흔 개는 기록 공백 복구 후 유지되며 일반 삭제는 재조회하지 않는다`() =
         coroutinesTest {
@@ -3120,7 +3277,7 @@ private fun verifyCachedShopDetailRefresh(
     viewModel.dispatch(selectShop(shop))
     runCurrent()
     val cached = requireNotNull(viewModel.uiState.value.shopDetail)
-    val refreshed = cached.copy(menuUpdatedAt = "2026-10-09T01:00:00Z", reviewCount = 23)
+    val refreshed = cached.copy(reviewCount = 23)
 
     viewModel.dispatch(OnShopDetailDismissed)
     runCurrent()
@@ -3178,6 +3335,7 @@ private fun mapViewModel(
     communityRepository: FakeCommunityRepository = FakeCommunityRepository(),
     profileRepository: FakeProfileRepository = FakeProfileRepository(null),
     reviewChanges: FakeReviewChangeStore = FakeReviewChangeStore(),
+    menuRepository: ShopMenuRepository = FakeMapShopMenuRepository(),
 ): MapViewModel =
     MapViewModel(
         ramenShopRepository = ramenShopRepository,
@@ -3201,6 +3359,7 @@ private fun mapViewModel(
         profileRepository = profileRepository,
         reviewChanges = reviewChanges,
         reviewChangeReducer = ReviewChangeReducer(),
+        shopMenuRepository = menuRepository,
     )
 
 private fun blockedReviewDetailUseCase(

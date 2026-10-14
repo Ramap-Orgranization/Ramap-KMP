@@ -47,6 +47,7 @@ import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.RamapTheme
 import com.peto.ramap.ui.main.map.component.ClusterShopList
 import com.peto.ramap.ui.main.map.component.SearchContent
+import com.peto.ramap.ui.main.map.contract.MapLoadKey
 import com.peto.ramap.ui.main.map.contract.MapUiState
 import com.peto.ramap.ui.main.map.model.CameraPosition
 import com.peto.ramap.ui.main.map.shop.ShopDetailContent
@@ -66,6 +67,7 @@ internal fun MapContent(
     onShopSelected: (RamenShop, Boolean, AnalyticsSource) -> Unit,
     onShopDetailDismissed: () -> Unit,
     onShopDetailRetry: () -> Unit,
+    onShopMenuRetry: () -> Unit = {},
     onRequestedShopDismissed: () -> Unit,
     onQueryChanged: (String) -> Unit,
     onRecentSearchSelected: (String) -> Unit,
@@ -241,6 +243,10 @@ internal fun MapContent(
         )
 
         ShopDetailContent(
+            menu = uiState.shopMenu,
+            isMenuLoading = uiState.loadState.isLoading(MapLoadKey.ShopMenu),
+            hasMenuLoadFailure = uiState.hasShopMenuLoadFailure,
+            onMenuRetry = onShopMenuRetry,
             state =
                 uiState.shopDetailState,
             visible = showShopDetail,
