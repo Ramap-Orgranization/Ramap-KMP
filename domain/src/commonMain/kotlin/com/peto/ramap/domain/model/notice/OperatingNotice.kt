@@ -1,6 +1,5 @@
 package com.peto.ramap.domain.model.notice
 
-import com.peto.ramap.domain.model.businesshour.BusinessDay
 import com.peto.ramap.domain.model.businesshour.BusinessHours
 import com.peto.ramap.domain.model.businesshour.BusinessHoursScheduleOverride
 import com.peto.ramap.domain.model.shop.RamenShop
@@ -9,6 +8,7 @@ import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.LocalTime
 import kotlinx.datetime.minus
+import kotlinx.datetime.plus
 import kotlin.time.Instant
 
 data class OperatingNotice(
@@ -26,17 +26,44 @@ data class OperatingNotice(
     val updatedAt: String? = null,
     val dailySchedules: List<OperatingNoticeDay> = emptyList(),
 ) {
-    fun isActiveAt(currentDateTime: LocalDateTime): Boolean = currentDateTime.date >= startDate && (endDate == null || currentDateTime.date <= endDate)
+    fun appliesOn(date: LocalDate): Boolean {
+        if (date < startDate || (endDate != null && date > endDate)) return false
+        if (dailySchedules.isEmpty()) return true
+        return dailySchedules.any { it.date == date && it.closed }
+    }
 
-    fun isCurrentOrScheduledAt(currentDateTime: LocalDateTime): Boolean = isActiveAt(currentDateTime) || startDate > currentDateTime.date
+    fun isActiveAt(currentDateTime: LocalDateTime): Boolean = appliesOn(currentDateTime.date)
 
-    fun isRelevantForBusinessHoursAt(currentDateTime: LocalDateTime): Boolean {
-        if (isCurrentOrScheduledAt(currentDateTime)) return true
+    fun isCurrentOrScheduledAt(currentDateTime: LocalDateTime): Boolean =
+        isActiveAt(currentDateTime) ||
+            if (dailySchedules.isEmpty()) startDate > currentDateTime.date else dailySchedules.any { it.closed && it.date > currentDateTime.date }
+
+    fun isRelevantForBusinessHoursAt(currentDateTime: LocalDateTime): Boolean = isCurrentOrScheduledAt(currentDateTime) || businessDateAt(currentDateTime) != null
+
+    fun businessDateAt(currentDateTime: LocalDateTime): LocalDate? {
+        if (isActiveAt(currentDateTime)) return currentDateTime.date
         val previousDate = currentDateTime.date.minus(1, DateTimeUnit.DAY)
-        val day = scheduleOn(previousDate, shop.businessHoursDetails)?.day ?: return false
-        val overnightDay = if (day.closed) shop.businessHoursDetails?.weekly?.get(BusinessDay.from(previousDate.dayOfWeek).key) ?: return false else day
-        val close = overnightDay.close?.let { runCatching { LocalTime.parse(it) }.getOrNull() } ?: return false
-        return overnightDay.closeNextDay && currentDateTime.time < close
+        if (!appliesOn(previousDate)) return null
+        val previousDay = shop.businessHoursDetails?.dayAt(previousDate) ?: return null
+        val close = previousDay.close?.let { runCatching { LocalTime.parse(it) }.getOrNull() } ?: return null
+        return previousDate.takeIf { previousDay.closeNextDay && currentDateTime.time < close }
+    }
+
+    fun nextClosingAt(currentDateTime: LocalDateTime): LocalDateTime? {
+        if (type != OperatingNoticeType.EARLY_CLOSING || endTime == null) return null
+        return listOf(currentDateTime.date.minus(1, DateTimeUnit.DAY), currentDateTime.date, currentDateTime.date.plus(1, DateTimeUnit.DAY), startDate)
+            .filter(::appliesOn)
+            .mapNotNull(::closingAt)
+            .filter { it > currentDateTime }
+            .minOrNull()
+    }
+
+    fun closingAt(businessDate: LocalDate): LocalDateTime? {
+        val time = endTime ?: return null
+        val day = shop.businessHoursDetails?.dayAt(businessDate)
+        val open = day?.open?.let { runCatching { LocalTime.parse(it) }.getOrNull() }
+        val date = if (day?.closeNextDay == true && open != null && time < open) businessDate.plus(1, DateTimeUnit.DAY) else businessDate
+        return LocalDateTime(date, time)
     }
 
     fun scheduleOn(

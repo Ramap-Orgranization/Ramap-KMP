@@ -1,7 +1,6 @@
 package com.peto.ramap.debug.admin.ui.registration.contract
 
 import com.peto.ramap.debug.admin.data.model.AdminCorrectionPreview
-import com.peto.ramap.debug.admin.data.model.AdminDelayedOpening
 import com.peto.ramap.debug.admin.data.model.AdminDraft
 import com.peto.ramap.debug.admin.data.model.AdminEvidence
 import com.peto.ramap.debug.admin.data.model.AdminExternalVenue
@@ -42,21 +41,16 @@ internal data class AdminRegistrationUiState(
     val editingEventId: String? = null,
     val correctionRequest: String = "",
     val correctionPreview: AdminCorrectionPreview? = null,
-    val delayedOpenings: List<AdminDelayedOpening> = emptyList(),
-    val delayedOpeningKoreaToday: String? = null,
-    val releasingDelayedOpeningId: String? = null,
     val selectedTab: AdminRegistrationTab = AdminRegistrationTab.EVENT_MANAGEMENT,
     val today: LocalDate = LocalDate.now(ZoneId.of("Asia/Seoul")),
     val managedEventsLoadFailed: Boolean = false,
-    val delayedOpeningsLoadFailed: Boolean = false,
     override val loadState: LoadState = LoadState(),
 ) : LoadableState<AdminRegistrationUiState> {
     val isSubmitting: Boolean get() = loadState.isLoading(AdminRegistrationLoadKey.Submission)
     val isSavingEventStatus: Boolean get() = loadState.isLoading(AdminRegistrationLoadKey.EventStatus)
     val isCorrecting: Boolean get() = loadState.isLoading(AdminRegistrationLoadKey.Correction)
     val isLoadingEvents: Boolean get() = loadState.isLoading(AdminRegistrationLoadKey.ManagedEvents)
-    val isLoadingDelayedOpenings: Boolean get() = loadState.isLoading(AdminRegistrationLoadKey.DelayedOpenings)
-    val isBusy: Boolean get() = isSubmitting || isSavingEventStatus || isCorrecting || loadState.isLoading(AdminRegistrationLoadKey.Release)
+    val isBusy: Boolean get() = isSubmitting || isSavingEventStatus || isCorrecting
 
     fun restoreForm(form: AdminRegistrationUiState): AdminRegistrationUiState =
         copy(

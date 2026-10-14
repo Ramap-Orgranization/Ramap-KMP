@@ -11,8 +11,6 @@ import ramap.shared.generated.resources.operating_notice_day_closed
 import ramap.shared.generated.resources.operating_notice_day_regular
 import ramap.shared.generated.resources.operating_notice_hours_unknown
 import ramap.shared.generated.resources.operating_notice_type_early_closing
-import ramap.shared.generated.resources.operating_notice_type_late_opening
-import ramap.shared.generated.resources.operating_notice_type_operating_notice
 import ramap.shared.generated.resources.operating_notice_type_temporary_closure
 import ramap.shared.generated.resources.shop_detail_business_hours_break_time_format
 import ramap.shared.generated.resources.shop_detail_business_hours_next_day_time_format
@@ -45,10 +43,8 @@ object ShopOperatingNoticeResourceMapper {
 
     fun typeLabel(type: OperatingNoticeType): StringResource =
         when (type) {
-            OperatingNoticeType.OPERATING_NOTICE -> Res.string.operating_notice_type_operating_notice
             OperatingNoticeType.TEMPORARY_CLOSURE -> Res.string.operating_notice_type_temporary_closure
             OperatingNoticeType.EARLY_CLOSING -> Res.string.operating_notice_type_early_closing
-            OperatingNoticeType.LATE_OPENING -> Res.string.operating_notice_type_late_opening
         }
 
     fun notice(notice: OperatingNotice): UiText = UiText(typeLabel(notice.type))

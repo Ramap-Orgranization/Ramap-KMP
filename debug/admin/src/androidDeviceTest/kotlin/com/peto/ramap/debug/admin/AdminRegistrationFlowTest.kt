@@ -33,7 +33,6 @@ import java.time.LocalDate
 import java.time.ZoneOffset
 import java.util.Locale
 import kotlin.test.assertEquals
-import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -111,19 +110,6 @@ class AdminRegistrationFlowTest {
         compose.runOnIdle { assertNull(viewModel.uiState.value.draft) }
         tab("이벤트 수정")
         compose.onNodeWithText("등록 테스트").assertIsDisplayed()
-    }
-
-    @Test
-    fun openingReleaseRefreshesAndDoesNotRemainBusy() {
-        tab("영업 변동")
-        compose.onNodeWithText("영업 시작 처리").performScrollTo().performClick()
-        compose.waitUntil {
-            data.releases == 1 &&
-                viewModel.uiState.value.delayedOpenings
-                    .isEmpty()
-        }
-        compose.onNodeWithText("해제 대기 중인 오픈 지연이 없습니다.").assertIsDisplayed()
-        compose.runOnIdle { assertFalse(viewModel.uiState.value.isBusy) }
     }
 
     @Test

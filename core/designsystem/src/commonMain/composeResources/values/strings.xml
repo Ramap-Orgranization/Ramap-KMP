@@ -193,10 +193,8 @@
     <string name="operating_notice_scheduled_section">예정된 운영 변동</string>
     <string name="operating_notice_error_title">영업 변동을 불러오지 못했어요</string>
     <string name="operating_notice_error_description">잠시 후 다시 시도해 주세요.</string>
-    <string name="operating_notice_type_operating_notice">영업 변동</string>
     <string name="operating_notice_type_temporary_closure">임시 휴무</string>
     <string name="operating_notice_type_early_closing">조기 마감</string>
-    <string name="operating_notice_type_late_opening">오픈 지연</string>
     <string name="operating_notice_source_action">원문 보기</string>
 
     <!-- 이벤트 공통 정보 -->
@@ -468,8 +466,6 @@
     <!-- 관리자 등록 -->
     <string name="admin_registration_shop_names_load_failure">매장 목록을 불러오지 못했어요.</string>
     <string name="admin_registration_managed_events_load_failure">관리할 이벤트를 불러오지 못했어요.</string>
-    <string name="admin_delayed_opening_load_failure">오픈 지연 목록을 불러오지 못했어요.</string>
-    <string name="admin_delayed_opening_release_failure">영업 시작 처리에 실패했어요. 다시 시도해 주세요.</string>
     <string name="admin_registration_preview_required">URL 또는 캡처 이미지를 입력해 주세요.</string>
     <string name="admin_registration_preview_failure">미리보기를 만들지 못했어요.</string>
     <string name="admin_registration_draft_required">먼저 미리보기를 만들어 주세요.</string>

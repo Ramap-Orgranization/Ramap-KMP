@@ -24,14 +24,24 @@ class AdminRegistrationPreviewStateReducerTest {
             AdminDraft(
                 startDate = "2026-10-01",
                 endDate = "2026-10-31",
-                noticeType = "operating_notice",
+                noticeType = "full_close",
                 dailySchedules = listOf(AdminNoticeDay("2026-10-06", true), AdminNoticeDay("2026-10-08", false)),
             )
         val result = AdminRegistrationPreviewStateReducer.reduce(state, preview)
         assertEquals("2026-10-01", result.draft?.startDate)
         assertEquals("2026-10-31", result.draft?.endDate)
         assertEquals(preview.dailySchedules, result.draft?.dailySchedules)
-        assertEquals(OperatingNoticeType.OPERATING_NOTICE, result.selectedNoticeType)
+        assertEquals(OperatingNoticeType.TEMPORARY_CLOSURE, result.selectedNoticeType)
+    }
+
+    @Test
+    fun `임시 휴무를 선택한 미리보기는 조기 마감 시각을 비운다`() {
+        val state = AdminRegistrationUiState(isOperatingNotice = true, selectedNoticeType = OperatingNoticeType.TEMPORARY_CLOSURE)
+        val preview = AdminDraft(noticeType = "early_close", endTime = "15:00")
+        val draft = AdminRegistrationPreviewStateReducer.reduce(state, preview).draft!!
+        assertEquals("full_close", draft.noticeType)
+        assertNull(draft.endTime)
+        assertEquals(true, draft.canRegisterOperatingNotice())
     }
 
     @Test

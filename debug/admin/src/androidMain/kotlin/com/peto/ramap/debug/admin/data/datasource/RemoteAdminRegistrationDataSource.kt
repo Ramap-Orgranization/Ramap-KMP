@@ -1,15 +1,12 @@
 package com.peto.ramap.debug.admin.data.datasource
 
 import com.peto.ramap.debug.admin.data.model.AdminCorrectionPreview
-import com.peto.ramap.debug.admin.data.model.AdminDelayedOpening
-import com.peto.ramap.debug.admin.data.model.AdminDelayedOpenings
 import com.peto.ramap.debug.admin.data.model.AdminDraft
 import com.peto.ramap.debug.admin.data.model.AdminEvidence
 import com.peto.ramap.debug.admin.data.model.AdminExternalVenue
 import com.peto.ramap.debug.admin.data.model.AdminManagedEvent
 import com.peto.ramap.debug.admin.data.model.AdminShopHours
 import com.peto.ramap.debug.admin.data.model.AdminShopName
-import com.peto.ramap.debug.admin.data.model.request.AdminOperatingNoticeRequest
 import com.peto.ramap.debug.admin.data.model.request.CorrectionRequest
 import com.peto.ramap.debug.admin.data.model.request.EventStatusRequest
 import com.peto.ramap.debug.admin.data.model.request.PreviewRequest
@@ -102,9 +99,9 @@ internal class RemoteAdminRegistrationDataSource(
                 sourceUrl = draft.sourceUrl.orEmpty(),
                 evidencePath = draft.evidencePath,
                 noticeType = draft.noticeType,
-                startTime = draft.startTime,
-                endTime = draft.endTime,
-                scheduleOverride = draft.scheduleOverride,
+                startTime = null,
+                endTime = if (draft.noticeType == "early_close") draft.endTime else null,
+                scheduleOverride = null,
                 dailySchedules = draft.dailySchedules,
                 participants = draft.participants,
             ),
@@ -146,16 +143,6 @@ internal class RemoteAdminRegistrationDataSource(
     }
 
     override suspend fun fetchManagedEvents(): List<AdminManagedEvent> = client.functions.invoke(EVENT_STATUS_FUNCTION, EventStatusRequest(action = "list")).body()
-
-    override suspend fun fetchDelayedOpenings(): AdminDelayedOpenings =
-        client.functions
-            .invoke(OPERATING_NOTICE_FUNCTION, AdminOperatingNoticeRequest(action = "list"))
-            .body<DelayedOpeningResponse>()
-            .let { AdminDelayedOpenings(it.koreaToday, it.notices) }
-
-    override suspend fun releaseDelayedOpening(id: String) {
-        client.functions.invoke(OPERATING_NOTICE_FUNCTION, AdminOperatingNoticeRequest(action = "release", id = id))
-    }
 
     override suspend fun saveEventStatus(
         eventId: String,
@@ -236,12 +223,5 @@ internal class RemoteAdminRegistrationDataSource(
         const val REGISTER_FUNCTION = "register-event"
         const val EVENT_STATUS_FUNCTION = "admin-event-status"
         const val CORRECTION_FUNCTION = "admin-correct-registration"
-        const val OPERATING_NOTICE_FUNCTION = "admin-operating-notice"
     }
 }
-
-@kotlinx.serialization.Serializable
-private data class DelayedOpeningResponse(
-    @kotlinx.serialization.SerialName("korea_today") val koreaToday: String,
-    val notices: List<AdminDelayedOpening> = emptyList(),
-)

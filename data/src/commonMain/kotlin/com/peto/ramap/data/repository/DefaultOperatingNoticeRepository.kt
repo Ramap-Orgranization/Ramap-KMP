@@ -45,7 +45,7 @@ internal class DefaultOperatingNoticeRepository(
                     .firstOrNull()
                     ?.toDomain() ?: return@invokeRequest emptyList()
 
-            responses.map { it.toDomain(shop) }
+            responses.mapNotNull { it.toDomain(shop) }
         }
 
     private fun today(): LocalDate = Clock.System.todayIn(TimeZone.of(SEOUL_TIME_ZONE))

@@ -1,10 +1,8 @@
 package com.peto.ramap.debug.admin.ui.registration
 
 import com.peto.ramap.debug.admin.data.datasource.AdminRegistrationDataSource
-import com.peto.ramap.debug.admin.data.model.AdminBreakTime
 import com.peto.ramap.debug.admin.data.model.AdminDraft
 import com.peto.ramap.debug.admin.data.model.AdminManagedEvent
-import com.peto.ramap.debug.admin.data.model.AdminScheduleOverride
 import com.peto.ramap.debug.admin.ui.registration.contract.AdminEventStatus
 import com.peto.ramap.debug.admin.ui.registration.contract.AdminEventStatusScope
 import com.peto.ramap.debug.admin.ui.registration.contract.AdminRegistrationIntent
@@ -25,8 +23,6 @@ import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.admin_correction_failure
 import ramap.shared.generated.resources.admin_correction_required
 import ramap.shared.generated.resources.admin_correction_success
-import ramap.shared.generated.resources.admin_delayed_opening_load_failure
-import ramap.shared.generated.resources.admin_delayed_opening_release_failure
 import ramap.shared.generated.resources.admin_event_status_event_required
 import ramap.shared.generated.resources.admin_event_status_period_required
 import ramap.shared.generated.resources.admin_event_status_reason_required
@@ -53,7 +49,6 @@ internal class AdminRegistrationViewModel(
         loadShopNames()
         loadExternalVenues()
         loadManagedEvents()
-        loadDelayedOpenings()
     }
 
     override suspend fun handleIntent(intent: AdminRegistrationIntent) {
@@ -61,7 +56,6 @@ internal class AdminRegistrationViewModel(
         when (intent) {
             AdminRegistrationIntent.OnResumed -> {
                 loadManagedEvents()
-                loadDelayedOpenings()
             }
             AdminRegistrationIntent.OnEvidenceReadFailed -> showToast(Res.string.admin_registration_image_required)
             is AdminRegistrationIntent.OnRegistrationTypeSelected ->
@@ -81,9 +75,19 @@ internal class AdminRegistrationViewModel(
 
             is AdminRegistrationIntent.OnNoticeTypeSelected ->
                 reduce {
+                    if (draft?.dailySchedules?.isNotEmpty() == true && intent.noticeType != OperatingNoticeType.TEMPORARY_CLOSURE) {
+                        return@reduce copy(selectedNoticeType = intent.noticeType, draft = null, selectedStartDate = null, selectedEndDate = null, message = null)
+                    }
                     copy(
                         selectedNoticeType = intent.noticeType,
-                        draft = draft?.takeIf { it.dailySchedules.isEmpty() }?.copy(noticeType = intent.noticeType.toRequestValue()),
+                        draft =
+                            draft?.copy(
+                                noticeType = intent.noticeType.toRequestValue(),
+                                startTime = null,
+                                endTime = if (intent.noticeType == OperatingNoticeType.EARLY_CLOSING) draft.endTime else null,
+                                scheduleOverride = null,
+                                dailySchedules = if (intent.noticeType == OperatingNoticeType.TEMPORARY_CLOSURE) draft.dailySchedules else emptyList(),
+                            ),
                         message = null,
                     )
                 }
@@ -124,46 +128,9 @@ internal class AdminRegistrationViewModel(
                 reduce { copy(draft = draft?.copy(description = intent.value), message = null) }
             is AdminRegistrationIntent.OnDraftNoticeTimesChanged ->
                 reduce { copy(draft = draft?.copy(startTime = intent.startTime, endTime = intent.endTime), message = null) }
-            is AdminRegistrationIntent.OnDraftScheduleOverrideChanged ->
-                reduce {
-                    val existing = draft?.scheduleOverride
-                    val dayKey = selectedStartDate?.let(java.time.LocalDate::parse)?.dayOfWeek?.let(::dayKey)
-                    val regularBreaks = selectedShopHours?.breakTimes?.get(dayKey).orEmpty()
-                    copy(
-                        draft =
-                            draft?.copy(
-                                scheduleOverride =
-                                    AdminScheduleOverride(
-                                        open = intent.open,
-                                        close = intent.close,
-                                        closeNextDay = intent.open != null && intent.close != null && intent.close < intent.open,
-                                        breakTimes = existing?.breakTimes ?: regularBreaks,
-                                    ),
-                            ),
-                        message = null,
-                    )
-                }
             is AdminRegistrationIntent.OnRegularSegmentSelected ->
                 reduce {
-                    copy(draft = draft?.copy(scheduleOverride = AdminScheduleOverride(open = intent.open, close = intent.close, closeNextDay = intent.close < intent.open)), message = null)
-                }
-            is AdminRegistrationIntent.OnDraftBreakTimeChanged ->
-                reduce {
-                    val scheduleOverride = draft?.scheduleOverride ?: return@reduce this
-                    val breaks = scheduleOverride.breakTimes.toMutableList()
-                    if (intent.index !in breaks.indices) return@reduce this
-                    breaks[intent.index] = AdminBreakTime(intent.start, intent.end)
-                    copy(
-                        draft =
-                            draft.copy(
-                                scheduleOverride = scheduleOverride.copy(breakTimes = breaks),
-                            ),
-                        message = null,
-                    )
-                }
-            AdminRegistrationIntent.OnDraftBreakTimesCleared ->
-                reduce {
-                    copy(draft = draft?.copy(scheduleOverride = draft.scheduleOverride?.copy(breakTimes = emptyList())), message = null)
+                    copy(draft = draft?.copy(endTime = intent.close, startTime = null, scheduleOverride = null), message = null)
                 }
             is AdminRegistrationIntent.OnEvidenceSelected -> reduce { copy(evidence = intent.evidence, draft = null, message = null) }
             is AdminRegistrationIntent.OnDateRangeSelected -> changeDates(intent.startDate, intent.endDate)
@@ -171,8 +138,6 @@ internal class AdminRegistrationViewModel(
             AdminRegistrationIntent.OnTodaySelected -> selectToday()
             AdminRegistrationIntent.OnPreviewOrRegisterClicked -> previewOrRegister()
             AdminRegistrationIntent.OnManagedEventsRefreshed -> loadManagedEvents()
-            AdminRegistrationIntent.OnDelayedOpeningsRefreshed -> loadDelayedOpenings()
-            is AdminRegistrationIntent.OnDelayedOpeningReleased -> releaseDelayedOpening(intent.id)
             is AdminRegistrationIntent.OnManagedEventSelected ->
                 reduce {
                     copy(
@@ -239,7 +204,6 @@ internal class AdminRegistrationViewModel(
             )
         }
         if (tab == AdminRegistrationTab.EVENT_MANAGEMENT || tab == AdminRegistrationTab.EVENT_EDIT) loadManagedEvents()
-        if (tab == AdminRegistrationTab.OPERATING_NOTICE) loadDelayedOpenings()
     }
 
     private fun selectToday() {
@@ -311,40 +275,6 @@ internal class AdminRegistrationViewModel(
         }
     }
 
-    private fun loadDelayedOpenings() {
-        launchTask(taskKey = DELAYED_OPENINGS_TASK_KEY, loadKey = AdminRegistrationLoadKey.DelayedOpenings, policy = TaskPolicy.CancelPrevious, onStart = { copy(delayedOpeningsLoadFailed = false) }) {
-            try {
-                val delayedOpenings = dataSource.fetchDelayedOpenings()
-                reduce {
-                    copy(
-                        delayedOpenings = delayedOpenings.notices,
-                        delayedOpeningKoreaToday = delayedOpenings.koreaToday,
-                    )
-                }
-            } catch (exception: CancellationException) {
-                throw exception
-            } catch (exception: Throwable) {
-                handleError(exception)
-                reduce { copy(delayedOpeningsLoadFailed = true) }
-                showToast(Res.string.admin_delayed_opening_load_failure)
-            }
-        }
-    }
-
-    private fun releaseDelayedOpening(id: String) {
-        launchTask(taskKey = RELEASE_TASK_KEY, loadKey = AdminRegistrationLoadKey.Release, policy = TaskPolicy.IgnoreNew, onStart = { copy(releasingDelayedOpeningId = id) }, onFinish = { copy(releasingDelayedOpeningId = null) }) {
-            try {
-                dataSource.releaseDelayedOpening(id)
-                loadDelayedOpenings()
-            } catch (exception: CancellationException) {
-                throw exception
-            } catch (exception: Throwable) {
-                handleError(exception)
-                showToast(Res.string.admin_delayed_opening_release_failure)
-            }
-        }
-    }
-
     private fun previewCorrection() {
         val request = currentState.correctionRequest.trim()
         if (request.isEmpty()) {
@@ -371,7 +301,6 @@ internal class AdminRegistrationViewModel(
                 dataSource.applyCorrection(preview, preview.changes)
                 reduce { copy(correctionPreview = null, correctionRequest = "") }
                 loadManagedEvents()
-                loadDelayedOpenings()
                 showToast(Res.string.admin_correction_success, ToastType.SUCCESS)
             } catch (exception: CancellationException) {
                 throw exception
@@ -516,6 +445,10 @@ internal class AdminRegistrationViewModel(
             showToast(Res.string.admin_registration_draft_required)
             return
         }
+        if (currentState.isOperatingNotice && !draft.canRegisterOperatingNotice()) {
+            showToast(Res.string.admin_registration_register_failure)
+            return
+        }
         launchTask(
             taskKey = SUBMIT_TASK_KEY,
             loadKey = AdminRegistrationLoadKey.Submission,
@@ -532,7 +465,6 @@ internal class AdminRegistrationViewModel(
                 reduce { restoreForm(AdminRegistrationUiState()).copy(editingEventId = null, message = AdminRegistrationMessage.SUCCESS) }
                 savedForms.remove(currentState.selectedTab)
                 loadManagedEvents()
-                if (currentState.isOperatingNotice) loadDelayedOpenings()
                 if (!currentState.isOperatingNotice && editingEventId == null) loadExternalVenues()
                 showToast(if (editingEventId == null) Res.string.admin_registration_success else Res.string.admin_correction_success, ToastType.SUCCESS)
             } catch (exception: CancellationException) {
@@ -602,8 +534,6 @@ internal class AdminRegistrationViewModel(
         const val EVENT_STATUS_SAVE_TASK_KEY = "admin-event-status-save"
         const val CORRECTION_TASK_KEY = "admin-correction"
         val FORM_TABS = setOf(AdminRegistrationTab.EVENT_REGISTRATION, AdminRegistrationTab.OPERATING_NOTICE)
-        const val RELEASE_TASK_KEY = "admin-release-delayed-opening"
-        const val DELAYED_OPENINGS_TASK_KEY = "admin-delayed-openings"
     }
 }
 
@@ -618,10 +548,8 @@ private fun AdminEventStatusScope.requestValue(): String =
 
 private fun OperatingNoticeType.toRequestValue(): String =
     when (this) {
-        OperatingNoticeType.OPERATING_NOTICE -> "operating_notice"
         OperatingNoticeType.TEMPORARY_CLOSURE -> "full_close"
         OperatingNoticeType.EARLY_CLOSING -> "early_close"
-        OperatingNoticeType.LATE_OPENING -> "late_opening"
     }
 
 private fun createEventDraft(event: AdminManagedEvent): AdminDraft =

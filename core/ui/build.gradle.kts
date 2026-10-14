@@ -8,6 +8,7 @@ kotlin {
         api(projects.core.analytics)
         api(projects.core.common)
         api(projects.domain)
+        api(libs.kotlinx.datetime)
         implementation(projects.core.designsystem)
         implementation(libs.compose.components.resources)
         implementation(libs.androidx.lifecycle.viewmodel.compose)

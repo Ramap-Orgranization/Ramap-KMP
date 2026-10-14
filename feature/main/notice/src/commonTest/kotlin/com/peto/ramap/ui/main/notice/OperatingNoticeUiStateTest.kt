@@ -27,7 +27,7 @@ class OperatingNoticeUiStateTest {
     ) = OperatingNotice(
         id = id,
         shop = ramenShopFixture(id = shopId),
-        type = OperatingNoticeType.OPERATING_NOTICE,
+        type = OperatingNoticeType.TEMPORARY_CLOSURE,
         description = "운영 일정",
         startDate = LocalDate.parse("2026-10-01"),
         endDate = LocalDate.parse("2026-10-31"),

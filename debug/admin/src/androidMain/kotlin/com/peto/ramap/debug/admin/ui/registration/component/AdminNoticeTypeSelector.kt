@@ -63,10 +63,8 @@ internal fun AdminNoticeTypeSelector(
 @Composable
 private fun OperatingNoticeType.label(): String =
     when (this) {
-        OperatingNoticeType.OPERATING_NOTICE,
         OperatingNoticeType.TEMPORARY_CLOSURE,
         OperatingNoticeType.EARLY_CLOSING,
-        OperatingNoticeType.LATE_OPENING,
         -> composeStringResource(ShopOperatingNoticeResourceMapper.typeLabel(this))
     }
 

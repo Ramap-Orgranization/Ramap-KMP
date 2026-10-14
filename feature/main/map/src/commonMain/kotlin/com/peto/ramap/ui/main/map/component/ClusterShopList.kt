@@ -38,11 +38,10 @@ import kotlin.time.Clock
 internal fun ClusterShopList(
     shops: List<RamenShop>,
     operatingNotices: List<OperatingNotice>,
+    currentDateTime: LocalDateTime,
     onShopClick: (RamenShop) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val currentDateTime = Clock.System.now().toLocalDateTime(TimeZone.of("Asia/Seoul"))
-
     Column(
         modifier = modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -131,6 +130,7 @@ private fun ClusterShopListPreview() {
         ClusterShopList(
             shops = shops,
             operatingNotices = notices,
+            currentDateTime = Clock.System.now().toLocalDateTime(TimeZone.of("Asia/Seoul")),
             onShopClick = {},
         )
     }

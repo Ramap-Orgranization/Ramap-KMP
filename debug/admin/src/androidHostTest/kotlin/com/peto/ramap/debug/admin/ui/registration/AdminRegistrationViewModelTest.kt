@@ -2,10 +2,13 @@ package com.peto.ramap.debug.admin.ui.registration
 
 import com.peto.ramap.coroutinesTest
 import com.peto.ramap.debug.admin.FakeAdminRegistrationDataSource
+import com.peto.ramap.debug.admin.data.model.AdminDraft
+import com.peto.ramap.debug.admin.data.model.AdminNoticeDay
 import com.peto.ramap.debug.admin.ui.registration.contract.AdminEventStatus
 import com.peto.ramap.debug.admin.ui.registration.contract.AdminRegistrationIntent
 import com.peto.ramap.debug.admin.ui.registration.contract.AdminRegistrationTab
 import com.peto.ramap.domain.model.event.ShopEventType
+import com.peto.ramap.domain.model.notice.OperatingNoticeType
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runCurrent
@@ -119,23 +122,6 @@ class AdminRegistrationViewModelTest {
         }
 
     @Test
-    fun `release refresh does not cancel its own mutation or leave spinner active`() =
-        coroutinesTest {
-            val data = FakeAdminRegistrationDataSource()
-            val viewModel = viewModel(data)
-            runCurrent()
-            viewModel.dispatch(AdminRegistrationIntent.OnDelayedOpeningReleased("delay"))
-            runCurrent()
-            assertEquals(1, data.releases)
-            assertTrue(
-                viewModel.uiState.value.delayedOpenings
-                    .isEmpty(),
-            )
-            assertNull(viewModel.uiState.value.releasingDelayedOpeningId)
-            assertFalse(viewModel.uiState.value.isBusy)
-        }
-
-    @Test
     fun `failed event fetch exposes retry and successful retry clears error`() =
         coroutinesTest {
             val data = FakeAdminRegistrationDataSource().apply { eventsFailure = IllegalStateException("offline") }
@@ -171,6 +157,53 @@ class AdminRegistrationViewModelTest {
             )
         }
 
+    @Test
+    fun `조기 마감 시각이 없으면 등록을 막고 확인한 시각을 입력하면 등록한다`() =
+        coroutinesTest {
+            val data = FakeAdminRegistrationDataSource()
+            val viewModel = viewModel(data)
+            runCurrent()
+            viewModel.dispatch(AdminRegistrationIntent.OnTabSelected(AdminRegistrationTab.OPERATING_NOTICE))
+            viewModel.dispatch(AdminRegistrationIntent.OnSourceUrlChanged("https://www.instagram.com/test_shop/"))
+            viewModel.dispatch(AdminRegistrationIntent.OnPreviewOrRegisterClicked)
+            runCurrent()
+            viewModel.dispatch(AdminRegistrationIntent.OnDraftNoticeTimesChanged(null, null))
+            viewModel.dispatch(AdminRegistrationIntent.OnPreviewOrRegisterClicked)
+            runCurrent()
+            assertEquals(0, data.registrations)
+            viewModel.dispatch(AdminRegistrationIntent.OnDraftNoticeTimesChanged(null, "15:00"))
+            viewModel.dispatch(AdminRegistrationIntent.OnPreviewOrRegisterClicked)
+            runCurrent()
+            assertEquals(1, data.registrations)
+            assertEquals("15:00", data.savedDraft?.endTime)
+        }
+
+    @Test
+    fun `달력 공지에서 조기 마감으로 바꾸면 월 전체 기간과 초안을 무효화한다`() =
+        coroutinesTest {
+            val data =
+                FakeAdminRegistrationDataSource().apply {
+                    previewResult =
+                        AdminDraft(
+                            noticeType = "full_close",
+                            startDate = "2026-10-01",
+                            endDate = "2026-10-31",
+                            dailySchedules = listOf(AdminNoticeDay("2026-10-14", true)),
+                        )
+                }
+            val viewModel = viewModel(data)
+            runCurrent()
+            viewModel.dispatch(AdminRegistrationIntent.OnTabSelected(AdminRegistrationTab.OPERATING_NOTICE))
+            viewModel.dispatch(AdminRegistrationIntent.OnSourceUrlChanged("https://www.instagram.com/test_shop/"))
+            viewModel.dispatch(AdminRegistrationIntent.OnPreviewOrRegisterClicked)
+            runCurrent()
+            viewModel.dispatch(AdminRegistrationIntent.OnNoticeTypeSelected(OperatingNoticeType.EARLY_CLOSING))
+            runCurrent()
+            assertNull(viewModel.uiState.value.draft)
+            assertNull(viewModel.uiState.value.selectedStartDate)
+            assertNull(viewModel.uiState.value.selectedEndDate)
+        }
+
     private fun viewModel(data: FakeAdminRegistrationDataSource = FakeAdminRegistrationDataSource()) = AdminRegistrationViewModel(data) { LocalDate.parse(FakeAdminRegistrationDataSource.TODAY) }
 
     @Test
@@ -199,7 +232,7 @@ class AdminRegistrationViewModelTest {
                 assertEquals("2026-10-30", data.savedDraft?.startDate)
                 assertEquals("2026-11-02", data.savedDraft?.endDate)
                 assertEquals(tab == AdminRegistrationTab.OPERATING_NOTICE, data.registeredAsOperatingNotice)
-                if (tab == AdminRegistrationTab.OPERATING_NOTICE) assertEquals("11:00", data.savedDraft?.scheduleOverride?.open)
+                if (tab == AdminRegistrationTab.OPERATING_NOTICE) assertEquals("15:00", data.savedDraft?.endTime)
             }
         }
 

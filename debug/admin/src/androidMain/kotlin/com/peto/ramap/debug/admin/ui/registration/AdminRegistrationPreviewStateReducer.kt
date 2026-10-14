@@ -11,6 +11,7 @@ internal object AdminRegistrationPreviewStateReducer {
         preview: AdminDraft,
     ): AdminRegistrationUiState {
         val isMonthly = state.isOperatingNotice && preview.dailySchedules.isNotEmpty()
+        val resolvedNoticeType = if (isMonthly) "full_close" else state.selectedNoticeType?.let(::noticeTypeRequestValue) ?: preview.noticeType
         val resolvedEventType = if (state.hasSelectedEventType) state.selectedEventType else resolveEventType(preview.eventType, state.selectedEventType)
         val resolvedEndDate =
             if (!state.isOperatingNotice && resolvedEventType == ShopEventType.STORE_RENEWAL) {
@@ -34,10 +35,13 @@ internal object AdminRegistrationPreviewStateReducer {
                     sourceUrl = preview.sourceUrl ?: state.sourceUrl.ifBlank { null },
                     startDate = if (isMonthly) preview.startDate else state.selectedStartDate ?: preview.startDate,
                     endDate = resolvedEndDate,
-                    noticeType = if (isMonthly) "operating_notice" else state.selectedNoticeType?.let(::noticeTypeRequestValue) ?: preview.noticeType,
+                    noticeType = resolvedNoticeType,
+                    startTime = if (state.isOperatingNotice) null else preview.startTime,
+                    endTime = if (state.isOperatingNotice && resolvedNoticeType != "early_close") null else preview.endTime,
+                    scheduleOverride = if (state.isOperatingNotice) null else preview.scheduleOverride,
                 ),
             selectedEventType = resolvedEventType,
-            selectedNoticeType = if (isMonthly) OperatingNoticeType.OPERATING_NOTICE else state.selectedNoticeType,
+            selectedNoticeType = if (isMonthly) OperatingNoticeType.TEMPORARY_CLOSURE else state.selectedNoticeType,
             selectedStartDate = if (isMonthly) preview.startDate else state.selectedStartDate ?: preview.startDate,
             selectedEndDate = resolvedEndDate,
             message = null,
@@ -54,9 +58,7 @@ internal object AdminRegistrationPreviewStateReducer {
 
     private fun noticeTypeRequestValue(noticeType: OperatingNoticeType): String =
         when (noticeType) {
-            OperatingNoticeType.OPERATING_NOTICE -> "operating_notice"
             OperatingNoticeType.TEMPORARY_CLOSURE -> "full_close"
             OperatingNoticeType.EARLY_CLOSING -> "early_close"
-            OperatingNoticeType.LATE_OPENING -> "late_opening"
         }
 }
