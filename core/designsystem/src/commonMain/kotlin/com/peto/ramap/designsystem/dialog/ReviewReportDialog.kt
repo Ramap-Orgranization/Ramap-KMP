@@ -1,4 +1,4 @@
-package com.peto.ramap.designsystem.review
+package com.peto.ramap.designsystem.dialog
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.peto.ramap.designsystem.button.AppButton
+import com.peto.ramap.designsystem.review.ReviewReportFormContent
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.domain.model.community.ReportReason
 import com.peto.ramap.theme.AppTextStyle
