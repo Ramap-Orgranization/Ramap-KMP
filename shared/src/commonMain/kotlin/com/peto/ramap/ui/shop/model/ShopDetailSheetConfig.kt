@@ -9,6 +9,5 @@ data class ShopDetailSheetConfig(
     val maxHeight: Dp,
     val isNavigationBarPadded: Boolean = false,
     val visible: Boolean = true,
-    val showRequestedLoadingInSheet: Boolean = false,
     val showReviewsOnOpen: Boolean = false,
 )

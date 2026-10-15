@@ -1,4 +1,4 @@
-package com.peto.ramap.ui.shop.model
+package com.peto.ramap.ui.shop.overview.model
 
 /** 다른 화면에서 지도에 진입한 순간을 상세의 비동기 작업과 공유한다. */
 class ShopDetailEntryContext {

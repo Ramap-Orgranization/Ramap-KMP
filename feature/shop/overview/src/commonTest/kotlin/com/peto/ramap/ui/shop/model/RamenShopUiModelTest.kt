@@ -2,6 +2,7 @@ package com.peto.ramap.ui.shop.model
 
 import com.peto.ramap.domain.model.report.ShopInformationField
 import com.peto.ramap.fixture.ramenShopFixture
+import com.peto.ramap.ui.shop.overview.model.RamenShopUiModel
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertSame

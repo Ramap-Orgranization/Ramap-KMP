@@ -1,4 +1,4 @@
-package com.peto.ramap.ui.shop.log.event
+package com.peto.ramap.ui.shop.overview.log.event
 
 import com.peto.ramap.analytics.AnalyticsEvent
 

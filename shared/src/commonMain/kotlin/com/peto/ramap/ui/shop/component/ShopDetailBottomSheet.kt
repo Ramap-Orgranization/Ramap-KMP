@@ -1,6 +1,5 @@
 package com.peto.ramap.ui.shop.component
 
-import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.Orientation
@@ -8,8 +7,6 @@ import androidx.compose.foundation.gestures.draggable
 import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxSize
@@ -21,9 +18,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.BottomSheetScaffold
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.SheetValue
@@ -40,6 +37,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.navigationevent.NavigationEventInfo
@@ -48,20 +46,25 @@ import androidx.navigationevent.compose.rememberNavigationEventState
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.DimmedColor
 import com.peto.ramap.theme.GrayColor
+import com.peto.ramap.ui.paging.InfiniteLazyColumn
+import com.peto.ramap.ui.paging.InfiniteScrollState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ShopDetailBottomSheet(
     shopId: String,
+    listState: LazyListState,
     maxHeight: Dp,
     isBackEnabled: Boolean,
     isNavigationBarPadded: Boolean,
     onDismissRequest: () -> Unit,
+    loadMoreState: InfiniteScrollState,
+    loadMoreEnabled: Boolean,
+    onLoadMore: () -> Unit,
     floatingAction: (@Composable () -> Unit)? = null,
-    content: @Composable ColumnScope.(ScrollState) -> Unit,
+    content: LazyListScope.() -> Unit,
 ) {
     key(shopId) {
-        val scrollState = rememberScrollState()
         val bottomSheetState =
             rememberStandardBottomSheetState(
                 initialValue = SheetValue.PartiallyExpanded,
@@ -138,18 +141,25 @@ fun ShopDetailBottomSheet(
                 containerColor = Color.Transparent,
                 sheetDragHandle = null,
                 sheetContent = {
-                    Column(
+                    InfiniteLazyColumn(
+                        loadMoreState = loadMoreState,
+                        loadMoreEnabled = loadMoreEnabled,
+                        onLoadMore = onLoadMore,
+                        state = listState,
                         modifier =
                             Modifier
+                                .testTag("shop_detail_list")
                                 .fillMaxWidth()
                                 .height(maxHeight)
                                 .run {
                                     if (isNavigationBarPadded) navigationBarsPadding() else this
-                                }.verticalScroll(scrollState),
+                                },
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
-                        ShopDetailSheetHandle(dragModifier = handleDragModifier)
-                        content(scrollState)
+                        item(key = "shop_detail_handle", contentType = "handle") {
+                            ShopDetailSheetHandle(dragModifier = handleDragModifier)
+                        }
+                        content()
                     }
                 },
                 content = {},

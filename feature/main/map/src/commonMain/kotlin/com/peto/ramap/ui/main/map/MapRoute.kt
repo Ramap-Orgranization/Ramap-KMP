@@ -181,7 +181,6 @@ fun MapRoute(
                         isUncovered = isUncovered,
                         isBackEnabled = isBackEnabled,
                         showReviewsOnOpen = shouldShowReviews,
-                        showRequestedLoadingInSheet = false,
                         toastManager = toastManager,
                         appSettingsOpener = appSettingsOpener,
                         shopShareLinkFactory = shopShareLinkFactory,

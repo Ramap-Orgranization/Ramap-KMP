@@ -17,7 +17,7 @@ import com.peto.ramap.fake.FakeLoginRepository
 import com.peto.ramap.fake.FakeProfileRepository
 import com.peto.ramap.fake.FakeReviewChangeStore
 import com.peto.ramap.fake.FakeShopReviewRepository
-import com.peto.ramap.ui.shop.review.contract.ShopReviewIntent
+import com.peto.ramap.ui.shop.review.contract.ReviewsIntent
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.NonCancellable
@@ -29,14 +29,14 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class ShopReviewViewModelTest {
+class ReviewsViewModelTest {
     @Test
     fun `생성 직후 매장을 선택해도 첫 조회에 로그인 사용자를 반영하고 중복 조회하지 않는다`() =
         coroutinesTest {
             val fake = FakeShopReviewRepository()
             val profile = FakeProfileRepository("owner", isProfilePublic = false)
             val login = FakeLoginRepository(LoginSessionState.AUTHENTICATED)
-            var viewModel: ShopReviewViewModel? = null
+            var viewModel: ReviewsViewModel? = null
             val requestedViewers = mutableListOf<String?>()
             val requestedLoginStates = mutableListOf<Boolean>()
             val repository =
@@ -52,7 +52,7 @@ class ShopReviewViewModelTest {
                     }
                 }
             viewModel = viewModel(repository, profile, login = login)
-            viewModel.dispatch(ShopReviewIntent.OnShopSelected("shop"))
+            viewModel.dispatch(ReviewsIntent.OnShopSelected("shop"))
             runCurrent()
             assertEquals(listOf<String?>("owner"), requestedViewers.toList())
             assertEquals(listOf(true), requestedLoginStates)
@@ -72,7 +72,7 @@ class ShopReviewViewModelTest {
             profile.sessionUserIds.value = null
             login.updateSessionState(LoginSessionState.NOT_AUTHENTICATED)
             changes.reset(null)
-            viewModel.dispatch(ShopReviewIntent.OnShopSelected("shop"))
+            viewModel.dispatch(ReviewsIntent.OnShopSelected("shop"))
             runCurrent()
             assertEquals(null, viewModel.uiState.value.currentUserId)
             assertEquals(null, viewModel.uiState.value.currentProfileIsPublic)
@@ -94,11 +94,11 @@ class ShopReviewViewModelTest {
                     ): RamapResult<ShopReviewsPage> = if (failed) RamapResult.Error(RamapError.Http(500)) else RamapResult.Success(ShopReviewsPage(listOf(review(shopId)), 1))
                 }
             val viewModel = viewModel(repository)
-            viewModel.dispatch(ShopReviewIntent.OnShopSelected("shop"))
+            viewModel.dispatch(ReviewsIntent.OnShopSelected("shop"))
             runCurrent()
             assertTrue(viewModel.uiState.value.hasReviewLoadFailure)
             failed = false
-            viewModel.dispatch(ShopReviewIntent.OnRetry)
+            viewModel.dispatch(ReviewsIntent.OnRetry)
             runCurrent()
             assertEquals(1, viewModel.uiState.value.reviewCount)
             assertFalse(viewModel.uiState.value.hasReviewLoadFailure)
@@ -110,14 +110,14 @@ class ShopReviewViewModelTest {
             val fake = FakeShopReviewRepository()
             fake.reviews = (0 until 45).map { review("shop", "review-$it") }
             val viewModel = viewModel(fake)
-            viewModel.dispatch(ShopReviewIntent.OnShopSelected("shop"))
-            viewModel.dispatch(ShopReviewIntent.OnShopSelected("shop"))
+            viewModel.dispatch(ReviewsIntent.OnShopSelected("shop"))
+            viewModel.dispatch(ReviewsIntent.OnShopSelected("shop"))
             runCurrent()
             assertEquals(listOf(0L), fake.pageOffsets)
-            viewModel.dispatch(ShopReviewIntent.OnLoadMore)
+            viewModel.dispatch(ReviewsIntent.OnLoadMore)
             runCurrent()
             assertEquals(40, viewModel.uiState.value.reviews.size)
-            viewModel.dispatch(ShopReviewIntent.OnRetry)
+            viewModel.dispatch(ReviewsIntent.OnRetry)
             runCurrent()
             assertEquals(listOf(0L, 20L, 0L, 20L), fake.pageOffsets)
             assertEquals(40, viewModel.uiState.value.reviews.size)
@@ -138,16 +138,16 @@ class ShopReviewViewModelTest {
                     ): RamapResult<ShopReviewsPage> = if (failed) RamapResult.Error(RamapError.Http(500)) else fake.fetchShopReviewsPage(shopId, offset)
                 }
             val viewModel = viewModel(repository)
-            viewModel.dispatch(ShopReviewIntent.OnShopSelected("shop"))
+            viewModel.dispatch(ReviewsIntent.OnShopSelected("shop"))
             runCurrent()
             val rows = viewModel.uiState.value.reviews
             failed = true
-            viewModel.dispatch(ShopReviewIntent.OnLoadMore)
+            viewModel.dispatch(ReviewsIntent.OnLoadMore)
             runCurrent()
             assertEquals(rows, viewModel.uiState.value.reviews)
             assertTrue(viewModel.uiState.value.hasPageLoadFailure)
             assertFalse(viewModel.uiState.value.hasReviewLoadFailure)
-            viewModel.dispatch(ShopReviewIntent.OnRetry)
+            viewModel.dispatch(ReviewsIntent.OnRetry)
             runCurrent()
             assertEquals(rows, viewModel.uiState.value.reviews)
             assertTrue(viewModel.uiState.value.hasReviewLoadFailure)
@@ -171,9 +171,9 @@ class ShopReviewViewModelTest {
                         }
                 }
             val viewModel = viewModel(repository)
-            viewModel.dispatch(ShopReviewIntent.OnShopSelected("old"))
+            viewModel.dispatch(ReviewsIntent.OnShopSelected("old"))
             runCurrent()
-            viewModel.dispatch(ShopReviewIntent.OnShopSelected("new"))
+            viewModel.dispatch(ReviewsIntent.OnShopSelected("new"))
             runCurrent()
             old.complete(ShopReviewsPage(listOf(review("old")), 1))
             runCurrent()
@@ -183,8 +183,8 @@ class ShopReviewViewModelTest {
                     .single()
                     .shopId,
             )
-            viewModel.dispatch(ShopReviewIntent.OnDismissed)
-            viewModel.dispatch(ShopReviewIntent.OnRetry)
+            viewModel.dispatch(ReviewsIntent.OnDismissed)
+            viewModel.dispatch(ReviewsIntent.OnRetry)
             runCurrent()
             assertEquals(null, viewModel.uiState.value.shopId)
             assertEquals(emptyList(), viewModel.uiState.value.reviews)
@@ -213,7 +213,7 @@ class ShopReviewViewModelTest {
                     }
                 }
             val viewModel = viewModel(repository, profile)
-            viewModel.dispatch(ShopReviewIntent.OnShopSelected("shop"))
+            viewModel.dispatch(ReviewsIntent.OnShopSelected("shop"))
             runCurrent()
             profile.sessionUserIds.value = "new-user"
             runCurrent()
@@ -231,7 +231,7 @@ class ShopReviewViewModelTest {
             fake.reviews = listOf(review("shop"))
             val changes = FakeReviewChangeStore()
             val viewModel = viewModel(fake, changes = changes)
-            viewModel.dispatch(ShopReviewIntent.OnShopSelected("shop"))
+            viewModel.dispatch(ReviewsIntent.OnShopSelected("shop"))
             runCurrent()
             fake.reviews = emptyList()
             changes.publish(ReviewChange.AccessChanged("author"))
@@ -262,7 +262,7 @@ class ShopReviewViewModelTest {
                     }
                 }
             val viewModel = viewModel(repository, profile, changes)
-            viewModel.dispatch(ShopReviewIntent.OnShopSelected("shop"))
+            viewModel.dispatch(ReviewsIntent.OnShopSelected("shop"))
             runCurrent()
             profile.sessionUserIds.value = "new-user"
             runCurrent()
@@ -281,9 +281,9 @@ class ShopReviewViewModelTest {
         profile: FakeProfileRepository = FakeProfileRepository(null),
         changes: FakeReviewChangeStore = FakeReviewChangeStore(),
         login: FakeLoginRepository = FakeLoginRepository(),
-    ): ShopReviewViewModel {
+    ): ReviewsViewModel {
         val reducer = ReviewChangeReducer()
-        return ShopReviewViewModel(repository, FakeCommunityRepository(), profile, login, changes, reducer, FeatchShopReviewsUseCase(repository, changes, reducer, ShopReviewCache(changes, reducer)))
+        return ReviewsViewModel(repository, FakeCommunityRepository(), profile, login, changes, reducer, FeatchShopReviewsUseCase(repository, changes, reducer, ShopReviewCache(changes, reducer)))
     }
 
     private fun review(

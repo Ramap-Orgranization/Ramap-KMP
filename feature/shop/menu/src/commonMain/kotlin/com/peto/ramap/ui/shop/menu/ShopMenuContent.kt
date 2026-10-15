@@ -5,13 +5,10 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.peto.ramap.designsystem.component.LoadErrorContent
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.domain.model.menu.MenuSection
@@ -23,38 +20,15 @@ import com.peto.ramap.theme.RamapTheme
 import com.peto.ramap.ui.loading.LoadState
 import com.peto.ramap.ui.shop.menu.component.ShopMenuSection
 import com.peto.ramap.ui.shop.menu.component.ShopMenuSkeleton
-import com.peto.ramap.ui.shop.menu.contract.ShopMenuIntent
 import com.peto.ramap.ui.shop.menu.contract.ShopMenuLoadKey
 import com.peto.ramap.ui.shop.menu.contract.ShopMenuUiState
 import org.jetbrains.compose.resources.stringResource
-import org.koin.compose.viewmodel.koinViewModel
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.map_shop_detail_error_description
 import ramap.shared.generated.resources.menu_load_error_illustration
 import ramap.shared.generated.resources.shop_menu_load_failure_message
 import ramap.shared.generated.resources.shop_menu_title
 import ramap.shared.generated.resources.shop_menu_updated_at
-
-@Composable
-fun ShopMenuRoute(
-    shopId: String,
-    onMenuSourceClick: (String) -> Unit,
-    modifier: Modifier = Modifier,
-    viewModel: ShopMenuViewModel = koinViewModel(),
-) {
-    LaunchedEffect(shopId) {
-        viewModel.dispatch(ShopMenuIntent.OnShopSelected(shopId))
-    }
-
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-
-    ShopMenuContent(
-        uiState = uiState,
-        onMenuSourceClick = onMenuSourceClick,
-        onRetry = { viewModel.dispatch(ShopMenuIntent.OnRetry) },
-        modifier = modifier,
-    )
-}
 
 @Composable
 fun ShopMenuContent(

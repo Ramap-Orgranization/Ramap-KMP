@@ -188,7 +188,7 @@ class AdminRegistrationViewModelTest {
                             noticeType = "full_close",
                             startDate = "2026-10-01",
                             endDate = "2026-10-31",
-                            dailySchedules = listOf(AdminNoticeDay("2026-10-14", true)),
+                            dailySchedules = listOf(AdminNoticeDay("2026-10-14", true), AdminNoticeDay("2026-10-21", true)),
                         )
                 }
             val viewModel = viewModel(data)

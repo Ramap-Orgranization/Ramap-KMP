@@ -26,7 +26,6 @@ class ShopDetailRequest(
     val isUncovered: Boolean,
     val isBackEnabled: Boolean,
     val showReviewsOnOpen: Boolean,
-    val showRequestedLoadingInSheet: Boolean,
     val toastManager: ToastManager,
     val appSettingsOpener: AppSettingsOpener,
     val shopShareLinkFactory: ShopShareLinkFactory,

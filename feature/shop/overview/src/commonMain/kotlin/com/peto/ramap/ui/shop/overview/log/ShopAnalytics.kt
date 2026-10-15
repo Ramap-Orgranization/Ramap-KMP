@@ -1,4 +1,4 @@
-package com.peto.ramap.ui.shop.log
+package com.peto.ramap.ui.shop.overview.log
 
 import com.peto.ramap.analytics.AnalyticsSource
 import com.peto.ramap.analytics.AnalyticsTracker
@@ -10,7 +10,7 @@ import com.peto.ramap.analytics.common.shop.ShopSelected
 import com.peto.ramap.analytics.common.shop.SubscribedToggled
 import com.peto.ramap.domain.model.shop.Category
 import com.peto.ramap.domain.model.shop.RamenShop
-import com.peto.ramap.ui.shop.log.event.ShopMapLinkOpened
+import com.peto.ramap.ui.shop.overview.log.event.ShopMapLinkOpened
 
 class ShopAnalytics(
     private val analyticsTracker: AnalyticsTracker,

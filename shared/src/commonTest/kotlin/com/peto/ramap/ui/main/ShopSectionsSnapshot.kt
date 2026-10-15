@@ -3,14 +3,13 @@ package com.peto.ramap.ui.main
 import com.peto.ramap.ui.main.map.contract.MapUiState
 import com.peto.ramap.ui.shop.menu.contract.ShopMenuUiState
 import com.peto.ramap.ui.shop.overview.contract.ShopOverviewState
-import com.peto.ramap.ui.shop.review.contract.ShopReviewUiState
-import kotlinx.coroutines.flow.map
+import com.peto.ramap.ui.shop.review.contract.ReviewsUiState
 
 data class ShopSectionsSnapshot(
     val map: MapUiState,
     val overview: ShopOverviewState = ShopOverviewState(),
     val menuState: ShopMenuUiState = ShopMenuUiState(),
-    val reviewState: ShopReviewUiState = ShopReviewUiState(),
+    val reviewState: ReviewsUiState = ReviewsUiState(),
 ) {
     val currentDateTime get() = map.currentDateTime
     val selectedShopId get() = map.selectedShopId

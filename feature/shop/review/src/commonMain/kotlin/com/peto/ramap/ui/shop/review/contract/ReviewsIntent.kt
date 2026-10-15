@@ -4,45 +4,45 @@ import com.peto.ramap.domain.model.community.ReportReason
 import com.peto.ramap.domain.model.review.Review
 import com.peto.ramap.ui.base.Intent
 
-sealed interface ShopReviewIntent : Intent {
+sealed interface ReviewsIntent : Intent {
     data class OnShopSelected(
         val shopId: String,
-    ) : ShopReviewIntent
+    ) : ReviewsIntent
 
-    data object OnDismissed : ShopReviewIntent
+    data object OnDismissed : ReviewsIntent
 
-    data object OnLoadMore : ShopReviewIntent
+    data object OnLoadMore : ReviewsIntent
 
-    data object OnRetry : ShopReviewIntent
+    data object OnRetry : ReviewsIntent
 
     data class OnReviewLikeToggled(
         val review: Review,
-    ) : ShopReviewIntent
+    ) : ReviewsIntent
 
     data class OnReviewDeleted(
         val review: Review,
-    ) : ShopReviewIntent
+    ) : ReviewsIntent
 
     data class OnReviewReportRequested(
         val review: Review,
-    ) : ShopReviewIntent
+    ) : ReviewsIntent
 
     data class OnReviewReportSubmitted(
         val reason: ReportReason,
         val description: String,
-    ) : ShopReviewIntent
+    ) : ReviewsIntent
 
-    data object OnReviewReportDismissed : ShopReviewIntent
+    data object OnReviewReportDismissed : ReviewsIntent
 
     data class OnBlockedReviewViewRequested(
         val review: Review,
-    ) : ShopReviewIntent
+    ) : ReviewsIntent
 
     data class OnBlockedReviewUnblockRequested(
         val review: Review,
-    ) : ShopReviewIntent
+    ) : ReviewsIntent
 
-    data object OnBlockedReviewUnblockConfirmed : ShopReviewIntent
+    data object OnBlockedReviewUnblockConfirmed : ReviewsIntent
 
-    data object OnBlockedReviewUnblockDismissed : ShopReviewIntent
+    data object OnBlockedReviewUnblockDismissed : ReviewsIntent
 }

@@ -8,8 +8,20 @@ import com.peto.ramap.domain.model.notice.OperatingNoticeType
 internal object AdminRegistrationPreviewStateReducer {
     fun reduce(
         state: AdminRegistrationUiState,
-        preview: AdminDraft,
+        result: AdminDraft,
     ): AdminRegistrationUiState {
+        val singleClosure = result.dailySchedules.singleOrNull()?.takeIf { it.closed && it.scheduleOverride == null }
+        val preview =
+            if (state.isOperatingNotice && singleClosure != null) {
+                result.copy(
+                    startDate = singleClosure.date,
+                    endDate = singleClosure.date,
+                    noticeType = "full_close",
+                    dailySchedules = emptyList(),
+                )
+            } else {
+                result
+            }
         val isMonthly = state.isOperatingNotice && preview.dailySchedules.isNotEmpty()
         val resolvedNoticeType = if (isMonthly) "full_close" else state.selectedNoticeType?.let(::noticeTypeRequestValue) ?: preview.noticeType
         val resolvedEventType = if (state.hasSelectedEventType) state.selectedEventType else resolveEventType(preview.eventType, state.selectedEventType)

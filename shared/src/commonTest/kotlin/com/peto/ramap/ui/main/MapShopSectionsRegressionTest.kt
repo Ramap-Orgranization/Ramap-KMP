@@ -91,7 +91,7 @@ import com.peto.ramap.ui.shop.overview.contract.ShopOverviewIntent.OnOverviewRet
 import com.peto.ramap.ui.shop.overview.contract.ShopOverviewIntent.OnShopNotificationToggled
 import com.peto.ramap.ui.shop.overview.contract.ShopOverviewIntent.OnShopReportSubmitted
 import com.peto.ramap.ui.shop.overview.contract.ShopOverviewIntent.OnShopShareClicked
-import com.peto.ramap.ui.shop.review.contract.ShopReviewIntent
+import com.peto.ramap.ui.shop.review.contract.ReviewsIntent
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.NonCancellable
@@ -293,7 +293,7 @@ class MapShopSectionsRegressionTest {
             runCurrent()
             viewModel.dispatch(OnShopSelected(shop))
             runCurrent()
-            viewModel.dispatch(ShopReviewIntent.OnLoadMore)
+            viewModel.dispatch(ReviewsIntent.OnLoadMore)
             runCurrent()
             assertEquals(
                 40,
@@ -412,7 +412,7 @@ class MapShopSectionsRegressionTest {
             runCurrent()
             viewModel.dispatch(OnShopSelected(shop))
             runCurrent()
-            viewModel.dispatch(ShopReviewIntent.OnBlockedReviewViewRequested(blocked))
+            viewModel.dispatch(ReviewsIntent.OnBlockedReviewViewRequested(blocked))
             runCurrent()
 
             assertEquals(listOf(blocked.id), reviews.requestedBlockedReviews)
@@ -461,15 +461,15 @@ class MapShopSectionsRegressionTest {
             runCurrent()
             viewModel.dispatch(OnShopSelected(shop))
             runCurrent()
-            viewModel.dispatch(ShopReviewIntent.OnBlockedReviewUnblockRequested(blocked))
+            viewModel.dispatch(ReviewsIntent.OnBlockedReviewUnblockRequested(blocked))
             runCurrent()
             assertEquals(emptyList(), community.unblockedUserIds)
-            viewModel.dispatch(ShopReviewIntent.OnBlockedReviewUnblockDismissed)
+            viewModel.dispatch(ReviewsIntent.OnBlockedReviewUnblockDismissed)
             runCurrent()
             assertEquals(null, viewModel.uiState.value.pendingUnblockReview)
 
-            viewModel.dispatch(ShopReviewIntent.OnBlockedReviewUnblockRequested(blocked))
-            viewModel.dispatch(ShopReviewIntent.OnBlockedReviewUnblockConfirmed)
+            viewModel.dispatch(ReviewsIntent.OnBlockedReviewUnblockRequested(blocked))
+            viewModel.dispatch(ReviewsIntent.OnBlockedReviewUnblockConfirmed)
             runCurrent()
             assertEquals(listOf("blocked-author"), community.unblockedUserIds)
             assertEquals(null, viewModel.uiState.value.pendingUnblockReview)
@@ -502,12 +502,12 @@ class MapShopSectionsRegressionTest {
                 )
             viewModel.dispatch(OnShopSelected(shop))
             runCurrent()
-            viewModel.dispatch(ShopReviewIntent.OnBlockedReviewUnblockRequested(blocked))
-            viewModel.dispatch(ShopReviewIntent.OnBlockedReviewUnblockConfirmed)
+            viewModel.dispatch(ReviewsIntent.OnBlockedReviewUnblockRequested(blocked))
+            viewModel.dispatch(ReviewsIntent.OnBlockedReviewUnblockConfirmed)
             runCurrent()
             assertTrue(viewModel.uiState.value.reviewState.isLoading)
             assertTrue(viewModel.uiState.value.overviewState is ShopOverviewUiState.Content)
-            viewModel.dispatch(ShopReviewIntent.OnBlockedReviewViewRequested(blocked))
+            viewModel.dispatch(ReviewsIntent.OnBlockedReviewViewRequested(blocked))
             runCurrent()
             assertTrue(fake.requestedBlockedReviews.isEmpty())
             response.complete(ShopReviewsPage(listOf(blocked.copy(body = "공개 리뷰", isBlocked = false)), 1))
@@ -984,7 +984,7 @@ class MapShopSectionsRegressionTest {
             runCurrent()
             val overview = viewModel.uiState.value.shopOverview
             assertTrue(viewModel.uiState.value.reviewState.hasReviewLoadFailure)
-            viewModel.dispatch(ShopReviewIntent.OnRetry)
+            viewModel.dispatch(ReviewsIntent.OnRetry)
             runCurrent()
             assertEquals(2, requests)
             assertEquals(overview, viewModel.uiState.value.shopOverview)
@@ -3311,6 +3311,12 @@ private fun TestScope.mapViewModel(
                 offset: Long,
             ): RamapResult<ShopReviewsPage> = RamapResult.Success(seeded?.let { it.copy(reviews = it.reviews.drop(offset.toInt()).take(20)) } ?: ShopReviewsPage(emptyList(), 0))
         }
+    val effectiveProfile =
+        if (profileRepository.sessionUserIds.value == null && loginRepository.hasSession()) {
+            FakeProfileRepository("user")
+        } else {
+            profileRepository
+        }
     return MapShopSectionsFixture(
         scope = backgroundScope,
         map =
@@ -3331,7 +3337,7 @@ private fun TestScope.mapViewModel(
         reports = shopReportRepository,
         personalization = personalizationRepository,
         overviewQuery = overview,
-        profile = profileRepository,
+        profile = effectiveProfile,
         reviews = reviews,
         community = communityRepository,
         changes = reviewChanges,

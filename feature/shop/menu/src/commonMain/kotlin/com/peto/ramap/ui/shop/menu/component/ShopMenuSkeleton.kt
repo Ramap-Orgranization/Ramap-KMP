@@ -20,7 +20,7 @@ import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.RamapTheme
 
 @Composable
-internal fun ShopMenuSkeleton(
+fun ShopMenuSkeleton(
     modifier: Modifier = Modifier,
 ) {
     Column(

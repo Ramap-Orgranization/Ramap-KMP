@@ -26,9 +26,6 @@ import com.peto.ramap.ui.base.BaseViewModel
 import com.peto.ramap.ui.shop.contract.ShopInteractionEffect.ShareShop
 import com.peto.ramap.ui.shop.contract.ShopInteractionEffect.ShowLoginGuide
 import com.peto.ramap.ui.shop.contract.ShopInteractionEffect.ShowToast
-import com.peto.ramap.ui.shop.overview.log.ShopAnalytics
-import com.peto.ramap.ui.shop.overview.model.PendingShopAction
-import com.peto.ramap.ui.shop.overview.model.ShopDetailEntryContext
 import com.peto.ramap.ui.shop.model.ShopOverviewUiState
 import com.peto.ramap.ui.shop.overview.contract.ShopOverviewIntent
 import com.peto.ramap.ui.shop.overview.contract.ShopOverviewIntent.OnBookmarkToggled
@@ -46,9 +43,11 @@ import com.peto.ramap.ui.shop.overview.contract.ShopOverviewIntent.OnShopShareCl
 import com.peto.ramap.ui.shop.overview.contract.ShopOverviewLoadKey
 import com.peto.ramap.ui.shop.overview.contract.ShopOverviewSideEffect
 import com.peto.ramap.ui.shop.overview.contract.ShopOverviewState
+import com.peto.ramap.ui.shop.overview.log.ShopAnalytics
+import com.peto.ramap.ui.shop.overview.model.PendingShopAction
+import com.peto.ramap.ui.shop.overview.model.ShopDetailEntryContext
 import com.peto.ramap.ui.task.TaskPolicy
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -64,7 +63,7 @@ import ramap.shared.generated.resources.personalization_update_failure_message
 import ramap.shared.generated.resources.shop_information_report_failure_message
 import ramap.shared.generated.resources.shop_information_report_success_message
 
-class ShopOverviewViewModel(
+class OverviewViewModel(
     private val loginRepository: LoginRepository,
     private val shopReportRepository: ShopReportRepository,
     private val personalizationStore: PersonalizationStore,
@@ -73,7 +72,17 @@ class ShopOverviewViewModel(
     private val mapAnalytics: ShopAnalytics,
     private val signInUseCase: SignInUseCase,
     private val profileRepository: ProfileRepository,
-) : BaseViewModel<ShopOverviewState, ShopOverviewIntent, ShopOverviewSideEffect>(ShopOverviewState()) {
+) : BaseViewModel<ShopOverviewState, ShopOverviewIntent, ShopOverviewSideEffect>(
+    ShopOverviewState(
+        isLoggedIn = loginRepository.hasSession(),
+        personalization =
+            if (loginRepository.hasSession()) {
+                (personalizationStore.state.value as? PersonalizationBootstrapState.Success)?.value ?: ShopPersonalization()
+            } else {
+                ShopPersonalization()
+            },
+    ),
+) {
     val entryContext = ShopDetailEntryContext()
     private var pendingShopAction: PendingShopAction? = null
     private var pendingActionEntryGeneration = entryContext.generation

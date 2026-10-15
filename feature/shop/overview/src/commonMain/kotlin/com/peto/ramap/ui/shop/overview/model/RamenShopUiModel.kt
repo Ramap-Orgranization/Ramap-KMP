@@ -1,4 +1,4 @@
-package com.peto.ramap.ui.shop.model
+package com.peto.ramap.ui.shop.overview.model
 
 import androidx.compose.runtime.Immutable
 import com.peto.ramap.designsystem.resource.information.ShopInformationFieldResourceMapper

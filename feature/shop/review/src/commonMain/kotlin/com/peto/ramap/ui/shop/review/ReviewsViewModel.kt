@@ -17,10 +17,10 @@ import com.peto.ramap.domain.repository.ReviewRepository
 import com.peto.ramap.domain.store.ReviewChangeStore
 import com.peto.ramap.domain.usecase.FeatchShopReviewsUseCase
 import com.peto.ramap.ui.base.BaseViewModel
-import com.peto.ramap.ui.shop.review.contract.ShopReviewIntent
-import com.peto.ramap.ui.shop.review.contract.ShopReviewLoadKey
-import com.peto.ramap.ui.shop.review.contract.ShopReviewSideEffect
-import com.peto.ramap.ui.shop.review.contract.ShopReviewUiState
+import com.peto.ramap.ui.shop.review.contract.ReviewsIntent
+import com.peto.ramap.ui.shop.review.contract.ReviewsLoadKey
+import com.peto.ramap.ui.shop.review.contract.ReviewsSideEffect
+import com.peto.ramap.ui.shop.review.contract.ReviewsUiState
 import com.peto.ramap.ui.task.TaskPolicy
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -32,7 +32,7 @@ import ramap.shared.generated.resources.review_action_success
 import ramap.shared.generated.resources.review_delete_failed
 import ramap.shared.generated.resources.review_like_failed
 
-class ShopReviewViewModel(
+class ReviewsViewModel(
     private val reviewRepository: ReviewRepository,
     private val communityRepository: CommunityRepository,
     private val profileRepository: ProfileRepository,
@@ -40,7 +40,7 @@ class ShopReviewViewModel(
     private val reviewChanges: ReviewChangeStore,
     private val reviewChangeReducer: ReviewChangeReducer,
     private val fetchReviews: FeatchShopReviewsUseCase,
-) : BaseViewModel<ShopReviewUiState, ShopReviewIntent, ShopReviewSideEffect>(ShopReviewUiState()) {
+) : BaseViewModel<ReviewsUiState, ReviewsIntent, ReviewsSideEffect>(ReviewsUiState()) {
     private var epoch = reviewChanges.journal.value.epoch
     private var revision = reviewChanges.journal.value.revision
     private var profileJob: Job? = null
@@ -57,27 +57,27 @@ class ShopReviewViewModel(
         }
     }
 
-    override suspend fun handleIntent(intent: ShopReviewIntent) {
+    override suspend fun handleIntent(intent: ReviewsIntent) {
         when (intent) {
-            is ShopReviewIntent.OnShopSelected -> selectShop(intent.shopId)
-            ShopReviewIntent.OnDismissed -> {
+            is ReviewsIntent.OnShopSelected -> selectShop(intent.shopId)
+            ReviewsIntent.OnDismissed -> {
                 cancelReviewTasks()
                 reduce { copy(shopId = null, page = ShopReviewsPage(emptyList(), 0), hasLoaded = false, hasReviewLoadFailure = false, hasPageLoadFailure = false) }
             }
-            ShopReviewIntent.OnRetry -> loadPage(append = false)
-            ShopReviewIntent.OnLoadMore -> if (currentState.hasMoreReviews && !currentState.isLoadingMoreReviews) loadPage(append = true)
-            is ShopReviewIntent.OnReviewLikeToggled -> toggleLike(intent.review)
-            is ShopReviewIntent.OnReviewDeleted -> deleteReview(intent.review)
-            is ShopReviewIntent.OnReviewReportRequested -> requestReport(intent.review)
-            is ShopReviewIntent.OnReviewReportSubmitted -> submitReport(intent.reason, intent.description)
-            ShopReviewIntent.OnReviewReportDismissed -> {
+            ReviewsIntent.OnRetry -> loadPage(append = false)
+            ReviewsIntent.OnLoadMore -> if (currentState.hasMoreReviews && !currentState.isLoadingMoreReviews) loadPage(append = true)
+            is ReviewsIntent.OnReviewLikeToggled -> toggleLike(intent.review)
+            is ReviewsIntent.OnReviewDeleted -> deleteReview(intent.review)
+            is ReviewsIntent.OnReviewReportRequested -> requestReport(intent.review)
+            is ReviewsIntent.OnReviewReportSubmitted -> submitReport(intent.reason, intent.description)
+            ReviewsIntent.OnReviewReportDismissed -> {
                 cancelTask(REPORT_TASK_KEY)
                 reduce { copy(reportReview = null) }
             }
-            is ShopReviewIntent.OnBlockedReviewViewRequested -> revealBlockedReview(intent.review)
-            is ShopReviewIntent.OnBlockedReviewUnblockRequested -> requestUnblock(intent.review)
-            ShopReviewIntent.OnBlockedReviewUnblockConfirmed -> unblockAuthor()
-            ShopReviewIntent.OnBlockedReviewUnblockDismissed -> if (!currentState.isUnblockingReview) reduce { copy(pendingUnblockReview = null) }
+            is ReviewsIntent.OnBlockedReviewViewRequested -> revealBlockedReview(intent.review)
+            is ReviewsIntent.OnBlockedReviewUnblockRequested -> requestUnblock(intent.review)
+            ReviewsIntent.OnBlockedReviewUnblockConfirmed -> unblockAuthor()
+            ReviewsIntent.OnBlockedReviewUnblockDismissed -> if (!currentState.isUnblockingReview) reduce { copy(pendingUnblockReview = null) }
         }
     }
 
@@ -95,7 +95,7 @@ class ShopReviewViewModel(
         val retained = currentState.page
         launchResultTask(
             taskKey = REVIEWS_TASK_KEY,
-            loadKey = if (append) ShopReviewLoadKey.ReviewsPage else ShopReviewLoadKey.Reviews,
+            loadKey = if (append) ReviewsLoadKey.ReviewsPage else ReviewsLoadKey.Reviews,
             policy = TaskPolicy.CancelPrevious,
             onStart = { copy(hasReviewLoadFailure = append && hasReviewLoadFailure, hasPageLoadFailure = false) },
             request = { fetchReviews(shopId, viewer, retained, append) },
@@ -188,7 +188,7 @@ class ShopReviewViewModel(
         if (currentState.revealedBlockedReviews.containsKey(blocked.id)) return
         launchResultTask(
             taskKey = REVEAL_TASK_KEY,
-            loadKey = ShopReviewLoadKey.BlockedReviewReveal,
+            loadKey = ReviewsLoadKey.BlockedReviewReveal,
             policy = TaskPolicy.IgnoreNew,
             onStart = { copy(revealingBlockedReviewId = blocked.id) },
             onFinish = { copy(revealingBlockedReviewId = null) },
@@ -217,7 +217,7 @@ class ShopReviewViewModel(
         if (currentBlocked(review) == null || !review.allowsAuthorUnblocking()) return
         launchResultTask(
             taskKey = UNBLOCK_TASK_KEY,
-            loadKey = ShopReviewLoadKey.BlockedReviewUnblock,
+            loadKey = ReviewsLoadKey.BlockedReviewUnblock,
             policy = TaskPolicy.IgnoreNew,
             request = { communityRepository.unblockUser(review.author.userId) },
             onSuccess = {
@@ -240,13 +240,13 @@ class ShopReviewViewModel(
         if (review.shopId != currentState.shopId || !review.allowsLikeFrom(currentState.currentUserId)) return
         val viewer = currentState.currentUserId
         if (viewer == null) {
-            trySideEffect(ShopReviewSideEffect.ShowLoginGuide)
+            trySideEffect(ReviewsSideEffect.ShowLoginGuide)
             return
         }
         val next = review.toggledLike()
         launchOptimisticTask(
             taskKey = ACTION_TASK_KEY,
-            loadKey = ShopReviewLoadKey.ReviewAction,
+            loadKey = ReviewsLoadKey.ReviewAction,
             isUpdating = { it.actingReviewId != null },
             onStart = { copy(actingReviewId = review.id, page = reviewChangeReducer.updateShopPage(page, ReviewChange.Liked(review.id, next), review.shopId, currentUserId, hasMoreReviews)) },
             onFinish = { copy(actingReviewId = null) },
@@ -276,7 +276,7 @@ class ShopReviewViewModel(
         val viewer = currentState.currentUserId
         launchResultTask(
             taskKey = ACTION_TASK_KEY,
-            loadKey = ShopReviewLoadKey.ReviewAction,
+            loadKey = ReviewsLoadKey.ReviewAction,
             policy = TaskPolicy.IgnoreNew,
             onStart = { copy(actingReviewId = review.id) },
             onFinish = { copy(actingReviewId = null) },
@@ -287,7 +287,7 @@ class ShopReviewViewModel(
 
     private fun requestReport(review: Review) {
         if (!currentState.isLoggedIn) {
-            trySideEffect(ShopReviewSideEffect.ShowLoginGuide)
+            trySideEffect(ReviewsSideEffect.ShowLoginGuide)
             return
         }
         if (review.shopId != currentState.shopId || !review.allowsReportFrom(currentState.currentUserId) || currentState.isReportingReview) return
@@ -303,7 +303,7 @@ class ShopReviewViewModel(
         if (!currentState.isLoggedIn || review.shopId != currentState.shopId || !review.allowsReportFrom(viewer) || !reason.isValidDetails(description)) return
         launchResultTask(
             taskKey = REPORT_TASK_KEY,
-            loadKey = ShopReviewLoadKey.ReviewReport,
+            loadKey = ReviewsLoadKey.ReviewReport,
             policy = TaskPolicy.IgnoreNew,
             request = { communityRepository.reportReview(review.id, reason, description) },
             onSuccess = {
@@ -320,7 +320,7 @@ class ShopReviewViewModel(
         message: StringResource,
         type: ToastType = ToastType.DEFAULT,
     ) {
-        trySideEffect(ShopReviewSideEffect.ShowToast(message, type))
+        trySideEffect(ReviewsSideEffect.ShowToast(message, type))
     }
 
     companion object {

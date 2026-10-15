@@ -14,8 +14,9 @@ import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.coroutinesTest
 import com.peto.ramap.domain.model.auth.LoginSessionState
 import com.peto.ramap.domain.model.menu.ShopMenu
+import com.peto.ramap.domain.model.review.ShopReviewCache
 import com.peto.ramap.domain.model.review.change.ReviewChangeReducer
-import com.peto.ramap.domain.usecase.LoadShopReviewsUseCase
+import com.peto.ramap.domain.usecase.FeatchShopReviewsUseCase
 import com.peto.ramap.domain.usecase.SignInUseCase
 import com.peto.ramap.fake.FakeAnalyticsTracker
 import com.peto.ramap.fake.FakeCommunityRepository
@@ -28,13 +29,13 @@ import com.peto.ramap.fake.FakeShopReportRepository
 import com.peto.ramap.fixture.ramenShopFixture
 import com.peto.ramap.ui.lifecycle.ScreenViewModelScope
 import com.peto.ramap.ui.main.FakeMapSearchHistoryStorage
-import com.peto.ramap.ui.shop.log.ShopAnalytics
 import com.peto.ramap.ui.shop.menu.ShopMenuViewModel
 import com.peto.ramap.ui.shop.menu.contract.ShopMenuIntent
-import com.peto.ramap.ui.shop.overview.ShopOverviewViewModel
+import com.peto.ramap.ui.shop.overview.OverviewViewModel
 import com.peto.ramap.ui.shop.overview.contract.ShopOverviewIntent
-import com.peto.ramap.ui.shop.review.ShopReviewViewModel
-import com.peto.ramap.ui.shop.review.contract.ShopReviewIntent
+import com.peto.ramap.ui.shop.overview.log.ShopAnalytics
+import com.peto.ramap.ui.shop.review.ReviewsViewModel
+import com.peto.ramap.ui.shop.review.contract.ReviewsIntent
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runCurrent
@@ -57,7 +58,7 @@ class ShopSheetCompositionTest {
             val composition = Composition(ShopTestApplier(), recomposer)
             val profile = FakeProfileRepository(null)
             val queries = ShopSectionQueries()
-            var models: Triple<ShopOverviewViewModel, ShopMenuViewModel, ShopReviewViewModel>? = null
+            var models: Triple<OverviewViewModel, ShopMenuViewModel, ReviewsViewModel>? = null
             val content: @Composable () -> Unit = { sheet("shop", queries, profile) { models = it } }
             try {
                 composition.setContent(content)
@@ -99,7 +100,7 @@ class ShopSheetCompositionTest {
             val queries = ShopSectionQueries()
             val pending = CompletableDeferred<ShopMenu>()
             queries.menuGate = pending
-            var models: Triple<ShopOverviewViewModel, ShopMenuViewModel, ShopReviewViewModel>? = null
+            var models: Triple<OverviewViewModel, ShopMenuViewModel, ReviewsViewModel>? = null
             try {
                 composition.setContent { sheet("first", queries, profile) { models = it } }
                 runCurrent()
@@ -138,7 +139,7 @@ class ShopSheetCompositionTest {
             val login = FakeLoginRepository()
             val personalization = FakePersonalizationRepository()
             val profile = FakeProfileRepository(null)
-            var models: Triple<ShopOverviewViewModel, ShopMenuViewModel, ShopReviewViewModel>? = null
+            var models: Triple<OverviewViewModel, ShopMenuViewModel, ReviewsViewModel>? = null
             try {
                 composition.setContent { sheet("shop", ShopSectionQueries(), profile, login, personalization) { models = it } }
                 runCurrent()
@@ -167,7 +168,7 @@ class ShopSheetCompositionTest {
             queries.overviewResult = failure
             queries.menuResult = failure
             queries.reviewResult = failure
-            var models: Triple<ShopOverviewViewModel, ShopMenuViewModel, ShopReviewViewModel>? = null
+            var models: Triple<OverviewViewModel, ShopMenuViewModel, ReviewsViewModel>? = null
             try {
                 composition.setContent { sheet("shop", queries, FakeProfileRepository(null)) { models = it } }
                 runCurrent()
@@ -195,7 +196,7 @@ class ShopSheetCompositionTest {
                         com.peto.ramap.domain.model.review
                             .ShopReviewsPage(emptyList(), 0),
                     )
-                reviews.dispatch(ShopReviewIntent.OnRetry)
+                reviews.dispatch(ReviewsIntent.OnRetry)
                 runCurrent()
                 assertFalse(reviews.uiState.value.hasReviewLoadFailure)
                 assertEquals(2, queries.reviewCalls.size)
@@ -215,7 +216,7 @@ class ShopSheetCompositionTest {
         profile: FakeProfileRepository,
         login: FakeLoginRepository = FakeLoginRepository(),
         personalization: FakePersonalizationRepository = FakePersonalizationRepository(),
-        capture: (Triple<ShopOverviewViewModel, ShopMenuViewModel, ShopReviewViewModel>) -> Unit,
+        capture: (Triple<OverviewViewModel, ShopMenuViewModel, ReviewsViewModel>) -> Unit,
     ) {
         ScreenViewModelScope(shopId) {
             val owner = requireNotNull(LocalViewModelStoreOwner.current)
@@ -223,19 +224,19 @@ class ShopSheetCompositionTest {
             val changes = FakeReviewChangeStore()
             val factory =
                 viewModelFactory {
-                    initializer { ShopOverviewViewModel(login, FakeShopReportRepository(), personalization, queries, FakeMapSearchHistoryStorage(), ShopAnalytics(FakeAnalyticsTracker()), SignInUseCase(login, LoginAnalytics(FakeAnalyticsTracker(), FakeCrashReporter())), profile) }
+                    initializer { OverviewViewModel(login, FakeShopReportRepository(), personalization, queries, FakeMapSearchHistoryStorage(), ShopAnalytics(FakeAnalyticsTracker()), SignInUseCase(login, LoginAnalytics(FakeAnalyticsTracker(), FakeCrashReporter())), profile) }
                     initializer { ShopMenuViewModel(queries) }
-                    initializer { ShopReviewViewModel(queries, FakeCommunityRepository(), profile, login, changes, reducer, LoadShopReviewsUseCase(queries, changes, reducer)) }
+                    initializer { ReviewsViewModel(queries, FakeCommunityRepository(), profile, login, changes, reducer, FeatchShopReviewsUseCase(queries, changes, reducer, ShopReviewCache(changes, reducer))) }
                 }
             val provider = ViewModelProvider.create(owner, factory)
-            val overview = provider[ShopOverviewViewModel::class]
+            val overview = provider[OverviewViewModel::class]
             val menu = provider[ShopMenuViewModel::class]
-            val reviews = provider[ShopReviewViewModel::class]
+            val reviews = provider[ReviewsViewModel::class]
             capture(Triple(overview, menu, reviews))
             LaunchedEffect(shopId) {
                 overview.dispatch(ShopOverviewIntent.OnShopIdSelected(shopId))
                 menu.dispatch(ShopMenuIntent.OnShopSelected(shopId))
-                reviews.dispatch(ShopReviewIntent.OnShopSelected(shopId))
+                reviews.dispatch(ReviewsIntent.OnShopSelected(shopId))
             }
         }
     }

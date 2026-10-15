@@ -1,4 +1,4 @@
-package com.peto.ramap.ui.shop.component.dialog
+package com.peto.ramap.ui.shop.review.component.dialog
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -9,8 +9,8 @@ import com.peto.ramap.designsystem.dialog.CommonDialog
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.GrayColor
-import com.peto.ramap.ui.shop.review.contract.ShopReviewIntent
-import com.peto.ramap.ui.shop.review.contract.ShopReviewUiState
+import com.peto.ramap.ui.shop.review.contract.ReviewsIntent
+import com.peto.ramap.ui.shop.review.contract.ReviewsUiState
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.review_unblock_user
@@ -18,9 +18,9 @@ import ramap.shared.generated.resources.review_unblock_user_confirm
 import ramap.shared.generated.resources.shop_review_cancel
 
 @Composable
-fun MapBlockedReviewUnblockDialog(
-    state: ShopReviewUiState,
-    onIntent: (ShopReviewIntent) -> Unit,
+fun ShopBlockedReviewUnblockDialog(
+    state: ReviewsUiState,
+    onIntent: (ReviewsIntent) -> Unit,
 ) {
     CommonDialog(
         visible = state.pendingUnblockReview != null,
@@ -31,9 +31,9 @@ fun MapBlockedReviewUnblockDialog(
         dismissEnabled = !state.isUnblockingReview,
         dismissOnBackPress = !state.isUnblockingReview,
         dismissOnClickOutside = !state.isUnblockingReview,
-        onDismissRequest = { onIntent(ShopReviewIntent.OnBlockedReviewUnblockDismissed) },
-        onDismiss = { onIntent(ShopReviewIntent.OnBlockedReviewUnblockDismissed) },
-        onConfirm = { onIntent(ShopReviewIntent.OnBlockedReviewUnblockConfirmed) },
+        onDismissRequest = { onIntent(ReviewsIntent.OnBlockedReviewUnblockDismissed) },
+        onDismiss = { onIntent(ReviewsIntent.OnBlockedReviewUnblockDismissed) },
+        onConfirm = { onIntent(ReviewsIntent.OnBlockedReviewUnblockConfirmed) },
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,

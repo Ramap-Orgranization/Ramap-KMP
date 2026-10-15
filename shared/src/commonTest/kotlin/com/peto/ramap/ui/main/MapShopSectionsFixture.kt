@@ -2,6 +2,7 @@ package com.peto.ramap.ui.main
 
 import androidx.lifecycle.ViewModelStore
 import com.peto.ramap.analytics.common.login.LoginAnalytics
+import com.peto.ramap.domain.model.review.ShopReviewCache
 import com.peto.ramap.domain.model.review.change.ReviewChangeReducer
 import com.peto.ramap.domain.repository.CommunityRepository
 import com.peto.ramap.domain.repository.LoginRepository
@@ -11,8 +12,8 @@ import com.peto.ramap.domain.repository.ShopMenuRepository
 import com.peto.ramap.domain.repository.ShopReportRepository
 import com.peto.ramap.domain.store.PersonalizationStore
 import com.peto.ramap.domain.store.ReviewChangeStore
+import com.peto.ramap.domain.usecase.FeatchShopReviewsUseCase
 import com.peto.ramap.domain.usecase.FetchShopOverviewUseCase
-import com.peto.ramap.domain.usecase.LoadShopReviewsUseCase
 import com.peto.ramap.domain.usecase.SignInUseCase
 import com.peto.ramap.fake.FakeAnalyticsTracker
 import com.peto.ramap.fake.FakeCrashReporter
@@ -20,15 +21,15 @@ import com.peto.ramap.ui.main.map.MapViewModel
 import com.peto.ramap.ui.main.map.contract.MapIntent
 import com.peto.ramap.ui.main.map.contract.MapSideEffect
 import com.peto.ramap.ui.shop.contract.ShopInteractionEffect
-import com.peto.ramap.ui.shop.log.ShopAnalytics
 import com.peto.ramap.ui.shop.menu.ShopMenuViewModel
 import com.peto.ramap.ui.shop.menu.contract.ShopMenuIntent
-import com.peto.ramap.ui.shop.overview.ShopOverviewViewModel
+import com.peto.ramap.ui.shop.overview.OverviewViewModel
 import com.peto.ramap.ui.shop.overview.contract.ShopOverviewIntent
 import com.peto.ramap.ui.shop.overview.contract.ShopOverviewSideEffect
-import com.peto.ramap.ui.shop.review.ShopReviewViewModel
-import com.peto.ramap.ui.shop.review.contract.ShopReviewIntent
-import com.peto.ramap.ui.shop.review.contract.ShopReviewSideEffect
+import com.peto.ramap.ui.shop.overview.log.ShopAnalytics
+import com.peto.ramap.ui.shop.review.ReviewsViewModel
+import com.peto.ramap.ui.shop.review.contract.ReviewsIntent
+import com.peto.ramap.ui.shop.review.contract.ReviewsSideEffect
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
@@ -59,9 +60,9 @@ class MapShopSectionsFixture(
     val sideEffect = effects.receiveAsFlow()
     private var store: ViewModelStore? = null
     private var collectors: List<Job> = emptyList()
-    private var overview: ShopOverviewViewModel? = null
+    private var overview: OverviewViewModel? = null
     private var menu: ShopMenuViewModel? = null
-    private var review: ShopReviewViewModel? = null
+    private var review: ReviewsViewModel? = null
     private var mapLogin = false
 
     init {
@@ -76,10 +77,10 @@ class MapShopSectionsFixture(
     }
 
     private fun open(shopId: String?) {
-        val overviewVm = ShopOverviewViewModel(login, reports, personalization, overviewQuery, FakeMapSearchHistoryStorage(), ShopAnalytics(FakeAnalyticsTracker()), SignInUseCase(login, LoginAnalytics(FakeAnalyticsTracker(), FakeCrashReporter())), profile)
+        val overviewVm = OverviewViewModel(login, reports, personalization, overviewQuery, FakeMapSearchHistoryStorage(), ShopAnalytics(FakeAnalyticsTracker()), SignInUseCase(login, LoginAnalytics(FakeAnalyticsTracker(), FakeCrashReporter())), profile)
         val menuVm = ShopMenuViewModel(menus)
         val reducer = ReviewChangeReducer()
-        val reviewVm = ShopReviewViewModel(reviews, community, profile, login, changes, reducer, LoadShopReviewsUseCase(reviews, changes, reducer))
+        val reviewVm = ReviewsViewModel(reviews, community, profile, login, changes, reducer, FeatchShopReviewsUseCase(reviews, changes, reducer, ShopReviewCache(changes, reducer)))
         overview = overviewVm
         menu = menuVm
         review = reviewVm
@@ -111,8 +112,8 @@ class MapShopSectionsFixture(
                     reviewVm.sideEffect.collect { effect ->
                         effects.send(
                             when (effect) {
-                                ShopReviewSideEffect.ShowLoginGuide -> ShopInteractionEffect.ShowLoginGuide
-                                is ShopReviewSideEffect.ShowToast ->
+                                ReviewsSideEffect.ShowLoginGuide -> ShopInteractionEffect.ShowLoginGuide
+                                is ReviewsSideEffect.ShowToast ->
                                     ShopInteractionEffect.ShowToast(
                                         com.peto.ramap.designsystem.toast.model
                                             .ToastData(effect.message, effect.type),
@@ -126,7 +127,7 @@ class MapShopSectionsFixture(
             val selected = map.uiState.value.selectedShop
             overviewVm.dispatch(if (selected == null) ShopOverviewIntent.OnShopIdSelected(shopId) else ShopOverviewIntent.OnShopSelected(selected))
             menuVm.dispatch(ShopMenuIntent.OnShopSelected(shopId))
-            reviewVm.dispatch(ShopReviewIntent.OnShopSelected(shopId))
+            reviewVm.dispatch(ReviewsIntent.OnShopSelected(shopId))
         }
     }
 
@@ -167,7 +168,7 @@ class MapShopSectionsFixture(
         menu?.dispatch(intent)
     }
 
-    fun dispatch(intent: ShopReviewIntent) {
+    fun dispatch(intent: ReviewsIntent) {
         review?.dispatch(intent)
     }
 }

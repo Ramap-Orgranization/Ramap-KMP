@@ -1,19 +1,19 @@
-package com.peto.ramap.ui.shop.component.dialog
+package com.peto.ramap.ui.shop.review.component.dialog
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import com.peto.ramap.designsystem.review.ReviewReportDialog
+import com.peto.ramap.designsystem.dialog.ReviewReportDialog
 import com.peto.ramap.domain.model.community.ReportReason
-import com.peto.ramap.ui.shop.review.contract.ShopReviewIntent
-import com.peto.ramap.ui.shop.review.contract.ShopReviewUiState
+import com.peto.ramap.ui.shop.review.contract.ReviewsIntent
+import com.peto.ramap.ui.shop.review.contract.ReviewsUiState
 
 @Composable
-fun MapReviewReportDialog(
-    state: ShopReviewUiState,
-    onIntent: (ShopReviewIntent) -> Unit,
+fun ShopReviewReportDialog(
+    state: ReviewsUiState,
+    onIntent: (ReviewsIntent) -> Unit,
 ) {
     var selectedReason by remember(state.reportReview?.id) { mutableStateOf<ReportReason?>(null) }
     var details by remember(state.reportReview?.id) { mutableStateOf("") }
@@ -29,10 +29,10 @@ fun MapReviewReportDialog(
         onDetailsChanged = { details = it },
         isActing = state.isReportingReview,
         onDismissRequest = {
-            if (!state.isReportingReview) onIntent(ShopReviewIntent.OnReviewReportDismissed)
+            if (!state.isReportingReview) onIntent(ReviewsIntent.OnReviewReportDismissed)
         },
         onSubmit = { reason, reportDetails ->
-            onIntent(ShopReviewIntent.OnReviewReportSubmitted(reason, reportDetails))
+            onIntent(ReviewsIntent.OnReviewReportSubmitted(reason, reportDetails))
         },
     )
 }

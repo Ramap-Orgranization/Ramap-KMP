@@ -3,6 +3,7 @@ package com.peto.ramap.debug.admin.data.model
 import com.peto.ramap.domain.model.notice.OperatingNoticeType
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import java.time.LocalDate
 
 @Serializable
 internal data class AdminDraft(
@@ -29,6 +30,9 @@ internal data class AdminDraft(
     @SerialName("schedule_override") val scheduleOverride: AdminScheduleOverride? = null,
 ) {
     fun canRegisterOperatingNotice(): Boolean {
+        val start = startDate?.let { runCatching { LocalDate.parse(it) }.getOrNull() } ?: return false
+        val end = endDate?.let { runCatching { LocalDate.parse(it) }.getOrNull() } ?: return false
+        if (end < start) return false
         if (startTime != null || scheduleOverride != null) return false
         val type = noticeType?.let(OperatingNoticeType::fromOrNull) ?: return false
         if (type == OperatingNoticeType.EARLY_CLOSING) {

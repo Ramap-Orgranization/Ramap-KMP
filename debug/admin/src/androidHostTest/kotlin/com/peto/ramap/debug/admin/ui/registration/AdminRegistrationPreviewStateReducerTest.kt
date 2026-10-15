@@ -37,11 +37,66 @@ class AdminRegistrationPreviewStateReducerTest {
     @Test
     fun `임시 휴무를 선택한 미리보기는 조기 마감 시각을 비운다`() {
         val state = AdminRegistrationUiState(isOperatingNotice = true, selectedNoticeType = OperatingNoticeType.TEMPORARY_CLOSURE)
-        val preview = AdminDraft(noticeType = "early_close", endTime = "15:00")
+        val preview = AdminDraft(noticeType = "early_close", endTime = "15:00", startDate = "2026-10-15", endDate = "2026-10-15")
         val draft = AdminRegistrationPreviewStateReducer.reduce(state, preview).draft!!
         assertEquals("full_close", draft.noticeType)
         assertNull(draft.endTime)
         assertEquals(true, draft.canRegisterOperatingNotice())
+    }
+
+    @Test
+    fun `날짜별 하루 휴무는 한달 범위를 버리고 사용자가 선택한 하루를 반영한다`() {
+        val state =
+            AdminRegistrationUiState(
+                isOperatingNotice = true,
+                selectedNoticeType = OperatingNoticeType.TEMPORARY_CLOSURE,
+                selectedStartDate = "2026-10-15",
+                selectedEndDate = "2026-10-15",
+            )
+        val preview =
+            AdminDraft(
+                startDate = "2026-10-01",
+                endDate = "2026-10-31",
+                noticeType = "full_close",
+                dailySchedules = listOf(AdminNoticeDay("2026-10-14", true)),
+            )
+
+        val draft = AdminRegistrationPreviewStateReducer.reduce(state, preview).draft!!
+
+        assertEquals("2026-10-15", draft.startDate)
+        assertEquals("2026-10-15", draft.endDate)
+        assertEquals(emptyList(), draft.dailySchedules)
+        assertEquals(true, draft.canRegisterOperatingNotice())
+    }
+
+    @Test
+    fun `날짜 선택이 없으면 날짜별 하루 휴무의 실제 날짜를 사용한다`() {
+        val state = AdminRegistrationUiState(isOperatingNotice = true)
+        val preview =
+            AdminDraft(
+                startDate = "2026-10-01",
+                endDate = "2026-10-31",
+                noticeType = "full_close",
+                dailySchedules = listOf(AdminNoticeDay("2026-10-15", true)),
+            )
+
+        val draft = AdminRegistrationPreviewStateReducer.reduce(state, preview).draft!!
+
+        assertEquals("2026-10-15", draft.startDate)
+        assertEquals("2026-10-15", draft.endDate)
+        assertEquals(emptyList(), draft.dailySchedules)
+    }
+
+    @Test
+    fun `분석 실패로 날짜가 없거나 잘못된 공지는 등록하지 않는다`() {
+        for ((start, end) in listOf(null to null, "2026-02-30" to "2026-02-30", "2026-10-16" to "2026-10-15")) {
+            val preview = AdminDraft(startDate = start, endDate = end)
+            val state = AdminRegistrationUiState(isOperatingNotice = true, selectedNoticeType = OperatingNoticeType.TEMPORARY_CLOSURE)
+
+            val draft = AdminRegistrationPreviewStateReducer.reduce(state, preview).draft!!
+
+            assertEquals(false, draft.canRegisterOperatingNotice())
+        }
     }
 
     @Test
