@@ -26,9 +26,9 @@ import com.peto.ramap.ui.base.BaseViewModel
 import com.peto.ramap.ui.shop.contract.ShopInteractionEffect.ShareShop
 import com.peto.ramap.ui.shop.contract.ShopInteractionEffect.ShowLoginGuide
 import com.peto.ramap.ui.shop.contract.ShopInteractionEffect.ShowToast
-import com.peto.ramap.ui.shop.log.ShopAnalytics
-import com.peto.ramap.ui.shop.model.PendingShopAction
-import com.peto.ramap.ui.shop.model.ShopDetailEntryContext
+import com.peto.ramap.ui.shop.overview.log.ShopAnalytics
+import com.peto.ramap.ui.shop.overview.model.PendingShopAction
+import com.peto.ramap.ui.shop.overview.model.ShopDetailEntryContext
 import com.peto.ramap.ui.shop.model.ShopOverviewUiState
 import com.peto.ramap.ui.shop.overview.contract.ShopOverviewIntent
 import com.peto.ramap.ui.shop.overview.contract.ShopOverviewIntent.OnBookmarkToggled
@@ -50,7 +50,6 @@ import com.peto.ramap.ui.task.TaskPolicy
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.currentCoroutineContext
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.StringResource
@@ -85,9 +84,9 @@ class ShopOverviewViewModel(
     private var hidingSelectedShopId: String? = null
 
     init {
-        viewModelScope.launch(start = CoroutineStart.UNDISPATCHED) { observeShopSession() }
-        viewModelScope.launch(start = CoroutineStart.UNDISPATCHED) { observeSessionState() }
-        viewModelScope.launch(start = CoroutineStart.UNDISPATCHED) { observePersonalization() }
+        viewModelScope.launch { observeShopSession() }
+        viewModelScope.launch { observeSessionState() }
+        viewModelScope.launch { observePersonalization() }
     }
 
     override suspend fun handleIntent(intent: ShopOverviewIntent) {

@@ -1,4 +1,4 @@
-import { dailySchedulesSchema, validClosureSchedules, type DailySchedule } from "../_shared/operating-notice-schedule.ts";
+import { dailySchedulesSchema, validCalendarDate, validClosureSchedules, type DailySchedule } from "../_shared/operating-notice-schedule.ts";
 import { isAdministrator } from "../_shared/admin-auth.ts";
 import { createServiceClient } from "../_shared/event-notifications.ts";
 import { normalizeMapUrl } from "../_shared/event-venue-url.ts";
@@ -26,11 +26,11 @@ const OPERATING_NOTICE_EXTRACTION_PROMPT =
   "영업 변동은 전체 기능명이며 notice_type은 full_close(임시 휴무), early_close(조기 마감) 중 하나만 선택하세요. 오픈 지연이나 일반 영업시간 변경은 유형을 null로 두고 uncertainties에 지원하지 않는 공지라고 적으세요. " +
   "월간 휴무 달력이나 떨어진 여러 휴무 날짜는 한 건의 full_close로 반환하고 daily_schedules에 원문에서 확인한 휴무 및 정상영업 날짜만 넣으세요. " +
   "daily_schedules의 closed는 휴무면 true, 정상영업이면 false입니다. 변경된 영업시간은 지원하지 않으며 각 schedule_override는 null입니다. " +
-  "schedule_override와 start_time은 항상 null입니다. early_close의 end_time은 원문에 명시된 정확한 마감 시각만 넣으세요. 점심만 영업, 저녁 휴무, 지금 마감처럼 시각이 없으면 추측하지 말고 null로 두며 마감 시각 확인이 필요하다고 uncertainties에 적으세요. 월간 휴무 공지의 end_time은 null이고 start_date와 end_date는 해당 월의 첫날과 마지막 날입니다. " +
+  "schedule_override와 start_time은 항상 null입니다. early_close의 end_time은 원문에 명시된 정확한 마감 시각만 넣으세요. 점심만 영업, 저녁 휴무, 지금 마감처럼 시각이 없으면 추측하지 말고 null로 두며 마감 시각 확인이 필요하다고 uncertainties에 적으세요. 월간 휴무 공지의 end_time은 null이고 start_date와 end_date는 daily_schedules에서 확인한 첫 날짜와 마지막 날짜입니다. " +
   "달력의 정상영업 표기도 빠짐없이 추출하되 빈칸의 의미를 추측하지 마세요. 단일 공지나 이벤트의 daily_schedules는 빈 배열입니다. " +
   "title은 null로 반환하세요. 날짜는 YYYY-MM-DD, 시간은 HH:mm으로 변환하세요. " +
   "오늘·내일 같은 상대 날짜는 게시일이나 관찰일을 알 수 없으면 추측하지 마세요. " +
-  "종료일이 원문에 없으면 end_date를 null로 반환하고 uncertainties에 적으세요. " +
+  "명확한 하루 임시 휴무는 start_date와 end_date를 같은 날짜로 반환하고 daily_schedules는 빈 배열입니다. 그 외 종료일이 원문에 없으면 end_date를 null로 반환하고 uncertainties에 적으세요. " +
   "event_type은 null, participants는 빈 배열로 반환하세요. " +
   "매장명은 계정명으로 추측하지 말고 실제 매장명이 원문에 명시된 경우에만 반환하세요. " +
   "관리자 피드백은 원문 사실을 더 정확히 반영하기 위한 수정 지시로만 사용하고 새로운 사실의 근거로 사용하지 마세요.";
@@ -84,8 +84,7 @@ Deno.serve(async (request) => {
     if (caption?.isExact) draft.description = caption.cleanText;
     if (registrationType === "operating_notice") {
       if (draft.daily_schedules.length > 0) {
-        if (!draft.start_date || !draft.end_date || !validClosureSchedules(draft.daily_schedules, draft.start_date, draft.end_date)) throw new Error("Invalid monthly schedule");
-        draft.notice_type = "full_close";
+        normalizeClosureSchedule(draft);
         draft.schedule_override = null;
         draft.start_time = null;
         draft.end_time = null;
@@ -127,6 +126,24 @@ Deno.serve(async (request) => {
     return json({ code: "analysis_failed" }, 502);
   }
 });
+
+function normalizeClosureSchedule(draft: EventDraft) {
+  const dates = draft.daily_schedules.map((day) => day?.date).filter(validCalendarDate).sort();
+  const start = dates[0];
+  const end = dates[dates.length - 1];
+  if (!start || !end || !validClosureSchedules(draft.daily_schedules, start, end)) {
+    console.error("preview-event invalid closure schedule");
+    draft.daily_schedules = [];
+    draft.start_date = null;
+    draft.end_date = null;
+    draft.notice_type = null;
+    return;
+  }
+  draft.start_date = start;
+  draft.end_date = end;
+  draft.notice_type = "full_close";
+  if (draft.daily_schedules.length === 1) draft.daily_schedules = [];
+}
 
 async function analyze(
   apiKey: string,

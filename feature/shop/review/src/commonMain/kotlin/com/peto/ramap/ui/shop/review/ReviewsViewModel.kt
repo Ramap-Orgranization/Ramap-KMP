@@ -15,7 +15,7 @@ import com.peto.ramap.domain.repository.LoginRepository
 import com.peto.ramap.domain.repository.ProfileRepository
 import com.peto.ramap.domain.repository.ReviewRepository
 import com.peto.ramap.domain.store.ReviewChangeStore
-import com.peto.ramap.domain.usecase.LoadShopReviewsUseCase
+import com.peto.ramap.domain.usecase.FeatchShopReviewsUseCase
 import com.peto.ramap.ui.base.BaseViewModel
 import com.peto.ramap.ui.shop.review.contract.ShopReviewIntent
 import com.peto.ramap.ui.shop.review.contract.ShopReviewLoadKey
@@ -23,9 +23,6 @@ import com.peto.ramap.ui.shop.review.contract.ShopReviewSideEffect
 import com.peto.ramap.ui.shop.review.contract.ShopReviewUiState
 import com.peto.ramap.ui.task.TaskPolicy
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.currentCoroutineContext
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.StringResource
 import ramap.shared.generated.resources.Res
@@ -42,9 +39,8 @@ class ShopReviewViewModel(
     private val loginRepository: LoginRepository,
     private val reviewChanges: ReviewChangeStore,
     private val reviewChangeReducer: ReviewChangeReducer,
-    private val loadReviews: LoadShopReviewsUseCase,
+    private val fetchReviews: FeatchShopReviewsUseCase,
 ) : BaseViewModel<ShopReviewUiState, ShopReviewIntent, ShopReviewSideEffect>(ShopReviewUiState()) {
-    private var context = 0L
     private var epoch = reviewChanges.journal.value.epoch
     private var revision = reviewChanges.journal.value.revision
     private var profileJob: Job? = null
@@ -75,7 +71,7 @@ class ShopReviewViewModel(
             is ShopReviewIntent.OnReviewReportRequested -> requestReport(intent.review)
             is ShopReviewIntent.OnReviewReportSubmitted -> submitReport(intent.reason, intent.description)
             ShopReviewIntent.OnReviewReportDismissed -> {
-                cancelTask(REPORT)
+                cancelTask(REPORT_TASK_KEY)
                 reduce { copy(reportReview = null) }
             }
             is ShopReviewIntent.OnBlockedReviewViewRequested -> revealBlockedReview(intent.review)
@@ -88,7 +84,7 @@ class ShopReviewViewModel(
     private fun selectShop(shopId: String) {
         if (currentState.shopId == shopId) return
         cancelReviewTasks()
-        val cached = loadReviews.findCached(shopId, currentState.currentUserId)
+        val cached = fetchReviews.findCached(shopId, currentState.currentUserId)
         reduce { copy(shopId = shopId, page = cached ?: ShopReviewsPage(emptyList(), 0), hasLoaded = cached != null, hasReviewLoadFailure = false, hasPageLoadFailure = false) }
         loadPage(append = false)
     }
@@ -96,24 +92,22 @@ class ShopReviewViewModel(
     private fun loadPage(append: Boolean) {
         val shopId = currentState.shopId ?: return
         val viewer = currentState.currentUserId
-        val requestedContext = context
         val retained = currentState.page
-        // Initial/refresh and pagination share a task key so their responses cannot overwrite each other.
         launchResultTask(
-            taskKey = REVIEWS,
+            taskKey = REVIEWS_TASK_KEY,
             loadKey = if (append) ShopReviewLoadKey.ReviewsPage else ShopReviewLoadKey.Reviews,
             policy = TaskPolicy.CancelPrevious,
-            onStart = { copy(hasReviewLoadFailure = if (append) hasReviewLoadFailure else false, hasPageLoadFailure = false) },
-            request = { loadReviews(shopId, viewer, retained, append) },
+            onStart = { copy(hasReviewLoadFailure = append && hasReviewLoadFailure, hasPageLoadFailure = false) },
+            request = { fetchReviews(shopId, viewer, retained, append) },
             onSuccess = { page ->
-                if (!isCurrent(shopId, viewer, requestedContext)) return@launchResultTask
+                if (!isCurrent(shopId, viewer)) return@launchResultTask
                 reduce { copy(page = page, hasLoaded = true, hasReviewLoadFailure = false, hasPageLoadFailure = false) }
-                loadReviews.savePage(shopId, viewer, page)
+                fetchReviews.savePage(shopId, viewer, page)
             },
             onError = {
-                if (!isCurrent(shopId, viewer, requestedContext)) return@launchResultTask
+                if (!isCurrent(shopId, viewer)) return@launchResultTask
                 reduce { copy(hasReviewLoadFailure = !append, hasPageLoadFailure = append) }
-                if (append) toast(Res.string.data_load_failure_message, ToastType.ERROR)
+                if (append) showToast(Res.string.data_load_failure_message, ToastType.ERROR)
             },
         )
     }
@@ -124,7 +118,7 @@ class ShopReviewViewModel(
                 epoch = journal.epoch
                 revision = journal.revision
                 cancelReviewTasks()
-                loadReviews.clearCache()
+                fetchReviews.clearCache()
                 reduce { copy(page = ShopReviewsPage(emptyList(), 0), hasLoaded = false, hasReviewLoadFailure = false, hasPageLoadFailure = false) }
                 loadPage(append = false)
                 return@collect
@@ -142,7 +136,7 @@ class ShopReviewViewModel(
                     val updated = reviewChangeReducer.updateShopPage(state.page, change, shopId, state.currentUserId, state.hasMoreReviews)
                     reduce { copy(page = updated, currentProfileIsPublic = (change as? ReviewChange.Written)?.takeIf { it.userId == currentUserId }?.counts?.profileIsPublic ?: currentProfileIsPublic) }
                     if (change is ReviewChange.AccessChanged && updated.reviews != state.reviews) {
-                        cancelTask(REVEAL)
+                        cancelTask(REVEAL_TASK_KEY)
                         reduce { clearAccess() }
                         loadPage(append = false)
                     }
@@ -156,7 +150,7 @@ class ShopReviewViewModel(
         profileRepository.sessionUserIds.collect { viewer ->
             if (currentState.currentUserId == viewer) return@collect
             cancelReviewTasks()
-            loadReviews.clearCache()
+            fetchReviews.clearCache()
             profileJob?.cancel()
             reduce { copy(currentUserId = viewer, currentProfileIsPublic = null, page = ShopReviewsPage(emptyList(), 0), hasLoaded = false, hasReviewLoadFailure = false, hasPageLoadFailure = false) }
             refreshProfile()
@@ -176,16 +170,14 @@ class ShopReviewViewModel(
     }
 
     private fun cancelReviewTasks() {
-        context++
-        for (key in listOf(REVIEWS, ACTION, REPORT, REVEAL, UNBLOCK)) cancelTask(key)
+        for (key in listOf(REVIEWS_TASK_KEY, ACTION_TASK_KEY, REPORT_TASK_KEY, REVEAL_TASK_KEY, UNBLOCK_TASK_KEY)) cancelTask(key)
         reduce { clearAccess().copy(actingReviewId = null, reportReview = null) }
     }
 
-    private suspend fun isCurrent(
+    private fun isCurrent(
         shopId: String,
         viewer: String?,
-        requestedContext: Long,
-    ): Boolean = currentCoroutineContext().isActive && context == requestedContext && currentState.shopId == shopId && currentState.currentUserId == viewer
+    ): Boolean = currentState.shopId == shopId && currentState.currentUserId == viewer
 
     private fun currentBlocked(review: Review): Review? = currentState.reviews.firstOrNull { it.isBlockedVersionOf(review) }
 
@@ -194,23 +186,22 @@ class ShopReviewViewModel(
         val blocked = currentBlocked(review) ?: return
         val viewer = currentState.currentUserId ?: return
         if (currentState.revealedBlockedReviews.containsKey(blocked.id)) return
-        val requestedContext = context
         launchResultTask(
-            taskKey = REVEAL,
+            taskKey = REVEAL_TASK_KEY,
             loadKey = ShopReviewLoadKey.BlockedReviewReveal,
             policy = TaskPolicy.IgnoreNew,
             onStart = { copy(revealingBlockedReviewId = blocked.id) },
             onFinish = { copy(revealingBlockedReviewId = null) },
             request = { reviewRepository.fetchBlockedShopReviewOnce(blocked.id) },
             onSuccess = { revealed ->
-                if (!isCurrent(blocked.shopId, viewer, requestedContext) || currentBlocked(blocked) == null) return@launchResultTask
+                if (!isCurrent(blocked.shopId, viewer) || currentBlocked(blocked) == null) return@launchResultTask
                 if (revealed == null || !revealed.isBlockedVersionOf(blocked)) {
-                    toast(Res.string.review_action_failed, ToastType.ERROR)
+                    showToast(Res.string.review_action_failed, ToastType.ERROR)
                     return@launchResultTask
                 }
                 reduce { copy(revealedBlockedReviews = revealedBlockedReviews + (revealed.id to revealed)) }
             },
-            onError = { if (isCurrent(blocked.shopId, viewer, requestedContext)) toast(Res.string.review_action_failed, ToastType.ERROR) },
+            onError = { if (isCurrent(blocked.shopId, viewer)) showToast(Res.string.review_action_failed, ToastType.ERROR) },
         )
     }
 
@@ -224,23 +215,22 @@ class ShopReviewViewModel(
         val review = currentState.pendingUnblockReview ?: return
         val viewer = currentState.currentUserId ?: return
         if (currentBlocked(review) == null || !review.allowsAuthorUnblocking()) return
-        val requestedContext = context
         launchResultTask(
-            taskKey = UNBLOCK,
+            taskKey = UNBLOCK_TASK_KEY,
             loadKey = ShopReviewLoadKey.BlockedReviewUnblock,
             policy = TaskPolicy.IgnoreNew,
             request = { communityRepository.unblockUser(review.author.userId) },
             onSuccess = {
-                if (!isCurrent(review.shopId, viewer, requestedContext)) return@launchResultTask
-                cancelTask(REVEAL)
+                if (!isCurrent(review.shopId, viewer)) return@launchResultTask
+                cancelTask(REVEAL_TASK_KEY)
                 reduce { clearAccess() }
-                toast(Res.string.review_action_success)
+                showToast(Res.string.review_action_success)
                 loadPage(append = false)
             },
             onError = {
-                if (isCurrent(review.shopId, viewer, requestedContext)) {
+                if (isCurrent(review.shopId, viewer)) {
                     reduce { copy(pendingUnblockReview = null) }
-                    toast(Res.string.review_action_failed, ToastType.ERROR)
+                    showToast(Res.string.review_action_failed, ToastType.ERROR)
                 }
             },
         )
@@ -253,24 +243,23 @@ class ShopReviewViewModel(
             trySideEffect(ShopReviewSideEffect.ShowLoginGuide)
             return
         }
-        val requestedContext = context
         val next = review.toggledLike()
         launchOptimisticTask(
-            taskKey = ACTION,
+            taskKey = ACTION_TASK_KEY,
             loadKey = ShopReviewLoadKey.ReviewAction,
             isUpdating = { it.actingReviewId != null },
             onStart = { copy(actingReviewId = review.id, page = reviewChangeReducer.updateShopPage(page, ReviewChange.Liked(review.id, next), review.shopId, currentUserId, hasMoreReviews)) },
             onFinish = { copy(actingReviewId = null) },
             rollback = {
-                if (context != requestedContext || currentUserId != viewer) {
+                if (currentUserId != viewer) {
                     this
                 } else {
                     copy(actingReviewId = null, page = reviewChangeReducer.updateShopPage(page, ReviewChange.Liked(review.id, ReviewLike(review.likeCount, review.isLiked)), review.shopId, currentUserId, hasMoreReviews))
                 }
             },
             request = { reviewRepository.setReviewLike(review.id, next.isLiked) },
-            onSuccess = { like -> if (isCurrent(review.shopId, viewer, requestedContext)) updateLike(review.id, like) },
-            onError = { if (isCurrent(review.shopId, viewer, requestedContext)) toast(Res.string.review_like_failed, ToastType.ERROR) },
+            onSuccess = { like -> if (isCurrent(review.shopId, viewer)) updateLike(review.id, like) },
+            onError = { if (isCurrent(review.shopId, viewer)) showToast(Res.string.review_like_failed, ToastType.ERROR) },
         )
     }
 
@@ -285,15 +274,14 @@ class ShopReviewViewModel(
     private fun deleteReview(review: Review) {
         if (review.shopId != currentState.shopId || !review.allowsDeletionBy(currentState.currentUserId)) return
         val viewer = currentState.currentUserId
-        val requestedContext = context
         launchResultTask(
-            taskKey = ACTION,
+            taskKey = ACTION_TASK_KEY,
             loadKey = ShopReviewLoadKey.ReviewAction,
             policy = TaskPolicy.IgnoreNew,
             onStart = { copy(actingReviewId = review.id) },
             onFinish = { copy(actingReviewId = null) },
             request = { reviewRepository.deleteReview(review.id) },
-            onError = { if (isCurrent(review.shopId, viewer, requestedContext)) toast(Res.string.review_delete_failed, ToastType.ERROR) },
+            onError = { if (isCurrent(review.shopId, viewer)) showToast(Res.string.review_delete_failed, ToastType.ERROR) },
         )
     }
 
@@ -313,23 +301,22 @@ class ShopReviewViewModel(
         val review = currentState.reportReview ?: return
         val viewer = currentState.currentUserId ?: return
         if (!currentState.isLoggedIn || review.shopId != currentState.shopId || !review.allowsReportFrom(viewer) || !reason.isValidDetails(description)) return
-        val requestedContext = context
         launchResultTask(
-            taskKey = REPORT,
+            taskKey = REPORT_TASK_KEY,
             loadKey = ShopReviewLoadKey.ReviewReport,
             policy = TaskPolicy.IgnoreNew,
             request = { communityRepository.reportReview(review.id, reason, description) },
             onSuccess = {
-                if (isCurrent(review.shopId, viewer, requestedContext) && currentState.reportReview?.id == review.id) {
+                if (isCurrent(review.shopId, viewer) && currentState.reportReview?.id == review.id) {
                     reduce { copy(reportReview = null) }
-                    toast(Res.string.review_action_success, ToastType.SUCCESS)
+                    showToast(Res.string.review_action_success, ToastType.SUCCESS)
                 }
             },
-            onError = { if (isCurrent(review.shopId, viewer, requestedContext) && currentState.reportReview?.id == review.id) toast(Res.string.review_action_failed, ToastType.ERROR) },
+            onError = { if (isCurrent(review.shopId, viewer) && currentState.reportReview?.id == review.id) showToast(Res.string.review_action_failed, ToastType.ERROR) },
         )
     }
 
-    private fun toast(
+    private fun showToast(
         message: StringResource,
         type: ToastType = ToastType.DEFAULT,
     ) {
@@ -337,10 +324,10 @@ class ShopReviewViewModel(
     }
 
     companion object {
-        private const val REVIEWS = "shop_reviews"
-        private const val ACTION = "shop_review_action"
-        private const val REPORT = "shop_review_report"
-        private const val REVEAL = "shop_review_reveal"
-        private const val UNBLOCK = "shop_review_unblock"
+        private const val REVIEWS_TASK_KEY = "shop_reviews"
+        private const val ACTION_TASK_KEY = "shop_review_action"
+        private const val REPORT_TASK_KEY = "shop_review_report"
+        private const val REVEAL_TASK_KEY = "shop_review_reveal"
+        private const val UNBLOCK_TASK_KEY = "shop_review_unblock"
     }
 }

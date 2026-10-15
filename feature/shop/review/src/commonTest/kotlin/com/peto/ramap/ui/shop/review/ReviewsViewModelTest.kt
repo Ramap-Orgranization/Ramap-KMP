@@ -6,11 +6,12 @@ import com.peto.ramap.coroutinesTest
 import com.peto.ramap.domain.model.auth.LoginSessionState
 import com.peto.ramap.domain.model.community.ReviewAuthor
 import com.peto.ramap.domain.model.review.Review
+import com.peto.ramap.domain.model.review.ShopReviewCache
 import com.peto.ramap.domain.model.review.ShopReviewsPage
 import com.peto.ramap.domain.model.review.change.ReviewChange
 import com.peto.ramap.domain.model.review.change.ReviewChangeReducer
 import com.peto.ramap.domain.repository.ReviewRepository
-import com.peto.ramap.domain.usecase.LoadShopReviewsUseCase
+import com.peto.ramap.domain.usecase.FeatchShopReviewsUseCase
 import com.peto.ramap.fake.FakeCommunityRepository
 import com.peto.ramap.fake.FakeLoginRepository
 import com.peto.ramap.fake.FakeProfileRepository
@@ -282,7 +283,7 @@ class ShopReviewViewModelTest {
         login: FakeLoginRepository = FakeLoginRepository(),
     ): ShopReviewViewModel {
         val reducer = ReviewChangeReducer()
-        return ShopReviewViewModel(repository, FakeCommunityRepository(), profile, login, changes, reducer, LoadShopReviewsUseCase(repository, changes, reducer))
+        return ShopReviewViewModel(repository, FakeCommunityRepository(), profile, login, changes, reducer, FeatchShopReviewsUseCase(repository, changes, reducer, ShopReviewCache(changes, reducer)))
     }
 
     private fun review(
