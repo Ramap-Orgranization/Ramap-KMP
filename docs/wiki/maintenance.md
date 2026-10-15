@@ -1,7 +1,7 @@
 ---
 authority: canonical
 status: active
-last_verified: 2026-10-13
+last_verified: 2026-10-15
 ---
 
 # 위키 유지보수 규칙
@@ -33,7 +33,7 @@ last_verified: 2026-10-13
 ## 작업과 PR에서의 적용
 
 1. 작업에 관련된 정책·도메인 문서와 소유 스킬을 읽습니다.
-2. 작업 중에는 이유·수정 범위·검증·배포·미확인 항목을 로컬 전용 `docs/change-history/CHANGELOG.md`에 남깁니다. 기존 기록을 지우지 않습니다. [DEC-0014](decisions.md#dec-0014-수정-작업-이력-기록-의무-도입)
+2. 작업과 검증을 마친 뒤 이유·수정 범위·검증·배포·미확인 항목을 로컬 전용 `docs/change-history/CHANGELOG.md`에 추가합니다. 기록 시점과 이력 조회 범위는 [코딩 규칙](../../.agents/skills/ramap-coding-conventions/SKILL.md#finish-the-change)을 따릅니다. [DEC-0014](decisions.md#dec-0014-수정-작업-이력-기록-의무-도입)
 3. 최종 PR 준비에서 위 표에 따라 의미가 바뀌었는지 확인합니다. 의미가 그대로면 위키를 수정하지 않고 PR에 그 이유를 적습니다.
 4. 의미가 바뀌면 기존 문서의 해당 규칙을 고치고 필요한 결정·후보만 추가합니다. 개발 규칙 변경은 먼저 소유 스킬에 반영합니다.
 5. 위키를 바꿨으면 `python3 scripts/check_wiki.py`를 실행합니다. 검사기를 바꿨으면 회귀 검사도 실행합니다. PR의 위키 영향에 변경한 정책·도메인 항목과 검사 결과를 적습니다.
