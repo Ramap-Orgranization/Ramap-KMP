@@ -1,9 +1,10 @@
 package com.peto.ramap.data.usecase.di
 
 import com.peto.ramap.data.usecase.DefaultFetchShopOverviewUseCase
+import com.peto.ramap.domain.model.review.ShopReviewCache
 import com.peto.ramap.domain.model.review.change.ReviewChangeReducer
+import com.peto.ramap.domain.usecase.FeatchShopReviewsUseCase
 import com.peto.ramap.domain.usecase.FetchShopOverviewUseCase
-import com.peto.ramap.domain.usecase.LoadShopReviewsUseCase
 import com.peto.ramap.domain.usecase.LoginSessionUseCase
 import com.peto.ramap.domain.usecase.SearchRamenShopsUseCase
 import com.peto.ramap.domain.usecase.SignInUseCase
@@ -20,7 +21,8 @@ val useCaseModule =
                 operatingNoticeRepository = get(),
             )
         }
-        factoryOf(::LoadShopReviewsUseCase)
+        factoryOf(::ShopReviewCache)
+        factoryOf(::FeatchShopReviewsUseCase)
         factoryOf(::SearchRamenShopsUseCase)
         factoryOf(::SignInUseCase)
         factoryOf(::LoginSessionUseCase)
