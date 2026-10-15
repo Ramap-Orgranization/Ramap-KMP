@@ -73,16 +73,16 @@ class OverviewViewModel(
     private val signInUseCase: SignInUseCase,
     private val profileRepository: ProfileRepository,
 ) : BaseViewModel<ShopOverviewState, ShopOverviewIntent, ShopOverviewSideEffect>(
-    ShopOverviewState(
-        isLoggedIn = loginRepository.hasSession(),
-        personalization =
-            if (loginRepository.hasSession()) {
-                (personalizationStore.state.value as? PersonalizationBootstrapState.Success)?.value ?: ShopPersonalization()
-            } else {
-                ShopPersonalization()
-            },
-    ),
-) {
+        ShopOverviewState(
+            isLoggedIn = loginRepository.hasSession(),
+            personalization =
+                if (loginRepository.hasSession()) {
+                    (personalizationStore.state.value as? PersonalizationBootstrapState.Success)?.value ?: ShopPersonalization()
+                } else {
+                    ShopPersonalization()
+                },
+        ),
+    ) {
     val entryContext = ShopDetailEntryContext()
     private var pendingShopAction: PendingShopAction? = null
     private var pendingActionEntryGeneration = entryContext.generation
