@@ -239,14 +239,17 @@ class NavigationStateTest {
     }
 
     @Test
-    fun `지도 탭을 떠나는 모든 전환에서 종료 콜백을 호출한다`() {
-        var mapTabExitCount = 0
-        val navigationState =
-            navigationState(
-                onMapTabExited = { mapTabExitCount += 1 },
-            )
+    fun `지도 탭 선택과 뒤로 가기로 떠나면 요청한 매장 경로를 정리한다`() {
+        val navigationState = navigationState()
+        navigationState.showShopOnMap("shop-id")
 
         navigationState.selectTopLevelTab(TabStatus.EVENT)
+        assertEquals(TabStatus.EVENT, navigationState.selectedTab)
+        assertEquals(
+            listOf(ScreenRoutes.MapRoutes()),
+            navigationState.backStacks.getValue(TabStatus.MAP).toList(),
+        )
+
         navigationState.selectTopLevelTab(TabStatus.MAP)
         navigationState.showShopOnMap(
             shopId = "shop-id",
@@ -254,20 +257,22 @@ class NavigationStateTest {
         )
         navigationState.pop()
 
-        assertEquals(2, mapTabExitCount)
+        assertEquals(TabStatus.EVENT, navigationState.selectedTab)
+        assertEquals(
+            listOf(ScreenRoutes.MapRoutes()),
+            navigationState.backStacks.getValue(TabStatus.MAP).toList(),
+        )
     }
 
     @Test
-    fun `현재 지도 탭을 다시 선택하면 종료 콜백을 호출하지 않는다`() {
-        var mapTabExitCount = 0
-        val navigationState =
-            navigationState(
-                onMapTabExited = { mapTabExitCount += 1 },
-            )
+    fun `현재 지도 탭을 다시 선택하면 요청한 매장 경로를 유지한다`() {
+        val navigationState = navigationState()
+        navigationState.showShopOnMap("shop-id")
 
         navigationState.selectTopLevelTab(TabStatus.MAP)
 
-        assertEquals(0, mapTabExitCount)
+        assertEquals(TabStatus.MAP, navigationState.selectedTab)
+        assertEquals(ScreenRoutes.MapRoutes("shop-id"), navigationState.currentRoute)
     }
 
     @Test
@@ -385,7 +390,6 @@ class NavigationStateTest {
     private fun navigationState(
         selectedTab: TabStatus = TabStatus.MAP,
         rankingBackStack: NavBackStack<NavKey> = NavBackStack(ScreenRoutes.RankingTabRoutes),
-        onMapTabExited: () -> Unit = {},
     ): NavigationState =
         NavigationState(
             selectedTabState = mutableStateOf(selectedTab),
@@ -396,6 +400,5 @@ class NavigationStateTest {
                     TabStatus.EVENT to NavBackStack<NavKey>(ScreenRoutes.EventTabRoutes()),
                     TabStatus.MY to NavBackStack<NavKey>(ScreenRoutes.MyTabRoutes),
                 ),
-            onMapTabExited = onMapTabExited,
         )
 }

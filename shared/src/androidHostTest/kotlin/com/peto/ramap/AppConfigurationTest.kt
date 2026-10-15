@@ -96,7 +96,7 @@ class AppConfigurationTest {
                 appVersionProvider = versionProvider,
                 viewModel = retainedGate,
             ) {
-                val navigationState = rememberNavigationState(onMapTabExited = {})
+                val navigationState = rememberNavigationState()
                 NavigationRouter(
                     navigationState = navigationState,
                     mapScreen = {

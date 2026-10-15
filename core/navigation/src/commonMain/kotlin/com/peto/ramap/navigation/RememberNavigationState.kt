@@ -12,9 +12,7 @@ import kotlinx.serialization.modules.polymorphic
 import kotlinx.serialization.modules.subclass
 
 @Composable
-fun rememberNavigationState(
-    onMapTabExited: () -> Unit,
-): NavigationState {
+fun rememberNavigationState(): NavigationState {
     val navigationConfiguration = rememberNavigationConfiguration()
     val selectedTabState =
         rememberSerializable(
@@ -41,11 +39,10 @@ fun rememberNavigationState(
             )
         }
 
-    return remember(selectedTabState, backStacks, onMapTabExited) {
+    return remember(selectedTabState, backStacks) {
         NavigationState(
             selectedTabState = selectedTabState,
             backStacks = backStacks,
-            onMapTabExited = onMapTabExited,
         )
     }
 }
