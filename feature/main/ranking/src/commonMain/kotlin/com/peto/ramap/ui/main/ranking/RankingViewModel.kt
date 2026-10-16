@@ -71,7 +71,9 @@ class RankingViewModel(
 
             RankingIntent.OnAreaSheetOpened -> restoreAreaSelection()
 
-            RankingIntent.OnLoginSelectionDismissed -> Unit
+            RankingIntent.OnLoginSelectionDismissed -> {
+                pendingBookmarkRequest = null
+            }
 
             is RankingIntent.OnLoginTypeSelected -> {
                 when (intent.type) {

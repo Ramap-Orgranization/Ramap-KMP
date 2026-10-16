@@ -793,6 +793,89 @@ class RankingViewModelTest {
             )
         }
 
+    @Test
+    fun `로그인 안내를 닫으면 이후 로그인해도 북마크를 저장하지 않는다`() =
+        coroutinesTest {
+            val shop = ramenShop()
+            val personalizationStore = FakePersonalizationRepository()
+            val loginRepository =
+                FakeLoginRepository(LoginSessionState.NOT_AUTHENTICATED)
+            val viewModel =
+                rankingViewModel(
+                    personalizationStore = personalizationStore,
+                    loginRepository = loginRepository,
+                )
+            runCurrent()
+
+            viewModel.dispatch(
+                RankingIntent.OnBookmarkChanged(
+                    shop = shop,
+                    enabled = true,
+                ),
+            )
+            runCurrent()
+            viewModel.dispatch(RankingIntent.OnLoginSelectionDismissed)
+            runCurrent()
+
+            loginRepository.updateSessionState(LoginSessionState.AUTHENTICATED)
+            personalizationStore.updateBookmarkedShopIds(setOf("existing-shop"))
+            runCurrent()
+
+            assertEquals(
+                emptyList(),
+                personalizationStore.bookmarkUpdateRequests,
+            )
+        }
+
+    @Test
+    fun `로그인을 선택하면 대기 북마크를 한 번만 저장한다`() =
+        coroutinesTest {
+            val shop = ramenShop()
+            val personalizationStore = FakePersonalizationRepository()
+            val loginRepository =
+                FakeLoginRepository(LoginSessionState.NOT_AUTHENTICATED)
+            val viewModel =
+                rankingViewModel(
+                    personalizationStore = personalizationStore,
+                    loginRepository = loginRepository,
+                )
+            runCurrent()
+
+            viewModel.dispatch(
+                RankingIntent.OnBookmarkChanged(
+                    shop = shop,
+                    enabled = true,
+                ),
+            )
+            runCurrent()
+            viewModel.dispatch(RankingIntent.OnLoginTypeSelected(LoginType.KAKAO))
+            runCurrent()
+
+            assertEquals(1, loginRepository.signInWithKakaoCallCount)
+            assertEquals(
+                emptyList(),
+                personalizationStore.bookmarkUpdateRequests,
+            )
+
+            loginRepository.updateSessionState(LoginSessionState.AUTHENTICATED)
+            personalizationStore.updateBookmarkedShopIds(setOf("existing-shop"))
+            runCurrent()
+
+            assertEquals(
+                listOf(shop.id to true),
+                personalizationStore.bookmarkUpdateRequests,
+            )
+
+            // 이후 서버 상태가 바뀌어도 소비한 대기 요청을 재실행하지 않는다.
+            personalizationStore.updateBookmarkedShopIds(setOf("existing-shop"))
+            runCurrent()
+
+            assertEquals(
+                listOf(shop.id to true),
+                personalizationStore.bookmarkUpdateRequests,
+            )
+        }
+
     private fun shopIds(viewModel: RankingViewModel): List<String> =
         viewModel.uiState.value.shops.map { item ->
             item.ranking.shop.id
