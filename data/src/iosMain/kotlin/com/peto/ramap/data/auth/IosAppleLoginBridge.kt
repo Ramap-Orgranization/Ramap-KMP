@@ -1,4 +1,6 @@
-package com.peto.ramap.data.auth
+package com.peto.ramap
+
+import com.peto.ramap.data.auth.AppleToken
 
 import kotlinx.coroutines.CancellableContinuation
 import kotlinx.coroutines.suspendCancellableCoroutine

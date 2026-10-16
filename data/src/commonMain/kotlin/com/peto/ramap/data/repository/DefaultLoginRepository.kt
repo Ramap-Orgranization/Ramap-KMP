@@ -38,7 +38,6 @@ internal class DefaultLoginRepository(
      */
     override val session: Flow<LoginSessionState> =
         supabaseClient.auth.sessionStatus
-            // 백그라운드 전환 중의 세션 복원 상태는 로그아웃이 아니다.
             .filterNot { it is SessionStatus.Initializing }
             .map(::loginSessionState)
 
