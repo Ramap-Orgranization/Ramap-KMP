@@ -39,6 +39,7 @@ Use subagents when the user explicitly requests delegation or a dedicated workfl
 - **Planning and code review:** `planner` for substantial unresolved product or architectural decisions and explicitly requested staged plans; `code_reviewer` for dedicated code reviews.
 - **Assigned implementation and validation:** `implementer`, `test_validator`, and `release_manager` for their dedicated workflows. Content planning and post-registration menu checks use `instagram_marketer` and `menu_registration_reviewer`.
 - **Git workflows:** `git_commit`, `git_issue_branch`, and `git_pr`, together with their corresponding task skills.
+- **Menu refresh:** `menu_collector` for DOM collection and `menu_refresh_judge` for application decisions, using the model settings and limited-context handoff in `tools/menu-refresh/SKILL.md`. Keep DB writes with the primary agent and post-registration review with a separate `menu_registration_reviewer`.
 
 Each role has one standalone TOML file directly under `.codex/agents/`, such as `planner.toml` or `implementer.toml`. Its `name` is the role ID; its `description`, `model`, `model_reasoning_effort`, and `developer_instructions` define discovery, runtime settings, and responsibilities together. Use role-based names without model prefixes or model-specific directories, and do not duplicate these instructions in a paired Markdown file. The project skills remain the owners of implementation rules.
 

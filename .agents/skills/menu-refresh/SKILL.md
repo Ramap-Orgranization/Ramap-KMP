@@ -1,8 +1,8 @@
 ---
 name: menu-refresh
-description: "[TODO: Briefly describe what this skill does and when it applies.]"
+description: Refresh existing Ramap shop menus by database date or shop list, and resume menu refresh or pending decisions using the canonical tools/menu-refresh workflow.
 ---
 
 # Menu Refresh
 
-[TODO: Add the task-specific guidance Codex needs. Reference supporting files only when they are relevant.]
+Read and follow [the canonical menu-refresh skill](../../../tools/menu-refresh/SKILL.md). Its tools, policy references, Luna Low collection, Sol High decision workflow and independent verification are the source of truth. Reuse `tools/menu-refresh/` directly and preserve existing frozen runs and user decisions.

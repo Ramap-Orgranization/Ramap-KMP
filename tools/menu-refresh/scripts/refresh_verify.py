@@ -5,6 +5,7 @@ from datetime import datetime
 
 from refresh_plan import digest, literal, serialized, state_rows, state_sql
 from collection_skips import skips_for_shop
+from manual_menu_protections import protection_for_row, protections_for_shop, normalized
 
 
 VISIBLE_FIELDS = ('id', 'shop_id', 'section_id', 'name', 'price_krw', 'price_text',
@@ -41,7 +42,7 @@ def read_state(value):
     if len(rows) != 1 or not isinstance(rows[0].get('state'), dict):
         raise ValueError('expected one database state object')
     state = rows[0]['state']
-    for key in ('shops', 'sections', 'items', 'visible', 'overrides', 'rules', 'menu_timestamps'):
+    for key in ('shops', 'sections', 'items', 'visible', 'overrides', 'rules', 'menu_timestamps', 'manual_menu_protections'):
         if not isinstance(state.get(key), list):
             raise ValueError('missing state array: ' + key)
     if 'collection_skips' in state and not isinstance(state['collection_skips'], list):
@@ -82,6 +83,23 @@ def same_time(left, right):
 def verify_plan(plan, state, snapshots):
     issues = []
     shop_id = plan['shop_id']
+    try:
+        protections = protections_for_shop(shop_id, state)
+        if plan.get('source_absence_policy') != 'direct_registration_only_v1':
+            issues.append('source absence policy missing or obsolete')
+        if protections != plan.get('manual_menu_protections'):
+            issues.append('direct registration protection mismatch')
+        source_names = {normalized(row['name']) for row in plan['source_items']}
+        actual_rows = state_rows(state, 'items', shop_id)
+        actual_ids = {row['id'] for row in actual_rows}
+        for row in actual_rows:
+            if normalized(row['name']) not in source_names and not protection_for_row(row, protections):
+                issues.append('unprotected menu absent from Naver: ' + row['id'])
+        for row in plan['before']:
+            if normalized(row['name']) not in source_names and protection_for_row(row, protections) and row['id'] not in actual_ids:
+                issues.append('directly registered menu deleted: ' + row['id'])
+    except ValueError as error:
+        issues.append(str(error))
     actual_shop = next((r for r in state['shops'] if r['id'] == shop_id), None)
     if actual_shop is None or any(actual_shop.get(k) != v for k, v in plan['identity'].items()):
         issues.append('shop identity mismatch')

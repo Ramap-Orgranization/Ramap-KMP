@@ -15,6 +15,7 @@ from pathlib import Path
 
 from refresh_plan import digest, prepare_capture, serialized, state_sql
 from collection_skips import DEFAULT_REGISTRY, load_registry, skips_for_shop
+from manual_menu_protections import DEFAULT_REGISTRY as PROTECTION_REGISTRY
 from refresh_verify import expected_visible, read_state, result_rows, verification_sql, verify_plan
 
 
@@ -44,6 +45,8 @@ def versions():
     paths += sorted(p for p in (SKILL / 'scripts').iterdir() if p.suffix in ('.py', '.js'))
     if DEFAULT_REGISTRY.exists():
         paths.append(DEFAULT_REGISTRY)
+    if PROTECTION_REGISTRY.exists():
+        paths.append(PROTECTION_REGISTRY)
     return {str(p.relative_to(REPO)): digest(p.read_text()) for p in paths}
 
 

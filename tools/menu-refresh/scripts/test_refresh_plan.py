@@ -21,14 +21,18 @@ def fixture():
     state = {'shops': [{'id': SHOP, 'name': '테스트라멘', 'address': '서울 서초구 테스트로 1',
         'naver_place_url': 'https://map.naver.com/p/entry/place/123'}],
         'sections': [{'id': SECTION, 'shop_id': SHOP, 'title': '상시메뉴', 'is_visible': True,
-            'display_order': 0, 'description': None}], 'items': [row], 'overrides': [], 'rules': []}
+            'display_order': 0, 'description': None}], 'items': [row], 'overrides': [], 'rules': [],
+        'manual_menu_protections': []}
     capture = {'shop_id': SHOP, 'status': 'collected', 'identity_verified': True,
         'source_url': 'https://m.place.naver.com/restaurant/123/menu/list',
         'source_shop': {'id': '123', 'name': '테스트라멘', 'address': '서울 서초구 테스트로 1'},
         'captured_at': '2026-10-07T02:00:00Z', 'menu_items': [source],
         'quality': {'passed': True, 'source_count': 1, 'collected_count': 1,
             'source_image_count': 1, 'collected_image_count': 1, 'sequence_evidence': 'regular 1'},
-        'scope': [{'source_id': 'naver-item-1', 'name': '쇼유라멘', 'decision': 'include', 'reason': '라멘 본품'}]}
+        'scope': [{'source_id': 'naver-item-1', 'name': '쇼유라멘', 'decision': 'include', 'reason': '라멘 본품'}],
+        'source_absence_review': {'complete': True, 'source_url': 'https://m.place.naver.com/restaurant/123/menu/list',
+            'captured_at': '2026-10-07T02:00:00Z', 'raw_sha256': '0' * 64,
+            'reason': '전체 메뉴 확인 fixture; SQL 검증 전 실제 원문 해시 결속 필요'}}
     return capture, state
 
 
@@ -397,16 +401,65 @@ class RefreshPlanTest(unittest.TestCase):
             self.assertEqual('cleanup_required', plan['status'])
             self.assertEqual([], plan['deletions'])
 
-    def test_db_only_row_is_preserved_after_source_order(self):
+    def test_직접_등록_근거가_있는_원본_부재_메뉴만_보존한다(self):
         capture, state = fixture()
         other = {**state['items'][0], 'id': '00000000-0000-0000-0000-000000000004',
             'name': '머쉬룸시오라멘', 'display_order': 0}
         state['items'][0]['display_order'] = 1
         state['items'].append(other)
+        state['manual_menu_protections'] = [{'id': '00000000-0000-0000-0000-000000000005',
+            'shop_id': SHOP, 'menu_item_id': other['id'], 'name': other['name'],
+            'authority': 'human_user', 'kind': 'direct_registration', 'status': 'active',
+            'evidence_ref': 'user-message:direct-registration', 'reason': '사용자 직접 등록 확인'}]
         plan = make_plan(capture, state)
         self.assertEqual(['머쉬룸시오라멘'], plan['db_only_preserved'])
         self.assertEqual(2, len(plan['expected']))
         self.assertEqual([0, 1], [r['display_order'] for r in plan['expected']])
+
+    def test_직접_등록_근거가_없는_원본_부재_메뉴는_삭제한다(self):
+        capture, state = fixture()
+        old = {**state['items'][0], 'id': '00000000-0000-0000-0000-000000000004',
+            'name': '과거냉라멘', 'price_krw': None}
+        state['items'].append(old)
+        plan = make_plan(capture, state)
+        self.assertEqual([old['id']], [row['id'] for row in plan['deletions']])
+        self.assertEqual('source_absent', plan['deletions'][0]['reason'])
+        self.assertEqual([], plan['db_only_preserved'])
+        self.assertNotIn(old['id'], [row['id'] for row in plan['expected']])
+
+    def test_일반_admin_verified는_부재_삭제를_보호하지_않는다(self):
+        capture, state = fixture()
+        old = {**state['items'][0], 'id': '00000000-0000-0000-0000-000000000004', 'name': '과거냉라멘'}
+        state['items'].append(old)
+        state['overrides'] = [{'id': 'override-1', 'shop_id': SHOP, 'normalized_name': '과거냉라멘',
+            'name': '과거냉라멘', 'action': 'upsert', 'source_type': 'admin_verified', 'status': 'active'}]
+        plan = make_plan(capture, state)
+        self.assertEqual(1, len(plan['deletions']))
+        self.assertEqual([{'id': 'override-1', 'reason': 'source_absent_without_direct_registration'}], plan['override_revocations'])
+        self.assertEqual([], plan['expected_overrides'])
+
+    def test_보호_조회가_누락되면_삭제_계획을_만들지_않는다(self):
+        capture, state = fixture()
+        state.pop('manual_menu_protections')
+        with self.assertRaisesRegex(ValueError, 'protection read'):
+            make_plan(capture, state)
+
+    def test_불완전한_원본_부재_확인은_삭제를_차단한다(self):
+        capture, state = fixture()
+        state['items'][0]['name'] = '과거냉라멘'
+        capture['source_absence_review']['complete'] = False
+        plan = make_plan(capture, state)
+        self.assertEqual('blocked', plan['status'])
+        self.assertEqual([], plan['deletions'])
+
+    def test_동일_이름_다른_UUID에_직접_등록_보호를_확대하지_않는다(self):
+        capture, state = fixture()
+        state['items'][0].update(name='과거냉라멘', description=None, image_url=None)
+        state['manual_menu_protections'] = [{'id': '00000000-0000-0000-0000-000000000005',
+            'shop_id': SHOP, 'menu_item_id': '00000000-0000-0000-0000-000000000004',
+            'name': '과거냉라멘', 'authority': 'human_user', 'kind': 'direct_registration', 'status': 'active',
+            'evidence_ref': 'user-message:direct-registration', 'reason': '다른 행의 직접 등록'}]
+        self.assertEqual([ROW], [row['id'] for row in make_plan(capture, state)['deletions']])
 
     def test_variable_price_cannot_replace_fixed_price(self):
         capture, state = fixture()

@@ -31,6 +31,7 @@ class CollectionSkipsTest(unittest.TestCase):
 
     def test_new_skipped_menu_is_not_added_or_held(self):
         capture, state = fixture()
+        state['items'] = []
         capture['menu_items'][0]['name'] = '미선택 신규메뉴'
         capture['scope'][0].update(name='미선택 신규메뉴', decision='manual', reason='구성 확인')
         state['collection_skips'] = [skip_for(capture)]
@@ -52,7 +53,7 @@ class CollectionSkipsTest(unittest.TestCase):
         self.assertEqual([], plan['pending'])
         self.assertEqual([], plan['updates'])
 
-    def test_same_source_id_still_skips_after_name_changes(self):
+    def test_재수집_제외의_이름_대응이_바뀌면_부재_삭제를_차단한다(self):
         capture, state = fixture()
         state['collection_skips'] = [skip_for(capture)]
         capture['menu_items'][0]['name'] = '새 표기 이름'
@@ -60,7 +61,9 @@ class CollectionSkipsTest(unittest.TestCase):
         plan = make_plan(capture, state)
         self.assertEqual([], plan['additions'])
         self.assertEqual([], plan['updates'])
-        self.assertEqual(1, len(plan['collection_skipped']))
+        self.assertEqual([], plan['deletions'])
+        self.assertEqual('blocked', plan['status'])
+        self.assertIn('재수집 제외', plan['pending'][0]['reason'])
 
     def test_other_shop_or_inactive_decision_cannot_skip_menu(self):
         capture, state = fixture()

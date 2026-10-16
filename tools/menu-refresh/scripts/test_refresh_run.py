@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 from html import escape
 from pathlib import Path
 
-from refresh_plan import prepare_capture
+from refresh_plan import digest, prepare_capture
 from refresh_run import accept, drain, fail_collection, initialize, load, next_action, record_review, recover, retry, save, submit
 from refresh_verify import VISIBLE_FIELDS, expected_visible, result_rows, verify_plan
 from replay_run import ReplayDatabase
@@ -54,6 +54,8 @@ class RefreshRunTest(unittest.TestCase):
         directory.mkdir()
         capture['raw_html_path'] = str(directory / 'raw-menu.html')
         (directory / 'raw-menu.html').write_text(raw_for(capture))
+        if capture.get('source_absence_review'):
+            capture['source_absence_review']['raw_sha256'] = digest(raw_for(capture))
         save(directory / 'result.json', capture)
         submit(self.run, directory / 'result.json', collector)
 
@@ -65,6 +67,31 @@ class RefreshRunTest(unittest.TestCase):
 
     def process(self):
         return drain(self.run, self.db)
+
+    def test_잘못된_기대값에도_원본에_없는_비보호_잔존_행을_검출한다(self):
+        plan, _ = prepare_capture(self.capture, self.state, raw_for(self.capture))
+        extra = {**self.state['items'][0], 'id': str(uuid.uuid4()), 'name': '과거냉라멘'}
+        self.state['items'].append(extra)
+        self.state['visible'].append({k: extra.get(k) for k in VISIBLE_FIELDS})
+        plan['expected'].append(extra)
+        plan['expected_visible'] = self.state['visible']
+        result = verify_plan(plan, self.state, [])
+        self.assertIn('unprotected menu absent from Naver: ' + extra['id'], result['issues'])
+
+    def test_잘못된_기대값에도_직접_등록_보호_행의_삭제를_검출한다(self):
+        extra = {**self.state['items'][0], 'id': str(uuid.uuid4()), 'name': '직접등록냉라멘'}
+        self.state['items'].append(extra)
+        self.state['manual_menu_protections'] = [{'id': str(uuid.uuid4()), 'shop_id': SHOP,
+            'menu_item_id': extra['id'], 'name': extra['name'], 'authority': 'human_user',
+            'kind': 'direct_registration', 'status': 'active',
+            'evidence_ref': 'user-message:direct-registration', 'reason': '사용자 직접 등록 확인'}]
+        self.capture['source_absence_review']['raw_sha256'] = digest(raw_for(self.capture))
+        plan, _ = prepare_capture(self.capture, self.state, raw_for(self.capture))
+        self.state['items'] = [row for row in self.state['items'] if row['id'] != extra['id']]
+        plan['expected'] = copy.deepcopy(self.state['items'])
+        plan['expected_visible'] = self.state['visible']
+        result = verify_plan(plan, self.state, [])
+        self.assertIn('directly registered menu deleted: ' + extra['id'], result['issues'])
 
     def test_verified_price_is_applied_without_approval_and_second_drain_does_not_replay(self):
         self.setup_run()
