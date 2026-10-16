@@ -119,7 +119,11 @@ python3 tools/menu-refresh/scripts/replay_run.py \
 
 ## 브라우저 캡처
 
-CUA 최초 초기화는 해당 도구의 문서대로 수행한다. 새 Chrome 탭 바인딩 문서에서 DOM API를 확인한 뒤 공개 메뉴를 읽는다. 실행 전 모든 메뉴 더보기를 확장하고 메뉴 사진을 스크롤해 로드한다.
+CUA 최초 초기화는 해당 도구의 문서대로 수행한다. 새 Chrome 탭 바인딩이 반환한 **브라우저별 전체 문서**에서 `tab.playwright.evaluate` 지원을 확인한 뒤 공개 메뉴를 읽는다. 초기 공통 접근성 문서에 DOM API가 없다는 이유만으로 기능 미지원으로 판정하지 않는다. 실행 전 모든 메뉴 더보기를 확장하고 메뉴 사진을 스크롤해 로드한다.
+
+탭 생성이 공통 접근성 문서만 반환하면 최초 브라우저 선택의 `cua.getBrowser(...)`가 제공하는 브라우저별 문서를 확인한다. 이후에는 유효한 바인딩을 재사용하며 탭 오류 때문에 브라우저를 다시 선택하지 않는다.
+
+Place ID를 확정했으면 `https://m.place.naver.com/restaurant/<place-id>/menu/list`를 전용 탭에 직접 연다. PC 지도 진입 URL의 iframe을 거쳐 수집하지 않는다. CLI에서 내장 브라우저가 없으면 제공되는 Chrome 바인딩을 사용하고, 지원되지 않는 내장 브라우저를 반복 초기화하지 않는다.
 
 직접 페이지 요청이 HTTP 429로 실패하면 같은 요청을 반복하지 않고 새 브라우저 탭의 렌더링된 메뉴로 확인한다. 매장별 작업자는 전용 탭을 사용하고 공용 탭의 페이지를 바꾸지 않는다.
 
@@ -127,10 +131,22 @@ CUA 최초 초기화는 해당 도구의 문서대로 수행한다. 새 Chrome �
 // Local filesystem operations below only save/read task artifacts.
 var artifactFs = await import('node:fs/promises');
 var collector = await artifactFs.readFile(skillDir + '/scripts/capture_naver_menu.js', 'utf8');
-var capture = await tab.playwright.evaluate('(' + collector + ')()');
+var capture = await tab.playwright.evaluate('(' + collector + ')()', undefined, {timeoutMs: 30000});
 await artifactFs.writeFile(shopDir + '/dom-capture.json', JSON.stringify(capture, null, 2));
 await artifactFs.writeFile(shopDir + '/raw-menu.html', capture.sections.map(s => s.raw_html).join('\n'));
 ```
+
+내부 평가기의 30초와 파일 저장 시간에 여유를 주도록 이 CUA 도구 호출에는 `timeout_ms: 60000`을 지정한다.
+
+로컬 산출물 저장은 위 예제의 `node:fs/promises`로 수행한다. 실제 import·쓰기 오류를 확인하기 전에 저장 기능이 없다고 판정하지 않는다. 클립보드 경유나 도구 응답의 수기 재구성으로 원문을 대체하지 않으며, 공통 수집기 문자열도 직접 읽은 내용을 그대로 실행한다.
+
+### 작업자별 병렬 수집
+
+- 먼저 새 실행 환경의 전용 탭 한 개에서 실제 메뉴 DOM·직렬화 상태·원문 HTML 수집을 사전 확인한다. 사용자가 동시 수집 검증을 요청한 경우에만 이미 완료된 매장도 읽기 전용 검증 대상으로 다시 연다.
+- 각 작업자는 자신의 CUA 초기화와 전용 탭 생성부터 원문 저장까지 수행한다. 다른 작업자의 탭을 이동하거나 부모가 만든 캡처를 자신의 수집 결과로 사용하지 않는다. 탭 ID·원본 URL·수집자·시작/종료 시각과 수집기·DOM·원문 파일 해시를 남긴다.
+- 여러 작업자를 배정할 때는 각 탭의 메뉴 목록이 준비된 뒤 수집을 시작하도록 조정한다. 실제 활성 작업자 수와 서로 다른 탭 ID를 확인하고, 각 작업자가 저장한 결과를 개별 대조한다. 활성 수와 페이지 수만으로 원본 수집 성공을 선언하지 않는다.
+- `Debugger unattached`, selector deadline, isolated-world 오류는 실행 오류로 기록한다. 기존 브라우저 바인딩을 유지하고 해당 작업자만 새 전용 탭에서 한 번 재시도한다. 명시적 브라우저 연결 해제에는 도구가 제공한 복구 문서를 따른다. REPL 전체 초기화·공유 브라우저 재선택으로 다른 작업자의 세션을 바꾸지 않는다.
+- 문서에 DOM 읽기 API가 실제 없거나 한 번의 진단 재시도도 실패하면 해당 작업자의 수집을 중단하고 정확한 오류를 남긴다. 별도 Playwright import, 비공개 연결 방식, 선언값 수정으로 통과시키지 않는다. 부모의 대체 수집은 출처를 별도로 표시하며 작업자의 직접 수집 성공 수에 포함하지 않는다.
 
 메뉴 원문은 `sections[].raw_html`을 합친 완전한 패널로 저장한다. 페이지 전체 `outerHTML` 반환이 도구 길이 제한으로 잘렸다면 완전한 증거로 사용하지 않는다. `dom-capture.json`의 수와 원문 패널·수집 목록을 함께 대조한다. 원본/수집 값이 이미 검증된 자료로 판정되면 같은 페이지를 다시 열지 않는다.
 
