@@ -160,7 +160,7 @@ struct iOSApp: App {
             queue: .main
         ) { _ in
             guard hasKakaoCallbackScheme() else {
-                IosKakaoLoginBridge.shared.complete(
+                IosKakaoLoginCallbackBridge.shared.complete(
                     idToken: nil,
                     accessToken: nil,
                     errorMessage: "카카오 URL scheme이 iOS 앱에 등록되어 있지 않습니다.",
@@ -168,7 +168,7 @@ struct iOSApp: App {
                 return
             }
             let completion: (OAuthToken?, Error?) -> Void = { token, error in
-                IosKakaoLoginBridge.shared.complete(
+                IosKakaoLoginCallbackBridge.shared.complete(
                     idToken: token?.idToken,
                     accessToken: token?.accessToken,
                     errorMessage: error?.localizedDescription
@@ -270,7 +270,7 @@ final class AppleLoginCoordinator: NSObject, ASAuthorizationControllerDelegate, 
             return
         }
 
-        IosAppleLoginBridge.shared.complete(
+        IosAppleLoginCallbackBridge.shared.complete(
             idToken: idToken,
             nonce: nonce,
             errorMessage: nil,
@@ -293,7 +293,7 @@ final class AppleLoginCoordinator: NSObject, ASAuthorizationControllerDelegate, 
     }
 
     private func complete(errorMessage: String) {
-        IosAppleLoginBridge.shared.complete(
+        IosAppleLoginCallbackBridge.shared.complete(
             idToken: nil,
             nonce: nonce,
             errorMessage: errorMessage,

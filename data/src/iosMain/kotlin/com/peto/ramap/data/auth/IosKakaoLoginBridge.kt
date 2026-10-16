@@ -1,7 +1,6 @@
 package com.peto.ramap
 
 import com.peto.ramap.data.auth.KakaoToken
-
 import kotlinx.coroutines.CancellableContinuation
 import kotlinx.coroutines.suspendCancellableCoroutine
 import platform.Foundation.NSNotificationCenter
