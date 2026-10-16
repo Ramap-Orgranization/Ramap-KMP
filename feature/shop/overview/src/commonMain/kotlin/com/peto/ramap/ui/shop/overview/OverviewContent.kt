@@ -62,7 +62,6 @@ fun OverviewContent(
                     shop = shop,
                     operatingNotice = uiState.overview.operatingNotice,
                     operatingNotices = uiState.overview.operatingNotices,
-                    onOperatingNoticeClick = headerActions.onOperatingNoticeClick,
                 )
             }
         }

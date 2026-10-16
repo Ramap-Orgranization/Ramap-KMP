@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
@@ -28,7 +27,6 @@ import com.peto.ramap.designsystem.card.SectionCard
 import com.peto.ramap.designsystem.resource.businesshours.BusinessHoursResourceMapper
 import com.peto.ramap.designsystem.resource.businesshours.BusinessHoursStatusResourceMapper
 import com.peto.ramap.designsystem.resource.format
-import com.peto.ramap.designsystem.resource.operatingnotice.ShopOperatingNoticeResourceMapper
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.domain.model.businesshour.BusinessHours
 import com.peto.ramap.domain.model.businesshour.BusinessHoursStatus
@@ -52,7 +50,6 @@ import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.ic_keyboard_arrow_down
 import ramap.shared.generated.resources.shop_detail_business_hours_collapse
 import ramap.shared.generated.resources.shop_detail_business_hours_expand
-import ramap.shared.generated.resources.shop_detail_operating_notice_action_suffix
 import kotlin.time.Clock
 
 @Composable
@@ -61,7 +58,6 @@ internal fun BusinessHoursCard(
     operatingNotice: OperatingNotice?,
     operatingNotices: List<OperatingNotice> = listOfNotNull(operatingNotice),
     modifier: Modifier = Modifier,
-    onOperatingNoticeClick: (OperatingNotice) -> Unit = {},
 ) {
     var isExpanded by rememberSaveable { mutableStateOf(false) }
     var currentDateTime by remember { mutableStateOf(Clock.System.now().toLocalDateTime(TimeZone.of("Asia/Seoul"))) }
@@ -93,8 +89,6 @@ internal fun BusinessHoursCard(
         ) {
             BusinessHoursStatusSummary(
                 status = status,
-                operatingNotice = operatingNotice?.takeIf { it.dailySchedules.isEmpty() },
-                onOperatingNoticeClick = onOperatingNoticeClick,
                 modifier = Modifier.padding(vertical = 5.dp),
             )
 
@@ -120,18 +114,6 @@ internal fun BusinessHoursCard(
             }
         }
 
-        operatingNotices
-            .filter { it.dailySchedules.isNotEmpty() && it.isCurrentOrScheduledAt(currentDateTime) }
-            .maxWithOrNull(compareBy<OperatingNotice> { it.isActiveAt(currentDateTime) }.thenBy { it.updatedAt.orEmpty() }.thenBy { it.id })
-            ?.let { monthlyNotice ->
-                BusinessHoursStatusSummary(
-                    status = null,
-                    operatingNotice = monthlyNotice,
-                    onOperatingNoticeClick = onOperatingNoticeClick,
-                    modifier = Modifier.padding(vertical = 5.dp),
-                )
-            }
-
         if (isExpanded && businessHours != null) {
             SectionCard {
                 lines.forEachIndexed { index, line ->
@@ -148,8 +130,6 @@ internal fun BusinessHoursCard(
 @Composable
 private fun BusinessHoursStatusSummary(
     status: BusinessHoursStatus?,
-    operatingNotice: OperatingNotice?,
-    onOperatingNoticeClick: (OperatingNotice) -> Unit,
     modifier: Modifier,
 ) {
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -176,25 +156,6 @@ private fun BusinessHoursStatusSummary(
                     text = statusText.removePrefix(highlightedLabel),
                     style = AppTextStyle.B2,
                     color = GrayColor.C400,
-                )
-            }
-        }
-        if (operatingNotice != null && operatingNotice.type != OperatingNoticeType.EARLY_CLOSING) {
-            val noticeText = ShopOperatingNoticeResourceMapper.notice(operatingNotice).format()
-            Row(
-                modifier = Modifier.noRippleClickable { onOperatingNoticeClick(operatingNotice) },
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                AppText(
-                    text = noticeText,
-                    style = AppTextStyle.B1,
-                    color = SystemColor.Warning,
-                )
-                Spacer(modifier = Modifier.width(4.dp))
-                AppText(
-                    text = stringResource(Res.string.shop_detail_operating_notice_action_suffix),
-                    style = AppTextStyle.B1,
-                    color = SystemColor.Warning,
                 )
             }
         }

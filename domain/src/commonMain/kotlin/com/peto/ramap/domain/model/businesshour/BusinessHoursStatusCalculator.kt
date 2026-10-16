@@ -30,7 +30,7 @@ internal object BusinessHoursStatusCalculator {
         if (currentDateTime.date in businessHours.dateOverrides && today != null && !today.closed && (today.open == null || today.close == null)) {
             return BusinessHoursStatus.Unknown
         }
-        val nextOpenTime = findNextOpeningSchedule(businessHours, currentDateTime)
+        val nextOpenTime = nextOpeningTimeAt(businessHours, currentDateTime)
         return nextOpenTime?.let(BusinessHoursStatus::Closed)
     }
 
@@ -142,7 +142,7 @@ internal object BusinessHoursStatusCalculator {
     /**
      * 오늘부터 일주일 안에서 현재 시각 이후의 다음 영업 시작 시각을 찾는다.
      */
-    private fun findNextOpeningSchedule(
+    fun nextOpeningTimeAt(
         businessHours: BusinessHours,
         currentDateTime: LocalDateTime,
     ): String? {

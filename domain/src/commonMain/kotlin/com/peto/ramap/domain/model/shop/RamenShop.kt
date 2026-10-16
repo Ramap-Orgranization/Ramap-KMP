@@ -50,25 +50,26 @@ data class RamenShop(
         operatingNotices: List<OperatingNotice> = emptyList(),
     ): BusinessHoursStatus? {
         val applicableNotices = operatingNotices.filter { it.shop.id == id }
-        if (hasOperatingNoticeBlockingOpening(currentDateTime, applicableNotices)) return BusinessHoursStatus.Closed()
         val hours = businessHoursDetails ?: BusinessHours(emptyMap(), emptyMap(), emptyMap(), null)
         val effectiveHours = effectiveBusinessHours(hours, currentDateTime, applicableNotices)
-        if (effectiveHours.dateOverrides[currentDateTime.date]?.day?.closed == true) return BusinessHoursStatus.Closed()
+        val hasTemporaryClosure = applicableNotices.any { it.type == OperatingNoticeType.TEMPORARY_CLOSURE && it.businessDateAt(currentDateTime) != null }
+        if (hasTemporaryClosure || effectiveHours.dateOverrides[currentDateTime.date]?.day?.closed == true) {
+            return BusinessHoursStatus.Closed(effectiveHours.nextOpeningTimeAt(currentDateTime))
+        }
+        if (hasEarlyClosingNoticeBlockingOpening(currentDateTime, applicableNotices)) return BusinessHoursStatus.Closed()
         return effectiveHours.statusAt(currentDateTime)
     }
 
-    private fun hasOperatingNoticeBlockingOpening(
+    private fun hasEarlyClosingNoticeBlockingOpening(
         currentDateTime: LocalDateTime,
         operatingNotices: List<OperatingNotice>,
     ): Boolean =
         operatingNotices
             .asSequence()
+            .filter { it.type == OperatingNoticeType.EARLY_CLOSING }
             .mapNotNull { notice -> notice.businessDateAt(currentDateTime)?.let { businessDate -> notice to businessDate } }
             .any { (notice, businessDate) ->
-                when (notice.type) {
-                    OperatingNoticeType.TEMPORARY_CLOSURE -> true
-                    OperatingNoticeType.EARLY_CLOSING -> notice.closingAt(businessDate)?.let { currentDateTime >= it } == true
-                }
+                notice.closingAt(businessDate)?.let { currentDateTime >= it } == true
             }
 
     private fun effectiveBusinessHours(

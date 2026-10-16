@@ -26,9 +26,9 @@ class MonthlyOperatingNoticeTest {
     @Test
     fun `떨어진 휴무일 사이의 날짜는 휴무로 처리하지 않는다`() {
         val notice = monthly(listOf(day("2026-10-06", true), day("2026-10-13", true)))
-        assertEquals(BusinessHoursStatus.Closed(), shop.businessHoursStatus(at("2026-10-06T12:00"), listOf(notice)))
+        assertEquals(BusinessHoursStatus.Closed("11:00"), shop.businessHoursStatus(at("2026-10-06T12:00"), listOf(notice)))
         assertTrue(shop.isOpenAt(at("2026-10-08T12:00"), listOf(notice)))
-        assertEquals(BusinessHoursStatus.Closed(), shop.businessHoursStatus(at("2026-10-13T12:00"), listOf(notice)))
+        assertEquals(BusinessHoursStatus.Closed("11:00"), shop.businessHoursStatus(at("2026-10-13T12:00"), listOf(notice)))
         assertTrue(shop.isOpenAt(at("2026-11-06T12:00"), listOf(notice)))
     }
 
@@ -55,6 +55,7 @@ class MonthlyOperatingNoticeTest {
         val notice = monthly(listOf(day("2026-10-31", true))).copy(shop = overnightShop)
         assertTrue(notice.isRelevantForBusinessHoursAt(at("2026-11-01T01:00")))
         assertFalse(overnightShop.isOpenAt(at("2026-11-01T01:00"), listOf(notice)))
+        assertEquals(BusinessHoursStatus.Closed("11:00"), overnightShop.businessHoursStatus(at("2026-11-01T01:00"), listOf(notice)))
         assertFalse(notice.isRelevantForBusinessHoursAt(at("2026-11-01T03:00")))
     }
 

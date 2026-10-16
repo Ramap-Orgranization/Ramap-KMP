@@ -7,8 +7,10 @@ import com.peto.ramap.domain.model.businesshour.BusinessHoursStatus
 import com.peto.ramap.domain.model.notice.OperatingNotice
 import com.peto.ramap.domain.model.notice.OperatingNoticeType
 import com.peto.ramap.fixture.ramenShopFixture
+import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.LocalTime
+import kotlinx.datetime.plus
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -197,12 +199,17 @@ class BusinessHoursTest {
     }
 
     @Test
-    fun `영업 변동으로 닫힌 매장은 다음 영업시간 없이 영업 종료 상태를 표시한다`() {
+    fun `임시 휴무에도 다음 영업시간을 표시하고 조기 마감 시각부터 영업 종료한다`() {
         val shop =
             ramenShopFixture().copy(
                 businessHoursDetails =
                     BusinessHours(
-                        weekly = mapOf("sun" to BusinessHoursDay(false, "11:00", "22:00", false, null)),
+                        weekly =
+                            mapOf(
+                                "sun" to BusinessHoursDay(false, "11:00", "22:00", false, null),
+                                "mon" to BusinessHoursDay(true, null, null, false, null),
+                                "tue" to BusinessHoursDay(false, "12:00", "21:00", false, null),
+                            ),
                         breakTimes = mapOf("sun" to listOf(BreakTime("13:00", "14:00"))),
                         lastOrders = emptyMap(),
                         notice = null,
@@ -223,12 +230,31 @@ class BusinessHoursTest {
             )
 
         assertEquals(
-            BusinessHoursStatus.Closed(),
+            BusinessHoursStatus.Closed("12:00"),
             shop.businessHoursStatus(LocalDateTime(2026, 8, 30, 12, 0), listOf(temporaryClosure)),
         )
         assertEquals(
-            BusinessHoursStatus.Closed(),
+            BusinessHoursStatus.Closed("12:00"),
             shop.businessHoursStatus(LocalDateTime(2026, 8, 30, 13, 30), listOf(temporaryClosure)),
+        )
+
+        val nextClosure =
+            temporaryClosure.copy(
+                id = "next",
+                startDate = date.plus(2, DateTimeUnit.DAY),
+                endDate = date.plus(2, DateTimeUnit.DAY),
+            )
+        assertEquals(
+            BusinessHoursStatus.Closed("11:00"),
+            shop.businessHoursStatus(LocalDateTime(2026, 8, 30, 12, 0), listOf(temporaryClosure, nextClosure)),
+        )
+        assertEquals(
+            BusinessHoursStatus.Closed(),
+            shop.businessHoursStatus(LocalDateTime(2026, 8, 30, 12, 0), listOf(temporaryClosure.copy(endDate = null))),
+        )
+        assertEquals(
+            BusinessHoursStatus.Closed(),
+            shop.copy(businessHoursDetails = null).businessHoursStatus(LocalDateTime(2026, 8, 30, 12, 0), listOf(temporaryClosure)),
         )
 
         val earlyClosing =
