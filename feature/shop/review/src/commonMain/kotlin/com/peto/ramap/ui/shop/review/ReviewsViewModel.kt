@@ -49,7 +49,7 @@ class ReviewsViewModel(
         viewModelScope.launch { observeChanges() }
         viewModelScope.launch { observeSession() }
         viewModelScope.launch {
-            loginRepository.sessionState.collect { session ->
+            loginRepository.session.collect { session ->
                 val authenticated = session == LoginSessionState.AUTHENTICATED
                 if (currentState.isLoggedIn && !authenticated) cancelReviewTasks()
                 reduce { copy(isLoggedIn = authenticated) }

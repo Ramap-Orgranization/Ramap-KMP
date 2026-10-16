@@ -14,7 +14,7 @@ class SettingsViewModel(
 ) : BaseViewModel<SettingsUiState, SettingsIntent, SettingsSideEffect>(SettingsUiState()) {
     init {
         viewModelScope.launch {
-            loginRepository.sessionState.collect { sessionState ->
+            loginRepository.session.collect { sessionState ->
                 reduce { copy(isLoggedIn = sessionState == LoginSessionState.AUTHENTICATED) }
             }
         }

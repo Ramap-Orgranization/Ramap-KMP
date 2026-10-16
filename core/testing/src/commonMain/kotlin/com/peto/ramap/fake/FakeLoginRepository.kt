@@ -25,7 +25,7 @@ class FakeLoginRepository(
     var deleteAccountError: Throwable? = null
     var signInResult: RamapResult<Unit> = RamapResult.Success(Unit)
 
-    override val sessionState: Flow<LoginSessionState> = mutableSessionState
+    override val session: Flow<LoginSessionState> = mutableSessionState
 
     override suspend fun awaitInitialization() = Unit
 

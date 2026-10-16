@@ -36,7 +36,7 @@ internal class DefaultLoginRepository(
     /**
      * 앱이 Supabase 구현을 알지 않고 인증 여부에 반응할 수 있도록 세션 상태를 변환합니다.
      */
-    override val sessionState: Flow<LoginSessionState> =
+    override val session: Flow<LoginSessionState> =
         supabaseClient.auth.sessionStatus
             // 백그라운드 전환 중의 세션 복원 상태는 로그아웃이 아니다.
             .filterNot { it is SessionStatus.Initializing }

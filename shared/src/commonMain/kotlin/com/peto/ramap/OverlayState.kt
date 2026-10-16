@@ -9,7 +9,7 @@ import com.peto.ramap.designsystem.toast.ToastManager
 import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.auth.LoginType
-import com.peto.ramap.domain.usecase.LoginSessionUseCase
+import com.peto.ramap.domain.repository.LoginRepository
 import com.peto.ramap.domain.usecase.SignInUseCase
 import com.peto.ramap.navigation.NavigationState
 import kotlinx.coroutines.CoroutineScope
@@ -20,7 +20,7 @@ import ramap.shared.generated.resources.kakao_login_failure_message
 import ramap.shared.generated.resources.login_success_message
 
 internal class OverlayState(
-    private val loginSessionUseCase: LoginSessionUseCase,
+    private val loginRepository: LoginRepository,
     private val navigationState: NavigationState,
     private val signInUseCase: SignInUseCase,
     private val toastManager: ToastManager,
@@ -39,7 +39,7 @@ internal class OverlayState(
         asOverlay: Boolean,
     ) {
         if (userId.isBlank()) return
-        if (!loginSessionUseCase.hasSession()) {
+        if (!loginRepository.hasSession()) {
             pendingProfileTarget = userId to asOverlay
             showProfileLoginGuide = true
             return

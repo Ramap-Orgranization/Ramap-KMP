@@ -237,7 +237,7 @@ class MapViewModel(
     }
 
     private suspend fun observeSessionState() {
-        loginRepository.sessionState.collectLatest { sessionState ->
+        loginRepository.session.collectLatest { sessionState ->
             val isAuthenticated = sessionState == LoginSessionState.AUTHENTICATED
             updateAuthState(isAuthenticated)
             if (isAuthenticated) resumeBookmarkedView()

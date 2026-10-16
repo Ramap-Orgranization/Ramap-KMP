@@ -107,7 +107,7 @@ class OverviewViewModel(
     }
 
     private suspend fun observeSessionState() {
-        loginRepository.sessionState.collect { sessionState ->
+        loginRepository.session.collect { sessionState ->
             val authenticated = sessionState == LoginSessionState.AUTHENTICATED
             if (currentState.isLoggedIn && !authenticated) clearPendingAction()
             if (!authenticated) observedBookmarkedShopIds = null

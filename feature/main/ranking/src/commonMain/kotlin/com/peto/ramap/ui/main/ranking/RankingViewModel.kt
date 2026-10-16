@@ -116,7 +116,7 @@ class RankingViewModel(
 
     private fun observeSessionState() {
         viewModelScope.launch {
-            loginRepository.sessionState.collectLatest { sessionState ->
+            loginRepository.session.collectLatest { sessionState ->
                 if (sessionState == LoginSessionState.AUTHENTICATED) return@collectLatest
 
                 observedBookmarkedShopIds = null

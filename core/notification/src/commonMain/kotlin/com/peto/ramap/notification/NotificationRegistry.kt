@@ -58,7 +58,7 @@ class NotificationRegistry(
      * @param onAuthenticated 인증된 세션이 감지될 때마다 실행할 suspend 블록.
      */
     private suspend fun observeAuthenticatedSessions(onAuthenticated: suspend () -> Unit) {
-        loginRepository.sessionState.collectLatest { sessionState ->
+        loginRepository.session.collectLatest { sessionState ->
             if (sessionState == LoginSessionState.AUTHENTICATED) onAuthenticated()
         }
     }

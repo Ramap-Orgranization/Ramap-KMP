@@ -5,7 +5,6 @@ import com.peto.ramap.domain.model.review.ShopReviewCache
 import com.peto.ramap.domain.model.review.change.ReviewChangeReducer
 import com.peto.ramap.domain.usecase.FeatchShopReviewsUseCase
 import com.peto.ramap.domain.usecase.FetchShopOverviewUseCase
-import com.peto.ramap.domain.usecase.LoginSessionUseCase
 import com.peto.ramap.domain.usecase.SearchRamenShopsUseCase
 import com.peto.ramap.domain.usecase.SignInUseCase
 import org.koin.core.module.dsl.factoryOf
@@ -25,5 +24,4 @@ val useCaseModule =
         factoryOf(::FeatchShopReviewsUseCase)
         factoryOf(::SearchRamenShopsUseCase)
         factoryOf(::SignInUseCase)
-        factoryOf(::LoginSessionUseCase)
     }

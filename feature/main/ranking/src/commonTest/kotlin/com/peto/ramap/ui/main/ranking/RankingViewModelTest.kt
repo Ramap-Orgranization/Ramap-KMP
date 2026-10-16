@@ -637,7 +637,7 @@ class RankingViewModelTest {
                 }
             val loginRepository =
                 object : LoginRepository by FakeLoginRepository(LoginSessionState.AUTHENTICATED) {
-                    override val sessionState = sessionStates.asSharedFlow()
+                    override val session = sessionStates.asSharedFlow()
                 }
             val personalizationStore = FakePersonalizationRepository()
             val viewModel =
@@ -674,7 +674,7 @@ class RankingViewModelTest {
             val sessionStates = MutableSharedFlow<LoginSessionState>()
             val loginRepository =
                 object : LoginRepository by FakeLoginRepository(LoginSessionState.AUTHENTICATED) {
-                    override val sessionState = sessionStates.asSharedFlow()
+                    override val session = sessionStates.asSharedFlow()
                 }
             val viewModel =
                 rankingViewModel(

@@ -156,7 +156,7 @@ internal suspend fun observeSessionPersonalization(
 ) {
     awaitSessionInitialization(loginRepository)
     var previousSessionState: LoginSessionState? = null
-    loginRepository.sessionState
+    loginRepository.session
         .distinctUntilChanged()
         .collectLatest { sessionState ->
             val authenticatedAfterGuest =

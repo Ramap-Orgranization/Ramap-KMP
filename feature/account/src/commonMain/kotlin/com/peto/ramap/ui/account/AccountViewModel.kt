@@ -7,7 +7,6 @@ import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.auth.LoginSessionState
 import com.peto.ramap.domain.model.auth.LoginType
 import com.peto.ramap.domain.repository.LoginRepository
-import com.peto.ramap.domain.usecase.LoginSessionUseCase
 import com.peto.ramap.domain.usecase.SignInUseCase
 import com.peto.ramap.ui.account.contract.AccountIntent
 import com.peto.ramap.ui.account.contract.AccountIntent.OnAccountDeleteConfirm
@@ -34,7 +33,6 @@ import ramap.shared.generated.resources.logout_failure_message
 class AccountViewModel(
     private val loginRepository: LoginRepository,
     private val signInUseCase: SignInUseCase,
-    private val loginSessionUseCase: LoginSessionUseCase,
 ) : BaseViewModel<AccountUiState, AccountIntent, AccountSideEffect>(
         AccountUiState(),
     ) {
@@ -53,7 +51,7 @@ class AccountViewModel(
 
     private fun observeSessionState() {
         viewModelScope.launch {
-            loginSessionUseCase().collectLatest { sessionState ->
+            loginRepository.session.collectLatest { sessionState ->
                 updateSessionState(sessionState)
             }
         }
@@ -74,7 +72,7 @@ class AccountViewModel(
     private fun findAccountLabel(isAuthenticated: Boolean): String? {
         if (!isAuthenticated) return null
 
-        return loginSessionUseCase.currentUserEmail()
+        return loginRepository.currentUserEmail()
     }
 
     private fun signInWithKakao() {
