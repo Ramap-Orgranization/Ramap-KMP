@@ -9,7 +9,7 @@ import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.auth.LoginSessionState
 import com.peto.ramap.domain.model.auth.LoginType
-import com.peto.ramap.domain.model.personalization.ShopPersonalization
+import com.peto.ramap.domain.model.personalization.Personalization
 import com.peto.ramap.domain.model.rank.RankingCursor
 import com.peto.ramap.domain.model.rank.RankingPage
 import com.peto.ramap.domain.model.rank.ShopRanking
@@ -168,7 +168,7 @@ class RankingViewModelTest {
                 )
             val personalizationStore =
                 FakePersonalizationRepository(
-                    ShopPersonalization(
+                    Personalization(
                         hiddenShopIds = setOf("shop-id"),
                     ),
                 )
@@ -474,7 +474,7 @@ class RankingViewModelTest {
         coroutinesTest {
             val mutablePersonalization =
                 MutableStateFlow<PersonalizationBootstrapState>(
-                    PersonalizationBootstrapState.Success(ShopPersonalization()),
+                    PersonalizationBootstrapState.Success(Personalization()),
                 )
             val store =
                 object : PersonalizationStore by FakePersonalizationRepository() {
@@ -486,11 +486,11 @@ class RankingViewModelTest {
                     ): RamapResult<Unit> {
                         mutablePersonalization.value =
                             PersonalizationBootstrapState.Success(
-                                ShopPersonalization(bookmarkedShopIds = setOf(shopId)),
+                                Personalization(bookmarkedShopIds = setOf(shopId)),
                             )
                         yield()
                         mutablePersonalization.value =
-                            PersonalizationBootstrapState.Success(ShopPersonalization())
+                            PersonalizationBootstrapState.Success(Personalization())
                         return RamapResult.Error(
                             RamapError.Unknown(IllegalStateException("failure")),
                         )
@@ -527,7 +527,7 @@ class RankingViewModelTest {
         coroutinesTest {
             val mutablePersonalization =
                 MutableStateFlow<PersonalizationBootstrapState>(
-                    PersonalizationBootstrapState.Success(ShopPersonalization()),
+                    PersonalizationBootstrapState.Success(Personalization()),
                 )
             val allowCompletion = CompletableDeferred<Unit>()
             val requests = mutableListOf<Pair<String, Boolean>>()
@@ -542,7 +542,7 @@ class RankingViewModelTest {
                         requests += shopId to enabled
                         mutablePersonalization.value =
                             PersonalizationBootstrapState.Success(
-                                ShopPersonalization(bookmarkedShopIds = setOf(shopId)),
+                                Personalization(bookmarkedShopIds = setOf(shopId)),
                             )
                         allowCompletion.await()
                         return RamapResult.Success(Unit)
@@ -681,7 +681,7 @@ class RankingViewModelTest {
                     repository = FakeShopRankingRepository(pageOf(shopRanking(likeCount = 3))),
                     personalizationStore =
                         FakePersonalizationRepository(
-                            ShopPersonalization(bookmarkedShopIds = setOf(shop.id)),
+                            Personalization(bookmarkedShopIds = setOf(shop.id)),
                         ),
                     loginRepository = loginRepository,
                 )
@@ -701,7 +701,7 @@ class RankingViewModelTest {
             val shop = ramenShop()
             val personalizationStore =
                 FakePersonalizationRepository(
-                    ShopPersonalization(bookmarkedShopIds = setOf(shop.id)),
+                    Personalization(bookmarkedShopIds = setOf(shop.id)),
                 )
             val loginRepository = FakeLoginRepository(LoginSessionState.AUTHENTICATED)
             val viewModel =
@@ -736,7 +736,7 @@ class RankingViewModelTest {
             val shop = ramenShop()
             val personalizationStore =
                 FakePersonalizationRepository(
-                    ShopPersonalization(bookmarkedShopIds = setOf(shop.id)),
+                    Personalization(bookmarkedShopIds = setOf(shop.id)),
                 )
             val loginRepository = FakeLoginRepository(LoginSessionState.AUTHENTICATED)
             val viewModel =
@@ -768,7 +768,7 @@ class RankingViewModelTest {
             val shop = ramenShop()
             val personalizationStore =
                 FakePersonalizationRepository(
-                    ShopPersonalization(
+                    Personalization(
                         bookmarkedShopIds = setOf(shop.id),
                     ),
                 )

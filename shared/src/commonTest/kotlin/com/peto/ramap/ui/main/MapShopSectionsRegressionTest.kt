@@ -13,7 +13,7 @@ import com.peto.ramap.domain.model.businesshour.BusinessHours
 import com.peto.ramap.domain.model.businesshour.BusinessHoursDay
 import com.peto.ramap.domain.model.community.ReviewAuthor
 import com.peto.ramap.domain.model.menu.ShopMenu
-import com.peto.ramap.domain.model.personalization.ShopPersonalization
+import com.peto.ramap.domain.model.personalization.Personalization
 import com.peto.ramap.domain.model.place.PlaceSearchErrorCode
 import com.peto.ramap.domain.model.place.PlaceSearchException
 import com.peto.ramap.domain.model.report.ShopInformationField
@@ -2131,7 +2131,7 @@ class MapShopSectionsRegressionTest {
             val shop = ramenShopFixture(id = "subscribed-shop-to-hide")
             val personalizationRepository =
                 FakePersonalizationRepository(
-                    ShopPersonalization(notificationShopIds = setOf(shop.id)),
+                    Personalization(notificationShopIds = setOf(shop.id)),
                 )
             val viewModel =
                 mapViewModel(
@@ -2157,7 +2157,7 @@ class MapShopSectionsRegressionTest {
                 mapViewModel(
                     personalizationRepository =
                         FakePersonalizationRepository(
-                            ShopPersonalization(hiddenShopIds = setOf(shop.id)),
+                            Personalization(hiddenShopIds = setOf(shop.id)),
                         ),
                     loginRepository = loggedInRepository(),
                     notificationSettingsRepository = notificationRepository,
@@ -2202,7 +2202,7 @@ class MapShopSectionsRegressionTest {
             val shop = ramenShopFixture(id = "notification-disable-shop")
             val personalizationRepository =
                 FakePersonalizationRepository(
-                    ShopPersonalization(notificationShopIds = setOf(shop.id)),
+                    Personalization(notificationShopIds = setOf(shop.id)),
                 )
             val viewModel =
                 mapViewModel(
@@ -2224,7 +2224,7 @@ class MapShopSectionsRegressionTest {
             val shop = ramenShopFixture(id = "notification-disabled-externally")
             val personalizationRepository =
                 FakePersonalizationRepository(
-                    ShopPersonalization(notificationShopIds = setOf(shop.id)),
+                    Personalization(notificationShopIds = setOf(shop.id)),
                 )
             val viewModel =
                 mapViewModel(
@@ -2251,7 +2251,7 @@ class MapShopSectionsRegressionTest {
                 )
             val personalizationRepository =
                 FakePersonalizationRepository(
-                    ShopPersonalization(hiddenShopIds = setOf(hiddenShop.id)),
+                    Personalization(hiddenShopIds = setOf(hiddenShop.id)),
                 )
             val viewModel =
                 mapViewModel(
@@ -2896,7 +2896,7 @@ class MapShopSectionsRegressionTest {
             val shop = ramenShopFixture()
             val personalizationRepository =
                 FakePersonalizationRepository(
-                    ShopPersonalization(bookmarkedShopIds = setOf(shop.id)),
+                    Personalization(bookmarkedShopIds = setOf(shop.id)),
                 )
             val viewModel =
                 mapViewModel(
@@ -2977,7 +2977,7 @@ class MapShopSectionsRegressionTest {
             val shop = ramenShopFixture()
             val personalizationRepository =
                 FakePersonalizationRepository(
-                    ShopPersonalization(bookmarkedShopIds = setOf(shop.id)),
+                    Personalization(bookmarkedShopIds = setOf(shop.id)),
                 )
             val viewModel =
                 mapViewModel(
@@ -3111,7 +3111,7 @@ class MapShopSectionsRegressionTest {
             val shop = ramenShopFixture(id = "cached-bookmarked-shop")
             val personalizationRepository =
                 FakePersonalizationRepository(
-                    ShopPersonalization(bookmarkedShopIds = setOf(shop.id)),
+                    Personalization(bookmarkedShopIds = setOf(shop.id)),
                 )
             val viewModel = mapViewModel(personalizationRepository = personalizationRepository)
             runCurrent()
@@ -3381,4 +3381,4 @@ private fun loggedInRepository(): FakeLoginRepository =
         userEmail = "test@ramap.com",
     )
 
-private fun personalization(repository: FakePersonalizationRepository): ShopPersonalization = (repository.state.value as PersonalizationBootstrapState.Success).value
+private fun personalization(repository: FakePersonalizationRepository): Personalization = (repository.state.value as PersonalizationBootstrapState.Success).value

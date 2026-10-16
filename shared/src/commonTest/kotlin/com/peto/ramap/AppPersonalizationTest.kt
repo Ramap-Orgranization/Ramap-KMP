@@ -3,7 +3,7 @@ package com.peto.ramap
 import com.peto.ramap.core.result.RamapError
 import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.domain.model.auth.LoginSessionState
-import com.peto.ramap.domain.model.personalization.ShopPersonalization
+import com.peto.ramap.domain.model.personalization.Personalization
 import com.peto.ramap.domain.store.PersonalizationBootstrapState
 import com.peto.ramap.domain.store.PersonalizationStore
 import com.peto.ramap.fake.FakeLoginRepository
@@ -88,7 +88,7 @@ class AppPersonalizationTest {
     fun `이미 표시한 앱 경로는 구성 변경 새로고침 중에도 유지한다`() {
         assertTrue(
             shouldShowAppRoute(
-                personalizationState = PersonalizationBootstrapState.Success(ShopPersonalization()),
+                personalizationState = PersonalizationBootstrapState.Success(Personalization()),
                 hasShownAppRoute = false,
             ),
         )

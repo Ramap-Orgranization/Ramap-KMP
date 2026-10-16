@@ -8,8 +8,9 @@ import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.auth.LoginSessionState
 import com.peto.ramap.domain.model.auth.LoginType
-import com.peto.ramap.domain.model.personalization.ShopNotificationToggle
-import com.peto.ramap.domain.model.personalization.ShopPersonalization
+import com.peto.ramap.domain.model.personalization.BookmarkChangeStatus
+import com.peto.ramap.domain.model.personalization.NotificationStatus
+import com.peto.ramap.domain.model.personalization.Personalization
 import com.peto.ramap.domain.model.report.ShopInformationField
 import com.peto.ramap.domain.model.report.ShopInformationReport
 import com.peto.ramap.domain.model.shop.RamenShop
@@ -77,9 +78,9 @@ class OverviewViewModel(
             isLoggedIn = loginRepository.hasSession(),
             personalization =
                 if (loginRepository.hasSession()) {
-                    (personalizationStore.state.value as? PersonalizationBootstrapState.Success)?.value ?: ShopPersonalization()
+                    (personalizationStore.state.value as? PersonalizationBootstrapState.Success)?.value ?: Personalization()
                 } else {
-                    ShopPersonalization()
+                    Personalization()
                 },
         ),
     ) {
@@ -111,7 +112,7 @@ class OverviewViewModel(
             val authenticated = sessionState == LoginSessionState.AUTHENTICATED
             if (currentState.isLoggedIn && !authenticated) clearPendingAction()
             if (!authenticated) observedBookmarkedShopIds = null
-            reduce { copy(isLoggedIn = authenticated, personalization = if (authenticated) personalization else ShopPersonalization()) }
+            reduce { copy(isLoggedIn = authenticated, personalization = if (authenticated) personalization else Personalization()) }
         }
     }
 
@@ -351,8 +352,8 @@ class OverviewViewModel(
     ) {
         if (requireLogin(PendingShopAction.ToggleShopNotification(shop, source))) return
         when (val toggle = currentState.personalization.notificationToggle(shop.id)) {
-            ShopNotificationToggle.HiddenShop -> showToast(Res.string.hidden_shop_notification_unavailable_message)
-            is ShopNotificationToggle.Allowed ->
+            NotificationStatus.Hidden -> showToast(Res.string.hidden_shop_notification_unavailable_message)
+            is NotificationStatus.Allowed ->
                 launchPersonalizationTask(
                     taskKey = "$PERSONALIZATION_TASK_KEY:notification:${shop.id}",
                     pendingEntry = pendingEntry,
@@ -424,7 +425,10 @@ class OverviewViewModel(
     private fun synchronizeOverviewLikeCounts(bookmarkedShopIds: Set<String>) {
         val changes = currentState.personalization.bookmarkChangesSince(observedBookmarkedShopIds)
         observedBookmarkedShopIds = bookmarkedShopIds
-        for (change in changes) updateOverviewBookmarkCount(change.shopId, change.enabled)
+        for (change in changes) {
+            val isBookmarked = change.type == BookmarkChangeStatus.ADDED
+            updateOverviewBookmarkCount(change.shopId, isBookmarked)
+        }
     }
 
     private fun updateOverviewBookmarkCount(
@@ -461,21 +465,21 @@ class OverviewViewModel(
         )
     }
 
-    private fun applyPersonalization(personalization: ShopPersonalization) {
+    private fun applyPersonalization(personalization: Personalization) {
         val selectedShopId = currentState.selectedShop?.id
         val transition = personalization.visibilityChange(selectedShopId, currentState.personalization)
         reduce {
             copy(
                 overviewState =
                     when (transition) {
-                        com.peto.ramap.domain.model.personalization.ShopVisibilityChange.Hidden -> ShopOverviewUiState.Closed
-                        com.peto.ramap.domain.model.personalization.ShopVisibilityChange.Visible -> overviewStateWithVisibleShop(overviewState)
-                        com.peto.ramap.domain.model.personalization.ShopVisibilityChange.Unchanged -> overviewState
+                        com.peto.ramap.domain.model.personalization.VisibilityStatus.Hidden -> ShopOverviewUiState.Closed
+                        com.peto.ramap.domain.model.personalization.VisibilityStatus.Visible -> overviewStateWithVisibleShop(overviewState)
+                        com.peto.ramap.domain.model.personalization.VisibilityStatus.Unchanged -> overviewState
                     },
                 personalization = personalization,
             )
         }
-        if (transition == com.peto.ramap.domain.model.personalization.ShopVisibilityChange.Hidden && hidingSelectedShopId != selectedShopId) trySideEffect(ShopOverviewSideEffect.SelectedShopHidden)
+        if (transition == com.peto.ramap.domain.model.personalization.VisibilityStatus.Hidden && hidingSelectedShopId != selectedShopId) trySideEffect(ShopOverviewSideEffect.SelectedShopHidden)
     }
 
     private fun overviewStateWithVisibleShop(state: ShopOverviewUiState): ShopOverviewUiState =

@@ -5,7 +5,7 @@ import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.importation.ImportationCandidates
 import com.peto.ramap.domain.model.importation.ImportationPreview
-import com.peto.ramap.domain.model.personalization.ShopPersonalization
+import com.peto.ramap.domain.model.personalization.Personalization
 import com.peto.ramap.domain.model.report.PlaceReportTextParser
 import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.domain.repository.ImportationRepository
@@ -64,7 +64,7 @@ class ImportationViewModel(
 
     private suspend fun requestPreview(
         url: String,
-        personalization: ShopPersonalization,
+        personalization: Personalization,
     ) {
         when (val result = importationRepository.analyze(url)) {
             is RamapResult.Error -> publishError(ImportationErrorHandler.resolveAnalyzeError(result.error))
@@ -80,7 +80,7 @@ class ImportationViewModel(
 
     private suspend fun requestCandidates(
         preview: ImportationPreview,
-        personalization: ShopPersonalization,
+        personalization: Personalization,
     ) {
         val resolved: ImportationCandidates = ImportationCandidates.from(preview, personalization)
         if (resolved.importableShopIds.isEmpty()) {
@@ -138,7 +138,7 @@ class ImportationViewModel(
         reduce { clearPreview(this).copy(url = "") }
     }
 
-    private fun currentPersonalization(): ShopPersonalization? = (personalizationStore.state.value as? PersonalizationBootstrapState.Success)?.value
+    private fun currentPersonalization(): Personalization? = (personalizationStore.state.value as? PersonalizationBootstrapState.Success)?.value
 
     private fun publishError(error: ImportationError) {
         reduce { copy(error = error) }

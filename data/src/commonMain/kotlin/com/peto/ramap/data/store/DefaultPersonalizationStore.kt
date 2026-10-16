@@ -2,7 +2,7 @@ package com.peto.ramap.data.store
 
 import com.peto.ramap.core.result.RamapError
 import com.peto.ramap.core.result.RamapResult
-import com.peto.ramap.domain.model.personalization.ShopPersonalization
+import com.peto.ramap.domain.model.personalization.Personalization
 import com.peto.ramap.domain.repository.BookmarkRepository
 import com.peto.ramap.domain.repository.HiddenShopRepository
 import com.peto.ramap.domain.repository.SubscribedShopRepository
@@ -79,7 +79,7 @@ internal class DefaultPersonalizationStore(
 
         val hiddenShopIds = (hiddenShops as RamapResult.Success).data
         publish(
-            ShopPersonalization(
+            Personalization(
                 bookmarkedShopIds = (bookmarks as RamapResult.Success).data - hiddenShopIds,
                 hiddenShopIds = hiddenShopIds,
                 notificationShopIds = (subscribedShops as RamapResult.Success).data - hiddenShopIds,
@@ -201,7 +201,7 @@ internal class DefaultPersonalizationStore(
      * 로그아웃 시 공유 개인화 상태를 초기화한다.
      */
     override suspend fun clear() {
-        publish(ShopPersonalization())
+        publish(Personalization())
     }
 
     /**
@@ -212,7 +212,7 @@ internal class DefaultPersonalizationStore(
     private suspend fun removeSubscriptionOrRollback(
         shopId: String,
         hadNotification: Boolean,
-        previous: ShopPersonalization,
+        previous: Personalization,
     ): RamapResult.Error? {
         if (!hadNotification) return null
         val result = subscribedShopRepository.unsubscribeShop(shopId)
@@ -238,7 +238,7 @@ internal class DefaultPersonalizationStore(
     private suspend fun restoreAfterHideFailure(
         shopId: String,
         hadNotification: Boolean,
-        previous: ShopPersonalization,
+        previous: Personalization,
     ) {
         withContext(NonCancellable) {
             restoreSubscription(shopId, hadNotification)
@@ -261,7 +261,7 @@ internal class DefaultPersonalizationStore(
      */
     private fun rollback(
         result: RamapResult.Error,
-        previous: ShopPersonalization,
+        previous: Personalization,
     ): RamapResult.Error {
         publish(previous)
         return result
@@ -272,16 +272,16 @@ internal class DefaultPersonalizationStore(
      */
     private fun <T> rollbackOnError(
         result: RamapResult<T>,
-        previous: ShopPersonalization,
+        previous: Personalization,
     ): RamapResult<T> {
         if (result is RamapResult.Error) publish(previous)
         return result
     }
 
-    private val currentPersonalization: ShopPersonalization
-        get() = (state.value as? PersonalizationBootstrapState.Success)?.value ?: ShopPersonalization()
+    private val currentPersonalization: Personalization
+        get() = (state.value as? PersonalizationBootstrapState.Success)?.value ?: Personalization()
 
-    private fun publish(personalization: ShopPersonalization) {
+    private fun publish(personalization: Personalization) {
         _state.value = PersonalizationBootstrapState.Success(personalization)
     }
 }

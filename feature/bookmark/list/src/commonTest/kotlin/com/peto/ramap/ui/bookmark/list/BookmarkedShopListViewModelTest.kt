@@ -8,7 +8,7 @@ import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.coroutinesTest
 import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
-import com.peto.ramap.domain.model.personalization.ShopPersonalization
+import com.peto.ramap.domain.model.personalization.Personalization
 import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.domain.repository.RamenShopRepository
@@ -36,7 +36,7 @@ class BookmarkedShopListViewModelTest {
             val shop = ramenShopFixture(id = "bookmarked-shop")
             val personalizationRepository =
                 FakePersonalizationRepository(
-                    ShopPersonalization(bookmarkedShopIds = setOf(shop.id)),
+                    Personalization(bookmarkedShopIds = setOf(shop.id)),
                 )
             val viewModel =
                 BookmarkedShopListViewModel(
@@ -80,7 +80,7 @@ class BookmarkedShopListViewModelTest {
                 BookmarkedShopListViewModel(
                     personalizationStore =
                         FakePersonalizationRepository(
-                            ShopPersonalization(bookmarkedShopIds = setOf(shop.id)),
+                            Personalization(bookmarkedShopIds = setOf(shop.id)),
                         ),
                     ramenShopRepository =
                         FakeRamenShopRepository(
@@ -108,7 +108,7 @@ class BookmarkedShopListViewModelTest {
                 BookmarkedShopListViewModel(
                     personalizationStore =
                         FakePersonalizationRepository(
-                            ShopPersonalization(bookmarkedShopIds = setOf(shop.id)),
+                            Personalization(bookmarkedShopIds = setOf(shop.id)),
                         ),
                     ramenShopRepository = ramenShopRepository,
                     analyticsTracker = FakeAnalyticsTracker(),
@@ -147,7 +147,7 @@ class BookmarkedShopListViewModelTest {
                 }
             val personalizationRepository =
                 FakePersonalizationRepository(
-                    ShopPersonalization(bookmarkedShopIds = setOf(initialShop.id)),
+                    Personalization(bookmarkedShopIds = setOf(initialShop.id)),
                 )
             val viewModel =
                 BookmarkedShopListViewModel(
@@ -179,7 +179,7 @@ class BookmarkedShopListViewModelTest {
             val addedShop = ramenShopFixture(id = "added-bookmarked-shop", name = "추가 매장")
             val personalizationRepository =
                 FakePersonalizationRepository(
-                    ShopPersonalization(bookmarkedShopIds = setOf(initialShop.id)),
+                    Personalization(bookmarkedShopIds = setOf(initialShop.id)),
                 )
             val ramenShopRepository =
                 FakeRamenShopRepository(
@@ -229,7 +229,7 @@ class BookmarkedShopListViewModelTest {
                 }
             val personalizationRepository =
                 FakePersonalizationRepository(
-                    ShopPersonalization(bookmarkedShopIds = setOf(initialShop.id)),
+                    Personalization(bookmarkedShopIds = setOf(initialShop.id)),
                 )
             val viewModel =
                 BookmarkedShopListViewModel(
@@ -270,7 +270,7 @@ class BookmarkedShopListViewModelTest {
                 }
             val personalizationRepository =
                 FakePersonalizationRepository(
-                    ShopPersonalization(bookmarkedShopIds = setOf(shop.id)),
+                    Personalization(bookmarkedShopIds = setOf(shop.id)),
                 )
             val viewModel =
                 BookmarkedShopListViewModel(
@@ -300,7 +300,7 @@ class BookmarkedShopListViewModelTest {
             val shop = ramenShopFixture(id = "bookmarked-shop")
             val repository =
                 FakePersonalizationRepository(
-                    ShopPersonalization(bookmarkedShopIds = setOf(shop.id)),
+                    Personalization(bookmarkedShopIds = setOf(shop.id)),
                 )
             val analyticsTracker = FakeAnalyticsTracker()
             val viewModel = bookmarkedShopListViewModel(shop, repository, analyticsTracker)
@@ -321,7 +321,7 @@ class BookmarkedShopListViewModelTest {
                 assertEquals(RamenShops(emptyMap()), viewModel.uiState.value.shops)
                 assertEquals(false, viewModel.uiState.value.isOverlayLoading)
                 assertEquals(
-                    RamapResult.Success(ShopPersonalization()),
+                    RamapResult.Success(Personalization()),
                     repository.fetchPersonalization(),
                 )
                 assertEquals(
@@ -342,7 +342,7 @@ class BookmarkedShopListViewModelTest {
             val shop = ramenShopFixture(id = "bookmarked-shop")
             val repository =
                 object : PersonalizationStore by FakePersonalizationRepository(
-                    ShopPersonalization(bookmarkedShopIds = setOf(shop.id)),
+                    Personalization(bookmarkedShopIds = setOf(shop.id)),
                 ) {
                     override suspend fun updateBookmark(
                         shopId: String,
@@ -374,7 +374,7 @@ private fun bookmarkedShopListViewModel(
     shop: RamenShop,
     personalizationRepository: PersonalizationStore =
         FakePersonalizationRepository(
-            ShopPersonalization(bookmarkedShopIds = setOf(shop.id)),
+            Personalization(bookmarkedShopIds = setOf(shop.id)),
         ),
     analyticsTracker: FakeAnalyticsTracker = FakeAnalyticsTracker(),
 ) = BookmarkedShopListViewModel(

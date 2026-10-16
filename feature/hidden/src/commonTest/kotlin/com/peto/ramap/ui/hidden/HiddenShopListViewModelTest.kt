@@ -4,7 +4,7 @@ import com.peto.ramap.analytics.AnalyticsSource
 import com.peto.ramap.analytics.common.shop.HiddenShopToggled
 import com.peto.ramap.core.result.RamapError
 import com.peto.ramap.coroutinesTest
-import com.peto.ramap.domain.model.personalization.ShopPersonalization
+import com.peto.ramap.domain.model.personalization.Personalization
 import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.fake.FakeAnalyticsTracker
 import com.peto.ramap.fake.FakePersonalizationRepository
@@ -27,7 +27,7 @@ class HiddenShopListViewModelTest {
                 HiddenShopListViewModel(
                     personalizationStore =
                         FakePersonalizationRepository(
-                            ShopPersonalization(hiddenShopIds = setOf(hiddenShop.id)),
+                            Personalization(hiddenShopIds = setOf(hiddenShop.id)),
                         ),
                     ramenShopRepository =
                         FakeRamenShopRepository(
@@ -72,7 +72,7 @@ class HiddenShopListViewModelTest {
                 HiddenShopListViewModel(
                     personalizationStore =
                         FakePersonalizationRepository(
-                            ShopPersonalization(hiddenShopIds = setOf(shop.id)),
+                            Personalization(hiddenShopIds = setOf(shop.id)),
                         ),
                     ramenShopRepository = ramenShopRepository,
                     analyticsTracker = FakeAnalyticsTracker(),
@@ -101,7 +101,7 @@ class HiddenShopListViewModelTest {
                 HiddenShopListViewModel(
                     personalizationStore =
                         FakePersonalizationRepository(
-                            ShopPersonalization(hiddenShopIds = setOf(shop.id)),
+                            Personalization(hiddenShopIds = setOf(shop.id)),
                         ),
                     ramenShopRepository = FakeRamenShopRepository(fetchByIdsResult = RamenShops(listOf(shop))),
                     analyticsTracker = analyticsTracker,

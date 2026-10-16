@@ -1,6 +1,6 @@
 package com.peto.ramap.ui.shop.overview.contract
 
-import com.peto.ramap.domain.model.personalization.ShopPersonalization
+import com.peto.ramap.domain.model.personalization.Personalization
 import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.domain.model.shop.ShopOverView
 import com.peto.ramap.domain.model.shop.WaitingSystem
@@ -13,7 +13,7 @@ data class ShopOverviewState(
     val shopWaiting: Map<String, WaitingSystem?> = emptyMap(),
     val entryGeneration: Long = 0,
     val isLoggedIn: Boolean = false,
-    val personalization: ShopPersonalization = ShopPersonalization(),
+    val personalization: Personalization = Personalization(),
     val hasLoadFailure: Boolean = false,
     val isShopUnavailable: Boolean = false,
     override val loadState: LoadState = LoadState(),

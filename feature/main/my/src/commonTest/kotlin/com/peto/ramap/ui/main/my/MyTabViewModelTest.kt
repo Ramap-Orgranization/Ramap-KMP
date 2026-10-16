@@ -6,7 +6,7 @@ import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.coroutinesTest
 import com.peto.ramap.domain.model.community.BlockedUser
 import com.peto.ramap.domain.model.community.PublicProfile
-import com.peto.ramap.domain.model.personalization.ShopPersonalization
+import com.peto.ramap.domain.model.personalization.Personalization
 import com.peto.ramap.domain.model.profile.AccountProfile
 import com.peto.ramap.fake.FakeCommunityRepository
 import com.peto.ramap.fake.FakeFollowRepository
@@ -111,7 +111,7 @@ class MyTabViewModelTest {
             val profiles = FakeProfileRepository()
             val personalization =
                 FakePersonalizationRepository(
-                    ShopPersonalization(
+                    Personalization(
                         bookmarkedShopIds = setOf("one"),
                         notificationShopIds = setOf("two", "three"),
                         hiddenShopIds = setOf("four", "five", "six"),

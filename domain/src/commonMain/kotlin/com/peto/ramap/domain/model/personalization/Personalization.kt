@@ -5,26 +5,26 @@ package com.peto.ramap.domain.model.personalization
  *
  * 숨긴 매장은 북마크 및 알림 설정 집합에 포함되지 않는다.
  */
-data class ShopPersonalization(
+data class Personalization(
     val bookmarkedShopIds: Set<String> = emptySet(),
     val hiddenShopIds: Set<String> = emptySet(),
     val notificationShopIds: Set<String> = emptySet(),
 ) {
     fun visibilityChange(
         shopId: String?,
-        previous: ShopPersonalization,
-    ): ShopVisibilityChange =
-        when {
-            shopId == null -> ShopVisibilityChange.Unchanged
-            shopId !in previous.hiddenShopIds && shopId in hiddenShopIds -> ShopVisibilityChange.Hidden
-            shopId in previous.hiddenShopIds && shopId !in hiddenShopIds -> ShopVisibilityChange.Visible
-            else -> ShopVisibilityChange.Unchanged
+        previous: Personalization,
+    ): VisibilityStatus =
+        when (shopId) {
+            null -> VisibilityStatus.Unchanged
+            !in previous.hiddenShopIds if shopId in hiddenShopIds -> VisibilityStatus.Hidden
+            in previous.hiddenShopIds if shopId !in hiddenShopIds -> VisibilityStatus.Visible
+            else -> VisibilityStatus.Unchanged
         }
 
-    fun bookmarkChangesSince(previousIds: Set<String>?): List<ShopBookmarkChange> {
+    fun bookmarkChangesSince(previousIds: Set<String>?): List<BookmarkChange> {
         if (previousIds == null) return emptyList()
-        return (bookmarkedShopIds - previousIds).map { ShopBookmarkChange(it, true) } +
-            (previousIds - bookmarkedShopIds).map { ShopBookmarkChange(it, false) }
+        return (bookmarkedShopIds - previousIds).map { BookmarkChange(it, BookmarkChangeStatus.ADDED) } +
+            (previousIds - bookmarkedShopIds).map { BookmarkChange(it, BookmarkChangeStatus.REMOVED) }
     }
 
     fun nextBookmarkEnabled(shopId: String): Boolean = shopId !in bookmarkedShopIds
@@ -34,11 +34,11 @@ data class ShopPersonalization(
     fun hasBookmark(shopId: String): Boolean = shopId in bookmarkedShopIds
 
     /** 숨김 매장의 변경을 차단하고 그 외에는 현재 구독을 반전한다. */
-    fun notificationToggle(shopId: String): ShopNotificationToggle =
+    fun notificationToggle(shopId: String): NotificationStatus =
         if (shopId in hiddenShopIds) {
-            ShopNotificationToggle.HiddenShop
+            NotificationStatus.Hidden
         } else {
-            ShopNotificationToggle.Allowed(enabled = shopId !in notificationShopIds)
+            NotificationStatus.Allowed(enabled = shopId !in notificationShopIds)
         }
 
     /**
@@ -49,7 +49,7 @@ data class ShopPersonalization(
     fun changeBookmark(
         shopId: String,
         isBookmarked: Boolean,
-    ): ShopPersonalization {
+    ): Personalization {
         val changedBookmarkedShopIds =
             if (isBookmarked) {
                 bookmarkedShopIds + shopId
@@ -63,7 +63,7 @@ data class ShopPersonalization(
     }
 
     /** 숨김 매장을 제외하고 여러 매장을 좋아요에 추가한다. */
-    fun addBookmarks(shopIds: Set<String>): ShopPersonalization = copy(bookmarkedShopIds = bookmarkedShopIds + (shopIds - hiddenShopIds))
+    fun addBookmarks(shopIds: Set<String>): Personalization = copy(bookmarkedShopIds = bookmarkedShopIds + (shopIds - hiddenShopIds))
 
     /**
      * 특정 매장의 알림 구독 상태를 [isSubscribed]로 변경한다.
@@ -71,7 +71,7 @@ data class ShopPersonalization(
     fun changeNotificationSubscription(
         shopId: String,
         isSubscribed: Boolean,
-    ): ShopPersonalization {
+    ): Personalization {
         val changedNotificationShopIds =
             if (isSubscribed) {
                 notificationShopIds + shopId
@@ -87,7 +87,7 @@ data class ShopPersonalization(
     /**
      * 특정 매장을 숨기고 연관된 북마크와 알림 설정을 함께 제거한다.
      */
-    fun hideShop(shopId: String): ShopPersonalization =
+    fun hideShop(shopId: String): Personalization =
         copy(
             hiddenShopIds = hiddenShopIds + shopId,
             bookmarkedShopIds = bookmarkedShopIds - shopId,
@@ -101,4 +101,17 @@ data class ShopPersonalization(
         shopId: String,
         enabled: Boolean,
     ): Boolean = enabled && shopId in hiddenShopIds
+
+    /**
+     * 북마크 뷰 또는 일반 뷰 조건 전환 시 특정 매장을 시트/화면에 유지해야 하는지 판단한다.
+     */
+    fun shouldKeepShop(
+        shopId: String,
+        willShowBookmarkedShops: Boolean,
+    ): Boolean =
+        if (willShowBookmarkedShops) {
+            shopId in bookmarkedShopIds
+        } else {
+            shopId !in hiddenShopIds
+        }
 }

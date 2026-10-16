@@ -2,7 +2,7 @@ package com.peto.ramap.data.store
 
 import com.peto.ramap.core.result.RamapError
 import com.peto.ramap.core.result.RamapResult
-import com.peto.ramap.domain.model.personalization.ShopPersonalization
+import com.peto.ramap.domain.model.personalization.Personalization
 import com.peto.ramap.domain.repository.BookmarkRepository
 import com.peto.ramap.domain.store.PersonalizationBootstrapState
 import com.peto.ramap.fake.FakeBookmarkRepository
@@ -34,7 +34,7 @@ class DefaultPersonalizationStoreTest {
             assertEquals(PersonalizationBootstrapState.Loading, store.state.value)
             store.refresh()
             assertEquals(
-                PersonalizationBootstrapState.Success(ShopPersonalization()),
+                PersonalizationBootstrapState.Success(Personalization()),
                 store.state.value,
             )
         }
@@ -105,7 +105,7 @@ class DefaultPersonalizationStoreTest {
             assertIs<RamapResult.Success<Unit>>(store.refresh())
 
             assertEquals(
-                ShopPersonalization(
+                Personalization(
                     bookmarkedShopIds = setOf("bookmark"),
                     hiddenShopIds = setOf("hidden"),
                     notificationShopIds = setOf("notification"),
@@ -130,7 +130,7 @@ class DefaultPersonalizationStoreTest {
 
             assertIs<RamapResult.Success<Unit>>(store.hideShop("shop"))
 
-            assertEquals(ShopPersonalization(hiddenShopIds = setOf("shop")), personalization(store))
+            assertEquals(Personalization(hiddenShopIds = setOf("shop")), personalization(store))
             assertEquals(setOf("shop"), bookmarkRepository.shopIds)
             assertEquals(emptyList(), bookmarkRepository.removeRequests)
             assertEquals(listOf("shop"), hiddenShopRepository.atomicHideRequests)
@@ -204,7 +204,7 @@ class DefaultPersonalizationStoreTest {
 
             assertIs<RamapResult.Success<Unit>>(store.unhideShop("shop"))
 
-            assertEquals(ShopPersonalization(), personalization(store))
+            assertEquals(Personalization(), personalization(store))
             assertEquals(emptySet(), hiddenShopRepository.shopIds)
         }
 
@@ -244,7 +244,7 @@ class DefaultPersonalizationStoreTest {
 
             assertIs<RamapResult.Error>(store.updateBookmark("shop", true))
 
-            assertEquals(ShopPersonalization(), personalization(store))
+            assertEquals(Personalization(), personalization(store))
         }
 
     @Test
@@ -282,7 +282,7 @@ class DefaultPersonalizationStoreTest {
 
             assertIs<RamapResult.Error>(store.addBookmarks(setOf("shop-a", "shop-b")))
 
-            assertEquals(ShopPersonalization(), personalization(store))
+            assertEquals(Personalization(), personalization(store))
         }
 
     @Test
@@ -339,7 +339,7 @@ class DefaultPersonalizationStoreTest {
 
             store.clear()
 
-            assertEquals(ShopPersonalization(), personalization(store))
+            assertEquals(Personalization(), personalization(store))
         }
 
     @Test
@@ -362,5 +362,5 @@ class DefaultPersonalizationStoreTest {
             assertEquals(emptyList(), subscribedShopRepository.subscriptionRequests)
         }
 
-    private fun personalization(store: DefaultPersonalizationStore): ShopPersonalization = assertIs<PersonalizationBootstrapState.Success>(store.state.value).value
+    private fun personalization(store: DefaultPersonalizationStore): Personalization = assertIs<PersonalizationBootstrapState.Success>(store.state.value).value
 }

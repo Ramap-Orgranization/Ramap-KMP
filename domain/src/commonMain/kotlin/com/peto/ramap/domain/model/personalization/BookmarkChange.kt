@@ -1,6 +1,6 @@
 package com.peto.ramap.domain.model.personalization
 
-data class ShopBookmarkChange(
+data class BookmarkChange(
     val shopId: String,
-    val enabled: Boolean,
+    val type: BookmarkChangeStatus,
 )

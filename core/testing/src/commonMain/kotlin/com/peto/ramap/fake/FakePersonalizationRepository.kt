@@ -2,14 +2,14 @@ package com.peto.ramap.fake
 
 import com.peto.ramap.core.result.RamapError
 import com.peto.ramap.core.result.RamapResult
-import com.peto.ramap.domain.model.personalization.ShopPersonalization
+import com.peto.ramap.domain.model.personalization.Personalization
 import com.peto.ramap.domain.store.PersonalizationBootstrapState
 import com.peto.ramap.domain.store.PersonalizationStore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 class FakePersonalizationRepository(
-    personalization: ShopPersonalization = ShopPersonalization(),
+    personalization: Personalization = Personalization(),
     initialState: PersonalizationBootstrapState = PersonalizationBootstrapState.Success(personalization),
 ) : PersonalizationStore {
     private val mutableState = MutableStateFlow(initialState)
@@ -86,7 +86,7 @@ class FakePersonalizationRepository(
     }
 
     override suspend fun clear() {
-        publish(ShopPersonalization())
+        publish(Personalization())
     }
 
     fun updateBookmarkedShopIds(shopIds: Set<String>) {
@@ -94,14 +94,14 @@ class FakePersonalizationRepository(
         bookmarkedShopIds.value = shopIds
     }
 
-    suspend fun fetchPersonalization(): RamapResult<ShopPersonalization> = RamapResult.Success(currentPersonalization)
+    suspend fun fetchPersonalization(): RamapResult<Personalization> = RamapResult.Success(currentPersonalization)
 
     suspend fun removeBookmark(shopId: String): RamapResult<Unit> = updateBookmark(shopId, false)
 
-    private val currentPersonalization: ShopPersonalization
-        get() = (state.value as? PersonalizationBootstrapState.Success)?.value ?: ShopPersonalization()
+    private val currentPersonalization: Personalization
+        get() = (state.value as? PersonalizationBootstrapState.Success)?.value ?: Personalization()
 
-    private fun publish(personalization: ShopPersonalization) {
+    private fun publish(personalization: Personalization) {
         mutableState.value = PersonalizationBootstrapState.Success(personalization)
     }
 }
