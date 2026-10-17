@@ -27,7 +27,7 @@
   } else issues.push('직렬화 메뉴 상태 미확인');
   const stateRows = Object.entries(state).filter(([, v]) => ['PlaceMenuItem', 'PlaceDetail_BaeminMenu'].includes(v?.__typename));
   const statePrice = row => typeof row.price === 'object' ? row.price?.displayText : String(row.price ?? '');
-  const images = row => [row.thumbnailUrl, ...(row.images || []).map(i => i.url)].filter(photo);
+  const images = row => [row.thumbnailUrl, ...(row.images || []).map(i => typeof i === 'string' ? i : i?.url)].filter(photo);
   const base = Object.values(state).find(v => v?.__typename === 'PlaceDetailBase' && String(v.id) === placeId);
   const sections = [];
   for (const section of document.querySelectorAll('.place_section_content')) {
@@ -65,9 +65,21 @@
   }
   if (!sections.length) issues.push('수집 가능한 메뉴 목록 없음');
   if (!base) issues.push('같은 Place ID의 매장 식별 정보 없음');
-  return {source_url: location.href, captured_at: new Date().toISOString(), parser_version: 'naver-menu-rendered-v1',
+  const boardImages = [...document.querySelectorAll('a[data-nlog-area="plc_bmv.menupanimg"] img,img[alt*="메뉴판"]')]
+    .map(img => {
+      const url = [img.currentSrc, img.getAttribute('src'), img.getAttribute('data-src')].find(photo) || null;
+      return {image_url: url, source_image_url: original(url), alt: img.getAttribute('alt'),
+        loaded: img.complete && img.naturalWidth > 0, raw_html: img.closest('a')?.outerHTML || img.outerHTML};
+    });
+  // Text-only sections omit menu-board galleries and cannot prove absence.
+  const rawHtml = document.documentElement?.outerHTML || null;
+  if (!rawHtml) issues.push('페이지 전체 원문 미수집');
+  return {source_url: location.href, captured_at: new Date().toISOString(), parser_version: 'naver-menu-rendered-v2',
     source_shop: base ? {id: String(base.id), name: base.name, address: base.roadAddress || base.address,
-      legacy_address: base.address} : null, sections, state_menu_records: stateRows,
+      legacy_address: base.address} : null, sections, raw_html: rawHtml, menu_board_images: boardImages,
+    source_coverage: {scope: rawHtml ? 'full_document' : 'text_sections_only',
+      menu_board_count: boardImages.length, menu_board_unloaded: boardImages.filter(b => !b.image_url || !b.loaded).length},
+    state_menu_records: stateRows,
     state_menu_categories: Object.entries(state).filter(([, v]) => /MenuCategory/.test(v?.__typename || '')),
     issues};
 }

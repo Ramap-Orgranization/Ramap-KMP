@@ -91,6 +91,12 @@ def signature(row):
         image_origin(row['image_url']), row['is_featured'])
 
 
+def recommendation_signature(row):
+    # Same name/price alone can hide distinct source configurations or photos.
+    return (compact(row['name']), price_key(row['price_text']), text_content(row['description']),
+        image_origin(row['image_url']))
+
+
 def canonical_dom(raw_dom, place_id):
     # Legacy compact captures may contain the same complete DOM panel twice.
     # Remove only byte-identical whole panels, never duplicate regular rows.
@@ -134,10 +140,18 @@ def canonical_dom(raw_dom, place_id):
     actual_signatures = {signature(r) for r in menus}
     if any(signature(r) not in actual_signatures for r in summaries):
         raise ValueError('representative summary contains a menu missing from actual categories')
-    recommendations = [r for r in menus if r['recommended']]
-    recommended_keys = {(compact(r['name']), price_key(r['price_text'])) for r in recommendations}
+    # Representative panels are rendered before the general categories even
+    # when Naver labels their links as plc_bmv.menu rather than recmenu.
+    recommendations = []
+    recommended_keys = set()
+    for row in rows:
+        if row['recommended'] or compact(row['heading']) == '대표메뉴':
+            key = recommendation_signature(row)
+            if key not in recommended_keys:
+                recommendations.append(row)
+                recommended_keys.add(key)
     regular = [r for r in menus if not r['recommended']
-        and (compact(r['name']), price_key(r['price_text'])) not in recommended_keys]
+        and recommendation_signature(r) not in recommended_keys]
     canonical = recommendations + regular
     return canonical, {'parsed_rows': len(rows), 'summary_rows': len(summaries),
         'duplicate_complete_panels': duplicate_panels, 'recommendation_duplicates': len(menus) - len(canonical)}

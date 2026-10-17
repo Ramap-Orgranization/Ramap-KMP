@@ -50,16 +50,17 @@ def protection_for_row(row, entries):
     return matches[0] if matches else None
 
 
-def protections_sql(shop_ids):
-    ids = ','.join("'" + str(uuid.UUID(value)) + "'" for value in shop_ids)
-    if not ids:
+def protections_sql(shop_ids=None):
+    ids = None if shop_ids is None else ','.join("'" + str(uuid.UUID(value)) + "'" for value in shop_ids)
+    if ids == '':
         raise ValueError('protection read needs shop IDs')
+    scope = '' if ids is None else "AND binding->>'shop_id' IN (" + ids + ") "
     return ("SELECT coalesce(jsonb_agg(binding ORDER BY binding->>'id'),'[]'::jsonb) AS manual_menu_protections FROM ("
         "SELECT DISTINCT ON (binding->>'id') binding FROM public.shop_menu_validation_runs r "
         "CROSS JOIN LATERAL jsonb_array_elements(CASE WHEN jsonb_typeof(r.details->'manual_menu_protection_bindings')='array' "
         "THEN r.details->'manual_menu_protection_bindings' ELSE '[]'::jsonb END) AS binding "
         "WHERE r.details->>'manual_menu_protection_authority'='human_user' "
-        "AND binding->>'shop_id' IN (" + ids + ") "
+        + scope +
         "ORDER BY binding->>'id',r.completed_at DESC NULLS LAST,r.id DESC"
         ") latest WHERE binding->>'authority'='human_user' AND binding->>'kind'='direct_registration' "
         "AND binding->>'status'='active'")

@@ -1,8 +1,10 @@
 import copy
+import json
+import re
 import unittest
 from datetime import datetime
 
-from refresh_plan import approved_ramen_type, image_identity, literal, make_plan, postgres_timestamp, select_sql, transaction_sql
+from refresh_plan import approved_ramen_type, image_identity, literal, make_plan, postgres_timestamp, select_sql, serialized_guard_rows, transaction_sql
 
 
 SHOP = '00000000-0000-0000-0000-000000000001'
@@ -37,6 +39,37 @@ def fixture():
 
 
 class RefreshPlanTest(unittest.TestCase):
+    def test_guard_serialization_preserves_all_fields_and_original_order(self):
+        rows = [{'id': 'b', 'display_order': 0, 'description': "닭'육수", 'price_krw': None},
+            {'id': 'a', 'display_order': 1, 'image_url': None, 'name': '시오라멘'}]
+        original = copy.deepcopy(rows)
+        self.assertEqual([rows[1], rows[0]], json.loads(serialized_guard_rows(rows)))
+        self.assertEqual(original, rows)
+
+    def test_postwrite_guard_uses_uuid_order_even_for_source_ordered_plan(self):
+        capture, state = fixture()
+        other = {**state['items'][0], 'id': '00000000-0000-0000-0000-000000000004',
+            'name': '시오라멘', 'display_order': 1}
+        state['items'].append(other)
+        source = {**capture['menu_items'][0], 'source_id': 'naver-item-2', 'name': '시오라멘'}
+        capture['menu_items'].append(source)
+        capture['scope'].append({'source_id': source['source_id'], 'name': source['name'],
+            'decision': 'include', 'reason': '라멘 본품'})
+        capture['quality'].update(source_count=2, collected_count=2, source_image_count=2, collected_image_count=2)
+        plan = make_plan(capture, state)
+        plan['before'].reverse()
+        plan['expected'].reverse()
+        original = copy.deepcopy(plan['expected'])
+        raw = ''.join('<li><a data-nlog-area="plc_bmv.menu" data-nlog-params="{&quot;place_id&quot;:&quot;123&quot;}">'
+            f'<span class="lZCdr">{source["name"]}</span><span class="N4UFh">10,000원</span>'
+            '<div class="NjVSW">닭 육수</div><img src="https://example.com/menu.jpg"></a></li>'
+            for source in capture['menu_items'])
+        sql = transaction_sql(plan, raw)
+        match = re.search(r"IS DISTINCT FROM '((?:[^']|'')*)'::jsonb THEN RAISE EXCEPTION 'Post-write menu mismatch'", sql)
+        self.assertIsNotNone(match)
+        self.assertEqual(sorted(original, key=lambda row: row['id']), json.loads(match[1].replace("''", "'")))
+        self.assertEqual(original, plan['expected'])
+
     def test_existing_registered_menu_is_ramen_scope_without_reconfirmation(self):
         capture, state = fixture()
         state['items'][0]['name'] = '돈코츠'

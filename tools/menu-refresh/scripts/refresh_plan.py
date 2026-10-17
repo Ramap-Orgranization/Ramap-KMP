@@ -15,6 +15,7 @@ from zoneinfo import ZoneInfo
 from source_dom import reconcile_source
 from collection_skips import collection_skips_sql, matching_skip, skips_for_shop
 from manual_menu_protections import protection_for_row, protections_for_shop, protections_sql
+from deletion_guards import POLICY, validate_absence, validate_deletions, validate_evidence_files, validate_origin
 
 
 def normalized(value):
@@ -42,6 +43,11 @@ def postgres_timestamp(value):
 
 def serialized(value):
     return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(',', ':'))
+
+
+def serialized_guard_rows(rows):
+    """Match SQL jsonb_agg ORDER BY row->>'id' without changing display order."""
+    return serialized(sorted(rows, key=lambda row: row['id']))
 
 
 def digest(value):
@@ -111,7 +117,7 @@ def state_sql(selection):
     return 'SELECT jsonb_build_object(' + ','.join(parts) + ') AS state;'
 
 
-def make_plan(capture, state, *, description_approvals=()):
+def make_plan(capture, state, *, description_approvals=(), registration_overrides=None):
     shop_id = str(uuid.UUID(capture['shop_id']))
     shop = next(r for r in state['shops'] if r['id'] == shop_id)
     plan = {'shop_id': shop_id, 'shop_name': shop['name'], 'source_url': capture.get('source_url'),
@@ -157,9 +163,11 @@ def make_plan(capture, state, *, description_approvals=()):
     section_id = regular[0]['id']
     before = state_rows(state, 'items', shop_id)
     protections = protections_for_shop(shop_id, state)
+    origin_overrides = state_rows(state, 'overrides', shop_id) if registration_overrides is None else registration_overrides
     plan['manual_menu_protections'] = protections
-    plan['source_absence_policy'] = 'direct_registration_only_v1'
+    plan['source_absence_policy'] = POLICY
     plan['source_absence_review'] = copy.deepcopy(capture.get('source_absence_review'))
+    plan['registration_origin_reviews'] = copy.deepcopy(capture.get('registration_origin_reviews', []))
     expected = {r['id']: copy.deepcopy(r) for r in before}
     by_name = defaultdict(list)
     for row in before:
@@ -197,19 +205,18 @@ def make_plan(capture, state, *, description_approvals=()):
     matched_order = []
     source_names = {normalized(i['name']) for i in source}
     absent = [row for row in before if normalized(row['name']) not in source_names]
+    plan['db_only_preserved'].extend(row['name'] for row in absent if protection_for_row(row, protections))
+    absent = [row for row in absent if not protection_for_row(row, protections)]
     if absent:
         review = capture.get('source_absence_review') or {}
-        if (review.get('complete') is not True or not review.get('reason')
-            or review.get('source_url') != capture['source_url']
-            or review.get('captured_at') != capture['captured_at']
-            or not re.fullmatch(r'[0-9a-f]{64}', review.get('raw_sha256', ''))):
-            plan['pending'].append({'reason': '원본 부재 판정에 전체 메뉴 확인과 원문 해시 결속 필요'})
+        try:
+            validate_absence(review, capture['source_url'], capture['captured_at'])
+            for old in absent:
+                validate_origin(old, plan['registration_origin_reviews'], origin_overrides)
+        except ValueError as error:
+            plan['pending'].append({'reason': '원본 부재·직접 등록 경위 검증 미완료', 'details': str(error)})
             return plan
         for old in absent:
-            protection = protection_for_row(old, protections)
-            if protection:
-                plan['db_only_preserved'].append(old['name'])
-                continue
             if matching_skip(plan['collection_skip_rules'], old):
                 plan['pending'].append({'name': old['name'],
                     'reason': '원본 부재 항목이 사용자 재수집 제외 범위와 충돌; 보호로 간주하지 않고 별도 처리 필요'})
@@ -430,19 +437,26 @@ def make_plan(capture, state, *, description_approvals=()):
         'cleanup_required' if plan['deletion_handoff'] else 'prepared',
         captured_at=capture['captured_at'], source_items=source,
         parser_version=capture.get('parser_version', 'naver-menu-rendered-v1'), expected=sorted(expected.values(), key=lambda r: r['id']),
-        before=before, sections=sections, overrides=state_rows(state, 'overrides', shop_id),
+        before=before, sections=sections, overrides=origin_overrides,
         expected_overrides=sorted(expected_overrides.values(), key=lambda row: row['id']), rules=rules,
         identity={k: shop[k] for k in ('id', 'name', 'address', 'naver_place_url')})
+    try:
+        validate_deletions(plan)
+    except ValueError as error:
+        plan['status'] = 'blocked'
+        plan['pending'].append({'reason': '삭제 근거 검증 미완료', 'details': str(error)})
     return plan
 
 
 def transaction_sql(plan, raw_dom, reconciliation=None):
     if plan['status'] != 'prepared':
         raise ValueError('blocked plan cannot produce mutation SQL')
+    validate_deletions(plan, raw_dom)
+    validate_evidence_files(plan)
     plan['source_reconciliation'] = reconciliation or reconcile_source(plan['source_items'], raw_dom, plan['source_url'])
     source_names = {normalized(row['name']) for row in plan['source_items']}
     protections = plan.get('manual_menu_protections')
-    if plan.get('source_absence_policy') != 'direct_registration_only_v1' or not isinstance(protections, list):
+    if plan.get('source_absence_policy') != POLICY or not isinstance(protections, list):
         raise ValueError('source absence policy and exact direct registration bindings are required')
     for row in plan['expected']:
         if normalized(row['name']) not in source_names and not protection_for_row(row, protections):
@@ -451,10 +465,6 @@ def transaction_sql(plan, raw_dom, reconciliation=None):
     for row in plan['before']:
         if normalized(row['name']) not in source_names and protection_for_row(row, protections) and row['id'] not in expected_ids:
             raise ValueError('directly registered menu cannot be deleted for source absence')
-    review = plan.get('source_absence_review') or {}
-    if any(deletion['reason'] == 'source_absent' for deletion in plan['deletions']):
-        if review.get('complete') is not True or review.get('raw_sha256') != digest(raw_dom):
-            raise ValueError('source absence decision is not bound to the full raw menu')
     shop_id = literal(plan['shop_id']) + '::uuid'
     snapshot_id = literal(plan['snapshot_id']) + '::uuid'
     body = ['DECLARE n integer; BEGIN']
@@ -477,7 +487,7 @@ def transaction_sql(plan, raw_dom, reconciliation=None):
     checks.append((f'SELECT entry AS row FROM jsonb_array_elements((SELECT manual_menu_protections FROM ({protection_query}) s)) entry',
         protections))
     for query, rows in checks:
-        body.append(f"IF (SELECT coalesce(jsonb_agg(row ORDER BY row->>'id'),'[]'::jsonb) FROM ({query}) q) IS DISTINCT FROM {literal(serialized(rows))}::jsonb THEN RAISE EXCEPTION 'Concurrent menu or protection change'; END IF;")
+        body.append(f"IF (SELECT coalesce(jsonb_agg(row ORDER BY row->>'id'),'[]'::jsonb) FROM ({query}) q) IS DISTINCT FROM {literal(serialized_guard_rows(rows))}::jsonb THEN RAISE EXCEPTION 'Concurrent menu or protection change'; END IF;")
     body.append(f"IF EXISTS(SELECT 1 FROM public.shop_menu_snapshots WHERE id={snapshot_id}) THEN RAISE EXCEPTION 'Snapshot already applied; read result instead of replaying'; END IF;")
     for row in plan.get('override_additions', []):
         body.append(f"INSERT INTO public.shop_menu_manual_overrides({','.join(row)}) VALUES({','.join(literal(v) for v in row.values())}) ON CONFLICT (shop_id,normalized_name) WHERE status='active' DO NOTHING; GET DIAGNOSTICS n=ROW_COUNT; IF n<>1 THEN RAISE EXCEPTION 'Scope confirmation insertion mismatch'; END IF;")
@@ -500,18 +510,19 @@ def transaction_sql(plan, raw_dom, reconciliation=None):
         assignments = ','.join(k + '=' + literal(v) for k, v in update['fields'].items())
         body.append(f"UPDATE public.shop_menu_manual_overrides SET {assignments} WHERE id={literal(update['id'])}::uuid AND shop_id={shop_id} AND action='upsert' AND status='active'; GET DIAGNOSTICS n=ROW_COUNT; IF n<>1 THEN RAISE EXCEPTION 'Override update count mismatch'; END IF;")
     query = checks[0][0]
-    body.append(f"IF (SELECT coalesce(jsonb_agg(row ORDER BY row->>'id'),'[]'::jsonb) FROM ({query}) q) IS DISTINCT FROM {literal(serialized(plan['expected']))}::jsonb THEN RAISE EXCEPTION 'Post-write menu mismatch'; END IF;")
+    body.append(f"IF (SELECT coalesce(jsonb_agg(row ORDER BY row->>'id'),'[]'::jsonb) FROM ({query}) q) IS DISTINCT FROM {literal(serialized_guard_rows(plan['expected']))}::jsonb THEN RAISE EXCEPTION 'Post-write menu mismatch'; END IF;")
     for query, rows in (checks[1], checks[3]):
-        body.append(f"IF (SELECT coalesce(jsonb_agg(row ORDER BY row->>'id'),'[]'::jsonb) FROM ({query}) q) IS DISTINCT FROM {literal(serialized(rows))}::jsonb THEN RAISE EXCEPTION 'Unexpected section or rule change'; END IF;")
+        body.append(f"IF (SELECT coalesce(jsonb_agg(row ORDER BY row->>'id'),'[]'::jsonb) FROM ({query}) q) IS DISTINCT FROM {literal(serialized_guard_rows(rows))}::jsonb THEN RAISE EXCEPTION 'Unexpected section or rule change'; END IF;")
     expected_overrides = [{k: v for k, v in row.items() if k != 'updated_at'}
         for row in plan.get('expected_overrides', plan['overrides'])]
     query = checks[2][0].replace('to_jsonb(o)', "(to_jsonb(o)-'updated_at')")
-    body.append(f"IF (SELECT coalesce(jsonb_agg(row ORDER BY row->>'id'),'[]'::jsonb) FROM ({query}) q) IS DISTINCT FROM {literal(serialized(expected_overrides))}::jsonb THEN RAISE EXCEPTION 'Post-write override mismatch'; END IF;")
+    body.append(f"IF (SELECT coalesce(jsonb_agg(row ORDER BY row->>'id'),'[]'::jsonb) FROM ({query}) q) IS DISTINCT FROM {literal(serialized_guard_rows(expected_overrides))}::jsonb THEN RAISE EXCEPTION 'Post-write override mismatch'; END IF;")
     plan['source_hash'] = digest(raw_dom)
     plan['menu_fingerprint'] = digest(serialized(plan['source_items']))
     body.append(f"INSERT INTO public.shop_menu_snapshots(id,shop_id,captured_at,source_url,parser_version,source_hash,raw_dom,menu_items,menu_fingerprint) VALUES({snapshot_id},{shop_id},{literal(plan['captured_at'])}::timestamptz,{literal(plan['source_url'])},{literal(plan['parser_version'])},{literal(plan['source_hash'])},{literal(raw_dom)},{literal(serialized(plan['source_items']))}::jsonb,{literal(plan['menu_fingerprint'])}); GET DIAGNOSTICS n=ROW_COUNT; IF n<>1 THEN RAISE EXCEPTION 'Snapshot count mismatch'; END IF;")
-    if plan.get('validation_run_id') and (plan['updates'] or plan['additions'] or plan['deletions'] or plan.get('override_updates') or plan.get('override_additions')):
-        summary = {k: plan.get(k, []) for k in ('updates', 'additions', 'deletions', 'override_updates', 'override_revocations', 'override_additions', 'duplicate_resolutions', 'variable_price_preserved', 'pending', 'db_only_preserved', 'manual_menu_protections')}
+    if plan.get('validation_run_id') and (plan['updates'] or plan['additions'] or plan['deletions'] or plan.get('override_updates') or plan.get('override_additions') or plan.get('override_revocations')):
+        summary = {k: plan.get(k, []) for k in ('updates', 'additions', 'deletions', 'override_updates', 'override_revocations', 'override_additions', 'duplicate_resolutions', 'variable_price_preserved', 'pending', 'db_only_preserved', 'manual_menu_protections', 'registration_origin_reviews')}
+        summary.update(source_absence_policy=plan['source_absence_policy'], source_absence_review=plan.get('source_absence_review'))
         previous = f'FROM public.shop_menu_snapshots WHERE shop_id={shop_id} AND id<>{snapshot_id} ORDER BY captured_at DESC,id DESC LIMIT 1'
         body.append(f"INSERT INTO public.shop_menu_change_events(shop_id,previous_menu_fingerprint,new_menu_fingerprint,previous_source_hash,new_source_hash,change_summary,validation_run_id) VALUES({shop_id},coalesce((SELECT menu_fingerprint {previous}),{literal(digest(serialized(plan['before'])))}),{literal(plan['menu_fingerprint'])},coalesce((SELECT source_hash {previous}),'no_previous_snapshot'),{literal(plan['source_hash'])},{literal(serialized(summary))}::jsonb,{literal(plan['validation_run_id'])}::uuid); GET DIAGNOSTICS n=ROW_COUNT; IF n<>1 THEN RAISE EXCEPTION 'Change audit count mismatch'; END IF;")
     body.append('END;')
@@ -563,7 +574,8 @@ def confirmed_scope_state(capture, state, confirmations):
 def prepare_capture(capture, state, raw_dom, run_id=None, snapshot_id=None, confirmations=(), description_approvals=()):
     """Shared preparation for the CLI and queue runner; parse source DOM once."""
     virtual, override_additions = confirmed_scope_state(capture, state, confirmations)
-    plan = make_plan(capture, virtual, description_approvals=description_approvals)
+    plan = make_plan(capture, virtual, description_approvals=description_approvals,
+        registration_overrides=state_rows(state, 'overrides', capture['shop_id']))
     plan['override_additions'] = override_additions
     if 'overrides' in plan:
         plan['overrides'] = state_rows(state, 'overrides', capture['shop_id'])

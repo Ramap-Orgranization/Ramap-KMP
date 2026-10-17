@@ -47,6 +47,8 @@ DOM 수집은 `.codex/agents/menu-collector.toml`의 **GPT-6 Luna Low**, 반영 
 
 원본 부재 삭제의 보호는 **사용자가 직접 등록한 근거를 정확한 매장·메뉴 ID에 연결한 항목만** 인정한다. DB 감사의 `manual_menu_protection_bindings`가 원본이며 `data/manual-menu-protections.json`은 검증된 캐시다. 최신 보호 기록을 읽지 못하면 삭제하지 않는다. 전체 원문·시각·해시에 결속한 `source_absence_review`로 부재를 확인하고, 일반 upsert의 재등록 방지도 같은 트랜잭션에 처리한다. 사후 검증과 독립 검토는 계획의 기대값과 별도로 모든 원본 미대응 행의 직접 등록 근거를 검사한다.
 
+**보호 목록의 누락은 자동 수집의 증명이 아니다.** 모든 삭제 후보는 [삭제 근거 계약](references/workflow.md#원본-부재와-직접-등록-보호)의 메뉴별 등록 경위 조사를 통과해야 한다. 과거 사용자 입력·등록 감사·첨부/업로드 사진·오버라이드와 별칭 단서를 조사해 미해결이면 삭제를 중단한다. 텍스트 목록만으로 전체 원본을 확인했다고 선언하지 않는다. `deletion_guards.py`의 같은 검증을 계획·SQL 생성·사후 검증에 적용하며, 이전 계획을 수정해 재실행하지 않고 새 실행을 만든다.
+
 ## 최신화 실행
 
 1. **대상을 고정한다.** 기본 날짜 필드는 `shop_menu_update_timestamps.updated_at`이다. 날짜만 지정하면 Asia/Seoul 해당 날짜 00:00 **이전(`<`)**을 사용하고 NULL은 오래된 날짜로 추정하지 않는다. 기본 대상은 노출 중이며 `menu_snapshot_enabled=true`이고 네이버 출처가 있는 기존 매장이다. 날짜·ID 순으로 제한 수를 선정하며 출처 없는 매장을 임의로 대체하지 않는다. `select-sql --date-field menu|shop|capture`로 명시된 날짜 필드를 선택하고 `refresh_run.py init`으로 목록·정책·코드·사용자 확인을 고정한다.

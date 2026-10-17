@@ -6,6 +6,7 @@ from datetime import datetime
 from refresh_plan import digest, literal, serialized, state_rows, state_sql
 from collection_skips import skips_for_shop
 from manual_menu_protections import protection_for_row, protections_for_shop, normalized
+from deletion_guards import POLICY, validate_deletions, validate_evidence_files
 
 
 VISIBLE_FIELDS = ('id', 'shop_id', 'section_id', 'name', 'price_krw', 'price_text',
@@ -55,12 +56,15 @@ def verification_sql(plans):
         raise ValueError('empty verification batch')
     selection = [{'id': p['shop_id']} for p in plans]
     ids = ','.join(literal(str(uuid.UUID(p['snapshot_id']))) + '::uuid' for p in plans)
-    query = state_sql(selection).rstrip(';')
+    query = state_sql(selection).strip().removesuffix(';')
+    deletion_ids = ','.join(literal(str(uuid.UUID(p['snapshot_id']))) + '::uuid'
+        for p in plans if p.get('deletions')) or 'NULL::uuid'
     return (f"WITH current_state AS ({query}) SELECT jsonb_build_object("
         "'state',(SELECT state FROM current_state),"
         "'snapshots',(SELECT coalesce(jsonb_agg(to_jsonb(s) ORDER BY s.id),'[]'::jsonb) FROM "
         "(SELECT id,shop_id,captured_at,source_url,parser_version,source_hash,menu_fingerprint,menu_items,"
-        "encode(sha256(convert_to(raw_dom,'UTF8')),'hex') AS raw_hash "
+        "encode(sha256(convert_to(raw_dom,'UTF8')),'hex') AS raw_hash,"
+        f"CASE WHEN id IN ({deletion_ids}) THEN raw_dom ELSE NULL END AS deletion_raw_dom "
         f"FROM public.shop_menu_snapshots WHERE id IN ({ids})) s)) AS verification;")
 
 
@@ -85,7 +89,7 @@ def verify_plan(plan, state, snapshots):
     shop_id = plan['shop_id']
     try:
         protections = protections_for_shop(shop_id, state)
-        if plan.get('source_absence_policy') != 'direct_registration_only_v1':
+        if plan.get('source_absence_policy') != POLICY:
             issues.append('source absence policy missing or obsolete')
         if protections != plan.get('manual_menu_protections'):
             issues.append('direct registration protection mismatch')
@@ -122,6 +126,13 @@ def verify_plan(plan, state, snapshots):
         issues.append('snapshot missing or duplicated')
     else:
         snapshot = matching[0]
+        try:
+            if any(d['reason'] == 'source_absent' for d in plan.get('deletions', [])) and not snapshot.get('deletion_raw_dom'):
+                raise ValueError('deleted menu needs an independent full-page source read')
+            validate_deletions(plan, snapshot.get('deletion_raw_dom'))
+            validate_evidence_files(plan)
+        except ValueError as error:
+            issues.append(str(error))
         for key in ('shop_id', 'source_url', 'parser_version', 'source_hash', 'menu_fingerprint'):
             if snapshot.get(key) != plan[key]:
                 issues.append('snapshot ' + key + ' mismatch')

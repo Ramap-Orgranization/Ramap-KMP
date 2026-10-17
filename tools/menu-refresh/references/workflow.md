@@ -11,6 +11,7 @@
 | `refresh_plan.py` | 대상 선정/상태 조회 SQL, 변경 계획과 가드 SQL 생성 |
 | `refresh_run.py`, `run_with_tools.js` | 실행 고정·수집 제출·묶음 조회·매장별 쓰기·복구·집계 |
 | `refresh_verify.py` | 반영 후 전체/노출 메뉴·스냅샷·보호 기록 대조 |
+| `deletion_guards.py` | 정확한 삭제 대상의 등록 경위와 전체 페이지·메뉴판 검토를 계획/SQL/사후 검증에서 공통 검사 |
 | `review_checklist.py`, `review-checklist.html` | 동결 검토 자료·체크 승인표 생성과 선택 추출. DB 쓰기는 수행하지 않음 |
 | `collection_skips.py`, `data/collection-skips.json` | 최신 재수집 제외 조회와 검증된 수집 배정 캐시 |
 | `replay_run.py`, `test_*.py` | 코드 변경 시 저장 자료로 실제 실행 경로를 모의 DB에서 검증 |
@@ -123,11 +124,21 @@ python3 tools/menu-refresh/scripts/replay_run.py \
 
 최신 DB 조회는 `manual_menu_protections`를 포함해야 한다. 보호는 DB 감사의 `manual_menu_protection_authority=human_user`와 `manual_menu_protection_bindings`에서 읽으며, 정확한 `shop_id`, `menu_item_id`, 이름, 직접 등록 근거를 대조한다. 일반 upsert나 `admin_verified`는 직접 등록 증거가 아니다. 새 직접 등록 확인을 반영할 때 실제 사용자 확인 또는 등록 감사의 참조를 결속해 DB 감사와 검증된 캐시를 갱신한다. 목록이 비어 있는 것과 보호 조회가 누락된 것을 구분한다.
 
-원본 부재 후보가 있으면 판정자가 전체 메뉴·더보기·로딩·메뉴판 안내·별도 메뉴 대응을 확인한다. 완전한 수집에만 `source_absence_review={complete:true, source_url, captured_at, raw_sha256, reason}`를 새 파생 캡처에 결속한다. 안내 행만 있거나 실제 메뉴가 메뉴판 이미지로만 제공돼 확인하지 못한 경우 `complete=true`로 선언하지 않는다. 원문 해시와 확인 시각은 실제 저장 근거를 사용한다.
+원본 부재 후보가 있으면 판정자가 전체 메뉴·더보기·로딩·메뉴판 안내·별도 메뉴·이름 변종 대응을 확인한다. `raw-menu.html`은 수집기의 `raw_html` 전체 문서로 저장한다. 텍스트 카드 섹션 합본에는 섹션 밖의 메뉴판 갤러리가 빠질 수 있으므로 삭제 근거로 쓰지 않는다. 전체 문서가 잘리거나 이미지 안내·다른 메뉴 표면을 확인하지 못하면 삭제를 중단한다. 메뉴판 원본 URL을 개별 메뉴 사진으로 등록하지 않는다.
+
+삭제 계약은 `direct_registration_only_v2`다. 새 파생 캡처에 다음 증거를 결속하고 실제 파일/감사와 대조한다. 값만 채워 완전성을 선언하지 않는다.
+
+- `source_absence_review`: `schema_version=2`, `complete=true`, 실제 `source_url`, `captured_at`, 전체 문서의 `raw_sha256`, 판단 `reason`. `coverage`는 `scope=full_document`, `expanded=true`, `loading_complete=true`, `other_menu_surfaces_reviewed=true`, 해시 있는 `collection_evidence={ref,sha256}`를 가진다.
+- `menu_board_reviews`: DOM의 메뉴판 이미지 원본 URL마다 한 건씩 `image_url`, `outcome=all_candidates_checked|not_current`, `reason`, `unresolved_candidates=[]`, 실제 검토 파일의 `evidence={ref,sha256}`를 저장한다. 이미지가 없으면 빈 배열이다. 이미지에만 남은 후보, 오래된 가격, 별칭·구성 충돌은 확인 없이 부재로 처리하지 않는다. 공통 가드는 실제 전체 문서의 메뉴판 URL 집합과 대조한다.
+- `registration_origin_reviews`: 모든 삭제 후보의 정확한 `shop_id`, `menu_item_id`, `name`, `before_sha256`, 현재 오버라이드 전체의 `overrides_sha256`를 저장한다. 해시는 공통 `evidence_hash`로 계산한다. `checked`는 `registration_audit`, `human_input`, `manual_overrides`, `stored_media`, `aliases` 전체이며, `aliases_reviewed=true`, `unresolved_clues=[]`, 실제 조사 근거 `evidence_refs=[{ref,sha256}]`, `reason`과 항목별 `clue_resolutions`를 포함한다. 직접 등록이 아님을 조사한 경우에만 `outcome=not_direct_registration`으로 판정한다. 과거 원문/감사가 없거나 단서가 해결되지 않으면 이 판정을 만들지 않는다.
+
+직접 등록이 확인되면 삭제 리뷰를 만들지 않고 정확한 직접 등록 보호를 먼저 감사에 결속한다. 예전 note·현장 확인·사용자 첨부·업로드 이미지·별칭은 조사 단서이며 그 자체로 모든 메뉴를 보호하지 않는다. 일반 수집 결과의 범위 승인과 실제 사용자의 직접 등록 요청을 구분한다. 직접 등록 메뉴에 대한 별도 명시적 삭제 지시는 정확한 인간 근거를 갖춘 좁은 `menu-add` 계획으로 처리한다.
 
 같은 매장의 전체 원본에 없는 행은 직접 등록 보호 항목을 제외하고 삭제 계획에 넣는다. 원본 부재 메뉴의 일반 활성 upsert는 같은 트랜잭션에서 `revoked`로 해제해 재등록을 막는다. 재수집 제외와 충돌한 항목은 삭제 보호가 아니라 처리 불가로 분리한다. 동일 SQL의 ROLLBACK·COMMIT·전체 재조회 후 실제 원본 미대응 행마다 직접 등록 근거가 있는지 확인하며, 기대 상태에 잘못 남겨 둔 행도 실패다.
 
 CUA 최초 초기화는 해당 도구의 문서대로 수행한다. 새 Chrome 탭 바인딩이 반환한 **브라우저별 전체 문서**에서 `tab.playwright.evaluate` 지원을 확인한 뒤 공개 메뉴를 읽는다. 초기 공통 접근성 문서에 DOM API가 없다는 이유만으로 기능 미지원으로 판정하지 않는다. 실행 전 모든 메뉴 더보기를 확장하고 메뉴 사진을 스크롤해 로드한다.
+
+공통 CUA Tab과 브라우저의 DOM Tab은 다른 바인딩일 수 있다. 현재 문서에 advanced `agent.browsers` API가 제공되면 실제 선택된 browser ID로 `agent.browsers.get(browserId)`를 얻고, 그 브라우저의 `tabs.get(ownedTab.id)`로 같은 전용 탭을 바인딩한 뒤 문서에 명시된 읽기 전용 evaluator를 사용한다. 공통 Tab에 `playwright` 속성이 없다는 사실만으로 권한 제한을 선언하지 않는다. Chrome에는 지원되는 `sessionName` 옵션을 사용하며, 실제 메뉴 더보기 선택자는 `[data-nlog-area="plc_bmv.more"]`다.
 
 탭 생성이 공통 접근성 문서만 반환하면 최초 브라우저 선택의 `cua.getBrowser(...)`가 제공하는 브라우저별 문서를 확인한다. 이후에는 유효한 바인딩을 재사용하며 탭 오류 때문에 브라우저를 다시 선택하지 않는다.
 
@@ -141,12 +152,14 @@ var artifactFs = await import('node:fs/promises');
 var collector = await artifactFs.readFile(skillDir + '/scripts/capture_naver_menu.js', 'utf8');
 var capture = await tab.playwright.evaluate('(' + collector + ')()', undefined, {timeoutMs: 30000});
 await artifactFs.writeFile(shopDir + '/dom-capture.json', JSON.stringify(capture, null, 2));
-await artifactFs.writeFile(shopDir + '/raw-menu.html', capture.sections.map(s => s.raw_html).join('\n'));
+await artifactFs.writeFile(shopDir + '/raw-menu.html', capture.raw_html);
 ```
 
 내부 평가기의 30초와 파일 저장 시간에 여유를 주도록 이 CUA 도구 호출에는 `timeout_ms: 60000`을 지정한다.
 
 로컬 산출물 저장은 위 예제의 `node:fs/promises`로 수행한다. 실제 import·쓰기 오류를 확인하기 전에 저장 기능이 없다고 판정하지 않는다. 클립보드 경유나 도구 응답의 수기 재구성으로 원문을 대체하지 않으며, 공통 수집기 문자열도 직접 읽은 내용을 그대로 실행한다.
+
+수집·탭 종료·부재 확인 시각은 각각 실제 실행 시 측정한다. 나중에 입력한 시각을 과거 실행 시각으로 쓰지 않는다. 수집자·모델·브라우저·탭 ID가 누락된 과거 자료는 원문을 바꾸지 않고 별도 인계 근거와 확인 한계를 남긴다. 사진 수는 비어 있지 않은 유효 HTTPS URL만 세며, `images: [""]` 같은 배열의 존재만으로 사진이 있다고 판단하지 않는다.
 
 ### 탭 종료
 
@@ -163,7 +176,7 @@ await artifactFs.writeFile(shopDir + '/raw-menu.html', capture.sections.map(s =>
 - `Debugger unattached`, selector deadline, isolated-world 오류는 실행 오류로 기록한다. 기존 브라우저 바인딩을 유지하고 해당 작업자만 새 전용 탭에서 한 번 재시도한다. 명시적 브라우저 연결 해제에는 도구가 제공한 복구 문서를 따른다. REPL 전체 초기화·공유 브라우저 재선택으로 다른 작업자의 세션을 바꾸지 않는다.
 - 문서에 DOM 읽기 API가 실제 없거나 한 번의 진단 재시도도 실패하면 해당 작업자의 수집을 중단하고 정확한 오류를 남긴다. 별도 Playwright import, 비공개 연결 방식, 선언값 수정으로 통과시키지 않는다. 부모의 대체 수집은 출처를 별도로 표시하며 작업자의 직접 수집 성공 수에 포함하지 않는다.
 
-메뉴 원문은 `sections[].raw_html`을 합친 완전한 패널로 저장한다. 페이지 전체 `outerHTML` 반환이 도구 길이 제한으로 잘렸다면 완전한 증거로 사용하지 않는다. `dom-capture.json`의 수와 원문 패널·수집 목록을 함께 대조한다. 원본/수집 값이 이미 검증된 자료로 판정되면 같은 페이지를 다시 열지 않는다.
+메뉴 원문은 `raw_html` 전체 문서로 저장하고 `sections`와 `menu_board_images`도 보존한다. 페이지 전체 `outerHTML` 반환이 도구 길이 제한으로 잘렸다면 완전한 증거로 사용하지 않는다. `dom-capture.json`의 수와 전체 문서·패널·메뉴판 목록·수집 목록을 함께 대조한다. 원본/수집 값이 이미 검증된 자료로 판정되면 같은 페이지를 다시 열지 않는다. 과거 텍스트 패널 캡처는 원래 해시를 보존하며 삭제 근거로 승격하지 않는다.
 
 이 표현식은 DOM에서 확인한 메뉴 카드와 같은 페이지의 `script.textContent`에 노출된 `__APOLLO_STATE__` JSON만 읽는다. 사이트 JavaScript를 eval하지 않으며 페이지나 네트워크를 변경하지 않는다. 현재 두 가지 카드 선택자를 지원하지만 네이버 클래스나 가격 구조가 바뀌면 캡처 결과를 직접 확인해 수정한다. 직렬화 데이터만으로 다른 주문 표면의 메뉴를 일반 목록에 섞지 않는다.
 
@@ -206,7 +219,9 @@ SQL 생성 시 `source_dom.py`가 메뉴 링크의 원본 Place ID와 canonical 
 
 사용자가 기존 메뉴의 등록 범위를 확정한 경우 해당 메뉴의 활성 `admin_verified` upsert를 적용한다. 이름·설명 부족에 따른 `manual` 범위 보류는 해제한다. 검증된 최신 가격·사진·설명이 과거 upsert와 다르면 등록 정책에 따라 정규 메뉴와 함께 동기화하며 구성·판매 상태와 숨김·이벤트·중복 검사는 계속 수행한다. 기존 등록 메뉴와 신규 가격 기준의 우선순위는 `docs/menu-registration-policy.md`를 따른다. 리틀훅라멘의 기존 `정구지로`, `온비빔`은 2026-10-07 사용자 확인 대상이다.
 
-기존 등록 메뉴는 무조건 라멘 범위이며 수집자의 `exclude`나 신규 저가 기준으로 삭제하지 않는다. 사용자 명시 제외 또는 확인된 판매 종료가 활성 suppress·제외 규칙에 결속된 경우에만 기존 행 삭제를 검토한다. 해당 scope에 `delete_existing: true`, `deletion_evidence: "정확한 사용자 제외 지시와 원본/기존 메뉴 ID·가격 일치; 활성 upsert 충돌 없음"`처럼 실제 근거를 붙인다. 도우미는 단일 원본/노출 상시 행·고정 가격 일치와 upsert 부재를 확인한다. 명시적 삭제 근거 없이 원본에 없는 행을 제거하지 않으며, 기존 제외 행의 정체가 불확실하면 `cleanup_required` 계획과 별도 정리 handoff만 작성한다.
+기존 등록 메뉴는 무조건 라멘 범위이며 수집자의 `exclude`나 신규 저가 기준만으로 삭제하지 않는다. 사용자 명시 제외·확인된 판매 종료·중복은 정확한 원본/기존 UUID 대응 근거로 처리한다. 완전한 최신 원본의 부재는 별도의 `source_absence_review`로 결속하며 정확한 직접 등록 근거가 없는 기존 행을 삭제한다. 일반 upsert의 재등록 방지도 같은 트랜잭션에 처리한다. 수집 불완전·정체 불확실·정확 재수집 제외와 충돌하면 삭제를 중단하고 해당 값만 미해결로 남긴다.
+
+수동 SQL 확장에서도 전체 행 비교를 유지한다. `jsonb_agg(... ORDER BY row->>'id')`와 비교하는 JSON 배열은 UUID 순서로 직렬화하며, 화면 `display_order`와 원본 순서는 바꾸지 않는다. 이름·섹션 등 지원 밖 변경은 실제 SQL의 변경 이벤트와 validation audit 상세에 정확히 결속하고, 검증기의 이벤트 수를 실제 INSERT 조건과 대조한다. 실패한 ROLLBACK·검증 자료를 보존한 뒤 원인을 수정하며 성공한 SQL을 다시 실행하지 않는다.
 
 원본 ID가 없으면 실제 null을 저장한다. 캡처 행 순번은 별도 `capture_row_index`로 표시할 수 있지만 메뉴 식별 근거를 대신하지 못한다. 원본에서 사진이 노출된 메뉴 수와 수집한 사진 URL 수는 전체 `menu_items` 기준으로 같아야 한다. 추천 때문에 원시 화면에 사진 5개, 중복 제거한 목록에는 4개라면 canonical 수는 4/4이며 raw DOM 사진 수 5는 별도다. 일반 목록의 같은 이름·가격 두 행이 다른 사진을 가진다면 원본에서는 두 행 모두 보존한다. 구성·설명·카테고리도 동일하면 등록 후보는 원본의 대표 표시→정보 충실도→첫 등장 순서에 따라 1개로 결정한다.
 
