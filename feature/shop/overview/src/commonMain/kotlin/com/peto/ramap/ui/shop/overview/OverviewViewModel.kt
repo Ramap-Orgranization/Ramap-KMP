@@ -3,7 +3,6 @@ package com.peto.ramap.ui.shop.overview
 import androidx.lifecycle.viewModelScope
 import com.peto.ramap.analytics.AnalyticsSource
 import com.peto.ramap.core.result.RamapError
-import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.auth.LoginSessionState
@@ -15,7 +14,6 @@ import com.peto.ramap.domain.model.report.ShopInformationField
 import com.peto.ramap.domain.model.report.ShopInformationReport
 import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.domain.repository.LoginRepository
-import com.peto.ramap.domain.repository.ProfileRepository
 import com.peto.ramap.domain.repository.ShopReportRepository
 import com.peto.ramap.domain.store.PersonalizationBootstrapState
 import com.peto.ramap.domain.store.PersonalizationStore
@@ -46,10 +44,9 @@ import com.peto.ramap.ui.shop.overview.contract.ShopOverviewSideEffect
 import com.peto.ramap.ui.shop.overview.contract.ShopOverviewState
 import com.peto.ramap.ui.shop.overview.log.ShopAnalytics
 import com.peto.ramap.ui.shop.overview.model.PendingShopAction
-import com.peto.ramap.ui.shop.overview.model.ShopDetailEntryContext
 import com.peto.ramap.ui.task.TaskPolicy
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.StringResource
@@ -72,7 +69,6 @@ class OverviewViewModel(
     private val mapSearchHistoryStorage: SearchHistoryStorage,
     private val mapAnalytics: ShopAnalytics,
     private val signInUseCase: SignInUseCase,
-    private val profileRepository: ProfileRepository,
 ) : BaseViewModel<ShopOverviewState, ShopOverviewIntent, ShopOverviewSideEffect>(
         ShopOverviewState(
             isLoggedIn = loginRepository.hasSession(),
@@ -84,18 +80,12 @@ class OverviewViewModel(
                 },
         ),
     ) {
-    val entryContext = ShopDetailEntryContext()
     private var pendingShopAction: PendingShopAction? = null
-    private var pendingActionEntryGeneration = entryContext.generation
-    private val resumedActionTaskKeys = mutableSetOf<String>()
     private var observedBookmarkedShopIds: Set<String>? = null
-    private var requestContext = 0L
-    private var sessionUserId: String? = null
     private var hidingSelectedShopId: String? = null
 
     init {
-        viewModelScope.launch { observeShopSession() }
-        viewModelScope.launch { observeSessionState() }
+        if (!currentState.isLoggedIn) viewModelScope.launch { awaitLogin() }
         viewModelScope.launch { observePersonalization() }
     }
 
@@ -107,30 +97,14 @@ class OverviewViewModel(
         }
     }
 
-    private suspend fun observeSessionState() {
-        loginRepository.session.collect { sessionState ->
-            val authenticated = sessionState == LoginSessionState.AUTHENTICATED
-            if (currentState.isLoggedIn && !authenticated) clearPendingAction()
-            if (!authenticated) observedBookmarkedShopIds = null
-            reduce { copy(isLoggedIn = authenticated, personalization = if (authenticated) personalization else Personalization()) }
-        }
-    }
-
-    private suspend fun observeShopSession() {
-        profileRepository.sessionUserIds.collect { userId ->
-            if (sessionUserId == userId) return@collect
-            if (sessionUserId != null) clearPendingAction()
-            sessionUserId = userId
-            observedBookmarkedShopIds = null
-            requestContext++
-            cancelTask(OVERVIEW_TASK_KEY)
-            fetchShopOverviewUseCase.clearCache()
-            currentSheetShopId()?.let(::loadOverview)
-        }
+    private suspend fun awaitLogin() {
+        loginRepository.session.first { it == LoginSessionState.AUTHENTICATED }
+        reduce { copy(isLoggedIn = true) }
+        fetchShopOverviewUseCase.clearCache()
+        currentSheetShopId()?.let(::loadOverview)
     }
 
     private fun loadOverview(shopId: String) {
-        val context = ++requestContext
         val cached = (fetchShopOverviewUseCase.findCached(shopId) as? ShopOverviewCacheLookup.Hit)?.overview
         launchResultTask(
             taskKey = OVERVIEW_TASK_KEY,
@@ -150,7 +124,7 @@ class OverviewViewModel(
             },
             request = { fetchShopOverviewUseCase(shopId) },
             onSuccess = { overview ->
-                if (!currentCoroutineContext().isActive || requestContext != context || currentSheetShopId() != shopId || overview.shop.id != shopId) return@launchResultTask
+                if (!currentCoroutineContext().isActive || currentSheetShopId() != shopId || overview.shop.id != shopId) return@launchResultTask
                 val mapped = fetchShopOverviewUseCase.reconcileBookmarkCount(overview)
                 val overview = mapped.copy(shop = mapped.shop.copy(isVisible = currentState.selectedShop?.isVisible ?: mapped.shop.isVisible))
                 reduce { copy(overviewState = ShopOverviewUiState.Content(overview), shopWaiting = shopWaiting + (shopId to overview.waitingSystem)) }
@@ -158,7 +132,7 @@ class OverviewViewModel(
                 trySideEffect(ShopOverviewSideEffect.ShopViewed(overview.shop))
             },
             onError = { error ->
-                if (!currentCoroutineContext().isActive || requestContext != context || currentSheetShopId() != shopId) return@launchResultTask
+                if (!currentCoroutineContext().isActive || currentSheetShopId() != shopId) return@launchResultTask
                 reduce { copy(hasLoadFailure = true, isShopUnavailable = error is RamapError.Http && error.status == SHOP_NOT_FOUND, overviewState = if (shopOverview != null && !(error is RamapError.Http && error.status == SHOP_NOT_FOUND)) overviewState else ShopOverviewUiState.Error(shopId, selectedShop)) }
                 showErrorToast(error)
             },
@@ -178,20 +152,8 @@ class OverviewViewModel(
 
     private fun handleAccountIntent(intent: ShopOverviewIntent): Boolean {
         when (intent) {
-            ShopOverviewIntent.OnLoginRequested -> requestBookmarkedViewLogin()
             is OnLoginTypeSelected -> login(intent.type)
-            ShopOverviewIntent.OnLoginSelectionDismissed -> dismissLoginGuide()
-            ShopOverviewIntent.OnPendingLoginActionCancelled -> clearPendingAction()
-            is ShopOverviewIntent.OnMapEntryChanged -> {
-                if (intent.generation > currentState.entryGeneration) {
-                    entryContext.advanceTo(intent.generation)
-                    clearPendingAction()
-                    reduce { copy(entryGeneration = intent.generation) }
-                }
-            }
-            is ShopOverviewIntent.OnLoginRequestedForEntry -> {
-                if (entryContext.includes(intent.generation)) requestBookmarkedViewLogin()
-            }
+            ShopOverviewIntent.OnLoginSelectionDismissed -> pendingShopAction = null
             else -> return false
         }
         return true
@@ -302,7 +264,6 @@ class OverviewViewModel(
     }
 
     private fun dismissOverview() {
-        requestContext++
         cancelTask(OVERVIEW_TASK_KEY)
         reduce { copy(overviewState = ShopOverviewUiState.Closed) }
     }
@@ -331,12 +292,11 @@ class OverviewViewModel(
         shop: RamenShop,
         source: AnalyticsSource,
         enabled: Boolean,
-        pendingEntry: Long? = null,
     ) {
         if (currentState.personalization.hasBookmark(shop.id) == enabled) return
-        launchPersonalizationTask(
-            taskKey = "$PERSONALIZATION_TASK_KEY:bookmark:${shop.id}",
-            pendingEntry = pendingEntry,
+        launchResultTask(
+            taskKey = BOOKMARK_TASK_KEY,
+            policy = TaskPolicy.IgnoreNew,
             request = {
                 mapAnalytics.logBookmarkToggled(shop, enabled, source)
                 personalizationStore.updateBookmark(shop.id, enabled)
@@ -348,15 +308,14 @@ class OverviewViewModel(
     private fun toggleShopNotification(
         shop: RamenShop,
         source: AnalyticsSource,
-        pendingEntry: Long? = null,
     ) {
         if (requireLogin(PendingShopAction.ToggleShopNotification(shop, source))) return
         when (val toggle = currentState.personalization.notificationToggle(shop.id)) {
             NotificationStatus.Hidden -> showToast(Res.string.hidden_shop_notification_unavailable_message)
             is NotificationStatus.Allowed ->
-                launchPersonalizationTask(
-                    taskKey = "$PERSONALIZATION_TASK_KEY:notification:${shop.id}",
-                    pendingEntry = pendingEntry,
+                launchResultTask(
+                    taskKey = NOTIFICATION_TASK_KEY,
+                    policy = TaskPolicy.IgnoreNew,
                     request = {
                         mapAnalytics.logShopSubscribed(shop, toggle.enabled, source)
                         personalizationStore.updateShopNotification(shop.id, toggle.enabled)
@@ -369,14 +328,13 @@ class OverviewViewModel(
     private fun toggleHidden(
         shop: RamenShop,
         source: AnalyticsSource,
-        pendingEntry: Long? = null,
     ) {
         if (requireLogin(PendingShopAction.ToggleHidden(shop, source))) return
         val hidden = !currentState.personalization.nextHiddenEnabled(shop.id)
         if (!hidden && currentState.selectedShop?.id == shop.id) hidingSelectedShopId = shop.id
-        launchPersonalizationTask(
-            taskKey = "$PERSONALIZATION_TASK_KEY:hidden:${shop.id}",
-            pendingEntry = pendingEntry,
+        launchResultTask(
+            taskKey = HIDDEN_TASK_KEY,
+            policy = TaskPolicy.IgnoreNew,
             request = {
                 mapAnalytics.logHiddenToggled(shop, !hidden, source)
                 if (hidden) personalizationStore.unhideShop(shop.id) else personalizationStore.hideShop(shop.id)
@@ -392,33 +350,6 @@ class OverviewViewModel(
                 hidingSelectedShopId = null
                 showToast(Res.string.personalization_update_failure_message, ToastType.ERROR)
             },
-        )
-    }
-
-    private fun launchPersonalizationTask(
-        taskKey: String,
-        pendingEntry: Long?,
-        request: suspend () -> RamapResult<Unit>,
-        onSuccess: suspend (Unit) -> Unit = {},
-        onError: suspend (RamapError) -> Unit,
-    ) {
-        val key = pendingEntry?.let { "$taskKey:entry:$it" } ?: taskKey
-        if (pendingEntry != null) resumedActionTaskKeys += key
-        launchResultTask(
-            taskKey = key,
-            policy = TaskPolicy.IgnoreNew,
-            onFinish = {
-                resumedActionTaskKeys -= key
-                this
-            },
-            request = {
-                if (pendingEntry != null && !entryContext.includes(pendingEntry)) {
-                    throw CancellationException(STALE_ENTRY_MESSAGE)
-                }
-                request()
-            },
-            onSuccess = onSuccess,
-            onError = onError,
         )
     }
 
@@ -499,10 +430,6 @@ class OverviewViewModel(
         viewModelScope.launch { postSideEffect(ShopOverviewSideEffect.Interaction(ShowLoginGuide)) }
     }
 
-    private fun dismissLoginGuide() {
-        clearPendingAction()
-    }
-
     private fun login(type: LoginType) {
         launchResultTask(
             taskKey = ACCOUNT_TASK_KEY,
@@ -523,16 +450,9 @@ class OverviewViewModel(
         )
     }
 
-    private fun requestBookmarkedViewLogin() {
-        pendingShopAction = PendingShopAction.LoginRequest
-        pendingActionEntryGeneration = entryContext.generation
-        if (currentState.isLoggedIn) resumePendingAction() else requestLoginGuide()
-    }
-
     private fun requireLogin(action: PendingShopAction): Boolean {
         if (currentState.isLoggedIn) return false
         pendingShopAction = action
-        pendingActionEntryGeneration = entryContext.generation
         requestLoginGuide()
         return true
     }
@@ -540,21 +460,25 @@ class OverviewViewModel(
     private fun resumePendingAction() {
         if (!currentState.isLoggedIn || personalizationStore.state.value !is PersonalizationBootstrapState.Success) return
         val action = pendingShopAction ?: return
-        val generation = pendingActionEntryGeneration
         pendingShopAction = null
-        if (!entryContext.includes(generation)) return
         when (action) {
-            PendingShopAction.LoginRequest -> trySideEffect(ShopOverviewSideEffect.LoginCompleted(generation))
-            is PendingShopAction.ToggleBookmark -> updateBookmark(action.shop, action.source, action.enabled, generation)
-            is PendingShopAction.ToggleShopNotification -> toggleShopNotification(action.shop, action.source, generation)
-            is PendingShopAction.ToggleHidden -> toggleHidden(action.shop, action.source, generation)
+            is PendingShopAction.ToggleBookmark ->
+                updateBookmark(
+                    shop = action.shop,
+                    source = action.source,
+                    enabled = action.enabled,
+                )
+            is PendingShopAction.ToggleShopNotification ->
+                toggleShopNotification(
+                    shop = action.shop,
+                    source = action.source,
+                )
+            is PendingShopAction.ToggleHidden ->
+                toggleHidden(
+                    shop = action.shop,
+                    source = action.source,
+                )
         }
-    }
-
-    private fun clearPendingAction() {
-        pendingShopAction = null
-        for (key in resumedActionTaskKeys.toList()) cancelTask(key)
-        resumedActionTaskKeys.clear()
     }
 
     private fun showToast(
@@ -582,9 +506,10 @@ class OverviewViewModel(
 
     companion object {
         private const val SHOP_NOT_FOUND = 404
-        private const val STALE_ENTRY_MESSAGE = "Shop overview entry changed before pending action"
         private const val OVERVIEW_TASK_KEY = "shop_overview"
-        private const val PERSONALIZATION_TASK_KEY = "shop_personalization"
+        private const val BOOKMARK_TASK_KEY = "shop_bookmark"
+        private const val NOTIFICATION_TASK_KEY = "shop_notification"
+        private const val HIDDEN_TASK_KEY = "shop_hidden"
         private const val SHOP_REPORT_TASK_KEY = "shop_report"
         private const val ACCOUNT_TASK_KEY = "shop_account"
     }

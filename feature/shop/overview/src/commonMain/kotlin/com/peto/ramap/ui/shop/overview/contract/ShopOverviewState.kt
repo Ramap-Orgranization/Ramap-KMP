@@ -11,7 +11,6 @@ import com.peto.ramap.ui.shop.model.ShopOverviewUiState
 data class ShopOverviewState(
     val overviewState: ShopOverviewUiState = ShopOverviewUiState.Closed,
     val shopWaiting: Map<String, WaitingSystem?> = emptyMap(),
-    val entryGeneration: Long = 0,
     val isLoggedIn: Boolean = false,
     val personalization: Personalization = Personalization(),
     val hasLoadFailure: Boolean = false,

@@ -77,7 +77,7 @@ class MapShopSectionsFixture(
     }
 
     private fun open(shopId: String?) {
-        val overviewVm = OverviewViewModel(login, reports, personalization, overviewQuery, FakeMapSearchHistoryStorage(), ShopAnalytics(FakeAnalyticsTracker()), SignInUseCase(login, LoginAnalytics(FakeAnalyticsTracker(), FakeCrashReporter())), profile)
+        val overviewVm = OverviewViewModel(login, reports, personalization, overviewQuery, FakeMapSearchHistoryStorage(), ShopAnalytics(FakeAnalyticsTracker()), SignInUseCase(login, LoginAnalytics(FakeAnalyticsTracker(), FakeCrashReporter())))
         val menuVm = ShopMenuViewModel(menus)
         val reducer = ReviewChangeReducer()
         val reviewVm = ReviewsViewModel(reviews, community, profile, login, changes, reducer, FeatchShopReviewsUseCase(reviews, changes, reducer, ShopReviewCache(changes, reducer)))
@@ -104,7 +104,6 @@ class MapShopSectionsFixture(
                             is ShopOverviewSideEffect.Interaction -> effects.send(effect.effect)
                             is ShopOverviewSideEffect.ShopViewed -> map.dispatch(MapIntent.OnShopViewed(effect.shop))
                             ShopOverviewSideEffect.SelectedShopHidden -> map.dispatch(MapIntent.OnSelectedShopHidden)
-                            is ShopOverviewSideEffect.LoginCompleted -> Unit
                         }
                     }
                 },

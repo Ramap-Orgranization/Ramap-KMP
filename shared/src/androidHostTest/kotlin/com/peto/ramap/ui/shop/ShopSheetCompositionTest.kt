@@ -64,7 +64,7 @@ class ShopSheetCompositionTest {
                 composition.setContent(content)
                 runCurrent()
                 val first = requireNotNull(models)
-                assertEquals(2, profile.sessionUserId.subscriptionCount.value)
+                assertEquals(1, profile.sessionUserId.subscriptionCount.value)
                 composition.setContent(content)
                 runCurrent()
                 assertSame(first.first, requireNotNull(models).first)
@@ -124,7 +124,7 @@ class ShopSheetCompositionTest {
                         .second.uiState.value.menu
                         ?.updatedAt,
                 )
-                assertEquals(2, profile.sessionUserId.subscriptionCount.value)
+                assertEquals(1, profile.sessionUserId.subscriptionCount.value)
             } finally {
                 composition.dispose()
                 recomposer.cancel()
@@ -221,10 +221,10 @@ class ShopSheetCompositionTest {
         ScreenViewModelScope(shopId) {
             val owner = requireNotNull(LocalViewModelStoreOwner.current)
             val reducer = ReviewChangeReducer()
-            val changes = FakeReviewChangeStore()
+            val changes = FakeReviewChangeStore().apply { reset(profile.sessionUserId.value) }
             val factory =
                 viewModelFactory {
-                    initializer { OverviewViewModel(login, FakeShopReportRepository(), personalization, queries, FakeMapSearchHistoryStorage(), ShopAnalytics(FakeAnalyticsTracker()), SignInUseCase(login, LoginAnalytics(FakeAnalyticsTracker(), FakeCrashReporter())), profile) }
+                    initializer { OverviewViewModel(login, FakeShopReportRepository(), personalization, queries, FakeMapSearchHistoryStorage(), ShopAnalytics(FakeAnalyticsTracker()), SignInUseCase(login, LoginAnalytics(FakeAnalyticsTracker(), FakeCrashReporter()))) }
                     initializer { ShopMenuViewModel(queries) }
                     initializer { ReviewsViewModel(queries, FakeCommunityRepository(), profile, login, changes, reducer, FeatchShopReviewsUseCase(queries, changes, reducer, ShopReviewCache(changes, reducer))) }
                 }

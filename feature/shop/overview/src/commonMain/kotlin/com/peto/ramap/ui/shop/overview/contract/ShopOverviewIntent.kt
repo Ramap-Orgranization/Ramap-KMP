@@ -7,8 +7,6 @@ import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.ui.base.Intent
 
 sealed interface ShopOverviewIntent : Intent {
-    data object OnLoginRequested : ShopOverviewIntent
-
     data class OnShopSelected(
         val shop: RamenShop,
     ) : ShopOverviewIntent
@@ -57,14 +55,4 @@ sealed interface ShopOverviewIntent : Intent {
     ) : ShopOverviewIntent
 
     data object OnLoginSelectionDismissed : ShopOverviewIntent
-
-    data class OnMapEntryChanged(
-        val generation: Long,
-    ) : ShopOverviewIntent
-
-    data class OnLoginRequestedForEntry(
-        val generation: Long,
-    ) : ShopOverviewIntent
-
-    data object OnPendingLoginActionCancelled : ShopOverviewIntent
 }

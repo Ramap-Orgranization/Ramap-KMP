@@ -60,11 +60,9 @@ fun OverviewRoute(
                             null
                         }
                         ShopOverviewSideEffect.SelectedShopHidden -> {
-                            viewModel.entryContext.advance()
                             currentOnHidden()
                             null
                         }
-                        is ShopOverviewSideEffect.LoginCompleted -> null
                     }
                 }.buffer(0)
         }
@@ -99,10 +97,7 @@ fun OverviewRoute(
         content(
             uiState,
             OverviewRouteActions(
-                onDismissRequest = {
-                    viewModel.entryContext.advance()
-                    onDismissRequest()
-                },
+                onDismissRequest = onDismissRequest,
                 onRetry = { viewModel.dispatch(ShopOverviewIntent.OnOverviewRetry) },
                 onLoginGuideRequested = requestLoginGuide,
                 onBookmarkToggled = { viewModel.dispatch(ShopOverviewIntent.OnBookmarkToggled(it, originSource)) },

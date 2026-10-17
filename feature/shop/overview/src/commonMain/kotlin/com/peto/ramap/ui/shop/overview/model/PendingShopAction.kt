@@ -4,8 +4,6 @@ import com.peto.ramap.analytics.AnalyticsSource
 import com.peto.ramap.domain.model.shop.RamenShop
 
 sealed interface PendingShopAction {
-    data object LoginRequest : PendingShopAction
-
     data class ToggleBookmark(
         val shop: RamenShop,
         val source: AnalyticsSource,

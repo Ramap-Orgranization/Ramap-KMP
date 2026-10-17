@@ -13,9 +13,5 @@ sealed interface ShopOverviewSideEffect : SideEffect {
         val shop: RamenShop,
     ) : ShopOverviewSideEffect
 
-    data class LoginCompleted(
-        val entryGeneration: Long,
-    ) : ShopOverviewSideEffect
-
     data object SelectedShopHidden : ShopOverviewSideEffect
 }
