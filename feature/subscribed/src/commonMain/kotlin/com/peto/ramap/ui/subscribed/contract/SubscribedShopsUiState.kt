@@ -5,7 +5,7 @@ import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.ui.loading.LoadState
 import com.peto.ramap.ui.loading.LoadableState
 
-data class SubscribedShopListUiState(
+data class SubscribedShopsUiState(
     val shops: RamenShops = RamenShops(emptyMap()),
     val subscribedEvents: List<ShopEvent> = emptyList(),
     val showShopError: Boolean = false,
@@ -13,8 +13,8 @@ data class SubscribedShopListUiState(
     val haveShopsLoaded: Boolean = false,
     val haveEventsLoaded: Boolean = false,
     override val loadState: LoadState = LoadState(),
-) : LoadableState<SubscribedShopListUiState> {
-    override fun withLoadingState(loadState: LoadState): SubscribedShopListUiState = copy(loadState = loadState)
+) : LoadableState<SubscribedShopsUiState> {
+    override fun withLoadingState(loadState: LoadState): SubscribedShopsUiState = copy(loadState = loadState)
 
     val showError: Boolean = showShopError || showEventError
 
@@ -24,14 +24,14 @@ data class SubscribedShopListUiState(
             (
                 !haveShopsLoaded ||
                     !haveEventsLoaded ||
-                    loadState.isLoading(SubscribedShopLoadKey.SHOPS) ||
-                    loadState.isLoading(SubscribedShopLoadKey.EVENTS)
+                    loadState.isLoading(SubscribedShopsLoadKey.SHOPS) ||
+                    loadState.isLoading(SubscribedShopsLoadKey.EVENTS)
             )
 
     val isOverlayLoading =
-        loadState.isLoading(SubscribedShopLoadKey.REMOVE) ||
-            loadState.isLoading(SubscribedShopLoadKey.SHOPS) ||
-            loadState.isLoading(SubscribedShopLoadKey.EVENTS)
+        loadState.isLoading(SubscribedShopsLoadKey.REMOVE) ||
+            loadState.isLoading(SubscribedShopsLoadKey.SHOPS) ||
+            loadState.isLoading(SubscribedShopsLoadKey.EVENTS)
 
     val showsEmptyContent: Boolean get() = shops.isEmpty() && subscribedEvents.isEmpty()
     val showsSubscribedEvents: Boolean get() = subscribedEvents.isNotEmpty()

@@ -31,7 +31,7 @@ import com.peto.ramap.ui.review.other.OtherReviewsRoute
 import com.peto.ramap.ui.review.write.ShopReviewWriteRoute
 import com.peto.ramap.ui.settings.SettingsRoute
 import com.peto.ramap.ui.shop.ShopDetailHost
-import com.peto.ramap.ui.subscribed.SubscribedShopListRoute
+import com.peto.ramap.ui.subscribed.SubscribedShopsRoute
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.event_not_found_message
 
@@ -272,7 +272,7 @@ internal fun NavigationGraph(
             )
         },
         subscribedShopsScreen = {
-            SubscribedShopListRoute(
+            SubscribedShopsRoute(
                 onBack = navigationState::pop,
                 onShopOpen = { shopId ->
                     navigationState.showShopOnMap(

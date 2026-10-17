@@ -15,11 +15,11 @@ import com.peto.ramap.domain.repository.RamenShopRepository
 import com.peto.ramap.domain.store.PersonalizationBootstrapState
 import com.peto.ramap.domain.store.PersonalizationStore
 import com.peto.ramap.ui.base.BaseViewModel
-import com.peto.ramap.ui.subscribed.contract.SubscribedShopListIntent
-import com.peto.ramap.ui.subscribed.contract.SubscribedShopListIntent.OnRemovalConfirmed
-import com.peto.ramap.ui.subscribed.contract.SubscribedShopListSideEffect
-import com.peto.ramap.ui.subscribed.contract.SubscribedShopListUiState
-import com.peto.ramap.ui.subscribed.contract.SubscribedShopLoadKey
+import com.peto.ramap.ui.subscribed.contract.SubscribedShopsIntent
+import com.peto.ramap.ui.subscribed.contract.SubscribedShopsIntent.OnRemovalConfirmed
+import com.peto.ramap.ui.subscribed.contract.SubscribedShopsLoadKey
+import com.peto.ramap.ui.subscribed.contract.SubscribedShopsSideEffect
+import com.peto.ramap.ui.subscribed.contract.SubscribedShopsUiState
 import com.peto.ramap.ui.subscribed.model.SubscribedRemovalTarget
 import com.peto.ramap.ui.task.TaskPolicy
 import kotlinx.coroutines.async
@@ -32,13 +32,13 @@ import kotlinx.coroutines.launch
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.personalization_update_failure_message
 
-class SubscribedShopListViewModel(
+class SubscribedShopsViewModel(
     private val notificationRepository: NotificationSettingsRepository,
     private val ramenShopRepository: RamenShopRepository,
     private val personalizationStore: PersonalizationStore,
     private val analyticsTracker: AnalyticsTracker,
-) : BaseViewModel<SubscribedShopListUiState, SubscribedShopListIntent, SubscribedShopListSideEffect>(
-        initialState = SubscribedShopListUiState(),
+) : BaseViewModel<SubscribedShopsUiState, SubscribedShopsIntent, SubscribedShopsSideEffect>(
+        initialState = SubscribedShopsUiState(),
     ) {
     init {
         viewModelScope.launch {
@@ -54,9 +54,9 @@ class SubscribedShopListViewModel(
         loadSubscribedEvents()
     }
 
-    override suspend fun handleIntent(intent: SubscribedShopListIntent) {
+    override suspend fun handleIntent(intent: SubscribedShopsIntent) {
         when (intent) {
-            SubscribedShopListIntent.OnRetry -> retryCurrentSubscriptions()
+            SubscribedShopsIntent.OnRetry -> retryCurrentSubscriptions()
             is OnRemovalConfirmed -> confirmRemoval(intent.target)
         }
     }
@@ -111,7 +111,7 @@ class SubscribedShopListViewModel(
     private fun fetchSubscribedShops(shopIds: Set<String>) {
         launchResultTask(
             taskKey = FETCH_SUBSCRIBED_SHOPS_TASK_KEY,
-            loadKey = SubscribedShopLoadKey.SHOPS,
+            loadKey = SubscribedShopsLoadKey.SHOPS,
             onStart = { copy(showShopError = false) },
             request = { ramenShopRepository.fetchRamenShops(shopIds) },
             onSuccess = { shops ->
@@ -137,7 +137,7 @@ class SubscribedShopListViewModel(
     private fun loadSubscribedEvents() {
         launchResultTask(
             taskKey = LOAD_EVENTS_TASK_KEY,
-            loadKey = SubscribedShopLoadKey.EVENTS,
+            loadKey = SubscribedShopsLoadKey.EVENTS,
             policy = TaskPolicy.CancelPrevious,
             onStart = { copy(showEventError = false) },
             request = { fetchSubscribedEvents() },
@@ -197,7 +197,7 @@ class SubscribedShopListViewModel(
         logRemoval(target)
         launchResultTask(
             taskKey = REMOVE_SUBSCRIPTION_TASK_KEY,
-            loadKey = SubscribedShopLoadKey.REMOVE,
+            loadKey = SubscribedShopsLoadKey.REMOVE,
             policy = TaskPolicy.IgnoreNew,
             request = {
                 when (target) {
@@ -250,7 +250,7 @@ class SubscribedShopListViewModel(
 
     private fun handleRemovalFailure() {
         trySideEffect(
-            SubscribedShopListSideEffect.ShowToast(
+            SubscribedShopsSideEffect.ShowToast(
                 ToastData(Res.string.personalization_update_failure_message, ToastType.ERROR),
             ),
         )

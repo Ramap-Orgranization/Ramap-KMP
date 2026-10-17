@@ -23,7 +23,7 @@ import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.preview.RamenShopPreviewParameterProvider
 import com.peto.ramap.preview.ShopEventPreviewParameterProvider
 import com.peto.ramap.theme.RamapTheme
-import com.peto.ramap.ui.subscribed.contract.SubscribedShopListUiState
+import com.peto.ramap.ui.subscribed.contract.SubscribedShopsUiState
 import com.peto.ramap.ui.subscribed.model.SubscribedRemovalTarget
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
@@ -33,7 +33,7 @@ import ramap.shared.generated.resources.top_level_tab_event
 
 @Composable
 internal fun SubscribedShopListContent(
-    uiState: SubscribedShopListUiState,
+    uiState: SubscribedShopsUiState,
     onShopOpen: (RamenShop) -> Unit,
     onEventOpen: (ShopEvent) -> Unit,
     onRemovalRequested: (SubscribedRemovalTarget) -> Unit,
@@ -104,7 +104,7 @@ private fun SubscribedShopListContentPreview() {
     RamapTheme {
         SubscribedShopListContent(
             uiState =
-                SubscribedShopListUiState(
+                SubscribedShopsUiState(
                     shops = RamenShops(shopProvider.ramenShopPreviewSamples),
                     subscribedEvents = eventProvider.values.toList(),
                     haveShopsLoaded = true,
@@ -123,7 +123,7 @@ private fun SubscribedShopListContentEmptyPreview() {
     RamapTheme {
         SubscribedShopListContent(
             uiState =
-                SubscribedShopListUiState(
+                SubscribedShopsUiState(
                     haveShopsLoaded = true,
                     haveEventsLoaded = true,
                 ),
