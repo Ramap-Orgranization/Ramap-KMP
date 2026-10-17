@@ -2,9 +2,6 @@ package com.peto.ramap.ui.shop.component
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.Orientation
-import androidx.compose.foundation.gestures.draggable
-import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
@@ -27,16 +24,12 @@ import androidx.compose.material3.SheetValue
 import androidx.compose.material3.rememberBottomSheetScaffoldState
 import androidx.compose.material3.rememberStandardBottomSheetState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -78,34 +71,7 @@ fun ShopDetailBottomSheet(
                 currentInfo = NavigationEventInfo.None,
             )
         val scrimInteractionSource = remember { MutableInteractionSource() }
-        val density = LocalDensity.current
-        var handleDragDistancePx by remember { mutableFloatStateOf(0f) }
-        var handleDragOffsetPx by remember { mutableFloatStateOf(0f) }
-        val handleDragModifier =
-            Modifier.draggable(
-                orientation = Orientation.Vertical,
-                enabled = bottomSheetState.currentValue == SheetValue.PartiallyExpanded,
-                state =
-                    rememberDraggableState { dragAmount ->
-                        handleDragDistancePx += dragAmount
-                        handleDragOffsetPx = (handleDragOffsetPx + dragAmount).coerceAtLeast(0f)
-                    },
-                onDragStarted = {
-                    handleDragDistancePx = 0f
-                    handleDragOffsetPx = 0f
-                },
-                onDragStopped = {
-                    if (handleDragOffsetPx >= with(density) { DRAG_DISMISS_THRESHOLD.toPx() }) {
-                        onDismissRequest()
-                    } else {
-                        handleDragOffsetPx = 0f
-                        if (handleDragDistancePx <= -with(density) { DRAG_EXPAND_THRESHOLD.toPx() }) {
-                            bottomSheetState.expand()
-                        }
-                    }
-                    handleDragDistancePx = 0f
-                },
-            )
+        val handleDragState = rememberShopDetailHandleDragState(bottomSheetState, onDismissRequest)
 
         NavigationBackHandler(
             state = backEventState,
@@ -131,7 +97,7 @@ fun ShopDetailBottomSheet(
                     Modifier
                         .windowInsetsPadding(
                             WindowInsets.safeDrawing.only(WindowInsetsSides.Top),
-                        ).graphicsLayer { translationY = handleDragOffsetPx },
+                        ).graphicsLayer { translationY = handleDragState.offsetPx },
                 scaffoldState = scaffoldState,
                 sheetPeekHeight = maxHeight * COLLAPSED_HEIGHT_FRACTION,
                 sheetMaxWidth = Dp.Unspecified,
@@ -157,7 +123,7 @@ fun ShopDetailBottomSheet(
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
                         item(key = "shop_detail_handle", contentType = "handle") {
-                            ShopDetailSheetHandle(dragModifier = handleDragModifier)
+                            ShopDetailSheetHandle(dragModifier = handleDragState.modifier)
                         }
                         content()
                     }
@@ -177,7 +143,7 @@ fun ShopDetailBottomSheet(
                             .run {
                                 if (isNavigationBarPadded) navigationBarsPadding() else this
                             }.padding(bottom = 12.dp)
-                            .graphicsLayer { translationY = handleDragOffsetPx },
+                            .graphicsLayer { translationY = handleDragState.offsetPx },
                 ) {
                     floatingAction()
                 }
