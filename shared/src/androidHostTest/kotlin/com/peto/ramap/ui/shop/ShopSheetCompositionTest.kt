@@ -84,7 +84,7 @@ class ShopSheetCompositionTest {
                     requireNotNull(models)
                         .second.uiState.value.menu,
                 )
-                queries.menuGate!!.complete(ShopMenu(emptyList()))
+                queries.menuGate!!.complete(ShopMenu(emptyList(), "2026-10-14"))
             } finally {
                 composition.dispose()
                 recomposer.cancel()
@@ -184,7 +184,7 @@ class ShopSheetCompositionTest {
                 assertEquals(2, queries.overviewCalls.size)
                 assertEquals(1, queries.menuCalls.size)
                 assertEquals(1, queries.reviewCalls.size)
-                queries.menuResult = RamapResult.Success(ShopMenu(emptyList()))
+                queries.menuResult = RamapResult.Success(ShopMenu(emptyList(), "2026-10-14"))
                 menu.dispatch(ShopMenuIntent.OnRetry)
                 runCurrent()
                 assertFalse(menu.uiState.value.hasLoadFailure)

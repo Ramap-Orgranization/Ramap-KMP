@@ -5,7 +5,7 @@ import com.peto.ramap.domain.model.menu.ShopMenu
 import com.peto.ramap.domain.repository.ShopMenuRepository
 
 class FakeMapShopMenuRepository(
-    var result: RamapResult<ShopMenu> = RamapResult.Success(ShopMenu(emptyList())),
+    var result: RamapResult<ShopMenu> = RamapResult.Success(ShopMenu(emptyList(), "2026-10-14")),
 ) : ShopMenuRepository {
     val requestedShopIds = mutableListOf<String>()
 
