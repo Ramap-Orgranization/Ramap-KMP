@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxSize
@@ -54,6 +55,7 @@ fun ShopDetailBottomSheet(
     loadMoreState: InfiniteScrollState,
     loadMoreEnabled: Boolean,
     onLoadMore: () -> Unit,
+    modifier: Modifier = Modifier,
     floatingAction: (@Composable () -> Unit)? = null,
     content: LazyListScope.() -> Unit,
 ) {
@@ -79,7 +81,12 @@ fun ShopDetailBottomSheet(
             onBackCompleted = onDismissRequest,
         )
 
-        Box(modifier = Modifier.fillMaxSize()) {
+        val isFullyExpanded =
+            bottomSheetState.currentValue == SheetValue.Expanded &&
+                bottomSheetState.targetValue == SheetValue.Expanded &&
+                !bottomSheetState.isAnimationRunning
+
+        Box(modifier = modifier.fillMaxSize()) {
             Box(
                 modifier =
                     Modifier
@@ -123,18 +130,19 @@ fun ShopDetailBottomSheet(
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
                         item(key = "shop_detail_handle", contentType = "handle") {
-                            ShopDetailSheetHandle(dragModifier = handleDragState.modifier)
+                            SheetHandle(dragModifier = handleDragState.modifier)
                         }
                         content()
+                        if (floatingAction != null && isFullyExpanded) {
+                            item(key = "shop_detail_floating_action_spacer", contentType = "spacer") {
+                                Spacer(modifier = Modifier.height(FLOATING_ACTION_BOTTOM_SPACE))
+                            }
+                        }
                     }
                 },
                 content = {},
             )
 
-            val isFullyExpanded =
-                bottomSheetState.currentValue == SheetValue.Expanded &&
-                    bottomSheetState.targetValue == SheetValue.Expanded &&
-                    !bottomSheetState.isAnimationRunning
             if (floatingAction != null && isFullyExpanded) {
                 Box(
                     modifier =
@@ -153,7 +161,7 @@ fun ShopDetailBottomSheet(
 }
 
 @Composable
-private fun ShopDetailSheetHandle(dragModifier: Modifier) {
+private fun SheetHandle(dragModifier: Modifier) {
     Box(
         modifier =
             Modifier
@@ -176,5 +184,4 @@ private fun ShopDetailSheetHandle(dragModifier: Modifier) {
 }
 
 private const val COLLAPSED_HEIGHT_FRACTION = 0.5f
-private val DRAG_DISMISS_THRESHOLD = 120.dp
-private val DRAG_EXPAND_THRESHOLD = 40.dp
+private val FLOATING_ACTION_BOTTOM_SPACE = 70.dp

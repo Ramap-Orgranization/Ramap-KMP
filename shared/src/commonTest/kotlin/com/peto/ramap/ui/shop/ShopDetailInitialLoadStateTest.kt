@@ -21,7 +21,7 @@ class ShopDetailInitialLoadStateTest {
     fun `요청 시작 전 로딩 키가 없어도 전체 스켈레톤을 표시한다`() {
         val overview = ShopOverviewState()
         val progress = ShopDetailInitialLoadState("shop").update(overview, ShopMenuUiState(), ReviewsUiState())
-        assertEquals(ShopDetailDisplayState.InitialSkeleton, progress.displayState(overview))
+        assertEquals(ShopDetailDisplayState.Initial, progress.displayState(overview))
     }
 
     @Test
@@ -40,7 +40,7 @@ class ShopDetailInitialLoadStateTest {
                 }
                 progress = progress.update(overview, menu, reviews)
                 assertEquals(
-                    if (index == order.lastIndex) ShopDetailDisplayState.Content else ShopDetailDisplayState.InitialSkeleton,
+                    if (index == order.lastIndex) ShopDetailDisplayState.Content else ShopDetailDisplayState.Initial,
                     progress.displayState(overview),
                     "조회 완료 순서 $order 에서 $index 단계 표시",
                 )
@@ -66,7 +66,7 @@ class ShopDetailInitialLoadStateTest {
     fun `오버뷰 실패도 다른 최초 조회를 기다린 뒤 전체 오류를 표시한다`() {
         val overview = failedOverview()
         var progress = ShopDetailInitialLoadState("shop").update(overview, successfulMenu(), loadingReviews())
-        assertEquals(ShopDetailDisplayState.InitialSkeleton, progress.displayState(overview))
+        assertEquals(ShopDetailDisplayState.Initial, progress.displayState(overview))
         progress = progress.update(overview, successfulMenu(), failedReviews())
         assertEquals(ShopDetailDisplayState.OverviewError, progress.displayState(overview))
     }
@@ -118,7 +118,7 @@ class ShopDetailInitialLoadStateTest {
         var menu = successfulMenu().copy(loadState = LoadState.loading(ShopMenuLoadKey.Menu))
         var reviews = successfulReviews().copy(loadState = LoadState.loading(ReviewsLoadKey.Reviews))
         var progress = ShopDetailInitialLoadState("shop").update(overview, menu, reviews)
-        assertEquals(ShopDetailDisplayState.InitialSkeleton, progress.displayState(overview))
+        assertEquals(ShopDetailDisplayState.Initial, progress.displayState(overview))
         overview = overview.copy(loadState = LoadState(), hasLoadFailure = true)
         menu = menu.copy(loadState = LoadState())
         reviews = reviews.copy(loadState = LoadState())
@@ -135,9 +135,9 @@ class ShopDetailInitialLoadStateTest {
         val previous = ShopDetailInitialLoadState("shop").update(overview, successfulMenu(), successfulReviews())
         assertEquals(ShopDetailDisplayState.Content, previous.displayState(overview))
         val next = ShopDetailInitialLoadState("next").update(overview, successfulMenu(), successfulReviews())
-        assertEquals(ShopDetailDisplayState.InitialSkeleton, next.displayState(overview))
+        assertEquals(ShopDetailDisplayState.Initial, next.displayState(overview))
         val reopened = ShopDetailInitialLoadState("shop").update(loadingOverview(), loadingMenu(), loadingReviews())
-        assertEquals(ShopDetailDisplayState.InitialSkeleton, reopened.displayState(loadingOverview()))
+        assertEquals(ShopDetailDisplayState.Initial, reopened.displayState(loadingOverview()))
     }
 
     @Test

@@ -3,7 +3,6 @@ package com.peto.ramap.ui.shop.component
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -15,7 +14,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.peto.ramap.designsystem.button.AppExtendedFloatingActionButton
-import com.peto.ramap.designsystem.component.LoadErrorContent
 import com.peto.ramap.designsystem.dialog.CommonDialog
 import com.peto.ramap.designsystem.indicator.RamenLoadingIndicator
 import com.peto.ramap.designsystem.text.AppText
@@ -23,7 +21,6 @@ import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.ui.shop.component.dialog.ReportDialog
-import com.peto.ramap.ui.shop.menu.ShopMenuContent
 import com.peto.ramap.ui.shop.model.ShopDetailActions
 import com.peto.ramap.ui.shop.model.ShopDetailContentUiState
 import com.peto.ramap.ui.shop.model.ShopDetailDisplayState
@@ -43,9 +40,6 @@ import ramap.shared.generated.resources.hide_shop_confirm_description
 import ramap.shared.generated.resources.hide_shop_confirm_dismiss
 import ramap.shared.generated.resources.hide_shop_confirm_title
 import ramap.shared.generated.resources.ic_map_outline
-import ramap.shared.generated.resources.laduck_error_crying
-import ramap.shared.generated.resources.map_shop_detail_error_description
-import ramap.shared.generated.resources.map_shop_detail_error_title
 import ramap.shared.generated.resources.ranking_show_shop_on_map
 
 @Composable
@@ -92,6 +86,7 @@ fun ShopDetailContent(
                 loadMoreState = loadMoreState,
                 loadMoreEnabled = uiState.displayState == ShopDetailDisplayState.Content && selectedTab == ShopDetailTab.REVIEW,
                 onLoadMore = actions.reviewActions.onLoadMoreReviews,
+                modifier = modifier,
                 floatingAction =
                     mapAction?.let { showOnMap ->
                         {
@@ -104,7 +99,11 @@ fun ShopDetailContent(
                     },
             ) {
                 when (uiState.displayState) {
-                    ShopDetailDisplayState.InitialSkeleton -> item(key = "shop_detail_initial_loading", contentType = "status") { ShopDetailSkeleton(selectedTab = selectedTab) }
+                    ShopDetailDisplayState.Initial ->
+                        item(key = "shop_detail_initial_loading", contentType = "status") {
+                            ShopDetailSkeleton(selectedTab = selectedTab)
+                        }
+
                     ShopDetailDisplayState.OverviewLoading ->
                         item(key = "shop_detail_overview_loading", contentType = "status") {
                             RamenLoadingIndicator(
@@ -169,7 +168,10 @@ fun ShopDetailContent(
                         )
                     }
 
-                    ShopDetailDisplayState.OverviewError -> item(key = "shop_detail_overview_error", contentType = "status") { RegionLoadError(onRetry = actions.onRetry) }
+                    ShopDetailDisplayState.OverviewError ->
+                        item(key = "shop_detail_overview_error", contentType = "status") {
+                            RegionLoadError(onRetry = actions.onRetry)
+                        }
                 }
             }
         }
@@ -212,51 +214,5 @@ fun ShopDetailContent(
                 actions.shopActions.onReportSubmit(wrongFields, description)
             },
         )
-    }
-}
-
-@Composable
-private fun RegionLoadError(onRetry: () -> Unit) {
-    LoadErrorContent(
-        image = Res.drawable.laduck_error_crying,
-        title = stringResource(Res.string.map_shop_detail_error_title),
-        description = stringResource(Res.string.map_shop_detail_error_description),
-        onRetry = onRetry,
-        modifier = Modifier.fillMaxWidth(),
-        compact = true,
-    )
-}
-
-private fun shopDetailSections(
-    scope: LazyListScope,
-    uiState: ShopDetailContentUiState,
-    actions: ShopDetailActions,
-    selectedTab: ShopDetailTab,
-    onTabSelected: (ShopDetailTab) -> Unit,
-    reviewItems: LazyListScope.() -> Unit,
-) {
-    scope.item(key = "shop_detail_tabs", contentType = "tabs") {
-        OverviewTabRow(
-            menuCount = uiState.menuState?.menu?.itemCount ?: 0,
-            reviewCount = uiState.reviewState.reviewCount,
-            selectedTab = selectedTab,
-            onTabSelected = onTabSelected,
-            modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp),
-        )
-    }
-    when (selectedTab) {
-        ShopDetailTab.MENU -> {
-            scope.item(key = "shop_detail_menu", contentType = "menu") {
-                ShopMenuContent(
-                    uiState =
-                        uiState.menuState ?: com.peto.ramap.ui.shop.menu.contract
-                            .ShopMenuUiState(),
-                    onRetry = actions.onMenuRetry,
-                    onMenuSourceClick = actions.externalLinkActions.onExternalLinkClick,
-                    modifier = Modifier.padding(horizontal = 20.dp),
-                )
-            }
-        }
-        ShopDetailTab.REVIEW -> scope.reviewItems()
     }
 }

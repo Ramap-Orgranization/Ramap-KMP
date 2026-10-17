@@ -33,7 +33,7 @@ data class ShopDetailInitialLoadState(
 
     fun displayState(overview: ShopOverviewState): ShopDetailDisplayState =
         when {
-            !isComplete -> ShopDetailDisplayState.InitialSkeleton
+            !isComplete -> ShopDetailDisplayState.Initial
             !matchesOverview(overview) -> ShopDetailDisplayState.OverviewLoading
             hasPresentedOverview && overview.shopOverview != null -> ShopDetailDisplayState.Content
             overview.isLoading -> ShopDetailDisplayState.OverviewLoading
