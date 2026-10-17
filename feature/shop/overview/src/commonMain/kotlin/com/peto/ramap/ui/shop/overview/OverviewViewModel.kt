@@ -81,7 +81,6 @@ class OverviewViewModel(
         ),
     ) {
     private var pendingShopAction: PendingShopAction? = null
-    private var observedBookmarkedShopIds: Set<String>? = null
     private var hidingSelectedShopId: String? = null
 
     init {
@@ -100,7 +99,6 @@ class OverviewViewModel(
     private suspend fun awaitLogin() {
         loginRepository.session.first { it == LoginSessionState.AUTHENTICATED }
         reduce { copy(isLoggedIn = true) }
-        // 공개 상세 캐시를 유지해 재조회 중 발생한 저장 수 변경을 보존한다.
         currentSheetShopId()?.let(::loadOverview)
     }
 
@@ -143,9 +141,10 @@ class OverviewViewModel(
         personalizationStore.state.collect { state ->
             val personalization = (state as? PersonalizationBootstrapState.Success)?.value ?: return@collect
             if (!loginRepository.hasSession()) return@collect
+            val previousBookmarkedShopIds = currentState.bookmarkedShopIds.takeIf { currentState.hasReceivedPersonalization }
             reduce { copy(isLoggedIn = true) }
             applyPersonalization(personalization)
-            synchronizeOverviewLikeCounts(personalization.bookmarkedShopIds)
+            synchronizeOverviewLikeCounts(previousBookmarkedShopIds)
             resumePendingAction()
         }
     }
@@ -353,9 +352,8 @@ class OverviewViewModel(
         )
     }
 
-    private fun synchronizeOverviewLikeCounts(bookmarkedShopIds: Set<String>) {
-        val changes = currentState.personalization.bookmarkChangesSince(observedBookmarkedShopIds)
-        observedBookmarkedShopIds = bookmarkedShopIds
+    private fun synchronizeOverviewLikeCounts(previousBookmarkedShopIds: Set<String>?) {
+        val changes = currentState.personalization.bookmarkChangesSince(previousBookmarkedShopIds)
         for (change in changes) {
             val isBookmarked = change.type == BookmarkChangeStatus.ADDED
             updateOverviewBookmarkCount(change.shopId, isBookmarked)
@@ -408,6 +406,7 @@ class OverviewViewModel(
                         com.peto.ramap.domain.model.personalization.VisibilityStatus.Unchanged -> overviewState
                     },
                 personalization = personalization,
+                hasReceivedPersonalization = true,
             )
         }
         if (transition == com.peto.ramap.domain.model.personalization.VisibilityStatus.Hidden && hidingSelectedShopId != selectedShopId) trySideEffect(ShopOverviewSideEffect.SelectedShopHidden)

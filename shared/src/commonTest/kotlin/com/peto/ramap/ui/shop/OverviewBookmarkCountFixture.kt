@@ -9,6 +9,7 @@ import com.peto.ramap.domain.model.shop.ShopOverView
 import com.peto.ramap.domain.repository.OperatingNoticeRepository
 import com.peto.ramap.domain.repository.RamenShopRepository
 import com.peto.ramap.domain.store.PersonalizationBootstrapState
+import com.peto.ramap.domain.store.PersonalizationStore
 import com.peto.ramap.domain.usecase.FetchShopOverviewUseCase
 import com.peto.ramap.domain.usecase.SignInUseCase
 import com.peto.ramap.fake.FakeAnalyticsTracker
@@ -32,6 +33,22 @@ class OverviewBookmarkCountFixture {
     val personalization = FakePersonalizationRepository(initialState = PersonalizationBootstrapState.Loading)
     val requestedShopIds = mutableListOf<String>()
     var fetchOverview: suspend () -> RamapResult<ShopOverView> = { RamapResult.Success(initialOverview) }
+    var bookmarkResponse: suspend () -> RamapResult<Unit> = { RamapResult.Success(Unit) }
+
+    private val personalizationStore =
+        object : PersonalizationStore by personalization {
+            override suspend fun updateBookmark(
+                shopId: String,
+                enabled: Boolean,
+            ): RamapResult<Unit> {
+                val previousIds = personalization.bookmarkedShopIds.value
+                val result = personalization.updateBookmark(shopId, enabled)
+                if (result is RamapResult.Error) return result
+                return bookmarkResponse().also {
+                    if (it is RamapResult.Error) personalization.updateBookmarkedShopIds(previousIds)
+                }
+            }
+        }
 
     private val repository =
         object : RamenShopRepository by FakeRamenShopRepository() {
@@ -56,7 +73,7 @@ class OverviewBookmarkCountFixture {
         OverviewViewModel(
             loginRepository = login,
             shopReportRepository = FakeShopReportRepository(),
-            personalizationStore = personalization,
+            personalizationStore = personalizationStore,
             fetchShopOverviewUseCase = query,
             mapSearchHistoryStorage = FakeMapSearchHistoryStorage(),
             mapAnalytics = ShopAnalytics(analytics),

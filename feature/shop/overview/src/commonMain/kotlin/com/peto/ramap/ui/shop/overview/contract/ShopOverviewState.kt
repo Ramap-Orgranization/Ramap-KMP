@@ -13,6 +13,7 @@ data class ShopOverviewState(
     val shopWaiting: Map<String, WaitingSystem?> = emptyMap(),
     val isLoggedIn: Boolean = false,
     val personalization: Personalization = Personalization(),
+    val hasReceivedPersonalization: Boolean = false,
     val hasLoadFailure: Boolean = false,
     val isShopUnavailable: Boolean = false,
     override val loadState: LoadState = LoadState(),

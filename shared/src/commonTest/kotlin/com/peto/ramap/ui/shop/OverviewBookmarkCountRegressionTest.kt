@@ -19,6 +19,60 @@ import kotlin.test.assertTrue
 @OptIn(ExperimentalCoroutinesApi::class)
 class OverviewBookmarkCountRegressionTest {
     @Test
+    fun `로그인 후 첫 빈 목록을 받은 뒤 저장하고 해제하면 상세와 캐시의 수를 갱신한다`() =
+        scenario { fixture ->
+            fixture.authenticate()
+            runCurrent()
+            assertCount(fixture, 22L)
+
+            fixture.personalization.updateBookmarkedShopIds(emptySet())
+            runCurrent()
+            assertCount(fixture, 22L)
+
+            fixture.viewModel.dispatch(ShopOverviewIntent.OnBookmarkToggled(fixture.shop))
+            runCurrent()
+            assertCount(fixture, 23L)
+            assertEquals(setOf("shop"), fixture.viewModel.uiState.value.bookmarkedShopIds)
+
+            fixture.viewModel.dispatch(ShopOverviewIntent.OnBookmarkToggled(fixture.shop))
+            runCurrent()
+            assertCount(fixture, 22L)
+            assertTrue(
+                fixture.viewModel.uiState.value.bookmarkedShopIds
+                    .isEmpty(),
+            )
+        }
+
+    @Test
+    fun `로그인 후 받은 기존 저장 목록은 수를 바꾸지 않고 이후 해제와 재저장만 반영한다`() =
+        scenario { fixture ->
+            fixture.authenticate()
+            runCurrent()
+            fixture.personalization.updateBookmarkedShopIds(setOf("shop"))
+            runCurrent()
+            assertCount(fixture, 22L)
+
+            fixture.viewModel.dispatch(ShopOverviewIntent.OnBookmarkToggled(fixture.shop))
+            runCurrent()
+            assertCount(fixture, 21L)
+            assertTrue(
+                fixture.viewModel.uiState.value.bookmarkedShopIds
+                    .isEmpty(),
+            )
+
+            fixture.viewModel.dispatch(ShopOverviewIntent.OnBookmarkToggled(fixture.shop))
+            runCurrent()
+            assertCount(fixture, 22L)
+            assertEquals(setOf("shop"), fixture.viewModel.uiState.value.bookmarkedShopIds)
+        }
+
+    @Test
+    fun `저장 수를 먼저 올린 뒤 저장이 실패하면 상세와 캐시의 수를 원복한다`() = bookmarkRollbackScenario(initiallyBookmarked = false)
+
+    @Test
+    fun `저장 수를 먼저 내린 뒤 해제가 실패하면 상세와 캐시의 수를 원복한다`() = bookmarkRollbackScenario(initiallyBookmarked = true)
+
+    @Test
     fun `로그인 후 저장보다 먼저 조회한 응답이 늦게 도착해도 상세 저장 수를 유지한다`() = delayedLoginOverviewScenario(RamapResult.Success(22L))
 
     @Test
@@ -101,6 +155,29 @@ class OverviewBookmarkCountRegressionTest {
             assertEquals(listOf("shop" to true, "shop" to false), fixture.personalization.bookmarkUpdateRequests)
             assertCount(fixture, 22L)
             assertEquals(listOf("shop", "shop"), fixture.requestedShopIds)
+        }
+
+    private fun bookmarkRollbackScenario(initiallyBookmarked: Boolean) =
+        scenario { fixture ->
+            val previousIds = if (initiallyBookmarked) setOf("shop") else emptySet()
+            fixture.authenticate()
+            runCurrent()
+            fixture.personalization.updateBookmarkedShopIds(previousIds)
+            runCurrent()
+            assertCount(fixture, 22L)
+
+            val response = CompletableDeferred<RamapResult<Unit>>()
+            fixture.bookmarkResponse = { response.await() }
+            fixture.viewModel.dispatch(ShopOverviewIntent.OnBookmarkToggled(fixture.shop))
+            runCurrent()
+            assertCount(fixture, if (initiallyBookmarked) 21L else 23L)
+            assertEquals(!initiallyBookmarked, "shop" in fixture.viewModel.uiState.value.bookmarkedShopIds)
+
+            response.complete(RamapResult.Error(RamapError.Http(500)))
+            runCurrent()
+            assertCount(fixture, 22L)
+            assertEquals(previousIds, fixture.viewModel.uiState.value.bookmarkedShopIds)
+            assertEquals(listOf("shop" to !initiallyBookmarked), fixture.personalization.bookmarkUpdateRequests)
         }
 
     private fun TestScope.requestBookmarkAndLogin(fixture: OverviewBookmarkCountFixture) {
