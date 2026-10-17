@@ -100,7 +100,7 @@ class OverviewViewModel(
     private suspend fun awaitLogin() {
         loginRepository.session.first { it == LoginSessionState.AUTHENTICATED }
         reduce { copy(isLoggedIn = true) }
-        fetchShopOverviewUseCase.clearCache()
+        // 공개 상세 캐시를 유지해 재조회 중 발생한 저장 수 변경을 보존한다.
         currentSheetShopId()?.let(::loadOverview)
     }
 
