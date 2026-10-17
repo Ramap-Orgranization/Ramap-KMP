@@ -62,21 +62,17 @@ class ReviewsViewModelTest {
         }
 
     @Test
-    fun `관찰 시작 전에 로그아웃해도 최신 세션과 변경 저장소 수명으로 한 번만 조회한다`() =
+    fun `비로그인 상태로 상세를 열면 사용자 정보 없이 리뷰를 조회한다`() =
         coroutinesTest {
             val fake = FakeShopReviewRepository()
-            val profile = FakeProfileRepository("old-user")
-            val login = FakeLoginRepository(LoginSessionState.AUTHENTICATED)
-            val changes = FakeReviewChangeStore()
-            val viewModel = viewModel(fake, profile, changes, login)
-            profile.sessionUserId.value = null
-            login.updateSessionState(LoginSessionState.NOT_AUTHENTICATED)
-            changes.reset(null)
+            fake.reviews = listOf(review("shop"))
+            val viewModel = viewModel(fake)
             viewModel.dispatch(ReviewsIntent.OnShopSelected("shop"))
             runCurrent()
             assertEquals(null, viewModel.uiState.value.currentUserId)
             assertEquals(null, viewModel.uiState.value.currentProfileIsPublic)
             assertFalse(viewModel.uiState.value.isLoggedIn)
+            assertEquals(fake.reviews, viewModel.uiState.value.reviews)
             assertEquals(listOf(0L), fake.pageOffsets)
             assertFalse(viewModel.uiState.value.isLoading)
         }
@@ -154,75 +150,10 @@ class ReviewsViewModelTest {
         }
 
     @Test
-    fun `매장 변경과 닫기 후 취소를 무시한 리뷰 응답은 반영하지 않는다`() =
-        coroutinesTest {
-            val fake = FakeShopReviewRepository()
-            val old = CompletableDeferred<ShopReviewsPage>()
-            val repository =
-                object : ReviewRepository by fake {
-                    override suspend fun fetchShopReviewsPage(
-                        shopId: String,
-                        offset: Long,
-                    ): RamapResult<ShopReviewsPage> =
-                        if (shopId == "old") {
-                            withContext(NonCancellable) { RamapResult.Success(old.await()) }
-                        } else {
-                            RamapResult.Success(ShopReviewsPage(listOf(review(shopId)), 1))
-                        }
-                }
-            val viewModel = viewModel(repository)
-            viewModel.dispatch(ReviewsIntent.OnShopSelected("old"))
-            runCurrent()
-            viewModel.dispatch(ReviewsIntent.OnShopSelected("new"))
-            runCurrent()
-            old.complete(ShopReviewsPage(listOf(review("old")), 1))
-            runCurrent()
-            assertEquals(
-                "new",
-                viewModel.uiState.value.reviews
-                    .single()
-                    .shopId,
-            )
-            viewModel.dispatch(ReviewsIntent.OnDismissed)
-            viewModel.dispatch(ReviewsIntent.OnRetry)
-            runCurrent()
-            assertEquals(null, viewModel.uiState.value.shopId)
-            assertEquals(emptyList(), viewModel.uiState.value.reviews)
-        }
+    fun `매장 변경 후 늦게 도착한 리뷰 성공 응답은 새 목록을 덮지 않는다`() = lateShopResponseScenario(fails = false)
 
     @Test
-    fun `로그인 사용자가 바뀌면 이전 리뷰 범위와 일시 공개 상태를 제거한다`() =
-        coroutinesTest {
-            val fake = FakeShopReviewRepository()
-            val profile = FakeProfileRepository(null)
-            profile.sessionUserId.value = "old-user"
-            val pending = CompletableDeferred<ShopReviewsPage>()
-            var calls = 0
-            val repository =
-                object : ReviewRepository by fake {
-                    override suspend fun fetchShopReviewsPage(
-                        shopId: String,
-                        offset: Long,
-                    ): RamapResult<ShopReviewsPage> {
-                        calls++
-                        return if (calls == 1) {
-                            withContext(NonCancellable) { RamapResult.Success(pending.await()) }
-                        } else {
-                            RamapResult.Success(ShopReviewsPage(emptyList(), 0))
-                        }
-                    }
-                }
-            val viewModel = viewModel(repository, profile)
-            viewModel.dispatch(ReviewsIntent.OnShopSelected("shop"))
-            runCurrent()
-            profile.sessionUserId.value = "new-user"
-            runCurrent()
-            pending.complete(ShopReviewsPage(listOf(review("shop").copy(isPublic = false)), 1))
-            runCurrent()
-            assertEquals("new-user", viewModel.uiState.value.currentUserId)
-            assertEquals(emptyList(), viewModel.uiState.value.reviews)
-            assertEquals(emptyMap(), viewModel.uiState.value.revealedBlockedReviews)
-        }
+    fun `매장 변경 후 늦게 도착한 리뷰 실패 응답은 새 목록에 오류를 표시하지 않는다`() = lateShopResponseScenario(fails = true)
 
     @Test
     fun `차단 접근 변경은 해당 사용자의 리뷰를 즉시 숨기고 독립 재조회한다`() =
@@ -230,7 +161,7 @@ class ReviewsViewModelTest {
             val fake = FakeShopReviewRepository()
             fake.reviews = listOf(review("shop"))
             val changes = FakeReviewChangeStore()
-            val viewModel = viewModel(fake, changes = changes)
+            val viewModel = viewModel(fake, profile = FakeProfileRepository("owner"), changes = changes, login = FakeLoginRepository(LoginSessionState.AUTHENTICATED))
             viewModel.dispatch(ReviewsIntent.OnShopSelected("shop"))
             runCurrent()
             fake.reviews = emptyList()
@@ -241,45 +172,72 @@ class ReviewsViewModelTest {
         }
 
     @Test
-    fun `사용자 관찰자가 먼저 조회한 뒤 변경 저장소 수명이 바뀌어도 리뷰를 다시 완료한다`() =
+    fun `로그인된 상세를 열어도 변경 저장소에 같은 사용자 ID가 반영될 때까지 조회하지 않는다`() =
         coroutinesTest {
             val fake = FakeShopReviewRepository()
-            val profile = FakeProfileRepository(null)
-            val changes = FakeReviewChangeStore()
-            val pending = CompletableDeferred<ShopReviewsPage>()
-            var calls = 0
-            val repository =
-                object : ReviewRepository by fake {
-                    override suspend fun fetchShopReviewsPage(
-                        shopId: String,
-                        offset: Long,
-                    ): RamapResult<ShopReviewsPage> {
-                        calls++
-                        return when (calls) {
-                            2 -> RamapResult.Success(pending.await())
-                            else -> RamapResult.Success(ShopReviewsPage(listOf(review(shopId)), 1))
-                        }
-                    }
-                }
-            val viewModel = viewModel(repository, profile, changes)
+            fake.reviews = listOf(review("shop"))
+            val profile = FakeProfileRepository("owner")
+            val login = FakeLoginRepository(LoginSessionState.AUTHENTICATED)
+            val changes = FakeReviewChangeStore().apply { reset(null) }
+            val viewModel = viewModel(fake, profile, changes, login)
             viewModel.dispatch(ReviewsIntent.OnShopSelected("shop"))
             runCurrent()
-            profile.sessionUserId.value = "new-user"
+            viewModel.dispatch(ReviewsIntent.OnRetry)
+            changes.reset("different-user")
             runCurrent()
-            assertTrue(viewModel.uiState.value.isLoading)
-            changes.reset("new-user")
+            assertEquals(emptyList(), fake.pageOffsets)
+            assertFalse(viewModel.uiState.value.hasLoaded)
+            changes.reset("owner")
             runCurrent()
-            assertEquals(3, calls)
-            assertEquals("new-user", viewModel.uiState.value.currentUserId)
+            assertEquals(listOf(0L), fake.pageOffsets)
+            assertEquals("owner", viewModel.uiState.value.currentUserId)
+            assertTrue(viewModel.uiState.value.isLoggedIn)
             assertEquals(1, viewModel.uiState.value.reviewCount)
             assertFalse(viewModel.uiState.value.isLoading)
             assertFalse(viewModel.uiState.value.hasReviewLoadFailure)
         }
 
+    private fun lateShopResponseScenario(fails: Boolean) =
+        coroutinesTest {
+            val fixture = ReviewsViewModelFixture()
+            val response = CompletableDeferred<RamapResult<ShopReviewsPage>>()
+            val oldResult = if (fails) RamapResult.Error(RamapError.Http(500)) else RamapResult.Success(ShopReviewsPage(listOf(review("old")), 1))
+            var returned = false
+            fixture.fetchPage = { shopId, _ ->
+                if (shopId == "old") {
+                    withContext(NonCancellable) { response.await() }.also { returned = true }
+                } else {
+                    RamapResult.Success(ShopReviewsPage(listOf(review(shopId)), 1))
+                }
+            }
+            val viewModel = fixture.viewModel
+            try {
+                viewModel.dispatch(ReviewsIntent.OnShopSelected("old"))
+                runCurrent()
+                viewModel.dispatch(ReviewsIntent.OnShopSelected("new"))
+                runCurrent()
+                response.complete(oldResult)
+                runCurrent()
+                assertTrue(returned)
+                assertEquals(listOf(review("new")), viewModel.uiState.value.reviews)
+                assertTrue(viewModel.uiState.value.hasLoaded)
+                assertFalse(viewModel.uiState.value.hasReviewLoadFailure)
+                assertFalse(viewModel.uiState.value.isLoading)
+                viewModel.dispatch(ReviewsIntent.OnDismissed)
+                viewModel.dispatch(ReviewsIntent.OnRetry)
+                runCurrent()
+                assertEquals(null, viewModel.uiState.value.shopId)
+                assertEquals(emptyList(), viewModel.uiState.value.reviews)
+            } finally {
+                response.complete(oldResult)
+                fixture.store.clear()
+            }
+        }
+
     private fun viewModel(
         repository: ReviewRepository,
         profile: FakeProfileRepository = FakeProfileRepository(null),
-        changes: FakeReviewChangeStore = FakeReviewChangeStore(),
+        changes: FakeReviewChangeStore = FakeReviewChangeStore().apply { reset(profile.sessionUserId.value) },
         login: FakeLoginRepository = FakeLoginRepository(),
     ): ReviewsViewModel {
         val reducer = ReviewChangeReducer()

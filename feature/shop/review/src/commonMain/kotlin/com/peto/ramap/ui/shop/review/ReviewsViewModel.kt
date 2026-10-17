@@ -22,7 +22,10 @@ import com.peto.ramap.ui.shop.review.contract.ReviewsLoadKey
 import com.peto.ramap.ui.shop.review.contract.ReviewsSideEffect
 import com.peto.ramap.ui.shop.review.contract.ReviewsUiState
 import com.peto.ramap.ui.task.TaskPolicy
-import kotlinx.coroutines.Job
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.StringResource
 import ramap.shared.generated.resources.Res
@@ -41,19 +44,14 @@ class ReviewsViewModel(
     private val reviewChangeReducer: ReviewChangeReducer,
     private val fetchReviews: FeatchShopReviewsUseCase,
 ) : BaseViewModel<ReviewsUiState, ReviewsIntent, ReviewsSideEffect>(ReviewsUiState()) {
-    private var epoch = reviewChanges.journal.value.epoch
     private var revision = reviewChanges.journal.value.revision
-    private var profileJob: Job? = null
 
     init {
         viewModelScope.launch { observeChanges() }
-        viewModelScope.launch { observeSession() }
+        viewModelScope.launch { awaitUser() }
         viewModelScope.launch {
-            loginRepository.session.collect { session ->
-                val authenticated = session == LoginSessionState.AUTHENTICATED
-                if (currentState.isLoggedIn && !authenticated) cancelReviewTasks()
-                reduce { copy(isLoggedIn = authenticated) }
-            }
+            loginRepository.session.first { it == LoginSessionState.AUTHENTICATED }
+            reduce { copy(isLoggedIn = true) }
         }
     }
 
@@ -92,6 +90,7 @@ class ReviewsViewModel(
     private fun loadPage(append: Boolean) {
         val shopId = currentState.shopId ?: return
         val viewer = currentState.currentUserId
+        if (viewer == null && loginRepository.hasSession()) return
         val retained = currentState.page
         launchResultTask(
             taskKey = REVIEWS_TASK_KEY,
@@ -100,12 +99,12 @@ class ReviewsViewModel(
             onStart = { copy(hasReviewLoadFailure = append && hasReviewLoadFailure, hasPageLoadFailure = false) },
             request = { fetchReviews(shopId, viewer, retained, append) },
             onSuccess = { page ->
-                if (!isCurrent(shopId, viewer)) return@launchResultTask
+                if (!currentCoroutineContext().isActive) return@launchResultTask
                 reduce { copy(page = page, hasLoaded = true, hasReviewLoadFailure = false, hasPageLoadFailure = false) }
                 fetchReviews.savePage(shopId, viewer, page)
             },
             onError = {
-                if (!isCurrent(shopId, viewer)) return@launchResultTask
+                if (!currentCoroutineContext().isActive) return@launchResultTask
                 reduce { copy(hasReviewLoadFailure = !append, hasPageLoadFailure = append) }
                 if (append) showToast(Res.string.data_load_failure_message, ToastType.ERROR)
             },
@@ -114,15 +113,7 @@ class ReviewsViewModel(
 
     private suspend fun observeChanges() {
         reviewChanges.journal.collect { journal ->
-            if (epoch != journal.epoch) {
-                epoch = journal.epoch
-                revision = journal.revision
-                cancelReviewTasks()
-                fetchReviews.clearCache()
-                reduce { copy(page = ShopReviewsPage(emptyList(), 0), hasLoaded = false, hasReviewLoadFailure = false, hasPageLoadFailure = false) }
-                loadPage(append = false)
-                return@collect
-            }
+            if (journal.userId != currentState.currentUserId) return@collect
             if (journal.hasGapAfter(revision)) {
                 revision = journal.revision
                 loadPage(append = false)
@@ -146,27 +137,23 @@ class ReviewsViewModel(
         }
     }
 
-    private suspend fun observeSession() {
-        profileRepository.sessionUserId.collect { viewer ->
-            if (currentState.currentUserId == viewer) return@collect
-            cancelReviewTasks()
-            fetchReviews.clearCache()
-            profileJob?.cancel()
-            reduce { copy(currentUserId = viewer, currentProfileIsPublic = null, page = ShopReviewsPage(emptyList(), 0), hasLoaded = false, hasReviewLoadFailure = false, hasPageLoadFailure = false) }
-            refreshProfile()
-            loadPage(append = false)
-        }
+    private suspend fun awaitUser() {
+        val viewer = profileRepository.sessionUserId.filterNotNull().first()
+        cancelReviewTasks()
+        val journal = reviewChanges.journal.first { it.userId == viewer }
+        revision = journal.revision
+        fetchReviews.clearCache()
+        reduce { copy(currentUserId = viewer, page = ShopReviewsPage(emptyList(), 0), hasLoaded = false, hasReviewLoadFailure = false, hasPageLoadFailure = false) }
+        loadProfile(viewer)
+        loadPage(append = false)
     }
 
-    private fun refreshProfile() {
-        profileJob?.cancel()
-        val viewer = currentState.currentUserId ?: return
-        profileJob =
-            viewModelScope.launch {
-                val result = profileRepository.fetchMyProfile()
-                val profile = (result as? RamapResult.Success)?.data ?: return@launch
-                if (currentState.currentUserId == viewer && profile.userId == viewer) reduce { copy(currentProfileIsPublic = profile.isPublic) }
-            }
+    private fun loadProfile(viewer: String) {
+        viewModelScope.launch {
+            val result = profileRepository.fetchMyProfile()
+            val profile = (result as? RamapResult.Success)?.data ?: return@launch
+            if (isActive && profile.userId == viewer) reduce { copy(currentProfileIsPublic = profile.isPublic) }
+        }
     }
 
     private fun cancelReviewTasks() {
@@ -174,17 +161,12 @@ class ReviewsViewModel(
         reduce { clearAccess().copy(actingReviewId = null, reportReview = null) }
     }
 
-    private fun isCurrent(
-        shopId: String,
-        viewer: String?,
-    ): Boolean = currentState.shopId == shopId && currentState.currentUserId == viewer
-
     private fun currentBlocked(review: Review): Review? = currentState.reviews.firstOrNull { it.isBlockedVersionOf(review) }
 
     private fun revealBlockedReview(review: Review) {
         if (currentState.isUnblockingReview || currentState.isLoading) return
         val blocked = currentBlocked(review) ?: return
-        val viewer = currentState.currentUserId ?: return
+        if (currentState.currentUserId == null) return
         if (currentState.revealedBlockedReviews.containsKey(blocked.id)) return
         launchResultTask(
             taskKey = REVEAL_TASK_KEY,
@@ -194,14 +176,14 @@ class ReviewsViewModel(
             onFinish = { copy(revealingBlockedReviewId = null) },
             request = { reviewRepository.fetchBlockedShopReviewOnce(blocked.id) },
             onSuccess = { revealed ->
-                if (!isCurrent(blocked.shopId, viewer) || currentBlocked(blocked) == null) return@launchResultTask
+                if (!currentCoroutineContext().isActive || currentBlocked(blocked) == null) return@launchResultTask
                 if (revealed == null || !revealed.isBlockedVersionOf(blocked)) {
                     showToast(Res.string.review_action_failed, ToastType.ERROR)
                     return@launchResultTask
                 }
                 reduce { copy(revealedBlockedReviews = revealedBlockedReviews + (revealed.id to revealed)) }
             },
-            onError = { if (isCurrent(blocked.shopId, viewer)) showToast(Res.string.review_action_failed, ToastType.ERROR) },
+            onError = { if (currentCoroutineContext().isActive) showToast(Res.string.review_action_failed, ToastType.ERROR) },
         )
     }
 
@@ -213,7 +195,7 @@ class ReviewsViewModel(
 
     private fun unblockAuthor() {
         val review = currentState.pendingUnblockReview ?: return
-        val viewer = currentState.currentUserId ?: return
+        if (currentState.currentUserId == null) return
         if (currentBlocked(review) == null || !review.allowsAuthorUnblocking()) return
         launchResultTask(
             taskKey = UNBLOCK_TASK_KEY,
@@ -221,14 +203,14 @@ class ReviewsViewModel(
             policy = TaskPolicy.IgnoreNew,
             request = { communityRepository.unblockUser(review.author.userId) },
             onSuccess = {
-                if (!isCurrent(review.shopId, viewer)) return@launchResultTask
+                if (!currentCoroutineContext().isActive) return@launchResultTask
                 cancelTask(REVEAL_TASK_KEY)
                 reduce { clearAccess() }
                 showToast(Res.string.review_action_success)
                 loadPage(append = false)
             },
             onError = {
-                if (isCurrent(review.shopId, viewer)) {
+                if (currentCoroutineContext().isActive) {
                     reduce { copy(pendingUnblockReview = null) }
                     showToast(Res.string.review_action_failed, ToastType.ERROR)
                 }
@@ -238,8 +220,7 @@ class ReviewsViewModel(
 
     private fun toggleLike(review: Review) {
         if (review.shopId != currentState.shopId || !review.allowsLikeFrom(currentState.currentUserId)) return
-        val viewer = currentState.currentUserId
-        if (viewer == null) {
+        if (currentState.currentUserId == null) {
             trySideEffect(ReviewsSideEffect.ShowLoginGuide)
             return
         }
@@ -251,15 +232,11 @@ class ReviewsViewModel(
             onStart = { copy(actingReviewId = review.id, page = reviewChangeReducer.updateShopPage(page, ReviewChange.Liked(review.id, next), review.shopId, currentUserId, hasMoreReviews)) },
             onFinish = { copy(actingReviewId = null) },
             rollback = {
-                if (currentUserId != viewer) {
-                    this
-                } else {
-                    copy(actingReviewId = null, page = reviewChangeReducer.updateShopPage(page, ReviewChange.Liked(review.id, ReviewLike(review.likeCount, review.isLiked)), review.shopId, currentUserId, hasMoreReviews))
-                }
+                copy(actingReviewId = null, page = reviewChangeReducer.updateShopPage(page, ReviewChange.Liked(review.id, ReviewLike(review.likeCount, review.isLiked)), review.shopId, currentUserId, hasMoreReviews))
             },
             request = { reviewRepository.setReviewLike(review.id, next.isLiked) },
-            onSuccess = { like -> if (isCurrent(review.shopId, viewer)) updateLike(review.id, like) },
-            onError = { if (isCurrent(review.shopId, viewer)) showToast(Res.string.review_like_failed, ToastType.ERROR) },
+            onSuccess = { like -> if (currentCoroutineContext().isActive) updateLike(review.id, like) },
+            onError = { if (currentCoroutineContext().isActive) showToast(Res.string.review_like_failed, ToastType.ERROR) },
         )
     }
 
@@ -273,7 +250,6 @@ class ReviewsViewModel(
 
     private fun deleteReview(review: Review) {
         if (review.shopId != currentState.shopId || !review.allowsDeletionBy(currentState.currentUserId)) return
-        val viewer = currentState.currentUserId
         launchResultTask(
             taskKey = ACTION_TASK_KEY,
             loadKey = ReviewsLoadKey.ReviewAction,
@@ -281,7 +257,7 @@ class ReviewsViewModel(
             onStart = { copy(actingReviewId = review.id) },
             onFinish = { copy(actingReviewId = null) },
             request = { reviewRepository.deleteReview(review.id) },
-            onError = { if (isCurrent(review.shopId, viewer)) showToast(Res.string.review_delete_failed, ToastType.ERROR) },
+            onError = { if (currentCoroutineContext().isActive) showToast(Res.string.review_delete_failed, ToastType.ERROR) },
         )
     }
 
@@ -307,12 +283,12 @@ class ReviewsViewModel(
             policy = TaskPolicy.IgnoreNew,
             request = { communityRepository.reportReview(review.id, reason, description) },
             onSuccess = {
-                if (isCurrent(review.shopId, viewer) && currentState.reportReview?.id == review.id) {
+                if (currentCoroutineContext().isActive && currentState.reportReview?.id == review.id) {
                     reduce { copy(reportReview = null) }
                     showToast(Res.string.review_action_success, ToastType.SUCCESS)
                 }
             },
-            onError = { if (isCurrent(review.shopId, viewer) && currentState.reportReview?.id == review.id) showToast(Res.string.review_action_failed, ToastType.ERROR) },
+            onError = { if (currentCoroutineContext().isActive && currentState.reportReview?.id == review.id) showToast(Res.string.review_action_failed, ToastType.ERROR) },
         )
     }
 

@@ -3317,6 +3317,9 @@ private fun TestScope.mapViewModel(
         } else {
             profileRepository
         }
+    if (reviewChanges.journal.value.userId != effectiveProfile.sessionUserId.value) {
+        reviewChanges.reset(effectiveProfile.sessionUserId.value)
+    }
     return MapShopSectionsFixture(
         scope = backgroundScope,
         map =
