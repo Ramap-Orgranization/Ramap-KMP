@@ -48,7 +48,6 @@ class RankingViewModel(
 ) : BaseViewModel<RankingUiState, RankingIntent, RankingSideEffect>(
         RankingUiState(),
     ) {
-    private var observedBookmarkedShopIds: Set<String>? = null
     private var pendingBookmarkRequest: Pair<RamenShop, Boolean>? = null
 
     init {
@@ -107,6 +106,7 @@ class RankingViewModel(
                 reduce {
                     copy(
                         bookmarkedShopIds = personalization.bookmarkedShopIds,
+                        hasReceivedPersonalization = true,
                     )
                 }
                 resumePendingBookmark()
@@ -119,10 +119,10 @@ class RankingViewModel(
             loginRepository.session.collectLatest { sessionState ->
                 if (sessionState == LoginSessionState.AUTHENTICATED) return@collectLatest
 
-                observedBookmarkedShopIds = null
                 reduce {
                     copy(
                         bookmarkedShopIds = emptySet(),
+                        hasReceivedPersonalization = false,
                         bookmarkLikeCountDeltas = emptyMap(),
                     )
                 }
@@ -131,9 +131,8 @@ class RankingViewModel(
     }
 
     private fun synchronizeLikeCounts(bookmarkedShopIds: Set<String>) {
-        val previousIds = observedBookmarkedShopIds
-        observedBookmarkedShopIds = bookmarkedShopIds
-        if (previousIds == null) return
+        if (!currentState.hasReceivedPersonalization) return
+        val previousIds = currentState.bookmarkedShopIds
 
         val addedShopIds = bookmarkedShopIds - previousIds
         val removedShopIds = previousIds - bookmarkedShopIds
