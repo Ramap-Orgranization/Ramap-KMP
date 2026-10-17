@@ -101,7 +101,14 @@ class DefaultShopMenuRepositoryTest {
 
             val result = DefaultShopMenuRepository(source).fetchShopMenu("shop").getOrThrow()
 
-            assertEquals(ShopMenu(emptyList()), result)
+            assertEquals(
+                expected =
+                    ShopMenu(
+                        sections = emptyList(),
+                        updatedAt = "",
+                    ),
+                actual = result,
+            )
             assertEquals(listOf("shop"), source.requestedShopIds)
         }
 
