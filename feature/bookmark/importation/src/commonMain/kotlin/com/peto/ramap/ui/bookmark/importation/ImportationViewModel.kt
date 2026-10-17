@@ -41,7 +41,8 @@ class ImportationViewModel(
     }
 
     private fun changeUrl(url: String) {
-        reduce { copy(url = PlaceReportTextParser.extractSupportedUrl(url) ?: url, error = null) }
+        val extractedUrl = PlaceReportTextParser.extractSupportedUrl(url) ?: url
+        reduce { copy(url = extractedUrl, error = null) }
     }
 
     private fun removeCandidate(shopId: String) {
@@ -50,10 +51,9 @@ class ImportationViewModel(
 
     private fun analyze() {
         val url = currentState.url.trim()
-        if (url.isEmpty()) return publishError(ImportationError.INVALID_URL)
-        val personalization =
-            currentPersonalization()
-                ?: return publishError(ImportationError.PERSONALIZATION_UNAVAILABLE)
+        val isUrlEmpty = url.isEmpty()
+        if (isUrlEmpty) return publishError(ImportationError.INVALID_URL)
+        val personalization = currentPersonalization() ?: return publishError(ImportationError.PERSONALIZATION_UNAVAILABLE)
         launchTask(
             taskKey = ANALYZE_TASK_KEY,
             loadKey = ImportationLoadKey.ANALYZE,
@@ -83,7 +83,8 @@ class ImportationViewModel(
         personalization: Personalization,
     ) {
         val resolved: ImportationCandidates = ImportationCandidates.from(preview, personalization)
-        if (resolved.importableShopIds.isEmpty()) {
+        val isImportableEmpty = resolved.importableShopIds.isEmpty()
+        if (isImportableEmpty) {
             publishPreview(preview, resolved, RamenShops(emptyMap()))
             return
         }
@@ -111,7 +112,8 @@ class ImportationViewModel(
 
     private fun addBookmarks() {
         val shopIds = currentState.candidates.keys
-        if (shopIds.isEmpty()) return
+        val isShopIdsEmpty = shopIds.isEmpty()
+        if (isShopIdsEmpty) return
 
         importationAnalytics.logBookmarksAdded(currentState.candidates)
         launchResultTask(

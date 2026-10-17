@@ -35,7 +35,8 @@ class ProfileEditViewModel(
             repository.sessionUserId.distinctUntilChanged().collect { userId ->
                 cancelProfileTasks()
                 reduce { ProfileUiState(userId = userId, loadState = LoadState()) }
-                if (userId != null) fetch()
+                val hasUserId = userId != null
+                if (hasUserId) fetch()
             }
         }
     }
@@ -58,10 +59,16 @@ class ProfileEditViewModel(
             ProfileIntent.Retry -> fetch()
             is ProfileIntent.ChangeNickname -> changeNickname(intent.value)
             ProfileIntent.CheckNickname -> checkNickname()
-            is ProfileIntent.ChangeBio -> if (currentState.editing && !currentState.saving) reduce { copy(bio = intent.value) }
+            is ProfileIntent.ChangeBio -> {
+                val canEditBio = currentState.editing && !currentState.saving
+                if (canEditBio) reduce { copy(bio = intent.value) }
+            }
             is ProfileIntent.PickImage -> pickImage(intent)
             ProfileIntent.RejectImage -> showToast(Res.string.profile_image_rejected, ToastType.ERROR)
-            ProfileIntent.RemovePhoto -> if (!currentState.saving) reduce { copy(image = null, removePhoto = profile?.avatarUrl != null) }
+            ProfileIntent.RemovePhoto -> {
+                val canRemovePhoto = !currentState.saving
+                if (canRemovePhoto) reduce { copy(image = null, removePhoto = profile?.avatarUrl != null) }
+            }
             ProfileIntent.Save -> save()
             ProfileIntent.Back -> back()
             ProfileIntent.Leave -> endEdit()
@@ -69,15 +76,16 @@ class ProfileEditViewModel(
     }
 
     private fun fetch() {
-        if (currentState.userId == null) return
+        val isUserNotLoggedIn = currentState.userId == null
+        if (isUserNotLoggedIn) return
         launchTask(FETCH, loadKey = ProfileLoadKey.Fetch, onStart = { copy(failed = false) }) {
             when (val result = repository.fetchMyProfile()) {
                 is RamapResult.Success -> {
-                    if (result.data.userId == currentState.userId) {
+                    val isCurrentUser = result.data.userId == currentState.userId
+                    if (isCurrentUser) {
                         beginEdit(result.data)
                     }
                 }
-
                 is RamapResult.Error -> {
                     reduce { copy(failed = true) }
                 }
@@ -104,8 +112,10 @@ class ProfileEditViewModel(
     }
 
     private fun pickImage(intent: ProfileIntent.PickImage) {
-        if (!currentState.editing || currentState.saving) return
-        if (!intent.image.isValid()) {
+        val cannotEditImage = !currentState.editing || currentState.saving
+        if (cannotEditImage) return
+        val isInvalidImage = !intent.image.isValid()
+        if (isInvalidImage) {
             showToast(Res.string.profile_image_rejected, ToastType.ERROR)
             return
         }
@@ -113,10 +123,12 @@ class ProfileEditViewModel(
     }
 
     private fun changeNickname(value: String) {
-        if (!currentState.editing || currentState.saving) return
-        if (value.trim() != currentState.nickname.trim()) cancelTask(CHECK_NICKNAME)
+        val cannotEditNickname = !currentState.editing || currentState.saving
+        if (cannotEditNickname) return
+        val isNicknameUnchanged = value.trim() == currentState.nickname.trim()
+        if (!isNicknameUnchanged) cancelTask(CHECK_NICKNAME)
         reduce {
-            if (value.trim() == nickname.trim()) {
+            if (isNicknameUnchanged) {
                 copy(nickname = value, nicknameTouched = true)
             } else {
                 copy(
@@ -132,7 +144,8 @@ class ProfileEditViewModel(
 
     private fun checkNickname() {
         val draft = currentState
-        if (!draft.canCheckNickname) return
+        val cannotCheck = !draft.canCheckNickname
+        if (cannotCheck) return
         val nickname = draft.nickname.trim()
         launchTask(
             taskKey = CHECK_NICKNAME,
@@ -140,11 +153,13 @@ class ProfileEditViewModel(
             onStart = { copy(nicknameCheckFailed = false, nicknameAvailable = null) },
         ) {
             val result = repository.isNicknameAvailable(nickname)
-            if (nickname != currentState.nickname.trim()) return@launchTask
+            val isNicknameChangedConcurrently = nickname != currentState.nickname.trim()
+            if (isNicknameChangedConcurrently) return@launchTask
             when (result) {
                 is RamapResult.Success -> reduce { copy(nicknameAvailable = result.data, checkedNickname = nickname) }
                 is RamapResult.Error -> {
-                    if (isRateLimit(result.error)) {
+                    val isRateLimited = isRateLimit(result.error)
+                    if (isRateLimited) {
                         showToast(Res.string.profile_nickname_check_rate_limited, ToastType.ERROR)
                     } else {
                         reduce { copy(nicknameCheckFailed = true) }
@@ -156,7 +171,8 @@ class ProfileEditViewModel(
 
     private fun save() {
         val draft = currentState
-        if (!draft.canSave) return
+        val cannotSave = !draft.canSave
+        if (cannotSave) return
         launchTask(SAVE, loadKey = ProfileLoadKey.Save) {
             val result =
                 repository.updateMyProfile(
@@ -168,13 +184,14 @@ class ProfileEditViewModel(
                     ),
                 )
             when (result) {
-                is RamapResult.Success ->
-                    if (result.data.userId == currentState.userId) {
+                is RamapResult.Success -> {
+                    val isCurrentUser = result.data.userId == currentState.userId
+                    if (isCurrentUser) {
                         reduce { copy(profile = result.data, editing = false, image = null, removePhoto = false) }
                         showToast(Res.string.profile_saved, ToastType.SUCCESS)
                         trySideEffect(ProfileSideEffect.NavigateBack)
                     }
-
+                }
                 is RamapResult.Error -> handleSaveFailure(draft, result.error)
             }
         }
@@ -184,15 +201,18 @@ class ProfileEditViewModel(
         draft: ProfileUiState,
         error: RamapError,
     ) {
-        if (isProfileSaveRateLimit(error)) {
+        val isSaveRateLimited = isProfileSaveRateLimit(error)
+        if (isSaveRateLimited) {
             showToast(Res.string.profile_save_rate_limited, ToastType.ERROR)
             return
         }
-        if (isProfileDailyChangeLimit(error)) {
+        val isDailyLimitExceeded = isProfileDailyChangeLimit(error)
+        if (isDailyLimitExceeded) {
             showToast(dailyChangeLimitMessage(error), ToastType.ERROR)
             return
         }
-        if (isNicknameTaken(error)) {
+        val isTaken = isNicknameTaken(error)
+        if (isTaken) {
             reduce {
                 copy(
                     nicknameAvailable = false,
@@ -204,8 +224,10 @@ class ProfileEditViewModel(
         }
         if (draft.nicknameChanged) {
             val availability = repository.isNicknameAvailable(draft.nickname.trim())
-            if (draft.userId != currentState.userId) return
-            if (availability is RamapResult.Success && !availability.data) {
+            val isUserChanged = draft.userId != currentState.userId
+            if (isUserChanged) return
+            val isAlreadyTaken = availability is RamapResult.Success && !availability.data
+            if (isAlreadyTaken) {
                 reduce { copy(nicknameAvailable = false) }
                 return
             }
@@ -214,8 +236,10 @@ class ProfileEditViewModel(
     }
 
     private fun isProfileDailyChangeLimit(error: RamapError): Boolean {
-        if (error !is RamapError.Http || error.status != HTTP_TOO_MANY_REQUESTS_STATUS) return false
-        return error.serverMessage in setOf(PROFILE_NICKNAME_DAILY_LIMIT, PROFILE_BIO_DAILY_LIMIT)
+        val isNotHttpError = error !is RamapError.Http || error.status != HTTP_TOO_MANY_REQUESTS_STATUS
+        if (isNotHttpError) return false
+        val serverMessage = error.serverMessage
+        return serverMessage in setOf(PROFILE_NICKNAME_DAILY_LIMIT, PROFILE_BIO_DAILY_LIMIT)
     }
 
     private fun dailyChangeLimitMessage(error: RamapError): StringResource =
@@ -233,14 +257,17 @@ class ProfileEditViewModel(
     private fun isRateLimit(error: RamapError): Boolean = error is RamapError.Http && error.status == HTTP_TOO_MANY_REQUESTS_STATUS
 
     private fun isProfileSaveRateLimit(error: RamapError): Boolean {
-        if (error !is RamapError.Http || error.status != HTTP_TOO_MANY_REQUESTS_STATUS) return false
+        val isNotHttpError = error !is RamapError.Http || error.status != HTTP_TOO_MANY_REQUESTS_STATUS
+        if (isNotHttpError) return false
         return error.serverMessage == PROFILE_SAVE_RATE_LIMIT
     }
 
     private fun back() {
+        val isNotEditing = !currentState.editing
+        val isSaving = currentState.saving
         when {
-            !currentState.editing -> trySideEffect(ProfileSideEffect.NavigateBack)
-            currentState.saving -> Unit
+            isNotEditing -> trySideEffect(ProfileSideEffect.NavigateBack)
+            isSaving -> Unit
             else -> discardAndNavigateBack()
         }
     }
@@ -257,7 +284,8 @@ class ProfileEditViewModel(
 
     override fun handleError(throwable: Throwable) {
         super.handleError(throwable)
-        if (currentState.profile == null) {
+        val isProfileMissing = currentState.profile == null
+        if (isProfileMissing) {
             reduce { copy(failed = true) }
         } else {
             showToast(Res.string.profile_save_failed, ToastType.ERROR)

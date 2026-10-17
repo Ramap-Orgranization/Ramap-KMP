@@ -28,6 +28,7 @@ import com.peto.ramap.ui.main.event.detail.contract.EventDetailSideEffect.ShowTo
 import com.peto.ramap.ui.main.event.detail.contract.EventDetailUiState
 import com.peto.ramap.ui.main.event.detail.log.EventDetailAnalytics
 import com.peto.ramap.ui.task.TaskPolicy
+import org.jetbrains.compose.resources.StringResource
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.event_notification_load_failure_message
 import ramap.shared.generated.resources.event_notification_update_failure_message
@@ -37,13 +38,11 @@ class EventDetailViewModel(
     private val loginRepository: LoginRepository,
     private val notificationRepository: NotificationSettingsRepository,
     private val eventDetailAnalytics: EventDetailAnalytics,
-) : BaseViewModel<
-        EventDetailUiState,
-        EventDetailIntent,
-        EventDetailSideEffect,
-    >(
+) : BaseViewModel<EventDetailUiState, EventDetailIntent, EventDetailSideEffect>(
         EventDetailUiState(),
     ) {
+    private var currentEventId: String? = null
+
     override suspend fun handleIntent(intent: EventDetailIntent) {
         when (intent) {
             is OnEntered -> handleEntered(intent)
@@ -77,11 +76,7 @@ class EventDetailViewModel(
 
     private fun handleVenueShopSelected(shopId: String) {
         val eventId = currentState.event?.id ?: return
-
-        eventDetailAnalytics.logVenueShopSelected(
-            eventId = eventId,
-            shopId = shopId,
-        )
+        eventDetailAnalytics.logVenueShopSelected(eventId = eventId, shopId = shopId)
     }
 
     private fun handleVenueInstagramSelected() {
@@ -98,11 +93,7 @@ class EventDetailViewModel(
 
     private fun handleCollaboratorShopSelected(shopId: String) {
         val eventId = currentState.event?.id ?: return
-
-        eventDetailAnalytics.logCollaboratorShopSelected(
-            eventId = eventId,
-            shopId = shopId,
-        )
+        eventDetailAnalytics.logCollaboratorShopSelected(eventId = eventId, shopId = shopId)
     }
 
     private fun handleCollaboratorInstagramSelected() {
@@ -137,14 +128,8 @@ class EventDetailViewModel(
                     hasEventLoadFailed = false,
                 )
             },
-            request = {
-                ramenShopRepository.fetchEvent(eventId)
-            },
-            onSuccess = { event ->
-                handleLoadedEvent(
-                    event = event,
-                )
-            },
+            request = { ramenShopRepository.fetchEvent(eventId) },
+            onSuccess = { event -> handleLoadedEvent(event = event) },
             onError = {
                 reduce {
                     copy(
@@ -161,7 +146,8 @@ class EventDetailViewModel(
     }
 
     private suspend fun handleLoadedEvent(event: ShopEvent?) {
-        if (event == null) {
+        val isEventUnavailable = event == null
+        if (isEventUnavailable) {
             showEventUnavailable()
             return
         }
@@ -175,24 +161,16 @@ class EventDetailViewModel(
     }
 
     private fun applyLoadedEvent(event: ShopEvent) {
-        val notificationWindow =
-            EventNotificationWindow.from(
-                event.startDate,
-                currentEpochMillis(),
-            )
-
-        val canChangeNotification =
-            loginRepository.hasSession()
+        val notificationWindow = EventNotificationWindow.from(event.startDate, currentEpochMillis())
+        val canChangeNotification = loginRepository.hasSession()
+        val isNotificationVisible = notificationWindow != EventNotificationWindow.CLOSED
+        val isEventDayOnly = notificationWindow == EventNotificationWindow.EVENT_DAY_ONLY
 
         reduce {
             copy(
                 event = event,
-                isNotificationVisible =
-                    notificationWindow !=
-                        EventNotificationWindow.CLOSED,
-                isEventDayOnly =
-                    notificationWindow ==
-                        EventNotificationWindow.EVENT_DAY_ONLY,
+                isNotificationVisible = isNotificationVisible,
+                isEventDayOnly = isEventDayOnly,
                 canChangeNotification = canChangeNotification,
                 hasEventLoadFailed = false,
             )
@@ -200,45 +178,29 @@ class EventDetailViewModel(
     }
 
     private fun refreshEventNotification(event: ShopEvent) {
-        if (!currentState.canChangeNotification) {
-            return
-        }
+        val cannotChangeNotification = !currentState.canChangeNotification
+        if (cannotChangeNotification) return
 
-        if (!currentState.isNotificationVisible) {
-            return
-        }
+        val isNotificationHidden = !currentState.isNotificationVisible
+        if (isNotificationHidden) return
 
         launchResultTask(
             taskKey = NOTIFICATION_TASK_KEY,
             loadKey = EventDetailLoadKey.Notification,
             policy = TaskPolicy.CancelPrevious,
-            request = {
-                notificationRepository
-                    .isEventNotificationEnabled(event.id)
-            },
+            request = { notificationRepository.isEventNotificationEnabled(event.id) },
             onSuccess = ::finishNotificationRefresh,
-            onError = {
-                showNotificationFailure(Res.string.event_notification_load_failure_message)
-            },
+            onError = { showNotificationFailure(Res.string.event_notification_load_failure_message) },
         )
     }
 
     private fun finishNotificationRefresh(isEnabled: Boolean) {
-        reduce {
-            copy(
-                isNotificationEnabled = isEnabled,
-            )
-        }
+        reduce { copy(isNotificationEnabled = isEnabled) }
     }
 
     private suspend fun handleNotificationChanged(enabled: Boolean) {
-        val eventId =
-            currentState.event?.id ?: return
-
-        eventDetailAnalytics.logNotificationToggled(
-            eventId = eventId,
-            enabled = enabled,
-        )
+        val eventId = currentState.event?.id ?: return
+        eventDetailAnalytics.logNotificationToggled(eventId = eventId, enabled = enabled)
 
         if (enabled) {
             postSideEffect(RequestNotificationPermission)
@@ -249,36 +211,18 @@ class EventDetailViewModel(
     }
 
     private fun updateNotification(enabled: Boolean) {
-        val eventId =
-            currentState.event?.id ?: return
-
-        val previousValue =
-            currentState.isNotificationEnabled
+        val eventId = currentState.event?.id ?: return
+        val previousValue = currentState.isNotificationEnabled
 
         launchResultTask(
             taskKey = NOTIFICATION_TASK_KEY,
             loadKey = EventDetailLoadKey.Notification,
             policy = TaskPolicy.IgnoreNew,
-            onStart = {
-                copy(
-                    isNotificationEnabled = enabled,
-                )
-            },
-            request = {
-                notificationRepository.updateEventNotification(
-                    eventId = eventId,
-                    enabled = enabled,
-                )
-            },
-            onSuccess = {
-                finishNotificationUpdate(
-                    isEnabled = enabled,
-                )
-            },
+            onStart = { copy(isNotificationEnabled = enabled) },
+            request = { notificationRepository.updateEventNotification(eventId = eventId, enabled = enabled) },
+            onSuccess = { finishNotificationUpdate(isEnabled = enabled) },
             onError = {
-                finishNotificationUpdate(
-                    isEnabled = previousValue,
-                )
+                finishNotificationUpdate(isEnabled = previousValue)
                 showNotificationFailure(Res.string.event_notification_update_failure_message)
             },
         )
@@ -288,7 +232,7 @@ class EventDetailViewModel(
         reduce { copy(isNotificationEnabled = isEnabled) }
     }
 
-    private suspend fun showNotificationFailure(message: org.jetbrains.compose.resources.StringResource) {
+    private suspend fun showNotificationFailure(message: StringResource) {
         postSideEffect(ShowToast(message))
     }
 
@@ -296,6 +240,4 @@ class EventDetailViewModel(
         private const val LOAD_EVENT_TASK_KEY = "event-detail-load"
         private const val NOTIFICATION_TASK_KEY = "event-detail-notification"
     }
-
-    private var currentEventId: String? = null
 }

@@ -28,11 +28,7 @@ class HiddenShopListViewModel(
     private val personalizationStore: PersonalizationStore,
     private val ramenShopRepository: RamenShopRepository,
     private val analyticsTracker: AnalyticsTracker,
-) : BaseViewModel<
-        HiddenShopListUiState,
-        HiddenShopListIntent,
-        HiddenShopListSideEffect,
-    >(
+) : BaseViewModel<HiddenShopListUiState, HiddenShopListIntent, HiddenShopListSideEffect>(
         initialState = HiddenShopListUiState(),
     ) {
     init {
@@ -42,10 +38,7 @@ class HiddenShopListViewModel(
     override suspend fun handleIntent(intent: HiddenShopListIntent) {
         when (intent) {
             HiddenShopListIntent.OnRetry -> retryCurrentHiddenShops()
-
-            is HiddenShopListIntent.OnUnhideConfirmed -> {
-                handleUnhideConfirmed(intent)
-            }
+            is HiddenShopListIntent.OnUnhideConfirmed -> handleUnhideConfirmed(intent)
         }
     }
 
@@ -80,12 +73,14 @@ class HiddenShopListViewModel(
         hiddenShopIds: Set<String>,
         forceFetch: Boolean = false,
     ) {
-        if (hiddenShopIds.isEmpty()) {
+        val isHiddenShopIdsEmpty = hiddenShopIds.isEmpty()
+        if (isHiddenShopIdsEmpty) {
             applyExistingHiddenShops(hiddenShopIds)
             return
         }
 
-        if (!forceFetch && currentState.shops.containsAll(hiddenShopIds)) {
+        val isAlreadyCached = !forceFetch && currentState.shops.containsAll(hiddenShopIds)
+        if (isAlreadyCached) {
             applyExistingHiddenShops(hiddenShopIds)
             return
         }
@@ -96,11 +91,7 @@ class HiddenShopListViewModel(
     private fun applyExistingHiddenShops(hiddenShopIds: Set<String>) {
         cancelTask(FETCH_SHOP_TASK_KEY)
 
-        val hiddenShops =
-            createHiddenShops(
-                shops = currentState.shops,
-                hiddenShopIds = hiddenShopIds,
-            )
+        val hiddenShops = createHiddenShops(shops = currentState.shops, hiddenShopIds = hiddenShopIds)
 
         reduce {
             copy(
@@ -118,9 +109,7 @@ class HiddenShopListViewModel(
             onStart = { copy(showError = false) },
             request = { ramenShopRepository.fetchRamenShops(hiddenShopIds) },
             onSuccess = { shops -> handleFetchSuccess(shops, hiddenShopIds) },
-            onError = {
-                reduce { copy(showError = true, hasLoaded = true) }
-            },
+            onError = { reduce { copy(showError = true, hasLoaded = true) } },
         )
     }
 
@@ -137,7 +126,6 @@ class HiddenShopListViewModel(
         hiddenShopIds: Set<String>,
     ): RamenShops {
         val filteredShops = shops.filterByShopIds(hiddenShopIds)
-
         return filteredShops.markHidden(hiddenShopIds)
     }
 
@@ -156,27 +144,14 @@ class HiddenShopListViewModel(
             taskKey = UNHIDE_SHOP_TASK_KEY,
             loadKey = HiddenShopLoadKey.UNHIDE,
             policy = TaskPolicy.IgnoreNew,
-            request = {
-                personalizationStore.unhideShop(shopId)
-            },
-            onSuccess = {
-                handleUnhideSuccess(shopId)
-            },
-            onError = {
-                showToast(
-                    Res.string.personalization_update_failure_message,
-                    ToastType.ERROR,
-                )
-            },
+            request = { personalizationStore.unhideShop(shopId) },
+            onSuccess = { handleUnhideSuccess(shopId) },
+            onError = { showToast(Res.string.personalization_update_failure_message, ToastType.ERROR) },
         )
     }
 
     private fun handleUnhideSuccess(shopId: String) {
-        reduce {
-            copy(
-                shops = shops.remove(shopId),
-            )
-        }
+        reduce { copy(shops = shops.remove(shopId)) }
     }
 
     private suspend fun showToast(
@@ -184,12 +159,7 @@ class HiddenShopListViewModel(
         type: ToastType,
     ) {
         postSideEffect(
-            HiddenShopListSideEffect.ShowToast(
-                ToastData(
-                    message = message,
-                    type = type,
-                ),
-            ),
+            HiddenShopListSideEffect.ShowToast(ToastData(message = message, type = type)),
         )
     }
 

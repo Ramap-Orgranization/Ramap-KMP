@@ -10,9 +10,11 @@ import com.peto.ramap.domain.model.auth.LoginType
 import com.peto.ramap.domain.model.personalization.BookmarkChangeStatus
 import com.peto.ramap.domain.model.personalization.NotificationStatus
 import com.peto.ramap.domain.model.personalization.Personalization
+import com.peto.ramap.domain.model.personalization.VisibilityStatus
 import com.peto.ramap.domain.model.report.ShopInformationField
 import com.peto.ramap.domain.model.report.ShopInformationReport
 import com.peto.ramap.domain.model.shop.RamenShop
+import com.peto.ramap.domain.model.shop.ShopOverView
 import com.peto.ramap.domain.repository.LoginRepository
 import com.peto.ramap.domain.repository.ShopReportRepository
 import com.peto.ramap.domain.store.PersonalizationBootstrapState
@@ -70,21 +72,14 @@ class OverviewViewModel(
     private val mapAnalytics: ShopAnalytics,
     private val signInUseCase: SignInUseCase,
 ) : BaseViewModel<ShopOverviewState, ShopOverviewIntent, ShopOverviewSideEffect>(
-        ShopOverviewState(
-            isLoggedIn = loginRepository.hasSession(),
-            personalization =
-                if (loginRepository.hasSession()) {
-                    (personalizationStore.state.value as? PersonalizationBootstrapState.Success)?.value ?: Personalization()
-                } else {
-                    Personalization()
-                },
-        ),
+        initialState(loginRepository, personalizationStore),
     ) {
     private var pendingShopAction: PendingShopAction? = null
     private var hidingSelectedShopId: String? = null
 
     init {
-        if (!currentState.isLoggedIn) viewModelScope.launch { awaitLogin() }
+        val isNotLoggedIn = !currentState.isLoggedIn
+        if (isNotLoggedIn) viewModelScope.launch { awaitLogin() }
         viewModelScope.launch { observePersonalization() }
     }
 
@@ -96,67 +91,18 @@ class OverviewViewModel(
         }
     }
 
-    private suspend fun awaitLogin() {
-        loginRepository.session.first { it == LoginSessionState.AUTHENTICATED }
-        reduce { copy(isLoggedIn = true) }
-        currentSheetShopId()?.let(::loadOverview)
-    }
-
-    private fun loadOverview(shopId: String) {
-        val cached = (fetchShopOverviewUseCase.findCached(shopId) as? ShopOverviewCacheLookup.Hit)?.overview
-        launchResultTask(
-            taskKey = OVERVIEW_TASK_KEY,
-            loadKey = ShopOverviewLoadKey.Overview,
-            policy = TaskPolicy.CancelPrevious,
-            onStart = {
-                copy(
-                    overviewState =
-                        when {
-                            shopOverview?.shop?.id == shopId -> overviewState
-                            cached != null -> ShopOverviewUiState.Content(cached)
-                            else -> ShopOverviewUiState.Loading(shopId, selectedShop?.takeIf { it.id == shopId })
-                        },
-                    hasLoadFailure = false,
-                    isShopUnavailable = false,
-                )
-            },
-            request = { fetchShopOverviewUseCase(shopId) },
-            onSuccess = { overview ->
-                if (!currentCoroutineContext().isActive || currentSheetShopId() != shopId || overview.shop.id != shopId) return@launchResultTask
-                val mapped = fetchShopOverviewUseCase.reconcileBookmarkCount(overview)
-                val overview = mapped.copy(shop = mapped.shop.copy(isVisible = currentState.selectedShop?.isVisible ?: mapped.shop.isVisible))
-                reduce { copy(overviewState = ShopOverviewUiState.Content(overview), shopWaiting = shopWaiting + (shopId to overview.waitingSystem)) }
-                viewModelScope.launch { mapSearchHistoryStorage.addRecentlyViewedShop(shopId) }
-                trySideEffect(ShopOverviewSideEffect.ShopViewed(overview.shop))
-            },
-            onError = { error ->
-                if (!currentCoroutineContext().isActive || currentSheetShopId() != shopId) return@launchResultTask
-                reduce { copy(hasLoadFailure = true, isShopUnavailable = error is RamapError.Http && error.status == SHOP_NOT_FOUND, overviewState = if (shopOverview != null && !(error is RamapError.Http && error.status == SHOP_NOT_FOUND)) overviewState else ShopOverviewUiState.Error(shopId, selectedShop)) }
-                showErrorToast(error)
-            },
-        )
-    }
-
-    private suspend fun observePersonalization() {
-        personalizationStore.state.collect { state ->
-            val personalization = (state as? PersonalizationBootstrapState.Success)?.value ?: return@collect
-            if (!loginRepository.hasSession()) return@collect
-            val previousBookmarkedShopIds = currentState.bookmarkedShopIds.takeIf { currentState.hasReceivedPersonalization }
-            reduce { copy(isLoggedIn = true) }
-            applyPersonalization(personalization)
-            synchronizeOverviewLikeCounts(previousBookmarkedShopIds)
-            resumePendingAction()
-        }
-    }
-
-    private fun handleAccountIntent(intent: ShopOverviewIntent): Boolean {
+    private fun handleAccountIntent(intent: ShopOverviewIntent): Boolean =
         when (intent) {
-            is OnLoginTypeSelected -> login(intent.type)
-            ShopOverviewIntent.OnLoginSelectionDismissed -> pendingShopAction = null
-            else -> return false
+            is OnLoginTypeSelected -> {
+                login(intent.type)
+                true
+            }
+            ShopOverviewIntent.OnLoginSelectionDismissed -> {
+                pendingShopAction = null
+                true
+            }
+            else -> false
         }
-        return true
-    }
 
     private fun handleShopIntent(intent: ShopOverviewIntent): Boolean {
         when (intent) {
@@ -183,33 +129,132 @@ class OverviewViewModel(
         return true
     }
 
-    private fun currentSheetShopId(): String? =
-        when (val sheet = currentState.overviewState) {
-            is ShopOverviewUiState.Loading -> sheet.shopId
-            is ShopOverviewUiState.Content -> sheet.overview.shop.id
-            is ShopOverviewUiState.Error -> sheet.shopId
-            ShopOverviewUiState.Closed -> null
-        }
-
     private fun selectShop(shop: RamenShop) {
-        val selectedShop = currentState.selectedShop
-        if (selectedShop?.id == shop.id && currentState.shopOverview != null) return
-        val cachedOverview = (fetchShopOverviewUseCase.findCached(shop.id) as? ShopOverviewCacheLookup.Hit)?.overview
+        val isAlreadySelectedWithOverview = currentState.selectedShop?.id == shop.id && currentState.shopOverview != null
+        if (isAlreadySelectedWithOverview) return
+        viewModelScope.launch { mapSearchHistoryStorage.addRecentlyViewedShop(shop.id) }
+        openShopOverview(shop.id, shop)
+    }
+
+    private fun selectShopId(shopId: String) {
+        if (shopId.isBlank()) return
+        val isAlreadySelectedWithOverview = currentState.selectedShop?.id == shopId && currentState.shopOverview != null
+        if (isAlreadySelectedWithOverview) return
+        val cachedOverview = (fetchShopOverviewUseCase.findCached(shopId) as? ShopOverviewCacheLookup.Hit)?.overview
+        val initialShop = currentState.selectedShop?.takeIf { it.id == shopId } ?: cachedOverview?.shop
+        openShopOverview(shopId, initialShop)
+    }
+
+    private fun openShopOverview(
+        shopId: String,
+        initialShop: RamenShop?,
+    ) {
+        val cachedOverview = (fetchShopOverviewUseCase.findCached(shopId) as? ShopOverviewCacheLookup.Hit)?.overview
+        val hasCachedOverview = cachedOverview != null
         val nextSheet =
-            when {
-                cachedOverview != null -> ShopOverviewUiState.Content(cachedOverview)
-                else -> ShopOverviewUiState.Loading(shop.id, shop)
+            if (hasCachedOverview) {
+                ShopOverviewUiState.Content(cachedOverview)
+            } else {
+                ShopOverviewUiState.Loading(shopId, initialShop)
+            }
+        reduce { copy(overviewState = nextSheet) }
+        if (hasCachedOverview) {
+            viewModelScope.launch { mapSearchHistoryStorage.addRecentlyViewedShop(cachedOverview.shop.id) }
+            viewModelScope.launch { postSideEffect(ShopOverviewSideEffect.ShopViewed(cachedOverview.shop)) }
+        }
+        loadOverview(shopId)
+    }
+
+    private fun loadOverview(shopId: String) {
+        val cached = (fetchShopOverviewUseCase.findCached(shopId) as? ShopOverviewCacheLookup.Hit)?.overview
+        launchResultTask(
+            taskKey = OVERVIEW_TASK_KEY,
+            loadKey = ShopOverviewLoadKey.Overview,
+            policy = TaskPolicy.CancelPrevious,
+            onStart = {
+                val isSameShopAlreadyLoaded = shopOverview?.shop?.id == shopId
+                val hasCachedOverview = cached != null
+                val initialOverviewState =
+                    when {
+                        isSameShopAlreadyLoaded -> overviewState
+                        hasCachedOverview -> ShopOverviewUiState.Content(cached)
+                        else -> ShopOverviewUiState.Loading(shopId, selectedShop?.takeIf { it.id == shopId })
+                    }
+                copy(
+                    overviewState = initialOverviewState,
+                    hasLoadFailure = false,
+                    isShopUnavailable = false,
+                )
+            },
+            request = { fetchShopOverviewUseCase(shopId) },
+            onSuccess = { overview -> handleOverviewLoadSuccess(shopId, overview) },
+            onError = { error -> handleOverviewLoadError(shopId, error) },
+        )
+    }
+
+    private suspend fun handleOverviewLoadSuccess(
+        shopId: String,
+        overview: ShopOverView,
+    ) {
+        val isInactive = !currentCoroutineContext().isActive
+        val isSheetShopChanged = currentSheetShopId() != shopId
+        val isOverviewShopMismatch = overview.shop.id != shopId
+        if (isInactive || isSheetShopChanged || isOverviewShopMismatch) return
+
+        val mapped = fetchShopOverviewUseCase.reconcileBookmarkCount(overview)
+        val isVisible = currentState.selectedShop?.isVisible ?: mapped.shop.isVisible
+        val finalOverview = mapped.copy(shop = mapped.shop.copy(isVisible = isVisible))
+        reduce {
+            copy(
+                overviewState = ShopOverviewUiState.Content(finalOverview),
+                shopWaiting = shopWaiting + (shopId to finalOverview.waitingSystem),
+            )
+        }
+        viewModelScope.launch { mapSearchHistoryStorage.addRecentlyViewedShop(shopId) }
+        trySideEffect(ShopOverviewSideEffect.ShopViewed(finalOverview.shop))
+    }
+
+    private suspend fun handleOverviewLoadError(
+        shopId: String,
+        error: RamapError,
+    ) {
+        val isInactive = !currentCoroutineContext().isActive
+        val isSheetShopChanged = currentSheetShopId() != shopId
+        if (isInactive || isSheetShopChanged) return
+
+        val isNotFound = error is RamapError.Http && error.status == SHOP_NOT_FOUND
+        val isRetainingPreviousOverview = currentState.shopOverview != null && !isNotFound
+        val nextOverviewState =
+            if (isRetainingPreviousOverview) {
+                currentState.overviewState
+            } else {
+                ShopOverviewUiState.Error(shopId, currentState.selectedShop)
             }
         reduce {
             copy(
-                overviewState = nextSheet,
+                hasLoadFailure = true,
+                isShopUnavailable = isNotFound,
+                overviewState = nextOverviewState,
             )
         }
-        viewModelScope.launch { mapSearchHistoryStorage.addRecentlyViewedShop(shop.id) }
-        if (cachedOverview != null) {
-            viewModelScope.launch { postSideEffect(ShopOverviewSideEffect.ShopViewed(cachedOverview.shop)) }
-        }
-        loadOverview(shop.id)
+        showErrorToast(error)
+    }
+
+    private fun dismissRequestedShop() {
+        val isNotLoadingState = currentState.overviewState !is ShopOverviewUiState.Loading
+        if (isNotLoadingState) return
+        cancelTask(OVERVIEW_TASK_KEY)
+        reduce { copy(overviewState = ShopOverviewUiState.Closed) }
+    }
+
+    private fun dismissOverview() {
+        cancelTask(OVERVIEW_TASK_KEY)
+        reduce { copy(overviewState = ShopOverviewUiState.Closed) }
+    }
+
+    private fun retryOverview() {
+        val shopId = currentSheetShopId() ?: currentState.selectedShop?.id ?: return
+        loadOverview(shopId)
     }
 
     private fun shareShop(shop: RamenShop) {
@@ -217,10 +262,7 @@ class OverviewViewModel(
         viewModelScope.launch {
             postSideEffect(
                 ShopOverviewSideEffect.Interaction(
-                    ShareShop(
-                        shopId = shop.id,
-                        shopName = shop.name,
-                    ),
+                    ShareShop(shopId = shop.id, shopName = shop.name),
                 ),
             )
         }
@@ -231,152 +273,6 @@ class OverviewViewModel(
         mapProvider: String,
     ) {
         mapAnalytics.logShopMapLinkOpened(shop, mapProvider)
-    }
-
-    private fun selectShopId(shopId: String) {
-        if (shopId.isBlank()) return
-        if (currentState.selectedShop?.id == shopId && currentState.shopOverview != null) return
-        val cachedOverview = (fetchShopOverviewUseCase.findCached(shopId) as? ShopOverviewCacheLookup.Hit)?.overview
-        val selectedShop = currentState.selectedShop?.takeIf { it.id == shopId } ?: cachedOverview?.shop
-        val nextSheet =
-            when {
-                cachedOverview != null -> ShopOverviewUiState.Content(cachedOverview)
-                else -> ShopOverviewUiState.Loading(shopId, selectedShop)
-            }
-        reduce {
-            copy(
-                overviewState = nextSheet,
-            )
-        }
-        if (cachedOverview != null) {
-            viewModelScope.launch { mapSearchHistoryStorage.addRecentlyViewedShop(cachedOverview.shop.id) }
-            viewModelScope.launch { postSideEffect(ShopOverviewSideEffect.ShopViewed(cachedOverview.shop)) }
-        }
-        loadOverview(shopId)
-    }
-
-    private fun dismissRequestedShop() {
-        if (currentState.overviewState is ShopOverviewUiState.Loading) {
-            cancelTask(OVERVIEW_TASK_KEY)
-            reduce { copy(overviewState = ShopOverviewUiState.Closed) }
-        }
-    }
-
-    private fun dismissOverview() {
-        cancelTask(OVERVIEW_TASK_KEY)
-        reduce { copy(overviewState = ShopOverviewUiState.Closed) }
-    }
-
-    private fun retryOverview() {
-        val shopId =
-            when (val state = currentState.overviewState) {
-                is ShopOverviewUiState.Error -> state.shopId
-                is ShopOverviewUiState.Loading -> state.shopId
-                is ShopOverviewUiState.Content -> state.overview.shop.id
-                ShopOverviewUiState.Closed -> currentState.selectedShop?.id
-            } ?: return
-        loadOverview(shopId)
-    }
-
-    private fun toggleBookmark(
-        shop: RamenShop,
-        source: AnalyticsSource,
-    ) {
-        val enabled = currentState.personalization.nextBookmarkEnabled(shop.id)
-        if (requireLogin(PendingShopAction.ToggleBookmark(shop, source, enabled))) return
-        updateBookmark(shop, source, enabled)
-    }
-
-    private fun updateBookmark(
-        shop: RamenShop,
-        source: AnalyticsSource,
-        enabled: Boolean,
-    ) {
-        if (currentState.personalization.hasBookmark(shop.id) == enabled) return
-        launchResultTask(
-            taskKey = BOOKMARK_TASK_KEY,
-            policy = TaskPolicy.IgnoreNew,
-            request = {
-                mapAnalytics.logBookmarkToggled(shop, enabled, source)
-                personalizationStore.updateBookmark(shop.id, enabled)
-            },
-            onError = { showToast(Res.string.personalization_update_failure_message, ToastType.ERROR) },
-        )
-    }
-
-    private fun toggleShopNotification(
-        shop: RamenShop,
-        source: AnalyticsSource,
-    ) {
-        if (requireLogin(PendingShopAction.ToggleShopNotification(shop, source))) return
-        when (val toggle = currentState.personalization.notificationToggle(shop.id)) {
-            NotificationStatus.Hidden -> showToast(Res.string.hidden_shop_notification_unavailable_message)
-            is NotificationStatus.Allowed ->
-                launchResultTask(
-                    taskKey = NOTIFICATION_TASK_KEY,
-                    policy = TaskPolicy.IgnoreNew,
-                    request = {
-                        mapAnalytics.logShopSubscribed(shop, toggle.enabled, source)
-                        personalizationStore.updateShopNotification(shop.id, toggle.enabled)
-                    },
-                    onError = { showToast(Res.string.personalization_update_failure_message, ToastType.ERROR) },
-                )
-        }
-    }
-
-    private fun toggleHidden(
-        shop: RamenShop,
-        source: AnalyticsSource,
-    ) {
-        if (requireLogin(PendingShopAction.ToggleHidden(shop, source))) return
-        val hidden = !currentState.personalization.nextHiddenEnabled(shop.id)
-        if (!hidden && currentState.selectedShop?.id == shop.id) hidingSelectedShopId = shop.id
-        launchResultTask(
-            taskKey = HIDDEN_TASK_KEY,
-            policy = TaskPolicy.IgnoreNew,
-            request = {
-                mapAnalytics.logHiddenToggled(shop, !hidden, source)
-                if (hidden) personalizationStore.unhideShop(shop.id) else personalizationStore.hideShop(shop.id)
-            },
-            onSuccess = {
-                if (!hidden) showToast(Res.string.hide_shop_success_message)
-                if (hidingSelectedShopId == shop.id) {
-                    hidingSelectedShopId = null
-                    trySideEffect(ShopOverviewSideEffect.SelectedShopHidden)
-                }
-            },
-            onError = {
-                hidingSelectedShopId = null
-                showToast(Res.string.personalization_update_failure_message, ToastType.ERROR)
-            },
-        )
-    }
-
-    private fun synchronizeOverviewLikeCounts(previousBookmarkedShopIds: Set<String>?) {
-        val changes = currentState.personalization.bookmarkChangesSince(previousBookmarkedShopIds)
-        for (change in changes) {
-            val isBookmarked = change.type == BookmarkChangeStatus.ADDED
-            updateOverviewBookmarkCount(change.shopId, isBookmarked)
-        }
-    }
-
-    private fun updateOverviewBookmarkCount(
-        shopId: String,
-        enabled: Boolean,
-    ) {
-        fetchShopOverviewUseCase.updateCachedLikeCount(shopId, enabled)
-        val overviewContent = currentState.overviewState as? ShopOverviewUiState.Content ?: return
-        if (overviewContent.overview.shop.id != shopId) return
-
-        reduce {
-            copy(
-                overviewState =
-                    overviewContent.copy(
-                        overview =
-                            overviewContent.overview.updateBookmarkCount(enabled),
-                    ),
-            )
-        }
     }
 
     private fun submitShopReport(
@@ -394,58 +290,169 @@ class OverviewViewModel(
         )
     }
 
+    private fun toggleBookmark(
+        shop: RamenShop,
+        source: AnalyticsSource,
+    ) {
+        val enabled = currentState.personalization.nextBookmarkEnabled(shop.id)
+        if (requireLogin(PendingShopAction.ToggleBookmark(shop, source, enabled))) return
+        updateBookmark(shop, source, enabled)
+    }
+
+    private fun updateBookmark(
+        shop: RamenShop,
+        source: AnalyticsSource,
+        enabled: Boolean,
+    ) {
+        val isBookmarkStatusUnchanged = currentState.personalization.hasBookmark(shop.id) == enabled
+        if (isBookmarkStatusUnchanged) return
+        launchResultTask(
+            taskKey = BOOKMARK_TASK_KEY,
+            policy = TaskPolicy.IgnoreNew,
+            request = {
+                mapAnalytics.logBookmarkToggled(shop, enabled, source)
+                personalizationStore.updateBookmark(shop.id, enabled)
+            },
+            onError = { showToast(Res.string.personalization_update_failure_message, ToastType.ERROR) },
+        )
+    }
+
+    private fun toggleShopNotification(
+        shop: RamenShop,
+        source: AnalyticsSource,
+    ) {
+        if (requireLogin(PendingShopAction.ToggleShopNotification(shop, source))) return
+        val toggle = currentState.personalization.notificationToggle(shop.id)
+        val isNotificationHidden = toggle is NotificationStatus.Hidden
+        if (isNotificationHidden) {
+            showToast(Res.string.hidden_shop_notification_unavailable_message)
+            return
+        }
+        val allowed = toggle as NotificationStatus.Allowed
+        launchResultTask(
+            taskKey = NOTIFICATION_TASK_KEY,
+            policy = TaskPolicy.IgnoreNew,
+            request = {
+                mapAnalytics.logShopSubscribed(shop, allowed.enabled, source)
+                personalizationStore.updateShopNotification(shop.id, allowed.enabled)
+            },
+            onError = { showToast(Res.string.personalization_update_failure_message, ToastType.ERROR) },
+        )
+    }
+
+    private fun toggleHidden(
+        shop: RamenShop,
+        source: AnalyticsSource,
+    ) {
+        if (requireLogin(PendingShopAction.ToggleHidden(shop, source))) return
+        val hidden = !currentState.personalization.nextHiddenEnabled(shop.id)
+        val isHidingCurrentSelectedShop = !hidden && currentState.selectedShop?.id == shop.id
+        if (isHidingCurrentSelectedShop) hidingSelectedShopId = shop.id
+        launchResultTask(
+            taskKey = HIDDEN_TASK_KEY,
+            policy = TaskPolicy.IgnoreNew,
+            request = {
+                mapAnalytics.logHiddenToggled(shop, !hidden, source)
+                if (hidden) personalizationStore.unhideShop(shop.id) else personalizationStore.hideShop(shop.id)
+            },
+            onSuccess = { handleHiddenSuccess(shop.id, hidden) },
+            onError = { handleHiddenError() },
+        )
+    }
+
+    private fun handleHiddenSuccess(
+        shopId: String,
+        hidden: Boolean,
+    ) {
+        val isShopUnhidden = !hidden
+        if (isShopUnhidden) showToast(Res.string.hide_shop_success_message)
+        val isTargetSelectedShop = hidingSelectedShopId == shopId
+        if (isTargetSelectedShop) {
+            hidingSelectedShopId = null
+            trySideEffect(ShopOverviewSideEffect.SelectedShopHidden)
+        }
+    }
+
+    private fun handleHiddenError() {
+        hidingSelectedShopId = null
+        showToast(Res.string.personalization_update_failure_message, ToastType.ERROR)
+    }
+
+    private suspend fun awaitLogin() {
+        loginRepository.session.first { it == LoginSessionState.AUTHENTICATED }
+        reduce { copy(isLoggedIn = true) }
+        currentSheetShopId()?.let(::loadOverview)
+    }
+
+    private suspend fun observePersonalization() {
+        personalizationStore.state.collect(::handlePersonalizationStateChange)
+    }
+
+    private fun handlePersonalizationStateChange(state: PersonalizationBootstrapState) {
+        val personalization = (state as? PersonalizationBootstrapState.Success)?.value ?: return
+        val isLoggedOut = !loginRepository.hasSession()
+        if (isLoggedOut) return
+        val previousBookmarkedShopIds = currentState.bookmarkedShopIds.takeIf { currentState.hasReceivedPersonalization }
+        reduce { copy(isLoggedIn = true) }
+        applyPersonalization(personalization)
+        synchronizeOverviewLikeCounts(previousBookmarkedShopIds)
+        resumePendingAction()
+    }
+
+    private fun synchronizeOverviewLikeCounts(previousBookmarkedShopIds: Set<String>?) {
+        val changes = currentState.personalization.bookmarkChangesSince(previousBookmarkedShopIds)
+        for ((shopId, type) in changes) {
+            val isBookmarked = type == BookmarkChangeStatus.ADDED
+            updateOverviewBookmarkCount(shopId, isBookmarked)
+        }
+    }
+
+    private fun updateOverviewBookmarkCount(
+        shopId: String,
+        enabled: Boolean,
+    ) {
+        fetchShopOverviewUseCase.updateCachedLikeCount(shopId, enabled)
+        val overviewContent = currentState.overviewState as? ShopOverviewUiState.Content ?: return
+        val isDifferentShop = overviewContent.overview.shop.id != shopId
+        if (isDifferentShop) return
+        val updatedOverview = overviewContent.overview.updateBookmarkCount(enabled)
+        reduce { copy(overviewState = overviewContent.copy(overview = updatedOverview)) }
+    }
+
     private fun applyPersonalization(personalization: Personalization) {
         val selectedShopId = currentState.selectedShop?.id
         val transition = personalization.visibilityChange(selectedShopId, currentState.personalization)
+        val nextOverviewState =
+            when (transition) {
+                VisibilityStatus.Hidden -> ShopOverviewUiState.Closed
+                VisibilityStatus.Visible -> overviewStateWithVisibleShop(currentState.overviewState)
+                VisibilityStatus.Unchanged -> currentState.overviewState
+            }
         reduce {
             copy(
-                overviewState =
-                    when (transition) {
-                        com.peto.ramap.domain.model.personalization.VisibilityStatus.Hidden -> ShopOverviewUiState.Closed
-                        com.peto.ramap.domain.model.personalization.VisibilityStatus.Visible -> overviewStateWithVisibleShop(overviewState)
-                        com.peto.ramap.domain.model.personalization.VisibilityStatus.Unchanged -> overviewState
-                    },
+                overviewState = nextOverviewState,
                 personalization = personalization,
                 hasReceivedPersonalization = true,
             )
         }
-        if (transition == com.peto.ramap.domain.model.personalization.VisibilityStatus.Hidden && hidingSelectedShopId != selectedShopId) trySideEffect(ShopOverviewSideEffect.SelectedShopHidden)
-    }
-
-    private fun overviewStateWithVisibleShop(state: ShopOverviewUiState): ShopOverviewUiState =
-        when (state) {
-            ShopOverviewUiState.Closed -> state
-            is ShopOverviewUiState.Loading -> state.copy(shop = state.shop?.copy(isVisible = true))
-            is ShopOverviewUiState.Content -> visibleContentState(state)
-            is ShopOverviewUiState.Error -> state.copy(shop = state.shop?.copy(isVisible = true))
+        val isHiddenSelectedShop = transition == VisibilityStatus.Hidden && hidingSelectedShopId != selectedShopId
+        if (isHiddenSelectedShop) {
+            trySideEffect(ShopOverviewSideEffect.SelectedShopHidden)
         }
-
-    private fun visibleContentState(state: ShopOverviewUiState.Content): ShopOverviewUiState.Content =
-        state.copy(
-            overview = state.overview.copy(shop = state.overview.shop.copy(isVisible = true)),
-        )
-
-    private fun requestLoginGuide() {
-        viewModelScope.launch { postSideEffect(ShopOverviewSideEffect.Interaction(ShowLoginGuide)) }
     }
 
     private fun login(type: LoginType) {
+        val failureMessage =
+            when (type) {
+                LoginType.KAKAO -> Res.string.kakao_login_failure_message
+                LoginType.APPLE -> Res.string.apple_login_failure_message
+            }
         launchResultTask(
             taskKey = ACCOUNT_TASK_KEY,
             policy = TaskPolicy.CancelPrevious,
             request = { signInUseCase(type, AnalyticsSource.MAP) },
-            onSuccess = {
-                showToast(Res.string.login_success_message)
-            },
-            onError = { error ->
-                showErrorToast(
-                    error,
-                    when (type) {
-                        LoginType.KAKAO -> Res.string.kakao_login_failure_message
-                        LoginType.APPLE -> Res.string.apple_login_failure_message
-                    },
-                )
-            },
+            onSuccess = { showToast(Res.string.login_success_message) },
+            onError = { error -> showErrorToast(error, failureMessage) },
         )
     }
 
@@ -457,27 +464,45 @@ class OverviewViewModel(
     }
 
     private fun resumePendingAction() {
-        if (!currentState.isLoggedIn || personalizationStore.state.value !is PersonalizationBootstrapState.Success) return
+        val isPersonalizationLoaded = personalizationStore.state.value is PersonalizationBootstrapState.Success
+        val isUserNotReady = !currentState.isLoggedIn || !isPersonalizationLoaded
+        if (isUserNotReady) return
         val action = pendingShopAction ?: return
         pendingShopAction = null
+        executePendingAction(action)
+    }
+
+    private fun executePendingAction(action: PendingShopAction) {
         when (action) {
-            is PendingShopAction.ToggleBookmark ->
-                updateBookmark(
-                    shop = action.shop,
-                    source = action.source,
-                    enabled = action.enabled,
-                )
-            is PendingShopAction.ToggleShopNotification ->
-                toggleShopNotification(
-                    shop = action.shop,
-                    source = action.source,
-                )
-            is PendingShopAction.ToggleHidden ->
-                toggleHidden(
-                    shop = action.shop,
-                    source = action.source,
-                )
+            is PendingShopAction.ToggleBookmark -> updateBookmark(action.shop, action.source, action.enabled)
+            is PendingShopAction.ToggleShopNotification -> toggleShopNotification(action.shop, action.source)
+            is PendingShopAction.ToggleHidden -> toggleHidden(action.shop, action.source)
         }
+    }
+
+    private fun requestLoginGuide() {
+        viewModelScope.launch { postSideEffect(ShopOverviewSideEffect.Interaction(ShowLoginGuide)) }
+    }
+
+    private fun currentSheetShopId(): String? =
+        when (val sheet = currentState.overviewState) {
+            is ShopOverviewUiState.Loading -> sheet.shopId
+            is ShopOverviewUiState.Content -> sheet.overview.shop.id
+            is ShopOverviewUiState.Error -> sheet.shopId
+            ShopOverviewUiState.Closed -> null
+        }
+
+    private fun overviewStateWithVisibleShop(state: ShopOverviewUiState): ShopOverviewUiState =
+        when (state) {
+            ShopOverviewUiState.Closed -> state
+            is ShopOverviewUiState.Loading -> state.copy(shop = state.shop?.copy(isVisible = true))
+            is ShopOverviewUiState.Content -> visibleContentState(state)
+            is ShopOverviewUiState.Error -> state.copy(shop = state.shop?.copy(isVisible = true))
+        }
+
+    private fun visibleContentState(state: ShopOverviewUiState.Content): ShopOverviewUiState.Content {
+        val visibleShop = state.overview.shop.copy(isVisible = true)
+        return state.copy(overview = state.overview.copy(shop = visibleShop))
     }
 
     private fun showToast(
@@ -511,5 +536,23 @@ class OverviewViewModel(
         private const val HIDDEN_TASK_KEY = "shop_hidden"
         private const val SHOP_REPORT_TASK_KEY = "shop_report"
         private const val ACCOUNT_TASK_KEY = "shop_account"
+
+        private fun initialState(
+            loginRepository: LoginRepository,
+            personalizationStore: PersonalizationStore,
+        ): ShopOverviewState {
+            val hasSession = loginRepository.hasSession()
+            val personalizationSuccess = personalizationStore.state.value as? PersonalizationBootstrapState.Success
+            val personalization =
+                if (hasSession) {
+                    personalizationSuccess?.value ?: Personalization()
+                } else {
+                    Personalization()
+                }
+            return ShopOverviewState(
+                isLoggedIn = hasSession,
+                personalization = personalization,
+            )
+        }
     }
 }

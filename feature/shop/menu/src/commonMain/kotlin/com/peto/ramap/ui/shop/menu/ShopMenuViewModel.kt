@@ -16,11 +16,11 @@ class ShopMenuViewModel(
     override suspend fun handleIntent(intent: ShopMenuIntent) {
         when (intent) {
             is ShopMenuIntent.OnShopSelected -> {
-                if (currentState.shopId == intent.shopId) return
+                val isSameShopSelected = currentState.shopId == intent.shopId
+                if (isSameShopSelected) return
                 reduce { copy(shopId = intent.shopId, menu = null, hasLoadFailure = false) }
                 fetchMenu()
             }
-
             ShopMenuIntent.OnRetry -> fetchMenu()
         }
     }
@@ -34,11 +34,13 @@ class ShopMenuViewModel(
             onStart = { copy(hasLoadFailure = false) },
             request = { repository.fetchShopMenu(shopId) },
             onSuccess = { menu ->
-                if (!currentCoroutineContext().isActive || currentState.shopId != shopId) return@launchResultTask
+                val isInactiveOrShopChanged = !currentCoroutineContext().isActive || currentState.shopId != shopId
+                if (isInactiveOrShopChanged) return@launchResultTask
                 reduce { copy(menu = menu, hasLoadFailure = false) }
             },
             onError = {
-                if (currentCoroutineContext().isActive && currentState.shopId == shopId) reduce { copy(hasLoadFailure = true) }
+                val isCurrentShopActive = currentCoroutineContext().isActive && currentState.shopId == shopId
+                if (isCurrentShopActive) reduce { copy(hasLoadFailure = true) }
             },
         )
     }

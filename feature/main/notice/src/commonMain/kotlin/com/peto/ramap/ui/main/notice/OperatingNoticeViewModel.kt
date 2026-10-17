@@ -80,7 +80,8 @@ class OperatingNoticeViewModel(
 
     private fun applyOperatingNotices(notices: List<OperatingNotice>) {
         val now = Clock.System.now().toLocalDateTime(TimeZone.of(SEOUL_TIME_ZONE))
-        val (today, scheduled) = notices.filter { it.isCurrentOrScheduledAt(now) }.partition { it.isActiveAt(now) }
+        val currentNotices = notices.filter { it.isCurrentOrScheduledAt(now) }
+        val (today, scheduled) = currentNotices.partition { it.isActiveAt(now) }
         reduce { copy(todayOperatingNotices = today, scheduledOperatingNotices = scheduled) }
     }
 

@@ -46,7 +46,8 @@ class SubscribedShopListViewModel(
                 .map { (it as? PersonalizationBootstrapState.Success)?.value?.notificationShopIds }
                 .distinctUntilChanged()
                 .collectLatest { shopIds ->
-                    if (shopIds == null) return@collectLatest
+                    val isShopIdsNull = shopIds == null
+                    if (isShopIdsNull) return@collectLatest
                     syncSubscribedShops(shopIds)
                 }
         }
@@ -56,10 +57,7 @@ class SubscribedShopListViewModel(
     override suspend fun handleIntent(intent: SubscribedShopListIntent) {
         when (intent) {
             SubscribedShopListIntent.OnRetry -> retryCurrentSubscriptions()
-
-            is OnRemovalConfirmed -> {
-                confirmRemoval(intent.target)
-            }
+            is OnRemovalConfirmed -> confirmRemoval(intent.target)
         }
     }
 
@@ -81,7 +79,8 @@ class SubscribedShopListViewModel(
         shopIds: Set<String>,
         forceFetch: Boolean = false,
     ) {
-        if (shopIds.isEmpty()) {
+        val isShopIdsEmpty = shopIds.isEmpty()
+        if (isShopIdsEmpty) {
             cancelTask(FETCH_SUBSCRIBED_SHOPS_TASK_KEY)
             reduce {
                 copy(
@@ -93,7 +92,8 @@ class SubscribedShopListViewModel(
             return
         }
 
-        if (!forceFetch && currentState.shops.containsAll(shopIds)) {
+        val isAlreadyCached = !forceFetch && currentState.shops.containsAll(shopIds)
+        if (isAlreadyCached) {
             cancelTask(FETCH_SUBSCRIBED_SHOPS_TASK_KEY)
             reduce {
                 copy(
@@ -163,7 +163,8 @@ class SubscribedShopListViewModel(
 
     private suspend fun fetchSubscribedEvents(): RamapResult<List<ShopEvent>> {
         val overrides = notificationRepository.fetchEventOverrides()
-        if (overrides is RamapResult.Error) return overrides
+        val isError = overrides is RamapResult.Error
+        if (isError) return overrides
 
         return fetchEnabledActiveEvents((overrides as RamapResult.Success).data)
     }
@@ -181,7 +182,8 @@ class SubscribedShopListViewModel(
         eventResults: List<Pair<EventNotificationOverride, RamapResult<ShopEvent?>>>,
     ): RamapResult<List<ShopEvent>> {
         eventResults.forEach { (_, result) ->
-            if (result is RamapResult.Error) return result
+            val isError = result is RamapResult.Error
+            if (isError) return result
         }
 
         val events =
@@ -240,11 +242,8 @@ class SubscribedShopListViewModel(
     private fun removeTargetFromState(target: SubscribedRemovalTarget) {
         reduce {
             when (target) {
-                is SubscribedRemovalTarget.Shop ->
-                    copy(shops = shops.remove(target.shopId))
-
-                is SubscribedRemovalTarget.EventOverride ->
-                    copy(subscribedEvents = subscribedEvents.filterNot { it.id == target.eventId })
+                is SubscribedRemovalTarget.Shop -> copy(shops = shops.remove(target.shopId))
+                is SubscribedRemovalTarget.EventOverride -> copy(subscribedEvents = subscribedEvents.filterNot { it.id == target.eventId })
             }
         }
     }

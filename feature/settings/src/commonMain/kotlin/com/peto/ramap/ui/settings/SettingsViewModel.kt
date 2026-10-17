@@ -15,7 +15,8 @@ class SettingsViewModel(
     init {
         viewModelScope.launch {
             loginRepository.session.collect { sessionState ->
-                reduce { copy(isLoggedIn = sessionState == LoginSessionState.AUTHENTICATED) }
+                val isAuthenticated = sessionState == LoginSessionState.AUTHENTICATED
+                reduce { copy(isLoggedIn = isAuthenticated) }
             }
         }
     }

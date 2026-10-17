@@ -39,10 +39,7 @@ class BookmarkedShopListViewModel(
     override suspend fun handleIntent(intent: BookmarkedShopListIntent) {
         when (intent) {
             BookmarkedShopListIntent.OnRetry -> retryCurrentBookmarks()
-
-            is BookmarkedShopListIntent.OnRemovalConfirmed -> {
-                handleRemovalConfirmed(intent)
-            }
+            is BookmarkedShopListIntent.OnRemovalConfirmed -> handleRemovalConfirmed(intent)
         }
     }
 
@@ -77,12 +74,14 @@ class BookmarkedShopListViewModel(
         shopIds: Set<String>,
         forceFetch: Boolean = false,
     ) {
-        if (shopIds.isEmpty()) {
+        val isShopIdsEmpty = shopIds.isEmpty()
+        if (isShopIdsEmpty) {
             applyExistingBookmarkedShops(shopIds)
             return
         }
 
-        if (!forceFetch && currentState.shops.containsAll(shopIds)) {
+        val isAlreadyCached = !forceFetch && currentState.shops.containsAll(shopIds)
+        if (isAlreadyCached) {
             applyExistingBookmarkedShops(shopIds)
             return
         }
@@ -119,10 +118,7 @@ class BookmarkedShopListViewModel(
     ) {
         reduce {
             copy(
-                shops =
-                    shops.filterByShopIds(
-                        requestedShopIds,
-                    ),
+                shops = shops.filterByShopIds(requestedShopIds),
                 showError = false,
                 hasLoaded = true,
             )
@@ -146,12 +142,7 @@ class BookmarkedShopListViewModel(
             policy = TaskPolicy.IgnoreNew,
             request = { personalizationStore.updateBookmark(shopId, false) },
             onSuccess = { handleBookmarkRemovalSuccess(shopId) },
-            onError = {
-                showToast(
-                    Res.string.personalization_update_failure_message,
-                    type = ToastType.ERROR,
-                )
-            },
+            onError = { showToast(Res.string.personalization_update_failure_message, type = ToastType.ERROR) },
         )
     }
 
@@ -173,7 +164,6 @@ class BookmarkedShopListViewModel(
 
     companion object {
         private const val FETCH_BOOKMARKS_TASK_KEY = "fetch-bookmarks"
-
         private const val REMOVE_BOOKMARK_TASK_KEY = "remove-bookmark"
     }
 }

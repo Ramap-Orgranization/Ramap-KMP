@@ -41,21 +41,27 @@ class MyReviewsViewModel(
     private fun observeChanges() {
         viewModelScope.launch {
             changes.journal.collect { journal ->
-                if (epoch != journal.epoch) {
+                val isEpochChanged = epoch != journal.epoch
+                if (isEpochChanged) {
                     epoch = journal.epoch
                     revision = journal.revision
                     return@collect
                 }
-                if (journal.hasGapAfter(revision)) {
+                val hasGap = journal.hasGapAfter(revision)
+                if (hasGap) {
                     revision = journal.revision
-                    if (currentState.userId != null) loadPage(reset = true)
+                    val hasUser = currentState.userId != null
+                    if (hasUser) loadPage(reset = true)
                     return@collect
                 }
                 for (record in journal.changesAfter(revision)) {
                     val change = record.change
-                    if (change is ReviewChange.AccessChanged && change.userId == currentState.userId) {
+                    val isAccessChangedForUser = change is ReviewChange.AccessChanged && change.userId == currentState.userId
+                    val isWrittenForUser = change is ReviewChange.Written && change.userId == currentState.userId
+                    val isHydrated = change is ReviewChange.Hydrated
+                    if (isAccessChangedForUser) {
                         loadPage(reset = true)
-                    } else if (change is ReviewChange.Written && change.userId == currentState.userId || change is ReviewChange.Hydrated) {
+                    } else if (isWrittenForUser || isHydrated) {
                         reduce {
                             val updated = reviewChangeReducer.updateOwnerRows(reviews, change, filter, hasMore)
                             val counts = (change as? ReviewChange.Written)?.counts
@@ -90,7 +96,8 @@ class MyReviewsViewModel(
                 generation++
                 cancelTask(PAGE_TASK)
                 reduce { MyReviewsUiState(userId = userId) }
-                if (userId != null) loadPage(reset = true)
+                val hasUser = userId != null
+                if (hasUser) loadPage(reset = true)
             }
         }
     }
@@ -106,7 +113,8 @@ class MyReviewsViewModel(
     }
 
     private fun handleSelectFilter(filter: MyReviewVisibility) {
-        if (filter == currentState.filter) return
+        val isSameFilter = filter == currentState.filter
+        if (isSameFilter) return
         cancelTask(PAGE_TASK)
         reduce {
             copy(
@@ -121,11 +129,13 @@ class MyReviewsViewModel(
     }
 
     private fun handleRetry() {
-        loadPage(reset = currentState.failedReset || currentState.reviews.isEmpty())
+        val shouldReset = currentState.failedReset || currentState.reviews.isEmpty()
+        loadPage(reset = shouldReset)
     }
 
     private fun handleLoadMore() {
-        if (currentState.hasMore && !currentState.loading && !currentState.failed) {
+        val canLoadMore = currentState.hasMore && !currentState.loading && !currentState.failed
+        if (canLoadMore) {
             loadPage(reset = false)
         }
     }
@@ -135,9 +145,11 @@ class MyReviewsViewModel(
     }
 
     private fun deleteReview(reviewId: String) {
-        if (currentState.reviews.none { it.id == reviewId }) return
+        val isReviewMissing = currentState.reviews.none { it.id == reviewId }
+        if (isReviewMissing) return
         val actingUserId = currentState.userId ?: return
-        if (currentState.actingReviewId != null) return
+        val isAlreadyActing = currentState.actingReviewId != null
+        if (isAlreadyActing) return
 
         launchResultTask(
             taskKey = DELETE_TASK,
@@ -145,17 +157,20 @@ class MyReviewsViewModel(
             onStart = { copy(actingReviewId = reviewId) },
             request = { reviews.deleteReview(reviewId) },
             onSuccess = {
-                if (currentState.userId == actingUserId) {
+                val isSameUser = currentState.userId == actingUserId
+                if (isSameUser) {
                     reduce { copy(actingReviewId = null) }
                 }
             },
             onError = {
-                if (currentState.userId == actingUserId) {
+                val isSameUser = currentState.userId == actingUserId
+                if (isSameUser) {
                     handleDeleteError()
                 }
             },
             onFinish = {
-                if (actingReviewId == reviewId) copy(actingReviewId = null) else this
+                val isActingOnThisReview = actingReviewId == reviewId
+                if (isActingOnThisReview) copy(actingReviewId = null) else this
             },
         )
     }
@@ -182,21 +197,29 @@ class MyReviewsViewModel(
             onStart = { copy(failed = false, failedReset = false) },
             request = { fetchExtent(offset, filter, targetSize) },
             onSuccess = { page ->
-                if (requestedGeneration != generation || userId != currentState.userId || filter != currentState.filter) return@launchResultTask
-                if (baseline.epoch != changes.journal.value.epoch ||
-                    changes.journal.value.hasGapAfter(baseline.revision) ||
+                val isStaleRequest = requestedGeneration != generation || userId != currentState.userId || filter != currentState.filter
+                if (isStaleRequest) return@launchResultTask
+
+                val isEpochChanged = baseline.epoch != changes.journal.value.epoch
+                val hasGap = changes.journal.value.hasGapAfter(baseline.revision)
+                val hasUserChanges =
                     changes.journal.value
                         .changesAfter(baseline.revision)
                         .any { (it.change as? ReviewChange.Written)?.userId == userId || (it.change as? ReviewChange.AccessChanged)?.userId == userId }
-                ) {
+
+                if (isEpochChanged || hasGap || hasUserChanges) {
                     loadPage(reset)
                     return@launchResultTask
                 }
-                if (userId == currentState.userId && filter == currentState.filter) {
+                val isContextValid = userId == currentState.userId && filter == currentState.filter
+                if (isContextValid) {
                     handlePageSuccess(page = page, reset = reset)
                 }
             },
-            onError = { if (requestedGeneration == generation) handlePageError(reset = reset) },
+            onError = {
+                val isCurrentGeneration = requestedGeneration == generation
+                if (isCurrentGeneration) handlePageError(reset = reset)
+            },
         )
     }
 
@@ -224,7 +247,8 @@ class MyReviewsViewModel(
                 is RamapResult.Success -> {
                     latest = result.data
                     gathered += result.data.reviews
-                    if (result.data.reviews.size < PAGE_SIZE) break
+                    val isPageIncomplete = result.data.reviews.size < PAGE_SIZE
+                    if (isPageIncomplete) break
                 }
             }
         }

@@ -59,38 +59,26 @@ class RankingViewModel(
     override suspend fun handleIntent(intent: RankingIntent) {
         when (intent) {
             RankingIntent.OnRefreshed -> refreshRankings()
-
             RankingIntent.OnRetried -> loadFirstPage()
-
             RankingIntent.OnNextPageRequested,
             RankingIntent.OnNextPageRetried,
             -> loadNextPage()
-
             RankingIntent.OnAllCategoriesSelected -> selectAllCategories()
-
             RankingIntent.OnAreaSheetOpened -> restoreAreaSelection()
-
             RankingIntent.OnLoginSelectionDismissed -> {
                 pendingBookmarkRequest = null
             }
-
             is RankingIntent.OnLoginTypeSelected -> {
                 when (intent.type) {
                     LoginType.KAKAO -> signInWithKakao()
                     LoginType.APPLE -> signInWithApple()
                 }
             }
-
             is RankingIntent.OnAreaFilterSelected -> selectAreaFilter(intent.areaFilter)
-
             is RankingIntent.OnAdministrativeAreaSelected -> selectAdministrativeArea(intent.area)
-
             RankingIntent.OnAreaSelectionBack -> showAdministrativeAreas()
-
             is RankingIntent.OnBookmarkChanged -> updateBookmark(intent.shop, intent.enabled)
-
             is RankingIntent.OnCategoryToggled -> toggleCategory(intent)
-
             is RankingIntent.OnShopClicked -> rankingAnalytics.logShopSelected(intent.shop)
         }
     }
@@ -101,7 +89,8 @@ class RankingViewModel(
                 val personalization =
                     (state as? PersonalizationBootstrapState.Success)?.value
                         ?: return@collectLatest
-                if (!loginRepository.hasSession()) return@collectLatest
+                val isLoggedOut = !loginRepository.hasSession()
+                if (isLoggedOut) return@collectLatest
                 synchronizeLikeCounts(personalization.bookmarkedShopIds)
                 reduce {
                     copy(
@@ -117,21 +106,23 @@ class RankingViewModel(
     private fun observeSessionState() {
         viewModelScope.launch {
             loginRepository.session.collectLatest { sessionState ->
-                if (sessionState == LoginSessionState.AUTHENTICATED) return@collectLatest
-
-                reduce {
-                    copy(
-                        bookmarkedShopIds = emptySet(),
-                        hasReceivedPersonalization = false,
-                        bookmarkLikeCountDeltas = emptyMap(),
-                    )
+                val isNotAuthenticated = sessionState != LoginSessionState.AUTHENTICATED
+                if (isNotAuthenticated) {
+                    reduce {
+                        copy(
+                            bookmarkedShopIds = emptySet(),
+                            hasReceivedPersonalization = false,
+                            bookmarkLikeCountDeltas = emptyMap(),
+                        )
+                    }
                 }
             }
         }
     }
 
     private fun synchronizeLikeCounts(bookmarkedShopIds: Set<String>) {
-        if (!currentState.hasReceivedPersonalization) return
+        val isNotReceivedYet = !currentState.hasReceivedPersonalization
+        if (isNotReceivedYet) return
         val previousIds = currentState.bookmarkedShopIds
 
         val addedShopIds = bookmarkedShopIds - previousIds
@@ -145,7 +136,8 @@ class RankingViewModel(
         for (shopId in removedShopIds) {
             synchronizeLikeCountChange(shopId, enabled = false, loadedShopIds, changedDeltas)
         }
-        if (changedDeltas.isEmpty()) return
+        val isDeltasEmpty = changedDeltas.isEmpty()
+        if (isDeltasEmpty) return
 
         reduce {
             copy(
@@ -166,14 +158,14 @@ class RankingViewModel(
         loadedShopIds: Set<String>,
         changedDeltas: MutableMap<String, Long>,
     ) {
-        if (shopId !in loadedShopIds) return
+        val isNotLoaded = shopId !in loadedShopIds
+        if (isNotLoaded) return
 
         changedDeltas[shopId] = calculateBookmarkLikeCountDelta(enabled)
     }
 
     private fun toggleCategory(intent: RankingIntent.OnCategoryToggled) {
-        val enabled =
-            intent.category !in currentState.selectedCategories
+        val enabled = intent.category !in currentState.selectedCategories
 
         val updatedCategories =
             if (enabled) {
@@ -187,25 +179,24 @@ class RankingViewModel(
     }
 
     private fun selectAllCategories() {
-        if (currentState.selectedCategories.isEmpty()) return
+        val isCategoriesEmpty = currentState.selectedCategories.isEmpty()
+        if (isCategoriesEmpty) return
 
         changeFilters { copy(selectedCategories = emptySet()) }
     }
 
     private fun selectAreaFilter(areaFilter: AreaFilter) {
-        if (currentState.areaFilter == areaFilter) return
+        val isSameAreaFilter = currentState.areaFilter == areaFilter
+        if (isSameAreaFilter) return
 
         rankingAnalytics.logAreaSelected(areaFilter)
 
-        changeFilters {
-            copy(
-                areaFilter = areaFilter,
-            )
-        }
+        changeFilters { copy(areaFilter = areaFilter) }
     }
 
     private fun selectAdministrativeArea(area: AdministrativeArea) {
-        if (area == AdministrativeArea.SEJONG) {
+        val isSejong = area == AdministrativeArea.SEJONG
+        if (isSejong) {
             selectAreaFilter(AreaFilter.Province(area))
             return
         }
@@ -222,7 +213,8 @@ class RankingViewModel(
     }
 
     private fun restoreAdministrativeArea(area: AdministrativeArea) {
-        if (area == AdministrativeArea.SEJONG) {
+        val isSejong = area == AdministrativeArea.SEJONG
+        if (isSejong) {
             reduce {
                 copy(
                     areaSelectionArea = area,
@@ -257,9 +249,7 @@ class RankingViewModel(
                 )
             },
             request = { shopRankRepository.fetchAdministrativeDistricts(area) },
-            onSuccess = { districts ->
-                reduce { copy(administrativeDistricts = districts) }
-            },
+            onSuccess = { districts -> reduce { copy(administrativeDistricts = districts) } },
         )
     }
 
@@ -280,20 +270,23 @@ class RankingViewModel(
         shop: RamenShop,
         enabled: Boolean,
     ) {
-        if (!hasBookmarkSessionOrShowGuide()) {
+        val hasSession = hasBookmarkSessionOrShowGuide()
+        if (!hasSession) {
             pendingBookmarkRequest = shop to enabled
             return
         }
-        if (shop.id in currentState.bookmarkUpdatingShopIds) return
-        if (!shouldUpdateBookmark(shop.id, enabled)) return
+        val isAlreadyUpdating = shop.id in currentState.bookmarkUpdatingShopIds
+        if (isAlreadyUpdating) return
+        val isBookmarkUnchanged = !shouldUpdateBookmark(shop.id, enabled)
+        if (isBookmarkUnchanged) return
 
         rankingAnalytics.logBookmarkToggled(shop, enabled)
-
         executeBookmarkUpdate(shop.id, enabled)
     }
 
     private suspend fun hasBookmarkSessionOrShowGuide(): Boolean {
-        if (loginRepository.hasSession()) return true
+        val hasSession = loginRepository.hasSession()
+        if (hasSession) return true
 
         postSideEffect(RankingSideEffect.ShowLoginGuide)
         return false
@@ -304,7 +297,6 @@ class RankingViewModel(
         enabled: Boolean,
     ): Boolean {
         val isCurrentlyBookmarked = shopId in currentState.bookmarkedShopIds
-
         return isCurrentlyBookmarked != enabled
     }
 
@@ -318,36 +310,21 @@ class RankingViewModel(
             onStart = { createBookmarkUpdatingState(this, shopId) },
             onFinish = { createBookmarkUpdateFinishedState(this, shopId) },
             request = { personalizationStore.updateBookmark(shopId, enabled) },
-            onError = {
-                handleBookmarkUpdateFailure()
-            },
+            onError = { handleBookmarkUpdateFailure() },
         )
     }
 
-    private fun calculateBookmarkLikeCountDelta(enabled: Boolean): Long =
-        if (enabled) {
-            1L
-        } else {
-            -1L
-        }
+    private fun calculateBookmarkLikeCountDelta(enabled: Boolean): Long = if (enabled) 1L else -1L
 
     private fun createBookmarkUpdatingState(
         state: RankingUiState,
         shopId: String,
-    ): RankingUiState =
-        state.copy(
-            bookmarkUpdatingShopIds =
-                state.bookmarkUpdatingShopIds + shopId,
-        )
+    ): RankingUiState = state.copy(bookmarkUpdatingShopIds = state.bookmarkUpdatingShopIds + shopId)
 
     private fun createBookmarkUpdateFinishedState(
         state: RankingUiState,
         shopId: String,
-    ): RankingUiState =
-        state.copy(
-            bookmarkUpdatingShopIds =
-                state.bookmarkUpdatingShopIds - shopId,
-        )
+    ): RankingUiState = state.copy(bookmarkUpdatingShopIds = state.bookmarkUpdatingShopIds - shopId)
 
     private fun handleBookmarkUpdateFailure() {
         showToast(
@@ -397,7 +374,8 @@ class RankingViewModel(
     private fun loadNextPage() {
         val cursor = currentState.nextCursor ?: return
 
-        if (!canLoadNextPage()) return
+        val cannotLoadMore = !canLoadNextPage()
+        if (cannotLoadMore) return
 
         rankingAnalytics.logNextPageRequested()
 
@@ -455,9 +433,7 @@ class RankingViewModel(
             taskKey = SIGN_IN_TASK_KEY,
             policy = TaskPolicy.IgnoreNew,
             request = { signInUseCase(LoginType.KAKAO, AnalyticsSource.RANKING) },
-            onSuccess = {
-                showToast(Res.string.login_success_message, ToastType.SUCCESS)
-            },
+            onSuccess = { showToast(Res.string.login_success_message, ToastType.SUCCESS) },
             onError = { handleKakaoLoginFailure() },
         )
     }
@@ -467,12 +443,8 @@ class RankingViewModel(
             taskKey = SIGN_IN_TASK_KEY,
             policy = TaskPolicy.IgnoreNew,
             request = { signInUseCase(LoginType.APPLE, AnalyticsSource.RANKING) },
-            onSuccess = {
-                showToast(Res.string.login_success_message, ToastType.SUCCESS)
-            },
-            onError = {
-                showToast(Res.string.apple_login_failure_message, ToastType.ERROR)
-            },
+            onSuccess = { showToast(Res.string.login_success_message, ToastType.SUCCESS) },
+            onError = { showToast(Res.string.apple_login_failure_message, ToastType.ERROR) },
         )
     }
 
@@ -480,8 +452,10 @@ class RankingViewModel(
         val pending = pendingBookmarkRequest ?: return
         pendingBookmarkRequest = null
         val (shop, enabled) = pending
-        if (shop.id in currentState.bookmarkUpdatingShopIds) return
-        if (!shouldUpdateBookmark(shop.id, enabled)) return
+        val isAlreadyUpdating = shop.id in currentState.bookmarkUpdatingShopIds
+        if (isAlreadyUpdating) return
+        val isBookmarkUnchanged = !shouldUpdateBookmark(shop.id, enabled)
+        if (isBookmarkUnchanged) return
 
         rankingAnalytics.logBookmarkToggled(shop, enabled)
         executeBookmarkUpdate(shop.id, enabled)
@@ -489,7 +463,6 @@ class RankingViewModel(
 
     private fun handleKakaoLoginFailure() {
         loginAnalytics.logLoginFailed(AnalyticsSource.RANKING)
-
         showToast(Res.string.kakao_login_failure_message, ToastType.ERROR)
     }
 

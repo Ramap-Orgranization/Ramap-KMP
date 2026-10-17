@@ -21,29 +21,39 @@ class FollowViewModel(
                 cancelTask(MUTATION_TASK)
                 cancelTask(COUNTS_TASK)
                 reduce { FollowState(currentUserId = userId) }
-                if (userId != null) refresh()
+                val hasUserId = userId != null
+                if (hasUserId) refresh()
             }
         }
     }
 
     override suspend fun handleIntent(intent: FollowIntent) {
         when (intent) {
-            is FollowIntent.Select -> if (!currentState.mutating) selectList(intent.list)
+            is FollowIntent.Select -> {
+                val isNotMutating = !currentState.mutating
+                if (isNotMutating) selectList(intent.list)
+            }
             is FollowIntent.Change -> changeFollow(intent)
             FollowIntent.Retry -> refresh()
             FollowIntent.ReturnedFromProfile -> refresh()
-            FollowIntent.LoadMore -> if (currentState.hasMore && !currentState.failed && !currentState.mutating) loadPage(reset = false)
+            FollowIntent.LoadMore -> {
+                val canLoadMore = currentState.hasMore && !currentState.failed && !currentState.mutating
+                if (canLoadMore) loadPage(reset = false)
+            }
         }
     }
 
     private fun refresh() {
-        if (currentState.mutating) return
+        val isMutating = currentState.mutating
+        if (isMutating) return
         loadCounts()
         loadPage(reset = true)
     }
 
     private fun selectList(list: FollowList) {
-        if (currentState.selectedList == list || list !in currentState.availableLists) return
+        val isSameList = currentState.selectedList == list
+        val isListUnavailable = list !in currentState.availableLists
+        if (isSameList || isListUnavailable) return
         cancelTask(PAGE_TASK)
         reduce { copy(selectedList = list, profiles = emptyList(), offset = 0L, hasMore = false, failed = false) }
         loadPage(reset = true)
@@ -57,11 +67,16 @@ class FollowViewModel(
             onStart = { copy(countsFailed = false) },
             request = follows::fetchCounts,
             onSuccess = { counts ->
-                if (currentState.currentUserId != userId) return@launchResultTask
+                val isUserChanged = currentState.currentUserId != userId
+                if (isUserChanged) return@launchResultTask
                 reduce { copy(counts = counts, countsFailed = false) }
-                if (counts.requests == 0L && currentState.selectedList == FollowList.REQUESTS) selectList(FollowList.FOLLOWING)
+                val isRequestsEmpty = counts.requests == 0L && currentState.selectedList == FollowList.REQUESTS
+                if (isRequestsEmpty) selectList(FollowList.FOLLOWING)
             },
-            onError = { if (currentState.currentUserId == userId) reduce { copy(countsFailed = true) } },
+            onError = {
+                val isSameUser = currentState.currentUserId == userId
+                if (isSameUser) reduce { copy(countsFailed = true) }
+            },
         )
     }
 
@@ -76,7 +91,8 @@ class FollowViewModel(
             onStart = { copy(failed = false) },
             request = { follows.fetchConnections(list, offset) },
             onSuccess = { page ->
-                if (currentState.currentUserId == userId && currentState.selectedList == list) {
+                val isCurrentContext = currentState.currentUserId == userId && currentState.selectedList == list
+                if (isCurrentContext) {
                     reduce {
                         copy(
                             profiles = (if (reset) page else profiles + page).distinctBy { it.userId },
@@ -87,7 +103,8 @@ class FollowViewModel(
                 }
             },
             onError = {
-                if (currentState.currentUserId == userId && currentState.selectedList == list) {
+                val isCurrentContext = currentState.currentUserId == userId && currentState.selectedList == list
+                if (isCurrentContext) {
                     reduce { copy(failed = true) }
                 }
             },
@@ -96,9 +113,12 @@ class FollowViewModel(
 
     private fun changeFollow(intent: FollowIntent.Change) {
         val userId = currentState.currentUserId ?: return
-        if (currentState.mutating) return
+        val isMutating = currentState.mutating
+        if (isMutating) return
         val list = currentState.selectedList
-        if (currentState.profiles.none { it.userId == intent.userId } || !isListAction(list, intent.action)) return
+        val isUserNotInProfiles = currentState.profiles.none { it.userId == intent.userId }
+        val isInvalidAction = !isListAction(list, intent.action)
+        if (isUserNotInProfiles || isInvalidAction) return
         cancelTask(PAGE_TASK)
         cancelTask(COUNTS_TASK)
         launchResultTask(
@@ -109,9 +129,11 @@ class FollowViewModel(
             onFinish = { copy(actingUserId = null, actingAction = null) },
             request = { follows.changeFollow(intent.userId, intent.action) },
             onSuccess = {
-                if (currentState.currentUserId != userId) return@launchResultTask
+                val isUserChanged = currentState.currentUserId != userId
+                if (isUserChanged) return@launchResultTask
                 cancelTask(PAGE_TASK)
-                if (currentState.selectedList != list) {
+                val isListChanged = currentState.selectedList != list
+                if (isListChanged) {
                     loadPage(reset = true)
                     return@launchResultTask
                 }
@@ -123,15 +145,18 @@ class FollowViewModel(
                         counts = counts?.after(intent.action),
                     )
                 }
-                if (currentState.selectedList == FollowList.REQUESTS && currentState.counts?.requests == 0L) {
+                val isRequestsListEmpty = currentState.selectedList == FollowList.REQUESTS && currentState.counts?.requests == 0L
+                val shouldLoadMore = currentState.profiles.isEmpty() && currentState.hasMore
+                if (isRequestsListEmpty) {
                     selectList(FollowList.FOLLOWING)
-                } else if (currentState.profiles.isEmpty() && currentState.hasMore) {
+                } else if (shouldLoadMore) {
                     loadPage(reset = false)
                 }
                 loadCounts()
             },
             onError = {
-                if (currentState.currentUserId == userId) {
+                val isSameUser = currentState.currentUserId == userId
+                if (isSameUser) {
                     loadCounts()
                     postSideEffect(FollowEffect.ActionFailed)
                 }

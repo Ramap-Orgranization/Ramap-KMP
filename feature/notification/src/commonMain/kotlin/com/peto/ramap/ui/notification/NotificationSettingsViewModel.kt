@@ -41,9 +41,7 @@ class NotificationSettingsViewModel(
             policy = TaskPolicy.CancelPrevious,
             onStart = { copy(showError = false) },
             request = notificationRepository::fetchEventNotificationsEnabled,
-            onSuccess = { enabled ->
-                reduce { copy(areEnabled = enabled) }
-            },
+            onSuccess = { enabled -> reduce { copy(areEnabled = enabled) } },
             onError = { reduce { copy(showError = true) } },
         )
     }

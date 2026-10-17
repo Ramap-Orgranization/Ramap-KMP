@@ -48,12 +48,14 @@ class OtherReviewsViewModel(
             var epoch = changes.journal.value.epoch
             var revision = changes.journal.value.revision
             changes.journal.collect { journal ->
-                if (epoch != journal.epoch) {
+                val isEpochChanged = epoch != journal.epoch
+                if (isEpochChanged) {
                     epoch = journal.epoch
                     revision = journal.revision
                     return@collect
                 }
-                if (journal.hasGapAfter(revision)) {
+                val hasGap = journal.hasGapAfter(revision)
+                if (hasGap) {
                     revision = journal.revision
                     loadPage(reset = true)
                     return@collect
@@ -61,7 +63,8 @@ class OtherReviewsViewModel(
                 for (record in journal.changesAfter(revision)) {
                     val change = record.change
                     val targetId = currentState.userId
-                    if (change is ReviewChange.AccessChanged && change.userId == targetId) {
+                    val isAccessChangedForUser = change is ReviewChange.AccessChanged && change.userId == targetId
+                    if (isAccessChangedForUser) {
                         generation++
                         val extent = currentState.reviews.size
                         reduce { copy(reviews = emptyList(), profileAccess = null, hasMore = false) }
@@ -69,18 +72,22 @@ class OtherReviewsViewModel(
                     } else {
                         reduce {
                             val access = profileAccess as? ProfileAccess.Visible ?: return@reduce this
-                            if (!access.canReadReviews) return@reduce this
+                            val cannotReadReviews = !access.canReadReviews
+                            if (cannotReadReviews) return@reduce this
                             val patched =
                                 reviewChangeReducer.updateProfileRows(
                                     rows = reviews,
                                     change = change,
                                     hasMore = hasMore,
                                     accepts = { receipt, review ->
-                                        receipt.userId == targetId && (targetId == currentUserId || reviewChangeReducer.isPublicPublished(review))
+                                        val isTargetUser = receipt.userId == targetId
+                                        val isAccessible = targetId == currentUserId || reviewChangeReducer.isPublicPublished(review)
+                                        isTargetUser && isAccessible
                                     },
                                 )
                             val ownerCounts = (change as? ReviewChange.Written)?.takeIf { it.userId == targetId }?.counts
-                            val count = ownerCounts?.let { if (targetId == currentUserId) it.totalCount else it.publishedCount }
+                            val isCurrentSelf = targetId == currentUserId
+                            val count = ownerCounts?.let { if (isCurrentSelf) it.totalCount else it.publishedCount }
                             copy(
                                 reviews = patched,
                                 reviewsOffset = patched.size.toLong(),
@@ -115,7 +122,8 @@ class OtherReviewsViewModel(
                             sessionResolved = true,
                         )
                     }
-                    if (targetId != null) loadPage(reset = true)
+                    val hasTargetUser = targetId != null
+                    if (hasTargetUser) loadPage(reset = true)
                 }
         }
     }
@@ -132,27 +140,34 @@ class OtherReviewsViewModel(
     }
 
     private fun handleLoadMore() {
-        if (currentState.selectedTab == OtherReviewsTab.SavedShops) {
-            if (currentState.savedShopsHasMore && !currentState.savedShopsLoading && !currentState.savedShopsFailed) {
+        val isSavedShopsTab = currentState.selectedTab == OtherReviewsTab.SavedShops
+        if (isSavedShopsTab) {
+            val canLoadMoreSavedShops = currentState.savedShopsHasMore && !currentState.savedShopsLoading && !currentState.savedShopsFailed
+            if (canLoadMoreSavedShops) {
                 loadSavedShops()
             }
             return
         }
-        if (currentState.hasMore && !currentState.loading && !currentState.failed) {
+        val canLoadMoreReviews = currentState.hasMore && !currentState.loading && !currentState.failed
+        if (canLoadMoreReviews) {
             loadPage(reset = false)
         }
     }
 
     private fun handleRetry() {
-        if (currentState.selectedTab == OtherReviewsTab.SavedShops && currentState.profileAccess is ProfileAccess.Visible) {
+        val isSavedShopsTab = currentState.selectedTab == OtherReviewsTab.SavedShops
+        val isProfileVisible = currentState.profileAccess is ProfileAccess.Visible
+        if (isSavedShopsTab && isProfileVisible) {
             loadSavedShops()
             return
         }
-        loadPage(reset = currentState.reviews.isEmpty())
+        val isReviewsEmpty = currentState.reviews.isEmpty()
+        loadPage(reset = isReviewsEmpty)
     }
 
     private fun openProfile(userId: String) {
-        if (userId.isBlank() || currentState.userId == userId) return
+        val isInvalidOrSameUser = userId.isBlank() || currentState.userId == userId
+        if (isInvalidOrSameUser) return
         generation++
         cancelTask(PAGE_TASK)
         cancelTask(SAVED_SHOPS_TASK)
@@ -166,7 +181,8 @@ class OtherReviewsViewModel(
                 sessionResolved = sessionResolved,
             )
         }
-        if (currentState.sessionResolved) loadPage(reset = true)
+        val isSessionResolved = currentState.sessionResolved
+        if (isSessionResolved) loadPage(reset = true)
     }
 
     private fun loadPage(
@@ -174,7 +190,9 @@ class OtherReviewsViewModel(
         requestedReviewExtent: Int = if (reset) currentState.reviews.size else 0,
     ) {
         val userId = currentState.userId ?: return
-        if (!currentState.sessionResolved || (!reset && currentState.profileAccess !is ProfileAccess.Visible)) return
+        val isNotResolved = !currentState.sessionResolved
+        val isNotVisibleOnNextPage = !reset && currentState.profileAccess !is ProfileAccess.Visible
+        if (isNotResolved || isNotVisibleOnNextPage) return
         if (reset) {
             cancelTask(SAVED_SHOPS_TASK)
             cancelTask(FOLLOW_ACCESS_TASK)
@@ -214,19 +232,22 @@ class OtherReviewsViewModel(
         val requestedGeneration = generation
         val result = community.fetchProfileAccess(userId)
         currentCoroutineContext().ensureActive()
-        if (requestedGeneration != generation) return
+        val isStaleGeneration = requestedGeneration != generation
+        if (isStaleGeneration) return
         when (result) {
             is RamapResult.Success ->
                 when (val access = result.data) {
                     is ProfileAccess.Visible -> {
                         reduce { copy(profileAccess = access) }
-                        if (currentState.currentUserId != null) loadSavedShops()
+                        val hasCurrentUser = currentState.currentUserId != null
+                        if (hasCurrentUser) loadSavedShops()
                         if (access.canReadReviews) {
                             fetchAndApplyUserReviews(userId, 0L, reset = true)
                             while (currentState.reviews.size < requestedReviewExtent && currentState.hasMore && !currentState.failed) {
                                 val offset = currentState.reviewsOffset
                                 fetchAndApplyUserReviews(userId, offset, reset = false)
-                                if (currentState.reviewsOffset == offset) break
+                                val isOffsetStuck = currentState.reviewsOffset == offset
+                                if (isOffsetStuck) break
                             }
                         }
                     }
@@ -248,7 +269,8 @@ class OtherReviewsViewModel(
         userId: String,
         access: ProfileAccess,
     ) {
-        if (currentState.userId != userId) return
+        val isDifferentUser = currentState.userId != userId
+        if (isDifferentUser) return
         reduce {
             copy(
                 profileAccess = access,
@@ -274,22 +296,26 @@ class OtherReviewsViewModel(
         val baseline = changes.journal.value
         val result = community.fetchProfileReviewsPage(userId, offset)
         currentCoroutineContext().ensureActive()
-        if (requestedGeneration != generation) return
-        if (baseline.epoch != changes.journal.value.epoch) {
+        val isStaleGeneration = requestedGeneration != generation
+        if (isStaleGeneration) return
+        val isEpochChanged = baseline.epoch != changes.journal.value.epoch
+        if (isEpochChanged) {
             loadPage(reset = true)
             return
         }
-        if (changes.journal.value.hasGapAfter(baseline.revision) ||
+        val hasGap = changes.journal.value.hasGapAfter(baseline.revision)
+        val hasUserChanges =
             changes.journal.value
                 .changesAfter(baseline.revision)
                 .any { (it.change as? ReviewChange.Written)?.userId == userId || (it.change as? ReviewChange.AccessChanged)?.userId == userId }
-        ) {
+        if (hasGap || hasUserChanges) {
             loadPage(reset)
             return
         }
         when (result) {
             is RamapResult.Success -> {
-                if (currentState.userId != userId) return
+                val isDifferentUser = currentState.userId != userId
+                if (isDifferentUser) return
                 val original = result.data
                 var rows = original.reviews
                 for (record in changes.journal.value.changesAfter(baseline.revision)) {
@@ -299,7 +325,9 @@ class OtherReviewsViewModel(
                             change = record.change,
                             hasMore = original.reviews.size == PAGE_SIZE,
                             accepts = { receipt, review ->
-                                receipt.userId == userId && (userId == currentState.currentUserId || reviewChangeReducer.isPublicPublished(review))
+                                val isUserReceipt = receipt.userId == userId
+                                val isAccessible = userId == currentState.currentUserId || reviewChangeReducer.isPublicPublished(review)
+                                isUserReceipt && isAccessible
                             },
                         )
                 }
@@ -310,7 +338,8 @@ class OtherReviewsViewModel(
                     applyProfileAccess(userId, page.access)
                     return
                 }
-                if (!access.canReadReviews || !access.canReadSavedShops) cancelTask(SAVED_SHOPS_TASK)
+                val cannotReadShopsOrReviews = !access.canReadReviews || !access.canReadSavedShops
+                if (cannotReadShopsOrReviews) cancelTask(SAVED_SHOPS_TASK)
                 reduce {
                     copy(
                         profileAccess = access.copy(profile = profile ?: access.profile),
@@ -333,17 +362,20 @@ class OtherReviewsViewModel(
     }
 
     private fun fail(userId: String) {
-        if (currentState.userId == userId) reduce { copy(failed = true) }
+        val isSameUser = currentState.userId == userId
+        if (isSameUser) reduce { copy(failed = true) }
     }
 
     private fun toggleFollow() {
         val access = currentState.profileAccess as? ProfileAccess.Visible ?: return
         val currentUserId = currentState.currentUserId
-        if (currentUserId == null) {
+        val isLoggedOut = currentUserId == null
+        if (isLoggedOut) {
             trySideEffect(OtherReviewsEffect.LoginRequired)
             return
         }
-        if (access.profile.userId == currentUserId || currentState.following) return
+        val isSelfOrMutating = access.profile.userId == currentUserId || currentState.following
+        if (isSelfOrMutating) return
         val action = if (access.followState == FollowState.NONE) FollowAction.FOLLOW else FollowAction.UNFOLLOW
         launchResultTask(
             taskKey = FOLLOW_TASK,
@@ -351,7 +383,8 @@ class OtherReviewsViewModel(
             policy = TaskPolicy.IgnoreNew,
             request = { follows.changeFollow(access.profile.userId, action) },
             onSuccess = {
-                if (currentState.currentUserId == currentUserId && currentState.userId == access.profile.userId) {
+                val isCurrentContextValid = currentState.currentUserId == currentUserId && currentState.userId == access.profile.userId
+                if (isCurrentContextValid) {
                     refreshFollowAccess(access.profile.userId)
                 }
             },
@@ -362,11 +395,13 @@ class OtherReviewsViewModel(
     private fun toggleBlock() {
         val profile = currentState.profile ?: return
         val currentUserId = currentState.currentUserId
-        if (currentUserId == null) {
+        val isLoggedOut = currentUserId == null
+        if (isLoggedOut) {
             trySideEffect(OtherReviewsEffect.LoginRequired)
             return
         }
-        if (profile.userId == currentUserId || currentState.blocking) return
+        val isSelfOrBlocking = profile.userId == currentUserId || currentState.blocking
+        if (isSelfOrBlocking) return
         val wasBlocked = currentState.isBlocked
         launchResultTask(
             taskKey = BLOCK_TASK,
@@ -393,7 +428,6 @@ class OtherReviewsViewModel(
         val currentUserId = currentState.currentUserId
         val resumeReviews = currentState.loading
         val resumeSavedShops = currentState.savedShopsLoading
-        // Discard in-flight pages carrying the old follow state or permissions.
         cancelTask(PAGE_TASK)
         cancelTask(SAVED_SHOPS_TASK)
         launchResultTask(
@@ -402,25 +436,30 @@ class OtherReviewsViewModel(
             policy = TaskPolicy.CancelPrevious,
             request = { community.fetchProfileAccess(userId) },
             onSuccess = { access ->
-                if (currentState.currentUserId != currentUserId || currentState.userId != userId) return@launchResultTask
+                val isStaleContext = currentState.currentUserId != currentUserId || currentState.userId != userId
+                if (isStaleContext) return@launchResultTask
                 applyFollowAccess(userId, access)
                 if (access !is ProfileAccess.Visible) return@launchResultTask
-                if (access.canReadReviews &&
-                    (
-                        !previousAccess.canReadReviews ||
-                            resumeReviews ||
-                            (currentState.reviewsOffset == 0L && !currentState.failed && access.reviewCount != 0L)
-                    )
-                ) {
+
+                val shouldLoadPage =
+                    access.canReadReviews &&
+                        (
+                            !previousAccess.canReadReviews ||
+                                resumeReviews ||
+                                (currentState.reviewsOffset == 0L && !currentState.failed && access.reviewCount != 0L)
+                        )
+                if (shouldLoadPage) {
                     loadPage(reset = false)
                 }
-                if (access.canReadSavedShops &&
-                    (
-                        !previousAccess.canReadSavedShops ||
-                            resumeSavedShops ||
-                            (!currentState.savedShopsLoaded && !currentState.savedShopsFailed)
-                    )
-                ) {
+
+                val shouldLoadSavedShops =
+                    access.canReadSavedShops &&
+                        (
+                            !previousAccess.canReadSavedShops ||
+                                resumeSavedShops ||
+                                (!currentState.savedShopsLoaded && !currentState.savedShopsFailed)
+                        )
+                if (shouldLoadSavedShops) {
                     loadSavedShops()
                 }
             },
@@ -457,7 +496,8 @@ class OtherReviewsViewModel(
         currentUserId: String,
         wasBlocked: Boolean,
     ) {
-        if (currentState.userId != targetProfile.userId || currentState.currentUserId != currentUserId) return
+        val isStaleUser = currentState.userId != targetProfile.userId || currentState.currentUserId != currentUserId
+        if (isStaleUser) return
         cancelTask(PAGE_TASK)
         cancelTask(SAVED_SHOPS_TASK)
         cancelTask(FOLLOW_ACCESS_TASK)
@@ -484,7 +524,8 @@ class OtherReviewsViewModel(
     }
 
     private suspend fun handleToggleBlockError(targetUserId: String) {
-        if (currentState.userId == targetUserId) {
+        val isSameUser = currentState.userId == targetUserId
+        if (isSameUser) {
             postSideEffect(
                 OtherReviewsEffect.ShowToast(
                     ToastData(
@@ -497,17 +538,20 @@ class OtherReviewsViewModel(
     }
 
     private fun selectTab(tab: OtherReviewsTab) {
-        if (tab == OtherReviewsTab.SavedShops && currentState.currentUserId == null) {
+        val isSavedShopsAndLoggedOut = tab == OtherReviewsTab.SavedShops && currentState.currentUserId == null
+        if (isSavedShopsAndLoggedOut) {
             trySideEffect(OtherReviewsEffect.LoginRequired)
             return
         }
         reduce { copy(selectedTab = tab) }
-        if (tab == OtherReviewsTab.SavedShops && !currentState.savedShopsLoaded) loadSavedShops()
+        val shouldLoadSavedShops = tab == OtherReviewsTab.SavedShops && !currentState.savedShopsLoaded
+        if (shouldLoadSavedShops) loadSavedShops()
     }
 
     private fun loadSavedShops() {
         val userId = currentState.userId ?: return
-        if (currentState.currentUserId == null || (currentState.profileAccess as? ProfileAccess.Visible)?.canReadSavedShops != true) return
+        val isLoggedOutOrCannotRead = currentState.currentUserId == null || (currentState.profileAccess as? ProfileAccess.Visible)?.canReadSavedShops != true
+        if (isLoggedOutOrCannotRead) return
         val offset = currentState.savedShopsOffset
         launchResultTask(
             taskKey = SAVED_SHOPS_TASK,
@@ -517,11 +561,13 @@ class OtherReviewsViewModel(
             request = { community.fetchUserSavedShops(userId, offset) },
             onSuccess = { page ->
                 currentCoroutineContext().ensureActive()
-                if (currentState.userId == userId) applySavedShopsPage(page)
+                val isSameUser = currentState.userId == userId
+                if (isSameUser) applySavedShopsPage(page)
             },
             onError = {
                 currentCoroutineContext().ensureActive()
-                if (currentState.userId == userId) reduce { copy(savedShopsFailed = true) }
+                val isSameUser = currentState.userId == userId
+                if (isSameUser) reduce { copy(savedShopsFailed = true) }
             },
         )
     }
@@ -533,7 +579,8 @@ class OtherReviewsViewModel(
             applyProfileAccess(currentState.userId ?: return, page.access)
             return
         }
-        if (!access.canReadReviews || !access.canReadSavedShops) cancelTask(PAGE_TASK)
+        val cannotReadShopsOrReviews = !access.canReadReviews || !access.canReadSavedShops
+        if (cannotReadShopsOrReviews) cancelTask(PAGE_TASK)
         reduce {
             copy(
                 profileAccess = access.copy(profile = profile ?: access.profile),

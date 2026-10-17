@@ -43,8 +43,7 @@ class EventsViewModel(
             is EventsIntent.OnFilterSelected -> reduce { selectEventFilter(this, intent.filter) }
             is EventsIntent.OnEventClicked -> eventsAnalytics.logEventSelected(intent.event)
             EventsIntent.OnNewsReportClicked -> reduce { copy(showNewsReportDialog = true) }
-            EventsIntent.OnNewsReportDismissed ->
-                reduce { copy(showNewsReportDialog = false, newsReportContent = "", newsReportEvidence = null) }
+            EventsIntent.OnNewsReportDismissed -> reduce { copy(showNewsReportDialog = false, newsReportContent = "", newsReportEvidence = null) }
             is EventsIntent.OnNewsReportContentChanged -> reduce { copy(newsReportContent = intent.value) }
             is EventsIntent.OnNewsReportEvidenceSelected -> reduce { copy(newsReportEvidence = intent.evidence) }
             EventsIntent.OnNewsReportEvidenceRemoved -> reduce { copy(newsReportEvidence = null) }
@@ -74,23 +73,20 @@ class EventsViewModel(
             retryOnNetworkError = true,
             request = ramenShopRepository::fetchActiveEvents,
             onSuccess = { events -> reduce { mapEventsToUiState(this, events) } },
-            onError = {
-                showToast(
-                    message = Res.string.event_list_refresh_failure_message,
-                    type = ToastType.ERROR,
-                )
-            },
+            onError = { showToast(message = Res.string.event_list_refresh_failure_message, type = ToastType.ERROR) },
         )
     }
 
     private fun submitNewsReport() {
         val content = currentState.newsReportContent
         val sourceUrl = InstagramNewsUrlParser.extractCanonicalUrl(content)
-        if (content.isNotBlank() && sourceUrl == null) {
+        val isInvalidUrl = content.isNotBlank() && sourceUrl == null
+        if (isInvalidUrl) {
             showToast(Res.string.news_report_invalid_url_message)
             return
         }
-        if (sourceUrl == null && currentState.newsReportEvidence == null) {
+        val isReportMissing = sourceUrl == null && currentState.newsReportEvidence == null
+        if (isReportMissing) {
             showToast(Res.string.news_report_required_message)
             return
         }
@@ -119,9 +115,7 @@ class EventsViewModel(
                     NewsReportSubmission.DUPLICATE -> showToast(Res.string.news_report_duplicate_message)
                 }
             },
-            onError = {
-                showToast(Res.string.news_report_failure_message)
-            },
+            onError = { showToast(Res.string.news_report_failure_message) },
         )
     }
 
