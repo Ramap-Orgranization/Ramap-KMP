@@ -27,7 +27,7 @@ internal class DefaultProfileRepository(
     private val changes: DefaultReviewChangeStore,
     private val currentTime: () -> Instant = { Clock.System.now() },
 ) : ProfileRepository {
-    override val sessionUserIds = dataSource.sessionUserIds
+    override val sessionUserId = dataSource.sessionUserIds
 
     private var avatarCache: AvatarCache? = null
 

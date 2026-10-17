@@ -128,9 +128,9 @@ class MyReviewsViewModelTest {
             repository.pendingResults += pending
             viewModel.dispatch(MyReviewsIntent.Retry)
             runCurrent()
-            profiles.sessionUserIds.value = "second"
+            profiles.sessionUserId.value = "second"
             runCurrent()
-            profiles.sessionUserIds.value = "first"
+            profiles.sessionUserId.value = "first"
             runCurrent()
             pending.complete(RamapResult.Success(MyReviewsPage(emptyList(), 99, 99, 0, true)))
             runCurrent()

@@ -12,9 +12,9 @@ class FakeProfileRepository(
     var isProfilePublic: Boolean = true,
     var followersCanReadReviews: Boolean = false,
 ) : ProfileRepository {
-    override val sessionUserIds = MutableStateFlow(userId)
+    override val sessionUserId = MutableStateFlow(userId)
 
-    override suspend fun fetchMyProfile() = RamapResult.Success(AccountProfile(sessionUserIds.value.orEmpty(), "라멘러", isPublic = isProfilePublic, followersCanReadReviews = followersCanReadReviews))
+    override suspend fun fetchMyProfile() = RamapResult.Success(AccountProfile(sessionUserId.value.orEmpty(), "라멘러", isPublic = isProfilePublic, followersCanReadReviews = followersCanReadReviews))
 
     override suspend fun isNicknameAvailable(nickname: String) = RamapResult.Success(true)
 
@@ -24,6 +24,6 @@ class FakeProfileRepository(
 
     override suspend fun updateProfileVisibility(isPublic: Boolean): RamapResult<AccountProfile> {
         isProfilePublic = isPublic
-        return RamapResult.Success(AccountProfile(sessionUserIds.value.orEmpty(), "라멘러", isPublic = isPublic))
+        return RamapResult.Success(AccountProfile(sessionUserId.value.orEmpty(), "라멘러", isPublic = isPublic))
     }
 }

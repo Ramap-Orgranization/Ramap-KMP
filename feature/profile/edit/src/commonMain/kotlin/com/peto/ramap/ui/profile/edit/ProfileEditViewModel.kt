@@ -32,7 +32,7 @@ class ProfileEditViewModel(
 
     private fun observeSession() {
         viewModelScope.launch {
-            repository.sessionUserIds.distinctUntilChanged().collect { userId ->
+            repository.sessionUserId.distinctUntilChanged().collect { userId ->
                 cancelProfileTasks()
                 reduce { ProfileUiState(userId = userId, loadState = LoadState()) }
                 if (userId != null) fetch()

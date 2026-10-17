@@ -147,7 +147,7 @@ class ReviewsViewModel(
     }
 
     private suspend fun observeSession() {
-        profileRepository.sessionUserIds.collect { viewer ->
+        profileRepository.sessionUserId.collect { viewer ->
             if (currentState.currentUserId == viewer) return@collect
             cancelReviewTasks()
             fetchReviews.clearCache()

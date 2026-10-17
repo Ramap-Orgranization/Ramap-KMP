@@ -78,7 +78,7 @@ class MyTabViewModelTest {
             runCurrent()
             assertEquals(8, viewModel.uiState.value.reviewCount)
 
-            profiles.sessionUserIds.value = null
+            profiles.sessionUserId.value = null
             runCurrent()
             assertNull(viewModel.uiState.value.reviewCount)
             assertNull(viewModel.uiState.value.blockedUserCount)
@@ -137,7 +137,7 @@ class MyTabViewModelTest {
             val updatedProfile = viewModel.uiState.value.profile
             assertEquals("새 닉네임", updatedProfile?.nickname)
 
-            profiles.sessionUserIds.value = null
+            profiles.sessionUserId.value = null
             runCurrent()
             assertNull(viewModel.uiState.value.profile)
             assertTrue(viewModel.uiState.value.sessionResolved)
@@ -182,7 +182,7 @@ class MyTabViewModelTest {
             profiles.ignoreFetchCancellation = true
             viewModel.dispatch(MyTabIntent.Refresh)
             runCurrent()
-            profiles.sessionUserIds.value = null
+            profiles.sessionUserId.value = null
             runCurrent()
             oldRequest.complete(RamapResult.Success(AccountProfile("first", "이전 사용자")))
             runCurrent()
@@ -257,7 +257,7 @@ class MyTabViewModelTest {
 
             viewModel.dispatch(MyTabIntent.SaveVisibility(true))
             runCurrent()
-            profiles.sessionUserIds.value = null
+            profiles.sessionUserId.value = null
             runCurrent()
             pending.complete(RamapResult.Success(AccountProfile("first", "느긋한차슈", isPublic = true)))
             runCurrent()

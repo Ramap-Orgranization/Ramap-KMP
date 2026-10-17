@@ -86,7 +86,7 @@ class MyReviewsViewModel(
 
     private fun observeSessionUserIds() {
         viewModelScope.launch {
-            profiles.sessionUserIds.distinctUntilChanged().collect { userId ->
+            profiles.sessionUserId.distinctUntilChanged().collect { userId ->
                 generation++
                 cancelTask(PAGE_TASK)
                 reduce { MyReviewsUiState(userId = userId) }

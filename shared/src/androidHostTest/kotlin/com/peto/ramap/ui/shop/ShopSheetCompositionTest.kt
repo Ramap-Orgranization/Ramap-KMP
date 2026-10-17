@@ -64,7 +64,7 @@ class ShopSheetCompositionTest {
                 composition.setContent(content)
                 runCurrent()
                 val first = requireNotNull(models)
-                assertEquals(2, profile.sessionUserIds.subscriptionCount.value)
+                assertEquals(2, profile.sessionUserId.subscriptionCount.value)
                 composition.setContent(content)
                 runCurrent()
                 assertSame(first.first, requireNotNull(models).first)
@@ -73,7 +73,7 @@ class ShopSheetCompositionTest {
                 assertEquals(listOf("shop"), queries.menuCalls)
                 composition.setContent { }
                 runCurrent()
-                assertEquals(0, profile.sessionUserIds.subscriptionCount.value)
+                assertEquals(0, profile.sessionUserId.subscriptionCount.value)
                 queries.menuGate = CompletableDeferred()
                 composition.setContent(content)
                 runCurrent()
@@ -124,7 +124,7 @@ class ShopSheetCompositionTest {
                         .second.uiState.value.menu
                         ?.updatedAt,
                 )
-                assertEquals(2, profile.sessionUserIds.subscriptionCount.value)
+                assertEquals(2, profile.sessionUserId.subscriptionCount.value)
             } finally {
                 composition.dispose()
                 recomposer.cancel()
@@ -151,7 +151,7 @@ class ShopSheetCompositionTest {
                 personalization.updateBookmarkedShopIds(setOf("existing"))
                 runCurrent()
                 assertEquals(emptyList(), personalization.bookmarkUpdateRequests)
-                assertEquals(0, profile.sessionUserIds.subscriptionCount.value)
+                assertEquals(0, profile.sessionUserId.subscriptionCount.value)
             } finally {
                 composition.dispose()
                 recomposer.cancel()

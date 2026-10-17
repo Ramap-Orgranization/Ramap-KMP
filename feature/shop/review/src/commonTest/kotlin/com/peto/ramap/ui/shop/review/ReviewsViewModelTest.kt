@@ -69,7 +69,7 @@ class ReviewsViewModelTest {
             val login = FakeLoginRepository(LoginSessionState.AUTHENTICATED)
             val changes = FakeReviewChangeStore()
             val viewModel = viewModel(fake, profile, changes, login)
-            profile.sessionUserIds.value = null
+            profile.sessionUserId.value = null
             login.updateSessionState(LoginSessionState.NOT_AUTHENTICATED)
             changes.reset(null)
             viewModel.dispatch(ReviewsIntent.OnShopSelected("shop"))
@@ -195,7 +195,7 @@ class ReviewsViewModelTest {
         coroutinesTest {
             val fake = FakeShopReviewRepository()
             val profile = FakeProfileRepository(null)
-            profile.sessionUserIds.value = "old-user"
+            profile.sessionUserId.value = "old-user"
             val pending = CompletableDeferred<ShopReviewsPage>()
             var calls = 0
             val repository =
@@ -215,7 +215,7 @@ class ReviewsViewModelTest {
             val viewModel = viewModel(repository, profile)
             viewModel.dispatch(ReviewsIntent.OnShopSelected("shop"))
             runCurrent()
-            profile.sessionUserIds.value = "new-user"
+            profile.sessionUserId.value = "new-user"
             runCurrent()
             pending.complete(ShopReviewsPage(listOf(review("shop").copy(isPublic = false)), 1))
             runCurrent()
@@ -264,7 +264,7 @@ class ReviewsViewModelTest {
             val viewModel = viewModel(repository, profile, changes)
             viewModel.dispatch(ReviewsIntent.OnShopSelected("shop"))
             runCurrent()
-            profile.sessionUserIds.value = "new-user"
+            profile.sessionUserId.value = "new-user"
             runCurrent()
             assertTrue(viewModel.uiState.value.isLoading)
             changes.reset("new-user")

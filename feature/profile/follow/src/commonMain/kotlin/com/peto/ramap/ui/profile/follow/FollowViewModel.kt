@@ -16,7 +16,7 @@ class FollowViewModel(
 ) : BaseViewModel<FollowState, FollowIntent, FollowEffect>(FollowState()) {
     init {
         viewModelScope.launch {
-            profiles.sessionUserIds.distinctUntilChanged().collect { userId ->
+            profiles.sessionUserId.distinctUntilChanged().collect { userId ->
                 cancelTask(PAGE_TASK)
                 cancelTask(MUTATION_TASK)
                 cancelTask(COUNTS_TASK)

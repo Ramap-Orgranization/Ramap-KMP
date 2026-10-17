@@ -137,7 +137,7 @@ class FollowViewModelTest {
             val profiles = FakeProfileRepository()
             val viewModel = FollowViewModel(repository, profiles)
             runCurrent()
-            profiles.sessionUserIds.value = null
+            profiles.sessionUserId.value = null
             runCurrent()
             pending.complete(RamapResult.Success(FollowCounts(3L, 5L, 2L)))
             runCurrent()

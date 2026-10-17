@@ -98,7 +98,7 @@ class OtherReviewsViewModel(
     private fun observeSessionUserIds() {
         viewModelScope.launch {
             profiles
-                .sessionUserIds
+                .sessionUserId
                 .distinctUntilChanged()
                 .collect { currentUserId ->
                     generation++

@@ -56,7 +56,7 @@ class MyTabViewModel(
             }
         }
         viewModelScope.launch {
-            repository.sessionUserIds.distinctUntilChanged().collect { userId ->
+            repository.sessionUserId.distinctUntilChanged().collect { userId ->
                 requestGeneration++
                 sessionGeneration++
                 cancelTask(FETCH)

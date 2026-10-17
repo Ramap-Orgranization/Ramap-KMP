@@ -3312,7 +3312,7 @@ private fun TestScope.mapViewModel(
             ): RamapResult<ShopReviewsPage> = RamapResult.Success(seeded?.let { it.copy(reviews = it.reviews.drop(offset.toInt()).take(20)) } ?: ShopReviewsPage(emptyList(), 0))
         }
     val effectiveProfile =
-        if (profileRepository.sessionUserIds.value == null && loginRepository.hasSession()) {
+        if (profileRepository.sessionUserId.value == null && loginRepository.hasSession()) {
             FakeProfileRepository("user")
         } else {
             profileRepository

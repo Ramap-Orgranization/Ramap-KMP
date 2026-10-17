@@ -11,7 +11,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.withContext
 
 class FakeProfileRepository : ProfileRepository {
-    override val sessionUserIds = MutableStateFlow<String?>("first")
+    override val sessionUserId = MutableStateFlow<String?>("first")
     var saveResult: CompletableDeferred<RamapResult<AccountProfile>>? = null
     var fetchResult: RamapResult<AccountProfile>? = null
     var fetchPending: CompletableDeferred<RamapResult<AccountProfile>>? = null
@@ -25,7 +25,7 @@ class FakeProfileRepository : ProfileRepository {
     override suspend fun fetchMyProfile(): RamapResult<AccountProfile> {
         val pending = fetchPending
         if (pending != null) return if (ignoreFetchCancellation) withContext(NonCancellable) { pending.await() } else pending.await()
-        return fetchResult ?: RamapResult.Success(AccountProfile(sessionUserIds.value.orEmpty(), "느긋한차슈"))
+        return fetchResult ?: RamapResult.Success(AccountProfile(sessionUserId.value.orEmpty(), "느긋한차슈"))
     }
 
     override suspend fun isNicknameAvailable(nickname: String): RamapResult<Boolean> {
@@ -36,11 +36,11 @@ class FakeProfileRepository : ProfileRepository {
     override suspend fun updateMyProfile(draft: ProfileDraft): RamapResult<AccountProfile> {
         saveCalls++
         val pending = saveResult
-        if (pending == null) return RamapResult.Success(AccountProfile(sessionUserIds.value.orEmpty(), draft.nickname.value, bio = draft.bio?.value.orEmpty()))
+        if (pending == null) return RamapResult.Success(AccountProfile(sessionUserId.value.orEmpty(), draft.nickname.value, bio = draft.bio?.value.orEmpty()))
         return if (ignoreCancellation) withContext(NonCancellable) { pending.await() } else pending.await()
     }
 
     override suspend fun updateProfileVisibility(visibility: ProfileVisibility): RamapResult<AccountProfile> = updateProfileVisibility(visibility.isPublic)
 
-    override suspend fun updateProfileVisibility(isPublic: Boolean): RamapResult<AccountProfile> = RamapResult.Success(AccountProfile(sessionUserIds.value.orEmpty(), "느긋한차슈", isPublic = isPublic))
+    override suspend fun updateProfileVisibility(isPublic: Boolean): RamapResult<AccountProfile> = RamapResult.Success(AccountProfile(sessionUserId.value.orEmpty(), "느긋한차슈", isPublic = isPublic))
 }

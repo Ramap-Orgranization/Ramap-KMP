@@ -59,7 +59,7 @@ class ReviewWriteViewModel(
 
     private fun observeSessionUser() {
         viewModelScope.launch {
-            profileRepository.sessionUserIds
+            profileRepository.sessionUserId
                 .distinctUntilChanged()
                 .collect { userId ->
                     resetStateForSessionUserChange()
@@ -221,7 +221,7 @@ class ReviewWriteViewModel(
 
     private suspend fun submit() {
         if (!currentState.canSubmit) return
-        val userId = profileRepository.sessionUserIds.first()
+        val userId = profileRepository.sessionUserId.first()
         if (userId == null) {
             postSideEffect(ReviewWriteSideEffect.LoginRequired)
             return
@@ -248,7 +248,7 @@ class ReviewWriteViewModel(
                 if (
                     generation != submissionGeneration ||
                     profile.userId != userId ||
-                    profileRepository.sessionUserIds.first() != userId
+                    profileRepository.sessionUserId.first() != userId
                 ) {
                     return@launchResultTask
                 }

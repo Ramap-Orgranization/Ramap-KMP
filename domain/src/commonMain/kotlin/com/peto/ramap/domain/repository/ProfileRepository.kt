@@ -8,7 +8,7 @@ import com.peto.ramap.domain.model.profile.ProfileVisibility
 import kotlinx.coroutines.flow.Flow
 
 interface ProfileRepository {
-    val sessionUserIds: Flow<String?>
+    val sessionUserId: Flow<String?>
 
     suspend fun fetchMyProfile(): RamapResult<AccountProfile>
 

@@ -190,7 +190,7 @@ class ReviewWriteViewModelTest {
             assertEquals("첫 계정 리뷰", viewModel.uiState.value.body)
 
             reviews.editableReview = EditableReview("review", "shop", "새 계정 리뷰", listOf("second"), listOf(null), false)
-            profiles.sessionUserIds.value = "second"
+            profiles.sessionUserId.value = "second"
             runCurrent()
             assertEquals("새 계정 리뷰", viewModel.uiState.value.body)
             assertEquals(
