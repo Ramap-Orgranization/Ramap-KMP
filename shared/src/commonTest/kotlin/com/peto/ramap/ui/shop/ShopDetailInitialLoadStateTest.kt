@@ -154,7 +154,7 @@ class ShopDetailInitialLoadStateTest {
 
     private fun failedOverview() = ShopOverviewState(overviewState = ShopOverviewUiState.Error("shop", null), hasLoadFailure = true)
 
-    private fun successfulMenu() = ShopMenuUiState(shopId = "shop", menu = ShopMenu(emptyList()))
+    private fun successfulMenu() = ShopMenuUiState(shopId = "shop", menu = ShopMenu(emptyList(), "2026-10-14"))
 
     private fun loadingMenu() = ShopMenuUiState(shopId = "shop", loadState = LoadState.loading(ShopMenuLoadKey.Menu))
 
