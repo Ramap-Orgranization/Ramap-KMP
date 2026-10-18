@@ -25,14 +25,11 @@ import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.event_registration_open
 import ramap.shared.generated.resources.ic_add
-import ramap.shared.generated.resources.ic_report
-import ramap.shared.generated.resources.news_report_open
 
 @Composable
 internal fun EventFilters(
     selectedFilter: EventFilter,
     onFilterSelected: (EventFilter) -> Unit,
-    onClickNewsReport: () -> Unit,
     onClickAdminRegistration: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
@@ -57,15 +54,6 @@ internal fun EventFilters(
         }
 
         Spacer(modifier = Modifier.weight(1f))
-
-        Image(
-            painter = painterResource(Res.drawable.ic_report),
-            contentDescription = stringResource(Res.string.news_report_open),
-            modifier =
-                Modifier
-                    .size(25.dp)
-                    .noRippleClickable { onClickNewsReport() },
-        )
         if (onClickAdminRegistration != null) {
             Image(
                 painter = painterResource(Res.drawable.ic_add),
@@ -86,7 +74,6 @@ private fun EventFiltersPreview() {
         EventFilters(
             selectedFilter = EventFilter.EVENT,
             onFilterSelected = {},
-            onClickNewsReport = {},
         )
     }
 }

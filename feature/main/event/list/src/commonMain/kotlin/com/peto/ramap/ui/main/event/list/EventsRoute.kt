@@ -38,13 +38,11 @@ import com.peto.ramap.ui.main.event.list.component.EventFilters
 import com.peto.ramap.ui.main.event.list.component.EventListBottomSheet
 import com.peto.ramap.ui.main.event.list.component.EventListEmptyContent
 import com.peto.ramap.ui.main.event.list.component.EventListSkeleton
-import com.peto.ramap.ui.main.event.list.component.NewsReportDialog
 import com.peto.ramap.ui.main.event.list.component.eventSection
 import com.peto.ramap.ui.main.event.list.contract.EventsIntent
 import com.peto.ramap.ui.main.event.list.contract.EventsSideEffect
 import com.peto.ramap.ui.main.event.list.contract.EventsUiState
 import com.peto.ramap.ui.main.event.list.platform.rememberAdminRegistrationAction
-import com.peto.ramap.ui.main.event.list.platform.rememberNewsReportImagePicker
 import com.peto.ramap.ui.main.event.list.preview.EventsPreviewParameterProvider
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
@@ -70,10 +68,6 @@ fun EventsRoute(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val adminRegistrationAction = rememberAdminRegistrationAction()
-    val imagePicker =
-        rememberNewsReportImagePicker { evidence ->
-            viewModel.dispatch(EventsIntent.OnNewsReportEvidenceSelected(evidence))
-        }
     ObserveAsEvents(viewModel.sideEffect) { sideEffect ->
         when (sideEffect) {
             is EventsSideEffect.ShowEventsToast -> toastManager.show(sideEffect.data)
@@ -89,12 +83,6 @@ fun EventsRoute(
         onRefresh = { viewModel.dispatch(EventsIntent.OnEventsRefreshed) },
         onClickRetry = { viewModel.dispatch(EventsIntent.OnEventsRetried) },
         onFilterSelected = { filter -> viewModel.dispatch(EventsIntent.OnFilterSelected(filter)) },
-        onClickNewsReport = { viewModel.dispatch(EventsIntent.OnNewsReportClicked) },
-        onNewsReportContentChanged = { viewModel.dispatch(EventsIntent.OnNewsReportContentChanged(it)) },
-        onNewsReportImagePick = imagePicker,
-        onNewsReportEvidenceRemoved = { viewModel.dispatch(EventsIntent.OnNewsReportEvidenceRemoved) },
-        onNewsReportSubmit = { viewModel.dispatch(EventsIntent.OnNewsReportSubmit) },
-        onNewsReportDismiss = { viewModel.dispatch(EventsIntent.OnNewsReportDismissed) },
         onClickAdminRegistration = adminRegistrationAction,
     )
 }
@@ -107,12 +95,6 @@ internal fun EventsScreen(
     onRefresh: () -> Unit,
     onClickRetry: () -> Unit,
     onFilterSelected: (EventFilter) -> Unit,
-    onClickNewsReport: () -> Unit,
-    onNewsReportContentChanged: (String) -> Unit,
-    onNewsReportImagePick: () -> Unit,
-    onNewsReportEvidenceRemoved: () -> Unit,
-    onNewsReportSubmit: () -> Unit,
-    onNewsReportDismiss: () -> Unit,
     onClickAdminRegistration: (() -> Unit)?,
 ) {
     var selectedEventGroup by remember { mutableStateOf<ShopEvents?>(null) }
@@ -179,7 +161,6 @@ internal fun EventsScreen(
                                 EventFilters(
                                     selectedFilter = uiState.selectedFilter,
                                     onFilterSelected = onFilterSelected,
-                                    onClickNewsReport = onClickNewsReport,
                                     onClickAdminRegistration = onClickAdminRegistration,
                                     modifier = Modifier.padding(top = 5.dp),
                                 )
@@ -255,17 +236,6 @@ internal fun EventsScreen(
             }
         }
     }
-    NewsReportDialog(
-        value = uiState.newsReportContent,
-        evidence = uiState.newsReportEvidence,
-        visible = uiState.showNewsReportDialog,
-        isSubmitting = uiState.isSubmittingNewsReport,
-        onValueChange = onNewsReportContentChanged,
-        onImagePick = onNewsReportImagePick,
-        onEvidenceRemove = onNewsReportEvidenceRemoved,
-        onSubmit = onNewsReportSubmit,
-        onDismiss = onNewsReportDismiss,
-    )
 }
 
 @Preview(showBackground = true)
@@ -281,12 +251,6 @@ private fun EventsRoutePreview(
             onRefresh = {},
             onClickRetry = {},
             onFilterSelected = {},
-            onClickNewsReport = {},
-            onNewsReportContentChanged = {},
-            onNewsReportImagePick = {},
-            onNewsReportEvidenceRemoved = {},
-            onNewsReportSubmit = {},
-            onNewsReportDismiss = {},
             onClickAdminRegistration = null,
         )
     }
