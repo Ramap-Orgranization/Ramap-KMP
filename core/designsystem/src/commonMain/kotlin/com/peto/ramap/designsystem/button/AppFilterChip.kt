@@ -35,9 +35,9 @@ import ramap.shared.generated.resources.ranking_all_regions
 
 @Composable
 fun AppFilterChip(
-    label: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    label: String = "",
     icon: DrawableResource? = null,
     trailingIcon: DrawableResource? = null,
     selected: Boolean = false,

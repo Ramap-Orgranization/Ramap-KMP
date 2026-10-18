@@ -44,7 +44,6 @@ import ramap.shared.generated.resources.ic_keyboard_arrow_down
 import ramap.shared.generated.resources.ic_kid_star
 import ramap.shared.generated.resources.ic_kid_star_filled
 import ramap.shared.generated.resources.ic_notice_search
-import ramap.shared.generated.resources.operating_notice_saved
 import ramap.shared.generated.resources.operating_notice_search
 
 @Composable
@@ -76,7 +75,7 @@ internal fun OperatingNoticeFilters(
     HorizontalDivider(color = GrayColor.C100)
 }
 
-@Preview(name = "기본 필터", showBackground = true, widthDp = 360)
+@Preview(showBackground = true)
 @Composable
 private fun OperatingNoticeFiltersPreview() {
     RamapTheme {
@@ -92,7 +91,7 @@ private fun OperatingNoticeFiltersPreview() {
     }
 }
 
-@Preview(name = "검색·지역·저장 선택", showBackground = true, widthDp = 360)
+@Preview(showBackground = true, widthDp = 360)
 @Composable
 private fun OperatingNoticeSelectedFiltersPreview() {
     val state = operatingNoticeFiltersPreviewState()
@@ -192,7 +191,6 @@ private fun OperatingNoticeFilterChips(
             trailingIcon = Res.drawable.ic_keyboard_arrow_down,
         )
         AppFilterChip(
-            label = stringResource(Res.string.operating_notice_saved),
             onClick = onSavedToggled,
             icon = if (savedOnly) Res.drawable.ic_kid_star_filled else Res.drawable.ic_kid_star,
             selected = savedOnly,
