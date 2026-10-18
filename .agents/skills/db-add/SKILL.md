@@ -9,7 +9,7 @@ Register or conservatively update one or many ramen shops in `public.ramen_shops
 
 ## Execution context
 
-Read `AGENTS.md` and `.codex/commands/db-add.md`. The command delegates here for registration details; its older `public.shops` example is not the write target. `supabase/migrations/20261003013853_remove_legacy_shops_view.sql` removes that compatibility view. Inspect the current `public.ramen_shops` schema before querying or writing.
+Read `AGENTS.md` and `.codex/commands/db-add.md`. The command delegates here for registration details; Inspect the current `public.ramen_shops` schema before querying or writing.
 
 Apply the available `supabase:supabase` skill for connection and CLI guidance. Use the configured project and an authenticated Supabase MCP or linked CLI path for administrative writes. `local.properties` already contains the app configuration; do not print its keys or ask for them again. Discover CLI flags with `--help`. The primary agent owns registration; only `menu-add`'s final review requires its dedicated reviewer.
 
