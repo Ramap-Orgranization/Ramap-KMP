@@ -18,7 +18,7 @@ internal fun AdminNoticeTimeFields(
     isError: Boolean,
     onTimesChanged: (String?, String?) -> Unit,
 ) {
-    if (type != OperatingNoticeType.EARLY_CLOSING) return
+    if (type?.hasClosingTime != true) return
     OutlinedTextField(
         value = endTime.orEmpty(),
         isError = isError,

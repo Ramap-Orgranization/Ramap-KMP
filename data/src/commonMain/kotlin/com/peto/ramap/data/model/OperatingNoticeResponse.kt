@@ -18,6 +18,8 @@ internal data class OperatingNoticeResponse(
     val shopId: String,
     @SerialName("notice_type")
     val noticeType: String,
+    @SerialName("notice_category")
+    val noticeCategory: String? = null,
     val description: String,
     @SerialName("notice_date")
     val startDate: String,
@@ -39,8 +41,8 @@ internal data class OperatingNoticeResponse(
     val dailySchedules: List<OperatingNoticeDayResponse> = emptyList(),
 ) {
     fun toDomain(shop: RamenShop): OperatingNotice? {
-        val type = OperatingNoticeType.fromOrNull(noticeType) ?: return null
-        if (type == OperatingNoticeType.EARLY_CLOSING && endTime == null) return null
+        val type = OperatingNoticeType.fromOrNull(noticeCategory ?: noticeType) ?: return null
+        if (type.hasClosingTime && endTime == null) return null
         return OperatingNotice(
             id = id,
             shop = shop,

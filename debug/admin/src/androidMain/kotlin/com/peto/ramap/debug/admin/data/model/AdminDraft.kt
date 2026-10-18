@@ -35,7 +35,7 @@ internal data class AdminDraft(
         if (end < start) return false
         if (startTime != null || scheduleOverride != null) return false
         val type = noticeType?.let(OperatingNoticeType::fromOrNull) ?: return false
-        if (type == OperatingNoticeType.EARLY_CLOSING) {
+        if (type.hasClosingTime) {
             return endTime?.matches(Regex("([01][0-9]|2[0-3]):[0-5][0-9]")) == true && dailySchedules.isEmpty()
         }
         return endTime == null && dailySchedules.all { it.scheduleOverride == null } && (dailySchedules.isEmpty() || dailySchedules.any { it.closed })

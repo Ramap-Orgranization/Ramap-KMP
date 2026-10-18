@@ -179,6 +179,7 @@ private fun OperatingNoticeType.label(): String =
     when (this) {
         OperatingNoticeType.TEMPORARY_CLOSURE,
         OperatingNoticeType.EARLY_CLOSING,
+        OperatingNoticeType.PLANNED_CLOSING,
         -> composeStringResource(ShopOperatingNoticeResourceMapper.typeLabel(this))
     }
 

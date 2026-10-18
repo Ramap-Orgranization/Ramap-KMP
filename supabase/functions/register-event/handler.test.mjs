@@ -69,10 +69,10 @@ for (const type of ["limited_menu", "popup"]) {
   });
 }
 
-for (const type of ["full_close", "early_close"]) {
+for (const type of ["full_close", "early_close", "planned_close"]) {
   test(`${type} 공지는 관리자 경로에 연속 기간과 검토 메모를 저장한다`, async () => {
     const app = harness();
-    const body = { ...base, registration_type: "operating_notice", notice_type: type, end_time: type === "early_close" ? "15:00" : null };
+    const body = { ...base, registration_type: "operating_notice", notice_type: type, end_time: type !== "full_close" ? "15:00" : null };
     const response = await app.invoke(body);
     assert.equal(response.status, 200, JSON.stringify(await response.json()));
     const row = app.calls.inserts.find(({ table }) => table === "admin_shop_operating_notice_records").value[0];
@@ -83,7 +83,7 @@ for (const type of ["full_close", "early_close"]) {
 }
 
 test("제거한 공지 유형과 마감 시각 없는 조기 마감은 쓰기 전에 거절한다", async () => {
-  for (const notice_type of ["operating_notice", "late_opening", "early_close"]) {
+  for (const notice_type of ["operating_notice", "late_opening", "early_close", "planned_close"]) {
     const app = harness();
     assert.equal((await app.invoke({ ...base, registration_type: "operating_notice", notice_type })).status, 400);
     assert.equal(app.calls.inserts.length, 0);

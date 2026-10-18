@@ -32,6 +32,26 @@ data class OperatingNotice(
         return dailySchedules.any { it.date == date && it.closed }
     }
 
+    fun scheduledDates(referenceDate: LocalDate): List<LocalDate> {
+        if (dailySchedules.isNotEmpty()) {
+            return dailySchedules
+                .filter { it.closed && it.date > referenceDate && appliesOn(it.date) }
+                .map { it.date }
+                .distinct()
+                .sorted()
+        }
+        val lastDate = endDate ?: startDate
+        if (startDate == lastDate) return listOfNotNull(startDate.takeIf { it > referenceDate })
+        if (lastDate < referenceDate) return emptyList()
+        return buildList {
+            var scheduledDate = startDate
+            while (scheduledDate <= lastDate) {
+                add(scheduledDate)
+                scheduledDate = scheduledDate.plus(1, DateTimeUnit.DAY)
+            }
+        }
+    }
+
     fun isActiveAt(currentDateTime: LocalDateTime): Boolean = appliesOn(currentDateTime.date)
 
     fun isCurrentOrScheduledAt(currentDateTime: LocalDateTime): Boolean =
@@ -50,7 +70,7 @@ data class OperatingNotice(
     }
 
     fun nextClosingAt(currentDateTime: LocalDateTime): LocalDateTime? {
-        if (type != OperatingNoticeType.EARLY_CLOSING || endTime == null) return null
+        if (!type.hasClosingTime || endTime == null) return null
         return listOf(currentDateTime.date.minus(1, DateTimeUnit.DAY), currentDateTime.date, currentDateTime.date.plus(1, DateTimeUnit.DAY), startDate)
             .filter(::appliesOn)
             .mapNotNull(::closingAt)

@@ -66,7 +66,7 @@ data class RamenShop(
     ): Boolean =
         operatingNotices
             .asSequence()
-            .filter { it.type == OperatingNoticeType.EARLY_CLOSING }
+            .filter { it.type.hasClosingTime }
             .mapNotNull { notice -> notice.businessDateAt(currentDateTime)?.let { businessDate -> notice to businessDate } }
             .any { (notice, businessDate) ->
                 notice.closingAt(businessDate)?.let { currentDateTime >= it } == true
@@ -85,7 +85,7 @@ data class RamenShop(
                 overrides[date] = BusinessHoursScheduleOverride(BusinessHoursDay(true, null, null, false, null))
                 continue
             }
-            val earlyClose = notices.filter { it.type == OperatingNoticeType.EARLY_CLOSING && it.appliesOn(date) }.mapNotNull { it.closingAt(date) }.minOrNull() ?: continue
+            val earlyClose = notices.filter { it.type.hasClosingTime && it.appliesOn(date) }.mapNotNull { it.closingAt(date) }.minOrNull() ?: continue
             val day = businessHours.dayAt(date) ?: continue
             val regularCloseTime = day.close?.let { runCatching { LocalTime.parse(it) }.getOrNull() } ?: continue
             val regularCloseDate = if (day.closeNextDay) date.plus(1, DateTimeUnit.DAY) else date

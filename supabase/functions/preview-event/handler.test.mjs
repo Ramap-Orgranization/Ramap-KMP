@@ -28,9 +28,9 @@ function harness(draft) {
   };
 }
 
-test("점심만 영업의 마감 시각이 없으면 확인이 필요한 조기 마감 초안으로 남긴다", async () => {
-  const draft = await harness({ notice_type: "early_close", end_time: null })();
-  assert.equal(draft.notice_type, "early_close");
+test("점심만 영업의 마감 시각이 없으면 확인이 필요한 운영 변동 초안으로 남긴다", async () => {
+  const draft = await harness({ notice_type: "planned_close", end_time: null })();
+  assert.equal(draft.notice_type, "planned_close");
   assert.equal(draft.end_time, null);
   assert.ok(draft.uncertainties.some((item) => item.includes("마감 시각")));
 });
@@ -84,3 +84,11 @@ test("잘못된 일정은 전체 미리보기를 실패시키거나 연속 휴�
     assert.equal(draft.description, "점심만 영업");
   }
 });
+
+for (const notice_type of ["early_close", "planned_close"]) {
+  test(`${notice_type}는 확인된 종료 시각을 유지한다`, async () => {
+    const draft = await harness({ notice_type, end_time: "16:00" })();
+    assert.equal(draft.notice_type, notice_type);
+    assert.equal(draft.end_time, "16:00");
+  });
+}

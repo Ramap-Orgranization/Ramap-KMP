@@ -71,3 +71,14 @@ test("같은 달력에서 분리한 휴무 공지는 요청한 대상 날짜로 
   assert.equal(api.matchesNoticeDate({ notice_date: "2099-10-21", end_date: "2099-10-21" }, "2099-10-21"), true);
   assert.equal(api.matchesNoticeDate({ notice_date: "2099-10-28", end_date: "2099-10-28" }, "2099-10-21"), false);
 });
+
+for (const notice_type of ["early_close", "planned_close"]) {
+  test(`${notice_type} 보정은 정확한 종료 시각이 있어야 하고 두 유형 간 전환에서 시각을 유지한다`, async () => {
+    const empty = harness({ notice_type: "full_close", notice_date: "2099-01-01", end_date: null });
+    assert.equal((await empty.applyCorrection("operating_notice", "notice", { notice_type })).status, 400);
+    const api = harness({ notice_type: "early_close", notice_date: "2099-01-01", end_date: null, end_time: "15:00:00" });
+    assert.equal((await api.applyCorrection("operating_notice", "notice", { notice_type })).status, 200);
+    assert.equal(api.updates[0].notice_type, notice_type);
+    assert.equal(api.updates[0].end_time, undefined); // Omitted field preserves the stored closing time.
+  });
+}

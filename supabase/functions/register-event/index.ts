@@ -318,7 +318,7 @@ async function registerOperatingNotice(
     (!Array.isArray(dailySchedules)) ||
     (scheduleOverride != null || startTime != null) ||
     (noticeType === "full_close" && endTime != null) ||
-    (noticeType === "early_close" && (!endTime || isMonthly))
+    ((noticeType === "early_close" || noticeType === "planned_close") && (!endTime || isMonthly))
   ) return json({ code: "invalid_operating_notice_draft" }, 400);
 
   const closureDates = isMonthly ? (dailySchedules as Array<{ date: string; closed: boolean }>).filter((day) => day.closed).map((day) => day.date) : [];
@@ -411,7 +411,7 @@ function dateAfterDays(value: string, days: number) {
   return date.toISOString().slice(0, 10);
 }
 function validTime(value: string | null) { return typeof value === "string" && /^([01]\d|2[0-3]):[0-5]\d$/.test(value); }
-function isSupportedNoticeType(value: string | null) { return value === "full_close" || value === "early_close"; }
+function isSupportedNoticeType(value: string | null) { return value === "full_close" || value === "early_close" || value === "planned_close"; }
 function text(value: unknown): string | null { return typeof value === "string" && value.trim() !== "" ? value.trim() : null; }
 function normalizeInstagramUrl(value: string | null) {
   if (!value) return null;

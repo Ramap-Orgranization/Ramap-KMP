@@ -49,7 +49,7 @@ internal object AdminRegistrationPreviewStateReducer {
                     endDate = resolvedEndDate,
                     noticeType = resolvedNoticeType,
                     startTime = if (state.isOperatingNotice) null else preview.startTime,
-                    endTime = if (state.isOperatingNotice && resolvedNoticeType != "early_close") null else preview.endTime,
+                    endTime = if (state.isOperatingNotice && resolvedNoticeType !in setOf("early_close", "planned_close")) null else preview.endTime,
                     scheduleOverride = if (state.isOperatingNotice) null else preview.scheduleOverride,
                 ),
             selectedEventType = resolvedEventType,
@@ -72,5 +72,6 @@ internal object AdminRegistrationPreviewStateReducer {
         when (noticeType) {
             OperatingNoticeType.TEMPORARY_CLOSURE -> "full_close"
             OperatingNoticeType.EARLY_CLOSING -> "early_close"
+            OperatingNoticeType.PLANNED_CLOSING -> "planned_close"
         }
 }
