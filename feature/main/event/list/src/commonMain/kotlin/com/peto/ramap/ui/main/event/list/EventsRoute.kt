@@ -27,14 +27,13 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.peto.ramap.designsystem.button.AppFloatingActionButton
 import com.peto.ramap.designsystem.component.LoadErrorContent
 import com.peto.ramap.designsystem.toast.ToastManager
-import com.peto.ramap.domain.model.event.EventFilter
 import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.model.event.ShopEvents
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.RamapTheme
 import com.peto.ramap.ui.base.ObserveAsEvents
-import com.peto.ramap.ui.main.event.list.component.EventFilters
+import com.peto.ramap.ui.main.event.list.component.EventListActions
 import com.peto.ramap.ui.main.event.list.component.EventListBottomSheet
 import com.peto.ramap.ui.main.event.list.component.EventListEmptyContent
 import com.peto.ramap.ui.main.event.list.component.EventListSkeleton
@@ -55,8 +54,6 @@ import ramap.shared.generated.resources.event_list_ongoing_section
 import ramap.shared.generated.resources.event_list_upcoming_section
 import ramap.shared.generated.resources.ic_operating_notice_fab
 import ramap.shared.generated.resources.laduck_error_crying
-import ramap.shared.generated.resources.new_menu_ongoing_section
-import ramap.shared.generated.resources.new_menu_upcoming_section
 import ramap.shared.generated.resources.operating_notice_open
 
 @Composable
@@ -82,7 +79,6 @@ fun EventsRoute(
         },
         onRefresh = { viewModel.dispatch(EventsIntent.OnEventsRefreshed) },
         onClickRetry = { viewModel.dispatch(EventsIntent.OnEventsRetried) },
-        onFilterSelected = { filter -> viewModel.dispatch(EventsIntent.OnFilterSelected(filter)) },
         onClickAdminRegistration = adminRegistrationAction,
     )
 }
@@ -94,7 +90,6 @@ internal fun EventsScreen(
     onClickEvent: (ShopEvent) -> Unit,
     onRefresh: () -> Unit,
     onClickRetry: () -> Unit,
-    onFilterSelected: (EventFilter) -> Unit,
     onClickAdminRegistration: (() -> Unit)?,
 ) {
     var selectedEventGroup by remember { mutableStateOf<ShopEvents?>(null) }
@@ -137,30 +132,15 @@ internal fun EventsScreen(
                     else -> {
                         val summerLimitedTitle =
                             stringResource(Res.string.event_filter_summer_limited)
-                        val ongoingTitleRes =
-                            if (uiState.isNewMenuFilter) {
-                                Res.string.new_menu_ongoing_section
-                            } else {
-                                Res.string.event_list_ongoing_section
-                            }
-                        val upcomingTitleRes =
-                            if (uiState.isNewMenuFilter) {
-                                Res.string.new_menu_upcoming_section
-                            } else {
-                                Res.string.event_list_upcoming_section
-                            }
-
-                        val ongoingTitle = stringResource(ongoingTitleRes)
-                        val upcomingTitle = stringResource(upcomingTitleRes)
+                        val ongoingTitle = stringResource(Res.string.event_list_ongoing_section)
+                        val upcomingTitle = stringResource(Res.string.event_list_upcoming_section)
                         LazyColumn(
                             modifier = Modifier.fillMaxSize(),
                             contentPadding = PaddingValues(bottom = 5.dp),
                             verticalArrangement = Arrangement.spacedBy(10.dp),
                         ) {
                             item {
-                                EventFilters(
-                                    selectedFilter = uiState.selectedFilter,
-                                    onFilterSelected = onFilterSelected,
+                                EventListActions(
                                     onClickAdminRegistration = onClickAdminRegistration,
                                     modifier = Modifier.padding(top = 5.dp),
                                 )
@@ -250,7 +230,6 @@ private fun EventsRoutePreview(
             onClickEvent = {},
             onRefresh = {},
             onClickRetry = {},
-            onFilterSelected = {},
             onClickAdminRegistration = null,
         )
     }

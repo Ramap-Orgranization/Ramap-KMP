@@ -1,6 +1,5 @@
 package com.peto.ramap.ui.main.event.list.contract
 
-import com.peto.ramap.domain.model.event.EventFilter
 import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.model.event.ShopEvents
 import com.peto.ramap.ui.base.State
@@ -9,7 +8,6 @@ import com.peto.ramap.ui.loading.LoadState as TaskLoadState
 
 data class EventsUiState(
     val loadedEvents: List<ShopEvent> = emptyList(),
-    val selectedFilter: EventFilter = EventFilter.EVENT,
     val summerLimitedEvents: List<ShopEvents> = emptyList(),
     val ongoingEvents: List<ShopEvents> = emptyList(),
     val upcomingEvents: List<ShopEvents> = emptyList(),
@@ -22,9 +20,6 @@ data class EventsUiState(
 
     val isRefreshing: Boolean
         get() = loadState.isLoading(EventsLoadKey.Refresh)
-
-    val isNewMenuFilter: Boolean
-        get() = selectedFilter == EventFilter.NEW_MENU
 
     val isEmpty: Boolean
         get() =

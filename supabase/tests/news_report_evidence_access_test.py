@@ -94,6 +94,7 @@ def main():
         'feedback': query('select count(*) from public.feedback_submissions'),
         'administrators': query('select count(*) from community_private.news_report_evidence_administrators'),
     }
+    check('news_report_submission_rpc_removed', query("select to_regprocedure('public.submit_news_report(text,text)') is null"))
     assert query("select count(*) from vault.decrypted_secrets where name='discord_feedback_webhook_url' and nullif(btrim(decrypted_secret),'') is not null") == 0, 'Staging notifications must be disabled'
     failure = None
     try:
@@ -118,6 +119,8 @@ def main():
         legacy = upload('service', 'ownerless')
         check('owner_identity', query('select owner_id from storage.objects where bucket_id=%s and name=%s', (bucket, submitted)) == accounts['reporter']['id'])
         check('legacy_owner_absent', query('select owner_id from storage.objects where bucket_id=%s and name=%s', (bucket, legacy)) is None)
+        connection.execute("insert into public.feedback_submissions(feedback_type,message,attachment_path) values ('news_report',%s,%s)", (source, submitted))
+        report_paths.append(submitted)
 
         denied_name = f'security-evidence-{label}-anonymous.png'
         objects.append((bucket, denied_name))
@@ -172,15 +175,6 @@ def main():
             writable = False
         check('membership_cannot_be_self_assigned', not writable)
 
-        for actor, name in [('anon', submitted), ('other', submitted), ('reporter', other)]:
-            status, _, _ = call('POST', '/rest/v1/rpc/submit_news_report', actor, {'p_source_url': source, 'p_attachment_path': name})
-            check('cross_owner_attachment_denied_' + actor, status == (401 if actor == 'anon' else 403) and query('select count(*) from public.feedback_submissions where message=%s', (source,)) == 0, status)
-        status, response, _ = call('POST', '/rest/v1/rpc/submit_news_report', 'reporter', {'p_source_url': source, 'p_attachment_path': submitted})
-        report_paths.append(submitted)
-        check('reporter_submission', status == 200 and response == 'submitted' and query('select count(*) from public.feedback_submissions where attachment_path=%s', (submitted,)) == 1, status)
-        status, response, _ = call('POST', '/rest/v1/rpc/submit_news_report', 'reporter', {'p_source_url': source, 'p_attachment_path': unused})
-        check('duplicate_submission_contract', status == 200 and response == 'duplicate' and query('select count(*) from public.feedback_submissions where attachment_path=%s', (unused,)) == 0, status)
-
         status, _, _ = call('DELETE', f'/storage/v1/object/{bucket}', 'other', {'prefixes': [submitted]})
         check('other_cannot_delete', object_count(submitted) == 1, status)
         status, _, _ = call('DELETE', f'/storage/v1/object/{bucket}', 'anon', {'prefixes': [submitted]})
@@ -195,9 +189,6 @@ def main():
         status_read, _, payload = download(submitted, 'reporter')
         check('evidence_overwrite_denied', status >= 400 and status_read == 200 and payload == image, status)
 
-        for actor in ['anon', 'other']:
-            status, response, _ = call('POST', '/rest/v1/rpc/submit_news_report', actor, {'p_source_url': source + actor, 'p_attachment_path': None})
-            check('source_only_submission_' + actor, status == 200 and response == 'submitted', status)
         check('image_bytes_verified', hashlib.sha256(payload).digest() == hashlib.sha256(image).digest())
     except BaseException as error:
         failure = f'{type(error).__name__}: {error}'

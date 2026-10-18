@@ -5,7 +5,6 @@ import com.peto.ramap.core.result.RamapError
 import com.peto.ramap.coroutinesTest
 import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
-import com.peto.ramap.domain.model.event.EventFilter
 import com.peto.ramap.domain.model.event.EventVenue
 import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.model.event.ShopEventType
@@ -70,7 +69,6 @@ class EventsViewModelTest {
                     .single(),
             )
             assertFalse(viewModel.uiState.value.isLoading)
-            assertEquals(EventFilter.EVENT, viewModel.uiState.value.selectedFilter)
             assertEquals(1, repository.activeEventsRequestCount)
         }
 
@@ -211,7 +209,7 @@ class EventsViewModelTest {
         }
 
     @Test
-    fun `필터 변경은 최초 응답을 사용하고 repository를 다시 호출하지 않는다`() =
+    fun `필터 없이 모든 이벤트 유형을 최초 응답 하나로 표시한다`() =
         coroutinesTest {
             val repository =
                 FakeRamenShopRepository(
@@ -235,28 +233,14 @@ class EventsViewModelTest {
                     .map { it.id },
             )
             assertEquals(
-                listOf("summer-upcoming"),
+                listOf("summer-upcoming", "new-menu-upcoming", "renewal-upcoming"),
                 viewModel.uiState.value.upcomingEvents
                     .flatten()
                     .map { it.id },
             )
-
-            viewModel.dispatch(EventsIntent.OnFilterSelected(EventFilter.NEW_MENU))
-            runCurrent()
-
             assertEquals(1, repository.activeEventsRequestCount)
             assertEquals(
-                listOf("new-menu-upcoming"),
-                viewModel.uiState.value.upcomingEvents
-                    .flatten()
-                    .map { it.id },
-            )
-
-            viewModel.dispatch(EventsIntent.OnFilterSelected(EventFilter.STORE_RENEWAL))
-            runCurrent()
-
-            assertEquals(
-                listOf("renewal-today", "renewal-upcoming"),
+                listOf("renewal-today"),
                 (viewModel.uiState.value.ongoingEvents + viewModel.uiState.value.upcomingEvents)
                     .flatten()
                     .map { it.id },

@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -33,9 +32,6 @@ internal fun EventListSkeleton(modifier: Modifier = Modifier) {
         userScrollEnabled = false,
     ) {
         item {
-            EventFiltersSkeleton()
-        }
-        item {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 EventSectionTitleSkeleton()
                 OngoingEventsSkeleton()
@@ -50,32 +46,6 @@ internal fun EventListSkeleton(modifier: Modifier = Modifier) {
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun EventFiltersSkeleton() {
-    Row(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .height(48.dp)
-                .padding(horizontal = 15.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
-    ) {
-        repeat(3) {
-            Skeleton(
-                modifier = Modifier.width(60.dp).height(18.dp),
-            )
-        }
-
-        Spacer(modifier = Modifier.weight(1f))
-
-        Skeleton(
-            modifier = Modifier.size(24.dp),
-            shape = CircleShape,
-        )
     }
 }
 

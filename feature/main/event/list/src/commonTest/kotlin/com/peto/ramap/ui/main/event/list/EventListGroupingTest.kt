@@ -1,6 +1,5 @@
 package com.peto.ramap.ui.main.event.list
 
-import com.peto.ramap.domain.model.event.EventFilter
 import com.peto.ramap.domain.model.event.EventVenue
 import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.model.event.ShopEventType
@@ -9,7 +8,6 @@ import com.peto.ramap.fixture.ramenShopFixture
 import com.peto.ramap.ui.main.event.list.contract.EventsUiState
 import com.peto.ramap.ui.main.event.list.contract.mapEventsToUiState
 import com.peto.ramap.ui.main.event.list.contract.partitionBySchedule
-import com.peto.ramap.ui.main.event.list.contract.selectEventFilter
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -67,7 +65,7 @@ class EventListGroupingTest {
     }
 
     @Test
-    fun `이벤트 탭은 여름 한정을 진행 중 목록 위 별도 그룹으로 표시한다`() {
+    fun `필터 없이 모든 이벤트 유형을 일정별 목록에 표시한다`() {
         val events =
             listOf(
                 event("summer-today", true, ShopEventType.SUMMER_LIMITED),
@@ -81,15 +79,9 @@ class EventListGroupingTest {
         assertEquals(listOf("summer-today"), state.summerLimitedEvents.flatten().map { it.id })
         assertEquals(listOf("event-today"), state.ongoingEvents.flatten().map { it.id })
         assertEquals(
-            listOf("summer-upcoming"),
+            listOf("summer-upcoming", "new-menu-upcoming", "renewal-upcoming"),
             state.upcomingEvents.flatten().map { it.id },
         )
-
-        val newMenuState = selectEventFilter(state, EventFilter.NEW_MENU)
-        assertEquals(listOf("new-menu-upcoming"), newMenuState.upcomingEvents.flatten().map { it.id })
-
-        val renewalState = selectEventFilter(state, EventFilter.STORE_RENEWAL)
-        assertEquals(listOf("renewal-upcoming"), renewalState.upcomingEvents.flatten().map { it.id })
     }
 
     @Test
@@ -136,7 +128,7 @@ class EventListGroupingTest {
 
         val state =
             mapEventsToUiState(
-                EventsUiState(selectedFilter = EventFilter.EVENT),
+                EventsUiState(),
                 listOf(newestEvent, olderEvent),
             )
 
