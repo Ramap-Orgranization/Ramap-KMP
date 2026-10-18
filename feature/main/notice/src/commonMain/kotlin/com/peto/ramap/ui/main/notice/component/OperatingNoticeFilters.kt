@@ -9,19 +9,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
-import com.peto.ramap.domain.model.notice.OperatingNotice
-import com.peto.ramap.domain.model.notice.OperatingNoticeFeed
-import com.peto.ramap.domain.model.notice.OperatingNoticeFeedItem
-import com.peto.ramap.domain.model.personalization.Personalization
-import com.peto.ramap.domain.model.shop.AdministrativeArea
-import com.peto.ramap.domain.model.shop.AdministrativeDistrict
-import com.peto.ramap.domain.model.shop.AreaFilter
-import com.peto.ramap.domain.store.PersonalizationBootstrapState
-import com.peto.ramap.preview.OperatingNoticePreviewParameterProvider
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.RamapTheme
 import com.peto.ramap.ui.main.notice.contract.OperatingNoticeUiState
-import kotlinx.datetime.LocalDate
+import com.peto.ramap.ui.main.notice.preview.OperatingNoticeUiStatePreviewParameterProvider
 
 @Composable
 internal fun OperatingNoticeFilters(
@@ -55,13 +46,13 @@ internal fun OperatingNoticeFilters(
 @Preview(showBackground = true)
 @Composable
 private fun OperatingNoticeFiltersPreview(
-    @PreviewParameter(OperatingNoticePreviewParameterProvider::class)
-    notices: List<OperatingNotice>,
+    @PreviewParameter(OperatingNoticeUiStatePreviewParameterProvider::class)
+    uiState: OperatingNoticeUiState,
 ) {
     RamapTheme {
         Column {
             OperatingNoticeFilters(
-                uiState = operatingNoticeFiltersPreviewState(notices),
+                uiState = uiState,
                 onTabSelected = {},
                 onQueryChanged = {},
                 onAreaOpened = {},
@@ -70,46 +61,3 @@ private fun OperatingNoticeFiltersPreview(
         }
     }
 }
-
-@Preview(showBackground = true)
-@Composable
-private fun OperatingNoticeSelectedFiltersPreview(
-    @PreviewParameter(OperatingNoticePreviewParameterProvider::class)
-    notices: List<OperatingNotice>,
-) {
-    val state = operatingNoticeFiltersPreviewState(notices)
-    val bookmarkedShopIds =
-        state.feed
-            ?.items
-            .orEmpty()
-            .map { it.notice.shop.id }
-            .toSet()
-    RamapTheme {
-        Column {
-            OperatingNoticeFilters(
-                uiState =
-                    state.copy(
-                        scheduledSelected = true,
-                        query = "라멘",
-                        areaFilter = AreaFilter.District(AdministrativeArea.SEOUL, AdministrativeDistrict("마포구")),
-                        savedOnly = true,
-                        bookmarkedShopIds = bookmarkedShopIds,
-                        personalizationState = PersonalizationBootstrapState.Success(Personalization(bookmarkedShopIds = bookmarkedShopIds)),
-                    ),
-                onTabSelected = {},
-                onQueryChanged = {},
-                onAreaOpened = {},
-                onSavedToggled = {},
-            )
-        }
-    }
-}
-
-private fun operatingNoticeFiltersPreviewState(notices: List<OperatingNotice>): OperatingNoticeUiState =
-    OperatingNoticeUiState(
-        feed =
-            OperatingNoticeFeed(
-                referenceDate = LocalDate(2026, 10, 14),
-                items = notices.map { OperatingNoticeFeedItem(it, AdministrativeArea.SEOUL, "마포구") },
-            ),
-    )
