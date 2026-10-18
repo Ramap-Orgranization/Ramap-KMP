@@ -17,8 +17,6 @@ import com.peto.ramap.ui.resource.area.AreaFilterResourceMapper
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.ic_keyboard_arrow_down
-import ramap.shared.generated.resources.ic_kid_star
-import ramap.shared.generated.resources.ic_kid_star_filled
 
 @Composable
 internal fun OperatingNoticeFilterChips(
@@ -39,10 +37,9 @@ internal fun OperatingNoticeFilterChips(
             onClick = onAreaOpened,
             trailingIcon = Res.drawable.ic_keyboard_arrow_down,
         )
-        AppFilterChip(
-            onClick = onSavedToggled,
-            icon = if (savedOnly) Res.drawable.ic_kid_star_filled else Res.drawable.ic_kid_star,
+        SavedFilterButton(
             selected = savedOnly,
+            onClick = onSavedToggled,
         )
     }
 }
