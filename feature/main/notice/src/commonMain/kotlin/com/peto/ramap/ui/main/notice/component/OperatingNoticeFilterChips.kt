@@ -7,11 +7,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
 import com.peto.ramap.designsystem.button.AppFilterChip
-import com.peto.ramap.domain.model.shop.AdministrativeArea
-import com.peto.ramap.domain.model.shop.AdministrativeDistrict
 import com.peto.ramap.domain.model.shop.AreaFilter
+import com.peto.ramap.preview.AreaFilterPreviewParameterProvider
 import com.peto.ramap.theme.RamapTheme
 import com.peto.ramap.ui.resource.area.AreaFilterResourceMapper
 import org.jetbrains.compose.resources.stringResource
@@ -49,10 +49,13 @@ internal fun OperatingNoticeFilterChips(
 
 @Preview(showBackground = true)
 @Composable
-private fun OperatingNoticeFilterChipsPreview() {
+private fun OperatingNoticeFilterChipsPreview(
+    @PreviewParameter(AreaFilterPreviewParameterProvider::class)
+    areaFilter: AreaFilter,
+) {
     RamapTheme {
         OperatingNoticeFilterChips(
-            areaFilter = AreaFilter.District(AdministrativeArea.SEOUL, AdministrativeDistrict("마포구")),
+            areaFilter = areaFilter,
             savedOnly = true,
             onAreaOpened = {},
             onSavedToggled = {},

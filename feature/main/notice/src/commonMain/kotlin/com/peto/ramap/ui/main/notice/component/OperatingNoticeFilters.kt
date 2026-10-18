@@ -7,7 +7,9 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
+import com.peto.ramap.domain.model.notice.OperatingNotice
 import com.peto.ramap.domain.model.notice.OperatingNoticeFeed
 import com.peto.ramap.domain.model.notice.OperatingNoticeFeedItem
 import com.peto.ramap.domain.model.personalization.Personalization
@@ -52,11 +54,14 @@ internal fun OperatingNoticeFilters(
 
 @Preview(showBackground = true)
 @Composable
-private fun OperatingNoticeFiltersPreview() {
+private fun OperatingNoticeFiltersPreview(
+    @PreviewParameter(OperatingNoticePreviewParameterProvider::class)
+    notices: List<OperatingNotice>,
+) {
     RamapTheme {
         Column {
             OperatingNoticeFilters(
-                uiState = operatingNoticeFiltersPreviewState(),
+                uiState = operatingNoticeFiltersPreviewState(notices),
                 onTabSelected = {},
                 onQueryChanged = {},
                 onAreaOpened = {},
@@ -66,10 +71,13 @@ private fun OperatingNoticeFiltersPreview() {
     }
 }
 
-@Preview(showBackground = true, widthDp = 360)
+@Preview(showBackground = true)
 @Composable
-private fun OperatingNoticeSelectedFiltersPreview() {
-    val state = operatingNoticeFiltersPreviewState()
+private fun OperatingNoticeSelectedFiltersPreview(
+    @PreviewParameter(OperatingNoticePreviewParameterProvider::class)
+    notices: List<OperatingNotice>,
+) {
+    val state = operatingNoticeFiltersPreviewState(notices)
     val bookmarkedShopIds =
         state.feed
             ?.items
@@ -97,11 +105,11 @@ private fun OperatingNoticeSelectedFiltersPreview() {
     }
 }
 
-private fun operatingNoticeFiltersPreviewState(): OperatingNoticeUiState =
+private fun operatingNoticeFiltersPreviewState(notices: List<OperatingNotice>): OperatingNoticeUiState =
     OperatingNoticeUiState(
         feed =
             OperatingNoticeFeed(
                 referenceDate = LocalDate(2026, 10, 14),
-                items = OperatingNoticePreviewParameterProvider().values.first().map { OperatingNoticeFeedItem(it, AdministrativeArea.SEOUL, "마포구") },
+                items = notices.map { OperatingNoticeFeedItem(it, AdministrativeArea.SEOUL, "마포구") },
             ),
     )

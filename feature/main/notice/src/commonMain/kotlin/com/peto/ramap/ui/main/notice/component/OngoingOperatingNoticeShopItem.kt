@@ -12,6 +12,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
 import com.peto.ramap.designsystem.badge.NewsBadge
 import com.peto.ramap.designsystem.image.RemoteShopImage
@@ -91,10 +92,13 @@ internal fun OngoingOperatingNoticeShop(
 
 @Preview(showBackground = true, widthDp = 360)
 @Composable
-private fun OngoingOperatingNoticeShopPreview() {
+private fun OngoingOperatingNoticeShopPreview(
+    @PreviewParameter(OperatingNoticePreviewParameterProvider::class)
+    notices: List<OperatingNotice>,
+) {
     RamapTheme {
         Column {
-            OperatingNoticePreviewParameterProvider().values.first().forEach { notice ->
+            notices.forEach { notice ->
                 OngoingOperatingNoticeShop(
                     notice = notice,
                     onClick = {},
