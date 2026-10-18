@@ -67,6 +67,15 @@ class OperatingNoticeResponseTest {
         assertNull(response(noticeType = "early_close", endTime = null).toDomain(ramenShopFixture()))
     }
 
+    @Test
+    fun `canonical 유형을 우선하고 모르는 canonical은 legacy로 강제하지 않는다`() {
+        val legacy = response("early_close")
+        assertEquals(OperatingNoticeType.PLANNED_CLOSING, legacy.copy(noticeCategory = "planned_close").toDomain(ramenShopFixture())!!.type)
+        assertEquals(OperatingNoticeType.EARLY_CLOSING, legacy.toDomain(ramenShopFixture())!!.type)
+        assertNull(legacy.copy(noticeCategory = "unknown").toDomain(ramenShopFixture()))
+        assertNull(legacy.copy(noticeCategory = "planned_close", endTime = null).toDomain(ramenShopFixture()))
+    }
+
     private fun response(
         noticeType: String = "temporary_closure",
         startDate: String = "2026-08-20",

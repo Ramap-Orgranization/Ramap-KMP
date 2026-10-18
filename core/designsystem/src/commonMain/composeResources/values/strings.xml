@@ -578,4 +578,13 @@
     <string name="place_search_unavailable_seconds">장소 검색을 잠시 이용할 수 없어요. %1$s초 후 다시 시도해 주세요.</string>
     <string name="place_search_unavailable_minutes">장소 검색을 잠시 이용할 수 없어요. 약 %1$s분 후 다시 시도해 주세요.</string>
     <string name="place_search_unavailable_hours">장소 검색을 잠시 이용할 수 없어요. 약 %1$s시간 후 다시 시도해 주세요.</string>
+    <string name="operating_notice_type_planned_closing">운영 변동</string>
+    <string name="operating_notice_closing_time">%1$s 영업 종료</string>
+    <string name="operating_notice_search">매장명 검색</string>
+    <string name="operating_notice_saved">저장한 매장</string>
+    <string name="operating_notice_today_tab">오늘</string>
+    <string name="operating_notice_scheduled_tab">예정</string>
+    <string name="operating_notice_today_tab_count">오늘(%1$d)</string>
+    <string name="operating_notice_scheduled_tab_count">예정(%1$d)</string>
+    <string name="operating_notice_scheduled_date_header">%1$s.%2$s %3$s요일</string>
 </resources>

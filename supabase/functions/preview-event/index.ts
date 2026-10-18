@@ -23,10 +23,10 @@ const OPERATING_NOTICE_EXTRACTION_PROMPT =
   "라멘 매장의 영업 변동 공지 초안을 추출하세요. 입력에 없는 사실은 절대 만들지 마세요. " +
   "description은 원문 캡션 또는 이미지의 문구, 이모지, 구두점, 줄바꿈을 그대로 보존하세요. " +
   "요약·번역·홍보 문구로 재작성하지 말고, OCR이 불확실하면 읽은 내용을 임의로 보정하지 말고 uncertainties에 적으세요. " +
-  "영업 변동은 전체 기능명이며 notice_type은 full_close(임시 휴무), early_close(조기 마감) 중 하나만 선택하세요. 오픈 지연이나 일반 영업시간 변경은 유형을 null로 두고 uncertainties에 지원하지 않는 공지라고 적으세요. " +
+  "영업 변동은 전체 기능명이며 notice_type은 full_close(해당 날짜 전체 임시 휴무), early_close(정상 영업 중 수량 소진 등으로 실제 발생한 조기 마감), planned_close(사전에 정해진 사유에 따른 단축 영업인 운영 변동) 중 하나를 선택하세요. 특정 메뉴 품절만으로 매장 조기 마감으로 판단하지 마세요. 오픈 지연이나 일반 영업시간 변경은 유형을 null로 두고 uncertainties에 지원하지 않는 공지라고 적으세요. " +
   "월간 휴무 달력이나 떨어진 여러 휴무 날짜는 한 건의 full_close로 반환하고 daily_schedules에 원문에서 확인한 휴무 및 정상영업 날짜만 넣으세요. " +
   "daily_schedules의 closed는 휴무면 true, 정상영업이면 false입니다. 변경된 영업시간은 지원하지 않으며 각 schedule_override는 null입니다. " +
-  "schedule_override와 start_time은 항상 null입니다. early_close의 end_time은 원문에 명시된 정확한 마감 시각만 넣으세요. 점심만 영업, 저녁 휴무, 지금 마감처럼 시각이 없으면 추측하지 말고 null로 두며 마감 시각 확인이 필요하다고 uncertainties에 적으세요. 월간 휴무 공지의 end_time은 null이고 start_date와 end_date는 daily_schedules에서 확인한 첫 날짜와 마지막 날짜입니다. " +
+  "schedule_override와 start_time은 항상 null입니다. early_close와 planned_close의 end_time은 원문에 명시된 정확한 마감 시각만 넣으세요. 점심만 영업, 저녁 휴무, 지금 마감처럼 시각이 없으면 추측하지 말고 null로 두며 마감 시각 확인이 필요하다고 uncertainties에 적으세요. 월간 휴무 공지의 end_time은 null이고 start_date와 end_date는 daily_schedules에서 확인한 첫 날짜와 마지막 날짜입니다. " +
   "달력의 정상영업 표기도 빠짐없이 추출하되 빈칸의 의미를 추측하지 마세요. 단일 공지나 이벤트의 daily_schedules는 빈 배열입니다. " +
   "title은 null로 반환하세요. 날짜는 YYYY-MM-DD, 시간은 HH:mm으로 변환하세요. " +
   "오늘·내일 같은 상대 날짜는 게시일이나 관찰일을 알 수 없으면 추측하지 마세요. " +
@@ -89,7 +89,7 @@ Deno.serve(async (request) => {
         draft.start_time = null;
         draft.end_time = null;
       }
-      if (draft.notice_type === "early_close" && !draft.end_time) draft.uncertainties.push("조기 마감 시각을 확인한 뒤 등록해 주세요.");
+      if ((draft.notice_type === "early_close" || draft.notice_type === "planned_close") && !draft.end_time) draft.uncertainties.push(`${draft.notice_type === "planned_close" ? "운영 변동의 마감" : "조기 마감"} 시각을 확인한 뒤 등록해 주세요.`);
       draft.event_type = null;
       draft.participants = [];
       if (!isSupportedNoticeType(draft.notice_type)) {
@@ -171,7 +171,7 @@ async function analyze(
         {
           role: "system",
           content: registrationType === "operating_notice"
-            ? "라멘 매장의 영업 변동 공지 초안을 추출하세요. 입력에 없는 사실은 절대 만들지 마세요. 유형은 full_close와 early_close만 지원합니다. 점심만 영업 또는 저녁 휴무는 early_close로 분류하되 원문에 정확한 마감 시각이 없으면 end_time을 null로 두고 uncertainties에 확인 필요를 적으세요. start_time과 schedule_override는 항상 null입니다. 월간 휴무 공지는 full_close와 daily_schedules를 사용하세요."
+            ? "라멘 매장의 영업 변동 공지 초안을 추출하세요. 입력에 없는 사실은 절대 만들지 마세요. 유형은 full_close, early_close, planned_close를 지원합니다. 정상 영업 도중 실제로 일찍 종료한 경우 early_close, 사전 공지한 점심만 영업 또는 저녁 휴무는 planned_close로 분류하되 원문에 정확한 마감 시각이 없으면 end_time을 null로 두고 uncertainties에 확인 필요를 적으세요. start_time과 schedule_override는 항상 null입니다. 월간 휴무 공지는 full_close와 daily_schedules를 사용하세요."
             : "라멘 매장의 이벤트 등록 초안을 추출하세요. 입력에 없는 사실은 절대 만들지 마세요. 관리자 피드백은 입력 사실을 더 정확히 반영하기 위한 수정 지시로만 사용하고, 새로운 사실을 추측하는 근거로 사용하지 마세요. title은 원문에 명시된 이벤트명이나 메뉴명만 짧게 적고, 원문에 없으면 null을 반환하세요. event_type은 collab, popup, limited_menu, summer_limited, new_menu, store_renewal 중 하나입니다. 다른 매장·브랜드·셰프 등이 이벤트에 함께 참여하거나 콜라보한다고 명시된 경우에만 collab을 선택하세요. participants에는 원문에서 이벤트 참여 또는 콜라보가 명시된 주체만 넣고, 각 항목에 name과 canonical Instagram 프로필 URL(알 수 없으면 null)을 넣으세요. 단순 재료·면·식자재 공급자나 납품업체는 참여자가 아닙니다. 날짜·회식·메뉴·수량·운영 시간을 추측하거나 추가하지 마세요. description은 입력 캡션의 사실만 사용하고 홍보 문구로 바꾸지 마세요. 매장명은 계정명이 아니라 실제 매장명으로 추측하지 말고 null을 반환하세요. 날짜는 YYYY-MM-DD로 변환합니다. 확실하지 않거나 누락된 필드는 uncertainties에 한국어로 적습니다.",
         },
         {
@@ -245,7 +245,7 @@ async function analyze(
       : [],
     notice_type: text(draft.notice_type),
     start_time: null,
-    end_time: draft.notice_type === "early_close" && validTime(draft.end_time) ? draft.end_time : null,
+    end_time: (draft.notice_type === "early_close" || draft.notice_type === "planned_close") && validTime(draft.end_time) ? draft.end_time : null,
     schedule_override: null,
     uncertainties: Array.isArray(draft.uncertainties) ? draft.uncertainties.filter((item) => typeof item === "string") : [],
   };
@@ -327,7 +327,7 @@ function normalizeInstagramProfileUrl(value: string | null) {
 
 function isSupportedRegistrationType(value: string) { return value === "event" || value === "operating_notice"; }
 function isSupportedEventType(value: string | null) { return value === "collab" || value === "popup" || value === "limited_menu" || value === "summer_limited" || value === "new_menu" || value === "store_renewal"; }
-function isSupportedNoticeType(value: string | null) { return value === "full_close" || value === "early_close"; }
+function isSupportedNoticeType(value: string | null) { return value === "full_close" || value === "early_close" || value === "planned_close"; }
 function validDate(value: string | null) { return typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value); }
 function validTime(value: string | null) { return typeof value === "string" && /^([01]\d|2[0-3]):[0-5]\d$/.test(value); }
 function text(value: unknown): string | null { return typeof value === "string" && value.trim() !== "" ? value.trim() : null; }

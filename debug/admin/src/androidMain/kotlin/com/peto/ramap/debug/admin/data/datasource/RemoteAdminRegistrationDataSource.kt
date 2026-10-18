@@ -100,7 +100,7 @@ internal class RemoteAdminRegistrationDataSource(
                 evidencePath = draft.evidencePath,
                 noticeType = draft.noticeType,
                 startTime = null,
-                endTime = if (draft.noticeType == "early_close") draft.endTime else null,
+                endTime = if (draft.noticeType in setOf("early_close", "planned_close")) draft.endTime else null,
                 scheduleOverride = null,
                 dailySchedules = draft.dailySchedules,
                 participants = draft.participants,

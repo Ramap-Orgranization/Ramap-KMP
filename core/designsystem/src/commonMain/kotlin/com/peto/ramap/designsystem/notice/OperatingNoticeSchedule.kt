@@ -5,7 +5,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.dp
 import com.peto.ramap.designsystem.resource.format
-import com.peto.ramap.designsystem.resource.operatingnotice.ShopOperatingNoticeResourceMapper
+import com.peto.ramap.designsystem.resource.operatingnotice.OperatingNoticeResourceMapper
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.domain.model.businesshour.BusinessHours
 import com.peto.ramap.domain.model.notice.OperatingNoticeDay
@@ -20,7 +20,7 @@ fun OperatingNoticeSchedule(
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         days.sortedBy { it.date }.forEach { day ->
-            val labels = ShopOperatingNoticeResourceMapper.daySchedule(day, businessHours).map { it.format() }
+            val labels = OperatingNoticeResourceMapper.daySchedule(day, businessHours).map { it.format() }
             AppText(
                 text = (listOf(day.date.toString()) + labels).joinToString(" · "),
                 style = AppTextStyle.B2,

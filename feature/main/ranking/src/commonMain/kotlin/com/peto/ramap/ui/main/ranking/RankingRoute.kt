@@ -36,7 +36,7 @@ import com.peto.ramap.preview.RamenShopPreviewParameterProvider
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.RamapTheme
 import com.peto.ramap.ui.base.ObserveAsEvents
-import com.peto.ramap.ui.main.ranking.component.AreaSheetContent
+import com.peto.ramap.ui.component.area.AreaSheetContent
 import com.peto.ramap.ui.main.ranking.component.RankingFilters
 import com.peto.ramap.ui.main.ranking.contract.RankingIntent
 import com.peto.ramap.ui.main.ranking.contract.RankingSideEffect

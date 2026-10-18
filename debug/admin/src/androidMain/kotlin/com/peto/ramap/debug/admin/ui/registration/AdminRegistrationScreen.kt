@@ -353,7 +353,7 @@ internal fun AdminRegistrationScreen(
                             )
                         }
                         uiState.draft?.let { draft ->
-                            if (uiState.isOperatingNotice && draft.noticeType == "early_close") {
+                            if (uiState.isOperatingNotice && draft.noticeType in setOf("early_close", "planned_close")) {
                                 val dayKey =
                                     (uiState.selectedStartDate ?: draft.startDate)
                                         ?.let { java.time.LocalDate.parse(it) }

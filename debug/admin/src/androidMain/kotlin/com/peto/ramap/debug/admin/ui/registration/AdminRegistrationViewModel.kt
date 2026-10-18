@@ -84,7 +84,7 @@ internal class AdminRegistrationViewModel(
                             draft?.copy(
                                 noticeType = intent.noticeType.toRequestValue(),
                                 startTime = null,
-                                endTime = if (intent.noticeType == OperatingNoticeType.EARLY_CLOSING) draft.endTime else null,
+                                endTime = if (intent.noticeType.hasClosingTime) draft.endTime else null,
                                 scheduleOverride = null,
                                 dailySchedules = if (intent.noticeType == OperatingNoticeType.TEMPORARY_CLOSURE) draft.dailySchedules else emptyList(),
                             ),
@@ -550,6 +550,7 @@ private fun OperatingNoticeType.toRequestValue(): String =
     when (this) {
         OperatingNoticeType.TEMPORARY_CLOSURE -> "full_close"
         OperatingNoticeType.EARLY_CLOSING -> "early_close"
+        OperatingNoticeType.PLANNED_CLOSING -> "planned_close"
     }
 
 private fun createEventDraft(event: AdminManagedEvent): AdminDraft =

@@ -36,6 +36,18 @@ class EarlyClosingNoticeTest {
         )
 
     @Test
+    fun `운영 변동은 정규 영업과 휴게를 유지하고 실제 조기 마감과 가장 이른 시각을 적용한다`() {
+        val planned = notice.copy(type = OperatingNoticeType.PLANNED_CLOSING, endTime = LocalTime(18, 0))
+        assertEquals(BusinessHoursStatus.BreakTime("17:00"), shop.businessHoursStatus(LocalDateTime(2026, 10, 14, 16, 0), listOf(planned)))
+        assertEquals(BusinessHoursStatus.OpenUntil("18:00"), shop.businessHoursStatus(LocalDateTime(2026, 10, 14, 17, 59), listOf(planned)))
+        assertEquals(BusinessHoursStatus.Closed(), shop.businessHoursStatus(LocalDateTime(2026, 10, 14, 18, 0), listOf(planned)))
+        assertEquals(BusinessHoursStatus.Closed(), shop.businessHoursStatus(LocalDateTime(2026, 10, 14, 15, 0), listOf(planned, notice)))
+        val closed = notice.copy(type = OperatingNoticeType.TEMPORARY_CLOSURE, endTime = null)
+        assertFalse(shop.isOpenAt(LocalDateTime(2026, 10, 14, 12, 0), listOf(planned, notice, closed)))
+        assertEquals(LocalDateTime(2026, 10, 14, 18, 0), planned.nextClosingAt(LocalDateTime(2026, 10, 14, 17, 0)))
+    }
+
+    @Test
     fun `점심 조기 마감 직전에는 변경된 마감 시각을 안내하고 영업중을 유지한다`() {
         val now = LocalDateTime(2026, 10, 14, 14, 59)
         assertEquals(BusinessHoursStatus.OpenUntil("15:00"), shop.businessHoursStatus(now, listOf(notice)))

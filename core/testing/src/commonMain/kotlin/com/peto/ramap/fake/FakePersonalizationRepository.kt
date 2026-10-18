@@ -89,6 +89,10 @@ class FakePersonalizationRepository(
         publish(Personalization())
     }
 
+    fun updateBootstrapState(state: PersonalizationBootstrapState) {
+        mutableState.value = state
+    }
+
     fun updateBookmarkedShopIds(shopIds: Set<String>) {
         publish(currentPersonalization.copy(bookmarkedShopIds = shopIds.toSet()))
         bookmarkedShopIds.value = shopIds

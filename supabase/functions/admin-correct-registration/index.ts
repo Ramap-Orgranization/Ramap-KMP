@@ -4,7 +4,7 @@ import { createServiceClient } from "../_shared/event-notifications.ts";
 
 const OPENAI_URL = "https://api.openai.com/v1/chat/completions";
 const EVENT_TYPES = ["collab", "popup", "limited_menu", "summer_limited", "new_menu", "store_renewal"] as const;
-const NOTICE_TYPES = ["full_close", "early_close"] as const;
+const NOTICE_TYPES = ["full_close", "early_close", "planned_close"] as const;
 type RegistrationType = "event" | "operating_notice";
 type Changes = {
   title: string | null; description: string | null; start_date: string | null; end_date: string | null;
@@ -104,7 +104,7 @@ async function applyCorrection(type: RegistrationType, id: string, value: unknow
   if (type === "operating_notice") {
     const noticeType = changes.notice_type ?? current.notice_type;
     const endTime = changes.end_time ?? current.end_time;
-    if (!NOTICE_TYPES.includes(noticeType as typeof NOTICE_TYPES[number]) || (noticeType === "early_close" && !endTime)) return json({ code: "invalid_changes" }, 400);
+    if (!NOTICE_TYPES.includes(noticeType as typeof NOTICE_TYPES[number]) || ((noticeType === "early_close" || noticeType === "planned_close") && !endTime)) return json({ code: "invalid_changes" }, 400);
     filtered.start_time = null;
     filtered.schedule_override = null;
     if (noticeType === "full_close") filtered.end_time = null;
@@ -138,7 +138,7 @@ async function analyze(apiKey: string, type: RegistrationType, record: unknown, 
       temperature: 0,
       messages: [{
         role: "system",
-        content: `관리자 등록 수정 도우미입니다. ${type === "event" ? "이벤트는 title, description, start_date, end_date, event_type만" : "영업 변동은 description, start_date(원본 notice_date), end_date, notice_type, end_time만"} 변경할 수 있습니다. 공지 유형은 full_close(임시 휴무)와 early_close(조기 마감)만 지원합니다. 조기 마감은 확인된 end_time이 필요하며 start_time과 schedule_override는 null입니다. 기존 레코드와 요청만 근거로 삼으세요.`,
+        content: `관리자 등록 수정 도우미입니다. ${type === "event" ? "이벤트는 title, description, start_date, end_date, event_type만" : "영업 변동은 description, start_date(원본 notice_date), end_date, notice_type, end_time만"} 변경할 수 있습니다. 공지 유형은 full_close(해당 날짜 전체 임시 휴무), early_close(정상 영업 중 수량 소진 등으로 실제 발생한 조기 마감), planned_close(사전에 정해진 사유에 따른 단축 영업인 운영 변동)를 지원합니다. 두 마감 유형은 원문에서 확인된 정확한 end_time이 필요하며 start_time과 schedule_override는 null입니다. 기존 레코드와 요청만 근거로 삼으세요.`,
       }, { role: "user", content: `기존 레코드:\n${JSON.stringify(record)}\n\n수정 요청:\n${instruction}` }],
       response_format: { type: "json_schema", json_schema: { name: "registration_correction", strict: true, schema: { type: "object", additionalProperties: false, properties: { summary: { type: "string" }, changes: { type: "object", additionalProperties: false, properties: { title: { type: ["string", "null"] }, description: { type: ["string", "null"] }, start_date: { type: ["string", "null"] }, end_date: { type: ["string", "null"] }, event_type: { type: ["string", "null"] }, notice_type: { type: ["string", "null"] }, start_time: { type: ["string", "null"] }, end_time: { type: ["string", "null"] }, schedule_override: { type: ["object", "null"], additionalProperties: false, properties: { closed: { type: "boolean" }, open: { type: ["string", "null"] }, close: { type: ["string", "null"] }, close_next_day: { type: "boolean" }, label: { type: ["string", "null"] } }, required: ["closed", "open", "close", "close_next_day", "label"] } }, required: ["title", "description", "start_date", "end_date", "event_type", "notice_type", "start_time", "end_time", "schedule_override"] } }, required: ["summary", "changes"] } } },
     }),

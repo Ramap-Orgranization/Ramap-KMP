@@ -14,10 +14,11 @@ import androidx.compose.ui.unit.dp
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.GrayColor
+import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
-import ramap.shared.generated.resources.laduck_loading_walking
+import ramap.shared.generated.resources.search_empty_illustration
 import ramap.shared.generated.resources.shop_list_count
 
 @Composable
@@ -37,16 +38,17 @@ fun ShopListCount(
 }
 
 @Composable
-fun ShopListEmptyContent(
+fun ShopsEmptyContent(
     title: String,
     modifier: Modifier = Modifier,
+    image: DrawableResource = Res.drawable.search_empty_illustration,
 ) {
     Column(
         modifier = modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 32.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Image(
-            painter = painterResource(Res.drawable.laduck_loading_walking),
+            painter = painterResource(image),
             contentDescription = null,
             modifier = Modifier.size(220.dp).align(Alignment.CenterHorizontally),
         )

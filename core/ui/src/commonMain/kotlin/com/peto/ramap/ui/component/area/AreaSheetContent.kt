@@ -1,4 +1,4 @@
-package com.peto.ramap.ui.main.ranking.component
+package com.peto.ramap.ui.component.area
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -35,7 +35,7 @@ import ramap.shared.generated.resources.ranking_all_regions
 import ramap.shared.generated.resources.ranking_area_all
 
 @Composable
-internal fun AreaSheetContent(
+fun AreaSheetContent(
     areaFilter: AreaFilter,
     areaSelectionArea: AdministrativeArea?,
     administrativeDistricts: AdministrativeDistricts,

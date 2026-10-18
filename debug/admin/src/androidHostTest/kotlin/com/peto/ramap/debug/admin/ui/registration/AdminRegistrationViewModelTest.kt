@@ -204,6 +204,29 @@ class AdminRegistrationViewModelTest {
             assertNull(viewModel.uiState.value.selectedEndDate)
         }
 
+    @Test
+    fun `운영 변동으로 바꿔도 확인된 종료 시각을 유지하고 등록한다`() =
+        coroutinesTest {
+            val data = FakeAdminRegistrationDataSource()
+            val viewModel = viewModel(data)
+            runCurrent()
+            viewModel.dispatch(AdminRegistrationIntent.OnTabSelected(AdminRegistrationTab.OPERATING_NOTICE))
+            viewModel.dispatch(AdminRegistrationIntent.OnSourceUrlChanged("https://www.instagram.com/test_shop/"))
+            viewModel.dispatch(AdminRegistrationIntent.OnPreviewOrRegisterClicked)
+            runCurrent()
+            viewModel.dispatch(AdminRegistrationIntent.OnNoticeTypeSelected(OperatingNoticeType.PLANNED_CLOSING))
+            runCurrent()
+            assertEquals(
+                "15:00",
+                viewModel.uiState.value.draft
+                    ?.endTime,
+            )
+            viewModel.dispatch(AdminRegistrationIntent.OnPreviewOrRegisterClicked)
+            runCurrent()
+            assertEquals("planned_close", data.savedDraft?.noticeType)
+            assertEquals("15:00", data.savedDraft?.endTime)
+        }
+
     private fun viewModel(data: FakeAdminRegistrationDataSource = FakeAdminRegistrationDataSource()) = AdminRegistrationViewModel(data) { LocalDate.parse(FakeAdminRegistrationDataSource.TODAY) }
 
     @Test

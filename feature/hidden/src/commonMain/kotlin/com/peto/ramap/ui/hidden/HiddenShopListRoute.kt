@@ -17,7 +17,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.peto.ramap.designsystem.component.RamenShopSummaries
 import com.peto.ramap.designsystem.component.SettingsListPage
 import com.peto.ramap.designsystem.component.ShopListCount
-import com.peto.ramap.designsystem.component.ShopListEmptyContent
+import com.peto.ramap.designsystem.component.ShopsEmptyContent
 import com.peto.ramap.designsystem.dialog.CommonDialog
 import com.peto.ramap.designsystem.resource.category.CategoryResourceMapper
 import com.peto.ramap.designsystem.text.AppText
@@ -116,7 +116,7 @@ private fun HiddenShopListContent(
     onUnhideRequested: (RamenShop) -> Unit,
 ) {
     if (uiState.shops.isEmpty()) {
-        ShopListEmptyContent(
+        ShopsEmptyContent(
             title = stringResource(Res.string.hidden_shops_empty_title),
             modifier = Modifier.fillMaxSize(),
         )
