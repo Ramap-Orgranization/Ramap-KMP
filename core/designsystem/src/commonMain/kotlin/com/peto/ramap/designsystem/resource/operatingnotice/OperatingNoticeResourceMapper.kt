@@ -19,7 +19,7 @@ import ramap.shared.generated.resources.shop_detail_business_hours_break_time_fo
 import ramap.shared.generated.resources.shop_detail_business_hours_next_day_time_format
 import ramap.shared.generated.resources.shop_detail_business_hours_time_format
 
-object ShopOperatingNoticeResourceMapper {
+object OperatingNoticeResourceMapper {
     fun daySchedule(
         day: OperatingNoticeDay,
         hours: BusinessHours?,
@@ -53,7 +53,7 @@ object ShopOperatingNoticeResourceMapper {
 
     fun badgeContainerColor(type: OperatingNoticeType): Color =
         when (type) {
-            OperatingNoticeType.TEMPORARY_CLOSURE -> ChromaticColor.Red500
+            OperatingNoticeType.TEMPORARY_CLOSURE -> ChromaticColor.Red300
             OperatingNoticeType.PLANNED_CLOSING -> ChromaticColor.Blue500
             OperatingNoticeType.EARLY_CLOSING -> ChromaticColor.Orange300
         }

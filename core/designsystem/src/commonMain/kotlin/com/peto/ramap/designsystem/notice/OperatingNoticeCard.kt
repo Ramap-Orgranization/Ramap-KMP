@@ -17,7 +17,7 @@ import com.peto.ramap.designsystem.badge.EventDateBadge
 import com.peto.ramap.designsystem.badge.NewsBadge
 import com.peto.ramap.designsystem.component.RamenShopSummary
 import com.peto.ramap.designsystem.resource.category.CategoryResourceMapper
-import com.peto.ramap.designsystem.resource.operatingnotice.ShopOperatingNoticeResourceMapper
+import com.peto.ramap.designsystem.resource.operatingnotice.OperatingNoticeResourceMapper
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.designsystem.text.eventDateText
 import com.peto.ramap.domain.model.notice.OperatingNotice
@@ -68,8 +68,8 @@ fun OperatingNoticeCard(
                 horizontalArrangement = Arrangement.spacedBy(5.dp),
             ) {
                 NewsBadge(
-                    text = stringResource(ShopOperatingNoticeResourceMapper.typeLabel(notice.type)),
-                    containerColor = ShopOperatingNoticeResourceMapper.badgeContainerColor(notice.type),
+                    text = stringResource(OperatingNoticeResourceMapper.typeLabel(notice.type)),
+                    containerColor = OperatingNoticeResourceMapper.badgeContainerColor(notice.type),
                     contentColor = CommonColor.White,
                     textStyle = AppTextStyle.C2,
                 )

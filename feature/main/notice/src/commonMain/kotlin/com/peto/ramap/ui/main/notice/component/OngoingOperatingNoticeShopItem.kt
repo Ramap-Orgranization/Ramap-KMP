@@ -15,7 +15,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.peto.ramap.designsystem.badge.NewsBadge
 import com.peto.ramap.designsystem.image.RemoteShopImage
-import com.peto.ramap.designsystem.resource.operatingnotice.ShopOperatingNoticeResourceMapper
+import com.peto.ramap.designsystem.resource.operatingnotice.OperatingNoticeResourceMapper
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.domain.model.notice.OperatingNotice
 import com.peto.ramap.extension.noRippleClickable
@@ -64,9 +64,9 @@ internal fun OngoingOperatingNoticeShop(
                 itemVerticalAlignment = Alignment.CenterVertically,
             ) {
                 NewsBadge(
-                    text = stringResource(ShopOperatingNoticeResourceMapper.typeLabel(notice.type)),
+                    text = stringResource(OperatingNoticeResourceMapper.typeLabel(notice.type)),
                     textStyle = AppTextStyle.C2,
-                    containerColor = ShopOperatingNoticeResourceMapper.badgeContainerColor(notice.type),
+                    containerColor = OperatingNoticeResourceMapper.badgeContainerColor(notice.type),
                     contentColor = CommonColor.White,
                 )
                 if (notice.type.hasClosingTime) {

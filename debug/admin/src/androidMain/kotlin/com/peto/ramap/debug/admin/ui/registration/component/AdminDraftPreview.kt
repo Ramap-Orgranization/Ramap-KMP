@@ -21,7 +21,7 @@ import com.peto.ramap.debug.admin.data.model.AdminExternalVenue
 import com.peto.ramap.debug.admin.ui.registration.formatDateRange
 import com.peto.ramap.debug.admin.ui.registration.toOperatingNoticeType
 import com.peto.ramap.designsystem.notice.OperatingNoticeSchedule
-import com.peto.ramap.designsystem.resource.operatingnotice.ShopOperatingNoticeResourceMapper
+import com.peto.ramap.designsystem.resource.operatingnotice.OperatingNoticeResourceMapper
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.domain.model.businesshour.BusinessHours
 import com.peto.ramap.domain.model.notice.OperatingNoticeType
@@ -180,7 +180,7 @@ private fun OperatingNoticeType.label(): String =
         OperatingNoticeType.TEMPORARY_CLOSURE,
         OperatingNoticeType.EARLY_CLOSING,
         OperatingNoticeType.PLANNED_CLOSING,
-        -> composeStringResource(ShopOperatingNoticeResourceMapper.typeLabel(this))
+        -> composeStringResource(OperatingNoticeResourceMapper.typeLabel(this))
     }
 
 @Preview(showBackground = true)

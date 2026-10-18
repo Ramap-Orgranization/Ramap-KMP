@@ -9,7 +9,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.peto.ramap.designsystem.resource.operatingnotice.ShopOperatingNoticeResourceMapper
+import com.peto.ramap.designsystem.resource.operatingnotice.OperatingNoticeResourceMapper
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.domain.model.notice.OperatingNoticeType
 import com.peto.ramap.theme.AppTextStyle
@@ -66,7 +66,7 @@ private fun OperatingNoticeType.label(): String =
         OperatingNoticeType.TEMPORARY_CLOSURE,
         OperatingNoticeType.EARLY_CLOSING,
         OperatingNoticeType.PLANNED_CLOSING,
-        -> composeStringResource(ShopOperatingNoticeResourceMapper.typeLabel(this))
+        -> composeStringResource(OperatingNoticeResourceMapper.typeLabel(this))
     }
 
 @Preview(showBackground = true)

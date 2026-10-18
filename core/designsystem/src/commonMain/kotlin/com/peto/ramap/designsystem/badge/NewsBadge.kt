@@ -10,7 +10,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.peto.ramap.designsystem.resource.operatingnotice.ShopOperatingNoticeResourceMapper
+import com.peto.ramap.designsystem.resource.operatingnotice.OperatingNoticeResourceMapper
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.domain.model.notice.OperatingNoticeType
 import com.peto.ramap.theme.AppTextStyle
@@ -63,9 +63,9 @@ private fun OperatingNoticeBadgeColorsPreview() {
         ) {
             OperatingNoticeType.entries.forEach { type ->
                 NewsBadge(
-                    text = stringResource(ShopOperatingNoticeResourceMapper.typeLabel(type)),
+                    text = stringResource(OperatingNoticeResourceMapper.typeLabel(type)),
                     textStyle = AppTextStyle.C2,
-                    containerColor = ShopOperatingNoticeResourceMapper.badgeContainerColor(type),
+                    containerColor = OperatingNoticeResourceMapper.badgeContainerColor(type),
                     contentColor = CommonColor.White,
                 )
             }
