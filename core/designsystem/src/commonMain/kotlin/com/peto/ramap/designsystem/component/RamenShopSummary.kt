@@ -82,13 +82,15 @@ fun RamenShopSummary(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
-                AppText(
-                    text = shop.address,
-                    style = AppTextStyle.C1,
-                    color = GrayColor.C300,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
+                if (shop.address.isNotBlank()) {
+                    AppText(
+                        text = shop.address,
+                        style = AppTextStyle.C1,
+                        color = GrayColor.C300,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
                 MenuCategoryLabels(
                     menuCategories = shop.menuCategories,
                     style = AppTextStyle.C1,

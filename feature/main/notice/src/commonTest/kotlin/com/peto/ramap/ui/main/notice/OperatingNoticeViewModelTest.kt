@@ -5,10 +5,14 @@ import com.peto.ramap.core.result.RamapError
 import com.peto.ramap.coroutinesTest
 import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
+import com.peto.ramap.domain.model.auth.LoginSessionState
 import com.peto.ramap.domain.model.notice.OperatingNotice
 import com.peto.ramap.domain.model.notice.OperatingNoticeType
+import com.peto.ramap.domain.store.PersonalizationBootstrapState
 import com.peto.ramap.fake.FakeAnalyticsTracker
+import com.peto.ramap.fake.FakeLoginRepository
 import com.peto.ramap.fake.FakeOperatingNoticeRepository
+import com.peto.ramap.fake.FakePersonalizationRepository
 import com.peto.ramap.fixture.ramenShopFixture
 import com.peto.ramap.ui.main.notice.contract.OperatingNoticeIntent
 import com.peto.ramap.ui.main.notice.contract.OperatingNoticeSideEffect
@@ -40,6 +44,8 @@ class OperatingNoticeViewModelTest {
                 OperatingNoticeViewModel(
                     FakeOperatingNoticeRepository(),
                     OperatingNoticeAnalytics(analyticsTracker),
+                    FakePersonalizationRepository(),
+                    FakeLoginRepository(),
                 )
 
             viewModel.dispatch(OperatingNoticeIntent.OnNoticeClicked(notice))
@@ -132,6 +138,64 @@ class OperatingNoticeViewModelTest {
             assertEquals(listOf(scheduled), viewModel.uiState.value.scheduledOperatingNotices)
         }
 
+    @Test
+    fun `검색 입력은 진행 중 새로고침 완료 뒤에도 최신 조건으로 집계한다`() =
+        coroutinesTest {
+            val repository = FakeOperatingNoticeRepository(notices = listOf(operatingNotice(), operatingNotice("other").copy(shop = ramenShopFixture(id = "other", name = "다른 매장"))))
+            val viewModel = operatingNoticeViewModel(repository)
+            runCurrent()
+            repository.delayMillis = 1_000
+            viewModel.dispatch(OperatingNoticeIntent.OnRefreshed)
+            viewModel.dispatch(OperatingNoticeIntent.OnQueryChanged("다른"))
+            viewModel.dispatch(OperatingNoticeIntent.OnQueryChanged(" 매장 "))
+            runCurrent()
+            assertEquals(2, viewModel.uiState.value.todayShops.size)
+            viewModel.dispatch(OperatingNoticeIntent.OnQueryChanged("다른"))
+            advanceTimeBy(1_000)
+            runCurrent()
+            assertEquals(
+                listOf("other"),
+                viewModel.uiState.value.todayShops
+                    .map { it.shop.id },
+            )
+        }
+
+    @Test
+    fun `저장 필터의 초기 로딩 실패를 빈 결과와 구분하고 저장 변경과 로그아웃을 반영한다`() =
+        coroutinesTest {
+            val store = FakePersonalizationRepository(initialState = PersonalizationBootstrapState.Loading)
+            val login = FakeLoginRepository(LoginSessionState.AUTHENTICATED)
+            val viewModel = OperatingNoticeViewModel(FakeOperatingNoticeRepository(notices = listOf(operatingNotice())), OperatingNoticeAnalytics(FakeAnalyticsTracker()), store, login)
+            runCurrent()
+            viewModel.dispatch(OperatingNoticeIntent.OnSavedToggled)
+            runCurrent()
+            assertTrue(viewModel.uiState.value.savedOnly)
+            assertEquals(PersonalizationBootstrapState.Loading, viewModel.uiState.value.personalizationState)
+            store.updateBootstrapState(PersonalizationBootstrapState.Error)
+            runCurrent()
+            assertEquals(PersonalizationBootstrapState.Error, viewModel.uiState.value.personalizationState)
+            store.updateBookmarkedShopIds(setOf("shop"))
+            runCurrent()
+            assertEquals(1, viewModel.uiState.value.todayShops.size)
+            store.updateBookmarkedShopIds(emptySet())
+            runCurrent()
+            assertEquals(0, viewModel.uiState.value.todayShops.size)
+            login.updateSessionState(LoginSessionState.NOT_AUTHENTICATED)
+            runCurrent()
+            assertFalse(viewModel.uiState.value.savedOnly)
+            assertTrue(
+                viewModel.uiState.value.bookmarkedShopIds
+                    .isEmpty(),
+            )
+            store.clear()
+            login.updateSessionState(LoginSessionState.AUTHENTICATED)
+            runCurrent()
+            assertTrue(
+                viewModel.uiState.value.bookmarkedShopIds
+                    .isEmpty(),
+            )
+        }
+
     private fun operatingNotice(
         id: String = "notice",
         startDate: LocalDate = Clock.System.todayIn(TimeZone.of("Asia/Seoul")),
@@ -152,5 +216,7 @@ class OperatingNoticeViewModelTest {
         OperatingNoticeViewModel(
             repository,
             OperatingNoticeAnalytics(FakeAnalyticsTracker()),
+            FakePersonalizationRepository(),
+            FakeLoginRepository(),
         )
 }

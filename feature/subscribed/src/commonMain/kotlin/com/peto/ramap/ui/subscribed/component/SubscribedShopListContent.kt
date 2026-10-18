@@ -13,7 +13,7 @@ import com.peto.ramap.designsystem.card.EventCard
 import com.peto.ramap.designsystem.card.SectionCard
 import com.peto.ramap.designsystem.component.RamenShopSummaries
 import com.peto.ramap.designsystem.component.ShopListCount
-import com.peto.ramap.designsystem.component.ShopListEmptyContent
+import com.peto.ramap.designsystem.component.ShopsEmptyContent
 import com.peto.ramap.designsystem.resource.category.CategoryResourceMapper
 import com.peto.ramap.designsystem.resource.event.ShopEventResourceMapper
 import com.peto.ramap.designsystem.text.eventDateText
@@ -39,7 +39,7 @@ internal fun SubscribedShopListContent(
     onRemovalRequested: (SubscribedRemovalTarget) -> Unit,
 ) {
     if (uiState.showsEmptyContent) {
-        ShopListEmptyContent(
+        ShopsEmptyContent(
             title = stringResource(Res.string.subscribed_shops_empty_title),
             modifier = Modifier.fillMaxSize(),
         )

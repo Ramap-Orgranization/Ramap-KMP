@@ -3,8 +3,12 @@ package com.peto.ramap.fake
 import com.peto.ramap.core.result.RamapError
 import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.domain.model.notice.OperatingNotice
+import com.peto.ramap.domain.model.notice.OperatingNoticeFeed
 import com.peto.ramap.domain.repository.OperatingNoticeRepository
 import kotlinx.coroutines.delay
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
+import kotlin.time.Clock
 
 class FakeOperatingNoticeRepository(
     var notices: List<OperatingNotice> = emptyList(),
@@ -18,6 +22,23 @@ class FakeOperatingNoticeRepository(
 
     private val _requestedActiveNoticeShopIds = mutableListOf<String>()
     val requestedActiveNoticeShopIds: List<String> = _requestedActiveNoticeShopIds
+
+    override suspend fun fetchOperatingNoticeFeed(): RamapResult<OperatingNoticeFeed> {
+        fetchCount++
+        if (delayMillis > 0) delay(delayMillis)
+        return error?.let { RamapResult.Error(it) } ?: RamapResult.Success(
+            OperatingNoticeFeed(
+                Clock.System
+                    .now()
+                    .toLocalDateTime(TimeZone.of("Asia/Seoul"))
+                    .date,
+                notices.map {
+                    com.peto.ramap.domain.model.notice
+                        .OperatingNoticeFeedItem(it)
+                },
+            ),
+        )
+    }
 
     override suspend fun fetchCurrentOperatingNotices(): RamapResult<List<OperatingNotice>> {
         fetchCount++

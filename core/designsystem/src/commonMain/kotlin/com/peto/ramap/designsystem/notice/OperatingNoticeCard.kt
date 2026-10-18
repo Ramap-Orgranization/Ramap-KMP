@@ -1,7 +1,6 @@
 package com.peto.ramap.designsystem.notice
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -22,12 +21,12 @@ import com.peto.ramap.designsystem.resource.operatingnotice.ShopOperatingNoticeR
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.designsystem.text.eventDateText
 import com.peto.ramap.domain.model.notice.OperatingNotice
+import com.peto.ramap.extension.noRippleClickable
 import com.peto.ramap.preview.OperatingNoticePreviewParameterProvider
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.RamapTheme
-import com.peto.ramap.theme.SystemColor
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.operating_notice_source_action
@@ -70,7 +69,7 @@ fun OperatingNoticeCard(
             ) {
                 NewsBadge(
                     text = stringResource(ShopOperatingNoticeResourceMapper.typeLabel(notice.type)),
-                    containerColor = SystemColor.Warning,
+                    containerColor = ShopOperatingNoticeResourceMapper.badgeContainerColor(notice.type),
                     contentColor = CommonColor.White,
                     textStyle = AppTextStyle.C2,
                 )
@@ -97,7 +96,7 @@ fun OperatingNoticeCard(
                     text = stringResource(Res.string.operating_notice_source_action),
                     style = AppTextStyle.B1,
                     color = GrayColor.C500,
-                    modifier = Modifier.clickable { onSourceClick(sourceUrl) },
+                    modifier = Modifier.noRippleClickable { onSourceClick(sourceUrl) },
                 )
             }
         }
