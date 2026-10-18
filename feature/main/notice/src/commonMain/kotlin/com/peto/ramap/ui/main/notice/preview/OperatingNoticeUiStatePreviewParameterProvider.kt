@@ -35,7 +35,12 @@ class OperatingNoticeUiStatePreviewParameterProvider : PreviewParameterProvider<
         val selectedState: OperatingNoticeUiState
             get() {
                 val base = defaultState
-                val bookmarkedShopIds = base.feed?.items.orEmpty().map { it.notice.shop.id }.toSet()
+                val bookmarkedShopIds =
+                    base.feed
+                        ?.items
+                        .orEmpty()
+                        .map { it.notice.shop.id }
+                        .toSet()
                 return base.copy(
                     scheduledSelected = true,
                     query = "라멘",
