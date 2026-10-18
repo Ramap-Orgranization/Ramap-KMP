@@ -10,7 +10,7 @@ import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.importation.ImportationPreview
 import com.peto.ramap.domain.model.importation.ImportationProvider
-import com.peto.ramap.domain.model.personalization.ShopPersonalization
+import com.peto.ramap.domain.model.personalization.Personalization
 import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.domain.repository.ImportationRepository
 import com.peto.ramap.fake.FakeAnalyticsTracker
@@ -83,7 +83,7 @@ class ImportationViewModelTest {
                 ImportationViewModel(
                     personalizationStore =
                         FakePersonalizationRepository(
-                            ShopPersonalization(
+                            Personalization(
                                 bookmarkedShopIds = setOf(bookmarkedShop.id),
                                 hiddenShopIds = setOf(hiddenShop.id),
                             ),
@@ -146,7 +146,7 @@ class ImportationViewModelTest {
                 )
                 assertEquals(listOf(setOf(remainingShop.id)), personalizationRepository.bookmarkBulkAddRequests)
                 assertEquals(
-                    RamapResult.Success(ShopPersonalization(bookmarkedShopIds = setOf(remainingShop.id))),
+                    RamapResult.Success(Personalization(bookmarkedShopIds = setOf(remainingShop.id))),
                     personalizationRepository.fetchPersonalization(),
                 )
                 assertEquals(
@@ -200,7 +200,7 @@ class ImportationViewModelTest {
             val candidateShop = ramenShopFixture(id = "candidate-shop")
             val personalizationRepository =
                 FakePersonalizationRepository(
-                    ShopPersonalization(bookmarkedShopIds = setOf(existingShopId)),
+                    Personalization(bookmarkedShopIds = setOf(existingShopId)),
                 ).apply {
                     bookmarkUpdateError = RamapError.Unknown(IllegalStateException("failure"))
                 }
@@ -222,7 +222,7 @@ class ImportationViewModelTest {
             assertEquals(ImportationError.CONFIRM_FAILED, viewModel.uiState.value.error)
             assertEquals(RamenShops(listOf(candidateShop)), viewModel.uiState.value.candidates)
             assertEquals(
-                RamapResult.Success(ShopPersonalization(bookmarkedShopIds = setOf(existingShopId))),
+                RamapResult.Success(Personalization(bookmarkedShopIds = setOf(existingShopId))),
                 personalizationRepository.fetchPersonalization(),
             )
         }

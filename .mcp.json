@@ -1,9 +1,5 @@
 {
   "mcpServers": {
-    "aside": {
-      "command": "/Users/jeongchanho/.local/bin/aside",
-      "args": ["mcp"]
-    },
     "supabase": {
       "url": "https://mcp.supabase.com/mcp"
     }

@@ -3,6 +3,7 @@ package com.peto.ramap.ui.main.map
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -18,12 +19,10 @@ import com.peto.ramap.navigation.deeplink.ShopShareLinkFactory
 import com.peto.ramap.platform.AppSettingsOpener
 import com.peto.ramap.platform.NotificationPermissionRequester
 import com.peto.ramap.ui.main.map.contract.MapIntent
-import com.peto.ramap.ui.main.map.contract.MapIntent.OnBookmarkToggled
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnBookmarkedShopsToggled
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnBoundsChanged
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnCameraPositionChanged
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnCategoryFilterToggled
-import com.peto.ramap.ui.main.map.contract.MapIntent.OnHiddenToggled
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnInitialLocationFocusConsumed
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnLocationPermissionBlocked
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnLoginSelectionDismissed
@@ -35,25 +34,20 @@ import com.peto.ramap.ui.main.map.contract.MapIntent.OnQueryChanged
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnRecentSearchDeleted
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnRecentSearchSelected
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnRecentSearchesCleared
-import com.peto.ramap.ui.main.map.contract.MapIntent.OnRequestedShopDismissed
-import com.peto.ramap.ui.main.map.contract.MapIntent.OnReviewReportRequested
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnSearchResultsDismissed
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnSelectedShopFocusConsumed
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopDetailDismissed
-import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopDetailRetry
-import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopIdSelected
-import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopMapLinkClicked
-import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopNotificationToggled
-import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopReportSubmitted
-import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopReviewsLoadMore
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopSelected
-import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopShareClicked
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnStatusTimeRefreshed
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnViewportLoadRetry
+import com.peto.ramap.ui.main.map.contract.MapSideEffect
+import com.peto.ramap.ui.main.map.model.ShopDetailRequest
+import com.peto.ramap.ui.refresh.BusinessHoursStatusRefreshEffect
 import com.peto.ramap.ui.refresh.PeriodicRefreshEffect
+import com.peto.ramap.ui.shop.component.MapInteractionHost
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
-import org.koin.compose.viewmodel.koinViewModel
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.current_location_timeout_message
 
@@ -70,29 +64,38 @@ fun MapRoute(
     showShopDetail: Boolean = true,
     showReviewsOnOpen: Boolean = false,
     originSource: AnalyticsSource = AnalyticsSource.MAP,
+    isUncovered: Boolean = true,
     toastManager: ToastManager = koinInject(),
     appSettingsOpener: AppSettingsOpener = koinInject(),
     shopShareLinkFactory: ShopShareLinkFactory = koinInject(),
     requestNotificationPermission: suspend () -> Boolean = NotificationPermissionRequester::request,
-    viewModel: MapViewModel = koinViewModel(),
+    viewModel: MapViewModel =
+        org.koin.compose.viewmodel
+            .koinViewModel(),
+    detailContent: @Composable (ShopDetailRequest) -> Unit,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val selectedShopFocusRequest = uiState.selectedShopFocusRequest
     val coroutineScope = rememberCoroutineScope()
     var shouldShowShopDetail by remember(requestedShopId, showShopDetail) { mutableStateOf(showShopDetail) }
     var shouldShowReviews by remember(requestedShopId, showReviewsOnOpen) { mutableStateOf(showReviewsOnOpen) }
     var detailSource by remember(requestedShopId, originSource) { mutableStateOf(originSource) }
 
-    PeriodicRefreshEffect(intervalMillis = OPERATING_NOTICE_REFRESH_MILLIS) {
+    LaunchedEffect(requestedShopId, showShopDetail) {
+        requestedShopId?.let { viewModel.dispatch(MapIntent.OnShopIdSelected(it, showShopDetail)) }
+    }
+    androidx.compose.runtime.DisposableEffect(viewModel) {
+        onDispose { viewModel.dispatch(MapIntent.OnMapTabExited) }
+    }
+    BusinessHoursStatusRefreshEffect(currentDateTime = uiState.currentDateTime, notices = uiState.operatingNotices) {
         viewModel.dispatch(OnStatusTimeRefreshed)
+    }
+    PeriodicRefreshEffect(intervalMillis = OPERATING_NOTICE_REFRESH_MILLIS) {
         viewModel.dispatch(OnOperatingNoticesRefreshRequested)
     }
 
-    LaunchedEffect(requestedShopId) {
-        requestedShopId?.let { viewModel.dispatch(OnShopIdSelected(it)) }
-    }
-
     MapInteractionHost(
-        sideEffect = viewModel.sideEffect,
+        sideEffect = remember(viewModel) { viewModel.sideEffect.map { (it as MapSideEffect.Interaction).effect } },
         isLoggedIn = uiState.isLoggedIn,
         hiddenShopIds = uiState.hiddenShopIds,
         notificationShopIds = uiState.notificationShopIds,
@@ -100,13 +103,12 @@ fun MapRoute(
         appSettingsOpener = appSettingsOpener,
         shopShareLinkFactory = shopShareLinkFactory,
         requestNotificationPermission = requestNotificationPermission,
-        onNotificationToggled = { viewModel.dispatch(OnShopNotificationToggled(it, detailSource)) },
+        onNotificationToggled = {},
         onLoginTypeSelected = { viewModel.dispatch(OnLoginTypeSelected(it)) },
         onLoginDismissed = { viewModel.dispatch(OnLoginSelectionDismissed) },
-    ) { onShopNotificationToggled, onLoginGuideRequested ->
+    ) { _, _ ->
         MapContent(
             uiState = uiState,
-            showNotificationActions = NotificationPermissionRequester.isSupported,
             isBackEnabled = isBackEnabled,
             onBoundsChanged = { viewModel.dispatch(OnBoundsChanged(it)) },
             onCameraPositionChanged = { viewModel.dispatch(OnCameraPositionChanged(it)) },
@@ -134,67 +136,60 @@ fun MapRoute(
                 viewModel.dispatch(OnShopDetailDismissed)
                 onDetailDismissed()
             },
-            onShopDetailRetry = {
-                if (uiState.selectedShop != null) {
-                    viewModel.dispatch(OnShopDetailRetry)
-                } else {
-                    requestedShopId?.let { shopId -> viewModel.dispatch(OnShopIdSelected(shopId)) }
-                }
-            },
-            onRequestedShopDismissed = {
-                shouldShowReviews = false
-                viewModel.dispatch(OnRequestedShopDismissed)
-                onDetailDismissed()
-            },
             onQueryChanged = { viewModel.dispatch(OnQueryChanged(it)) },
             onRecentSearchSelected = { viewModel.dispatch(OnRecentSearchSelected(it)) },
             onRecentSearchDeleted = { viewModel.dispatch(OnRecentSearchDeleted(it)) },
             onRecentSearchesCleared = { viewModel.dispatch(OnRecentSearchesCleared) },
             onSearchResultsDismissed = { viewModel.dispatch(OnSearchResultsDismissed) },
             onInitialLocationFocusConsumed = { viewModel.dispatch(OnInitialLocationFocusConsumed) },
-            onSelectedShopFocusConsumed = { viewModel.dispatch(OnSelectedShopFocusConsumed) },
+            onSelectedShopFocusConsumed = {
+                selectedShopFocusRequest?.let { viewModel.dispatch(OnSelectedShopFocusConsumed(it)) }
+            },
             onCategoryFilterToggled = { viewModel.dispatch(OnCategoryFilterToggled(it)) },
             onOpenFilterToggled = { viewModel.dispatch(OnOpenFilterToggled) },
             onViewportLoadRetry = { viewModel.dispatch(OnViewportLoadRetry) },
-            onBookmarkToggled = { viewModel.dispatch(OnBookmarkToggled(it, detailSource)) },
-            onShopNotificationToggled = onShopNotificationToggled,
-            onHiddenToggled = { viewModel.dispatch(OnHiddenToggled(it, detailSource)) },
-            onShopShareClick = { viewModel.dispatch(OnShopShareClicked(it)) },
-            onShopMapLinkClick = { shop, provider -> viewModel.dispatch(OnShopMapLinkClicked(shop, provider)) },
-            onReportSubmit = { wrongFields, description ->
-                viewModel.dispatch(OnShopReportSubmitted(wrongFields, description))
-            },
             onBookmarkedShopsToggle = { viewModel.dispatch(OnBookmarkedShopsToggled) },
-            onEventClick = onEventNavigate,
-            onReviewsClick = { shopId ->
-                if (uiState.isLoggedIn) {
-                    onReviewNavigate(shopId)
-                } else {
-                    onLoginGuideRequested()
-                }
-            },
-            onOpenProfile = onOpenProfile,
-            onReviewLike = {
-                viewModel.dispatch(MapIntent.OnReviewLikeToggled(it))
-            },
-            onReviewEdit = { onEditReview(it.shopId, it.id) },
-            onReviewDelete = {
-                viewModel.dispatch(MapIntent.OnReviewDeleted(it))
-            },
-            onReviewReport = { viewModel.dispatch(OnReviewReportRequested(it)) },
-            onViewBlockedReview = { viewModel.dispatch(MapIntent.OnBlockedReviewViewRequested(it)) },
-            onUnblockBlockedUser = { viewModel.dispatch(MapIntent.OnBlockedReviewUnblockRequested(it)) },
-            hasMoreReviews = uiState.hasMoreShopReviews,
-            isLoadingMoreReviews = uiState.isLoadingMoreShopReviews,
-            isRetryingReviews = uiState.isRetryingShopReviews,
-            onLoadMoreReviews = { viewModel.dispatch(OnShopReviewsLoadMore) },
-            onOperatingNoticeNavigate = onOperatingNoticeNavigate,
-            showShopDetail = shouldShowShopDetail,
-            showReviewsOnOpen = shouldShowReviews,
         )
     }
-    MapReviewReportDialog(state = uiState, onIntent = viewModel::dispatch)
-    MapBlockedReviewUnblockDialog(state = uiState, onIntent = viewModel::dispatch)
+    if (shouldShowShopDetail) {
+        uiState.selectedShopId?.let { shopId ->
+            key(uiState.shopSelectionKey) {
+                detailContent(
+                    ShopDetailRequest(
+                        shopId = shopId,
+                        initialShop = uiState.selectedShop,
+                        onDismiss = {
+                            shouldShowReviews = false
+                            detailSource = AnalyticsSource.MAP
+                            viewModel.dispatch(OnShopDetailDismissed)
+                            onDetailDismissed()
+                        },
+                        onSelectedShopHidden = {
+                            viewModel.dispatch(MapIntent.OnSelectedShopHidden)
+                            onDetailDismissed()
+                        },
+                        onShopLoadFailed = { viewModel.dispatch(MapIntent.OnShopLoadFailed(it)) },
+                        onLoginGuideRequested = { viewModel.dispatch(OnLoginSelectionDismissed) },
+                        onShopViewed = { viewModel.dispatch(MapIntent.OnShopViewed(it)) },
+                        onShowOnMap = null,
+                        onReviewNavigate = onReviewNavigate,
+                        onOpenProfile = onOpenProfile,
+                        onEditReview = onEditReview,
+                        onEventNavigate = onEventNavigate,
+                        onOperatingNoticeNavigate = onOperatingNoticeNavigate,
+                        originSource = detailSource,
+                        isUncovered = isUncovered,
+                        isBackEnabled = isBackEnabled,
+                        showReviewsOnOpen = shouldShowReviews,
+                        toastManager = toastManager,
+                        appSettingsOpener = appSettingsOpener,
+                        shopShareLinkFactory = shopShareLinkFactory,
+                        requestNotificationPermission = requestNotificationPermission,
+                    ),
+                )
+            }
+        }
+    }
 }
 
 private const val OPERATING_NOTICE_REFRESH_MILLIS = 60_000L

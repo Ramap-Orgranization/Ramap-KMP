@@ -15,8 +15,6 @@ GoogleService-Info.plist
 captures
 .externalNativeBuild
 .cxx
-.codex
-.agents
 .artifacts
 *.xcodeproj/*
 !*.xcodeproj/project.pbxproj
@@ -26,8 +24,9 @@ captures
 **/xcshareddata/WorkspaceSettings.xcsettings
 node_modules/
 iosApp/Pods/
-docs/
-AGENTS.md
+/docs/*
+!/docs/wiki/
+!/docs/menu-registration-policy.md
 .scratch/
 **/__pycache__/
 *.pyc
@@ -49,10 +48,43 @@ AGENTS.md
 /androidApp/release/
 /distribution/
 /marketing
-tools/
+# Shared Codex menu-refresh skill; runtime data and historical outputs stay local.
+/tools/*
+!/tools/menu-refresh/
+/tools/menu-refresh/*
+!/tools/menu-refresh/SKILL.md
+!/tools/menu-refresh/README.md
+!/tools/menu-refresh/agents/
+!/tools/menu-refresh/agents/*.yaml
+!/tools/menu-refresh/references/
+!/tools/menu-refresh/references/*.md
+!/tools/menu-refresh/scripts/
+!/tools/menu-refresh/scripts/*.py
+!/tools/menu-refresh/scripts/*.js
+!/tools/menu-refresh/assets/
+!/tools/menu-refresh/assets/*.html
+# Historical menu-refresh outputs.
+/output/menu-refresh-skill.zip
+/output/menu-refresh-pilot-2026-10-07.md
 outputs/
 /artifacts
 iosApp/iosApp/GoogleService-Info-Release.plist
 tools/menu-snapshot-data.js
 
 !/supabase/
+# Place lookup implementation and schema regression tests.
+!/supabase/functions/place-search/place_search.ts
+!/supabase/tests/shops_schema_test.ts
+!/supabase/tests/news_report_evidence_access_test.py
+!/supabase/tests/admin_access_test.py
+!/supabase/functions/place-search/search_budget.ts
+!/supabase/tests/place_search_budget_test.py
+!/supabase/tests/report_submission_abuse_test.py
+!/supabase/tests/review_submission_retry_test.py
+!/supabase/tests/push_registration_growth_test.py
+!/supabase/tests/operating_notice_fields_test.py
+!/supabase/tests/hidden_shop_visibility_test.py
+!/supabase/tests/operating_status_worker_access_test.py
+!/supabase/tests/operating_status_diagnostics_test.py
+!/supabase/tests/profile_bio_instagram_cleanup_test.py
+!/supabase/tests/remaining_server_hardening_test.py

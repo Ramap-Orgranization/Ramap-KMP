@@ -1,0 +1,4 @@
+interface:
+  display_name: "Instagram Carousel Prototype"
+  short_description: "실제 앱 화면으로 인스타그램 HTML 시안과 PNG·ZIP 제작"
+  default_prompt: "Use $instagram-carousel-prototype to create a 4:5 HTML carousel from these app screenshots, preserve the approved copy, and export PNGs and a ZIP after the prototype is confirmed."

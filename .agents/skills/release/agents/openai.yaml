@@ -1,0 +1,4 @@
+interface:
+  display_name: "Ramap Release"
+  short_description: "전담 릴리스 에이전트로 Android 버전 준비·승인·게시"
+  default_prompt: "Use $release with release_manager to prepare the next Android release, verify the AAB, and wait for explicit approval of the complete preview before remote publication."

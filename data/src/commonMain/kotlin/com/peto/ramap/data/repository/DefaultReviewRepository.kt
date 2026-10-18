@@ -2,7 +2,10 @@ package com.peto.ramap.data.repository
 
 import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.data.datasource.review.ReviewDataSource
+import com.peto.ramap.data.datasource.shop.RamenShopDataSource
+import com.peto.ramap.data.model.ReviewMutationResponse
 import com.peto.ramap.data.model.ShopReviewRequest
+import com.peto.ramap.data.store.DefaultReviewChangeStore
 import com.peto.ramap.domain.model.review.EditableReview
 import com.peto.ramap.domain.model.review.MyReview
 import com.peto.ramap.domain.model.review.MyReviewVisibility
@@ -11,22 +14,57 @@ import com.peto.ramap.domain.model.review.Review
 import com.peto.ramap.domain.model.review.ReviewImage
 import com.peto.ramap.domain.model.review.ReviewLike
 import com.peto.ramap.domain.model.review.ShopReviewsPage
+import com.peto.ramap.domain.model.review.change.ReviewChange
+import com.peto.ramap.domain.model.review.change.ReviewSnapshot
+import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.domain.repository.ReviewRepository
 import com.peto.ramap.network.execute.invokeRequest
-import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 internal class DefaultReviewRepository(
     private val dataSource: ReviewDataSource,
-    private val changes: ReviewChangeNotifier,
+    private val shopDataSource: RamenShopDataSource,
+    private val changes: DefaultReviewChangeStore,
+    private val hydrationScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
 ) : ReviewRepository {
-    override fun observeChanges(): Flow<Unit> = changes.events
+    private val writes = Mutex()
 
     override suspend fun fetchMyReviews(
         offset: Long,
         visibility: MyReviewVisibility,
-    ): RamapResult<MyReviewsPage> = invokeRequest { dataSource.fetchMyReviews(offset, visibility.rpcValue).toDomain() }
+    ): RamapResult<MyReviewsPage> =
+        invokeRequest {
+            val page = dataSource.fetchMyReviews(offset, visibility.rpcValue).toDomain()
+            val shops = fetchReviewShops(page.reviews.map { it.shopId }.toSet())
+            page.copy(reviews = page.reviews.map { it.copy(shop = shops[it.shopId]) })
+        }
 
-    override suspend fun fetchMyReview(reviewId: String): RamapResult<MyReview?> = invokeRequest { dataSource.fetchMyReview(reviewId)?.toDomain() }
+    private suspend fun fetchReviewShops(shopIds: Set<String>): Map<String, RamenShop> {
+        val nonblankIds = shopIds.filter { it.isNotBlank() }.toSet()
+        if (nonblankIds.isEmpty()) return emptyMap()
+        val result =
+            invokeRequest {
+                shopDataSource.fetchRamenShopsByIds(nonblankIds).map { it.toDomain() }.associateBy { it.id }
+            }
+        return when (result) {
+            is RamapResult.Success -> result.data
+            is RamapResult.Error -> emptyMap()
+        }
+    }
+
+    override suspend fun fetchMyReview(reviewId: String): RamapResult<MyReview?> =
+        invokeRequest {
+            dataSource.fetchMyReview(reviewId)?.toDomain()?.let { review ->
+                review.copy(shop = fetchReviewShops(setOf(review.shopId))[review.shopId])
+            }
+        }
 
     override suspend fun fetchShopReviewsPage(
         shopId: String,
@@ -43,7 +81,7 @@ internal class DefaultReviewRepository(
         images: List<ReviewImage>,
         isPublic: Boolean,
     ): RamapResult<Unit> =
-        invokeRequest {
+        write {
             require(Review.isValidBody(body)) { ERROR_INVALID_REVIEW_BODY }
             require(images.size <= ReviewImage.MAX_COUNT && images.all(ReviewImage::isValid)) { ERROR_INVALID_REVIEW_IMAGES }
             dataSource.submitReview(
@@ -55,7 +93,6 @@ internal class DefaultReviewRepository(
                 ),
                 images,
             )
-            changes.notifyChanged()
         }
 
     override suspend fun fetchEditableReview(reviewId: String): RamapResult<EditableReview?> =
@@ -70,29 +107,85 @@ internal class DefaultReviewRepository(
         newImages: List<ReviewImage>,
         isPublic: Boolean,
     ): RamapResult<Unit> =
-        invokeRequest {
+        write {
             require(Review.isValidBody(body)) { ERROR_INVALID_REVIEW_BODY }
             require(retainedImagePaths.size + newImages.size <= ReviewImage.MAX_COUNT) { ERROR_TOO_MANY_IMAGES }
             require(newImages.all(ReviewImage::isValid)) { ERROR_INVALID_REVIEW_IMAGES }
             dataSource.updateReview(reviewId, body.trim(), retainedImagePaths, newImages, isPublic)
-            changes.notifyChanged()
         }
 
-    override suspend fun deleteReview(reviewId: String): RamapResult<Unit> =
-        invokeRequest {
-            dataSource.deleteReview(reviewId)
-            changes.notifyChanged()
-        }
+    override suspend fun deleteReview(reviewId: String): RamapResult<Unit> = write { dataSource.deleteReview(reviewId) }
 
     override suspend fun setReviewLike(
         reviewId: String,
         liked: Boolean,
     ): RamapResult<ReviewLike> =
         invokeRequest {
-            dataSource.setReviewLike(reviewId, liked).toDomain()
+            val epoch = changes.synchronizeSession()
+            dataSource.setReviewLike(reviewId, liked).toDomain().also { changes.publish(ReviewChange.Liked(reviewId, it), epoch) }
         }
 
+    private suspend fun write(request: suspend () -> ReviewMutationResponse): RamapResult<Unit> =
+        writes.withLock {
+            invokeRequest {
+                val epoch = changes.synchronizeSession()
+                val receipt = request()
+                val written = receipt.toDomain()
+                val shop = written.after?.let { fetchMutationShop(it.review.shopId) }
+                changes.publish(written.copy(after = written.after?.copy(shop = shop)), epoch)
+                hydrate(receipt, epoch, shop)
+            }
+        }
+
+    private suspend fun hydrate(
+        receipt: ReviewMutationResponse,
+        epoch: Long,
+        shop: RamenShop?,
+    ) {
+        val hydrated = hydrateOnce(receipt, epoch, shop)
+        if (isHydrated(hydrated) || receipt.after == null) return
+        hydrationScope.launch {
+            var knownShop = hydrated?.shop ?: shop
+            repeat(HYDRATION_RETRIES) { attempt ->
+                delay(HYDRATION_RETRY_DELAY_MS * (attempt + 1))
+                if (changes.synchronizeSession() != epoch) return@launch
+                val retried = hydrateOnce(receipt, epoch, knownShop)
+                knownShop = retried?.shop ?: knownShop
+                if (isHydrated(retried)) return@launch
+            }
+        }
+    }
+
+    private suspend fun hydrateOnce(
+        receipt: ReviewMutationResponse,
+        epoch: Long,
+        shop: RamenShop?,
+    ): ReviewSnapshot? =
+        try {
+            val hydrated =
+                dataSource.hydrateMutation(receipt).toDomain().after?.let { snapshot ->
+                    snapshot.copy(shop = shop ?: fetchMutationShop(snapshot.review.shopId))
+                }
+            if (hydrated != null) changes.publish(ReviewChange.Hydrated(hydrated), epoch)
+            hydrated
+        } catch (_: CancellationException) {
+            null
+        } catch (_: Exception) {
+            null
+        }
+
+    private suspend fun fetchMutationShop(shopId: String): RamenShop? =
+        try {
+            fetchReviewShops(setOf(shopId))[shopId]
+        } catch (_: CancellationException) {
+            null
+        }
+
+    private fun isHydrated(snapshot: ReviewSnapshot?): Boolean = snapshot != null && snapshot.shop != null && snapshot.review.images.all { it.url != null }
+
     private companion object {
+        const val HYDRATION_RETRIES = 3
+        const val HYDRATION_RETRY_DELAY_MS = 1000L
         const val ERROR_INVALID_REVIEW_BODY = "Invalid review body"
         const val ERROR_INVALID_REVIEW_IMAGES = "Invalid review images"
         const val ERROR_TOO_MANY_IMAGES = "Too many images"

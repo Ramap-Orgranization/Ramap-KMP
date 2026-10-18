@@ -53,7 +53,8 @@ class PlaceReportViewModel(
 
     private fun extractSupportedPlaceUrl(placeUrl: String): String? {
         val extractedPlaceUrl = PlaceReportTextParser.extractSupportedUrl(placeUrl)
-        if (extractedPlaceUrl == null) {
+        val isInvalidUrl = extractedPlaceUrl == null
+        if (isInvalidUrl) {
             showToast(Res.string.place_report_invalid_url_message, ToastType.ERROR)
         }
         return extractedPlaceUrl
@@ -71,12 +72,7 @@ class PlaceReportViewModel(
         extractedPlaceUrl: String,
     ): Boolean? {
         val placeName = PlaceReportTextParser.extractSharedPlaceName(placeUrl)
-        val resolvedPlace =
-            if (placeName == null) {
-                placeLinkResolver.resolve(extractedPlaceUrl)
-            } else {
-                null
-            }
+        val resolvedPlace = if (placeName == null) placeLinkResolver.resolve(extractedPlaceUrl) else null
         val searchQuery = placeName ?: resolvedPlace?.name ?: resolvedPlace?.placeId ?: return false
         var existingShop: Boolean? = null
         handleResult(
@@ -88,8 +84,9 @@ class PlaceReportViewModel(
             onSuccess = { shops ->
                 existingShop =
                     shops.values.any { shop ->
-                        PlaceReportTextParser.matchesSharedPlace(placeUrl, shop) ||
-                            (resolvedPlace != null && PlaceReportTextParser.matchesResolvedPlace(resolvedPlace, shop))
+                        val isSharedMatch = PlaceReportTextParser.matchesSharedPlace(placeUrl, shop)
+                        val isResolvedMatch = resolvedPlace != null && PlaceReportTextParser.matchesResolvedPlace(resolvedPlace, shop)
+                        isSharedMatch || isResolvedMatch
                     }
             },
             onError = { showToast(Res.string.place_report_failure_message, ToastType.ERROR) },
@@ -97,7 +94,6 @@ class PlaceReportViewModel(
         return existingShop
     }
 
-    /** URL 제보 제출 작업을 실행하고 실행 중 추가 제출은 무시한다. */
     private fun launchSubmission(block: suspend () -> Unit) {
         launchTask(
             taskKey = SUBMIT_TASK_KEY,
@@ -115,9 +111,7 @@ class PlaceReportViewModel(
         handleResult(
             result = reportRepository.submitUnregisteredPlaceReport(report),
             onSuccess = { onSuccess() },
-            onError = {
-                showToast(Res.string.place_report_failure_message, ToastType.ERROR)
-            },
+            onError = { showToast(Res.string.place_report_failure_message, ToastType.ERROR) },
         )
     }
 
@@ -130,7 +124,6 @@ class PlaceReportViewModel(
 
     companion object {
         private const val SEARCH_RESULT_LIMIT = 10
-
         private const val SUBMIT_TASK_KEY = "submit-place-report"
     }
 }

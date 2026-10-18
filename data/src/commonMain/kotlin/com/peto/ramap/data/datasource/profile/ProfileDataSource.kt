@@ -1,7 +1,9 @@
 package com.peto.ramap.data.datasource.profile
 
 import com.peto.ramap.data.model.ProfileResponse
+import com.peto.ramap.data.model.SignedImageUrl
 import com.peto.ramap.domain.model.profile.ProfileImage
+import com.peto.ramap.domain.model.profile.ProfileVisibility
 import kotlinx.coroutines.flow.Flow
 
 internal interface ProfileDataSource {
@@ -23,6 +25,8 @@ internal interface ProfileDataSource {
 
     suspend fun updateProfileVisibility(isPublic: Boolean): ProfileResponse
 
+    suspend fun updateProfileVisibility(visibility: ProfileVisibility): ProfileResponse
+
     suspend fun uploadPhoto(
         userId: String,
         path: String,
@@ -37,5 +41,5 @@ internal interface ProfileDataSource {
     suspend fun signedPhotoUrl(
         userId: String,
         path: String,
-    ): String
+    ): SignedImageUrl
 }

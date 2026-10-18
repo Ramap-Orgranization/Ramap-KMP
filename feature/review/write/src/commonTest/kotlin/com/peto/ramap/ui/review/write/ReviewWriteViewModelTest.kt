@@ -10,8 +10,8 @@ import com.peto.ramap.domain.model.profile.AccountProfile
 import com.peto.ramap.domain.model.review.EditableReview
 import com.peto.ramap.domain.model.review.Review
 import com.peto.ramap.domain.model.review.ReviewImage
+import com.peto.ramap.domain.model.shop.ShopOverView
 import com.peto.ramap.domain.repository.ProfileRepository
-import com.peto.ramap.domain.usecase.ShopDetail
 import com.peto.ramap.fake.FakeProfileRepository
 import com.peto.ramap.fake.FakeRamenShopRepository
 import com.peto.ramap.fixture.ramenShopFixture
@@ -190,7 +190,7 @@ class ReviewWriteViewModelTest {
             assertEquals("첫 계정 리뷰", viewModel.uiState.value.body)
 
             reviews.editableReview = EditableReview("review", "shop", "새 계정 리뷰", listOf("second"), listOf(null), false)
-            profiles.sessionUserIds.value = "second"
+            profiles.sessionUserId.value = "second"
             runCurrent()
             assertEquals("새 계정 리뷰", viewModel.uiState.value.body)
             assertEquals(
@@ -219,7 +219,7 @@ class ReviewWriteViewModelTest {
             viewModel.dispatch(ReviewWriteIntent.Open("second"))
             runCurrent()
             assertEquals("", viewModel.uiState.value.body)
-            assertEquals(listOf("first", "second"), ramenShops.requestedShopDetailIds)
+            assertEquals(listOf("first", "second"), ramenShops.requestedShopOverviewIds)
 
             viewModel.dispatch(ReviewWriteIntent.ChangeBody("second draft"))
             viewModel.dispatch(ReviewWriteIntent.Submit)
@@ -441,7 +441,7 @@ class ReviewWriteViewModelTest {
     fun `loads the shop used by the review identity card`() =
         coroutinesTest {
             val shop = ramenShopFixture(id = "shop")
-            val ramenShops = FakeRamenShopRepository(shopDetail = ShopDetail(shop, 0, null, null, null))
+            val ramenShops = FakeRamenShopRepository(shopOverview = ShopOverView(shop, 0, null, null, null))
             val viewModel =
                 ReviewWriteViewModel(
                     FakeReviewRepository(),
@@ -451,7 +451,7 @@ class ReviewWriteViewModelTest {
             viewModel.dispatch(ReviewWriteIntent.Open("shop"))
             runCurrent()
 
-            assertEquals(listOf("shop"), ramenShops.requestedShopDetailIds)
+            assertEquals(listOf("shop"), ramenShops.requestedShopOverviewIds)
             assertEquals(shop, viewModel.uiState.value.shop)
         }
 

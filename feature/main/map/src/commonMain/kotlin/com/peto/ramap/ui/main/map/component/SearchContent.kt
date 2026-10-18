@@ -184,6 +184,7 @@ internal fun SearchContent(
                             SearchResultList(
                                 shops = uiState.searchResultShops,
                                 operatingNotices = uiState.operatingNotices,
+                                currentDateTime = uiState.currentDateTime,
                                 onShopClick = {
                                     onShopSelected(it, true, AnalyticsSource.SEARCH_RESULT)
                                 },

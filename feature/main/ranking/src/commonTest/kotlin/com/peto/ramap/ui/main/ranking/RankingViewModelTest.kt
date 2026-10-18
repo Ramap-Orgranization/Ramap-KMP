@@ -9,7 +9,7 @@ import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.auth.LoginSessionState
 import com.peto.ramap.domain.model.auth.LoginType
-import com.peto.ramap.domain.model.personalization.ShopPersonalization
+import com.peto.ramap.domain.model.personalization.Personalization
 import com.peto.ramap.domain.model.rank.RankingCursor
 import com.peto.ramap.domain.model.rank.RankingPage
 import com.peto.ramap.domain.model.rank.ShopRanking
@@ -35,10 +35,11 @@ import com.peto.ramap.ui.main.ranking.contract.RankingSideEffect
 import com.peto.ramap.ui.main.ranking.log.RankingAnalytics
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.test.runCurrent
-import kotlinx.coroutines.yield
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.personalization_update_failure_message
 import ramap.shared.generated.resources.ranking_refresh_failure_message
@@ -80,6 +81,44 @@ class RankingViewModelTest {
             assertEquals(
                 4L,
                 viewModel.uiState.value.displayedLikeCount(viewModel.uiState.value.shops[0]),
+            )
+        }
+
+    @Test
+    fun `로그인 후 첫 빈 목록을 받은 뒤 저장과 해제를 하면 랭킹 수를 갱신한다`() =
+        coroutinesTest {
+            val personalizationStore = FakePersonalizationRepository(initialState = PersonalizationBootstrapState.Loading)
+            val loginRepository = FakeLoginRepository(LoginSessionState.NOT_AUTHENTICATED)
+            val viewModel =
+                rankingViewModel(
+                    repository = FakeShopRankingRepository(pageOf(shopRanking(likeCount = 3))),
+                    personalizationStore = personalizationStore,
+                    loginRepository = loginRepository,
+                )
+            runCurrent()
+            loginRepository.updateSessionState(LoginSessionState.AUTHENTICATED)
+            runCurrent()
+            assertLikeCount(viewModel, 3L)
+
+            personalizationStore.updateBookmarkedShopIds(emptySet())
+            runCurrent()
+            assertLikeCount(viewModel, 3L)
+
+            viewModel.dispatch(RankingIntent.OnBookmarkChanged(ramenShop(), enabled = true))
+            runCurrent()
+            assertLikeCount(viewModel, 4L)
+            assertEquals(setOf("shop-id"), viewModel.uiState.value.bookmarkedShopIds)
+
+            viewModel.dispatch(RankingIntent.OnBookmarkChanged(ramenShop(), enabled = false))
+            runCurrent()
+            assertLikeCount(viewModel, 3L)
+            assertTrue(
+                viewModel.uiState.value.bookmarkedShopIds
+                    .isEmpty(),
+            )
+            assertTrue(
+                viewModel.uiState.value.bookmarkLikeCountDeltas
+                    .isEmpty(),
             )
         }
 
@@ -166,7 +205,7 @@ class RankingViewModelTest {
                 )
             val personalizationStore =
                 FakePersonalizationRepository(
-                    ShopPersonalization(
+                    Personalization(
                         hiddenShopIds = setOf("shop-id"),
                     ),
                 )
@@ -468,64 +507,17 @@ class RankingViewModelTest {
         }
 
     @Test
-    fun `저장소가 낙관적 상태와 롤백을 차례로 발행하면 좋아요 수를 한 번만 원복한다`() =
-        coroutinesTest {
-            val mutablePersonalization =
-                MutableStateFlow<PersonalizationBootstrapState>(
-                    PersonalizationBootstrapState.Success(ShopPersonalization()),
-                )
-            val store =
-                object : PersonalizationStore by FakePersonalizationRepository() {
-                    override val state = mutablePersonalization.asStateFlow()
+    fun `저장소가 낙관적 상태와 롤백을 차례로 발행하면 좋아요 수를 한 번만 원복한다`() = bookmarkRollbackScenario(initiallyBookmarked = false)
 
-                    override suspend fun updateBookmark(
-                        shopId: String,
-                        enabled: Boolean,
-                    ): RamapResult<Unit> {
-                        mutablePersonalization.value =
-                            PersonalizationBootstrapState.Success(
-                                ShopPersonalization(bookmarkedShopIds = setOf(shopId)),
-                            )
-                        yield()
-                        mutablePersonalization.value =
-                            PersonalizationBootstrapState.Success(ShopPersonalization())
-                        return RamapResult.Error(
-                            RamapError.Unknown(IllegalStateException("failure")),
-                        )
-                    }
-                }
-            val viewModel =
-                rankingViewModel(
-                    repository = FakeShopRankingRepository(pageOf(shopRanking(likeCount = 3))),
-                    personalizationStore = store,
-                )
-            runCurrent()
-
-            viewModel.dispatch(
-                RankingIntent.OnBookmarkChanged(
-                    shop = ramenShop(),
-                    enabled = true,
-                ),
-            )
-            runCurrent()
-
-            assertEquals(
-                3L,
-                viewModel.uiState.value
-                    .displayedLikeCount(viewModel.uiState.value.shops[0]),
-            )
-            assertFalse(
-                viewModel.uiState.value.bookmarkLikeCountDeltas
-                    .containsKey("shop-id"),
-            )
-        }
+    @Test
+    fun `저장 해제로 수를 먼저 내린 뒤 실패하면 랭킹 저장 수를 원복한다`() = bookmarkRollbackScenario(initiallyBookmarked = true)
 
     @Test
     fun `북마크 추가 중 빠른 제거 입력은 버튼 잠금 계약에 따라 새 요청을 시작하지 않는다`() =
         coroutinesTest {
             val mutablePersonalization =
                 MutableStateFlow<PersonalizationBootstrapState>(
-                    PersonalizationBootstrapState.Success(ShopPersonalization()),
+                    PersonalizationBootstrapState.Success(Personalization()),
                 )
             val allowCompletion = CompletableDeferred<Unit>()
             val requests = mutableListOf<Pair<String, Boolean>>()
@@ -540,7 +532,7 @@ class RankingViewModelTest {
                         requests += shopId to enabled
                         mutablePersonalization.value =
                             PersonalizationBootstrapState.Success(
-                                ShopPersonalization(bookmarkedShopIds = setOf(shopId)),
+                                Personalization(bookmarkedShopIds = setOf(shopId)),
                             )
                         allowCompletion.await()
                         return RamapResult.Success(Unit)
@@ -626,12 +618,80 @@ class RankingViewModelTest {
         }
 
     @Test
+    fun `세션 복원으로 인증 상태가 다시 전달돼도 저장 표시와 좋아요 수를 유지한다`() =
+        coroutinesTest {
+            val shop = ramenShop()
+            val sessionStates =
+                MutableSharedFlow<LoginSessionState>(replay = 1).apply {
+                    tryEmit(LoginSessionState.AUTHENTICATED)
+                }
+            val loginRepository =
+                object : LoginRepository by FakeLoginRepository(LoginSessionState.AUTHENTICATED) {
+                    override val session = sessionStates.asSharedFlow()
+                }
+            val personalizationStore = FakePersonalizationRepository()
+            val viewModel =
+                rankingViewModel(
+                    repository = FakeShopRankingRepository(pageOf(shopRanking(likeCount = 3))),
+                    personalizationStore = personalizationStore,
+                    loginRepository = loginRepository,
+                )
+            runCurrent()
+            viewModel.dispatch(RankingIntent.OnBookmarkChanged(shop, enabled = true))
+            runCurrent()
+            val stateBeforeRestore = viewModel.uiState.value
+            assertEquals(setOf(shop.id), stateBeforeRestore.bookmarkedShopIds)
+            assertEquals(4L, stateBeforeRestore.displayedLikeCount(stateBeforeRestore.shops[0]))
+
+            sessionStates.emit(LoginSessionState.AUTHENTICATED)
+            runCurrent()
+
+            assertEquals(stateBeforeRestore, viewModel.uiState.value)
+
+            viewModel.dispatch(RankingIntent.OnBookmarkChanged(shop, enabled = false))
+            runCurrent()
+
+            assertEquals(listOf(shop.id to true, shop.id to false), personalizationStore.bookmarkUpdateRequests)
+            assertEquals(emptySet(), viewModel.uiState.value.bookmarkedShopIds)
+            assertEquals(emptyMap(), viewModel.uiState.value.bookmarkLikeCountDeltas)
+            assertEquals(3L, viewModel.uiState.value.displayedLikeCount(viewModel.uiState.value.shops[0]))
+        }
+
+    @Test
+    fun `개인화 상태보다 늦게 인증 상태가 전달돼도 기존 저장 표시를 유지한다`() =
+        coroutinesTest {
+            val shop = ramenShop()
+            val sessionStates = MutableSharedFlow<LoginSessionState>()
+            val loginRepository =
+                object : LoginRepository by FakeLoginRepository(LoginSessionState.AUTHENTICATED) {
+                    override val session = sessionStates.asSharedFlow()
+                }
+            val viewModel =
+                rankingViewModel(
+                    repository = FakeShopRankingRepository(pageOf(shopRanking(likeCount = 3))),
+                    personalizationStore =
+                        FakePersonalizationRepository(
+                            Personalization(bookmarkedShopIds = setOf(shop.id)),
+                        ),
+                    loginRepository = loginRepository,
+                )
+            runCurrent()
+            assertEquals(setOf(shop.id), viewModel.uiState.value.bookmarkedShopIds)
+
+            sessionStates.emit(LoginSessionState.AUTHENTICATED)
+            runCurrent()
+
+            assertEquals(setOf(shop.id), viewModel.uiState.value.bookmarkedShopIds)
+            assertEquals(3L, viewModel.uiState.value.displayedLikeCount(viewModel.uiState.value.shops[0]))
+        }
+
+    @Test
     fun `로그아웃 후 로그인하면 기존 저장 매장의 좋아요 수를 다시 더하지 않는다`() =
         coroutinesTest {
             val shop = ramenShop()
             val personalizationStore =
                 FakePersonalizationRepository(
-                    ShopPersonalization(bookmarkedShopIds = setOf(shop.id)),
+                    Personalization(bookmarkedShopIds = setOf(shop.id)),
                 )
             val loginRepository = FakeLoginRepository(LoginSessionState.AUTHENTICATED)
             val viewModel =
@@ -652,6 +712,7 @@ class RankingViewModelTest {
             runCurrent()
 
             assertEquals(emptyList(), personalizationStore.bookmarkUpdateRequests)
+            assertEquals(setOf(shop.id), viewModel.uiState.value.bookmarkedShopIds)
             assertEquals(
                 3L,
                 viewModel.uiState.value
@@ -665,7 +726,7 @@ class RankingViewModelTest {
             val shop = ramenShop()
             val personalizationStore =
                 FakePersonalizationRepository(
-                    ShopPersonalization(bookmarkedShopIds = setOf(shop.id)),
+                    Personalization(bookmarkedShopIds = setOf(shop.id)),
                 )
             val loginRepository = FakeLoginRepository(LoginSessionState.AUTHENTICATED)
             val viewModel =
@@ -679,6 +740,8 @@ class RankingViewModelTest {
             loginRepository.updateSessionState(LoginSessionState.NOT_AUTHENTICATED)
             personalizationStore.clear()
             runCurrent()
+            assertEquals(emptySet(), viewModel.uiState.value.bookmarkedShopIds)
+            assertEquals(emptyMap(), viewModel.uiState.value.bookmarkLikeCountDeltas)
             viewModel.dispatch(RankingIntent.OnRefreshed)
             runCurrent()
 
@@ -695,7 +758,7 @@ class RankingViewModelTest {
             val shop = ramenShop()
             val personalizationStore =
                 FakePersonalizationRepository(
-                    ShopPersonalization(
+                    Personalization(
                         bookmarkedShopIds = setOf(shop.id),
                     ),
                 )
@@ -719,6 +782,148 @@ class RankingViewModelTest {
                 personalizationStore.bookmarkUpdateRequests,
             )
         }
+
+    @Test
+    fun `로그인 안내를 닫으면 이후 로그인해도 북마크를 저장하지 않는다`() =
+        coroutinesTest {
+            val shop = ramenShop()
+            val personalizationStore = FakePersonalizationRepository()
+            val loginRepository =
+                FakeLoginRepository(LoginSessionState.NOT_AUTHENTICATED)
+            val viewModel =
+                rankingViewModel(
+                    personalizationStore = personalizationStore,
+                    loginRepository = loginRepository,
+                )
+            runCurrent()
+
+            viewModel.dispatch(
+                RankingIntent.OnBookmarkChanged(
+                    shop = shop,
+                    enabled = true,
+                ),
+            )
+            runCurrent()
+            viewModel.dispatch(RankingIntent.OnLoginSelectionDismissed)
+            runCurrent()
+
+            loginRepository.updateSessionState(LoginSessionState.AUTHENTICATED)
+            personalizationStore.updateBookmarkedShopIds(setOf("existing-shop"))
+            runCurrent()
+
+            assertEquals(
+                emptyList(),
+                personalizationStore.bookmarkUpdateRequests,
+            )
+        }
+
+    @Test
+    fun `로그인을 선택하면 대기 북마크를 한 번만 저장한다`() =
+        coroutinesTest {
+            val shop = ramenShop()
+            val personalizationStore = FakePersonalizationRepository()
+            val loginRepository =
+                FakeLoginRepository(LoginSessionState.NOT_AUTHENTICATED)
+            val viewModel =
+                rankingViewModel(
+                    personalizationStore = personalizationStore,
+                    loginRepository = loginRepository,
+                )
+            runCurrent()
+
+            viewModel.dispatch(
+                RankingIntent.OnBookmarkChanged(
+                    shop = shop,
+                    enabled = true,
+                ),
+            )
+            runCurrent()
+            viewModel.dispatch(RankingIntent.OnLoginTypeSelected(LoginType.KAKAO))
+            runCurrent()
+
+            assertEquals(1, loginRepository.signInWithKakaoCallCount)
+            assertEquals(
+                emptyList(),
+                personalizationStore.bookmarkUpdateRequests,
+            )
+
+            loginRepository.updateSessionState(LoginSessionState.AUTHENTICATED)
+            personalizationStore.updateBookmarkedShopIds(setOf("existing-shop"))
+            runCurrent()
+
+            assertEquals(
+                listOf(shop.id to true),
+                personalizationStore.bookmarkUpdateRequests,
+            )
+
+            // 이후 서버 상태가 바뀌어도 소비한 대기 요청을 재실행하지 않는다.
+            personalizationStore.updateBookmarkedShopIds(setOf("existing-shop"))
+            runCurrent()
+
+            assertEquals(
+                listOf(shop.id to true),
+                personalizationStore.bookmarkUpdateRequests,
+            )
+        }
+
+    private fun bookmarkRollbackScenario(initiallyBookmarked: Boolean) =
+        coroutinesTest {
+            val previousIds = if (initiallyBookmarked) setOf("shop-id") else emptySet()
+            val previous = Personalization(bookmarkedShopIds = previousIds)
+            val mutablePersonalization =
+                MutableStateFlow<PersonalizationBootstrapState>(
+                    PersonalizationBootstrapState.Success(previous),
+                )
+            val response = CompletableDeferred<RamapResult<Unit>>()
+            val store =
+                object : PersonalizationStore by FakePersonalizationRepository() {
+                    override val state = mutablePersonalization.asStateFlow()
+
+                    override suspend fun updateBookmark(
+                        shopId: String,
+                        enabled: Boolean,
+                    ): RamapResult<Unit> {
+                        mutablePersonalization.value =
+                            PersonalizationBootstrapState.Success(previous.changeBookmark(shopId, enabled))
+                        return response.await().also {
+                            mutablePersonalization.value = PersonalizationBootstrapState.Success(previous)
+                        }
+                    }
+                }
+            val viewModel =
+                rankingViewModel(
+                    repository = FakeShopRankingRepository(pageOf(shopRanking(likeCount = 3))),
+                    personalizationStore = store,
+                )
+            runCurrent()
+            assertLikeCount(viewModel, 3L)
+
+            viewModel.dispatch(RankingIntent.OnBookmarkChanged(ramenShop(), enabled = !initiallyBookmarked))
+            runCurrent()
+            assertLikeCount(viewModel, if (initiallyBookmarked) 2L else 4L)
+            assertEquals(!initiallyBookmarked, "shop-id" in viewModel.uiState.value.bookmarkedShopIds)
+
+            response.complete(RamapResult.Error(RamapError.Http(500)))
+            runCurrent()
+            assertLikeCount(viewModel, 3L)
+            assertEquals(previousIds, viewModel.uiState.value.bookmarkedShopIds)
+            assertTrue(
+                viewModel.uiState.value.bookmarkLikeCountDeltas
+                    .isEmpty(),
+            )
+            assertTrue(
+                viewModel.uiState.value.bookmarkUpdatingShopIds
+                    .isEmpty(),
+            )
+        }
+
+    private fun assertLikeCount(
+        viewModel: RankingViewModel,
+        expected: Long,
+    ) {
+        val state = viewModel.uiState.value
+        assertEquals(expected, state.displayedLikeCount(state.shops[0]), "랭킹에 표시되는 저장 수")
+    }
 
     private fun shopIds(viewModel: RankingViewModel): List<String> =
         viewModel.uiState.value.shops.map { item ->

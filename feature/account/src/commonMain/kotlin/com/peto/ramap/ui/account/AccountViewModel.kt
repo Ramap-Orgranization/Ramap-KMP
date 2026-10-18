@@ -7,7 +7,6 @@ import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.auth.LoginSessionState
 import com.peto.ramap.domain.model.auth.LoginType
 import com.peto.ramap.domain.repository.LoginRepository
-import com.peto.ramap.domain.usecase.LoginSessionUseCase
 import com.peto.ramap.domain.usecase.SignInUseCase
 import com.peto.ramap.ui.account.contract.AccountIntent
 import com.peto.ramap.ui.account.contract.AccountIntent.OnAccountDeleteConfirm
@@ -34,10 +33,7 @@ import ramap.shared.generated.resources.logout_failure_message
 class AccountViewModel(
     private val loginRepository: LoginRepository,
     private val signInUseCase: SignInUseCase,
-    private val loginSessionUseCase: LoginSessionUseCase,
-) : BaseViewModel<AccountUiState, AccountIntent, AccountSideEffect>(
-        AccountUiState(),
-    ) {
+) : BaseViewModel<AccountUiState, AccountIntent, AccountSideEffect>(AccountUiState()) {
     init {
         observeSessionState()
     }
@@ -53,7 +49,7 @@ class AccountViewModel(
 
     private fun observeSessionState() {
         viewModelScope.launch {
-            loginSessionUseCase().collectLatest { sessionState ->
+            loginRepository.session.collectLatest { sessionState ->
                 updateSessionState(sessionState)
             }
         }
@@ -62,7 +58,6 @@ class AccountViewModel(
     private fun updateSessionState(sessionState: LoginSessionState) {
         val isAuthenticated = sessionState == LoginSessionState.AUTHENTICATED
         val accountLabel = findAccountLabel(isAuthenticated)
-
         reduce {
             copy(
                 isLoggedIn = isAuthenticated,
@@ -72,9 +67,9 @@ class AccountViewModel(
     }
 
     private fun findAccountLabel(isAuthenticated: Boolean): String? {
-        if (!isAuthenticated) return null
-
-        return loginSessionUseCase.currentUserEmail()
+        val isNotAuthenticated = !isAuthenticated
+        if (isNotAuthenticated) return null
+        return loginRepository.currentUserEmail()
     }
 
     private fun signInWithKakao() {
@@ -83,15 +78,8 @@ class AccountViewModel(
             loadKey = AccountLoadKey.Login,
             policy = TaskPolicy.IgnoreNew,
             request = { signInUseCase(LoginType.KAKAO, AnalyticsSource.ACCOUNT) },
-            onSuccess = {
-                showToast(Res.string.login_success_message, ToastType.SUCCESS)
-            },
-            onError = {
-                showToast(
-                    messageResource = Res.string.kakao_login_failure_message,
-                    type = ToastType.ERROR,
-                )
-            },
+            onSuccess = { showToast(Res.string.login_success_message, ToastType.SUCCESS) },
+            onError = { showToast(Res.string.kakao_login_failure_message, ToastType.ERROR) },
         )
     }
 
@@ -101,15 +89,8 @@ class AccountViewModel(
             loadKey = AccountLoadKey.Login,
             policy = TaskPolicy.IgnoreNew,
             request = { signInUseCase(LoginType.APPLE, AnalyticsSource.ACCOUNT) },
-            onSuccess = {
-                showToast(Res.string.login_success_message, ToastType.SUCCESS)
-            },
-            onError = {
-                showToast(
-                    messageResource = Res.string.apple_login_failure_message,
-                    type = ToastType.ERROR,
-                )
-            },
+            onSuccess = { showToast(Res.string.login_success_message, ToastType.SUCCESS) },
+            onError = { showToast(Res.string.apple_login_failure_message, ToastType.ERROR) },
         )
     }
 
@@ -119,12 +100,7 @@ class AccountViewModel(
             loadKey = AccountLoadKey.Logout,
             policy = TaskPolicy.IgnoreNew,
             request = loginRepository::signOut,
-            onError = {
-                showToast(
-                    messageResource = Res.string.logout_failure_message,
-                    type = ToastType.ERROR,
-                )
-            },
+            onError = { showToast(Res.string.logout_failure_message, ToastType.ERROR) },
         )
     }
 
@@ -134,18 +110,8 @@ class AccountViewModel(
             loadKey = AccountLoadKey.Delete,
             policy = TaskPolicy.IgnoreNew,
             request = loginRepository::deleteAccount,
-            onSuccess = {
-                showToast(
-                    messageResource = Res.string.account_delete_success_message,
-                    type = ToastType.SUCCESS,
-                )
-            },
-            onError = {
-                showToast(
-                    messageResource = Res.string.account_delete_failure_message,
-                    type = ToastType.ERROR,
-                )
-            },
+            onSuccess = { showToast(Res.string.account_delete_success_message, ToastType.SUCCESS) },
+            onError = { showToast(Res.string.account_delete_failure_message, ToastType.ERROR) },
         )
     }
 
@@ -154,14 +120,7 @@ class AccountViewModel(
         type: ToastType,
     ) {
         viewModelScope.launch {
-            postSideEffect(
-                ShowToast(
-                    ToastData(
-                        message = messageResource,
-                        type = type,
-                    ),
-                ),
-            )
+            postSideEffect(ShowToast(ToastData(message = messageResource, type = type)))
         }
     }
 

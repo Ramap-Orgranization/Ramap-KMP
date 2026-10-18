@@ -21,11 +21,13 @@ internal fun AdminFieldSection(
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        AppText(
-            text = label,
-            style = AppTextStyle.B1,
-            color = GrayColor.C500,
-        )
+        if (label.isNotBlank()) {
+            AppText(
+                text = label,
+                style = AppTextStyle.B1,
+                color = GrayColor.C500,
+            )
+        }
         content()
     }
 }

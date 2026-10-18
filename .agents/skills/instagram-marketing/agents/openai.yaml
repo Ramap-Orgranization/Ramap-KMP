@@ -1,0 +1,4 @@
+interface:
+  display_name: "인스타그램 게시물 기획"
+  short_description: "전담 콘텐츠 기획 에이전트로 라멥 인스타그램 초안 작성"
+  default_prompt: "Use $instagram-marketing with the instagram_marketer role to draft Ramap's Instagram concept, carousel copy, caption, and fact-check list for user approval."

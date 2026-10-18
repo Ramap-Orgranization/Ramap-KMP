@@ -3,7 +3,6 @@ package com.peto.ramap.ui.account
 import com.peto.ramap.analytics.common.login.LoginAnalytics
 import com.peto.ramap.coroutinesTest
 import com.peto.ramap.domain.model.auth.LoginSessionState
-import com.peto.ramap.domain.usecase.LoginSessionUseCase
 import com.peto.ramap.domain.usecase.SignInUseCase
 import com.peto.ramap.fake.FakeAnalyticsTracker
 import com.peto.ramap.fake.FakeCrashReporter
@@ -19,8 +18,6 @@ import kotlin.test.assertTrue
 class AccountViewModelTest {
     private fun createSignInUseCase(repository: FakeLoginRepository): SignInUseCase = SignInUseCase(repository, LoginAnalytics(FakeAnalyticsTracker(), FakeCrashReporter()))
 
-    private fun createObserveLoginSessionUseCase(repository: FakeLoginRepository): LoginSessionUseCase = LoginSessionUseCase(repository)
-
     @Test
     fun `로그인 세션이면 계정 이메일을 표시한다`() =
         coroutinesTest {
@@ -33,7 +30,6 @@ class AccountViewModelTest {
                 AccountViewModel(
                     repository,
                     createSignInUseCase(repository),
-                    createObserveLoginSessionUseCase(repository),
                 )
 
             runCurrent()
@@ -47,7 +43,7 @@ class AccountViewModelTest {
         coroutinesTest {
             val repository =
                 FakeLoginRepository(initialSessionState = LoginSessionState.AUTHENTICATED)
-            val viewModel = AccountViewModel(repository, createSignInUseCase(repository), createObserveLoginSessionUseCase(repository))
+            val viewModel = AccountViewModel(repository, createSignInUseCase(repository))
             runCurrent()
 
             viewModel.dispatch(AccountIntent.OnAccountDeleteConfirm)
@@ -60,7 +56,7 @@ class AccountViewModelTest {
     fun `Apple 로그인을 누르면 저장소에 요청한다`() =
         coroutinesTest {
             val repository = FakeLoginRepository()
-            val viewModel = AccountViewModel(repository, createSignInUseCase(repository), createObserveLoginSessionUseCase(repository))
+            val viewModel = AccountViewModel(repository, createSignInUseCase(repository))
             runCurrent()
 
             viewModel.dispatch(AccountIntent.OnAppleLoginClick)

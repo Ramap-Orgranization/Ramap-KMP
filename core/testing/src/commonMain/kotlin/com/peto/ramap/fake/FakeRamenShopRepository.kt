@@ -6,8 +6,8 @@ import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.model.shop.MapBounds
 import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.domain.model.shop.SearchQuery
+import com.peto.ramap.domain.model.shop.ShopOverView
 import com.peto.ramap.domain.repository.RamenShopRepository
-import com.peto.ramap.domain.usecase.ShopDetail
 import kotlinx.coroutines.delay
 
 class FakeRamenShopRepository(
@@ -23,15 +23,15 @@ class FakeRamenShopRepository(
     var activeEventsDelayMillis: Long = 0,
     private val shopLikeCount: Long = 0L,
     var shopLikeCountError: RamapError? = null,
-    var shopDetail: ShopDetail? = null,
-    var shopDetailError: RamapError? = null,
+    var shopOverview: ShopOverView? = null,
+    var shopOverviewError: RamapError? = null,
 ) : RamenShopRepository {
-    val requestedShopDetailIds = mutableListOf<String>()
+    val requestedShopOverviewIds = mutableListOf<String>()
 
-    override suspend fun fetchShopDetail(shopId: String): RamapResult<ShopDetail> {
-        requestedShopDetailIds += shopId
-        return (shopDetailError ?: error)?.let { RamapResult.Error(it) }
-            ?: shopDetail?.let { RamapResult.Success(it) }
+    override suspend fun fetchShopOverview(shopId: String): RamapResult<ShopOverView> {
+        requestedShopOverviewIds += shopId
+        return (shopOverviewError ?: error)?.let { RamapResult.Error(it) }
+            ?: shopOverview?.let { RamapResult.Success(it) }
             ?: RamapResult.Error(
                 RamapError.Unknown(IllegalStateException("Missing fake shop detail")),
             )

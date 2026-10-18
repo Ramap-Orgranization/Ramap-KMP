@@ -60,7 +60,7 @@ class ProfileEditViewModelTest {
             runCurrent()
             assertTrue(model.uiState.value.loading)
 
-            repository.sessionUserIds.value = null
+            repository.sessionUserId.value = null
             runCurrent()
             assertFalse(model.uiState.value.loading)
         }
@@ -500,7 +500,7 @@ class ProfileEditViewModelTest {
             model.dispatch(ProfileIntent.ChangeBio("첫 계정의 자기소개"))
             model.dispatch(ProfileIntent.Save)
             runCurrent()
-            repository.sessionUserIds.value = "second"
+            repository.sessionUserId.value = "second"
             runCurrent()
             repository.saveResult?.complete(RamapResult.Success(AccountProfile("first", "새로운차슈")))
             runCurrent()
@@ -532,7 +532,7 @@ class ProfileEditViewModelTest {
             val model = ProfileEditViewModel(repository, FakeLoginRepository())
             runCurrent()
             runCurrent()
-            repository.sessionUserIds.value = null
+            repository.sessionUserId.value = null
             runCurrent()
             model.dispatch(ProfileIntent.PickImage(ProfileImage(byteArrayOf(1), "image/jpeg")))
             runCurrent()

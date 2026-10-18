@@ -10,6 +10,8 @@ sealed interface MyReviewsIntent : Intent {
 
     data object Retry : MyReviewsIntent
 
+    data object ReturnedToScreen : MyReviewsIntent
+
     data object LoadMore : MyReviewsIntent
 
     data class DeleteReview(

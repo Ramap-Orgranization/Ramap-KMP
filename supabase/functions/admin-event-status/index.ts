@@ -1,3 +1,4 @@
+import { isManageableEvent, validDate } from "../_shared/admin-event-policy.ts";
 import { isAdministrator } from "../_shared/admin-auth.ts";
 import { createServiceClient } from "../_shared/event-notifications.ts";
 
@@ -18,11 +19,10 @@ async function listActiveEvents() {
   const { data, error } = await supabase
     .from("shop_events")
     .select("id,title,description,event_type,start_date,end_date,cancelled_dates,sold_out_dates,venue_name,ramen_shops(name)")
-    .lte("start_date", today)
     .or(`end_date.gte.${today},end_date.is.null`)
     .order("end_date");
   if (error) return json({ code: "server_unavailable" }, 503);
-  return json((data ?? []).map((event) => ({
+  return json((data ?? []).filter((event) => isManageableEvent(event, today)).map((event) => ({
     id: event.id,
     title: event.title,
     start_date: event.start_date,
@@ -62,11 +62,11 @@ async function updateEventStatus(body: Record<string, unknown>) {
 async function editEvent(body: Record<string, unknown>) {
   const eventId = text(body.event_id);
   const title = text(body.title);
-  const description = text(body.description);
+  const description = typeof body.description === "string" ? body.description.trim() : null;
   const eventType = text(body.event_type);
   const startDate = text(body.start_date);
   const requestedEndDate = text(body.end_date) ?? startDate;
-  if (!eventId || !title || !description || !eventType || !startDate || !validDate(startDate) || !validDate(requestedEndDate) || requestedEndDate < startDate || !isEventType(eventType)) {
+  if (!eventId || !title || description === null || !eventType || !startDate || !validDate(startDate) || !validDate(requestedEndDate) || requestedEndDate < startDate || !isEventType(eventType)) {
     return json({ code: "invalid_request" }, 400);
   }
 
@@ -98,12 +98,6 @@ function isStatus(value: string | null): value is "sold_out" | "cancelled" {
 
 function isScope(value: string | null): value is "today" | "entire_period" | "custom_period" {
   return value === "today" || value === "entire_period" || value === "custom_period";
-}
-
-function validDate(value: string | null): value is string {
-  if (value === null || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
-  const date = new Date(`${value}T00:00:00Z`);
-  return !Number.isNaN(date.valueOf()) && date.toISOString().startsWith(value);
 }
 
 function isEventType(value: string): boolean {

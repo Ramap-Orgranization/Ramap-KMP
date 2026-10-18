@@ -1,6 +1,5 @@
 package com.peto.ramap.designsystem.review
 
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -31,6 +30,7 @@ fun ReviewCard(
     actionsEnabled: Boolean = true,
     showBlockedContent: Boolean = false,
     isBlockedReviewLoading: Boolean = false,
+    photoViewerEnabled: Boolean = actions.onReviewClick == null,
     header: @Composable () -> Unit,
 ) {
     if (review.isBlocked && !showBlockedContent) {
@@ -58,15 +58,18 @@ fun ReviewCard(
         shape = RectangleShape,
         color = CommonColor.White,
     ) {
-        Column(
-            verticalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
+        Column {
             header()
 
-            ReviewCardImages(
-                imageUrls = review.imageUrls,
-                photoViewerEnabled = actions.onReviewClick == null,
-            )
+            Spacer(modifier = Modifier.height(5.dp))
+
+            if (review.imageUrls.isNotEmpty()) {
+                ReviewCardImages(
+                    imageUrls = review.imageUrls,
+                    photoViewerEnabled = photoViewerEnabled,
+                )
+                Spacer(modifier = Modifier.height(10.dp))
+            }
 
             ReviewCardContent(
                 review = review,
@@ -74,6 +77,7 @@ fun ReviewCard(
                 currentProfileIsPublic = currentProfileIsPublic,
             )
 
+            Spacer(modifier = Modifier.height(10.dp))
             ReviewCardFooter(
                 review = review,
                 onLike = actions.onLike,

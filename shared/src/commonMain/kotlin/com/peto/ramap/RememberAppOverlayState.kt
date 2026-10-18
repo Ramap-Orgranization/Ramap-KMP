@@ -8,7 +8,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.peto.ramap.designsystem.toast.ToastManager
 import com.peto.ramap.domain.model.auth.LoginSessionState
-import com.peto.ramap.domain.usecase.LoginSessionUseCase
+import com.peto.ramap.domain.repository.LoginRepository
 import com.peto.ramap.domain.usecase.SignInUseCase
 import com.peto.ramap.navigation.NavigationState
 import kotlinx.coroutines.CoroutineScope
@@ -18,22 +18,22 @@ import org.koin.compose.koinInject
 internal fun rememberAppOverlayState(
     navigationState: NavigationState,
     toastManager: ToastManager,
-    loginSessionUseCase: LoginSessionUseCase = koinInject(),
+    loginRepository: LoginRepository = koinInject(),
     signInUseCase: SignInUseCase = koinInject(),
     coroutineScope: CoroutineScope = rememberCoroutineScope(),
 ): OverlayState {
-    val sessionState by loginSessionUseCase().collectAsStateWithLifecycle(
+    val sessionState by loginRepository.session.collectAsStateWithLifecycle(
         initialValue =
-            if (loginSessionUseCase.hasSession()) {
+            if (loginRepository.hasSession()) {
                 LoginSessionState.AUTHENTICATED
             } else {
                 LoginSessionState.NOT_AUTHENTICATED
             },
     )
     val overlayState =
-        remember(loginSessionUseCase, navigationState, signInUseCase, toastManager, coroutineScope) {
+        remember(loginRepository, navigationState, signInUseCase, toastManager, coroutineScope) {
             OverlayState(
-                loginSessionUseCase = loginSessionUseCase,
+                loginRepository = loginRepository,
                 navigationState = navigationState,
                 signInUseCase = signInUseCase,
                 toastManager = toastManager,

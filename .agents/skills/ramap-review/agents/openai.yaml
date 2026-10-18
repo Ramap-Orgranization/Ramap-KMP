@@ -1,0 +1,4 @@
+interface:
+  display_name: "Ramap Code Review"
+  short_description: "전담 리뷰 에이전트로 Ramap 변경의 결함·UX·설계 검토"
+  default_prompt: "Use $ramap-review with code_reviewer to inspect the requested diff and related state transitions read-only and report evidence-backed findings by severity."

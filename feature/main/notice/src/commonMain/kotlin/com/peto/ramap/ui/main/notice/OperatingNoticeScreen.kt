@@ -4,17 +4,12 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
@@ -31,18 +26,28 @@ import androidx.compose.ui.unit.dp
 import androidx.navigationevent.NavigationEventInfo
 import androidx.navigationevent.compose.NavigationBackHandler
 import androidx.navigationevent.compose.rememberNavigationEventState
+import com.peto.ramap.designsystem.bottomsheet.CommonBottomSheet
 import com.peto.ramap.designsystem.button.AppFloatingActionButton
 import com.peto.ramap.designsystem.component.LoadErrorContent
-import com.peto.ramap.designsystem.component.ShopListEmptyContent
+import com.peto.ramap.designsystem.component.ShopsEmptyContent
 import com.peto.ramap.designsystem.notice.OperatingNoticeBottomSheet
 import com.peto.ramap.domain.model.notice.OperatingNotice
+import com.peto.ramap.domain.model.notice.OperatingNoticeFeed
+import com.peto.ramap.domain.model.notice.OperatingNoticeFeedItem
+import com.peto.ramap.domain.model.shop.AdministrativeArea
+import com.peto.ramap.domain.model.shop.AreaFilter
+import com.peto.ramap.domain.store.PersonalizationBootstrapState
 import com.peto.ramap.preview.OperatingNoticePreviewParameterProvider
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.RamapTheme
 import com.peto.ramap.ui.main.notice.component.OngoingOperatingNoticeShop
-import com.peto.ramap.ui.main.notice.component.OperatingNoticeSectionTitle
+import com.peto.ramap.ui.main.notice.component.OperatingNoticeAreaSheet
+import com.peto.ramap.ui.main.notice.component.OperatingNoticeDateHeader
+import com.peto.ramap.ui.main.notice.component.OperatingNoticeFilters
 import com.peto.ramap.ui.main.notice.component.OperatingNoticeSkeleton
+import com.peto.ramap.ui.main.notice.contract.OperatingNoticeSelection
 import com.peto.ramap.ui.main.notice.contract.OperatingNoticeUiState
+import kotlinx.datetime.LocalDate
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.event_list_open
@@ -51,8 +56,7 @@ import ramap.shared.generated.resources.laduck_error_crying
 import ramap.shared.generated.resources.operating_notice_empty
 import ramap.shared.generated.resources.operating_notice_error_description
 import ramap.shared.generated.resources.operating_notice_error_title
-import ramap.shared.generated.resources.operating_notice_scheduled_section
-import ramap.shared.generated.resources.operating_notice_today_section
+import ramap.shared.generated.resources.search_result_empty_message
 
 @Composable
 internal fun OperatingNoticeScreen(
@@ -63,14 +67,18 @@ internal fun OperatingNoticeScreen(
     onRetry: () -> Unit,
     onShopClick: (String) -> Unit,
     onNoticeClick: (OperatingNotice) -> Unit,
+    onTabSelected: (Boolean) -> Unit = {},
+    onQueryChanged: (String) -> Unit = {},
+    onAreaSelected: (AreaFilter) -> Unit = {},
+    onSavedToggled: () -> Unit = {},
+    onPersonalizationRetry: () -> Unit = {},
     isSourceUrlSupported: (String) -> Boolean,
     onSourceClick: (String) -> Unit,
 ) {
     val backEventState = rememberNavigationEventState<NavigationEventInfo>(NavigationEventInfo.None)
     val pullToRefreshState = rememberPullToRefreshState()
-    var selectedNotice by remember { mutableStateOf<OperatingNotice?>(null) }
-    val todaySectionTitle = stringResource(Res.string.operating_notice_today_section)
-    val scheduledSectionTitle = stringResource(Res.string.operating_notice_scheduled_section)
+    var selectedNotice by remember { mutableStateOf<OperatingNoticeSelection?>(null) }
+    var areaSheetVisible by remember { mutableStateOf(false) }
 
     NavigationBackHandler(
         state = backEventState,
@@ -84,6 +92,13 @@ internal fun OperatingNoticeScreen(
                 .background(CommonColor.White)
                 .statusBarsPadding(),
     ) {
+        OperatingNoticeFilters(
+            uiState = uiState,
+            onTabSelected = onTabSelected,
+            onQueryChanged = onQueryChanged,
+            onAreaOpened = { areaSheetVisible = true },
+            onSavedToggled = onSavedToggled,
+        )
         Box(modifier = Modifier.fillMaxSize().weight(1f)) {
             PullToRefreshBox(
                 isRefreshing = uiState.isRefreshing,
@@ -111,9 +126,23 @@ internal fun OperatingNoticeScreen(
                             modifier = Modifier.fillMaxSize(),
                         )
 
-                    !uiState.hasOperatingNotices ->
-                        ShopListEmptyContent(
-                            title = stringResource(Res.string.operating_notice_empty),
+                    uiState.savedOnly && uiState.personalizationState == PersonalizationBootstrapState.Loading ->
+                        OperatingNoticeSkeleton(Modifier.fillMaxSize())
+                    uiState.savedOnly && uiState.personalizationState == PersonalizationBootstrapState.Error ->
+                        LoadErrorContent(
+                            image = Res.drawable.laduck_error_crying,
+                            title = stringResource(Res.string.operating_notice_error_title),
+                            description = stringResource(Res.string.operating_notice_error_description),
+                            onRetry = onPersonalizationRetry,
+                            modifier = Modifier.fillMaxSize(),
+                        )
+
+                    (if (uiState.scheduledSelected) uiState.scheduledShops else uiState.todayShops).isEmpty() ->
+                        ShopsEmptyContent(
+                            title =
+                                stringResource(
+                                    if (uiState.query.isNotBlank()) Res.string.search_result_empty_message else Res.string.operating_notice_empty,
+                                ),
                             modifier = Modifier.fillMaxSize(),
                         )
 
@@ -121,27 +150,30 @@ internal fun OperatingNoticeScreen(
                         Box {
                             LazyColumn(
                                 modifier = Modifier.fillMaxSize(),
-                                contentPadding = PaddingValues(vertical = 16.dp),
-                                verticalArrangement = Arrangement.spacedBy(10.dp),
+                                verticalArrangement = Arrangement.Top,
                             ) {
-                                addNoticeSection(
-                                    listScope = this,
-                                    title = todaySectionTitle,
-                                    notices = uiState.todayShops,
-                                    onNoticeClick = {
-                                        onNoticeClick(it)
-                                        selectedNotice = it
-                                    },
-                                )
-                                addNoticeSection(
-                                    listScope = this,
-                                    title = scheduledSectionTitle,
-                                    notices = uiState.scheduledShops,
-                                    onNoticeClick = {
-                                        onNoticeClick(it)
-                                        selectedNotice = it
-                                    },
-                                )
+                                val onSelected: (OperatingNotice, LocalDate) -> Unit = { notice, date ->
+                                    onNoticeClick(notice)
+                                    selectedNotice = uiState.selectNotice(notice, date)
+                                }
+                                if (uiState.scheduledSelected) {
+                                    uiState.scheduledGroups.forEach { (date, notices) ->
+                                        item(key = "date:$date") { OperatingNoticeDateHeader(date) }
+                                        addOperatingNoticeRows(
+                                            scope = this,
+                                            notices = notices,
+                                            date = date,
+                                            onSelected = onSelected,
+                                        )
+                                    }
+                                } else {
+                                    addOperatingNoticeRows(
+                                        scope = this,
+                                        notices = uiState.todayShops,
+                                        date = uiState.referenceDate,
+                                        onSelected = onSelected,
+                                    )
+                                }
                             }
                         }
                 }
@@ -158,10 +190,20 @@ internal fun OperatingNoticeScreen(
             )
         }
     }
-    selectedNotice?.let { notice ->
+    CommonBottomSheet(visible = areaSheetVisible, onDismissRequest = { areaSheetVisible = false }) {
+        OperatingNoticeAreaSheet(
+            feed = uiState.feed,
+            areaFilter = uiState.areaFilter,
+            onAreaSelected = {
+                onAreaSelected(it)
+                areaSheetVisible = false
+            },
+        )
+    }
+    selectedNotice?.let { selection ->
         OperatingNoticeBottomSheet(
-            notice = notice,
-            notices = uiState.noticesForShop(notice.shop.id),
+            notice = selection.notice,
+            notices = selection.notices,
             isSourceUrlSupported = isSourceUrlSupported,
             onSourceClick = onSourceClick,
             onShopClick = onShopClick,
@@ -170,39 +212,55 @@ internal fun OperatingNoticeScreen(
     }
 }
 
-private fun addNoticeSection(
-    listScope: LazyListScope,
-    title: String,
+internal fun addOperatingNoticeRows(
+    scope: LazyListScope,
     notices: List<OperatingNotice>,
-    onNoticeClick: (OperatingNotice) -> Unit,
+    date: LocalDate,
+    onSelected: (OperatingNotice, LocalDate) -> Unit,
 ) {
-    if (notices.isEmpty()) return
-    listScope.item {
-        OperatingNoticeSectionTitle(title = title, modifier = Modifier.padding(horizontal = 16.dp))
-    }
-    listScope.item {
-        FlowRow(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 5.dp),
-            horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterHorizontally),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            notices.forEach { notice ->
-                OngoingOperatingNoticeShop(notice = notice, onClick = { onNoticeClick(notice) })
-            }
-            repeat(10) { Spacer(modifier = Modifier.width(72.dp).height(0.dp)) }
-        }
+    scope.items(notices, key = { "shop:$date:${it.shop.id}" }) { notice ->
+        OngoingOperatingNoticeShop(
+            notice = notice,
+            onClick = { onSelected(notice, date) },
+        )
     }
 }
 
-@Preview
+@Preview(name = "오늘")
 @Composable
 private fun OperatingNoticeScreenPreview(
     @PreviewParameter(OperatingNoticePreviewParameterProvider::class)
     notices: List<OperatingNotice>,
 ) {
+    OperatingNoticePreviewContent(previewState(notices))
+}
+
+@Preview(name = "예정")
+@Composable
+private fun OperatingNoticeScheduledPreview() {
+    OperatingNoticePreviewContent(previewState(OperatingNoticePreviewParameterProvider().values.first()).copy(scheduledSelected = true))
+}
+
+@Preview(name = "검색 결과 없음")
+@Composable
+private fun OperatingNoticeSearchEmptyPreview() {
+    OperatingNoticePreviewContent(previewState(OperatingNoticePreviewParameterProvider().values.first()).copy(query = "없는 매장"))
+}
+
+private fun previewState(notices: List<OperatingNotice>) =
+    OperatingNoticeUiState(
+        feed =
+            OperatingNoticeFeed(
+                referenceDate = LocalDate(2026, 10, 14),
+                items = notices.map { OperatingNoticeFeedItem(it, AdministrativeArea.SEOUL, "마포구") },
+            ),
+    )
+
+@Composable
+private fun OperatingNoticePreviewContent(state: OperatingNoticeUiState) {
     RamapTheme {
         OperatingNoticeScreen(
-            uiState = OperatingNoticeUiState(todayOperatingNotices = notices),
+            uiState = state,
             onBack = {},
             onEventListClick = {},
             onRefresh = {},

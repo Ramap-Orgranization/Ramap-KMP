@@ -16,9 +16,23 @@ Deno.serve(async (request) => {
     return new Response("Unauthorized", { status: 401 });
   }
 
-  const payload = await request.json() as WebhookPayload;
-  if (payload.type !== "INSERT" || payload.table !== "shop_events") {
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return new Response("Invalid JSON", { status: 400 });
+  }
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
+    return new Response("Invalid webhook payload", { status: 400 });
+  }
+
+  const payload = body as WebhookPayload;
+  if (payload.schema !== "public" || payload.type !== "INSERT" || payload.table !== "shop_events") {
     return new Response("Ignored", { status: 202 });
+  }
+  if (!payload.record || typeof payload.record !== "object" || Array.isArray(payload.record)
+    || typeof payload.record.event_type !== "string") {
+    return new Response("Invalid webhook payload", { status: 400 });
   }
 
   try {

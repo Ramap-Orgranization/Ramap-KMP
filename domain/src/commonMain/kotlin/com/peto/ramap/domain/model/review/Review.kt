@@ -10,6 +10,7 @@ data class Review(
     val body: String,
     val createdAt: String,
     val imageUrls: List<String> = emptyList(),
+    val images: List<MyReviewPhoto> = emptyList(),
     val author: ReviewAuthor = ReviewAuthor("", ""),
     val moderationStatus: ReviewModerationStatus = ReviewModerationStatus.PUBLISHED,
     val isPublic: Boolean = true,
@@ -18,6 +19,23 @@ data class Review(
     val isLiked: Boolean = false,
     val isBlocked: Boolean = false,
 ) {
+    fun allowsLikeFrom(viewerId: String?): Boolean = author.userId != viewerId && isPublic && moderationStatus == ReviewModerationStatus.PUBLISHED
+
+    fun allowsReportFrom(viewerId: String?): Boolean = viewerId != null && id.isNotBlank() && author.userId.isNotBlank() && author.userId != viewerId
+
+    fun allowsDeletionBy(viewerId: String?): Boolean = author.userId == viewerId
+
+    /** 본문을 일시 공개한 응답도 동일한 차단 리뷰여야 한다. */
+    fun isBlockedVersionOf(review: Review): Boolean = isBlocked && id == review.id && shopId == review.shopId && author.userId == review.author.userId
+
+    fun allowsAuthorUnblocking(): Boolean = isBlocked && author.userId.isNotBlank()
+
+    fun toggledLike(): ReviewLike =
+        ReviewLike(
+            likeCount = if (isLiked) likeCount - 1 else likeCount + 1,
+            isLiked = !isLiked,
+        )
+
     companion object {
         private val profanityFilter = KoreanProfanityFilter()
 

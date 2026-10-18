@@ -6,7 +6,7 @@ import com.peto.ramap.domain.model.auth.LoginType
 import kotlinx.coroutines.flow.Flow
 
 interface LoginRepository {
-    val sessionState: Flow<LoginSessionState>
+    val session: Flow<LoginSessionState>
 
     suspend fun awaitInitialization()
 

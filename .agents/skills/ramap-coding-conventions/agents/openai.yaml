@@ -1,0 +1,4 @@
+interface:
+  display_name: "Ramap Coding Conventions"
+  short_description: "Ramap KMP 구현·리뷰에 코딩 규칙과 검증 기준 적용"
+  default_prompt: "Use $ramap-coding-conventions to apply the Ramap Kotlin coding rules to this change."

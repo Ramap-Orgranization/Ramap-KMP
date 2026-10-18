@@ -17,10 +17,7 @@ import com.peto.ramap.navigation.deeplink.ShopDeepLinkParser
 import com.peto.ramap.navigation.rememberNavigationState
 import com.peto.ramap.notification.NotificationDeepLinkParser
 import com.peto.ramap.notification.NotificationLaunchDispatcher
-import com.peto.ramap.ui.main.map.MapViewModel
-import com.peto.ramap.ui.main.map.contract.MapIntent.OnMapTabExited
 import org.koin.compose.koinInject
-import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 internal fun AppRoute(
@@ -35,11 +32,7 @@ internal fun AppRoute(
     loginRepository: LoginRepository = koinInject(),
     personalizationStore: PersonalizationStore = koinInject(),
 ) {
-    val mapViewModel = koinViewModel<MapViewModel>()
-    val navigationState =
-        rememberNavigationState(
-            onMapTabExited = { mapViewModel.dispatch(OnMapTabExited) },
-        )
+    val navigationState = rememberNavigationState()
 
     AppRouteObservers(
         navigationState = navigationState,

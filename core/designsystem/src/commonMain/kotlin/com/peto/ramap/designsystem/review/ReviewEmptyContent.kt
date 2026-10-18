@@ -16,6 +16,7 @@ import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.RamapTheme
+import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
@@ -26,6 +27,7 @@ import ramap.shared.generated.resources.shop_review_empty
 fun ReviewEmptyContent(
     text: String,
     modifier: Modifier = Modifier,
+    image: DrawableResource = Res.drawable.review_empty_illustration,
 ) {
     Column(
         modifier =
@@ -36,7 +38,7 @@ fun ReviewEmptyContent(
         verticalArrangement = Arrangement.Center,
     ) {
         Image(
-            painter = painterResource(Res.drawable.review_empty_illustration),
+            painter = painterResource(image),
             contentDescription = null,
             modifier = Modifier.size(220.dp),
         )

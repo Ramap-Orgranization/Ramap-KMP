@@ -28,11 +28,15 @@ kotlin {
         }
 
         pod("NMapsMap")
-        pod("FirebaseCore")
-        pod("FirebaseMessaging")
-        pod("FirebaseAnalytics")
-        pod("FirebaseCrashlytics")
-        pod("FirebaseInstallations")
+        // 앱의 Podfile.lock과 Gradle 단독 Pod 조회에서 같은 SDK 버전을 사용한다.
+        val firebaseIosVersion =
+            libs.versions.firebase.ios
+                .get()
+        pod("FirebaseCore") { version = firebaseIosVersion }
+        pod("FirebaseMessaging") { version = firebaseIosVersion }
+        pod("FirebaseAnalytics") { version = firebaseIosVersion }
+        pod("FirebaseCrashlytics") { version = firebaseIosVersion }
+        pod("FirebaseInstallations") { version = firebaseIosVersion }
         pod("GoogleDataTransport")
         pod("GoogleUtilities")
         pod("nanopb")
@@ -96,7 +100,11 @@ kotlin {
             implementation(projects.domain)
             implementation(projects.data)
             implementation(projects.feature.main)
+            implementation(projects.feature.shop.menu)
+            implementation(projects.feature.shop.review)
+            implementation(projects.feature.shop.overview)
             implementation(projects.feature.profile.edit)
+            implementation(projects.feature.profile.follow)
             implementation(projects.feature.review.my)
             implementation(projects.feature.review.other)
             implementation(projects.feature.review.write)

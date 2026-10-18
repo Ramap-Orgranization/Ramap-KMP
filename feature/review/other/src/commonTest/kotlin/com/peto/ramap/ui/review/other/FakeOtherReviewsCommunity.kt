@@ -15,7 +15,10 @@ class FakeOtherReviewsCommunity : CommunityRepository by FakeCommunityRepository
     var profilePrivate = false
     var reviews: List<ProfileReview> = emptyList()
     var savedShops: List<RamenShop> = emptyList()
+    var reviewCount: Long? = null
+    var savedShopCount: Long? = null
     var failNextPage = false
+    var failNextSavedShops = false
     var failNextBlock = false
     val blockedUserIds = mutableSetOf<String>()
     val requestedProfileUserIds = mutableListOf<String>()
@@ -24,14 +27,21 @@ class FakeOtherReviewsCommunity : CommunityRepository by FakeCommunityRepository
 
     override suspend fun fetchProfileAccess(userId: String): RamapResult<ProfileAccess> {
         requestedProfileUserIds += userId
-        val target = profile?.takeIf { it.userId == userId } ?: return RamapResult.Success(ProfileAccess.Unavailable)
-        val access =
-            when {
-                userId in blockedUserIds -> ProfileAccess.Blocked(PublicProfile(target.userId, target.nickname))
-                profilePrivate -> ProfileAccess.Private
-                else -> ProfileAccess.Visible(target)
-            }
-        return RamapResult.Success(access)
+        return RamapResult.Success(profileAccess(userId))
+    }
+
+    private fun profileAccess(userId: String): ProfileAccess {
+        val target = profile?.takeIf { it.userId == userId } ?: return ProfileAccess.Unavailable
+        return when {
+            userId in blockedUserIds -> ProfileAccess.Blocked(PublicProfile(target.userId, target.nickname))
+            profilePrivate -> ProfileAccess.Private
+            else ->
+                ProfileAccess.Visible(
+                    profile = target,
+                    reviewCount = reviewCount,
+                    savedShopCount = savedShopCount,
+                )
+        }
     }
 
     override suspend fun blockUser(userId: String): RamapResult<Unit> {
@@ -46,6 +56,23 @@ class FakeOtherReviewsCommunity : CommunityRepository by FakeCommunityRepository
     override suspend fun unblockUser(userId: String): RamapResult<Unit> {
         blockedUserIds -= userId
         return RamapResult.Success(Unit)
+    }
+
+    override suspend fun fetchProfileReviewsPage(
+        userId: String,
+        offset: Long,
+    ): RamapResult<com.peto.ramap.domain.model.community.ProfileReviewsPage> {
+        val result = fetchUserReviews(userId, offset)
+        return when (result) {
+            is RamapResult.Error -> result
+            is RamapResult.Success ->
+                RamapResult.Success(
+                    com.peto.ramap.domain.model.community.ProfileReviewsPage(
+                        profileAccess(userId),
+                        result.data,
+                    ),
+                )
+        }
     }
 
     override suspend fun fetchUserReviews(
@@ -65,13 +92,11 @@ class FakeOtherReviewsCommunity : CommunityRepository by FakeCommunityRepository
         offset: Long,
     ): RamapResult<PublicSavedShopsPage> {
         requestedSavedShopOffsets += offset
-        val target = profile?.takeIf { it.userId == userId } ?: return RamapResult.Success(PublicSavedShopsPage(ProfileAccess.Unavailable, emptyList()))
-        val access =
-            when {
-                userId in blockedUserIds -> ProfileAccess.Blocked(PublicProfile(target.userId, target.nickname))
-                profilePrivate -> ProfileAccess.Private
-                else -> ProfileAccess.Visible(target)
-            }
+        if (failNextSavedShops) {
+            failNextSavedShops = false
+            return RamapResult.Error(RamapError.Unknown(IllegalStateException("saved shops unavailable")))
+        }
+        val access = profileAccess(userId)
         return RamapResult.Success(PublicSavedShopsPage(access, savedShops.drop(offset.toInt()).take(20)))
     }
 }

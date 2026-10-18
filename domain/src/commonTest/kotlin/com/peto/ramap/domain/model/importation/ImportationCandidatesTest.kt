@@ -1,6 +1,6 @@
 package com.peto.ramap.domain.model.importation
 
-import com.peto.ramap.domain.model.personalization.ShopPersonalization
+import com.peto.ramap.domain.model.personalization.Personalization
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -17,7 +17,7 @@ class ImportationCandidatesTest {
                         unmatchedPlaceNames = emptyList(),
                     ),
                 personalization =
-                    ShopPersonalization(
+                    Personalization(
                         bookmarkedShopIds = setOf(BOOKMARKED_SHOP_ID),
                         hiddenShopIds = setOf(HIDDEN_SHOP_ID),
                     ),

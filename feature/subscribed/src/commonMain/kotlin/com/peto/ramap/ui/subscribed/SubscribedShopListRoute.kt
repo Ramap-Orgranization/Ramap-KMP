@@ -16,9 +16,9 @@ import com.peto.ramap.theme.RamapTheme
 import com.peto.ramap.ui.base.ObserveAsEvents
 import com.peto.ramap.ui.subscribed.component.SubscribedRemovalConfirmDialog
 import com.peto.ramap.ui.subscribed.component.SubscribedShopListContent
-import com.peto.ramap.ui.subscribed.contract.SubscribedShopListIntent
-import com.peto.ramap.ui.subscribed.contract.SubscribedShopListSideEffect
-import com.peto.ramap.ui.subscribed.contract.SubscribedShopListUiState
+import com.peto.ramap.ui.subscribed.contract.SubscribedShopsIntent
+import com.peto.ramap.ui.subscribed.contract.SubscribedShopsSideEffect
+import com.peto.ramap.ui.subscribed.contract.SubscribedShopsUiState
 import com.peto.ramap.ui.subscribed.model.SubscribedRemovalTarget
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
@@ -28,34 +28,34 @@ import ramap.shared.generated.resources.laduck_error_confused
 import ramap.shared.generated.resources.settings_subscribed_shops_menu
 
 @Composable
-fun SubscribedShopListRoute(
+fun SubscribedShopsRoute(
     onBack: () -> Unit,
     onShopOpen: (String) -> Unit,
     onEventOpen: (String) -> Unit,
     toastManager: ToastManager = koinInject(),
-    viewModel: SubscribedShopListViewModel = koinViewModel(),
+    viewModel: SubscribedShopsViewModel = koinViewModel(),
 ) {
     val uiState = viewModel.uiState.collectAsStateWithLifecycle().value
 
     ObserveAsEvents(viewModel.sideEffect) { sideEffect ->
         when (sideEffect) {
-            is SubscribedShopListSideEffect.ShowToast -> toastManager.show(sideEffect.data)
+            is SubscribedShopsSideEffect.ShowToast -> toastManager.show(sideEffect.data)
         }
     }
 
-    SubscribedShopListRouteContent(
+    SubscribedShopsRouteContent(
         uiState = uiState,
         onBack = onBack,
         onShopOpen = onShopOpen,
         onEventOpen = onEventOpen,
-        onRetry = { viewModel.dispatch(SubscribedShopListIntent.OnRetry) },
-        onRemovalConfirmed = { viewModel.dispatch(SubscribedShopListIntent.OnRemovalConfirmed(it)) },
+        onRetry = { viewModel.dispatch(SubscribedShopsIntent.OnRetry) },
+        onRemovalConfirmed = { viewModel.dispatch(SubscribedShopsIntent.OnRemovalConfirmed(it)) },
     )
 }
 
 @Composable
-private fun SubscribedShopListRouteContent(
-    uiState: SubscribedShopListUiState,
+private fun SubscribedShopsRouteContent(
+    uiState: SubscribedShopsUiState,
     onBack: () -> Unit,
     onShopOpen: (String) -> Unit,
     onEventOpen: (String) -> Unit,
@@ -95,11 +95,11 @@ private fun SubscribedShopListRouteContent(
 
 @Preview
 @Composable
-private fun SubscribedShopListRoutePreview() {
+private fun SubscribedShopsRoutePreview() {
     RamapTheme {
-        SubscribedShopListRouteContent(
+        SubscribedShopsRouteContent(
             uiState =
-                SubscribedShopListUiState(
+                SubscribedShopsUiState(
                     shops = RamenShops(RamenShopPreviewParameterProvider().ramenShopPreviewSamples),
                     subscribedEvents = ShopEventPreviewParameterProvider().values.toList(),
                     haveShopsLoaded = true,

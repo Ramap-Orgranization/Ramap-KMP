@@ -5,4 +5,5 @@ import com.peto.ramap.ui.loading.LoadKey
 enum class OperatingNoticeLoadKey : LoadKey {
     Fetch,
     Refresh,
+    Personalization,
 }

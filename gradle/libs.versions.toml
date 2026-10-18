@@ -43,10 +43,11 @@ play-services-location = "21.4.0"
 play-app-update = "2.1.0"
 
 # Authentication
-kakao = "2.24.0"
+kakao = "2.25.0"
 
 # Firebase
 firebase-bom = "34.16.0"
+firebase-ios = "11.15.0"
 firebase-crashlytics-gradle = "3.0.3"
 google-services = "4.5.0"
 install-referrer = "2.2"
@@ -108,6 +109,7 @@ ktor-client-content-negotiation = { module = "io.ktor:ktor-client-content-negoti
 ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
 ktor-client-darwin = { module = "io.ktor:ktor-client-darwin", version.ref = "ktor" }
 ktor-client-okhttp = { module = "io.ktor:ktor-client-okhttp", version.ref = "ktor" }
+ktor-client-mock = { module = "io.ktor:ktor-client-mock", version.ref = "ktor" }
 ktor-serialization-kotlinx-json = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor" }
 
 # Supabase

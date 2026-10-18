@@ -18,4 +18,6 @@ data class BusinessHours(
     fun lastOrdersAt(date: LocalDate): List<String> = if (dateOverrides[date]?.useRegularLastOrders == false) emptyList() else lastOrders[BusinessDay.from(date.dayOfWeek).key].orEmpty()
 
     fun statusAt(currentDateTime: LocalDateTime): BusinessHoursStatus? = BusinessHoursStatusCalculator.statusAt(this, currentDateTime)
+
+    fun nextOpeningTimeAt(currentDateTime: LocalDateTime): String? = BusinessHoursStatusCalculator.nextOpeningTimeAt(this, currentDateTime)
 }

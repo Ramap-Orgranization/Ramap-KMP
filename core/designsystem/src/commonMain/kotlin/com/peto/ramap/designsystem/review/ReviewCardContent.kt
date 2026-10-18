@@ -13,6 +13,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -43,7 +44,7 @@ fun ReviewCardContent(
     currentProfileIsPublic: Boolean?,
     modifier: Modifier = Modifier,
 ) {
-    var expanded by remember(review.id, review.body) { mutableStateOf(false) }
+    var expanded by rememberSaveable(review.id, review.body) { mutableStateOf(false) }
     var hasOverflow by remember(review.id, review.body) { mutableStateOf(false) }
 
     Column(
@@ -67,7 +68,7 @@ fun ReviewCardContent(
                 if (!expanded) hasOverflow = layout.hasVisualOverflow
             },
         )
-        if (hasOverflow) {
+        if (hasOverflow || expanded) {
             AppText(
                 text = stringResource(if (expanded) Res.string.review_collapse else Res.string.review_more),
                 modifier = Modifier.clickable(role = Role.Button) { expanded = !expanded },

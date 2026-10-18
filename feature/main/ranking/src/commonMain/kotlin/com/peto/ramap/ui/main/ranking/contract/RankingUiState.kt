@@ -22,6 +22,7 @@ data class RankingUiState(
     val administrativeDistricts: AdministrativeDistricts = AdministrativeDistricts(emptyList()),
     val selectedCategories: Set<Category> = emptySet(),
     val bookmarkedShopIds: Set<String> = emptySet(),
+    val hasReceivedPersonalization: Boolean = false,
     val bookmarkUpdatingShopIds: Set<String> = emptySet(),
     val bookmarkLikeCountDeltas: Map<String, Long> = emptyMap(),
     val showError: Boolean = false,

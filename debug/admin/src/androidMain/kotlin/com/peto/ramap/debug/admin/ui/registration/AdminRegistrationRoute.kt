@@ -5,6 +5,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.peto.ramap.debug.admin.ui.registration.contract.AdminEventStatus
 import com.peto.ramap.debug.admin.ui.registration.contract.AdminEventStatusScope
@@ -25,6 +27,7 @@ internal fun AdminRegistrationRoute(
     viewModel: AdminRegistrationViewModel = koinViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.dispatch(AdminRegistrationIntent.OnResumed) }
     ObserveAsEvents(viewModel.sideEffect) { sideEffect ->
         when (sideEffect) {
             is AdminRegistrationSideEffect.ShowToast -> toastManager.show(sideEffect.data)
@@ -48,10 +51,8 @@ internal fun AdminRegistrationRoute(
             onDraftDescriptionChanged = { viewModel.dispatch(AdminRegistrationIntent.OnDraftDescriptionChanged(it)) },
             onDraftVenueChanged = { name, address, externalVenueId, instagramUrl, naverMapUrl, kakaoMapUrl -> viewModel.dispatch(AdminRegistrationIntent.OnDraftVenueChanged(name, address, externalVenueId, instagramUrl, naverMapUrl, kakaoMapUrl)) },
             onDraftNoticeTimesChanged = { start, end -> viewModel.dispatch(AdminRegistrationIntent.OnDraftNoticeTimesChanged(start, end)) },
-            onDraftScheduleOverrideChanged = { open, close -> viewModel.dispatch(AdminRegistrationIntent.OnDraftScheduleOverrideChanged(open, close)) },
             onRegularSegmentSelected = { open, close -> viewModel.dispatch(AdminRegistrationIntent.OnRegularSegmentSelected(open, close)) },
-            onDraftBreakTimeChanged = { index, start, end -> viewModel.dispatch(AdminRegistrationIntent.OnDraftBreakTimeChanged(index, start, end)) },
-            onDraftBreakTimesCleared = { viewModel.dispatch(AdminRegistrationIntent.OnDraftBreakTimesCleared) },
+            onEvidenceReadFailed = { viewModel.dispatch(AdminRegistrationIntent.OnEvidenceReadFailed) },
             onEvidenceSelected = { viewModel.dispatch(AdminRegistrationIntent.OnEvidenceSelected(it)) },
             onDateRangeSelected = { startDate, endDate ->
                 viewModel.dispatch(AdminRegistrationIntent.OnDateRangeSelected(startDate, endDate))
@@ -59,8 +60,6 @@ internal fun AdminRegistrationRoute(
             onTodaySelected = { viewModel.dispatch(AdminRegistrationIntent.OnTodaySelected) },
             onPreviewOrRegisterClick = { viewModel.dispatch(AdminRegistrationIntent.OnPreviewOrRegisterClicked) },
             onManagedEventsRefresh = { viewModel.dispatch(AdminRegistrationIntent.OnManagedEventsRefreshed) },
-            onDelayedOpeningsRefresh = { viewModel.dispatch(AdminRegistrationIntent.OnDelayedOpeningsRefreshed) },
-            onDelayedOpeningReleased = { viewModel.dispatch(AdminRegistrationIntent.OnDelayedOpeningReleased(it)) },
             onManagedEventSelected = { viewModel.dispatch(AdminRegistrationIntent.OnManagedEventSelected(it)) },
             onEventStatusSelected = { status: AdminEventStatus ->
                 viewModel.dispatch(AdminRegistrationIntent.OnEventStatusSelected(status))

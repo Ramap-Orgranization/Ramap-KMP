@@ -3,10 +3,13 @@ package com.peto.ramap.data.repository
 import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.data.datasource.profile.ProfileDataSource
 import com.peto.ramap.data.model.ProfileResponse
+import com.peto.ramap.data.store.DefaultReviewChangeStore
 import com.peto.ramap.domain.model.profile.AccountProfile
 import com.peto.ramap.domain.model.profile.ProfileDraft
 import com.peto.ramap.domain.model.profile.ProfileImage
 import com.peto.ramap.domain.model.profile.ProfileNickname
+import com.peto.ramap.domain.model.profile.ProfileVisibility
+import com.peto.ramap.domain.model.review.change.ReviewChange
 import com.peto.ramap.domain.repository.ProfileRepository
 import com.peto.ramap.network.execute.invokeRequest
 import io.github.jan.supabase.exceptions.RestException
@@ -14,8 +17,6 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.withContext
 import kotlin.time.Clock
 import kotlin.time.Instant
@@ -23,15 +24,12 @@ import kotlin.uuid.Uuid
 
 internal class DefaultProfileRepository(
     private val dataSource: ProfileDataSource,
-    private val changes: ReviewChangeNotifier = ReviewChangeNotifier(),
+    private val changes: DefaultReviewChangeStore,
     private val currentTime: () -> Instant = { Clock.System.now() },
 ) : ProfileRepository {
-    override val sessionUserIds = dataSource.sessionUserIds
+    override val sessionUserId = dataSource.sessionUserIds
 
     private var avatarCache: AvatarCache? = null
-    private val profileUpdates = MutableSharedFlow<AccountProfile>(extraBufferCapacity = 1)
-
-    override fun observeProfileUpdates() = profileUpdates.asSharedFlow()
 
     override suspend fun fetchMyProfile(): RamapResult<AccountProfile> =
         invokeRequest {
@@ -61,11 +59,21 @@ internal class DefaultProfileRepository(
     override suspend fun updateProfileVisibility(isPublic: Boolean): RamapResult<AccountProfile> =
         invokeRequest {
             val userId = requireNotNull(dataSource.currentUserId()) { ERROR_MISSING_AUTHENTICATED_USER }
+            val epoch = changes.synchronizeSession()
             val response = dataSource.updateProfileVisibility(isPublic)
             check(response.userId == userId) { ERROR_MISMATCHED_PROFILE_OWNER }
-            changes.notifyChanged()
+            changes.publish(ReviewChange.AccessChanged(userId), epoch)
             accountProfile(userId, response, tolerateAvatarSigningFailure = true)
-                .also { profileUpdates.tryEmit(it) }
+        }
+
+    override suspend fun updateProfileVisibility(visibility: ProfileVisibility): RamapResult<AccountProfile> =
+        invokeRequest {
+            val userId = requireNotNull(dataSource.currentUserId()) { ERROR_MISSING_AUTHENTICATED_USER }
+            val epoch = changes.synchronizeSession()
+            val response = dataSource.updateProfileVisibility(visibility)
+            check(response.userId == userId) { ERROR_MISMATCHED_PROFILE_OWNER }
+            changes.publish(ReviewChange.AccessChanged(userId), epoch)
+            accountProfile(userId, response, tolerateAvatarSigningFailure = true)
         }
 
     private suspend fun updateProfile(
@@ -89,7 +97,6 @@ internal class DefaultProfileRepository(
         check(response.userId == userId) { ERROR_MISMATCHED_PROFILE_OWNER }
         cleanUpPreviousAvatar(userId, previousAvatarPath, response.avatarPath)
         return accountProfile(userId, response, tolerateAvatarSigningFailure = true)
-            .also { profileUpdates.tryEmit(it) }
     }
 
     private suspend fun previousAvatarPath(
@@ -160,6 +167,8 @@ internal class DefaultProfileRepository(
             avatarUrl = avatarUrl,
             bio = response.bio,
             isPublic = response.isPublic,
+            followersCanReadReviews = response.followersCanReadReviews,
+            followersCanReadSavedShops = response.followersCanReadSavedShops,
             nicknameChangesRemaining = response.nicknameChangesRemaining,
             bioChangesRemaining = response.bioChangesRemaining,
         )
@@ -174,7 +183,7 @@ internal class DefaultProfileRepository(
         if (currentCache != null && currentCache.matches(userId, path, currentTime())) {
             return currentCache.url
         }
-        val url =
+        val signedImage =
             try {
                 dataSource.signedPhotoUrl(userId, path)
             } catch (exception: CancellationException) {
@@ -183,8 +192,8 @@ internal class DefaultProfileRepository(
                 if (!tolerateFailure) throw exception
                 return null
             }
-        avatarCache = AvatarCache(userId = userId, path = path, url = url, signedAt = currentTime())
-        return url
+        avatarCache = AvatarCache(userId = userId, path = path, url = signedImage.url, expiresAt = signedImage.expiresAt)
+        return signedImage.url
     }
 
     private fun clearAvatarCache() {

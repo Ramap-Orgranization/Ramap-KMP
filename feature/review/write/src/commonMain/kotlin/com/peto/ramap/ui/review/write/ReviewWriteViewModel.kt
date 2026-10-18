@@ -59,11 +59,12 @@ class ReviewWriteViewModel(
 
     private fun observeSessionUser() {
         viewModelScope.launch {
-            profileRepository.sessionUserIds
+            profileRepository.sessionUserId
                 .distinctUntilChanged()
                 .collect { userId ->
                     resetStateForSessionUserChange()
-                    if (userId != null && reviewId != null) {
+                    val hasUserAndReview = userId != null && reviewId != null
+                    if (hasUserAndReview) {
                         loadEditableReview()
                     }
                 }
@@ -100,34 +101,41 @@ class ReviewWriteViewModel(
         this.reviewId = reviewId
         reduce { ReviewWriteUiState(reviewId = reviewId) }
         loadShop()
-        if (reviewId != null) loadEditableReview()
+        val hasReview = reviewId != null
+        if (hasReview) loadEditableReview()
     }
 
     private fun changeBody(body: String) {
-        if (!currentState.canEdit) return
+        val cannotEdit = !currentState.canEdit
+        if (cannotEdit) return
         reduce { copy(body = limitBodyLength(body)) }
     }
 
     private fun changeVisibility(isPublic: Boolean) {
-        if (!currentState.canEdit) return
+        val cannotEdit = !currentState.canEdit
+        if (cannotEdit) return
         reduce { copy(isPublic = isPublic) }
     }
 
     private fun addImage(image: ReviewImage) {
-        if (!currentState.canEdit || !image.isValid()) return
+        val cannotEditOrInvalid = !currentState.canEdit || !image.isValid()
+        if (cannotEditOrInvalid) return
         val currentTotalCount = currentState.images.size + currentState.existingImages.size
-        if (currentTotalCount < ReviewImage.MAX_COUNT) {
+        val canAddMore = currentTotalCount < ReviewImage.MAX_COUNT
+        if (canAddMore) {
             reduce { copy(images = images + image) }
         }
     }
 
     private fun removeImage(index: Int) {
-        if (!currentState.canEdit) return
+        val cannotEdit = !currentState.canEdit
+        if (cannotEdit) return
         reduce { copy(images = images.filterIndexed { i, _ -> i != index }) }
     }
 
     private fun removeExistingImage(index: Int) {
-        if (!currentState.canEdit) return
+        val cannotEdit = !currentState.canEdit
+        if (cannotEdit) return
         reduce { copy(existingImages = existingImages.filterIndexed { i, _ -> i != index }) }
     }
 
@@ -135,8 +143,11 @@ class ReviewWriteViewModel(
         fromIndex: Int,
         toIndex: Int,
     ) {
-        if (!currentState.canEdit) return
-        if (fromIndex !in currentState.images.indices || toIndex !in currentState.images.indices) return
+        val cannotEdit = !currentState.canEdit
+        if (cannotEdit) return
+        val isFromIndexInvalid = fromIndex !in currentState.images.indices
+        val isToIndexInvalid = toIndex !in currentState.images.indices
+        if (isFromIndexInvalid || isToIndexInvalid) return
         reduce {
             copy(
                 images = images.toMutableList().apply { add(toIndex, removeAt(fromIndex)) },
@@ -155,7 +166,7 @@ class ReviewWriteViewModel(
             loadKey = ReviewWriteLoadKey.Shop,
             policy = TaskPolicy.IgnoreNew,
             onStart = { copy(shopLoadFailed = false) },
-            request = { ramenShopRepository.fetchShopDetail(shopId) },
+            request = { ramenShopRepository.fetchShopOverview(shopId) },
             onSuccess = { detail -> reduce { copy(shop = detail.shop) } },
             onError = { handleShopLoadError() },
         )
@@ -188,8 +199,11 @@ class ReviewWriteViewModel(
         review: EditableReview?,
         targetReviewId: String,
     ) {
-        if (!currentCoroutineContext().isActive || reviewId != targetReviewId) return
-        if (review == null || review.shopId != shopId) {
+        val isInactive = !currentCoroutineContext().isActive
+        val isReviewIdChanged = reviewId != targetReviewId
+        if (isInactive || isReviewIdChanged) return
+        val isInvalidReviewOrShopMismatch = review == null || review.shopId != shopId
+        if (isInvalidReviewOrShopMismatch) {
             handleReviewLoadError()
             return
         }
@@ -209,7 +223,8 @@ class ReviewWriteViewModel(
     }
 
     private suspend fun handleReviewLoadError() {
-        if (!currentCoroutineContext().isActive) return
+        val isInactive = !currentCoroutineContext().isActive
+        if (isInactive) return
         reduce { copy(reviewLoadFailed = true) }
         postSideEffect(
             ReviewWriteSideEffect.ShowToast(
@@ -220,14 +235,17 @@ class ReviewWriteViewModel(
     }
 
     private suspend fun submit() {
-        if (!currentState.canSubmit) return
-        val userId = profileRepository.sessionUserIds.first()
-        if (userId == null) {
+        val cannotSubmit = !currentState.canSubmit
+        if (cannotSubmit) return
+        val userId = profileRepository.sessionUserId.first()
+        val isLoggedOut = userId == null
+        if (isLoggedOut) {
             postSideEffect(ReviewWriteSideEffect.LoginRequired)
             return
         }
         val draft = currentState
-        if (!draft.isPublic) {
+        val isPrivateDraft = !draft.isPublic
+        if (isPrivateDraft) {
             submitDraft(draft)
             return
         }
@@ -245,14 +263,13 @@ class ReviewWriteViewModel(
             policy = TaskPolicy.IgnoreNew,
             request = { profileRepository.fetchMyProfile() },
             onSuccess = { profile ->
-                if (
-                    generation != submissionGeneration ||
-                    profile.userId != userId ||
-                    profileRepository.sessionUserIds.first() != userId
-                ) {
+                val isStaleGeneration = generation != submissionGeneration
+                val isUserChanged = profile.userId != userId || profileRepository.sessionUserId.first() != userId
+                if (isStaleGeneration || isUserChanged) {
                     return@launchResultTask
                 }
-                if (draft.isPublic && !profile.isPublic) {
+                val isPrivateProfileAndReviewsHidden = draft.isPublic && !profile.isPublic && !profile.followersCanReadReviews
+                if (isPrivateProfileAndReviewsHidden) {
                     reduce { copy(showPrivateProfileConfirmation = true) }
                 } else {
                     submitDraft(draft)
@@ -263,20 +280,26 @@ class ReviewWriteViewModel(
     }
 
     private fun confirmSubmitWithPrivateProfile() {
-        if (!hasValidConfirmationState()) return
+        val isInvalidState = !hasValidConfirmationState()
+        if (isInvalidState) return
         val draft = currentState.copy(showPrivateProfileConfirmation = false)
         reduce { copy(showPrivateProfileConfirmation = false) }
         submitDraft(draft)
     }
 
     private fun confirmSubmitWithPublicProfile() {
-        if (!hasValidConfirmationState()) return
+        val isInvalidState = !hasValidConfirmationState()
+        if (isInvalidState) return
         val draft = currentState.copy(showPrivateProfileConfirmation = false)
         reduce { copy(showPrivateProfileConfirmation = false) }
         updateProfileVisibilityAndSubmit(draft)
     }
 
-    private fun hasValidConfirmationState(): Boolean = currentState.showPrivateProfileConfirmation && Review.isValidBody(currentState.body)
+    private fun hasValidConfirmationState(): Boolean {
+        val isConfirmationShown = currentState.showPrivateProfileConfirmation
+        val isValidBody = Review.isValidBody(currentState.body)
+        return isConfirmationShown && isValidBody
+    }
 
     private fun updateProfileVisibilityAndSubmit(draft: ReviewWriteUiState) {
         val generation = submissionGeneration
@@ -286,7 +309,8 @@ class ReviewWriteViewModel(
             policy = TaskPolicy.IgnoreNew,
             request = { profileRepository.updateProfileVisibility(isPublic = true) },
             onSuccess = {
-                if (generation == submissionGeneration) submitDraft(draft)
+                val isSameGeneration = generation == submissionGeneration
+                if (isSameGeneration) submitDraft(draft)
             },
             onError = { showSubmitFailureIfAuthenticated() },
         )
@@ -301,7 +325,8 @@ class ReviewWriteViewModel(
             policy = TaskPolicy.IgnoreNew,
         ) {
             val result = executeSubmitRequest(shopId, editReviewId, draft)
-            if (!currentCoroutineContext().isActive) return@launchTask
+            val isInactive = !currentCoroutineContext().isActive
+            if (isInactive) return@launchTask
             handleSubmitResult(result)
         }
     }
@@ -357,12 +382,8 @@ class ReviewWriteViewModel(
             var endIndex = 0
             var characterCount = 0
             while (endIndex < body.length && characterCount < Review.BODY_LENGTH.last) {
-                endIndex +=
-                    if (body[endIndex].isHighSurrogate() && body.getOrNull(endIndex + 1)?.isLowSurrogate() == true) {
-                        2
-                    } else {
-                        1
-                    }
+                val isSurrogatePair = body[endIndex].isHighSurrogate() && body.getOrNull(endIndex + 1)?.isLowSurrogate() == true
+                endIndex += if (isSurrogatePair) 2 else 1
                 characterCount++
             }
             return body.substring(0, endIndex)

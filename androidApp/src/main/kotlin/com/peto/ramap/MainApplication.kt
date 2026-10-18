@@ -8,7 +8,6 @@ import com.google.firebase.analytics.FirebaseAnalytics
 import com.google.firebase.crashlytics.FirebaseCrashlytics
 import com.google.firebase.messaging.FirebaseMessaging
 import com.kakao.sdk.common.KakaoSdk
-import com.naver.maps.map.NaverMapSdk
 import com.peto.ramap.analytics.AnalyticsTracker
 import com.peto.ramap.attribution.InstallReferrerAttributor
 import com.peto.ramap.di.initKoin
@@ -28,8 +27,6 @@ class MainApplication : Application() {
             },
         )
         FirebaseMessaging.getInstance().register()
-        NaverMapSdk.getInstance(this).client =
-            NaverMapSdk.NcpKeyClient(RamapSecrets.naverMapNcpKeyId)
         KakaoSdk.init(this, RamapSecrets.kakaoNativeAppKey)
         initKoin {
             androidContext(this@MainApplication)

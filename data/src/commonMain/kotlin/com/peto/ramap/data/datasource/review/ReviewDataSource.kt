@@ -3,7 +3,9 @@ package com.peto.ramap.data.datasource.review
 import com.peto.ramap.data.model.EditableReviewResponse
 import com.peto.ramap.data.model.MyReviewResponse
 import com.peto.ramap.data.model.MyReviewsPageResponse
+import com.peto.ramap.data.model.ProfileReviewsPageResponse
 import com.peto.ramap.data.model.ReviewLikeResponse
+import com.peto.ramap.data.model.ReviewMutationResponse
 import com.peto.ramap.data.model.ReviewResponse
 import com.peto.ramap.data.model.ShopReviewRequest
 import com.peto.ramap.data.model.ShopReviewsPageResponse
@@ -32,6 +34,11 @@ internal interface ReviewDataSource {
 
     suspend fun fetchBlockedShopReviewOnce(reviewId: String): ReviewResponse?
 
+    suspend fun fetchProfileReviewsPage(
+        userId: String,
+        offset: Long,
+    ): ProfileReviewsPageResponse
+
     suspend fun fetchProfileReviews(
         userId: String?,
         offset: Long,
@@ -40,7 +47,7 @@ internal interface ReviewDataSource {
     suspend fun submitReview(
         review: ShopReviewRequest,
         images: List<ReviewImage>,
-    )
+    ): ReviewMutationResponse
 
     suspend fun fetchEditableReview(reviewId: String): Pair<EditableReviewResponse, List<String?>>?
 
@@ -50,9 +57,11 @@ internal interface ReviewDataSource {
         retainedImagePaths: List<String>,
         newImages: List<ReviewImage>,
         isPublic: Boolean,
-    )
+    ): ReviewMutationResponse
 
-    suspend fun deleteReview(reviewId: String)
+    suspend fun deleteReview(reviewId: String): ReviewMutationResponse
+
+    suspend fun hydrateMutation(response: ReviewMutationResponse): ReviewMutationResponse = response
 
     suspend fun setReviewLike(
         reviewId: String,

@@ -148,7 +148,7 @@ private fun TrackUserProperties(
     personalizationStore: PersonalizationStore,
 ) {
     LaunchedEffect(loginRepository) {
-        loginRepository.sessionState.collect { state ->
+        loginRepository.session.collect { state ->
             appAnalytics.updateLoginStatus(state)
         }
     }

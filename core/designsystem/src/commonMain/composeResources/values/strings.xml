@@ -14,6 +14,7 @@
     <string name="map_search_result_closed_label">영업 종료</string>
     <string name="map_search_result_closed_format">영업 종료 · %1$s에 영업 시작</string>
     <string name="shop_menu_title">메뉴판</string>
+    <string name="shop_menu_load_failure_message">메뉴 정보를 불러오지 못했어요</string>
     <string name="shop_menu_updated_at">%1$s 업데이트</string>
     <string name="shop_menu_representative">대표</string>
     <string name="shop_menu_price">%1$s원</string>
@@ -46,6 +47,7 @@
     <string name="shop_detail_link_apple_maps">애플 지도</string>
     <string name="shop_detail_link_report">제보하기</string>
     <string name="shop_review_title">리뷰</string>
+    <string name="shop_review_load_failure_message">리뷰를 불러오지 못했어요</string>
     <string name="shop_review_empty">아직 작성한 리뷰가 없어요</string>
     <string name="shop_review_empty_title">아직 등록된 리뷰가 없어요</string>
     <string name="shop_review_empty_description">%1$s의 첫 번째 방문 후기를 남겨주세요!</string>
@@ -193,10 +195,8 @@
     <string name="operating_notice_scheduled_section">예정된 운영 변동</string>
     <string name="operating_notice_error_title">영업 변동을 불러오지 못했어요</string>
     <string name="operating_notice_error_description">잠시 후 다시 시도해 주세요.</string>
-    <string name="operating_notice_type_operating_notice">영업 변동</string>
     <string name="operating_notice_type_temporary_closure">임시 휴무</string>
     <string name="operating_notice_type_early_closing">조기 마감</string>
-    <string name="operating_notice_type_late_opening">오픈 지연</string>
     <string name="operating_notice_source_action">원문 보기</string>
 
     <!-- 이벤트 공통 정보 -->
@@ -468,8 +468,6 @@
     <!-- 관리자 등록 -->
     <string name="admin_registration_shop_names_load_failure">매장 목록을 불러오지 못했어요.</string>
     <string name="admin_registration_managed_events_load_failure">관리할 이벤트를 불러오지 못했어요.</string>
-    <string name="admin_delayed_opening_load_failure">오픈 지연 목록을 불러오지 못했어요.</string>
-    <string name="admin_delayed_opening_release_failure">영업 시작 처리에 실패했어요. 다시 시도해 주세요.</string>
     <string name="admin_registration_preview_required">URL 또는 캡처 이미지를 입력해 주세요.</string>
     <string name="admin_registration_preview_failure">미리보기를 만들지 못했어요.</string>
     <string name="admin_registration_draft_required">먼저 미리보기를 만들어 주세요.</string>
@@ -545,6 +543,48 @@
     <string name="my_reviews_empty_public">공개 리뷰가 없어요</string>
     <string name="my_reviews_empty_private">비공개 리뷰가 없어요</string>
     <string name="my_reviews_filter_number">%1$d</string>
-    <string name="review_profile_reviews_tab">작성한 리뷰</string>
+    <string name="review_profile_reviews_tab">리뷰</string>
+    <string name="review_profile_reviews_tab_count">리뷰(%1$d)</string>
+    <string name="review_profile_saved_shops_tab_count">저장한 매장(%1$d)</string>
     <string name="review_profile_saved_shops_tab">저장한 매장</string>
+    <string name="follow">팔로우</string>
+    <string name="unfollow">팔로우 해제</string>
+    <string name="follow_cancel_request">팔로우 요청 취소</string>
+    <string name="follow_manage">팔로우 관리</string>
+    <string name="follow_following_users">팔로우한 사용자</string>
+    <string name="follow_followers">팔로워</string>
+    <string name="follow_following">팔로잉</string>
+    <string name="follow_requests">받은 요청</string>
+    <string name="follow_count">%1$d</string>
+    <string name="follow_approve">승인</string>
+    <string name="follow_reject">거절</string>
+    <string name="follow_remove">팔로워 삭제</string>
+    <string name="follow_remove_confirm">팔로워 목록에서 삭제하시겠습니까?</string>
+    <string name="follow_empty">아직 목록이 비어 있어요</string>
+    <string name="follow_following_empty">아직 팔로우한 사용자가 없어요</string>
+    <string name="follow_followers_empty">아직 팔로워가 없어요</string>
+    <string name="follow_reviews_visibility">팔로워에게 리뷰 공개</string>
+    <string name="follow_saved_shops_visibility">팔로워에게 저장한 매장 공개</string>
+    <string name="follow_content_private">공개하지 않은 콘텐츠예요</string>
+    <string name="place_search_rate_limited">검색 요청이 많아요. 잠시 후 다시 시도해 주세요.</string>
+    <string name="place_search_rate_limited_seconds">검색 요청이 많아요. %1$s초 후 다시 시도해 주세요.</string>
+    <string name="place_search_rate_limited_minutes">검색 요청이 많아요. 약 %1$s분 후 다시 시도해 주세요.</string>
+    <string name="place_search_rate_limited_hours">검색 요청이 많아요. 약 %1$s시간 후 다시 시도해 주세요.</string>
+    <string name="place_search_daily_limited">오늘의 장소 검색 한도를 모두 사용했어요. 한국 시각 자정 이후 다시 이용해 주세요.</string>
+    <string name="place_search_daily_limited_seconds">오늘의 장소 검색 한도를 모두 사용했어요. %1$s초 후 다시 시도해 주세요.</string>
+    <string name="place_search_daily_limited_minutes">오늘의 장소 검색 한도를 모두 사용했어요. 약 %1$s분 후 다시 시도해 주세요.</string>
+    <string name="place_search_daily_limited_hours">오늘의 장소 검색 한도를 모두 사용했어요. 약 %1$s시간 후 다시 시도해 주세요.</string>
+    <string name="place_search_unavailable">장소 검색을 잠시 이용할 수 없어요. 잠시 후 다시 시도해 주세요.</string>
+    <string name="place_search_unavailable_seconds">장소 검색을 잠시 이용할 수 없어요. %1$s초 후 다시 시도해 주세요.</string>
+    <string name="place_search_unavailable_minutes">장소 검색을 잠시 이용할 수 없어요. 약 %1$s분 후 다시 시도해 주세요.</string>
+    <string name="place_search_unavailable_hours">장소 검색을 잠시 이용할 수 없어요. 약 %1$s시간 후 다시 시도해 주세요.</string>
+    <string name="operating_notice_type_planned_closing">운영 변동</string>
+    <string name="operating_notice_closing_time">%1$s 영업 종료</string>
+    <string name="operating_notice_search">매장명 검색</string>
+    <string name="operating_notice_saved">저장한 매장</string>
+    <string name="operating_notice_today_tab">오늘</string>
+    <string name="operating_notice_scheduled_tab">예정</string>
+    <string name="operating_notice_today_tab_count">오늘(%1$d)</string>
+    <string name="operating_notice_scheduled_tab_count">예정(%1$d)</string>
+    <string name="operating_notice_scheduled_date_header">%1$s.%2$s %3$s요일</string>
 </resources>

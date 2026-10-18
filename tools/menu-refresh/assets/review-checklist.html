@@ -1,0 +1,331 @@
+<div id="ramap-menu-approval-checklist">
+  <style>
+    #ramap-menu-approval-checklist { color: var(--foreground); }
+    #ramap-menu-approval-checklist .review-header { display: grid; gap: 10px; margin-bottom: 14px; padding-right: 90px; }
+    #ramap-menu-approval-checklist .review-entry { display: grid; gap: 8px; margin: 14px 0; }
+    #ramap-menu-approval-checklist .entry-heading { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: start; }
+    #ramap-menu-approval-checklist .entry-name { font-weight: 500; overflow-wrap: anywhere; }
+    #ramap-menu-approval-checklist .source-value { white-space: pre-wrap; overflow-wrap: anywhere; }
+    #ramap-menu-approval-checklist .compare-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 10px; }
+    #ramap-menu-approval-checklist .source-column { display: grid; gap: 7px; align-content: start; }
+    #ramap-menu-approval-checklist .decision-field { display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; }
+    #ramap-menu-approval-checklist .decision-field > label { margin: 0; }
+    #ramap-menu-approval-checklist .review-footer { display: grid; gap: 12px; margin-top: 18px; }
+    #ramap-menu-approval-checklist .selection-list { padding-left: 20px; overflow-wrap: anywhere; }
+    #ramap-menu-approval-checklist .selection-list li { margin: 6px 0; }
+    #ramap-menu-approval-checklist .comparison-summary { color: var(--muted-foreground); }
+    #ramap-menu-approval-checklist .review-error { color: var(--destructive); }
+    #ramap-menu-approval-checklist a { overflow-wrap: anywhere; }
+    @media (max-width: 520px) {
+      #ramap-menu-approval-checklist .compare-grid { grid-template-columns: minmax(0, 1fr); }
+    }
+  </style>
+  <div class="review-header">
+    <h3>보류 메뉴 선택 승인</h3>
+    <div class="text-small text-muted" data-review-total></div>
+  </div>
+  <div class="viz-row">
+    <span class="tabular-nums" data-selected-count aria-live="polite">선택 0건</span>
+    <button type="button" class="btn btn-primary" data-approve disabled>선택한 0건 승인</button>
+  </div>
+  <div class="text-small" data-message role="status" aria-live="polite"></div>
+  <div class="review-error text-small" data-error role="alert" hidden></div>
+  <details data-selection-details hidden>
+    <summary class="cursor-interaction">선택한 항목 확인</summary>
+    <ul class="selection-list" data-selection-list></ul>
+  </details>
+  <hr>
+  <div data-review-list></div>
+  <div class="review-footer">
+    <div class="viz-row">
+      <button type="button" class="btn" data-previous>이전</button>
+      <span class="tabular-nums text-small" data-page-count aria-live="polite"></span>
+      <button type="button" class="btn" data-next>다음</button>
+    </div>
+    <div class="viz-row">
+      <span class="tabular-nums" data-selected-count aria-live="polite">선택 0건</span>
+      <button type="button" class="btn btn-primary" data-approve disabled>선택한 0건 승인</button>
+    </div>
+  </div>
+  <script type="application/json" class="review-data">__MENU_REVIEW_DATA__</script>
+  <script>
+    (() => {
+      const root = document.getElementById('ramap-menu-approval-checklist');
+      const config = JSON.parse(root.querySelector('.review-data').textContent);
+      const entries = new Map(config.entries.map(entry => [entry.id, entry]));
+      const entryIndexes = new Map(config.entries.map((entry, index) => [entry.id, index]));
+      const list = root.querySelector('[data-review-list]');
+      const message = root.querySelector('[data-message]');
+      const error = root.querySelector('[data-error]');
+      const selectionDetails = root.querySelector('[data-selection-details]');
+      const selectionList = root.querySelector('[data-selection-list]');
+      const previous = root.querySelector('[data-previous]');
+      const next = root.querySelector('[data-next]');
+      const pageCount = root.querySelector('[data-page-count]');
+      const selected = new Map();
+      const choices = new Map(config.entries.filter(entry => entry.default_choice)
+        .map(entry => [entry.id, entry.default_choice]));
+      let page = 0;
+      let sending = false;
+      let sendError = '';
+      const totalPages = Math.max(1, Math.ceil(config.entries.length / config.pageSize));
+      root.querySelector('[data-review-total]').textContent =
+        `${config.counts.menu_records}개 메뉴 확인 · ${config.counts.shops}개 매장 · 원본 보류 ${config.counts.source_records}곳`;
+
+      function node(tag, text, className) {
+        const element = document.createElement(tag);
+        if (text !== undefined) element.textContent = text;
+        if (className) element.className = className;
+        return element;
+      }
+      function link(text, href) {
+        const anchor = node('a', text);
+        const url = new URL(href);
+        if (!['https:', 'http:'].includes(url.protocol)) return node('span', text);
+        anchor.href = url.href;
+        anchor.target = '_blank';
+        anchor.rel = 'noopener noreferrer';
+        return anchor;
+      }
+      function formatPrice(value) {
+        const price = value.price !== undefined ? value.price : value.price_krw;
+        return Number.isInteger(price) ? `${price.toLocaleString('ko-KR')}원` : value.price_text || '가격 표기 없음';
+      }
+      function chosen(entry) {
+        return entry.choices.find(choice => choice.key === choices.get(entry.id));
+      }
+      function sourceColumn(title, value, visible) {
+        const column = node('div', undefined, 'source-column');
+        column.append(node('span', title, 'text-small text-muted'), node('span', value.name, 'entry-name'));
+        column.append(node('span', formatPrice(value), 'tabular-nums'));
+        column.append(node('div', value.description || '설명 없음', 'source-value'));
+        if (visible !== undefined) column.append(node('span', visible ? '현재 노출 중' : '현재 숨김', 'text-small text-muted'));
+        const image = value.source_image_url || value.image_url;
+        if (image) column.append(link('메뉴 사진 보기', image));
+        return column;
+      }
+      function conflict() {
+        const targets = new Map();
+        for (const [id, key] of selected) {
+          const entry = entries.get(id);
+          const choice = entry.choices.find(item => item.key === key);
+          const target = choice && choice.existing_item_id;
+          if (!target) continue;
+          if (targets.has(target)) return `${entry.shop_name}: 서로 다른 두 항목에 같은 기존 메뉴가 선택되어 있습니다.`;
+          targets.set(target, id);
+        }
+        return '';
+      }
+      function snapshot() {
+        return { modelContent: { bundle_id: config.bundleId,
+          registry_path: config.registryPath, selection_only: true,
+          selected: Array.from(selected, ([id, key]) =>
+            [entryIndexes.get(id), entries.get(id).choices.findIndex(choice => choice.key === key)]) },
+          privateContent: { bundle_id: config.bundleId, page,
+            choices: Array.from(choices, ([id, key]) =>
+              [entryIndexes.get(id), entries.get(id).choices.findIndex(choice => choice.key === key)])
+              .filter(([index, choice]) => config.entries[index].default_choice !== config.entries[index].choices[choice].key) } };
+      }
+      function remember() {
+        if (window.openai && typeof window.openai.setWidgetState === 'function') {
+          window.openai.setWidgetState(snapshot()).catch(() => {});
+        }
+      }
+      function restore(state) {
+        if (!state || state.modelContent?.bundle_id !== config.bundleId) return;
+        selected.clear();
+        choices.clear();
+        for (const entry of config.entries) {
+          if (entry.default_choice) choices.set(entry.id, entry.default_choice);
+        }
+        if (state.privateContent?.bundle_id === config.bundleId) {
+          for (const [index, choiceIndex] of state.privateContent.choices || []) {
+            const entry = config.entries[index];
+            const choice = entry && entry.choices[choiceIndex];
+            if (choice) choices.set(entry.id, choice.key);
+          }
+          page = Math.max(0, Math.min(totalPages - 1, Math.floor(Number(state.privateContent.page) || 0)));
+        }
+        for (const [index, choiceIndex] of state.modelContent.selected || []) {
+          const entry = config.entries[index];
+          const choice = entry && entry.choices[choiceIndex];
+          if (choice) {
+            selected.set(entry.id, choice.key);
+            choices.set(entry.id, choice.key);
+          }
+        }
+      }
+      function updateSelection() {
+        const count = Array.from(selected.keys()).reduce((sum, id) => sum + entries.get(id).pending_count, 0);
+        root.querySelectorAll('[data-selected-count]').forEach(element => { element.textContent = `선택 ${count}건`; });
+        const problem = conflict();
+        error.textContent = problem || sendError;
+        error.hidden = !(problem || sendError);
+        root.querySelectorAll('[data-approve]').forEach(button => {
+          button.textContent = sending ? '승인 메시지 여는 중' : `선택한 ${count}건 승인`;
+          button.disabled = !count || sending || Boolean(problem);
+        });
+        selectionDetails.hidden = !count;
+        selectionList.replaceChildren();
+        for (const [id, key] of selected) {
+          const entry = entries.get(id);
+          const choice = entry.choices.find(item => item.key === key);
+          selectionList.append(node('li', `${entry.shop_name} · ${entry.name} — ${choice.label}`));
+        }
+      }
+      function renderEntry(entry) {
+        const row = node('section', undefined, 'review-entry');
+        row.dataset.entryId = entry.id;
+        const links = node('div', undefined, 'viz-row text-small');
+        links.append(link(entry.shop_name, entry.naver_place_url), link('메뉴 원본', entry.menu_url));
+        if (entry.pending_count > 1) links.append(node('span', `같은 메뉴 보류 ${entry.pending_count}건`, 'text-muted'));
+        row.append(links);
+        const heading = node('div', undefined, 'entry-heading');
+        const title = node('div');
+        title.append(node('div', entry.name, 'entry-name'));
+        const prices = [...new Set(entry.sources.map(source => formatPrice(source.value)))];
+        if (prices.length) title.append(node('div', prices.join(' / '), 'text-small tabular-nums'));
+        heading.append(title);
+        const checkLabel = node('label', undefined, 'form-check');
+        const checkbox = node('input');
+        checkbox.type = 'checkbox';
+        checkbox.className = 'form-check-input';
+        checkbox.dataset.selectEntry = entry.id;
+        checkbox.checked = selected.has(entry.id);
+        checkbox.disabled = !entry.approvable || !chosen(entry);
+        checkbox.setAttribute('aria-label', `${entry.shop_name} ${entry.name} 승인 선택`);
+        checkLabel.append(checkbox, node('span', '승인', 'form-check-label'));
+        heading.append(checkLabel);
+        row.append(heading);
+        const scope = entry.scope_status === 'approved_existing' ? '기존 등록 · 라멘 확정' :
+          entry.scope_status === 'approved_type' ? '자동 승인 유형 · 라멘 확정' : '';
+        if (scope) row.append(node('span', scope, 'text-small text-muted'));
+        row.append(node('div', entry.reason, 'text-small text-muted'));
+        const details = node('details');
+        details.open = checkbox.checked;
+        details.append(node('summary', '가격·설명 비교', 'comparison-summary cursor-interaction'));
+        const comparisons = node('div', undefined, 'compare-grid');
+        for (const current of entry.existing) {
+          comparisons.append(sourceColumn('기존 DB', current, entry.currently_visible_ids.includes(current.id)));
+        }
+        for (const [index, source] of entry.sources.entries()) {
+          comparisons.append(sourceColumn(entry.sources.length > 1 ? `원본 ${index + 1}` : '네이버 원본', source.value));
+        }
+        details.append(comparisons);
+        if (entry.captured_at) {
+          const date = new Intl.DateTimeFormat('ko-KR', { timeZone: 'Asia/Seoul', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+            .format(new Date(entry.captured_at));
+          details.append(node('div', `원본 수집 ${date}`, 'text-small text-muted'));
+        }
+        if (entry.sources.length || entry.existing.length) row.append(details);
+        if (entry.choices.length > 1) {
+          const field = node('div', undefined, 'decision-field');
+          const label = node('label', '승인할 처리', 'form-label text-small');
+          const select = node('select', undefined, 'form-select');
+          select.id = `decision-${entry.id}`;
+          select.dataset.decisionEntry = entry.id;
+          label.htmlFor = select.id;
+          const placeholder = node('option', '처리할 값을 선택하세요');
+          placeholder.value = '';
+          select.append(placeholder);
+          for (const choice of entry.choices) {
+            const option = node('option', choice.label);
+            option.value = choice.key;
+            select.append(option);
+          }
+          select.value = choices.get(entry.id) || '';
+          select.addEventListener('change', () => {
+            if (select.value) choices.set(entry.id, select.value); else choices.delete(entry.id);
+            if (checkbox.checked && select.value) selected.set(entry.id, select.value);
+            if (!select.value) { selected.delete(entry.id); checkbox.checked = false; }
+            checkbox.disabled = !select.value;
+            details.open = true;
+            sendError = '';
+            message.textContent = '';
+            updateSelection();
+            remember();
+          });
+          field.append(label, select);
+          row.append(field);
+        } else if (entry.choices.length === 1) {
+          row.append(node('div', entry.choices[0].label, 'text-small'));
+        } else {
+          row.append(node('div', '원본 자료 추가 필요', 'text-small'));
+        }
+        checkbox.addEventListener('change', () => {
+          const choice = chosen(entry);
+          if (checkbox.checked && choice) selected.set(entry.id, choice.key); else selected.delete(entry.id);
+          if (checkbox.checked) details.open = true;
+          sendError = '';
+          message.textContent = '';
+          updateSelection();
+          remember();
+        });
+        return row;
+      }
+      function render() {
+        list.replaceChildren();
+        for (const entry of config.entries.slice(page * config.pageSize, (page + 1) * config.pageSize)) {
+          list.append(renderEntry(entry), node('hr'));
+        }
+        previous.disabled = page === 0;
+        next.disabled = page === totalPages - 1;
+        pageCount.textContent = `${page + 1} / ${totalPages} 페이지`;
+        updateSelection();
+      }
+      function changePage(delta) {
+        page = Math.max(0, Math.min(totalPages - 1, page + delta));
+        render();
+        remember();
+      }
+      previous.addEventListener('click', () => changePage(-1));
+      next.addEventListener('click', () => changePage(1));
+      async function approveSelected() {
+        if (!selected.size || sending || conflict()) return;
+        sendError = '';
+        if (!window.openai || typeof window.openai.sendFollowUpMessage !== 'function') {
+          sendError = '이 대화의 승인 버튼을 사용할 수 없습니다. 선택 내역은 유지됩니다.';
+          updateSelection();
+          return;
+        }
+        const selection = { bundle_id: config.bundleId,
+          selected: Array.from(selected, ([entry_id, choice_key]) => ({ entry_id, choice_key })) };
+        const count = Array.from(selected.keys()).reduce((sum, id) => sum + entries.get(id).pending_count, 0);
+        const names = selection.selected.map(item => {
+          const entry = entries.get(item.entry_id);
+          const choice = entry.choices.find(c => c.key === item.choice_key);
+          return `- ${entry.shop_name} / ${entry.name}: ${choice.label}`;
+        });
+        const prompt = [
+          `체크한 보류 ${count}건만 화면에 표시된 처리대로 승인합니다.`,
+          '선택하지 않은 항목은 기존 보류 상태를 유지하세요. 기존 등록 메뉴의 라멘 여부는 재검증하지 마세요.',
+          '동결된 검토 자료의 원본 ID·기존 메뉴 ID·문구·가격과 아래 선택을 결속하고, 최신 DB 값을 확인한 뒤 해당 선택만 반영하세요.',
+          `검토 자료: ${config.registryPath}`,
+          ...names,
+          '선택 데이터:', JSON.stringify(selection),
+          '다른 항목으로 승인을 확대하지 말고 반영 결과와 통합 보류 목록을 갱신하세요.'
+        ].join('\n');
+        sending = true;
+        message.textContent = `선택한 ${count}건의 승인 메시지를 준비했습니다.`;
+        updateSelection();
+        try {
+          await window.openai.sendFollowUpMessage({ prompt, title: `선택한 ${count}건만 승인` });
+        } catch (_) {
+          sendError = '승인 메시지를 열지 못했습니다. 선택은 유지되어 있습니다.';
+        } finally {
+          sending = false;
+          updateSelection();
+        }
+      }
+      root.querySelectorAll('[data-approve]').forEach(button => button.addEventListener('click', approveSelected));
+      restore(window.openai && window.openai.widgetState);
+      render();
+      window.addEventListener('openai:set_globals', event => {
+        const state = event.detail?.globals?.widgetState;
+        if (state?.modelContent?.bundle_id !== config.bundleId) return;
+        restore(state);
+        render();
+      });
+    })();
+  </script>
+</div>

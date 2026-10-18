@@ -1,0 +1,4 @@
+interface:
+  display_name: "메뉴 최신화"
+  short_description: "매장 메뉴 최신화와 재개, 보류 메뉴 체크 승인 및 반영 결과 검증"
+  default_prompt: "Use $menu-refresh to refresh the requested Ramap shops under the current registration policy and create a checkbox review for unresolved menu decisions."

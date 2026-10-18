@@ -2,30 +2,157 @@ package com.peto.ramap.data.repository
 
 import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.core.result.getOrThrow
-import com.peto.ramap.data.model.MenuResponse
-import com.peto.ramap.data.model.MenuSectionResponse
-import com.peto.ramap.data.model.ShopDetailResponse
 import com.peto.ramap.data.model.ShopEventParticipantResponse
 import com.peto.ramap.data.model.ShopEventResponse
+import com.peto.ramap.data.model.ShopOverviewResponse
 import com.peto.ramap.domain.model.shop.Category
 import com.peto.ramap.domain.model.shop.Location
 import com.peto.ramap.domain.model.shop.MenuCategories
 import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.domain.model.shop.SearchQuery
+import com.peto.ramap.domain.model.shop.WaitingProvider
+import com.peto.ramap.domain.model.shop.WaitingSystem
 import com.peto.ramap.fake.FakeRamenShopDataSource
 import com.peto.ramap.fixture.BOUNDS_FIXTURE
 import com.peto.ramap.fixture.ramenShopResponseFixture
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class DefaultRamenShopRepositoryTest {
+    private val json = Json { ignoreUnknownKeys = true }
+
     @Test
-    fun `상세 RPC 응답도 기존 이벤트와 메뉴 규칙으로 변환한다`() =
+    fun `상세 RPC의 매장 컬럼에서 웨이팅을 읽고 기존 중첩 응답은 무시한다`() =
         runTest {
             val response =
-                ShopDetailResponse(
+                json.decodeFromString<ShopOverviewResponse>(
+                    """
+                    {
+                        "shop": {
+                            "id": "shop-1",
+                            "name": "라멘집",
+                            "address": "서울",
+                            "lat": 37.5,
+                            "lng": 127.0,
+                            "created_at": "2026-06-01T00:00:00Z",
+                            "updated_at": "2026-06-02T00:00:00Z",
+                            "waiting_provider": "catchtable",
+                            "waiting_provider_url": "https://app.catchtable.co.kr/ct/shop/shop-1"
+                        },
+                        "like_count": 3,
+                        "waiting_system": {
+                            "id": "old-waiting",
+                            "shop_id": "shop-1",
+                            "provider": "tabling",
+                            "provider_url": "https://example.com/old-waiting"
+                        }
+                    }
+                    """.trimIndent(),
+                )
+            val repository = DefaultRamenShopRepository(FakeRamenShopDataSource(shopOverviewResponse = response))
+
+            val detail = repository.fetchShopOverview("shop-1").getOrThrow()
+
+            assertEquals(
+                WaitingSystem(
+                    id = "shop-1",
+                    shopId = "shop-1",
+                    provider = WaitingProvider.CATCHTABLE,
+                    providerUrl = "https://app.catchtable.co.kr/ct/shop/shop-1",
+                ),
+                detail.waitingSystem,
+            )
+            assertEquals(3L, detail.likeCount)
+            assertEquals("shop-1", detail.shop.id)
+        }
+
+    @Test
+    fun `상세 웨이팅은 모든 제공자와 알 수 없는 제공자 및 URL 없음을 유지한다`() =
+        runTest {
+            val providers =
+                listOf(
+                    "catchtable" to WaitingProvider.CATCHTABLE,
+                    "tabling" to WaitingProvider.TABLING,
+                    "syrup_friends" to WaitingProvider.SYRUP_FRIENDS,
+                    "new_provider" to WaitingProvider.UNKNOWN,
+                )
+            for ((providerId, expectedProvider) in providers) {
+                val response =
+                    ShopOverviewResponse(
+                        shop = ramenShopResponseFixture(id = "shop-1").copy(waitingProvider = providerId),
+                        likeCount = 0L,
+                    )
+                val repository = DefaultRamenShopRepository(FakeRamenShopDataSource(shopOverviewResponse = response))
+
+                val detail = repository.fetchShopOverview("shop-1").getOrThrow()
+
+                assertEquals(
+                    WaitingSystem(
+                        id = "shop-1",
+                        shopId = "shop-1",
+                        provider = expectedProvider,
+                        providerUrl = null,
+                    ),
+                    detail.waitingSystem,
+                )
+            }
+        }
+
+    @Test
+    fun `상세 매장에 웨이팅 컬럼이 없으면 웨이팅 없이 조회한다`() =
+        runTest {
+            val response =
+                json.decodeFromString<ShopOverviewResponse>(
+                    """
+                    {
+                        "shop": {
+                            "id": "shop-1",
+                            "name": "라멘집",
+                            "address": "서울",
+                            "lat": 37.5,
+                            "lng": 127.0,
+                            "created_at": "2026-06-01T00:00:00Z",
+                            "updated_at": "2026-06-02T00:00:00Z"
+                        },
+                        "like_count": 0,
+                        "waiting_system": null
+                    }
+                    """.trimIndent(),
+                )
+            val repository = DefaultRamenShopRepository(FakeRamenShopDataSource(shopOverviewResponse = response))
+
+            val detail = repository.fetchShopOverview("shop-1").getOrThrow()
+
+            assertEquals(null, detail.waitingSystem)
+        }
+
+    @Test
+    fun `상세 매장에 URL만 있고 웨이팅 제공자가 null이면 웨이팅 없음으로 유지한다`() =
+        runTest {
+            val response =
+                ShopOverviewResponse(
+                    shop =
+                        ramenShopResponseFixture(id = "shop-1").copy(
+                            waitingProvider = null,
+                            waitingProviderUrl = "https://example.com/waiting",
+                        ),
+                    likeCount = 0L,
+                )
+            val repository = DefaultRamenShopRepository(FakeRamenShopDataSource(shopOverviewResponse = response))
+
+            val detail = repository.fetchShopOverview("shop-1").getOrThrow()
+
+            assertEquals(null, detail.waitingSystem)
+        }
+
+    @Test
+    fun `상세 RPC 응답을 기존 이벤트 규칙으로 변환한다`() =
+        runTest {
+            val response =
+                ShopOverviewResponse(
                     shop = ramenShopResponseFixture(id = "venue-shop"),
                     likeCount = 3L,
                     events = listOf(shopEventResponse()),
@@ -34,123 +161,15 @@ class DefaultRamenShopRepositoryTest {
                             ShopEventParticipantResponse(eventId = "event", shopId = "partner-shop"),
                             ShopEventParticipantResponse(eventId = "event", shopId = null),
                         ),
-                    menuSections =
-                        listOf(
-                            MenuSectionResponse(
-                                id = "section",
-                                shopId = "venue-shop",
-                                title = "한정 메뉴",
-                                description = "하루 10그릇 한정",
-                                displayOrder = 0,
-                            ),
-                        ),
-                    menuItems =
-                        listOf(
-                            MenuResponse(
-                                id = "menu",
-                                sectionId = "section",
-                                name = "시오라멘",
-                                priceKrw = 10000,
-                                displayOrder = 0,
-                            ),
-                        ),
                 )
             val repository =
                 DefaultRamenShopRepository(
-                    FakeRamenShopDataSource(shopDetailResponse = response),
+                    FakeRamenShopDataSource(shopOverviewResponse = response),
                 )
 
-            val detail = repository.fetchShopDetail("venue-shop").getOrThrow()
+            val detail = repository.fetchShopOverview("venue-shop").getOrThrow()
 
             assertEquals(2, detail.event?.collaborationPartnerCount)
-            assertEquals("하루 10그릇 한정", detail.menuSections.single().description)
-        }
-
-    @Test
-    fun `메뉴가 있는 상세는 메뉴 전용 갱신 시각을 반환한다`() =
-        runTest {
-            val response =
-                ShopDetailResponse(
-                    shop = ramenShopResponseFixture(id = "menu-update-shop"),
-                    likeCount = 0L,
-                    menuSections =
-                        listOf(
-                            MenuSectionResponse(
-                                id = "section",
-                                shopId = "menu-update-shop",
-                                title = "상시메뉴",
-                                displayOrder = 0,
-                            ),
-                        ),
-                    menuItems =
-                        listOf(
-                            MenuResponse(
-                                id = "menu",
-                                sectionId = "section",
-                                name = "쇼유라멘",
-                                displayOrder = 0,
-                            ),
-                        ),
-                )
-            val repository =
-                DefaultRamenShopRepository(
-                    FakeRamenShopDataSource(
-                        shopDetailResponse = response,
-                        shopMenuUpdatedAt = "2026-09-02T12:00:00Z",
-                    ),
-                )
-
-            val detail = repository.fetchShopDetail("menu-update-shop").getOrThrow()
-
-            assertEquals("2026-09-02T12:00:00Z", detail.menuUpdatedAt)
-        }
-
-    @Test
-    fun `이벤트 메뉴 섹션은 상시 메뉴보다 먼저 표시한다`() =
-        runTest {
-            val response =
-                ShopDetailResponse(
-                    shop = ramenShopResponseFixture(id = "menu-order-shop"),
-                    likeCount = 0L,
-                    menuSections =
-                        listOf(
-                            MenuSectionResponse(
-                                id = "permanent",
-                                shopId = "menu-order-shop",
-                                title = " 상시메뉴 ",
-                                displayOrder = 0,
-                            ),
-                            MenuSectionResponse(
-                                id = "event",
-                                shopId = "menu-order-shop",
-                                title = "기간 한정",
-                                displayOrder = 1,
-                            ),
-                        ),
-                    menuItems =
-                        listOf(
-                            MenuResponse(
-                                id = "permanent-item",
-                                sectionId = "permanent",
-                                name = "쇼유라멘",
-                                displayOrder = 0,
-                            ),
-                            MenuResponse(
-                                id = "event-item",
-                                sectionId = "event",
-                                name = "한정 라멘",
-                                displayOrder = 0,
-                            ),
-                        ),
-                )
-            val repository =
-                DefaultRamenShopRepository(
-                    FakeRamenShopDataSource(shopDetailResponse = response),
-                )
-
-            val detail = repository.fetchShopDetail("menu-order-shop").getOrThrow()
-
-            assertEquals(listOf("event", "permanent"), detail.menuSections.map { it.id })
         }
 
     @Test
@@ -211,7 +230,7 @@ class DefaultRamenShopRepositoryTest {
     fun `상세 RPC의 다른 활성 이벤트 참여자는 선택한 콜라보 인원에서 제외한다`() =
         runTest {
             val response =
-                ShopDetailResponse(
+                ShopOverviewResponse(
                     shop = ramenShopResponseFixture(id = "venue-shop"),
                     likeCount = 0L,
                     events = listOf(shopEventResponse(id = "selected-collab")),
@@ -233,10 +252,10 @@ class DefaultRamenShopRepositoryTest {
                 )
             val repository =
                 DefaultRamenShopRepository(
-                    FakeRamenShopDataSource(shopDetailResponse = response),
+                    FakeRamenShopDataSource(shopOverviewResponse = response),
                 )
 
-            val detail = repository.fetchShopDetail("venue-shop").getOrThrow()
+            val detail = repository.fetchShopOverview("venue-shop").getOrThrow()
 
             assertEquals(1, detail.event?.collaborationPartnerCount)
         }

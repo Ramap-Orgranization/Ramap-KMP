@@ -19,7 +19,7 @@ class LoginSessionStateTest {
         runTest {
             withSupabaseSessionFixture { client ->
                 client.auth.setSessionStatus(authenticatedSessionFixture())
-                DefaultLoginRepository(client).sessionState.test {
+                DefaultLoginRepository(client).session.test {
                     assertEquals(LoginSessionState.AUTHENTICATED, awaitItem())
 
                     client.auth.setSessionStatus(SessionStatus.Initializing)
@@ -37,7 +37,7 @@ class LoginSessionStateTest {
     fun `초기 세션 확인이 끝나야 로그인 여부를 알린다`() =
         runTest {
             withSupabaseSessionFixture { client ->
-                DefaultLoginRepository(client).sessionState.test {
+                DefaultLoginRepository(client).session.test {
                     expectNoEvents()
                     client.auth.setSessionStatus(SessionStatus.NotAuthenticated())
                     assertEquals(LoginSessionState.NOT_AUTHENTICATED, awaitItem())

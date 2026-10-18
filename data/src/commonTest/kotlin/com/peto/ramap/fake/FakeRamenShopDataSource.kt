@@ -2,15 +2,14 @@ package com.peto.ramap.fake
 
 import com.peto.ramap.data.datasource.shop.RamenShopDataSource
 import com.peto.ramap.data.model.RamenShopResponse
-import com.peto.ramap.data.model.ShopDetailResponse
 import com.peto.ramap.data.model.ShopEventParticipantResponse
 import com.peto.ramap.data.model.ShopEventResponse
+import com.peto.ramap.data.model.ShopOverviewResponse
 import com.peto.ramap.domain.model.shop.MapBounds
 import com.peto.ramap.domain.model.shop.SearchQuery
 
 internal class FakeRamenShopDataSource(
-    private val shopDetailResponse: ShopDetailResponse? = null,
-    private val shopMenuUpdatedAt: String? = null,
+    private val shopOverviewResponse: ShopOverviewResponse? = null,
     private val responses: List<RamenShopResponse> = emptyList(),
     private val searchResponses: List<RamenShopResponse> = emptyList(),
     private val fetchByIdsResponses: List<RamenShopResponse> = emptyList(),
@@ -22,23 +21,15 @@ internal class FakeRamenShopDataSource(
     var shopDetailRequestCount = 0
         private set
 
-    override suspend fun fetchShopDetail(shopId: String): ShopDetailResponse? {
+    override suspend fun fetchShopOverview(shopId: String): ShopOverviewResponse {
         shopDetailRequestCount += 1
         error?.let { throw it }
-        return shopDetailResponse
+        return checkNotNull(shopOverviewResponse) { "Missing fake shop detail" }
     }
-
-    override suspend fun fetchShopMenuUpdatedAt(shopId: String): String? = shopMenuUpdatedAt
-
-    override suspend fun fetchShopLikeCount(shopId: String): Long = 0L
 
     override suspend fun fetchActiveShopEvents(shopId: String): List<ShopEventResponse> = activeEventResponses
 
-    override suspend fun fetchActiveEvents(): List<ShopEventResponse> = activeEventsResponses
-
-    override suspend fun fetchActiveEvent(eventId: String): ShopEventResponse? = activeEventsResponses.firstOrNull { it.id == eventId }
-
-    override suspend fun fetchEvent(eventId: String): ShopEventResponse? = activeEventsResponses.firstOrNull { it.id == eventId }
+    override suspend fun fetchEvents(eventId: String?): List<ShopEventResponse> = if (eventId == null) activeEventsResponses else activeEventsResponses.filter { it.id == eventId }
 
     override suspend fun fetchShopEventParticipants(eventId: String): List<ShopEventParticipantResponse> = participantResponses
 

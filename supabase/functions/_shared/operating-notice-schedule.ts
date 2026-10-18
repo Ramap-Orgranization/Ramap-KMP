@@ -58,3 +58,7 @@ export const dailySchedulesSchema = {
     required: ["date", "closed", "schedule_override"],
   },
 };
+
+export function validClosureSchedules(value: unknown, start: string, end: string): value is DailySchedule[] {
+  return validDailySchedules(value, start, end) && value.some((day) => day.closed) && value.every((day) => day.schedule_override == null);
+}

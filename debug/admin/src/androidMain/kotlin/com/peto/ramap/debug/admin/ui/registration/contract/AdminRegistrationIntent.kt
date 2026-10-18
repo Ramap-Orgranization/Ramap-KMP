@@ -6,6 +6,10 @@ import com.peto.ramap.domain.model.notice.OperatingNoticeType
 import com.peto.ramap.ui.base.Intent
 
 internal sealed interface AdminRegistrationIntent : Intent {
+    data object OnResumed : AdminRegistrationIntent
+
+    data object OnEvidenceReadFailed : AdminRegistrationIntent
+
     data class OnRegistrationTypeSelected(
         val isOperatingNotice: Boolean,
     ) : AdminRegistrationIntent
@@ -58,23 +62,10 @@ internal sealed interface AdminRegistrationIntent : Intent {
         val endTime: String?,
     ) : AdminRegistrationIntent
 
-    data class OnDraftScheduleOverrideChanged(
-        val open: String?,
-        val close: String?,
-    ) : AdminRegistrationIntent
-
     data class OnRegularSegmentSelected(
         val open: String,
         val close: String,
     ) : AdminRegistrationIntent
-
-    data class OnDraftBreakTimeChanged(
-        val index: Int,
-        val start: String,
-        val end: String,
-    ) : AdminRegistrationIntent
-
-    data object OnDraftBreakTimesCleared : AdminRegistrationIntent
 
     data class OnEvidenceSelected(
         val evidence: AdminEvidence?,
@@ -90,12 +81,6 @@ internal sealed interface AdminRegistrationIntent : Intent {
     data object OnPreviewOrRegisterClicked : AdminRegistrationIntent
 
     data object OnManagedEventsRefreshed : AdminRegistrationIntent
-
-    data object OnDelayedOpeningsRefreshed : AdminRegistrationIntent
-
-    data class OnDelayedOpeningReleased(
-        val id: String,
-    ) : AdminRegistrationIntent
 
     data class OnManagedEventSelected(
         val eventId: String,

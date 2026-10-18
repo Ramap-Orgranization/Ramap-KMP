@@ -9,7 +9,6 @@ import androidx.navigation3.runtime.NavKey
 class NavigationState(
     selectedTabState: MutableState<TabStatus>,
     val backStacks: Map<TabStatus, NavBackStack<NavKey>>,
-    private val onMapTabExited: () -> Unit = {},
 ) {
     private var eventTabRouteId = 0
 
@@ -52,6 +51,8 @@ class NavigationState(
         // Preserve the originating review stack, including the event tab, for Back.
         selectedTab = TabStatus.MAP
     }
+
+    fun showFollows() = showOnce(ScreenRoutes.FollowRoutes)
 
     fun showProfileEdit() = showOnce(ScreenRoutes.ProfileEditRoutes)
 
@@ -132,7 +133,6 @@ class NavigationState(
             eventBackStack.add(ScreenRoutes.EventTabRoutes(++eventTabRouteId))
         }
         if (selectedTab == TabStatus.MAP) {
-            onMapTabExited()
             clearRequestedShopFromMapRoute()
         }
         selectedTab = tab

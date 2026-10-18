@@ -4,10 +4,16 @@ import com.peto.ramap.data.datasource.appnotice.AppNoticeDataSource
 import com.peto.ramap.data.datasource.appnotice.RemoteAppNoticeDataSource
 import com.peto.ramap.data.datasource.community.CommunityDataSource
 import com.peto.ramap.data.datasource.community.RemoteCommunityDataSource
+import com.peto.ramap.data.datasource.follow.FollowDataSource
+import com.peto.ramap.data.datasource.follow.RemoteFollowDataSource
+import com.peto.ramap.data.datasource.image.ImageUrlDataSource
+import com.peto.ramap.data.datasource.image.RemoteImageUrlDataSource
 import com.peto.ramap.data.datasource.importation.ImportationDataSource
 import com.peto.ramap.data.datasource.importation.KakaoImportationDataSource
 import com.peto.ramap.data.datasource.importation.NaverImportationDataSource
 import com.peto.ramap.data.datasource.importation.RemoteImportationDataSource
+import com.peto.ramap.data.datasource.menu.RemoteShopMenuDataSource
+import com.peto.ramap.data.datasource.menu.ShopMenuDataSource
 import com.peto.ramap.data.datasource.notice.OperatingNoticeDataSource
 import com.peto.ramap.data.datasource.notice.RemoteOperatingNoticeDataSource
 import com.peto.ramap.data.datasource.personalization.BookmarkShopDataSource
@@ -38,9 +44,11 @@ import org.koin.dsl.module
 
 val dataSourceModule =
     module {
-        single<ProfileDataSource> { RemoteProfileDataSource(get()) }
-        single<CommunityDataSource> { RemoteCommunityDataSource(get(), get()) }
-        single<ReviewDataSource> { RemoteReviewDataSource(get()) }
+        single<FollowDataSource> { RemoteFollowDataSource(get()) }
+        single<ImageUrlDataSource> { RemoteImageUrlDataSource(get()) }
+        single<ProfileDataSource> { RemoteProfileDataSource(get(), get()) }
+        single<CommunityDataSource> { RemoteCommunityDataSource(get(), get(), get()) }
+        single<ReviewDataSource> { RemoteReviewDataSource(get(), get(), get()) }
         single { NaverImportationDataSource(get(), get<HttpClient>()) }
         single { KakaoImportationDataSource(get()) }
         single<ImportationDataSource> { RemoteImportationDataSource(get(), get()) }
@@ -50,6 +58,7 @@ val dataSourceModule =
         single<RamenShopDataSource> {
             RemoteRamenShopDataSource(get<SupabaseClient>())
         }
+        single<ShopMenuDataSource> { RemoteShopMenuDataSource(get<SupabaseClient>()) }
         single<OperatingNoticeDataSource> {
             RemoteOperatingNoticeDataSource(get<SupabaseClient>())
         }

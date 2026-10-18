@@ -5,7 +5,7 @@ import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.importation.ImportationCandidates
 import com.peto.ramap.domain.model.importation.ImportationPreview
-import com.peto.ramap.domain.model.personalization.ShopPersonalization
+import com.peto.ramap.domain.model.personalization.Personalization
 import com.peto.ramap.domain.model.report.PlaceReportTextParser
 import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.domain.repository.ImportationRepository
@@ -41,7 +41,8 @@ class ImportationViewModel(
     }
 
     private fun changeUrl(url: String) {
-        reduce { copy(url = PlaceReportTextParser.extractSupportedUrl(url) ?: url, error = null) }
+        val extractedUrl = PlaceReportTextParser.extractSupportedUrl(url) ?: url
+        reduce { copy(url = extractedUrl, error = null) }
     }
 
     private fun removeCandidate(shopId: String) {
@@ -50,10 +51,9 @@ class ImportationViewModel(
 
     private fun analyze() {
         val url = currentState.url.trim()
-        if (url.isEmpty()) return publishError(ImportationError.INVALID_URL)
-        val personalization =
-            currentPersonalization()
-                ?: return publishError(ImportationError.PERSONALIZATION_UNAVAILABLE)
+        val isUrlEmpty = url.isEmpty()
+        if (isUrlEmpty) return publishError(ImportationError.INVALID_URL)
+        val personalization = currentPersonalization() ?: return publishError(ImportationError.PERSONALIZATION_UNAVAILABLE)
         launchTask(
             taskKey = ANALYZE_TASK_KEY,
             loadKey = ImportationLoadKey.ANALYZE,
@@ -64,7 +64,7 @@ class ImportationViewModel(
 
     private suspend fun requestPreview(
         url: String,
-        personalization: ShopPersonalization,
+        personalization: Personalization,
     ) {
         when (val result = importationRepository.analyze(url)) {
             is RamapResult.Error -> publishError(ImportationErrorHandler.resolveAnalyzeError(result.error))
@@ -80,10 +80,11 @@ class ImportationViewModel(
 
     private suspend fun requestCandidates(
         preview: ImportationPreview,
-        personalization: ShopPersonalization,
+        personalization: Personalization,
     ) {
         val resolved: ImportationCandidates = ImportationCandidates.from(preview, personalization)
-        if (resolved.importableShopIds.isEmpty()) {
+        val isImportableEmpty = resolved.importableShopIds.isEmpty()
+        if (isImportableEmpty) {
             publishPreview(preview, resolved, RamenShops(emptyMap()))
             return
         }
@@ -111,7 +112,8 @@ class ImportationViewModel(
 
     private fun addBookmarks() {
         val shopIds = currentState.candidates.keys
-        if (shopIds.isEmpty()) return
+        val isShopIdsEmpty = shopIds.isEmpty()
+        if (isShopIdsEmpty) return
 
         importationAnalytics.logBookmarksAdded(currentState.candidates)
         launchResultTask(
@@ -138,7 +140,7 @@ class ImportationViewModel(
         reduce { clearPreview(this).copy(url = "") }
     }
 
-    private fun currentPersonalization(): ShopPersonalization? = (personalizationStore.state.value as? PersonalizationBootstrapState.Success)?.value
+    private fun currentPersonalization(): Personalization? = (personalizationStore.state.value as? PersonalizationBootstrapState.Success)?.value
 
     private fun publishError(error: ImportationError) {
         reduce { copy(error = error) }

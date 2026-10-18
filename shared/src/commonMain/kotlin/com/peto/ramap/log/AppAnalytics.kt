@@ -4,7 +4,7 @@ import com.peto.ramap.analytics.AnalyticsTracker
 import com.peto.ramap.analytics.AnalyticsUserProperties
 import com.peto.ramap.analytics.common.deeplink.DeepLinkAnalyticsEvent
 import com.peto.ramap.domain.model.auth.LoginSessionState
-import com.peto.ramap.domain.model.personalization.ShopPersonalization
+import com.peto.ramap.domain.model.personalization.Personalization
 
 class AppAnalytics(
     private val analyticsTracker: AnalyticsTracker,
@@ -42,7 +42,7 @@ class AppAnalytics(
         )
     }
 
-    fun updatePersonalizationProperties(personalization: ShopPersonalization) {
+    fun updatePersonalizationProperties(personalization: Personalization) {
         analyticsTracker.userProperty(
             AnalyticsUserProperties.BOOKMARKED_COUNT,
             personalization.bookmarkedShopIds.size.toString(),

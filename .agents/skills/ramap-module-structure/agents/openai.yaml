@@ -1,0 +1,4 @@
+interface:
+  display_name: "Ramap Module Structure"
+  short_description: "Ramap modules and dependency direction"
+  default_prompt: "Use $ramap-module-structure and the current settings.gradle.kts to choose the owning modules, source sets, and dependency edges for this change."

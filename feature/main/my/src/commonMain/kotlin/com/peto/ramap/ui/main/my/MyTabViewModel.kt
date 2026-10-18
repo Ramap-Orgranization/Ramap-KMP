@@ -3,12 +3,16 @@ package com.peto.ramap.ui.main.my
 import androidx.lifecycle.viewModelScope
 import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
+import com.peto.ramap.domain.model.profile.ProfileVisibility
 import com.peto.ramap.domain.model.review.MyReviewVisibility
+import com.peto.ramap.domain.model.review.change.ReviewChange
 import com.peto.ramap.domain.repository.CommunityRepository
+import com.peto.ramap.domain.repository.FollowRepository
 import com.peto.ramap.domain.repository.ProfileRepository
 import com.peto.ramap.domain.repository.ReviewRepository
 import com.peto.ramap.domain.store.PersonalizationBootstrapState
 import com.peto.ramap.domain.store.PersonalizationStore
+import com.peto.ramap.domain.store.ReviewChangeStore
 import com.peto.ramap.ui.base.BaseViewModel
 import com.peto.ramap.ui.main.my.contract.MyTabIntent
 import com.peto.ramap.ui.main.my.contract.MyTabLoadKey
@@ -28,36 +32,46 @@ class MyTabViewModel(
     private val communityRepository: CommunityRepository,
     private val personalizationStore: PersonalizationStore,
     private val reviewRepository: ReviewRepository,
+    private val followRepository: FollowRepository,
+    private val changes: ReviewChangeStore,
 ) : BaseViewModel<MyTabUiState, MyTabIntent, MyTabSideEffect>(MyTabUiState()) {
     private var requestGeneration = 0L
+    private var sessionGeneration = 0L
 
     init {
         viewModelScope.launch {
-            repository.sessionUserIds.distinctUntilChanged().collect { userId ->
+            var epoch = changes.journal.value.epoch
+            var revision = changes.journal.value.revision
+            changes.journal.collect { journal ->
+                if (epoch != journal.epoch) {
+                    epoch = journal.epoch
+                    revision = journal.revision
+                }
+                val hasGap = journal.hasGapAfter(revision)
+                if (hasGap) refreshReviewCount()
+                for (record in journal.changesAfter(revision)) {
+                    val change = record.change as? ReviewChange.Written ?: continue
+                    val isMyReview = change.userId == currentState.userId
+                    if (isMyReview) reduce { copy(reviewCount = change.counts.totalCount) }
+                }
+                revision = journal.revision
+            }
+        }
+        viewModelScope.launch {
+            repository.sessionUserId.distinctUntilChanged().collect { userId ->
                 requestGeneration++
+                sessionGeneration++
                 cancelTask(FETCH)
                 cancelTask(VISIBILITY)
                 cancelTask(BLOCKED_USERS)
                 cancelTask(REVIEW_COUNT)
                 cancelTask(BLOCKED_USER_COUNT)
+                cancelTask(FOLLOW_REQUESTS)
                 cancelTask(UNBLOCK)
-                reduce { MyTabUiState(userId = userId, sessionResolved = userId == null) }
-                if (userId != null) refresh()
-            }
-        }
-        viewModelScope.launch {
-            reviewRepository.observeChanges().collect {
-                if (currentState.userId != null) refreshReviewCount()
-            }
-        }
-        viewModelScope.launch {
-            repository.observeProfileUpdates().collect { profile ->
-                if (currentState.userId == profile.userId) reduce { copy(profile = profile) }
-            }
-        }
-        viewModelScope.launch {
-            communityRepository.observeChanges().collect {
-                if (currentState.userId != null) refreshBlockedUserCount()
+                val isSessionResolved = userId == null
+                reduce { MyTabUiState(userId = userId, sessionResolved = isSessionResolved) }
+                val hasUserId = userId != null
+                if (hasUserId) refresh()
             }
         }
         viewModelScope.launch {
@@ -77,23 +91,50 @@ class MyTabViewModel(
     override suspend fun handleIntent(intent: MyTabIntent) {
         when (intent) {
             MyTabIntent.Refresh -> refresh()
-            is MyTabIntent.SaveVisibility -> saveVisibility(intent.isPublic)
+            MyTabIntent.ReturnedToScreen -> {
+                refreshBlockedUserCount()
+                refreshPendingFollowRequests()
+            }
+            MyTabIntent.ReturnedFromProfileEdit -> {
+                refreshProfile()
+                refreshPendingFollowRequests()
+            }
+            MyTabIntent.ReturnedFromReviews -> {
+                refreshPendingFollowRequests()
+            }
+            MyTabIntent.ReturnedFromBlockedProfile -> {
+                refreshBlockedUserCount()
+                refreshPendingFollowRequests()
+            }
+            MyTabIntent.ReturnedFromFollows -> refreshPendingFollowRequests()
+            is MyTabIntent.SaveVisibility ->
+                saveVisibility(
+                    ProfileVisibility(
+                        isPublic = intent.isPublic,
+                        followersCanReadReviews = currentState.profile?.followersCanReadReviews ?: true,
+                        followersCanReadSavedShops = currentState.profile?.followersCanReadSavedShops ?: true,
+                    ),
+                )
+            is MyTabIntent.SaveProfileVisibility -> saveVisibility(intent.visibility)
             MyTabIntent.OpenBlockedUsers -> openBlockedUsers()
             MyTabIntent.DismissBlockedUsers -> {
-                if (!currentState.unblocking) {
+                val isNotUnblocking = !currentState.unblocking
+                if (isNotUnblocking) {
                     reduce { copy(blockedUsers = emptyList(), pendingUnblockUser = null) }
                 }
             }
             is MyTabIntent.RequestUnblock -> requestUnblock(intent.userId)
             MyTabIntent.DismissUnblock -> {
-                if (!currentState.unblocking) reduce { copy(pendingUnblockUser = null) }
+                val isNotUnblocking = !currentState.unblocking
+                if (isNotUnblocking) reduce { copy(pendingUnblockUser = null) }
             }
             MyTabIntent.ConfirmUnblock -> unblockUser()
         }
     }
 
     private fun requestUnblock(userId: String) {
-        if (currentState.unblocking) return
+        val isAlreadyUnblocking = currentState.unblocking
+        if (isAlreadyUnblocking) return
         val target = currentState.blockedUsers.firstOrNull { it.profile.userId == userId } ?: return
         reduce { copy(pendingUnblockUser = target.profile) }
     }
@@ -101,7 +142,9 @@ class MyTabViewModel(
     private fun unblockUser() {
         val currentUserId = currentState.userId ?: return
         val target = currentState.pendingUnblockUser ?: return
-        if (currentState.unblocking || currentState.blockedUsers.none { it.profile.userId == target.userId }) return
+        val isBlockedTargetMissing = currentState.blockedUsers.none { it.profile.userId == target.userId }
+        val cannotUnblock = currentState.unblocking || isBlockedTargetMissing
+        if (cannotUnblock) return
         launchResultTask(
             taskKey = UNBLOCK,
             loadKey = MyTabLoadKey.Unblock,
@@ -116,7 +159,8 @@ class MyTabViewModel(
         currentUserId: String,
         targetUserId: String,
     ) {
-        if (currentState.userId != currentUserId) return
+        val isDifferentUser = currentState.userId != currentUserId
+        if (isDifferentUser) return
         reduce {
             val remainingUsers = blockedUsers.filterNot { it.profile.userId == targetUserId }
             copy(
@@ -125,13 +169,15 @@ class MyTabViewModel(
                 pendingUnblockUser = null,
             )
         }
-        if (currentState.blockedUsers.isEmpty()) {
+        val isBlockedListEmpty = currentState.blockedUsers.isEmpty()
+        if (isBlockedListEmpty) {
             postSideEffect(MyTabSideEffect.CloseBlockedUsersDialog)
         }
     }
 
     private suspend fun showUnblockFailure(currentUserId: String) {
-        if (currentState.userId != currentUserId) return
+        val isDifferentUser = currentState.userId != currentUserId
+        if (isDifferentUser) return
         postSideEffect(
             MyTabSideEffect.ShowToast(
                 ToastData(
@@ -149,9 +195,11 @@ class MyTabViewModel(
             loadKey = MyTabLoadKey.BlockedUsers,
             request = communityRepository::fetchBlockedUsers,
             onSuccess = { users ->
-                if (currentState.userId == userId) {
+                val isSameUser = currentState.userId == userId
+                if (isSameUser) {
                     reduce { copy(blockedUserCount = users.size) }
-                    if (users.isEmpty()) {
+                    val isUsersEmpty = users.isEmpty()
+                    if (isUsersEmpty) {
                         postSideEffect(
                             MyTabSideEffect.ShowToast(
                                 ToastData(
@@ -167,7 +215,8 @@ class MyTabViewModel(
                 }
             },
             onError = {
-                if (currentState.userId == userId) {
+                val isSameUser = currentState.userId == userId
+                if (isSameUser) {
                     reduce { copy(blockedUsers = emptyList()) }
                     postSideEffect(
                         MyTabSideEffect.ShowToast(
@@ -182,21 +231,35 @@ class MyTabViewModel(
         )
     }
 
-    private fun saveVisibility(isPublic: Boolean) {
+    private fun saveVisibility(visibility: ProfileVisibility) {
         val userId = currentState.userId ?: return
         val profile = currentState.profile ?: return
-        if (profile.userId != userId || currentState.savingVisibility || profile.isPublic == isPublic) return
+        val isProfileSaveNotAllowed = profile.userId != userId || currentState.savingVisibility
+        if (isProfileSaveNotAllowed) return
+
+        val isVisibilityUnchanged =
+            profile.isPublic == visibility.isPublic &&
+                profile.followersCanReadReviews == visibility.followersCanReadReviews &&
+                profile.followersCanReadSavedShops == visibility.followersCanReadSavedShops
+        if (isVisibilityUnchanged) {
+            trySideEffect(MyTabSideEffect.VisibilitySaved)
+            return
+        }
+
         launchResultTask(
             taskKey = VISIBILITY,
             loadKey = MyTabLoadKey.Visibility,
-            request = { repository.updateProfileVisibility(isPublic) },
+            request = { repository.updateProfileVisibility(visibility) },
             onSuccess = { updatedProfile ->
-                if (currentState.userId == userId && updatedProfile.userId == userId) {
+                val isSameUser = currentState.userId == userId && updatedProfile.userId == userId
+                if (isSameUser) {
                     reduce { copy(profile = updatedProfile) }
+                    postSideEffect(MyTabSideEffect.VisibilitySaved)
                 }
             },
             onError = {
-                if (currentState.userId == userId) {
+                val isSameUser = currentState.userId == userId
+                if (isSameUser) {
                     postSideEffect(
                         MyTabSideEffect.ShowToast(
                             ToastData(
@@ -211,9 +274,26 @@ class MyTabViewModel(
     }
 
     private fun refresh() {
-        val userId = currentState.userId ?: return
         refreshReviewCount()
         refreshBlockedUserCount()
+        refreshPendingFollowRequests()
+        refreshProfile()
+    }
+
+    private fun refreshPendingFollowRequests() {
+        val userId = currentState.userId ?: return
+        launchResultTask(
+            taskKey = FOLLOW_REQUESTS,
+            request = followRepository::fetchCounts,
+            onSuccess = { counts ->
+                val isSameUser = currentState.userId == userId
+                if (isSameUser) reduce { copy(hasPendingFollowRequests = counts.requests > 0L) }
+            },
+        )
+    }
+
+    private fun refreshProfile() {
+        val userId = currentState.userId ?: return
         val generation = ++requestGeneration
         launchResultTask(
             taskKey = FETCH,
@@ -221,24 +301,42 @@ class MyTabViewModel(
             onStart = { copy(failed = false, sessionResolved = true) },
             request = repository::fetchMyProfile,
             onSuccess = { profile ->
-                if (generation == requestGeneration && currentState.userId == userId) {
+                val isCurrentGeneration = generation == requestGeneration && currentState.userId == userId
+                if (isCurrentGeneration) {
                     reduce { if (profile.userId == userId) copy(profile = profile) else copy(failed = true) }
                 }
             },
             onError = {
-                if (generation == requestGeneration && currentState.userId == userId) reduce { copy(failed = true) }
+                val isCurrentGeneration = generation == requestGeneration && currentState.userId == userId
+                if (isCurrentGeneration) reduce { copy(failed = true) }
             },
         )
     }
 
     private fun refreshReviewCount() {
         val userId = currentState.userId ?: return
+        val generation = sessionGeneration
+        val baseline = changes.journal.value
         launchResultTask(
             taskKey = REVIEW_COUNT,
             loadKey = MyTabLoadKey.ReviewCount,
             request = { reviewRepository.fetchMyReviews(0, MyReviewVisibility.ALL) },
             onSuccess = { page ->
-                if (currentState.userId == userId) reduce { copy(reviewCount = page.totalCount) }
+                val journal = changes.journal.value
+                val isSessionStale = generation != sessionGeneration || currentState.userId != userId
+                if (isSessionStale) return@launchResultTask
+                val isEpochChanged = baseline.epoch != journal.epoch
+                if (isEpochChanged) {
+                    refreshReviewCount()
+                    return@launchResultTask
+                }
+                val latest = journal.changesAfter(baseline.revision).mapNotNull { it.change as? ReviewChange.Written }.lastOrNull { it.userId == userId }
+                val hasGap = journal.hasGapAfter(baseline.revision)
+                if (hasGap) {
+                    refreshReviewCount()
+                } else {
+                    reduce { copy(reviewCount = latest?.counts?.totalCount ?: page.totalCount) }
+                }
             },
         )
     }
@@ -250,7 +348,8 @@ class MyTabViewModel(
             loadKey = MyTabLoadKey.BlockedUserCount,
             request = communityRepository::fetchBlockedUsers,
             onSuccess = { users ->
-                if (currentState.userId == userId) reduce { copy(blockedUserCount = users.size) }
+                val isSameUser = currentState.userId == userId
+                if (isSameUser) reduce { copy(blockedUserCount = users.size) }
             },
         )
     }
@@ -261,6 +360,7 @@ class MyTabViewModel(
         private const val BLOCKED_USERS = "my-tab-blocked-users"
         private const val REVIEW_COUNT = "my-tab-review-count"
         private const val BLOCKED_USER_COUNT = "my-tab-blocked-user-count"
+        private const val FOLLOW_REQUESTS = "my-tab-follow-requests"
         private const val UNBLOCK = "my-tab-unblock-user"
     }
 }

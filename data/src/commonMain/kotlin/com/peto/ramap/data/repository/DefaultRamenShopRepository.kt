@@ -3,24 +3,17 @@ package com.peto.ramap.data.repository
 import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.data.datasource.shop.RamenShopDataSource
 import com.peto.ramap.data.extension.toLocalDate
-import com.peto.ramap.data.model.MenuResponse
-import com.peto.ramap.data.model.MenuSectionResponse
-import com.peto.ramap.data.model.ShopDetailResponse
 import com.peto.ramap.data.model.ShopEventParticipantResponse
 import com.peto.ramap.data.model.ShopEventResponse
+import com.peto.ramap.data.model.ShopOverviewResponse
 import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.model.event.ShopEventType
-import com.peto.ramap.domain.model.menu.Menu
-import com.peto.ramap.domain.model.menu.MenuSection
-import com.peto.ramap.domain.model.menu.Menus
-import com.peto.ramap.domain.model.menu.Price
 import com.peto.ramap.domain.model.shop.MapBounds
 import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.domain.model.shop.SearchQuery
+import com.peto.ramap.domain.model.shop.ShopOverView
 import com.peto.ramap.domain.repository.RamenShopRepository
-import com.peto.ramap.domain.usecase.ShopDetail
 import com.peto.ramap.network.execute.invokeRequest
-import kotlinx.coroutines.CancellationException
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
@@ -31,47 +24,34 @@ import kotlin.time.Clock
 internal class DefaultRamenShopRepository(
     private val dataSource: RamenShopDataSource,
 ) : RamenShopRepository {
-    override suspend fun fetchShopDetail(shopId: String): RamapResult<ShopDetail> =
+    override suspend fun fetchShopOverview(shopId: String): RamapResult<ShopOverView> =
         invokeRequest {
-            val response =
-                dataSource.fetchShopDetail(shopId)
-                    ?: error("매장 상세를 찾을 수 없습니다: $shopId")
-            val menuUpdatedAt =
-                response.menuSections
-                    .takeIf(List<MenuSectionResponse>::isNotEmpty)
-                    ?.let {
-                        try {
-                            dataSource.fetchShopMenuUpdatedAt(shopId)
-                        } catch (exception: CancellationException) {
-                            throw exception
-                        } catch (_: Throwable) {
-                            null
-                        }
-                    }
-            shopDetail(response, shopId, menuUpdatedAt)
+            val response = dataSource.fetchShopOverview(shopId)
+            shopOverview(response, shopId)
         }
 
-    override suspend fun fetchShopLikeCount(shopId: String): RamapResult<Long> =
-        invokeRequest {
-            dataSource.fetchShopLikeCount(shopId)
-        }
+    override suspend fun fetchShopLikeCount(shopId: String): RamapResult<Long> = invokeRequest { dataSource.fetchShopOverview(shopId).likeCount }
 
     override suspend fun fetchActiveEvent(eventId: String): RamapResult<ShopEvent?> =
         invokeRequest {
-            dataSource.fetchActiveEvent(eventId)?.let(::toDomain)?.takeIf(::isVisibleInActiveEvents)
+            dataSource
+                .fetchEvents(eventId)
+                .singleOrNull()
+                ?.let(::toDomain)
+                ?.takeIf(::isVisibleInActiveEvents)
         }
 
     override suspend fun fetchActiveEvents(): RamapResult<List<ShopEvent>> =
         invokeRequest {
             dataSource
-                .fetchActiveEvents()
+                .fetchEvents(eventId = null)
                 .map(::toDomain)
                 .filter(::isVisibleInActiveEvents)
         }
 
     override suspend fun fetchEvent(eventId: String): RamapResult<ShopEvent?> =
         invokeRequest {
-            dataSource.fetchEvent(eventId)?.let(::toDomain)
+            dataSource.fetchEvents(eventId).singleOrNull()?.let(::toDomain)
         }
 
     override suspend fun fetchActiveShopEvent(shopId: String): RamapResult<ShopEvent?> =
@@ -87,21 +67,18 @@ internal class DefaultRamenShopRepository(
             activeShopEvent(events, participants, shopId)
         }
 
-    private fun shopDetail(
-        response: ShopDetailResponse,
+    private fun shopOverview(
+        response: ShopOverviewResponse,
         shopId: String,
-        menuUpdatedAt: String?,
-    ): ShopDetail {
+    ): ShopOverView {
         val domainShop = response.shop.toDomain()
         val activeEvents = activeShopEvents(response.events)
-        return ShopDetail(
+        return ShopOverView(
             shop = domainShop,
             likeCount = response.likeCount,
-            waitingSystem = response.waitingSystem?.toDomain(),
+            waitingSystem = response.shop.toWaitingSystem(),
             event = activeShopEvent(activeEvents, response.eventParticipants, shopId),
             operatingNotice = response.operatingNotice?.toDomain(domainShop),
-            menuSections = menuSections(response.menuSections, response.menuItems),
-            menuUpdatedAt = menuUpdatedAt,
         )
     }
 
@@ -129,47 +106,6 @@ internal class DefaultRamenShopRepository(
             }
         return event.copy(activeEventCount = 1, collaborationPartnerCount = partnerCount)
     }
-
-    private fun menuSections(
-        sections: List<MenuSectionResponse>,
-        items: List<MenuResponse>,
-    ): List<MenuSection> {
-        val itemsBySection = items.groupBy { it.sectionId }
-        return sections
-            .sortedWith(
-                compareBy<MenuSectionResponse>(::menuSectionPriority)
-                    .thenBy { it.displayOrder }
-                    .thenBy { it.id },
-            ).map { menuSection(it, itemsBySection[it.id].orEmpty()) }
-            .filter { it.items.isNotEmpty() }
-    }
-
-    private fun menuSectionPriority(section: MenuSectionResponse): Int = if (section.title.trim() == PERMANENT_MENU_SECTION_TITLE) 1 else 0
-
-    private fun menuSection(
-        section: MenuSectionResponse,
-        items: List<MenuResponse>,
-    ): MenuSection =
-        MenuSection(
-            id = section.id,
-            title = section.title,
-            description = section.description,
-            displayOrder = section.displayOrder,
-            items = Menus(items.sortedBy { it.displayOrder }.map(::menuItem)),
-        )
-
-    private fun menuItem(item: MenuResponse): Menu =
-        Menu(
-            id = item.id,
-            name = item.name,
-            priceKrw = item.priceKrw?.let(::Price),
-            priceText = item.priceText,
-            description = item.description,
-            imageUrl = item.imageUrl,
-            sourceUrl = item.sourceUrl,
-            displayOrder = item.displayOrder,
-            isRepresentative = item.isRepresentative,
-        )
 
     private fun toDomain(response: ShopEventResponse): ShopEvent {
         val event = response.toDomain()
@@ -241,7 +177,6 @@ internal class DefaultRamenShopRepository(
         }
 
     private companion object {
-        const val PERMANENT_MENU_SECTION_TITLE = "상시메뉴"
         const val SEOUL_TIME_ZONE = "Asia/Seoul"
     }
 }

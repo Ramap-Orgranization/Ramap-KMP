@@ -1,16 +1,22 @@
 package com.peto.ramap.data.datasource.notice
 
+import com.peto.ramap.data.model.OperatingNoticeFeedResponse
 import com.peto.ramap.data.model.OperatingNoticeResponse
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.from
+import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.filter.FilterOperator
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.minus
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 
 internal class RemoteOperatingNoticeDataSource(
     private val client: SupabaseClient,
 ) : OperatingNoticeDataSource {
+    override suspend fun fetchOperatingNoticeFeed(today: LocalDate): OperatingNoticeFeedResponse = client.postgrest.rpc("fetch_operating_notice_feed", buildJsonObject { put("p_today", today.toString()) }).decodeAs()
+
     override suspend fun fetchApprovedOperatingNotices(today: LocalDate): List<OperatingNoticeResponse> =
         client
             .from(TABLE_NAME)

@@ -34,7 +34,10 @@ buildkonfig {
 }
 
 kotlin {
-    androidLibrary {
+    android {
+        withDeviceTest {
+            instrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        }
         androidResources {
             enable = true
         }
@@ -59,6 +62,18 @@ kotlin {
         implementation(project.dependencies.platform(libs.koin.bom))
         implementation(libs.koin.android)
         implementation(libs.koin.compose.viewmodel)
+    }
+
+    sourceSets.androidHostTest
+        .get()
+        .kotlin
+        .srcDir("src/androidTestSupport/kotlin")
+    sourceSets.getByName("androidDeviceTest").kotlin.srcDir("src/androidTestSupport/kotlin")
+    sourceSets.getByName("androidDeviceTest").dependencies {
+        implementation("androidx.compose.ui:ui-test-junit4:1.11.2")
+        implementation("androidx.compose.ui:ui-test-manifest:1.11.2")
+        implementation("androidx.test:runner:1.7.0")
+        implementation(libs.kotlin.test)
     }
 
     sourceSets.androidHostTest.dependencies {

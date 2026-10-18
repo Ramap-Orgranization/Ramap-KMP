@@ -61,27 +61,6 @@ class ShopEventTest {
     }
 
     @Test
-    fun `이벤트를 날짜별로 묶고 빈 날짜를 제외한다`() {
-        val first = event(startDate = "2024-02-28", endDate = "2024-03-01")
-        val second = event(startDate = "2024-03-01", endDate = "2024-03-01")
-
-        val grouped =
-            groupShopEventsByDate(
-                dates =
-                    listOf(
-                        LocalDate(2024, 2, 27),
-                        LocalDate(2024, 2, 28),
-                        LocalDate(2024, 3, 1),
-                    ),
-                events = listOf(first, second),
-            )
-
-        assertFalse(grouped.containsKey(LocalDate(2024, 2, 27)))
-        assertEquals(listOf(first), grouped[LocalDate(2024, 2, 28)])
-        assertEquals(listOf(first, second), grouped[LocalDate(2024, 3, 1)])
-    }
-
-    @Test
     fun `취소된 날짜만 취소 상태로 판정한다`() {
         val event =
             event(

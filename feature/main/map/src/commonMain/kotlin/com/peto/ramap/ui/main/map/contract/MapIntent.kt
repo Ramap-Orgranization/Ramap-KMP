@@ -2,51 +2,20 @@ package com.peto.ramap.ui.main.map.contract
 
 import com.peto.ramap.analytics.AnalyticsSource
 import com.peto.ramap.domain.model.auth.LoginType
-import com.peto.ramap.domain.model.community.ReportReason
-import com.peto.ramap.domain.model.report.ShopInformationField
-import com.peto.ramap.domain.model.review.Review
 import com.peto.ramap.domain.model.shop.Category
 import com.peto.ramap.domain.model.shop.Location
 import com.peto.ramap.domain.model.shop.MapBounds
 import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.ui.base.Intent
 import com.peto.ramap.ui.main.map.model.CameraPosition
+import com.peto.ramap.ui.main.map.model.ShopFocusRequest
 
 sealed interface MapIntent : Intent {
-    data class OnBlockedReviewViewRequested(
-        val review: Review,
+    data class OnLoginTypeSelected(
+        val type: LoginType,
     ) : MapIntent
 
-    data class OnBlockedReviewUnblockRequested(
-        val review: Review,
-    ) : MapIntent
-
-    data object OnBlockedReviewUnblockConfirmed : MapIntent
-
-    data object OnBlockedReviewUnblockDismissed : MapIntent
-
-    data class OnReviewLikeToggled(
-        val review: Review,
-    ) : MapIntent
-
-    data class OnReviewDeleted(
-        val review: Review,
-    ) : MapIntent
-
-    data class OnReviewReportRequested(
-        val review: Review,
-    ) : MapIntent
-
-    data class OnReviewReportSubmitted(
-        val reason: ReportReason,
-        val details: String,
-    ) : MapIntent
-
-    data object OnReviewReportDismissed : MapIntent
-
-    data object OnReviewsChanged : MapIntent
-
-    data object OnShopReviewsLoadMore : MapIntent
+    data object OnLoginSelectionDismissed : MapIntent
 
     data class OnBoundsChanged(
         val bounds: MapBounds,
@@ -64,7 +33,9 @@ sealed interface MapIntent : Intent {
 
     data object OnInitialLocationFocusConsumed : MapIntent
 
-    data object OnSelectedShopFocusConsumed : MapIntent
+    data class OnSelectedShopFocusConsumed(
+        val request: ShopFocusRequest,
+    ) : MapIntent
 
     data object OnMapTabExited : MapIntent
 
@@ -78,24 +49,20 @@ sealed interface MapIntent : Intent {
         val source: AnalyticsSource = AnalyticsSource.MARKER,
     ) : MapIntent
 
-    data class OnShopShareClicked(
-        val shop: RamenShop,
-    ) : MapIntent
-
-    data class OnShopMapLinkClicked(
-        val shop: RamenShop,
-        val mapProvider: String,
-    ) : MapIntent
-
     data class OnShopIdSelected(
         val shopId: String,
+        val showDetail: Boolean = true,
+    ) : MapIntent
+
+    /** 다른 화면의 지도 보기로 진입할 때 이전 지도의 검색과 필터를 초기화한다. */
+    data class OnShopNavigationRequested(
+        val shopId: String,
+        val showDetail: Boolean = true,
     ) : MapIntent
 
     data object OnRequestedShopDismissed : MapIntent
 
     data object OnShopDetailDismissed : MapIntent
-
-    data object OnShopDetailRetry : MapIntent
 
     data object OnSearchResultsDismissed : MapIntent
 
@@ -119,33 +86,17 @@ sealed interface MapIntent : Intent {
 
     data object OnOpenFilterToggled : MapIntent
 
-    data class OnBookmarkToggled(
-        val shop: RamenShop,
-        val source: AnalyticsSource = AnalyticsSource.MAP,
-    ) : MapIntent
-
-    data class OnShopNotificationToggled(
-        val shop: RamenShop,
-        val source: AnalyticsSource = AnalyticsSource.MAP,
-    ) : MapIntent
-
-    data class OnHiddenToggled(
-        val shop: RamenShop,
-        val source: AnalyticsSource = AnalyticsSource.MAP,
-    ) : MapIntent
-
-    data class OnShopReportSubmitted(
-        val wrongFields: Set<ShopInformationField>,
-        val description: String,
-    ) : MapIntent
-
     data object OnBookmarkedShopsToggled : MapIntent
 
-    data class OnLoginTypeSelected(
-        val type: LoginType,
+    data object OnLocationPermissionBlocked : MapIntent
+
+    data class OnShopLoadFailed(
+        val shopId: String,
     ) : MapIntent
 
-    data object OnLoginSelectionDismissed : MapIntent
+    data class OnShopViewed(
+        val shop: RamenShop,
+    ) : MapIntent
 
-    data object OnLocationPermissionBlocked : MapIntent
+    data object OnSelectedShopHidden : MapIntent
 }

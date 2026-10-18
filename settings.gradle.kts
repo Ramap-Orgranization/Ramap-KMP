@@ -54,6 +54,7 @@ include(":feature:main:map")
 include(":feature:main:ranking")
 include(":feature:main:my")
 include(":feature:profile:edit")
+include(":feature:profile:follow")
 include(":feature:review:my")
 include(":feature:review:other")
 include(":feature:review:write")
@@ -65,3 +66,9 @@ include(":feature:hidden")
 include(":feature:notification")
 include(":feature:report")
 include(":feature:subscribed")
+
+include(":feature:shop:menu")
+
+include(":feature:shop:review")
+
+include(":feature:shop:overview")
