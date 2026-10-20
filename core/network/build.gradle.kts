@@ -1,4 +1,5 @@
 import com.codingfeline.buildkonfig.compiler.FieldSpec.Type.STRING
+import org.jetbrains.kotlin.gradle.targets.native.tasks.KotlinNativeSimulatorTest
 import java.util.Properties
 
 plugins {
@@ -60,6 +61,32 @@ kotlin {
         implementation(libs.supabase.storage)
         implementation(libs.kermit)
     }
-    sourceSets.androidMain.dependencies { implementation(libs.ktor.client.okhttp) }
+    sourceSets.androidMain.dependencies {
+        implementation(libs.ktor.client.okhttp)
+        implementation(libs.koin.android)
+    }
+    sourceSets.androidHostTest.dependencies { implementation(libs.robolectric) }
     sourceSets.iosMain.dependencies { implementation(libs.ktor.client.darwin) }
+}
+
+// 독립 실행 테스트에는 Keychain 서비스가 없습니다 (KT-61470).
+// 부팅된 시뮬레이터에서 통합 검증: :core:network:iosSimulatorArm64Test -Pramap.keychainTestDevice=<UDID>
+val keychainTestDevice = providers.gradleProperty("ramap.keychainTestDevice")
+if (keychainTestDevice.isPresent) {
+    kotlin.iosSimulatorArm64().testRuns.configureEach {
+        executionSource.binary.linkerOpts(
+            "-sectcreate",
+            "__TEXT",
+            "__entitlements",
+            file("src/iosTest/resources/keychain-test-entitlements.plist").absolutePath,
+        )
+    }
+}
+tasks.withType<KotlinNativeSimulatorTest>().configureEach {
+    if (keychainTestDevice.isPresent) {
+        standalone.set(false)
+        device.set(keychainTestDevice)
+    } else {
+        filter.excludeTestsMatching("com.peto.ramap.network.auth.IosKeychainSessionStorageIntegrationTest.*")
+    }
 }

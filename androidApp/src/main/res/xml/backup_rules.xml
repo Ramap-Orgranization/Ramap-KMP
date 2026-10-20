@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<full-backup-content>
+    <!-- 이전 버전의 Supabase 세션 및 PKCE 저장 파일은 백업하지 않습니다. -->
+    <exclude domain="sharedpref" path="com.peto.ramap_preferences.xml" />
+    <exclude domain="sharedpref" path="com.peto.ramap.debug_preferences.xml" />
+</full-backup-content>
