@@ -26,6 +26,7 @@ import platform.Foundation.CFBridgingRetain
 import platform.Foundation.NSData
 import platform.Foundation.NSString
 import platform.Foundation.NSUTF8StringEncoding
+import platform.Foundation.NSUserDefaults
 import platform.Foundation.create
 import platform.Foundation.dataUsingEncoding
 import platform.Security.SecItemAdd
@@ -48,7 +49,8 @@ import platform.Security.kSecValueData
 internal class IosKeychainSessionStorage(
     private val account: String,
     private val service: String = "com.peto.ramap.auth.session",
-) : SecureSessionStorage {
+    private val defaults: NSUserDefaults = NSUserDefaults.standardUserDefaults,
+) : SessionStorage {
     override suspend fun read(): String? =
         withContext(Dispatchers.IO) {
             memScoped {
@@ -89,6 +91,19 @@ internal class IosKeychainSessionStorage(
             } finally {
                 CFRelease(retainedData)
             }
+        }
+    }
+
+    override suspend fun readLegacy(): String? =
+        withContext(Dispatchers.IO) {
+            defaults.stringForKey(account)
+                ?: defaults.stringForKey(SessionStorageKeys.LEGACY_SESSION)
+        }
+
+    override suspend fun deleteLegacy() {
+        withContext(Dispatchers.IO) {
+            defaults.removeObjectForKey(account)
+            defaults.removeObjectForKey(SessionStorageKeys.LEGACY_SESSION)
         }
     }
 

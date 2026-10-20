@@ -12,8 +12,7 @@ import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 
 internal class MigratingSessionManager(
-    private val secureStorage: SecureSessionStorage,
-    private val legacyStorage: LegacySessionStorage,
+    private val storage: SessionStorage,
 ) : SessionManager {
     private val mutex = Mutex()
     private val json = Json { encodeDefaults = true }
@@ -47,7 +46,7 @@ internal class MigratingSessionManager(
     private suspend fun restoreSession(): UserSession? {
         val secured =
             try {
-                secureStorage.read()
+                storage.read()
             } catch (_: InvalidStoredSessionException) {
                 persistSession(CLEARED_SESSION)
                 return null
@@ -58,10 +57,10 @@ internal class MigratingSessionManager(
             return session
         }
 
-        val legacy = legacyStorage.read() ?: return null
+        val legacy = storage.readLegacy() ?: return null
         val session = decodeOrClearSession(legacy) ?: return null
-        secureStorage.write(legacy)
-        check(secureStorage.read() == legacy) { ERROR_MIGRATION_VERIFICATION }
+        storage.write(legacy)
+        check(storage.read() == legacy) { ERROR_MIGRATION_VERIFICATION }
         deleteLegacySession()
         return session
     }
@@ -80,13 +79,13 @@ internal class MigratingSessionManager(
     }
 
     private suspend fun persistSession(value: String) {
-        secureStorage.write(value)
+        storage.write(value)
         deleteLegacySession()
     }
 
     private suspend fun deleteLegacySession() {
         try {
-            legacyStorage.delete()
+            storage.deleteLegacy()
         } catch (exception: CancellationException) {
             throw exception
         } catch (_: Exception) {

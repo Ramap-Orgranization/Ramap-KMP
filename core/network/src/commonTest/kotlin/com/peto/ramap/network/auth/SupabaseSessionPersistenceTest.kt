@@ -27,22 +27,22 @@ class SupabaseSessionPersistenceTest {
                     expiresIn = 3600,
                     tokenType = "bearer",
                 )
-            val secure = FakeSecureSessionStorage()
-            val legacy = FakeLegacySessionStorage(json.encodeToString(session))
-            val manager = MigratingSessionManager(secure, legacy)
+            val storage = FakeSessionStorage()
+            storage.legacyStored = json.encodeToString(session)
+            val manager = MigratingSessionManager(storage)
             val client = createTestClient(manager)
             try {
                 client.auth.awaitInitialization()
                 assertEquals(session, client.auth.currentSessionOrNull())
-                assertNull(legacy.stored)
+                assertNull(storage.legacyStored)
 
                 val refreshed = session.copy(accessToken = "new-access", refreshToken = "new-refresh")
                 client.auth.importSession(refreshed, autoRefresh = false)
-                assertEquals(refreshed, MigratingSessionManager(secure, legacy).loadSession())
+                assertEquals(refreshed, MigratingSessionManager(storage).loadSession())
 
                 client.auth.clearSession()
                 assertNull(client.auth.currentSessionOrNull())
-                assertNull(MigratingSessionManager(secure, legacy).loadSessionOrNull())
+                assertNull(MigratingSessionManager(storage).loadSessionOrNull())
             } finally {
                 client.close()
             }

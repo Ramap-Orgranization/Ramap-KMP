@@ -64,6 +64,7 @@ kotlin {
     sourceSets.androidMain.dependencies {
         implementation(libs.ktor.client.okhttp)
         implementation(libs.koin.android)
+        implementation(libs.androidx.datastore.preferences)
     }
     sourceSets.androidHostTest.dependencies { implementation(libs.robolectric) }
     sourceSets.iosMain.dependencies { implementation(libs.ktor.client.darwin) }
