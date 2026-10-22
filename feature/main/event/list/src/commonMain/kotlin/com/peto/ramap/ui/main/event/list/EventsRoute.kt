@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
@@ -30,10 +29,8 @@ import com.peto.ramap.designsystem.toast.ToastManager
 import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.model.event.ShopEvents
 import com.peto.ramap.theme.CommonColor
-import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.RamapTheme
 import com.peto.ramap.ui.base.ObserveAsEvents
-import com.peto.ramap.ui.main.event.list.component.EventListActions
 import com.peto.ramap.ui.main.event.list.component.EventListBottomSheet
 import com.peto.ramap.ui.main.event.list.component.EventListEmptyContent
 import com.peto.ramap.ui.main.event.list.component.EventListSkeleton
@@ -41,7 +38,6 @@ import com.peto.ramap.ui.main.event.list.component.eventSection
 import com.peto.ramap.ui.main.event.list.contract.EventsIntent
 import com.peto.ramap.ui.main.event.list.contract.EventsSideEffect
 import com.peto.ramap.ui.main.event.list.contract.EventsUiState
-import com.peto.ramap.ui.main.event.list.platform.rememberAdminRegistrationAction
 import com.peto.ramap.ui.main.event.list.preview.EventsPreviewParameterProvider
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
@@ -64,7 +60,6 @@ fun EventsRoute(
     viewModel: EventsViewModel = koinViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val adminRegistrationAction = rememberAdminRegistrationAction()
     ObserveAsEvents(viewModel.sideEffect) { sideEffect ->
         when (sideEffect) {
             is EventsSideEffect.ShowEventsToast -> toastManager.show(sideEffect.data)
@@ -79,7 +74,6 @@ fun EventsRoute(
         },
         onRefresh = { viewModel.dispatch(EventsIntent.OnEventsRefreshed) },
         onClickRetry = { viewModel.dispatch(EventsIntent.OnEventsRetried) },
-        onClickAdminRegistration = adminRegistrationAction,
     )
 }
 
@@ -90,7 +84,6 @@ internal fun EventsScreen(
     onClickEvent: (ShopEvent) -> Unit,
     onRefresh: () -> Unit,
     onClickRetry: () -> Unit,
-    onClickAdminRegistration: (() -> Unit)?,
 ) {
     var selectedEventGroup by remember { mutableStateOf<ShopEvents?>(null) }
     val pullToRefreshState = rememberPullToRefreshState()
@@ -139,20 +132,6 @@ internal fun EventsScreen(
                             contentPadding = PaddingValues(bottom = 5.dp),
                             verticalArrangement = Arrangement.spacedBy(10.dp),
                         ) {
-                            item {
-                                EventListActions(
-                                    onClickAdminRegistration = onClickAdminRegistration,
-                                    modifier = Modifier.padding(top = 5.dp),
-                                )
-                            }
-
-                            item {
-                                HorizontalDivider(
-                                    thickness = 2.dp,
-                                    color = GrayColor.C100,
-                                )
-                            }
-
                             if (uiState.isEmpty) {
                                 item {
                                     EventListEmptyContent(modifier = Modifier.fillMaxSize())
@@ -230,7 +209,6 @@ private fun EventsRoutePreview(
             onClickEvent = {},
             onRefresh = {},
             onClickRetry = {},
-            onClickAdminRegistration = null,
         )
     }
 }
