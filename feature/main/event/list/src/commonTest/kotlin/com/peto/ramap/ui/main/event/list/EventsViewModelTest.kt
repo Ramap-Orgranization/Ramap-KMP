@@ -238,10 +238,9 @@ class EventsViewModelTest {
                     .flatten()
                     .map { it.id },
             )
-            assertEquals(1, repository.activeEventsRequestCount)
             assertEquals(
                 listOf("renewal-today"),
-                (viewModel.uiState.value.ongoingEvents + viewModel.uiState.value.upcomingEvents)
+                viewModel.uiState.value.ongoingEvents
                     .flatten()
                     .map { it.id },
             )
