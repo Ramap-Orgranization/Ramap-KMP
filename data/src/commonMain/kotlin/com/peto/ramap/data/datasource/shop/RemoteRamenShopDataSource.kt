@@ -117,13 +117,13 @@ internal class RemoteRamenShopDataSource(
     ): List<RamenShopResponse> =
         client.postgrest
             .rpc(
-                function = "search_map_ramen_shops",
+                function = SEARCH_MAP_RAMEN_SHOPS_RPC,
                 parameters =
                     buildJsonObject {
-                        put("p_query", query.value)
-                        put("p_lat", center?.lat?.let(::JsonPrimitive) ?: JsonNull)
-                        put("p_lng", center?.lng?.let(::JsonPrimitive) ?: JsonNull)
-                        put("p_limit", limit)
+                        put(QUERY_PARAMETER, query.value)
+                        put(LAT_PARAMETER, center?.lat?.let(::JsonPrimitive) ?: JsonNull)
+                        put(LNG_PARAMETER, center?.lng?.let(::JsonPrimitive) ?: JsonNull)
+                        put(LIMIT_PARAMETER, limit)
                     },
             ).decodeList()
 
@@ -132,8 +132,13 @@ internal class RemoteRamenShopDataSource(
         private const val FETCH_ACTIVE_EVENTS_RPC = "fetch_active_events"
         private const val FETCH_ACTIVE_SHOP_EVENTS_RPC = "fetch_active_shop_events"
         private const val FETCH_SHOP_OVERVIEW_RPC = "fetch_shop_detail_v3"
+        private const val SEARCH_MAP_RAMEN_SHOPS_RPC = "search_map_ramen_shops"
         private const val SHOP_ID_PARAMETER = "p_shop_id"
         private const val EVENT_ID_PARAMETER = "p_event_id"
+        private const val QUERY_PARAMETER = "p_query"
+        private const val LAT_PARAMETER = "p_lat"
+        private const val LNG_PARAMETER = "p_lng"
+        private const val LIMIT_PARAMETER = "p_limit"
         private const val EVENT_PARTICIPANT_TABLE = "shop_event_participants"
         private const val COLUMN_EVENT_ID = "event_id"
         private const val COLUMN_ID = "id"
