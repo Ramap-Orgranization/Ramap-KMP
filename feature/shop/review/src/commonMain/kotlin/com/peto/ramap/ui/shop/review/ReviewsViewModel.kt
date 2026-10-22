@@ -63,10 +63,6 @@ class ReviewsViewModel(
     override suspend fun handleIntent(intent: ReviewsIntent) {
         when (intent) {
             is ReviewsIntent.OnShopSelected -> selectShop(intent.shopId)
-            ReviewsIntent.OnDismissed -> {
-                cancelReviewTasks()
-                reduce { copy(shopId = null, page = ShopReviewsPage(emptyList(), 0), hasLoaded = false, hasReviewLoadFailure = false, hasPageLoadFailure = false) }
-            }
             ReviewsIntent.OnRetry -> loadPage(append = false)
             ReviewsIntent.OnLoadMore -> {
                 val canLoadMore = currentState.hasMoreReviews && !currentState.isLoadingMoreReviews

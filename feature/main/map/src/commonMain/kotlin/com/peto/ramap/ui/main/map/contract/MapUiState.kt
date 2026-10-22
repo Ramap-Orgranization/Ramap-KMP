@@ -9,6 +9,7 @@ import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.ui.loading.LoadState
 import com.peto.ramap.ui.loading.LoadableState
 import com.peto.ramap.ui.main.map.model.CameraPosition
+import com.peto.ramap.ui.main.map.model.PlaceFocusRequest
 import com.peto.ramap.ui.main.map.model.ShopFocusRequest
 import com.peto.ramap.ui.main.map.model.location.LocationFocusStatus
 import com.peto.ramap.ui.main.map.model.search.SearchResultGuide
@@ -33,6 +34,7 @@ data class MapUiState(
      * 아직 소비하지 않은 선택 매장의 카메라 이동 요청.
      */
     val selectedShopFocusRequest: ShopFocusRequest? = null,
+    val placeFocusRequest: PlaceFocusRequest? = null,
     /**
      * 검색창 입력값, 검색 결과, 검색 결과의 소비 상태.
      */
@@ -94,12 +96,12 @@ data class MapUiState(
     /**
      * 검색 결과 리스트 바텀시트에 표시할 매장 목록.
      *
-     * 현재 위치와 가까운 매장을 먼저 표시한다.
+     * 서버의 매장명 관련도·거리 순서를 유지한다.
      */
     val searchResultShops: RamenShops
         get() =
-            if (search.hasLoadedResultsForInput) {
-                displaySearchResults.nearestFirstTo(currentLocation)
+            if (search.showsShopResults) {
+                displaySearchResults
             } else {
                 RamenShops(emptyMap())
             }
@@ -115,7 +117,7 @@ data class MapUiState(
      */
     val searchResultGuide: SearchResultGuide?
         get() {
-            if (!search.hasLoadedResultsForInput) return null
+            if (!search.showsShopResults) return null
             if (search.results.isEmpty()) return SearchResultGuide.SearchEmpty
             if (
                 displaySearchResults.isNotEmpty() &&
@@ -151,7 +153,7 @@ data class MapUiState(
                 .orEmpty()
 
         val markerShops =
-            if (search.hasLoadedResultsForInput) {
+            if (search.showsShopResults) {
                 RamenShops(displaySearchResults + selectedMarkerShop)
             } else {
                 RamenShops(displayFilteredShops + selectedMarkerShop)
@@ -164,7 +166,10 @@ data class MapUiState(
      * 검색 결과 리스트 바텀시트를 보여줄지 여부.
      */
     val showSearchResults: Boolean
-        get() = searchResultShops.size > 1
+        get() =
+            search.showsShopResults &&
+                !search.isResultsDismissed &&
+                (searchResultShops.size > 1 || search.places.isNotEmpty())
 
     /**
      * 지도 화면의 바텀시트를 열지 여부.
@@ -194,11 +199,11 @@ data class MapUiState(
         get() = selectedShopFocusRequest?.shopId?.let { it == selectedShop?.id } == true
 
     /**
-     * 가장 가까운 검색 결과로 지도 카메라를 이동해야 하는지 여부.
+     * 서버가 우선한 첫 검색 결과로 지도 카메라를 이동해야 하는지 여부.
      *
      * 검색 결과 포커스가 필요한 상태에서 결과가 여러 개일 때 true가 된다.
      */
-    val shouldFocusNearestSearchResult: Boolean
+    val shouldFocusFirstSearchResult: Boolean
         get() = shouldFocusSearchResults && searchResultShops.size > 1
 
     val focusRequestKey: Long
@@ -218,6 +223,7 @@ data class MapUiState(
             selectedShop == null &&
                 search.input.isNotBlank() &&
                 searchResultShops.isNotEmpty() &&
+                search.places.isEmpty() &&
                 !search.isResultFocusConsumed
 
     /**

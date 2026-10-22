@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.rememberScrollState
@@ -26,12 +27,15 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.peto.ramap.analytics.AnalyticsSource
 import com.peto.ramap.designsystem.button.AppButton
 import com.peto.ramap.designsystem.resource.category.CategoryResourceMapper
+import com.peto.ramap.domain.model.place.PlaceSearchResult
 import com.peto.ramap.domain.model.shop.Category
 import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.theme.CommonColor
@@ -39,6 +43,7 @@ import com.peto.ramap.ui.main.map.contract.MapUiState
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.retry_action
+import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -48,6 +53,7 @@ internal fun SearchContent(
     maxHeight: Dp,
     onSearchFocusChanged: (Boolean) -> Unit,
     onQueryChanged: (String) -> Unit,
+    onPlaceSelected: (PlaceSearchResult) -> Unit,
     onRecentSearchSelected: (String) -> Unit,
     onRecentSearchDeleted: (String) -> Unit,
     onRecentSearchesCleared: () -> Unit,
@@ -167,6 +173,8 @@ internal fun SearchContent(
         }
 
         if (!isSearchFocused && uiState.showSearchResults) {
+            val showsPlaceShortcut = uiState.hasSearchResult && uiState.search.places.isNotEmpty()
+
             BottomSheetScaffold(
                 scaffoldState = searchResultScaffoldState,
                 sheetPeekHeight = BottomSheetDefaults.SheetPeekHeight - 10.dp,
@@ -189,7 +197,14 @@ internal fun SearchContent(
                                     onShopSelected(it, true, AnalyticsSource.SEARCH_RESULT)
                                 },
                             )
-                        } else {
+                        }
+                        if (!showsPlaceShortcut && uiState.search.places.isNotEmpty()) {
+                            PlaceDestinationList(
+                                places = uiState.search.places,
+                                onPlaceSelected = onPlaceSelected,
+                            )
+                        }
+                        if (!uiState.hasSearchResult && uiState.search.places.isEmpty()) {
                             uiState.searchResultGuide?.let { guide ->
                                 SearchResultGuide(guide = guide)
                             }
@@ -198,6 +213,25 @@ internal fun SearchContent(
                 },
                 content = {},
             )
+
+            if (showsPlaceShortcut) {
+                PlaceDestinationShortcut(
+                    places = uiState.search.places,
+                    onPlaceSelected = onPlaceSelected,
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 15.dp)
+                            .offset {
+                                IntOffset(
+                                    x = 0,
+                                    y = searchResultSheetState.requireOffset().roundToInt(),
+                                )
+                            }.graphicsLayer {
+                                translationY = -size.height - 10.dp.toPx()
+                            },
+                )
+            }
         }
     }
 }

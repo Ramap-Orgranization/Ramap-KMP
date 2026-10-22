@@ -29,6 +29,7 @@ import androidx.navigationevent.compose.NavigationBackHandler
 import androidx.navigationevent.compose.rememberNavigationEventState
 import com.peto.ramap.analytics.AnalyticsSource
 import com.peto.ramap.designsystem.indicator.RamenLoadingIndicator
+import com.peto.ramap.domain.model.place.PlaceSearchResult
 import com.peto.ramap.domain.model.shop.Category
 import com.peto.ramap.domain.model.shop.Location
 import com.peto.ramap.domain.model.shop.MapBounds
@@ -58,6 +59,8 @@ internal fun MapContent(
     onShopSelected: (RamenShop, Boolean, AnalyticsSource) -> Unit,
     onShopDetailDismissed: () -> Unit,
     onQueryChanged: (String) -> Unit,
+    onPlaceSelected: (PlaceSearchResult) -> Unit,
+    onPlaceFocusConsumed: () -> Unit,
     onRecentSearchSelected: (String) -> Unit,
     onRecentSearchDeleted: (String) -> Unit,
     onRecentSearchesCleared: () -> Unit,
@@ -113,7 +116,7 @@ internal fun MapContent(
         NavigationBackHandler(
             state = backEventState,
             isBackEnabled =
-                isBackEnabled && (clusterBalloonState.isVisible || isSearchFocused || uiState.selectedShopId != null),
+                isBackEnabled && (clusterBalloonState.isVisible || isSearchFocused || uiState.showSearchResults || uiState.selectedShopId != null),
             onBackCompleted = {
                 when {
                     clusterBalloonState.isVisible -> clusterBalloonState.dismiss()
@@ -130,9 +133,11 @@ internal fun MapContent(
             modifier = Modifier.fillMaxSize(),
             shops = uiState.markerShops,
             focusShops = uiState.focusShops,
-            focusNearestToCurrentLocation = uiState.shouldFocusNearestSearchResult,
+            focusFirstSearchResult = uiState.shouldFocusFirstSearchResult,
             focusRequestKey = uiState.focusRequestKey,
             initialFocusLocation = uiState.initialFocusLocation,
+            placeFocusRequest = uiState.placeFocusRequest,
+            onPlaceFocusConsumed = onPlaceFocusConsumed,
             shouldBootstrapInitialLocationFocus = uiState.shouldBootstrapLocationFocusStatus,
             selectedShopId = uiState.selectedShop?.id,
             cameraPosition = uiState.cameraPosition,
@@ -193,6 +198,7 @@ internal fun MapContent(
             maxHeight = maxHeight,
             onSearchFocusChanged = { isSearchFocused = it },
             onQueryChanged = onQueryChanged,
+            onPlaceSelected = onPlaceSelected,
             onRecentSearchSelected = onRecentSearchSelected,
             onRecentSearchDeleted = onRecentSearchDeleted,
             onRecentSearchesCleared = onRecentSearchesCleared,
@@ -229,6 +235,8 @@ private fun MapContentPreview(
             onShopSelected = { _, _, _ -> },
             onShopDetailDismissed = {},
             onQueryChanged = {},
+            onPlaceSelected = {},
+            onPlaceFocusConsumed = {},
             onRecentSearchSelected = {},
             onRecentSearchDeleted = {},
             onRecentSearchesCleared = {},

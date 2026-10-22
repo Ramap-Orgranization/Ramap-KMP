@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigationevent.NavigationEventDispatcher
 import androidx.navigationevent.NavigationEventDispatcherOwner
 import androidx.navigationevent.compose.LocalNavigationEventDispatcherOwner
+import com.peto.ramap.domain.model.menu.ShopMenu
 import com.peto.ramap.domain.model.review.Review
 import com.peto.ramap.domain.model.review.ShopReviewsPage
 import com.peto.ramap.domain.model.shop.ShopOverView
@@ -92,6 +93,19 @@ class ShopDetailContentTest {
             onNodeWithTag("shop_detail_initial_skeleton").assertDoesNotExist()
             onNodeWithTag("shop_detail_list").performScrollToKey("shop_detail_overview")
             onNodeWithText("테스트 매장").assertExists()
+        }
+
+    @Test
+    fun `등록된 메뉴가 없으면 오류 대신 빈 메뉴 안내를 표시한다`() =
+        runComposeUiTest {
+            menu = ShopMenuUiState(shopId = "shop", menu = ShopMenu(sections = emptyList(), updatedAt = ""))
+            setContent { content() }
+
+            onNodeWithTag("shop_detail_list").performScrollToKey("shop_detail_menu")
+            onNodeWithText("등록된 메뉴가 없어요").assertExists()
+            onNodeWithText("메뉴 정보를 불러오지 못했어요").assertDoesNotExist()
+            onNodeWithText("다시 시도").assertDoesNotExist()
+            onNodeWithText(" 업데이트").assertDoesNotExist()
         }
 
     @Test

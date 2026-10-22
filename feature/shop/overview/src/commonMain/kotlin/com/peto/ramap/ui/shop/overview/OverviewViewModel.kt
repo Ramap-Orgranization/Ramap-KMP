@@ -30,11 +30,9 @@ import com.peto.ramap.ui.shop.contract.ShopInteractionEffect.ShowToast
 import com.peto.ramap.ui.shop.model.ShopOverviewUiState
 import com.peto.ramap.ui.shop.overview.contract.ShopOverviewIntent
 import com.peto.ramap.ui.shop.overview.contract.ShopOverviewIntent.OnBookmarkToggled
-import com.peto.ramap.ui.shop.overview.contract.ShopOverviewIntent.OnDismissed
 import com.peto.ramap.ui.shop.overview.contract.ShopOverviewIntent.OnHiddenToggled
 import com.peto.ramap.ui.shop.overview.contract.ShopOverviewIntent.OnLoginTypeSelected
 import com.peto.ramap.ui.shop.overview.contract.ShopOverviewIntent.OnOverviewRetry
-import com.peto.ramap.ui.shop.overview.contract.ShopOverviewIntent.OnRequestedShopDismissed
 import com.peto.ramap.ui.shop.overview.contract.ShopOverviewIntent.OnShopIdSelected
 import com.peto.ramap.ui.shop.overview.contract.ShopOverviewIntent.OnShopMapLinkClicked
 import com.peto.ramap.ui.shop.overview.contract.ShopOverviewIntent.OnShopNotificationToggled
@@ -113,8 +111,6 @@ class OverviewViewModel(
             is OnShopIdSelected -> selectShopId(intent.shopId)
             is OnShopShareClicked -> shareShop(intent.shop)
             is OnShopMapLinkClicked -> openShopMapLink(intent.shop, intent.mapProvider)
-            OnRequestedShopDismissed -> dismissRequestedShop()
-            OnDismissed -> dismissOverview()
             OnOverviewRetry -> retryOverview()
             is OnShopReportSubmitted -> submitShopReport(intent.wrongFields, intent.description)
             else -> return false
@@ -241,18 +237,6 @@ class OverviewViewModel(
             )
         }
         showErrorToast(error)
-    }
-
-    private fun dismissRequestedShop() {
-        val isNotLoadingState = currentState.overviewState !is ShopOverviewUiState.Loading
-        if (isNotLoadingState) return
-        cancelTask(OVERVIEW_TASK_KEY)
-        reduce { copy(overviewState = ShopOverviewUiState.Closed) }
-    }
-
-    private fun dismissOverview() {
-        cancelTask(OVERVIEW_TASK_KEY)
-        reduce { copy(overviewState = ShopOverviewUiState.Closed) }
     }
 
     private fun retryOverview() {

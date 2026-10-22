@@ -17,13 +17,13 @@ internal class NaverCameraController {
     fun focusShops(
         naverMap: NaverMap,
         shops: RamenShops,
-        currentLocation: Location?,
+        focusFirstResult: Boolean,
         focusRequestKey: Long,
     ): Boolean {
         if (shops.isEmpty()) return false
-        if (isSameFocusRequest(shops, currentLocation, focusRequestKey)) return true
+        if (isSameFocusRequest(shops, focusFirstResult, focusRequestKey)) return true
 
-        moveToFocusTarget(naverMap, shops, currentLocation)
+        moveToFocusTarget(naverMap, shops, focusFirstResult)
         return true
     }
 
@@ -42,10 +42,10 @@ internal class NaverCameraController {
 
     private fun isSameFocusRequest(
         shops: RamenShops,
-        currentLocation: Location?,
+        focusFirstResult: Boolean,
         focusRequestKey: Long,
     ): Boolean {
-        val key = buildFocusKey(shops, currentLocation, focusRequestKey)
+        val key = buildFocusKey(shops, focusFirstResult, focusRequestKey)
         if (key == lastFocusKey) return true
         lastFocusKey = key
         return false
@@ -53,35 +53,22 @@ internal class NaverCameraController {
 
     private fun buildFocusKey(
         shops: RamenShops,
-        currentLocation: Location?,
+        focusFirstResult: Boolean,
         focusRequestKey: Long,
     ): String =
         shops.values.joinToString("|") { "${it.id}:${it.location.lat}:${it.location.lng}" } +
-            ":${currentLocation != null}:$focusRequestKey"
+            ":$focusFirstResult:$focusRequestKey"
 
     private fun moveToFocusTarget(
         naverMap: NaverMap,
         shops: RamenShops,
-        currentLocation: Location?,
+        focusFirstResult: Boolean,
     ) {
         naverMap.locationTrackingMode = LocationTrackingMode.None
         when {
             shops.size == 1 -> moveToShop(naverMap, shops.values.first())
-            currentLocation != null -> moveToNearestShop(naverMap, shops, currentLocation)
+            focusFirstResult -> moveToShop(naverMap, shops.values.first())
             else -> moveToShopsBounds(naverMap, shops)
-        }
-    }
-
-    private fun moveToNearestShop(
-        naverMap: NaverMap,
-        shops: RamenShops,
-        currentLocation: Location,
-    ) {
-        val nearest = shops.nearestTo(currentLocation)
-        if (nearest != null) {
-            moveToShop(naverMap, nearest)
-        } else {
-            moveToShopsBounds(naverMap, shops)
         }
     }
 

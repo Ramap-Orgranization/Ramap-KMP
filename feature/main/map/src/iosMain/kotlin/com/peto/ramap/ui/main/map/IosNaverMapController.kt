@@ -24,6 +24,7 @@ import com.peto.ramap.ui.main.ShopTagMergeStrategy
 import com.peto.ramap.ui.main.map.config.CurrentLocationConfig
 import com.peto.ramap.ui.main.map.config.MapInteractionConfig
 import com.peto.ramap.ui.main.map.model.CameraPosition
+import com.peto.ramap.ui.main.map.model.PlaceFocusRequest
 import kotlinx.cinterop.BetaInteropApi
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.readValue
@@ -59,6 +60,7 @@ internal class IosNaverMapController(
         }
     private var clusterer = newClusterer()
     private var lastShopsKey = ""
+    private var lastPlaceFocusSequence: Long? = null
     private var lastFocusKey = ""
     private var hasFocusedCurrentLocation = false
     private var hasRestoredCameraPosition = false
@@ -112,7 +114,7 @@ internal class IosNaverMapController(
 
     fun updateFocus(
         shops: RamenShops,
-        focusNearestToCurrentLocation: Boolean,
+        focusFirstSearchResult: Boolean,
         focusRequestKey: Long,
         selectedShopId: String?,
     ): Boolean {
@@ -128,19 +130,17 @@ internal class IosNaverMapController(
                     },
                 right = 0.0,
             )
-        val location = currentLocation.takeIf { focusNearestToCurrentLocation }
         val key =
             shops.values.joinToString("|") { "${it.id}:${it.location.lat}:${it.location.lng}" } +
-                ":${location != null}:$focusRequestKey"
+                ":$focusFirstSearchResult:$focusRequestKey"
         if (shops.isEmpty()) return false
         if (key == lastFocusKey) return true
         lastFocusKey = key
         mapView.positionMode = NMFMyPositionNormal
 
-        val nearest = shops.nearestTo(location)
         when {
             shops.size == 1 -> moveToShop(shops.values.first())
-            nearest != null -> moveToShop(nearest)
+            focusFirstSearchResult -> moveToShop(shops.values.first())
             else -> {
                 val points = shops.values.map { NMGLatLng.latLngWithLat(it.location.lat, it.location.lng) }
                 val bounds = NMGLatLngBounds.latLngBoundsWithLatLngs(points)
@@ -223,6 +223,20 @@ internal class IosNaverMapController(
         mapView.removeCameraDelegate(this)
         mapView.removeLoadDelegate(this)
         locationManager?.removeDelegate(this)
+    }
+
+    fun focusPlace(request: PlaceFocusRequest) {
+        if (lastPlaceFocusSequence == request.sequence) return
+        lastPlaceFocusSequence = request.sequence
+        val location = request.location
+        mapView.positionMode = NMFMyPositionNormal
+        mapView.contentInset = UIEdgeInsetsMake(0.0, 0.0, 0.0, 0.0)
+        moveCamera(
+            NMFCameraUpdate.cameraUpdateWithScrollTo(
+                NMGLatLng.latLngWithLat(location.lat, location.lng),
+                zoomTo = request.zoom,
+            ),
+        )
     }
 
     private fun moveToShop(shop: RamenShop) {

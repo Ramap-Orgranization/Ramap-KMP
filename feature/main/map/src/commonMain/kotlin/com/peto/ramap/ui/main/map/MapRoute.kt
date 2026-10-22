@@ -76,6 +76,7 @@ fun MapRoute(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val selectedShopFocusRequest = uiState.selectedShopFocusRequest
+    val placeFocusRequest = uiState.placeFocusRequest
     val coroutineScope = rememberCoroutineScope()
     var shouldShowShopDetail by remember(requestedShopId, showShopDetail) { mutableStateOf(showShopDetail) }
     var shouldShowReviews by remember(requestedShopId, showReviewsOnOpen) { mutableStateOf(showReviewsOnOpen) }
@@ -137,6 +138,8 @@ fun MapRoute(
                 onDetailDismissed()
             },
             onQueryChanged = { viewModel.dispatch(OnQueryChanged(it)) },
+            onPlaceSelected = { viewModel.dispatch(MapIntent.OnPlaceSelected(it)) },
+            onPlaceFocusConsumed = { placeFocusRequest?.let { viewModel.dispatch(MapIntent.OnPlaceFocusConsumed(it)) } },
             onRecentSearchSelected = { viewModel.dispatch(OnRecentSearchSelected(it)) },
             onRecentSearchDeleted = { viewModel.dispatch(OnRecentSearchDeleted(it)) },
             onRecentSearchesCleared = { viewModel.dispatch(OnRecentSearchesCleared) },

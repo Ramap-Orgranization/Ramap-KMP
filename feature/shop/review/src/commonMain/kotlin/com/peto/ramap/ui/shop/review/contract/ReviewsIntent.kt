@@ -9,8 +9,6 @@ sealed interface ReviewsIntent : Intent {
         val shopId: String,
     ) : ReviewsIntent
 
-    data object OnDismissed : ReviewsIntent
-
     data object OnLoadMore : ReviewsIntent
 
     data object OnRetry : ReviewsIntent
