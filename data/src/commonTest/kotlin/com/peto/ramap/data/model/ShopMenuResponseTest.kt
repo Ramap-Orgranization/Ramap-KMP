@@ -1,9 +1,31 @@
 package com.peto.ramap.data.model
 
+import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class ShopMenuResponseTest {
+    @Test
+    fun `갱신일이 null이어도 등록된 메뉴를 유지한다`() {
+        val response =
+            Json.decodeFromString<ShopMenuResponse>(
+                """{"menu_sections":[{"id":"section","shop_id":"shop","title":"상시메뉴","display_order":0}],"menu_items":[{"id":"menu","section_id":"section","name":"쇼유라멘","display_order":0}],"menu_updated_at":null}""",
+            )
+
+        val menu = response.toDomain()
+
+        assertEquals(1, menu.itemCount)
+        assertEquals(
+            "쇼유라멘",
+            menu.sections
+                .single()
+                .items
+                .single()
+                .name,
+        )
+        assertEquals("", menu.updatedAt)
+    }
+
     @Test
     fun `메뉴 상세 필드와 항목 순서를 유지하고 빈 섹션 및 소속 없는 항목은 제외한다`() {
         val response =

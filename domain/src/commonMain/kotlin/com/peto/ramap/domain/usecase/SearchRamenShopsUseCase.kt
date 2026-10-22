@@ -1,6 +1,7 @@
 package com.peto.ramap.domain.usecase
 
 import com.peto.ramap.core.result.RamapResult
+import com.peto.ramap.domain.model.shop.Location
 import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.domain.model.shop.SearchQuery
 import com.peto.ramap.domain.repository.RamenShopRepository
@@ -9,10 +10,13 @@ import com.peto.ramap.domain.repository.RamenShopRepository
 class SearchRamenShopsUseCase(
     private val ramenShopRepository: RamenShopRepository,
 ) {
-    suspend operator fun invoke(query: SearchQuery): RamapResult<RamenShops> {
+    suspend operator fun invoke(
+        query: SearchQuery,
+        center: Location? = null,
+    ): RamapResult<RamenShops> {
         val normalized = query.normalizeShopSearchQuery()
         if (!normalized.isValidForShopSearch()) return RamapResult.Success(RamenShops(emptyMap()))
-        return ramenShopRepository.searchRamenShops(normalized, RESULT_LIMIT)
+        return ramenShopRepository.searchMapRamenShops(normalized, center, RESULT_LIMIT)
     }
 
     companion object {

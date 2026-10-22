@@ -3,6 +3,7 @@ package com.peto.ramap.fake
 import com.peto.ramap.core.result.RamapError
 import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.domain.model.event.ShopEvent
+import com.peto.ramap.domain.model.shop.Location
 import com.peto.ramap.domain.model.shop.MapBounds
 import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.domain.model.shop.SearchQuery
@@ -70,6 +71,7 @@ class FakeRamenShopRepository(
     val requestedShopIdsHistory = mutableListOf<Set<String>>()
     val requestedSearchQueries = mutableListOf<SearchQuery>()
     val requestedSearchLimits = mutableListOf<Int>()
+    val requestedSearchCenters = mutableListOf<Location?>()
 
     override suspend fun fetchRamenShops(bounds: MapBounds): RamapResult<RamenShops> {
         requestedBoundsHistory += bounds
@@ -90,5 +92,14 @@ class FakeRamenShopRepository(
         requestedSearchLimits += limit
         delay(searchDelayMillis)
         return error?.let { RamapResult.Error(it) } ?: RamapResult.Success(searchResult)
+    }
+
+    override suspend fun searchMapRamenShops(
+        query: SearchQuery,
+        center: Location?,
+        limit: Int,
+    ): RamapResult<RamenShops> {
+        requestedSearchCenters += center
+        return searchRamenShops(query, limit)
     }
 }

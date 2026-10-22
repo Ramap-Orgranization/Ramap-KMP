@@ -8,6 +8,9 @@ value class SearchQuery(
 ) {
     fun isValidForShopSearch(): Boolean = normalizeShopSearchQuery().value.length in SHOP_SEARCH_LENGTH
 
+    /** 표시용 원문을 보존하면서 공백 차이 없이 비교할 검색 키. */
+    fun comparisonKey(): String = normalizeShopSearchQuery().value.filterNot(Char::isWhitespace)
+
     /**
      * 검색 비교에 사용할 표준 형태의 검색어를 반환한다.
      *
@@ -45,6 +48,8 @@ value class SearchQuery(
         }
 
     companion object {
-        private val SHOP_SEARCH_LENGTH = 2..15
+        const val MIN_LENGTH = 1
+        const val MAX_LENGTH = 100
+        private val SHOP_SEARCH_LENGTH = MIN_LENGTH..MAX_LENGTH
     }
 }

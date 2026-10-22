@@ -15,6 +15,9 @@ internal data class PlaceSearchResultResponse(
     val kind: PlaceSearchResultKindResponse? = null,
     @SerialName("shop_id")
     val shopId: String? = null,
+    val zoom: Double? = null,
+    @SerialName("is_ambiguous_region")
+    val isAmbiguousRegion: Boolean = false,
 ) {
     fun toDomain(): PlaceSearchResult =
         PlaceSearchResult(
@@ -23,6 +26,8 @@ internal data class PlaceSearchResultResponse(
             location = Location(lat = lat, lng = lng),
             kind = kind.toDomain(),
             shopId = shopId,
+            zoom = zoom?.takeIf { it.isFinite() && it in 6.0..19.0 } ?: PlaceSearchResult.DEFAULT_ZOOM,
+            isAmbiguousRegion = isAmbiguousRegion,
         )
 
     private fun PlaceSearchResultKindResponse?.toDomain(): PlaceSearchResultKind =

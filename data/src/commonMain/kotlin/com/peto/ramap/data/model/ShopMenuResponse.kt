@@ -15,12 +15,12 @@ internal data class ShopMenuResponse(
     @SerialName("menu_items")
     val menuItems: List<MenuResponse> = emptyList(),
     @SerialName("menu_updated_at")
-    val menuUpdatedAt: String = "",
+    val menuUpdatedAt: String? = null,
 ) {
     fun toDomain(): ShopMenu =
         ShopMenu(
             sections = menuSections(menuSections, menuItems),
-            updatedAt = menuUpdatedAt,
+            updatedAt = menuUpdatedAt.orEmpty(),
         )
 
     private fun menuSections(

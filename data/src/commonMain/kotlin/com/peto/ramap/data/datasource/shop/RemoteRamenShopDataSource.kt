@@ -4,6 +4,7 @@ import com.peto.ramap.data.model.RamenShopResponse
 import com.peto.ramap.data.model.ShopEventParticipantResponse
 import com.peto.ramap.data.model.ShopEventResponse
 import com.peto.ramap.data.model.ShopOverviewResponse
+import com.peto.ramap.domain.model.shop.Location
 import com.peto.ramap.domain.model.shop.MapBounds
 import com.peto.ramap.domain.model.shop.SearchQuery
 import io.github.jan.supabase.SupabaseClient
@@ -108,6 +109,23 @@ internal class RemoteRamenShopDataSource(
                 limit(limit.toLong())
             }.decodeList()
     }
+
+    override suspend fun searchMapRamenShops(
+        query: SearchQuery,
+        center: Location?,
+        limit: Int,
+    ): List<RamenShopResponse> =
+        client.postgrest
+            .rpc(
+                function = "search_map_ramen_shops",
+                parameters =
+                    buildJsonObject {
+                        put("p_query", query.value)
+                        put("p_lat", center?.lat?.let(::JsonPrimitive) ?: JsonNull)
+                        put("p_lng", center?.lng?.let(::JsonPrimitive) ?: JsonNull)
+                        put("p_limit", limit)
+                    },
+            ).decodeList()
 
     companion object {
         private const val TABLE_NAME = "ramen_shops"
