@@ -2,8 +2,6 @@ package com.peto.ramap.domain.model.notice
 
 import com.peto.ramap.domain.model.businesshour.BusinessHours
 import com.peto.ramap.domain.model.businesshour.BusinessHoursDay
-import com.peto.ramap.domain.model.shop.AdministrativeArea
-import com.peto.ramap.domain.model.shop.AreaFilter
 import com.peto.ramap.fixture.ramenShopFixture
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalTime
@@ -24,15 +22,14 @@ class OperatingNoticeFeedTest {
     }
 
     @Test
-    fun `오늘 매장도 미래 공지를 예정에 표시하고 검색 지역 저장 조건을 모두 적용한다`() {
+    fun `오늘 매장도 미래 공지를 예정에 표시하고 검색과 저장 조건을 모두 적용한다`() {
         val today = notice("today")
         val future = notice("future").copy(startDate = LocalDate(2026, 10, 19), endDate = null)
         val other = future.copy(id = "other", shop = future.shop.copy(id = "other", name = "다른 매장"))
         val feed = feed(today, future, other)
         assertEquals(listOf("future", "other"), feed.representatives(true).map { it.id })
-        assertEquals(1, feed.representatives(false, "  RAMEN ", AreaFilter.Province(AdministrativeArea.SEOUL), setOf("shop")).size)
-        assertEquals(0, feed.representatives(false, "ramen", AreaFilter.Province(AdministrativeArea.BUSAN), setOf("shop")).size)
-        assertEquals(listOf("마포구"), feed.districts(AdministrativeArea.SEOUL))
+        assertEquals(1, feed.representatives(false, "  RAMEN ", setOf("shop")).size)
+        assertEquals(0, feed.representatives(false, "ramen", emptySet()).size)
     }
 
     @Test
@@ -150,7 +147,7 @@ class OperatingNoticeFeedTest {
         assertEquals(listOf(closure, future), feed.noticesForShopOn("shop", LocalDate(2026, 10, 19)))
     }
 
-    private fun feed(vararg notices: OperatingNotice) = OperatingNoticeFeed(date, notices.map { OperatingNoticeFeedItem(it, AdministrativeArea.SEOUL, "마포구") })
+    private fun feed(vararg notices: OperatingNotice) = OperatingNoticeFeed(date, notices.map { OperatingNoticeFeedItem(it) })
 
     private fun notice(
         id: String,

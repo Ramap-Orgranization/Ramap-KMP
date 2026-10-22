@@ -7,7 +7,6 @@ import com.peto.ramap.data.model.OperatingNoticeFeedResponse
 import com.peto.ramap.data.model.OperatingNoticeResponse
 import com.peto.ramap.data.model.OperatingNoticeShopResponse
 import com.peto.ramap.domain.model.notice.OperatingNoticeType
-import com.peto.ramap.domain.model.shop.AdministrativeArea
 import com.peto.ramap.fake.FakeRamenShopDataSource
 import com.peto.ramap.fixture.ramenShopResponseFixture
 import kotlinx.coroutines.test.runTest
@@ -70,7 +69,7 @@ class DefaultOperatingNoticeRepositoryTest {
         }
 
     @Test
-    fun `목록 조회는 서울 기준일과 canonical 유형 및 정규화 지역을 전달한다`() =
+    fun `목록 조회는 지역 필드 없이 서울 기준일과 canonical 유형을 전달한다`() =
         runTest {
             val today = Clock.System.todayIn(TimeZone.of("Asia/Seoul"))
             var requestedDate: LocalDate? = null
@@ -84,8 +83,6 @@ class DefaultOperatingNoticeRepositoryTest {
                                 OperatingNoticeFeedItemResponse(
                                     notice = response("planned", today.toString()).copy(noticeType = "early_close", noticeCategory = "planned_close", endTime = "16:00:00"),
                                     shop = OperatingNoticeShopResponse(id = "shop", name = "매장", lat = 37.0, lng = 127.0, createdAt = "", updatedAt = ""),
-                                    area = "SEOUL",
-                                    sigungu = "마포구",
                                 ),
                             ),
                         )
@@ -107,7 +104,6 @@ class DefaultOperatingNoticeRepositoryTest {
                     .single()
                     .notice.type,
             )
-            assertEquals(AdministrativeArea.SEOUL, feed.items.single().area)
         }
 
     private fun response(

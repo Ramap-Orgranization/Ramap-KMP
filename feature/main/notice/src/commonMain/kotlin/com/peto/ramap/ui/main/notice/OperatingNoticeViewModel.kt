@@ -42,7 +42,6 @@ class OperatingNoticeViewModel(
             is OperatingNoticeIntent.OnNoticeClicked -> operatingNoticeAnalytics.logNoticeSelected(intent.notice)
             is OperatingNoticeIntent.OnTabSelected -> reduce { copy(scheduledSelected = intent.scheduled) }
             is OperatingNoticeIntent.OnQueryChanged -> reduce { copy(query = intent.query) }
-            is OperatingNoticeIntent.OnAreaSelected -> reduce { copy(areaFilter = intent.area) }
             OperatingNoticeIntent.OnSavedToggled -> toggleSaved()
             OperatingNoticeIntent.OnPersonalizationRetried -> refreshPersonalization()
             OperatingNoticeIntent.OnRefreshed -> refreshOperatingNotices()
