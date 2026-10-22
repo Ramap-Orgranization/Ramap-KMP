@@ -36,13 +36,13 @@ https://place.map.kakao.com/853448086
 
 ## Registration gate
 
-`/db-add` is discovery-first. Shop input authorizes discovery and preview preparation; insert, update, profile-image upload, and snapshot persistence wait for explicit approval of that preview.
+`/db-add` is discovery-first. Shop input authorizes discovery and preview preparation; insert, update, profile-image upload, snapshot persistence, and menu-row registration wait for explicit approval of that preview.
 
 After read-only discovery, duplicate checks, and menu collection/review, show a registration preview. Collect the complete crawlable menu and prepare the ramen-scoped snapshot before displaying this preview; do not wait for registration approval to collect it. For each shop, include its batch index, official name, address, canonical map identifiers, normalized hours or a clearly marked missing schedule, categories, duplicate action (`create` or `update missing fields`), Instagram status, menu-source URL, and snapshot plan (`collected in preview; persist after shop write` or `no crawlable menu`). Coordinates remain an internal validation and database field; do not show them in the user-facing preview unless the user explicitly asks for diagnostics. For batches, show totals and one compact row per shop.
 
 Wait for explicit approval that identifies the preview, such as `1~10 등록 승인`, `2, 4번만 등록`, or `방금 미리보기 전부 승인`. Do not treat a shop list, a request to collect data, silence, or a menu approval as registration approval. If source data changes after the preview, show a new preview and require fresh approval.
 
-After approval, mutate only the approved rows, then persist and verify the already-collected immutable snapshot for every approved shop with a crawlable menu. Do not recollect unless the preview collection failed or the source changed. The same approval authorizes snapshot persistence; it never authorizes `menu-add` rows. Do not stop after creating shop rows or ask for another approval before persisting and verifying the planned snapshots. Complete those snapshots first, then show the separate menu-registration preview required by `menu-add`.
+Approval covers the shop rows, profile images, snapshots, and reviewed ramen-scoped menu objects shown in the registration preview unless the user limits its scope. After approval, mutate only the approved rows, then persist and verify the already-collected immutable snapshot for every approved shop with a crawlable menu. Do not recollect unless the preview collection failed or the source changed. Complete the planned snapshots, then invoke `menu-add` with the exact previewed menu objects under the same approval; do not request a separate menu approval.
 
 ### Registration preview format
 
@@ -67,7 +67,7 @@ Single-shop input uses the same workflow below. For two or more requests:
 3. Do read-only discovery in batches where the source/tool permits it. Before mutations, query existing `ramen_shops` rows for all resolved identifiers in chunks small enough for the active client; do not run a full-table name scan.
 4. Prepare ready rows in input order. One blocked or failed shop must not block unrelated ready shops. Do not parallelize conflicting writes to the same resolved shop identity.
 5. Group only decision-required items into one concise question. Include batch index, proposed official name/address, sources, and the exact ambiguity or hours conflict. Include unambiguous rows in the registration preview; do not register any row before approval.
-6. Before showing the registration preview, collect independent menus in batches of up to three shops, run `menu-collect-review`, and show one combined ramen-scoped snapshot preview. After registration approval, run Instagram-image upload and persist/verify one immutable snapshot per approved crawlable menu using those collected artifacts, then require explicit approval for that exact group before invoking `menu-add`. A menu approval is needed only for writing menu rows, not for collection or snapshot persistence.
+6. Before showing the registration preview, collect independent menus in batches of up to three shops, run `menu-collect-review`, and show one combined ramen-scoped snapshot preview. After registration approval, run Instagram-image upload and persist/verify one immutable snapshot per approved crawlable menu using those collected artifacts, then invoke `menu-add` for the approved group's previewed menu objects under the Registration gate above.
 
 Use chunks of up to 10 shops by default. For a larger list, finish and report each chunk before moving to the next; retain resolved, verified identifiers to avoid repeated discovery. Stop only for a systemic failure (for example, lost database access), a user decision that affects remaining rows, or an explicit user request to stop.
 
@@ -182,12 +182,12 @@ menu_items, menu_fingerprint, captured_at (default now())
    - `source_hash`: SHA-256 of `raw_dom`;
    - `menu_fingerprint`: SHA-256 of a deterministic JSON serialization of `menu_items` in DOM order.
 
-   Verify the inserted snapshot by `id`, item count, source URL, and hashes before reporting it as saved. If the insert fails, inspect the error and retry once; do not claim the snapshot was saved. Never replace or delete an earlier snapshot. Keep snapshot IDs, hashes, raw-item counts, parser versions, and source URLs internal unless the user asks for diagnostic details. User-facing progress should say only that the snapshot was saved, then present the same ramen-scoped menu approval preview already collected during registration preview.
-3. Show the ramen-scoped snapshot during registration preview and wait for the user's explicit approval of the registration preview before writing the shop. Saving the snapshot after shop write does not approve menu rows; a general approval to register the shop does not approve menu items.
-4. On approval, invoke `menu-add` with the exact approved menu objects. Let `menu-add` recheck the shop, sections, and items, write descriptions and image URLs atomically with each item, and verify `visible_shop_menu_items`.
+   Verify the inserted snapshot by `id`, item count, source URL, and hashes before reporting it as saved. If the insert fails, inspect the error and retry once; do not claim the snapshot was saved. Never replace or delete an earlier snapshot. Keep snapshot IDs, hashes, raw-item counts, parser versions, and source URLs internal unless the user asks for diagnostic details. User-facing progress should say only that the snapshot was saved, then continue with the approved menu registration.
+3. Show the ramen-scoped menu objects during the registration preview and apply the Registration gate above. State that approval includes those menu objects.
+4. After snapshot verification, invoke `menu-add` with the exact approved menu objects. Let `menu-add` recheck the shop, sections, and items, write descriptions and image URLs atomically with each item, and verify `visible_shop_menu_items`.
 5. If no usable crawlable menu page is available, finish the shop registration and report that no snapshot could be saved. Do not invent menu items or prices.
 
-Keep menu collection, snapshot persistence, and menu-row registration separate from shop identity, hours, categories, Instagram, and collector-list writes. `db-add` may update user-supplied shop categories, but menu rows must be written only through `menu-add` after the previewed snapshot receives explicit menu approval.
+Keep menu collection, snapshot persistence, and menu-row registration separate from shop identity, hours, categories, Instagram, and collector-list writes. `db-add` may update user-supplied shop categories; write menu rows only through `menu-add` using the approved registration preview's exact menu objects.
 
 ## Direct menu throughput
 
