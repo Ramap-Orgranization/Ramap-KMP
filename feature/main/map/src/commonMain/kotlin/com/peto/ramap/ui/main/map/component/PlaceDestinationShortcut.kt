@@ -28,6 +28,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.peto.ramap.designsystem.card.SectionCard
 import com.peto.ramap.designsystem.menu.AppDropdownMenu
+import com.peto.ramap.designsystem.menu.AppDropdownMenuItem
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.domain.model.place.PlaceSearchResult
 import com.peto.ramap.domain.model.place.PlaceSearchResults
@@ -89,8 +90,8 @@ internal fun PlaceDestinationShortcut(
                 }
                 AppText(
                     text = if (hasMultiplePlaces) firstPlace.name else firstPlace.address.ifBlank { firstPlace.name },
-                    style = AppTextStyle.B2,
-                    color = ChromaticColor.Blue400,
+                    style = AppTextStyle.B1,
+                    color = GrayColor.C500,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f),
@@ -112,13 +113,16 @@ internal fun PlaceDestinationShortcut(
                     .width(maxWidth)
                     .heightIn(max = 320.dp),
         ) {
-            PlaceDestinationList(
-                places = places,
-                onPlaceSelected = { place ->
-                    isMenuExpanded = false
-                    onPlaceSelected(place)
-                },
-            )
+            places.forEach { place ->
+                AppDropdownMenuItem(
+                    text = place.name,
+                    onClick = {
+                        isMenuExpanded = false
+                        onPlaceSelected(place)
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
         }
     }
 }

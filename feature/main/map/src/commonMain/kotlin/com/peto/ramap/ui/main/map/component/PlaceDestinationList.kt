@@ -57,8 +57,8 @@ internal fun PlaceDestinationList(
                     modifier = Modifier.weight(1f),
                     verticalArrangement = Arrangement.spacedBy(5.dp),
                 ) {
-                    AppText(text = place.name, style = AppTextStyle.T3, color = ChromaticColor.Blue400)
-                    AppText(text = place.address, style = AppTextStyle.B2, color = GrayColor.C300)
+                    AppText(text = place.name, style = AppTextStyle.B1, color = GrayColor.C500)
+                    AppText(text = place.address, style = AppTextStyle.B1, color = GrayColor.C500)
                 }
             }
             HorizontalDivider(thickness = 1.dp, color = GrayColor.C100)
