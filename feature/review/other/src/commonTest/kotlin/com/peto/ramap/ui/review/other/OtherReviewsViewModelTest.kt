@@ -1,6 +1,8 @@
 package com.peto.ramap.ui.review.other
 
 import app.cash.turbine.test
+import com.peto.ramap.core.result.RamapError
+import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.coroutinesTest
 import com.peto.ramap.domain.model.community.ProfileReview
 import com.peto.ramap.domain.model.community.ReviewAuthor
@@ -15,6 +17,11 @@ import com.peto.ramap.ui.review.other.contract.OtherReviewsIntent
 import com.peto.ramap.ui.review.other.contract.OtherReviewsTab
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runCurrent
+import ramap.shared.generated.resources.Res
+import ramap.shared.generated.resources.follow_update_failure_message
+import ramap.shared.generated.resources.login_required_block_description
+import ramap.shared.generated.resources.login_required_saved_shops_description
+import ramap.shared.generated.resources.review_block_failed
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -111,7 +118,7 @@ class OtherReviewsViewModelTest {
 
             viewModel.sideEffect.test {
                 viewModel.dispatch(OtherReviewsIntent.ToggleBlock)
-                assertEquals(OtherReviewsEffect.LoginRequired, awaitItem())
+                assertEquals(OtherReviewsEffect.LoginRequired(Res.string.login_required_block_description), awaitItem())
             }
             assertTrue(community.blockedUserIds.isEmpty())
         }
@@ -229,7 +236,7 @@ class OtherReviewsViewModelTest {
 
             viewModel.sideEffect.test {
                 viewModel.dispatch(OtherReviewsIntent.SelectTab(OtherReviewsTab.SavedShops))
-                assertEquals(OtherReviewsEffect.LoginRequired, awaitItem())
+                assertEquals(OtherReviewsEffect.LoginRequired(Res.string.login_required_saved_shops_description), awaitItem())
             }
 
             assertEquals(OtherReviewsTab.Reviews, viewModel.uiState.value.selectedTab)
@@ -404,10 +411,45 @@ class OtherReviewsViewModelTest {
             runCurrent()
 
             community.failNextBlock = true
-            viewModel.dispatch(OtherReviewsIntent.ToggleBlock)
-            runCurrent()
+            viewModel.sideEffect.test {
+                viewModel.dispatch(OtherReviewsIntent.ToggleBlock)
+                runCurrent()
+                val effect = awaitItem()
+                assertTrue(effect is OtherReviewsEffect.ShowToast)
+                assertEquals(Res.string.review_block_failed, effect.data.message)
+            }
             assertFalse(viewModel.uiState.value.isBlocked)
             assertEquals(1, viewModel.uiState.value.reviews.size)
+        }
+
+    @Test
+    fun `팔로우 변경 실패는 조회나 차단 실패와 구분해 안내한다`() =
+        coroutinesTest {
+            val community = FakeOtherReviewsCommunity()
+            val follows =
+                FakeFollowRepository().apply {
+                    changeResult = RamapResult.Error(RamapError.Http(500))
+                }
+            val viewModel =
+                OtherReviewsViewModel(
+                    community = community,
+                    profiles = FakeProfileRepository(),
+                    follows = follows,
+                    changes = FakeReviewChangeStore(),
+                    reviewChangeReducer = ReviewChangeReducer(),
+                )
+            viewModel.dispatch(OtherReviewsIntent.OpenProfile("author"))
+            runCurrent()
+
+            viewModel.sideEffect.test {
+                viewModel.dispatch(OtherReviewsIntent.ToggleFollow)
+                runCurrent()
+                val effect = awaitItem()
+                assertTrue(effect is OtherReviewsEffect.ShowToast)
+                assertEquals(Res.string.follow_update_failure_message, effect.data.message)
+                assertFalse(viewModel.uiState.value.following)
+                assertFalse(viewModel.uiState.value.isBlocked)
+            }
         }
 
     private fun review(number: Int) =

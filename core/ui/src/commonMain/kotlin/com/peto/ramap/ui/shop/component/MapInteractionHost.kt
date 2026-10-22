@@ -21,10 +21,12 @@ import com.peto.ramap.ui.base.ObserveAsEvents
 import com.peto.ramap.ui.shop.contract.ShopInteractionEffect
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.location_permission_settings_action
+import ramap.shared.generated.resources.login_required_description
 import ramap.shared.generated.resources.notification_permission_enable_message
 import ramap.shared.generated.resources.share_shop_chooser_title
 import ramap.shared.generated.resources.share_shop_message
@@ -42,15 +44,15 @@ fun MapInteractionHost(
     onNotificationToggled: (RamenShop) -> Unit,
     onLoginTypeSelected: (LoginType) -> Unit,
     onLoginDismissed: () -> Unit,
-    content: @Composable ((RamenShop) -> Unit, () -> Unit) -> Unit,
+    content: @Composable ((RamenShop) -> Unit, (StringResource) -> Unit) -> Unit,
 ) {
     val coroutineScope = rememberCoroutineScope()
-    var showLoginGuideDialog by remember { mutableStateOf(false) }
+    var loginGuideDescription by remember { mutableStateOf<StringResource?>(null) }
     val shareChooserTitle = stringResource(Res.string.share_shop_chooser_title)
     ObserveAsEvents(sideEffect) { effect ->
         when (effect) {
-            ShopInteractionEffect.ShowLoginGuide -> {
-                showLoginGuideDialog = true
+            is ShopInteractionEffect.ShowLoginGuide -> {
+                loginGuideDescription = effect.description
             }
             is ShopInteractionEffect.ShowToast ->
                 toastManager.show(
@@ -97,18 +99,19 @@ fun MapInteractionHost(
                 }
             }
         }
-    }) {
-        showLoginGuideDialog = true
+    }) { description ->
+        loginGuideDescription = description
     }
 
     LoginGuideDialog(
-        visible = showLoginGuideDialog,
+        visible = loginGuideDescription != null,
+        description = loginGuideDescription ?: Res.string.login_required_description,
         onDismiss = {
-            showLoginGuideDialog = false
+            loginGuideDescription = null
             onLoginDismissed()
         },
         onLoginTypeSelected = { type ->
-            showLoginGuideDialog = false
+            loginGuideDescription = null
             onLoginTypeSelected(type)
         },
         loginButton = { type, onClick -> LoginButton(type, onClick) },

@@ -24,8 +24,8 @@ import kotlinx.coroutines.launch
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.data_load_failure_message
 import ramap.shared.generated.resources.profile_save_failed
-import ramap.shared.generated.resources.review_action_failed
 import ramap.shared.generated.resources.review_blocked_users_empty
+import ramap.shared.generated.resources.review_unblock_failed
 
 class MyTabViewModel(
     private val repository: ProfileRepository,
@@ -181,7 +181,7 @@ class MyTabViewModel(
         postSideEffect(
             MyTabSideEffect.ShowToast(
                 ToastData(
-                    message = Res.string.review_action_failed,
+                    message = Res.string.review_unblock_failed,
                     type = ToastType.ERROR,
                 ),
             ),

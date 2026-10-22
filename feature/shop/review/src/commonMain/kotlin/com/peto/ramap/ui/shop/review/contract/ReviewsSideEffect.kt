@@ -5,7 +5,9 @@ import com.peto.ramap.ui.base.SideEffect
 import org.jetbrains.compose.resources.StringResource
 
 sealed interface ReviewsSideEffect : SideEffect {
-    data object ShowLoginGuide : ReviewsSideEffect
+    data class ShowLoginGuide(
+        val description: StringResource,
+    ) : ReviewsSideEffect
 
     data class ShowToast(
         val message: StringResource,

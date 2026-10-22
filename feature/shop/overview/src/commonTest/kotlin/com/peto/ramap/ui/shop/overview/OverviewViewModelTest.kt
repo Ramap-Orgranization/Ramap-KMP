@@ -1,6 +1,7 @@
 package com.peto.ramap.ui.shop.overview
 
 import androidx.lifecycle.viewModelScope
+import app.cash.turbine.test
 import com.peto.ramap.core.result.RamapError
 import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.coroutinesTest
@@ -8,7 +9,9 @@ import com.peto.ramap.domain.model.auth.LoginSessionState
 import com.peto.ramap.domain.model.auth.LoginType
 import com.peto.ramap.domain.model.shop.ShopOverView
 import com.peto.ramap.fixture.ramenShopFixture
+import com.peto.ramap.ui.shop.contract.ShopInteractionEffect
 import com.peto.ramap.ui.shop.overview.contract.ShopOverviewIntent
+import com.peto.ramap.ui.shop.overview.contract.ShopOverviewSideEffect
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.NonCancellable
@@ -16,6 +19,10 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.withContext
+import ramap.shared.generated.resources.Res
+import ramap.shared.generated.resources.login_required_bookmark_description
+import ramap.shared.generated.resources.login_required_hide_shop_description
+import ramap.shared.generated.resources.login_required_notification_description
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -23,6 +30,37 @@ import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class OverviewViewModelTest {
+    @Test
+    fun `저장과 숨김과 알림에는 선택한 작업에 맞는 로그인 이유를 전달한다`() =
+        coroutinesTest {
+            val fixture = OverviewViewModelFixture()
+            val shop = ramenShopFixture(id = "shop")
+            try {
+                runCurrent()
+                fixture.viewModel.sideEffect.test {
+                    val requests =
+                        listOf(
+                            ShopOverviewIntent.OnBookmarkToggled(shop) to Res.string.login_required_bookmark_description,
+                            ShopOverviewIntent.OnHiddenToggled(shop) to Res.string.login_required_hide_shop_description,
+                            ShopOverviewIntent.OnShopNotificationToggled(shop) to Res.string.login_required_notification_description,
+                        )
+                    for ((intent, description) in requests) {
+                        fixture.viewModel.dispatch(intent)
+                        runCurrent()
+                        assertEquals(
+                            ShopOverviewSideEffect.Interaction(ShopInteractionEffect.ShowLoginGuide(description)),
+                            awaitItem(),
+                        )
+                    }
+                    assertTrue(fixture.personalization.bookmarkUpdateRequests.isEmpty())
+                    val state = fixture.viewModel.uiState.value
+                    assertTrue(state.notificationShopIds.isEmpty())
+                }
+            } finally {
+                fixture.store.clear()
+            }
+        }
+
     @Test
     fun `로그인 상태로 상세를 열면 로그인 상태를 표시하고 한 번 조회한다`() =
         overviewScenario(initialSessionState = LoginSessionState.AUTHENTICATED) { fixture ->

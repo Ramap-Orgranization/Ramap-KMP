@@ -43,6 +43,8 @@ import com.peto.ramap.ui.main.ranking.contract.RankingSideEffect
 import com.peto.ramap.ui.main.ranking.contract.RankingUiState
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
+import ramap.shared.generated.resources.Res
+import ramap.shared.generated.resources.login_required_bookmark_description
 
 @Composable
 fun RankingRoute(
@@ -139,6 +141,7 @@ fun RankingRoute(
 
     LoginGuideDialog(
         visible = showLoginGuideDialog,
+        description = Res.string.login_required_bookmark_description,
         onDismiss = {
             showLoginGuideDialog = false
             viewModel.dispatch(RankingIntent.OnLoginSelectionDismissed)

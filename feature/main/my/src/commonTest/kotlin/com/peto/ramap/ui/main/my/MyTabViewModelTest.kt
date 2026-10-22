@@ -20,8 +20,8 @@ import kotlinx.coroutines.test.runCurrent
 import kotlinx.datetime.LocalDate
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.profile_save_failed
-import ramap.shared.generated.resources.review_action_failed
 import ramap.shared.generated.resources.review_blocked_users_empty
+import ramap.shared.generated.resources.review_unblock_failed
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -422,7 +422,7 @@ class MyTabViewModelTest {
 
                 val effect = awaitItem()
                 assertTrue(effect is MyTabSideEffect.ShowToast)
-                assertEquals(Res.string.review_action_failed, effect.data.message)
+                assertEquals(Res.string.review_unblock_failed, effect.data.message)
                 assertEquals(listOf(user), viewModel.uiState.value.blockedUsers)
                 assertEquals(1, viewModel.uiState.value.blockedUserCount)
                 assertEquals(user.profile, viewModel.uiState.value.pendingUnblockUser)

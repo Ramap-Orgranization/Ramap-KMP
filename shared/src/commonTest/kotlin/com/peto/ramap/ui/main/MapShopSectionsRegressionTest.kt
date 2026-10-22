@@ -107,6 +107,9 @@ import ramap.shared.generated.resources.data_load_failure_message
 import ramap.shared.generated.resources.hidden_shop_notification_unavailable_message
 import ramap.shared.generated.resources.hidden_shop_search_result_message
 import ramap.shared.generated.resources.hide_shop_success_message
+import ramap.shared.generated.resources.login_required_bookmark_description
+import ramap.shared.generated.resources.login_required_hide_shop_description
+import ramap.shared.generated.resources.login_required_saved_shops_description
 import ramap.shared.generated.resources.place_search_daily_limited_minutes
 import ramap.shared.generated.resources.place_search_rate_limited
 import ramap.shared.generated.resources.search_result_empty_message
@@ -1588,7 +1591,7 @@ class MapShopSectionsRegressionTest {
                 viewModel.dispatch(OnBookmarkedShopsToggled)
                 runCurrent()
 
-                assertEquals(ShowLoginGuide, awaitItem())
+                assertEquals(ShowLoginGuide(Res.string.login_required_saved_shops_description), awaitItem())
             }
         }
 
@@ -2844,7 +2847,7 @@ class MapShopSectionsRegressionTest {
                 viewModel.dispatch(OnBookmarkToggled(shop))
                 runCurrent()
 
-                assertEquals(ShowLoginGuide, awaitItem())
+                assertEquals(ShowLoginGuide(Res.string.login_required_bookmark_description), awaitItem())
             }
         }
 
@@ -3134,7 +3137,7 @@ class MapShopSectionsRegressionTest {
                 viewModel.dispatch(OnHiddenToggled(shop))
                 runCurrent()
 
-                assertEquals(ShowLoginGuide, awaitItem())
+                assertEquals(ShowLoginGuide(Res.string.login_required_hide_shop_description), awaitItem())
             }
         }
 

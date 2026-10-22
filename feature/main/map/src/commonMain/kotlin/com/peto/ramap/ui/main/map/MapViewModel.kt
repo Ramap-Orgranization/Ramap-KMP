@@ -79,6 +79,7 @@ import ramap.shared.generated.resources.hidden_shop_search_result_message
 import ramap.shared.generated.resources.kakao_login_failure_message
 import ramap.shared.generated.resources.location_permission_enable_message
 import ramap.shared.generated.resources.location_permission_settings_action
+import ramap.shared.generated.resources.login_required_saved_shops_description
 import ramap.shared.generated.resources.login_success_message
 import ramap.shared.generated.resources.search_result_empty_message
 import ramap.shared.generated.resources.search_result_hidden_only_message
@@ -431,7 +432,7 @@ class MapViewModel(
         } else {
             dismissShopDetail()
             pendingBookmarkedView = true
-            showInteraction(ShopInteractionEffect.ShowLoginGuide)
+            showInteraction(ShopInteractionEffect.ShowLoginGuide(Res.string.login_required_saved_shops_description))
         }
     }
 

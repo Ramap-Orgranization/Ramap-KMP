@@ -14,8 +14,11 @@ import com.peto.ramap.ui.shop.review.contract.ReviewsIntent
 import com.peto.ramap.ui.shop.review.contract.ReviewsSideEffect
 import com.peto.ramap.ui.shop.review.contract.ReviewsUiState
 import com.peto.ramap.ui.shop.review.model.ReviewActions
+import org.jetbrains.compose.resources.StringResource
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
+import ramap.shared.generated.resources.Res
+import ramap.shared.generated.resources.login_required_review_write_description
 
 @Composable
 fun ReviewsRoute(
@@ -24,7 +27,7 @@ fun ReviewsRoute(
     onReviewNavigate: (String) -> Unit,
     onOpenProfile: (String) -> Unit,
     onEditReview: (String, String) -> Unit,
-    onLoginGuideRequested: () -> Unit,
+    onLoginGuideRequested: (StringResource) -> Unit,
     onLoginRequired: () -> Unit,
     toastManager: ToastManager = koinInject(),
     viewModel: ReviewsViewModel = koinViewModel(),
@@ -41,9 +44,9 @@ fun ReviewsRoute(
 
     ObserveAsEvents(viewModel.sideEffect) { effect ->
         when (effect) {
-            ReviewsSideEffect.ShowLoginGuide -> {
+            is ReviewsSideEffect.ShowLoginGuide -> {
                 currentOnLoginRequired()
-                currentOnLoginGuideRequested()
+                currentOnLoginGuideRequested(effect.description)
             }
             is ReviewsSideEffect.ShowToast -> currentToastManager.show(ToastData(effect.message, effect.type))
         }
@@ -53,7 +56,7 @@ fun ReviewsRoute(
         uiState,
         ReviewActions(
             onWriteReviewClick = {
-                if (isLoggedIn) onReviewNavigate(shopId) else onLoginGuideRequested()
+                if (isLoggedIn) onReviewNavigate(shopId) else onLoginGuideRequested(Res.string.login_required_review_write_description)
             },
             onRetry = { viewModel.dispatch(ReviewsIntent.OnRetry) },
             onViewBlockedReview = { viewModel.dispatch(ReviewsIntent.OnBlockedReviewViewRequested(it)) },

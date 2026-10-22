@@ -52,7 +52,7 @@ fun OverviewRoute(
                 .mapNotNull { effect ->
                     when (effect) {
                         is ShopOverviewSideEffect.Interaction -> {
-                            if (effect.effect == ShopInteractionEffect.ShowLoginGuide) currentOnLoginGuideRequested()
+                            if (effect.effect is ShopInteractionEffect.ShowLoginGuide) currentOnLoginGuideRequested()
                             effect.effect
                         }
                         is ShopOverviewSideEffect.ShopViewed -> {
