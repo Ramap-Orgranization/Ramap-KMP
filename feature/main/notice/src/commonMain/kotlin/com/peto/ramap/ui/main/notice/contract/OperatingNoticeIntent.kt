@@ -2,6 +2,7 @@ package com.peto.ramap.ui.main.notice.contract
 
 import com.peto.ramap.domain.model.notice.OperatingNotice
 import com.peto.ramap.ui.base.Intent
+import com.peto.ramap.ui.main.notice.model.OperatingNoticeTab
 
 sealed interface OperatingNoticeIntent : Intent {
     data class OnNoticeClicked(
@@ -9,7 +10,7 @@ sealed interface OperatingNoticeIntent : Intent {
     ) : OperatingNoticeIntent
 
     data class OnTabSelected(
-        val scheduled: Boolean,
+        val tab: OperatingNoticeTab,
     ) : OperatingNoticeIntent
 
     data class OnQueryChanged(

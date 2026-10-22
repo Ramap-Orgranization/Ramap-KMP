@@ -7,6 +7,8 @@ import com.peto.ramap.domain.store.PersonalizationBootstrapState
 import com.peto.ramap.ui.base.State
 import com.peto.ramap.ui.loading.LoadState
 import com.peto.ramap.ui.loading.LoadableState
+import com.peto.ramap.ui.main.notice.model.OperatingNoticeSelection
+import com.peto.ramap.ui.main.notice.model.OperatingNoticeTab
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.todayIn
@@ -16,7 +18,7 @@ data class OperatingNoticeUiState(
     val todayOperatingNotices: List<OperatingNotice> = emptyList(),
     val scheduledOperatingNotices: List<OperatingNotice> = emptyList(),
     val feed: OperatingNoticeFeed? = null,
-    val scheduledSelected: Boolean = false,
+    val tab: OperatingNoticeTab = OperatingNoticeTab.TODAY,
     val query: String = "",
     val savedOnly: Boolean = false,
     val bookmarkedShopIds: Set<String> = emptySet(),

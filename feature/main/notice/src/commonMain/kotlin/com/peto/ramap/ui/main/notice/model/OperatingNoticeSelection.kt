@@ -1,4 +1,4 @@
-package com.peto.ramap.ui.main.notice.contract
+package com.peto.ramap.ui.main.notice.model
 
 import com.peto.ramap.domain.model.notice.OperatingNotice
 import kotlinx.datetime.LocalDate

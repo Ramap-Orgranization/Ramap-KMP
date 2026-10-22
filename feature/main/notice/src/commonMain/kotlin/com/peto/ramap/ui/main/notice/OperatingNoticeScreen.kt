@@ -42,7 +42,8 @@ import com.peto.ramap.ui.main.notice.component.OperatingNoticeDateHeader
 import com.peto.ramap.ui.main.notice.component.OperatingNoticeFilters
 import com.peto.ramap.ui.main.notice.component.OperatingNoticeSkeleton
 import com.peto.ramap.ui.main.notice.contract.OperatingNoticeUiState
-import com.peto.ramap.ui.main.notice.contract.OperatingNoticeSelection
+import com.peto.ramap.ui.main.notice.model.OperatingNoticeSelection
+import com.peto.ramap.ui.main.notice.model.OperatingNoticeTab
 import kotlinx.datetime.LocalDate
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
@@ -63,7 +64,7 @@ internal fun OperatingNoticeScreen(
     onRetry: () -> Unit,
     onShopClick: (String) -> Unit,
     onNoticeClick: (OperatingNotice) -> Unit,
-    onTabSelected: (Boolean) -> Unit = {},
+    onTabSelected: (OperatingNoticeTab) -> Unit = {},
     onQueryChanged: (String) -> Unit = {},
     onSavedToggled: () -> Unit = {},
     onPersonalizationRetry: () -> Unit = {},
@@ -130,7 +131,7 @@ internal fun OperatingNoticeScreen(
                             modifier = Modifier.fillMaxSize(),
                         )
 
-                    (if (uiState.scheduledSelected) uiState.scheduledShops else uiState.todayShops).isEmpty() ->
+                    (if (uiState.tab == OperatingNoticeTab.SCHEDULED) uiState.scheduledShops else uiState.todayShops).isEmpty() ->
                         ShopsEmptyContent(
                             title =
                                 stringResource(
@@ -149,7 +150,7 @@ internal fun OperatingNoticeScreen(
                                     onNoticeClick(notice)
                                     selectedNotice = uiState.selectNotice(notice, date)
                                 }
-                                if (uiState.scheduledSelected) {
+                                if (uiState.tab == OperatingNoticeTab.SCHEDULED) {
                                     uiState.scheduledGroups.forEach { (date, notices) ->
                                         item(key = "date:$date") { OperatingNoticeDateHeader(date) }
                                         addOperatingNoticeRows(
@@ -221,7 +222,7 @@ private fun OperatingNoticeScreenPreview(
 @Preview(name = "예정")
 @Composable
 private fun OperatingNoticeScheduledPreview() {
-    OperatingNoticePreviewContent(previewState(OperatingNoticePreviewParameterProvider().values.first()).copy(scheduledSelected = true))
+    OperatingNoticePreviewContent(previewState(OperatingNoticePreviewParameterProvider().values.first()).copy(tab = OperatingNoticeTab.SCHEDULED))
 }
 
 @Preview(name = "검색 결과 없음")

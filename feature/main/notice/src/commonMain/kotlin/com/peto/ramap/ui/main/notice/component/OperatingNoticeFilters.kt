@@ -15,12 +15,13 @@ import androidx.compose.ui.unit.dp
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.RamapTheme
 import com.peto.ramap.ui.main.notice.contract.OperatingNoticeUiState
+import com.peto.ramap.ui.main.notice.model.OperatingNoticeTab
 import com.peto.ramap.ui.main.notice.preview.OperatingNoticeUiStatePreviewParameterProvider
 
 @Composable
 internal fun OperatingNoticeFilters(
     uiState: OperatingNoticeUiState,
-    onTabSelected: (Boolean) -> Unit,
+    onTabSelected: (OperatingNoticeTab) -> Unit,
     onQueryChanged: (String) -> Unit,
     onSavedToggled: () -> Unit,
 ) {
@@ -44,7 +45,7 @@ internal fun OperatingNoticeFilters(
         )
     }
     OperatingNoticeTabs(
-        scheduledSelected = uiState.scheduledSelected,
+        selectedTab = uiState.tab,
         todayCount = uiState.todayCount,
         scheduledCount = uiState.scheduledCount,
         onTabSelected = onTabSelected,

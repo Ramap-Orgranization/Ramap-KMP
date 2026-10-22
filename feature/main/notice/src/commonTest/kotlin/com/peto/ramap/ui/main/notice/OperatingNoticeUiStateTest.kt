@@ -8,6 +8,7 @@ import com.peto.ramap.domain.model.personalization.Personalization
 import com.peto.ramap.domain.store.PersonalizationBootstrapState
 import com.peto.ramap.fixture.ramenShopFixture
 import com.peto.ramap.ui.main.notice.contract.OperatingNoticeUiState
+import com.peto.ramap.ui.main.notice.model.OperatingNoticeTab
 import kotlinx.datetime.LocalDate
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -64,7 +65,7 @@ class OperatingNoticeUiStateTest {
         assertEquals(setOf("today", "same-day"), selectedToday.notices.map { it.id }.toSet())
         assertEquals(listOf(future), selectedFuture.notices)
         assertEquals(next, selectedFuture.date)
-        val changed = state.copy(query = "다른", scheduledSelected = false, feed = OperatingNoticeFeed(today, emptyList()))
+        val changed = state.copy(query = "다른", tab = OperatingNoticeTab.TODAY, feed = OperatingNoticeFeed(today, emptyList()))
         assertEquals(emptyList(), changed.todayShops)
         assertEquals(listOf(future), selectedFuture.notices)
     }

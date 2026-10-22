@@ -7,6 +7,7 @@ import com.peto.ramap.domain.model.personalization.Personalization
 import com.peto.ramap.domain.store.PersonalizationBootstrapState
 import com.peto.ramap.preview.OperatingNoticePreviewParameterProvider
 import com.peto.ramap.ui.main.notice.contract.OperatingNoticeUiState
+import com.peto.ramap.ui.main.notice.model.OperatingNoticeTab
 import kotlinx.datetime.LocalDate
 
 class OperatingNoticeUiStatePreviewParameterProvider : PreviewParameterProvider<OperatingNoticeUiState> {
@@ -39,7 +40,7 @@ class OperatingNoticeUiStatePreviewParameterProvider : PreviewParameterProvider<
                         .map { it.notice.shop.id }
                         .toSet()
                 return base.copy(
-                    scheduledSelected = true,
+                    tab = OperatingNoticeTab.SCHEDULED,
                     query = "라멘",
                     savedOnly = true,
                     bookmarkedShopIds = bookmarkedShopIds,
