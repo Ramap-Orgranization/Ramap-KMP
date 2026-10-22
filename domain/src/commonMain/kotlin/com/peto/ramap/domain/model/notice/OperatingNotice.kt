@@ -41,10 +41,9 @@ data class OperatingNotice(
                 .sorted()
         }
         val lastDate = endDate ?: startDate
-        if (startDate == lastDate) return listOfNotNull(startDate.takeIf { it > referenceDate })
-        if (lastDate < referenceDate) return emptyList()
+        if (lastDate <= referenceDate) return emptyList()
         return buildList {
-            var scheduledDate = startDate
+            var scheduledDate = maxOf(startDate, referenceDate.plus(1, DateTimeUnit.DAY))
             while (scheduledDate <= lastDate) {
                 add(scheduledDate)
                 scheduledDate = scheduledDate.plus(1, DateTimeUnit.DAY)

@@ -28,7 +28,7 @@ class OperatingNoticeListKeysTest {
                 endTime = null,
                 sourceUrl = null,
             )
-        val feed = OperatingNoticeFeed(LocalDate(2026, 10, 18), listOf(OperatingNoticeFeedItem(closure)))
+        val feed = OperatingNoticeFeed(LocalDate(2026, 10, 9), listOf(OperatingNoticeFeedItem(closure)))
         val keys = mutableListOf<Any>()
         val scope =
             object : LazyListScope {
