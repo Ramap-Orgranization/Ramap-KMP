@@ -18,6 +18,8 @@ import com.peto.ramap.navigation.rememberNavigationState
 import com.peto.ramap.notification.NotificationDeepLinkParser
 import com.peto.ramap.notification.NotificationLaunchDispatcher
 import org.koin.compose.koinInject
+import ramap.shared.generated.resources.Res
+import ramap.shared.generated.resources.login_required_profile_description
 
 @Composable
 internal fun AppRoute(
@@ -80,6 +82,7 @@ internal fun AppRoute(
 
     LoginGuideDialog(
         visible = overlayState.showProfileLoginGuide,
+        description = Res.string.login_required_profile_description,
         onDismiss = {
             overlayState.showProfileLoginGuide = false
             overlayState.pendingProfileTarget = null

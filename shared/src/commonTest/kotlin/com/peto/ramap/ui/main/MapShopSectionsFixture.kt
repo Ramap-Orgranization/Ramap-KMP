@@ -111,7 +111,7 @@ class MapShopSectionsFixture(
                     reviewVm.sideEffect.collect { effect ->
                         effects.send(
                             when (effect) {
-                                ReviewsSideEffect.ShowLoginGuide -> ShopInteractionEffect.ShowLoginGuide
+                                is ReviewsSideEffect.ShowLoginGuide -> ShopInteractionEffect.ShowLoginGuide(effect.description)
                                 is ReviewsSideEffect.ShowToast ->
                                     ShopInteractionEffect.ShowToast(
                                         com.peto.ramap.designsystem.toast.model

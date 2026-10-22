@@ -70,6 +70,7 @@ import com.peto.ramap.ui.review.other.contract.OtherReviewsIntent
 import com.peto.ramap.ui.review.other.contract.OtherReviewsLoadKey
 import com.peto.ramap.ui.review.other.contract.OtherReviewsTab
 import com.peto.ramap.ui.review.other.contract.OtherReviewsUiState
+import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
@@ -80,6 +81,7 @@ import ramap.shared.generated.resources.follow_content_private
 import ramap.shared.generated.resources.follow_followers
 import ramap.shared.generated.resources.follow_following
 import ramap.shared.generated.resources.ic_profile_blocked
+import ramap.shared.generated.resources.login_required_description
 import ramap.shared.generated.resources.review_blocked_empty
 import ramap.shared.generated.resources.review_profile_private
 import ramap.shared.generated.resources.review_profile_title
@@ -99,11 +101,11 @@ fun OtherReviewsRoute(
     toastManager: ToastManager = koinInject(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-    var showLoginGuide by remember { mutableStateOf(false) }
+    var loginGuideDescription by remember { mutableStateOf<StringResource?>(null) }
     var selectedShopId by rememberSaveable(userId) { mutableStateOf<String?>(null) }
     ObserveAsEvents(viewModel.sideEffect) { effect ->
         when (effect) {
-            OtherReviewsEffect.LoginRequired -> showLoginGuide = true
+            is OtherReviewsEffect.LoginRequired -> loginGuideDescription = effect.description
             is OtherReviewsEffect.ShowToast -> toastManager.show(effect.data)
         }
     }
@@ -133,10 +135,11 @@ fun OtherReviewsRoute(
         }
     }
     LoginGuideDialog(
-        visible = showLoginGuide,
-        onDismiss = { showLoginGuide = false },
+        visible = loginGuideDescription != null,
+        description = loginGuideDescription ?: Res.string.login_required_description,
+        onDismiss = { loginGuideDescription = null },
         onLoginTypeSelected = { type ->
-            showLoginGuide = false
+            loginGuideDescription = null
             onLoginTypeSelected(type)
         },
         loginButton = { type, onClick -> LoginButton(type, onClick) },

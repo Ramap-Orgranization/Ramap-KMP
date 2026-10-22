@@ -27,8 +27,8 @@ import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 import ramap.shared.generated.resources.Res
-import ramap.shared.generated.resources.profile_visibility_private
-import ramap.shared.generated.resources.profile_visibility_public
+import ramap.shared.generated.resources.review_private_profile_confirm_private
+import ramap.shared.generated.resources.review_private_profile_confirm_public
 import ramap.shared.generated.resources.review_private_profile_confirmation
 import ramap.shared.generated.resources.review_private_profile_confirmation_title
 import ramap.shared.generated.resources.review_retry
@@ -89,8 +89,8 @@ fun ShopReviewWriteRoute(
     )
     CommonDialog(
         visible = uiState.showPrivateProfileConfirmation,
-        confirmText = stringResource(Res.string.profile_visibility_public),
-        dismissText = stringResource(Res.string.profile_visibility_private),
+        confirmText = stringResource(Res.string.review_private_profile_confirm_public),
+        dismissText = stringResource(Res.string.review_private_profile_confirm_private),
         onDismissRequest = { viewModel.dispatch(ReviewWriteIntent.CancelPrivateProfileConfirmation) },
         onDismiss = { viewModel.dispatch(ReviewWriteIntent.ConfirmSubmitWithPrivateProfile) },
         onConfirm = { viewModel.dispatch(ReviewWriteIntent.ConfirmSubmitWithPublicProfile) },

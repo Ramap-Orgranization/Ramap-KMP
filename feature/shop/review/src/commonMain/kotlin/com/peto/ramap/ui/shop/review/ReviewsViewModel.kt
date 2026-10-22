@@ -30,10 +30,15 @@ import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.StringResource
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.data_load_failure_message
+import ramap.shared.generated.resources.login_required_review_like_description
+import ramap.shared.generated.resources.login_required_review_report_description
 import ramap.shared.generated.resources.review_action_failed
 import ramap.shared.generated.resources.review_action_success
 import ramap.shared.generated.resources.review_delete_failed
 import ramap.shared.generated.resources.review_like_failed
+import ramap.shared.generated.resources.review_report_failed
+import ramap.shared.generated.resources.review_unblock_failed
+import ramap.shared.generated.resources.review_unblock_success
 
 class ReviewsViewModel(
     private val reviewRepository: ReviewRepository,
@@ -233,14 +238,14 @@ class ReviewsViewModel(
                 if (isInactive) return@launchResultTask
                 cancelTask(REVEAL_TASK_KEY)
                 reduce { clearAccess() }
-                showToast(Res.string.review_action_success)
+                showToast(Res.string.review_unblock_success)
                 loadPage(append = false)
             },
             onError = {
                 val isActiveContext = currentCoroutineContext().isActive
                 if (isActiveContext) {
                     reduce { copy(pendingUnblockReview = null) }
-                    showToast(Res.string.review_action_failed, ToastType.ERROR)
+                    showToast(Res.string.review_unblock_failed, ToastType.ERROR)
                 }
             },
         )
@@ -252,7 +257,7 @@ class ReviewsViewModel(
         if (isDifferentShop || cannotLike) return
         val isLoggedOut = currentState.currentUserId == null
         if (isLoggedOut) {
-            trySideEffect(ReviewsSideEffect.ShowLoginGuide)
+            trySideEffect(ReviewsSideEffect.ShowLoginGuide(Res.string.login_required_review_like_description))
             return
         }
         val next = review.toggledLike()
@@ -306,7 +311,7 @@ class ReviewsViewModel(
     private fun requestReport(review: Review) {
         val isLoggedOut = !currentState.isLoggedIn
         if (isLoggedOut) {
-            trySideEffect(ReviewsSideEffect.ShowLoginGuide)
+            trySideEffect(ReviewsSideEffect.ShowLoginGuide(Res.string.login_required_review_report_description))
             return
         }
         val isDifferentShop = review.shopId != currentState.shopId
@@ -341,7 +346,7 @@ class ReviewsViewModel(
             },
             onError = {
                 val isActiveTargetReview = currentCoroutineContext().isActive && currentState.reportReview?.id == review.id
-                if (isActiveTargetReview) showToast(Res.string.review_action_failed, ToastType.ERROR)
+                if (isActiveTargetReview) showToast(Res.string.review_report_failed, ToastType.ERROR)
             },
         )
     }

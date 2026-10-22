@@ -58,6 +58,9 @@ import ramap.shared.generated.resources.data_load_failure_message
 import ramap.shared.generated.resources.hidden_shop_notification_unavailable_message
 import ramap.shared.generated.resources.hide_shop_success_message
 import ramap.shared.generated.resources.kakao_login_failure_message
+import ramap.shared.generated.resources.login_required_bookmark_description
+import ramap.shared.generated.resources.login_required_hide_shop_description
+import ramap.shared.generated.resources.login_required_notification_description
 import ramap.shared.generated.resources.login_success_message
 import ramap.shared.generated.resources.personalization_update_failure_message
 import ramap.shared.generated.resources.shop_information_report_failure_message
@@ -459,7 +462,7 @@ class OverviewViewModel(
     private fun requireLogin(action: PendingShopAction): Boolean {
         if (currentState.isLoggedIn) return false
         pendingShopAction = action
-        requestLoginGuide()
+        requestLoginGuide(action)
         return true
     }
 
@@ -480,8 +483,16 @@ class OverviewViewModel(
         }
     }
 
-    private fun requestLoginGuide() {
-        viewModelScope.launch { postSideEffect(ShopOverviewSideEffect.Interaction(ShowLoginGuide)) }
+    private fun requestLoginGuide(action: PendingShopAction) {
+        val description =
+            when (action) {
+                is PendingShopAction.ToggleBookmark -> Res.string.login_required_bookmark_description
+                is PendingShopAction.ToggleShopNotification -> Res.string.login_required_notification_description
+                is PendingShopAction.ToggleHidden -> Res.string.login_required_hide_shop_description
+            }
+        viewModelScope.launch {
+            postSideEffect(ShopOverviewSideEffect.Interaction(ShowLoginGuide(description)))
+        }
     }
 
     private fun currentSheetShopId(): String? =
