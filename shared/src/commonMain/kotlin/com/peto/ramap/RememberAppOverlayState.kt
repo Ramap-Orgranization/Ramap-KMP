@@ -1,6 +1,7 @@
 package com.peto.ramap
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -11,6 +12,7 @@ import com.peto.ramap.domain.model.auth.LoginSessionState
 import com.peto.ramap.domain.repository.LoginRepository
 import com.peto.ramap.domain.usecase.SignInUseCase
 import com.peto.ramap.navigation.NavigationState
+import com.peto.ramap.ui.login.LoginGuideController
 import kotlinx.coroutines.CoroutineScope
 import org.koin.compose.koinInject
 
@@ -20,6 +22,7 @@ internal fun rememberAppOverlayState(
     toastManager: ToastManager,
     loginRepository: LoginRepository = koinInject(),
     signInUseCase: SignInUseCase = koinInject(),
+    loginGuideController: LoginGuideController = koinInject(),
     coroutineScope: CoroutineScope = rememberCoroutineScope(),
 ): OverlayState {
     val sessionState by loginRepository.session.collectAsStateWithLifecycle(
@@ -31,21 +34,26 @@ internal fun rememberAppOverlayState(
             },
     )
     val overlayState =
-        remember(loginRepository, navigationState, signInUseCase, toastManager, coroutineScope) {
+        remember(loginRepository, navigationState, signInUseCase, toastManager, coroutineScope, loginGuideController) {
             OverlayState(
                 loginRepository = loginRepository,
                 navigationState = navigationState,
                 signInUseCase = signInUseCase,
                 toastManager = toastManager,
                 coroutineScope = coroutineScope,
+                loginGuideController = loginGuideController,
             )
         }
+
+    DisposableEffect(overlayState) {
+        onDispose { overlayState.dismissLoginGuide() }
+    }
 
     LaunchedEffect(sessionState, overlayState.pendingProfileTarget) {
         if (sessionState != LoginSessionState.AUTHENTICATED) return@LaunchedEffect
         val (userId, asOverlay) = overlayState.pendingProfileTarget ?: return@LaunchedEffect
         overlayState.pendingProfileTarget = null
-        overlayState.showProfileLoginGuide = false
+        overlayState.dismissLoginGuide()
         overlayState.openProfile(userId, asOverlay)
     }
 

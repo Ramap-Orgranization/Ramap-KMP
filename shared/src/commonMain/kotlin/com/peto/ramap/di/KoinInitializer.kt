@@ -6,6 +6,7 @@ import com.peto.ramap.data.usecase.di.useCaseModule
 import com.peto.ramap.designsystem.di.designSystemModule
 import com.peto.ramap.network.di.networkModule
 import com.peto.ramap.notification.di.notificationModule
+import com.peto.ramap.ui.di.uiModule
 import org.koin.core.context.startKoin
 import org.koin.dsl.KoinAppDeclaration
 
@@ -16,6 +17,7 @@ fun initKoin(appDeclaration: KoinAppDeclaration = {}) {
             appModule,
             networkModule,
             designSystemModule,
+            uiModule,
             platformModule,
             dataSourceModule,
             repositoryModule,

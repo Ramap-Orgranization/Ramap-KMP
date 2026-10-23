@@ -12,11 +12,13 @@ import com.peto.ramap.domain.model.auth.LoginType
 import com.peto.ramap.domain.repository.LoginRepository
 import com.peto.ramap.domain.usecase.SignInUseCase
 import com.peto.ramap.navigation.NavigationState
+import com.peto.ramap.ui.login.LoginGuideController
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.apple_login_failure_message
 import ramap.shared.generated.resources.kakao_login_failure_message
+import ramap.shared.generated.resources.login_required_profile_description
 import ramap.shared.generated.resources.login_success_message
 
 internal class OverlayState(
@@ -25,11 +27,11 @@ internal class OverlayState(
     private val signInUseCase: SignInUseCase,
     private val toastManager: ToastManager,
     private val coroutineScope: CoroutineScope,
+    private val loginGuideController: LoginGuideController,
 ) {
     var overlayProfileUserId by mutableStateOf<String?>(null)
     var overlayReviewWriteArgs by mutableStateOf<Pair<String, String?>?>(null)
     var pendingProfileTarget by mutableStateOf<Pair<String, Boolean>?>(null)
-    var showProfileLoginGuide by mutableStateOf(false)
 
     val isOverlayActive: Boolean
         get() = overlayProfileUserId != null || overlayReviewWriteArgs != null
@@ -41,7 +43,12 @@ internal class OverlayState(
         if (userId.isBlank()) return
         if (!loginRepository.hasSession()) {
             pendingProfileTarget = userId to asOverlay
-            showProfileLoginGuide = true
+            loginGuideController.show(
+                owner = this,
+                description = Res.string.login_required_profile_description,
+                onLoginTypeSelected = ::signIn,
+                onDismiss = { pendingProfileTarget = null },
+            )
             return
         }
         if (asOverlay) {
@@ -49,6 +56,10 @@ internal class OverlayState(
         } else {
             navigationState.showOtherReviews(userId)
         }
+    }
+
+    fun dismissLoginGuide() {
+        loginGuideController.cancel(this)
     }
 
     fun signIn(type: LoginType) {
