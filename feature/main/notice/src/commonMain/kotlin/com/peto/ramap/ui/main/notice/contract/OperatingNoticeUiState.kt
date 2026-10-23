@@ -8,7 +8,6 @@ import com.peto.ramap.ui.base.State
 import com.peto.ramap.ui.loading.LoadState
 import com.peto.ramap.ui.loading.LoadableState
 import com.peto.ramap.ui.main.notice.model.OperatingNoticeSelection
-import com.peto.ramap.ui.main.notice.model.OperatingNoticeTab
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.todayIn
@@ -18,7 +17,8 @@ data class OperatingNoticeUiState(
     val todayOperatingNotices: List<OperatingNotice> = emptyList(),
     val scheduledOperatingNotices: List<OperatingNotice> = emptyList(),
     val feed: OperatingNoticeFeed? = null,
-    val tab: OperatingNoticeTab = OperatingNoticeTab.TODAY,
+    val savedFilterError: Boolean = false,
+    val showLoginGuide: Boolean = false,
     val query: String = "",
     val savedOnly: Boolean = false,
     val bookmarkedShopIds: Set<String> = emptySet(),
@@ -78,6 +78,13 @@ data class OperatingNoticeUiState(
         notice: OperatingNotice,
         date: LocalDate,
     ): OperatingNoticeSelection = OperatingNoticeSelection(notice, date, noticeFeed.noticesForShopOn(notice.shop.id, date))
+
+    fun selectScheduledNotice(notice: OperatingNotice): OperatingNoticeSelection =
+        OperatingNoticeSelection(
+            notice = notice,
+            date = null,
+            notices = noticeFeed.scheduledNoticesForShop(notice.shop.id),
+        )
 
     override fun withLoadingState(loadState: LoadState): OperatingNoticeUiState = copy(loadState = loadState)
 }

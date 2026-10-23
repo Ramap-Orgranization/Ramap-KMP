@@ -4,12 +4,17 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
@@ -28,6 +33,7 @@ import androidx.navigationevent.compose.NavigationBackHandler
 import androidx.navigationevent.compose.rememberNavigationEventState
 import com.peto.ramap.designsystem.button.AppFloatingActionButton
 import com.peto.ramap.designsystem.component.LoadErrorContent
+import com.peto.ramap.designsystem.component.NewsFilters
 import com.peto.ramap.designsystem.component.ShopsEmptyContent
 import com.peto.ramap.designsystem.notice.OperatingNoticeBottomSheet
 import com.peto.ramap.domain.model.notice.OperatingNotice
@@ -38,12 +44,10 @@ import com.peto.ramap.preview.OperatingNoticePreviewParameterProvider
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.RamapTheme
 import com.peto.ramap.ui.main.notice.component.OngoingOperatingNoticeShop
-import com.peto.ramap.ui.main.notice.component.OperatingNoticeDateHeader
-import com.peto.ramap.ui.main.notice.component.OperatingNoticeFilters
+import com.peto.ramap.ui.main.notice.component.OperatingNoticeSectionTitle
 import com.peto.ramap.ui.main.notice.component.OperatingNoticeSkeleton
 import com.peto.ramap.ui.main.notice.contract.OperatingNoticeUiState
 import com.peto.ramap.ui.main.notice.model.OperatingNoticeSelection
-import com.peto.ramap.ui.main.notice.model.OperatingNoticeTab
 import kotlinx.datetime.LocalDate
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
@@ -53,6 +57,8 @@ import ramap.shared.generated.resources.laduck_error_crying
 import ramap.shared.generated.resources.operating_notice_empty
 import ramap.shared.generated.resources.operating_notice_error_description
 import ramap.shared.generated.resources.operating_notice_error_title
+import ramap.shared.generated.resources.operating_notice_scheduled_section
+import ramap.shared.generated.resources.operating_notice_today_section
 import ramap.shared.generated.resources.search_result_empty_message
 
 @Composable
@@ -64,13 +70,14 @@ internal fun OperatingNoticeScreen(
     onRetry: () -> Unit,
     onShopClick: (String) -> Unit,
     onNoticeClick: (OperatingNotice) -> Unit,
-    onTabSelected: (OperatingNoticeTab) -> Unit = {},
     onQueryChanged: (String) -> Unit = {},
     onSavedToggled: () -> Unit = {},
     onPersonalizationRetry: () -> Unit = {},
     isSourceUrlSupported: (String) -> Boolean,
     onSourceClick: (String) -> Unit,
 ) {
+    val todayTitle = stringResource(Res.string.operating_notice_today_section)
+    val scheduledTitle = stringResource(Res.string.operating_notice_scheduled_section)
     val backEventState = rememberNavigationEventState<NavigationEventInfo>(NavigationEventInfo.None)
     val pullToRefreshState = rememberPullToRefreshState()
     var selectedNotice by remember { mutableStateOf<OperatingNoticeSelection?>(null) }
@@ -87,9 +94,9 @@ internal fun OperatingNoticeScreen(
                 .background(CommonColor.White)
                 .statusBarsPadding(),
     ) {
-        OperatingNoticeFilters(
-            uiState = uiState,
-            onTabSelected = onTabSelected,
+        NewsFilters(
+            query = uiState.query,
+            savedOnly = uiState.savedOnly,
             onQueryChanged = onQueryChanged,
             onSavedToggled = onSavedToggled,
         )
@@ -122,7 +129,7 @@ internal fun OperatingNoticeScreen(
 
                     uiState.savedOnly && uiState.personalizationState == PersonalizationBootstrapState.Loading ->
                         OperatingNoticeSkeleton(Modifier.fillMaxSize())
-                    uiState.savedOnly && uiState.personalizationState == PersonalizationBootstrapState.Error ->
+                    uiState.savedFilterError || (uiState.savedOnly && uiState.personalizationState == PersonalizationBootstrapState.Error) ->
                         LoadErrorContent(
                             image = Res.drawable.laduck_error_crying,
                             title = stringResource(Res.string.operating_notice_error_title),
@@ -131,7 +138,7 @@ internal fun OperatingNoticeScreen(
                             modifier = Modifier.fillMaxSize(),
                         )
 
-                    (if (uiState.tab == OperatingNoticeTab.SCHEDULED) uiState.scheduledShops else uiState.todayShops).isEmpty() ->
+                    uiState.todayShops.isEmpty() && uiState.scheduledShops.isEmpty() ->
                         ShopsEmptyContent(
                             title =
                                 stringResource(
@@ -144,30 +151,27 @@ internal fun OperatingNoticeScreen(
                         Box {
                             LazyColumn(
                                 modifier = Modifier.fillMaxSize(),
-                                verticalArrangement = Arrangement.Top,
+                                contentPadding = PaddingValues(vertical = 16.dp),
+                                verticalArrangement = Arrangement.spacedBy(10.dp),
                             ) {
-                                val onSelected: (OperatingNotice, LocalDate) -> Unit = { notice, date ->
-                                    onNoticeClick(notice)
-                                    selectedNotice = uiState.selectNotice(notice, date)
-                                }
-                                if (uiState.tab == OperatingNoticeTab.SCHEDULED) {
-                                    uiState.scheduledGroups.forEach { (date, notices) ->
-                                        item(key = "date:$date") { OperatingNoticeDateHeader(date) }
-                                        addOperatingNoticeRows(
-                                            scope = this,
-                                            notices = notices,
-                                            date = date,
-                                            onSelected = onSelected,
-                                        )
-                                    }
-                                } else {
-                                    addOperatingNoticeRows(
-                                        scope = this,
-                                        notices = uiState.todayShops,
-                                        date = uiState.referenceDate,
-                                        onSelected = onSelected,
-                                    )
-                                }
+                                addNoticeSection(
+                                    listScope = this,
+                                    title = todayTitle,
+                                    notices = uiState.todayShops,
+                                    onNoticeClick = { notice ->
+                                        onNoticeClick(notice)
+                                        selectedNotice = uiState.selectNotice(notice, uiState.referenceDate)
+                                    },
+                                )
+                                addNoticeSection(
+                                    listScope = this,
+                                    title = scheduledTitle,
+                                    notices = uiState.scheduledShops,
+                                    onNoticeClick = { notice ->
+                                        onNoticeClick(notice)
+                                        selectedNotice = uiState.selectScheduledNotice(notice)
+                                    },
+                                )
                             }
                         }
                 }
@@ -196,17 +200,27 @@ internal fun OperatingNoticeScreen(
     }
 }
 
-internal fun addOperatingNoticeRows(
-    scope: LazyListScope,
+private fun addNoticeSection(
+    listScope: LazyListScope,
+    title: String,
     notices: List<OperatingNotice>,
-    date: LocalDate,
-    onSelected: (OperatingNotice, LocalDate) -> Unit,
+    onNoticeClick: (OperatingNotice) -> Unit,
 ) {
-    scope.items(notices, key = { "shop:$date:${it.shop.id}" }) { notice ->
-        OngoingOperatingNoticeShop(
-            notice = notice,
-            onClick = { onSelected(notice, date) },
-        )
+    if (notices.isEmpty()) return
+    listScope.item {
+        OperatingNoticeSectionTitle(title = title, modifier = Modifier.padding(horizontal = 16.dp))
+    }
+    listScope.item {
+        FlowRow(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 5.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterHorizontally),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            notices.forEach { notice ->
+                OngoingOperatingNoticeShop(notice = notice, onClick = { onNoticeClick(notice) })
+            }
+            repeat(10) { Spacer(modifier = Modifier.width(72.dp).height(0.dp)) }
+        }
     }
 }
 
@@ -222,7 +236,7 @@ private fun OperatingNoticeScreenPreview(
 @Preview(name = "예정")
 @Composable
 private fun OperatingNoticeScheduledPreview() {
-    OperatingNoticePreviewContent(previewState(OperatingNoticePreviewParameterProvider().values.first()).copy(tab = OperatingNoticeTab.SCHEDULED))
+    OperatingNoticePreviewContent(previewState(OperatingNoticePreviewParameterProvider().values.first()))
 }
 
 @Preview(name = "검색 결과 없음")

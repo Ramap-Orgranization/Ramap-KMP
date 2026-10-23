@@ -48,7 +48,7 @@ class OperatingNoticeScreenTest {
     }
 
     @Test
-    fun `오늘과 예정 탭을 누르면 해당 날짜의 매장만 표시하고 오늘로 돌아온다`() =
+    fun `오늘과 예정 섹션의 매장을 함께 표시하고 지난 공지는 제외한다`() =
         runComposeUiTest {
             state =
                 state(
@@ -58,41 +58,21 @@ class OperatingNoticeScreenTest {
                 )
             setContent { content() }
 
+            onNodeWithText("오늘의 운영 변동").assertExists()
+            onNodeWithText("예정된 운영 변동").assertExists()
             onNodeWithText("오늘 매장").assertExists()
-            onNodeWithText("예정 매장").assertDoesNotExist()
-            onNodeWithText("지난 매장").assertDoesNotExist()
-            onNodeWithText("전국").assertDoesNotExist()
-
-            onNodeWithText("예정(1)").performClick()
-
             onNodeWithText("예정 매장").assertExists()
-            onNodeWithText("오늘 매장").assertDoesNotExist()
             onNodeWithText("지난 매장").assertDoesNotExist()
-            onNodeWithText("10.23", substring = true).assertExists()
-
-            onNodeWithText("오늘(1)").performClick()
-
-            onNodeWithText("오늘 매장").assertExists()
-            onNodeWithText("예정 매장").assertDoesNotExist()
+            onNodeWithText("오늘(1)").assertDoesNotExist()
             onNodeWithText("10.23", substring = true).assertDoesNotExist()
         }
 
     @Test
-    fun `예정 공지가 없으면 오늘 공지를 섞지 않고 빈 안내를 표시한다`() =
+    fun `전체 공지가 없으면 기존 빈 안내를 표시한다`() =
         runComposeUiTest {
-            state = state(notice("오늘 매장", today))
+            state = state()
             setContent { content() }
-
-            onNodeWithText("오늘 매장").assertExists()
-            onNodeWithText("예정(0)").performClick()
-
             onNodeWithText("현재 또는 예정된 영업 변동이 없어요").assertExists()
-            onNodeWithText("오늘 매장").assertDoesNotExist()
-
-            onNodeWithText("오늘(1)").performClick()
-
-            onNodeWithText("오늘 매장").assertExists()
-            onNodeWithText("현재 또는 예정된 영업 변동이 없어요").assertDoesNotExist()
         }
 
     @Test
@@ -101,12 +81,12 @@ class OperatingNoticeScreenTest {
             state = state(notice("오늘 매장", today), notice("다른 매장", today))
             setContent { content() }
 
-            onNodeWithText("매장명 검색").performTextInput("오늘")
+            onNodeWithText("매장명을 입력해주세요").performTextInput("오늘")
             onNodeWithText("오늘 매장").assertExists()
             onNodeWithText("다른 매장").assertDoesNotExist()
 
             onNodeWithContentDescription("검색어 지우기").performClick()
-            onNodeWithText("매장명 검색").assertExists()
+            onNodeWithText("매장명을 입력해주세요").assertExists()
             onNodeWithText("오늘 매장").assertExists()
             onNodeWithText("다른 매장").assertExists()
         }
@@ -131,7 +111,6 @@ class OperatingNoticeScreenTest {
                     onRetry = {},
                     onShopClick = {},
                     onNoticeClick = {},
-                    onTabSelected = { state = state.copy(tab = it) },
                     onQueryChanged = { state = state.copy(query = it) },
                     isSourceUrlSupported = { true },
                     onSourceClick = {},

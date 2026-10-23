@@ -1,4 +1,4 @@
-package com.peto.ramap.ui.main.map.component
+package com.peto.ramap.designsystem.button
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
@@ -17,7 +17,7 @@ import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
 
 @Composable
-internal fun MapCircleIconButton(
+fun AppCircleIconButton(
     isActive: Boolean,
     contentDescription: String,
     selected: Boolean? = null,

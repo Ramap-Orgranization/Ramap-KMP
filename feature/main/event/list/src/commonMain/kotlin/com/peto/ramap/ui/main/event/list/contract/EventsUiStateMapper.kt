@@ -10,7 +10,13 @@ internal fun mapEventsToUiState(
 ): EventsUiState = mapEventsToUiState(state.copy(loadedEvents = events))
 
 internal fun mapEventsToUiState(state: EventsUiState): EventsUiState {
-    val (ongoingEvents, upcomingEvents) = partitionBySchedule(state.loadedEvents)
+    val (ongoingEvents, upcomingEvents) =
+        partitionBySchedule(
+            state.loadedEvents.filter { event ->
+                event.eventListDisplayName.contains(state.query.trim(), ignoreCase = true) &&
+                    (!state.savedOnly || event.eventListShop?.id in state.bookmarkedShopIds)
+            },
+        )
     val summerLimitedEvents = ongoingEvents.filter { it.type == ShopEventType.SUMMER_LIMITED }
     val regularOngoingEvents = ongoingEvents.filterNot { it.type == ShopEventType.SUMMER_LIMITED }
 
