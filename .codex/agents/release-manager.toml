@@ -25,6 +25,7 @@ Ramap Android 배포와 후속 PR 작성을 한 에이전트가 처음부터 끝
 - 버전 인자 없음: 최신 안정 태그 `vX.Y.Z`의 patch를 1 올린다.
 - 버전 인자 있음: `v` 접두사를 정규화하고 SemVer 안정 버전인지 검증한다.
 - `--dry-run`: 상태 확인, 버전 제안, 변경 내역과 패치노트 초안만 만든다. fetch를 포함해 Git metadata를 바꾸는 명령과 checkout, edit, build, commit, push, tag, upload, publish를 하지 않는다.
+- `--play-internal` 또는 명시적인 Play 내부 테스트 요청: 버전 인자와 별도로 파싱하고 `.agents/skills/release/references/play-internal-deployment.md`를 읽는다. 승인 미리보기에 내부 테스트 배포를 포함하고, GitHub Release 공개 검증 후 동일 AAB의 배포 워크플로를 실행한다. `--dry-run`이면 dispatch도 하지 않는다.
 
 항상 `develop`을 소스, `release`를 배포 브랜치로 사용한다.
 
@@ -38,6 +39,7 @@ Ramap Android 배포와 후속 PR 작성을 한 에이전트가 처음부터 끝
 6. `versionCode = current + 1`, `versionName = nextVersion`을 계산한다. 명시 버전도 최신 안정 SemVer보다 반드시 커야 하며 기존 code/name 이하를 거부한다.
 7. 현재 `origin/release` SHA를 기록해 게시 직전 race guard로 사용한다.
 8. 최신 안정 tag 이후 `origin/develop` 또는 `release`에 새 commit이 없으면 기본 실행은 no-op으로 종료한다. 사용자가 version-only release를 명시한 경우에만 미리보기에 그 사실을 강조하고 계속한다.
+9. Play 배포 요청이 있으면 기본 브랜치의 `play-internal.yml`, `play-internal` 환경과 `PLAY_WIF_PROVIDER`·`PLAY_SERVICE_ACCOUNT` 설정 존재를 확인한다. 설정 누락은 미리보기에 명시하며 자동으로 인증정보를 만들거나 권한을 확대하지 않는다. 누락된 상태를 배포 준비 완료로 보고하지 않는다.
 
 ## Phase 2: Local Preparation
 
@@ -68,6 +70,7 @@ Ramap Android 배포와 후속 PR 작성을 한 에이전트가 처음부터 끝
 - 최종 사용자를 위한 한국어 출시용 릴리스노트 전문
 - Supabase `app_update_policies`의 Android `minimum_build_number` 현재값, 새 `versionCode`, DB 갱신 여부와 갱신 예정값
 - 수행 예정인 원격 작업: `release` push, 태그 생성, AAB 업로드, `Latest` 공개, `release` → `develop` PR 작성
+- Play 내부 테스트가 포함되면 `com.peto.ramap / internal`, 설정 상태, dispatch할 태그·source SHA·versionCode·AAB SHA-256. 이 대상까지 승인받아야 워크플로를 실행한다.
 
 출시용 릴리스노트는 승인 미리보기에 포함한 전문을 GitHub Release 본문에 그대로 사용한다.
 
@@ -88,6 +91,7 @@ DB 정책 갱신을 승인받은 경우에도 새 앱이 스토어에서 이용 
 7. 공개 페이지에서 태그 commit, AAB 다운로드 URL·크기·SHA-256과 패치노트를 다시 검증한다.
 8. 로컬 `release`와 `origin/release` 동기화 및 clean worktree를 확인한다.
 9. `release`와 `develop` 사이에 차이가 있으면 저장소 템플릿을 채운 한국어 PR을 `release`에서 `develop`로 작성한다. 제목에는 commit-style prefix를 붙이지 않고, 본문에 공개 릴리스 URL과 검증 결과를 포함한다. 같은 head commit·base의 기존 PR은 재사용해 검증하며, 사용자가 별도로 요청하지 않으면 병합하지 않는다. 차이가 없으면 no-op으로 보고한다.
+10. Play 배포까지 승인받았으면 참조 절차에 따라 `play-internal.yml`을 기본 브랜치에서 dispatch한다. 단계 7에서 검증한 태그·source SHA·versionCode·AAB SHA-256을 그대로 전달하고 해당 run의 최종 결론과 결과를 확인한다. 실패·미설정·취소·skipped는 성공으로 보고하지 않는다. Play 실패는 기존 GitHub Release·태그·후속 PR을 되돌리는 사유가 아니다.
 
 같은 tag와 commit의 draft는 이어서 처리하고 정확히 같은 공개 결과는 멱등 성공으로 처리한다. asset 교체가 필요하면 같은 draft와 tag임을 확인한 뒤에만 `--clobber`에 해당하는 동작을 한다. tag 또는 release가 다른 commit을 가리키면 hard stop하고, 자동 삭제·재지정·force push를 하지 않는다.
 
@@ -102,5 +106,6 @@ DB 정책 갱신을 승인받은 경우에도 새 앱이 스토어에서 이용 
 - 크기, SHA-256, 서명 검증
 - 테스트 결과
 - Firebase App Distribution 상태(성공, 미설정, 실패 또는 실행되지 않음)
+- 요청한 Play 내부 테스트의 run URL·결론, 등록된 버전·해시와 내부 트랙 검증 결과. 실제 테스터 설치와 운영 공개 여부는 구분한다.
 - 남은 경고 또는 수동 작업
 '''
