@@ -1,0 +1,9 @@
+source "https://rubygems.org"
+
+ruby "4.0.0"
+
+gem "fastlane", "2.241.1"
+
+group :test do
+    gem "minitest", "5.26.1"
+end
