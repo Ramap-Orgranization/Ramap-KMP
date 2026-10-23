@@ -110,6 +110,17 @@ class PlayInternalTest(unittest.TestCase):
             self.assertEqual(self.approved["AAB_SHA256"], result["sha256"])
             self.assertEqual(result, json.loads((output / "verified.json").read_text()))
 
+    def test_운영심사는_허용된_트랙과_출시노트를_요구한다(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            output = Path(temporary)
+            with self.assertRaises(ValueError):
+                RELEASE.prepare(self.approved, output, "beta")
+            for notes in ["", "가" * 501]:
+                with patch.object(RELEASE, "github_json", side_effect=[self.ref, self.tag, dict(self.release, body=notes)]), \
+                        patch.object(RELEASE, "run") as download, self.assertRaises(ValueError):
+                    RELEASE.prepare(self.approved, output, "production")
+                download.assert_not_called()
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -13,7 +13,7 @@ class PlayInternalRelease
             "version_code" => environment.fetch("VERSION_CODE"),
             "sha256" => environment.fetch("AAB_SHA256"),
             "package_name" => PACKAGE_NAME,
-            "track" => TRACK
+            "track" => self::TRACK
         }
         expected.each do |key, value|
             raise "Verified artifact #{key} mismatch." unless artifact.fetch(key) == value
@@ -28,7 +28,7 @@ class PlayInternalRelease
         @client = client
         @artifact = artifact
         @track = track
-        raise "Only the internal track is allowed." unless track.track == TRACK
+        raise "Only the #{self.class::TRACK} track is allowed." unless track.track == self.class::TRACK
         releases = Array(track.releases)
         valid = releases.length == 1 && releases.first.status == "completed" &&
             Array(releases.first.version_codes).map(&:to_s) == [artifact.fetch("version_code")]
@@ -41,23 +41,23 @@ class PlayInternalRelease
             reject_newer_release!(bundles)
             bundle = matching_bundle(bundles)
             verify_bundle!(bundle) if bundle
-            next "already_present" if bundle && internal_release_completed?
+            next "already_present" if bundle && already_present?
 
             unless bundle
                 uploaded_code = @client.upload_bundle(@artifact.fetch("aab"))
                 raise "Uploaded version code mismatch." unless uploaded_code.to_s == @artifact.fetch("version_code")
             end
             verify_bundle!(matching_bundle(current_bundles))
-            @client.update_track(TRACK, @track)
+            @client.update_track(self.class::TRACK, @track)
             @client.validate_current_edit!
-            @client.commit_current_edit!
+            commit_edit!
             "published"
         end
 
         # Re-read a fresh edit after commit (or an idempotent retry) before reporting success.
         with_edit do
             verify_bundle!(matching_bundle(current_bundles))
-            raise "Approved build is not completed on internal track." unless internal_release_completed?
+            raise "Approved build is not completed on #{self.class::TRACK} track." unless release_completed?
         end
         result
     end
@@ -93,8 +93,16 @@ class PlayInternalRelease
             codes.any? { |code| code > @artifact.fetch("version_code").to_i }
     end
 
-    def internal_release_completed?
-        @client.track_releases(TRACK).any? do |release|
+    def commit_edit!
+        @client.commit_current_edit!
+    end
+
+    def already_present?
+        release_completed?
+    end
+
+    def release_completed?
+        @client.track_releases(self.class::TRACK).any? do |release|
             release.status == "completed" && Array(release.version_codes).map(&:to_s).include?(@artifact.fetch("version_code"))
         end
     end

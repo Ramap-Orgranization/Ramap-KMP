@@ -104,7 +104,8 @@ def verify_aab(path, approved, tool):
     verify_manifest(xml, approved)
 
 
-def prepare(approved, directory):
+def prepare(approved, directory, track="internal"):
+    require(track in ("internal", "production"), "Unsupported Play track.")
     directory.mkdir(parents=True, exist_ok=True)
     # A failed retry must not leave a previously verified manifest available to the upload lane.
     (directory / "verified.json").unlink(missing_ok=True)
@@ -116,6 +117,9 @@ def prepare(approved, directory):
     require(re.fullmatch(r"[0-9a-f]{40}", tag_object) is not None, "Invalid tag object.")
     annotated_tag = github_json(repository, f"git/tags/{tag_object}")
     release = github_json(repository, f"releases/tags/{tag}")
+    notes = (release.get("body") or "").strip()
+    if track == "production":
+        require(0 < len(notes) <= 500, "Production requires approved release notes of 1–500 characters.")
     asset = release_asset(release, tag_ref, annotated_tag, approved)
     path = directory / ASSET_NAME
     require(not path.exists(), "Use a fresh output directory; an AAB already exists.")
@@ -124,7 +128,8 @@ def prepare(approved, directory):
     verify_aab(path, approved, bundletool(directory))
     result = {
         "package_name": PACKAGE_NAME,
-        "track": "internal",
+        "track": track,
+        "release_notes": notes,
         "tag": tag,
         "source_sha": approved["SOURCE_SHA"],
         "version_code": approved["VERSION_CODE"],
@@ -139,9 +144,10 @@ def prepare(approved, directory):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--track", choices=("internal", "production"), default="internal")
     arguments = parser.parse_args()
     try:
-        result = prepare(approved_inputs(os.environ), arguments.output.resolve())
+        result = prepare(approved_inputs(os.environ), arguments.output.resolve(), arguments.track)
     except (ValueError, OSError, subprocess.CalledProcessError, ET.ParseError) as error:
         # Subprocess stderr may contain provider details; do not forward credentials or signed URLs.
         parser.exit(1, f"Release verification failed: {error}\n")

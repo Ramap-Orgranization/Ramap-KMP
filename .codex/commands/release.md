@@ -1,6 +1,6 @@
 # /release
 
-Prepare and publish a Ramap Android release from the `release` branch.
+Prepare a Ramap Android release from `release` and complete Play production review submission. iOS release requests also finish at App Store review submission; public store release stays manual.
 
 ## Usage
 
@@ -35,7 +35,7 @@ The command must:
 8. Include the current Supabase Android minimum build number in the preview and ask whether to update it to the new `versionCode`; update it only after store availability and explicit approval.
 9. Show one complete release preview and obtain explicit approval before any remote push, tag, upload, or publication.
 10. After approval, push `release`, create an annotated `vX.Y.Z` tag, attach `androidApp-release.aab` to a draft, verify it, publish it as `Latest`, and verify the public release and asset digest.
-11. When `--play-internal` or an explicit Play internal testing request is included, read `.agents/skills/release/references/play-internal-deployment.md`. Include that destination and the exact tag, source SHA, versionCode, and AAB SHA-256 in the approval preview. After public release verification, dispatch `play-internal.yml` from the default branch with those approved inputs and verify its result. Never rebuild the AAB or publish to production in this workflow.
-12. Report GitHub publication, Play internal deployment, and the follow-up PR separately. Retry only the failed Play workflow with the same approved artifact. Internal testing does not authorize a forced-update policy change.
+11. By default, follow `.agents/skills/release/references/store-review-deployment.md` and run `play-review.yml` with the approved AAB after public GitHub Release verification. Include production review and Managed publishing ON in the approval preview, and verify the actual review lifecycle state. When `--play-internal` or an explicit Play internal testing request is included, read `.agents/skills/release/references/play-internal-deployment.md`. Include that destination and the exact tag, source SHA, versionCode, and AAB SHA-256 in the approval preview. After public release verification, dispatch `play-internal.yml` from the default branch with those approved inputs and verify its result. This explicit internal-only option does not submit production review. Never rebuild the approved AAB.
+12. Report GitHub publication, Play review submission (or requested internal-only deployment), and the follow-up PR separately. Retry only the failed Play workflow with the same approved artifact. Internal testing does not authorize a forced-update policy change.
 
 Never commit secrets, keystores, `local.properties`, generated build outputs, or unrelated changes. Stop on conflicts, failed tests, missing signing configuration, divergent remote state, or mismatched existing tags.

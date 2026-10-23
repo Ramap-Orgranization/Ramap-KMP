@@ -2,6 +2,8 @@ require "json"
 require "pathname"
 require "shellwords"
 require_relative "release_support"
+require_relative "review_submission"
+require "digest"
 
 default_platform(:ios)
 
@@ -87,7 +89,6 @@ platform :ios do
             output_name: "Ramap-#{version}-#{build}.ipa",
             export_options: ramap_export_options,
             xcargs: "#{ramap_signing_arguments} CURRENT_PROJECT_VERSION=#{build} MARKETING_VERSION=#{version}",
-            export_xcargs: ramap_signing_arguments,
             skip_profile_detection: true,
             xcodebuild_formatter: ""
         )
@@ -133,36 +134,44 @@ platform :ios do
         UI.success("Upload finished. Run status to check Apple processing before test distribution or review.")
     end
 
-    desc "Submit an explicit processed build using existing metadata and manual release"
+    desc "Upload the approved IPA, wait for processing, and verify final App Store review submission"
+    lane :deploy do |options|
+        result_path = ENV["IOS_REVIEW_RESULT"]
+        File.delete(result_path) if result_path && File.exist?(result_path)
+        ipa = RamapRelease.verify_ipa!(options[:ipa])
+        expected = options[:sha256].to_s
+        UI.user_error!("Specify the approved sha256 for this IPA.") unless expected.match?(/\A[0-9a-f]{64}\z/) && Digest::SHA256.file(ipa.fetch(:path)).hexdigest == expected
+        upload(ipa: ipa.fetch(:path))
+        review(version: ipa.fetch(:version), build: ipa.fetch(:build), notes: options[:notes], exempt_encryption: options[:exempt_encryption])
+    end
+
+    desc "Wait for the explicit build and submit it for review, preserving manual release"
     lane :review do |options|
+        result_path = ENV["IOS_REVIEW_RESULT"]
+        File.delete(result_path) if result_path && File.exist?(result_path)
         version, build = RamapRelease.version_and_build(options)
         app = ramap_app
-        app_version = app.get_edit_app_store_version(platform: "IOS")
-        UI.user_error!("Prepare App Store version #{version} first.") unless app_version && app_version.version_string == version
-        UI.user_error!("The version is already waiting for review; check status instead.") if app_version.app_version_state == "WAITING_FOR_REVIEW"
-        UI.user_error!("This lane preserves manual release; check the current release setting first.") unless app_version.release_type == "MANUAL"
-        builds = Spaceship::ConnectAPI::Build.all(
-            app_id: app.id,
-            version: version,
-            build_number: build,
-            platform: "IOS",
-        )
-        UI.user_error!("Build #{version} (#{build}) must be valid before review.") unless builds.one? && builds.first.processing_state == "VALID"
-        UI.user_error!("Complete export compliance before review.") if builds.first.uses_non_exempt_encryption.nil?
-        upload_to_app_store(
-            api_key: ramap_api_key,
-            app_identifier: RamapRelease::BUNDLE_ID,
-            app_version: version,
-            build_number: build,
-            skip_binary_upload: true,
-            skip_screenshots: true,
-            skip_metadata: true,
-            skip_app_version_update: true,
-            submit_for_review: true,
-            automatic_release: false,
-            run_precheck_before_submit: false,
-            force: true
-        )
-        UI.success("Review submission requested. Run status to confirm the resulting App Store state.")
+        notes = options[:notes] ? File.read(File.expand_path(options[:notes]), encoding: "UTF-8").strip : nil
+        UI.user_error!("Release notes must contain 1–4000 characters.") if notes && !(1..4000).cover?(notes.length)
+        result = IosReviewSubmission.new(app, version, build).submit(
+            notes: notes, exempt_encryption: options[:exempt_encryption].to_s == "true"
+        ) do
+            upload_to_app_store(
+                api_key: ramap_api_key,
+                app_identifier: RamapRelease::BUNDLE_ID,
+                app_version: version,
+                build_number: build,
+                skip_binary_upload: true,
+                skip_screenshots: true,
+                skip_metadata: true,
+                skip_app_version_update: true,
+                submit_for_review: true,
+                automatic_release: false,
+                run_precheck_before_submit: false,
+                force: true
+            )
+        end
+        File.write(result_path, JSON.pretty_generate(result) + "\n") if result_path
+        UI.success("App Store #{version} (#{build}): #{result.fetch('state')}; manual release verified.")
     end
 end

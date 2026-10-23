@@ -1,6 +1,6 @@
 # 승인된 AAB의 Play 내부 테스트 배포
 
-`/release --play-internal` 또는 자연어로 Play 내부 테스트까지 요청한 Android 릴리스에 적용한다. 기본 `/release`와 iOS 배포 범위는 유지한다. GitHub Release에 게시한 `androidApp-release.aab`를 재사용하며 새 AAB 빌드·서명, 스토어 문구·스크린샷 변경, 운영 트랙 승격, 테스터 목록 변경은 수행하지 않는다.
+`/release --play-internal` 또는 자연어로 Play 내부 테스트까지 요청한 Android 릴리스에 적용한다. 이 요청은 기본 `/release`의 운영 심사 제출 대신 내부 테스트로 범위를 제한한다. 최종 스토어 심사는 [별도 절차](store-review-deployment.md)를 따른다. GitHub Release에 게시한 `androidApp-release.aab`를 재사용하며 새 AAB 빌드·서명, 스토어 문구·스크린샷 변경, 운영 트랙 승격, 테스터 목록 변경은 수행하지 않는다.
 
 ## 최초 연결
 
@@ -53,7 +53,7 @@ gh run view "$PLAY_RUN_ID" --repo "$GITHUB_REPOSITORY" \
 ```
 
 4. 실행이 끝나면 run 결론과 `Summarize deployment`의 결과를 확인한다. 결과에는 tag, source SHA, versionCode, AAB SHA-256, GitHub Release URL과 `published` 또는 `already_present`가 포함된다. 실패·취소·skipped 또는 결과 없음은 성공이 아니다.
-5. GitHub Release, Play, Firebase와 후속 PR 결과를 따로 보고한다. `internal` 트랙에 `completed`로 등록됐다는 결과가 테스터의 실제 설치나 운영 스토어 공개를 뜻하지 않는다. 테스터 그룹·Google 검토·기기 설치 상태는 별도 확인이며, 이 결과로 강제업데이트 최소 빌드를 갱신하지 않는다.
+5. GitHub Release, Play와 후속 PR 결과를 따로 보고한다. `internal` 트랙에 `completed`로 등록됐다는 결과가 테스터의 실제 설치나 운영 스토어 공개를 뜻하지 않는다. 테스터 그룹·Google 검토·기기 설치 상태는 별도 확인이며, 이 결과로 강제업데이트 최소 빌드를 갱신하지 않는다.
 
 ## 검증과 재시도
 
