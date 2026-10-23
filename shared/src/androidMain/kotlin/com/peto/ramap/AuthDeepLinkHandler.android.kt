@@ -1,9 +1,14 @@
 package com.peto.ramap
 
 import android.content.Intent
-import com.peto.ramap.network.supabaseClient
+import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.handleDeeplinks
+import org.koin.mp.KoinPlatformTools
 
 fun handleAuthDeepLink(intent: Intent) {
-    supabaseClient.handleDeeplinks(intent)
+    KoinPlatformTools
+        .defaultContext()
+        .get()
+        .get<SupabaseClient>()
+        .handleDeeplinks(intent)
 }

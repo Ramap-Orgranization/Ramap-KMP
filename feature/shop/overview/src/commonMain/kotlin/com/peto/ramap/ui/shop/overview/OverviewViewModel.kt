@@ -30,11 +30,9 @@ import com.peto.ramap.ui.shop.contract.ShopInteractionEffect.ShowToast
 import com.peto.ramap.ui.shop.model.ShopOverviewUiState
 import com.peto.ramap.ui.shop.overview.contract.ShopOverviewIntent
 import com.peto.ramap.ui.shop.overview.contract.ShopOverviewIntent.OnBookmarkToggled
-import com.peto.ramap.ui.shop.overview.contract.ShopOverviewIntent.OnDismissed
 import com.peto.ramap.ui.shop.overview.contract.ShopOverviewIntent.OnHiddenToggled
 import com.peto.ramap.ui.shop.overview.contract.ShopOverviewIntent.OnLoginTypeSelected
 import com.peto.ramap.ui.shop.overview.contract.ShopOverviewIntent.OnOverviewRetry
-import com.peto.ramap.ui.shop.overview.contract.ShopOverviewIntent.OnRequestedShopDismissed
 import com.peto.ramap.ui.shop.overview.contract.ShopOverviewIntent.OnShopIdSelected
 import com.peto.ramap.ui.shop.overview.contract.ShopOverviewIntent.OnShopMapLinkClicked
 import com.peto.ramap.ui.shop.overview.contract.ShopOverviewIntent.OnShopNotificationToggled
@@ -58,6 +56,9 @@ import ramap.shared.generated.resources.data_load_failure_message
 import ramap.shared.generated.resources.hidden_shop_notification_unavailable_message
 import ramap.shared.generated.resources.hide_shop_success_message
 import ramap.shared.generated.resources.kakao_login_failure_message
+import ramap.shared.generated.resources.login_required_bookmark_description
+import ramap.shared.generated.resources.login_required_hide_shop_description
+import ramap.shared.generated.resources.login_required_notification_description
 import ramap.shared.generated.resources.login_success_message
 import ramap.shared.generated.resources.personalization_update_failure_message
 import ramap.shared.generated.resources.shop_information_report_failure_message
@@ -110,8 +111,6 @@ class OverviewViewModel(
             is OnShopIdSelected -> selectShopId(intent.shopId)
             is OnShopShareClicked -> shareShop(intent.shop)
             is OnShopMapLinkClicked -> openShopMapLink(intent.shop, intent.mapProvider)
-            OnRequestedShopDismissed -> dismissRequestedShop()
-            OnDismissed -> dismissOverview()
             OnOverviewRetry -> retryOverview()
             is OnShopReportSubmitted -> submitShopReport(intent.wrongFields, intent.description)
             else -> return false
@@ -238,18 +237,6 @@ class OverviewViewModel(
             )
         }
         showErrorToast(error)
-    }
-
-    private fun dismissRequestedShop() {
-        val isNotLoadingState = currentState.overviewState !is ShopOverviewUiState.Loading
-        if (isNotLoadingState) return
-        cancelTask(OVERVIEW_TASK_KEY)
-        reduce { copy(overviewState = ShopOverviewUiState.Closed) }
-    }
-
-    private fun dismissOverview() {
-        cancelTask(OVERVIEW_TASK_KEY)
-        reduce { copy(overviewState = ShopOverviewUiState.Closed) }
     }
 
     private fun retryOverview() {
@@ -459,7 +446,7 @@ class OverviewViewModel(
     private fun requireLogin(action: PendingShopAction): Boolean {
         if (currentState.isLoggedIn) return false
         pendingShopAction = action
-        requestLoginGuide()
+        requestLoginGuide(action)
         return true
     }
 
@@ -480,8 +467,16 @@ class OverviewViewModel(
         }
     }
 
-    private fun requestLoginGuide() {
-        viewModelScope.launch { postSideEffect(ShopOverviewSideEffect.Interaction(ShowLoginGuide)) }
+    private fun requestLoginGuide(action: PendingShopAction) {
+        val description =
+            when (action) {
+                is PendingShopAction.ToggleBookmark -> Res.string.login_required_bookmark_description
+                is PendingShopAction.ToggleShopNotification -> Res.string.login_required_notification_description
+                is PendingShopAction.ToggleHidden -> Res.string.login_required_hide_shop_description
+            }
+        viewModelScope.launch {
+            postSideEffect(ShopOverviewSideEffect.Interaction(ShowLoginGuide(description)))
+        }
     }
 
     private fun currentSheetShopId(): String? =

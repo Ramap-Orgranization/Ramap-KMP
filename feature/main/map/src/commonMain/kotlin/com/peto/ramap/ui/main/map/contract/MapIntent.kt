@@ -2,12 +2,14 @@ package com.peto.ramap.ui.main.map.contract
 
 import com.peto.ramap.analytics.AnalyticsSource
 import com.peto.ramap.domain.model.auth.LoginType
+import com.peto.ramap.domain.model.place.PlaceSearchResult
 import com.peto.ramap.domain.model.shop.Category
 import com.peto.ramap.domain.model.shop.Location
 import com.peto.ramap.domain.model.shop.MapBounds
 import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.ui.base.Intent
 import com.peto.ramap.ui.main.map.model.CameraPosition
+import com.peto.ramap.ui.main.map.model.PlaceFocusRequest
 import com.peto.ramap.ui.main.map.model.ShopFocusRequest
 
 sealed interface MapIntent : Intent {
@@ -35,6 +37,14 @@ sealed interface MapIntent : Intent {
 
     data class OnSelectedShopFocusConsumed(
         val request: ShopFocusRequest,
+    ) : MapIntent
+
+    data class OnPlaceSelected(
+        val place: PlaceSearchResult,
+    ) : MapIntent
+
+    data class OnPlaceFocusConsumed(
+        val request: PlaceFocusRequest,
     ) : MapIntent
 
     data object OnMapTabExited : MapIntent

@@ -5,20 +5,16 @@ import com.peto.ramap.core.result.RamapError
 import com.peto.ramap.coroutinesTest
 import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
-import com.peto.ramap.domain.model.event.EventFilter
 import com.peto.ramap.domain.model.event.EventVenue
 import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.model.event.ShopEventType
 import com.peto.ramap.domain.model.event.ShopEvents
-import com.peto.ramap.domain.model.report.NewsReportEvidence
 import com.peto.ramap.domain.repository.RamenShopRepository
 import com.peto.ramap.fake.FakeAnalyticsTracker
 import com.peto.ramap.fake.FakeRamenShopRepository
-import com.peto.ramap.fake.FakeShopReportRepository
 import com.peto.ramap.fixture.ramenShopFixture
 import com.peto.ramap.ui.main.event.list.contract.EventsIntent
 import com.peto.ramap.ui.main.event.list.contract.EventsSideEffect
-import com.peto.ramap.ui.main.event.list.contract.EventsUiState
 import com.peto.ramap.ui.main.event.list.log.EventsAnalytics
 import com.peto.ramap.ui.retry.NetworkRetryGenerator
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -40,7 +36,6 @@ class EventsViewModelTest {
             val viewModel =
                 EventsViewModel(
                     FakeRamenShopRepository(),
-                    FakeShopReportRepository(),
                     EventsAnalytics(analyticsTracker),
                 )
 
@@ -55,34 +50,6 @@ class EventsViewModelTest {
                 ),
                 analyticsTracker.events.single().params(),
             )
-        }
-
-    @Test
-    fun `스토리 캡처만 있으면 새소식 제보를 제출할 수 있다`() {
-        val state =
-            EventsUiState(
-                newsReportEvidence =
-                    NewsReportEvidence(
-                        bytes = byteArrayOf(1),
-                        mimeType = NewsReportEvidence.JPEG_MIME_TYPE,
-                    ),
-            )
-
-        assertTrue(state.canSubmitNewsReport)
-    }
-
-    @Test
-    fun `새소식 제보 성공 시 바텀시트를 닫는다`() =
-        coroutinesTest {
-            val viewModel = eventsViewModel(FakeRamenShopRepository())
-            runCurrent()
-
-            viewModel.dispatch(EventsIntent.OnNewsReportClicked)
-            viewModel.dispatch(EventsIntent.OnNewsReportContentChanged("https://instagram.com/p/post"))
-            viewModel.dispatch(EventsIntent.OnNewsReportSubmit)
-            runCurrent()
-
-            assertFalse(viewModel.uiState.value.showNewsReportDialog)
         }
 
     @Test
@@ -102,7 +69,6 @@ class EventsViewModelTest {
                     .single(),
             )
             assertFalse(viewModel.uiState.value.isLoading)
-            assertEquals(EventFilter.EVENT, viewModel.uiState.value.selectedFilter)
             assertEquals(1, repository.activeEventsRequestCount)
         }
 
@@ -243,7 +209,7 @@ class EventsViewModelTest {
         }
 
     @Test
-    fun `필터 변경은 최초 응답을 사용하고 repository를 다시 호출하지 않는다`() =
+    fun `필터 없이 모든 이벤트 유형을 최초 응답 하나로 표시한다`() =
         coroutinesTest {
             val repository =
                 FakeRamenShopRepository(
@@ -267,29 +233,14 @@ class EventsViewModelTest {
                     .map { it.id },
             )
             assertEquals(
-                listOf("summer-upcoming"),
+                listOf("summer-upcoming", "new-menu-upcoming", "renewal-upcoming"),
                 viewModel.uiState.value.upcomingEvents
                     .flatten()
                     .map { it.id },
             )
-
-            viewModel.dispatch(EventsIntent.OnFilterSelected(EventFilter.NEW_MENU))
-            runCurrent()
-
-            assertEquals(1, repository.activeEventsRequestCount)
             assertEquals(
-                listOf("new-menu-upcoming"),
-                viewModel.uiState.value.upcomingEvents
-                    .flatten()
-                    .map { it.id },
-            )
-
-            viewModel.dispatch(EventsIntent.OnFilterSelected(EventFilter.STORE_RENEWAL))
-            runCurrent()
-
-            assertEquals(
-                listOf("renewal-today", "renewal-upcoming"),
-                (viewModel.uiState.value.ongoingEvents + viewModel.uiState.value.upcomingEvents)
+                listOf("renewal-today"),
+                viewModel.uiState.value.ongoingEvents
                     .flatten()
                     .map { it.id },
             )
@@ -298,7 +249,6 @@ class EventsViewModelTest {
     private fun eventsViewModel(ramenShopRepository: RamenShopRepository): EventsViewModel =
         EventsViewModel(
             ramenShopRepository,
-            FakeShopReportRepository(),
             EventsAnalytics(FakeAnalyticsTracker()),
         )
 

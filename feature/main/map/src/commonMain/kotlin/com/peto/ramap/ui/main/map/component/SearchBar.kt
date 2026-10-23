@@ -25,6 +25,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.peto.ramap.designsystem.text.AppText
+import com.peto.ramap.domain.model.shop.SearchQuery
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.RamapTheme
@@ -54,7 +55,7 @@ internal fun SearchBar(
     fun commitIfChanged() {
         val trimmed = internalValue.trim()
 
-        if (trimmed.length in MIN_QUERY_LENGTH..MAX_QUERY_LENGTH) {
+        if (trimmed.length in SearchQuery.MIN_LENGTH..SearchQuery.MAX_LENGTH) {
             lastCommitted = trimmed
             onQueryChange(trimmed)
         }
@@ -63,10 +64,10 @@ internal fun SearchBar(
     TextField(
         value = internalValue,
         onValueChange = { value ->
-            val limitedValue = value.take(MAX_QUERY_LENGTH)
+            val limitedValue = value.take(SearchQuery.MAX_LENGTH)
             internalValue = limitedValue
 
-            if (limitedValue.trim().length < MIN_QUERY_LENGTH) {
+            if (limitedValue.trim().length < SearchQuery.MIN_LENGTH) {
                 lastCommitted = limitedValue
                 onQueryChange(limitedValue)
             }
@@ -142,9 +143,6 @@ internal fun SearchBar(
             ),
     )
 }
-
-private const val MIN_QUERY_LENGTH = 2
-private const val MAX_QUERY_LENGTH = 15
 
 @Composable
 @Preview

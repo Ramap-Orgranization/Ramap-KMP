@@ -40,7 +40,7 @@ data class ShopSectionsSnapshot(
     val showBottomSheet get() = map.selectedShopId != null
     val focusShops get() = map.focusShops
     val shouldFocusSelectedShop get() = map.shouldFocusSelectedShop
-    val shouldFocusNearestSearchResult get() = map.shouldFocusNearestSearchResult
+    val shouldFocusFirstSearchResult get() = map.shouldFocusFirstSearchResult
     val focusRequestKey get() = map.focusRequestKey
     val initialFocusLocation get() = map.initialFocusLocation
     val shouldBootstrapLocationFocusStatus get() = map.shouldBootstrapLocationFocusStatus

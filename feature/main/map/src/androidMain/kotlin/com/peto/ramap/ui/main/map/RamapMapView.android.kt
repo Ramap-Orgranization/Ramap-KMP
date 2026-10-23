@@ -40,6 +40,7 @@ import com.peto.ramap.ui.main.map.config.CurrentLocationConfig
 import com.peto.ramap.ui.main.map.config.MapInteractionConfig
 import com.peto.ramap.ui.main.map.config.MarkerConfig
 import com.peto.ramap.ui.main.map.model.CameraPosition
+import com.peto.ramap.ui.main.map.model.PlaceFocusRequest
 import com.peto.ramap.ui.main.map.model.location.CurrentLocationRequestState
 import kotlinx.coroutines.delay
 import org.jetbrains.compose.resources.painterResource
@@ -51,9 +52,11 @@ import kotlin.time.Duration.Companion.milliseconds
 internal actual fun RamapMapView(
     shops: RamenShops,
     focusShops: RamenShops,
-    focusNearestToCurrentLocation: Boolean,
+    focusFirstSearchResult: Boolean,
     focusRequestKey: Long,
     initialFocusLocation: Location?,
+    placeFocusRequest: PlaceFocusRequest?,
+    onPlaceFocusConsumed: () -> Unit,
     shouldBootstrapInitialLocationFocus: Boolean,
     selectedShopId: String?,
     cameraPosition: CameraPosition?,
@@ -143,6 +146,20 @@ internal actual fun RamapMapView(
         clusterRenderer.render(map, shops)
     }
 
+    LaunchedEffect(naverMap, placeFocusRequest) {
+        val map = naverMap ?: return@LaunchedEffect
+        val request = placeFocusRequest ?: return@LaunchedEffect
+        map.setContentPadding(0, 0, 0, 0)
+        map.locationTrackingMode = LocationTrackingMode.None
+        map.moveCamera(
+            CameraUpdate.scrollAndZoomTo(
+                LatLng(request.location.lat, request.location.lng),
+                request.zoom,
+            ),
+        )
+        onPlaceFocusConsumed()
+    }
+
     LaunchedEffect(
         naverMap,
         initialFocusLocation,
@@ -160,7 +177,7 @@ internal actual fun RamapMapView(
     LaunchedEffect(
         naverMap,
         focusShops,
-        focusNearestToCurrentLocation,
+        focusFirstSearchResult,
         focusRequestKey,
         selectedShopId,
         viewportHeight,
@@ -181,7 +198,7 @@ internal actual fun RamapMapView(
             cameraController.focusShops(
                 map,
                 focusShops,
-                currentLocation.takeIf { focusNearestToCurrentLocation },
+                focusFirstSearchResult,
                 focusRequestKey,
             )
         if (didMoveCamera && selectedShopId != null && focusShops.size == 1) {

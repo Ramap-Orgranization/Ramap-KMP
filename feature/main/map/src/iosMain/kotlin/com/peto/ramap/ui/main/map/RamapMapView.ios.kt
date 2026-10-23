@@ -32,6 +32,7 @@ import com.peto.ramap.platform.permission.rememberLocationPermissionGenerator
 import com.peto.ramap.ui.main.map.component.LocationButton
 import com.peto.ramap.ui.main.map.config.CurrentLocationConfig
 import com.peto.ramap.ui.main.map.model.CameraPosition
+import com.peto.ramap.ui.main.map.model.PlaceFocusRequest
 import com.peto.ramap.ui.main.map.model.location.CurrentLocationRequestState
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.coroutines.delay
@@ -42,9 +43,11 @@ import kotlin.math.roundToInt
 internal actual fun RamapMapView(
     shops: RamenShops,
     focusShops: RamenShops,
-    focusNearestToCurrentLocation: Boolean,
+    focusFirstSearchResult: Boolean,
     focusRequestKey: Long,
     initialFocusLocation: Location?,
+    placeFocusRequest: PlaceFocusRequest?,
+    onPlaceFocusConsumed: () -> Unit,
     shouldBootstrapInitialLocationFocus: Boolean,
     selectedShopId: String?,
     cameraPosition: CameraPosition?,
@@ -121,10 +124,14 @@ internal actual fun RamapMapView(
                 controller.updateInitialLocationFocus(
                     location = initialFocusLocation,
                 )
+                placeFocusRequest?.let { request ->
+                    controller.focusPlace(request)
+                    onPlaceFocusConsumed()
+                }
                 val didMoveCamera =
                     controller.updateFocus(
                         shops = focusShops,
-                        focusNearestToCurrentLocation = focusNearestToCurrentLocation,
+                        focusFirstSearchResult = focusFirstSearchResult,
                         focusRequestKey = focusRequestKey,
                         selectedShopId = selectedShopId,
                     )

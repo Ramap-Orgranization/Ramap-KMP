@@ -8,14 +8,17 @@ import com.peto.ramap.domain.model.shop.MapBounds
 import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.ui.main.map.model.CameraPosition
+import com.peto.ramap.ui.main.map.model.PlaceFocusRequest
 
 @Composable
 internal expect fun RamapMapView(
     shops: RamenShops,
     focusShops: RamenShops,
-    focusNearestToCurrentLocation: Boolean,
+    focusFirstSearchResult: Boolean,
     focusRequestKey: Long,
     initialFocusLocation: Location?,
+    placeFocusRequest: PlaceFocusRequest?,
+    onPlaceFocusConsumed: () -> Unit,
     shouldBootstrapInitialLocationFocus: Boolean,
     selectedShopId: String?,
     cameraPosition: CameraPosition?,

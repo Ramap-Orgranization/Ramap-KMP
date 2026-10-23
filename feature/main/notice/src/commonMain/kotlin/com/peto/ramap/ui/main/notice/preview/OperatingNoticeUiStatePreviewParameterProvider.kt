@@ -4,12 +4,10 @@ import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import com.peto.ramap.domain.model.notice.OperatingNoticeFeed
 import com.peto.ramap.domain.model.notice.OperatingNoticeFeedItem
 import com.peto.ramap.domain.model.personalization.Personalization
-import com.peto.ramap.domain.model.shop.AdministrativeArea
-import com.peto.ramap.domain.model.shop.AdministrativeDistrict
-import com.peto.ramap.domain.model.shop.AreaFilter
 import com.peto.ramap.domain.store.PersonalizationBootstrapState
 import com.peto.ramap.preview.OperatingNoticePreviewParameterProvider
 import com.peto.ramap.ui.main.notice.contract.OperatingNoticeUiState
+import com.peto.ramap.ui.main.notice.model.OperatingNoticeTab
 import kotlinx.datetime.LocalDate
 
 class OperatingNoticeUiStatePreviewParameterProvider : PreviewParameterProvider<OperatingNoticeUiState> {
@@ -27,7 +25,7 @@ class OperatingNoticeUiStatePreviewParameterProvider : PreviewParameterProvider<
                     feed =
                         OperatingNoticeFeed(
                             referenceDate = LocalDate(2026, 10, 14),
-                            items = notices.map { OperatingNoticeFeedItem(it, AdministrativeArea.SEOUL, "마포구") },
+                            items = notices.map { OperatingNoticeFeedItem(it) },
                         ),
                 )
             }
@@ -42,9 +40,8 @@ class OperatingNoticeUiStatePreviewParameterProvider : PreviewParameterProvider<
                         .map { it.notice.shop.id }
                         .toSet()
                 return base.copy(
-                    scheduledSelected = true,
+                    tab = OperatingNoticeTab.SCHEDULED,
                     query = "라멘",
-                    areaFilter = AreaFilter.District(AdministrativeArea.SEOUL, AdministrativeDistrict("마포구")),
                     savedOnly = true,
                     bookmarkedShopIds = bookmarkedShopIds,
                     personalizationState =

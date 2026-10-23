@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="sharedpref" path="com.peto.ramap_preferences.xml" />
+        <exclude domain="sharedpref" path="com.peto.ramap.debug_preferences.xml" />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="sharedpref" path="com.peto.ramap_preferences.xml" />
+        <exclude domain="sharedpref" path="com.peto.ramap.debug_preferences.xml" />
+    </device-transfer>
+</data-extraction-rules>

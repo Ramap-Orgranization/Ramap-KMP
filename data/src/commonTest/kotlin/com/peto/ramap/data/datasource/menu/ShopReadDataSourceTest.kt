@@ -58,6 +58,31 @@ class ShopReadDataSourceTest {
         }
 
     @Test
+    fun `메뉴와 갱신일이 없는 응답은 오류 없이 빈 메뉴로 읽는다`() =
+        runTest {
+            val client =
+                createSupabaseClient("https://fixture.invalid", "fixture-key") {
+                    httpEngine =
+                        MockEngine {
+                            respond(
+                                content = """[{"menu_sections":[],"menu_items":[],"menu_updated_at":null}]""",
+                                headers = headersOf("Content-Type", "application/json"),
+                            )
+                        }
+                    install(Postgrest)
+                }
+            try {
+                val menu = DefaultShopMenuRepository(RemoteShopMenuDataSource(client)).fetchShopMenu("shop").getOrThrow()
+
+                assertEquals(emptyList(), menu.sections)
+                assertEquals(0, menu.itemCount)
+                assertEquals("", menu.updatedAt)
+            } finally {
+                client.close()
+            }
+        }
+
+    @Test
     fun `상세 조회는 메뉴 필드가 없는 v3 RPC에서 매장 웨이팅을 읽는다`() =
         runTest {
             val paths = mutableListOf<String>()

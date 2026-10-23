@@ -7,7 +7,4 @@ kotlin {
         implementation(projects.core.analytics)
         implementation(libs.coil.compose)
     }
-    sourceSets.androidMain.dependencies {
-        implementation(libs.androidx.activity.compose)
-    }
 }

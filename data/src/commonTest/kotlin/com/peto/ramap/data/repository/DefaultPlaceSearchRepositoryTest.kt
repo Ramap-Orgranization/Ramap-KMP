@@ -13,10 +13,21 @@ import com.peto.ramap.domain.model.shop.Location
 import com.peto.ramap.domain.model.shop.SearchQuery
 import com.peto.ramap.fake.FakePlaceSearchDataSource
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class DefaultPlaceSearchRepositoryTest {
+    @Test
+    fun `동리 후보의 모호성 정보를 역직렬화하고 구버전 응답은 기본값을 사용한다`() {
+        val response =
+            Json.decodeFromString<PlaceSearchResponse>(
+                """{"results":[{"name":"비토리","address":"경남 사천시 서포면 비토리","lat":34.97,"lng":127.97,"kind":"map_location","is_ambiguous_region":true},{"name":"세종","address":"세종특별자치시","lat":36.48,"lng":127.29,"kind":"map_location"}]}""",
+            )
+
+        assertEquals(listOf(true, false), response.results.map { it.toDomain().isAmbiguousRegion })
+    }
+
     @Test
     fun `장소 검색 요청에 검색어와 중심점을 전달하고 도메인 결과로 변환한다`() =
         runTest {
@@ -44,6 +55,7 @@ class DefaultPlaceSearchRepositoryTest {
                 PlaceSearchRequest(
                     query = "멘야",
                     center = PlaceSearchCenterRequest(lat = 37.4, lng = 126.9),
+                    mode = "locations",
                 ),
                 dataSource.request,
             )

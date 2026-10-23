@@ -8,6 +8,7 @@ import com.peto.ramap.domain.model.personalization.Personalization
 import com.peto.ramap.domain.store.PersonalizationBootstrapState
 import com.peto.ramap.fixture.ramenShopFixture
 import com.peto.ramap.ui.main.notice.contract.OperatingNoticeUiState
+import com.peto.ramap.ui.main.notice.model.OperatingNoticeTab
 import kotlinx.datetime.LocalDate
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -34,18 +35,22 @@ class OperatingNoticeUiStateTest {
     }
 
     @Test
-    fun `진행 중인 기간 휴무는 일정의 전체 날짜와 각 날짜 상세에 포함하고 매장 수는 한 번 센다`() {
+    fun `진행 중인 기간 휴무는 예정에 내일부터만 표시하고 오늘 종료되면 예정 개수에서 제외한다`() {
         val tomorrow = LocalDate(2026, 10, 19)
         val closure = notice("period", LocalDate(2026, 10, 10)).copy(endDate = tomorrow)
         val state = state(closure)
-        val expectedDates = (10..19).map { LocalDate(2026, 10, it) }
         assertEquals(listOf(closure), state.todayShops)
-        assertEquals(expectedDates.associateWith { listOf(closure) }, state.scheduledGroups)
+        assertEquals(mapOf(tomorrow to listOf(closure)), state.scheduledGroups)
         assertEquals(1, state.todayCount)
         assertEquals(1, state.scheduledCount)
-        for (date in expectedDates) {
-            assertEquals(listOf(closure), state.selectNotice(closure, date).notices)
-        }
+        assertEquals(listOf(closure), state.selectNotice(closure, today).notices)
+        assertEquals(listOf(closure), state.selectNotice(closure, tomorrow).notices)
+
+        val lastDay = state.copy(feed = state.feed?.copy(referenceDate = tomorrow))
+        assertEquals(listOf(closure), lastDay.todayShops)
+        assertEquals(emptyMap(), lastDay.scheduledGroups)
+        assertEquals(1, lastDay.todayCount)
+        assertEquals(0, lastDay.scheduledCount)
     }
 
     @Test
@@ -60,7 +65,7 @@ class OperatingNoticeUiStateTest {
         assertEquals(setOf("today", "same-day"), selectedToday.notices.map { it.id }.toSet())
         assertEquals(listOf(future), selectedFuture.notices)
         assertEquals(next, selectedFuture.date)
-        val changed = state.copy(query = "다른", scheduledSelected = false, feed = OperatingNoticeFeed(today, emptyList()))
+        val changed = state.copy(query = "다른", tab = OperatingNoticeTab.TODAY, feed = OperatingNoticeFeed(today, emptyList()))
         assertEquals(emptyList(), changed.todayShops)
         assertEquals(listOf(future), selectedFuture.notices)
     }

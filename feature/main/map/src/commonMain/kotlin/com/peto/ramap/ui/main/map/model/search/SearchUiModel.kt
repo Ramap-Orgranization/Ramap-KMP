@@ -1,5 +1,8 @@
 package com.peto.ramap.ui.main.map.model.search
 
+import com.peto.ramap.domain.model.place.PlaceSearchResult
+import com.peto.ramap.domain.model.place.PlaceSearchResults
+import com.peto.ramap.domain.model.shop.Location
 import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.domain.model.shop.SearchQuery
 
@@ -17,20 +20,26 @@ data class SearchUiModel(
     val isResultFocusConsumed: Boolean = false,
     /** 매장 검색 결과에 대한 카메라 포커스 요청을 식별하는 일련번호. */
     val focusRequestKey: Long = 0,
+    val hasSearchFailure: Boolean = false,
+    val places: PlaceSearchResults = PlaceSearchResults(emptyList()),
+    val selectedPlace: PlaceSearchResult? = null,
+    val shopSearchCenter: Location? = null,
+    val placeSearchCenter: Location? = null,
 ) {
     /** [results]가 현재 입력을 정규화한 검색어에 대응하는지 여부. */
     val hasLoadedResultsForInput: Boolean
         get() {
             val normalizedInput = SearchQuery(input).normalizeShopSearchQuery()
-            return normalizedInput.value.isNotBlank() && loadedQuery == normalizedInput
+            return normalizedInput.value.isNotBlank() && loadedQuery?.comparisonKey() == normalizedInput.comparisonKey()
         }
 
-    fun hasLoadedResultsFor(query: SearchQuery): Boolean = query.value.isNotBlank() && loadedQuery == query
+    fun hasLoadedResultsFor(query: SearchQuery): Boolean = query.value.isNotBlank() && loadedQuery?.comparisonKey() == query.comparisonKey()
 
     /** 검색창 입력을 [input]으로 변경하고 새 결과를 표시할 준비를 한다. */
     fun updateInput(input: String): SearchUiModel =
         copy(
             input = input,
+            selectedPlace = null,
             isResultsDismissed = false,
             isResultFocusConsumed = false,
             focusRequestKey = focusRequestKey + 1,
@@ -46,6 +55,8 @@ data class SearchUiModel(
         copy(
             results = RamenShops(emptyMap()),
             loadedQuery = null,
+            places = PlaceSearchResults(emptyList()),
+            selectedPlace = null,
             isResultsDismissed = false,
             isResultFocusConsumed = false,
         )
@@ -56,10 +67,21 @@ data class SearchUiModel(
     fun updateResults(
         query: SearchQuery,
         results: RamenShops,
+        places: PlaceSearchResults = PlaceSearchResults(emptyList()),
+        shopSearchCenter: Location? = null,
+        placeSearchCenter: Location? = null,
     ): SearchUiModel =
         copy(
             results = results,
             loadedQuery = query,
+            places = places,
+            shopSearchCenter = shopSearchCenter,
+            placeSearchCenter = placeSearchCenter,
             isResultFocusConsumed = false,
         )
+
+    val showsShopResults: Boolean
+        get() = hasLoadedResultsForInput && selectedPlace == null
+
+    fun selectPlace(place: PlaceSearchResult): SearchUiModel = copy(selectedPlace = place, isResultsDismissed = true, isResultFocusConsumed = true)
 }

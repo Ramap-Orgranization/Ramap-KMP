@@ -6,4 +6,5 @@ import kotlinx.serialization.Serializable
 internal data class PlaceSearchRequest(
     val query: String,
     val center: PlaceSearchCenterRequest,
+    val mode: String? = null,
 )

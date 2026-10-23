@@ -1,37 +1,26 @@
 package com.peto.ramap.domain.model.notice
 
-import com.peto.ramap.domain.model.shop.AdministrativeArea
-import com.peto.ramap.domain.model.shop.AreaFilter
 import kotlinx.datetime.LocalDate
 
 data class OperatingNoticeFeed(
     val referenceDate: LocalDate,
     val items: List<OperatingNoticeFeedItem>,
 ) {
-    fun districts(area: AdministrativeArea): List<String> =
-        items
-            .filter { it.area == area }
-            .mapNotNull { it.sigungu }
-            .distinct()
-            .sorted()
-
     fun representatives(
         scheduled: Boolean,
         query: String = "",
-        areaFilter: AreaFilter = AreaFilter.Nationwide,
         bookmarkedShopIds: Set<String>? = null,
     ): List<OperatingNotice> {
-        if (scheduled) return scheduledGroups(query, areaFilter, bookmarkedShopIds).values.flatten().distinctBy { it.shop.id }
-        val notices = filteredItems(query, areaFilter, bookmarkedShopIds).map { it.notice }.filter { it.appliesOn(referenceDate) }
+        if (scheduled) return scheduledGroups(query, bookmarkedShopIds).values.flatten().distinctBy { it.shop.id }
+        val notices = filteredItems(query, bookmarkedShopIds).map { it.notice }.filter { it.appliesOn(referenceDate) }
         return representativesOn(referenceDate, notices)
     }
 
     fun scheduledGroups(
         query: String = "",
-        areaFilter: AreaFilter = AreaFilter.Nationwide,
         bookmarkedShopIds: Set<String>? = null,
     ): Map<LocalDate, List<OperatingNotice>> {
-        val filtered = filteredItems(query, areaFilter, bookmarkedShopIds)
+        val filtered = filteredItems(query, bookmarkedShopIds)
         val groups = mutableMapOf<LocalDate, MutableList<OperatingNotice>>()
         for (item in filtered) {
             for (date in item.notice.scheduledDates(referenceDate)) {
@@ -73,23 +62,11 @@ data class OperatingNoticeFeed(
 
     private fun filteredItems(
         query: String,
-        areaFilter: AreaFilter,
         bookmarkedShopIds: Set<String>?,
     ): List<OperatingNoticeFeedItem> =
         items.filter { item ->
             item.notice.shop.name
                 .contains(query.trim(), ignoreCase = true) &&
-                (bookmarkedShopIds == null || item.notice.shop.id in bookmarkedShopIds) &&
-                matchesArea(item, areaFilter)
-        }
-
-    private fun matchesArea(
-        item: OperatingNoticeFeedItem,
-        filter: AreaFilter,
-    ): Boolean =
-        when (filter) {
-            AreaFilter.Nationwide -> true
-            is AreaFilter.Province -> item.area == filter.area
-            is AreaFilter.District -> item.area == filter.area && item.sigungu == filter.district.name
+                (bookmarkedShopIds == null || item.notice.shop.id in bookmarkedShopIds)
         }
 }

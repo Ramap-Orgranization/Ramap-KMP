@@ -2,6 +2,8 @@ package com.peto.ramap.domain.model.shop
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 class SearchQueryTest {
     @Test
@@ -67,5 +69,14 @@ class SearchQueryTest {
 
         // Then
         assertEquals("""%r%a%m%e%n%\_%\%%s%h%o%p%""", actual)
+    }
+
+    @Test
+    fun `한 글자와 긴 상호를 허용하고 빈 입력과 최대 길이 초과를 거절한다`() {
+        assertTrue(SearchQuery("구").isValidForShopSearch())
+        assertTrue(SearchQuery("눚").isValidForShopSearch())
+        assertTrue(SearchQuery("가".repeat(100)).isValidForShopSearch())
+        assertFalse(SearchQuery(" ").isValidForShopSearch())
+        assertFalse(SearchQuery("가".repeat(101)).isValidForShopSearch())
     }
 }

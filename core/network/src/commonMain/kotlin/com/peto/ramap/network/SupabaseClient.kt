@@ -4,6 +4,7 @@ import com.peto.ramap.network.config.RamapSecrets
 import io.github.jan.supabase.annotations.SupabaseInternal
 import io.github.jan.supabase.auth.Auth
 import io.github.jan.supabase.auth.FlowType
+import io.github.jan.supabase.auth.SessionManager
 import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.functions.Functions
 import io.github.jan.supabase.postgrest.Postgrest
@@ -11,7 +12,7 @@ import io.github.jan.supabase.storage.Storage
 import kotlin.time.Duration.Companion.seconds
 
 @OptIn(SupabaseInternal::class)
-val supabaseClient =
+internal fun createRamapSupabaseClient(sessionManager: SessionManager) =
     createSupabaseClient(
         supabaseUrl = RamapSecrets.supabaseUrl,
         supabaseKey = RamapSecrets.supabaseAnonKey,
@@ -21,6 +22,7 @@ val supabaseClient =
         install(Storage)
         install(Functions)
         install(Auth) {
+            this.sessionManager = sessionManager
             scheme = AUTH_DEEPLINK_SCHEME
             host = AUTH_DEEPLINK_HOST
             flowType = FlowType.PKCE

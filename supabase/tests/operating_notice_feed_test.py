@@ -11,7 +11,8 @@ from pathlib import Path
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--migration", type=Path, required=True)
-    parser.add_argument("--followup-migration", type=Path)
+    parser.add_argument("--followup-migration", type=Path, action="append", default=[])
+    parser.add_argument("--without-regions", action="store_true")
     args = parser.parse_args()
     for command in ("initdb", "pg_ctl", "psql"):
         if not shutil.which(command):
@@ -74,7 +75,8 @@ def main():
             """)
             query(args.migration.read_text())
             if args.followup_migration:
-                query(args.followup_migration.read_text())
+                for migration in args.followup_migration:
+                    query(migration.read_text())
                 query("""
                     set role anon;
                     do $$ begin
@@ -109,9 +111,7 @@ def main():
                     assert feed->>'reference_date'='2099-10-18', '기준일';
                     assert jsonb_array_length(feed->'items')=4, '가시 매장의 오늘과 미래 공지';
                     assert not (feed::text like '%비공개OCR%'), '내부 OCR 제외';
-                    assert exists(select 1 from jsonb_array_elements(feed->'items') item where item->>'area'='SEOUL' and item->>'sigungu'='마포구'), '지역 별칭';
-                    assert exists(select 1 from jsonb_array_elements(feed->'items') item where item->>'area'='SEJONG' and item->>'sigungu' is null), '세종 시군구 없음';
-                    assert exists(select 1 from jsonb_array_elements(feed->'items') item where item->'shop'->>'name'='알수없는매장' and item->>'area' is null), '미상 주소 보존';
+                    assert exists(select 1 from jsonb_array_elements(feed->'items') item where item->'shop'->>'name'='알수없는매장'), '미상 주소 보존';
                     assert jsonb_array_length(public.fetch_operating_notice_feed('2099-10-19')->'items')=1, '종료일과 미래 공지';
                 end $$;
                 reset role;
@@ -121,7 +121,30 @@ def main():
                 end $$;
                 reset role;
             """)
-            print("PASS: three types, legacy preservation, canonical projection, date/area/visibility and role permissions")
+            if args.without_regions:
+                for role in ("anon", "authenticated"):
+                    query(f"""
+                        set role {role};
+                        do $$ begin
+                            assert not exists (
+                                select 1 from jsonb_array_elements(public.fetch_operating_notice_feed('2099-10-18')->'items') item
+                                where item ? 'area' or item ? 'sigungu'
+                            ), '지역 필드가 없는 전국 목록';
+                            assert public.fetch_operating_notice_feed(null)->'items'='[]'::jsonb, '기준일이 없으면 빈 목록';
+                        end $$;
+                        reset role;
+                    """)
+            else:
+                query("""
+                    set role anon;
+                    do $$ declare feed jsonb; begin
+                        feed := public.fetch_operating_notice_feed('2099-10-18');
+                        assert exists(select 1 from jsonb_array_elements(feed->'items') item where item->>'area'='SEOUL' and item->>'sigungu'='마포구'), '지역 별칭';
+                        assert exists(select 1 from jsonb_array_elements(feed->'items') item where item->>'area'='SEJONG' and item->>'sigungu' is null), '세종 시군구 없음';
+                    end $$;
+                    reset role;
+                """)
+            print("PASS: three types, legacy preservation, canonical projection, date/visibility, region contract and role permissions")
         finally:
             subprocess.run(["pg_ctl", "-D", str(database), "-m", "immediate", "-w", "stop"], check=True, capture_output=True)
 

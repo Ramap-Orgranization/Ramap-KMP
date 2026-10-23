@@ -8,6 +8,7 @@ import com.peto.ramap.data.model.ShopEventResponse
 import com.peto.ramap.data.model.ShopOverviewResponse
 import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.model.event.ShopEventType
+import com.peto.ramap.domain.model.shop.Location
 import com.peto.ramap.domain.model.shop.MapBounds
 import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.domain.model.shop.SearchQuery
@@ -174,6 +175,15 @@ internal class DefaultRamenShopRepository(
                     .map { it.toDomain() }
                     .associateBy { it.id },
             )
+        }
+
+    override suspend fun searchMapRamenShops(
+        query: SearchQuery,
+        center: Location?,
+        limit: Int,
+    ): RamapResult<RamenShops> =
+        invokeRequest {
+            RamenShops(dataSource.searchMapRamenShops(query, center, limit).map { it.toDomain() })
         }
 
     private companion object {

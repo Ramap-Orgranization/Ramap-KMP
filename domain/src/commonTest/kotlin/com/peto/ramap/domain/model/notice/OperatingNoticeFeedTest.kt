@@ -2,8 +2,6 @@ package com.peto.ramap.domain.model.notice
 
 import com.peto.ramap.domain.model.businesshour.BusinessHours
 import com.peto.ramap.domain.model.businesshour.BusinessHoursDay
-import com.peto.ramap.domain.model.shop.AdministrativeArea
-import com.peto.ramap.domain.model.shop.AreaFilter
 import com.peto.ramap.fixture.ramenShopFixture
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalTime
@@ -24,26 +22,25 @@ class OperatingNoticeFeedTest {
     }
 
     @Test
-    fun `오늘 매장도 미래 공지를 예정에 표시하고 검색 지역 저장 조건을 모두 적용한다`() {
+    fun `오늘 매장도 미래 공지를 예정에 표시하고 검색과 저장 조건을 모두 적용한다`() {
         val today = notice("today")
         val future = notice("future").copy(startDate = LocalDate(2026, 10, 19), endDate = null)
         val other = future.copy(id = "other", shop = future.shop.copy(id = "other", name = "다른 매장"))
         val feed = feed(today, future, other)
         assertEquals(listOf("future", "other"), feed.representatives(true).map { it.id })
-        assertEquals(1, feed.representatives(false, "  RAMEN ", AreaFilter.Province(AdministrativeArea.SEOUL), setOf("shop")).size)
-        assertEquals(0, feed.representatives(false, "ramen", AreaFilter.Province(AdministrativeArea.BUSAN), setOf("shop")).size)
-        assertEquals(listOf("마포구"), feed.districts(AdministrativeArea.SEOUL))
+        assertEquals(1, feed.representatives(false, "  RAMEN ", setOf("shop")).size)
+        assertEquals(0, feed.representatives(false, "ramen", emptySet()).size)
     }
 
     @Test
-    fun `진행 중인 기간 휴무는 지난 날짜와 오늘을 포함해 시작일부터 종료일까지 일정에 표시한다`() {
+    fun `진행 중인 기간 휴무는 오늘 탭과 내일부터 종료일까지 예정에 표시한다`() {
         val closure =
             notice("period", OperatingNoticeType.TEMPORARY_CLOSURE).copy(
                 startDate = LocalDate(2026, 10, 10),
                 endDate = LocalDate(2026, 10, 19),
             )
         val feed = feed(closure)
-        val expectedDates = (10..19).map { LocalDate(2026, 10, it) }
+        val expectedDates = listOf(LocalDate(2026, 10, 19))
         assertEquals(listOf(closure), feed.representatives(false))
         assertEquals(expectedDates, feed.scheduledGroups().keys.toList())
         for (notices in feed.scheduledGroups().values) {
@@ -53,7 +50,8 @@ class OperatingNoticeFeedTest {
 
         val lastDay = feed.copy(referenceDate = LocalDate(2026, 10, 19))
         assertEquals(listOf(closure), lastDay.representatives(false))
-        assertEquals(expectedDates, lastDay.scheduledGroups().keys.toList())
+        assertEquals(emptyMap(), lastDay.scheduledGroups())
+        assertEquals(emptyList(), lastDay.representatives(true))
 
         val afterClosure = feed.copy(referenceDate = LocalDate(2026, 10, 20))
         assertEquals(emptyList(), afterClosure.representatives(false))
@@ -98,6 +96,14 @@ class OperatingNoticeFeedTest {
             listOf(LocalDate(2026, 12, 31), LocalDate(2027, 1, 1), LocalDate(2027, 1, 2)),
             feed(january, december).scheduledGroups().keys.toList(),
         )
+        assertEquals(
+            listOf(LocalDate(2027, 1, 1), LocalDate(2027, 1, 2)),
+            feed(january, december)
+                .copy(referenceDate = LocalDate(2026, 12, 31))
+                .scheduledGroups()
+                .keys
+                .toList(),
+        )
     }
 
     @Test
@@ -124,14 +130,14 @@ class OperatingNoticeFeedTest {
     }
 
     @Test
-    fun `진행 중인 기간 휴무는 전체 날짜에 표시하고 겹치는 미래 마감 공지보다 우선한다`() {
+    fun `진행 중인 기간 휴무는 미래 날짜에만 표시하고 겹치는 미래 마감 공지보다 우선한다`() {
         val closure = notice("period", OperatingNoticeType.TEMPORARY_CLOSURE).copy(endDate = LocalDate(2026, 10, 23))
         val future = notice("early").copy(startDate = LocalDate(2026, 10, 19), endDate = LocalDate(2026, 10, 19))
         val unrelated = closure.copy(id = "unrelated", shop = closure.shop.copy(id = "other"))
         val feed = feed(closure, future, unrelated)
         val groups = feed.scheduledGroups()
         assertEquals(
-            listOf(LocalDate(2026, 10, 18), LocalDate(2026, 10, 19), LocalDate(2026, 10, 20), LocalDate(2026, 10, 21), LocalDate(2026, 10, 22), LocalDate(2026, 10, 23)),
+            listOf(LocalDate(2026, 10, 19), LocalDate(2026, 10, 20), LocalDate(2026, 10, 21), LocalDate(2026, 10, 22), LocalDate(2026, 10, 23)),
             groups.keys.toList(),
         )
         for (notices in groups.values) {
@@ -141,7 +147,7 @@ class OperatingNoticeFeedTest {
         assertEquals(listOf(closure, future), feed.noticesForShopOn("shop", LocalDate(2026, 10, 19)))
     }
 
-    private fun feed(vararg notices: OperatingNotice) = OperatingNoticeFeed(date, notices.map { OperatingNoticeFeedItem(it, AdministrativeArea.SEOUL, "마포구") })
+    private fun feed(vararg notices: OperatingNotice) = OperatingNoticeFeed(date, notices.map { OperatingNoticeFeedItem(it) })
 
     private fun notice(
         id: String,

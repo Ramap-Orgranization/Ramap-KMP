@@ -1,6 +1,8 @@
 package com.peto.ramap.domain.model.place
 
 import com.peto.ramap.domain.model.shop.Location
+import com.peto.ramap.domain.model.shop.RamenShops
+import com.peto.ramap.domain.model.shop.SearchQuery
 
 /**
  * 장소 검색 결과의 순서와 컬렉션 행위를 캡슐화한다.
@@ -11,6 +13,16 @@ import com.peto.ramap.domain.model.shop.Location
 data class PlaceSearchResults(
     private val results: List<PlaceSearchResult>,
 ) : List<PlaceSearchResult> by results {
+    /** 매장명에 일치하면 상위 지역 없이 입력한 읍·면·동·리 후보보다 매장을 우선한다. */
+    fun prioritizeShopNames(
+        query: SearchQuery,
+        shops: RamenShops,
+    ): PlaceSearchResults {
+        val queryKey = query.comparisonKey()
+        if (queryKey.isEmpty() || shops.values.none { SearchQuery(it.name).comparisonKey().contains(queryKey) }) return this
+        return PlaceSearchResults(results.filterNot { it.isAmbiguousRegion })
+    }
+
     /**
      * [center]와 가까운 장소부터 정렬한 새 검색 결과를 반환한다.
      *

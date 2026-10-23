@@ -26,8 +26,15 @@ import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.StringResource
 import ramap.shared.generated.resources.Res
-import ramap.shared.generated.resources.review_action_failed
+import ramap.shared.generated.resources.follow_load_failure_message
+import ramap.shared.generated.resources.follow_update_failure_message
+import ramap.shared.generated.resources.login_required_block_description
+import ramap.shared.generated.resources.login_required_follow_description
+import ramap.shared.generated.resources.login_required_saved_shops_description
+import ramap.shared.generated.resources.review_block_failed
+import ramap.shared.generated.resources.review_unblock_failed
 
 class OtherReviewsViewModel(
     private val community: CommunityRepository,
@@ -371,7 +378,7 @@ class OtherReviewsViewModel(
         val currentUserId = currentState.currentUserId
         val isLoggedOut = currentUserId == null
         if (isLoggedOut) {
-            trySideEffect(OtherReviewsEffect.LoginRequired)
+            trySideEffect(OtherReviewsEffect.LoginRequired(Res.string.login_required_follow_description))
             return
         }
         val isSelfOrMutating = access.profile.userId == currentUserId || currentState.following
@@ -388,7 +395,12 @@ class OtherReviewsViewModel(
                     refreshFollowAccess(access.profile.userId)
                 }
             },
-            onError = { handleToggleBlockError(access.profile.userId) },
+            onError = {
+                showActionFailure(
+                    targetUserId = access.profile.userId,
+                    message = Res.string.follow_update_failure_message,
+                )
+            },
         )
     }
 
@@ -397,7 +409,7 @@ class OtherReviewsViewModel(
         val currentUserId = currentState.currentUserId
         val isLoggedOut = currentUserId == null
         if (isLoggedOut) {
-            trySideEffect(OtherReviewsEffect.LoginRequired)
+            trySideEffect(OtherReviewsEffect.LoginRequired(Res.string.login_required_block_description))
             return
         }
         val isSelfOrBlocking = profile.userId == currentUserId || currentState.blocking
@@ -418,7 +430,10 @@ class OtherReviewsViewModel(
                 )
             },
             onError = {
-                handleToggleBlockError(profile.userId)
+                showActionFailure(
+                    targetUserId = profile.userId,
+                    message = if (wasBlocked) Res.string.review_unblock_failed else Res.string.review_block_failed,
+                )
             },
         )
     }
@@ -463,7 +478,12 @@ class OtherReviewsViewModel(
                     loadSavedShops()
                 }
             },
-            onError = { handleToggleBlockError(userId) },
+            onError = {
+                showActionFailure(
+                    targetUserId = userId,
+                    message = Res.string.follow_load_failure_message,
+                )
+            },
         )
     }
 
@@ -523,13 +543,16 @@ class OtherReviewsViewModel(
         if (wasBlocked) loadPage(reset = true)
     }
 
-    private suspend fun handleToggleBlockError(targetUserId: String) {
+    private suspend fun showActionFailure(
+        targetUserId: String,
+        message: StringResource,
+    ) {
         val isSameUser = currentState.userId == targetUserId
         if (isSameUser) {
             postSideEffect(
                 OtherReviewsEffect.ShowToast(
                     ToastData(
-                        message = Res.string.review_action_failed,
+                        message = message,
                         type = ToastType.ERROR,
                     ),
                 ),
@@ -540,7 +563,7 @@ class OtherReviewsViewModel(
     private fun selectTab(tab: OtherReviewsTab) {
         val isSavedShopsAndLoggedOut = tab == OtherReviewsTab.SavedShops && currentState.currentUserId == null
         if (isSavedShopsAndLoggedOut) {
-            trySideEffect(OtherReviewsEffect.LoginRequired)
+            trySideEffect(OtherReviewsEffect.LoginRequired(Res.string.login_required_saved_shops_description))
             return
         }
         reduce { copy(selectedTab = tab) }

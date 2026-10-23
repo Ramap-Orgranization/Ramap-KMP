@@ -10,6 +10,9 @@ import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.auth.LoginSessionState
 import com.peto.ramap.domain.model.auth.LoginType
+import com.peto.ramap.domain.model.place.PlaceSearchResult
+import com.peto.ramap.domain.model.place.PlaceSearchResultKind
+import com.peto.ramap.domain.model.place.PlaceSearchResults
 import com.peto.ramap.domain.model.shop.Category
 import com.peto.ramap.domain.model.shop.Location
 import com.peto.ramap.domain.model.shop.MapBounds
@@ -19,6 +22,7 @@ import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.domain.model.shop.SearchQuery
 import com.peto.ramap.domain.repository.LoginRepository
 import com.peto.ramap.domain.repository.OperatingNoticeRepository
+import com.peto.ramap.domain.repository.PlaceSearchRepository
 import com.peto.ramap.domain.repository.RamenShopRepository
 import com.peto.ramap.domain.store.PersonalizationBootstrapState
 import com.peto.ramap.domain.store.PersonalizationStore
@@ -56,6 +60,7 @@ import com.peto.ramap.ui.main.map.contract.MapSideEffect
 import com.peto.ramap.ui.main.map.contract.MapUiState
 import com.peto.ramap.ui.main.map.log.MapAnalytics
 import com.peto.ramap.ui.main.map.model.CameraPosition
+import com.peto.ramap.ui.main.map.model.PlaceFocusRequest
 import com.peto.ramap.ui.main.map.model.ShopFocusRequest
 import com.peto.ramap.ui.main.map.model.location.LocationFocusStatus
 import com.peto.ramap.ui.main.map.viewport.ViewportLoadResult
@@ -63,6 +68,8 @@ import com.peto.ramap.ui.main.map.viewport.ViewportShopLoader
 import com.peto.ramap.ui.shop.contract.ShopInteractionEffect
 import com.peto.ramap.ui.shop.contract.ShopInteractionEffect.ShowToast
 import com.peto.ramap.ui.task.TaskPolicy
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
@@ -79,6 +86,7 @@ import ramap.shared.generated.resources.hidden_shop_search_result_message
 import ramap.shared.generated.resources.kakao_login_failure_message
 import ramap.shared.generated.resources.location_permission_enable_message
 import ramap.shared.generated.resources.location_permission_settings_action
+import ramap.shared.generated.resources.login_required_saved_shops_description
 import ramap.shared.generated.resources.login_success_message
 import ramap.shared.generated.resources.search_result_empty_message
 import ramap.shared.generated.resources.search_result_hidden_only_message
@@ -94,6 +102,7 @@ class MapViewModel(
     private val mapAnalytics: MapAnalytics,
     private val operatingNoticeRepository: OperatingNoticeRepository,
     private val signInUseCase: SignInUseCase,
+    private val placeSearchRepository: PlaceSearchRepository,
 ) : BaseViewModel<MapUiState, MapIntent, MapSideEffect>(initialState = MapUiState()) {
     private val viewportShopLoader = ViewportShopLoader(ramenShopRepository, viewModelScope)
     private var pendingBookmarkedView = false
@@ -184,6 +193,10 @@ class MapViewModel(
             is OnMyLocationChanged -> updateMyLocation(intent.location)
             OnInitialLocationFocusConsumed -> consumeInitialLocationFocus()
             is OnSelectedShopFocusConsumed -> consumeSelectedShopFocus(intent.request)
+            is MapIntent.OnPlaceFocusConsumed ->
+                reduce {
+                    if (placeFocusRequest == intent.request) copy(placeFocusRequest = null) else this
+                }
             OnMapTabExited -> dismissBottomSheet()
             OnOperatingNoticesRefreshRequested -> loadOperatingNotices()
             OnStatusTimeRefreshed -> reduce { copy(currentDateTime = Clock.System.now().toLocalDateTime(TimeZone.of("Asia/Seoul"))) }
@@ -194,7 +207,7 @@ class MapViewModel(
 
     private fun dismissBottomSheet() {
         cancelTask(SEARCH_TASK_KEY)
-        reduce { copy(search = search.reset()) }
+        reduce { copy(search = search.reset(), placeFocusRequest = null) }
         dismissShopDetail()
     }
 
@@ -218,6 +231,7 @@ class MapViewModel(
     private suspend fun handleSearchIntent(intent: MapIntent): Boolean {
         when (intent) {
             is OnSearchResultsDismissed -> dismissSearchResults()
+            is MapIntent.OnPlaceSelected -> selectPlace(intent.place)
             is OnQueryChanged -> updateQuery(intent.query, clearFilters = true)
             is OnRecentSearchSelected -> updateQuery(intent.query)
             is OnRecentSearchDeleted -> mapSearchHistoryStorage.removeRecentSearch(intent.query)
@@ -260,6 +274,7 @@ class MapViewModel(
         reduce {
             copy(
                 selectedShopFocusRequest = focusRequest,
+                placeFocusRequest = null,
                 search = search.consumeResultFocus(shop.id in search.results),
             )
         }
@@ -276,7 +291,7 @@ class MapViewModel(
         failedShopId = null
         consumeInitialLocationFocus()
         val focusRequest = ShopFocusRequest(shopId, ++shopFocusSequence)
-        reduce { copy(selectedShopFocusRequest = focusRequest) }
+        reduce { copy(selectedShopFocusRequest = focusRequest, placeFocusRequest = null) }
         pendingBookmarkedView = false
         reduce { copy(selectedShopId = shopId, selectedShop = null, shopSelectionKey = shopSelectionKey + 1) }
         if (!showDetail) loadSelectedShopLocation(shopId)
@@ -354,28 +369,62 @@ class MapViewModel(
     }
 
     private fun searchShops(query: SearchQuery) {
-        if (canReuseSearchResults(query)) {
+        val shopCenter = currentState.currentLocation
+        val placeCenter = currentState.cameraPosition?.center ?: shopCenter ?: DEFAULT_SEARCH_CENTER
+        if (canReuseSearchResults(query, shopCenter, placeCenter)) {
             cancelTask(SEARCH_TASK_KEY)
             recordRecentSearch(query.value)
-            handleSingleSearchResult(currentState.searchResultShops.singleShopOrNull())
+            handleSingleSearchDestination()
             return
         }
 
+        consumeInitialLocationFocus()
         launchTask(
             taskKey = SEARCH_TASK_KEY,
             loadKey = MapLoadKey.Search,
             policy = TaskPolicy.CancelPrevious,
         ) {
-            val result = searchRamenShopsUseCase(query)
-            if (currentCoroutineContext().isActive) handleSearchResult(query, result)
+            coroutineScope {
+                val shops = async { searchRamenShopsUseCase(query, shopCenter) }
+                val places = async { placeSearchRepository.search(query, placeCenter) }
+                val shopResult = shops.await()
+                val placeResult = places.await()
+                if (currentCoroutineContext().isActive) {
+                    handleSearchResults(query, shopCenter, placeCenter, shopResult, placeResult)
+                }
+            }
         }
     }
 
-    private fun canReuseSearchResults(query: SearchQuery): Boolean {
-        val hasValidQuery = query.value.isNotBlank()
-        val hasLoadedResults = currentState.search.hasLoadedResultsFor(query)
-        val hasNonEmptyResults = currentState.search.results.isNotEmpty()
-        return hasValidQuery && hasLoadedResults && hasNonEmptyResults
+    private fun canReuseSearchResults(
+        query: SearchQuery,
+        shopCenter: Location?,
+        placeCenter: Location,
+    ): Boolean {
+        val search = currentState.search
+        return search.hasLoadedResultsFor(query) &&
+            !search.hasSearchFailure &&
+            search.shopSearchCenter == shopCenter &&
+            search.placeSearchCenter == placeCenter &&
+            (search.results.isNotEmpty() || search.places.isNotEmpty())
+    }
+
+    private fun selectPlace(place: PlaceSearchResult) {
+        if (!currentState.search.hasLoadedResultsForInput || place !in currentState.search.places) return
+        cancelTask(SEARCH_TASK_KEY)
+        focusPlace(place)
+    }
+
+    private fun focusPlace(place: PlaceSearchResult) {
+        dismissShopDetail()
+        consumeInitialLocationFocus()
+        reduce {
+            copy(
+                search = search.selectPlace(place),
+                selectedShopFocusRequest = null,
+                placeFocusRequest = PlaceFocusRequest(place.location, ++shopFocusSequence, place.zoom),
+            )
+        }
     }
 
     private fun updateSearchInput(
@@ -386,6 +435,7 @@ class MapViewModel(
         reduce {
             copy(
                 search = search.updateInput(query),
+                placeFocusRequest = null,
                 filters = if (clearFilters) filters.clear() else filters,
                 isBookmarkedView = if (clearFilters) false else isBookmarkedView,
             )
@@ -431,7 +481,7 @@ class MapViewModel(
         } else {
             dismissShopDetail()
             pendingBookmarkedView = true
-            showInteraction(ShopInteractionEffect.ShowLoginGuide)
+            showInteraction(ShopInteractionEffect.ShowLoginGuide(Res.string.login_required_saved_shops_description))
         }
     }
 
@@ -483,38 +533,58 @@ class MapViewModel(
         reduce { copy(search = search.clearResults()) }
     }
 
-    private fun handleSearchResult(
+    private fun handleSearchResults(
         query: SearchQuery,
-        result: RamapResult<RamenShops>,
+        shopCenter: Location?,
+        placeCenter: Location,
+        shopResult: RamapResult<RamenShops>,
+        placeResult: RamapResult<PlaceSearchResults>,
     ) {
-        when (result) {
-            is RamapResult.Success -> handleLoadedSearchResult(query, result.data)
-            is RamapResult.Error -> handleFailedSearchResult(result.error)
+        val shops = (shopResult as? RamapResult.Success)?.data ?: RamenShops(emptyMap())
+        val places =
+            PlaceSearchResults(
+                (placeResult as? RamapResult.Success)
+                    ?.data
+                    .orEmpty()
+                    .filter { it.kind == PlaceSearchResultKind.MAP_LOCATION },
+            ).prioritizeShopNames(query, shops)
+        val hasFailure = shopResult is RamapResult.Error || placeResult is RamapResult.Error
+        dismissShopDetail()
+        reduce {
+            copy(search = search.updateResults(query, shops, places, shopCenter, placeCenter).copy(hasSearchFailure = hasFailure))
         }
-    }
-
-    private fun handleLoadedSearchResult(
-        query: SearchQuery,
-        shops: RamenShops,
-    ) {
-        recordRecentSearch(query.value)
-        reduceSearchResult(query, shops)
-        val searchResultShops = currentState.searchResultShops
-        val isFilterActiveAndEmpty = searchResultShops.isEmpty() && currentState.filters.isNotEmpty()
-        if (isFilterActiveAndEmpty) {
-            showToast(Res.string.filter_empty_visible_result_message)
+        if (shopResult is RamapResult.Success || placeResult is RamapResult.Success) recordRecentSearch(query.value)
+        if (shopResult is RamapResult.Error) {
+            handleFailedSearchResult(shopResult.error)
+        } else if (placeResult is RamapResult.Error) {
+            handleFailedSearchResult(placeResult.error)
         }
-        val hasHiddenShopsInResults = searchResultShops.size > 1 && searchResultShops.values.any { !it.isVisible }
-        if (hasHiddenShopsInResults) {
-            showToast(Res.string.search_result_hidden_only_message)
-        }
-        val hasShops = shops.isNotEmpty()
-        if (hasShops) {
-            handleSingleSearchResult(searchResultShops.singleShopOrNull())
+        if (shops.isEmpty() && places.isEmpty()) {
+            if (!hasFailure) {
+                showToast(Res.string.search_result_empty_message)
+                reduce { copy(search = search.reset(), placeFocusRequest = null) }
+            }
             return
         }
-        showToast(Res.string.search_result_empty_message)
-        reduce { copy(search = search.reset()) }
+        val filteredShops = currentState.searchResultShops
+        if (filteredShops.isEmpty() && currentState.filters.isNotEmpty() && places.isEmpty()) {
+            showToast(Res.string.filter_empty_visible_result_message)
+        }
+        if (filteredShops.size > 1 && filteredShops.values.any { !it.isVisible }) {
+            showToast(Res.string.search_result_hidden_only_message)
+        }
+        handleSingleSearchDestination()
+    }
+
+    private fun handleSingleSearchDestination() {
+        val search = currentState.search
+        if (search.places.isEmpty()) {
+            handleSingleSearchResult(currentState.searchResultShops.singleShopOrNull())
+            return
+        }
+        if (search.results.isNotEmpty() || search.hasSearchFailure) return
+        val place = search.places.singleOrNull() ?: return
+        focusPlace(place)
     }
 
     private fun handleFailedSearchResult(error: RamapError) {
@@ -559,14 +629,6 @@ class MapViewModel(
             type = ToastType.DEFAULT,
             action = ToastAction(label = Res.string.location_permission_settings_action),
         )
-
-    private fun reduceSearchResult(
-        query: SearchQuery,
-        result: RamenShops,
-    ) {
-        dismissShopDetail()
-        reduce { copy(search = search.updateResults(query, result)) }
-    }
 
     private fun recordRecentSearch(query: String) {
         viewModelScope.launch { mapSearchHistoryStorage.addRecentSearch(query) }
@@ -680,6 +742,7 @@ class MapViewModel(
     companion object {
         private const val SELECTED_SHOP_TASK_KEY = "map-selected-shop"
         private const val SEARCH_TASK_KEY = "map-search"
+        private val DEFAULT_SEARCH_CENTER = Location(37.5665, 126.9780)
         private const val PERSONALIZED_SHOPS_TASK_KEY = "map-personalized-shops"
         private const val OPERATING_NOTICES_TASK_KEY = "map-operating-notices"
     }

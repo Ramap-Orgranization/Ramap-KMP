@@ -36,7 +36,6 @@ fun OperatingNoticeRoute(
         onShopClick = onShopClick,
         onTabSelected = { viewModel.dispatch(OperatingNoticeIntent.OnTabSelected(it)) },
         onQueryChanged = { viewModel.dispatch(OperatingNoticeIntent.OnQueryChanged(it)) },
-        onAreaSelected = { viewModel.dispatch(OperatingNoticeIntent.OnAreaSelected(it)) },
         onSavedToggled = { viewModel.dispatch(OperatingNoticeIntent.OnSavedToggled) },
         onPersonalizationRetry = { viewModel.dispatch(OperatingNoticeIntent.OnPersonalizationRetried) },
         onNoticeClick = { viewModel.dispatch(OperatingNoticeIntent.OnNoticeClicked(it)) },

@@ -3,11 +3,12 @@ package com.peto.ramap.ui.main.notice.contract
 import com.peto.ramap.domain.model.notice.OperatingNotice
 import com.peto.ramap.domain.model.notice.OperatingNoticeFeed
 import com.peto.ramap.domain.model.notice.OperatingNoticeFeedItem
-import com.peto.ramap.domain.model.shop.AreaFilter
 import com.peto.ramap.domain.store.PersonalizationBootstrapState
 import com.peto.ramap.ui.base.State
 import com.peto.ramap.ui.loading.LoadState
 import com.peto.ramap.ui.loading.LoadableState
+import com.peto.ramap.ui.main.notice.model.OperatingNoticeSelection
+import com.peto.ramap.ui.main.notice.model.OperatingNoticeTab
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.todayIn
@@ -17,9 +18,8 @@ data class OperatingNoticeUiState(
     val todayOperatingNotices: List<OperatingNotice> = emptyList(),
     val scheduledOperatingNotices: List<OperatingNotice> = emptyList(),
     val feed: OperatingNoticeFeed? = null,
-    val scheduledSelected: Boolean = false,
+    val tab: OperatingNoticeTab = OperatingNoticeTab.TODAY,
     val query: String = "",
-    val areaFilter: AreaFilter = AreaFilter.Nationwide,
     val savedOnly: Boolean = false,
     val bookmarkedShopIds: Set<String> = emptySet(),
     val personalizationState: PersonalizationBootstrapState = PersonalizationBootstrapState.Loading,
@@ -50,13 +50,22 @@ data class OperatingNoticeUiState(
         get() = noticeFeed.referenceDate
 
     val todayShops: List<OperatingNotice>
-        get() = noticeFeed.representatives(false, query, areaFilter, if (savedOnly) bookmarkedShopIds else null)
+        get() =
+            noticeFeed.representatives(
+                scheduled = false,
+                query = query,
+                bookmarkedShopIds = if (savedOnly) bookmarkedShopIds else null,
+            )
 
     val scheduledShops: List<OperatingNotice>
         get() = scheduledGroups.values.flatten().distinctBy { it.shop.id }
 
     val scheduledGroups: Map<LocalDate, List<OperatingNotice>>
-        get() = noticeFeed.scheduledGroups(query, areaFilter, if (savedOnly) bookmarkedShopIds else null)
+        get() =
+            noticeFeed.scheduledGroups(
+                query = query,
+                bookmarkedShopIds = if (savedOnly) bookmarkedShopIds else null,
+            )
 
     private val noticeFeed: OperatingNoticeFeed
         get() =

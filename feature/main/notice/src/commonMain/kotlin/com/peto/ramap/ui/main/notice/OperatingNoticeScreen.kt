@@ -26,7 +26,6 @@ import androidx.compose.ui.unit.dp
 import androidx.navigationevent.NavigationEventInfo
 import androidx.navigationevent.compose.NavigationBackHandler
 import androidx.navigationevent.compose.rememberNavigationEventState
-import com.peto.ramap.designsystem.bottomsheet.CommonBottomSheet
 import com.peto.ramap.designsystem.button.AppFloatingActionButton
 import com.peto.ramap.designsystem.component.LoadErrorContent
 import com.peto.ramap.designsystem.component.ShopsEmptyContent
@@ -34,19 +33,17 @@ import com.peto.ramap.designsystem.notice.OperatingNoticeBottomSheet
 import com.peto.ramap.domain.model.notice.OperatingNotice
 import com.peto.ramap.domain.model.notice.OperatingNoticeFeed
 import com.peto.ramap.domain.model.notice.OperatingNoticeFeedItem
-import com.peto.ramap.domain.model.shop.AdministrativeArea
-import com.peto.ramap.domain.model.shop.AreaFilter
 import com.peto.ramap.domain.store.PersonalizationBootstrapState
 import com.peto.ramap.preview.OperatingNoticePreviewParameterProvider
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.RamapTheme
 import com.peto.ramap.ui.main.notice.component.OngoingOperatingNoticeShop
-import com.peto.ramap.ui.main.notice.component.OperatingNoticeAreaSheet
 import com.peto.ramap.ui.main.notice.component.OperatingNoticeDateHeader
 import com.peto.ramap.ui.main.notice.component.OperatingNoticeFilters
 import com.peto.ramap.ui.main.notice.component.OperatingNoticeSkeleton
-import com.peto.ramap.ui.main.notice.contract.OperatingNoticeSelection
 import com.peto.ramap.ui.main.notice.contract.OperatingNoticeUiState
+import com.peto.ramap.ui.main.notice.model.OperatingNoticeSelection
+import com.peto.ramap.ui.main.notice.model.OperatingNoticeTab
 import kotlinx.datetime.LocalDate
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
@@ -67,9 +64,8 @@ internal fun OperatingNoticeScreen(
     onRetry: () -> Unit,
     onShopClick: (String) -> Unit,
     onNoticeClick: (OperatingNotice) -> Unit,
-    onTabSelected: (Boolean) -> Unit = {},
+    onTabSelected: (OperatingNoticeTab) -> Unit = {},
     onQueryChanged: (String) -> Unit = {},
-    onAreaSelected: (AreaFilter) -> Unit = {},
     onSavedToggled: () -> Unit = {},
     onPersonalizationRetry: () -> Unit = {},
     isSourceUrlSupported: (String) -> Boolean,
@@ -78,7 +74,6 @@ internal fun OperatingNoticeScreen(
     val backEventState = rememberNavigationEventState<NavigationEventInfo>(NavigationEventInfo.None)
     val pullToRefreshState = rememberPullToRefreshState()
     var selectedNotice by remember { mutableStateOf<OperatingNoticeSelection?>(null) }
-    var areaSheetVisible by remember { mutableStateOf(false) }
 
     NavigationBackHandler(
         state = backEventState,
@@ -96,7 +91,6 @@ internal fun OperatingNoticeScreen(
             uiState = uiState,
             onTabSelected = onTabSelected,
             onQueryChanged = onQueryChanged,
-            onAreaOpened = { areaSheetVisible = true },
             onSavedToggled = onSavedToggled,
         )
         Box(modifier = Modifier.fillMaxSize().weight(1f)) {
@@ -137,7 +131,7 @@ internal fun OperatingNoticeScreen(
                             modifier = Modifier.fillMaxSize(),
                         )
 
-                    (if (uiState.scheduledSelected) uiState.scheduledShops else uiState.todayShops).isEmpty() ->
+                    (if (uiState.tab == OperatingNoticeTab.SCHEDULED) uiState.scheduledShops else uiState.todayShops).isEmpty() ->
                         ShopsEmptyContent(
                             title =
                                 stringResource(
@@ -156,7 +150,7 @@ internal fun OperatingNoticeScreen(
                                     onNoticeClick(notice)
                                     selectedNotice = uiState.selectNotice(notice, date)
                                 }
-                                if (uiState.scheduledSelected) {
+                                if (uiState.tab == OperatingNoticeTab.SCHEDULED) {
                                     uiState.scheduledGroups.forEach { (date, notices) ->
                                         item(key = "date:$date") { OperatingNoticeDateHeader(date) }
                                         addOperatingNoticeRows(
@@ -189,16 +183,6 @@ internal fun OperatingNoticeScreen(
                 containerColor = CommonColor.White,
             )
         }
-    }
-    CommonBottomSheet(visible = areaSheetVisible, onDismissRequest = { areaSheetVisible = false }) {
-        OperatingNoticeAreaSheet(
-            feed = uiState.feed,
-            areaFilter = uiState.areaFilter,
-            onAreaSelected = {
-                onAreaSelected(it)
-                areaSheetVisible = false
-            },
-        )
     }
     selectedNotice?.let { selection ->
         OperatingNoticeBottomSheet(
@@ -238,7 +222,7 @@ private fun OperatingNoticeScreenPreview(
 @Preview(name = "예정")
 @Composable
 private fun OperatingNoticeScheduledPreview() {
-    OperatingNoticePreviewContent(previewState(OperatingNoticePreviewParameterProvider().values.first()).copy(scheduledSelected = true))
+    OperatingNoticePreviewContent(previewState(OperatingNoticePreviewParameterProvider().values.first()).copy(tab = OperatingNoticeTab.SCHEDULED))
 }
 
 @Preview(name = "검색 결과 없음")
@@ -252,7 +236,7 @@ private fun previewState(notices: List<OperatingNotice>) =
         feed =
             OperatingNoticeFeed(
                 referenceDate = LocalDate(2026, 10, 14),
-                items = notices.map { OperatingNoticeFeedItem(it, AdministrativeArea.SEOUL, "마포구") },
+                items = notices.map { OperatingNoticeFeedItem(it) },
             ),
     )
 

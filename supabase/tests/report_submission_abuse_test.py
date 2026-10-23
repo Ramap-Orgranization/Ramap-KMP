@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
-"""격리 staging에서 제보 중복·한도·권한·롤백을 검증하고 fixture를 정리한다."""
+"""격리 staging에서 매장 제보 중복·한도·권한·롤백을 검증하고 fixture를 정리한다."""
 import argparse
-import base64
 import concurrent.futures
 import json
 import secrets
@@ -24,13 +23,13 @@ def main():
     assert args.project_ref == 'gedptwzjortijxpjvmbc' and config['project_ref'] == args.project_ref
     assert args.project_ref in database_url and config['url'].rstrip('/') == f'https://{args.project_ref}.supabase.co'
     connection = psycopg.connect(database_url, password=Path(args.db_password_file).read_text().strip(), autocommit=True, connect_timeout=20)
-    cases, accounts, objects = [], {}, []
+    cases, accounts = [], {}
     requests, request_lock = 0, threading.Lock()
     failure = None
     label = uuid.uuid4().hex
     shop_id = str(uuid.uuid4())
     source_prefix = f'https://report-test.invalid/{label}/'
-    tables = {'feedback': 'feedback_submissions', 'shop_information': 'shop_information_reports', 'unregistered_place': 'unregistered_place_reports'}
+    tables = {'shop_information': 'shop_information_reports', 'unregistered_place': 'unregistered_place_reports'}
     helper_created = False
 
     def query(sql, values=()):
@@ -41,11 +40,11 @@ def main():
         if not condition:
             raise AssertionError(name)
 
-    def call(method, path, body=None, actor='anon', headers=None, raw=None):
+    def call(method, path, body=None, actor='anon', headers=None):
         nonlocal requests
         token = config['service_role'] if actor == 'service' else accounts.get(actor, {}).get('token', config['anon'])
-        request_headers = {'apikey': config['service_role'] if actor == 'service' else config['anon'], 'Authorization': 'Bearer ' + token, 'Content-Type': 'image/png' if raw is not None else 'application/json', **(headers or {})}
-        data = raw if raw is not None else json.dumps(body).encode() if body is not None else None
+        request_headers = {'apikey': config['service_role'] if actor == 'service' else config['anon'], 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json', **(headers or {})}
+        data = json.dumps(body).encode() if body is not None else None
         with request_lock:
             requests += 1
         request = urllib.request.Request(config['url'].rstrip('/') + path, data=data, headers=request_headers, method=method)
@@ -81,18 +80,15 @@ def main():
         connection.execute('delete from report_submission_test.notifications')
         connection.execute('delete from report_submission_private.submission_counters')
         connection.execute('delete from report_submission_private.recent_submissions')
-        connection.execute('update report_submission_private.submission_limits set global_minute_limit=1000,global_daily_limit=1000,actor_minute_limit=1000,actor_daily_limit=1000,enabled=true')
+        connection.execute('update report_submission_private.submission_limits set global_minute_limit=1000,global_daily_limit=1000,actor_minute_limit=1000,actor_daily_limit=1000,enabled=true where kind = any(%s)', (list(tables),))
 
     def payload(kind, suffix):
-        if kind == 'feedback':
-            return {'p_source_url': source_prefix + suffix}
         if kind == 'shop_information':
             return {'id': str(uuid.uuid4()), 'shop_id': shop_id, 'shop_name': 'Synthetic report shop', 'wrong_fields': ['address', 'phone'], 'description': label + '-' + suffix}
         return {'id': str(uuid.uuid4()), 'place_url': source_prefix + suffix}
 
     def submit(kind, suffix, actor='anon', headers=None, value=None):
-        path = '/rest/v1/rpc/submit_news_report' if kind == 'feedback' else '/rest/v1/' + tables[kind]
-        return call('POST', path, value if value is not None else payload(kind, suffix), actor, {'Prefer': 'return=minimal', **(headers or {})})
+        return call('POST', '/rest/v1/' + tables[kind], value if value is not None else payload(kind, suffix), actor, {'Prefer': 'return=minimal', **(headers or {})})
 
     def total(kind):
         return query('select count(*) from report_submission_test.notifications where kind=%s', (kind,))
@@ -116,7 +112,7 @@ def main():
         connection.execute("""create function report_submission_test.capture() returns trigger language plpgsql security definer set search_path='' as $$
         begin
             insert into report_submission_test.notifications(kind,report_id) values
-            (case tg_table_name when 'feedback_submissions' then 'feedback' when 'shop_information_reports' then 'shop_information' else 'unregistered_place' end,new.id);
+            (case tg_table_name when 'shop_information_reports' then 'shop_information' else 'unregistered_place' end,new.id);
             return new;
         end;$$""")
         connection.execute('revoke all on schema report_submission_test from public,anon,authenticated')
@@ -126,7 +122,7 @@ def main():
         connection.execute('insert into public.ramen_shops(id,name,address,lat,lng) values (%s,%s,%s,37,127)', (shop_id, 'Synthetic report shop', 'Synthetic only'))
 
         for role in ['anon', 'authenticated']:
-            for operation in ['select * from report_submission_private.submission_limits', 'select * from report_submission_private.submission_counters', 'delete from report_submission_private.recent_submissions', "select report_submission_private.admit_submission('feedback','forged')"]:
+            for operation in ['select * from report_submission_private.submission_limits', 'select * from report_submission_private.submission_counters', 'delete from report_submission_private.recent_submissions', "select report_submission_private.admit_submission('shop_information','forged')"]:
                 denied = False
                 try:
                     with connection.transaction(force_rollback=True):
@@ -158,7 +154,7 @@ def main():
             clear()
             first = submit(kind, 'same')
             second = submit(kind, 'same', 'A')
-            check(kind + '_duplicate_success_contract', first[0] in [200, 201] and second[0] in [200, 201] and (kind != 'feedback' or (first[1] == 'submitted' and second[1] == 'duplicate')))
+            check(kind + '_duplicate_success_contract', first[0] in [200, 201] and second[0] in [200, 201])
             check(kind + '_duplicate_one_row_one_notification_one_unit', total(kind) == 1 and daily(kind) == 1)
 
             clear()
@@ -207,10 +203,6 @@ def main():
             check(kind + '_parallel_distinct_exact_limit', sum(r[0] in [200, 201] for r in replies) == 3 and sum(limit_reply(r) for r in replies) == 9 and total(kind) == 3 and daily(kind) == 3)
 
         clear()
-        bad_news = ['not a URL', 'javascript:alert(1)', 'https://user:pass@example.invalid/report', source_prefix + 'a b', source_prefix + 'x' * 2100]
-        for index, value in enumerate(bad_news):
-            status, _, _ = submit('feedback', 'invalid', value={'p_source_url': value})
-            check('invalid_news_URL_' + str(index), status == 400 and total('feedback') == 0 and daily('feedback') == 0)
         bad_places = [{'place_url': 'not a URL'}, {'place_url': source_prefix + 'invalid', 'lat': 999, 'lng': 999}, {'lat': 37}, {}, {'lat': 'NaN', 'lng': 127}]
         for index, value in enumerate(bad_places):
             status, _, _ = submit('unregistered_place', 'invalid', value=value)
@@ -228,12 +220,6 @@ def main():
         first = submit('unregistered_place', 'coordinate-only', value={'lat': 37.12345611, 'lng': 127.12345611})
         second = submit('unregistered_place', 'coordinate-only', 'B', value={'lat': 37.12345612, 'lng': 127.12345612})
         check('coordinate_only_report_supported_and_precision_noise_deduplicated', first[0] == 201 and second[0] == 201 and total('unregistered_place') == 1 and daily('unregistered_place') == 1)
-
-        clear()
-        connection.execute('insert into public.feedback_submissions(feedback_type,message) values (%s,%s)', ('news_report', source_prefix + 'historical'))
-        connection.execute("update report_submission_private.submission_limits set enabled=false where kind='feedback'")
-        reply = submit('feedback', 'historical')
-        check('permanent_historical_news_duplicate_uses_no_budget', reply[0] == 200 and reply[1] == 'duplicate' and total('feedback') == 1 and daily('feedback') == 0)
 
         clear()
         connection.execute("update report_submission_private.submission_limits set enabled=false where kind='unregistered_place'")
@@ -270,19 +256,6 @@ def main():
         recent_text = query('select coalesce(jsonb_agg(to_jsonb(c)),\'[]\')::text from report_submission_private.recent_submissions c')
         check('quota_state_contains_no_raw_IP_subject_or_report_content', source_prefix not in recent_text and all(a['id'] not in counter_text for a in accounts.values()))
 
-        clear()
-        photo = 'report-abuse-' + label + '.png'
-        objects.append(photo)
-        image = base64.b64decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jE1cAAAAASUVORK5CYII=')
-        status, _, _ = call('POST', '/storage/v1/object/news-report-evidence/' + photo, actor='A', raw=image)
-        check('photo_fixture_uploaded_once', status == 200)
-        for actor in ['anon', 'B']:
-            status, _, _ = submit('feedback', 'unauthorized-photo', actor, value={'p_source_url': source_prefix + actor, 'p_attachment_path': photo})
-            check('photo_ownership_preserved_' + actor, status in [400, 401, 403] and total('feedback') == 0)
-        first = submit('feedback', 'photo-only', 'A', value={'p_attachment_path': photo})
-        second = submit('feedback', 'photo-only', 'A', value={'p_attachment_path': photo})
-        check('photo_only_submission_and_duplicate_contract', first[0] == 200 and first[1] == 'submitted' and second[0] == 200 and second[1] == 'duplicate' and total('feedback') == 1)
-        check('submitted_photo_still_present', query('select count(*) from storage.objects where bucket_id=%s and name=%s', ('news-report-evidence', photo)) == 1)
     except BaseException as error:
         failure = type(error).__name__ + ': ' + str(error)
     finally:
@@ -291,8 +264,6 @@ def main():
             for table in tables.values():
                 connection.execute('drop trigger if exists zz_report_test_capture on public.' + table)
             connection.execute('drop schema report_submission_test cascade')
-        for photo in objects:
-            call('DELETE', '/storage/v1/object/news-report-evidence', {'prefixes': [photo]}, 'service')
         for actor in accounts.values():
             call('DELETE', '/auth/v1/admin/users/' + actor['id'], actor='service')
         connection.execute('delete from public.ramen_shops where id=%s', (shop_id,))

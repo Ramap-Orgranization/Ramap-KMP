@@ -2,6 +2,7 @@ package com.peto.ramap.domain.repository
 
 import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.domain.model.event.ShopEvent
+import com.peto.ramap.domain.model.shop.Location
 import com.peto.ramap.domain.model.shop.MapBounds
 import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.domain.model.shop.SearchQuery
@@ -30,6 +31,13 @@ interface RamenShopRepository {
 
     suspend fun searchRamenShops(
         query: SearchQuery,
+        limit: Int,
+    ): RamapResult<RamenShops>
+
+    /** 매장명 관련도와 [center] 기준 거리순으로 정렬한 지도 검색 결과를 반환한다. */
+    suspend fun searchMapRamenShops(
+        query: SearchQuery,
+        center: Location?,
         limit: Int,
     ): RamapResult<RamenShops>
 }

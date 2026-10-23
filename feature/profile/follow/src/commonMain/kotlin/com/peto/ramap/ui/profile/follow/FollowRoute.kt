@@ -14,7 +14,7 @@ import com.peto.ramap.ui.refresh.RefreshOnReturnEffect
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 import ramap.shared.generated.resources.Res
-import ramap.shared.generated.resources.review_action_failed
+import ramap.shared.generated.resources.follow_update_failure_message
 
 @Composable
 fun FollowRoute(
@@ -37,7 +37,7 @@ fun FollowRoute(
         }
     }
     ObserveAsEvents(viewModel.sideEffect) {
-        toastManager.show(ToastData(message = Res.string.review_action_failed, type = ToastType.ERROR))
+        toastManager.show(ToastData(message = Res.string.follow_update_failure_message, type = ToastType.ERROR))
     }
     FollowContent(
         state = state,

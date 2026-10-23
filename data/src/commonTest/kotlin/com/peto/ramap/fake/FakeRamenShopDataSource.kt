@@ -5,6 +5,7 @@ import com.peto.ramap.data.model.RamenShopResponse
 import com.peto.ramap.data.model.ShopEventParticipantResponse
 import com.peto.ramap.data.model.ShopEventResponse
 import com.peto.ramap.data.model.ShopOverviewResponse
+import com.peto.ramap.domain.model.shop.Location
 import com.peto.ramap.domain.model.shop.MapBounds
 import com.peto.ramap.domain.model.shop.SearchQuery
 
@@ -47,6 +48,8 @@ internal class FakeRamenShopDataSource(
 
     var requestedSearchLimit: Int? = null
         private set
+    var requestedSearchCenter: Location? = null
+        private set
 
     override suspend fun fetchRamenShops(bounds: MapBounds): List<RamenShopResponse> {
         requestedBounds = bounds
@@ -70,5 +73,14 @@ internal class FakeRamenShopDataSource(
         requestedSearchLimit = limit
         error?.let { throw it }
         return searchResponses
+    }
+
+    override suspend fun searchMapRamenShops(
+        query: SearchQuery,
+        center: Location?,
+        limit: Int,
+    ): List<RamenShopResponse> {
+        requestedSearchCenter = center
+        return searchRamenShops(query, limit)
     }
 }

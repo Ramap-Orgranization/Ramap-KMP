@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
@@ -27,24 +26,18 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.peto.ramap.designsystem.button.AppFloatingActionButton
 import com.peto.ramap.designsystem.component.LoadErrorContent
 import com.peto.ramap.designsystem.toast.ToastManager
-import com.peto.ramap.domain.model.event.EventFilter
 import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.model.event.ShopEvents
 import com.peto.ramap.theme.CommonColor
-import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.RamapTheme
 import com.peto.ramap.ui.base.ObserveAsEvents
-import com.peto.ramap.ui.main.event.list.component.EventFilters
 import com.peto.ramap.ui.main.event.list.component.EventListBottomSheet
 import com.peto.ramap.ui.main.event.list.component.EventListEmptyContent
 import com.peto.ramap.ui.main.event.list.component.EventListSkeleton
-import com.peto.ramap.ui.main.event.list.component.NewsReportDialog
 import com.peto.ramap.ui.main.event.list.component.eventSection
 import com.peto.ramap.ui.main.event.list.contract.EventsIntent
 import com.peto.ramap.ui.main.event.list.contract.EventsSideEffect
 import com.peto.ramap.ui.main.event.list.contract.EventsUiState
-import com.peto.ramap.ui.main.event.list.platform.rememberAdminRegistrationAction
-import com.peto.ramap.ui.main.event.list.platform.rememberNewsReportImagePicker
 import com.peto.ramap.ui.main.event.list.preview.EventsPreviewParameterProvider
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
@@ -57,8 +50,6 @@ import ramap.shared.generated.resources.event_list_ongoing_section
 import ramap.shared.generated.resources.event_list_upcoming_section
 import ramap.shared.generated.resources.ic_operating_notice_fab
 import ramap.shared.generated.resources.laduck_error_crying
-import ramap.shared.generated.resources.new_menu_ongoing_section
-import ramap.shared.generated.resources.new_menu_upcoming_section
 import ramap.shared.generated.resources.operating_notice_open
 
 @Composable
@@ -69,11 +60,6 @@ fun EventsRoute(
     viewModel: EventsViewModel = koinViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val adminRegistrationAction = rememberAdminRegistrationAction()
-    val imagePicker =
-        rememberNewsReportImagePicker { evidence ->
-            viewModel.dispatch(EventsIntent.OnNewsReportEvidenceSelected(evidence))
-        }
     ObserveAsEvents(viewModel.sideEffect) { sideEffect ->
         when (sideEffect) {
             is EventsSideEffect.ShowEventsToast -> toastManager.show(sideEffect.data)
@@ -88,14 +74,6 @@ fun EventsRoute(
         },
         onRefresh = { viewModel.dispatch(EventsIntent.OnEventsRefreshed) },
         onClickRetry = { viewModel.dispatch(EventsIntent.OnEventsRetried) },
-        onFilterSelected = { filter -> viewModel.dispatch(EventsIntent.OnFilterSelected(filter)) },
-        onClickNewsReport = { viewModel.dispatch(EventsIntent.OnNewsReportClicked) },
-        onNewsReportContentChanged = { viewModel.dispatch(EventsIntent.OnNewsReportContentChanged(it)) },
-        onNewsReportImagePick = imagePicker,
-        onNewsReportEvidenceRemoved = { viewModel.dispatch(EventsIntent.OnNewsReportEvidenceRemoved) },
-        onNewsReportSubmit = { viewModel.dispatch(EventsIntent.OnNewsReportSubmit) },
-        onNewsReportDismiss = { viewModel.dispatch(EventsIntent.OnNewsReportDismissed) },
-        onClickAdminRegistration = adminRegistrationAction,
     )
 }
 
@@ -106,14 +84,6 @@ internal fun EventsScreen(
     onClickEvent: (ShopEvent) -> Unit,
     onRefresh: () -> Unit,
     onClickRetry: () -> Unit,
-    onFilterSelected: (EventFilter) -> Unit,
-    onClickNewsReport: () -> Unit,
-    onNewsReportContentChanged: (String) -> Unit,
-    onNewsReportImagePick: () -> Unit,
-    onNewsReportEvidenceRemoved: () -> Unit,
-    onNewsReportSubmit: () -> Unit,
-    onNewsReportDismiss: () -> Unit,
-    onClickAdminRegistration: (() -> Unit)?,
 ) {
     var selectedEventGroup by remember { mutableStateOf<ShopEvents?>(null) }
     val pullToRefreshState = rememberPullToRefreshState()
@@ -155,43 +125,13 @@ internal fun EventsScreen(
                     else -> {
                         val summerLimitedTitle =
                             stringResource(Res.string.event_filter_summer_limited)
-                        val ongoingTitleRes =
-                            if (uiState.isNewMenuFilter) {
-                                Res.string.new_menu_ongoing_section
-                            } else {
-                                Res.string.event_list_ongoing_section
-                            }
-                        val upcomingTitleRes =
-                            if (uiState.isNewMenuFilter) {
-                                Res.string.new_menu_upcoming_section
-                            } else {
-                                Res.string.event_list_upcoming_section
-                            }
-
-                        val ongoingTitle = stringResource(ongoingTitleRes)
-                        val upcomingTitle = stringResource(upcomingTitleRes)
+                        val ongoingTitle = stringResource(Res.string.event_list_ongoing_section)
+                        val upcomingTitle = stringResource(Res.string.event_list_upcoming_section)
                         LazyColumn(
                             modifier = Modifier.fillMaxSize(),
                             contentPadding = PaddingValues(bottom = 5.dp),
                             verticalArrangement = Arrangement.spacedBy(10.dp),
                         ) {
-                            item {
-                                EventFilters(
-                                    selectedFilter = uiState.selectedFilter,
-                                    onFilterSelected = onFilterSelected,
-                                    onClickNewsReport = onClickNewsReport,
-                                    onClickAdminRegistration = onClickAdminRegistration,
-                                    modifier = Modifier.padding(top = 5.dp),
-                                )
-                            }
-
-                            item {
-                                HorizontalDivider(
-                                    thickness = 2.dp,
-                                    color = GrayColor.C100,
-                                )
-                            }
-
                             if (uiState.isEmpty) {
                                 item {
                                     EventListEmptyContent(modifier = Modifier.fillMaxSize())
@@ -255,17 +195,6 @@ internal fun EventsScreen(
             }
         }
     }
-    NewsReportDialog(
-        value = uiState.newsReportContent,
-        evidence = uiState.newsReportEvidence,
-        visible = uiState.showNewsReportDialog,
-        isSubmitting = uiState.isSubmittingNewsReport,
-        onValueChange = onNewsReportContentChanged,
-        onImagePick = onNewsReportImagePick,
-        onEvidenceRemove = onNewsReportEvidenceRemoved,
-        onSubmit = onNewsReportSubmit,
-        onDismiss = onNewsReportDismiss,
-    )
 }
 
 @Preview(showBackground = true)
@@ -280,14 +209,6 @@ private fun EventsRoutePreview(
             onClickEvent = {},
             onRefresh = {},
             onClickRetry = {},
-            onFilterSelected = {},
-            onClickNewsReport = {},
-            onNewsReportContentChanged = {},
-            onNewsReportImagePick = {},
-            onNewsReportEvidenceRemoved = {},
-            onNewsReportSubmit = {},
-            onNewsReportDismiss = {},
-            onClickAdminRegistration = null,
         )
     }
 }

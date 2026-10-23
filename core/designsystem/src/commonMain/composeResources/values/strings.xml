@@ -6,14 +6,15 @@
     <!-- 매장 상세 화면 -->
     <string name="shop_detail_label_address">주소</string>
     <string name="shop_detail_copy_address">주소 복사</string>
-    <string name="map_search_result_open">영업중</string>
-    <string name="map_search_result_open_last_order_format">영업중 · %1$s에 라스트오더</string>
-    <string name="map_search_result_open_close_format">영업중 · %1$s에 영업종료</string>
+    <string name="map_search_result_open">영업 중</string>
+    <string name="map_search_result_open_last_order_format">영업 중 · %1$s에 라스트오더</string>
+    <string name="map_search_result_open_close_format">영업 중 · %1$s에 영업 종료</string>
     <string name="map_search_result_break_time_label">브레이크 타임</string>
     <string name="map_search_result_break_time_format">브레이크 타임 · %1$s에 영업 시작</string>
     <string name="map_search_result_closed_label">영업 종료</string>
     <string name="map_search_result_closed_format">영업 종료 · %1$s에 영업 시작</string>
     <string name="shop_menu_title">메뉴판</string>
+    <string name="shop_menu_empty_message">등록된 메뉴가 없어요</string>
     <string name="shop_menu_load_failure_message">메뉴 정보를 불러오지 못했어요</string>
     <string name="shop_menu_updated_at">%1$s 업데이트</string>
     <string name="shop_menu_representative">대표</string>
@@ -33,9 +34,9 @@
     <string name="shop_detail_business_hours_weekday_range_format">%1$s–%2$s</string>
     <string name="shop_detail_business_hours_time_format">%1$s ~ %2$s</string>
     <string name="shop_detail_business_hours_next_day_time_format">%1$s ~ 다음 날 %2$s</string>
-    <string name="shop_detail_business_hours_closed">정기휴무</string>
+    <string name="shop_detail_business_hours_closed">정기 휴무</string>
     <string name="shop_detail_business_hours_closed_label_format">%1$s</string>
-    <string name="shop_detail_business_hours_break_time_format">%1$s ~ %2$s (브레이크타임)</string>
+    <string name="shop_detail_business_hours_break_time_format">%1$s ~ %2$s (브레이크 타임)</string>
     <string name="shop_detail_business_hours_last_order_format">%1$s (라스트오더)</string>
     <string name="shop_detail_business_hours_override">오늘 변경 영업시간</string>
     <string name="shop_detail_business_hours_override_reason">변경 사유: %1$s</string>
@@ -61,15 +62,19 @@
     <string name="shop_review_image_invalid">JPEG·PNG 형식의 5MB 이하 사진을 선택해 주세요</string>
     <string name="shop_review_image_add">사진 추가</string>
     <string name="shop_review_image_remove">사진 삭제</string>
-    <string name="shop_review_submit">등록</string>
+    <string name="shop_review_submit">리뷰 등록</string>
     <string name="shop_review_cancel">취소</string>
-    <string name="shop_review_failure_message">리뷰 등록에 실패했습니다</string>
+    <string name="shop_review_failure_message">리뷰를 저장하지 못했어요. 다시 시도해 주세요.</string>
     <string name="review_author_unknown">알 수 없는 사용자</string>
     <string name="review_report">신고</string>
     <string name="review_photo_description">리뷰 사진 %1$d</string>
     <string name="review_status_removed">삭제된 리뷰</string>
-    <string name="review_action_failed">데이터 로딩에 실패했어요.\n잠시 후 다시 시도해 주세요.</string>
-    <string name="review_action_success">신고가 완료되었습니다.</string>
+    <string name="review_action_failed">정보를 불러오지 못했어요.\n잠시 후 다시 시도해 주세요.</string>
+    <string name="review_action_success">신고를 접수했어요.</string>
+    <string name="review_report_failed">신고를 접수하지 못했어요. 다시 시도해 주세요.</string>
+    <string name="review_block_failed">사용자를 차단하지 못했어요. 다시 시도해 주세요.</string>
+    <string name="review_unblock_failed">차단을 해제하지 못했어요. 다시 시도해 주세요.</string>
+    <string name="review_unblock_success">차단을 해제했어요.</string>
     <string name="review_block_confirm">%1$s님을 차단할까요?</string>
     <string name="review_blocked_review">차단한 사용자의 리뷰입니다</string>
     <string name="review_blocked_options">차단 리뷰 옵션</string>
@@ -87,12 +92,14 @@
     <string name="review_visibility_title">리뷰 공개 설정</string>
     <string name="review_private_status">나만 보기</string>
     <string name="review_visibility_description">공개로 설정해도 프로필이 비공개면 다른 방문자에게 노출되지 않아요.</string>
-    <string name="review_private_profile_confirmation_title">프로필 비공개 상태 게시</string>
-    <string name="review_private_profile_confirmation">현재 프로필이 비공개되어 다른 사용자에게 보이지 않아요. 프로필을 공개하시겠어요?</string>
+    <string name="review_private_profile_confirmation_title">프로필을 공개할까요?</string>
+    <string name="review_private_profile_confirmation">프로필이 비공개여도 닉네임과 프로필 사진은 공개돼요.\n프로필을 공개하거나 비공개를 유지한 채 리뷰를 저장할 수 있어요.</string>
+    <string name="review_private_profile_confirm_public">프로필 공개하고 저장</string>
+    <string name="review_private_profile_confirm_private">비공개 유지하고 저장</string>
     <string name="review_photos">사진 첨부(선택)</string>
     <string name="review_body_title">리뷰 작성</string>
     <string name="review_profile_title">리뷰 프로필</string>
-    <string name="review_profile_unavailable">존재하지 않거나 삭제된 사용자예요</string>
+    <string name="review_profile_unavailable">이 프로필을 볼 수 없어요.</string>
     <string name="review_profile_private">비공개 프로필이에요</string>
     <string name="review_reason_harassment">욕설·괴롭힘</string>
     <string name="review_reason_hate">혐오·차별</string>
@@ -102,8 +109,8 @@
     <string name="review_reason_spam">광고·도배</string>
     <string name="review_reason_violence">폭력·위협</string>
     <string name="review_report_description">신고 사유를 선택해 주세요.</string>
-    <string name="review_report_policy_title">안전하고 투명한 커뮤니티 보호 정책</string>
-    <string name="review_report_policy_body">접수된 신고는 즉시 자동 삭제되지 않으며, 가이드라인에 따라 운영자가 내용을 면밀히 확인한 후 신속하게 처리됩니다.</string>
+    <string name="review_report_policy_title">신고 처리 안내</string>
+    <string name="review_report_policy_body">신고만으로 리뷰가 바로 삭제되지는 않아요.\n운영자가 내용을 확인한 뒤 가이드라인에 따라 처리해요.</string>
     <string name="review_report_details">추가 설명 (최대 %1$d자)</string>
     <string name="review_report_details_required">추가 설명 (필수, 최대 %1$d자)</string>
     <string name="review_report_title">리뷰 신고</string>
@@ -145,48 +152,27 @@
     <string name="event_detail_title">이벤트 상세</string>
     <string name="event_detail_new_menu_title">신메뉴 상세</string>
     <string name="event_detail_store_renewal_title">리뉴얼 상세</string>
-    <string name="event_not_found_message">종료되었거나 찾을 수 없는 이벤트예요</string>
+    <string name="event_not_found_message">이벤트를 찾을 수 없어요.</string>
     <string name="event_notification_enable">이벤트 알림 켜기</string>
     <string name="event_notification_disable">이벤트 알림 끄기</string>
     <string name="event_notification_action">이벤트 알림</string>
 
     <!-- 이벤트 알림 설정 화면 -->
-    <string name="event_notification_master_action">이벤트 푸쉬알림</string>
+    <string name="event_notification_master_action">이벤트 알림</string>
 
     <!-- 이벤트 목록 화면 -->
     <string name="event_list_empty">진행 중이거나 예정된 새소식이 없어요</string>
     <string name="event_list_error_title">새소식을 불러오지 못했어요</string>
     <string name="event_list_error_description">잠시 후 다시 시도해 주세요.</string>
-    <string name="event_list_refresh_failure_message">새소식을 새로고침하지 못했어요</string>
+    <string name="event_list_refresh_failure_message">새소식을 새로고침하지 못했어요. 잠시 후 다시 시도해 주세요.</string>
     <string name="event_list_ongoing_section">진행 중</string>
     <string name="event_list_upcoming_section">진행 예정</string>
-    <string name="new_menu_ongoing_section">신규 출시</string>
-    <string name="new_menu_upcoming_section">출시 예정</string>
     <string name="event_list_additional_events">+%1$d</string>
     <string name="event_filter_summer_limited">여름 한정</string>
-    <string name="event_filter_event">이벤트</string>
-    <string name="event_filter_new_menu">신메뉴</string>
-    <string name="event_filter_store_renewal">리뉴얼</string>
-    <string name="news_report_open">새소식 제보하기</string>
     <string name="event_registration_open">관리자 등록</string>
-    <string name="news_report_title">새소식 제보</string>
-    <string name="news_report_description">인스타그램 게시물 링크 또는 스토리 캡처를 보내주세요</string>
-    <string name="news_report_placeholder">인스타그램 게시물 링크</string>
-    <string name="news_report_action">제보하기</string>
-    <string name="news_report_dismiss">취소</string>
-    <string name="news_report_success_message">새소식 제보가 접수되었습니다</string>
-    <string name="news_report_failure_message">새소식 제보 접수에 실패했습니다</string>
-    <string name="news_report_invalid_url_message">Instagram 게시물 또는 릴스 링크를 입력해주세요</string>
-    <string name="news_report_required_message">링크 또는 스토리 캡처를 추가해주세요</string>
-    <string name="news_report_duplicate_message">이미 제보된 새소식입니다</string>
-    <string name="news_report_photo_add">스토리 캡처 추가</string>
-    <string name="news_report_photo_remove">사진 삭제</string>
-    <string name="news_report_clear_action">입력 내용 모두 지우기</string>
-    <string name="news_report_link_label">인스타그램 링크</string>
-    <string name="news_report_photo_label">사진 첨부</string>
 
     <string name="operating_notice_day_closed">휴무</string>
-    <string name="operating_notice_day_regular">정상영업</string>
+    <string name="operating_notice_day_regular">정상 영업</string>
     <string name="operating_notice_hours_unknown">영업시간 미확인</string>
     <!-- 영업 변동 화면 -->
     <string name="operating_notice_open">영업 변동 보기</string>
@@ -236,7 +222,7 @@
     <string name="shop_information_report_action">제보하기</string>
     <string name="shop_information_report_dismiss">취소</string>
     <string name="shop_information_report_success_message">제보가 접수되었습니다</string>
-    <string name="shop_information_report_failure_message">제보 접수에 실패했습니다</string>
+    <string name="shop_information_report_failure_message">제보를 접수하지 못했어요. 잠시 후 다시 시도해 주세요.</string>
     <string name="shop_information_field_address">주소</string>
     <string name="shop_information_field_business_hours">영업시간</string>
     <string name="shop_information_field_menu_categories">메뉴 카테고리</string>
@@ -266,11 +252,11 @@
     <string name="search_bar_placeholder">매장명을 입력해주세요</string>
     <string name="search_bar_search_icon">검색</string>
     <string name="search_bar_clear_action">검색어 지우기</string>
-    <string name="search_result_empty_message">검색 결과가 없어요</string>
-    <string name="search_result_filter_empty_message">선택한 필터에 맞는 매장이 없어요</string>
-    <string name="search_result_query_filter_empty_message">검색어와 선택한 필터에 맞는 매장이 없어요</string>
+    <string name="search_result_empty_message">검색 결과가 없어요. 검색어를 바꿔보세요.</string>
+    <string name="search_result_filter_empty_message">선택한 필터에 맞는 매장이 없어요. 필터를 바꿔보세요.</string>
+    <string name="search_result_query_filter_empty_message">검색어와 필터에 맞는 매장이 없어요. 검색어나 필터를 바꿔보세요.</string>
     <string name="search_result_hidden_only_message">숨김 처리한 매장이 검색되었어요</string>
-    <string name="filter_empty_visible_result_message">선택한 필터에 맞는 매장이 없어요</string>
+    <string name="filter_empty_visible_result_message">선택한 필터에 맞는 매장이 없어요. 필터를 바꿔보세요.</string>
     <string name="hidden_shop_search_result_message">숨김 처리된 매장이에요</string>
     <string name="recent_searches_title">최근 검색</string>
     <string name="recent_search_clear_all">전체 삭제</string>
@@ -282,7 +268,7 @@
     <string name="place_report_placeholder">지도 링크 또는 공유 내용 붙여넣기</string>
     <string name="place_report_action">장소 제보하기</string>
     <string name="place_report_success_message">장소 제보가 접수되었습니다</string>
-    <string name="place_report_failure_message">장소 제보 접수에 실패했습니다</string>
+    <string name="place_report_failure_message">장소 제보를 접수하지 못했어요. 잠시 후 다시 시도해 주세요.</string>
     <string name="place_report_invalid_url_message">카카오맵 또는 네이버 지도 링크를 입력해주세요</string>
     <string name="place_report_existing_shop_message">이미 존재하는 매장입니다</string>
 
@@ -292,7 +278,7 @@
     <string name="settings_title">설정</string>
     <string name="settings_account_menu">계정</string>
     <string name="settings_information_menu">정보</string>
-    <string name="settings_official_account_menu">라맵 공식 계정</string>
+    <string name="settings_official_account_menu">라멥 공식 계정</string>
     <string name="settings_contact_menu">문의하기</string>
     <string name="settings_report_menu">제보하기</string>
     <string name="settings_subscribed_shops_menu">알림 설정한 매장 보기</string>
@@ -323,9 +309,9 @@
     <string name="importation_remove_candidate">추가 대상에서 제외</string>
     <string name="importation_input_label">카카오맵 또는 네이버 지도 목록 링크</string>
     <string name="importation_analyze">목록 찾기</string>
-    <string name="importation_registered_count_label">기등록 매장</string>
-    <string name="importation_hidden_count_label">숨김 제외</string>
-    <string name="importation_unmatched_count_label">매칭 실패</string>
+    <string name="importation_registered_count_label">이미 저장한 매장</string>
+    <string name="importation_hidden_count_label">숨긴 매장</string>
+    <string name="importation_unmatched_count_label">찾지 못한 매장</string>
     <string name="importation_count">%1$d개</string>
     <string name="importation_candidates_title">추가할 매장</string>
     <string name="importation_confirm">추가하기</string>
@@ -333,11 +319,11 @@
     <string name="importation_completed">저장 목록에 추가했어요</string>
     <string name="importation_error_invalid_url">링크를 입력해주세요</string>
     <string name="importation_error_unsupported_url">카카오맵 또는 네이버 지도 목록 링크만 사용할 수 있어요</string>
-    <string name="importation_error_unavailable_list">비공개·삭제·만료된 목록이거나 불러올 수 없는 목록이에요</string>
-    <string name="importation_error_provider_failure">지도 목록 제공 서비스에 일시적인 문제가 있어요</string>
-    <string name="importation_error_personalization">저장 정보를 불러온 뒤 다시 시도해주세요</string>
+    <string name="importation_error_unavailable_list">목록을 불러올 수 없어요. 공개된 목록인지 확인하고 링크를 다시 입력해 주세요.</string>
+    <string name="importation_error_provider_failure">지도 목록을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.</string>
+    <string name="importation_error_personalization">저장 정보를 확인하지 못했어요. 잠시 후 다시 시도해 주세요.</string>
     <string name="importation_error_analyze">목록을 불러오지 못했어요. 링크를 확인해주세요</string>
-    <string name="importation_error_confirm">저장 추가에 실패했어요</string>
+    <string name="importation_error_confirm">매장을 저장하지 못했어요. 다시 시도해 주세요.</string>
 
     <!-- 앱 업데이트 -->
     <string name="app_update_title">업데이트가 필요해요</string>
@@ -350,37 +336,47 @@
 
     <!-- 알림 설정한 매장 화면 -->
     <string name="subscribed_shops_empty_title">알림을 설정한 매장이 없어요</string>
-    <string name="notification_removal_confirm_title">알림 설정을 해제하시겠습니까?</string>
-    <string name="notification_removal_confirm_action">해제</string>
+    <string name="notification_removal_confirm_title">알림 설정을 해제할까요?</string>
+    <string name="notification_removal_confirm_action">알림 해제</string>
     <string name="notification_removal_dismiss_action">취소</string>
 
     <!-- 숨긴 매장 화면 -->
     <string name="hidden_shops_empty_title">숨긴 매장이 없어요</string>
-    <string name="unhide_shop_confirm_title">숨김을 해제하시겠습니까?</string>
+    <string name="unhide_shop_confirm_title">숨김을 해제할까요?</string>
     <string name="unhide_shop_confirm_action">숨김 해제</string>
 
     <!-- 계정 화면 -->
     <string name="logout_menu">로그아웃</string>
     <string name="account_delete_menu">계정 삭제</string>
-    <string name="account_delete_confirm_title">계정을 탈퇴하시겠습니까?</string>
-    <string name="account_delete_confirm_description">탈퇴하면 계정 정보와 데이터가 삭제되며 복구할 수 없습니다.</string>
+    <string name="account_delete_confirm_title">계정을 탈퇴할까요?</string>
+    <string name="account_delete_confirm_description">탈퇴하면 계정 정보와 데이터가 삭제돼요. 삭제된 데이터는 복구할 수 없어요.</string>
     <string name="account_delete_confirm_action">탈퇴하기</string>
     <string name="account_delete_confirm_dismiss">취소</string>
     <string name="account_delete_success_message">계정 탈퇴가 완료되었습니다</string>
-    <string name="account_delete_failure_message">계정 탈퇴에 실패했습니다</string>
+    <string name="account_delete_failure_message">계정을 탈퇴하지 못했어요. 잠시 후 다시 시도해 주세요.</string>
 
     <!-- 로그인 화면 및 안내 -->
     <string name="kakao_login_button_title">카카오로 시작하기</string>
-    <string name="kakao_login_failure_message">카카오 로그인에 실패했습니다.</string>
+    <string name="kakao_login_failure_message">카카오로 로그인하지 못했어요. 다시 시도해 주세요.</string>
     <string name="apple_login_button_title">Apple로 계속하기</string>
-    <string name="apple_login_failure_message">Apple 로그인에 실패했습니다.</string>
+    <string name="apple_login_failure_message">Apple로 로그인하지 못했어요. 다시 시도해 주세요.</string>
     <string name="login_success_message">로그인 되었습니다.</string>
-    <string name="logout_failure_message">로그아웃에 실패했습니다.</string>
-    <string name="login_required_message">로그인이 필요한 기능입니다</string>
-    <string name="login_required_description">로그인 후 저장과 숨김 기능을 사용할 수 있어요.</string>
+    <string name="logout_failure_message">로그아웃하지 못했어요. 다시 시도해 주세요.</string>
+    <string name="login_required_message">로그인</string>
+    <string name="login_required_description">이 기능을 이용하려면 로그인이 필요해요.</string>
+    <string name="login_required_bookmark_description">매장을 저장하려면 로그인이 필요해요.</string>
+    <string name="login_required_saved_shops_description">저장한 매장을 보려면 로그인이 필요해요.</string>
+    <string name="login_required_hide_shop_description">매장을 숨기려면 로그인이 필요해요.</string>
+    <string name="login_required_notification_description">매장 알림을 설정하려면 로그인이 필요해요.</string>
+    <string name="login_required_review_write_description">리뷰를 작성하려면 로그인이 필요해요.</string>
+    <string name="login_required_review_like_description">리뷰에 좋아요를 누르려면 로그인이 필요해요.</string>
+    <string name="login_required_review_report_description">리뷰를 신고하려면 로그인이 필요해요.</string>
+    <string name="login_required_follow_description">팔로우를 관리하려면 로그인이 필요해요.</string>
+    <string name="login_required_block_description">차단 기능을 이용하려면 로그인이 필요해요.</string>
+    <string name="login_required_profile_description">사용자 프로필을 보려면 로그인이 필요해요.</string>
 
     <!-- 지도 화면 -->
-    <string name="hide_shop_confirm_title">숨김 처리하시겠습니까?</string>
+    <string name="hide_shop_confirm_title">이 매장을 숨길까요?</string>
     <string name="hide_shop_confirm_description">숨기면 지도와 저장 목록에서 보이지 않아요.</string>
     <string name="hide_shop_confirm_action">숨김 처리</string>
     <string name="hide_shop_confirm_dismiss">취소</string>
@@ -395,9 +391,9 @@
     <string name="map_shop_detail_error_description">잠시 후 다시 시도해 주세요.</string>
 
     <!-- 권한 안내 -->
-    <string name="location_permission_settings_action">설정</string>
-    <string name="location_permission_enable_message">위치 권한을 활성화해주세요</string>
-    <string name="notification_permission_enable_message">알림 권한을 활성화해주세요</string>
+    <string name="location_permission_settings_action">설정 열기</string>
+    <string name="location_permission_enable_message">내 위치를 보려면 설정에서 위치 접근을 허용해 주세요.</string>
+    <string name="notification_permission_enable_message">이벤트 알림을 받으려면 설정에서 알림을 허용해 주세요.</string>
 
     <!-- 공통 상태 및 피드백 -->
     <string name="loading_content_description">불러오는 중</string>
@@ -407,8 +403,8 @@
     <string name="event_notification_load_failure_message">알림 상태를 확인하지 못했어요. 잠시 후 다시 시도해 주세요.</string>
     <string name="event_notification_update_failure_message">알림 설정을 저장하지 못했어요. 다시 시도해 주세요.</string>
     <string name="retry_action">다시 시도</string>
-    <string name="personalization_update_failure_message">변경사항을 저장하지 못했습니다. 다시 시도해 주세요.</string>
-    <string name="personalization_load_failure_message">설정을 불러오지 못했습니다. 다시 시도해 주세요.</string>
+    <string name="personalization_update_failure_message">변경사항을 저장하지 못했어요. 다시 시도해 주세요.</string>
+    <string name="personalization_load_failure_message">설정을 불러오지 못했어요. 다시 시도해 주세요.</string>
     <string name="personalization_load_failure_title">개인 설정을 불러오지 못했어요</string>
     <string name="toast_icon">알림</string>
 
@@ -428,7 +424,7 @@
     <string name="ranking_empty_action">지도에서 매장 찾기</string>
     <string name="ranking_error_title">매장 랭킹을 불러오지 못했어요</string>
     <string name="ranking_error_description">잠시 후 다시 시도해 주세요.</string>
-    <string name="ranking_refresh_failure_message">매장 랭킹을 새로고침하지 못했어요</string>
+    <string name="ranking_refresh_failure_message">매장 랭킹을 새로고침하지 못했어요. 잠시 후 다시 시도해 주세요.</string>
     <string name="ranking_show_shop_on_map">지도에서 보기</string>
     <string name="ranking_bookmark_cancel_action">저장 해제</string>
     <string name="ranking_area_seoul_short">서울</string>
@@ -469,18 +465,18 @@
     <string name="admin_registration_shop_names_load_failure">매장 목록을 불러오지 못했어요.</string>
     <string name="admin_registration_managed_events_load_failure">관리할 이벤트를 불러오지 못했어요.</string>
     <string name="admin_registration_preview_required">URL 또는 캡처 이미지를 입력해 주세요.</string>
-    <string name="admin_registration_preview_failure">미리보기를 만들지 못했어요.</string>
+    <string name="admin_registration_preview_failure">미리보기를 만들지 못했어요. 다시 시도해 주세요.</string>
     <string name="admin_registration_draft_required">먼저 미리보기를 만들어 주세요.</string>
     <string name="admin_registration_image_only_required">매장명, 제목, 날짜를 입력해 주세요.</string>
     <string name="admin_registration_image_required">캡처 이미지를 선택해 주세요.</string>
     <string name="admin_registration_success">등록했어요.</string>
-    <string name="admin_registration_register_failure">요청을 처리하지 못했어요.</string>
+    <string name="admin_registration_register_failure">등록하지 못했어요. 다시 시도해 주세요.</string>
     <string name="admin_event_status_event_required">이벤트를 선택해 주세요.</string>
     <string name="admin_event_status_reason_required">취소 사유를 입력해 주세요.</string>
     <string name="admin_event_status_period_required">적용 기간을 선택해 주세요.</string>
-    <string name="admin_event_status_save_failure">이벤트 상태를 저장하지 못했어요.</string>
+    <string name="admin_event_status_save_failure">이벤트 상태를 저장하지 못했어요. 다시 시도해 주세요.</string>
     <string name="admin_correction_required">수정할 항목과 요청 내용을 입력해 주세요.</string>
-    <string name="admin_correction_failure">수정 요청을 처리하지 못했어요.</string>
+    <string name="admin_correction_failure">수정 요청을 처리하지 못했어요. 다시 시도해 주세요.</string>
     <string name="admin_correction_success">수정했어요.</string>
     <!-- Profile -->
     <string name="profile_title">내 프로필</string>
@@ -499,12 +495,12 @@
     <string name="profile_photo_remove">사진 제거</string>
     <string name="profile_nickname">닉네임</string>
     <string name="profile_nickname_placeholder">2~10글자를 입력해 주세요.</string>
-    <string name="profile_nickname_check">중복확인</string>
+    <string name="profile_nickname_check">중복 확인</string>
     <string name="profile_nickname_available">사용할 수 있는 닉네임이에요.</string>
     <string name="profile_nickname_unavailable">이미 사용 중인 닉네임이에요.</string>
     <string name="profile_nickname_check_failed">확인하지 못했어요. 다시 시도해 주세요.</string>
     <string name="profile_nickname_clear">닉네임 지우기</string>
-    <string name="profile_complete">완료</string>
+    <string name="profile_complete">저장</string>
     <string name="profile_counter">%1$d / 10</string>
     <string name="profile_saved">프로필을 저장했어요.</string>
     <string name="profile_save_failed">프로필을 저장하지 못했어요. 다시 시도해 주세요.</string>
@@ -532,8 +528,8 @@
     <string name="review_delete_confirm">리뷰를 삭제할까요?\n삭제된 리뷰는 복구할 수 없어요.</string>
     <string name="review_edit_title">리뷰 수정</string>
     <string name="review_save">저장</string>
-    <string name="review_delete_failed">리뷰를 삭제하지 못했습니다</string>
-    <string name="review_like_failed">좋아요를 변경하지 못했습니다</string>
+    <string name="review_delete_failed">리뷰를 삭제하지 못했어요. 다시 시도해 주세요.</string>
+    <string name="review_like_failed">좋아요를 변경하지 못했어요. 다시 시도해 주세요.</string>
     <string name="my_reviews">내 리뷰</string>
     <string name="my_reviews_summary">작성한 리뷰</string>
     <string name="my_reviews_all_filter">전체</string>
@@ -559,13 +555,15 @@
     <string name="follow_approve">승인</string>
     <string name="follow_reject">거절</string>
     <string name="follow_remove">팔로워 삭제</string>
-    <string name="follow_remove_confirm">팔로워 목록에서 삭제하시겠습니까?</string>
+    <string name="follow_remove_confirm">팔로워 목록에서 삭제할까요?</string>
     <string name="follow_empty">아직 목록이 비어 있어요</string>
     <string name="follow_following_empty">아직 팔로우한 사용자가 없어요</string>
     <string name="follow_followers_empty">아직 팔로워가 없어요</string>
     <string name="follow_reviews_visibility">팔로워에게 리뷰 공개</string>
     <string name="follow_saved_shops_visibility">팔로워에게 저장한 매장 공개</string>
     <string name="follow_content_private">공개하지 않은 콘텐츠예요</string>
+    <string name="follow_update_failure_message">팔로우 정보를 변경하지 못했어요. 다시 시도해 주세요.</string>
+    <string name="follow_load_failure_message">팔로우 정보를 불러오지 못했어요. 다시 시도해 주세요.</string>
     <string name="place_search_rate_limited">검색 요청이 많아요. 잠시 후 다시 시도해 주세요.</string>
     <string name="place_search_rate_limited_seconds">검색 요청이 많아요. %1$s초 후 다시 시도해 주세요.</string>
     <string name="place_search_rate_limited_minutes">검색 요청이 많아요. 약 %1$s분 후 다시 시도해 주세요.</string>

@@ -24,6 +24,7 @@ internal class DefaultPlaceSearchRepository(
                         PlaceSearchRequest(
                             query = query.value,
                             center = PlaceSearchCenterRequest(center.lat, center.lng),
+                            mode = "locations",
                         ),
                     ).results
                     .map { it.toDomain() },

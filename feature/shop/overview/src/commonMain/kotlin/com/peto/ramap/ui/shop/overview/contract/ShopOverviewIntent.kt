@@ -24,10 +24,6 @@ sealed interface ShopOverviewIntent : Intent {
         val shopId: String,
     ) : ShopOverviewIntent
 
-    data object OnRequestedShopDismissed : ShopOverviewIntent
-
-    data object OnDismissed : ShopOverviewIntent
-
     data object OnOverviewRetry : ShopOverviewIntent
 
     data class OnBookmarkToggled(

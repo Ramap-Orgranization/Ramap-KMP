@@ -223,11 +223,6 @@ class ReviewsViewModelTest {
                 assertTrue(viewModel.uiState.value.hasLoaded)
                 assertFalse(viewModel.uiState.value.hasReviewLoadFailure)
                 assertFalse(viewModel.uiState.value.isLoading)
-                viewModel.dispatch(ReviewsIntent.OnDismissed)
-                viewModel.dispatch(ReviewsIntent.OnRetry)
-                runCurrent()
-                assertEquals(null, viewModel.uiState.value.shopId)
-                assertEquals(emptyList(), viewModel.uiState.value.reviews)
             } finally {
                 response.complete(oldResult)
                 fixture.store.clear()

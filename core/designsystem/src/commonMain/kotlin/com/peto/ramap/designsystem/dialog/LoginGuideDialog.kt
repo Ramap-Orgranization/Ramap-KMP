@@ -14,6 +14,7 @@ import com.peto.ramap.domain.model.auth.LoginType
 import com.peto.ramap.domain.model.auth.supportedLoginTypes
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.GrayColor
+import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.login_required_description
@@ -25,6 +26,7 @@ fun LoginGuideDialog(
     onDismiss: () -> Unit,
     onLoginTypeSelected: (LoginType) -> Unit,
     loginButton: @Composable (LoginType, () -> Unit) -> Unit,
+    description: StringResource = Res.string.login_required_description,
 ) {
     CommonBottomSheet(
         visible = visible,
@@ -42,7 +44,7 @@ fun LoginGuideDialog(
                 textAlign = TextAlign.Center,
             )
             AppText(
-                text = stringResource(Res.string.login_required_description),
+                text = stringResource(description),
                 modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
                 style = AppTextStyle.B2,
                 color = GrayColor.C400,
