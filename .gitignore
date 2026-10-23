@@ -10,6 +10,14 @@ google-services.json
 GoogleService-Info.plist
 *.jks
 *.keystore
+AuthKey_*.p8
+*.p12
+*.mobileprovision
+iosApp/.bundle/
+iosApp/vendor/bundle/
+iosApp/fastlane/report.xml
+iosApp/fastlane/README.md
+iosApp/fastlane/Preview.html
 androidApp/.bundle/
 androidApp/vendor/bundle/
 androidApp/fastlane/report.xml
