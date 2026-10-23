@@ -10,6 +10,12 @@ google-services.json
 GoogleService-Info.plist
 *.jks
 *.keystore
+androidApp/.bundle/
+androidApp/vendor/bundle/
+androidApp/fastlane/report.xml
+androidApp/fastlane/README.md
+androidApp/fastlane/Preview.html
+gha-creds-*.json
 .idea
 .DS_Store
 captures

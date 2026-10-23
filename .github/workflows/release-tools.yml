@@ -1,0 +1,53 @@
+name: Release tooling checks
+
+on:
+    pull_request:
+        paths:
+            - 'scripts/play_internal.py'
+            - 'scripts/tests/test_play_internal*'
+            - 'androidApp/Gemfile*'
+            - 'androidApp/fastlane/**'
+            - '.github/workflows/play-internal.yml'
+            - '.github/workflows/release-tools.yml'
+    push:
+        branches: [develop, release]
+        paths:
+            - 'scripts/play_internal.py'
+            - 'scripts/tests/test_play_internal*'
+            - 'androidApp/Gemfile*'
+            - 'androidApp/fastlane/**'
+            - '.github/workflows/play-internal.yml'
+            - '.github/workflows/release-tools.yml'
+
+permissions:
+    contents: read
+
+jobs:
+    test:
+        runs-on: ubuntu-latest
+        timeout-minutes: 15
+        steps:
+            - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+              with:
+                  persist-credentials: false
+            - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+              with:
+                  python-version: '3.12'
+            - name: Verify artifact guards
+              run: python3 -m unittest discover -s scripts/tests -p test_play_internal.py -v
+            - uses: ruby/setup-ruby@26e5b7d197ebf60545ee9667bcbace0be11ccaec # v1
+              with:
+                  ruby-version: '4.0.0'
+                  working-directory: androidApp
+                  bundler-cache: true
+            - name: Verify Play publication and retry guards
+              working-directory: androidApp
+              run: bundle exec ruby ../scripts/tests/test_play_internal_release.rb
+            - name: Load Fastlane lanes without deployment
+              working-directory: androidApp
+              env:
+                  FASTLANE_SKIP_UPDATE_CHECK: '1'
+                  FASTLANE_HIDE_GITHUB_ISSUES: '1'
+                  FASTLANE_SKIP_DOCS: '1'
+                  FASTLANE_OPT_OUT_USAGE: '1'
+              run: bundle exec fastlane lanes
