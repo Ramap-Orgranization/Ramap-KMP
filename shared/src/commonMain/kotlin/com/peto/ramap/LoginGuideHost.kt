@@ -16,7 +16,6 @@ internal fun LoginGuideHost(controller: LoginGuideController) {
     key(request) {
         LoginGuideDialog(
             visible = true,
-            description = request.description,
             onDismiss = { controller.dismiss(request) },
             onLoginTypeSelected = { controller.select(request, it) },
             loginButton = { type, onClick -> LoginButton(type, onClick) },
