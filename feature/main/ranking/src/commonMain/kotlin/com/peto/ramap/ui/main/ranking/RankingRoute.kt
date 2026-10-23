@@ -21,8 +21,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.peto.ramap.designsystem.bottomsheet.CommonBottomSheet
-import com.peto.ramap.designsystem.button.login.LoginButton
-import com.peto.ramap.designsystem.dialog.LoginGuideDialog
 import com.peto.ramap.designsystem.toast.ToastManager
 import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.model.rank.RankedShops
@@ -37,6 +35,7 @@ import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.RamapTheme
 import com.peto.ramap.ui.base.ObserveAsEvents
 import com.peto.ramap.ui.component.area.AreaSheetContent
+import com.peto.ramap.ui.login.rememberLoginGuideRequest
 import com.peto.ramap.ui.main.ranking.component.RankingFilters
 import com.peto.ramap.ui.main.ranking.contract.RankingIntent
 import com.peto.ramap.ui.main.ranking.contract.RankingSideEffect
@@ -73,13 +72,16 @@ fun RankingRoute(
         onDispose { rankingDetailShopId = null }
     }
 
-    var showLoginGuideDialog by remember {
-        mutableStateOf(false)
-    }
+    val requestLoginGuide =
+        rememberLoginGuideRequest(
+            onLoginTypeSelected = { viewModel.dispatch(RankingIntent.OnLoginTypeSelected(it)) },
+            onDismiss = { viewModel.dispatch(RankingIntent.OnLoginSelectionDismissed) },
+            ownerKey = viewModel,
+        )
     ObserveAsEvents(viewModel.sideEffect) { sideEffect ->
         when (sideEffect) {
             RankingSideEffect.ShowLoginGuide -> {
-                showLoginGuideDialog = true
+                requestLoginGuide(Res.string.login_required_bookmark_description)
             }
 
             is RankingSideEffect.ShowToast -> {
@@ -138,20 +140,6 @@ fun RankingRoute(
             )
         }
     }
-
-    LoginGuideDialog(
-        visible = showLoginGuideDialog,
-        description = Res.string.login_required_bookmark_description,
-        onDismiss = {
-            showLoginGuideDialog = false
-            viewModel.dispatch(RankingIntent.OnLoginSelectionDismissed)
-        },
-        onLoginTypeSelected = { type ->
-            showLoginGuideDialog = false
-            viewModel.dispatch(RankingIntent.OnLoginTypeSelected(type))
-        },
-        loginButton = { type, onClick -> LoginButton(type, onClick) },
-    )
 }
 
 @Composable

@@ -10,8 +10,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.ExperimentalTestApi
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.v2.runComposeUiTest
 import androidx.navigationevent.NavigationEventDispatcher
 import androidx.navigationevent.NavigationEventDispatcherOwner
@@ -93,6 +95,22 @@ class OperatingNoticeScreenTest {
             onNodeWithText("현재 또는 예정된 영업 변동이 없어요").assertDoesNotExist()
         }
 
+    @Test
+    fun `검색어를 입력하면 바로 필터링하고 지우면 전체 매장을 다시 표시한다`() =
+        runComposeUiTest {
+            state = state(notice("오늘 매장", today), notice("다른 매장", today))
+            setContent { content() }
+
+            onNodeWithText("매장명 검색").performTextInput("오늘")
+            onNodeWithText("오늘 매장").assertExists()
+            onNodeWithText("다른 매장").assertDoesNotExist()
+
+            onNodeWithContentDescription("검색어 지우기").performClick()
+            onNodeWithText("매장명 검색").assertExists()
+            onNodeWithText("오늘 매장").assertExists()
+            onNodeWithText("다른 매장").assertExists()
+        }
+
     @Composable
     private fun content() {
         val dispatcher = remember { NavigationEventDispatcher() }
@@ -114,6 +132,7 @@ class OperatingNoticeScreenTest {
                     onShopClick = {},
                     onNoticeClick = {},
                     onTabSelected = { state = state.copy(tab = it) },
+                    onQueryChanged = { state = state.copy(query = it) },
                     isSourceUrlSupported = { true },
                     onSourceClick = {},
                 )

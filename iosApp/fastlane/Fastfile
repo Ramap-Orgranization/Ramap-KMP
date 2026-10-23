@@ -1,0 +1,168 @@
+require "json"
+require "pathname"
+require "shellwords"
+require_relative "release_support"
+
+default_platform(:ios)
+
+def ramap_credentials
+    @ramap_credentials ||= RamapRelease.load_credentials
+end
+
+def ramap_api_key
+    @ramap_api_key ||= app_store_connect_api_key(
+        key_id: ramap_credentials.fetch("key_id"),
+        issuer_id: ramap_credentials.fetch("issuer_id"),
+        key_filepath: ramap_credentials.fetch("key_filepath"),
+        duration: 1200,
+        in_house: false
+    )
+end
+
+def ramap_app
+    ramap_api_key
+    app = Spaceship::ConnectAPI::App.find(RamapRelease::BUNDLE_ID)
+    UI.user_error!("Ramap App Store Connect access is unavailable.") unless app && app.id == RamapRelease::APP_ID
+    app
+end
+
+def ramap_signing_arguments
+    Shellwords.join([
+        "-allowProvisioningUpdates",
+        "-authenticationKeyPath", ramap_credentials.fetch("key_filepath"),
+        "-authenticationKeyID", ramap_credentials.fetch("key_id"),
+        "-authenticationKeyIssuerID", ramap_credentials.fetch("issuer_id")
+    ])
+end
+
+def ramap_export_options
+    options = {
+        method: "app-store",
+        destination: "export",
+        signingStyle: "automatic",
+        teamID: ramap_credentials.fetch("team_id"),
+        manageAppVersionAndBuildNumber: false,
+        uploadSymbols: true
+    }
+    profile = ramap_credentials["provisioning_profile_uuid"]
+    if profile && !profile.empty?
+        options[:signingStyle] = "manual"
+        options[:signingCertificate] = "Apple Distribution"
+        options[:provisioningProfiles] = { RamapRelease::BUNDLE_ID => profile }
+    end
+    options
+end
+
+platform :ios do
+    desc "Read-only API authentication, build, and review status"
+    lane :status do
+        app = ramap_app
+        UI.success("API authentication succeeded: #{app.name} (#{app.id})")
+        Spaceship::ConnectAPI::Build.all(app_id: app.id, platform: "IOS").first(10).each do |build|
+            UI.message("#{build.pre_release_version.version} (#{build.version}): #{build.processing_state}")
+        end
+        Spaceship::ConnectAPI.get_app_store_versions(app_id: app.id, filter: { platform: "IOS" }).to_models.each do |version|
+            UI.message("iOS #{version.version_string}: #{version.app_version_state}; release=#{version.release_type}")
+        end
+    end
+
+    desc "Archive and export a signed Release IPA without uploading"
+    lane :archive do |options|
+        version, build = RamapRelease.version_and_build(options)
+        app = ramap_app
+        RamapRelease.unlock_signing_keychain!(ramap_credentials)
+        RamapRelease.ensure_new_build!(
+            build,
+            Spaceship::ConnectAPI::Build.all(app_id: app.id, platform: "IOS").map(&:version)
+        )
+        output = File.join(RamapRelease::ROOT, "build", "ios-release", "#{version}-#{build}")
+        UI.user_error!("Archive already exists: #{output}") if File.exist?(File.join(output, "Ramap.xcarchive"))
+        build_app(
+            workspace: File.join(RamapRelease::ROOT, "iosApp", "iosApp.xcworkspace"),
+            scheme: "iosApp",
+            configuration: "Release",
+            destination: "generic/platform=iOS",
+            archive_path: File.join(output, "Ramap.xcarchive"),
+            output_directory: output,
+            output_name: "Ramap-#{version}-#{build}.ipa",
+            export_options: ramap_export_options,
+            xcargs: "#{ramap_signing_arguments} CURRENT_PROJECT_VERSION=#{build} MARKETING_VERSION=#{version}",
+            export_xcargs: ramap_signing_arguments,
+            skip_profile_detection: true,
+            xcodebuild_formatter: ""
+        )
+        RamapRelease.verify_ipa!(lane_context[SharedValues::IPA_OUTPUT_PATH])
+    end
+
+    desc "Export an existing Ramap Release Archive without uploading"
+    lane :export do |options|
+        ramap_api_key
+        RamapRelease.unlock_signing_keychain!(ramap_credentials)
+        archive = RamapRelease.archive_path(options[:archive])
+        output = File.join(RamapRelease::ROOT, "build", "ios-release", File.basename(archive, ".xcarchive"))
+        build_app(
+            skip_build_archive: true,
+            archive_path: archive,
+            output_directory: output,
+            output_name: "Ramap.ipa",
+            export_options: ramap_export_options,
+            export_xcargs: ramap_signing_arguments,
+            skip_profile_detection: true,
+            xcodebuild_formatter: ""
+        )
+        RamapRelease.verify_ipa!(lane_context[SharedValues::IPA_OUTPUT_PATH])
+    end
+
+    desc "Upload a verified IPA; keep App Store review separate"
+    lane :upload do |options|
+        ipa = RamapRelease.verify_ipa!(options[:ipa])
+        app = ramap_app
+        RamapRelease.ensure_new_build!(
+            ipa.fetch(:build),
+            Spaceship::ConnectAPI::Build.all(app_id: app.id, platform: "IOS").map(&:version)
+        )
+        upload_to_testflight(
+            api_key: ramap_api_key,
+            app_identifier: RamapRelease::BUNDLE_ID,
+            apple_id: RamapRelease::APP_ID,
+            ipa: ipa.fetch(:path),
+            skip_submission: true,
+            skip_waiting_for_build_processing: true,
+            distribute_external: false
+        )
+        UI.success("Upload finished. Run status to check Apple processing before test distribution or review.")
+    end
+
+    desc "Submit an explicit processed build using existing metadata and manual release"
+    lane :review do |options|
+        version, build = RamapRelease.version_and_build(options)
+        app = ramap_app
+        app_version = app.get_edit_app_store_version(platform: "IOS")
+        UI.user_error!("Prepare App Store version #{version} first.") unless app_version && app_version.version_string == version
+        UI.user_error!("The version is already waiting for review; check status instead.") if app_version.app_version_state == "WAITING_FOR_REVIEW"
+        UI.user_error!("This lane preserves manual release; check the current release setting first.") unless app_version.release_type == "MANUAL"
+        builds = Spaceship::ConnectAPI::Build.all(
+            app_id: app.id,
+            version: version,
+            build_number: build,
+            platform: "IOS",
+        )
+        UI.user_error!("Build #{version} (#{build}) must be valid before review.") unless builds.one? && builds.first.processing_state == "VALID"
+        UI.user_error!("Complete export compliance before review.") if builds.first.uses_non_exempt_encryption.nil?
+        upload_to_app_store(
+            api_key: ramap_api_key,
+            app_identifier: RamapRelease::BUNDLE_ID,
+            app_version: version,
+            build_number: build,
+            skip_binary_upload: true,
+            skip_screenshots: true,
+            skip_metadata: true,
+            skip_app_version_update: true,
+            submit_for_review: true,
+            automatic_release: false,
+            run_precheck_before_submit: false,
+            force: true
+        )
+        UI.success("Review submission requested. Run status to confirm the resulting App Store state.")
+    end
+end

@@ -5,8 +5,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import com.peto.ramap.deeplink.DeepLinkEntryPoint
-import com.peto.ramap.designsystem.button.login.LoginButton
-import com.peto.ramap.designsystem.dialog.LoginGuideDialog
 import com.peto.ramap.designsystem.toast.ToastManager
 import com.peto.ramap.domain.model.auth.LoginType
 import com.peto.ramap.domain.repository.LoginRepository
@@ -18,8 +16,6 @@ import com.peto.ramap.navigation.rememberNavigationState
 import com.peto.ramap.notification.NotificationDeepLinkParser
 import com.peto.ramap.notification.NotificationLaunchDispatcher
 import org.koin.compose.koinInject
-import ramap.shared.generated.resources.Res
-import ramap.shared.generated.resources.login_required_profile_description
 
 @Composable
 internal fun AppRoute(
@@ -79,18 +75,4 @@ internal fun AppRoute(
             onLoginTypeSelected = onLoginTypeSelected,
         )
     }
-
-    LoginGuideDialog(
-        visible = overlayState.showProfileLoginGuide,
-        description = Res.string.login_required_profile_description,
-        onDismiss = {
-            overlayState.showProfileLoginGuide = false
-            overlayState.pendingProfileTarget = null
-        },
-        onLoginTypeSelected = { type ->
-            overlayState.showProfileLoginGuide = false
-            onLoginTypeSelected(type)
-        },
-        loginButton = { type, onClick -> LoginButton(type, onClick) },
-    )
 }

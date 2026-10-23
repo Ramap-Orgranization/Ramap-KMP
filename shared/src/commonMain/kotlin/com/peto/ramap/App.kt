@@ -31,6 +31,7 @@ import com.peto.ramap.platform.network.NetworkConnectivityObserver
 import com.peto.ramap.platform.network.NetworkConnectivityStatus
 import com.peto.ramap.platform.storage.AppNoticeStorage
 import com.peto.ramap.theme.RamapTheme
+import com.peto.ramap.ui.login.LoginGuideController
 import com.peto.ramap.ui.retry.NetworkRetryGenerator
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
@@ -55,6 +56,7 @@ fun App(
     loginRepository: LoginRepository = koinInject(),
     personalizationStore: PersonalizationStore = koinInject(),
     toastManager: ToastManager = koinInject(),
+    loginGuideController: LoginGuideController = koinInject(),
     onExitRequested: (() -> Unit)? = null,
 ) {
     RamapTheme {
@@ -71,6 +73,7 @@ fun App(
                     loginRepository = loginRepository,
                     personalizationStore = personalizationStore,
                     toastManager = toastManager,
+                    loginGuideController = loginGuideController,
                     onExitRequested = onExitRequested,
                 )
             }
@@ -83,6 +86,7 @@ private fun AppContent(
     loginRepository: LoginRepository,
     personalizationStore: PersonalizationStore,
     toastManager: ToastManager,
+    loginGuideController: LoginGuideController,
     onExitRequested: (() -> Unit)?,
 ) {
     val retryRequests = remember { MutableSharedFlow<Unit>(extraBufferCapacity = 1) }
@@ -140,6 +144,7 @@ private fun AppContent(
             else -> Unit
         }
 
+        LoginGuideHost(controller = loginGuideController)
         ToastHost(toastManager = toastManager)
     }
 }

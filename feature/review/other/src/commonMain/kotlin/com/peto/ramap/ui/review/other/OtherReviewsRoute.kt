@@ -29,9 +29,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.peto.ramap.designsystem.button.login.LoginButton
 import com.peto.ramap.designsystem.component.RamenShopSummary
-import com.peto.ramap.designsystem.dialog.LoginGuideDialog
 import com.peto.ramap.designsystem.indicator.RamenLoadingIndicator
 import com.peto.ramap.designsystem.profile.ProfileHeader
 import com.peto.ramap.designsystem.resource.category.CategoryResourceMapper
@@ -58,6 +56,7 @@ import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.RamapTheme
 import com.peto.ramap.ui.base.ObserveAsEvents
 import com.peto.ramap.ui.loading.LoadState
+import com.peto.ramap.ui.login.rememberLoginGuideRequest
 import com.peto.ramap.ui.paging.ObserveLoadMoreNearListEnd
 import com.peto.ramap.ui.review.other.component.OtherProfileTabs
 import com.peto.ramap.ui.review.other.component.OtherReviewsErrorContent
@@ -70,7 +69,6 @@ import com.peto.ramap.ui.review.other.contract.OtherReviewsIntent
 import com.peto.ramap.ui.review.other.contract.OtherReviewsLoadKey
 import com.peto.ramap.ui.review.other.contract.OtherReviewsTab
 import com.peto.ramap.ui.review.other.contract.OtherReviewsUiState
-import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
@@ -81,7 +79,6 @@ import ramap.shared.generated.resources.follow_content_private
 import ramap.shared.generated.resources.follow_followers
 import ramap.shared.generated.resources.follow_following
 import ramap.shared.generated.resources.ic_profile_blocked
-import ramap.shared.generated.resources.login_required_description
 import ramap.shared.generated.resources.review_blocked_empty
 import ramap.shared.generated.resources.review_profile_private
 import ramap.shared.generated.resources.review_profile_title
@@ -101,11 +98,15 @@ fun OtherReviewsRoute(
     toastManager: ToastManager = koinInject(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-    var loginGuideDescription by remember { mutableStateOf<StringResource?>(null) }
+    val requestLoginGuide =
+        rememberLoginGuideRequest(
+            onLoginTypeSelected = onLoginTypeSelected,
+            ownerKey = userId,
+        )
     var selectedShopId by rememberSaveable(userId) { mutableStateOf<String?>(null) }
     ObserveAsEvents(viewModel.sideEffect) { effect ->
         when (effect) {
-            is OtherReviewsEffect.LoginRequired -> loginGuideDescription = effect.description
+            is OtherReviewsEffect.LoginRequired -> requestLoginGuide(effect.description)
             is OtherReviewsEffect.ShowToast -> toastManager.show(effect.data)
         }
     }
@@ -134,16 +135,6 @@ fun OtherReviewsRoute(
             )
         }
     }
-    LoginGuideDialog(
-        visible = loginGuideDescription != null,
-        description = loginGuideDescription ?: Res.string.login_required_description,
-        onDismiss = { loginGuideDescription = null },
-        onLoginTypeSelected = { type ->
-            loginGuideDescription = null
-            onLoginTypeSelected(type)
-        },
-        loginButton = { type, onClick -> LoginButton(type, onClick) },
-    )
 }
 
 @Composable

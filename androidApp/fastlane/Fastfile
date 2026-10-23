@@ -1,0 +1,34 @@
+require "supply"
+require_relative "play_internal_release"
+
+default_platform(:android)
+
+platform :android do
+    desc "Publish the verified GitHub Release AAB to Play internal testing without rebuilding"
+    lane :internal do
+        result_path = ENV.fetch("PLAY_RESULT")
+        File.delete(result_path) if File.exist?(result_path)
+        artifact = PlayInternalRelease.load_artifact(ENV.fetch("VERIFIED_RELEASE"))
+        Supply.config = FastlaneCore::Configuration.create(
+            Supply::Options.available_options,
+            package_name: PlayInternalRelease::PACKAGE_NAME,
+            track: PlayInternalRelease::TRACK,
+            release_status: "completed",
+            changes_not_sent_for_review: false,
+            rescue_changes_not_sent_for_review: false
+        )
+        client = Supply::Client.make_from_config
+        track = Google::Apis::AndroidpublisherV3::Track.new(
+            track: PlayInternalRelease::TRACK,
+            releases: [Google::Apis::AndroidpublisherV3::TrackRelease.new(
+                name: artifact.fetch("tag"),
+                version_codes: [artifact.fetch("version_code")],
+                status: "completed"
+            )]
+        )
+        status = PlayInternalRelease.new(client, artifact, track).publish
+        result = artifact.merge("status" => status)
+        File.write(result_path, JSON.pretty_generate(result) + "\n")
+        UI.success("Play internal #{status}: #{artifact.fetch('tag')} (#{artifact.fetch('version_code')})")
+    end
+end

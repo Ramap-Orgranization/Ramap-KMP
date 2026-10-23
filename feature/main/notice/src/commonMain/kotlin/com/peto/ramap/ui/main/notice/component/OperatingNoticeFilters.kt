@@ -12,11 +12,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
+import com.peto.ramap.designsystem.component.AppSearchBar
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.RamapTheme
 import com.peto.ramap.ui.main.notice.contract.OperatingNoticeUiState
 import com.peto.ramap.ui.main.notice.model.OperatingNoticeTab
 import com.peto.ramap.ui.main.notice.preview.OperatingNoticeUiStatePreviewParameterProvider
+import org.jetbrains.compose.resources.stringResource
+import ramap.shared.generated.resources.Res
+import ramap.shared.generated.resources.operating_notice_search
 
 @Composable
 internal fun OperatingNoticeFilters(
@@ -34,10 +38,11 @@ internal fun OperatingNoticeFilters(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        NoticeSearchField(
+        AppSearchBar(
             query = uiState.query,
-            onQueryChanged = onQueryChanged,
+            onQueryChange = onQueryChanged,
             modifier = Modifier.weight(1f),
+            placeholder = stringResource(Res.string.operating_notice_search),
         )
         SavedFilterButton(
             selected = uiState.savedOnly,

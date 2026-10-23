@@ -1,13 +1,7 @@
 package com.peto.ramap.ui.shop.component
 
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
-import com.peto.ramap.designsystem.button.login.LoginButton
-import com.peto.ramap.designsystem.dialog.LoginGuideDialog
 import com.peto.ramap.designsystem.toast.ToastManager
 import com.peto.ramap.designsystem.toast.model.ToastAction
 import com.peto.ramap.designsystem.toast.model.ToastData
@@ -18,6 +12,7 @@ import com.peto.ramap.navigation.deeplink.ShopShareLinkFactory
 import com.peto.ramap.platform.AppSettingsOpener
 import com.peto.ramap.platform.ShareLauncher
 import com.peto.ramap.ui.base.ObserveAsEvents
+import com.peto.ramap.ui.login.rememberLoginGuideRequest
 import com.peto.ramap.ui.shop.contract.ShopInteractionEffect
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
@@ -26,7 +21,6 @@ import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.location_permission_settings_action
-import ramap.shared.generated.resources.login_required_description
 import ramap.shared.generated.resources.notification_permission_enable_message
 import ramap.shared.generated.resources.share_shop_chooser_title
 import ramap.shared.generated.resources.share_shop_message
@@ -47,12 +41,16 @@ fun MapInteractionHost(
     content: @Composable ((RamenShop) -> Unit, (StringResource) -> Unit) -> Unit,
 ) {
     val coroutineScope = rememberCoroutineScope()
-    var loginGuideDescription by remember { mutableStateOf<StringResource?>(null) }
+    val requestLoginGuide =
+        rememberLoginGuideRequest(
+            onLoginTypeSelected = onLoginTypeSelected,
+            onDismiss = onLoginDismissed,
+        )
     val shareChooserTitle = stringResource(Res.string.share_shop_chooser_title)
     ObserveAsEvents(sideEffect) { effect ->
         when (effect) {
             is ShopInteractionEffect.ShowLoginGuide -> {
-                loginGuideDescription = effect.description
+                requestLoginGuide(effect.description)
             }
             is ShopInteractionEffect.ShowToast ->
                 toastManager.show(
@@ -99,21 +97,5 @@ fun MapInteractionHost(
                 }
             }
         }
-    }) { description ->
-        loginGuideDescription = description
-    }
-
-    LoginGuideDialog(
-        visible = loginGuideDescription != null,
-        description = loginGuideDescription ?: Res.string.login_required_description,
-        onDismiss = {
-            loginGuideDescription = null
-            onLoginDismissed()
-        },
-        onLoginTypeSelected = { type ->
-            loginGuideDescription = null
-            onLoginTypeSelected(type)
-        },
-        loginButton = { type, onClick -> LoginButton(type, onClick) },
-    )
+    }, requestLoginGuide)
 }

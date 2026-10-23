@@ -20,7 +20,7 @@ internal object BusinessHoursStatusCalculator {
     ): BusinessHoursStatus? {
         val activeDate = findActiveBusinessDate(businessHours, currentDateTime)
         if (activeDate != null) {
-            return openStatus(businessHours, activeDate, currentDateTime.time)
+            return openStatus(businessHours, activeDate, currentDateTime)
         }
 
         val breakEndTime = findBreakEndDuringCurrentHours(businessHours, currentDateTime)
@@ -40,9 +40,9 @@ internal object BusinessHoursStatusCalculator {
     private fun openStatus(
         businessHours: BusinessHours,
         date: LocalDate,
-        currentTime: LocalTime,
+        currentDateTime: LocalDateTime,
     ): BusinessHoursStatus {
-        val lastOrder = findActiveLastOrder(businessHours, date, currentTime)
+        val lastOrder = findActiveLastOrder(businessHours, date, currentDateTime)
         if (lastOrder != null) return BusinessHoursStatus.OpenWithLastOrder(lastOrder)
 
         val closeTime = businessHours.dayAt(date)?.close ?: return BusinessHoursStatus.Open
@@ -53,15 +53,34 @@ internal object BusinessHoursStatusCalculator {
     private fun findActiveLastOrder(
         businessHours: BusinessHours,
         date: LocalDate,
-        currentTime: LocalTime,
+        currentDateTime: LocalDateTime,
     ): String? {
-        val lastOrders = businessHours.lastOrdersAt(date)
-        val nextBreakIndex =
-            businessHours.breaksAt(date).indexOfFirst { breakTime ->
-                parseTime(breakTime.start)?.let { currentTime < it } == true
-            }
-        val activeLastOrderIndex = nextBreakIndex.takeIf { it >= 0 } ?: lastOrders.lastIndex
-        return lastOrders.getOrNull(activeLastOrderIndex) ?: lastOrders.lastOrNull()
+        val day = businessHours.dayAt(date) ?: return null
+        val closeTime = day.close?.let(::parseTime) ?: return null
+        val closeDate = if (day.closeNextDay) date.plus(1, DateTimeUnit.DAY) else date
+        var sessionEnd = LocalDateTime(closeDate, closeTime)
+        for (breakTime in businessHours.breaksAt(date)) {
+            val breakStart = businessDateTime(date, day, breakTime.start) ?: continue
+            if (breakStart > currentDateTime && breakStart < sessionEnd) sessionEnd = breakStart
+        }
+
+        return businessHours
+            .lastOrdersAt(date)
+            .mapNotNull { value -> businessDateTime(date, day, value)?.let { it to value } }
+            .filter { (lastOrderAt, _) -> lastOrderAt > currentDateTime && lastOrderAt <= sessionEnd }
+            .minByOrNull { (lastOrderAt, _) -> lastOrderAt }
+            ?.second
+    }
+
+    private fun businessDateTime(
+        date: LocalDate,
+        day: BusinessHoursDay,
+        value: String,
+    ): LocalDateTime? {
+        val time = parseTime(value) ?: return null
+        val openTime = day.open?.let(::parseTime) ?: return null
+        val timeDate = if (day.closeNextDay && time < openTime) date.plus(1, DateTimeUnit.DAY) else date
+        return LocalDateTime(timeDate, time)
     }
 
     /**
