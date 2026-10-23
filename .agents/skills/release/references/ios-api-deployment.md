@@ -31,13 +31,16 @@ App Manager API 키의 클라우드 서명이 거부되더라도 관리자 키�
 # 서명·Bundle ID·Release Firebase·APNs production을 검사한 IPA 업로드
 ./scripts/ios-release.sh upload ipa:/absolute/path/Ramap.ipa
 
-# Apple 처리·수출규정 확인과 메타데이터 준비가 끝난 빌드를 별도로 심사 제출
+# 기본 스토어 배포: 승인 IPA 업로드부터 최종 심사 상태 확인까지
+./scripts/ios-release.sh deploy ipa:/absolute/path/Ramap.ipa sha256:APPROVED_SHA256 notes:/absolute/path/notes.txt
+
+# 이미 업로드된 빌드의 처리 대기·심사 제출을 재개
 ./scripts/ios-release.sh review version:1.1.11 build:21
 ```
 
 `archive`와 `export`는 `build/ios-release/`에 로컬 산출물을 만들며 업로드하지 않는다. `upload`는 App Store 심사 제출과 외부 테스터 배포를 하지 않고, Apple 처리 완료까지 기다리지 않는다. 업로드 후 `status` 및 필요한 TestFlight 그룹 조회로 처리·설치 가능 상태를 확인한다. 내부 그룹의 Xcode 자동 배포 설정도 실제 연결을 재조회해 판단한다.
 
-`review`는 지정한 버전·빌드만 대상으로 하며 기존 스크린샷·메타데이터와 수출규정 응답을 사용한다. 기존 정보가 없거나 준비 버전이 다르면 먼저 보완한다. 현재 라맵의 수동 출시 설정을 유지하므로 심사 승인이 자동 공개를 뜻하지 않는다. 제출 후 `status`로 `WAITING_FOR_REVIEW` 또는 실제 심사 상태를 확인한다. 별도 요청 없이 심사 중인 빌드를 취소·교체하거나 앱을 공개하지 않는다.
+`deploy`와 `review`의 최종 심사 제출·재시도·GitHub Actions 설정은 [최종 심사 제출](store-review-deployment.md)을 따른다. `review`는 지정한 버전·빌드만 대상으로 하며 기존 스크린샷·메타데이터와 수출규정 응답을 사용한다. 새 버전은 승인한 한국어 노트와 함께 MANUAL로 생성한다. 기존 정보가 없으면 먼저 보완하고, 다른 준비·심사 버전은 자동 교체하지 않는다. 현재 라맵의 수동 출시 설정을 유지하므로 심사 승인이 자동 공개를 뜻하지 않는다. 제출 후 `status`로 `WAITING_FOR_REVIEW` 또는 실제 심사 상태를 확인한다. 별도 요청 없이 심사 중인 빌드를 취소·교체하거나 앱을 공개하지 않는다.
 
 API JWT는 실행 중 갱신되지만 `.p8` 자체는 계속 비밀로 보관한다. 키 폐기·계약 미동의·역할 부족·서명 인증서 문제는 브라우저 세션 만료와 별도로 처리한다. API 키 배포가 실패하면 원인과 재현 명령을 보고하고 기존 Organizer 경로로 가능한지 판단하되, 업로드 결과를 먼저 확인해 중복 빌드를 만들지 않는다.
 

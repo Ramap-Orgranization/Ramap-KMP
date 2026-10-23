@@ -1,4 +1,4 @@
-package com.peto.ramap.ui.main.map.component
+package com.peto.ramap.designsystem.button
 
 import androidx.compose.foundation.Image
 import androidx.compose.runtime.Composable
@@ -15,14 +15,15 @@ import ramap.shared.generated.resources.bookmarked_shops_toggle
 import ramap.shared.generated.resources.ic_kid_star
 
 @Composable
-internal fun BookmarkedFilterButton(
+fun BookmarkedFilterButton(
     isActive: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    contentDescription: String = stringResource(Res.string.bookmarked_shops_toggle),
 ) {
-    MapCircleIconButton(
+    AppCircleIconButton(
         isActive = isActive,
-        contentDescription = stringResource(Res.string.bookmarked_shops_toggle),
+        contentDescription = contentDescription,
         selected = isActive,
         onClick = onClick,
         modifier = modifier,

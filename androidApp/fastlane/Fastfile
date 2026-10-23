@@ -1,9 +1,44 @@
 require "supply"
 require_relative "play_internal_release"
+require_relative "play_review_release"
 
 default_platform(:android)
 
 platform :android do
+    desc "Submit the verified release AAB to production review and verify its review state"
+    lane :review do
+        result_path = ENV.fetch("PLAY_RESULT")
+        File.delete(result_path) if File.exist?(result_path)
+        artifact = PlayReviewRelease.load_artifact(ENV.fetch("VERIFIED_RELEASE"))
+        notes = artifact.fetch("release_notes")
+        UI.user_error!("Approved release notes must contain 1–500 characters.") unless notes.is_a?(String) && (1..500).cover?(notes.length)
+        Supply.config = FastlaneCore::Configuration.create(
+            Supply::Options.available_options,
+            package_name: PlayReviewRelease::PACKAGE_NAME,
+            track: PlayReviewRelease::TRACK,
+            changes_not_sent_for_review: false,
+            rescue_changes_not_sent_for_review: false
+        )
+        client = Supply::Client.make_from_config
+        track = Google::Apis::AndroidpublisherV3::Track.new(
+            track: PlayReviewRelease::TRACK,
+            releases: [Google::Apis::AndroidpublisherV3::TrackRelease.new(
+                name: artifact.fetch("tag"),
+                version_codes: [artifact.fetch("version_code")],
+                status: "completed",
+                release_notes: [Google::Apis::AndroidpublisherV3::LocalizedText.new(language: "ko-KR", text: notes)]
+            )]
+        )
+        publisher = PlayReviewRelease.new(
+            client, artifact, track,
+            api: PlayReviewApi.new(client.client.authorization),
+            managed_publishing: ENV.fetch("PLAY_MANAGED_PUBLISHING", "false")
+        )
+        status = publisher.publish
+        File.write(result_path, JSON.pretty_generate(artifact.merge("status" => status, "review_state" => publisher.review_state)) + "\n")
+        UI.success("Play production #{status}: #{artifact.fetch('tag')} (#{artifact.fetch('version_code')}); #{publisher.review_state}")
+    end
+
     desc "Publish the verified GitHub Release AAB to Play internal testing without rebuilding"
     lane :internal do
         result_path = ENV.fetch("PLAY_RESULT")

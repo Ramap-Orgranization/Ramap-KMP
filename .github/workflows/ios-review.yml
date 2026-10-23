@@ -1,0 +1,110 @@
+name: App Store review
+run-name: App Store review ${{ inputs.version }} (${{ inputs.build }})
+
+on:
+    workflow_dispatch:
+        inputs:
+            version:
+                description: Approved uploaded iOS version (X.Y.Z)
+                required: true
+                type: string
+            build:
+                description: Approved uploaded iOS build number
+                required: true
+                type: string
+            release_notes:
+                description: Approved Korean release notes (blank preserves existing notes)
+                required: false
+                type: string
+            exempt_encryption:
+                description: Approved declaration that this build uses no non-exempt encryption
+                required: true
+                default: false
+                type: boolean
+
+permissions:
+    contents: read
+
+concurrency:
+    group: app-store-review-com-peto-ramap
+    cancel-in-progress: false
+
+jobs:
+    review:
+        if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+        runs-on: macos-15
+        timeout-minutes: 90
+        environment: app-store-review
+        env:
+            IOS_VERSION: ${{ inputs.version }}
+            IOS_BUILD: ${{ inputs.build }}
+            IOS_NOTES: ${{ inputs.release_notes }}
+            IOS_EXEMPT_ENCRYPTION: ${{ inputs.exempt_encryption }}
+            FASTLANE_SKIP_UPDATE_CHECK: '1'
+            FASTLANE_HIDE_CHANGELOG: '1'
+            FASTLANE_HIDE_GITHUB_ISSUES: '1'
+            FASTLANE_SKIP_DOCS: '1'
+            FASTLANE_OPT_OUT_USAGE: '1'
+        steps:
+            - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+              with:
+                  persist-credentials: false
+            - uses: ruby/setup-ruby@26e5b7d197ebf60545ee9667bcbace0be11ccaec # v1
+              with:
+                  ruby-version: '4.0.0'
+                  working-directory: iosApp
+                  bundler-cache: true
+            - name: Configure temporary App Store API key
+              env:
+                  RAMAP_ASC_CONFIG: ${{ runner.temp }}/ramap-asc/config.json
+                  ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+                  ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+                  ASC_PRIVATE_KEY: ${{ secrets.ASC_PRIVATE_KEY }}
+                  ASC_TEAM_ID: ${{ vars.ASC_TEAM_ID }}
+              run: |
+                  python3 - <<'PY'
+                  import json, os, re
+                  from pathlib import Path
+                  assert re.fullmatch(r'\d+\.\d+\.\d+', os.environ['IOS_VERSION']), 'Invalid version'
+                  assert re.fullmatch(r'[1-9]\d*', os.environ['IOS_BUILD']), 'Invalid build'
+                  names = ('ASC_KEY_ID', 'ASC_ISSUER_ID', 'ASC_PRIVATE_KEY', 'ASC_TEAM_ID')
+                  assert all(os.environ.get(name, '').strip() for name in names), 'Configure app-store-review credentials'
+                  os.umask(0o077)
+                  config = Path(os.environ['RAMAP_ASC_CONFIG'])
+                  config.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+                  key = config.parent / 'AuthKey.p8'
+                  key.write_text(os.environ['ASC_PRIVATE_KEY'])
+                  config.write_text(json.dumps(dict(key_id=os.environ['ASC_KEY_ID'], issuer_id=os.environ['ASC_ISSUER_ID'],
+                                                    key_filepath=str(key), team_id=os.environ['ASC_TEAM_ID'])))
+                  (config.parent / 'notes.txt').write_text(os.environ['IOS_NOTES'])
+                  PY
+            - name: Wait for build and verify final review submission
+              working-directory: iosApp
+              env:
+                  RAMAP_ASC_CONFIG: ${{ runner.temp }}/ramap-asc/config.json
+                  IOS_REVIEW_RESULT: ${{ runner.temp }}/ios-review-result.json
+              run: |
+                  options=("version:$IOS_VERSION" "build:$IOS_BUILD" "exempt_encryption:$IOS_EXEMPT_ENCRYPTION")
+                  if [ -n "$IOS_NOTES" ]; then options+=("notes:$(dirname "$RAMAP_ASC_CONFIG")/notes.txt"); fi
+                  bundle exec fastlane ios review "${options[@]}"
+            - name: Summarize review and remove API key
+              if: always()
+              env:
+                  RAMAP_ASC_CONFIG: ${{ runner.temp }}/ramap-asc/config.json
+                  IOS_REVIEW_RESULT: ${{ runner.temp }}/ios-review-result.json
+                  REVIEW_JOB_STATUS: ${{ job.status }}
+              run: |
+                  python3 - <<'PY'
+                  import json, os, shutil
+                  from pathlib import Path
+                  shutil.rmtree(Path(os.environ['RAMAP_ASC_CONFIG']).parent, ignore_errors=True)
+                  with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as summary:
+                      summary.write('## App Store review\n\nJob: ' + os.environ['REVIEW_JOB_STATUS'] + '\n\n')
+                      result = Path(os.environ['IOS_REVIEW_RESULT'])
+                      if result.is_file():
+                          for key, value in json.loads(result.read_text()).items():
+                              summary.write(f'- {key}: {value}\n')
+                          summary.write('\nFinal review state verified; public release stays manual.\n')
+                      else:
+                          summary.write('No verified review result. Resume with the same uploaded version/build.\n')
+                  PY

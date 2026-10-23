@@ -44,6 +44,16 @@ data class OperatingNoticeFeed(
             .distinctBy { it.id }
             .sortedWith(noticePriority(date))
 
+    fun scheduledNoticesForShop(shopId: String): List<OperatingNotice> =
+        items
+            .map { it.notice }
+            .filter { it.shop.id == shopId && it.scheduledDates(referenceDate).isNotEmpty() }
+            .distinctBy { it.id }
+            .sortedWith(
+                compareBy<OperatingNotice> { it.scheduledDates(referenceDate).first() }
+                    .thenComparator { first, second -> noticePriority(first.scheduledDates(referenceDate).first()).compare(first, second) },
+            )
+
     private fun representativesOn(
         date: LocalDate,
         notices: List<OperatingNotice>,

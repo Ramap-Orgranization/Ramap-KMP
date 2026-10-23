@@ -14,17 +14,21 @@ Usage: ./scripts/ios-release.sh <command> [option:value ...]
   archive version:X.Y.Z build:N   Create and export a signed Release IPA locally.
   export archive:/absolute/path   Export an existing xcarchive locally.
   upload ipa:/absolute/path       Upload an IPA to App Store Connect; do not submit review.
-  review version:X.Y.Z build:N    Submit that processed build using existing store metadata.
+  deploy ipa:/path sha256:HASH    Upload, wait for processing, submit and verify review.
+  review version:X.Y.Z build:N    Wait for the uploaded build, submit and verify review.
+                                 notes:/path supplies approved Korean release notes.
+                                 exempt_encryption:true requires an approved declaration.
 
 API key configuration: ~/.config/ramap/appstore-connect/config.json
 Override its location with RAMAP_ASC_CONFIG. Keep the .p8 key outside the repository.
-Upload and review are separate, explicit commands. Review uses manual release.
+deploy completes App Store review submission. upload is the TestFlight-only option.
+review resumes after an upload timeout without uploading again. Public release stays manual.
 EOF
     exit 0
 fi
 
 case "$TASK" in
-    setup|status|archive|export|upload|review) ;;
+    setup|status|archive|export|upload|deploy|review) ;;
     *) echo "Unknown command: $TASK" >&2; exit 1 ;;
 esac
 shift

@@ -1,8 +1,11 @@
 package com.peto.ramap.ui.main.notice.component
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -20,20 +23,55 @@ import com.peto.ramap.theme.RamapTheme
 
 @Composable
 internal fun OperatingNoticeSkeleton(modifier: Modifier = Modifier) {
-    LazyColumn(modifier = modifier, userScrollEnabled = false) {
-        items(6) {
-            Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 16.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                Skeleton(modifier = Modifier.size(56.dp), shape = CircleShape)
-                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Skeleton(modifier = Modifier.width(120.dp).height(20.dp))
-                    Skeleton(modifier = Modifier.width(90.dp).height(22.dp))
+    LazyColumn(
+        modifier = modifier,
+        contentPadding = PaddingValues(vertical = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+        userScrollEnabled = false,
+    ) {
+        item {
+            Skeleton(
+                modifier = Modifier.padding(horizontal = 16.dp).width(80.dp).height(24.dp),
+            )
+        }
+        item {
+            FlowRow(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 5.dp),
+                horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterHorizontally),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                repeat(8) {
+                    OperatingNoticeShopItemSkeleton()
+                }
+                repeat(10) {
+                    Spacer(Modifier.width(72.dp).height(0.dp))
                 }
             }
         }
     }
 }
 
-@Preview(name = "영업 변동 로딩", showBackground = true, widthDp = 360, heightDp = 560)
+@Composable
+private fun OperatingNoticeShopItemSkeleton() {
+    Column(
+        modifier = Modifier.width(72.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        Box(
+            modifier = Modifier.size(72.dp),
+            contentAlignment = Alignment.TopCenter,
+        ) {
+            Skeleton(modifier = Modifier.size(68.dp), shape = CircleShape)
+        }
+        Skeleton(modifier = Modifier.fillMaxWidth().height(36.dp))
+    }
+}
+
+@Preview(showBackground = true)
 @Composable
 private fun OperatingNoticeSkeletonPreview() {
     RamapTheme {

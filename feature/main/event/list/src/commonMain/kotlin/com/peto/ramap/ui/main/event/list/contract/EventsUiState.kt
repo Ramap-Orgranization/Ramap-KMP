@@ -2,6 +2,7 @@ package com.peto.ramap.ui.main.event.list.contract
 
 import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.model.event.ShopEvents
+import com.peto.ramap.domain.store.PersonalizationBootstrapState
 import com.peto.ramap.ui.base.State
 import com.peto.ramap.ui.loading.LoadableState
 import com.peto.ramap.ui.loading.LoadState as TaskLoadState
@@ -11,6 +12,12 @@ data class EventsUiState(
     val summerLimitedEvents: List<ShopEvents> = emptyList(),
     val ongoingEvents: List<ShopEvents> = emptyList(),
     val upcomingEvents: List<ShopEvents> = emptyList(),
+    val savedFilterError: Boolean = false,
+    val showLoginGuide: Boolean = false,
+    val query: String = "",
+    val savedOnly: Boolean = false,
+    val bookmarkedShopIds: Set<String> = emptySet(),
+    val personalizationState: PersonalizationBootstrapState = PersonalizationBootstrapState.Loading,
     val showError: Boolean = false,
     override val loadState: TaskLoadState = TaskLoadState(),
 ) : State,

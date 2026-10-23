@@ -6,6 +6,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.peto.ramap.designsystem.button.AppCircleIconButton
 import com.peto.ramap.theme.GrayColor
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
@@ -19,7 +20,7 @@ internal fun LocationButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    MapCircleIconButton(
+    AppCircleIconButton(
         isActive = false,
         contentDescription = stringResource(Res.string.current_location),
         onClick = {
