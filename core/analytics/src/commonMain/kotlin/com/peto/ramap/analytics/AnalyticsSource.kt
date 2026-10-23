@@ -10,6 +10,7 @@ enum class AnalyticsSource(
     SUBSCRIBED_SHOPS("subscribed_shops"),
     IMPORTATION("importation"),
     NOTIFICATION_SETTINGS("notification_settings"),
+    EVENT_LIST("event_list"),
     EVENT_DETAIL("event_detail"),
     ACCOUNT("account"),
     MARKER("marker"),

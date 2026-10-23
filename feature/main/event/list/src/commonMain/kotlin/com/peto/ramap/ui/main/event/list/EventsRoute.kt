@@ -24,10 +24,14 @@ import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.peto.ramap.designsystem.button.AppFloatingActionButton
+import com.peto.ramap.designsystem.button.login.LoginButton
 import com.peto.ramap.designsystem.component.LoadErrorContent
+import com.peto.ramap.designsystem.component.NewsFilters
+import com.peto.ramap.designsystem.dialog.LoginGuideDialog
 import com.peto.ramap.designsystem.toast.ToastManager
 import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.model.event.ShopEvents
+import com.peto.ramap.domain.store.PersonalizationBootstrapState
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.RamapTheme
 import com.peto.ramap.ui.base.ObserveAsEvents
@@ -50,6 +54,7 @@ import ramap.shared.generated.resources.event_list_ongoing_section
 import ramap.shared.generated.resources.event_list_upcoming_section
 import ramap.shared.generated.resources.ic_operating_notice_fab
 import ramap.shared.generated.resources.laduck_error_crying
+import ramap.shared.generated.resources.login_required_saved_shops_description
 import ramap.shared.generated.resources.operating_notice_open
 
 @Composable
@@ -65,16 +70,29 @@ fun EventsRoute(
             is EventsSideEffect.ShowEventsToast -> toastManager.show(sideEffect.data)
         }
     }
-    EventsScreen(
-        uiState = uiState,
-        onClickNotice = onClickNotice,
-        onClickEvent = { event ->
-            viewModel.dispatch(EventsIntent.OnEventClicked(event))
-            onClickEvent(event)
-        },
-        onRefresh = { viewModel.dispatch(EventsIntent.OnEventsRefreshed) },
-        onClickRetry = { viewModel.dispatch(EventsIntent.OnEventsRetried) },
-    )
+    Box {
+        EventsScreen(
+            uiState = uiState,
+            onClickNotice = onClickNotice,
+            onClickEvent = { event ->
+                viewModel.dispatch(EventsIntent.OnEventClicked(event))
+                onClickEvent(event)
+            },
+            onRefresh = { viewModel.dispatch(EventsIntent.OnEventsRefreshed) },
+            onClickRetry = { viewModel.dispatch(EventsIntent.OnEventsRetried) },
+            onQueryChanged = { viewModel.dispatch(EventsIntent.OnQueryChanged(it)) },
+            onSavedToggled = { viewModel.dispatch(EventsIntent.OnSavedToggled) },
+            onPersonalizationRetry = { viewModel.dispatch(EventsIntent.OnPersonalizationRetried) },
+        )
+
+        LoginGuideDialog(
+            visible = uiState.showLoginGuide,
+            description = Res.string.login_required_saved_shops_description,
+            onDismiss = { viewModel.dispatch(EventsIntent.OnLoginDismissed) },
+            onLoginTypeSelected = { viewModel.dispatch(EventsIntent.OnLoginSelected(it)) },
+            loginButton = { type, onClick -> LoginButton(type, onClick) },
+        )
+    }
 }
 
 @Composable
@@ -84,6 +102,9 @@ internal fun EventsScreen(
     onClickEvent: (ShopEvent) -> Unit,
     onRefresh: () -> Unit,
     onClickRetry: () -> Unit,
+    onQueryChanged: (String) -> Unit = {},
+    onSavedToggled: () -> Unit = {},
+    onPersonalizationRetry: () -> Unit = {},
 ) {
     var selectedEventGroup by remember { mutableStateOf<ShopEvents?>(null) }
     val pullToRefreshState = rememberPullToRefreshState()
@@ -94,6 +115,12 @@ internal fun EventsScreen(
                 .background(CommonColor.White)
                 .statusBarsPadding(),
     ) {
+        NewsFilters(
+            query = uiState.query,
+            savedOnly = uiState.savedOnly,
+            onQueryChanged = onQueryChanged,
+            onSavedToggled = onSavedToggled,
+        )
         Box(modifier = Modifier.fillMaxSize().weight(1f)) {
             PullToRefreshBox(
                 isRefreshing = uiState.isRefreshing,
@@ -112,6 +139,18 @@ internal fun EventsScreen(
             ) {
                 when {
                     uiState.isLoading -> EventListSkeleton(modifier = Modifier.fillMaxSize())
+
+                    uiState.savedOnly && uiState.personalizationState == PersonalizationBootstrapState.Loading ->
+                        EventListSkeleton(modifier = Modifier.fillMaxSize())
+
+                    uiState.savedFilterError || (uiState.savedOnly && uiState.personalizationState == PersonalizationBootstrapState.Error) ->
+                        LoadErrorContent(
+                            image = Res.drawable.laduck_error_crying,
+                            title = stringResource(Res.string.event_list_error_title),
+                            description = stringResource(Res.string.event_list_error_description),
+                            onRetry = onPersonalizationRetry,
+                            modifier = Modifier.fillMaxSize(),
+                        )
 
                     uiState.showError ->
                         LoadErrorContent(
