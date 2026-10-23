@@ -1,4 +1,4 @@
-package com.peto.ramap.ui.main.notice.component
+package com.peto.ramap.designsystem.component
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -29,7 +29,7 @@ import ramap.shared.generated.resources.ic_notice_search
 import ramap.shared.generated.resources.operating_notice_search
 
 @Composable
-internal fun NoticeSearchField(
+fun NoticeSearchField(
     query: String,
     onQueryChanged: (String) -> Unit,
     modifier: Modifier = Modifier,

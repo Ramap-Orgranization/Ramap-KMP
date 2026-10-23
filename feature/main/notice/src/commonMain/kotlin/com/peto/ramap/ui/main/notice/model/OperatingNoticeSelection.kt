@@ -5,6 +5,6 @@ import kotlinx.datetime.LocalDate
 
 data class OperatingNoticeSelection(
     val notice: OperatingNotice,
-    val date: LocalDate,
+    val date: LocalDate?,
     val notices: List<OperatingNotice>,
 )

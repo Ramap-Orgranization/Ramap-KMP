@@ -8,7 +8,6 @@ import com.peto.ramap.domain.model.personalization.Personalization
 import com.peto.ramap.domain.store.PersonalizationBootstrapState
 import com.peto.ramap.fixture.ramenShopFixture
 import com.peto.ramap.ui.main.notice.contract.OperatingNoticeUiState
-import com.peto.ramap.ui.main.notice.model.OperatingNoticeTab
 import kotlinx.datetime.LocalDate
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -65,7 +64,7 @@ class OperatingNoticeUiStateTest {
         assertEquals(setOf("today", "same-day"), selectedToday.notices.map { it.id }.toSet())
         assertEquals(listOf(future), selectedFuture.notices)
         assertEquals(next, selectedFuture.date)
-        val changed = state.copy(query = "다른", tab = OperatingNoticeTab.TODAY, feed = OperatingNoticeFeed(today, emptyList()))
+        val changed = state.copy(query = "다른", feed = OperatingNoticeFeed(today, emptyList()))
         assertEquals(emptyList(), changed.todayShops)
         assertEquals(listOf(future), selectedFuture.notices)
     }
@@ -105,6 +104,28 @@ class OperatingNoticeUiStateTest {
 
         val savedSuccessState = baseState.copy(savedOnly = true, personalizationState = PersonalizationBootstrapState.Success(Personalization()))
         assertTrue(savedSuccessState.showCounts)
+    }
+
+    @Test
+    fun `예정 매장은 한 번 표시하고 선택하면 모든 미래 원본 공지를 보존한다`() {
+        val closure = notice("closure", next).copy(endDate = later)
+        val hiddenByClosure = notice("planned", next).copy(type = OperatingNoticeType.PLANNED_CLOSING)
+        val anotherDay = notice("later", later)
+        val current = notice("today", today)
+        val state = state(current, closure, hiddenByClosure, anotherDay, closure)
+        assertEquals(1, state.scheduledShops.size)
+        assertEquals(
+            setOf("closure", "planned", "later"),
+            state
+                .selectScheduledNotice(closure)
+                .notices
+                .map { it.id }
+                .toSet(),
+        )
+        assertNull(state.selectScheduledNotice(closure).date)
+        assertEquals(today, state.selectNotice(current, today).date)
+        assertEquals(3, state.selectScheduledNotice(closure).notices.size)
+        assertEquals(listOf(current), state.selectNotice(current, today).notices)
     }
 
     private fun state(vararg notices: OperatingNotice) =

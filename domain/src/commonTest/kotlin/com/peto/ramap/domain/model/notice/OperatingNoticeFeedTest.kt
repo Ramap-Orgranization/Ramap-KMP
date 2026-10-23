@@ -147,6 +147,17 @@ class OperatingNoticeFeedTest {
         assertEquals(listOf(closure, future), feed.noticesForShopOn("shop", LocalDate(2026, 10, 19)))
     }
 
+    @Test
+    fun `예정 상세는 대표에 가려진 원본도 포함하고 지난 공지와 중복은 제외한다`() {
+        val futureDate = LocalDate(2026, 10, 19)
+        val closure = notice("closure", OperatingNoticeType.TEMPORARY_CLOSURE).copy(startDate = futureDate, endDate = futureDate)
+        val planned = notice("planned", OperatingNoticeType.PLANNED_CLOSING).copy(startDate = futureDate, endDate = futureDate)
+        val other = planned.copy(id = "other", shop = planned.shop.copy(id = "other"))
+        val feed = feed(notice("today"), closure, planned, closure, other)
+        assertEquals(listOf("closure"), feed.representatives(true, bookmarkedShopIds = setOf("shop")).map { it.id })
+        assertEquals(listOf("closure", "planned"), feed.scheduledNoticesForShop("shop").map { it.id })
+    }
+
     private fun feed(vararg notices: OperatingNotice) = OperatingNoticeFeed(date, notices.map { OperatingNoticeFeedItem(it) })
 
     private fun notice(

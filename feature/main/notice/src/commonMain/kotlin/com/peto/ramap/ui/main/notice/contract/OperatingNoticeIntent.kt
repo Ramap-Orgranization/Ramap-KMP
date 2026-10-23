@@ -1,16 +1,12 @@
 package com.peto.ramap.ui.main.notice.contract
 
+import com.peto.ramap.domain.model.auth.LoginType
 import com.peto.ramap.domain.model.notice.OperatingNotice
 import com.peto.ramap.ui.base.Intent
-import com.peto.ramap.ui.main.notice.model.OperatingNoticeTab
 
 sealed interface OperatingNoticeIntent : Intent {
     data class OnNoticeClicked(
         val notice: OperatingNotice,
-    ) : OperatingNoticeIntent
-
-    data class OnTabSelected(
-        val tab: OperatingNoticeTab,
     ) : OperatingNoticeIntent
 
     data class OnQueryChanged(
@@ -24,4 +20,10 @@ sealed interface OperatingNoticeIntent : Intent {
     data object OnRefreshed : OperatingNoticeIntent
 
     data object OnRetried : OperatingNoticeIntent
+
+    data object OnLoginDismissed : OperatingNoticeIntent
+
+    data class OnLoginSelected(
+        val type: LoginType,
+    ) : OperatingNoticeIntent
 }
