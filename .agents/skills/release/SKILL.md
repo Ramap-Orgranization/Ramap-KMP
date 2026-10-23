@@ -90,8 +90,9 @@ iOS TestFlight 요청은 Android 버전·AAB·GitHub Release 절차와 분리해
 
 ### Archive와 업로드
 
+- API 키가 설정되어 있으면 [API 키 배포 절차](references/ios-api-deployment.md)를 읽고 `scripts/ios-release.sh`를 사용한다. 로컬 Archive/IPA 생성, App Store Connect 업로드, App Store 심사 제출은 각각 별도 명령이다. 인증 설정만 요청받았을 때 새 빌드를 업로드하거나 심사를 제출하지 않는다.
 - iOS workspace(`iosApp/iosApp.xcworkspace`)와 앱 scheme으로 Release Archive를 만든다. 아카이브의 앱 버전, 빌드 번호, Bundle ID, APNs 환경과 Release Firebase 설정을 확인한다.
-- TestFlight 업로드는 Xcode Organizer에서 해당 Archive를 선택해 `Distribute App` → `App Store Connect`로 진행한다. Organizer의 업로드 단계가 자동 서명과 App Store Connect 업로드를 맡는다.
+- API 키를 사용할 수 없으면 Xcode Organizer에서 해당 Archive를 선택해 `Distribute App` → `App Store Connect`로 진행한다. Organizer의 업로드 단계가 자동 서명과 App Store Connect 업로드를 맡는다.
 - Archive에 `Apple Development` 서명이 보이더라도 Organizer가 App Store Connect 배포 서명을 적용할 수 있다. 따라서 Archive의 서명만으로 업로드 가능 여부를 판정하지 않는다.
 - `xcodebuild -exportArchive`가 `No Accounts` 또는 `No signing certificate "iOS Distribution" found`로 실패해도 Xcode Organizer 업로드가 불가능하다고 단정하지 않는다. 이 오류는 CLI export 환경의 계정/서명 상태를 나타낼 수 있다. Organizer에서 실제 업로드를 시도하고, 그 단계의 구체적 결과를 기준으로 판단한다.
 - Xcode Organizer에서 `Upload completed` 또는 `Uploaded to Apple` 상태가 확인될 때 업로드 성공으로 기록한다. dSYM 경고가 있어도 앱 업로드가 완료됐다면 TestFlight 처리를 계속 확인하고, 누락된 프레임워크 심볼과 경고를 결과에 보고한다.
