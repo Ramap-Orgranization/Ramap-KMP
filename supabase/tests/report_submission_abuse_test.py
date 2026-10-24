@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""격리 staging에서 매장 제보 중복·한도·권한·롤백을 검증하고 fixture를 정리한다."""
+"""격리 staging에서 매장 정보 제보 중복·한도·권한·롤백을 검증하고 fixture를 정리한다."""
 import argparse
 import concurrent.futures
 import json
@@ -29,7 +29,7 @@ def main():
     label = uuid.uuid4().hex
     shop_id = str(uuid.uuid4())
     source_prefix = f'https://report-test.invalid/{label}/'
-    tables = {'shop_information': 'shop_information_reports', 'unregistered_place': 'unregistered_place_reports'}
+    tables = {'shop_information': 'shop_information_reports'}
     helper_created = False
 
     def query(sql, values=()):
@@ -203,10 +203,6 @@ def main():
             check(kind + '_parallel_distinct_exact_limit', sum(r[0] in [200, 201] for r in replies) == 3 and sum(limit_reply(r) for r in replies) == 9 and total(kind) == 3 and daily(kind) == 3)
 
         clear()
-        bad_places = [{'place_url': 'not a URL'}, {'place_url': source_prefix + 'invalid', 'lat': 999, 'lng': 999}, {'lat': 37}, {}, {'lat': 'NaN', 'lng': 127}]
-        for index, value in enumerate(bad_places):
-            status, _, _ = submit('unregistered_place', 'invalid', value=value)
-            check('invalid_place_input_' + str(index), status == 400 and total('unregistered_place') == 0 and daily('unregistered_place') == 0)
         status, _, _ = submit('shop_information', 'long', value={**payload('shop_information', 'long'), 'description': 'a' * 4001})
         check('oversized_information_report_rejected', status == 400 and total('shop_information') == 0)
 
@@ -216,45 +212,10 @@ def main():
         second = submit('shop_information', 'normalized', 'B', value={**original, 'id': str(uuid.uuid4()), 'shop_name': 'Another supplied name', 'wrong_fields': ['phone', 'address', 'phone'], 'description': '  ' + original['description'] + '\n', 'created_at': '2099-01-01T00:00:00Z'})
         check('information_field_order_name_and_whitespace_cannot_bypass_duplicate', first[0] == 201 and second[0] == 201 and total('shop_information') == 1 and daily('shop_information') == 1)
 
-        clear()
-        first = submit('unregistered_place', 'coordinate-only', value={'lat': 37.12345611, 'lng': 127.12345611})
-        second = submit('unregistered_place', 'coordinate-only', 'B', value={'lat': 37.12345612, 'lng': 127.12345612})
-        check('coordinate_only_report_supported_and_precision_noise_deduplicated', first[0] == 201 and second[0] == 201 and total('unregistered_place') == 1 and daily('unregistered_place') == 1)
-
-        clear()
-        connection.execute("update report_submission_private.submission_limits set enabled=false where kind='unregistered_place'")
-        reply = submit('unregistered_place', 'maintenance', 'service')
-        check('trusted_service_maintenance_bypass_uses_no_public_budget', reply[0] == 201 and total('unregistered_place') == 1 and daily('unregistered_place') == 0)
-        reply = submit('unregistered_place', 'maintenance-invalid', 'service', value={'lat': 999, 'lng': 127})
-        check('trusted_service_still_requires_valid_new_row', reply[0] == 400 and total('unregistered_place') == 1)
-
-        clear()
-        connection.execute("update report_submission_private.submission_limits set global_daily_limit=3 where kind='unregistered_place'")
-        bulk = [payload('unregistered_place', 'bulk-' + str(i)) for i in range(4)]
-        reply = submit('unregistered_place', 'bulk', value=bulk)
-        check('bulk_over_limit_is_atomic_rollback', limit_reply(reply) and total('unregistered_place') == 0 and daily('unregistered_place') == 0 and query('select count(*) from report_submission_private.recent_submissions') == 0)
-
-        clear()
-        submit('unregistered_place', 'expired')
-        connection.execute("update report_submission_private.recent_submissions set expires_at=now()-interval '1 second'")
-        submit('unregistered_place', 'expired')
-        check('duplicate_window_can_expire_after_24_hours', total('unregistered_place') == 2)
-        with connection.transaction(force_rollback=True):
-            connection.execute("insert into report_submission_private.submission_counters values ('unregistered_place','global_day','',(date_trunc('day',now() at time zone 'Asia/Seoul') at time zone 'Asia/Seoul')-interval '1 day',now()-interval '1 second',1000)")
-            connection.execute("set local role anon")
-            connection.execute("select set_config('request.jwt.claims','{\"role\":\"anon\"}',true)")
-            connection.execute('insert into public.unregistered_place_reports(place_url) values (%s)', (source_prefix + 'expired-day',))
-            connection.execute('reset role')
-            check('expired_previous_day_and_bounded_cleanup', query('select count(*) from report_submission_private.submission_counters where expires_at<now()') == 0)
-
-        clear()
-        value = {'place_url': source_prefix + 'timestamp', 'created_at': '2000-01-01T00:00:00Z'}
-        submit('unregistered_place', 'timestamp', value=value)
-        submit('unregistered_place', 'timestamp', value={**value, 'lat': 37, 'lng': 127, 'created_at': '2099-01-01T00:00:00Z'})
-        check('ids_timestamps_and_optional_coordinates_cannot_bypass_duplicate', total('unregistered_place') == 1 and daily('unregistered_place') == 1)
+        # 장소 링크 강제 검증은 verified_place_report_access.sql 및 내부 함수 테스트에서 확인한다.
         counter_text = query('select coalesce(jsonb_agg(to_jsonb(c)),\'[]\')::text from report_submission_private.submission_counters c')
         recent_text = query('select coalesce(jsonb_agg(to_jsonb(c)),\'[]\')::text from report_submission_private.recent_submissions c')
-        check('quota_state_contains_no_raw_IP_subject_or_report_content', source_prefix not in recent_text and all(a['id'] not in counter_text for a in accounts.values()))
+        check('quota_state_contains_no_raw_IP_subject_or_report_content', label not in recent_text and all(a['id'] not in counter_text for a in accounts.values()))
 
     except BaseException as error:
         failure = type(error).__name__ + ': ' + str(error)
