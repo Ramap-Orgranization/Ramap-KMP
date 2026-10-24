@@ -29,8 +29,28 @@ class IosReviewSubmissionTest < Minitest::Test
             end
         end
     end
+    Localization = Struct.new(:locale, :name, :updates, :save_changes) do
+        def update(attributes:)
+            updates << attributes
+            self.name = attributes.fetch(:name) if save_changes
+        end
+    end
+    AppInfo = Struct.new(:state, :localizations) do
+        def get_app_info_localizations
+            localizations
+        end
+    end
+    Response = Struct.new(:to_models)
     module Api
         Build = BuildList
+        class << self
+            attr_accessor :app_infos, :app_info_reads
+
+            def get_app_infos(app_id:)
+                self.app_info_reads += 1
+                Response.new(app_infos)
+            end
+        end
     end
 
     def setup
@@ -38,6 +58,11 @@ class IosReviewSubmissionTest < Minitest::Test
         BuildList.builds = [@build]
         @version = Version.new("1.1.12", "PREPARE_FOR_SUBMISSION", "MANUAL", @build)
         @app = App.new("app", [@version])
+        @korean = Localization.new("ko", "라맵", [], true)
+        @english = Localization.new("en-US", "Ramap", [], true)
+        @info = AppInfo.new("PREPARE_FOR_SUBMISSION", [@korean, @english])
+        Api.app_infos = [@info]
+        Api.app_info_reads = 0
     end
 
     def submission(pause: -> {})
@@ -55,6 +80,42 @@ class IosReviewSubmissionTest < Minitest::Test
         @version.app_version_state = "IN_REVIEW"
         result = submission.submit { flunk "중복 제출" }
         assert_equal "IN_REVIEW", result.fetch("state")
+        assert_equal 0, Api.app_info_reads
+        assert_empty @korean.updates
+    end
+
+    def test_다음_심사제출_전에_한국어_스토어_이름만_라멥으로_저장한다
+        published = Localization.new("ko", "라맵", [], true)
+        Api.app_infos.unshift(AppInfo.new("READY_FOR_DISTRIBUTION", [published]))
+        submission.submit do
+            assert_equal "라멥", @korean.name
+            @version.app_version_state = "WAITING_FOR_REVIEW"
+        end
+        assert_equal [{ name: "라멥" }], @korean.updates
+        assert_empty published.updates
+        assert_empty @english.updates
+        assert_equal "Ramap", @english.name
+    end
+
+    def test_이미_라멥인_초안은_이름을_다시_저장하지_않는다
+        @korean.name = "라멥"
+        submission.submit { @version.app_version_state = "WAITING_FOR_REVIEW" }
+        assert_empty @korean.updates
+    end
+
+    def test_편집할_앱정보가_없거나_여러개면_심사를_제출하지_않는다
+        [[], [@info, @info]].each do |infos|
+            Api.app_infos = infos
+            assert_raises(RuntimeError) { submission.submit { flunk "잘못된 앱정보로 제출" } }
+        end
+    end
+
+    def test_한국어_앱정보가_없거나_이름_저장이_확인되지_않으면_제출하지_않는다
+        @info.localizations = [@english]
+        assert_raises(RuntimeError) { submission.submit { flunk "한국어 앱정보 없이 제출" } }
+        @info.localizations = [@korean]
+        @korean.save_changes = false
+        assert_raises(RuntimeError) { submission.submit { flunk "이름 저장 확인 없이 제출" } }
     end
 
     def test_다른_빌드가_심사중이면_완료로_보고하지_않는다
