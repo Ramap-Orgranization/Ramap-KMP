@@ -190,7 +190,7 @@ class OtherReviewsViewModel(
         val next = review.toggledLike()
         val originalReviewLike = ReviewLike(review.likeCount, review.isLiked)
         launchOptimisticTask(
-            taskKey = "other-review-like-${review.id}",
+            taskKey = likeTaskKey(review.id),
             loadKey = OtherReviewsLoadKey.ReviewAction,
             isUpdating = { false },
             onStart = {
@@ -698,7 +698,10 @@ class OtherReviewsViewModel(
         }
     }
 
+    private fun likeTaskKey(reviewId: String): String = "$LIKE_TASK_KEY$reviewId"
+
     private companion object {
+        const val LIKE_TASK_KEY = "other-review-like-"
         const val FOLLOW_ACCESS_TASK = "other-profile-follow-access"
         const val SAVED_SHOPS_TASK = "other-profile-saved-shops"
         const val PAGE_TASK = "other-reviews-page"
