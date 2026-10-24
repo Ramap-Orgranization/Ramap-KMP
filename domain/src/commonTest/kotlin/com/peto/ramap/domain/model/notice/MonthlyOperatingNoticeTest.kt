@@ -26,9 +26,9 @@ class MonthlyOperatingNoticeTest {
     @Test
     fun `떨어진 휴무일 사이의 날짜는 휴무로 처리하지 않는다`() {
         val notice = monthly(listOf(day("2026-10-06", true), day("2026-10-13", true)))
-        assertEquals(BusinessHoursStatus.Closed("11:00"), shop.businessHoursStatus(at("2026-10-06T12:00"), listOf(notice)))
+        assertEquals(BusinessHoursStatus.TemporaryClosure(LocalDate.parse("2026-10-06"), LocalDate.parse("2026-10-06")), shop.businessHoursStatus(at("2026-10-06T12:00"), listOf(notice)))
         assertTrue(shop.isOpenAt(at("2026-10-08T12:00"), listOf(notice)))
-        assertEquals(BusinessHoursStatus.Closed("11:00"), shop.businessHoursStatus(at("2026-10-13T12:00"), listOf(notice)))
+        assertEquals(BusinessHoursStatus.TemporaryClosure(LocalDate.parse("2026-10-13"), LocalDate.parse("2026-10-13")), shop.businessHoursStatus(at("2026-10-13T12:00"), listOf(notice)))
         assertTrue(shop.isOpenAt(at("2026-11-06T12:00"), listOf(notice)))
     }
 
@@ -57,6 +57,38 @@ class MonthlyOperatingNoticeTest {
         assertFalse(overnightShop.isOpenAt(at("2026-11-01T01:00"), listOf(notice)))
         assertEquals(BusinessHoursStatus.Closed("11:00"), overnightShop.businessHoursStatus(at("2026-11-01T01:00"), listOf(notice)))
         assertFalse(notice.isRelevantForBusinessHoursAt(at("2026-11-01T03:00")))
+    }
+
+    @Test
+    fun `연속 휴무는 첫날과 마지막 날까지 동일한 기간으로 적용하고 다음 날 해제한다`() {
+        val notice = monthly(emptyList()).copy(startDate = LocalDate.parse("2026-10-24"), endDate = LocalDate.parse("2026-10-30"))
+        val expected = BusinessHoursStatus.TemporaryClosure(notice.startDate, notice.endDate)
+        for (time in listOf("2026-10-24T00:00", "2026-10-27T16:00", "2026-10-30T23:59")) {
+            assertEquals(expected, shop.businessHoursStatus(at(time), listOf(notice)))
+            assertFalse(shop.isOpenAt(at(time), listOf(notice)))
+        }
+        assertTrue(shop.isOpenAt(at("2026-10-23T12:00"), listOf(notice)))
+        assertTrue(shop.isOpenAt(at("2026-10-31T12:00"), listOf(notice)))
+    }
+
+    @Test
+    fun `월간 공지에서는 오늘을 포함한 연속 휴무 구간만 반환한다`() {
+        val notice = monthly(listOf(day("2026-10-06", true), day("2026-10-07", true), day("2026-10-13", true)))
+        assertEquals(
+            BusinessHoursStatus.TemporaryClosure(LocalDate.parse("2026-10-06"), LocalDate.parse("2026-10-07")),
+            shop.businessHoursStatus(at("2026-10-07T12:00"), listOf(notice)),
+        )
+    }
+
+    @Test
+    fun `임시 휴무는 조기 마감보다 우선하며 다른 매장 공지는 적용하지 않는다`() {
+        val notice = monthly(listOf(day("2026-10-06", true)))
+        val earlyClosing = notice.copy(type = OperatingNoticeType.EARLY_CLOSING, endTime = kotlinx.datetime.LocalTime(15, 0))
+        assertEquals(
+            BusinessHoursStatus.TemporaryClosure(LocalDate.parse("2026-10-06"), LocalDate.parse("2026-10-06")),
+            shop.businessHoursStatus(at("2026-10-06T16:00"), listOf(earlyClosing, notice)),
+        )
+        assertTrue(shop.isOpenAt(at("2026-10-06T12:00"), listOf(notice.copy(shop = shop.copy(id = "other")))))
     }
 
     private fun monthly(days: List<OperatingNoticeDay>) =

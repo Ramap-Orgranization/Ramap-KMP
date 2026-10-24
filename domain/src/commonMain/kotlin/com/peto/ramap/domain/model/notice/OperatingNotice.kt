@@ -2,6 +2,7 @@ package com.peto.ramap.domain.model.notice
 
 import com.peto.ramap.domain.model.businesshour.BusinessHours
 import com.peto.ramap.domain.model.businesshour.BusinessHoursScheduleOverride
+import com.peto.ramap.domain.model.businesshour.BusinessHoursStatus
 import com.peto.ramap.domain.model.shop.RamenShop
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
@@ -30,6 +31,16 @@ data class OperatingNotice(
         if (date < startDate || (endDate != null && date > endDate)) return false
         if (dailySchedules.isEmpty()) return true
         return dailySchedules.any { it.date == date && it.closed }
+    }
+
+    fun temporaryClosureOn(date: LocalDate): BusinessHoursStatus.TemporaryClosure? {
+        if (type != OperatingNoticeType.TEMPORARY_CLOSURE || !appliesOn(date)) return null
+        if (dailySchedules.isEmpty()) return BusinessHoursStatus.TemporaryClosure(startDate, endDate)
+        var firstDate = date
+        var lastDate = date
+        while (appliesOn(firstDate.minus(1, DateTimeUnit.DAY))) firstDate = firstDate.minus(1, DateTimeUnit.DAY)
+        while (appliesOn(lastDate.plus(1, DateTimeUnit.DAY))) lastDate = lastDate.plus(1, DateTimeUnit.DAY)
+        return BusinessHoursStatus.TemporaryClosure(firstDate, lastDate)
     }
 
     fun scheduledDates(referenceDate: LocalDate): List<LocalDate> {

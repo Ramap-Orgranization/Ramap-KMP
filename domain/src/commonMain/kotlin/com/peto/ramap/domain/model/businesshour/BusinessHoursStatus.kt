@@ -1,8 +1,10 @@
 package com.peto.ramap.domain.model.businesshour
 
+import kotlinx.datetime.LocalDate
+
 sealed interface BusinessHoursStatus {
     val isNotOpening: Boolean
-        get() = this is BreakTime || this is Closed || this is Unknown
+        get() = this is BreakTime || this is Closed || this is TemporaryClosure || this is Unknown
 
     data object Unknown : BusinessHoursStatus
 
@@ -18,6 +20,11 @@ sealed interface BusinessHoursStatus {
 
     data class BreakTime(
         val endTime: String,
+    ) : BusinessHoursStatus
+
+    data class TemporaryClosure(
+        val startDate: LocalDate,
+        val endDate: LocalDate?,
     ) : BusinessHoursStatus
 
     data class Closed(

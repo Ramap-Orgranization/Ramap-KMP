@@ -59,12 +59,13 @@ internal fun BusinessHoursCard(
     operatingNotices: List<OperatingNotice> = listOfNotNull(operatingNotice),
     modifier: Modifier = Modifier,
 ) {
-    var isExpanded by rememberSaveable { mutableStateOf(false) }
     var currentDateTime by remember { mutableStateOf(Clock.System.now().toLocalDateTime(TimeZone.of("Asia/Seoul"))) }
     BusinessHoursStatusRefreshEffect(currentDateTime = currentDateTime, notices = operatingNotices) {
         currentDateTime = Clock.System.now().toLocalDateTime(TimeZone.of("Asia/Seoul"))
     }
     val status = shop.businessHoursStatus(currentDateTime, operatingNotices)
+    val temporaryClosure = status as? BusinessHoursStatus.TemporaryClosure
+    var isExpanded by rememberSaveable(shop.id, temporaryClosure) { mutableStateOf(false) }
     val businessHours = shop.businessHoursDetails
     val lines = businessHours?.let(BusinessHoursResourceMapper::all).orEmpty()
 
@@ -80,6 +81,15 @@ internal fun BusinessHoursCard(
                     shape = RoundedCornerShape(12.dp),
                 ).padding(vertical = 12.dp, horizontal = 16.dp),
     ) {
+        if (temporaryClosure != null) {
+            TemporaryClosureHours(
+                closure = temporaryClosure,
+                lines = lines,
+                isExpanded = isExpanded,
+                onToggle = { isExpanded = !isExpanded },
+            )
+            return@Column
+        }
         BusinessHoursNotice()
         Spacer(modifier = Modifier.height(2.dp))
         Row(
@@ -89,7 +99,7 @@ internal fun BusinessHoursCard(
         ) {
             BusinessHoursStatusSummary(
                 status = status,
-                modifier = Modifier.padding(vertical = 5.dp),
+                modifier = Modifier.weight(1f).padding(vertical = 5.dp),
             )
 
             if (businessHours != null) {
@@ -114,13 +124,15 @@ internal fun BusinessHoursCard(
             }
         }
 
-        if (isExpanded && businessHours != null) {
-            SectionCard {
-                lines.forEachIndexed { index, line ->
-                    BusinessHoursCardRow(
-                        line = line,
-                        isLast = index == lines.lastIndex,
-                    )
+        if (isExpanded && (businessHours != null)) {
+            if (lines.isNotEmpty()) {
+                SectionCard {
+                    lines.forEachIndexed { index, line ->
+                        BusinessHoursCardRow(
+                            line = line,
+                            isLast = index == lines.lastIndex,
+                        )
+                    }
                 }
             }
         }
