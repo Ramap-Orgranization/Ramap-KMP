@@ -311,7 +311,7 @@ class ReviewWriteViewModelTest {
         }
 
     @Test
-    fun `review body is limited to thirty Unicode characters`() =
+    fun `리뷰 본문은 Unicode 문자 100자까지 입력하고 초과 입력은 자른다`() =
         coroutinesTest {
             val viewModel =
                 ReviewWriteViewModel(
@@ -322,10 +322,18 @@ class ReviewWriteViewModelTest {
             viewModel.dispatch(ReviewWriteIntent.Open("shop"))
             runCurrent()
 
-            viewModel.dispatch(ReviewWriteIntent.ChangeBody("😀".repeat(31)))
+            val body = "가😀".repeat(50)
+            viewModel.dispatch(ReviewWriteIntent.ChangeBody(body))
             runCurrent()
 
-            assertEquals(30, Review.bodyCharacterCount(viewModel.uiState.value.body))
+            assertEquals(body, viewModel.uiState.value.body)
+            assertTrue(viewModel.uiState.value.canSubmit)
+
+            viewModel.dispatch(ReviewWriteIntent.ChangeBody(body + "😀"))
+            runCurrent()
+
+            assertEquals(body, viewModel.uiState.value.body)
+            assertEquals(100, Review.bodyCharacterCount(viewModel.uiState.value.body))
         }
 
     @Test

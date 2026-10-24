@@ -18,11 +18,20 @@ class ReviewTest {
     }
 
     @Test
-    fun isValidBody_countsUnicodeCodePointsAfterTrimming() {
+    fun `리뷰 본문은 앞뒤 공백을 제외한 Unicode 문자 5자부터 100자까지 허용한다`() {
         assertFalse(Review.isValidBody("1234"))
         assertTrue(Review.isValidBody("  12345  "))
-        assertTrue(Review.isValidBody("😀".repeat(30)))
-        assertFalse(Review.isValidBody("😀".repeat(31)))
+        for (body in listOf("가".repeat(31), "가".repeat(100), "😀".repeat(100), "가😀".repeat(50))) {
+            assertTrue(Review.isValidBody(body), body)
+            assertTrue(Review.isValidBody("  $body  "), body)
+        }
+        assertFalse(Review.isValidBody("가".repeat(101)))
+        assertFalse(Review.isValidBody("😀".repeat(101)))
+    }
+
+    @Test
+    fun `100자 리뷰에서도 비속어를 거부한다`() {
+        assertFalse(Review.isValidBody("가".repeat(98) + "씨발"))
     }
 
     @Test

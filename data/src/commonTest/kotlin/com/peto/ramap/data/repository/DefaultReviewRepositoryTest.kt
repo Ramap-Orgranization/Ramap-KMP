@@ -28,6 +28,20 @@ import kotlin.test.assertTrue
 @OptIn(ExperimentalCoroutinesApi::class)
 class DefaultReviewRepositoryTest {
     @Test
+    fun `리뷰 저장은 100자 본문을 허용하고 101자는 서버 요청 전에 거부한다`() =
+        runTest {
+            val source = FakeMyReviewsDataSource()
+            val repository = DefaultReviewRepository(source, FakeRamenShopDataSource(), testReviewChanges(), backgroundScope)
+            val body = "🍜".repeat(100)
+
+            assertIs<RamapResult.Success<Unit>>(repository.submitReview("shop", "  $body  ", emptyList(), true))
+            assertEquals(body, source.submittedReview?.body)
+
+            assertIs<RamapResult.Error>(repository.submitReview("shop", body + "🍜", emptyList(), true))
+            assertEquals(body, source.submittedReview?.body)
+        }
+
+    @Test
     fun `저장 이후 서명이나 정리가 실패해도 리뷰 저장은 성공한다`() =
         runTest {
             val source = FakeMyReviewsDataSource().apply { hydrationFailure = IllegalStateException("signing unavailable") }
