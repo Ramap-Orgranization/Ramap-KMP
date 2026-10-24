@@ -326,6 +326,21 @@ class NavigationStateTest {
     }
 
     @Test
+    fun `같은 공유 링크를 다시 수신하면 별도 지도 진입으로 처리한다`() {
+        val state = navigationState()
+        state.showShopOnMap("shop-id", source = NavigationSource.SHARED_LINK)
+        val first = state.currentRoute as ScreenRoutes.MapRoutes
+        state.showShopOnMap("shop-id", source = NavigationSource.SHARED_LINK)
+        val second = state.currentRoute as ScreenRoutes.MapRoutes
+        assertEquals(first.shopId, second.shopId)
+        assertTrue(second.instanceId > first.instanceId)
+        state.consumeMapReturnOrigin()
+        state.showShopOnMap("shop-id", source = NavigationSource.SHARED_LINK)
+        assertTrue((state.currentRoute as ScreenRoutes.MapRoutes).instanceId > second.instanceId)
+        assertEquals(1, state.currentBackStack.size)
+    }
+
+    @Test
     fun `현재 탭을 다시 선택해도 해당 탭 스택을 유지한다`() {
         val navigationState = navigationState(selectedTab = TabStatus.EVENT)
         navigationState.showEvent("event-id")

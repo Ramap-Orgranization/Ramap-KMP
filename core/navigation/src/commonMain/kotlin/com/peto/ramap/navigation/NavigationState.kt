@@ -11,6 +11,11 @@ class NavigationState(
     val backStacks: Map<TabStatus, NavBackStack<NavKey>>,
 ) {
     private var eventTabRouteId = 0
+    private var sharedShopRouteId =
+        backStacks.values
+            .flatten()
+            .filterIsInstance<ScreenRoutes.MapRoutes>()
+            .maxOfOrNull { it.instanceId } ?: 0
 
     var selectedTab: TabStatus by selectedTabState
         private set
@@ -167,6 +172,7 @@ class NavigationState(
                 showShopDetail = showShopDetail,
                 showReviews = showReviews,
                 source = source,
+                instanceId = if (source == NavigationSource.SHARED_LINK) ++sharedShopRouteId else 0,
             )
         val mapBackStack = backStacks.getValue(TabStatus.MAP)
         val isRequestedShopAlreadyShown =

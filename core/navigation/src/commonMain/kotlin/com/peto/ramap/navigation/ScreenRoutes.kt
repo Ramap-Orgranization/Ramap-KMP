@@ -12,6 +12,7 @@ sealed interface ScreenRoutes : NavKey {
         val showShopDetail: Boolean = true,
         val showReviews: Boolean = false,
         val source: NavigationSource? = null,
+        val instanceId: Int = 0,
     ) : ScreenRoutes
 
     @Serializable
