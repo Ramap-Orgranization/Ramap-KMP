@@ -268,8 +268,8 @@ class ReviewWriteViewModel(
                 if (isStaleGeneration || isUserChanged) {
                     return@launchResultTask
                 }
-                val isPrivateProfileAndReviewsHidden = draft.isPublic && !profile.isPublic && !profile.followersCanReadReviews
-                if (isPrivateProfileAndReviewsHidden) {
+                val isPublicReviewWithPrivateProfile = draft.isPublic && !profile.isPublic
+                if (isPublicReviewWithPrivateProfile) {
                     reduce { copy(showPrivateProfileConfirmation = true) }
                 } else {
                     submitDraft(draft)

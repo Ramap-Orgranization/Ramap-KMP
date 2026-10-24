@@ -9,8 +9,12 @@ import com.peto.ramap.domain.model.community.FollowState
 import com.peto.ramap.domain.model.community.ProfileAccess
 import com.peto.ramap.domain.model.community.PublicProfile
 import com.peto.ramap.domain.model.community.PublicSavedShopsPage
+import com.peto.ramap.domain.model.review.MyReviewVisibility
+import com.peto.ramap.domain.model.review.MyReviewsPage
 import com.peto.ramap.domain.model.review.Review
+import com.peto.ramap.domain.model.review.ReviewImage
 import com.peto.ramap.domain.model.review.ReviewLike
+import com.peto.ramap.domain.model.review.ShopReviewsPage
 import com.peto.ramap.domain.model.review.change.ReviewChange
 import com.peto.ramap.domain.model.review.change.ReviewChangeReducer
 import com.peto.ramap.domain.repository.CommunityRepository
@@ -41,26 +45,49 @@ import ramap.shared.generated.resources.review_block_failed
 import ramap.shared.generated.resources.review_like_failed
 import ramap.shared.generated.resources.review_unblock_failed
 
-import com.peto.ramap.domain.model.review.MyReviewVisibility
-import com.peto.ramap.domain.model.review.MyReviewsPage
-import com.peto.ramap.domain.model.review.ReviewImage
-import com.peto.ramap.domain.model.review.ShopReviewsPage
-
 class OtherReviewsViewModel(
     private val community: CommunityRepository,
     private val profiles: ProfileRepository,
     private val follows: FollowRepository,
     private val reviewRepository: ReviewRepository =
         object : ReviewRepository {
-            override suspend fun fetchMyReviews(offset: Long, visibility: MyReviewVisibility) = RamapResult.Success(MyReviewsPage(emptyList(), 0, 0, 0, true))
+            override suspend fun fetchMyReviews(
+                offset: Long,
+                visibility: MyReviewVisibility,
+            ) = RamapResult.Success(MyReviewsPage(emptyList(), 0, 0, 0, true))
+
             override suspend fun fetchMyReview(reviewId: String) = RamapResult.Success(null)
-            override suspend fun fetchShopReviewsPage(shopId: String, offset: Long) = RamapResult.Success(ShopReviewsPage(emptyList(), 0))
+
+            override suspend fun fetchShopReviewsPage(
+                shopId: String,
+                offset: Long,
+            ) = RamapResult.Success(ShopReviewsPage(emptyList(), 0))
+
             override suspend fun fetchBlockedShopReviewOnce(reviewId: String) = RamapResult.Success(null)
-            override suspend fun submitReview(shopId: String, body: String, images: List<ReviewImage>, isPublic: Boolean) = RamapResult.Success(Unit)
+
+            override suspend fun submitReview(
+                shopId: String,
+                body: String,
+                images: List<ReviewImage>,
+                isPublic: Boolean,
+            ) = RamapResult.Success(Unit)
+
             override suspend fun fetchEditableReview(reviewId: String) = RamapResult.Success(null)
-            override suspend fun updateReview(reviewId: String, body: String, retainedImagePaths: List<String>, newImages: List<ReviewImage>, isPublic: Boolean) = RamapResult.Success(Unit)
+
+            override suspend fun updateReview(
+                reviewId: String,
+                body: String,
+                retainedImagePaths: List<String>,
+                newImages: List<ReviewImage>,
+                isPublic: Boolean,
+            ) = RamapResult.Success(Unit)
+
             override suspend fun deleteReview(reviewId: String) = RamapResult.Success(Unit)
-            override suspend fun setReviewLike(reviewId: String, liked: Boolean) = RamapResult.Success(ReviewLike(0, liked))
+
+            override suspend fun setReviewLike(
+                reviewId: String,
+                liked: Boolean,
+            ) = RamapResult.Success(ReviewLike(0, liked))
         },
     private val changes: ReviewChangeStore,
     private val reviewChangeReducer: ReviewChangeReducer,

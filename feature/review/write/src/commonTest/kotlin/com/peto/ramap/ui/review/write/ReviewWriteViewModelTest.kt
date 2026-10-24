@@ -520,6 +520,50 @@ class ReviewWriteViewModelTest {
             assertFalse(viewModel.uiState.value.showPrivateProfileConfirmation)
         }
 
+    @Test
+    fun `팔로워 공개 여부와 무관하게 비공개 프로필의 공개 리뷰는 확인 후 저장한다`() =
+        coroutinesTest {
+            for (followersCanRead in listOf(false, true)) {
+                for (makePublic in listOf(false, true)) {
+                    val profiles = FakeProfileRepository(isProfilePublic = false, followersCanReadReviews = followersCanRead)
+                    val reviews = FakeReviewRepository()
+                    val viewModel = ReviewWriteViewModel(reviews, profiles, FakeRamenShopRepository())
+                    viewModel.dispatch(ReviewWriteIntent.Open("shop"))
+                    runCurrent()
+                    viewModel.dispatch(ReviewWriteIntent.ChangeBody("공개 확인 테스트"))
+                    viewModel.dispatch(ReviewWriteIntent.Submit)
+                    runCurrent()
+                    assertTrue(viewModel.uiState.value.showPrivateProfileConfirmation)
+                    assertTrue(reviews.submissions.isEmpty())
+                    viewModel.dispatch(
+                        if (makePublic) ReviewWriteIntent.ConfirmSubmitWithPublicProfile else ReviewWriteIntent.ConfirmSubmitWithPrivateProfile,
+                    )
+                    runCurrent()
+                    assertEquals(makePublic, profiles.isProfilePublic)
+                    assertEquals(1, reviews.submissions.size)
+                }
+            }
+        }
+
+    @Test
+    fun `비공개 프로필 공개 리뷰 확인을 취소하면 초안을 유지하고 저장하지 않는다`() =
+        coroutinesTest {
+            val profiles = FakeProfileRepository(isProfilePublic = false, followersCanReadReviews = true)
+            val reviews = FakeReviewRepository()
+            val viewModel = ReviewWriteViewModel(reviews, profiles, FakeRamenShopRepository())
+            viewModel.dispatch(ReviewWriteIntent.Open("shop"))
+            runCurrent()
+            viewModel.dispatch(ReviewWriteIntent.ChangeBody("공개 확인 테스트"))
+            viewModel.dispatch(ReviewWriteIntent.Submit)
+            runCurrent()
+            viewModel.dispatch(ReviewWriteIntent.CancelPrivateProfileConfirmation)
+            runCurrent()
+            assertFalse(viewModel.uiState.value.showPrivateProfileConfirmation)
+            assertEquals("공개 확인 테스트", viewModel.uiState.value.body)
+            assertTrue(reviews.submissions.isEmpty())
+            assertFalse(profiles.isProfilePublic)
+        }
+
     private fun reviewImage(seed: Int): ReviewImage =
         ReviewImage(
             bytes = byteArrayOf(0xFF.toByte(), 0xD8.toByte(), 0xFF.toByte(), seed.toByte()),
