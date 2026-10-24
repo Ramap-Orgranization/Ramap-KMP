@@ -1,12 +1,9 @@
 package com.peto.ramap.ui.review.other
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -14,9 +11,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -36,7 +31,6 @@ import com.peto.ramap.designsystem.resource.category.CategoryResourceMapper
 import com.peto.ramap.designsystem.review.ReviewEmptyContent
 import com.peto.ramap.designsystem.review.ReviewPage
 import com.peto.ramap.designsystem.review.ShopReviewCard
-import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.designsystem.toast.ToastManager
 import com.peto.ramap.domain.model.auth.LoginType
 import com.peto.ramap.domain.model.community.ProfileAccess
@@ -49,8 +43,6 @@ import com.peto.ramap.domain.model.shop.Category
 import com.peto.ramap.domain.model.shop.Location
 import com.peto.ramap.domain.model.shop.MenuCategories
 import com.peto.ramap.domain.model.shop.RamenShop
-import com.peto.ramap.extension.noRippleClickable
-import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.RamapTheme
@@ -74,17 +66,13 @@ import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.bookmarked_shops_empty_title
-import ramap.shared.generated.resources.bookmarked_shops_toggle
 import ramap.shared.generated.resources.follow_content_private
-import ramap.shared.generated.resources.follow_followers
-import ramap.shared.generated.resources.follow_following
 import ramap.shared.generated.resources.ic_profile_blocked
 import ramap.shared.generated.resources.review_blocked_empty
 import ramap.shared.generated.resources.review_profile_private
 import ramap.shared.generated.resources.review_profile_title
 import ramap.shared.generated.resources.review_profile_unavailable
 import ramap.shared.generated.resources.shop_review_empty
-import ramap.shared.generated.resources.shop_review_title
 
 @Composable
 fun OtherReviewsRoute(
@@ -225,18 +213,6 @@ internal fun OtherReviewsContent(
                 }
             }
             if (state.profileAccess is ProfileAccess.Visible) {
-                item {
-                    ProfileFollowCounts(
-                        followerCount = state.profileAccess.followerCount,
-                        followingCount = state.profileAccess.followingCount,
-                    )
-                    ProfileStatsCard(
-                        reviewCount = state.reviewCount,
-                        savedShopCount = state.savedShopCount,
-                        onReviewClick = { onIntent(OtherReviewsIntent.SelectTab(OtherReviewsTab.Reviews)) },
-                        onSavedShopClick = { onIntent(OtherReviewsIntent.SelectTab(OtherReviewsTab.SavedShops)) },
-                    )
-                }
                 stickyHeader(key = "profile-tabs") {
                     OtherProfileTabs(
                         selectedTab = state.selectedTab,
@@ -505,131 +481,6 @@ private fun OtherReviewsContentFailedPreview() {
             onBack = {},
             onOpenShopDetail = {},
             onIntent = {},
-        )
-    }
-}
-
-@Composable
-private fun ProfileFollowCounts(
-    followerCount: Long?,
-    followingCount: Long?,
-    modifier: Modifier = Modifier,
-) {
-    if (followerCount == null || followingCount == null) return
-    Column(
-        modifier =
-            modifier
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 12.dp),
-    ) {
-        HorizontalDivider(color = GrayColor.C100)
-        Row(
-            modifier = Modifier.padding(vertical = 20.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            ProfileFollowCount(
-                count = followerCount,
-                label = stringResource(Res.string.follow_followers),
-                modifier = Modifier.weight(1f),
-            )
-            VerticalDivider(
-                modifier = Modifier.height(36.dp),
-                color = GrayColor.C100,
-            )
-            ProfileFollowCount(
-                count = followingCount,
-                label = stringResource(Res.string.follow_following),
-                modifier = Modifier.weight(1f),
-            )
-        }
-    }
-}
-
-@Composable
-private fun ProfileStatsCard(
-    reviewCount: Long?,
-    savedShopCount: Long?,
-    onReviewClick: () -> Unit,
-    onSavedShopClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Row(
-        modifier =
-            modifier
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 12.dp)
-                .background(CommonColor.White, RoundedCornerShape(16.dp))
-                .border(1.dp, GrayColor.C100, RoundedCornerShape(16.dp))
-                .padding(vertical = 16.dp),
-        horizontalArrangement = Arrangement.SpaceEvenly,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Column(
-            modifier =
-                Modifier
-                    .weight(1f)
-                    .noRippleClickable(onClick = onReviewClick),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(4.dp),
-        ) {
-            AppText(
-                text = reviewCount?.toString().orEmpty(),
-                style = AppTextStyle.T1,
-                color = GrayColor.C500,
-            )
-            AppText(
-                text = stringResource(Res.string.shop_review_title),
-                style = AppTextStyle.C1,
-                color = GrayColor.C400,
-            )
-        }
-        VerticalDivider(
-            modifier = Modifier.height(24.dp),
-            thickness = 1.dp,
-            color = GrayColor.C100,
-        )
-        Column(
-            modifier =
-                Modifier
-                    .weight(1f)
-                    .noRippleClickable(onClick = onSavedShopClick),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(4.dp),
-        ) {
-            AppText(
-                text = savedShopCount?.toString().orEmpty(),
-                style = AppTextStyle.T1,
-                color = GrayColor.C500,
-            )
-            AppText(
-                text = stringResource(Res.string.bookmarked_shops_toggle),
-                style = AppTextStyle.C1,
-                color = GrayColor.C400,
-            )
-        }
-    }
-}
-
-@Composable
-private fun ProfileFollowCount(
-    count: Long,
-    label: String,
-    modifier: Modifier = Modifier,
-) {
-    Column(
-        modifier = modifier,
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(4.dp),
-    ) {
-        AppText(
-            text = count.toString(),
-            style = AppTextStyle.T1,
-            color = GrayColor.C500,
-        )
-        AppText(
-            text = label,
-            style = AppTextStyle.C1,
-            color = GrayColor.C300,
         )
     }
 }
