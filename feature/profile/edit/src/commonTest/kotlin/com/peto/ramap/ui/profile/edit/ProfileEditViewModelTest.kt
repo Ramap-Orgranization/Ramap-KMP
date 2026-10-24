@@ -1,8 +1,5 @@
 package com.peto.ramap.ui.profile.edit
 
-import com.peto.ramap.ui.profile.edit.contract.ProfileIntent
-import com.peto.ramap.ui.profile.edit.contract.ProfileSideEffect
-
 import com.peto.ramap.core.result.RamapError
 import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.coroutinesTest
@@ -10,6 +7,8 @@ import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.profile.AccountProfile
 import com.peto.ramap.domain.model.profile.ProfileImage
 import com.peto.ramap.fake.FakeLoginRepository
+import com.peto.ramap.ui.profile.edit.contract.ProfileIntent
+import com.peto.ramap.ui.profile.edit.contract.ProfileSideEffect
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first

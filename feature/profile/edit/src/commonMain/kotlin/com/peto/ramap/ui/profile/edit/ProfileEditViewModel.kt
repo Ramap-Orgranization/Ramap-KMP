@@ -1,10 +1,5 @@
 package com.peto.ramap.ui.profile.edit
 
-import com.peto.ramap.ui.profile.edit.contract.ProfileIntent
-import com.peto.ramap.ui.profile.edit.contract.ProfileLoadKey
-import com.peto.ramap.ui.profile.edit.contract.ProfileSideEffect
-import com.peto.ramap.ui.profile.edit.contract.ProfileUiState
-
 import androidx.lifecycle.viewModelScope
 import com.peto.ramap.core.result.RamapError
 import com.peto.ramap.core.result.RamapResult
@@ -15,6 +10,10 @@ import com.peto.ramap.domain.repository.LoginRepository
 import com.peto.ramap.domain.repository.ProfileRepository
 import com.peto.ramap.ui.base.BaseViewModel
 import com.peto.ramap.ui.loading.LoadState
+import com.peto.ramap.ui.profile.edit.contract.ProfileIntent
+import com.peto.ramap.ui.profile.edit.contract.ProfileLoadKey
+import com.peto.ramap.ui.profile.edit.contract.ProfileSideEffect
+import com.peto.ramap.ui.profile.edit.contract.ProfileUiState
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.StringResource

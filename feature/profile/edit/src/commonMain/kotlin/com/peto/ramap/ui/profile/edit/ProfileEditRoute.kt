@@ -1,9 +1,5 @@
 package com.peto.ramap.ui.profile.edit
 
-import com.peto.ramap.ui.profile.edit.contract.ProfileIntent
-import com.peto.ramap.ui.profile.edit.contract.ProfileSideEffect
-import com.peto.ramap.ui.profile.edit.contract.ProfileUiState
-
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
@@ -21,6 +17,9 @@ import com.peto.ramap.platform.image.rememberImagePicker
 import com.peto.ramap.theme.RamapTheme
 import com.peto.ramap.ui.base.ObserveAsEvents
 import com.peto.ramap.ui.loading.LoadState
+import com.peto.ramap.ui.profile.edit.contract.ProfileIntent
+import com.peto.ramap.ui.profile.edit.contract.ProfileSideEffect
+import com.peto.ramap.ui.profile.edit.contract.ProfileUiState
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 

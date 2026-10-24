@@ -1,8 +1,5 @@
 package com.peto.ramap.ui.profile.follow
 
-import com.peto.ramap.ui.profile.follow.contract.FollowIntent
-import com.peto.ramap.ui.profile.follow.contract.FollowState
-
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -13,6 +10,7 @@ import com.peto.ramap.designsystem.toast.ToastManager
 import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.ui.base.ObserveAsEvents
+import com.peto.ramap.ui.profile.follow.contract.FollowIntent
 import com.peto.ramap.ui.refresh.RefreshOnReturnEffect
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel

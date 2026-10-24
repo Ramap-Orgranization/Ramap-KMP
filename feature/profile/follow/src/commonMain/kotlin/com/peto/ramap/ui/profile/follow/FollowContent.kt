@@ -1,8 +1,5 @@
 package com.peto.ramap.ui.profile.follow
 
-import com.peto.ramap.ui.profile.follow.contract.FollowIntent
-import com.peto.ramap.ui.profile.follow.contract.FollowState
-
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -36,6 +33,8 @@ import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.ui.paging.ObserveLoadMoreNearListEnd
 import com.peto.ramap.ui.profile.follow.component.FollowUserRow
 import com.peto.ramap.ui.profile.follow.component.RemoveFollowerDialog
+import com.peto.ramap.ui.profile.follow.contract.FollowIntent
+import com.peto.ramap.ui.profile.follow.contract.FollowState
 import com.peto.ramap.ui.resource.FollowResourceMapper
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
