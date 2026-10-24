@@ -24,8 +24,8 @@ fun NewsFilters(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 20.dp)
-                .padding(top = 16.dp, bottom = 12.dp),
+                .padding(horizontal = 10.dp)
+                .padding(bottom = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
