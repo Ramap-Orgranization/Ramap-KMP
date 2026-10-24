@@ -1,5 +1,6 @@
 package com.peto.ramap.ui.review.other.contract
 
+import com.peto.ramap.domain.model.review.Review
 import com.peto.ramap.ui.base.Intent
 
 sealed interface OtherReviewsIntent : Intent {
@@ -18,4 +19,8 @@ sealed interface OtherReviewsIntent : Intent {
     data object ToggleFollow : OtherReviewsIntent
 
     data object ToggleBlock : OtherReviewsIntent
+
+    data class ToggleLike(
+        val review: Review,
+    ) : OtherReviewsIntent
 }

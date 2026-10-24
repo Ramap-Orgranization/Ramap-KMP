@@ -28,6 +28,7 @@ import com.peto.ramap.designsystem.component.RamenShopSummary
 import com.peto.ramap.designsystem.indicator.RamenLoadingIndicator
 import com.peto.ramap.designsystem.profile.ProfileHeader
 import com.peto.ramap.designsystem.resource.category.CategoryResourceMapper
+import com.peto.ramap.designsystem.review.ReviewCardActions
 import com.peto.ramap.designsystem.review.ReviewEmptyContent
 import com.peto.ramap.designsystem.review.ReviewPage
 import com.peto.ramap.designsystem.review.ShopReviewCard
@@ -283,10 +284,15 @@ internal fun OtherReviewsContent(
                 items = if (state.selectedTab == OtherReviewsTab.Reviews) state.reviews else emptyList(),
                 key = { it.review.id },
             ) { profileReview ->
+                val reviewActions =
+                    ReviewCardActions(
+                        onLike = { onIntent(OtherReviewsIntent.ToggleLike(profileReview.review)) },
+                    )
                 ShopReviewCard(
                     review = profileReview.review,
                     shop = profileReview.shop,
                     onOpenShopDetail = onOpenShopDetail,
+                    actions = reviewActions,
                     photoViewerEnabled = false,
                 )
             }

@@ -7,4 +7,5 @@ enum class OtherReviewsLoadKey : LoadKey {
     SavedShops,
     Block,
     Follow,
+    ReviewAction,
 }

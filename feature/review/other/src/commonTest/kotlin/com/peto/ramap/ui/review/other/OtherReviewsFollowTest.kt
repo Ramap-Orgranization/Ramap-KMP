@@ -15,6 +15,7 @@ import com.peto.ramap.domain.model.review.change.ReviewChangeReducer
 import com.peto.ramap.fake.FakeFollowRepository
 import com.peto.ramap.fake.FakeProfileRepository
 import com.peto.ramap.fake.FakeReviewChangeStore
+import com.peto.ramap.fake.FakeShopReviewRepository
 import com.peto.ramap.fixture.ramenShopFixture
 import com.peto.ramap.ui.review.other.contract.OtherReviewsEffect
 import com.peto.ramap.ui.review.other.contract.OtherReviewsIntent
@@ -256,6 +257,7 @@ class OtherReviewsFollowTest {
         community = community,
         profiles = FakeProfileRepository(),
         follows = follows,
+        reviewRepository = FakeShopReviewRepository(),
         changes = changes,
         reviewChangeReducer = ReviewChangeReducer(),
     )
