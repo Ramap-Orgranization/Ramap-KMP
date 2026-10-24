@@ -1,5 +1,8 @@
 package com.peto.ramap.ui.profile.edit
 
+import com.peto.ramap.ui.profile.edit.contract.ProfileIntent
+import com.peto.ramap.ui.profile.edit.contract.ProfileUiState
+
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border

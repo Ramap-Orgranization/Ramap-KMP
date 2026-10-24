@@ -1,5 +1,10 @@
 package com.peto.ramap.ui.profile.follow
 
+import com.peto.ramap.ui.profile.follow.contract.FollowEffect
+import com.peto.ramap.ui.profile.follow.contract.FollowIntent
+import com.peto.ramap.ui.profile.follow.contract.FollowLoadKey
+import com.peto.ramap.ui.profile.follow.contract.FollowState
+
 import androidx.lifecycle.viewModelScope
 import com.peto.ramap.domain.model.community.FollowAction
 import com.peto.ramap.domain.model.community.FollowList

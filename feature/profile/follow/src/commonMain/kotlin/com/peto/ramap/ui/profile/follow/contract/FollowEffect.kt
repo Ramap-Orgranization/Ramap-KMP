@@ -1,4 +1,4 @@
-package com.peto.ramap.ui.profile.follow
+package com.peto.ramap.ui.profile.follow.contract
 
 import com.peto.ramap.ui.base.SideEffect
 

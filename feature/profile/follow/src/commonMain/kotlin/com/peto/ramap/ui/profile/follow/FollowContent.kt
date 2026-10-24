@@ -1,5 +1,8 @@
 package com.peto.ramap.ui.profile.follow
 
+import com.peto.ramap.ui.profile.follow.contract.FollowIntent
+import com.peto.ramap.ui.profile.follow.contract.FollowState
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues

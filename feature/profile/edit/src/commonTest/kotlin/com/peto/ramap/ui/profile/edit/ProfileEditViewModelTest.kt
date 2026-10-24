@@ -1,5 +1,8 @@
 package com.peto.ramap.ui.profile.edit
 
+import com.peto.ramap.ui.profile.edit.contract.ProfileIntent
+import com.peto.ramap.ui.profile.edit.contract.ProfileSideEffect
+
 import com.peto.ramap.core.result.RamapError
 import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.coroutinesTest

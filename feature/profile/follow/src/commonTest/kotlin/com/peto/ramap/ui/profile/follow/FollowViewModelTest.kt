@@ -1,5 +1,7 @@
 package com.peto.ramap.ui.profile.follow
 
+import com.peto.ramap.ui.profile.follow.contract.FollowIntent
+
 import com.peto.ramap.core.result.RamapError
 import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.coroutinesTest

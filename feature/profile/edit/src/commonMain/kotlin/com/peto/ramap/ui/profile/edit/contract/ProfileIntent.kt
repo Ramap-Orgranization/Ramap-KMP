@@ -1,4 +1,4 @@
-package com.peto.ramap.ui.profile.edit
+package com.peto.ramap.ui.profile.edit.contract
 
 import com.peto.ramap.domain.model.profile.ProfileImage
 import com.peto.ramap.ui.base.Intent

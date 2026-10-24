@@ -1,5 +1,9 @@
 package com.peto.ramap.ui.profile.edit
 
+import com.peto.ramap.ui.profile.edit.contract.ProfileIntent
+import com.peto.ramap.ui.profile.edit.contract.ProfileSideEffect
+import com.peto.ramap.ui.profile.edit.contract.ProfileUiState
+
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue

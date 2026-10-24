@@ -1,4 +1,4 @@
-package com.peto.ramap.ui.profile.edit
+package com.peto.ramap.ui.profile.edit.contract
 
 import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.ui.base.SideEffect

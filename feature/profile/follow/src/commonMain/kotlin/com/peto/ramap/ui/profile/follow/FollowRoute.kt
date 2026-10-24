@@ -1,5 +1,8 @@
 package com.peto.ramap.ui.profile.follow
 
+import com.peto.ramap.ui.profile.follow.contract.FollowIntent
+import com.peto.ramap.ui.profile.follow.contract.FollowState
+
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
