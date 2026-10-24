@@ -27,6 +27,4 @@ sealed interface ProfileIntent : Intent {
     data object Save : ProfileIntent
 
     data object Back : ProfileIntent
-
-    data object Leave : ProfileIntent
 }

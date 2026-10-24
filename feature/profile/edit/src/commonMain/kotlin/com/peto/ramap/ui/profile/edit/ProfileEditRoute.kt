@@ -1,7 +1,6 @@
 package com.peto.ramap.ui.profile.edit
 
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -36,9 +35,7 @@ fun ProfileEditRoute(
             onImagePicked = { viewModel.dispatch(ProfileIntent.PickImage(ProfileImage(it.bytes, it.mimeType))) },
             onRejected = { viewModel.dispatch(ProfileIntent.RejectImage) },
         )
-    DisposableEffect(viewModel) {
-        onDispose { viewModel.dispatch(ProfileIntent.Leave) }
-    }
+
     ObserveAsEvents(viewModel.sideEffect) {
         when (it) {
             ProfileSideEffect.NavigateBack -> onBack()

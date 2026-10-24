@@ -75,7 +75,6 @@ class ProfileEditViewModel(
             }
             ProfileIntent.Save -> save()
             ProfileIntent.Back -> back()
-            ProfileIntent.Leave -> endEdit()
         }
     }
 
