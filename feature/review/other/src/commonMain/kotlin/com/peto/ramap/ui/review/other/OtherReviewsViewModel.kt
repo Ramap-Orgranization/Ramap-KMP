@@ -72,10 +72,7 @@ class OtherReviewsViewModel(
                     val targetId = currentState.userId
                     val isAccessChangedForUser = change is ReviewChange.AccessChanged && change.userId == targetId
                     if (isAccessChangedForUser) {
-                        generation++
-                        val extent = currentState.reviews.size
-                        reduce { copy(reviews = emptyList(), profileAccess = null, hasMore = false) }
-                        loadPage(reset = true, requestedReviewExtent = extent)
+                        handleAccessChange(change as ReviewChange.AccessChanged)
                     } else {
                         reduce {
                             val access = profileAccess as? ProfileAccess.Visible ?: return@reduce this
@@ -107,6 +104,19 @@ class OtherReviewsViewModel(
                 }
             }
         }
+    }
+
+    private fun handleAccessChange(change: ReviewChange.AccessChanged) {
+        val canRefreshFollowAccess = change.followAction != null && currentState.profileAccess is ProfileAccess.Visible
+        if (canRefreshFollowAccess) {
+            // 현재 화면의 팔로우 작업은 성공 콜백에서 접근 상태를 갱신한다.
+            if (!currentState.following) refreshFollowAccess(change.userId)
+            return
+        }
+        generation++
+        val extent = currentState.reviews.size
+        reduce { copy(reviews = emptyList(), profileAccess = null, hasMore = false) }
+        loadPage(reset = true, requestedReviewExtent = extent)
     }
 
     private fun observeSessionUserIds() {

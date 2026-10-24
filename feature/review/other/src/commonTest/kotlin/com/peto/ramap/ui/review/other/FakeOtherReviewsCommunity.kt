@@ -2,6 +2,7 @@ package com.peto.ramap.ui.review.other
 
 import com.peto.ramap.core.result.RamapError
 import com.peto.ramap.core.result.RamapResult
+import com.peto.ramap.domain.model.community.FollowState
 import com.peto.ramap.domain.model.community.ProfileAccess
 import com.peto.ramap.domain.model.community.ProfileReview
 import com.peto.ramap.domain.model.community.PublicProfile
@@ -9,10 +10,17 @@ import com.peto.ramap.domain.model.community.PublicSavedShopsPage
 import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.domain.repository.CommunityRepository
 import com.peto.ramap.fake.FakeCommunityRepository
+import kotlinx.coroutines.CompletableDeferred
 
 class FakeOtherReviewsCommunity : CommunityRepository by FakeCommunityRepository() {
     var profile: PublicProfile? = PublicProfile("author", "라멘팬")
     var profilePrivate = false
+    var canReadReviews = true
+    var canReadSavedShops = true
+    var followState = FollowState.NONE
+    var followerCount = 0L
+    var followingCount = 0L
+    var profileAccessPending: CompletableDeferred<RamapResult<ProfileAccess>>? = null
     var reviews: List<ProfileReview> = emptyList()
     var savedShops: List<RamenShop> = emptyList()
     var reviewCount: Long? = null
@@ -27,7 +35,7 @@ class FakeOtherReviewsCommunity : CommunityRepository by FakeCommunityRepository
 
     override suspend fun fetchProfileAccess(userId: String): RamapResult<ProfileAccess> {
         requestedProfileUserIds += userId
-        return RamapResult.Success(profileAccess(userId))
+        return profileAccessPending?.await() ?: RamapResult.Success(profileAccess(userId))
     }
 
     private fun profileAccess(userId: String): ProfileAccess {
@@ -38,6 +46,11 @@ class FakeOtherReviewsCommunity : CommunityRepository by FakeCommunityRepository
             else ->
                 ProfileAccess.Visible(
                     profile = target,
+                    canReadReviews = canReadReviews,
+                    canReadSavedShops = canReadSavedShops,
+                    followState = followState,
+                    followerCount = followerCount,
+                    followingCount = followingCount,
                     reviewCount = reviewCount,
                     savedShopCount = savedShopCount,
                 )

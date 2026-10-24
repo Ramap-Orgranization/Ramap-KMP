@@ -12,6 +12,7 @@ class FakeFollowRepository : FollowRepository {
     var countsResult: RamapResult<FollowCounts> = RamapResult.Success(FollowCounts(0L, 0L, 0L))
     var countsPending: CompletableDeferred<RamapResult<FollowCounts>>? = null
     var changeResult: RamapResult<Unit> = RamapResult.Success(Unit)
+    var onChanged: (String, FollowAction) -> Unit = { _, _ -> }
     var connections: Map<FollowList, List<PublicProfile>> = emptyMap()
     val calls = mutableListOf<Pair<FollowList, Long>>()
 
@@ -43,6 +44,7 @@ class FakeFollowRepository : FollowRepository {
         }
         val counts = (countsResult as? RamapResult.Success)?.data
         if (counts != null) countsResult = RamapResult.Success(counts.after(action))
+        onChanged(userId, action)
         return changeResult
     }
 }
