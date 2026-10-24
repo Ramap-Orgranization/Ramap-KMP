@@ -88,6 +88,20 @@ def main():
     def download(name, actor):
         return call('GET', f'/storage/v1/object/authenticated/{bucket}/{name}', actor)
 
+    def existing_evidence(owner, suffix):
+        name = upload('service', suffix)
+        connection.execute(
+            'update storage.objects set owner_id=%s where bucket_id=%s and name=%s',
+            (accounts[owner]['id'], bucket, name),
+        )
+        return name
+
+    def denied_upload(actor, suffix):
+        name = f'security-evidence-{label}-{suffix}.png'
+        objects.append((bucket, name))
+        status, _, _ = call('POST', f'/storage/v1/object/{bucket}/{name}', actor, raw=image)
+        check('upload_denied_' + suffix, status >= 400 and object_count(name) == 0, status)
+
     baseline = {
         'users': query('select count(*) from auth.users'),
         'objects': query('select count(*) from storage.objects'),
@@ -113,19 +127,20 @@ def main():
         connection.execute('insert into community_private.news_report_evidence_administrators(user_id) values (%s)', (accounts['administrator']['id'],))
         check('administrator_membership', query('select count(*) from community_private.news_report_evidence_administrators where user_id=%s', (accounts['administrator']['id'],)) == 1)
 
-        submitted = upload('reporter', 'submitted')
-        unused = upload('reporter', 'unused')
-        other = upload('other', 'other')
+        # Seed existing user-owned photos through the trusted fixture path.
+        submitted = existing_evidence('reporter', 'submitted')
+        unused = existing_evidence('reporter', 'unused')
+        other = existing_evidence('other', 'other')
         legacy = upload('service', 'ownerless')
+        administrative = upload('administrator', 'administrator')
+        check('administrator_upload_owner', query('select owner_id from storage.objects where bucket_id=%s and name=%s', (bucket, administrative)) == accounts['administrator']['id'])
         check('owner_identity', query('select owner_id from storage.objects where bucket_id=%s and name=%s', (bucket, submitted)) == accounts['reporter']['id'])
         check('legacy_owner_absent', query('select owner_id from storage.objects where bucket_id=%s and name=%s', (bucket, legacy)) is None)
         connection.execute("insert into public.feedback_submissions(feedback_type,message,attachment_path) values ('news_report',%s,%s)", (source, submitted))
         report_paths.append(submitted)
 
-        denied_name = f'security-evidence-{label}-anonymous.png'
-        objects.append((bucket, denied_name))
-        status, _, _ = call('POST', f'/storage/v1/object/{bucket}/{denied_name}', raw=image)
-        check('anonymous_upload_denied', status >= 400 and object_count(denied_name) == 0, status)
+        for actor in ['anon', 'reporter', 'other']:
+            denied_upload(actor, actor)
         for actor in ['anon', 'reporter', 'other', 'administrator']:
             status, _, payload = call('GET', f'/storage/v1/object/public/{bucket}/{submitted}', actor)
             check('public_url_denied_' + actor, status >= 400 and payload != image, status)
@@ -165,6 +180,7 @@ def main():
         accounts['other']['token'] = session['access_token']
         status, _, payload = download(submitted, 'other')
         check('user_metadata_cannot_grant_admin', status >= 400 and payload != image, status)
+        denied_upload('other', 'spoofed-administrator')
         try:
             with connection.transaction():
                 connection.execute('set local role authenticated')

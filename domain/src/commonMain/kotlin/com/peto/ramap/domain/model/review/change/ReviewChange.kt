@@ -1,5 +1,6 @@
 package com.peto.ramap.domain.model.review.change
 
+import com.peto.ramap.domain.model.community.FollowAction
 import com.peto.ramap.domain.model.review.ReviewLike
 
 sealed interface ReviewChange {
@@ -23,5 +24,6 @@ sealed interface ReviewChange {
 
     data class AccessChanged(
         val userId: String,
+        val followAction: FollowAction? = null,
     ) : ReviewChange
 }

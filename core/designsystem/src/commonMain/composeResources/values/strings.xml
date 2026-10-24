@@ -20,6 +20,7 @@
     <string name="shop_menu_representative">대표</string>
     <string name="shop_menu_price">%1$s원</string>
     <string name="shop_menu_source">자세히 보기 &gt;</string>
+    <string name="shop_detail_regular_business_hours">정규 영업시간</string>
     <string name="shop_detail_business_hours_notice">실제 매장 운영 상황과 다를 수 있어요</string>
     <string name="shop_detail_business_hours_expand">영업시간 펼치기</string>
     <string name="shop_detail_business_hours_collapse">영업시간 접기</string>
@@ -586,4 +587,9 @@
     <string name="operating_notice_today_tab_count">오늘(%1$d)</string>
     <string name="operating_notice_scheduled_tab_count">예정(%1$d)</string>
     <string name="operating_notice_scheduled_date_header">%1$s.%2$s %3$s요일</string>
+    <string name="business_hours_today_closed">오늘 휴무</string>
+    <string name="business_hours_today_closed_until">오늘 휴무 · %1$s까지</string>
+    <string name="business_hours_temporary_closure_date">%1$s(%2$s)</string>
+    <string name="business_hours_temporary_closure_period">%1$s(%2$s) ~ %3$s(%4$s)</string>
+    <string name="business_hours_temporary_closure_since">%1$s(%2$s)부터</string>
 </resources>

@@ -15,3 +15,10 @@ verify_jwt = true
 
 [functions.delete-account]
 verify_jwt = true
+
+[functions.submit-place-report]
+verify_jwt = true
+
+# The database authenticates internal validation requests with a private HMAC key.
+[functions.validate-place-report]
+verify_jwt = false

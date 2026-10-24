@@ -9,11 +9,18 @@ import com.peto.ramap.domain.model.community.FollowState
 import com.peto.ramap.domain.model.community.ProfileAccess
 import com.peto.ramap.domain.model.community.PublicProfile
 import com.peto.ramap.domain.model.community.PublicSavedShopsPage
+import com.peto.ramap.domain.model.review.MyReviewVisibility
+import com.peto.ramap.domain.model.review.MyReviewsPage
+import com.peto.ramap.domain.model.review.Review
+import com.peto.ramap.domain.model.review.ReviewImage
+import com.peto.ramap.domain.model.review.ReviewLike
+import com.peto.ramap.domain.model.review.ShopReviewsPage
 import com.peto.ramap.domain.model.review.change.ReviewChange
 import com.peto.ramap.domain.model.review.change.ReviewChangeReducer
 import com.peto.ramap.domain.repository.CommunityRepository
 import com.peto.ramap.domain.repository.FollowRepository
 import com.peto.ramap.domain.repository.ProfileRepository
+import com.peto.ramap.domain.repository.ReviewRepository
 import com.peto.ramap.domain.store.ReviewChangeStore
 import com.peto.ramap.ui.base.BaseViewModel
 import com.peto.ramap.ui.review.other.contract.OtherReviewsEffect
@@ -32,14 +39,56 @@ import ramap.shared.generated.resources.follow_load_failure_message
 import ramap.shared.generated.resources.follow_update_failure_message
 import ramap.shared.generated.resources.login_required_block_description
 import ramap.shared.generated.resources.login_required_follow_description
+import ramap.shared.generated.resources.login_required_review_like_description
 import ramap.shared.generated.resources.login_required_saved_shops_description
 import ramap.shared.generated.resources.review_block_failed
+import ramap.shared.generated.resources.review_like_failed
 import ramap.shared.generated.resources.review_unblock_failed
 
 class OtherReviewsViewModel(
     private val community: CommunityRepository,
     private val profiles: ProfileRepository,
     private val follows: FollowRepository,
+    private val reviewRepository: ReviewRepository =
+        object : ReviewRepository {
+            override suspend fun fetchMyReviews(
+                offset: Long,
+                visibility: MyReviewVisibility,
+            ) = RamapResult.Success(MyReviewsPage(emptyList(), 0, 0, 0, true))
+
+            override suspend fun fetchMyReview(reviewId: String) = RamapResult.Success(null)
+
+            override suspend fun fetchShopReviewsPage(
+                shopId: String,
+                offset: Long,
+            ) = RamapResult.Success(ShopReviewsPage(emptyList(), 0))
+
+            override suspend fun fetchBlockedShopReviewOnce(reviewId: String) = RamapResult.Success(null)
+
+            override suspend fun submitReview(
+                shopId: String,
+                body: String,
+                images: List<ReviewImage>,
+                isPublic: Boolean,
+            ) = RamapResult.Success(Unit)
+
+            override suspend fun fetchEditableReview(reviewId: String) = RamapResult.Success(null)
+
+            override suspend fun updateReview(
+                reviewId: String,
+                body: String,
+                retainedImagePaths: List<String>,
+                newImages: List<ReviewImage>,
+                isPublic: Boolean,
+            ) = RamapResult.Success(Unit)
+
+            override suspend fun deleteReview(reviewId: String) = RamapResult.Success(Unit)
+
+            override suspend fun setReviewLike(
+                reviewId: String,
+                liked: Boolean,
+            ) = RamapResult.Success(ReviewLike(0, liked))
+        },
     private val changes: ReviewChangeStore,
     private val reviewChangeReducer: ReviewChangeReducer,
 ) : BaseViewModel<OtherReviewsUiState, OtherReviewsIntent, OtherReviewsEffect>(OtherReviewsUiState()) {
@@ -72,10 +121,7 @@ class OtherReviewsViewModel(
                     val targetId = currentState.userId
                     val isAccessChangedForUser = change is ReviewChange.AccessChanged && change.userId == targetId
                     if (isAccessChangedForUser) {
-                        generation++
-                        val extent = currentState.reviews.size
-                        reduce { copy(reviews = emptyList(), profileAccess = null, hasMore = false) }
-                        loadPage(reset = true, requestedReviewExtent = extent)
+                        handleAccessChange(change as ReviewChange.AccessChanged)
                     } else {
                         reduce {
                             val access = profileAccess as? ProfileAccess.Visible ?: return@reduce this
@@ -107,6 +153,19 @@ class OtherReviewsViewModel(
                 }
             }
         }
+    }
+
+    private fun handleAccessChange(change: ReviewChange.AccessChanged) {
+        val canRefreshFollowAccess = change.followAction != null && currentState.profileAccess is ProfileAccess.Visible
+        if (canRefreshFollowAccess) {
+            // 현재 화면의 팔로우 작업은 성공 콜백에서 접근 상태를 갱신한다.
+            if (!currentState.following) refreshFollowAccess(change.userId)
+            return
+        }
+        generation++
+        val extent = currentState.reviews.size
+        reduce { copy(reviews = emptyList(), profileAccess = null, hasMore = false) }
+        loadPage(reset = true, requestedReviewExtent = extent)
     }
 
     private fun observeSessionUserIds() {
@@ -143,7 +202,56 @@ class OtherReviewsViewModel(
             OtherReviewsIntent.Retry -> handleRetry()
             OtherReviewsIntent.ToggleBlock -> toggleBlock()
             OtherReviewsIntent.ToggleFollow -> toggleFollow()
+            is OtherReviewsIntent.ToggleLike -> toggleLike(intent.review)
         }
+    }
+
+    private fun toggleLike(review: Review) {
+        val currentUserId = currentState.currentUserId
+        val isLoggedOut = currentUserId == null
+        if (isLoggedOut) {
+            trySideEffect(OtherReviewsEffect.LoginRequired(Res.string.login_required_review_like_description))
+            return
+        }
+        val targetId = currentState.userId ?: return
+        val next = review.toggledLike()
+        val originalReviewLike = ReviewLike(review.likeCount, review.isLiked)
+        launchOptimisticTask(
+            taskKey = likeTaskKey(review.id),
+            loadKey = OtherReviewsLoadKey.ReviewAction,
+            isUpdating = { false },
+            onStart = {
+                val patched =
+                    reviewChangeReducer.updateProfileRows(
+                        rows = reviews,
+                        change = ReviewChange.Liked(review.id, next),
+                        hasMore = hasMore,
+                        accepts = { receipt, _ -> receipt.userId == targetId },
+                    )
+                copy(reviews = patched)
+            },
+            rollback = {
+                val patched =
+                    reviewChangeReducer.updateProfileRows(
+                        rows = reviews,
+                        change = ReviewChange.Liked(review.id, originalReviewLike),
+                        hasMore = hasMore,
+                        accepts = { receipt, _ -> receipt.userId == targetId },
+                    )
+                copy(reviews = patched)
+            },
+            request = { reviewRepository.setReviewLike(review.id, next.isLiked) },
+            onError = {
+                postSideEffect(
+                    OtherReviewsEffect.ShowToast(
+                        ToastData(
+                            message = Res.string.review_like_failed,
+                            type = ToastType.ERROR,
+                        ),
+                    ),
+                )
+            },
+        )
     }
 
     private fun handleLoadMore() {
@@ -617,7 +725,10 @@ class OtherReviewsViewModel(
         }
     }
 
+    private fun likeTaskKey(reviewId: String): String = "$LIKE_TASK_KEY$reviewId"
+
     private companion object {
+        const val LIKE_TASK_KEY = "other-review-like-"
         const val FOLLOW_ACCESS_TASK = "other-profile-follow-access"
         const val SAVED_SHOPS_TASK = "other-profile-saved-shops"
         const val PAGE_TASK = "other-reviews-page"

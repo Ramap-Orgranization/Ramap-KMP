@@ -172,7 +172,7 @@ class ReviewChangeReducerTest {
     }
 
     @Test
-    fun `리뷰 삭제는 사진을 유지하며 이후 방문 번호와 작성자의 공개 리뷰 개수를 갱신한다`() {
+    fun `리뷰 삭제는 사진과 이후 방문 번호를 유지하고 작성자의 공개 리뷰 개수만 갱신한다`() {
         val earlier =
             createReview(
                 id = "earlier",
@@ -217,14 +217,14 @@ class ReviewChangeReducerTest {
                 hasMore = true,
             ) { _, _ -> true }
         assertEquals(listOf("unrelated", "later", "earlier"), result.map { it.id })
-        assertEquals(2, result.first { it.id == "later" }.visitNumber)
+        assertEquals(3, result.first { it.id == "later" }.visitNumber)
         assertEquals(1, result.last().visitNumber)
         assertEquals(listOf(2, 2, 2), result.map { it.author.reviewCount })
         assertSame(image, result.first().images.single())
     }
 
     @Test
-    fun `비공개 리뷰 등록과 본문 수정은 공개 방문 번호와 유효한 아바타를 유지한다`() {
+    fun `비공개 리뷰 등록과 본문 및 공개 범위 수정은 방문 번호와 유효한 아바타를 유지한다`() {
         val later =
             createReview(
                 id = "later",
@@ -300,7 +300,7 @@ class ReviewChangeReducerTest {
                     ),
                 hasMore = true,
             ) { _, _ -> true }
-        assertEquals(3, visible.first().visitNumber)
+        assertEquals(2, visible.first().visitNumber)
     }
 
     @Test

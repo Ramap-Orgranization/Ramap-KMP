@@ -32,6 +32,6 @@ internal class DefaultFollowRepository(
         invokeRequest {
             val epoch = changes.synchronizeSession()
             dataSource.changeFollow(userId, action.name.lowercase())
-            changes.publish(ReviewChange.AccessChanged(userId), epoch)
+            changes.publish(ReviewChange.AccessChanged(userId, followAction = action), epoch)
         }
 }

@@ -21,7 +21,6 @@ import com.peto.ramap.designsystem.image.RemoteShopImage
 import com.peto.ramap.designsystem.resource.businesshours.BusinessHoursStatusResourceMapper
 import com.peto.ramap.designsystem.resource.format
 import com.peto.ramap.designsystem.text.AppText
-import com.peto.ramap.domain.model.businesshour.BusinessHoursStatus
 import com.peto.ramap.domain.model.notice.OperatingNotice
 import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.domain.model.shop.RamenShops
@@ -35,10 +34,6 @@ import com.peto.ramap.ui.main.map.config.MapInteractionConfig
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
-import org.jetbrains.compose.resources.stringResource
-import ramap.shared.generated.resources.Res
-import ramap.shared.generated.resources.map_search_result_break_time_label
-import ramap.shared.generated.resources.map_search_result_closed_label
 import kotlin.time.Clock
 
 @Composable
@@ -111,16 +106,7 @@ private fun SearchResultItem(
                 )
                 shop.businessHoursStatus(currentDateTime, operatingNotices)?.let { status ->
                     val statusText = BusinessHoursStatusResourceMapper.status(status).format()
-                    val highlightedLabel =
-                        when (status) {
-                            is BusinessHoursStatus.BreakTime ->
-                                stringResource(Res.string.map_search_result_break_time_label)
-
-                            is BusinessHoursStatus.Closed ->
-                                stringResource(Res.string.map_search_result_closed_label)
-
-                            else -> null
-                        }
+                    val highlightedLabel = BusinessHoursStatusResourceMapper.noticeLabel(status)?.format()
                     if (highlightedLabel != null) {
                         Row {
                             AppText(

@@ -199,8 +199,6 @@ class ReviewChangeReducer {
         rows: List<Review>,
         change: ReviewChange.Written,
     ): MutableList<Review> {
-        val visitDelta = findVisitDelta(change)
-        val anchor = change.before?.review ?: change.after?.review
         val result = mutableListOf<Review>()
         for (review in rows) {
             if (review.id == change.reviewId) continue
@@ -208,30 +206,18 @@ class ReviewChangeReducer {
                 updateAuthorSummary(
                     review = review,
                     change = change,
-                    anchor = anchor,
-                    visitDelta = visitDelta,
                 )
         }
         return result
     }
 
-    private fun findVisitDelta(change: ReviewChange.Written): Int {
-        val after = if (change.after?.review?.let(::isPublicPublished) == true) 1 else 0
-        val before = if (change.before?.review?.let(::isPublicPublished) == true) 1 else 0
-        return after - before
-    }
-
     private fun updateAuthorSummary(
         review: Review,
         change: ReviewChange.Written,
-        anchor: Review?,
-        visitDelta: Int,
     ): Review {
         if (review.author.userId != change.userId) return review
-        val isLaterVisit = anchor != null && review.shopId == change.shopId && reviewOrder.compare(review, anchor) < 0
         return review.copy(
             author = review.author.copy(reviewCount = change.counts.publishedCount),
-            visitNumber = (review.visitNumber + if (isLaterVisit) visitDelta else 0).coerceAtLeast(0),
         )
     }
 

@@ -50,6 +50,12 @@ data class RamenShop(
         operatingNotices: List<OperatingNotice> = emptyList(),
     ): BusinessHoursStatus? {
         val applicableNotices = operatingNotices.filter { it.shop.id == id }
+        val temporaryClosure =
+            applicableNotices
+                .mapNotNull { it.temporaryClosureOn(currentDateTime.date) }
+                .sortedWith(compareBy<BusinessHoursStatus.TemporaryClosure> { it.endDate != null }.thenByDescending { it.endDate }.thenBy { it.startDate })
+                .firstOrNull()
+        if (temporaryClosure != null) return temporaryClosure
         val hours = businessHoursDetails ?: BusinessHours(emptyMap(), emptyMap(), emptyMap(), null)
         val effectiveHours = effectiveBusinessHours(hours, currentDateTime, applicableNotices)
         val hasTemporaryClosure = applicableNotices.any { it.type == OperatingNoticeType.TEMPORARY_CLOSURE && it.businessDateAt(currentDateTime) != null }

@@ -199,7 +199,7 @@ class BusinessHoursTest {
     }
 
     @Test
-    fun `임시 휴무에도 다음 영업시간을 표시하고 조기 마감 시각부터 영업 종료한다`() {
+    fun `임시 휴무는 날짜를 유지하고 조기 마감 시각부터 영업 종료한다`() {
         val shop =
             ramenShopFixture().copy(
                 businessHoursDetails =
@@ -230,11 +230,11 @@ class BusinessHoursTest {
             )
 
         assertEquals(
-            BusinessHoursStatus.Closed("12:00"),
+            BusinessHoursStatus.TemporaryClosure(date, date),
             shop.businessHoursStatus(LocalDateTime(2026, 8, 30, 12, 0), listOf(temporaryClosure)),
         )
         assertEquals(
-            BusinessHoursStatus.Closed("12:00"),
+            BusinessHoursStatus.TemporaryClosure(date, date),
             shop.businessHoursStatus(LocalDateTime(2026, 8, 30, 13, 30), listOf(temporaryClosure)),
         )
 
@@ -245,15 +245,15 @@ class BusinessHoursTest {
                 endDate = date.plus(2, DateTimeUnit.DAY),
             )
         assertEquals(
-            BusinessHoursStatus.Closed("11:00"),
+            BusinessHoursStatus.TemporaryClosure(date, date),
             shop.businessHoursStatus(LocalDateTime(2026, 8, 30, 12, 0), listOf(temporaryClosure, nextClosure)),
         )
         assertEquals(
-            BusinessHoursStatus.Closed(),
+            BusinessHoursStatus.TemporaryClosure(date, null),
             shop.businessHoursStatus(LocalDateTime(2026, 8, 30, 12, 0), listOf(temporaryClosure.copy(endDate = null))),
         )
         assertEquals(
-            BusinessHoursStatus.Closed(),
+            BusinessHoursStatus.TemporaryClosure(date, date),
             shop.copy(businessHoursDetails = null).businessHoursStatus(LocalDateTime(2026, 8, 30, 12, 0), listOf(temporaryClosure)),
         )
 

@@ -29,6 +29,7 @@ class IosReviewSubmission
             ).first
         end
         raise "App Store release type must remain MANUAL." unless app_version.release_type == "MANUAL"
+        synchronize_store_name!
         if notes
             localizations = app_version.get_app_store_version_localizations
             korean = localizations.find { |localization| localization.locale == "ko" }
@@ -47,6 +48,19 @@ class IosReviewSubmission
     end
 
     private
+
+    def synchronize_store_name!
+        name = File.read(File.join(__dir__, "metadata", "ko", "name.txt"), encoding: "UTF-8").strip
+        raise "The Korean App Store name must contain 2–30 characters." unless (2..30).cover?(name.length)
+        infos = @api.get_app_infos(app_id: @app.id).to_models.select { |info| EDITABLE.include?(info.state) }
+        raise "Prepare exactly one editable App Store app info before review." unless infos.one?
+        info = infos.first
+        korean = info.get_app_info_localizations.find { |localization| localization.locale == "ko" }
+        raise "Prepare the Korean app info localization before review." unless korean
+        korean.update(attributes: { name: name }) unless korean.name == name
+        saved = info.get_app_info_localizations.find { |localization| localization.locale == "ko" }
+        raise "The Korean App Store name was not saved; review was not submitted." unless saved && saved.name == name
+    end
 
     def versions
         @app.get_app_store_versions(filter: { platform: "IOS" })

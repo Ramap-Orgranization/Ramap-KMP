@@ -63,7 +63,7 @@ Use `.agents/skills/ramap-coding-conventions/SKILL.md` for coding style, naming,
 
 ## Modification records
 
-Use Git commits and pull requests as the shared record of code and documentation changes. Record validation results in the pull request or its CI results, and record deployments in the relevant pull request or release record. Do not add new entries to the local-only `docs/change-history/CHANGELOG.md`; preserve the existing file as a historical archive.
+Use Git commits and pull requests as the shared record of code and documentation changes. Record validation results in the pull request or its CI results, and record deployments in the relevant pull request or release record. The local-only `docs/change-history/` directory is optional and may be removed at the user's request. Do not append new work to it or recreate it when absent.
 
 ## User-visible UI content
 
