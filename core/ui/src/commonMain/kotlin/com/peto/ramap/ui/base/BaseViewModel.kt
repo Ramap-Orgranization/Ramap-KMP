@@ -15,6 +15,8 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -169,6 +171,7 @@ abstract class BaseViewModel<S : State, I : Intent, SE : SideEffect>(
      * 실행·취소·중복·로딩 정리는 [launchTask]에 위임한다. [RamapResult.Error]이면 공통
      * [handleError]를 한 번 호출한 뒤 [onError]를 호출하며, 요청이나 콜백에서 발생한 예외는
      * [launchTask]의 예외 처리 계약을 그대로 따른다.
+     * 요청 반환 직후 취소 여부를 확인해 취소된 작업의 결과 처리와 재시도 등록을 차단한다.
      *
      * @param taskKey ViewModel 안에서 요청 작업을 식별하는 문자열
      * @param loadKey 활성 개수를 추적할 로딩 키. `null`이면 로딩 카운트를 변경하지 않는다.
@@ -226,7 +229,9 @@ abstract class BaseViewModel<S : State, I : Intent, SE : SideEffect>(
             onStart = onStart,
             onFinish = onFinish,
         ) {
-            when (val result = request()) {
+            val result = request()
+            currentCoroutineContext().ensureActive()
+            when (result) {
                 is RamapResult.Success -> {
                     NetworkRetryGenerator.remove(this@BaseViewModel, taskKey)
                     onSuccess(result.data)

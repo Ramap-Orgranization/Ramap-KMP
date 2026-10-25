@@ -11,8 +11,8 @@ class MyReviewsPagePreviewParameterProvider : PreviewParameterProvider<MyReviews
             MyReviewsPage(
                 reviews = myReviews,
                 totalCount = myReviews.size,
-                publicCount = myReviews.count { it.isPublic },
-                privateCount = myReviews.count { !it.isPublic },
+                publicCount = myReviews.count { it.review.isPublic },
+                privateCount = myReviews.count { !it.review.isPublic },
                 profileIsPublic = true,
             ),
         )

@@ -413,6 +413,7 @@
     <!-- 최상위 탭 -->
     <string name="top_level_tab_map">지도</string>
     <string name="top_level_tab_ranking">랭킹</string>
+    <string name="top_level_tab_community">커뮤니티</string>
     <string name="top_level_tab_event">새소식</string>
     <string name="top_level_tab_my">마이</string>
 
@@ -585,6 +586,7 @@
     <string name="operating_notice_today_tab">오늘</string>
     <string name="operating_notice_scheduled_tab">예정</string>
     <string name="operating_notice_today_tab_count">오늘(%1$d)</string>
+    <string name="scroll_to_top">맨 위로 이동</string>
     <string name="operating_notice_scheduled_tab_count">예정(%1$d)</string>
     <string name="operating_notice_scheduled_date_header">%1$s.%2$s %3$s요일</string>
     <string name="business_hours_today_closed">오늘 휴무</string>

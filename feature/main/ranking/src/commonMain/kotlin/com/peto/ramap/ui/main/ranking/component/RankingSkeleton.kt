@@ -50,7 +50,7 @@ internal fun RankingRowSkeleton(modifier: Modifier = Modifier) {
 
         Skeleton(
             modifier = Modifier.size(55.dp),
-            shape = RoundedCornerShape(8.dp),
+            shape = CircleShape,
         )
 
         Column(

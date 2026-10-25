@@ -45,10 +45,10 @@ class NavigationStateTest {
     }
 
     @Test
-    fun `네 개 탭은 지도 랭킹 이벤트 설정 순서와 독립 스택을 가진다`() {
+    fun `다섯 개 탭은 지도 랭킹 이벤트 커뮤니티 마이 순서와 독립 스택을 가진다`() {
         val navigationState = navigationState()
 
-        assertEquals(listOf(TabStatus.MAP, TabStatus.RANKING, TabStatus.EVENT, TabStatus.MY), TabStatus.entries)
+        assertEquals(listOf(TabStatus.MAP, TabStatus.RANKING, TabStatus.EVENT, TabStatus.COMMUNITY, TabStatus.MY), TabStatus.entries)
         assertEquals(
             listOf(ScreenRoutes.RankingTabRoutes),
             navigationState.backStacks.getValue(TabStatus.RANKING).toList(),
@@ -413,6 +413,7 @@ class NavigationStateTest {
                     TabStatus.MAP to NavBackStack<NavKey>(ScreenRoutes.MapRoutes()),
                     TabStatus.RANKING to rankingBackStack,
                     TabStatus.EVENT to NavBackStack<NavKey>(ScreenRoutes.EventTabRoutes()),
+                    TabStatus.COMMUNITY to NavBackStack<NavKey>(ScreenRoutes.CommunityTabRoutes),
                     TabStatus.MY to NavBackStack<NavKey>(ScreenRoutes.MyTabRoutes),
                 ),
         )
