@@ -42,7 +42,8 @@ class OtherReviewsViewModelTest {
                 }
             val viewModel =
                 OtherReviewsViewModel(
-                    community = community,
+                    userProfileRepository = community,
+                    userModerationRepository = community,
                     profiles = FakeProfileRepository("owner"),
                     follows = FakeFollowRepository(),
                     changes = changes,
@@ -106,7 +107,8 @@ class OtherReviewsViewModelTest {
             val community = FakeOtherReviewsCommunity()
             val viewModel =
                 OtherReviewsViewModel(
-                    community = community,
+                    userProfileRepository = community,
+                    userModerationRepository = community,
                     profiles = FakeProfileRepository(userId = null),
                     follows = FakeFollowRepository(),
                     changes = FakeReviewChangeStore(),
@@ -131,7 +133,8 @@ class OtherReviewsViewModelTest {
             community.reviewCount = 23L
             val viewModel =
                 OtherReviewsViewModel(
-                    community = community,
+                    userProfileRepository = community,
+                    userModerationRepository = community,
                     profiles = FakeProfileRepository(),
                     follows = FakeFollowRepository(),
                     changes = FakeReviewChangeStore(),
@@ -166,7 +169,8 @@ class OtherReviewsViewModelTest {
             community.reviews = firstPage + firstPage.first().copy(shop = ramenShopFixture(id = "shop-1"))
             val viewModel =
                 OtherReviewsViewModel(
-                    community = community,
+                    userProfileRepository = community,
+                    userModerationRepository = community,
                     profiles = FakeProfileRepository(),
                     follows = FakeFollowRepository(),
                     changes = FakeReviewChangeStore(),
@@ -193,7 +197,8 @@ class OtherReviewsViewModelTest {
             community.savedShopCount = 23L
             val viewModel =
                 OtherReviewsViewModel(
-                    community = community,
+                    userProfileRepository = community,
+                    userModerationRepository = community,
                     profiles = FakeProfileRepository(),
                     follows = FakeFollowRepository(),
                     changes = FakeReviewChangeStore(),
@@ -224,7 +229,8 @@ class OtherReviewsViewModelTest {
             val community = FakeOtherReviewsCommunity()
             val viewModel =
                 OtherReviewsViewModel(
-                    community = community,
+                    userProfileRepository = community,
+                    userModerationRepository = community,
                     profiles = FakeProfileRepository(userId = null),
                     follows = FakeFollowRepository(),
                     changes = FakeReviewChangeStore(),
@@ -250,7 +256,8 @@ class OtherReviewsViewModelTest {
             community.profile = null
             val viewModel =
                 OtherReviewsViewModel(
-                    community = community,
+                    userProfileRepository = community,
+                    userModerationRepository = community,
                     profiles = FakeProfileRepository(),
                     follows = FakeFollowRepository(),
                     changes = FakeReviewChangeStore(),
@@ -275,7 +282,8 @@ class OtherReviewsViewModelTest {
             community.reviews = listOf(review(1))
             val viewModel =
                 OtherReviewsViewModel(
-                    community = community,
+                    userProfileRepository = community,
+                    userModerationRepository = community,
                     profiles = FakeProfileRepository(),
                     follows = FakeFollowRepository(),
                     changes = FakeReviewChangeStore(),
@@ -305,7 +313,8 @@ class OtherReviewsViewModelTest {
             community.reviews = listOf(review(1))
             val viewModel =
                 OtherReviewsViewModel(
-                    community = community,
+                    userProfileRepository = community,
+                    userModerationRepository = community,
                     profiles = FakeProfileRepository(),
                     follows = FakeFollowRepository(),
                     changes = FakeReviewChangeStore(),
@@ -339,7 +348,8 @@ class OtherReviewsViewModelTest {
             community.reviewCount = 23L
             val viewModel =
                 OtherReviewsViewModel(
-                    community = community,
+                    userProfileRepository = community,
+                    userModerationRepository = community,
                     profiles = FakeProfileRepository(),
                     follows = FakeFollowRepository(),
                     changes = FakeReviewChangeStore(),
@@ -368,7 +378,8 @@ class OtherReviewsViewModelTest {
             community.reviews = listOf(review(1))
             val viewModel =
                 OtherReviewsViewModel(
-                    community = community,
+                    userProfileRepository = community,
+                    userModerationRepository = community,
                     profiles = FakeProfileRepository(),
                     follows = FakeFollowRepository(),
                     changes = FakeReviewChangeStore(),
@@ -400,7 +411,8 @@ class OtherReviewsViewModelTest {
             community.reviews = listOf(review(1))
             val viewModel =
                 OtherReviewsViewModel(
-                    community = community,
+                    userProfileRepository = community,
+                    userModerationRepository = community,
                     profiles = FakeProfileRepository(),
                     follows = FakeFollowRepository(),
                     changes = FakeReviewChangeStore(),
@@ -432,7 +444,8 @@ class OtherReviewsViewModelTest {
                 }
             val viewModel =
                 OtherReviewsViewModel(
-                    community = community,
+                    userProfileRepository = community,
+                    userModerationRepository = community,
                     profiles = FakeProfileRepository(),
                     follows = follows,
                     changes = FakeReviewChangeStore(),
@@ -462,6 +475,6 @@ class OtherReviewsViewModelTest {
                     createdAt = "2026-09-30T12:00:00Z",
                     author = ReviewAuthor("author", "라멘팬"),
                 ),
-            shop = if (number % 2 == 0) ramenShopFixture(id = "shop-$number") else null,
+            shop = ramenShopFixture(id = "shop-$number"),
         )
 }

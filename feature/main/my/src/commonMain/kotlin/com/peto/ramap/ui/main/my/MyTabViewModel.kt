@@ -6,10 +6,10 @@ import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.profile.ProfileVisibility
 import com.peto.ramap.domain.model.review.MyReviewVisibility
 import com.peto.ramap.domain.model.review.change.ReviewChange
-import com.peto.ramap.domain.repository.CommunityRepository
 import com.peto.ramap.domain.repository.FollowRepository
 import com.peto.ramap.domain.repository.ProfileRepository
 import com.peto.ramap.domain.repository.ReviewRepository
+import com.peto.ramap.domain.repository.UserModerationRepository
 import com.peto.ramap.domain.store.PersonalizationBootstrapState
 import com.peto.ramap.domain.store.PersonalizationStore
 import com.peto.ramap.domain.store.ReviewChangeStore
@@ -29,7 +29,7 @@ import ramap.shared.generated.resources.review_unblock_failed
 
 class MyTabViewModel(
     private val repository: ProfileRepository,
-    private val communityRepository: CommunityRepository,
+    private val userModerationRepository: UserModerationRepository,
     private val personalizationStore: PersonalizationStore,
     private val reviewRepository: ReviewRepository,
     private val followRepository: FollowRepository,
@@ -149,7 +149,7 @@ class MyTabViewModel(
             taskKey = UNBLOCK,
             loadKey = MyTabLoadKey.Unblock,
             policy = TaskPolicy.IgnoreNew,
-            request = { communityRepository.unblockUser(target.userId) },
+            request = { userModerationRepository.unblockUser(target.userId) },
             onSuccess = { completeUnblock(currentUserId, target.userId) },
             onError = { showUnblockFailure(currentUserId) },
         )
@@ -193,7 +193,7 @@ class MyTabViewModel(
         launchResultTask(
             taskKey = BLOCKED_USERS,
             loadKey = MyTabLoadKey.BlockedUsers,
-            request = communityRepository::fetchBlockedUsers,
+            request = userModerationRepository::fetchBlockedUsers,
             onSuccess = { users ->
                 val isSameUser = currentState.userId == userId
                 if (isSameUser) {
@@ -346,7 +346,7 @@ class MyTabViewModel(
         launchResultTask(
             taskKey = BLOCKED_USER_COUNT,
             loadKey = MyTabLoadKey.BlockedUserCount,
-            request = communityRepository::fetchBlockedUsers,
+            request = userModerationRepository::fetchBlockedUsers,
             onSuccess = { users ->
                 val isSameUser = currentState.userId == userId
                 if (isSameUser) reduce { copy(blockedUserCount = users.size) }

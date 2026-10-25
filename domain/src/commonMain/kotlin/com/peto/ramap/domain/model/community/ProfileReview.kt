@@ -5,5 +5,5 @@ import com.peto.ramap.domain.model.shop.RamenShop
 
 data class ProfileReview(
     val review: Review,
-    val shop: RamenShop? = null,
+    val shop: RamenShop,
 )

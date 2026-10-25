@@ -19,7 +19,7 @@ class MyReviewResponseTest {
                 authorAvatarUrl = "https://example.com/avatar.jpg",
             ).toDomain()
 
-        assertEquals("https://example.com/avatar.jpg", review.authorAvatarUrl)
+        assertEquals("https://example.com/avatar.jpg", review.review.author.avatarUrl)
     }
 
     @Test
@@ -38,10 +38,10 @@ class MyReviewResponseTest {
                 authorReviewCount = 12,
             ).toDomain()
 
-        assertEquals(3, review.visitNumber)
-        assertEquals(12, review.authorReviewCount)
+        assertEquals(3, review.review.visitNumber)
+        assertEquals(12, review.review.author.reviewCount)
 
-        val uiReview = review.toReview()
+        val uiReview = review.review
         assertEquals(3, uiReview.visitNumber)
         assertEquals(12, uiReview.author.reviewCount)
     }

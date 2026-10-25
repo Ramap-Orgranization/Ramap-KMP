@@ -7,8 +7,8 @@ import com.peto.ramap.coroutinesTest
 import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.auth.LoginSessionState
 import com.peto.ramap.domain.model.community.ReportReason
-import com.peto.ramap.domain.repository.CommunityRepository
-import com.peto.ramap.fake.FakeCommunityRepository
+import com.peto.ramap.domain.repository.UserModerationRepository
+import com.peto.ramap.fake.FakeUserModerationRepository
 import com.peto.ramap.ui.shop.review.contract.ReviewsIntent
 import com.peto.ramap.ui.shop.review.contract.ReviewsSideEffect
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -58,7 +58,7 @@ class ReviewsFeedbackTest {
     @Test
     fun `차단 해제와 신고가 성공하면 각각의 작업 결과를 안내한다`() =
         coroutinesTest {
-            val community = FakeCommunityRepository()
+            val community = FakeUserModerationRepository()
             val fixture = ReviewsViewModelFixture(community)
             try {
                 openReviews(fixture)
@@ -93,7 +93,7 @@ class ReviewsFeedbackTest {
         coroutinesTest {
             val failure = RamapResult.Error(RamapError.Http(500))
             val community =
-                object : CommunityRepository by FakeCommunityRepository() {
+                object : UserModerationRepository by FakeUserModerationRepository() {
                     override suspend fun unblockUser(userId: String): RamapResult<Unit> = failure
 
                     override suspend fun reportReview(

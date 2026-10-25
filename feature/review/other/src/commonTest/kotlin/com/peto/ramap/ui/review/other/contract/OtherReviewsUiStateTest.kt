@@ -5,6 +5,7 @@ import com.peto.ramap.domain.model.community.ProfileReview
 import com.peto.ramap.domain.model.community.PublicProfile
 import com.peto.ramap.domain.model.community.ReviewAuthor
 import com.peto.ramap.domain.model.review.Review
+import com.peto.ramap.fixture.ramenShopFixture
 import com.peto.ramap.ui.loading.LoadState
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -16,6 +17,7 @@ class OtherReviewsUiStateTest {
     private val sampleProfile = PublicProfile(userId = "user-1", nickname = "라멘마니아")
     private val sampleReview =
         ProfileReview(
+            shop = ramenShopFixture(id = "shop-1"),
             review =
                 Review(
                     id = "review-1",

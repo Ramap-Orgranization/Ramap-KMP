@@ -8,11 +8,15 @@ import com.peto.ramap.domain.model.community.ProfileReview
 import com.peto.ramap.domain.model.community.PublicProfile
 import com.peto.ramap.domain.model.community.PublicSavedShopsPage
 import com.peto.ramap.domain.model.shop.RamenShop
-import com.peto.ramap.domain.repository.CommunityRepository
-import com.peto.ramap.fake.FakeCommunityRepository
+import com.peto.ramap.domain.repository.UserModerationRepository
+import com.peto.ramap.domain.repository.UserProfileRepository
+import com.peto.ramap.fake.FakeUserModerationRepository
+import com.peto.ramap.fake.FakeUserProfileRepository
 import kotlinx.coroutines.CompletableDeferred
 
-class FakeOtherReviewsCommunity : CommunityRepository by FakeCommunityRepository() {
+class FakeOtherReviewsCommunity :
+    UserProfileRepository by FakeUserProfileRepository(),
+    UserModerationRepository by FakeUserModerationRepository() {
     var profile: PublicProfile? = PublicProfile("author", "라멘팬")
     var profilePrivate = false
     var canReadReviews = true

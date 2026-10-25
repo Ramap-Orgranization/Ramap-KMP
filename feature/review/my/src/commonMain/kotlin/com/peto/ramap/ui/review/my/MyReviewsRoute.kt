@@ -26,9 +26,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.peto.ramap.designsystem.button.AppButton
 import com.peto.ramap.designsystem.dialog.CommonDialog
 import com.peto.ramap.designsystem.indicator.RamenLoadingIndicator
+import com.peto.ramap.designsystem.review.ReviewCard
 import com.peto.ramap.designsystem.review.ReviewCardActions
 import com.peto.ramap.designsystem.review.ReviewPage
-import com.peto.ramap.designsystem.review.ShopReviewCard
+import com.peto.ramap.designsystem.review.ShopReviewCardHeader
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.designsystem.toast.ToastManager
 import com.peto.ramap.domain.model.event.ShopEvent
@@ -191,20 +192,35 @@ fun MyReviewsContent(
                 }
                 items(
                     items = state.reviews,
-                    key = { it.id },
+                    key = { it.review.id },
                 ) { review ->
+                    val cardReview = review.review
+                    val actionsEnabled = state.actingReviewId == null
+                    val onShopClick =
+                        cardReview.shopId.takeIf { it.isNotBlank() }?.let { shopId ->
+                            { onOpenShopDetail(shopId) }
+                        }
                     val reviewActions =
                         ReviewCardActions(
-                            onEdit = { onEditReview(review.shopId, review.id) },
+                            onEdit = { onEditReview(cardReview.shopId, cardReview.id) },
                             onDelete = { deleteTargetReview = review },
+                            onReviewClick = onShopClick,
                         )
-                    ShopReviewCard(
-                        review = review.toReview(),
-                        shop = review.shop,
-                        shopName = review.shopName,
-                        onOpenShopDetail = onOpenShopDetail,
+                    ReviewCard(
+                        review = cardReview,
                         actions = reviewActions,
-                        actionsEnabled = state.actingReviewId == null,
+                        actionsEnabled = actionsEnabled,
+                        photoViewerEnabled = true,
+                        header = {
+                            ShopReviewCardHeader(
+                                review = cardReview,
+                                shop = review.shop,
+                                shopName = review.shopName,
+                                onOpenShopDetail = onShopClick.takeIf { actionsEnabled },
+                                actions = reviewActions,
+                                actionsEnabled = actionsEnabled,
+                            )
+                        },
                     )
                 }
                 if (state.showsAppendLoading) {
@@ -224,14 +240,14 @@ fun MyReviewsContent(
         visible = deleteTargetReview != null,
         confirmText = stringResource(Res.string.review_delete),
         dismissText = stringResource(Res.string.shop_review_cancel),
-        confirmEnabled = deleteTargetReview?.id != state.actingReviewId,
-        confirmIsLoading = deleteTargetReview?.id == state.actingReviewId,
-        dismissOnBackPress = deleteTargetReview?.id != state.actingReviewId,
-        dismissOnClickOutside = deleteTargetReview?.id != state.actingReviewId,
-        onDismissRequest = { if (deleteTargetReview?.id != state.actingReviewId) deleteTargetReview = null },
+        confirmEnabled = deleteTargetReview?.review?.id != state.actingReviewId,
+        confirmIsLoading = deleteTargetReview?.review?.id == state.actingReviewId,
+        dismissOnBackPress = deleteTargetReview?.review?.id != state.actingReviewId,
+        dismissOnClickOutside = deleteTargetReview?.review?.id != state.actingReviewId,
+        onDismissRequest = { if (deleteTargetReview?.review?.id != state.actingReviewId) deleteTargetReview = null },
         onDismiss = { deleteTargetReview = null },
         onConfirm = {
-            deleteTargetReview?.let { onIntent(MyReviewsIntent.DeleteReview(it.id)) }
+            deleteTargetReview?.let { onIntent(MyReviewsIntent.DeleteReview(it.review.id)) }
             deleteTargetReview = null
         },
     ) {

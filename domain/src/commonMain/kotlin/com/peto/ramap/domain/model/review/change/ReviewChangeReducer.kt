@@ -303,11 +303,9 @@ class ReviewChangeReducer {
                 hasMore = hasMore,
                 accepts = accepts,
             )
-        return patched.map { review ->
-            ProfileReview(
-                review = review,
-                shop = snapshot?.takeIf { it.review.id == review.id }?.shop ?: previous[review.id]?.shop,
-            )
+        return patched.mapNotNull { review ->
+            val shop = snapshot?.takeIf { it.review.id == review.id }?.shop ?: previous[review.id]?.shop
+            shop?.let { ProfileReview(review = review, shop = it) }
         }
     }
 
@@ -317,7 +315,7 @@ class ReviewChangeReducer {
         filter: MyReviewVisibility,
         hasMore: Boolean,
     ): List<MyReview> {
-        val previous = rows.associateBy { it.id }
+        val previous = rows.associateBy { it.review.id }
         val canonical =
             rows.map {
                 createOwnerReview(
@@ -351,7 +349,7 @@ class ReviewChangeReducer {
         row: MyReview,
         change: ReviewChange,
     ): Review {
-        val review = row.toReview()
+        val review = row.review
         if (change !is ReviewChange.Written || review.author.userId.isNotBlank()) return review
         return review.copy(author = review.author.copy(userId = change.userId))
     }
@@ -379,19 +377,9 @@ class ReviewChangeReducer {
         snapshot: ReviewSnapshot?,
     ): MyReview =
         MyReview(
-            id = review.id,
-            shopId = review.shopId,
+            review = review,
             shopName = snapshot?.shopName ?: previous?.shopName.orEmpty(),
-            body = review.body,
-            createdAt = review.createdAt,
-            images = review.images,
-            isPublic = review.isPublic,
-            moderationStatus = review.moderationStatus,
-            moderationNote = snapshot?.moderationNote ?: previous?.moderationNote,
-            authorAvatarUrl = review.author.avatarUrl,
-            visitNumber = review.visitNumber,
-            authorReviewCount = review.author.reviewCount,
             shop = snapshot?.shop ?: previous?.shop,
-            author = review.author,
+            moderationNote = snapshot?.moderationNote ?: previous?.moderationNote,
         )
 }

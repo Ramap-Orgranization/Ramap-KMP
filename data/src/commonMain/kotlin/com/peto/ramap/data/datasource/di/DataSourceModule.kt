@@ -6,6 +6,8 @@ import com.peto.ramap.data.datasource.community.CommunityDataSource
 import com.peto.ramap.data.datasource.community.RemoteCommunityDataSource
 import com.peto.ramap.data.datasource.follow.FollowDataSource
 import com.peto.ramap.data.datasource.follow.RemoteFollowDataSource
+import com.peto.ramap.data.datasource.image.CachedImageUrlDataSource
+import com.peto.ramap.data.datasource.image.ImageUrlAccessPolicy
 import com.peto.ramap.data.datasource.image.ImageUrlDataSource
 import com.peto.ramap.data.datasource.image.RemoteImageUrlDataSource
 import com.peto.ramap.data.datasource.importation.ImportationDataSource
@@ -31,24 +33,33 @@ import com.peto.ramap.data.datasource.report.RemoteShopReportDataSource
 import com.peto.ramap.data.datasource.report.ShopReportDataSource
 import com.peto.ramap.data.datasource.review.RemoteReviewDataSource
 import com.peto.ramap.data.datasource.review.ReviewDataSource
+import com.peto.ramap.data.datasource.review.ReviewImageResolver
+import com.peto.ramap.data.datasource.review.ReviewImageUrlAccessPolicy
 import com.peto.ramap.data.datasource.shop.RamenShopDataSource
 import com.peto.ramap.data.datasource.shop.RemoteRamenShopDataSource
 import com.peto.ramap.data.datasource.update.AppUpdatePolicyDataSource
 import com.peto.ramap.data.datasource.update.RemoteAppUpdatePolicyDataSource
 import com.peto.ramap.data.datasource.waiting.RemoteShopWaitingSystemDataSource
 import com.peto.ramap.data.datasource.waiting.ShopWaitingSystemDataSource
+import com.peto.ramap.data.feed.FeedDataSource
+import com.peto.ramap.data.feed.RemoteFeedDataSource
 import com.peto.ramap.domain.repository.PlaceLinkResolver
+import com.peto.ramap.domain.store.ReviewChangeStore
 import io.github.jan.supabase.SupabaseClient
 import io.ktor.client.HttpClient
+import org.koin.core.module.dsl.singleOf
 import org.koin.dsl.module
 
 val dataSourceModule =
     module {
         single<FollowDataSource> { RemoteFollowDataSource(get()) }
-        single<ImageUrlDataSource> { RemoteImageUrlDataSource(get()) }
+        single<ImageUrlAccessPolicy> { ReviewImageUrlAccessPolicy(get(), lazy { get<ReviewChangeStore>() }) }
+        single<ImageUrlDataSource> { CachedImageUrlDataSource(RemoteImageUrlDataSource(get()), get()) }
+        singleOf(::ReviewImageResolver)
         single<ProfileDataSource> { RemoteProfileDataSource(get(), get()) }
         single<CommunityDataSource> { RemoteCommunityDataSource(get(), get(), get()) }
-        single<ReviewDataSource> { RemoteReviewDataSource(get(), get(), get()) }
+        single<ReviewDataSource> { RemoteReviewDataSource(get(), get()) }
+        single<FeedDataSource> { RemoteFeedDataSource(get(), get()) }
         single { NaverImportationDataSource(get(), get<HttpClient>()) }
         single { KakaoImportationDataSource(get()) }
         single<ImportationDataSource> { RemoteImportationDataSource(get(), get()) }

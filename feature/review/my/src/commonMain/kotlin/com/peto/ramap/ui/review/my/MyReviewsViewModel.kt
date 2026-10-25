@@ -145,7 +145,7 @@ class MyReviewsViewModel(
     }
 
     private fun deleteReview(reviewId: String) {
-        val isReviewMissing = currentState.reviews.none { it.id == reviewId }
+        val isReviewMissing = currentState.reviews.none { it.review.id == reviewId }
         if (isReviewMissing) return
         val actingUserId = currentState.userId ?: return
         val isAlreadyActing = currentState.actingReviewId != null

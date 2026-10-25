@@ -31,10 +31,10 @@ data class MyReviewsUiState(
         reviewId: String,
         review: MyReview,
     ): MyReviewsUiState {
-        val updatedReviews = reviews.filterNot { it.id == reviewId }
+        val updatedReviews = reviews.filterNot { it.review.id == reviewId }
         val updatedTotalCount = (totalCount - 1).coerceAtLeast(0)
-        val updatedPublicCount = if (review.isPublic) (publicCount - 1).coerceAtLeast(0) else publicCount
-        val updatedPrivateCount = if (review.isPublic) privateCount else (privateCount - 1).coerceAtLeast(0)
+        val updatedPublicCount = if (review.review.isPublic) (publicCount - 1).coerceAtLeast(0) else publicCount
+        val updatedPrivateCount = if (review.review.isPublic) privateCount else (privateCount - 1).coerceAtLeast(0)
         val filteredCount =
             when (filter) {
                 MyReviewVisibility.ALL -> updatedTotalCount
@@ -55,7 +55,7 @@ data class MyReviewsUiState(
         page: MyReviewsPage,
         reset: Boolean,
     ): MyReviewsUiState {
-        val merged = (if (reset) page.reviews else reviews + page.reviews).distinctBy { it.id }
+        val merged = (if (reset) page.reviews else reviews + page.reviews).distinctBy { it.review.id }
         return copy(
             reviews = merged,
             totalCount = page.totalCount,

@@ -45,6 +45,8 @@ internal data class RamenShopResponse(
     val createdAt: String,
     @SerialName("updated_at")
     val updatedAt: String,
+    @SerialName("is_visible")
+    val isVisible: Boolean = true,
 ) {
     fun toWaitingSystem(): WaitingSystem? =
         ShopWaitingSystemResponse(
@@ -66,7 +68,7 @@ internal data class RamenShopResponse(
                     "${RamapSecrets.supabaseUrl}$STORAGE_PUBLIC_PATH$PROFILE_BUCKET/$path"
                 },
             menuCategories = MenuCategories(menuCategoryIds.orEmpty().mapNotNull(Category::fromId)),
-            isVisible = true,
+            isVisible = isVisible,
             createdAt = createdAt,
             updatedAt = updatedAt,
             businessHoursDetails =

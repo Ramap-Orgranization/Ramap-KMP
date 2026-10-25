@@ -1,43 +1,10 @@
 package com.peto.ramap.domain.model.review
 
-import com.peto.ramap.domain.model.community.ReviewAuthor
-import com.peto.ramap.domain.model.community.ReviewModerationStatus
 import com.peto.ramap.domain.model.shop.RamenShop
 
 data class MyReview(
-    val id: String,
-    val shopId: String,
+    val review: Review,
     val shopName: String,
-    val body: String,
-    val createdAt: String,
-    val images: List<MyReviewPhoto>,
-    val isPublic: Boolean,
-    val moderationStatus: ReviewModerationStatus,
-    val moderationNote: String? = null,
-    val authorAvatarUrl: String? = null,
-    val visitNumber: Int = 1,
-    val authorReviewCount: Int = 0,
     val shop: RamenShop? = null,
-    val author: ReviewAuthor? = null,
-) {
-    fun toReview(): Review =
-        Review(
-            id = id,
-            shopId = shopId,
-            body = body,
-            createdAt = createdAt,
-            imageUrls = images.mapNotNull { it.url },
-            images = images,
-            author =
-                author
-                    ?: ReviewAuthor(
-                        userId = "",
-                        nickname = shopName,
-                        avatarUrl = authorAvatarUrl,
-                        reviewCount = authorReviewCount,
-                    ),
-            isPublic = isPublic,
-            moderationStatus = moderationStatus,
-            visitNumber = visitNumber,
-        )
-}
+    val moderationNote: String? = null,
+)

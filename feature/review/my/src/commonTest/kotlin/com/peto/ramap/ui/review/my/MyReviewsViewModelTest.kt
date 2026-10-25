@@ -233,9 +233,9 @@ class MyReviewsViewModelTest {
             val deleted =
                 viewModel.uiState.value.reviews
                     .first()
-            repository.removedIds += deleted.id
+            repository.removedIds += deleted.review.id
             val canonical =
-                deleted.toReview().copy(
+                deleted.review.copy(
                     author =
                         com.peto.ramap.domain.model.community
                             .ReviewAuthor("owner", "작성자"),
@@ -243,7 +243,7 @@ class MyReviewsViewModelTest {
             store.publish(
                 com.peto.ramap.domain.model.review.change.ReviewChange
                     .Written(
-                        deleted.id,
+                        deleted.review.id,
                         "owner",
                         "shop",
                         com.peto.ramap.domain.model.review.change
@@ -258,7 +258,7 @@ class MyReviewsViewModelTest {
             runCurrent()
             assertFalse(
                 viewModel.uiState.value.reviews
-                    .any { it.id == deleted.id },
+                    .any { it.review.id == deleted.review.id },
             )
             assertEquals(74, viewModel.uiState.value.totalCount)
             assertEquals(29L, repository.calls.last().first)
