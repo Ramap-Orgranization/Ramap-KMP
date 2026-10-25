@@ -5,5 +5,5 @@ import kotlinx.serialization.Serializable
 @Serializable
 internal data class ProfileReviewsPageResponse(
     val access: ProfileAccessResponse,
-    val reviews: List<ReviewResponse> = emptyList(),
+    val reviews: List<ProfileReviewResponse> = emptyList(),
 )

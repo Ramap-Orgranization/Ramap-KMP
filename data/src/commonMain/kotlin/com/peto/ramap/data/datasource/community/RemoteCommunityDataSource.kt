@@ -10,24 +10,16 @@ import com.peto.ramap.data.model.PublicSavedShopsPageResponse
 import com.peto.ramap.data.model.ReviewResponse
 import com.peto.ramap.data.model.SignedImageRequest
 import io.github.jan.supabase.SupabaseClient
-import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
-import kotlin.time.Clock
-import kotlin.time.Duration.Companion.minutes
 
 internal class RemoteCommunityDataSource(
     private val client: SupabaseClient,
     private val reviewDataSource: ReviewDataSource,
     private val imageUrlDataSource: ImageUrlDataSource,
 ) : CommunityDataSource {
-    private val profileAvatarMutex = Mutex()
-    private var profileAvatarUrl: ProfileAvatarUrl? = null
-
     override suspend fun fetchMyCommunityProfile(): MyCommunityProfileResponse {
         val profile =
             client.postgrest
@@ -49,25 +41,8 @@ internal class RemoteCommunityDataSource(
     private suspend fun signProfileAccess(access: ProfileAccessResponse): ProfileAccessResponse {
         if (access.status != ProfileAccessResponse.VISIBLE) return access
         val profile = access.profile ?: return access
-        return access.copy(profile = profile.copy(avatarUrl = signedProfileAvatar(profile.avatarPath)))
+        return access.copy(profile = profile.copy(avatarUrl = signedAvatar(profile.avatarPath)))
     }
-
-    private suspend fun signedProfileAvatar(path: String?): String? =
-        profileAvatarMutex.withLock {
-            if (path == null) {
-                profileAvatarUrl = null
-                return@withLock null
-            }
-            val viewerId = client.auth.currentUserOrNull()?.id
-            val now = Clock.System.now()
-            val cached = profileAvatarUrl
-            if (cached?.matches(viewerId, path, now) == true) return@withLock cached.url
-            val url = signedAvatar(path) ?: return@withLock null
-            if (client.auth.currentUserOrNull()?.id == viewerId) {
-                profileAvatarUrl = ProfileAvatarUrl(viewerId, path, url, now + SIGNED_URL_REFRESH_AFTER)
-            }
-            url
-        }
 
     private suspend fun signedAvatar(path: String?): String? {
         if (path == null) return null
@@ -169,6 +144,5 @@ internal class RemoteCommunityDataSource(
         const val PARAM_BLOCKED = "p_blocked"
 
         const val BUCKET_PROFILE_AVATARS = "profile-avatars"
-        val SIGNED_URL_REFRESH_AFTER = 4.minutes
     }
 }

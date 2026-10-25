@@ -7,5 +7,6 @@ enum class TabStatus {
     MAP,
     RANKING,
     EVENT,
+    COMMUNITY,
     MY,
 }

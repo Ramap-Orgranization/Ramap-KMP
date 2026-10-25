@@ -10,10 +10,10 @@ import com.peto.ramap.domain.model.review.ReviewLike
 import com.peto.ramap.domain.model.review.ShopReviewsPage
 import com.peto.ramap.domain.model.review.change.ReviewChange
 import com.peto.ramap.domain.model.review.change.ReviewChangeReducer
-import com.peto.ramap.domain.repository.CommunityRepository
 import com.peto.ramap.domain.repository.LoginRepository
 import com.peto.ramap.domain.repository.ProfileRepository
 import com.peto.ramap.domain.repository.ReviewRepository
+import com.peto.ramap.domain.repository.UserModerationRepository
 import com.peto.ramap.domain.store.ReviewChangeStore
 import com.peto.ramap.domain.usecase.FeatchShopReviewsUseCase
 import com.peto.ramap.ui.base.BaseViewModel
@@ -42,7 +42,7 @@ import ramap.shared.generated.resources.review_unblock_success
 
 class ReviewsViewModel(
     private val reviewRepository: ReviewRepository,
-    private val communityRepository: CommunityRepository,
+    private val userModerationRepository: UserModerationRepository,
     private val profileRepository: ProfileRepository,
     private val loginRepository: LoginRepository,
     private val reviewChanges: ReviewChangeStore,
@@ -228,7 +228,7 @@ class ReviewsViewModel(
             taskKey = UNBLOCK_TASK_KEY,
             loadKey = ReviewsLoadKey.BlockedReviewUnblock,
             policy = TaskPolicy.IgnoreNew,
-            request = { communityRepository.unblockUser(review.author.userId) },
+            request = { userModerationRepository.unblockUser(review.author.userId) },
             onSuccess = {
                 val isInactive = !currentCoroutineContext().isActive
                 if (isInactive) return@launchResultTask
@@ -332,7 +332,7 @@ class ReviewsViewModel(
             taskKey = REPORT_TASK_KEY,
             loadKey = ReviewsLoadKey.ReviewReport,
             policy = TaskPolicy.IgnoreNew,
-            request = { communityRepository.reportReview(review.id, reason, description) },
+            request = { userModerationRepository.reportReview(review.id, reason, description) },
             onSuccess = {
                 val isActiveTargetReview = currentCoroutineContext().isActive && currentState.reportReview?.id == review.id
                 if (isActiveTargetReview) {

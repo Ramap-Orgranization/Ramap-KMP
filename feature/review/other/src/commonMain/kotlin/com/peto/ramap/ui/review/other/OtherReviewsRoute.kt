@@ -28,10 +28,11 @@ import com.peto.ramap.designsystem.component.RamenShopSummary
 import com.peto.ramap.designsystem.indicator.RamenLoadingIndicator
 import com.peto.ramap.designsystem.profile.ProfileHeader
 import com.peto.ramap.designsystem.resource.category.CategoryResourceMapper
+import com.peto.ramap.designsystem.review.ReviewCard
 import com.peto.ramap.designsystem.review.ReviewCardActions
 import com.peto.ramap.designsystem.review.ReviewEmptyContent
 import com.peto.ramap.designsystem.review.ReviewPage
-import com.peto.ramap.designsystem.review.ShopReviewCard
+import com.peto.ramap.designsystem.review.ShopReviewCardHeader
 import com.peto.ramap.designsystem.toast.ToastManager
 import com.peto.ramap.domain.model.auth.LoginType
 import com.peto.ramap.domain.model.community.ProfileAccess
@@ -284,16 +285,26 @@ internal fun OtherReviewsContent(
                 items = if (state.selectedTab == OtherReviewsTab.Reviews) state.reviews else emptyList(),
                 key = { it.review.id },
             ) { profileReview ->
+                val review = profileReview.review
+
                 val reviewActions =
                     ReviewCardActions(
-                        onLike = { onIntent(OtherReviewsIntent.ToggleLike(profileReview.review)) },
+                        onLike = { onIntent(OtherReviewsIntent.ToggleLike(review)) },
+                        onReviewClick = { onOpenShopDetail(review.shopId) },
                     )
-                ShopReviewCard(
-                    review = profileReview.review,
-                    shop = profileReview.shop,
-                    onOpenShopDetail = onOpenShopDetail,
+                ReviewCard(
+                    review = review,
                     actions = reviewActions,
                     photoViewerEnabled = false,
+                    header = {
+                        ShopReviewCardHeader(
+                            review = review,
+                            shop = profileReview.shop,
+                            onOpenShopDetail = { onOpenShopDetail(review.shopId) },
+                            actions = reviewActions,
+                            actionsEnabled = true,
+                        )
+                    },
                 )
             }
             if (state.showsEmptySavedShops) {

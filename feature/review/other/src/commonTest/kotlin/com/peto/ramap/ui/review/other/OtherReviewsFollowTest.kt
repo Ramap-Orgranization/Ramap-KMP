@@ -254,7 +254,8 @@ class OtherReviewsFollowTest {
         changes: FakeReviewChangeStore,
         follows: FakeFollowRepository = FakeFollowRepository(),
     ) = OtherReviewsViewModel(
-        community = community,
+        userProfileRepository = community,
+        userModerationRepository = community,
         profiles = FakeProfileRepository(),
         follows = follows,
         reviewRepository = FakeShopReviewRepository(),
@@ -264,6 +265,7 @@ class OtherReviewsFollowTest {
 
     private fun review(number: Int) =
         ProfileReview(
+            shop = ramenShopFixture(id = "shop"),
             review = Review("review-$number", "shop", "맛있는 라멘이에요", "2026-10-24", author = ReviewAuthor("author", "라멘팬")),
         )
 }

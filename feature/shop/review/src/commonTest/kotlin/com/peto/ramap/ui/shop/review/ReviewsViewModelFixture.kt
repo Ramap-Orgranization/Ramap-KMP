@@ -9,18 +9,18 @@ import com.peto.ramap.domain.model.review.ReviewLike
 import com.peto.ramap.domain.model.review.ShopReviewCache
 import com.peto.ramap.domain.model.review.ShopReviewsPage
 import com.peto.ramap.domain.model.review.change.ReviewChangeReducer
-import com.peto.ramap.domain.repository.CommunityRepository
 import com.peto.ramap.domain.repository.ProfileRepository
 import com.peto.ramap.domain.repository.ReviewRepository
+import com.peto.ramap.domain.repository.UserModerationRepository
 import com.peto.ramap.domain.usecase.FeatchShopReviewsUseCase
-import com.peto.ramap.fake.FakeCommunityRepository
 import com.peto.ramap.fake.FakeLoginRepository
 import com.peto.ramap.fake.FakeProfileRepository
 import com.peto.ramap.fake.FakeReviewChangeStore
 import com.peto.ramap.fake.FakeShopReviewRepository
+import com.peto.ramap.fake.FakeUserModerationRepository
 
 class ReviewsViewModelFixture(
-    community: CommunityRepository = FakeCommunityRepository(),
+    community: UserModerationRepository = FakeUserModerationRepository(),
 ) {
     val login = FakeLoginRepository()
     val profile = FakeProfileRepository(null, isProfilePublic = false)

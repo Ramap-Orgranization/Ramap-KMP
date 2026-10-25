@@ -29,12 +29,15 @@ fun rememberNavigationState(): NavigationState {
         rememberNavBackStack(configuration = navigationConfiguration, ScreenRoutes.RankingTabRoutes)
     val myBackStack =
         rememberNavBackStack(configuration = navigationConfiguration, ScreenRoutes.MyTabRoutes)
+    val communityBackStack =
+        rememberNavBackStack(configuration = navigationConfiguration, ScreenRoutes.CommunityTabRoutes)
     val backStacks =
-        remember(mapBackStack, rankingBackStack, eventBackStack, myBackStack) {
+        remember(mapBackStack, rankingBackStack, eventBackStack, communityBackStack, myBackStack) {
             mapOf(
                 TabStatus.MAP to mapBackStack,
                 TabStatus.RANKING to rankingBackStack,
                 TabStatus.EVENT to eventBackStack,
+                TabStatus.COMMUNITY to communityBackStack,
                 TabStatus.MY to myBackStack,
             )
         }
@@ -62,6 +65,7 @@ internal fun navKeySerializersModule(): SerializersModule =
             subclass(ScreenRoutes.EventTabRoutes::class)
             subclass(ScreenRoutes.OperatingNoticeRoutes::class)
             subclass(ScreenRoutes.RankingTabRoutes::class)
+            subclass(ScreenRoutes.CommunityTabRoutes::class)
             subclass(ScreenRoutes.MyTabRoutes::class)
             subclass(ScreenRoutes.SettingsRoutes::class)
             subclass(ScreenRoutes.AccountSettingsRoutes::class)

@@ -4,11 +4,13 @@ import com.peto.ramap.data.datasource.community.CommunityDataSource
 import com.peto.ramap.data.model.BlockedUserResponse
 import com.peto.ramap.data.model.MyCommunityProfileResponse
 import com.peto.ramap.data.model.ProfileAccessResponse
+import com.peto.ramap.data.model.ProfileReviewResponse
+import com.peto.ramap.data.model.ProfileReviewsPageResponse
 import com.peto.ramap.data.model.PublicSavedShopsPageResponse
 import com.peto.ramap.data.model.ReviewResponse
 
 internal class FakeCommunityDataSource(
-    private val reviews: List<ReviewResponse> = emptyList(),
+    private val reviews: List<ProfileReviewResponse> = emptyList(),
     private val reviewError: Throwable? = null,
 ) : CommunityDataSource {
     val requestedReviewPages = mutableListOf<Pair<String, Long>>()
@@ -16,9 +18,11 @@ internal class FakeCommunityDataSource(
     override suspend fun fetchProfileReviewsPage(
         userId: String,
         offset: Long,
-    ): com.peto.ramap.data.model.ProfileReviewsPageResponse =
-        com.peto.ramap.data.model
-            .ProfileReviewsPageResponse(fetchProfileAccess(userId), fetchUserReviews(userId, offset))
+    ): ProfileReviewsPageResponse {
+        requestedReviewPages += userId to offset
+        reviewError?.let { throw it }
+        return ProfileReviewsPageResponse(fetchProfileAccess(userId), reviews)
+    }
 
     override suspend fun fetchUserReviews(
         userId: String,
@@ -26,7 +30,7 @@ internal class FakeCommunityDataSource(
     ): List<ReviewResponse> {
         requestedReviewPages += userId to offset
         reviewError?.let { throw it }
-        return reviews
+        return reviews.map { it.review }
     }
 
     override suspend fun fetchMyCommunityProfile(): MyCommunityProfileResponse = MyCommunityProfileResponse()
