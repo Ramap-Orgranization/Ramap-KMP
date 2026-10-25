@@ -42,7 +42,6 @@ import com.peto.ramap.domain.usecase.FetchShopOverviewUseCase
 import com.peto.ramap.domain.usecase.ShopOverviewCacheLookup
 import com.peto.ramap.domain.usecase.SignInUseCase
 import com.peto.ramap.fake.FakeAnalyticsTracker
-import com.peto.ramap.fake.FakeCommunityRepository
 import com.peto.ramap.fake.FakeCrashReporter
 import com.peto.ramap.fake.FakeLoginRepository
 import com.peto.ramap.fake.FakeNotificationSettingsRepository
@@ -54,6 +53,7 @@ import com.peto.ramap.fake.FakeRamenShopRepository
 import com.peto.ramap.fake.FakeReviewChangeStore
 import com.peto.ramap.fake.FakeShopReportRepository
 import com.peto.ramap.fake.FakeShopWaitingSystemRepository
+import com.peto.ramap.fake.FakeUserModerationRepository
 import com.peto.ramap.fixture.BOUNDS_FIXTURE
 import com.peto.ramap.fixture.ramenShopFixture
 import com.peto.ramap.fixture.waitingSystemFixture
@@ -455,7 +455,7 @@ class MapShopSectionsRegressionTest {
                     author = ReviewAuthor("blocked-author", ""),
                     isBlocked = true,
                 )
-            val community = FakeCommunityRepository()
+            val community = FakeUserModerationRepository()
             val viewModel =
                 mapViewModel(
                     ramenShopRepository = FakeRamenShopRepository(fetchByIdsResult = RamenShops(mapOf(shop.id to shop))),
@@ -3533,7 +3533,7 @@ private fun TestScope.mapViewModel(
     notificationSettingsRepository: FakeNotificationSettingsRepository = FakeNotificationSettingsRepository(),
     detailUseCase: FetchShopOverviewUseCase? = null,
     reviewRepository: ReviewRepository? = null,
-    communityRepository: FakeCommunityRepository = FakeCommunityRepository(),
+    communityRepository: FakeUserModerationRepository = FakeUserModerationRepository(),
     profileRepository: FakeProfileRepository = FakeProfileRepository(null),
     reviewChanges: FakeReviewChangeStore = FakeReviewChangeStore(),
     menuRepository: ShopMenuRepository = FakeMapShopMenuRepository(),

@@ -19,13 +19,13 @@ import com.peto.ramap.domain.model.review.change.ReviewChangeReducer
 import com.peto.ramap.domain.usecase.FeatchShopReviewsUseCase
 import com.peto.ramap.domain.usecase.SignInUseCase
 import com.peto.ramap.fake.FakeAnalyticsTracker
-import com.peto.ramap.fake.FakeCommunityRepository
 import com.peto.ramap.fake.FakeCrashReporter
 import com.peto.ramap.fake.FakeLoginRepository
 import com.peto.ramap.fake.FakePersonalizationRepository
 import com.peto.ramap.fake.FakeProfileRepository
 import com.peto.ramap.fake.FakeReviewChangeStore
 import com.peto.ramap.fake.FakeShopReportRepository
+import com.peto.ramap.fake.FakeUserModerationRepository
 import com.peto.ramap.fixture.ramenShopFixture
 import com.peto.ramap.ui.lifecycle.ScreenViewModelScope
 import com.peto.ramap.ui.main.FakeMapSearchHistoryStorage
@@ -226,7 +226,7 @@ class ShopSheetCompositionTest {
                 viewModelFactory {
                     initializer { OverviewViewModel(login, FakeShopReportRepository(), personalization, queries, FakeMapSearchHistoryStorage(), ShopAnalytics(FakeAnalyticsTracker()), SignInUseCase(login, LoginAnalytics(FakeAnalyticsTracker(), FakeCrashReporter()))) }
                     initializer { ShopMenuViewModel(queries) }
-                    initializer { ReviewsViewModel(queries, FakeCommunityRepository(), profile, login, changes, reducer, FeatchShopReviewsUseCase(queries, changes, reducer, ShopReviewCache(changes, reducer))) }
+                    initializer { ReviewsViewModel(queries, FakeUserModerationRepository(), profile, login, changes, reducer, FeatchShopReviewsUseCase(queries, changes, reducer, ShopReviewCache(changes, reducer))) }
                 }
             val provider = ViewModelProvider.create(owner, factory)
             val overview = provider[OverviewViewModel::class]
