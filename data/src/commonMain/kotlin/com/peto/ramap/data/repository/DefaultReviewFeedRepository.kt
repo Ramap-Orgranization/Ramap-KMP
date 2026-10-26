@@ -23,6 +23,7 @@ internal class DefaultReviewFeedRepository(
             ReviewFeedPage(
                 reviews = page.reviews.map { it.toDomain() },
                 nextCursor = page.nextCursor(),
+                hasFilterTargets = page.hasFilterTargets,
             )
         }
 

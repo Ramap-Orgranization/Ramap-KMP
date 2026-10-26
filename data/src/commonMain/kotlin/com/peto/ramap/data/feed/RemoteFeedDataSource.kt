@@ -57,7 +57,7 @@ internal class RemoteFeedDataSource(
     }
 
     private companion object {
-        const val RPC_FETCH_FILTERED_REVIEW_FEED_PAGE = "fetch_filtered_review_feed_page"
+        const val RPC_FETCH_FILTERED_REVIEW_FEED_PAGE = "fetch_filtered_review_feed_page_v2"
         const val PARAM_FILTER = "p_filter"
         const val PARAM_SORT = "p_sort"
         const val RPC_FETCH_POPULAR_REVIEW_FEED_PAGE = "fetch_popular_review_feed_page"
