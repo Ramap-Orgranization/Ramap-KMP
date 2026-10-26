@@ -23,7 +23,7 @@ import com.peto.ramap.theme.RamapTheme
 internal fun RankingSkeleton(modifier: Modifier = Modifier) {
     LazyColumn(
         modifier = modifier,
-        contentPadding = PaddingValues(start = 24.dp, end = 10.dp),
+        contentPadding = PaddingValues(start = 16.dp, end = 10.dp),
         verticalArrangement = Arrangement.spacedBy(2.dp),
         userScrollEnabled = false,
     ) {
@@ -44,7 +44,7 @@ internal fun RankingRowSkeleton(modifier: Modifier = Modifier) {
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Skeleton(
-            modifier = Modifier.size(width = 16.dp, height = 24.dp),
+            modifier = Modifier.size(width = 32.dp, height = 24.dp),
             shape = RoundedCornerShape(4.dp),
         )
 

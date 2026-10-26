@@ -21,7 +21,7 @@ import org.jetbrains.compose.resources.painterResource
 fun LoadErrorContent(
     image: DrawableResource,
     title: String,
-    description: String,
+    description: String = "",
     modifier: Modifier = Modifier,
     onRetry: (() -> Unit)? = null,
     compact: Boolean = false,
@@ -50,12 +50,14 @@ fun LoadErrorContent(
             color = GrayColor.C500,
             textAlign = TextAlign.Center,
         )
-        AppText(
-            text = description,
-            style = AppTextStyle.B2,
-            color = GrayColor.C400,
-            textAlign = TextAlign.Center,
-        )
+        if (description.isNotBlank()) {
+            AppText(
+                text = description,
+                style = AppTextStyle.B2,
+                color = GrayColor.C400,
+                textAlign = TextAlign.Center,
+            )
+        }
         if (onRetry != null) {
             RetryButton(
                 onClick = onRetry,

@@ -66,7 +66,7 @@ internal fun RankingFilters(
                 label = stringResource(Res.string.ranking_all_categories),
                 selected = uiState.selectedCategories.isEmpty(),
                 onClick = onAllCategoriesSelected,
-                style = AppTextStyle.L3,
+                style = AppTextStyle.B4,
             )
         }
         items(Category.entries) { category ->
@@ -74,7 +74,7 @@ internal fun RankingFilters(
                 label = stringResource(CategoryResourceMapper.label(category)),
                 selected = category in uiState.selectedCategories,
                 onClick = { onCategoryToggled(category) },
-                style = AppTextStyle.L3,
+                style = AppTextStyle.B4,
             )
         }
     }

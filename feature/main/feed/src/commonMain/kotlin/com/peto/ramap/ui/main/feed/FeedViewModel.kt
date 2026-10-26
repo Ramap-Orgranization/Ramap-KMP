@@ -5,6 +5,7 @@ import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.feed.ReviewFeedCursor
+import com.peto.ramap.domain.model.feed.ReviewFeedFilter
 import com.peto.ramap.domain.model.feed.ReviewFeedPage
 import com.peto.ramap.domain.model.feed.ReviewFeedSort
 import com.peto.ramap.domain.model.moderation.ReportReason
@@ -30,8 +31,10 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.StringResource
 import ramap.shared.generated.resources.Res
+import ramap.shared.generated.resources.login_required_follow_description
 import ramap.shared.generated.resources.login_required_review_like_description
 import ramap.shared.generated.resources.login_required_review_report_description
+import ramap.shared.generated.resources.login_required_saved_shops_description
 import ramap.shared.generated.resources.review_action_failed
 import ramap.shared.generated.resources.review_action_success
 import ramap.shared.generated.resources.review_delete_failed
@@ -74,7 +77,7 @@ class FeedViewModel(
                     if (journal.hasGapAfter(lastAppliedRevision)) {
                         lastAppliedRevision = journal.revision
                         invalidateAccess()
-                        reduce { copy(reviews = emptyList(), nextCursor = null, hasLoaded = false) }
+                        reduce { copy(reviews = emptyList(), nextCursor = null, hasFilterTargets = null, hasLoaded = false) }
                         loadPage(append = false)
                         return@collect
                     }
@@ -93,7 +96,13 @@ class FeedViewModel(
     private fun invalidateSession(viewer: String?) {
         cancelTasks()
         sessionEpoch = null
-        reduce { FeedUiState(currentUserId = viewer, sort = sort) }
+        reduce {
+            FeedUiState(
+                currentUserId = viewer,
+                sort = sort,
+                filter = if (viewer != null && viewer == currentUserId) filter else ReviewFeedFilter.ALL,
+            )
+        }
     }
 
     private fun invalidateAccess() {
@@ -126,6 +135,13 @@ class FeedViewModel(
     override suspend fun handleIntent(intent: FeedIntent) {
         when (intent) {
             is FeedIntent.SelectSort -> selectSort(intent.sort)
+            is FeedIntent.SelectFilter -> selectFilter(intent.filter)
+            FeedIntent.Resume -> {
+                if (currentState.filter != ReviewFeedFilter.ALL && currentState.hasLoaded) {
+                    invalidateAccess()
+                    loadPage(append = false)
+                }
+            }
             FeedIntent.Refresh -> {
                 invalidateAccess()
                 loadPage(append = false)
@@ -160,11 +176,32 @@ class FeedViewModel(
             change is ReviewChange.Written ||
             (currentState.sort == ReviewFeedSort.POPULAR && change is ReviewChange.Liked)
 
+    private fun selectFilter(filter: ReviewFeedFilter) {
+        if (filter == currentState.filter) return
+        if (filter != ReviewFeedFilter.ALL && currentState.currentUserId == null) {
+            val description =
+                when (filter) {
+                    ReviewFeedFilter.SAVED_SHOPS -> Res.string.login_required_saved_shops_description
+                    else -> Res.string.login_required_follow_description
+                }
+            trySideEffect(FeedSideEffect.LoginRequired(description))
+            return
+        }
+        changeQuery(currentState.sort, filter)
+    }
+
     private fun selectSort(sort: ReviewFeedSort) {
         if (sort == currentState.sort) return
+        changeQuery(sort, currentState.filter)
+    }
+
+    private fun changeQuery(
+        sort: ReviewFeedSort,
+        filter: ReviewFeedFilter,
+    ) {
         cancelTask(PAGE_TASK)
         reduce {
-            clearAccess().copy(sort = sort, reviews = emptyList(), nextCursor = null, hasLoaded = false, failed = false, appendFailed = false)
+            clearAccess().copy(sort = sort, filter = filter, reviews = emptyList(), nextCursor = null, hasFilterTargets = null, hasLoaded = false, failed = false, appendFailed = false)
         }
         loadPage(append = false)
     }
@@ -172,6 +209,7 @@ class FeedViewModel(
     private fun loadPage(append: Boolean) {
         if (!currentState.sessionResolved) return
         val sort = currentState.sort
+        val filter = currentState.filter
         val cursor = if (append) currentState.nextCursor ?: return else null
         val extent = if (append) 0 else currentState.reviews.size
         val baseline = changes.journal.value
@@ -180,9 +218,9 @@ class FeedViewModel(
             loadKey = if (append) FeedLoadKey.Append else FeedLoadKey.Page,
             policy = TaskPolicy.CancelPrevious,
             onStart = { copy(failed = false, appendFailed = false) },
-            request = { fetchExtent(cursor, extent, sort) },
+            request = { fetchExtent(cursor, extent, sort, filter) },
             onSuccess = { page ->
-                if (baseline.epoch != changes.journal.value.epoch || sort != currentState.sort) return@launchResultTask
+                if (baseline.epoch != changes.journal.value.epoch || sort != currentState.sort || filter != currentState.filter) return@launchResultTask
                 val journal = changes.journal.value
                 val records = journal.changesAfter(baseline.revision)
                 if (journal.hasGapAfter(baseline.revision) || records.any { requiresReload(it.change) }) {
@@ -199,12 +237,13 @@ class FeedViewModel(
                     copy(
                         reviews = (if (append) reviews + rows else rows).distinctBy { it.review.id },
                         nextCursor = page.nextCursor,
+                        hasFilterTargets = page.hasFilterTargets,
                         hasLoaded = true,
                     )
                 }
             },
             onError = {
-                if (baseline.epoch == changes.journal.value.epoch && sort == currentState.sort) {
+                if (baseline.epoch == changes.journal.value.epoch && sort == currentState.sort && filter == currentState.filter) {
                     reduce { copy(failed = !append, appendFailed = append) }
                 }
             },
@@ -215,14 +254,17 @@ class FeedViewModel(
         cursor: ReviewFeedCursor?,
         extent: Int,
         sort: ReviewFeedSort,
+        filter: ReviewFeedFilter,
     ): RamapResult<ReviewFeedPage> {
         var next = cursor
+        var hasFilterTargets: Boolean? = null
         val rows = mutableListOf<ProfileReview>()
         do {
             val previous = next
-            when (val result = reviewFeedRepository.fetchPage(next, sort)) {
+            when (val result = reviewFeedRepository.fetchPage(next, sort, filter)) {
                 is RamapResult.Error -> return result
                 is RamapResult.Success -> {
+                    if (previous == cursor) hasFilterTargets = result.data.hasFilterTargets
                     rows += result.data.reviews
                     next = result.data.nextCursor
                 }
@@ -230,7 +272,7 @@ class FeedViewModel(
             currentCoroutineContext().ensureActive()
             if (next == previous) next = null
         } while (rows.size < extent && next != null)
-        return RamapResult.Success(ReviewFeedPage(rows, next))
+        return RamapResult.Success(ReviewFeedPage(rows, next, hasFilterTargets))
     }
 
     private fun findReview(review: Review): Review? = currentState.reviews.firstOrNull { it.review.id == review.id }?.review

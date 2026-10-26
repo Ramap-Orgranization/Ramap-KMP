@@ -2,6 +2,7 @@ package com.peto.ramap.ui.main.feed
 
 import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.domain.model.feed.ReviewFeedCursor
+import com.peto.ramap.domain.model.feed.ReviewFeedFilter
 import com.peto.ramap.domain.model.feed.ReviewFeedPage
 import com.peto.ramap.domain.model.feed.ReviewFeedSort
 import com.peto.ramap.domain.model.review.Review
@@ -16,6 +17,7 @@ internal class FakeReviewFeedRepository : ReviewFeedRepository {
     override suspend fun fetchPage(
         cursor: ReviewFeedCursor?,
         sort: ReviewFeedSort,
+        filter: ReviewFeedFilter,
     ): RamapResult<ReviewFeedPage> {
         requests += sort to cursor
         return response(cursor, sort)

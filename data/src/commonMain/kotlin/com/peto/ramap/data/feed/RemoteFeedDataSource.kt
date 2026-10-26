@@ -4,6 +4,7 @@ import com.peto.ramap.data.datasource.review.ReviewImageResolver
 import com.peto.ramap.data.model.ReviewFeedPageResponse
 import com.peto.ramap.data.model.ReviewResponse
 import com.peto.ramap.domain.model.feed.ReviewFeedCursor
+import com.peto.ramap.domain.model.feed.ReviewFeedFilter
 import com.peto.ramap.domain.model.feed.ReviewFeedSort
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
@@ -17,17 +18,26 @@ internal class RemoteFeedDataSource(
     override suspend fun fetchReviewsPage(
         cursor: ReviewFeedCursor?,
         sort: ReviewFeedSort,
+        filter: ReviewFeedFilter,
     ): ReviewFeedPageResponse {
         val rpc =
-            when (sort) {
-                ReviewFeedSort.LATEST -> RPC_FETCH_REVIEW_FEED_PAGE
-                ReviewFeedSort.POPULAR -> RPC_FETCH_POPULAR_REVIEW_FEED_PAGE
+            if (filter != ReviewFeedFilter.ALL) {
+                RPC_FETCH_FILTERED_REVIEW_FEED_PAGE
+            } else {
+                when (sort) {
+                    ReviewFeedSort.LATEST -> RPC_FETCH_REVIEW_FEED_PAGE
+                    ReviewFeedSort.POPULAR -> RPC_FETCH_POPULAR_REVIEW_FEED_PAGE
+                }
             }
         val page =
             client.postgrest
                 .rpc(
                     rpc,
                     buildJsonObject {
+                        if (filter != ReviewFeedFilter.ALL) {
+                            put(PARAM_FILTER, filter.name.lowercase())
+                            put(PARAM_SORT, sort.name.lowercase())
+                        }
                         put(PARAM_CREATED_AT, cursor?.createdAt)
                         put(PARAM_REVIEW_ID, cursor?.reviewId)
                         if (sort == ReviewFeedSort.POPULAR) put(PARAM_LIKE_COUNT, cursor?.likeCount)
@@ -47,6 +57,9 @@ internal class RemoteFeedDataSource(
     }
 
     private companion object {
+        const val RPC_FETCH_FILTERED_REVIEW_FEED_PAGE = "fetch_filtered_review_feed_page_v2"
+        const val PARAM_FILTER = "p_filter"
+        const val PARAM_SORT = "p_sort"
         const val RPC_FETCH_POPULAR_REVIEW_FEED_PAGE = "fetch_popular_review_feed_page"
         const val RPC_FETCH_REVIEW_FEED_PAGE = "fetch_review_feed_page"
         const val RPC_FETCH_BLOCKED_REVIEW_FEED_ONCE = "fetch_blocked_review_feed_once"

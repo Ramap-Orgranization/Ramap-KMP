@@ -10,6 +10,7 @@ internal data class ReviewFeedPageResponse(
     @SerialName("next_created_at") val nextCreatedAt: String? = null,
     @SerialName("next_review_id") val nextReviewId: String? = null,
     @SerialName("next_like_count") val nextLikeCount: Int? = null,
+    @SerialName("has_filter_targets") val hasFilterTargets: Boolean? = null,
 ) {
     fun nextCursor(): ReviewFeedCursor? {
         val createdAt = nextCreatedAt ?: return null
