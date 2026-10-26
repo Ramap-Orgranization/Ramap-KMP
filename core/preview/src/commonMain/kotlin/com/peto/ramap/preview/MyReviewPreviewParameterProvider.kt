@@ -1,10 +1,10 @@
 package com.peto.ramap.preview
 
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
-import com.peto.ramap.domain.model.community.ReviewModerationStatus
 import com.peto.ramap.domain.model.review.MyReview
 import com.peto.ramap.domain.model.review.MyReviewPhoto
 import com.peto.ramap.domain.model.review.Review
+import com.peto.ramap.domain.model.review.ReviewModerationStatus
 
 class MyReviewPreviewParameterProvider : PreviewParameterProvider<MyReview> {
     val myReviewPreviewSamples =

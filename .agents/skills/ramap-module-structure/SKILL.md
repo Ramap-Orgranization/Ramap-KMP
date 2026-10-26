@@ -12,7 +12,7 @@ Use this skill when a change creates, moves, or wires code across Gradle modules
 - App and composition: `:androidApp`, `:shared`
 - Core: `:core:analytics`, `:core:common`, `:core:ui`, `:core:preview`, `:core:designsystem`, `:core:network`, `:core:platform`, `:core:notification`, `:core:navigation`, `:core:testing`
 - Stable contracts and data: `:domain`, `:data`
-- Main aggregator and tabs: `:feature:main`, `:feature:main:event:list`, `:feature:main:event:detail`, `:feature:main:notice`, `:feature:main:map`, `:feature:main:japan`, `:feature:main:ranking`, `:feature:main:my`
+- Main aggregator and tabs: `:feature:main`, `:feature:main:event:list`, `:feature:main:event:detail`, `:feature:main:notice`, `:feature:main:map`, `:feature:main:japan`, `:feature:main:ranking`, `:feature:main:feed`, `:feature:main:my`
 - Other features: `:feature:profile:edit`, `:feature:review:my`, `:feature:review:other`, `:feature:review:write`, `:feature:settings`, `:feature:account`, `:feature:bookmark:list`, `:feature:bookmark:importation`, `:feature:hidden`, `:feature:notification`, `:feature:report`, `:feature:subscribed`
 - Debug tooling: `:debug:admin`, included by `androidApp` through `debugImplementation`
 

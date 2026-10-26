@@ -26,7 +26,7 @@ import androidx.compose.ui.window.DialogProperties
 import com.peto.ramap.designsystem.button.AppButton
 import com.peto.ramap.designsystem.review.ReviewReportFormContent
 import com.peto.ramap.designsystem.text.AppText
-import com.peto.ramap.domain.model.community.ReportReason
+import com.peto.ramap.domain.model.moderation.ReportReason
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor

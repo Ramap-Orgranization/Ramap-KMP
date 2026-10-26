@@ -29,8 +29,8 @@ import com.peto.ramap.theme.GrayColor
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
-import ramap.shared.generated.resources.ic_community
-import ramap.shared.generated.resources.ic_community_selected
+import ramap.shared.generated.resources.ic_feed
+import ramap.shared.generated.resources.ic_feed_selected
 import ramap.shared.generated.resources.ic_map
 import ramap.shared.generated.resources.ic_map_selected
 import ramap.shared.generated.resources.ic_news
@@ -38,8 +38,8 @@ import ramap.shared.generated.resources.ic_news_filled
 import ramap.shared.generated.resources.ic_person
 import ramap.shared.generated.resources.ic_ranking
 import ramap.shared.generated.resources.ic_ranking_selected
-import ramap.shared.generated.resources.top_level_tab_community
 import ramap.shared.generated.resources.top_level_tab_event
+import ramap.shared.generated.resources.top_level_tab_feed
 import ramap.shared.generated.resources.top_level_tab_map
 import ramap.shared.generated.resources.top_level_tab_my
 import ramap.shared.generated.resources.top_level_tab_ranking
@@ -92,7 +92,7 @@ private fun TabItem(
             TabStatus.RANKING -> if (selected) Res.drawable.ic_ranking_selected else Res.drawable.ic_ranking
             TabStatus.EVENT -> if (selected) Res.drawable.ic_news_filled else Res.drawable.ic_news
             TabStatus.MY -> Res.drawable.ic_person
-            TabStatus.COMMUNITY -> if (selected) Res.drawable.ic_community_selected else Res.drawable.ic_community
+            TabStatus.FEED -> if (selected) Res.drawable.ic_feed_selected else Res.drawable.ic_feed
         }
     val label =
         when (tab) {
@@ -100,7 +100,7 @@ private fun TabItem(
             TabStatus.RANKING -> stringResource(Res.string.top_level_tab_ranking)
             TabStatus.EVENT -> stringResource(Res.string.top_level_tab_event)
             TabStatus.MY -> stringResource(Res.string.top_level_tab_my)
-            TabStatus.COMMUNITY -> stringResource(Res.string.top_level_tab_community)
+            TabStatus.FEED -> stringResource(Res.string.top_level_tab_feed)
         }
 
     Column(

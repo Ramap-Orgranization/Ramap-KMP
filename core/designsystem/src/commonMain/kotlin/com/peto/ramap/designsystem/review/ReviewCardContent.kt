@@ -23,8 +23,8 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.peto.ramap.designsystem.text.AppText
-import com.peto.ramap.domain.model.community.ReviewModerationStatus
 import com.peto.ramap.domain.model.review.Review
+import com.peto.ramap.domain.model.review.ReviewModerationStatus
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.GrayColor
 import org.jetbrains.compose.resources.painterResource

@@ -22,7 +22,7 @@ fun NavigationRouter(
     navigationState: NavigationState,
     mapScreen: @Composable (ScreenRoutes.MapRoutes) -> Unit,
     rankingScreen: @Composable () -> Unit,
-    communityScreen: @Composable () -> Unit = {},
+    feedScreen: @Composable () -> Unit = {},
     eventListScreen: @Composable () -> Unit,
     operatingNoticeScreen: @Composable () -> Unit,
     myScreen: @Composable () -> Unit,
@@ -81,11 +81,11 @@ fun NavigationRouter(
                     content = myScreen,
                 )
             }
-            entry<ScreenRoutes.CommunityTabRoutes> {
+            entry<ScreenRoutes.FeedTabRoutes> {
                 BottonNavigationTabScreen(
-                    selectedTab = TabStatus.COMMUNITY,
+                    selectedTab = TabStatus.FEED,
                     onTabSelected = onTabSelected,
-                    content = communityScreen,
+                    content = feedScreen,
                 )
             }
             entry<ScreenRoutes.FollowRoutes> { route -> FullScreen { followScreen(route) } }

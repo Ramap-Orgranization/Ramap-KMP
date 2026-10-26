@@ -32,7 +32,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.peto.ramap.designsystem.resource.reportReasonResource
 import com.peto.ramap.designsystem.text.AppText
-import com.peto.ramap.domain.model.community.ReportReason
+import com.peto.ramap.domain.model.moderation.ReportReason
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.ChromaticColor
 import com.peto.ramap.theme.GrayColor
