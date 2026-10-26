@@ -1,8 +1,8 @@
 package com.peto.ramap.domain.model.review
 
-import com.peto.ramap.domain.model.community.ReviewAuthor
-import com.peto.ramap.domain.model.community.ReviewModerationStatus
 import com.peto.ramap.domain.model.moderation.KoreanProfanityFilter
+import com.peto.ramap.domain.model.review.ReviewAuthor
+import com.peto.ramap.domain.model.review.ReviewModerationStatus
 
 data class Review(
     val id: String,

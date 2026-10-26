@@ -1,14 +1,14 @@
 package com.peto.ramap.domain.repository
 
 import com.peto.ramap.core.result.RamapResult
-import com.peto.ramap.domain.model.community.ProfileAccess
-import com.peto.ramap.domain.model.community.ProfileReview
-import com.peto.ramap.domain.model.community.ProfileReviewsPage
-import com.peto.ramap.domain.model.community.PublicProfile
-import com.peto.ramap.domain.model.community.PublicSavedShopsPage
+import com.peto.ramap.domain.model.profile.ProfileAccess
+import com.peto.ramap.domain.model.profile.ProfileReviewsPage
+import com.peto.ramap.domain.model.profile.PublicProfile
+import com.peto.ramap.domain.model.profile.PublicSavedShopsPage
+import com.peto.ramap.domain.model.review.ProfileReview
 
 interface UserProfileRepository {
-    suspend fun fetchMyCommunityProfile(): RamapResult<PublicProfile?>
+    suspend fun fetchMyProfile(): RamapResult<PublicProfile?>
 
     suspend fun fetchProfileAccess(userId: String): RamapResult<ProfileAccess>
 

@@ -1,4 +1,4 @@
-package com.peto.ramap.domain.model.community
+package com.peto.ramap.domain.model.review
 
 import kotlin.time.Instant
 

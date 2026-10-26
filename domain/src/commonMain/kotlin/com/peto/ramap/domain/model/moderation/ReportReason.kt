@@ -1,4 +1,4 @@
-package com.peto.ramap.domain.model.community
+package com.peto.ramap.domain.model.moderation
 
 enum class ReportReason {
     SPAM,

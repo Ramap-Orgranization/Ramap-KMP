@@ -1,19 +1,19 @@
 package com.peto.ramap.data.repository
 
 import com.peto.ramap.core.result.RamapResult
-import com.peto.ramap.data.datasource.community.CommunityDataSource
-import com.peto.ramap.domain.model.community.ProfileAccess
-import com.peto.ramap.domain.model.community.ProfileReview
-import com.peto.ramap.domain.model.community.ProfileReviewsPage
-import com.peto.ramap.domain.model.community.PublicProfile
-import com.peto.ramap.domain.model.community.PublicSavedShopsPage
+import com.peto.ramap.data.datasource.profile.UserProfileDataSource
+import com.peto.ramap.domain.model.profile.ProfileAccess
+import com.peto.ramap.domain.model.profile.ProfileReviewsPage
+import com.peto.ramap.domain.model.profile.PublicProfile
+import com.peto.ramap.domain.model.profile.PublicSavedShopsPage
+import com.peto.ramap.domain.model.review.ProfileReview
 import com.peto.ramap.domain.repository.UserProfileRepository
 import com.peto.ramap.network.execute.invokeRequest
 
 internal class DefaultUserProfileRepository(
-    private val dataSource: CommunityDataSource,
+    private val dataSource: UserProfileDataSource,
 ) : UserProfileRepository {
-    override suspend fun fetchMyCommunityProfile(): RamapResult<PublicProfile?> = invokeRequest { dataSource.fetchMyCommunityProfile().toDomain() }
+    override suspend fun fetchMyProfile(): RamapResult<PublicProfile?> = invokeRequest { dataSource.fetchMyProfile().toDomain() }
 
     override suspend fun fetchProfileAccess(userId: String): RamapResult<ProfileAccess> = invokeRequest { dataSource.fetchProfileAccess(userId).toDomain() }
 

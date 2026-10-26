@@ -1,18 +1,17 @@
 package com.peto.ramap.fake
 
-import com.peto.ramap.data.datasource.community.CommunityDataSource
-import com.peto.ramap.data.model.BlockedUserResponse
-import com.peto.ramap.data.model.MyCommunityProfileResponse
+import com.peto.ramap.data.datasource.profile.UserProfileDataSource
+import com.peto.ramap.data.model.MyProfileResponse
 import com.peto.ramap.data.model.ProfileAccessResponse
 import com.peto.ramap.data.model.ProfileReviewResponse
 import com.peto.ramap.data.model.ProfileReviewsPageResponse
 import com.peto.ramap.data.model.PublicSavedShopsPageResponse
 import com.peto.ramap.data.model.ReviewResponse
 
-internal class FakeCommunityDataSource(
+internal class FakeUserProfileDataSource(
     private val reviews: List<ProfileReviewResponse> = emptyList(),
     private val reviewError: Throwable? = null,
-) : CommunityDataSource {
+) : UserProfileDataSource {
     val requestedReviewPages = mutableListOf<Pair<String, Long>>()
 
     override suspend fun fetchProfileReviewsPage(
@@ -33,7 +32,7 @@ internal class FakeCommunityDataSource(
         return reviews.map { it.review }
     }
 
-    override suspend fun fetchMyCommunityProfile(): MyCommunityProfileResponse = MyCommunityProfileResponse()
+    override suspend fun fetchMyProfile(): MyProfileResponse = MyProfileResponse()
 
     override suspend fun fetchProfileAccess(userId: String): ProfileAccessResponse = ProfileAccessResponse(ProfileAccessResponse.UNAVAILABLE)
 
@@ -41,18 +40,4 @@ internal class FakeCommunityDataSource(
         userId: String,
         offset: Long,
     ): PublicSavedShopsPageResponse = PublicSavedShopsPageResponse(ProfileAccessResponse(ProfileAccessResponse.UNAVAILABLE))
-
-    override suspend fun fetchBlockedUsers(): List<BlockedUserResponse> = emptyList()
-
-    override suspend fun report(
-        targetType: String,
-        targetId: String,
-        reason: String,
-        details: String,
-    ) = Unit
-
-    override suspend fun changeBlock(
-        userId: String,
-        blocked: Boolean,
-    ) = Unit
 }

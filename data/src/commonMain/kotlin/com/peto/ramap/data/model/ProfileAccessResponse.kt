@@ -1,7 +1,7 @@
 package com.peto.ramap.data.model
 
-import com.peto.ramap.domain.model.community.FollowState
-import com.peto.ramap.domain.model.community.ProfileAccess
+import com.peto.ramap.domain.model.follow.FollowState
+import com.peto.ramap.domain.model.profile.ProfileAccess
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 

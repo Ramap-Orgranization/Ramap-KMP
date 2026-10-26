@@ -1,4 +1,6 @@
-package com.peto.ramap.domain.model.community
+package com.peto.ramap.domain.model.profile
+
+import com.peto.ramap.domain.model.follow.FollowState
 
 sealed interface ProfileAccess {
     data class Visible(

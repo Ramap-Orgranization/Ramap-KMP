@@ -1,6 +1,6 @@
 package com.peto.ramap.domain.model.review
 
-import com.peto.ramap.domain.model.community.ReviewAuthor
+import com.peto.ramap.domain.model.review.ReviewAuthor
 import com.peto.ramap.domain.model.review.change.ReviewChange
 import com.peto.ramap.domain.model.review.change.ReviewChangeReducer
 import com.peto.ramap.domain.model.review.change.ReviewOwnerCounts

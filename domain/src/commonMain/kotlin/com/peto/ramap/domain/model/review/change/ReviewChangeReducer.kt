@@ -1,12 +1,12 @@
 package com.peto.ramap.domain.model.review.change
 
-import com.peto.ramap.domain.model.community.ProfileReview
-import com.peto.ramap.domain.model.community.ReviewAuthor
-import com.peto.ramap.domain.model.community.ReviewModerationStatus
 import com.peto.ramap.domain.model.review.MyReview
 import com.peto.ramap.domain.model.review.MyReviewPhoto
 import com.peto.ramap.domain.model.review.MyReviewVisibility
+import com.peto.ramap.domain.model.review.ProfileReview
 import com.peto.ramap.domain.model.review.Review
+import com.peto.ramap.domain.model.review.ReviewAuthor
+import com.peto.ramap.domain.model.review.ReviewModerationStatus
 import com.peto.ramap.domain.model.review.ShopReviewsPage
 import kotlin.time.Clock
 import kotlin.time.Instant

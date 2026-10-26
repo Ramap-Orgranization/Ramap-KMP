@@ -1,12 +1,12 @@
 package com.peto.ramap.data.model
 
-import com.peto.ramap.domain.model.community.PublicProfile
+import com.peto.ramap.domain.model.profile.PublicProfile
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
 
 @Serializable
-internal data class MyCommunityProfileResponse(
+internal data class MyProfileResponse(
     @SerialName("user_id")
     val userId: String? = null,
     val nickname: String? = null,
