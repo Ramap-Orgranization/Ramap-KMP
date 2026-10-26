@@ -19,9 +19,9 @@ import androidx.compose.ui.unit.dp
 import com.peto.ramap.designsystem.button.AppButton
 import com.peto.ramap.designsystem.profile.ProfileAvatar
 import com.peto.ramap.designsystem.text.AppText
-import com.peto.ramap.domain.model.community.FollowAction
-import com.peto.ramap.domain.model.community.FollowList
-import com.peto.ramap.domain.model.community.PublicProfile
+import com.peto.ramap.domain.model.follow.FollowAction
+import com.peto.ramap.domain.model.follow.FollowList
+import com.peto.ramap.domain.model.profile.PublicProfile
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.ChromaticColor
 import com.peto.ramap.theme.CommonColor

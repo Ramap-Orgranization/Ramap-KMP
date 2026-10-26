@@ -1,14 +1,16 @@
-package com.peto.ramap.ui.main.community.contract
+package com.peto.ramap.ui.main.feed.contract
 
-import com.peto.ramap.domain.model.community.CommunityFeedCursor
-import com.peto.ramap.domain.model.community.ProfileReview
+import com.peto.ramap.domain.model.feed.ReviewFeedCursor
+import com.peto.ramap.domain.model.feed.ReviewFeedSort
+import com.peto.ramap.domain.model.review.ProfileReview
 import com.peto.ramap.domain.model.review.Review
 import com.peto.ramap.ui.loading.LoadState
 import com.peto.ramap.ui.loading.LoadableState
 
-data class CommunityUiState(
+data class FeedUiState(
     val reviews: List<ProfileReview> = emptyList(),
-    val nextCursor: CommunityFeedCursor? = null,
+    val sort: ReviewFeedSort = ReviewFeedSort.LATEST,
+    val nextCursor: ReviewFeedCursor? = null,
     val currentUserId: String? = null,
     val sessionResolved: Boolean = false,
     val hasLoaded: Boolean = false,
@@ -21,11 +23,11 @@ data class CommunityUiState(
     val unblockReview: Review? = null,
     val deleteReview: Review? = null,
     override val loadState: LoadState = LoadState(),
-) : LoadableState<CommunityUiState> {
-    val refreshing: Boolean get() = loadState.isLoading(CommunityLoadKey.Page)
-    val appending: Boolean get() = loadState.isLoading(CommunityLoadKey.Append)
-    val reporting: Boolean get() = loadState.isLoading(CommunityLoadKey.Report)
-    val unblocking: Boolean get() = loadState.isLoading(CommunityLoadKey.Unblock)
+) : LoadableState<FeedUiState> {
+    val refreshing: Boolean get() = loadState.isLoading(FeedLoadKey.Page)
+    val appending: Boolean get() = loadState.isLoading(FeedLoadKey.Append)
+    val reporting: Boolean get() = loadState.isLoading(FeedLoadKey.Report)
+    val unblocking: Boolean get() = loadState.isLoading(FeedLoadKey.Unblock)
 
     val isLoadingInitial: Boolean
         get() = !sessionResolved || (!hasLoaded && !failed)
@@ -42,7 +44,7 @@ data class CommunityUiState(
     val hasAppendError: Boolean
         get() = appendFailed
 
-    override fun withLoadingState(loadState: LoadState): CommunityUiState = copy(loadState = loadState)
+    override fun withLoadingState(loadState: LoadState): FeedUiState = copy(loadState = loadState)
 
-    fun clearAccess(): CommunityUiState = copy(revealed = emptyMap(), revealingId = null, reportReview = null, unblockReview = null, deleteReview = null)
+    fun clearAccess(): FeedUiState = copy(revealed = emptyMap(), revealingId = null, reportReview = null, unblockReview = null, deleteReview = null)
 }

@@ -1,10 +1,10 @@
 package com.peto.ramap.ui.review.other.contract
 
-import com.peto.ramap.domain.model.community.ProfileAccess
-import com.peto.ramap.domain.model.community.ProfileReview
-import com.peto.ramap.domain.model.community.PublicProfile
-import com.peto.ramap.domain.model.community.ReviewAuthor
+import com.peto.ramap.domain.model.profile.ProfileAccess
+import com.peto.ramap.domain.model.profile.PublicProfile
+import com.peto.ramap.domain.model.review.ProfileReview
 import com.peto.ramap.domain.model.review.Review
+import com.peto.ramap.domain.model.review.ReviewAuthor
 import com.peto.ramap.fixture.ramenShopFixture
 import com.peto.ramap.ui.loading.LoadState
 import kotlin.test.Test

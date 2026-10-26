@@ -1,8 +1,8 @@
 package com.peto.ramap.ui.main.my.contract
 
-import com.peto.ramap.domain.model.community.BlockedUser
-import com.peto.ramap.domain.model.community.PublicProfile
+import com.peto.ramap.domain.model.moderation.BlockedUser
 import com.peto.ramap.domain.model.profile.AccountProfile
+import com.peto.ramap.domain.model.profile.PublicProfile
 import com.peto.ramap.ui.loading.LoadState
 import com.peto.ramap.ui.loading.LoadableState
 

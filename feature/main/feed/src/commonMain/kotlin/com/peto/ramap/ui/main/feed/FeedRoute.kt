@@ -1,4 +1,4 @@
-package com.peto.ramap.ui.main.community
+package com.peto.ramap.ui.main.feed
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -14,18 +14,18 @@ import com.peto.ramap.designsystem.toast.ToastManager
 import com.peto.ramap.domain.model.auth.LoginType
 import com.peto.ramap.ui.base.ObserveAsEvents
 import com.peto.ramap.ui.login.rememberLoginGuideRequest
-import com.peto.ramap.ui.main.community.component.CommunityDialogs
-import com.peto.ramap.ui.main.community.contract.CommunitySideEffect
+import com.peto.ramap.ui.main.feed.component.FeedDialogs
+import com.peto.ramap.ui.main.feed.contract.FeedSideEffect
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
-fun CommunityRoute(
+fun FeedRoute(
     onOpenProfile: (String) -> Unit,
     onEditReview: (String, String) -> Unit,
     onLoginTypeSelected: (LoginType) -> Unit,
     shopDetailContent: @Composable (String, () -> Unit) -> Unit,
-    viewModel: CommunityViewModel = koinViewModel(),
+    viewModel: FeedViewModel = koinViewModel(),
     toastManager: ToastManager = koinInject(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -34,12 +34,12 @@ fun CommunityRoute(
     val requestLogin = rememberLoginGuideRequest(onLoginTypeSelected = onLoginTypeSelected, ownerKey = viewModel)
     ObserveAsEvents(viewModel.sideEffect) { effect ->
         when (effect) {
-            is CommunitySideEffect.LoginRequired -> requestLogin(effect.description)
-            is CommunitySideEffect.ShowToast -> toastManager.show(effect.data)
+            is FeedSideEffect.LoginRequired -> requestLogin(effect.description)
+            is FeedSideEffect.ShowToast -> toastManager.show(effect.data)
         }
     }
     Box(modifier = Modifier.fillMaxSize()) {
-        CommunityContent(
+        FeedContent(
             state = state,
             listState = listState,
             onIntent = viewModel::dispatch,
@@ -47,7 +47,7 @@ fun CommunityRoute(
             onOpenShop = { detailShopId = it },
             onEditReview = onEditReview,
         )
-        CommunityDialogs(state = state, onIntent = viewModel::dispatch)
+        FeedDialogs(state = state, onIntent = viewModel::dispatch)
         detailShopId?.let { shopId ->
             shopDetailContent(shopId) { detailShopId = null }
         }

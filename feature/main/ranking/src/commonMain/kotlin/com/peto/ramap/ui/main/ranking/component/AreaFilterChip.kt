@@ -21,6 +21,7 @@ import com.peto.ramap.theme.RamapTheme
 import org.jetbrains.compose.resources.painterResource
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.ic_keyboard_arrow_down
+import ramap.shared.generated.resources.ic_map_pin
 
 @Composable
 internal fun AreaFilterChip(
@@ -40,8 +41,14 @@ internal fun AreaFilterChip(
                 Modifier
                     .padding(horizontal = 10.dp, vertical = 7.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(2.dp),
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
         ) {
+            Icon(
+                painter = painterResource(Res.drawable.ic_map_pin),
+                contentDescription = null,
+                modifier = Modifier.size(14.dp),
+                tint = GrayColor.C500,
+            )
             AppText(text = label, style = AppTextStyle.B4, color = GrayColor.C500)
             Icon(
                 painter = painterResource(Res.drawable.ic_keyboard_arrow_down),

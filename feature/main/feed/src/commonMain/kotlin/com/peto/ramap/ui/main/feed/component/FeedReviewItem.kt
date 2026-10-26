@@ -1,4 +1,4 @@
-package com.peto.ramap.ui.main.community.component
+package com.peto.ramap.ui.main.feed.component
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
@@ -12,18 +12,18 @@ import com.peto.ramap.designsystem.component.RamenShopCompactSummary
 import com.peto.ramap.designsystem.review.ReviewCard
 import com.peto.ramap.designsystem.review.ReviewCardActions
 import com.peto.ramap.designsystem.review.ReviewCardHeader
-import com.peto.ramap.domain.model.community.ProfileReview
+import com.peto.ramap.domain.model.review.ProfileReview
 import com.peto.ramap.preview.RamenShopPreviewParameterProvider
 import com.peto.ramap.preview.ReviewPreviewParameterProvider
 import com.peto.ramap.theme.RamapTheme
-import com.peto.ramap.ui.main.community.contract.CommunityIntent
-import com.peto.ramap.ui.main.community.contract.CommunityUiState
+import com.peto.ramap.ui.main.feed.contract.FeedIntent
+import com.peto.ramap.ui.main.feed.contract.FeedUiState
 
 @Composable
-internal fun CommunityReviewItem(
+internal fun FeedReviewItem(
     row: ProfileReview,
-    state: CommunityUiState,
-    onIntent: (CommunityIntent) -> Unit,
+    state: FeedUiState,
+    onIntent: (FeedIntent) -> Unit,
     onOpenProfile: (String) -> Unit,
     onOpenShop: (String) -> Unit,
     onEditReview: (String, String) -> Unit,
@@ -34,12 +34,12 @@ internal fun CommunityReviewItem(
     val actions =
         ReviewCardActions(
             onOpenProfile = onOpenProfile.takeUnless { original.isBlocked },
-            onLike = { onIntent(CommunityIntent.ToggleLike(original)) }.takeIf { !original.isBlocked && !isOwner },
-            onReport = { onIntent(CommunityIntent.RequestReport(displayed)) }.takeIf { !isOwner && (!original.isBlocked || original.id in state.revealed) },
+            onLike = { onIntent(FeedIntent.ToggleLike(original)) }.takeIf { !original.isBlocked && !isOwner },
+            onReport = { onIntent(FeedIntent.RequestReport(displayed)) }.takeIf { !isOwner && (!original.isBlocked || original.id in state.revealed) },
             onEdit = { onEditReview(original.shopId, original.id) }.takeIf { isOwner },
-            onDelete = { onIntent(CommunityIntent.RequestDelete(original)) }.takeIf { isOwner },
-            onViewBlockedReview = { onIntent(CommunityIntent.Reveal(original)) }.takeIf { original.isBlocked },
-            onUnblockBlockedUser = { onIntent(CommunityIntent.RequestUnblock(original)) }.takeIf { original.isBlocked },
+            onDelete = { onIntent(FeedIntent.RequestDelete(original)) }.takeIf { isOwner },
+            onViewBlockedReview = { onIntent(FeedIntent.Reveal(original)) }.takeIf { original.isBlocked },
+            onUnblockBlockedUser = { onIntent(FeedIntent.RequestUnblock(original)) }.takeIf { original.isBlocked },
         )
     ReviewCard(
         review = displayed,
@@ -71,15 +71,15 @@ internal fun CommunityReviewItem(
 
 @Preview(showBackground = true)
 @Composable
-private fun CommunityReviewItemPreview() {
+private fun FeedReviewItemPreview() {
     val review = ReviewPreviewParameterProvider().reviewPreviewSamples.first()
     val shop = RamenShopPreviewParameterProvider().ramenShopPreviewSamples.first().copy(id = review.shopId)
     val row = ProfileReview(review = review, shop = shop)
     RamapTheme {
-        CommunityReviewItem(
+        FeedReviewItem(
             row = row,
             state =
-                CommunityUiState(
+                FeedUiState(
                     hasLoaded = true,
                     sessionResolved = true,
                     currentUserId = "my-user-id",

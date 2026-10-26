@@ -13,8 +13,8 @@ import androidx.compose.ui.unit.dp
 import com.peto.ramap.designsystem.component.LoadErrorContent
 import com.peto.ramap.designsystem.indicator.RamenLoadingIndicator
 import com.peto.ramap.designsystem.review.ReviewWriteCard
-import com.peto.ramap.domain.model.community.ReviewAuthor
 import com.peto.ramap.domain.model.review.Review
+import com.peto.ramap.domain.model.review.ReviewAuthor
 import com.peto.ramap.domain.model.review.ShopReviewsPage
 import com.peto.ramap.theme.RamapTheme
 import com.peto.ramap.ui.shop.review.contract.ReviewsUiState

@@ -11,7 +11,6 @@ import com.peto.ramap.domain.model.auth.LoginSessionState
 import com.peto.ramap.domain.model.auth.LoginType
 import com.peto.ramap.domain.model.businesshour.BusinessHours
 import com.peto.ramap.domain.model.businesshour.BusinessHoursDay
-import com.peto.ramap.domain.model.community.ReviewAuthor
 import com.peto.ramap.domain.model.menu.ShopMenu
 import com.peto.ramap.domain.model.personalization.Personalization
 import com.peto.ramap.domain.model.place.PlaceSearchErrorCode
@@ -22,6 +21,7 @@ import com.peto.ramap.domain.model.place.PlaceSearchResults
 import com.peto.ramap.domain.model.report.ShopInformationField
 import com.peto.ramap.domain.model.report.ShopInformationReport
 import com.peto.ramap.domain.model.review.Review
+import com.peto.ramap.domain.model.review.ReviewAuthor
 import com.peto.ramap.domain.model.review.ShopReviewsPage
 import com.peto.ramap.domain.model.shop.Category
 import com.peto.ramap.domain.model.shop.Location
@@ -455,13 +455,13 @@ class MapShopSectionsRegressionTest {
                     author = ReviewAuthor("blocked-author", ""),
                     isBlocked = true,
                 )
-            val community = FakeUserModerationRepository()
+            val moderation = FakeUserModerationRepository()
             val viewModel =
                 mapViewModel(
                     ramenShopRepository = FakeRamenShopRepository(fetchByIdsResult = RamenShops(mapOf(shop.id to shop))),
                     loginRepository = loggedInRepository(),
                     profileRepository = FakeProfileRepository("viewer"),
-                    communityRepository = community,
+                    moderationRepository = moderation,
                     detailUseCase = blockedReviewDetailUseCase(shop, blocked),
                 )
 
@@ -470,7 +470,7 @@ class MapShopSectionsRegressionTest {
             runCurrent()
             viewModel.dispatch(ReviewsIntent.OnBlockedReviewUnblockRequested(blocked))
             runCurrent()
-            assertEquals(emptyList(), community.unblockedUserIds)
+            assertEquals(emptyList(), moderation.unblockedUserIds)
             viewModel.dispatch(ReviewsIntent.OnBlockedReviewUnblockDismissed)
             runCurrent()
             assertEquals(null, viewModel.uiState.value.pendingUnblockReview)
@@ -478,7 +478,7 @@ class MapShopSectionsRegressionTest {
             viewModel.dispatch(ReviewsIntent.OnBlockedReviewUnblockRequested(blocked))
             viewModel.dispatch(ReviewsIntent.OnBlockedReviewUnblockConfirmed)
             runCurrent()
-            assertEquals(listOf("blocked-author"), community.unblockedUserIds)
+            assertEquals(listOf("blocked-author"), moderation.unblockedUserIds)
             assertEquals(null, viewModel.uiState.value.pendingUnblockReview)
         }
 
@@ -3533,7 +3533,7 @@ private fun TestScope.mapViewModel(
     notificationSettingsRepository: FakeNotificationSettingsRepository = FakeNotificationSettingsRepository(),
     detailUseCase: FetchShopOverviewUseCase? = null,
     reviewRepository: ReviewRepository? = null,
-    communityRepository: FakeUserModerationRepository = FakeUserModerationRepository(),
+    moderationRepository: FakeUserModerationRepository = FakeUserModerationRepository(),
     profileRepository: FakeProfileRepository = FakeProfileRepository(null),
     reviewChanges: FakeReviewChangeStore = FakeReviewChangeStore(),
     menuRepository: ShopMenuRepository = FakeMapShopMenuRepository(),
@@ -3599,7 +3599,7 @@ private fun TestScope.mapViewModel(
         overviewQuery = overview,
         profile = effectiveProfile,
         reviews = reviews,
-        community = communityRepository,
+        moderation = moderationRepository,
         changes = reviewChanges,
         menus = menuRepository,
     )

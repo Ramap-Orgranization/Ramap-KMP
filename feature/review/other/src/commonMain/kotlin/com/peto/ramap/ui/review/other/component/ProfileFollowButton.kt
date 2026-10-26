@@ -7,7 +7,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.peto.ramap.designsystem.button.AppButton
-import com.peto.ramap.domain.model.community.FollowState
+import com.peto.ramap.domain.model.follow.FollowState
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.ChromaticColor
 import com.peto.ramap.theme.CommonColor
