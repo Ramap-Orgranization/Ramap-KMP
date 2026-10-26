@@ -1,4 +1,4 @@
-Lucide Icons — trophy, messages-square
+Lucide Icons — trophy, messages-square, map-pin
 https://github.com/lucide-icons/lucide
 
 ISC License

@@ -1,6 +1,6 @@
 package com.peto.ramap.designsystem.resource
 
-import com.peto.ramap.domain.model.community.ReportReason
+import com.peto.ramap.domain.model.moderation.ReportReason
 import org.jetbrains.compose.resources.StringResource
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.review_reason_harassment

@@ -1,8 +1,8 @@
 package com.peto.ramap.fake
 
 import com.peto.ramap.core.result.RamapResult
-import com.peto.ramap.domain.model.community.BlockedUser
-import com.peto.ramap.domain.model.community.ReportReason
+import com.peto.ramap.domain.model.moderation.BlockedUser
+import com.peto.ramap.domain.model.moderation.ReportReason
 import com.peto.ramap.domain.repository.UserModerationRepository
 
 class FakeUserModerationRepository(

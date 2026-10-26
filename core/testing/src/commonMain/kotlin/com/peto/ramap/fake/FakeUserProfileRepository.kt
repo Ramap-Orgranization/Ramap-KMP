@@ -1,23 +1,23 @@
 package com.peto.ramap.fake
 
 import com.peto.ramap.core.result.RamapResult
-import com.peto.ramap.domain.model.community.ProfileAccess
-import com.peto.ramap.domain.model.community.ProfileReview
-import com.peto.ramap.domain.model.community.PublicProfile
-import com.peto.ramap.domain.model.community.PublicSavedShopsPage
+import com.peto.ramap.domain.model.profile.ProfileAccess
+import com.peto.ramap.domain.model.profile.PublicProfile
+import com.peto.ramap.domain.model.profile.PublicSavedShopsPage
+import com.peto.ramap.domain.model.review.ProfileReview
 import com.peto.ramap.domain.repository.UserProfileRepository
 
 class FakeUserProfileRepository : UserProfileRepository {
-    override suspend fun fetchMyCommunityProfile(): RamapResult<PublicProfile?> = RamapResult.Success(PublicProfile("me", "나"))
+    override suspend fun fetchMyProfile(): RamapResult<PublicProfile?> = RamapResult.Success(PublicProfile("me", "나"))
 
     override suspend fun fetchProfileAccess(userId: String): RamapResult<ProfileAccess> = RamapResult.Success(ProfileAccess.Unavailable)
 
     override suspend fun fetchProfileReviewsPage(
         userId: String,
         offset: Long,
-    ): RamapResult<com.peto.ramap.domain.model.community.ProfileReviewsPage> =
+    ): RamapResult<com.peto.ramap.domain.model.profile.ProfileReviewsPage> =
         RamapResult.Success(
-            com.peto.ramap.domain.model.community
+            com.peto.ramap.domain.model.profile
                 .ProfileReviewsPage(ProfileAccess.Unavailable, emptyList()),
         )
 
