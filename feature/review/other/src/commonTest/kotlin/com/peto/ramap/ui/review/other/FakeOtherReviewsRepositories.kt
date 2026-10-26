@@ -2,11 +2,11 @@ package com.peto.ramap.ui.review.other
 
 import com.peto.ramap.core.result.RamapError
 import com.peto.ramap.core.result.RamapResult
-import com.peto.ramap.domain.model.community.FollowState
-import com.peto.ramap.domain.model.community.ProfileAccess
-import com.peto.ramap.domain.model.community.ProfileReview
-import com.peto.ramap.domain.model.community.PublicProfile
-import com.peto.ramap.domain.model.community.PublicSavedShopsPage
+import com.peto.ramap.domain.model.follow.FollowState
+import com.peto.ramap.domain.model.profile.ProfileAccess
+import com.peto.ramap.domain.model.profile.PublicProfile
+import com.peto.ramap.domain.model.profile.PublicSavedShopsPage
+import com.peto.ramap.domain.model.review.ProfileReview
 import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.domain.repository.UserModerationRepository
 import com.peto.ramap.domain.repository.UserProfileRepository
@@ -14,7 +14,7 @@ import com.peto.ramap.fake.FakeUserModerationRepository
 import com.peto.ramap.fake.FakeUserProfileRepository
 import kotlinx.coroutines.CompletableDeferred
 
-class FakeOtherReviewsCommunity :
+class FakeOtherReviewsRepositories :
     UserProfileRepository by FakeUserProfileRepository(),
     UserModerationRepository by FakeUserModerationRepository() {
     var profile: PublicProfile? = PublicProfile("author", "라멘팬")
@@ -78,13 +78,13 @@ class FakeOtherReviewsCommunity :
     override suspend fun fetchProfileReviewsPage(
         userId: String,
         offset: Long,
-    ): RamapResult<com.peto.ramap.domain.model.community.ProfileReviewsPage> {
+    ): RamapResult<com.peto.ramap.domain.model.profile.ProfileReviewsPage> {
         val result = fetchUserReviews(userId, offset)
         return when (result) {
             is RamapResult.Error -> result
             is RamapResult.Success ->
                 RamapResult.Success(
-                    com.peto.ramap.domain.model.community.ProfileReviewsPage(
+                    com.peto.ramap.domain.model.profile.ProfileReviewsPage(
                         profileAccess(userId),
                         result.data,
                     ),

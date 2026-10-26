@@ -5,8 +5,8 @@ import androidx.compose.ui.Modifier
 import com.peto.ramap.designsystem.review.ReviewCard
 import com.peto.ramap.designsystem.review.ReviewCardActions
 import com.peto.ramap.designsystem.review.ReviewCardHeader
-import com.peto.ramap.domain.model.community.ReviewModerationStatus
 import com.peto.ramap.domain.model.review.Review
+import com.peto.ramap.domain.model.review.ReviewModerationStatus
 import com.peto.ramap.ui.shop.review.contract.ReviewsUiState
 import com.peto.ramap.ui.shop.review.model.ReviewActions
 

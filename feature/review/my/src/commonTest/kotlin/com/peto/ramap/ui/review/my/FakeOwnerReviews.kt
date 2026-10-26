@@ -2,7 +2,6 @@ package com.peto.ramap.ui.review.my
 
 import com.peto.ramap.core.result.RamapError
 import com.peto.ramap.core.result.RamapResult
-import com.peto.ramap.domain.model.community.ReviewModerationStatus
 import com.peto.ramap.domain.model.review.EditableReview
 import com.peto.ramap.domain.model.review.MyReview
 import com.peto.ramap.domain.model.review.MyReviewVisibility
@@ -10,6 +9,7 @@ import com.peto.ramap.domain.model.review.MyReviewsPage
 import com.peto.ramap.domain.model.review.Review
 import com.peto.ramap.domain.model.review.ReviewImage
 import com.peto.ramap.domain.model.review.ReviewLike
+import com.peto.ramap.domain.model.review.ReviewModerationStatus
 import com.peto.ramap.domain.model.review.ShopReviewsPage
 import com.peto.ramap.domain.repository.ReviewRepository
 import kotlinx.coroutines.CompletableDeferred

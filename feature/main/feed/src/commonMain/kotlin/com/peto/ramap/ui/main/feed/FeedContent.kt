@@ -1,4 +1,4 @@
-package com.peto.ramap.ui.main.community
+package com.peto.ramap.ui.main.feed
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
@@ -15,7 +15,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -30,17 +33,18 @@ import com.peto.ramap.designsystem.indicator.RamenLoadingIndicator
 import com.peto.ramap.designsystem.review.ReviewEmptyContent
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.designsystem.topbar.CommonTopBar
-import com.peto.ramap.domain.model.community.ProfileReview
+import com.peto.ramap.domain.model.review.ProfileReview
 import com.peto.ramap.preview.RamenShopPreviewParameterProvider
 import com.peto.ramap.preview.ReviewPreviewParameterProvider
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.RamapTheme
-import com.peto.ramap.ui.main.community.component.CommunityReviewItem
-import com.peto.ramap.ui.main.community.component.CommunitySkeleton
-import com.peto.ramap.ui.main.community.contract.CommunityIntent
-import com.peto.ramap.ui.main.community.contract.CommunityUiState
+import com.peto.ramap.ui.main.feed.component.FeedReviewItem
+import com.peto.ramap.ui.main.feed.component.FeedSkeleton
+import com.peto.ramap.ui.main.feed.component.FeedSortSelector
+import com.peto.ramap.ui.main.feed.contract.FeedIntent
+import com.peto.ramap.ui.main.feed.contract.FeedUiState
 import com.peto.ramap.ui.paging.ObserveLoadMoreNearListEnd
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
@@ -49,23 +53,27 @@ import ramap.shared.generated.resources.ic_arrow_up
 import ramap.shared.generated.resources.scroll_to_top
 import ramap.shared.generated.resources.shop_review_empty_title
 import ramap.shared.generated.resources.shop_review_load_failure_message
-import ramap.shared.generated.resources.top_level_tab_community
+import ramap.shared.generated.resources.top_level_tab_feed
 
 @Composable
-internal fun CommunityContent(
-    state: CommunityUiState,
+internal fun FeedContent(
+    state: FeedUiState,
     listState: LazyListState,
-    onIntent: (CommunityIntent) -> Unit,
+    onIntent: (FeedIntent) -> Unit,
     onOpenProfile: (String) -> Unit,
     onOpenShop: (String) -> Unit,
     onEditReview: (String, String) -> Unit,
 ) {
+    val pullToRefreshState = rememberPullToRefreshState()
+    LaunchedEffect(state.sort) {
+        listState.scrollToItem(0)
+    }
     ObserveLoadMoreNearListEnd(
         listState = listState,
         itemThreshold = PREFETCH_ITEM_THRESHOLD,
         hasMore = state.nextCursor != null,
         isLoading = state.appending,
-        onLoadMore = { onIntent(CommunityIntent.LoadMore) },
+        onLoadMore = { onIntent(FeedIntent.LoadMore) },
     )
     val coroutineScope = rememberCoroutineScope()
     val showScrollToTop by remember {
@@ -75,16 +83,33 @@ internal fun CommunityContent(
     }
     Box(modifier = Modifier.fillMaxSize().statusBarsPadding()) {
         Column(modifier = Modifier.fillMaxSize()) {
-            CommonTopBar(title = stringResource(Res.string.top_level_tab_community), left = {})
+            CommonTopBar(title = stringResource(Res.string.top_level_tab_feed), left = {})
+            Box(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
+                FeedSortSelector(
+                    selected = state.sort,
+                    onSelect = { onIntent(FeedIntent.SelectSort(it)) },
+                    modifier = Modifier.align(Alignment.CenterEnd),
+                )
+            }
             PullToRefreshBox(
                 isRefreshing = state.isRefreshing,
-                onRefresh = { onIntent(CommunityIntent.Refresh) },
+                onRefresh = { onIntent(FeedIntent.Refresh) },
                 modifier = Modifier.weight(1f),
+                state = pullToRefreshState,
+                indicator = {
+                    PullToRefreshDefaults.Indicator(
+                        state = pullToRefreshState,
+                        isRefreshing = state.isRefreshing,
+                        modifier = Modifier.align(Alignment.TopCenter),
+                        containerColor = CommonColor.White,
+                        color = CommonColor.Black,
+                    )
+                },
             ) {
                 LazyColumn(state = listState, modifier = Modifier.fillMaxSize()) {
                     if (state.isLoadingInitial) {
                         item(key = "initial_loading") {
-                            CommunitySkeleton(modifier = Modifier.fillMaxWidth())
+                            FeedSkeleton(modifier = Modifier.fillMaxWidth())
                         }
                     }
                     if (state.isEmpty) {
@@ -96,7 +121,7 @@ internal fun CommunityContent(
                         }
                     }
                     items(items = state.reviews, key = { it.review.id }) { row ->
-                        CommunityReviewItem(
+                        FeedReviewItem(
                             row = row,
                             state = state,
                             onIntent = onIntent,
@@ -117,7 +142,7 @@ internal fun CommunityContent(
                                     style = AppTextStyle.B1,
                                     color = GrayColor.C300,
                                 )
-                                RetryButton(onClick = { onIntent(CommunityIntent.Retry) })
+                                RetryButton(onClick = { onIntent(FeedIntent.Retry) })
                             }
                         }
                     }
@@ -152,9 +177,9 @@ internal fun CommunityContent(
     }
 }
 
-@Preview(name = "커뮤니티 피드", showBackground = true)
+@Preview(name = "피드 피드", showBackground = true)
 @Composable
-private fun CommunityContentPreview() {
+private fun FeedContentPreview() {
     val reviews =
         ReviewPreviewParameterProvider().reviewPreviewSamples.mapIndexed { index, review ->
             ProfileReview(
@@ -163,9 +188,9 @@ private fun CommunityContentPreview() {
             )
         }
     RamapTheme {
-        CommunityContent(
+        FeedContent(
             state =
-                CommunityUiState(
+                FeedUiState(
                     reviews = reviews,
                     hasLoaded = true,
                     sessionResolved = true,
@@ -180,13 +205,13 @@ private fun CommunityContentPreview() {
     }
 }
 
-@Preview(name = "커뮤니티 로딩", showBackground = true)
+@Preview(name = "피드 로딩", showBackground = true)
 @Composable
-private fun CommunityContentLoadingPreview() {
+private fun FeedContentLoadingPreview() {
     RamapTheme {
-        CommunityContent(
+        FeedContent(
             state =
-                CommunityUiState(
+                FeedUiState(
                     hasLoaded = false,
                     sessionResolved = false,
                 ),
@@ -199,13 +224,13 @@ private fun CommunityContentLoadingPreview() {
     }
 }
 
-@Preview(name = "커뮤니티 비어있음", showBackground = true)
+@Preview(name = "피드 비어있음", showBackground = true)
 @Composable
-private fun CommunityContentEmptyPreview() {
+private fun FeedContentEmptyPreview() {
     RamapTheme {
-        CommunityContent(
+        FeedContent(
             state =
-                CommunityUiState(
+                FeedUiState(
                     reviews = emptyList(),
                     hasLoaded = true,
                     sessionResolved = true,
@@ -219,13 +244,13 @@ private fun CommunityContentEmptyPreview() {
     }
 }
 
-@Preview(name = "커뮤니티 오류", showBackground = true)
+@Preview(name = "피드 오류", showBackground = true)
 @Composable
-private fun CommunityContentFailurePreview() {
+private fun FeedContentFailurePreview() {
     RamapTheme {
-        CommunityContent(
+        FeedContent(
             state =
-                CommunityUiState(
+                FeedUiState(
                     reviews = emptyList(),
                     hasLoaded = true,
                     sessionResolved = true,

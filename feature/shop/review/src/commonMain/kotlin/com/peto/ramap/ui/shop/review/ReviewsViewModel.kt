@@ -4,7 +4,7 @@ import androidx.lifecycle.viewModelScope
 import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.auth.LoginSessionState
-import com.peto.ramap.domain.model.community.ReportReason
+import com.peto.ramap.domain.model.moderation.ReportReason
 import com.peto.ramap.domain.model.review.Review
 import com.peto.ramap.domain.model.review.ReviewLike
 import com.peto.ramap.domain.model.review.ShopReviewsPage

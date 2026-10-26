@@ -13,9 +13,9 @@ import com.peto.ramap.ui.account.di.accountModule
 import com.peto.ramap.ui.bookmark.importation.di.importationModule
 import com.peto.ramap.ui.bookmark.list.di.bookmarkListModule
 import com.peto.ramap.ui.hidden.di.hiddenModule
-import com.peto.ramap.ui.main.community.di.communityModule
 import com.peto.ramap.ui.main.event.detail.di.eventDetailModule
 import com.peto.ramap.ui.main.event.list.di.eventsModule
+import com.peto.ramap.ui.main.feed.di.feedModule
 import com.peto.ramap.ui.main.map.di.mapModule
 import com.peto.ramap.ui.main.my.di.myTabModule
 import com.peto.ramap.ui.main.notice.di.noticeModule
@@ -51,7 +51,7 @@ internal val appModule =
             mapModule,
             importationModule,
             rankingModule,
-            communityModule,
+            feedModule,
             notificationSettingsModule,
             reportModule,
             myTabModule,

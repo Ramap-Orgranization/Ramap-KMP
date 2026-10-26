@@ -1,4 +1,4 @@
-package com.peto.ramap.ui.main.community.component
+package com.peto.ramap.ui.main.feed.component
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -29,21 +29,21 @@ import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.RamapTheme
 
 @Composable
-internal fun CommunitySkeleton(
+internal fun FeedSkeleton(
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier.fillMaxWidth().background(CommonColor.White)) {
         repeat(2) {
-            CommunityItemSkeleton()
+            FeedItemSkeleton()
         }
     }
 }
 
 @Composable
-private fun CommunityItemSkeleton() {
+private fun FeedItemSkeleton() {
     Column(modifier = Modifier.fillMaxWidth()) {
-        CommunityAuthorSkeleton()
-        CommunityShopSkeleton()
+        FeedAuthorSkeleton()
+        FeedShopSkeleton()
         Spacer(modifier = Modifier.height(5.dp))
         LazyRow(
             modifier = Modifier.fillMaxWidth(),
@@ -65,14 +65,14 @@ private fun CommunityItemSkeleton() {
             )
         }
         Spacer(modifier = Modifier.height(10.dp))
-        CommunityFooterSkeleton()
+        FeedFooterSkeleton()
         Spacer(modifier = Modifier.height(4.dp))
         HorizontalDivider(color = GrayColor.C100)
     }
 }
 
 @Composable
-private fun CommunityAuthorSkeleton() {
+private fun FeedAuthorSkeleton() {
     Row(
         modifier = Modifier.fillMaxWidth().padding(start = 16.dp, top = 16.dp, end = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -98,7 +98,7 @@ private fun CommunityAuthorSkeleton() {
 }
 
 @Composable
-private fun CommunityShopSkeleton() {
+private fun FeedShopSkeleton() {
     Row(
         modifier =
             Modifier
@@ -125,7 +125,7 @@ private fun CommunityShopSkeleton() {
 }
 
 @Composable
-private fun CommunityFooterSkeleton() {
+private fun FeedFooterSkeleton() {
     Row(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -146,8 +146,8 @@ private fun CommunityFooterSkeleton() {
 
 @Preview(showBackground = true)
 @Composable
-private fun CommunitySkeletonPreview() {
+private fun FeedSkeletonPreview() {
     RamapTheme {
-        CommunitySkeleton()
+        FeedSkeleton()
     }
 }

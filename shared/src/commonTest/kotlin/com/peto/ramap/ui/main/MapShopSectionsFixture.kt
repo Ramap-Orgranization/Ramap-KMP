@@ -51,7 +51,7 @@ class MapShopSectionsFixture(
     private val overviewQuery: FetchShopOverviewUseCase,
     private val profile: ProfileRepository,
     private val reviews: ReviewRepository,
-    private val community: UserModerationRepository,
+    private val moderation: UserModerationRepository,
     private val changes: ReviewChangeStore,
     private val menus: ShopMenuRepository,
 ) {
@@ -80,7 +80,7 @@ class MapShopSectionsFixture(
         val overviewVm = OverviewViewModel(login, reports, personalization, overviewQuery, FakeMapSearchHistoryStorage(), ShopAnalytics(FakeAnalyticsTracker()), SignInUseCase(login, LoginAnalytics(FakeAnalyticsTracker(), FakeCrashReporter())))
         val menuVm = ShopMenuViewModel(menus)
         val reducer = ReviewChangeReducer()
-        val reviewVm = ReviewsViewModel(reviews, community, profile, login, changes, reducer, FeatchShopReviewsUseCase(reviews, changes, reducer, ShopReviewCache(changes, reducer)))
+        val reviewVm = ReviewsViewModel(reviews, moderation, profile, login, changes, reducer, FeatchShopReviewsUseCase(reviews, changes, reducer, ShopReviewCache(changes, reducer)))
         overview = overviewVm
         menu = menuVm
         review = reviewVm

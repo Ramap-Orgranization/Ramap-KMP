@@ -25,8 +25,8 @@ import com.peto.ramap.designsystem.review.ReviewPage
 import com.peto.ramap.designsystem.tab.AppSegmentedTab
 import com.peto.ramap.designsystem.tab.AppSegmentedTabs
 import com.peto.ramap.designsystem.text.AppText
-import com.peto.ramap.domain.model.community.FollowAction
-import com.peto.ramap.domain.model.community.FollowList
+import com.peto.ramap.domain.model.follow.FollowAction
+import com.peto.ramap.domain.model.follow.FollowList
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor

@@ -25,8 +25,8 @@ import com.peto.ramap.designsystem.button.AppButton
 import com.peto.ramap.designsystem.dialog.CommonDialog
 import com.peto.ramap.designsystem.profile.ProfileAvatar
 import com.peto.ramap.designsystem.text.AppText
-import com.peto.ramap.domain.model.community.BlockedUser
-import com.peto.ramap.domain.model.community.PublicProfile
+import com.peto.ramap.domain.model.moderation.BlockedUser
+import com.peto.ramap.domain.model.profile.PublicProfile
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor

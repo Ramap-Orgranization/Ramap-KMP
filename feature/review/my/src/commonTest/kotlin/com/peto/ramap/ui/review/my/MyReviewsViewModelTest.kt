@@ -173,7 +173,7 @@ class MyReviewsViewModelTest {
                         "리뷰 본문",
                         "2020",
                         author =
-                            com.peto.ramap.domain.model.community
+                            com.peto.ramap.domain.model.review
                                 .ReviewAuthor("owner", "작성자"),
                     )
             store.publish(
@@ -237,7 +237,7 @@ class MyReviewsViewModelTest {
             val canonical =
                 deleted.review.copy(
                     author =
-                        com.peto.ramap.domain.model.community
+                        com.peto.ramap.domain.model.review
                             .ReviewAuthor("owner", "작성자"),
                 )
             store.publish(

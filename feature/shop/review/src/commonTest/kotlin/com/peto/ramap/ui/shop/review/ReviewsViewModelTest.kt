@@ -4,8 +4,8 @@ import com.peto.ramap.core.result.RamapError
 import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.coroutinesTest
 import com.peto.ramap.domain.model.auth.LoginSessionState
-import com.peto.ramap.domain.model.community.ReviewAuthor
 import com.peto.ramap.domain.model.review.Review
+import com.peto.ramap.domain.model.review.ReviewAuthor
 import com.peto.ramap.domain.model.review.ShopReviewCache
 import com.peto.ramap.domain.model.review.ShopReviewsPage
 import com.peto.ramap.domain.model.review.change.ReviewChange

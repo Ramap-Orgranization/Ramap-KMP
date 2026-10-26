@@ -16,9 +16,9 @@ import com.peto.ramap.ui.bookmark.importation.ImportationGuideRoute
 import com.peto.ramap.ui.bookmark.importation.ImportationRoute
 import com.peto.ramap.ui.bookmark.list.BookmarkedShopListRoute
 import com.peto.ramap.ui.hidden.HiddenShopListRoute
-import com.peto.ramap.ui.main.community.CommunityRoute
 import com.peto.ramap.ui.main.event.detail.EventDetailRoute
 import com.peto.ramap.ui.main.event.list.EventsRoute
+import com.peto.ramap.ui.main.feed.FeedRoute
 import com.peto.ramap.ui.main.map.MapRoute
 import com.peto.ramap.ui.main.my.MyTabRoute
 import com.peto.ramap.ui.main.notice.OperatingNoticeRoute
@@ -138,8 +138,8 @@ internal fun NavigationGraph(
                 onLoginClick = onLoginTypeSelected,
             )
         },
-        communityScreen = {
-            CommunityRoute(
+        feedScreen = {
+            FeedRoute(
                 onOpenProfile = { userId -> openProfile(userId, true) },
                 onEditReview = { shopId, reviewId -> onOpenReviewEditOverlay(shopId, reviewId) },
                 onLoginTypeSelected = onLoginTypeSelected,
@@ -149,7 +149,7 @@ internal fun NavigationGraph(
                         onDismiss = onDismiss,
                         onShowOnMap = { selectedShopId ->
                             onDismiss()
-                            navigationState.showShopOnMap(shopId = selectedShopId, returnTab = TabStatus.COMMUNITY)
+                            navigationState.showShopOnMap(shopId = selectedShopId, returnTab = TabStatus.FEED)
                         },
                         onReviewNavigate = onOpenReviewWriteOverlay,
                         onEditReview = { selectedShopId, reviewId -> onOpenReviewEditOverlay(selectedShopId, reviewId) },

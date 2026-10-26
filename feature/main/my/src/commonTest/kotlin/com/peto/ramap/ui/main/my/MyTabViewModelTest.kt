@@ -4,10 +4,10 @@ import app.cash.turbine.test
 import com.peto.ramap.core.result.RamapError
 import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.coroutinesTest
-import com.peto.ramap.domain.model.community.BlockedUser
-import com.peto.ramap.domain.model.community.PublicProfile
+import com.peto.ramap.domain.model.moderation.BlockedUser
 import com.peto.ramap.domain.model.personalization.Personalization
 import com.peto.ramap.domain.model.profile.AccountProfile
+import com.peto.ramap.domain.model.profile.PublicProfile
 import com.peto.ramap.fake.FakeFollowRepository
 import com.peto.ramap.fake.FakePersonalizationRepository
 import com.peto.ramap.fake.FakeReviewChangeStore
@@ -55,18 +55,18 @@ class MyTabViewModelTest {
         coroutinesTest {
             val profiles = FakeProfileRepository()
             val reviews = FakeMyTabReviewRepository(totalCount = 7)
-            val community =
+            val moderation =
                 FakeUserModerationRepository(
                     blockedUsersResult = RamapResult.Success(listOf(blockedUser("user1", "차단사용자1"))),
                 )
-            val viewModel = MyTabViewModel(profiles, community, FakePersonalizationRepository(), reviews, FakeFollowRepository(), changes = FakeReviewChangeStore())
+            val viewModel = MyTabViewModel(profiles, moderation, FakePersonalizationRepository(), reviews, FakeFollowRepository(), changes = FakeReviewChangeStore())
             runCurrent()
 
             assertEquals(7, viewModel.uiState.value.reviewCount)
             assertEquals(1, viewModel.uiState.value.blockedUserCount)
 
             reviews.totalCount = 8
-            community.blockedUsersResult = RamapResult.Success(emptyList())
+            moderation.blockedUsersResult = RamapResult.Success(emptyList())
             viewModel.dispatch(MyTabIntent.Refresh)
             runCurrent()
 
@@ -270,11 +270,11 @@ class MyTabViewModelTest {
     fun `차단한 사용자가 있으면 대화상자를 열고 목록을 로드한다`() =
         coroutinesTest {
             val profiles = FakeProfileRepository()
-            val community =
+            val moderation =
                 FakeUserModerationRepository(
                     blockedUsersResult = RamapResult.Success(listOf(blockedUser("user1", "차단사용자1"))),
                 )
-            val viewModel = MyTabViewModel(profiles, community, FakePersonalizationRepository(), FakeMyTabReviewRepository(), FakeFollowRepository(), changes = FakeReviewChangeStore())
+            val viewModel = MyTabViewModel(profiles, moderation, FakePersonalizationRepository(), FakeMyTabReviewRepository(), FakeFollowRepository(), changes = FakeReviewChangeStore())
             runCurrent()
 
             viewModel.sideEffect.test {
@@ -310,8 +310,8 @@ class MyTabViewModelTest {
     fun `차단한 사용자가 없으면 토스트 메시지를 표시하고 대화상자를 열지 않는다`() =
         coroutinesTest {
             val profiles = FakeProfileRepository()
-            val community = FakeUserModerationRepository(blockedUsersResult = RamapResult.Success(emptyList()))
-            val viewModel = MyTabViewModel(profiles, community, FakePersonalizationRepository(), FakeMyTabReviewRepository(), FakeFollowRepository(), changes = FakeReviewChangeStore())
+            val moderation = FakeUserModerationRepository(blockedUsersResult = RamapResult.Success(emptyList()))
+            val viewModel = MyTabViewModel(profiles, moderation, FakePersonalizationRepository(), FakeMyTabReviewRepository(), FakeFollowRepository(), changes = FakeReviewChangeStore())
             runCurrent()
 
             viewModel.sideEffect.test {
@@ -331,8 +331,8 @@ class MyTabViewModelTest {
     fun `차단 해제 확인 후 목록과 차단 인원을 갱신한다`() =
         coroutinesTest {
             val users = listOf(blockedUser("user1", "첫 사용자"), blockedUser("user2", "둘째 사용자"))
-            val community = FakeUserModerationRepository(RamapResult.Success(users))
-            val viewModel = MyTabViewModel(FakeProfileRepository(), community, FakePersonalizationRepository(), FakeMyTabReviewRepository(), FakeFollowRepository(), changes = FakeReviewChangeStore())
+            val moderation = FakeUserModerationRepository(RamapResult.Success(users))
+            val viewModel = MyTabViewModel(FakeProfileRepository(), moderation, FakePersonalizationRepository(), FakeMyTabReviewRepository(), FakeFollowRepository(), changes = FakeReviewChangeStore())
             runCurrent()
 
             viewModel.dispatch(MyTabIntent.OpenBlockedUsers)
@@ -344,11 +344,11 @@ class MyTabViewModelTest {
                 viewModel.uiState.value.pendingUnblockUser
                     ?.nickname,
             )
-            assertTrue(community.unblockedUserIds.isEmpty())
+            assertTrue(moderation.unblockedUserIds.isEmpty())
 
             viewModel.dispatch(MyTabIntent.ConfirmUnblock)
             runCurrent()
-            assertEquals(listOf("user1"), community.unblockedUserIds)
+            assertEquals(listOf("user1"), moderation.unblockedUserIds)
             assertEquals(
                 listOf("user2"),
                 viewModel.uiState.value.blockedUsers
@@ -366,11 +366,11 @@ class MyTabViewModelTest {
     fun `마지막 사용자를 차단 해제하면 목록 대화상자를 닫는다`() =
         coroutinesTest {
             val user = blockedUser("user1", "첫 사용자")
-            val community = FakeUserModerationRepository(RamapResult.Success(listOf(user)))
+            val moderation = FakeUserModerationRepository(RamapResult.Success(listOf(user)))
             val viewModel =
                 MyTabViewModel(
                     FakeProfileRepository(),
-                    community,
+                    moderation,
                     FakePersonalizationRepository(),
                     FakeMyTabReviewRepository(),
                     FakeFollowRepository(),
@@ -401,8 +401,8 @@ class MyTabViewModelTest {
     fun `차단 해제 취소와 실패는 차단 목록을 유지한다`() =
         coroutinesTest {
             val user = blockedUser("user1", "첫 사용자")
-            val community = FakeUserModerationRepository(RamapResult.Success(listOf(user)))
-            val viewModel = MyTabViewModel(FakeProfileRepository(), community, FakePersonalizationRepository(), FakeMyTabReviewRepository(), FakeFollowRepository(), changes = FakeReviewChangeStore())
+            val moderation = FakeUserModerationRepository(RamapResult.Success(listOf(user)))
+            val viewModel = MyTabViewModel(FakeProfileRepository(), moderation, FakePersonalizationRepository(), FakeMyTabReviewRepository(), FakeFollowRepository(), changes = FakeReviewChangeStore())
             runCurrent()
             viewModel.dispatch(MyTabIntent.OpenBlockedUsers)
             runCurrent()
@@ -410,10 +410,10 @@ class MyTabViewModelTest {
             viewModel.dispatch(MyTabIntent.RequestUnblock(user.profile.userId))
             viewModel.dispatch(MyTabIntent.DismissUnblock)
             runCurrent()
-            assertTrue(community.unblockedUserIds.isEmpty())
+            assertTrue(moderation.unblockedUserIds.isEmpty())
             assertNull(viewModel.uiState.value.pendingUnblockUser)
 
-            community.unblockResult = RamapResult.Error(RamapError.Unknown(IllegalStateException("failed")))
+            moderation.unblockResult = RamapResult.Error(RamapError.Unknown(IllegalStateException("failed")))
             viewModel.sideEffect.test {
                 assertTrue(awaitItem() is MyTabSideEffect.OpenBlockedUsersDialog)
                 viewModel.dispatch(MyTabIntent.RequestUnblock(user.profile.userId))
