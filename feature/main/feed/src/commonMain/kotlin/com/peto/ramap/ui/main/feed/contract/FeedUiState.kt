@@ -13,6 +13,7 @@ data class FeedUiState(
     val sort: ReviewFeedSort = ReviewFeedSort.LATEST,
     val filter: ReviewFeedFilter = ReviewFeedFilter.ALL,
     val nextCursor: ReviewFeedCursor? = null,
+    val hasFilterTargets: Boolean? = null,
     val currentUserId: String? = null,
     val sessionResolved: Boolean = false,
     val hasLoaded: Boolean = false,

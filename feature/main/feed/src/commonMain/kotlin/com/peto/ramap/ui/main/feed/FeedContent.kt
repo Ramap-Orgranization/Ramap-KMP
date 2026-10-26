@@ -29,17 +29,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.peto.ramap.designsystem.button.AppFloatingActionButton
-import com.peto.ramap.designsystem.button.RetryButton
+import com.peto.ramap.designsystem.component.LoadErrorContent
 import com.peto.ramap.designsystem.indicator.RamenLoadingIndicator
 import com.peto.ramap.designsystem.review.ReviewEmptyContent
-import com.peto.ramap.designsystem.text.AppText
-import com.peto.ramap.designsystem.topbar.CommonTopBar
 import com.peto.ramap.domain.model.review.ProfileReview
 import com.peto.ramap.preview.RamenShopPreviewParameterProvider
 import com.peto.ramap.preview.ReviewPreviewParameterProvider
-import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.CommonColor
-import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.RamapTheme
 import com.peto.ramap.ui.main.feed.component.FeedFilterSelector
 import com.peto.ramap.ui.main.feed.component.FeedReviewItem
@@ -48,14 +44,15 @@ import com.peto.ramap.ui.main.feed.component.FeedSortSelector
 import com.peto.ramap.ui.main.feed.contract.FeedIntent
 import com.peto.ramap.ui.main.feed.contract.FeedUiState
 import com.peto.ramap.ui.paging.ObserveLoadMoreNearListEnd
+import com.peto.ramap.ui.resource.emptyImage
+import com.peto.ramap.ui.resource.emptyMessage
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.ic_arrow_up
+import ramap.shared.generated.resources.review_load_error_illustration
 import ramap.shared.generated.resources.scroll_to_top
-import ramap.shared.generated.resources.shop_review_empty_title
 import ramap.shared.generated.resources.shop_review_load_failure_message
-import ramap.shared.generated.resources.top_level_tab_feed
 
 @Composable
 internal fun FeedContent(
@@ -124,7 +121,8 @@ internal fun FeedContent(
                     if (state.isEmpty) {
                         item(key = "empty") {
                             ReviewEmptyContent(
-                                text = stringResource(Res.string.shop_review_empty_title),
+                                text = stringResource(state.filter.emptyMessage(state.hasFilterTargets)),
+                                image = state.filter.emptyImage(state.hasFilterTargets),
                                 modifier = Modifier.fillMaxWidth().padding(vertical = 60.dp),
                             )
                         }
@@ -141,18 +139,13 @@ internal fun FeedContent(
                     }
                     if (state.hasError || state.hasAppendError) {
                         item(key = "load_failure") {
-                            Column(
+                            LoadErrorContent(
+                                image = Res.drawable.review_load_error_illustration,
+                                title = stringResource(Res.string.shop_review_load_failure_message),
+                                onRetry = { onIntent(FeedIntent.Retry) },
+                                compact = state.reviews.isNotEmpty(),
                                 modifier = Modifier.fillMaxWidth().padding(24.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.spacedBy(12.dp),
-                            ) {
-                                AppText(
-                                    text = stringResource(Res.string.shop_review_load_failure_message),
-                                    style = AppTextStyle.B1,
-                                    color = GrayColor.C300,
-                                )
-                                RetryButton(onClick = { onIntent(FeedIntent.Retry) })
-                            }
+                            )
                         }
                     }
                     if (state.appending) {
@@ -186,7 +179,7 @@ internal fun FeedContent(
     }
 }
 
-@Preview(name = "피드 피드", showBackground = true)
+@Preview(showBackground = true)
 @Composable
 private fun FeedContentPreview() {
     val reviews =
@@ -204,66 +197,6 @@ private fun FeedContentPreview() {
                     hasLoaded = true,
                     sessionResolved = true,
                     currentUserId = "my-user-id",
-                ),
-            listState = LazyListState(),
-            onIntent = {},
-            onOpenProfile = {},
-            onOpenShop = {},
-            onEditReview = { _, _ -> },
-        )
-    }
-}
-
-@Preview(name = "피드 로딩", showBackground = true)
-@Composable
-private fun FeedContentLoadingPreview() {
-    RamapTheme {
-        FeedContent(
-            state =
-                FeedUiState(
-                    hasLoaded = false,
-                    sessionResolved = false,
-                ),
-            listState = LazyListState(),
-            onIntent = {},
-            onOpenProfile = {},
-            onOpenShop = {},
-            onEditReview = { _, _ -> },
-        )
-    }
-}
-
-@Preview(name = "피드 비어있음", showBackground = true)
-@Composable
-private fun FeedContentEmptyPreview() {
-    RamapTheme {
-        FeedContent(
-            state =
-                FeedUiState(
-                    reviews = emptyList(),
-                    hasLoaded = true,
-                    sessionResolved = true,
-                ),
-            listState = LazyListState(),
-            onIntent = {},
-            onOpenProfile = {},
-            onOpenShop = {},
-            onEditReview = { _, _ -> },
-        )
-    }
-}
-
-@Preview(name = "피드 오류", showBackground = true)
-@Composable
-private fun FeedContentFailurePreview() {
-    RamapTheme {
-        FeedContent(
-            state =
-                FeedUiState(
-                    reviews = emptyList(),
-                    hasLoaded = true,
-                    sessionResolved = true,
-                    failed = true,
                 ),
             listState = LazyListState(),
             onIntent = {},

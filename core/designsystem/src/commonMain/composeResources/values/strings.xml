@@ -594,6 +594,8 @@
     <string name="business_hours_temporary_closure_date">%1$s(%2$s)</string>
     <string name="business_hours_temporary_closure_period">%1$s(%2$s) ~ %3$s(%4$s)</string>
     <string name="business_hours_temporary_closure_since">%1$s(%2$s)부터</string>
+    <string name="feed_saved_shops_reviews_empty">저장한 매장에 공개 리뷰가 없어요</string>
+    <string name="feed_following_reviews_empty">팔로우한 사용자의 공개 리뷰가 없어요</string>
     <string name="feed_filter_all">전체</string>
     <string name="feed_filter_saved_shops">저장한 매장</string>
     <string name="feed_filter_following">팔로잉</string>

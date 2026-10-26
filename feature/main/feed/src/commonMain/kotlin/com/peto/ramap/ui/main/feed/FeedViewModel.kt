@@ -77,7 +77,7 @@ class FeedViewModel(
                     if (journal.hasGapAfter(lastAppliedRevision)) {
                         lastAppliedRevision = journal.revision
                         invalidateAccess()
-                        reduce { copy(reviews = emptyList(), nextCursor = null, hasLoaded = false) }
+                        reduce { copy(reviews = emptyList(), nextCursor = null, hasFilterTargets = null, hasLoaded = false) }
                         loadPage(append = false)
                         return@collect
                     }
@@ -201,7 +201,7 @@ class FeedViewModel(
     ) {
         cancelTask(PAGE_TASK)
         reduce {
-            clearAccess().copy(sort = sort, filter = filter, reviews = emptyList(), nextCursor = null, hasLoaded = false, failed = false, appendFailed = false)
+            clearAccess().copy(sort = sort, filter = filter, reviews = emptyList(), nextCursor = null, hasFilterTargets = null, hasLoaded = false, failed = false, appendFailed = false)
         }
         loadPage(append = false)
     }
@@ -237,6 +237,7 @@ class FeedViewModel(
                     copy(
                         reviews = (if (append) reviews + rows else rows).distinctBy { it.review.id },
                         nextCursor = page.nextCursor,
+                        hasFilterTargets = page.hasFilterTargets,
                         hasLoaded = true,
                     )
                 }
@@ -256,12 +257,14 @@ class FeedViewModel(
         filter: ReviewFeedFilter,
     ): RamapResult<ReviewFeedPage> {
         var next = cursor
+        var hasFilterTargets: Boolean? = null
         val rows = mutableListOf<ProfileReview>()
         do {
             val previous = next
             when (val result = reviewFeedRepository.fetchPage(next, sort, filter)) {
                 is RamapResult.Error -> return result
                 is RamapResult.Success -> {
+                    if (previous == cursor) hasFilterTargets = result.data.hasFilterTargets
                     rows += result.data.reviews
                     next = result.data.nextCursor
                 }
@@ -269,7 +272,7 @@ class FeedViewModel(
             currentCoroutineContext().ensureActive()
             if (next == previous) next = null
         } while (rows.size < extent && next != null)
-        return RamapResult.Success(ReviewFeedPage(rows, next))
+        return RamapResult.Success(ReviewFeedPage(rows, next, hasFilterTargets))
     }
 
     private fun findReview(review: Review): Review? = currentState.reviews.firstOrNull { it.review.id == review.id }?.review
