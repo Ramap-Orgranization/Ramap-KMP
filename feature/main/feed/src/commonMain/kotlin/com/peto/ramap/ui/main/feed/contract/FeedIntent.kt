@@ -1,5 +1,6 @@
 package com.peto.ramap.ui.main.feed.contract
 
+import com.peto.ramap.domain.model.feed.ReviewFeedFilter
 import com.peto.ramap.domain.model.feed.ReviewFeedSort
 import com.peto.ramap.domain.model.moderation.ReportReason
 import com.peto.ramap.domain.model.review.Review
@@ -9,6 +10,12 @@ sealed interface FeedIntent : Intent {
     data class SelectSort(
         val sort: ReviewFeedSort,
     ) : FeedIntent
+
+    data class SelectFilter(
+        val filter: ReviewFeedFilter,
+    ) : FeedIntent
+
+    data object Resume : FeedIntent
 
     data object Refresh : FeedIntent
 

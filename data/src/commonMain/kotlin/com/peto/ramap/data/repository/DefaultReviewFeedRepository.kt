@@ -3,6 +3,7 @@ package com.peto.ramap.data.repository
 import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.data.feed.FeedDataSource
 import com.peto.ramap.domain.model.feed.ReviewFeedCursor
+import com.peto.ramap.domain.model.feed.ReviewFeedFilter
 import com.peto.ramap.domain.model.feed.ReviewFeedPage
 import com.peto.ramap.domain.model.feed.ReviewFeedSort
 import com.peto.ramap.domain.model.review.Review
@@ -15,9 +16,10 @@ internal class DefaultReviewFeedRepository(
     override suspend fun fetchPage(
         cursor: ReviewFeedCursor?,
         sort: ReviewFeedSort,
+        filter: ReviewFeedFilter,
     ): RamapResult<ReviewFeedPage> =
         invokeRequest {
-            val page = reviews.fetchReviewsPage(cursor, sort)
+            val page = reviews.fetchReviewsPage(cursor, sort, filter)
             ReviewFeedPage(
                 reviews = page.reviews.map { it.toDomain() },
                 nextCursor = page.nextCursor(),

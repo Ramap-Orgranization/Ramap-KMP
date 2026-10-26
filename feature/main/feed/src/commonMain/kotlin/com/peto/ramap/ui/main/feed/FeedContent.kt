@@ -6,6 +6,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -40,6 +41,7 @@ import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.RamapTheme
+import com.peto.ramap.ui.main.feed.component.FeedFilterSelector
 import com.peto.ramap.ui.main.feed.component.FeedReviewItem
 import com.peto.ramap.ui.main.feed.component.FeedSkeleton
 import com.peto.ramap.ui.main.feed.component.FeedSortSelector
@@ -65,7 +67,7 @@ internal fun FeedContent(
     onEditReview: (String, String) -> Unit,
 ) {
     val pullToRefreshState = rememberPullToRefreshState()
-    LaunchedEffect(state.sort) {
+    LaunchedEffect(state.sort, state.filter) {
         listState.scrollToItem(0)
     }
     ObserveLoadMoreNearListEnd(
@@ -83,12 +85,19 @@ internal fun FeedContent(
     }
     Box(modifier = Modifier.fillMaxSize().statusBarsPadding()) {
         Column(modifier = Modifier.fillMaxSize()) {
-            CommonTopBar(title = stringResource(Res.string.top_level_tab_feed), left = {})
-            Box(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                FeedFilterSelector(
+                    selected = state.filter,
+                    onSelect = { onIntent(FeedIntent.SelectFilter(it)) },
+                    modifier = Modifier.weight(1f),
+                )
                 FeedSortSelector(
                     selected = state.sort,
                     onSelect = { onIntent(FeedIntent.SelectSort(it)) },
-                    modifier = Modifier.align(Alignment.CenterEnd),
                 )
             }
             PullToRefreshBox(

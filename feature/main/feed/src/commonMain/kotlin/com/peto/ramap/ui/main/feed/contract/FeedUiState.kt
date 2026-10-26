@@ -1,6 +1,7 @@
 package com.peto.ramap.ui.main.feed.contract
 
 import com.peto.ramap.domain.model.feed.ReviewFeedCursor
+import com.peto.ramap.domain.model.feed.ReviewFeedFilter
 import com.peto.ramap.domain.model.feed.ReviewFeedSort
 import com.peto.ramap.domain.model.review.ProfileReview
 import com.peto.ramap.domain.model.review.Review
@@ -10,6 +11,7 @@ import com.peto.ramap.ui.loading.LoadableState
 data class FeedUiState(
     val reviews: List<ProfileReview> = emptyList(),
     val sort: ReviewFeedSort = ReviewFeedSort.LATEST,
+    val filter: ReviewFeedFilter = ReviewFeedFilter.ALL,
     val nextCursor: ReviewFeedCursor? = null,
     val currentUserId: String? = null,
     val sessionResolved: Boolean = false,
