@@ -1,14 +1,13 @@
-package com.peto.ramap.data.datasource.community
+package com.peto.ramap.data.datasource.profile
 
-import com.peto.ramap.data.model.BlockedUserResponse
-import com.peto.ramap.data.model.MyCommunityProfileResponse
+import com.peto.ramap.data.model.MyProfileResponse
 import com.peto.ramap.data.model.ProfileAccessResponse
 import com.peto.ramap.data.model.ProfileReviewsPageResponse
 import com.peto.ramap.data.model.PublicSavedShopsPageResponse
 import com.peto.ramap.data.model.ReviewResponse
 
-internal interface CommunityDataSource {
-    suspend fun fetchMyCommunityProfile(): MyCommunityProfileResponse
+internal interface UserProfileDataSource {
+    suspend fun fetchMyProfile(): MyProfileResponse
 
     suspend fun fetchProfileAccess(userId: String): ProfileAccessResponse
 
@@ -26,18 +25,4 @@ internal interface CommunityDataSource {
         userId: String,
         offset: Long,
     ): PublicSavedShopsPageResponse
-
-    suspend fun fetchBlockedUsers(): List<BlockedUserResponse>
-
-    suspend fun report(
-        targetType: String,
-        targetId: String,
-        reason: String,
-        details: String,
-    )
-
-    suspend fun changeBlock(
-        userId: String,
-        blocked: Boolean,
-    )
 }

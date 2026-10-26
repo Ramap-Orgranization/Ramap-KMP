@@ -2,8 +2,6 @@ package com.peto.ramap.data.datasource.di
 
 import com.peto.ramap.data.datasource.appnotice.AppNoticeDataSource
 import com.peto.ramap.data.datasource.appnotice.RemoteAppNoticeDataSource
-import com.peto.ramap.data.datasource.community.CommunityDataSource
-import com.peto.ramap.data.datasource.community.RemoteCommunityDataSource
 import com.peto.ramap.data.datasource.follow.FollowDataSource
 import com.peto.ramap.data.datasource.follow.RemoteFollowDataSource
 import com.peto.ramap.data.datasource.image.CachedImageUrlDataSource
@@ -16,6 +14,8 @@ import com.peto.ramap.data.datasource.importation.NaverImportationDataSource
 import com.peto.ramap.data.datasource.importation.RemoteImportationDataSource
 import com.peto.ramap.data.datasource.menu.RemoteShopMenuDataSource
 import com.peto.ramap.data.datasource.menu.ShopMenuDataSource
+import com.peto.ramap.data.datasource.moderation.RemoteUserModerationDataSource
+import com.peto.ramap.data.datasource.moderation.UserModerationDataSource
 import com.peto.ramap.data.datasource.notice.OperatingNoticeDataSource
 import com.peto.ramap.data.datasource.notice.RemoteOperatingNoticeDataSource
 import com.peto.ramap.data.datasource.personalization.BookmarkShopDataSource
@@ -26,6 +26,8 @@ import com.peto.ramap.data.datasource.place.PlaceSearchDataSource
 import com.peto.ramap.data.datasource.place.RemotePlaceSearchDataSource
 import com.peto.ramap.data.datasource.profile.ProfileDataSource
 import com.peto.ramap.data.datasource.profile.RemoteProfileDataSource
+import com.peto.ramap.data.datasource.profile.RemoteUserProfileDataSource
+import com.peto.ramap.data.datasource.profile.UserProfileDataSource
 import com.peto.ramap.data.datasource.ranking.RemoteShopRankingDataSource
 import com.peto.ramap.data.datasource.ranking.ShopRankingDataSource
 import com.peto.ramap.data.datasource.report.RemotePlaceLinkResolver
@@ -57,7 +59,8 @@ val dataSourceModule =
         single<ImageUrlDataSource> { CachedImageUrlDataSource(RemoteImageUrlDataSource(get()), get()) }
         singleOf(::ReviewImageResolver)
         single<ProfileDataSource> { RemoteProfileDataSource(get(), get()) }
-        single<CommunityDataSource> { RemoteCommunityDataSource(get(), get(), get()) }
+        single<UserProfileDataSource> { RemoteUserProfileDataSource(get(), get(), get()) }
+        single<UserModerationDataSource> { RemoteUserModerationDataSource(get(), get()) }
         single<ReviewDataSource> { RemoteReviewDataSource(get(), get()) }
         single<FeedDataSource> { RemoteFeedDataSource(get(), get()) }
         single { NaverImportationDataSource(get(), get<HttpClient>()) }

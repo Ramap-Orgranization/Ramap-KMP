@@ -1,4 +1,4 @@
-package com.peto.ramap.domain.model.community
+package com.peto.ramap.domain.model.review
 
 import com.peto.ramap.domain.model.review.Review
 import com.peto.ramap.domain.model.shop.RamenShop

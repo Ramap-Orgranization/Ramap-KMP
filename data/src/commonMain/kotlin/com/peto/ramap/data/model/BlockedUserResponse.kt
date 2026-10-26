@@ -1,7 +1,7 @@
 package com.peto.ramap.data.model
 
-import com.peto.ramap.domain.model.community.BlockedUser
-import com.peto.ramap.domain.model.community.PublicProfile
+import com.peto.ramap.domain.model.moderation.BlockedUser
+import com.peto.ramap.domain.model.profile.PublicProfile
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.SerialName

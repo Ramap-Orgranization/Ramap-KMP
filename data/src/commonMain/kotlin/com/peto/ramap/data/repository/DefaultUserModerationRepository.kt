@@ -1,16 +1,16 @@
 package com.peto.ramap.data.repository
 
 import com.peto.ramap.core.result.RamapResult
-import com.peto.ramap.data.datasource.community.CommunityDataSource
+import com.peto.ramap.data.datasource.moderation.UserModerationDataSource
 import com.peto.ramap.data.store.DefaultReviewChangeStore
-import com.peto.ramap.domain.model.community.BlockedUser
-import com.peto.ramap.domain.model.community.ReportReason
+import com.peto.ramap.domain.model.moderation.BlockedUser
+import com.peto.ramap.domain.model.moderation.ReportReason
 import com.peto.ramap.domain.model.review.change.ReviewChange
 import com.peto.ramap.domain.repository.UserModerationRepository
 import com.peto.ramap.network.execute.invokeRequest
 
 internal class DefaultUserModerationRepository(
-    private val dataSource: CommunityDataSource,
+    private val dataSource: UserModerationDataSource,
     private val changes: DefaultReviewChangeStore,
 ) : UserModerationRepository {
     override suspend fun fetchBlockedUsers(): RamapResult<List<BlockedUser>> = invokeRequest { dataSource.fetchBlockedUsers().map { it.toDomain() } }

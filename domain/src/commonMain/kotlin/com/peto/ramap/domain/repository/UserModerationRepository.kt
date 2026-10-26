@@ -1,8 +1,8 @@
 package com.peto.ramap.domain.repository
 
 import com.peto.ramap.core.result.RamapResult
-import com.peto.ramap.domain.model.community.BlockedUser
-import com.peto.ramap.domain.model.community.ReportReason
+import com.peto.ramap.domain.model.moderation.BlockedUser
+import com.peto.ramap.domain.model.moderation.ReportReason
 
 interface UserModerationRepository {
     suspend fun fetchBlockedUsers(): RamapResult<List<BlockedUser>>

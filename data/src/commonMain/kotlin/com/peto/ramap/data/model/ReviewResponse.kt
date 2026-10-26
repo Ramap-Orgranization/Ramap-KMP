@@ -1,9 +1,9 @@
 package com.peto.ramap.data.model
 
-import com.peto.ramap.domain.model.community.ReviewAuthor
-import com.peto.ramap.domain.model.community.ReviewModerationStatus
 import com.peto.ramap.domain.model.review.MyReviewPhoto
 import com.peto.ramap.domain.model.review.Review
+import com.peto.ramap.domain.model.review.ReviewAuthor
+import com.peto.ramap.domain.model.review.ReviewModerationStatus
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient

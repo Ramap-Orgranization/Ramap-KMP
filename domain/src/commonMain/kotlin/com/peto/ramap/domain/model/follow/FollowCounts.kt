@@ -1,4 +1,4 @@
-package com.peto.ramap.domain.model.community
+package com.peto.ramap.domain.model.follow
 
 data class FollowCounts(
     val followers: Long,

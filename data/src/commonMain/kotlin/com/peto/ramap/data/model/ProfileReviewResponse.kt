@@ -1,6 +1,6 @@
 package com.peto.ramap.data.model
 
-import com.peto.ramap.domain.model.community.ProfileReview
+import com.peto.ramap.domain.model.review.ProfileReview
 import kotlinx.serialization.Serializable
 
 @Serializable

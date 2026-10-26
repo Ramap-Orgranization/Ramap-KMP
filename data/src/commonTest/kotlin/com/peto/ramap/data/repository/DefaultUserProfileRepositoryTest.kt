@@ -4,8 +4,8 @@ import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.data.model.ProfileReviewResponse
 import com.peto.ramap.data.model.RamenShopResponse
 import com.peto.ramap.data.model.ReviewResponse
-import com.peto.ramap.domain.model.community.ProfileReview
-import com.peto.ramap.fake.FakeCommunityDataSource
+import com.peto.ramap.domain.model.review.ProfileReview
+import com.peto.ramap.fake.FakeUserProfileDataSource
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -19,20 +19,20 @@ class DefaultUserProfileRepositoryTest {
     fun `응답의 리뷰와 매장 정보를 순서대로 변환한다`() =
         runTest {
             val reviews = listOf(review("first", "shop-a"), review("second", "shop-b"), review("third", "shop-a"))
-            val community = FakeCommunityDataSource(reviews)
-            val repository = DefaultUserProfileRepository(community)
+            val profiles = FakeUserProfileDataSource(reviews)
+            val repository = DefaultUserProfileRepository(profiles)
 
             val page = assertIs<RamapResult.Success<List<ProfileReview>>>(repository.fetchUserReviews("author", 20L)).data
 
             assertEquals(reviews.map { it.review.toDomain() }, page.map { it.review })
             assertEquals(listOf("shop-a", "shop-b", "shop-a"), page.map { it.shop.id })
-            assertEquals(listOf("author" to 20L), community.requestedReviewPages)
+            assertEquals(listOf("author" to 20L), profiles.requestedReviewPages)
         }
 
     @Test
     fun `빈 리뷰 페이지를 반환한다`() =
         runTest {
-            val repository = DefaultUserProfileRepository(FakeCommunityDataSource())
+            val repository = DefaultUserProfileRepository(FakeUserProfileDataSource())
 
             val page = assertIs<RamapResult.Success<List<ProfileReview>>>(repository.fetchUserReviews("author", 0L)).data
 
@@ -42,8 +42,8 @@ class DefaultUserProfileRepositoryTest {
     @Test
     fun `리뷰 조회가 실패하면 오류를 반환한다`() =
         runTest {
-            val community = FakeCommunityDataSource(reviewError = IllegalStateException("reviews unavailable"))
-            val repository = DefaultUserProfileRepository(community)
+            val profiles = FakeUserProfileDataSource(reviewError = IllegalStateException("reviews unavailable"))
+            val repository = DefaultUserProfileRepository(profiles)
 
             assertIs<RamapResult.Error>(repository.fetchUserReviews("author", 0L))
         }
@@ -51,8 +51,8 @@ class DefaultUserProfileRepositoryTest {
     @Test
     fun `리뷰 조회 취소를 전파한다`() =
         runTest {
-            val community = FakeCommunityDataSource(reviewError = CancellationException("cancelled"))
-            val repository = DefaultUserProfileRepository(community)
+            val profiles = FakeUserProfileDataSource(reviewError = CancellationException("cancelled"))
+            val repository = DefaultUserProfileRepository(profiles)
 
             assertFailsWith<CancellationException> { repository.fetchUserReviews("author", 0L) }
         }

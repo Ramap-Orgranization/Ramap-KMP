@@ -1,6 +1,6 @@
 package com.peto.ramap.data.model
 
-import com.peto.ramap.domain.model.community.FollowCounts
+import com.peto.ramap.domain.model.follow.FollowCounts
 import kotlinx.serialization.Serializable
 
 @Serializable

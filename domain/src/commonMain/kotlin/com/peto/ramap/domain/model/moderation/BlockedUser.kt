@@ -1,5 +1,6 @@
-package com.peto.ramap.domain.model.community
+package com.peto.ramap.domain.model.moderation
 
+import com.peto.ramap.domain.model.profile.PublicProfile
 import kotlinx.datetime.LocalDate
 
 data class BlockedUser(
