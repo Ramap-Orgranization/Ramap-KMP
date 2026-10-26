@@ -4,12 +4,12 @@ import androidx.lifecycle.ViewModelStore
 import com.peto.ramap.analytics.common.login.LoginAnalytics
 import com.peto.ramap.domain.model.review.ShopReviewCache
 import com.peto.ramap.domain.model.review.change.ReviewChangeReducer
-import com.peto.ramap.domain.repository.CommunityRepository
 import com.peto.ramap.domain.repository.LoginRepository
 import com.peto.ramap.domain.repository.ProfileRepository
 import com.peto.ramap.domain.repository.ReviewRepository
 import com.peto.ramap.domain.repository.ShopMenuRepository
 import com.peto.ramap.domain.repository.ShopReportRepository
+import com.peto.ramap.domain.repository.UserModerationRepository
 import com.peto.ramap.domain.store.PersonalizationStore
 import com.peto.ramap.domain.store.ReviewChangeStore
 import com.peto.ramap.domain.usecase.FeatchShopReviewsUseCase
@@ -51,7 +51,7 @@ class MapShopSectionsFixture(
     private val overviewQuery: FetchShopOverviewUseCase,
     private val profile: ProfileRepository,
     private val reviews: ReviewRepository,
-    private val community: CommunityRepository,
+    private val community: UserModerationRepository,
     private val changes: ReviewChangeStore,
     private val menus: ShopMenuRepository,
 ) {

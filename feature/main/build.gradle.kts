@@ -9,6 +9,7 @@ kotlin {
         api(projects.feature.main.notice)
         api(projects.feature.main.map)
         api(projects.feature.main.ranking)
+        api(projects.feature.main.community)
         api(projects.feature.main.my)
     }
 }
