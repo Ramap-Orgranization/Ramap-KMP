@@ -37,6 +37,8 @@ internal fun ReviewPhoto(
     contentScale: ContentScale = ContentScale.Crop,
     shape: Shape = RoundedCornerShape(12.dp),
     backgroundColor: Color = GrayColor.C050,
+    onLoadFailed: () -> Unit = {},
+    onLoadSucceeded: () -> Unit = {},
 ) {
     val context = LocalPlatformContext.current
     val request =
@@ -76,7 +78,11 @@ internal fun ReviewPhoto(
             contentDescription = contentDescription,
             modifier = Modifier.matchParentSize(),
             contentScale = contentScale,
-            onState = { imageState = it },
+            onState = {
+                imageState = it
+                if (it is AsyncImagePainter.State.Error) onLoadFailed()
+                if (it is AsyncImagePainter.State.Success) onLoadSucceeded()
+            },
         )
         if (imageState is AsyncImagePainter.State.Error) {
             Image(

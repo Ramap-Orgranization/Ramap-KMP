@@ -1,10 +1,8 @@
 package com.peto.ramap.ui.main.event.detail
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
@@ -17,7 +15,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.peto.ramap.designsystem.component.LoadErrorContent
 import com.peto.ramap.designsystem.indicator.RamenLoadingIndicator
@@ -26,9 +23,8 @@ import com.peto.ramap.designsystem.toast.ToastManager
 import com.peto.ramap.designsystem.toast.model.ToastAction
 import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
-import com.peto.ramap.designsystem.topbar.CommonTopBar
+import com.peto.ramap.designsystem.topbar.BackTopBar
 import com.peto.ramap.domain.model.event.ShopEvent
-import com.peto.ramap.extension.noRippleClickable
 import com.peto.ramap.platform.AppSettingsOpener
 import com.peto.ramap.platform.ExternalUriOpener
 import com.peto.ramap.platform.NotificationPermissionRequester
@@ -54,7 +50,6 @@ import com.peto.ramap.ui.main.event.detail.contract.EventDetailSideEffect.ShowTo
 import com.peto.ramap.ui.main.event.detail.contract.EventDetailUiState
 import com.peto.ramap.ui.main.event.detail.preview.EventDetailPreviewParameterProvider
 import kotlinx.coroutines.launch
-import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
@@ -62,10 +57,8 @@ import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.data_load_failure_message
 import ramap.shared.generated.resources.event_detail_load_failure_title
 import ramap.shared.generated.resources.event_detail_title
-import ramap.shared.generated.resources.ic_arrow3_left
 import ramap.shared.generated.resources.laduck_error_crying
 import ramap.shared.generated.resources.location_permission_settings_action
-import ramap.shared.generated.resources.navigation_back
 import ramap.shared.generated.resources.notification_permission_enable_message
 
 @Composable
@@ -205,24 +198,14 @@ internal fun EventDetailScreen(
                 .fillMaxSize()
                 .statusBarsPadding(),
         topBar = {
-            CommonTopBar(
+            BackTopBar(
+                onBack = onBack,
                 title =
                     stringResource(
                         uiState.event?.let { event -> ShopEventResourceMapper.detailTitle(event.type) }
                             ?: Res.string.event_detail_title,
                     ),
-                left = {
-                    Image(
-                        painter = painterResource(Res.drawable.ic_arrow3_left),
-                        contentDescription = stringResource(Res.string.navigation_back),
-                        modifier =
-                            Modifier
-                                .padding(18.dp)
-                                .size(24.dp)
-                                .noRippleClickable(onClick = onBack),
-                    )
-                },
-                right = {
+                action = {
                     uiState.event
                         ?.takeIf { event -> !event.isToday }
                         ?.let {

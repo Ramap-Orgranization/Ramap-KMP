@@ -533,6 +533,9 @@
     <string name="review_save">저장</string>
     <string name="review_delete_failed">리뷰를 삭제하지 못했어요. 다시 시도해 주세요.</string>
     <string name="review_like_failed">좋아요를 변경하지 못했어요. 다시 시도해 주세요.</string>
+    <string name="archive_records_tab">기록</string>
+    <string name="archive_shop_information_tab">매장 정보</string>
+    <string name="archive_review_written_at">%1$s</string>
     <string name="my_reviews">내 리뷰</string>
     <string name="my_reviews_summary">작성한 리뷰</string>
     <string name="my_reviews_all_filter">전체</string>
@@ -601,4 +604,13 @@
     <string name="feed_filter_following">팔로잉</string>
     <string name="feed_sort_latest">최신순</string>
     <string name="feed_sort_popular">인기순</string>
+    <string name="visited_shops">다녀온 매장</string>
+    <string name="login_required_visited_shops_description">로그인하면 리뷰를 작성한 매장을 지도에서 볼 수 있어요.</string>
+    <string name="visited_shops_empty_title">다녀온 라멘을\n지도에 남겨보세요</string>
+    <string name="visited_shops_empty_description">리뷰를 남긴 매장이\n나만의 지도에 모여요.</string>
+    <string name="find_visited_shop">다녀온 매장 찾기</string>
+    <string name="archive_review_date_and_visit">%1$s · %2$s</string>
+    <string name="visited_shops_error">다녀온 매장을 불러오지 못했어요.</string>
+    <string name="visited_shops_loading_title">다녀온 매장을\n지도에 모으고 있어요</string>
+    <string name="visited_shops_loading_description">내가 남긴 리뷰와 사진을 불러오는 중이에요.</string>
 </resources>

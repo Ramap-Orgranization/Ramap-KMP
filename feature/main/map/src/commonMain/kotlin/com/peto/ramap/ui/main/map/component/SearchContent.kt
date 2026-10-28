@@ -35,7 +35,6 @@ import androidx.compose.ui.unit.dp
 import com.peto.ramap.analytics.AnalyticsSource
 import com.peto.ramap.designsystem.button.AppButton
 import com.peto.ramap.designsystem.button.BookmarkedFilterButton
-import com.peto.ramap.designsystem.resource.category.CategoryResourceMapper
 import com.peto.ramap.domain.model.place.PlaceSearchResult
 import com.peto.ramap.domain.model.shop.Category
 import com.peto.ramap.domain.model.shop.RamenShop
@@ -145,9 +144,6 @@ internal fun SearchContent(
                     onViewedShopSelected = { shop ->
                         focusManager.clearFocus()
                         onRecentlyViewedShopSelected(shop)
-                    },
-                    categoryLabel = { category ->
-                        stringResource(CategoryResourceMapper.label(category))
                     },
                     modifier =
                         Modifier

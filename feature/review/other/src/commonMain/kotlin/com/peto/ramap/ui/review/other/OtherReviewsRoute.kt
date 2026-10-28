@@ -27,7 +27,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.peto.ramap.designsystem.component.RamenShopSummary
 import com.peto.ramap.designsystem.indicator.RamenLoadingIndicator
 import com.peto.ramap.designsystem.profile.ProfileHeader
-import com.peto.ramap.designsystem.resource.category.CategoryResourceMapper
 import com.peto.ramap.designsystem.review.ReviewCard
 import com.peto.ramap.designsystem.review.ReviewCardActions
 import com.peto.ramap.designsystem.review.ReviewEmptyContent
@@ -45,7 +44,6 @@ import com.peto.ramap.domain.model.shop.Category
 import com.peto.ramap.domain.model.shop.Location
 import com.peto.ramap.domain.model.shop.MenuCategories
 import com.peto.ramap.domain.model.shop.RamenShop
-import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.RamapTheme
 import com.peto.ramap.ui.base.ObserveAsEvents
@@ -318,9 +316,6 @@ internal fun OtherReviewsContent(
             ) { shop ->
                 RamenShopSummary(
                     shop = shop,
-                    categoryLabel = { stringResource(CategoryResourceMapper.label(it)) },
-                    containerColor = CommonColor.White,
-                    leadingContent = {},
                     onClick = { onOpenShopDetail(shop.id) },
                     modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
                 )

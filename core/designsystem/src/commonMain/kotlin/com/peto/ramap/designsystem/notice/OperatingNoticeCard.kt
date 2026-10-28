@@ -16,7 +16,6 @@ import androidx.compose.ui.unit.dp
 import com.peto.ramap.designsystem.badge.EventDateBadge
 import com.peto.ramap.designsystem.badge.NewsBadge
 import com.peto.ramap.designsystem.component.RamenShopSummary
-import com.peto.ramap.designsystem.resource.category.CategoryResourceMapper
 import com.peto.ramap.designsystem.resource.operatingnotice.OperatingNoticeResourceMapper
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.designsystem.text.eventDateText
@@ -51,11 +50,6 @@ fun OperatingNoticeCard(
             RamenShopSummary(
                 shop = notice.shop,
                 onClick = { onShopClick(notice.shop.id) },
-                categoryLabel = { category ->
-                    stringResource(CategoryResourceMapper.label(category))
-                },
-                containerColor = CommonColor.White,
-                leadingContent = {},
                 modifier = Modifier.padding(horizontal = 8.dp),
             )
         }

@@ -20,6 +20,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.peto.ramap.designsystem.bottomsheet.CommonBottomSheet
 import com.peto.ramap.designsystem.bottomsheet.CommonBottomSheetConfig
+import com.peto.ramap.designsystem.button.login.LoginButton
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.domain.model.auth.LoginType
 import com.peto.ramap.domain.model.auth.supportedLoginTypes
@@ -38,7 +39,6 @@ fun LoginGuideDialog(
     visible: Boolean,
     onDismiss: () -> Unit,
     onLoginTypeSelected: (LoginType) -> Unit,
-    loginButton: @Composable (LoginType, () -> Unit) -> Unit,
 ) {
     CommonBottomSheet(
         visible = visible,
@@ -78,7 +78,10 @@ fun LoginGuideDialog(
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     supportedLoginTypes().forEach { loginType ->
-                        loginButton(loginType) { onLoginTypeSelected(loginType) }
+                        LoginButton(
+                            type = loginType,
+                            onClick = { onLoginTypeSelected(loginType) },
+                        )
                     }
                 }
             }
