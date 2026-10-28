@@ -21,7 +21,10 @@ import com.peto.ramap.theme.CommonColor
 fun NavigationRouter(
     navigationState: NavigationState,
     mapScreen: @Composable (ScreenRoutes.MapRoutes) -> Unit,
+    archiveMapScreen: @Composable () -> Unit,
+    reviewShopSearchScreen: @Composable () -> Unit,
     rankingScreen: @Composable () -> Unit,
+    feedScreen: @Composable () -> Unit = {},
     eventListScreen: @Composable () -> Unit,
     operatingNoticeScreen: @Composable () -> Unit,
     myScreen: @Composable () -> Unit,
@@ -52,6 +55,13 @@ fun NavigationRouter(
                     content = { mapScreen(route) },
                 )
             }
+            entry<ScreenRoutes.ArchiveMapRoutes> {
+                BottonNavigationTabScreen(
+                    selectedTab = TabStatus.MAP,
+                    onTabSelected = onTabSelected,
+                    content = archiveMapScreen,
+                )
+            }
             entry<ScreenRoutes.EventTabRoutes> {
                 BottonNavigationTabScreen(
                     selectedTab = TabStatus.EVENT,
@@ -80,11 +90,19 @@ fun NavigationRouter(
                     content = myScreen,
                 )
             }
+            entry<ScreenRoutes.FeedTabRoutes> {
+                BottonNavigationTabScreen(
+                    selectedTab = TabStatus.FEED,
+                    onTabSelected = onTabSelected,
+                    content = feedScreen,
+                )
+            }
             entry<ScreenRoutes.FollowRoutes> { route -> FullScreen { followScreen(route) } }
             entry<ScreenRoutes.ProfileEditRoutes> { FullScreen(profileEditScreen) }
             entry<ScreenRoutes.MyReviewsRoutes> { FullScreen(myReviewsScreen) }
             entry<ScreenRoutes.OtherReviewsRoutes> { route -> FullScreen { otherReviewsScreen(route) } }
             entry<ScreenRoutes.ReviewWriteRoutes> { route -> FullScreen { reviewWriteScreen(route) } }
+            entry<ScreenRoutes.ReviewShopSearchRoutes> { FullScreen(reviewShopSearchScreen) }
             entry<ScreenRoutes.SettingsRoutes> { FullScreen(settingsScreen) }
             entry<ScreenRoutes.AccountSettingsRoutes> { FullScreen(accountSettingsScreen) }
             entry<ScreenRoutes.InformationRoutes> { FullScreen(informationScreen) }

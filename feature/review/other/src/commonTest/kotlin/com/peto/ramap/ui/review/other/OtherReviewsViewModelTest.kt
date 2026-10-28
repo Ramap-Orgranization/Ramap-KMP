@@ -4,9 +4,9 @@ import app.cash.turbine.test
 import com.peto.ramap.core.result.RamapError
 import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.coroutinesTest
-import com.peto.ramap.domain.model.community.ProfileReview
-import com.peto.ramap.domain.model.community.ReviewAuthor
+import com.peto.ramap.domain.model.review.ProfileReview
 import com.peto.ramap.domain.model.review.Review
+import com.peto.ramap.domain.model.review.ReviewAuthor
 import com.peto.ramap.domain.model.review.change.ReviewChangeReducer
 import com.peto.ramap.fake.FakeFollowRepository
 import com.peto.ramap.fake.FakeProfileRepository
@@ -33,16 +33,17 @@ class OtherReviewsViewModelTest {
     fun `본인 프로필은 비공개 미게시 리뷰의 등록과 수정과 삭제 및 집계를 재조회 없이 반영한다`() =
         coroutinesTest {
             val changes = FakeReviewChangeStore()
-            val community =
-                FakeOtherReviewsCommunity().apply {
+            val repositories =
+                FakeOtherReviewsRepositories().apply {
                     profile =
-                        com.peto.ramap.domain.model.community
+                        com.peto.ramap.domain.model.profile
                             .PublicProfile("owner", "작성자")
                     reviewCount = 0
                 }
             val viewModel =
                 OtherReviewsViewModel(
-                    community = community,
+                    userProfileRepository = repositories,
+                    userModerationRepository = repositories,
                     profiles = FakeProfileRepository("owner"),
                     follows = FakeFollowRepository(),
                     changes = changes,
@@ -51,7 +52,7 @@ class OtherReviewsViewModelTest {
             runCurrent()
             viewModel.dispatch(OtherReviewsIntent.OpenProfile("owner"))
             runCurrent()
-            val original = Review("private", "shop", "비공개 본문", "2026-10-12", author = ReviewAuthor("owner", "작성자"), isPublic = false, moderationStatus = com.peto.ramap.domain.model.community.ReviewModerationStatus.PENDING)
+            val original = Review("private", "shop", "비공개 본문", "2026-10-12", author = ReviewAuthor("owner", "작성자"), isPublic = false, moderationStatus = com.peto.ramap.domain.model.review.ReviewModerationStatus.PENDING)
 
             fun write(
                 before: Review?,
@@ -64,11 +65,11 @@ class OtherReviewsViewModelTest {
                     "shop",
                     before?.let {
                         com.peto.ramap.domain.model.review.change
-                            .ReviewSnapshot(it, "매장")
+                            .ReviewSnapshot(it, "매장", shop = ramenShopFixture(id = "shop", name = "매장"))
                     },
                     after?.let {
                         com.peto.ramap.domain.model.review.change
-                            .ReviewSnapshot(it, "매장")
+                            .ReviewSnapshot(it, "매장", shop = ramenShopFixture(id = "shop", name = "매장"))
                     },
                     com.peto.ramap.domain.model.review.change
                         .ReviewOwnerCounts(total, 0, total, 0, false),
@@ -80,7 +81,7 @@ class OtherReviewsViewModelTest {
                 viewModel.uiState.value.reviews
                     .map { it.review.id },
             )
-            assertEquals(1L, (viewModel.uiState.value.profileAccess as com.peto.ramap.domain.model.community.ProfileAccess.Visible).reviewCount)
+            assertEquals(1L, (viewModel.uiState.value.profileAccess as com.peto.ramap.domain.model.profile.ProfileAccess.Visible).reviewCount)
             val edited = original.copy(body = "수정된 비공개 본문")
             changes.publish(write(original, edited, 1))
             runCurrent()
@@ -96,17 +97,18 @@ class OtherReviewsViewModelTest {
                 viewModel.uiState.value.reviews
                     .isEmpty(),
             )
-            assertEquals(0L, (viewModel.uiState.value.profileAccess as com.peto.ramap.domain.model.community.ProfileAccess.Visible).reviewCount)
-            assertEquals(listOf(0L), community.requestedOffsets)
+            assertEquals(0L, (viewModel.uiState.value.profileAccess as com.peto.ramap.domain.model.profile.ProfileAccess.Visible).reviewCount)
+            assertEquals(listOf(0L), repositories.requestedOffsets)
         }
 
     @Test
     fun `비로그인 사용자의 차단 요청은 작성자를 차단하지 않고 로그인을 안내한다`() =
         coroutinesTest {
-            val community = FakeOtherReviewsCommunity()
+            val repositories = FakeOtherReviewsRepositories()
             val viewModel =
                 OtherReviewsViewModel(
-                    community = community,
+                    userProfileRepository = repositories,
+                    userModerationRepository = repositories,
                     profiles = FakeProfileRepository(userId = null),
                     follows = FakeFollowRepository(),
                     changes = FakeReviewChangeStore(),
@@ -120,18 +122,19 @@ class OtherReviewsViewModelTest {
                 viewModel.dispatch(OtherReviewsIntent.ToggleBlock)
                 assertEquals(OtherReviewsEffect.LoginRequired(Res.string.login_required_block_description), awaitItem())
             }
-            assertTrue(community.blockedUserIds.isEmpty())
+            assertTrue(repositories.blockedUserIds.isEmpty())
         }
 
     @Test
     fun `프로필 리뷰는 페이지 단위로 조회하며 마지막 페이지에서 멈춘다`() =
         coroutinesTest {
-            val community = FakeOtherReviewsCommunity()
-            community.reviews = (1..23).map(::review)
-            community.reviewCount = 23L
+            val repositories = FakeOtherReviewsRepositories()
+            repositories.reviews = (1..23).map(::review)
+            repositories.reviewCount = 23L
             val viewModel =
                 OtherReviewsViewModel(
-                    community = community,
+                    userProfileRepository = repositories,
+                    userModerationRepository = repositories,
                     profiles = FakeProfileRepository(),
                     follows = FakeFollowRepository(),
                     changes = FakeReviewChangeStore(),
@@ -151,9 +154,9 @@ class OtherReviewsViewModelTest {
 
             viewModel.dispatch(OtherReviewsIntent.LoadMore)
             runCurrent()
-            assertEquals(listOf("author"), community.requestedProfileUserIds)
-            assertEquals(listOf(0L, 20L), community.requestedOffsets)
-            assertEquals(community.reviews, viewModel.uiState.value.reviews)
+            assertEquals(listOf("author"), repositories.requestedProfileUserIds)
+            assertEquals(listOf(0L, 20L), repositories.requestedOffsets)
+            assertEquals(repositories.reviews, viewModel.uiState.value.reviews)
             assertEquals(23, viewModel.uiState.value.reviews.size)
             assertFalse(viewModel.uiState.value.hasMore)
         }
@@ -161,12 +164,13 @@ class OtherReviewsViewModelTest {
     @Test
     fun `페이지 사이의 중복 리뷰는 기존 매장을 유지하며 조회 위치를 증가시킨다`() =
         coroutinesTest {
-            val community = FakeOtherReviewsCommunity()
+            val repositories = FakeOtherReviewsRepositories()
             val firstPage = (1..20).map(::review)
-            community.reviews = firstPage + firstPage.first().copy(shop = ramenShopFixture(id = "shop-1"))
+            repositories.reviews = firstPage + firstPage.first().copy(shop = ramenShopFixture(id = "shop-1"))
             val viewModel =
                 OtherReviewsViewModel(
-                    community = community,
+                    userProfileRepository = repositories,
+                    userModerationRepository = repositories,
                     profiles = FakeProfileRepository(),
                     follows = FakeFollowRepository(),
                     changes = FakeReviewChangeStore(),
@@ -181,19 +185,20 @@ class OtherReviewsViewModelTest {
 
             assertEquals(firstPage, viewModel.uiState.value.reviews)
             assertEquals(21L, viewModel.uiState.value.reviewsOffset)
-            assertEquals(listOf(0L, 20L), community.requestedOffsets)
+            assertEquals(listOf(0L, 20L), repositories.requestedOffsets)
             assertFalse(viewModel.uiState.value.hasMore)
         }
 
     @Test
     fun `저장한 매장 탭은 공개 매장을 페이지 단위로 조회한다`() =
         coroutinesTest {
-            val community = FakeOtherReviewsCommunity()
-            community.savedShops = (1..23).map { ramenShopFixture(id = "shop-$it") }
-            community.savedShopCount = 23L
+            val repositories = FakeOtherReviewsRepositories()
+            repositories.savedShops = (1..23).map { ramenShopFixture(id = "shop-$it") }
+            repositories.savedShopCount = 23L
             val viewModel =
                 OtherReviewsViewModel(
-                    community = community,
+                    userProfileRepository = repositories,
+                    userModerationRepository = repositories,
                     profiles = FakeProfileRepository(),
                     follows = FakeFollowRepository(),
                     changes = FakeReviewChangeStore(),
@@ -213,7 +218,7 @@ class OtherReviewsViewModelTest {
             viewModel.dispatch(OtherReviewsIntent.LoadMore)
             runCurrent()
 
-            assertEquals(listOf(0L, 20L), community.requestedSavedShopOffsets)
+            assertEquals(listOf(0L, 20L), repositories.requestedSavedShopOffsets)
             assertEquals(23, viewModel.uiState.value.savedShops.size)
             assertFalse(viewModel.uiState.value.savedShopsHasMore)
         }
@@ -221,10 +226,11 @@ class OtherReviewsViewModelTest {
     @Test
     fun `비로그인 사용자의 저장한 매장 탭은 매장을 조회하지 않고 로그인을 안내한다`() =
         coroutinesTest {
-            val community = FakeOtherReviewsCommunity()
+            val repositories = FakeOtherReviewsRepositories()
             val viewModel =
                 OtherReviewsViewModel(
-                    community = community,
+                    userProfileRepository = repositories,
+                    userModerationRepository = repositories,
                     profiles = FakeProfileRepository(userId = null),
                     follows = FakeFollowRepository(),
                     changes = FakeReviewChangeStore(),
@@ -240,17 +246,18 @@ class OtherReviewsViewModelTest {
             }
 
             assertEquals(OtherReviewsTab.Reviews, viewModel.uiState.value.selectedTab)
-            assertTrue(community.requestedSavedShopOffsets.isEmpty())
+            assertTrue(repositories.requestedSavedShopOffsets.isEmpty())
         }
 
     @Test
     fun `이용할 수 없는 프로필은 리뷰를 조회하지 않는다`() =
         coroutinesTest {
-            val community = FakeOtherReviewsCommunity()
-            community.profile = null
+            val repositories = FakeOtherReviewsRepositories()
+            repositories.profile = null
             val viewModel =
                 OtherReviewsViewModel(
-                    community = community,
+                    userProfileRepository = repositories,
+                    userModerationRepository = repositories,
                     profiles = FakeProfileRepository(),
                     follows = FakeFollowRepository(),
                     changes = FakeReviewChangeStore(),
@@ -264,18 +271,19 @@ class OtherReviewsViewModelTest {
             assertTrue(viewModel.uiState.value.loaded)
             assertEquals(null, viewModel.uiState.value.profile)
             assertFalse(viewModel.uiState.value.isPrivate)
-            assertTrue(community.requestedOffsets.isEmpty())
+            assertTrue(repositories.requestedOffsets.isEmpty())
         }
 
     @Test
     fun `비공개 프로필은 사용자 정보와 리뷰를 숨긴다`() =
         coroutinesTest {
-            val community = FakeOtherReviewsCommunity()
-            community.profilePrivate = true
-            community.reviews = listOf(review(1))
+            val repositories = FakeOtherReviewsRepositories()
+            repositories.profilePrivate = true
+            repositories.reviews = listOf(review(1))
             val viewModel =
                 OtherReviewsViewModel(
-                    community = community,
+                    userProfileRepository = repositories,
+                    userModerationRepository = repositories,
                     profiles = FakeProfileRepository(),
                     follows = FakeFollowRepository(),
                     changes = FakeReviewChangeStore(),
@@ -293,19 +301,20 @@ class OtherReviewsViewModelTest {
                 viewModel.uiState.value.reviews
                     .isEmpty(),
             )
-            assertTrue(community.requestedOffsets.isEmpty())
-            assertTrue(community.requestedSavedShopOffsets.isEmpty())
+            assertTrue(repositories.requestedOffsets.isEmpty())
+            assertTrue(repositories.requestedSavedShopOffsets.isEmpty())
         }
 
     @Test
     fun `차단한 프로필은 사용자 정보를 유지하고 리뷰를 숨긴다`() =
         coroutinesTest {
-            val community = FakeOtherReviewsCommunity()
-            community.blockedUserIds += "author"
-            community.reviews = listOf(review(1))
+            val repositories = FakeOtherReviewsRepositories()
+            repositories.blockedUserIds += "author"
+            repositories.reviews = listOf(review(1))
             val viewModel =
                 OtherReviewsViewModel(
-                    community = community,
+                    userProfileRepository = repositories,
+                    userModerationRepository = repositories,
                     profiles = FakeProfileRepository(),
                     follows = FakeFollowRepository(),
                     changes = FakeReviewChangeStore(),
@@ -317,7 +326,7 @@ class OtherReviewsViewModelTest {
             runCurrent()
 
             assertTrue(viewModel.uiState.value.isBlocked)
-            assertEquals(listOf("author"), community.requestedProfileUserIds)
+            assertEquals(listOf("author"), repositories.requestedProfileUserIds)
             assertFalse(viewModel.uiState.value.isPrivate)
             assertEquals(
                 "라멘팬",
@@ -328,18 +337,19 @@ class OtherReviewsViewModelTest {
                 viewModel.uiState.value.reviews
                     .isEmpty(),
             )
-            assertTrue(community.requestedOffsets.isEmpty())
+            assertTrue(repositories.requestedOffsets.isEmpty())
         }
 
     @Test
     fun `다음 페이지 조회 실패 시 같은 위치를 재시도한다`() =
         coroutinesTest {
-            val community = FakeOtherReviewsCommunity()
-            community.reviews = (1..23).map(::review)
-            community.reviewCount = 23L
+            val repositories = FakeOtherReviewsRepositories()
+            repositories.reviews = (1..23).map(::review)
+            repositories.reviewCount = 23L
             val viewModel =
                 OtherReviewsViewModel(
-                    community = community,
+                    userProfileRepository = repositories,
+                    userModerationRepository = repositories,
                     profiles = FakeProfileRepository(),
                     follows = FakeFollowRepository(),
                     changes = FakeReviewChangeStore(),
@@ -349,7 +359,7 @@ class OtherReviewsViewModelTest {
             viewModel.dispatch(OtherReviewsIntent.OpenProfile("author"))
             runCurrent()
 
-            community.failNextPage = true
+            repositories.failNextPage = true
             viewModel.dispatch(OtherReviewsIntent.LoadMore)
             runCurrent()
             assertTrue(viewModel.uiState.value.failed)
@@ -357,18 +367,19 @@ class OtherReviewsViewModelTest {
 
             viewModel.dispatch(OtherReviewsIntent.Retry)
             runCurrent()
-            assertEquals(listOf(0L, 20L, 20L), community.requestedOffsets)
+            assertEquals(listOf(0L, 20L, 20L), repositories.requestedOffsets)
             assertEquals(23, viewModel.uiState.value.reviews.size)
         }
 
     @Test
     fun `차단하면 프로필 리뷰를 숨기고 차단을 해제하면 복원한다`() =
         coroutinesTest {
-            val community = FakeOtherReviewsCommunity()
-            community.reviews = listOf(review(1))
+            val repositories = FakeOtherReviewsRepositories()
+            repositories.reviews = listOf(review(1))
             val viewModel =
                 OtherReviewsViewModel(
-                    community = community,
+                    userProfileRepository = repositories,
+                    userModerationRepository = repositories,
                     profiles = FakeProfileRepository(),
                     follows = FakeFollowRepository(),
                     changes = FakeReviewChangeStore(),
@@ -385,7 +396,7 @@ class OtherReviewsViewModelTest {
                 viewModel.uiState.value.reviews
                     .isEmpty(),
             )
-            assertEquals(setOf("author"), community.blockedUserIds)
+            assertEquals(setOf("author"), repositories.blockedUserIds)
 
             viewModel.dispatch(OtherReviewsIntent.ToggleBlock)
             runCurrent()
@@ -396,11 +407,12 @@ class OtherReviewsViewModelTest {
     @Test
     fun `차단 실패 시 리뷰를 계속 표시한다`() =
         coroutinesTest {
-            val community = FakeOtherReviewsCommunity()
-            community.reviews = listOf(review(1))
+            val repositories = FakeOtherReviewsRepositories()
+            repositories.reviews = listOf(review(1))
             val viewModel =
                 OtherReviewsViewModel(
-                    community = community,
+                    userProfileRepository = repositories,
+                    userModerationRepository = repositories,
                     profiles = FakeProfileRepository(),
                     follows = FakeFollowRepository(),
                     changes = FakeReviewChangeStore(),
@@ -410,7 +422,7 @@ class OtherReviewsViewModelTest {
             viewModel.dispatch(OtherReviewsIntent.OpenProfile("author"))
             runCurrent()
 
-            community.failNextBlock = true
+            repositories.failNextBlock = true
             viewModel.sideEffect.test {
                 viewModel.dispatch(OtherReviewsIntent.ToggleBlock)
                 runCurrent()
@@ -425,14 +437,15 @@ class OtherReviewsViewModelTest {
     @Test
     fun `팔로우 변경 실패는 조회나 차단 실패와 구분해 안내한다`() =
         coroutinesTest {
-            val community = FakeOtherReviewsCommunity()
+            val repositories = FakeOtherReviewsRepositories()
             val follows =
                 FakeFollowRepository().apply {
                     changeResult = RamapResult.Error(RamapError.Http(500))
                 }
             val viewModel =
                 OtherReviewsViewModel(
-                    community = community,
+                    userProfileRepository = repositories,
+                    userModerationRepository = repositories,
                     profiles = FakeProfileRepository(),
                     follows = follows,
                     changes = FakeReviewChangeStore(),
@@ -462,6 +475,6 @@ class OtherReviewsViewModelTest {
                     createdAt = "2026-09-30T12:00:00Z",
                     author = ReviewAuthor("author", "라멘팬"),
                 ),
-            shop = if (number % 2 == 0) ramenShopFixture(id = "shop-$number") else null,
+            shop = ramenShopFixture(id = "shop-$number"),
         )
 }

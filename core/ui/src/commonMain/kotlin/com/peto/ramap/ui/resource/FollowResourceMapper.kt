@@ -1,8 +1,8 @@
 package com.peto.ramap.ui.resource
 
-import com.peto.ramap.domain.model.community.FollowAction
-import com.peto.ramap.domain.model.community.FollowList
-import com.peto.ramap.domain.model.community.FollowState
+import com.peto.ramap.domain.model.follow.FollowAction
+import com.peto.ramap.domain.model.follow.FollowList
+import com.peto.ramap.domain.model.follow.FollowState
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.StringResource
 import ramap.shared.generated.resources.Res

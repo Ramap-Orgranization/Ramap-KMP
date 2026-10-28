@@ -1,5 +1,6 @@
 package com.peto.ramap.data.datasource.review
 
+import com.peto.ramap.data.datasource.image.CachedImageUrlDataSource
 import com.peto.ramap.data.datasource.image.ImageUrlDataSource
 import com.peto.ramap.data.model.ReviewMutationResponse
 import com.peto.ramap.data.model.ReviewOwnerCountsResponse
@@ -50,7 +51,8 @@ class RemoteReviewDataSourceMutationTest {
             client.auth.setSessionStatus(SessionStatus.NotAuthenticated())
             try {
                 val changes = FakeReviewChangeStore()
-                val source = RemoteReviewDataSource(client, signer, changes)
+                val images = CachedImageUrlDataSource(signer, ReviewImageUrlAccessPolicy(client, lazy { changes }))
+                val source = RemoteReviewDataSource(client, ReviewImageResolver(images))
                 source.hydrateMutation(receipt(listOf("owner/retained")))
                 val pending = receipt(listOf("owner/retained", "owner/new"))
                 source.hydrateMutation(pending)

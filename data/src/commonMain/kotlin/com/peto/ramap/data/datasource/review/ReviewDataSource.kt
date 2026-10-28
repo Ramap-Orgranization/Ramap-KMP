@@ -17,6 +17,8 @@ internal interface ReviewDataSource {
         visibility: String,
     ): MyReviewsPageResponse
 
+    suspend fun fetchMyReviewsMetadata(offset: Long): MyReviewsPageResponse = fetchMyReviews(offset, "all")
+
     suspend fun fetchMyReview(reviewId: String): MyReviewResponse?
 
     suspend fun fetchShopReviews(

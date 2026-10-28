@@ -4,11 +4,11 @@ import androidx.lifecycle.viewModelScope
 import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
-import com.peto.ramap.domain.model.community.FollowAction
-import com.peto.ramap.domain.model.community.FollowState
-import com.peto.ramap.domain.model.community.ProfileAccess
-import com.peto.ramap.domain.model.community.PublicProfile
-import com.peto.ramap.domain.model.community.PublicSavedShopsPage
+import com.peto.ramap.domain.model.follow.FollowAction
+import com.peto.ramap.domain.model.follow.FollowState
+import com.peto.ramap.domain.model.profile.ProfileAccess
+import com.peto.ramap.domain.model.profile.PublicProfile
+import com.peto.ramap.domain.model.profile.PublicSavedShopsPage
 import com.peto.ramap.domain.model.review.MyReviewVisibility
 import com.peto.ramap.domain.model.review.MyReviewsPage
 import com.peto.ramap.domain.model.review.Review
@@ -17,10 +17,11 @@ import com.peto.ramap.domain.model.review.ReviewLike
 import com.peto.ramap.domain.model.review.ShopReviewsPage
 import com.peto.ramap.domain.model.review.change.ReviewChange
 import com.peto.ramap.domain.model.review.change.ReviewChangeReducer
-import com.peto.ramap.domain.repository.CommunityRepository
 import com.peto.ramap.domain.repository.FollowRepository
 import com.peto.ramap.domain.repository.ProfileRepository
 import com.peto.ramap.domain.repository.ReviewRepository
+import com.peto.ramap.domain.repository.UserModerationRepository
+import com.peto.ramap.domain.repository.UserProfileRepository
 import com.peto.ramap.domain.store.ReviewChangeStore
 import com.peto.ramap.ui.base.BaseViewModel
 import com.peto.ramap.ui.review.other.contract.OtherReviewsEffect
@@ -46,7 +47,8 @@ import ramap.shared.generated.resources.review_like_failed
 import ramap.shared.generated.resources.review_unblock_failed
 
 class OtherReviewsViewModel(
-    private val community: CommunityRepository,
+    private val userProfileRepository: UserProfileRepository,
+    private val userModerationRepository: UserModerationRepository,
     private val profiles: ProfileRepository,
     private val follows: FollowRepository,
     private val reviewRepository: ReviewRepository =
@@ -120,6 +122,15 @@ class OtherReviewsViewModel(
                     val change = record.change
                     val targetId = currentState.userId
                     val isAccessChangedForUser = change is ReviewChange.AccessChanged && change.userId == targetId
+                    val needsShop =
+                        change is ReviewChange.Written &&
+                            change.userId == targetId &&
+                            change.after?.let { after -> after.shop == null && currentState.reviews.none { it.review.id == after.review.id } } == true
+                    if (needsShop) {
+                        revision = record.revision
+                        loadPage(reset = true)
+                        continue
+                    }
                     if (isAccessChangedForUser) {
                         handleAccessChange(change as ReviewChange.AccessChanged)
                     } else {
@@ -345,7 +356,7 @@ class OtherReviewsViewModel(
         requestedReviewExtent: Int,
     ) {
         val requestedGeneration = generation
-        val result = community.fetchProfileAccess(userId)
+        val result = userProfileRepository.fetchProfileAccess(userId)
         currentCoroutineContext().ensureActive()
         val isStaleGeneration = requestedGeneration != generation
         if (isStaleGeneration) return
@@ -409,7 +420,7 @@ class OtherReviewsViewModel(
     ) {
         val requestedGeneration = generation
         val baseline = changes.journal.value
-        val result = community.fetchProfileReviewsPage(userId, offset)
+        val result = userProfileRepository.fetchProfileReviewsPage(userId, offset)
         currentCoroutineContext().ensureActive()
         val isStaleGeneration = requestedGeneration != generation
         if (isStaleGeneration) return
@@ -528,7 +539,7 @@ class OtherReviewsViewModel(
             loadKey = OtherReviewsLoadKey.Block,
             policy = TaskPolicy.IgnoreNew,
             request = {
-                if (wasBlocked) community.unblockUser(profile.userId) else community.blockUser(profile.userId)
+                if (wasBlocked) userModerationRepository.unblockUser(profile.userId) else userModerationRepository.blockUser(profile.userId)
             },
             onSuccess = {
                 handleToggleBlockSuccess(
@@ -557,7 +568,7 @@ class OtherReviewsViewModel(
             taskKey = FOLLOW_ACCESS_TASK,
             loadKey = OtherReviewsLoadKey.Follow,
             policy = TaskPolicy.CancelPrevious,
-            request = { community.fetchProfileAccess(userId) },
+            request = { userProfileRepository.fetchProfileAccess(userId) },
             onSuccess = { access ->
                 val isStaleContext = currentState.currentUserId != currentUserId || currentState.userId != userId
                 if (isStaleContext) return@launchResultTask
@@ -689,14 +700,12 @@ class OtherReviewsViewModel(
             loadKey = OtherReviewsLoadKey.SavedShops,
             policy = TaskPolicy.IgnoreNew,
             onStart = { copy(savedShopsFailed = false) },
-            request = { community.fetchUserSavedShops(userId, offset) },
+            request = { userProfileRepository.fetchUserSavedShops(userId, offset) },
             onSuccess = { page ->
-                currentCoroutineContext().ensureActive()
                 val isSameUser = currentState.userId == userId
                 if (isSameUser) applySavedShopsPage(page)
             },
             onError = {
-                currentCoroutineContext().ensureActive()
                 val isSameUser = currentState.userId == userId
                 if (isSameUser) reduce { copy(savedShopsFailed = true) }
             },

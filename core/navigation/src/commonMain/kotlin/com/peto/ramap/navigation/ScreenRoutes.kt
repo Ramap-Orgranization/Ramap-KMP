@@ -1,6 +1,7 @@
 package com.peto.ramap.navigation
 
 import androidx.navigation3.runtime.NavKey
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -16,6 +17,12 @@ sealed interface ScreenRoutes : NavKey {
     ) : ScreenRoutes
 
     @Serializable
+    data object ArchiveMapRoutes : ScreenRoutes
+
+    @Serializable
+    data object ReviewShopSearchRoutes : ScreenRoutes
+
+    @Serializable
     data class EventTabRoutes(
         val instanceId: Int = 0,
     ) : ScreenRoutes
@@ -25,6 +32,10 @@ sealed interface ScreenRoutes : NavKey {
 
     @Serializable
     data object RankingTabRoutes : ScreenRoutes
+
+    @Serializable
+    @SerialName("com.peto.ramap.navigation.ScreenRoutes.CommunityTabRoutes")
+    data object FeedTabRoutes : ScreenRoutes
 
     @Serializable
     data object MyTabRoutes : ScreenRoutes

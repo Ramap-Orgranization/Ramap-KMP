@@ -61,6 +61,7 @@ internal fun AppRoute(
             hasActiveOverlay = overlayState.isOverlayActive,
             openProfile = overlayState::openProfile,
             onLoginTypeSelected = onLoginTypeSelected,
+            onFindVisitedShop = overlayState::openReviewShopSearch,
             onOpenReviewWriteOverlay = { shopId ->
                 overlayState.overlayReviewWriteArgs = shopId to null
             },

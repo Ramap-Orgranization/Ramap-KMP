@@ -2,7 +2,6 @@ package com.peto.ramap.ui.review.my
 
 import com.peto.ramap.core.result.RamapError
 import com.peto.ramap.core.result.RamapResult
-import com.peto.ramap.domain.model.community.ReviewModerationStatus
 import com.peto.ramap.domain.model.review.EditableReview
 import com.peto.ramap.domain.model.review.MyReview
 import com.peto.ramap.domain.model.review.MyReviewVisibility
@@ -10,6 +9,7 @@ import com.peto.ramap.domain.model.review.MyReviewsPage
 import com.peto.ramap.domain.model.review.Review
 import com.peto.ramap.domain.model.review.ReviewImage
 import com.peto.ramap.domain.model.review.ReviewLike
+import com.peto.ramap.domain.model.review.ReviewModerationStatus
 import com.peto.ramap.domain.model.review.ShopReviewsPage
 import com.peto.ramap.domain.repository.ReviewRepository
 import kotlinx.coroutines.CompletableDeferred
@@ -36,14 +36,14 @@ internal class FakeOwnerReviews(
             failNext = false
             return RamapResult.Error(RamapError.Network(IllegalStateException("offline")))
         }
-        val all = (0 until total).map { review(it) }.filterNot { it.id in removedIds }
+        val all = (0 until total).map { review(it) }.filterNot { it.review.id in removedIds }
         val filtered =
             when (visibility) {
                 MyReviewVisibility.ALL -> all
-                MyReviewVisibility.PUBLIC -> all.filter { it.isPublic }
-                MyReviewVisibility.PRIVATE -> all.filterNot { it.isPublic }
+                MyReviewVisibility.PUBLIC -> all.filter { it.review.isPublic }
+                MyReviewVisibility.PRIVATE -> all.filterNot { it.review.isPublic }
             }
-        return RamapResult.Success(MyReviewsPage(filtered.drop(offset.toInt()).take(30), all.size, all.count { it.isPublic }, all.count { !it.isPublic }, false))
+        return RamapResult.Success(MyReviewsPage(filtered.drop(offset.toInt()).take(30), all.size, all.count { it.review.isPublic }, all.count { !it.review.isPublic }, false))
     }
 
     override suspend fun fetchMyReview(reviewId: String) = RamapResult.Success(review(reviewId.toInt()))
@@ -84,13 +84,16 @@ internal class FakeOwnerReviews(
 
     private fun review(index: Int) =
         MyReview(
-            id = "$index",
-            shopId = "shop",
+            review =
+                Review(
+                    id = "$index",
+                    shopId = "shop",
+                    body = "리뷰 본문",
+                    createdAt = "2026-09-28",
+                    images = emptyList(),
+                    isPublic = index < total - 2,
+                    moderationStatus = ReviewModerationStatus.PUBLISHED,
+                ),
             shopName = "매장",
-            body = "리뷰 본문",
-            createdAt = "2026-09-28",
-            images = emptyList(),
-            isPublic = index < total - 2,
-            moderationStatus = ReviewModerationStatus.PUBLISHED,
         )
 }

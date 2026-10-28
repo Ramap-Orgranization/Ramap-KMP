@@ -61,6 +61,8 @@ import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.RamapTheme
 import com.peto.ramap.theme.SystemColor
 import com.peto.ramap.ui.loading.LoadState
+import com.peto.ramap.ui.profile.edit.contract.ProfileIntent
+import com.peto.ramap.ui.profile.edit.contract.ProfileUiState
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res

@@ -3,12 +3,13 @@ package com.peto.ramap.ui.profile.follow
 import com.peto.ramap.core.result.RamapError
 import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.coroutinesTest
-import com.peto.ramap.domain.model.community.FollowAction
-import com.peto.ramap.domain.model.community.FollowCounts
-import com.peto.ramap.domain.model.community.FollowList
-import com.peto.ramap.domain.model.community.PublicProfile
+import com.peto.ramap.domain.model.follow.FollowAction
+import com.peto.ramap.domain.model.follow.FollowCounts
+import com.peto.ramap.domain.model.follow.FollowList
+import com.peto.ramap.domain.model.profile.PublicProfile
 import com.peto.ramap.fake.FakeFollowRepository
 import com.peto.ramap.fake.FakeProfileRepository
+import com.peto.ramap.ui.profile.follow.contract.FollowIntent
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runCurrent

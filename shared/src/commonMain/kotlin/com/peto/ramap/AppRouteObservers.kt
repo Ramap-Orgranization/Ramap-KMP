@@ -6,6 +6,7 @@ import androidx.compose.runtime.snapshotFlow
 import com.peto.ramap.deeplink.DeepLinkEntryPoint
 import com.peto.ramap.deeplink.DeepLinkEvent
 import com.peto.ramap.designsystem.toast.ToastManager
+import com.peto.ramap.domain.model.auth.LoginSessionState
 import com.peto.ramap.domain.repository.LoginRepository
 import com.peto.ramap.domain.store.PersonalizationBootstrapState
 import com.peto.ramap.domain.store.PersonalizationStore
@@ -55,6 +56,10 @@ internal fun AppRouteObservers(
         personalizationStore = personalizationStore,
     )
 
+    LaunchedEffect(loginRepository, navigationState) {
+        observeArchiveSession(loginRepository, navigationState)
+    }
+
     HandleNotificationDeepLink(
         navigationState = navigationState,
         notificationDeepLinkParser = notificationDeepLinkParser,
@@ -74,6 +79,15 @@ internal fun AppRouteObservers(
         onExitRequested = onExitRequested,
         toastManager = toastManager,
     )
+}
+
+internal suspend fun observeArchiveSession(
+    loginRepository: LoginRepository,
+    navigationState: NavigationState,
+) {
+    loginRepository.session.collect { session ->
+        if (session == LoginSessionState.NOT_AUTHENTICATED) navigationState.clearArchiveMap()
+    }
 }
 
 @Composable

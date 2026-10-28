@@ -19,6 +19,8 @@ internal class AppUpdateGateViewModel(
     override suspend fun handleIntent(intent: Nothing) = Unit
 
     private fun checkPolicy() {
+        if (versionProvider.isDebugBuild) return
+
         launchTask(
             taskKey = POLICY_TASK_KEY,
             loadKey = AppUpdateLoadKey.Policy,

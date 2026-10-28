@@ -4,12 +4,12 @@ import androidx.lifecycle.ViewModelStore
 import com.peto.ramap.analytics.common.login.LoginAnalytics
 import com.peto.ramap.domain.model.review.ShopReviewCache
 import com.peto.ramap.domain.model.review.change.ReviewChangeReducer
-import com.peto.ramap.domain.repository.CommunityRepository
 import com.peto.ramap.domain.repository.LoginRepository
 import com.peto.ramap.domain.repository.ProfileRepository
 import com.peto.ramap.domain.repository.ReviewRepository
 import com.peto.ramap.domain.repository.ShopMenuRepository
 import com.peto.ramap.domain.repository.ShopReportRepository
+import com.peto.ramap.domain.repository.UserModerationRepository
 import com.peto.ramap.domain.store.PersonalizationStore
 import com.peto.ramap.domain.store.ReviewChangeStore
 import com.peto.ramap.domain.usecase.FeatchShopReviewsUseCase
@@ -51,13 +51,15 @@ class MapShopSectionsFixture(
     private val overviewQuery: FetchShopOverviewUseCase,
     private val profile: ProfileRepository,
     private val reviews: ReviewRepository,
-    private val community: CommunityRepository,
+    private val moderation: UserModerationRepository,
     private val changes: ReviewChangeStore,
     private val menus: ShopMenuRepository,
 ) {
     val uiState = MutableStateFlow(ShopSectionsSnapshot(map.uiState.value))
     private val effects = Channel<ShopInteractionEffect>(Channel.BUFFERED)
     val sideEffect = effects.receiveAsFlow()
+    var archiveNavigationCount = 0
+        private set
     private var store: ViewModelStore? = null
     private var collectors: List<Job> = emptyList()
     private var overview: OverviewViewModel? = null
@@ -73,14 +75,21 @@ class MapShopSectionsFixture(
             }
         }
         scope.launch { map.uiState.collect { state -> uiState.value = uiState.value.copy(map = state) } }
-        scope.launch { map.sideEffect.collect { if (it is MapSideEffect.Interaction) effects.send(it.effect) } }
+        scope.launch {
+            map.sideEffect.collect {
+                when (it) {
+                    is MapSideEffect.Interaction -> effects.send(it.effect)
+                    MapSideEffect.NavigateToArchive -> archiveNavigationCount++
+                }
+            }
+        }
     }
 
     private fun open(shopId: String?) {
         val overviewVm = OverviewViewModel(login, reports, personalization, overviewQuery, FakeMapSearchHistoryStorage(), ShopAnalytics(FakeAnalyticsTracker()), SignInUseCase(login, LoginAnalytics(FakeAnalyticsTracker(), FakeCrashReporter())))
         val menuVm = ShopMenuViewModel(menus)
         val reducer = ReviewChangeReducer()
-        val reviewVm = ReviewsViewModel(reviews, community, profile, login, changes, reducer, FeatchShopReviewsUseCase(reviews, changes, reducer, ShopReviewCache(changes, reducer)))
+        val reviewVm = ReviewsViewModel(reviews, moderation, profile, login, changes, reducer, FeatchShopReviewsUseCase(reviews, changes, reducer, ShopReviewCache(changes, reducer)))
         overview = overviewVm
         menu = menuVm
         review = reviewVm

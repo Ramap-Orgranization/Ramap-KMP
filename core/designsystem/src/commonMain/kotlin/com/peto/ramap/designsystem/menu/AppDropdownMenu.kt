@@ -38,8 +38,6 @@ fun AppDropdownMenuItem(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
-    leadingIcon: (@Composable () -> Unit)? = null,
-    trailingIcon: (@Composable () -> Unit)? = null,
 ) {
     DropdownMenuItem(
         text = {
@@ -52,7 +50,5 @@ fun AppDropdownMenuItem(
         onClick = onClick,
         modifier = modifier,
         enabled = enabled,
-        leadingIcon = leadingIcon,
-        trailingIcon = trailingIcon,
     )
 }

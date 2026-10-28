@@ -14,8 +14,8 @@ import com.peto.ramap.data.datasource.update.AppUpdatePolicyDataSource
 import com.peto.ramap.data.datasource.waiting.ShopWaitingSystemDataSource
 import com.peto.ramap.data.repository.DefaultAppNoticeRepository
 import com.peto.ramap.data.repository.DefaultAppUpdateRepository
+import com.peto.ramap.data.repository.DefaultArchiveRepository
 import com.peto.ramap.data.repository.DefaultBookmarkRepository
-import com.peto.ramap.data.repository.DefaultCommunityRepository
 import com.peto.ramap.data.repository.DefaultFollowRepository
 import com.peto.ramap.data.repository.DefaultHiddenShopRepository
 import com.peto.ramap.data.repository.DefaultImportationRepository
@@ -26,18 +26,21 @@ import com.peto.ramap.data.repository.DefaultPlaceSearchRepository
 import com.peto.ramap.data.repository.DefaultProfileRepository
 import com.peto.ramap.data.repository.DefaultPushRegistrationRepository
 import com.peto.ramap.data.repository.DefaultRamenShopRepository
+import com.peto.ramap.data.repository.DefaultReviewFeedRepository
 import com.peto.ramap.data.repository.DefaultReviewRepository
 import com.peto.ramap.data.repository.DefaultShopMenuRepository
 import com.peto.ramap.data.repository.DefaultShopRankingRepository
 import com.peto.ramap.data.repository.DefaultShopReportRepository
 import com.peto.ramap.data.repository.DefaultShopWaitingSystemRepository
 import com.peto.ramap.data.repository.DefaultSubscribedShopRepository
+import com.peto.ramap.data.repository.DefaultUserModerationRepository
+import com.peto.ramap.data.repository.DefaultUserProfileRepository
 import com.peto.ramap.data.store.DefaultPersonalizationStore
 import com.peto.ramap.data.store.DefaultReviewChangeStore
 import com.peto.ramap.domain.repository.AppNoticeRepository
 import com.peto.ramap.domain.repository.AppUpdateRepository
+import com.peto.ramap.domain.repository.ArchiveRepository
 import com.peto.ramap.domain.repository.BookmarkRepository
-import com.peto.ramap.domain.repository.CommunityRepository
 import com.peto.ramap.domain.repository.FollowRepository
 import com.peto.ramap.domain.repository.HiddenShopRepository
 import com.peto.ramap.domain.repository.ImportationRepository
@@ -48,23 +51,29 @@ import com.peto.ramap.domain.repository.PlaceSearchRepository
 import com.peto.ramap.domain.repository.ProfileRepository
 import com.peto.ramap.domain.repository.PushRegistrationRepository
 import com.peto.ramap.domain.repository.RamenShopRepository
+import com.peto.ramap.domain.repository.ReviewFeedRepository
 import com.peto.ramap.domain.repository.ReviewRepository
 import com.peto.ramap.domain.repository.ShopMenuRepository
 import com.peto.ramap.domain.repository.ShopRankingRepository
 import com.peto.ramap.domain.repository.ShopReportRepository
 import com.peto.ramap.domain.repository.ShopWaitingSystemRepository
 import com.peto.ramap.domain.repository.SubscribedShopRepository
+import com.peto.ramap.domain.repository.UserModerationRepository
+import com.peto.ramap.domain.repository.UserProfileRepository
 import com.peto.ramap.domain.store.PersonalizationStore
 import com.peto.ramap.domain.store.ReviewChangeStore
 import org.koin.dsl.module
 
 val repositoryModule =
     module {
+        single<ArchiveRepository> { DefaultArchiveRepository(get(), get(), get()) }
         single { DefaultReviewChangeStore(get<ProfileDataSource>().sessionUserIds, get<ProfileDataSource>()::currentUserId) }
         single<ReviewChangeStore> { get<DefaultReviewChangeStore>() }
         single<FollowRepository> { DefaultFollowRepository(get(), get()) }
         single<ProfileRepository> { DefaultProfileRepository(get(), get()) }
-        single<CommunityRepository> { DefaultCommunityRepository(get(), get<RamenShopDataSource>(), get()) }
+        single<UserProfileRepository> { DefaultUserProfileRepository(get()) }
+        single<UserModerationRepository> { DefaultUserModerationRepository(get(), get()) }
+        single<ReviewFeedRepository> { DefaultReviewFeedRepository(get()) }
         single<ReviewRepository> { DefaultReviewRepository(get(), get<RamenShopDataSource>(), get()) }
         single<AppUpdateRepository> {
             DefaultAppUpdateRepository(get<AppUpdatePolicyDataSource>())

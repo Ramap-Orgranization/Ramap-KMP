@@ -42,8 +42,8 @@ internal class DefaultReviewRepository(
     ): RamapResult<MyReviewsPage> =
         invokeRequest {
             val page = dataSource.fetchMyReviews(offset, visibility.rpcValue).toDomain()
-            val shops = fetchReviewShops(page.reviews.map { it.shopId }.toSet())
-            page.copy(reviews = page.reviews.map { it.copy(shop = shops[it.shopId]) })
+            val shops = fetchReviewShops(page.reviews.map { it.review.shopId }.toSet())
+            page.copy(reviews = page.reviews.map { it.copy(shop = shops[it.review.shopId]) })
         }
 
     private suspend fun fetchReviewShops(shopIds: Set<String>): Map<String, RamenShop> {
@@ -62,7 +62,7 @@ internal class DefaultReviewRepository(
     override suspend fun fetchMyReview(reviewId: String): RamapResult<MyReview?> =
         invokeRequest {
             dataSource.fetchMyReview(reviewId)?.toDomain()?.let { review ->
-                review.copy(shop = fetchReviewShops(setOf(review.shopId))[review.shopId])
+                review.copy(shop = fetchReviewShops(setOf(review.review.shopId))[review.review.shopId])
             }
         }
 

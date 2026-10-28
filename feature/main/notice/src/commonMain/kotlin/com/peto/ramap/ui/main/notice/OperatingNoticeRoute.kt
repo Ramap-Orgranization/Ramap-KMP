@@ -4,7 +4,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.peto.ramap.designsystem.button.login.LoginButton
 import com.peto.ramap.designsystem.dialog.LoginGuideDialog
 import com.peto.ramap.designsystem.toast.ToastManager
 import com.peto.ramap.platform.ExternalUriOpener
@@ -50,7 +49,6 @@ fun OperatingNoticeRoute(
             visible = uiState.showLoginGuide,
             onDismiss = { viewModel.dispatch(OperatingNoticeIntent.OnLoginDismissed) },
             onLoginTypeSelected = { viewModel.dispatch(OperatingNoticeIntent.OnLoginSelected(it)) },
-            loginButton = { type, onClick -> LoginButton(type, onClick) },
         )
     }
 }

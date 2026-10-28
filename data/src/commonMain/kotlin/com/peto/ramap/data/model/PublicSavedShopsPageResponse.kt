@@ -1,6 +1,6 @@
 package com.peto.ramap.data.model
 
-import com.peto.ramap.domain.model.community.PublicSavedShopsPage
+import com.peto.ramap.domain.model.profile.PublicSavedShopsPage
 import kotlinx.serialization.Serializable
 
 @Serializable

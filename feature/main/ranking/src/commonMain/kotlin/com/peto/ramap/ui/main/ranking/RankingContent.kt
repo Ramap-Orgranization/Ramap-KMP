@@ -80,7 +80,7 @@ internal fun RankingContent(
                 LazyColumn(
                     state = listState,
                     overscrollEffect = null,
-                    contentPadding = PaddingValues(start = 24.dp, end = 10.dp),
+                    contentPadding = PaddingValues(horizontal = 5.dp),
                     verticalArrangement = Arrangement.spacedBy(2.dp),
                 ) {
                     items(uiState.shops, key = { it.ranking.shop.id }) { item ->

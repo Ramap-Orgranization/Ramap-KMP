@@ -18,7 +18,10 @@ import com.peto.ramap.ui.bookmark.list.BookmarkedShopListRoute
 import com.peto.ramap.ui.hidden.HiddenShopListRoute
 import com.peto.ramap.ui.main.event.detail.EventDetailRoute
 import com.peto.ramap.ui.main.event.list.EventsRoute
+import com.peto.ramap.ui.main.feed.FeedRoute
 import com.peto.ramap.ui.main.map.MapRoute
+import com.peto.ramap.ui.main.map.archive.ArchiveMapRoute
+import com.peto.ramap.ui.main.map.archive.ArchiveMapViewModel
 import com.peto.ramap.ui.main.my.MyTabRoute
 import com.peto.ramap.ui.main.notice.OperatingNoticeRoute
 import com.peto.ramap.ui.main.ranking.RankingRoute
@@ -28,10 +31,13 @@ import com.peto.ramap.ui.profile.follow.FollowRoute
 import com.peto.ramap.ui.report.PlaceReportRoute
 import com.peto.ramap.ui.review.my.MyReviewsRoute
 import com.peto.ramap.ui.review.other.OtherReviewsRoute
+import com.peto.ramap.ui.review.search.ReviewShopSearchRoute
 import com.peto.ramap.ui.review.write.ShopReviewWriteRoute
 import com.peto.ramap.ui.settings.SettingsRoute
+import com.peto.ramap.ui.shop.ArchiveShopDetailHost
 import com.peto.ramap.ui.shop.ShopDetailHost
 import com.peto.ramap.ui.subscribed.SubscribedShopsRoute
+import org.koin.compose.viewmodel.koinViewModel
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.event_not_found_message
 
@@ -42,6 +48,7 @@ internal fun NavigationGraph(
     hasActiveOverlay: Boolean,
     openProfile: (userId: String, asOverlay: Boolean) -> Unit,
     onLoginTypeSelected: (LoginType) -> Unit,
+    onFindVisitedShop: () -> Unit,
     onOpenReviewWriteOverlay: (shopId: String) -> Unit,
     onOpenReviewEditOverlay: (shopId: String, reviewId: String?) -> Unit,
 ) {
@@ -49,6 +56,7 @@ internal fun NavigationGraph(
         navigationState = navigationState,
         mapScreen = { route ->
             MapRoute(
+                onArchiveNavigate = navigationState::showArchiveMap,
                 detailContent = { request ->
                     ShopDetailHost(
                         shopId = request.shopId,
@@ -97,6 +105,30 @@ internal fun NavigationGraph(
                     },
             )
         },
+        archiveMapScreen = {
+            val viewModel = koinViewModel<ArchiveMapViewModel>()
+            ArchiveMapRoute(
+                viewModel = viewModel,
+                isBackEnabled = !hasActiveOverlay,
+                onReturnToMap = navigationState::pop,
+                onFindVisitedShop = navigationState::showReviewShopSearch,
+            )
+            ArchiveShopDetailHost(
+                viewModel = viewModel,
+                onEditReview = { shopId, reviewId -> onOpenReviewEditOverlay(shopId, reviewId) },
+                onReviewNavigate = onOpenReviewWriteOverlay,
+                onOpenProfile = { userId -> openProfile(userId, true) },
+                onEventNavigate = { event -> navigationState.showEvent(event.id) },
+                onOperatingNoticeNavigate = { notice -> navigationState.showShopOnMap(notice.shop.id) },
+                isBackEnabled = !hasActiveOverlay,
+            )
+        },
+        reviewShopSearchScreen = {
+            ReviewShopSearchRoute(
+                onBack = navigationState::pop,
+                onWriteReview = navigationState::showReviewWrite,
+            )
+        },
         rankingScreen = {
             RankingRoute(
                 onFindShopClick = navigationState::showMap,
@@ -135,6 +167,33 @@ internal fun NavigationGraph(
                 onSubscribedShopsNavigate = navigationState::showSubscribedShops,
                 onBookmarkedShopsNavigate = navigationState::showBookmarkedShops,
                 onLoginClick = onLoginTypeSelected,
+            )
+        },
+        feedScreen = {
+            FeedRoute(
+                onFindVisitedShop = onFindVisitedShop,
+                onOpenProfile = { userId -> openProfile(userId, true) },
+                onEditReview = { shopId, reviewId -> onOpenReviewEditOverlay(shopId, reviewId) },
+                onLoginTypeSelected = onLoginTypeSelected,
+                shopDetailContent = { shopId, onDismiss ->
+                    ShopDetailHost(
+                        shopId = shopId,
+                        onDismiss = onDismiss,
+                        onShowOnMap = { selectedShopId ->
+                            onDismiss()
+                            navigationState.showShopOnMap(shopId = selectedShopId, returnTab = TabStatus.FEED)
+                        },
+                        onReviewNavigate = onOpenReviewWriteOverlay,
+                        onEditReview = { selectedShopId, reviewId -> onOpenReviewEditOverlay(selectedShopId, reviewId) },
+                        onOpenProfile = { userId -> openProfile(userId, true) },
+                        onEventNavigate = { event ->
+                            onDismiss()
+                            navigationState.showEvent(event.id)
+                        },
+                        isUncovered = !hasActiveOverlay,
+                        originSource = AnalyticsSource.REVIEW_PROFILE,
+                    )
+                },
             )
         },
         settingsScreen = {
@@ -213,13 +272,7 @@ internal fun NavigationGraph(
                 shopId = route.shopId,
                 reviewId = route.reviewId,
                 onBack = navigationState::pop,
-                onSubmitted = {
-                    if (route.reviewId == null) {
-                        navigationState.showShopOnMap(shopId = route.shopId, showReviews = true)
-                    } else {
-                        navigationState.pop()
-                    }
-                },
+                onSubmitted = navigationState::completeReviewWrite,
                 onLogin = navigationState::showMyRoot,
             )
         },
@@ -313,16 +366,7 @@ internal fun NavigationGraph(
             EventDetailRoute(
                 eventId = route.eventId,
                 onBack = navigationState::pop,
-                onUnavailable = {
-                    navigationState.showEventRoot()
-
-                    toastManager.tryShow(
-                        ToastData(
-                            message = Res.string.event_not_found_message,
-                            type = ToastType.DEFAULT,
-                        ),
-                    )
-                },
+                onUnavailable = { returnFromUnavailableEvent(navigationState, toastManager) },
                 onShopClick = { shopId ->
                     navigationState.showShopOnMap(
                         shopId = shopId,
@@ -348,4 +392,12 @@ internal fun NavigationGraph(
             )
         },
     )
+}
+
+internal fun returnFromUnavailableEvent(
+    navigationState: NavigationState,
+    toastManager: ToastManager,
+) {
+    navigationState.showEventRoot()
+    toastManager.tryShow(ToastData(Res.string.event_not_found_message, ToastType.DEFAULT))
 }

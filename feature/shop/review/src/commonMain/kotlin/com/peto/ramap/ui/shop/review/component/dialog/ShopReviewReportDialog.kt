@@ -6,7 +6,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import com.peto.ramap.designsystem.dialog.ReviewReportDialog
-import com.peto.ramap.domain.model.community.ReportReason
+import com.peto.ramap.domain.model.moderation.ReportReason
 import com.peto.ramap.ui.shop.review.contract.ReviewsIntent
 import com.peto.ramap.ui.shop.review.contract.ReviewsUiState
 

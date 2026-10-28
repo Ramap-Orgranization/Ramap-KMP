@@ -4,19 +4,19 @@ import com.peto.ramap.core.result.RamapError
 import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.coroutinesTest
 import com.peto.ramap.domain.model.auth.LoginSessionState
-import com.peto.ramap.domain.model.community.ReviewAuthor
 import com.peto.ramap.domain.model.review.Review
+import com.peto.ramap.domain.model.review.ReviewAuthor
 import com.peto.ramap.domain.model.review.ShopReviewCache
 import com.peto.ramap.domain.model.review.ShopReviewsPage
 import com.peto.ramap.domain.model.review.change.ReviewChange
 import com.peto.ramap.domain.model.review.change.ReviewChangeReducer
 import com.peto.ramap.domain.repository.ReviewRepository
 import com.peto.ramap.domain.usecase.FeatchShopReviewsUseCase
-import com.peto.ramap.fake.FakeCommunityRepository
 import com.peto.ramap.fake.FakeLoginRepository
 import com.peto.ramap.fake.FakeProfileRepository
 import com.peto.ramap.fake.FakeReviewChangeStore
 import com.peto.ramap.fake.FakeShopReviewRepository
+import com.peto.ramap.fake.FakeUserModerationRepository
 import com.peto.ramap.ui.shop.review.contract.ReviewsIntent
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -236,7 +236,7 @@ class ReviewsViewModelTest {
         login: FakeLoginRepository = FakeLoginRepository(),
     ): ReviewsViewModel {
         val reducer = ReviewChangeReducer()
-        return ReviewsViewModel(repository, FakeCommunityRepository(), profile, login, changes, reducer, FeatchShopReviewsUseCase(repository, changes, reducer, ShopReviewCache(changes, reducer)))
+        return ReviewsViewModel(repository, FakeUserModerationRepository(), profile, login, changes, reducer, FeatchShopReviewsUseCase(repository, changes, reducer, ShopReviewCache(changes, reducer)))
     }
 
     private fun review(

@@ -1,7 +1,7 @@
 package com.peto.ramap.domain.model.review
 
-import com.peto.ramap.domain.model.community.ReviewAuthor
-import com.peto.ramap.domain.model.community.ReviewModerationStatus
+import com.peto.ramap.domain.model.review.ReviewAuthor
+import com.peto.ramap.domain.model.review.ReviewModerationStatus
 import com.peto.ramap.domain.model.review.change.ReviewChange
 import com.peto.ramap.domain.model.review.change.ReviewChangeReducer
 import com.peto.ramap.domain.model.review.change.ReviewOwnerCounts
@@ -30,7 +30,7 @@ class ReviewChangeReducerTest {
                 id = "existing",
                 created = "01",
                 shop = createShop("existing-shop"),
-            ).copy(images = listOf(image))
+            ).let { it.copy(review = it.review.copy(images = listOf(image))) }
         val created =
             createReview(
                 id = "new",
@@ -53,7 +53,7 @@ class ReviewChangeReducerTest {
                 hasMore = false,
             )
 
-        assertEquals(listOf("new", "existing"), result.map { it.id })
+        assertEquals(listOf("new", "existing"), result.map { it.review.id })
         assertSame(newShop, result.first().shop)
         assertEquals("서울 마포구", result.first().shop?.address)
         assertEquals("shop-image", result.first().shop?.instagramProfileImageUrl)
@@ -66,7 +66,13 @@ class ReviewChangeReducerTest {
                 ?.toList(),
         )
         assertSame(existing.shop, result.last().shop)
-        assertSame(image, result.last().images.single())
+        assertSame(
+            image,
+            result
+                .last()
+                .review.images
+                .single(),
+        )
     }
 
     @Test
@@ -76,16 +82,15 @@ class ReviewChangeReducerTest {
                 id = "review",
                 created = "01",
                 shop = null,
-            ).copy(
-                body = "현재 본문",
-                images =
-                    listOf(
-                        MyReviewPhoto(
-                            url = "stable",
-                            reference = "path",
+            ).let {
+                it.copy(
+                    review =
+                        it.review.copy(
+                            body = "현재 본문",
+                            images = listOf(MyReviewPhoto(url = "stable", reference = "path")),
                         ),
-                    ),
-            )
+                )
+            }
         val hydrated =
             createReview(
                 id = "review",
@@ -119,8 +124,8 @@ class ReviewChangeReducerTest {
                 ).single()
 
         assertSame(shop, result.shop)
-        assertEquals("현재 본문", result.body)
-        assertSame(current.images.single(), result.images.single())
+        assertEquals("현재 본문", result.review.body)
+        assertSame(current.review.images.single(), result.review.images.single())
     }
 
     @Test
@@ -548,20 +553,23 @@ class ReviewChangeReducerTest {
         shop: RamenShop?,
     ): MyReview =
         MyReview(
-            id = id,
-            shopId = shop?.id ?: "shop",
-            shopName = "매장",
-            body = "리뷰 본문",
-            createdAt = created,
-            images = emptyList(),
-            isPublic = true,
-            moderationStatus = ReviewModerationStatus.PUBLISHED,
-            shop = shop,
-            author =
-                ReviewAuthor(
-                    userId = "owner",
-                    nickname = "작성자",
+            review =
+                Review(
+                    id = id,
+                    shopId = shop?.id ?: "shop",
+                    body = "리뷰 본문",
+                    createdAt = created,
+                    images = emptyList(),
+                    isPublic = true,
+                    moderationStatus = ReviewModerationStatus.PUBLISHED,
+                    author =
+                        ReviewAuthor(
+                            userId = "owner",
+                            nickname = "작성자",
+                        ),
                 ),
+            shopName = "매장",
+            shop = shop,
         )
 
     private fun createShop(id: String): RamenShop =

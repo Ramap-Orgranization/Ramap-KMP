@@ -311,7 +311,7 @@ class ReviewWriteViewModelTest {
         }
 
     @Test
-    fun `리뷰 본문은 Unicode 문자 100자까지 입력하고 초과 입력은 자른다`() =
+    fun `리뷰 본문은 Unicode 문자 100자까지 입력하고 초과 입력은 거부한다`() =
         coroutinesTest {
             val viewModel =
                 ReviewWriteViewModel(
@@ -334,6 +334,70 @@ class ReviewWriteViewModelTest {
 
             assertEquals(body, viewModel.uiState.value.body)
             assertEquals(100, Review.bodyCharacterCount(viewModel.uiState.value.body))
+        }
+
+    @Test
+    fun `최대 길이 리뷰의 앞이나 중간에 입력해도 기존 본문을 보존한다`() =
+        coroutinesTest {
+            val viewModel = ReviewWriteViewModel(FakeReviewRepository(), FakeProfileRepository(), FakeRamenShopRepository())
+            viewModel.dispatch(ReviewWriteIntent.Open("shop"))
+            runCurrent()
+
+            val body = "가😀".repeat(49) + "끝😀"
+            viewModel.dispatch(ReviewWriteIntent.ChangeBody(body))
+            runCurrent()
+
+            for (insertionIndex in listOf(0, "가😀".repeat(25).length)) {
+                val changedBody = body.substring(0, insertionIndex) + "나" + body.substring(insertionIndex)
+                viewModel.dispatch(ReviewWriteIntent.ChangeBody(changedBody))
+                runCurrent()
+
+                assertEquals(body, viewModel.uiState.value.body)
+                assertTrue(viewModel.uiState.value.canSubmit)
+            }
+        }
+
+    @Test
+    fun `남은 글자 수보다 긴 내용을 중간에 붙여넣으면 기존 본문을 보존한다`() =
+        coroutinesTest {
+            val viewModel = ReviewWriteViewModel(FakeReviewRepository(), FakeProfileRepository(), FakeRamenShopRepository())
+            viewModel.dispatch(ReviewWriteIntent.Open("shop"))
+            runCurrent()
+
+            val body = "가".repeat(48) + "😀".repeat(48)
+            viewModel.dispatch(ReviewWriteIntent.ChangeBody(body))
+            runCurrent()
+            viewModel.dispatch(ReviewWriteIntent.ChangeBody("가".repeat(48) + "붙여넣기😀" + "😀".repeat(48)))
+            runCurrent()
+
+            assertEquals(body, viewModel.uiState.value.body)
+            assertEquals(96, Review.bodyCharacterCount(viewModel.uiState.value.body))
+        }
+
+    @Test
+    fun `최대 길이에서도 문자 교체와 삭제 후 다시 입력할 수 있다`() =
+        coroutinesTest {
+            val viewModel = ReviewWriteViewModel(FakeReviewRepository(), FakeProfileRepository(), FakeRamenShopRepository())
+            viewModel.dispatch(ReviewWriteIntent.Open("shop"))
+            runCurrent()
+
+            viewModel.dispatch(ReviewWriteIntent.ChangeBody("가".repeat(100)))
+            runCurrent()
+            val replacedBody = "가".repeat(50) + "😀" + "가".repeat(49)
+            viewModel.dispatch(ReviewWriteIntent.ChangeBody(replacedBody))
+            runCurrent()
+            assertEquals(replacedBody, viewModel.uiState.value.body)
+            assertEquals(100, Review.bodyCharacterCount(viewModel.uiState.value.body))
+
+            val shortenedBody = "가".repeat(99)
+            viewModel.dispatch(ReviewWriteIntent.ChangeBody(shortenedBody))
+            runCurrent()
+            assertEquals(shortenedBody, viewModel.uiState.value.body)
+
+            viewModel.dispatch(ReviewWriteIntent.ChangeBody(replacedBody))
+            runCurrent()
+            assertEquals(replacedBody, viewModel.uiState.value.body)
+            assertTrue(viewModel.uiState.value.canSubmit)
         }
 
     @Test

@@ -10,6 +10,10 @@ import com.peto.ramap.domain.repository.LoginRepository
 import com.peto.ramap.domain.repository.ProfileRepository
 import com.peto.ramap.ui.base.BaseViewModel
 import com.peto.ramap.ui.loading.LoadState
+import com.peto.ramap.ui.profile.edit.contract.ProfileIntent
+import com.peto.ramap.ui.profile.edit.contract.ProfileLoadKey
+import com.peto.ramap.ui.profile.edit.contract.ProfileSideEffect
+import com.peto.ramap.ui.profile.edit.contract.ProfileUiState
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.StringResource
@@ -71,7 +75,6 @@ class ProfileEditViewModel(
             }
             ProfileIntent.Save -> save()
             ProfileIntent.Back -> back()
-            ProfileIntent.Leave -> endEdit()
         }
     }
 

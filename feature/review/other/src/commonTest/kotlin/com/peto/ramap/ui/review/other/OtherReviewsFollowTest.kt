@@ -4,12 +4,12 @@ import app.cash.turbine.test
 import com.peto.ramap.core.result.RamapError
 import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.coroutinesTest
-import com.peto.ramap.domain.model.community.FollowAction
-import com.peto.ramap.domain.model.community.FollowState
-import com.peto.ramap.domain.model.community.ProfileAccess
-import com.peto.ramap.domain.model.community.ProfileReview
-import com.peto.ramap.domain.model.community.ReviewAuthor
+import com.peto.ramap.domain.model.follow.FollowAction
+import com.peto.ramap.domain.model.follow.FollowState
+import com.peto.ramap.domain.model.profile.ProfileAccess
+import com.peto.ramap.domain.model.review.ProfileReview
 import com.peto.ramap.domain.model.review.Review
+import com.peto.ramap.domain.model.review.ReviewAuthor
 import com.peto.ramap.domain.model.review.change.ReviewChange
 import com.peto.ramap.domain.model.review.change.ReviewChangeReducer
 import com.peto.ramap.fake.FakeFollowRepository
@@ -42,8 +42,8 @@ class OtherReviewsFollowTest {
     fun `팔로우와 언팔로우 변경 알림은 기존 프로필과 여러 페이지 목록 및 선택 탭을 유지한다`() =
         coroutinesTest {
             val changes = FakeReviewChangeStore()
-            val community =
-                FakeOtherReviewsCommunity().apply {
+            val repositories =
+                FakeOtherReviewsRepositories().apply {
                     reviews = (1..23).map(::review)
                     savedShops = listOf(ramenShopFixture())
                     reviewCount = 23L
@@ -52,7 +52,7 @@ class OtherReviewsFollowTest {
                 FakeFollowRepository().apply {
                     onChanged = { userId, action -> changes.publish(ReviewChange.AccessChanged(userId, action)) }
                 }
-            val viewModel = createViewModel(community, changes, follows)
+            val viewModel = createViewModel(repositories, changes, follows)
             viewModel.dispatch(OtherReviewsIntent.OpenProfile("author"))
             runCurrent()
             viewModel.dispatch(OtherReviewsIntent.LoadMore)
@@ -65,7 +65,7 @@ class OtherReviewsFollowTest {
 
             for (followState in listOf(FollowState.FOLLOWING, FollowState.NONE)) {
                 val pending = CompletableDeferred<RamapResult<ProfileAccess>>()
-                community.profileAccessPending = pending
+                repositories.profileAccessPending = pending
                 viewModel.dispatch(OtherReviewsIntent.ToggleFollow)
                 runCurrent()
 
@@ -74,8 +74,8 @@ class OtherReviewsFollowTest {
                 assertEquals(original.reviews, viewModel.uiState.value.reviews)
                 assertEquals(original.savedShops, viewModel.uiState.value.savedShops)
                 assertEquals(OtherReviewsTab.SavedShops, viewModel.uiState.value.selectedTab)
-                assertEquals(listOf(0L, 20L), community.requestedOffsets)
-                assertEquals(listOf(0L), community.requestedSavedShopOffsets)
+                assertEquals(listOf(0L, 20L), repositories.requestedOffsets)
+                assertEquals(listOf(0L), repositories.requestedSavedShopOffsets)
 
                 val followerCount = if (followState == FollowState.FOLLOWING) 1L else 0L
                 val access = assertIs<ProfileAccess.Visible>(original.profileAccess)
@@ -90,7 +90,7 @@ class OtherReviewsFollowTest {
 
             assertTrue(states.all { it.profile == original.profile && it.reviews == original.reviews && it.savedShops == original.savedShops })
             assertTrue(states.none { it.showsInitialLoading || it.loading || it.savedShopsLoading })
-            assertEquals(listOf("author", "author", "author"), community.requestedProfileUserIds)
+            assertEquals(listOf("author", "author", "author"), repositories.requestedProfileUserIds)
             assertEquals(original.reviewsOffset, viewModel.uiState.value.reviewsOffset)
             assertEquals(original.savedShopsOffset, viewModel.uiState.value.savedShopsOffset)
         }
@@ -99,13 +99,13 @@ class OtherReviewsFollowTest {
     fun `다른 화면의 팔로우 변경 알림도 기존 목록을 유지하며 접근 상태만 갱신한다`() =
         coroutinesTest {
             val changes = FakeReviewChangeStore()
-            val community = FakeOtherReviewsCommunity().apply { reviews = listOf(review(1)) }
-            val viewModel = createViewModel(community, changes)
+            val repositories = FakeOtherReviewsRepositories().apply { reviews = listOf(review(1)) }
+            val viewModel = createViewModel(repositories, changes)
             viewModel.dispatch(OtherReviewsIntent.OpenProfile("author"))
             runCurrent()
             val original = viewModel.uiState.value
             val pending = CompletableDeferred<RamapResult<ProfileAccess>>()
-            community.profileAccessPending = pending
+            repositories.profileAccessPending = pending
 
             changes.publish(ReviewChange.AccessChanged("author", FollowAction.FOLLOW))
             runCurrent()
@@ -118,15 +118,15 @@ class OtherReviewsFollowTest {
             runCurrent()
 
             assertEquals(FollowState.FOLLOWING, assertIs<ProfileAccess.Visible>(viewModel.uiState.value.profileAccess).followState)
-            assertEquals(listOf(0L), community.requestedOffsets)
+            assertEquals(listOf(0L), repositories.requestedOffsets)
         }
 
     @Test
     fun `언팔로우로 리뷰 열람 권한만 잃으면 프로필과 저장 목록은 유지한다`() =
         coroutinesTest {
             val changes = FakeReviewChangeStore()
-            val community =
-                FakeOtherReviewsCommunity().apply {
+            val repositories =
+                FakeOtherReviewsRepositories().apply {
                     followState = FollowState.FOLLOWING
                     reviews = listOf(review(1))
                     savedShops = listOf(ramenShopFixture())
@@ -134,12 +134,12 @@ class OtherReviewsFollowTest {
             val follows =
                 FakeFollowRepository().apply {
                     onChanged = { userId, action ->
-                        community.followState = FollowState.NONE
-                        community.canReadReviews = false
+                        repositories.followState = FollowState.NONE
+                        repositories.canReadReviews = false
                         changes.publish(ReviewChange.AccessChanged(userId, action))
                     }
                 }
-            val viewModel = createViewModel(community, changes, follows)
+            val viewModel = createViewModel(repositories, changes, follows)
             viewModel.dispatch(OtherReviewsIntent.OpenProfile("author"))
             runCurrent()
             val original = viewModel.uiState.value
@@ -155,16 +155,16 @@ class OtherReviewsFollowTest {
             )
             assertEquals(0L, viewModel.uiState.value.reviewsOffset)
             assertEquals(original.savedShops, viewModel.uiState.value.savedShops)
-            assertEquals(listOf(0L), community.requestedOffsets)
-            assertEquals(listOf(0L), community.requestedSavedShopOffsets)
+            assertEquals(listOf(0L), repositories.requestedOffsets)
+            assertEquals(listOf(0L), repositories.requestedSavedShopOffsets)
         }
 
     @Test
     fun `팔로우로 열람 권한을 얻으면 프로필을 유지하며 새로 허용된 목록을 불러온다`() =
         coroutinesTest {
             val changes = FakeReviewChangeStore()
-            val community =
-                FakeOtherReviewsCommunity().apply {
+            val repositories =
+                FakeOtherReviewsRepositories().apply {
                     canReadReviews = false
                     canReadSavedShops = false
                     reviews = listOf(review(1))
@@ -173,44 +173,44 @@ class OtherReviewsFollowTest {
             val follows =
                 FakeFollowRepository().apply {
                     onChanged = { userId, action ->
-                        community.followState = FollowState.FOLLOWING
-                        community.canReadReviews = true
-                        community.canReadSavedShops = true
+                        repositories.followState = FollowState.FOLLOWING
+                        repositories.canReadReviews = true
+                        repositories.canReadSavedShops = true
                         changes.publish(ReviewChange.AccessChanged(userId, action))
                     }
                 }
-            val viewModel = createViewModel(community, changes, follows)
+            val viewModel = createViewModel(repositories, changes, follows)
             viewModel.dispatch(OtherReviewsIntent.OpenProfile("author"))
             runCurrent()
             val originalProfile = assertNotNull(viewModel.uiState.value.profile)
-            assertTrue(community.requestedOffsets.isEmpty())
-            assertTrue(community.requestedSavedShopOffsets.isEmpty())
+            assertTrue(repositories.requestedOffsets.isEmpty())
+            assertTrue(repositories.requestedSavedShopOffsets.isEmpty())
 
             viewModel.dispatch(OtherReviewsIntent.ToggleFollow)
             runCurrent()
 
             assertEquals(originalProfile, viewModel.uiState.value.profile)
             assertFalse(viewModel.uiState.value.contentRestricted)
-            assertEquals(community.reviews, viewModel.uiState.value.reviews)
-            assertEquals(community.savedShops, viewModel.uiState.value.savedShops)
-            assertEquals(listOf(0L), community.requestedOffsets)
-            assertEquals(listOf(0L), community.requestedSavedShopOffsets)
+            assertEquals(repositories.reviews, viewModel.uiState.value.reviews)
+            assertEquals(repositories.savedShops, viewModel.uiState.value.savedShops)
+            assertEquals(listOf(0L), repositories.requestedOffsets)
+            assertEquals(listOf(0L), repositories.requestedSavedShopOffsets)
         }
 
     @Test
     fun `팔로우 후 접근 상태 조회가 실패하면 기존 화면을 유지하고 실패를 안내한다`() =
         coroutinesTest {
             val changes = FakeReviewChangeStore()
-            val community = FakeOtherReviewsCommunity().apply { reviews = listOf(review(1)) }
+            val repositories = FakeOtherReviewsRepositories().apply { reviews = listOf(review(1)) }
             val follows =
                 FakeFollowRepository().apply {
                     onChanged = { userId, action -> changes.publish(ReviewChange.AccessChanged(userId, action)) }
                 }
-            val viewModel = createViewModel(community, changes, follows)
+            val viewModel = createViewModel(repositories, changes, follows)
             viewModel.dispatch(OtherReviewsIntent.OpenProfile("author"))
             runCurrent()
             val original = viewModel.uiState.value
-            community.profileAccessPending = CompletableDeferred(RamapResult.Error(RamapError.Http(500)))
+            repositories.profileAccessPending = CompletableDeferred(RamapResult.Error(RamapError.Http(500)))
 
             viewModel.sideEffect.test {
                 viewModel.dispatch(OtherReviewsIntent.ToggleFollow)
@@ -229,12 +229,12 @@ class OtherReviewsFollowTest {
     fun `팔로우 외 접근 변경 알림은 기존 콘텐츠를 즉시 숨기고 다시 확인한다`() =
         coroutinesTest {
             val changes = FakeReviewChangeStore()
-            val community = FakeOtherReviewsCommunity().apply { reviews = listOf(review(1)) }
-            val viewModel = createViewModel(community, changes)
+            val repositories = FakeOtherReviewsRepositories().apply { reviews = listOf(review(1)) }
+            val viewModel = createViewModel(repositories, changes)
             viewModel.dispatch(OtherReviewsIntent.OpenProfile("author"))
             runCurrent()
             val pending = CompletableDeferred<RamapResult<ProfileAccess>>()
-            community.profileAccessPending = pending
+            repositories.profileAccessPending = pending
 
             changes.publish(ReviewChange.AccessChanged("author"))
             runCurrent()
@@ -250,11 +250,12 @@ class OtherReviewsFollowTest {
         }
 
     private fun createViewModel(
-        community: FakeOtherReviewsCommunity,
+        repositories: FakeOtherReviewsRepositories,
         changes: FakeReviewChangeStore,
         follows: FakeFollowRepository = FakeFollowRepository(),
     ) = OtherReviewsViewModel(
-        community = community,
+        userProfileRepository = repositories,
+        userModerationRepository = repositories,
         profiles = FakeProfileRepository(),
         follows = follows,
         reviewRepository = FakeShopReviewRepository(),
@@ -264,6 +265,7 @@ class OtherReviewsFollowTest {
 
     private fun review(number: Int) =
         ProfileReview(
+            shop = ramenShopFixture(id = "shop"),
             review = Review("review-$number", "shop", "맛있는 라멘이에요", "2026-10-24", author = ReviewAuthor("author", "라멘팬")),
         )
 }

@@ -24,8 +24,8 @@ internal class RemoteProfileDataSource(
 ) : ProfileDataSource {
     override val sessionUserIds =
         client.auth.sessionStatus
-            // 백그라운드 전환 중의 세션 복원 상태는 로그아웃이 아니다.
-            .filterNot { it is SessionStatus.Initializing }
+            // 세션 복원과 재시도 가능한 갱신 실패는 사용자 변경이 아니다.
+            .filterNot { it is SessionStatus.Initializing || it is SessionStatus.RefreshFailure }
             .map { status ->
                 (status as? SessionStatus.Authenticated)?.session?.user?.id
             }.distinctUntilChanged()

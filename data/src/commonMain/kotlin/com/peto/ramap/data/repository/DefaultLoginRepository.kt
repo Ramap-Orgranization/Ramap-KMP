@@ -20,8 +20,7 @@ import io.github.jan.supabase.postgrest.postgrest
 import io.ktor.client.call.body
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.filterNot
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.mapNotNull
 
 /**
  * Supabase Auth를 사용하는 [LoginRepository] 구현체입니다.
@@ -38,8 +37,7 @@ internal class DefaultLoginRepository(
      */
     override val session: Flow<LoginSessionState> =
         supabaseClient.auth.sessionStatus
-            .filterNot { it is SessionStatus.Initializing }
-            .map(::loginSessionState)
+            .mapNotNull(::loginSessionState)
 
     /**
      * Supabase가 로컬 저장소의 기존 세션 복원을 마칠 때까지 기다립니다.
@@ -117,9 +115,9 @@ internal class DefaultLoginRepository(
     }
 }
 
-internal fun loginSessionState(status: SessionStatus): LoginSessionState =
-    if (status is SessionStatus.Authenticated) {
-        LoginSessionState.AUTHENTICATED
-    } else {
-        LoginSessionState.NOT_AUTHENTICATED
+internal fun loginSessionState(status: SessionStatus): LoginSessionState? =
+    when (status) {
+        is SessionStatus.Authenticated -> LoginSessionState.AUTHENTICATED
+        is SessionStatus.NotAuthenticated -> LoginSessionState.NOT_AUTHENTICATED
+        SessionStatus.Initializing, is SessionStatus.RefreshFailure -> null
     }

@@ -22,7 +22,6 @@ import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
 import com.peto.ramap.designsystem.component.MenuCategoryLabels
 import com.peto.ramap.designsystem.image.RemoteShopImage
-import com.peto.ramap.designsystem.resource.category.CategoryResourceMapper
 import com.peto.ramap.designsystem.resource.event.ShopEventResourceMapper
 import com.peto.ramap.designsystem.resource.format
 import com.peto.ramap.designsystem.text.AppText
@@ -61,6 +60,7 @@ internal fun ShopHeaderSection(
     onReportClick: () -> Unit,
     onShareClick: () -> Unit,
     onEventClick: (ShopEvent) -> Unit,
+    showDismissButton: Boolean = true,
 ) {
     val clipboardManager = LocalClipboardManager.current
 
@@ -150,27 +150,22 @@ internal fun ShopHeaderSection(
                         onReportClick = onReportClick,
                         onShareClick = onShareClick,
                     )
-                    Image(
-                        painter = painterResource(Res.drawable.ic_close),
-                        contentDescription = stringResource(Res.string.review_close),
-                        modifier =
-                            Modifier
-                                .size(40.dp)
-                                .noRippleClickable(onClick = onDismissRequest)
-                                .padding(vertical = 8.dp),
-                        colorFilter = ColorFilter.tint(GrayColor.C500),
-                    )
+                    if (showDismissButton) {
+                        Image(
+                            painter = painterResource(Res.drawable.ic_close),
+                            contentDescription = stringResource(Res.string.review_close),
+                            modifier =
+                                Modifier
+                                    .size(40.dp)
+                                    .noRippleClickable(onClick = onDismissRequest)
+                                    .padding(vertical = 8.dp),
+                            colorFilter = ColorFilter.tint(GrayColor.C500),
+                        )
+                    }
                 }
 
                 MenuCategoryLabels(
                     menuCategories = shop.menuCategories,
-                    categoryLabel = { category ->
-                        stringResource(
-                            CategoryResourceMapper.label(
-                                category,
-                            ),
-                        )
-                    },
                     style = AppTextStyle.B1,
                     modifier =
                         Modifier

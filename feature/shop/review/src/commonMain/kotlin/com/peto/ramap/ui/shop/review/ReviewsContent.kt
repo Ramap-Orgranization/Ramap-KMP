@@ -6,9 +6,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import com.peto.ramap.designsystem.dialog.ReviewDeleteDialog
 import com.peto.ramap.domain.model.review.Review
 import com.peto.ramap.ui.paging.InfiniteScrollState
-import com.peto.ramap.ui.shop.review.component.dialog.ShopReviewDeleteDialog
 import com.peto.ramap.ui.shop.review.component.reviewItemKey
 import com.peto.ramap.ui.shop.review.component.reviewsContent
 import com.peto.ramap.ui.shop.review.contract.ReviewsUiState
@@ -44,10 +44,10 @@ fun ReviewsContent(
     }
     content(reviewItems, loadMoreState)
 
-    ShopReviewDeleteDialog(
-        review = deleteReview,
-        actingReviewId = uiState.actingReviewId,
-        onDismiss = { deleteReview = null },
+    ReviewDeleteDialog(
+        visible = deleteReview != null,
+        isDeleting = deleteReview?.id == uiState.actingReviewId,
+        onDismissRequest = { deleteReview = null },
         onConfirm = {
             deleteReview?.let(actions.onReviewDelete)
             deleteReview = null

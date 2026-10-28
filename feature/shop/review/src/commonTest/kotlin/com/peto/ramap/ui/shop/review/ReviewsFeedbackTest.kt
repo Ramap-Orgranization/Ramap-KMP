@@ -6,9 +6,9 @@ import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.coroutinesTest
 import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.auth.LoginSessionState
-import com.peto.ramap.domain.model.community.ReportReason
-import com.peto.ramap.domain.repository.CommunityRepository
-import com.peto.ramap.fake.FakeCommunityRepository
+import com.peto.ramap.domain.model.moderation.ReportReason
+import com.peto.ramap.domain.repository.UserModerationRepository
+import com.peto.ramap.fake.FakeUserModerationRepository
 import com.peto.ramap.ui.shop.review.contract.ReviewsIntent
 import com.peto.ramap.ui.shop.review.contract.ReviewsSideEffect
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -58,8 +58,8 @@ class ReviewsFeedbackTest {
     @Test
     fun `차단 해제와 신고가 성공하면 각각의 작업 결과를 안내한다`() =
         coroutinesTest {
-            val community = FakeCommunityRepository()
-            val fixture = ReviewsViewModelFixture(community)
+            val moderation = FakeUserModerationRepository()
+            val fixture = ReviewsViewModelFixture(moderation)
             try {
                 openReviews(fixture)
                 val viewModel = fixture.viewModel
@@ -73,7 +73,7 @@ class ReviewsFeedbackTest {
                         ReviewsSideEffect.ShowToast(Res.string.review_unblock_success),
                         awaitItem(),
                     )
-                    assertEquals(listOf(blocked.author.userId), community.unblockedUserIds)
+                    assertEquals(listOf(blocked.author.userId), moderation.unblockedUserIds)
 
                     viewModel.dispatch(ReviewsIntent.OnReviewReportRequested(fixture.otherReview))
                     viewModel.dispatch(ReviewsIntent.OnReviewReportSubmitted(ReportReason.SPAM, ""))
@@ -92,8 +92,8 @@ class ReviewsFeedbackTest {
     fun `차단 해제와 신고가 실패하면 조회 오류 대신 실패한 작업을 안내한다`() =
         coroutinesTest {
             val failure = RamapResult.Error(RamapError.Http(500))
-            val community =
-                object : CommunityRepository by FakeCommunityRepository() {
+            val moderation =
+                object : UserModerationRepository by FakeUserModerationRepository() {
                     override suspend fun unblockUser(userId: String): RamapResult<Unit> = failure
 
                     override suspend fun reportReview(
@@ -102,7 +102,7 @@ class ReviewsFeedbackTest {
                         details: String,
                     ): RamapResult<Unit> = failure
                 }
-            val fixture = ReviewsViewModelFixture(community)
+            val fixture = ReviewsViewModelFixture(moderation)
             try {
                 openReviews(fixture)
                 val viewModel = fixture.viewModel

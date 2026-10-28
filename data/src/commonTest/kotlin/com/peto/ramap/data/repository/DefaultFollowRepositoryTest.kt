@@ -5,7 +5,7 @@ import com.peto.ramap.data.datasource.follow.FollowDataSource
 import com.peto.ramap.data.model.FollowCountsResponse
 import com.peto.ramap.data.model.PublicProfileResponse
 import com.peto.ramap.data.testReviewChanges
-import com.peto.ramap.domain.model.community.FollowAction
+import com.peto.ramap.domain.model.follow.FollowAction
 import com.peto.ramap.domain.model.review.change.ReviewChange
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test

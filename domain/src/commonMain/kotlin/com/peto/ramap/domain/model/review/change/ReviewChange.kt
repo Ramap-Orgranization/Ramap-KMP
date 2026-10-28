@@ -1,6 +1,6 @@
 package com.peto.ramap.domain.model.review.change
 
-import com.peto.ramap.domain.model.community.FollowAction
+import com.peto.ramap.domain.model.follow.FollowAction
 import com.peto.ramap.domain.model.review.ReviewLike
 
 sealed interface ReviewChange {

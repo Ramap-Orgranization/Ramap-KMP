@@ -19,7 +19,6 @@ import com.peto.ramap.designsystem.component.SettingsListPage
 import com.peto.ramap.designsystem.component.ShopListCount
 import com.peto.ramap.designsystem.component.ShopsEmptyContent
 import com.peto.ramap.designsystem.dialog.CommonDialog
-import com.peto.ramap.designsystem.resource.category.CategoryResourceMapper
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.designsystem.toast.ToastManager
 import com.peto.ramap.domain.model.shop.RamenShop
@@ -128,8 +127,7 @@ private fun HiddenShopListContent(
             RamenShopSummaries(
                 shops = uiState.shops,
                 onShopClick = onShopOpen,
-                categoryLabel = { category -> stringResource(CategoryResourceMapper.label(category)) },
-                itemActionLabel = { stringResource(Res.string.unhide_shop_confirm_action) },
+                itemActionLabel = stringResource(Res.string.unhide_shop_confirm_action),
                 onItemAction = onUnhideRequested,
                 modifier = Modifier.padding(horizontal = 15.dp),
             )

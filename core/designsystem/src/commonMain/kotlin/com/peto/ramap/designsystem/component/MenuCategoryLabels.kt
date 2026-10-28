@@ -5,8 +5,8 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.peto.ramap.designsystem.resource.category.CategoryResourceMapper
 import com.peto.ramap.designsystem.text.AppText
-import com.peto.ramap.domain.model.shop.Category
 import com.peto.ramap.domain.model.shop.MenuCategories
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.GrayColor
@@ -17,7 +17,6 @@ import ramap.shared.generated.resources.menu_category_separator
 @Composable
 fun MenuCategoryLabels(
     menuCategories: MenuCategories,
-    categoryLabel: @Composable (Category) -> String,
     style: AppTextStyle,
     modifier: Modifier = Modifier,
 ) {
@@ -30,7 +29,7 @@ fun MenuCategoryLabels(
     ) {
         menuCategories.forEachIndexed { index, category ->
             AppText(
-                text = categoryLabel(category),
+                text = stringResource(CategoryResourceMapper.label(category)),
                 style = style,
                 color = GrayColor.C300,
             )

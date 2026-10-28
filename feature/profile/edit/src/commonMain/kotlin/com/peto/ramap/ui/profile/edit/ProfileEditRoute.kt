@@ -1,7 +1,6 @@
 package com.peto.ramap.ui.profile.edit
 
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -17,6 +16,9 @@ import com.peto.ramap.platform.image.rememberImagePicker
 import com.peto.ramap.theme.RamapTheme
 import com.peto.ramap.ui.base.ObserveAsEvents
 import com.peto.ramap.ui.loading.LoadState
+import com.peto.ramap.ui.profile.edit.contract.ProfileIntent
+import com.peto.ramap.ui.profile.edit.contract.ProfileSideEffect
+import com.peto.ramap.ui.profile.edit.contract.ProfileUiState
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -33,9 +35,7 @@ fun ProfileEditRoute(
             onImagePicked = { viewModel.dispatch(ProfileIntent.PickImage(ProfileImage(it.bytes, it.mimeType))) },
             onRejected = { viewModel.dispatch(ProfileIntent.RejectImage) },
         )
-    DisposableEffect(viewModel) {
-        onDispose { viewModel.dispatch(ProfileIntent.Leave) }
-    }
+
     ObserveAsEvents(viewModel.sideEffect) {
         when (it) {
             ProfileSideEffect.NavigateBack -> onBack()

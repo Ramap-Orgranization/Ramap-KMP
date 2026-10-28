@@ -8,20 +8,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
-import com.peto.ramap.domain.model.shop.Category
 import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.preview.RamenShopsPreviewParameterProvider
-import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.RamapTheme
 
 @Composable
 fun RamenShopSummaries(
     shops: RamenShops,
     onShopClick: (RamenShop) -> Unit,
-    categoryLabel: @Composable (Category) -> String,
     modifier: Modifier = Modifier,
-    itemActionLabel: (@Composable (RamenShop) -> String)? = null,
+    itemActionLabel: String? = null,
     onItemAction: ((RamenShop) -> Unit)? = null,
 ) {
     Column(
@@ -34,10 +31,7 @@ fun RamenShopSummaries(
             RamenShopSummary(
                 shop = shop,
                 onClick = { onShopClick(shop) },
-                categoryLabel = categoryLabel,
-                containerColor = CommonColor.White,
-                leadingContent = {},
-                actionLabel = itemActionLabel?.invoke(shop),
+                actionLabel = itemActionLabel,
                 onAction = onItemAction?.let { action -> { action(shop) } },
             )
         }
@@ -53,7 +47,6 @@ private fun RamenShopSummariesPreview(
         RamenShopSummaries(
             shops = shops,
             onShopClick = {},
-            categoryLabel = { category -> category.name },
         )
     }
 }

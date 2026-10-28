@@ -27,24 +27,23 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.peto.ramap.designsystem.component.RamenShopSummary
 import com.peto.ramap.designsystem.indicator.RamenLoadingIndicator
 import com.peto.ramap.designsystem.profile.ProfileHeader
-import com.peto.ramap.designsystem.resource.category.CategoryResourceMapper
+import com.peto.ramap.designsystem.review.ReviewCard
 import com.peto.ramap.designsystem.review.ReviewCardActions
 import com.peto.ramap.designsystem.review.ReviewEmptyContent
 import com.peto.ramap.designsystem.review.ReviewPage
-import com.peto.ramap.designsystem.review.ShopReviewCard
+import com.peto.ramap.designsystem.review.ShopReviewCardHeader
 import com.peto.ramap.designsystem.toast.ToastManager
 import com.peto.ramap.domain.model.auth.LoginType
-import com.peto.ramap.domain.model.community.ProfileAccess
-import com.peto.ramap.domain.model.community.ProfileReview
-import com.peto.ramap.domain.model.community.PublicProfile
-import com.peto.ramap.domain.model.community.ReviewAuthor
 import com.peto.ramap.domain.model.event.ShopEvent
+import com.peto.ramap.domain.model.profile.ProfileAccess
+import com.peto.ramap.domain.model.profile.PublicProfile
+import com.peto.ramap.domain.model.review.ProfileReview
 import com.peto.ramap.domain.model.review.Review
+import com.peto.ramap.domain.model.review.ReviewAuthor
 import com.peto.ramap.domain.model.shop.Category
 import com.peto.ramap.domain.model.shop.Location
 import com.peto.ramap.domain.model.shop.MenuCategories
 import com.peto.ramap.domain.model.shop.RamenShop
-import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.RamapTheme
 import com.peto.ramap.ui.base.ObserveAsEvents
@@ -284,16 +283,26 @@ internal fun OtherReviewsContent(
                 items = if (state.selectedTab == OtherReviewsTab.Reviews) state.reviews else emptyList(),
                 key = { it.review.id },
             ) { profileReview ->
+                val review = profileReview.review
+
                 val reviewActions =
                     ReviewCardActions(
-                        onLike = { onIntent(OtherReviewsIntent.ToggleLike(profileReview.review)) },
+                        onLike = { onIntent(OtherReviewsIntent.ToggleLike(review)) },
+                        onReviewClick = { onOpenShopDetail(review.shopId) },
                     )
-                ShopReviewCard(
-                    review = profileReview.review,
-                    shop = profileReview.shop,
-                    onOpenShopDetail = onOpenShopDetail,
+                ReviewCard(
+                    review = review,
                     actions = reviewActions,
                     photoViewerEnabled = false,
+                    header = {
+                        ShopReviewCardHeader(
+                            review = review,
+                            shop = profileReview.shop,
+                            onOpenShopDetail = { onOpenShopDetail(review.shopId) },
+                            actions = reviewActions,
+                            actionsEnabled = true,
+                        )
+                    },
                 )
             }
             if (state.showsEmptySavedShops) {
@@ -307,9 +316,6 @@ internal fun OtherReviewsContent(
             ) { shop ->
                 RamenShopSummary(
                     shop = shop,
-                    categoryLabel = { stringResource(CategoryResourceMapper.label(it)) },
-                    containerColor = CommonColor.White,
-                    leadingContent = {},
                     onClick = { onOpenShopDetail(shop.id) },
                     modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
                 )
