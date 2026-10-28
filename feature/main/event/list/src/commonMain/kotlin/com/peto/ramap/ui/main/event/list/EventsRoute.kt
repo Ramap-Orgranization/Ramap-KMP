@@ -24,7 +24,6 @@ import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.peto.ramap.designsystem.button.AppFloatingActionButton
-import com.peto.ramap.designsystem.button.login.LoginButton
 import com.peto.ramap.designsystem.component.LoadErrorContent
 import com.peto.ramap.designsystem.component.NewsFilters
 import com.peto.ramap.designsystem.dialog.LoginGuideDialog
@@ -88,7 +87,6 @@ fun EventsRoute(
             visible = uiState.showLoginGuide,
             onDismiss = { viewModel.dispatch(EventsIntent.OnLoginDismissed) },
             onLoginTypeSelected = { viewModel.dispatch(EventsIntent.OnLoginSelected(it)) },
-            loginButton = { type, onClick -> LoginButton(type, onClick) },
         )
     }
 }

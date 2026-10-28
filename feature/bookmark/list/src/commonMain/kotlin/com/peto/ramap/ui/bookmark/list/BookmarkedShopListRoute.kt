@@ -16,7 +16,6 @@ import com.peto.ramap.designsystem.component.RamenShopSummaries
 import com.peto.ramap.designsystem.component.SettingsListPage
 import com.peto.ramap.designsystem.component.ShopListCount
 import com.peto.ramap.designsystem.component.ShopsEmptyContent
-import com.peto.ramap.designsystem.resource.category.CategoryResourceMapper
 import com.peto.ramap.designsystem.toast.ToastManager
 import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.theme.GrayColor
@@ -116,8 +115,7 @@ private fun BookmarkedShopListContent(
             RamenShopSummaries(
                 shops = uiState.shops,
                 onShopClick = onShopOpen,
-                categoryLabel = { stringResource(CategoryResourceMapper.label(it)) },
-                itemActionLabel = { stringResource(Res.string.bookmark_removal_confirm_action) },
+                itemActionLabel = stringResource(Res.string.bookmark_removal_confirm_action),
                 onItemAction = onRemovalRequested,
                 modifier = Modifier.padding(horizontal = 15.dp),
             )

@@ -25,6 +25,7 @@ fun OverviewContent(
     actions: OverviewActions,
     modifier: Modifier = Modifier,
     dragAreaModifier: Modifier = Modifier,
+    showDismissButton: Boolean = true,
 ) {
     val shop = uiState.overview.shop
     val headerState = uiState.headerState
@@ -45,6 +46,7 @@ fun OverviewContent(
             event = uiState.overview.event,
             dragAreaModifier = dragAreaModifier,
             onDismissRequest = headerActions.onDismissRequest,
+            showDismissButton = showDismissButton,
             onBookmarkClick = headerActions.onBookmarkClick,
             onNotificationClick = headerActions.onNotificationClick,
             onHiddenClick = headerActions.onHiddenClick,

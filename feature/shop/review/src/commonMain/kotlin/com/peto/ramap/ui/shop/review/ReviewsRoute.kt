@@ -5,10 +5,10 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.peto.ramap.designsystem.dialog.ReviewUnblockDialog
 import com.peto.ramap.designsystem.toast.ToastManager
 import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.ui.base.ObserveAsEvents
-import com.peto.ramap.ui.shop.review.component.dialog.ShopBlockedReviewUnblockDialog
 import com.peto.ramap.ui.shop.review.component.dialog.ShopReviewReportDialog
 import com.peto.ramap.ui.shop.review.contract.ReviewsIntent
 import com.peto.ramap.ui.shop.review.contract.ReviewsSideEffect
@@ -71,5 +71,10 @@ fun ReviewsRoute(
     )
 
     ShopReviewReportDialog(state = uiState, onIntent = viewModel::dispatch)
-    ShopBlockedReviewUnblockDialog(state = uiState, onIntent = viewModel::dispatch)
+    ReviewUnblockDialog(
+        visible = uiState.pendingUnblockReview != null,
+        isUnblocking = uiState.isUnblockingReview,
+        onDismissRequest = { viewModel.dispatch(ReviewsIntent.OnBlockedReviewUnblockDismissed) },
+        onConfirm = { viewModel.dispatch(ReviewsIntent.OnBlockedReviewUnblockConfirmed) },
+    )
 }

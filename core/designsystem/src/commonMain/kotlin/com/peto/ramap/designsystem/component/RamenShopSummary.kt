@@ -16,21 +16,15 @@ import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
 import com.peto.ramap.designsystem.image.RemoteShopImage
 import com.peto.ramap.designsystem.text.AppText
-import com.peto.ramap.domain.model.shop.Category
 import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.extension.noRippleClickable
-import com.peto.ramap.preview.RamenShopPreviewParameterProvider
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
-import com.peto.ramap.theme.RamapTheme
 import org.jetbrains.compose.resources.painterResource
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.ic_close
@@ -38,11 +32,8 @@ import ramap.shared.generated.resources.ic_close
 @Composable
 fun RamenShopSummary(
     shop: RamenShop,
-    categoryLabel: @Composable (Category) -> String,
-    containerColor: Color,
-    leadingContent: @Composable () -> Unit,
-    modifier: Modifier = Modifier,
     onClick: (() -> Unit)? = null,
+    modifier: Modifier = Modifier,
     actionLabel: String? = null,
     onAction: (() -> Unit)? = null,
 ) {
@@ -52,9 +43,8 @@ fun RamenShopSummary(
         modifier =
             modifier
                 .fillMaxWidth()
-                .then(
-                    if (onClick != null) Modifier.noRippleClickable(onClick = onClick) else Modifier,
-                ).background(containerColor)
+                .then(if (onClick != null) Modifier.noRippleClickable(onClick = onClick) else Modifier)
+                .background(CommonColor.White)
                 .padding(start = 8.dp),
     ) {
         Row(
@@ -65,7 +55,6 @@ fun RamenShopSummary(
             horizontalArrangement = Arrangement.spacedBy(10.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            leadingContent()
             RemoteShopImage(
                 url = shop.instagramProfileImageUrl,
                 shape = RoundedCornerShape(8.dp),
@@ -94,7 +83,6 @@ fun RamenShopSummary(
                 MenuCategoryLabels(
                     menuCategories = shop.menuCategories,
                     style = AppTextStyle.C1,
-                    categoryLabel = categoryLabel,
                 )
             }
         }
@@ -127,37 +115,5 @@ private fun BoxScope.RamenShopSummaryAction(
                 tint = GrayColor.C400,
             )
         }
-    }
-}
-
-@Preview(showBackground = true, name = "Without Action")
-@Composable
-private fun RamenShopSummaryPreview(
-    @PreviewParameter(RamenShopPreviewParameterProvider::class) shop: RamenShop,
-) {
-    RamapTheme {
-        RamenShopSummary(
-            shop = shop,
-            categoryLabel = { it.name },
-            containerColor = CommonColor.White,
-            leadingContent = {},
-        )
-    }
-}
-
-@Preview(showBackground = true, name = "With Action")
-@Composable
-private fun RamenShopSummaryActionPreview(
-    @PreviewParameter(RamenShopPreviewParameterProvider::class) shop: RamenShop,
-) {
-    RamapTheme {
-        RamenShopSummary(
-            shop = shop,
-            categoryLabel = { it.name },
-            containerColor = CommonColor.White,
-            leadingContent = {},
-            actionLabel = "삭제",
-            onAction = {},
-        )
     }
 }

@@ -14,7 +14,6 @@ import com.peto.ramap.designsystem.card.SectionCard
 import com.peto.ramap.designsystem.component.RamenShopSummaries
 import com.peto.ramap.designsystem.component.ShopListCount
 import com.peto.ramap.designsystem.component.ShopsEmptyContent
-import com.peto.ramap.designsystem.resource.category.CategoryResourceMapper
 import com.peto.ramap.designsystem.resource.event.ShopEventResourceMapper
 import com.peto.ramap.designsystem.text.eventDateText
 import com.peto.ramap.domain.model.event.ShopEvent
@@ -81,10 +80,7 @@ internal fun SubscribedShopListContent(
                 RamenShopSummaries(
                     shops = uiState.shops,
                     onShopClick = onShopOpen,
-                    categoryLabel = { category ->
-                        stringResource(CategoryResourceMapper.label(category))
-                    },
-                    itemActionLabel = { _ -> stringResource(Res.string.notification_removal_confirm_action) },
+                    itemActionLabel = stringResource(Res.string.notification_removal_confirm_action),
                     onItemAction = {
                         onRemovalRequested(SubscribedRemovalTarget.Shop(it.id))
                     },

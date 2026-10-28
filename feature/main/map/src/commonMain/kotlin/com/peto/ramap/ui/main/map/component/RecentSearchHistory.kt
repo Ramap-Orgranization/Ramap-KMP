@@ -17,7 +17,6 @@ import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
 import com.peto.ramap.designsystem.component.RamenShopSummaries
 import com.peto.ramap.designsystem.text.AppText
-import com.peto.ramap.domain.model.shop.Category
 import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.extension.noRippleClickable
@@ -43,7 +42,6 @@ internal fun RecentSearchHistory(
     onSearchDeleted: (String) -> Unit,
     onSearchesCleared: () -> Unit,
     onViewedShopSelected: (RamenShop) -> Unit,
-    categoryLabel: @Composable (Category) -> String,
     modifier: Modifier = Modifier,
 ) {
     if (searches.isEmpty() && viewedShops.isEmpty()) return
@@ -106,7 +104,6 @@ internal fun RecentSearchHistory(
             RamenShopSummaries(
                 shops = viewedShops,
                 onShopClick = onViewedShopSelected,
-                categoryLabel = categoryLabel,
                 modifier = Modifier.padding(top = 5.dp),
             )
         }
@@ -156,7 +153,6 @@ private fun RecentSearchHistoryPreview(
             onSearchDeleted = {},
             onSearchesCleared = {},
             onViewedShopSelected = {},
-            categoryLabel = { it.name },
         )
     }
 }

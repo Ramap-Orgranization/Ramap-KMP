@@ -10,12 +10,14 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
@@ -26,6 +28,12 @@ fun ReviewCardImages(
     imageUrls: List<String>,
     modifier: Modifier = Modifier,
     photoViewerEnabled: Boolean = true,
+    imageSize: Dp = 220.dp,
+    contentPadding: PaddingValues = PaddingValues(horizontal = 16.dp),
+    centerSingleImage: Boolean = true,
+    onImageLoadFailed: (String) -> Unit = {},
+    onImageLoadSucceeded: (String) -> Unit = {},
+    imageRetryKeys: Map<String, Int> = emptyMap(),
 ) {
     if (imageUrls.isEmpty()) return
     var selectedIndex by remember(imageUrls, photoViewerEnabled) { mutableStateOf<Int?>(null) }
@@ -33,29 +41,33 @@ fun ReviewCardImages(
     LazyRow(
         modifier = modifier.fillMaxWidth(),
         horizontalArrangement =
-            if (imageUrls.size == 1) Arrangement.Center else Arrangement.spacedBy(4.dp),
-        contentPadding = PaddingValues(horizontal = 16.dp),
+            if (imageUrls.size == 1 && centerSingleImage) Arrangement.Center else Arrangement.spacedBy(4.dp),
+        contentPadding = contentPadding,
     ) {
         itemsIndexed(imageUrls) { index, url ->
-            ReviewPhoto(
-                url = url,
-                contentDescription =
-                    stringResource(
-                        Res.string.review_photo_description,
-                        index + 1,
-                    ),
-                modifier =
-                    Modifier
-                        .size(220.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .then(
-                            if (photoViewerEnabled) {
-                                Modifier.clickable(role = Role.Button) { selectedIndex = index }
-                            } else {
-                                Modifier
-                            },
+            key(imageRetryKeys[url] ?: 0) {
+                ReviewPhoto(
+                    url = url,
+                    contentDescription =
+                        stringResource(
+                            Res.string.review_photo_description,
+                            index + 1,
                         ),
-            )
+                    modifier =
+                        Modifier
+                            .size(imageSize)
+                            .clip(RoundedCornerShape(12.dp))
+                            .then(
+                                if (photoViewerEnabled) {
+                                    Modifier.clickable(role = Role.Button) { selectedIndex = index }
+                                } else {
+                                    Modifier
+                                },
+                            ),
+                    onLoadFailed = { onImageLoadFailed(url) },
+                    onLoadSucceeded = { onImageLoadSucceeded(url) },
+                )
+            }
         }
     }
     selectedIndex?.let { index ->

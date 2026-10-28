@@ -47,7 +47,6 @@ fun ProfileHeader(
     bio: String? = null,
     showEmptyBio: Boolean = false,
     onProfileClick: (() -> Unit)? = null,
-    avatarBadge: (@Composable BoxScope.() -> Unit)? = null,
 ) {
     val profileEditDescription = stringResource(Res.string.profile_edit)
     Column(
@@ -82,9 +81,7 @@ fun ProfileHeader(
                     description = stringResource(Res.string.profile_photo),
                     modifier = Modifier.size(128.dp),
                 )
-                if (avatarBadge != null) {
-                    avatarBadge()
-                } else if (onProfileClick != null) {
+                if (onProfileClick != null) {
                     ProfileEditBadge()
                 }
             }
