@@ -6,6 +6,7 @@ import com.peto.ramap.fixture.authenticatedSessionFixture
 import com.peto.ramap.fixture.withSupabaseSessionFixture
 import io.github.jan.supabase.annotations.SupabaseInternal
 import io.github.jan.supabase.auth.auth
+import io.github.jan.supabase.auth.status.RefreshFailureCause
 import io.github.jan.supabase.auth.status.SessionStatus
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -14,6 +15,23 @@ import kotlin.test.assertNull
 
 @OptIn(SupabaseInternal::class)
 class RemoteProfileDataSourceTest {
+    @Test
+    fun `토큰 갱신 실패 중에도 기존 사용자를 유지하고 실제 로그아웃 때 비운다`() =
+        runTest {
+            withSupabaseSessionFixture { client ->
+                client.auth.setSessionStatus(authenticatedSessionFixture())
+                RemoteProfileDataSource(client, RemoteImageUrlDataSource(client)).sessionUserIds.test {
+                    assertEquals("viewer", awaitItem())
+                    client.auth.setSessionStatus(SessionStatus.RefreshFailure(RefreshFailureCause.NetworkError(IllegalStateException("offline"))))
+                    expectNoEvents()
+                    client.auth.setSessionStatus(authenticatedSessionFixture())
+                    expectNoEvents()
+                    client.auth.setSessionStatus(SessionStatus.NotAuthenticated(isSignOut = true))
+                    assertNull(awaitItem())
+                }
+            }
+        }
+
     @Test
     fun `백그라운드 복귀로 같은 세션을 복원해도 사용자 변경을 알리지 않는다`() =
         runTest {
