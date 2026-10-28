@@ -340,16 +340,7 @@ internal fun NavigationGraph(
             EventDetailRoute(
                 eventId = route.eventId,
                 onBack = navigationState::pop,
-                onUnavailable = {
-                    navigationState.showEventRoot()
-
-                    toastManager.tryShow(
-                        ToastData(
-                            message = Res.string.event_not_found_message,
-                            type = ToastType.DEFAULT,
-                        ),
-                    )
-                },
+                onUnavailable = { returnFromUnavailableEvent(navigationState, toastManager) },
                 onShopClick = { shopId ->
                     navigationState.showShopOnMap(
                         shopId = shopId,
@@ -375,4 +366,12 @@ internal fun NavigationGraph(
             )
         },
     )
+}
+
+internal fun returnFromUnavailableEvent(
+    navigationState: NavigationState,
+    toastManager: ToastManager,
+) {
+    navigationState.showEventRoot()
+    toastManager.tryShow(ToastData(Res.string.event_not_found_message, ToastType.DEFAULT))
 }
