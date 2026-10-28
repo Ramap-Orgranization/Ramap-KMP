@@ -108,7 +108,9 @@ class ReviewWriteViewModel(
     private fun changeBody(body: String) {
         val cannotEdit = !currentState.canEdit
         if (cannotEdit) return
-        reduce { copy(body = limitBodyLength(body)) }
+        val exceedsBodyLength = Review.bodyCharacterCount(body) > Review.BODY_LENGTH.last
+        if (exceedsBodyLength) return
+        reduce { copy(body = body) }
     }
 
     private fun changeVisibility(isPublic: Boolean) {
@@ -377,16 +379,5 @@ class ReviewWriteViewModel(
         const val UPDATE_PROFILE_VISIBILITY_TASK = "shop-review-write-update-profile-visibility"
         const val SUBMIT_TASK = "shop-review-write-submit"
         const val REVIEW_TASK = "shop-review-write-review"
-
-        fun limitBodyLength(body: String): String {
-            var endIndex = 0
-            var characterCount = 0
-            while (endIndex < body.length && characterCount < Review.BODY_LENGTH.last) {
-                val isSurrogatePair = body[endIndex].isHighSurrogate() && body.getOrNull(endIndex + 1)?.isLowSurrogate() == true
-                endIndex += if (isSurrogatePair) 2 else 1
-                characterCount++
-            }
-            return body.substring(0, endIndex)
-        }
     }
 }
