@@ -12,6 +12,8 @@ import com.peto.ramap.domain.model.auth.LoginSessionState
 import com.peto.ramap.domain.repository.LoginRepository
 import com.peto.ramap.domain.usecase.SignInUseCase
 import com.peto.ramap.navigation.NavigationState
+import com.peto.ramap.navigation.ScreenRoutes
+import com.peto.ramap.navigation.TabStatus
 import com.peto.ramap.ui.login.LoginGuideController
 import kotlinx.coroutines.CoroutineScope
 import org.koin.compose.koinInject
@@ -55,6 +57,16 @@ internal fun rememberAppOverlayState(
         overlayState.pendingProfileTarget = null
         overlayState.dismissLoginGuide()
         overlayState.openProfile(userId, asOverlay)
+    }
+
+    LaunchedEffect(sessionState, overlayState) {
+        if (sessionState == LoginSessionState.AUTHENTICATED) overlayState.resumeReviewShopSearch()
+    }
+
+    LaunchedEffect(navigationState.selectedTab, navigationState.currentRoute, overlayState) {
+        if (navigationState.selectedTab != TabStatus.FEED || navigationState.currentRoute != ScreenRoutes.FeedTabRoutes) {
+            overlayState.cancelPendingReviewShopSearch()
+        }
     }
 
     return overlayState
