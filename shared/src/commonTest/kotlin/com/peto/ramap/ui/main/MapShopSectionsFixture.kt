@@ -58,6 +58,8 @@ class MapShopSectionsFixture(
     val uiState = MutableStateFlow(ShopSectionsSnapshot(map.uiState.value))
     private val effects = Channel<ShopInteractionEffect>(Channel.BUFFERED)
     val sideEffect = effects.receiveAsFlow()
+    var archiveNavigationCount = 0
+        private set
     private var store: ViewModelStore? = null
     private var collectors: List<Job> = emptyList()
     private var overview: OverviewViewModel? = null
@@ -73,7 +75,14 @@ class MapShopSectionsFixture(
             }
         }
         scope.launch { map.uiState.collect { state -> uiState.value = uiState.value.copy(map = state) } }
-        scope.launch { map.sideEffect.collect { if (it is MapSideEffect.Interaction) effects.send(it.effect) } }
+        scope.launch {
+            map.sideEffect.collect {
+                when (it) {
+                    is MapSideEffect.Interaction -> effects.send(it.effect)
+                    MapSideEffect.NavigateToArchive -> archiveNavigationCount++
+                }
+            }
+        }
     }
 
     private fun open(shopId: String?) {

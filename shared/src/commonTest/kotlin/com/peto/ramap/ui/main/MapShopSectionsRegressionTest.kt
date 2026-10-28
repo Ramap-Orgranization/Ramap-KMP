@@ -128,6 +128,60 @@ import kotlin.test.assertTrue
 @OptIn(ExperimentalCoroutinesApi::class)
 class MapShopSectionsRegressionTest {
     @Test
+    fun `아카이브 로그인에 성공하면 인증 상태가 준비된 뒤 한 번 전환한다`() =
+        coroutinesTest {
+            val login = FakeLoginRepository()
+            val viewModel = mapViewModel(loginRepository = login)
+            runCurrent()
+
+            viewModel.dispatch(MapIntent.OnArchiveLoginTypeSelected(LoginType.KAKAO))
+            runCurrent()
+            assertEquals(0, viewModel.archiveNavigationCount)
+
+            login.updateSessionState(LoginSessionState.AUTHENTICATED)
+            runCurrent()
+            assertEquals(1, viewModel.archiveNavigationCount)
+        }
+
+    @Test
+    fun `인증 상태가 먼저 반영되어도 아카이브 로그인 성공 후 전환한다`() =
+        coroutinesTest {
+            val login = FakeLoginRepository(LoginSessionState.AUTHENTICATED)
+            val viewModel = mapViewModel(loginRepository = login)
+            runCurrent()
+
+            viewModel.dispatch(MapIntent.OnArchiveLoginTypeSelected(LoginType.KAKAO))
+            runCurrent()
+            assertEquals(1, viewModel.archiveNavigationCount)
+        }
+
+    @Test
+    fun `아카이브 로그인에 실패하거나 지도에서 나가면 나중에 인증되어도 전환하지 않는다`() =
+        coroutinesTest {
+            val login = FakeLoginRepository()
+            val viewModel = mapViewModel(loginRepository = login)
+            runCurrent()
+
+            login.signInResult = RamapResult.Error(RamapError.Unknown(IllegalStateException("failed")))
+            viewModel.dispatch(MapIntent.OnArchiveLoginTypeSelected(LoginType.KAKAO))
+            runCurrent()
+            login.updateSessionState(LoginSessionState.AUTHENTICATED)
+            runCurrent()
+            assertEquals(0, viewModel.archiveNavigationCount)
+
+            login.updateSessionState(LoginSessionState.NOT_AUTHENTICATED)
+            login.signInResult = RamapResult.Success(Unit)
+            runCurrent()
+            viewModel.dispatch(MapIntent.OnArchiveLoginTypeSelected(LoginType.KAKAO))
+            runCurrent()
+            viewModel.dispatch(OnMapTabExited)
+            runCurrent()
+            login.updateSessionState(LoginSessionState.AUTHENTICATED)
+            runCurrent()
+            assertEquals(0, viewModel.archiveNavigationCount)
+        }
+
+    @Test
     fun `상세 성공은 메뉴 로딩과 실패를 기다리지 않고 메뉴만 재시도한다`() =
         coroutinesTest {
             val shop = ramenShopFixture()

@@ -7,6 +7,7 @@ import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.peto.ramap.analytics.AnalyticsSource
@@ -18,6 +19,7 @@ import com.peto.ramap.domain.model.notice.OperatingNotice
 import com.peto.ramap.navigation.deeplink.ShopShareLinkFactory
 import com.peto.ramap.platform.AppSettingsOpener
 import com.peto.ramap.platform.NotificationPermissionRequester
+import com.peto.ramap.ui.login.rememberLoginGuideRequest
 import com.peto.ramap.ui.main.map.contract.MapIntent
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnBookmarkedShopsToggled
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnBoundsChanged
@@ -45,11 +47,12 @@ import com.peto.ramap.ui.main.map.model.ShopDetailRequest
 import com.peto.ramap.ui.refresh.BusinessHoursStatusRefreshEffect
 import com.peto.ramap.ui.refresh.PeriodicRefreshEffect
 import com.peto.ramap.ui.shop.component.MapInteractionHost
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.current_location_timeout_message
+import ramap.shared.generated.resources.login_required_visited_shops_description
 
 @Composable
 fun MapRoute(
@@ -79,6 +82,12 @@ fun MapRoute(
     val selectedShopFocusRequest = uiState.selectedShopFocusRequest
     val placeFocusRequest = uiState.placeFocusRequest
     val coroutineScope = rememberCoroutineScope()
+    val currentOnArchiveNavigate by rememberUpdatedState(onArchiveNavigate)
+    val requestArchiveLogin =
+        rememberLoginGuideRequest(
+            onLoginTypeSelected = { viewModel.dispatch(MapIntent.OnArchiveLoginTypeSelected(it)) },
+            ownerKey = viewModel,
+        )
     var shouldShowShopDetail by remember(requestedShopId, showShopDetail) { mutableStateOf(showShopDetail) }
     var shouldShowReviews by remember(requestedShopId, showReviewsOnOpen) { mutableStateOf(showReviewsOnOpen) }
     var detailSource by remember(requestedShopId, originSource) { mutableStateOf(originSource) }
@@ -97,7 +106,18 @@ fun MapRoute(
     }
 
     MapInteractionHost(
-        sideEffect = remember(viewModel) { viewModel.sideEffect.map { (it as MapSideEffect.Interaction).effect } },
+        sideEffect =
+            remember(viewModel) {
+                viewModel.sideEffect.mapNotNull {
+                    when (it) {
+                        is MapSideEffect.Interaction -> it.effect
+                        MapSideEffect.NavigateToArchive -> {
+                            currentOnArchiveNavigate()
+                            null
+                        }
+                    }
+                }
+            },
         isLoggedIn = uiState.isLoggedIn,
         hiddenShopIds = uiState.hiddenShopIds,
         notificationShopIds = uiState.notificationShopIds,
@@ -153,7 +173,13 @@ fun MapRoute(
             onOpenFilterToggled = { viewModel.dispatch(OnOpenFilterToggled) },
             onViewportLoadRetry = { viewModel.dispatch(OnViewportLoadRetry) },
             onBookmarkedShopsToggle = { viewModel.dispatch(OnBookmarkedShopsToggled) },
-            onArchiveNavigate = onArchiveNavigate,
+            onArchiveNavigate = {
+                if (uiState.isLoggedIn) {
+                    onArchiveNavigate()
+                } else {
+                    requestArchiveLogin(Res.string.login_required_visited_shops_description)
+                }
+            },
         )
     }
     if (shouldShowShopDetail) {

@@ -215,7 +215,7 @@ internal fun MapContent(
             onBookmarkedShopsToggle = onBookmarkedShopsToggle,
         )
 
-        if (uiState.isLoggedIn && !isSearchFocused && !isImeVisible && !uiState.showSearchResults && uiState.selectedShopId == null) {
+        if (!isSearchFocused && !isImeVisible && !uiState.showSearchResults && uiState.selectedShopId == null) {
             MapModeSwitchFab(
                 isVisitedMode = false,
                 onClick = onArchiveNavigate,

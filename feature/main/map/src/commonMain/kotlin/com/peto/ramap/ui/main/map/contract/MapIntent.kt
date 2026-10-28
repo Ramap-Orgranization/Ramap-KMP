@@ -17,6 +17,10 @@ sealed interface MapIntent : Intent {
         val type: LoginType,
     ) : MapIntent
 
+    data class OnArchiveLoginTypeSelected(
+        val type: LoginType,
+    ) : MapIntent
+
     data object OnLoginSelectionDismissed : MapIntent
 
     data class OnBoundsChanged(

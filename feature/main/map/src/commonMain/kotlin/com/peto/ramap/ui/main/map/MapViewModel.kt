@@ -106,6 +106,8 @@ class MapViewModel(
 ) : BaseViewModel<MapUiState, MapIntent, MapSideEffect>(initialState = MapUiState()) {
     private val viewportShopLoader = ViewportShopLoader(ramenShopRepository, viewModelScope)
     private var pendingBookmarkedView = false
+    private var pendingArchiveLogin = false
+    private var archiveLoginSucceeded = false
     private var failedShopId: String? = null
     private var shopFocusSequence = 0L
 
@@ -172,6 +174,7 @@ class MapViewModel(
                 when (intent) {
                     OnBookmarkedShopsToggled -> toggleBookmarkedView()
                     is MapIntent.OnLoginTypeSelected -> login(intent.type)
+                    is MapIntent.OnArchiveLoginTypeSelected -> login(intent.type, continueToArchive = true)
                     MapIntent.OnLoginSelectionDismissed -> pendingBookmarkedView = false
                     OnLocationPermissionBlocked -> showLocationPermissionBlockedToast()
                     is MapIntent.OnShopLoadFailed -> if (currentState.selectedShopId == intent.shopId) failedShopId = intent.shopId
@@ -197,7 +200,11 @@ class MapViewModel(
                 reduce {
                     if (placeFocusRequest == intent.request) copy(placeFocusRequest = null) else this
                 }
-            OnMapTabExited -> dismissBottomSheet()
+            OnMapTabExited -> {
+                pendingArchiveLogin = false
+                archiveLoginSucceeded = false
+                dismissBottomSheet()
+            }
             OnOperatingNoticesRefreshRequested -> loadOperatingNotices()
             OnStatusTimeRefreshed -> reduce { copy(currentDateTime = Clock.System.now().toLocalDateTime(TimeZone.of("Asia/Seoul"))) }
             else -> return false
@@ -248,6 +255,7 @@ class MapViewModel(
             val isAuthenticated = sessionState == LoginSessionState.AUTHENTICATED
             updateAuthState(isAuthenticated)
             if (isAuthenticated) resumeBookmarkedView()
+            resumeArchiveAfterLogin()
         }
     }
 
@@ -719,12 +727,32 @@ class MapViewModel(
         updateBookmarkedView()
     }
 
-    private fun login(type: LoginType) {
+    private fun resumeArchiveAfterLogin() {
+        if (!pendingArchiveLogin || !archiveLoginSucceeded || !currentState.isLoggedIn) return
+        pendingArchiveLogin = false
+        archiveLoginSucceeded = false
+        trySideEffect(MapSideEffect.NavigateToArchive)
+    }
+
+    private fun login(
+        type: LoginType,
+        continueToArchive: Boolean = false,
+    ) {
+        pendingArchiveLogin = continueToArchive
+        archiveLoginSucceeded = false
         launchResultTask(
             taskKey = "map-login",
             request = { signInUseCase(type, AnalyticsSource.MAP) },
-            onSuccess = { showInteraction(ShowToast(ToastData(Res.string.login_success_message, ToastType.DEFAULT))) },
+            onSuccess = {
+                if (pendingArchiveLogin) {
+                    archiveLoginSucceeded = true
+                    resumeArchiveAfterLogin()
+                }
+                showInteraction(ShowToast(ToastData(Res.string.login_success_message, ToastType.DEFAULT)))
+            },
             onError = {
+                pendingArchiveLogin = false
+                archiveLoginSucceeded = false
                 val message =
                     when (type) {
                         LoginType.KAKAO -> Res.string.kakao_login_failure_message
