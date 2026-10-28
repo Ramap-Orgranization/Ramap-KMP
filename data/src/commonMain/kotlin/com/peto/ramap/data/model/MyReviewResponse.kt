@@ -24,6 +24,7 @@ internal data class MyReviewResponse(
     @SerialName("moderation_note") val moderationNote: String? = null,
     @SerialName("is_public") val isPublic: Boolean,
     @SerialName("visit_number") val visitNumber: Int = 1,
+    @SerialName("like_count") val likeCount: Int = 0,
     @SerialName("author_review_count") val authorReviewCount: Int = 0,
     @Transient val imageReferences: List<MyReviewPhoto> = emptyList(),
     @Transient val imageUrls: List<String?> = emptyList(),
@@ -46,6 +47,7 @@ internal data class MyReviewResponse(
                         ReviewModerationStatus.entries.find { it.name.equals(moderationStatus, ignoreCase = true) }
                             ?: ReviewModerationStatus.PENDING,
                     visitNumber = visitNumber,
+                    likeCount = likeCount,
                     author = ReviewAuthor(userId, nickname, authorAvatarUrl, authorReviewCount, authorAvatarPath, authorAvatarExpiresAt),
                 ),
             shopName = shopName,

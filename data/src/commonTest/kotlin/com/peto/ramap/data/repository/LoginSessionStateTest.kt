@@ -6,14 +6,46 @@ import com.peto.ramap.fixture.authenticatedSessionFixture
 import com.peto.ramap.fixture.withSupabaseSessionFixture
 import io.github.jan.supabase.annotations.SupabaseInternal
 import io.github.jan.supabase.auth.auth
+import io.github.jan.supabase.auth.status.RefreshFailureCause
 import io.github.jan.supabase.auth.status.SessionStatus
 import io.github.jan.supabase.auth.user.UserSession
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNull
 
 @OptIn(SupabaseInternal::class)
 class LoginSessionStateTest {
+    @Test
+    fun `토큰 갱신이 일시 실패해도 로그아웃을 알리지 않는다`() =
+        runTest {
+            withSupabaseSessionFixture { client ->
+                client.auth.setSessionStatus(authenticatedSessionFixture())
+                DefaultLoginRepository(client).session.test {
+                    assertEquals(LoginSessionState.AUTHENTICATED, awaitItem())
+                    client.auth.setSessionStatus(SessionStatus.RefreshFailure(RefreshFailureCause.NetworkError(IllegalStateException("offline"))))
+                    expectNoEvents()
+                    client.auth.setSessionStatus(authenticatedSessionFixture())
+                    assertEquals(LoginSessionState.AUTHENTICATED, awaitItem())
+                    client.auth.setSessionStatus(SessionStatus.NotAuthenticated(isSignOut = true))
+                    assertEquals(LoginSessionState.NOT_AUTHENTICATED, awaitItem())
+                }
+            }
+        }
+
+    @Test
+    fun `갱신 실패 중 새 구독에도 로그아웃을 알리지 않는다`() =
+        runTest {
+            withSupabaseSessionFixture { client ->
+                client.auth.setSessionStatus(SessionStatus.RefreshFailure(RefreshFailureCause.NetworkError(IllegalStateException("offline"))))
+                DefaultLoginRepository(client).session.test {
+                    expectNoEvents()
+                    client.auth.setSessionStatus(SessionStatus.NotAuthenticated())
+                    assertEquals(LoginSessionState.NOT_AUTHENTICATED, awaitItem())
+                }
+            }
+        }
+
     @Test
     fun `백그라운드 세션 복원을 로그아웃으로 알리지 않는다`() =
         runTest {
@@ -59,5 +91,7 @@ class LoginSessionStateTest {
 
         assertEquals(LoginSessionState.AUTHENTICATED, loginSessionState(authenticated))
         assertEquals(LoginSessionState.NOT_AUTHENTICATED, loginSessionState(SessionStatus.NotAuthenticated()))
+        assertNull(loginSessionState(SessionStatus.Initializing))
+        assertNull(loginSessionState(SessionStatus.RefreshFailure(RefreshFailureCause.NetworkError(IllegalStateException("offline")))))
     }
 }

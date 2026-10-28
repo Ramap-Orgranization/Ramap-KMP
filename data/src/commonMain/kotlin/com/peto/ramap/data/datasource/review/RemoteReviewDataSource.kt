@@ -32,17 +32,24 @@ internal class RemoteReviewDataSource(
         offset: Long,
         visibility: String,
     ): MyReviewsPageResponse {
-        val page =
-            client.postgrest
-                .rpc(
-                    RPC_FETCH_MY_REVIEWS,
-                    buildJsonObject {
-                        put(PARAM_OFFSET, offset)
-                        put(PARAM_VISIBILITY, visibility)
-                    },
-                ).decodeAs<MyReviewsPageResponse>()
+        val page = fetchMyReviewsMetadata(offset, visibility)
         return page.copy(reviews = images.resolveMyReviews(page.reviews))
     }
+
+    override suspend fun fetchMyReviewsMetadata(offset: Long): MyReviewsPageResponse = fetchMyReviewsMetadata(offset, "all")
+
+    private suspend fun fetchMyReviewsMetadata(
+        offset: Long,
+        visibility: String,
+    ): MyReviewsPageResponse =
+        client.postgrest
+            .rpc(
+                RPC_FETCH_MY_REVIEWS,
+                buildJsonObject {
+                    put(PARAM_OFFSET, offset)
+                    put(PARAM_VISIBILITY, visibility)
+                },
+            ).decodeAs<MyReviewsPageResponse>()
 
     override suspend fun fetchMyReview(reviewId: String): MyReviewResponse? {
         val review =
