@@ -12,6 +12,7 @@ import com.peto.ramap.analytics.AnalyticsSource
 import com.peto.ramap.domain.model.auth.LoginType
 import com.peto.ramap.navigation.NavigationState
 import com.peto.ramap.theme.CommonColor
+import com.peto.ramap.ui.lifecycle.ScreenViewModelScope
 import com.peto.ramap.ui.review.other.OtherReviewsRoute
 import com.peto.ramap.ui.review.write.ShopReviewWriteRoute
 import com.peto.ramap.ui.shop.ShopDetailHost
@@ -79,15 +80,17 @@ internal fun OverlayHost(
     if (overlayState.overlayReviewWriteArgs != null) {
         val (shopId, reviewId) = overlayState.overlayReviewWriteArgs!!
         FullScreenOverlay {
-            ShopReviewWriteRoute(
-                shopId = shopId,
-                reviewId = reviewId,
-                onBack = { overlayState.overlayReviewWriteArgs = null },
-                onSubmitted = {
-                    overlayState.overlayReviewWriteArgs = null
-                },
-                onLogin = navigationState::showMyRoot,
-            )
+            ScreenViewModelScope(screenKey = shopId to reviewId) {
+                ShopReviewWriteRoute(
+                    shopId = shopId,
+                    reviewId = reviewId,
+                    onBack = { overlayState.overlayReviewWriteArgs = null },
+                    onSubmitted = {
+                        overlayState.overlayReviewWriteArgs = null
+                    },
+                    onLogin = navigationState::showMyRoot,
+                )
+            }
         }
     }
 }
