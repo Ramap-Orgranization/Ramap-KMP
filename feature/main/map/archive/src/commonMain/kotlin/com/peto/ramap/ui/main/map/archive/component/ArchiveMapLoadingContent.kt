@@ -1,11 +1,15 @@
 package com.peto.ramap.ui.main.map.archive.component
 
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.InfiniteTransition
 import androidx.compose.animation.core.StartOffset
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.keyframes
 import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -42,13 +46,19 @@ import com.peto.ramap.theme.ChromaticColor
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.RamapTheme
+import com.peto.ramap.ui.main.map.archive.model.ArchiveLoadingStage
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.visited_shops_loading_description
-import ramap.shared.generated.resources.visited_shops_loading_title
+import ramap.shared.generated.resources.visited_shops_loading_map
+import ramap.shared.generated.resources.visited_shops_loading_photos
+import ramap.shared.generated.resources.visited_shops_loading_visits
 
 @Composable
-internal fun ArchiveMapLoadingContent(modifier: Modifier = Modifier) {
+internal fun ArchiveMapLoadingContent(
+    stage: ArchiveLoadingStage,
+    modifier: Modifier = Modifier,
+) {
     val transition = rememberInfiniteTransition(label = "archive_map_loading")
     BoxWithConstraints(
         modifier =
@@ -79,12 +89,24 @@ internal fun ArchiveMapLoadingContent(modifier: Modifier = Modifier) {
         ) {
             ArchiveMapIllustration(transition = transition)
             Spacer(modifier = Modifier.height(25.dp))
-            AppText(
-                text = stringResource(Res.string.visited_shops_loading_title),
-                style = AppTextStyle.H3Brand,
-                color = GrayColor.C500,
-                textAlign = TextAlign.Center,
-            )
+            AnimatedContent(
+                targetState = stage,
+                transitionSpec = { fadeIn() togetherWith fadeOut() },
+                label = "archive_loading_stage",
+            ) { currentStage ->
+                val title =
+                    when (currentStage) {
+                        ArchiveLoadingStage.VISITS -> Res.string.visited_shops_loading_visits
+                        ArchiveLoadingStage.PHOTOS -> Res.string.visited_shops_loading_photos
+                        ArchiveLoadingStage.MAP -> Res.string.visited_shops_loading_map
+                    }
+                AppText(
+                    text = stringResource(title),
+                    style = AppTextStyle.H3Brand,
+                    color = GrayColor.C500,
+                    textAlign = TextAlign.Center,
+                )
+            }
             Spacer(modifier = Modifier.height(12.dp))
             AppText(
                 text = stringResource(Res.string.visited_shops_loading_description),
@@ -136,6 +158,6 @@ private fun ArchiveLoadingDots(transition: InfiniteTransition) {
 @Composable
 private fun ArchiveMapLoadingContentPreview() {
     RamapTheme {
-        ArchiveMapLoadingContent(modifier = Modifier.fillMaxSize())
+        ArchiveMapLoadingContent(stage = ArchiveLoadingStage.VISITS, modifier = Modifier.fillMaxSize())
     }
 }

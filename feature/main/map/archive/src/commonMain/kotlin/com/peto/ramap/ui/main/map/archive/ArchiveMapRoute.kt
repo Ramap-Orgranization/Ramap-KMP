@@ -44,12 +44,14 @@ import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.RamapTheme
 import com.peto.ramap.ui.base.ObserveAsEvents
+import com.peto.ramap.ui.main.map.archive.component.ArchiveMapCanvas
 import com.peto.ramap.ui.main.map.archive.component.ArchiveMapClusterPopup
 import com.peto.ramap.ui.main.map.archive.component.ArchiveMapEmptyContent
 import com.peto.ramap.ui.main.map.archive.component.ArchiveMapLoadingContent
 import com.peto.ramap.ui.main.map.archive.contract.ArchiveMapIntent
 import com.peto.ramap.ui.main.map.archive.contract.ArchiveMapSideEffect
 import com.peto.ramap.ui.main.map.archive.contract.ArchiveMapUiState
+import com.peto.ramap.ui.main.map.archive.model.ArchiveLoadingStage
 import com.peto.ramap.ui.main.map.archive.model.ArchiveMapClusteringConfig
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
@@ -120,6 +122,13 @@ internal fun ArchiveMapContent(
     val hasMapShops = state.hasLoaded && state.shops.isNotEmpty()
     val isEmpty = state.hasLoaded && state.shops.isEmpty() && !state.hasError
     var isMapReady by remember(state.userId, hasMapShops) { mutableStateOf(isPreview && hasMapShops) }
+    var areInitialMarkersReady by remember(state.userId, hasMapShops) { mutableStateOf(false) }
+    val loadingStage =
+        when {
+            !hasMapShops -> ArchiveLoadingStage.VISITS
+            !areInitialMarkersReady -> ArchiveLoadingStage.PHOTOS
+            else -> ArchiveLoadingStage.MAP
+        }
     NavigationBackHandler(
         state = rememberNavigationEventState<NavigationEventInfo>(currentInfo = NavigationEventInfo.None),
         isBackEnabled = isBackEnabled && state.selectedShopId == null,
@@ -148,6 +157,7 @@ internal fun ArchiveMapContent(
                 onPhotoDownloadFailed = { id, reference -> onIntent(ArchiveMapIntent.PhotoDownloadFailed(id, reference)) },
                 onLocationPermissionBlocked = onLocationPermissionBlocked,
                 onCurrentLocationTimeout = onCurrentLocationTimeout,
+                onInitialMarkersReady = { areInitialMarkersReady = true },
                 onMapReady = { isMapReady = true },
             )
         }
@@ -172,7 +182,7 @@ internal fun ArchiveMapContent(
             enter = EnterTransition.None,
             exit = fadeOut(animationSpec = tween(durationMillis = 240)),
         ) {
-            ArchiveMapLoadingContent(modifier = Modifier.fillMaxSize())
+            ArchiveMapLoadingContent(stage = loadingStage, modifier = Modifier.fillMaxSize())
         }
         MapModeSwitchFab(
             isVisitedMode = true,

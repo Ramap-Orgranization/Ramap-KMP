@@ -612,5 +612,8 @@
     <string name="archive_review_date_and_visit">%1$s · %2$s</string>
     <string name="visited_shops_error">다녀온 매장을 불러오지 못했어요.</string>
     <string name="visited_shops_loading_title">다녀온 매장을\n지도에 모으고 있어요</string>
+    <string name="visited_shops_loading_visits">다녀온 매장을 찾고 있어요</string>
+    <string name="visited_shops_loading_photos">추억이 담긴 사진을 불러오고 있어요</string>
+    <string name="visited_shops_loading_map">매장들을 지도에 모으고 있어요</string>
     <string name="visited_shops_loading_description">내가 남긴 리뷰와 사진을 불러오는 중이에요.</string>
 </resources>

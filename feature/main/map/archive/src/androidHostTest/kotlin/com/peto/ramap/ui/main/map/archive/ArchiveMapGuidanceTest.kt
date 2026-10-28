@@ -25,8 +25,11 @@ import com.peto.ramap.domain.model.review.Review
 import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.fixture.ramenShopFixture
 import com.peto.ramap.theme.RamapTheme
+import com.peto.ramap.ui.main.map.archive.component.ArchiveMapLoadingContent
 import com.peto.ramap.ui.main.map.archive.component.ArchiveReviewTimelineItem
+import com.peto.ramap.ui.main.map.archive.component.rememberInitialMarkersReady
 import com.peto.ramap.ui.main.map.archive.contract.ArchiveMapUiState
+import com.peto.ramap.ui.main.map.archive.model.ArchiveLoadingStage
 import com.peto.ramap.ui.main.map.archive.model.rememberArchiveMarkerImages
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -37,6 +40,8 @@ import org.robolectric.annotation.GraphicsMode
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 @OptIn(ExperimentalTestApi::class)
 @RunWith(RobolectricTestRunner::class)
@@ -47,6 +52,21 @@ class ArchiveMapGuidanceTest {
         val application = RuntimeEnvironment.getApplication()
         shadowOf(application.packageManager).addActivityIfNotPresent(ComponentName(application, ComponentActivity::class.java))
     }
+
+    @Test
+    fun `로딩 단계가 바뀌면 각 단계의 안내를 보여준다`() =
+        runComposeUiTest {
+            var stage by mutableStateOf(ArchiveLoadingStage.VISITS)
+            setContent {
+                RamapTheme { ArchiveMapLoadingContent(stage = stage) }
+            }
+
+            onNodeWithText("다녀온 매장을 찾고 있어요", useUnmergedTree = true).assertExists()
+            runOnIdle { stage = ArchiveLoadingStage.PHOTOS }
+            onNodeWithText("추억이 담긴 사진을 불러오고 있어요", useUnmergedTree = true).assertExists()
+            runOnIdle { stage = ArchiveLoadingStage.MAP }
+            onNodeWithText("매장들을 지도에 모으고 있어요", useUnmergedTree = true).assertExists()
+        }
 
     @Test
     fun `빈 방문 기록의 안내와 매장 찾기는 네이티브 지도 준비를 기다리지 않는다`() =
@@ -117,6 +137,25 @@ class ArchiveMapGuidanceTest {
             runOnIdle { assertEquals(emptySet(), visibleShops) }
             runOnIdle { failures = setOf("image") }
             runOnIdle { assertEquals(setOf("shop"), visibleShops) }
+        }
+
+    @Test
+    fun `최초에는 모든 마커를 기다리고 이후 마커 갱신에서는 지도를 유지한다`() =
+        runComposeUiTest {
+            var markerIds by mutableStateOf(emptySet<String>())
+            var isReady = false
+            setContent {
+                val ready = rememberInitialMarkersReady(setOf("first", "second"), markerIds)
+                SideEffect { isReady = ready }
+            }
+
+            runOnIdle { assertFalse(isReady) }
+            runOnIdle { markerIds = setOf("first") }
+            runOnIdle { assertFalse(isReady) }
+            runOnIdle { markerIds = setOf("first", "second") }
+            runOnIdle { assertTrue(isReady) }
+            runOnIdle { markerIds = setOf("first") }
+            runOnIdle { assertTrue(isReady) }
         }
 
     @Test
