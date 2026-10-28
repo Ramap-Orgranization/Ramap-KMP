@@ -14,6 +14,7 @@ import com.peto.ramap.data.datasource.update.AppUpdatePolicyDataSource
 import com.peto.ramap.data.datasource.waiting.ShopWaitingSystemDataSource
 import com.peto.ramap.data.repository.DefaultAppNoticeRepository
 import com.peto.ramap.data.repository.DefaultAppUpdateRepository
+import com.peto.ramap.data.repository.DefaultArchiveRepository
 import com.peto.ramap.data.repository.DefaultBookmarkRepository
 import com.peto.ramap.data.repository.DefaultFollowRepository
 import com.peto.ramap.data.repository.DefaultHiddenShopRepository
@@ -38,6 +39,7 @@ import com.peto.ramap.data.store.DefaultPersonalizationStore
 import com.peto.ramap.data.store.DefaultReviewChangeStore
 import com.peto.ramap.domain.repository.AppNoticeRepository
 import com.peto.ramap.domain.repository.AppUpdateRepository
+import com.peto.ramap.domain.repository.ArchiveRepository
 import com.peto.ramap.domain.repository.BookmarkRepository
 import com.peto.ramap.domain.repository.FollowRepository
 import com.peto.ramap.domain.repository.HiddenShopRepository
@@ -64,6 +66,7 @@ import org.koin.dsl.module
 
 val repositoryModule =
     module {
+        single<ArchiveRepository> { DefaultArchiveRepository(get(), get(), get()) }
         single { DefaultReviewChangeStore(get<ProfileDataSource>().sessionUserIds, get<ProfileDataSource>()::currentUserId) }
         single<ReviewChangeStore> { get<DefaultReviewChangeStore>() }
         single<FollowRepository> { DefaultFollowRepository(get(), get()) }
