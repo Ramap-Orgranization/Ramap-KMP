@@ -104,6 +104,30 @@ internal fun NavigationGraph(
                     },
             )
         },
+        archiveMapScreen = {
+            val viewModel = koinViewModel<ArchiveMapViewModel>()
+            ArchiveMapRoute(
+                viewModel = viewModel,
+                isBackEnabled = !hasActiveOverlay,
+                onReturnToMap = navigationState::pop,
+                onFindVisitedShop = navigationState::showReviewShopSearch,
+            )
+            ArchiveShopDetailHost(
+                viewModel = viewModel,
+                onEditReview = { shopId, reviewId -> onOpenReviewEditOverlay(shopId, reviewId) },
+                onReviewNavigate = onOpenReviewWriteOverlay,
+                onOpenProfile = { userId -> openProfile(userId, true) },
+                onEventNavigate = { event -> navigationState.showEvent(event.id) },
+                onOperatingNoticeNavigate = { notice -> navigationState.showShopOnMap(notice.shop.id) },
+                isBackEnabled = !hasActiveOverlay,
+            )
+        },
+        reviewShopSearchScreen = {
+            ReviewShopSearchRoute(
+                onBack = navigationState::pop,
+                onWriteReview = navigationState::showReviewWrite,
+            )
+        },
         rankingScreen = {
             RankingRoute(
                 onFindShopClick = navigationState::showMap,
