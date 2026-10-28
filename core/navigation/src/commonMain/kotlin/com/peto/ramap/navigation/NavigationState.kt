@@ -69,6 +69,22 @@ class NavigationState(
 
     fun showReviewWrite(shopId: String) = showOnce(ScreenRoutes.ReviewWriteRoutes(shopId))
 
+    fun showReviewShopSearch() = showOnce(ScreenRoutes.ReviewShopSearchRoutes)
+
+    fun completeReviewWrite() {
+        val route = currentRoute as? ScreenRoutes.ReviewWriteRoutes ?: return
+        if (route.reviewId != null) {
+            pop()
+            return
+        }
+        if (currentBackStack.getOrNull(currentBackStack.lastIndex - 1) == ScreenRoutes.ReviewShopSearchRoutes) {
+            currentBackStack.removeLastOrNull()
+            currentBackStack.removeLastOrNull()
+            return
+        }
+        showShopOnMap(shopId = route.shopId, showReviews = true)
+    }
+
     fun showReviewEdit(
         shopId: String,
         reviewId: String,
@@ -99,6 +115,16 @@ class NavigationState(
     fun showEvent(eventId: String) {
         if (currentRoute == ScreenRoutes.EventDetailRoutes(eventId)) return
         currentBackStack.add(ScreenRoutes.EventDetailRoutes(eventId))
+    }
+
+    fun showArchiveMap() = showOnce(ScreenRoutes.ArchiveMapRoutes)
+
+    fun clearArchiveMap() {
+        val mapStack = backStacks.getValue(TabStatus.MAP)
+        val archiveIndex = mapStack.indexOf(ScreenRoutes.ArchiveMapRoutes)
+        if (archiveIndex < 0) return
+        while (mapStack.size > archiveIndex) mapStack.removeLastOrNull()
+        if (mapStack.isEmpty()) mapStack.add(ScreenRoutes.MapRoutes())
     }
 
     fun showOperatingNotice() = showOnce(ScreenRoutes.OperatingNoticeRoutes)

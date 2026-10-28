@@ -11,6 +11,8 @@ val ScreenRoutes.analyticsScreenName: String
     get() =
         when (this) {
             is ScreenRoutes.MapRoutes -> "map"
+            ScreenRoutes.ArchiveMapRoutes -> "archive_map"
+            ScreenRoutes.ReviewShopSearchRoutes -> "review_shop_search"
             is ScreenRoutes.EventTabRoutes -> "event_list"
             is ScreenRoutes.OperatingNoticeRoutes -> "operating_notice"
             is ScreenRoutes.RankingTabRoutes -> "ranking"

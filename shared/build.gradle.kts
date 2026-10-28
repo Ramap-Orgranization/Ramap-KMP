@@ -108,6 +108,7 @@ kotlin {
             implementation(projects.feature.review.my)
             implementation(projects.feature.review.other)
             implementation(projects.feature.review.write)
+            implementation(projects.feature.review.search)
             implementation(projects.feature.account)
             implementation(projects.feature.bookmark.list)
             implementation(projects.feature.bookmark.importation)

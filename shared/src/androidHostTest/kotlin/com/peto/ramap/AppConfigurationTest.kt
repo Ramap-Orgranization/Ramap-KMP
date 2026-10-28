@@ -106,6 +106,8 @@ class AppConfigurationTest {
                                 object : ViewModel() {}
                             }
                     },
+                    archiveMapScreen = {},
+                    reviewShopSearchScreen = {},
                     rankingScreen = {},
                     eventListScreen = {},
                     operatingNoticeScreen = {},

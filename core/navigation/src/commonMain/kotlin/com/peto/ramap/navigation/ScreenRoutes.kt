@@ -17,6 +17,12 @@ sealed interface ScreenRoutes : NavKey {
     ) : ScreenRoutes
 
     @Serializable
+    data object ArchiveMapRoutes : ScreenRoutes
+
+    @Serializable
+    data object ReviewShopSearchRoutes : ScreenRoutes
+
+    @Serializable
     data class EventTabRoutes(
         val instanceId: Int = 0,
     ) : ScreenRoutes

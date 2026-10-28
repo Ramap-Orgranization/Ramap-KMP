@@ -16,6 +16,7 @@ import com.peto.ramap.ui.hidden.di.hiddenModule
 import com.peto.ramap.ui.main.event.detail.di.eventDetailModule
 import com.peto.ramap.ui.main.event.list.di.eventsModule
 import com.peto.ramap.ui.main.feed.di.feedModule
+import com.peto.ramap.ui.main.map.archive.di.archiveModule
 import com.peto.ramap.ui.main.map.di.mapModule
 import com.peto.ramap.ui.main.my.di.myTabModule
 import com.peto.ramap.ui.main.notice.di.noticeModule
@@ -26,6 +27,7 @@ import com.peto.ramap.ui.profile.follow.di.followModule
 import com.peto.ramap.ui.report.di.reportModule
 import com.peto.ramap.ui.review.my.di.reviewMyModule
 import com.peto.ramap.ui.review.other.di.reviewOtherModule
+import com.peto.ramap.ui.review.search.di.reviewSearchModule
 import com.peto.ramap.ui.review.write.di.reviewWriteModule
 import com.peto.ramap.ui.settings.di.settingsModule
 import com.peto.ramap.ui.shop.menu.di.shopMenuModule
@@ -49,6 +51,7 @@ internal val appModule =
             noticeModule,
             hiddenModule,
             mapModule,
+            archiveModule,
             importationModule,
             rankingModule,
             feedModule,
@@ -58,6 +61,7 @@ internal val appModule =
             profileEditModule,
             followModule,
             reviewWriteModule,
+            reviewSearchModule,
             reviewMyModule,
             reviewOtherModule,
             settingsModule,

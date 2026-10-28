@@ -10,6 +10,56 @@ import kotlin.test.assertTrue
 
 class NavigationStateTest {
     @Test
+    fun `아카이브에서 매장을 찾아 첫 리뷰를 저장하면 아카이브로 돌아간다`() {
+        val state = navigationState()
+        state.showArchiveMap()
+        state.showReviewShopSearch()
+        state.showReviewWrite("shop")
+
+        state.completeReviewWrite()
+
+        assertEquals(TabStatus.MAP, state.selectedTab)
+        assertEquals(listOf(ScreenRoutes.MapRoutes(), ScreenRoutes.ArchiveMapRoutes), state.currentBackStack.toList())
+    }
+
+    @Test
+    fun `피드에서 매장을 찾아 리뷰를 저장하면 피드로 돌아간다`() {
+        val state = navigationState(selectedTab = TabStatus.FEED)
+        state.showReviewShopSearch()
+        state.showReviewWrite("shop")
+
+        state.completeReviewWrite()
+
+        assertEquals(TabStatus.FEED, state.selectedTab)
+        assertEquals(listOf(ScreenRoutes.FeedTabRoutes), state.currentBackStack.toList())
+    }
+
+    @Test
+    fun `작성을 취소하면 매장 찾기로 돌아가고 찾기를 닫으면 출발 화면이 유지된다`() {
+        val state = navigationState()
+        state.showArchiveMap()
+        state.showReviewShopSearch()
+        state.showReviewWrite("shop")
+
+        state.pop()
+        assertEquals(ScreenRoutes.ReviewShopSearchRoutes, state.currentRoute)
+        state.pop()
+        assertEquals(ScreenRoutes.ArchiveMapRoutes, state.currentRoute)
+    }
+
+    @Test
+    fun `기존 경로의 작성 완료는 지도 리뷰로 이동하고 수정 완료는 출발 화면으로 돌아간다`() {
+        val state = navigationState(selectedTab = TabStatus.MY)
+        state.showReviewWrite("shop")
+        state.completeReviewWrite()
+        assertEquals(ScreenRoutes.MapRoutes(shopId = "shop", showReviews = true), state.currentRoute)
+
+        state.showReviewEdit("shop", "review")
+        state.completeReviewWrite()
+        assertEquals(ScreenRoutes.MapRoutes(shopId = "shop", showReviews = true), state.currentRoute)
+    }
+
+    @Test
     fun `리뷰 작성은 현재 탭에서 한 단계로 열리고 뒤로 가면 출발 화면으로 돌아간다`() {
         for (tab in TabStatus.entries) {
             val state = navigationState(selectedTab = tab)
@@ -400,6 +450,39 @@ class NavigationStateTest {
         assertEquals(ScreenRoutes.ImportationRoutes, navigationState.currentRoute)
         navigationState.pop()
         assertEquals(ScreenRoutes.BookmarkedShopListRoutes, navigationState.currentRoute)
+    }
+
+    @Test
+    fun `아카이브 진입과 복귀는 기존 지도 엔트리를 유지하고 중복 진입을 막는다`() {
+        val state = navigationState()
+        val originalMap = state.currentRoute
+
+        state.showArchiveMap()
+        state.showArchiveMap()
+
+        assertEquals(listOf(originalMap, ScreenRoutes.ArchiveMapRoutes), state.currentBackStack.toList())
+        assertEquals(TabStatus.MAP, state.selectedTab)
+        state.pop()
+        assertEquals(listOf(originalMap), state.currentBackStack.toList())
+    }
+
+    @Test
+    fun `아카이브에서 다른 탭을 왕복해도 아카이브 화면을 유지한다`() {
+        val state = navigationState()
+        state.showArchiveMap()
+        state.selectTopLevelTab(TabStatus.MY)
+        state.selectTopLevelTab(TabStatus.MAP)
+        assertEquals(ScreenRoutes.ArchiveMapRoutes, state.currentRoute)
+        state.pop()
+        assertEquals(ScreenRoutes.MapRoutes(), state.currentRoute)
+    }
+
+    @Test
+    fun `아카이브에서 외부 매장 이동은 일반 지도로 연결한다`() {
+        val state = navigationState()
+        state.showArchiveMap()
+        state.showShopOnMap("shop")
+        assertEquals(listOf(ScreenRoutes.MapRoutes(shopId = "shop")), state.currentBackStack.toList())
     }
 
     private fun navigationState(

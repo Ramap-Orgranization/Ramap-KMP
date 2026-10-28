@@ -72,6 +72,7 @@ fun MapRoute(
     viewModel: MapViewModel =
         org.koin.compose.viewmodel
             .koinViewModel(),
+    onArchiveNavigate: () -> Unit,
     detailContent: @Composable (ShopDetailRequest) -> Unit,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -152,6 +153,7 @@ fun MapRoute(
             onOpenFilterToggled = { viewModel.dispatch(OnOpenFilterToggled) },
             onViewportLoadRetry = { viewModel.dispatch(OnViewportLoadRetry) },
             onBookmarkedShopsToggle = { viewModel.dispatch(OnBookmarkedShopsToggled) },
+            onArchiveNavigate = onArchiveNavigate,
         )
     }
     if (shouldShowShopDetail) {

@@ -21,6 +21,8 @@ import com.peto.ramap.theme.CommonColor
 fun NavigationRouter(
     navigationState: NavigationState,
     mapScreen: @Composable (ScreenRoutes.MapRoutes) -> Unit,
+    archiveMapScreen: @Composable () -> Unit,
+    reviewShopSearchScreen: @Composable () -> Unit,
     rankingScreen: @Composable () -> Unit,
     feedScreen: @Composable () -> Unit = {},
     eventListScreen: @Composable () -> Unit,
@@ -51,6 +53,13 @@ fun NavigationRouter(
                     selectedTab = TabStatus.MAP,
                     onTabSelected = onTabSelected,
                     content = { mapScreen(route) },
+                )
+            }
+            entry<ScreenRoutes.ArchiveMapRoutes> {
+                BottonNavigationTabScreen(
+                    selectedTab = TabStatus.MAP,
+                    onTabSelected = onTabSelected,
+                    content = archiveMapScreen,
                 )
             }
             entry<ScreenRoutes.EventTabRoutes> {
@@ -93,6 +102,7 @@ fun NavigationRouter(
             entry<ScreenRoutes.MyReviewsRoutes> { FullScreen(myReviewsScreen) }
             entry<ScreenRoutes.OtherReviewsRoutes> { route -> FullScreen { otherReviewsScreen(route) } }
             entry<ScreenRoutes.ReviewWriteRoutes> { route -> FullScreen { reviewWriteScreen(route) } }
+            entry<ScreenRoutes.ReviewShopSearchRoutes> { FullScreen(reviewShopSearchScreen) }
             entry<ScreenRoutes.SettingsRoutes> { FullScreen(settingsScreen) }
             entry<ScreenRoutes.AccountSettingsRoutes> { FullScreen(accountSettingsScreen) }
             entry<ScreenRoutes.InformationRoutes> { FullScreen(informationScreen) }

@@ -62,6 +62,8 @@ internal fun navKeySerializersModule(): SerializersModule =
     SerializersModule {
         polymorphic(NavKey::class) {
             subclass(ScreenRoutes.MapRoutes::class)
+            subclass(ScreenRoutes.ArchiveMapRoutes::class)
+            subclass(ScreenRoutes.ReviewShopSearchRoutes::class)
             subclass(ScreenRoutes.EventTabRoutes::class)
             subclass(ScreenRoutes.OperatingNoticeRoutes::class)
             subclass(ScreenRoutes.RankingTabRoutes::class)
