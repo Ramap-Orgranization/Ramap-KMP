@@ -64,10 +64,20 @@ class AppConfigurationTest {
             policy = AppUpdatePolicy(minimumBuildNumber = 10, storeUrl = "https://example.com"),
         )
 
+    @Test
+    fun `디버그 앱은 최소 빌드보다 낮아도 정책 조회 없이 진입하고 구성 변경 후에도 유지한다`() =
+        verifyPolicyRetention(
+            policy = AppUpdatePolicy(minimumBuildNumber = 22, storeUrl = "https://example.com"),
+            isDebugBuild = true,
+        )
+
     private fun verifyPolicyRetention(
         policy: AppUpdatePolicy? = null,
         recreateWhileLoading: Boolean = false,
+        isDebugBuild: Boolean = false,
     ) {
+        val expectedPolicy = if (isDebugBuild) null else policy
+        val expectedRequestCount = if (isDebugBuild) 0 else 1
         var updateRequestCount = 0
         var navigationViewModelCreations = 0
         var navigationViewModel: ViewModel? = null
@@ -85,6 +95,7 @@ class AppConfigurationTest {
                 override val versionName = "1.0.0"
                 override val buildNumber = 1L
                 override val platform = "android"
+                override val isDebugBuild = isDebugBuild
             }
         AppConfigurationTestActivity.content = content@{
             val retainedGate = viewModel { AppUpdateGateViewModel(repository, versionProvider) }
@@ -134,13 +145,13 @@ class AppConfigurationTest {
         val controller = Robolectric.buildActivity(AppConfigurationTestActivity::class.java).setup()
         try {
             shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(1))
-            assertEquals(1, updateRequestCount)
+            assertEquals(expectedRequestCount, updateRequestCount)
             val originalGateViewModel = assertNotNull(gateViewModel)
             val originalNavigationViewModel = navigationViewModel
             if (recreateWhileLoading) {
                 assertTrue(originalGateViewModel.uiState.value.loadState.isAnyLoading)
             } else {
-                assertEquals(policy, originalGateViewModel.uiState.value.policy)
+                assertEquals(expectedPolicy, originalGateViewModel.uiState.value.policy)
             }
 
             val configuration =
@@ -153,18 +164,18 @@ class AppConfigurationTest {
             shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(1))
 
             assertSame(originalGateViewModel, gateViewModel)
-            assertEquals(1, updateRequestCount)
+            assertEquals(expectedRequestCount, updateRequestCount)
             assertSame(originalNavigationViewModel, navigationViewModel)
             if (recreateWhileLoading) {
                 assertTrue(originalGateViewModel.uiState.value.loadState.isAnyLoading)
             }
             response.complete(policy)
             shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(1))
-            assertEquals(policy, originalGateViewModel.uiState.value.policy)
+            assertEquals(expectedPolicy, originalGateViewModel.uiState.value.policy)
             assertFalse(originalGateViewModel.uiState.value.loadState.isAnyLoading)
             if (!recreateWhileLoading) {
-                assertEquals(if (policy == null) 1 else 0, navigationViewModelCreations)
-                if (policy == null) assertNotNull(navigationViewModel) else assertNull(navigationViewModel)
+                assertEquals(if (expectedPolicy == null) 1 else 0, navigationViewModelCreations)
+                if (expectedPolicy == null) assertNotNull(navigationViewModel) else assertNull(navigationViewModel)
             }
         } finally {
             controller.pause().stop().destroy()

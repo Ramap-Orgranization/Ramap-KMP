@@ -6,4 +6,6 @@ interface AppVersionProvider {
     val buildNumber: Long
 
     val platform: String
+
+    val isDebugBuild: Boolean
 }

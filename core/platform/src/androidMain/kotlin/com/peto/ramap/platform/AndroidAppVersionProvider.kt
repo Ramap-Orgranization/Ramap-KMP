@@ -1,6 +1,7 @@
 package com.peto.ramap.platform
 
 import android.content.Context
+import android.content.pm.ApplicationInfo
 import android.os.Build
 
 class AndroidAppVersionProvider(
@@ -20,6 +21,7 @@ class AndroidAppVersionProvider(
             else -> packageInfo.versionCode.toLong()
         }
     override val platform: String = PLATFORM
+    override val isDebugBuild: Boolean = context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE != 0
 
     private companion object {
         const val PLATFORM = "android"
