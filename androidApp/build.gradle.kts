@@ -83,6 +83,19 @@ dependencies {
     implementation(libs.compose.ui.tooling.preview)
     debugImplementation(projects.debug.admin)
     debugImplementation(libs.compose.ui.tooling)
+    androidTestImplementation(projects.core.testing)
+    androidTestImplementation(projects.core.ui)
+    androidTestImplementation(projects.core.platform)
+    androidTestImplementation(projects.domain)
+    androidTestImplementation(projects.feature.main.map.archive)
+    androidTestImplementation(libs.navigation.event.compose)
+    androidTestImplementation(libs.compose.foundation)
+    androidTestImplementation(libs.supabase.auth)
+    androidTestImplementation(libs.kotlinx.coroutines.core)
+    androidTestImplementation(libs.kotlin.test)
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4:1.11.2")
+    androidTestImplementation("androidx.test:runner:1.7.0")
+    androidTestImplementation("androidx.test.espresso:espresso-core:3.7.0")
 }
 
 android {
@@ -104,6 +117,7 @@ android {
                 .toInt()
         versionCode = 32
         versionName = "1.1.14"
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         manifestPlaceholders["KAKAO_NATIVE_APP_KEY"] = kakaoNativeAppKey
     }
     packaging {

@@ -57,6 +57,7 @@ fun ShopDetailBottomSheet(
     onLoadMore: () -> Unit,
     modifier: Modifier = Modifier,
     floatingAction: (@Composable () -> Unit)? = null,
+    collapsedHeightFraction: Float = COLLAPSED_HEIGHT_FRACTION,
     content: LazyListScope.() -> Unit,
 ) {
     key(shopId) {
@@ -106,7 +107,7 @@ fun ShopDetailBottomSheet(
                             WindowInsets.safeDrawing.only(WindowInsetsSides.Top),
                         ).graphicsLayer { translationY = handleDragState.offsetPx },
                 scaffoldState = scaffoldState,
-                sheetPeekHeight = maxHeight * COLLAPSED_HEIGHT_FRACTION,
+                sheetPeekHeight = maxHeight * collapsedHeightFraction,
                 sheetMaxWidth = Dp.Unspecified,
                 sheetShape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
                 sheetContainerColor = CommonColor.White,

@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -28,6 +29,7 @@ import androidx.navigationevent.NavigationEventInfo
 import androidx.navigationevent.compose.NavigationBackHandler
 import androidx.navigationevent.compose.rememberNavigationEventState
 import com.peto.ramap.analytics.AnalyticsSource
+import com.peto.ramap.designsystem.button.MapModeSwitchFab
 import com.peto.ramap.designsystem.indicator.RamenLoadingIndicator
 import com.peto.ramap.domain.model.place.PlaceSearchResult
 import com.peto.ramap.domain.model.shop.Category
@@ -71,6 +73,7 @@ internal fun MapContent(
     onOpenFilterToggled: () -> Unit,
     onViewportLoadRetry: () -> Unit,
     onBookmarkedShopsToggle: () -> Unit,
+    onArchiveNavigate: () -> Unit = {},
 ) {
     val selectedShop: RamenShop? = uiState.selectedShop
     val focusManager = LocalFocusManager.current
@@ -211,6 +214,14 @@ internal fun MapContent(
             onViewportLoadRetry = onViewportLoadRetry,
             onBookmarkedShopsToggle = onBookmarkedShopsToggle,
         )
+
+        if (uiState.isLoggedIn && !isSearchFocused && !isImeVisible && !uiState.showSearchResults && uiState.selectedShopId == null) {
+            MapModeSwitchFab(
+                isVisitedMode = false,
+                onClick = onArchiveNavigate,
+                modifier = Modifier.align(Alignment.BottomEnd).padding(end = 12.dp, bottom = 84.dp),
+            )
+        }
 
         if (uiState.showsLoadingOverlay) {
             RamenLoadingIndicator(modifier = Modifier.align(Alignment.Center))
