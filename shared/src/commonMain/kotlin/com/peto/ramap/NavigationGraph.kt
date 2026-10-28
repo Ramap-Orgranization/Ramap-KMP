@@ -48,6 +48,7 @@ internal fun NavigationGraph(
     hasActiveOverlay: Boolean,
     openProfile: (userId: String, asOverlay: Boolean) -> Unit,
     onLoginTypeSelected: (LoginType) -> Unit,
+    onFindVisitedShop: () -> Unit,
     onOpenReviewWriteOverlay: (shopId: String) -> Unit,
     onOpenReviewEditOverlay: (shopId: String, reviewId: String?) -> Unit,
 ) {
@@ -170,6 +171,7 @@ internal fun NavigationGraph(
         },
         feedScreen = {
             FeedRoute(
+                onFindVisitedShop = onFindVisitedShop,
                 onOpenProfile = { userId -> openProfile(userId, true) },
                 onEditReview = { shopId, reviewId -> onOpenReviewEditOverlay(shopId, reviewId) },
                 onLoginTypeSelected = onLoginTypeSelected,

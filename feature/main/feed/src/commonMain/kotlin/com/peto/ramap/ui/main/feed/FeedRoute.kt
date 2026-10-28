@@ -27,6 +27,7 @@ fun FeedRoute(
     onOpenProfile: (String) -> Unit,
     onEditReview: (String, String) -> Unit,
     onLoginTypeSelected: (LoginType) -> Unit,
+    onFindVisitedShop: () -> Unit,
     shopDetailContent: @Composable (String, () -> Unit) -> Unit,
     viewModel: FeedViewModel = koinViewModel(),
     toastManager: ToastManager = koinInject(),
@@ -52,6 +53,7 @@ fun FeedRoute(
             onOpenProfile = onOpenProfile,
             onOpenShop = { detailShopId = it },
             onEditReview = onEditReview,
+            onFindVisitedShop = onFindVisitedShop,
         )
         FeedDialogs(state = state, onIntent = viewModel::dispatch)
         detailShopId?.let { shopId ->

@@ -6,11 +6,13 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
@@ -32,12 +34,14 @@ import com.peto.ramap.designsystem.button.AppFloatingActionButton
 import com.peto.ramap.designsystem.component.LoadErrorContent
 import com.peto.ramap.designsystem.indicator.RamenLoadingIndicator
 import com.peto.ramap.designsystem.review.ReviewEmptyContent
+import com.peto.ramap.designsystem.tab.AppChipTabs
+import com.peto.ramap.domain.model.feed.ReviewFeedFilter
 import com.peto.ramap.domain.model.review.ProfileReview
 import com.peto.ramap.preview.RamenShopPreviewParameterProvider
 import com.peto.ramap.preview.ReviewPreviewParameterProvider
+import com.peto.ramap.theme.ChromaticColor
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.RamapTheme
-import com.peto.ramap.ui.main.feed.component.FeedFilterSelector
 import com.peto.ramap.ui.main.feed.component.FeedReviewItem
 import com.peto.ramap.ui.main.feed.component.FeedSkeleton
 import com.peto.ramap.ui.main.feed.component.FeedSortSelector
@@ -46,13 +50,16 @@ import com.peto.ramap.ui.main.feed.contract.FeedUiState
 import com.peto.ramap.ui.paging.ObserveLoadMoreNearListEnd
 import com.peto.ramap.ui.resource.emptyImage
 import com.peto.ramap.ui.resource.emptyMessage
+import com.peto.ramap.ui.resource.label
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.ic_arrow_up
+import ramap.shared.generated.resources.ic_profile_edit
 import ramap.shared.generated.resources.review_load_error_illustration
 import ramap.shared.generated.resources.scroll_to_top
 import ramap.shared.generated.resources.shop_review_load_failure_message
+import ramap.shared.generated.resources.shop_review_write
 
 @Composable
 internal fun FeedContent(
@@ -62,6 +69,7 @@ internal fun FeedContent(
     onOpenProfile: (String) -> Unit,
     onOpenShop: (String) -> Unit,
     onEditReview: (String, String) -> Unit,
+    onFindVisitedShop: () -> Unit,
 ) {
     val pullToRefreshState = rememberPullToRefreshState()
     LaunchedEffect(state.sort, state.filter) {
@@ -87,9 +95,10 @@ internal fun FeedContent(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                FeedFilterSelector(
-                    selected = state.filter,
-                    onSelect = { onIntent(FeedIntent.SelectFilter(it)) },
+                AppChipTabs(
+                    labels = ReviewFeedFilter.entries.map { stringResource(it.label) },
+                    selectedIndex = ReviewFeedFilter.entries.indexOf(state.filter),
+                    onSelect = { onIntent(FeedIntent.SelectFilter(ReviewFeedFilter.entries[it])) },
                     modifier = Modifier.weight(1f),
                 )
                 FeedSortSelector(
@@ -112,7 +121,7 @@ internal fun FeedContent(
                     )
                 },
             ) {
-                LazyColumn(state = listState, modifier = Modifier.fillMaxSize()) {
+                LazyColumn(state = listState, contentPadding = PaddingValues(bottom = 88.dp), modifier = Modifier.fillMaxSize()) {
                     if (state.isLoadingInitial) {
                         item(key = "initial_loading") {
                             FeedSkeleton(modifier = Modifier.fillMaxWidth())
@@ -156,6 +165,18 @@ internal fun FeedContent(
                 }
             }
         }
+        AppFloatingActionButton(
+            icon = Res.drawable.ic_profile_edit,
+            contentDescription = stringResource(Res.string.shop_review_write),
+            onClick = onFindVisitedShop,
+            modifier =
+                Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(20.dp)
+                    .size(48.dp),
+            containerColor = ChromaticColor.Orange400,
+            iconTint = CommonColor.White,
+        )
         AnimatedVisibility(
             visible = showScrollToTop,
             enter = fadeIn(),
@@ -173,6 +194,7 @@ internal fun FeedContent(
                         listState.animateScrollToItem(0)
                     }
                 },
+                modifier = Modifier.size(48.dp),
                 containerColor = CommonColor.White,
             )
         }
@@ -203,6 +225,7 @@ private fun FeedContentPreview() {
             onOpenProfile = {},
             onOpenShop = {},
             onEditReview = { _, _ -> },
+            onFindVisitedShop = {},
         )
     }
 }
