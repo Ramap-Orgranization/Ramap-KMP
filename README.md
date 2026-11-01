@@ -42,34 +42,28 @@
 
 <table>
     <tr>
-        <th width="33%">지도 탐색</th>
-        <th width="33%">매장 상세</th>
-        <th width="33%">메뉴판</th>
+        <th width="25%">지도 탐색</th>
+        <th width="25%">매장 상세·리뷰</th>
+        <th width="25%">메뉴·가격</th>
+        <th width="25%">리뷰 피드</th>
     </tr>
     <tr>
-        <td><img src="assets/screenshots/map.png" alt="라멥 지도에서 라멘 매장을 탐색하는 화면" width="260" /></td>
-        <td><img src="assets/screenshots/shop-overview.png" alt="라멥 매장 상세 정보 화면" width="260" /></td>
-        <td><img src="assets/screenshots/shop-menu.png" alt="라멥 매장 메뉴와 가격 화면" width="260" /></td>
+        <td><img src="assets/store-screenshots/01-map.png" alt="라멘 전문점을 지도에서 찾는 라멥 스토어 스크린샷" width="240" /></td>
+        <td><img src="assets/store-screenshots/02-shop-details.png" alt="위치와 영업시간 및 매장 리뷰를 살펴보는 라멥 스토어 스크린샷" width="240" /></td>
+        <td><img src="assets/store-screenshots/03-menu.png" alt="매장 메뉴와 가격을 미리 확인하는 라멥 스토어 스크린샷" width="240" /></td>
+        <td><img src="assets/store-screenshots/04-review-feed.png" alt="라멘 방문 사진과 리뷰를 모아보는 라멥 스토어 스크린샷" width="240" /></td>
     </tr>
     <tr>
-        <th>매장 리뷰</th>
-        <th>리뷰 피드</th>
-        <th>랭킹</th>
+        <th width="25%">랭킹</th>
+        <th width="25%">매장 소식·이벤트</th>
+        <th width="25%">영업 변동</th>
+        <th width="25%">라멘 생활</th>
     </tr>
     <tr>
-        <td><img src="assets/screenshots/shop-reviews.png" alt="라멥 매장별 방문 리뷰 화면" width="260" /></td>
-        <td><img src="assets/screenshots/review-feed.png" alt="라멥 사용자들의 방문 리뷰 피드 화면" width="260" /></td>
-        <td><img src="assets/screenshots/ranking.png" alt="라멥 매장 랭킹 화면" width="260" /></td>
-    </tr>
-    <tr>
-        <th>이벤트 목록</th>
-        <th>이벤트 상세</th>
-        <th>운영 변동</th>
-    </tr>
-    <tr>
-        <td><img src="assets/screenshots/events.png" alt="라멥 매장 이벤트 목록 화면" width="260" /></td>
-        <td><img src="assets/screenshots/event-detail.png" alt="라멥 한정 메뉴 이벤트 상세 화면" width="260" /></td>
-        <td><img src="assets/screenshots/news.png" alt="라멥 매장의 오늘과 예정된 임시 휴무 등 운영 변동 안내 화면" width="260" /></td>
+        <td><img src="assets/store-screenshots/05-ranking.png" alt="다음에 방문할 라멘 매장을 랭킹에서 찾는 라멥 스토어 스크린샷" width="240" /></td>
+        <td><img src="assets/store-screenshots/06-events.png" alt="한정 메뉴와 매장 이벤트를 확인하는 라멥 스토어 스크린샷" width="240" /></td>
+        <td><img src="assets/store-screenshots/07-opening-updates.png" alt="방문 전 임시 휴무와 조기 마감 소식을 확인하는 라멥 스토어 스크린샷" width="240" /></td>
+        <td><img src="assets/store-screenshots/08-ramen-life.png" alt="매장 탐색과 저장 및 방문 리뷰를 소개하는 라멥 스토어 스크린샷" width="240" /></td>
     </tr>
 </table>
 
