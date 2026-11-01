@@ -207,28 +207,11 @@ def make_plan(capture, state, *, description_approvals=(), registration_override
     absent = [row for row in before if normalized(row['name']) not in source_names]
     plan['db_only_preserved'].extend(row['name'] for row in absent if protection_for_row(row, protections))
     absent = [row for row in absent if not protection_for_row(row, protections)]
-    if absent:
-        review = capture.get('source_absence_review') or {}
-        try:
-            validate_absence(review, capture['source_url'], capture['captured_at'])
-            for old in absent:
-                validate_origin(old, plan['registration_origin_reviews'], origin_overrides)
-        except ValueError as error:
-            plan['pending'].append({'reason': '원본 부재·직접 등록 경위 검증 미완료', 'details': str(error)})
+    for old in absent:
+        if matching_skip(plan['collection_skip_rules'], old):
+            plan['pending'].append({'name': old['name'],
+                'reason': '원본 부재 항목이 사용자 재수집 제외 범위와 충돌; 보호로 간주하지 않고 별도 처리 필요'})
             return plan
-        for old in absent:
-            if matching_skip(plan['collection_skip_rules'], old):
-                plan['pending'].append({'name': old['name'],
-                    'reason': '원본 부재 항목이 사용자 재수집 제외 범위와 충돌; 보호로 간주하지 않고 별도 처리 필요'})
-                return plan
-            plan['deletions'].append({'id': old['id'], 'section_id': old['section_id'],
-                'name': old['name'], 'price_krw': old['price_krw'], 'reason': 'source_absent',
-                'evidence': copy.deepcopy(review)})
-            expected.pop(old['id'])
-            override = overrides.get(normalized(old['name']))
-            if override and override['action'] == 'upsert':
-                plan['override_revocations'].append({'id': override['id'],
-                    'reason': 'source_absent_without_direct_registration'})
     for item, decision in zip(source, capture['scope']):
         name = normalized(item['name'])
         if normalized(decision['name']) != name or not decision.get('reason'):
@@ -326,10 +309,6 @@ def make_plan(capture, state, *, description_approvals=(), registration_override
                 plan['pending'].append({'name': item['name'], 'reason': '이름 변경/의미상 중복 확인 필요', 'candidates': alternatives})
                 unresolved = [row for row in absent if row['name'] in alternatives]
                 if unresolved:
-                    ids = {row['id'] for row in unresolved}
-                    plan['deletions'] = [row for row in plan['deletions'] if row['id'] not in ids]
-                    for row in unresolved:
-                        expected[row['id']] = copy.deepcopy(row)
                     plan['absence_identity_unresolved'] = True
                 continue
             row = {'id': str(uuid.uuid4()), 'shop_id': shop_id, 'section_id': section_id,
@@ -412,6 +391,25 @@ def make_plan(capture, state, *, description_approvals=(), registration_override
                 plan['override_updates'].append({'id': override['id'], 'fields': override_fields})
         if not description_held:
             matched_order.append(row['id'])
+    # Resolve possible name changes before treating a DB-only name as a deletion candidate.
+    if absent and not plan.get('absence_identity_unresolved'):
+        review = capture.get('source_absence_review') or {}
+        try:
+            validate_absence(review, capture['source_url'], capture['captured_at'])
+            for old in absent:
+                validate_origin(old, plan['registration_origin_reviews'], origin_overrides)
+        except ValueError as error:
+            plan['pending'].append({'reason': '원본 부재·직접 등록 경위 검증 미완료', 'details': str(error)})
+            return plan
+        for old in absent:
+            plan['deletions'].append({'id': old['id'], 'section_id': old['section_id'],
+                'name': old['name'], 'price_krw': old['price_krw'], 'reason': 'source_absent',
+                'evidence': copy.deepcopy(review)})
+            expected.pop(old['id'])
+            override = overrides.get(normalized(old['name']))
+            if override and override['action'] == 'upsert':
+                plan['override_revocations'].append({'id': override['id'],
+                    'reason': 'source_absent_without_direct_registration'})
     # Only evidenced direct registrations may remain without a source row.
     # A held source row keeps the entire section's old order.
     remaining = [r for r in before if r['section_id'] == section_id
@@ -519,7 +517,8 @@ def transaction_sql(plan, raw_dom, reconciliation=None):
     body.append(f"IF (SELECT coalesce(jsonb_agg(row ORDER BY row->>'id'),'[]'::jsonb) FROM ({query}) q) IS DISTINCT FROM {literal(serialized_guard_rows(expected_overrides))}::jsonb THEN RAISE EXCEPTION 'Post-write override mismatch'; END IF;")
     plan['source_hash'] = digest(raw_dom)
     plan['menu_fingerprint'] = digest(serialized(plan['source_items']))
-    body.append(f"INSERT INTO public.shop_menu_snapshots(id,shop_id,captured_at,source_url,parser_version,source_hash,raw_dom,menu_items,menu_fingerprint) VALUES({snapshot_id},{shop_id},{literal(plan['captured_at'])}::timestamptz,{literal(plan['source_url'])},{literal(plan['parser_version'])},{literal(plan['source_hash'])},{literal(raw_dom)},{literal(serialized(plan['source_items']))}::jsonb,{literal(plan['menu_fingerprint'])}); GET DIAGNOSTICS n=ROW_COUNT; IF n<>1 THEN RAISE EXCEPTION 'Snapshot count mismatch'; END IF;")
+    plan['raw_object_sha256'] = plan['source_hash']
+    body.append(f"INSERT INTO public.shop_menu_snapshots(id,shop_id,captured_at,source_url,parser_version,source_hash,raw_object_sha256,menu_items,menu_fingerprint) VALUES({snapshot_id},{shop_id},{literal(plan['captured_at'])}::timestamptz,{literal(plan['source_url'])},{literal(plan['parser_version'])},{literal(plan['source_hash'])},{literal(plan['raw_object_sha256'])},{literal(serialized(plan['source_items']))}::jsonb,{literal(plan['menu_fingerprint'])}); GET DIAGNOSTICS n=ROW_COUNT; IF n<>1 THEN RAISE EXCEPTION 'Snapshot count mismatch'; END IF;")
     if plan.get('validation_run_id') and (plan['updates'] or plan['additions'] or plan['deletions'] or plan.get('override_updates') or plan.get('override_additions') or plan.get('override_revocations')):
         summary = {k: plan.get(k, []) for k in ('updates', 'additions', 'deletions', 'override_updates', 'override_revocations', 'override_additions', 'duplicate_resolutions', 'variable_price_preserved', 'pending', 'db_only_preserved', 'manual_menu_protections', 'registration_origin_reviews')}
         summary.update(source_absence_policy=plan['source_absence_policy'], source_absence_review=plan.get('source_absence_review'))
@@ -606,6 +605,7 @@ def main():
     prepare.add_argument('--state', type=Path, required=True)
     prepare.add_argument('--output', type=Path, required=True)
     prepare.add_argument('--run-id')
+    prepare.add_argument('--project-id', help='archive originals in this project before emitting executable SQL')
     prepare.add_argument('--description-approvals', type=Path)
     args = parser.parse_args()
     if args.command == 'select-sql':
@@ -639,6 +639,10 @@ def main():
         plan, sql = prepare_capture(capture, state, raw_dom, args.run_id, plan['snapshot_id'],
             description_approvals=description_approvals)
         if sql:
+            from snapshot_storage import SnapshotStorage
+            project_id = args.project_id or (Path(__file__).resolve().parents[3] / 'supabase/.temp/project-ref').read_text().strip()
+            archived = SnapshotStorage.from_cli(project_id).archive(raw_dom)
+            (args.output / 'raw-storage.json').write_text(json.dumps(archived, indent=2) + '\n')
             (args.output / 'apply.sql').write_text(sql)
         elif (args.output / 'apply.sql').exists():
             (args.output / 'apply.sql').unlink()

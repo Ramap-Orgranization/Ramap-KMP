@@ -2,6 +2,8 @@
 
 스킬의 helper는 Python 표준 라이브러리만 사용한다. DB 인증은 연결된 Supabase MCP 또는 현재 저장소에 연결된 Supabase CLI로 수행하고 키를 출력하거나 산출물에 저장하지 않는다. CLI 명령은 현재 버전의 `--help`로 확인한다.
 
+DB에 원문을 저장하거나 저장된 원문을 읽을 때는 [원문 gzip 보관](raw-storage.md)을 따른다. 수집 원문 파일은 그대로 유지하며 운영 DB에는 검증된 비공개 Storage 원문의 참조를 저장한다.
+
 보류 상태 재점검·체크 승인표 생성·선택 반영은 [pending-review.md](pending-review.md)를 읽는다. 등록 범위와 개별 매장 결정은 Ramap의 `docs/menu-registration-policy.md`를 따른다. 아래 도구는 배치마다 새로 작성하지 않고 재사용한다.
 
 | 도구 | 책임 |

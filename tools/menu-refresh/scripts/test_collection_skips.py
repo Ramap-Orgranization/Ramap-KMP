@@ -58,6 +58,7 @@ class CollectionSkipsTest(unittest.TestCase):
         state['collection_skips'] = [skip_for(capture)]
         capture['menu_items'][0]['name'] = '새 표기 이름'
         capture['scope'][0]['name'] = '새 표기 이름'
+        capture.pop('source_absence_review')
         plan = make_plan(capture, state)
         self.assertEqual([], plan['additions'])
         self.assertEqual([], plan['updates'])

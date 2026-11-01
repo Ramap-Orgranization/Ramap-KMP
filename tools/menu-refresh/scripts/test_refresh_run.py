@@ -4,26 +4,13 @@ import tempfile
 import unittest
 import uuid
 from datetime import datetime, timezone
-from html import escape
 from pathlib import Path
 
 from refresh_plan import digest, prepare_capture
 from refresh_run import accept, drain, fail_collection, initialize, load, next_action, record_review, recover, retry, save, submit
 from refresh_verify import VISIBLE_FIELDS, expected_visible, result_rows, verify_plan
 from replay_run import ReplayDatabase
-from test_refresh_plan import SHOP, fixture
-
-
-def raw_for(capture):
-    rows = []
-    for item in capture['menu_items']:
-        description = '' if item.get('description') is None else '<div class="NjVSW">' + escape(item['description']) + '</div>'
-        image = '<img src="' + escape(item['image_url'], quote=True) + '">' if item.get('image_url') else ''
-        featured = '<span class="place_blind">대표</span>' if item.get('is_featured') else ''
-        rows.append('<li><a data-nlog-area="plc_bmv.menu" data-nlog-params="{&quot;place_id&quot;:&quot;123&quot;}">'
-            '<span class="lZCdr">' + escape(item['name']) + '</span><span class="N4UFh">' + escape(item['price_text'])
-            + '</span>' + description + image + featured + '</a></li>')
-    return ''.join(rows)
+from test_refresh_plan import SHOP, bind_deletion_evidence, fixture, raw_for
 
 
 def state_fixture():
@@ -186,6 +173,7 @@ class RefreshRunTest(unittest.TestCase):
         self.setup_run()
         self.capture['scope'][0].update(decision='exclude', reason='확인된 범위 밖',
             delete_existing=True, deletion_evidence='동일 원본·DB 이름과 가격 및 수동 보호 부재 확인')
+        bind_deletion_evidence(self.capture, self.state, self.state['items'], self.root / 'investigation')
         self.submit_capture()
         self.process()
         self.assertEqual([], self.db.state['items'])
@@ -197,6 +185,34 @@ class RefreshRunTest(unittest.TestCase):
         self.assertIn('Post-write menu mismatch', sql)
         self.assertIn('\nROLLBACK;\nSELECT ', sql)
         self.assertNotIn('\nCOMMIT;\n', sql)
+
+    def test_등록_경위_근거가_없는_삭제는_리허설과_커밋을_시작하지_않는다(self):
+        self.state['rules'] = [{'id': 'rule-1', 'shop_id': SHOP, 'match_type': 'name_contains',
+            'match_value': '쇼유라멘', 'is_active': True}]
+        self.capture['scope'][0].update(decision='exclude', reason='확인된 범위 밖',
+            delete_existing=True, deletion_evidence='이름과 가격만 확인')
+        self.setup_run()
+        self.submit_capture()
+        self.process()
+        self.assertEqual('blocked', self.shop()['status'])
+        self.assertEqual(self.state['items'], self.db.state['items'])
+        self.assertFalse(any(a['kind'] in ('rollback', 'commit') for a in self.db.actions))
+
+    def test_원본_부재_삭제는_전체_문서와_등록_근거를_사후_재검증한다(self):
+        old = {**self.state['items'][0], 'id': str(uuid.uuid4()), 'name': '과거냉라멘'}
+        self.state['items'].append(old)
+        self.state['visible'] = [{k: row.get(k) for k in VISIBLE_FIELDS} for row in self.state['items']]
+        bind_deletion_evidence(self.capture, self.state, [old], self.root / 'investigation', absence=True)
+        self.setup_run()
+        self.submit_capture()
+        result = self.process()
+        self.assertEqual(1, result['deleted_rows'])
+        self.assertEqual('verified', self.shop()['status'])
+        self.assertEqual([self.state['items'][0]], self.db.state['items'])
+        kinds = [a['kind'] for a in self.db.actions]
+        self.assertLess(kinds.index('rollback'), kinds.index('commit'))
+        snapshot = self.db.snapshots[next(iter(self.db.snapshots))]
+        self.assertTrue(snapshot['deletion_raw_dom'].startswith('<html>'))
 
     def test_scope_confirmation_and_new_menu_share_one_transaction(self):
         self.capture['scope'][0].update(decision='manual', reason='이름·설명만으로 범위 불명')
