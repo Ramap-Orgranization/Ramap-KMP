@@ -15,9 +15,7 @@
 
 ### 라멥 × 웅성
 
-라멘 인플루언서 [웅성(@menolic.sw)](https://www.instagram.com/menolic.sw/)님과 전국 라멘 매장을 함께 조사했습니다. 웅성님의 조사 방법과 라멘 지식을 바탕으로 검색 범위를 동 단위로 세분화하고, 중식으로 분류된 매장까지 살펴 기존 검색에서 놓친 라멘집을 찾았습니다.
-
-협업 당시 확보한 매장 정보는 **800곳에서 1,400곳 이상**으로 늘었습니다.
+라멘 인플루언서 [웅성(@menolic.sw)](https://www.instagram.com/menolic.sw/)님과 협업하며 서비스를 키워나가고 있습니다.
 
 > **머니그라피에서 소개된 라멥**
 >
@@ -76,6 +74,7 @@
 </table>
 
 ## 기술 스택
+<img width="1200" height="640" alt="ramap-architecture" src="https://github.com/user-attachments/assets/bfdd65fc-0cfa-4ee6-bb9e-76ead92969a2" />
 
 | 구분 | 기술 |
 | --- | --- |
