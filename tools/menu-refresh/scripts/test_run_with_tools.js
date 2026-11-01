@@ -8,7 +8,7 @@ const { execFileSync, spawnSync } = require('node:child_process');
 const scripts = __dirname;
 const driver = vm.runInNewContext(fs.readFileSync(path.join(scripts, 'run_with_tools.js'), 'utf8'));
 
-async function scenario({ loseAck = false, wrongProject = false, truncated = false, replay = false } = {}) {
+async function scenario({ loseAck = false, wrongProject = false, truncated = false, replay = false, archiveFailure = false } = {}) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'menu-refresh-tools-'));
   try {
     const runDir = path.join(root, "run ' $(touch HACKED_MENU_TEST)");
@@ -45,6 +45,9 @@ submit(run, source / 'result.json', '/collector')
     const api = {
       execCommand: async ({ cmd }) => {
         if (truncated && cmd.startsWith('python3 -c ')) return { exit_code: 0, output: '{"sql":"broken' };
+        // Storage is a separate fake transport, just as executeSql below is a fake DB.
+        if (cmd.includes(' archive --action-id ')) return archiveFailure
+          ? { exit_code: 1, output: '' } : { exit_code: 0, output: '{"verified":true}' };
         const result = spawnSync('/bin/zsh', ['-c', cmd], { cwd: root, encoding: 'utf8' });
         return { exit_code: result.status, output: result.stdout };
       },
@@ -56,6 +59,9 @@ submit(run, source / 'result.json', '/collector')
         const action = manifest.inflight;
         let rows;
         if (action.kind === 'audit_start') rows = [{ id: manifest.run_id, status: 'running' }];
+        else if (action.kind === 'audit_finish') rows = [{ id: manifest.run_id, status: 'partial',
+          total_snapshots: 0, checked_count: 0, applied_count: 0, unchanged_count: 0,
+          pending_count: 0, failure_count: 1 }];
         else if (action.kind === 'prewrite') rows = [{ state }];
         else {
           const shop = manifest.shops[action.shop_ids[0]];
@@ -85,6 +91,11 @@ submit(run, source / 'result.json', '/collector')
       assert.equal(calls, 0);
     } else {
       const result = await driver(api, options);
+      if (archiveFailure) {
+        assert.equal(commits, 0);
+        assert.equal(result.failures, 1);
+        return;
+      }
       assert.equal(result.status, 'awaiting_independent_review');
       assert.equal(result.verified_shops, 1);
       assert.equal(commits, 1);
@@ -105,5 +116,6 @@ submit(run, source / 'result.json', '/collector')
   await scenario({ wrongProject: true });
   await scenario({ truncated: true });
   await scenario({ replay: true });
-  process.stdout.write('5 MCP bridge scenarios passed\n');
+  await scenario({ archiveFailure: true });
+  process.stdout.write('6 MCP bridge scenarios passed\n');
 })().catch(error => { process.stderr.write(error.stack + '\n'); process.exitCode = 1; });

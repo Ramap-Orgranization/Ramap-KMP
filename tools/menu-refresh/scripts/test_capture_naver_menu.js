@@ -15,8 +15,12 @@ function capture(images) {
   };
   const container = {querySelector: () => ({textContent: '라멘'}), outerHTML: '<section></section>'};
   const section = {querySelectorAll: () => [row], closest: () => container};
-  const document = {querySelectorAll: selector => selector === 'script'
-    ? [{textContent: 'window.__APOLLO_STATE__ = ' + JSON.stringify(state)}] : [section]};
+  const document = {
+    documentElement: {outerHTML: '<html><body><section></section></body></html>'},
+    querySelectorAll: selector => selector === 'script'
+      ? [{textContent: 'window.__APOLLO_STATE__ = ' + JSON.stringify(state)}]
+      : selector === '.place_section_content' ? [section] : []
+  };
   return vm.runInNewContext('(' + source + ')()', {
     document, location: {pathname: '/restaurant/123/menu/list', href: 'https://m.place.naver.com/restaurant/123/menu/list'}, URL
   }).sections[0].items[0];

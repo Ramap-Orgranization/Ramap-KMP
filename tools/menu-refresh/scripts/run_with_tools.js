@@ -40,6 +40,10 @@
     const sql = JSON.parse(read.output).sql;
     let response;
     try {
+      if (action.kind === 'rollback' || action.kind === 'commit') {
+        const archived = await command(`archive --action-id ${quote(action.id)}`);
+        if (!archived.verified) throw new Error('private gzip original was not verified');
+      }
       response = await api.executeSql({ project_id: projectId, query: sql });
     } catch (error) {
       last = await command(`accept --action-id ${quote(action.id)} --failed`);
