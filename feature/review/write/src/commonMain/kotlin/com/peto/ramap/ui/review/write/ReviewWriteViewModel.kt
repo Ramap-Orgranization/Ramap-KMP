@@ -299,8 +299,8 @@ class ReviewWriteViewModel(
 
     private fun hasValidConfirmationState(): Boolean {
         val isConfirmationShown = currentState.showPrivateProfileConfirmation
-        val isValidBody = Review.isValidBody(currentState.body)
-        return isConfirmationShown && isValidBody
+        val isValidContent = Review.isValidContent(currentState.body, currentState.imageCount)
+        return isConfirmationShown && isValidContent
     }
 
     private fun updateProfileVisibilityAndSubmit(draft: ReviewWriteUiState) {

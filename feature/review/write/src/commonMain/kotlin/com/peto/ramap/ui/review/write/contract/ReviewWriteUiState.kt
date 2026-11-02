@@ -23,13 +23,14 @@ data class ReviewWriteUiState(
     val isLoadingReview: Boolean get() = loadState.isLoading(ReviewWriteLoadKey.Review)
     val isSubmitting: Boolean get() = loadState.isLoading(ReviewWriteLoadKey.Submit)
     val showsLoadingOverlay: Boolean get() = isSubmitting || isLoadingReview
+    val imageCount: Int get() = images.size + existingImages.size
     val canEdit: Boolean
         get() =
             !isSubmitting &&
                 !showPrivateProfileConfirmation &&
                 (reviewId == null || (reviewLoaded && !isLoadingReview && !reviewLoadFailed))
     val canSubmit: Boolean
-        get() = Review.isValidBody(body) && canEdit
+        get() = Review.isValidContent(body, imageCount) && canEdit
     val bodyContainsProfanity: Boolean get() = Review.containsProfanity(body)
 
     override fun withLoadingState(loadState: LoadState): ReviewWriteUiState = copy(loadState = loadState)

@@ -41,6 +41,11 @@ data class Review(
 
         fun isValidBody(body: String): Boolean = codePointCount(body.trim()) in BODY_LENGTH && !containsProfanity(body)
 
+        fun isValidContent(
+            body: String,
+            imageCount: Int,
+        ): Boolean = imageCount in 0..ReviewImage.MAX_COUNT && if (body.isBlank()) imageCount > 0 else isValidBody(body)
+
         fun containsProfanity(body: String): Boolean = profanityFilter.containsProfanity(body)
 
         fun bodyCharacterCount(body: String): Int = codePointCount(body)

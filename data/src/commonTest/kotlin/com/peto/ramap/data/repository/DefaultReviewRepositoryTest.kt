@@ -3,13 +3,16 @@ package com.peto.ramap.data.repository
 import com.peto.ramap.core.result.RamapError
 import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.core.result.getOrThrow
+import com.peto.ramap.data.datasource.review.ReviewDataSource
 import com.peto.ramap.data.datasource.shop.RamenShopDataSource
 import com.peto.ramap.data.model.MyReviewResponse
 import com.peto.ramap.data.model.MyReviewsPageResponse
 import com.peto.ramap.data.model.RamenShopResponse
+import com.peto.ramap.data.model.ReviewMutationResponse
 import com.peto.ramap.data.model.ShopReviewRequest
 import com.peto.ramap.data.testReviewChanges
 import com.peto.ramap.domain.model.review.MyReviewVisibility
+import com.peto.ramap.domain.model.review.ReviewImage
 import com.peto.ramap.domain.model.review.change.ReviewChange
 import com.peto.ramap.fake.FakeMyReviewsDataSource
 import com.peto.ramap.fake.FakeRamenShopDataSource
@@ -27,6 +30,58 @@ import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class DefaultReviewRepositoryTest {
+    @Test
+    fun `본문 없이 사진을 등록하고 공백 본문은 빈 문자열로 저장한다`() =
+        runTest {
+            val source = FakeMyReviewsDataSource()
+            val repository = DefaultReviewRepository(source, FakeRamenShopDataSource(), testReviewChanges(), backgroundScope)
+            val image = ReviewImage(byteArrayOf(0xff.toByte(), 0xd8.toByte(), 0xff.toByte()), ReviewImage.JPEG_MIME_TYPE)
+
+            assertIs<RamapResult.Success<Unit>>(repository.submitReview("shop", "  \t\n", listOf(image), true))
+            assertEquals("", source.submittedReview?.body)
+
+            assertIs<RamapResult.Error>(repository.submitReview("shop", "", emptyList(), true))
+            assertIs<RamapResult.Error>(repository.submitReview("shop", "1234", listOf(image), true))
+            assertIs<RamapResult.Error>(repository.submitReview("shop", "씨발 맛없어요", listOf(image), true))
+            assertIs<RamapResult.Error>(repository.submitReview("shop", "", List(4) { image }, true))
+            assertIs<RamapResult.Error>(repository.submitReview("shop", "", listOf(image.copy(bytes = byteArrayOf())), true))
+            assertEquals("", source.submittedReview?.body)
+        }
+
+    @Test
+    fun `본문 없는 수정은 유지하거나 새로 추가하는 사진으로 검증한다`() =
+        runTest {
+            val source = FakeMyReviewsDataSource()
+            val updatedBodies = mutableListOf<String>()
+            val photos = mutableListOf<Pair<List<String>, List<ReviewImage>>>()
+            val updatingSource =
+                object : ReviewDataSource by source {
+                    override suspend fun updateReview(
+                        reviewId: String,
+                        body: String,
+                        retainedImagePaths: List<String>,
+                        newImages: List<ReviewImage>,
+                        isPublic: Boolean,
+                    ): ReviewMutationResponse {
+                        updatedBodies += body
+                        photos += retainedImagePaths to newImages
+                        return source.submitReview(ShopReviewRequest("shop", body, retainedImagePaths, isPublic), newImages)
+                    }
+                }
+            val repository = DefaultReviewRepository(updatingSource, FakeRamenShopDataSource(), testReviewChanges(), backgroundScope)
+            val image = ReviewImage(byteArrayOf(0xff.toByte(), 0xd8.toByte(), 0xff.toByte()), ReviewImage.JPEG_MIME_TYPE)
+
+            assertIs<RamapResult.Success<Unit>>(repository.updateReview("review", "", listOf("retained"), emptyList(), true))
+            assertIs<RamapResult.Success<Unit>>(repository.updateReview("review", " \n", emptyList(), listOf(image), false))
+            assertEquals(listOf("", ""), updatedBodies)
+            assertEquals(listOf(listOf("retained") to emptyList(), emptyList<String>() to listOf(image)), photos)
+
+            assertIs<RamapResult.Error>(repository.updateReview("review", "", emptyList(), emptyList(), true))
+            assertIs<RamapResult.Error>(repository.updateReview("review", "1234", listOf("retained"), emptyList(), true))
+            assertIs<RamapResult.Error>(repository.updateReview("review", "", List(3) { "retained-$it" }, listOf(image), true))
+            assertEquals(2, updatedBodies.size)
+        }
+
     @Test
     fun `리뷰 저장은 100자 본문을 허용하고 101자는 서버 요청 전에 거부한다`() =
         runTest {

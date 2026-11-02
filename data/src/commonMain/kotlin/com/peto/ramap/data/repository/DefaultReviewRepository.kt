@@ -82,7 +82,7 @@ internal class DefaultReviewRepository(
         isPublic: Boolean,
     ): RamapResult<Unit> =
         write {
-            require(Review.isValidBody(body)) { ERROR_INVALID_REVIEW_BODY }
+            require(Review.isValidContent(body, images.size)) { ERROR_INVALID_REVIEW_BODY }
             require(images.size <= ReviewImage.MAX_COUNT && images.all(ReviewImage::isValid)) { ERROR_INVALID_REVIEW_IMAGES }
             dataSource.submitReview(
                 ShopReviewRequest(
@@ -108,7 +108,7 @@ internal class DefaultReviewRepository(
         isPublic: Boolean,
     ): RamapResult<Unit> =
         write {
-            require(Review.isValidBody(body)) { ERROR_INVALID_REVIEW_BODY }
+            require(Review.isValidContent(body, retainedImagePaths.size + newImages.size)) { ERROR_INVALID_REVIEW_BODY }
             require(retainedImagePaths.size + newImages.size <= ReviewImage.MAX_COUNT) { ERROR_TOO_MANY_IMAGES }
             require(newImages.all(ReviewImage::isValid)) { ERROR_INVALID_REVIEW_IMAGES }
             dataSource.updateReview(reviewId, body.trim(), retainedImagePaths, newImages, isPublic)

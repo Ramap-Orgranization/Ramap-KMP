@@ -8,6 +8,29 @@ import kotlin.test.assertTrue
 
 class ReviewTest {
     @Test
+    fun `본문이 비어 있으면 사진이 한 장 이상일 때만 리뷰를 허용한다`() {
+        for (body in listOf("", "  \t\n", "\u00a0\u2003")) {
+            assertFalse(Review.isValidContent(body, 0))
+            assertTrue(Review.isValidContent(body, 1))
+            assertTrue(Review.isValidContent(body, 3))
+            assertFalse(Review.isValidContent(body, 4))
+        }
+    }
+
+    @Test
+    fun `사진이 있어도 입력한 본문의 길이와 비속어 조건을 지킨다`() {
+        for (imageCount in 0..3) {
+            assertFalse(Review.isValidContent("1234", imageCount))
+            assertTrue(Review.isValidContent("  12345  ", imageCount))
+            assertTrue(Review.isValidContent("🍜".repeat(100), imageCount))
+            assertFalse(Review.isValidContent("🍜".repeat(101), imageCount))
+            assertFalse(Review.isValidContent("씨발 맛없어요", imageCount))
+        }
+        assertFalse(Review.isValidContent("12345", -1))
+        assertFalse(Review.isValidContent("12345", 4))
+    }
+
+    @Test
     fun isValidBodyRejectsProfanityWithinTheAllowedLength() {
         for (body in listOf("씨발 맛없어요", "씨.발 맛없어요", "ㅅㅂ 별로야", "씨발 맛없어요")) {
             assertFalse(Review.isValidBody(body), body)
