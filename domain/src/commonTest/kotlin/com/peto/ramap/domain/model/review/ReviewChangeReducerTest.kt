@@ -177,7 +177,7 @@ class ReviewChangeReducerTest {
     }
 
     @Test
-    fun `리뷰 삭제는 사진과 이후 방문 번호를 유지하고 작성자의 공개 리뷰 개수만 갱신한다`() {
+    fun `리뷰 삭제는 사진을 유지하고 같은 매장의 이후 방문 번호와 작성자의 공개 리뷰 개수를 갱신한다`() {
         val earlier =
             createReview(
                 id = "earlier",
@@ -222,10 +222,93 @@ class ReviewChangeReducerTest {
                 hasMore = true,
             ) { _, _ -> true }
         assertEquals(listOf("unrelated", "later", "earlier"), result.map { it.id })
-        assertEquals(3, result.first { it.id == "later" }.visitNumber)
+        assertEquals(2, result.first { it.id == "later" }.visitNumber)
+        assertEquals(1, result.first { it.id == "unrelated" }.visitNumber)
         assertEquals(1, result.last().visitNumber)
         assertEquals(listOf(2, 2, 2), result.map { it.author.reviewCount })
         assertSame(image, result.first().images.single())
+    }
+
+    @Test
+    fun `목록 밖의 비공개 리뷰 삭제도 같은 작성자와 매장의 이후 방문 차수를 줄인다`() {
+        val deleted =
+            createReview(
+                id = "private",
+                created = "01",
+                visit = 1,
+            ).copy(isPublic = false)
+        val later =
+            createReview(
+                id = "later",
+                created = "01",
+                visit = 2,
+            )
+        val otherAuthor = later.copy(id = "other-author", author = later.author.copy(userId = "another"))
+        val otherShop = later.copy(id = "other-shop", shopId = "other")
+        val result =
+            reducer.patch(
+                rows = listOf(later, otherAuthor, otherShop),
+                change =
+                    createWrittenChange(
+                        before = deleted,
+                        after = null,
+                        published = 2,
+                    ),
+                hasMore = true,
+            ) { _, review -> review.isPublic }
+
+        assertEquals(1, result.first { it.id == "later" }.visitNumber)
+        assertEquals(2, result.first { it.id == "other-author" }.visitNumber)
+        assertEquals(2, result.first { it.id == "other-shop" }.visitNumber)
+        assertEquals(3, result.first { it.id == "other-author" }.author.reviewCount)
+    }
+
+    @Test
+    fun `내 리뷰와 프로필 목록도 삭제된 방문을 제외하고 매장 정보를 유지한다`() {
+        val shop = createShop("shop")
+        val deleted =
+            createReview(
+                id = "deleted",
+                created = "01",
+                visit = 1,
+            )
+        val remaining =
+            createReview(
+                id = "remaining",
+                created = "02",
+                visit = 2,
+            )
+        val change =
+            createWrittenChange(
+                before = deleted,
+                after = null,
+                published = 1,
+            )
+        val ownerRows =
+            reducer.updateOwnerRows(
+                rows =
+                    listOf(
+                        MyReview(
+                            review = remaining.copy(author = remaining.author.copy(userId = "")),
+                            shopName = shop.name,
+                            shop = shop,
+                        ),
+                    ),
+                change = change,
+                filter = MyReviewVisibility.ALL,
+                hasMore = false,
+            )
+        val profileRows =
+            reducer.updateProfileRows(
+                rows = listOf(ProfileReview(review = remaining, shop = shop)),
+                change = change,
+                hasMore = false,
+            ) { _, _ -> true }
+
+        assertEquals(1, ownerRows.single().review.visitNumber)
+        assertEquals(1, profileRows.single().review.visitNumber)
+        assertSame(shop, ownerRows.single().shop)
+        assertSame(shop, profileRows.single().shop)
     }
 
     @Test

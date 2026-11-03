@@ -16,7 +16,7 @@ internal val adminModule =
     module {
         single<AdminAuthDataSource> { RemoteAdminAuthDataSource(get()) }
         single<AdminAccessDataSource> { RemoteAdminAccessDataSource(get()) }
-        single<AdminRegistrationDataSource> { RemoteAdminRegistrationDataSource(get()) }
+        single<AdminRegistrationDataSource> { RemoteAdminRegistrationDataSource(get(), get()) }
         viewModelOf(::AdminLoginViewModel)
         viewModel { AdminRegistrationViewModel(get()) }
     }
