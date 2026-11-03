@@ -34,14 +34,15 @@ class OperatingNoticeUiStateTest {
     }
 
     @Test
-    fun `진행 중인 기간 휴무는 예정에 내일부터만 표시하고 오늘 종료되면 예정 개수에서 제외한다`() {
+    fun `진행 중인 기간 휴무는 오늘에만 표시하고 예정 목록과 개수에서 제외한다`() {
         val tomorrow = LocalDate(2026, 10, 19)
         val closure = notice("period", LocalDate(2026, 10, 10)).copy(endDate = tomorrow)
         val state = state(closure)
         assertEquals(listOf(closure), state.todayShops)
-        assertEquals(mapOf(tomorrow to listOf(closure)), state.scheduledGroups)
+        assertEquals(emptyMap(), state.scheduledGroups)
+        assertEquals(emptyList(), state.scheduledShops)
         assertEquals(1, state.todayCount)
-        assertEquals(1, state.scheduledCount)
+        assertEquals(0, state.scheduledCount)
         assertEquals(listOf(closure), state.selectNotice(closure, today).notices)
         assertEquals(listOf(closure), state.selectNotice(closure, tomorrow).notices)
 
@@ -71,7 +72,7 @@ class OperatingNoticeUiStateTest {
 
     @Test
     fun `feed 없는 분리 목록도 실제 날짜 기준으로 오늘과 예정 및 상세를 구분한다`() {
-        val current = notice("today", today)
+        val current = notice("today", today).copy(endDate = later)
         val future = notice("future", next)
         val anotherDate = notice("later", later)
         val state =
@@ -83,7 +84,7 @@ class OperatingNoticeUiStateTest {
         assertEquals(listOf(current), state.todayShops)
         assertEquals(listOf(next, later), state.scheduledGroups.keys.toList())
         assertEquals(1, state.scheduledShops.size)
-        assertEquals(listOf(future), state.selectNotice(future, next).notices)
+        assertEquals(listOf(future, anotherDate), state.selectScheduledNotice(future).notices)
     }
 
     @Test
@@ -107,11 +108,11 @@ class OperatingNoticeUiStateTest {
     }
 
     @Test
-    fun `예정 매장은 한 번 표시하고 선택하면 모든 미래 원본 공지를 보존한다`() {
+    fun `예정 매장은 한 번 표시하고 상세에는 진행 중인 공지 없이 미래 원본 공지만 보존한다`() {
         val closure = notice("closure", next).copy(endDate = later)
         val hiddenByClosure = notice("planned", next).copy(type = OperatingNoticeType.PLANNED_CLOSING)
         val anotherDay = notice("later", later)
-        val current = notice("today", today)
+        val current = notice("today", today).copy(endDate = later)
         val state = state(current, closure, hiddenByClosure, anotherDay, closure)
         assertEquals(1, state.scheduledShops.size)
         assertEquals(

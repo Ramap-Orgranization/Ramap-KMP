@@ -41,6 +41,7 @@ function harness({ allowed = true, overlapping = false } = {}) {
     Deno: { serve: (value) => { handler = value; } },
     Request, Response, URL, Date, crypto, console,
     validCalendarDate, validClosureSchedules,
+    mediaStorage: (client) => client.storage,
     isAdministrator: async () => allowed,
     createServiceClient: () => { calls.clients++; return { from }; },
     assertKnownEventType: (value) => { assert.ok(["collab", "popup", "limited_menu", "summer_limited", "new_menu", "store_renewal"].includes(value)); },

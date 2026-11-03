@@ -1,3 +1,4 @@
+import { mediaStorage } from "../_shared/media-storage.ts";
 import { validCalendarDate, validClosureSchedules } from "../_shared/operating-notice-schedule.ts";
 import { isAdministrator } from "../_shared/admin-auth.ts";
 import { assertKnownEventType, createServiceClient } from "../_shared/event-notifications.ts";
@@ -146,13 +147,7 @@ Deno.serve(async (request) => {
   try {
     if (evidencePath && /^[\w-]+\.(?:jpe?g|png)$/i.test(evidencePath)) {
       imagePath = `events/${eventId}/1.${evidencePath.split(".").pop()!.toLowerCase()}`;
-      const { data: file, error: downloadError } = await supabase.storage.from(EVIDENCE_BUCKET).download(evidencePath);
-      if (downloadError || !file) throw downloadError ?? new Error("Evidence not found");
-      const { error: uploadError } = await supabase.storage.from(EVENT_BUCKET).upload(imagePath, await file.arrayBuffer(), {
-        contentType: file.type || "image/jpeg",
-        upsert: false,
-      });
-      if (uploadError) throw uploadError;
+      await mediaStorage(supabase).copy(EVIDENCE_BUCKET, evidencePath, EVENT_BUCKET, imagePath);
     } else if (sourceUrl && /\/(?:p|reel)\//.test(sourceUrl)) {
       imagePath = await copyInstagramImage(supabase, sourceUrl, eventId);
     }
@@ -186,7 +181,7 @@ Deno.serve(async (request) => {
       await supabase.from("shop_events").delete().eq("id", eventId);
     }
     if (createdExternalVenueId) await supabase.from("external_venues").delete().eq("id", createdExternalVenueId);
-    if (imagePath) await supabase.storage.from(EVENT_BUCKET).remove([imagePath]);
+    if (imagePath) await mediaStorage(supabase).from(EVENT_BUCKET).remove([imagePath]);
     await deleteEvidence(supabase, evidencePath);
     console.error("register-event failed", error);
     return json({ code: "registration_failed" }, 422);
@@ -194,7 +189,7 @@ Deno.serve(async (request) => {
 });
 
 async function deleteEvidence(supabase: ReturnType<typeof createServiceClient>, path: string | null) {
-  if (isEvidencePath(path)) await supabase.storage.from(EVIDENCE_BUCKET).remove([path]);
+  if (isEvidencePath(path)) await mediaStorage(supabase).from(EVIDENCE_BUCKET).remove([path]);
 }
 
 async function copyInstagramImage(
@@ -213,7 +208,7 @@ async function copyInstagramImage(
   if (!image?.ok || !extension) return null;
 
   const imagePath = `events/${eventId}/1.${extension}`;
-  const { error } = await supabase.storage.from(EVENT_BUCKET).upload(imagePath, await image.arrayBuffer(), {
+  const { error } = await mediaStorage(supabase).from(EVENT_BUCKET).upload(imagePath, await image.arrayBuffer(), {
     contentType,
     upsert: false,
   });

@@ -7,6 +7,8 @@ description: Reuse the established Ramap ViewModel, UI state, side effect, repos
 
 Reuse these patterns before inventing a new abstraction. Keep architectural placement and module selection in the sibling skills.
 
+Read and apply the team's [object-oriented principles](../../../docs/wiki/object-oriented-principles.md). That wiki page owns responsibility separation, interface design, abstraction, and test boundaries; this skill owns their concrete implementation patterns.
+
 ## Feature state flow
 
 - Model each feature with a typed `Intent`, `State`, and `SideEffect` contract.
@@ -15,7 +17,6 @@ Reuse these patterns before inventing a new abstraction. Keep architectural plac
 - Give each operation a stable `taskKey` and choose the existing `TaskPolicy` for its actual interaction: `CancelPrevious` replaces work with the same key, while `IgnoreNew` skips a new request while that key is active. Keep cancellation propagation and loading cleanup owned by `BaseViewModel`.
 - When an asynchronous task exposes loading in UI state, implement `LoadableState`, pass a typed `LoadKey` to the task, and derive loading from `loadState` even if the screen has only one loading operation. Do not toggle a parallel `loading` Boolean in `onStart`/`onFinish`. A task with no UI loading state does not need a `LoadKey`.
 - When updating a legacy ViewModel or screen, compare it with a current feature using the shared pattern; nearby legacy code is not a reason to keep a custom state or loading mechanism.
-- Keep ViewModels responsible for UI state and event orchestration. Put business rules in domain rules, stores, or use cases.
 - Split large intent handlers by concern, as in viewport, shop, search, personalization, or account handlers.
 - Read the current contracts in `core/ui/src/commonMain/kotlin/com/peto/ramap/ui/base` and `core/ui/src/commonMain/kotlin/com/peto/ramap/ui/loading` before wiring a new flow. Use `launchResultTask`'s existing result and retry hooks rather than adding a second network error or retry mechanism.
 
@@ -31,7 +32,6 @@ Reuse these patterns before inventing a new abstraction. Keep architectural plac
 - Declare repository interfaces in `domain` and implement them as `internal Default<Domain>Repository` classes in `data`.
 - Put remote or local access behind a data-source interface. Keep serialized response/DTO types in `data.model` and convert them to domain types at the data boundary.
 - Wrap network operations with the existing `invokeRequest`/`RamapResult` error path. Do not leak DTOs or network clients into features.
-- Split repository interfaces by responsibility rather than adding unrelated methods to an existing contract.
 
 ## Koin composition
 

@@ -10,6 +10,7 @@ Android와 iOS를 함께 지원하는 Ramap Kotlin Multiplatform 프로젝트에
 ## 먼저 읽을 문서
 
 - `AGENTS.md`
+- `docs/wiki/object-oriented-principles.md`
 - 프로젝트 skill 네 가지: `.agents/skills/ramap-coding-conventions/SKILL.md`, `.agents/skills/ramap-architecture/SKILL.md`, `.agents/skills/ramap-module-structure/SKILL.md`, `.agents/skills/ramap-design-patterns/SKILL.md`
 - planner handoff가 있다면 해당 handoff
 - 변경 대상 파일, 직접 호출자·의존 코드, 관련 테스트
@@ -26,9 +27,8 @@ Android와 iOS를 함께 지원하는 Ramap Kotlin Multiplatform 프로젝트에
 - feature 간 직접 의존과 production 코드의 `core/testing` 의존을 추가하지 않습니다.
 - Supabase 설정과 로컬 환경 값 등 비밀 정보는 코드나 커밋 대상에 넣지 않습니다.
 - 기존 사용자 변경을 보존하고 요청 범위 밖의 파일은 수정하지 않습니다.
-- 불필요한 추상화나 의존성을 추가하지 않고 기존 패턴을 재사용합니다.
 
-코딩 컨벤션, 아키텍처, 모듈 구조, 디자인 패턴은 위 네 가지 skill을 단일 기준으로 적용합니다. 에이전트 파일에 중복 규칙을 복제하지 않습니다.
+객체지향 원칙은 위키 문서에서, 코딩 컨벤션, 아키텍처, 모듈 구조, 디자인 패턴은 위 네 가지 skill에서 각각 소유합니다. 각 소유 문서를 읽고 적용하며 에이전트 파일에 중복 규칙을 복제하지 않습니다.
 
 ## 작업 절차
 

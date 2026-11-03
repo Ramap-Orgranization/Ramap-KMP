@@ -13,6 +13,7 @@ def main():
     parser.add_argument("--migration", type=Path, required=True)
     parser.add_argument("--followup-migration", type=Path, action="append", default=[])
     parser.add_argument("--without-regions", action="store_true")
+    parser.add_argument("--normalize-descriptions", action="store_true")
     args = parser.parse_args()
     for command in ("initdb", "pg_ctl", "psql"):
         if not shutil.which(command):
@@ -144,6 +145,44 @@ def main():
                     end $$;
                     reset role;
                 """)
+            if args.normalize_descriptions:
+                query("""
+                    insert into operating_notice_private.shop_operating_notices (shop_id,notice_type,notice_date,end_date)
+                        select id,'full_close','2099-10-18','2099-10-18' from public.ramen_shops where name='서울매장';
+                    do $$ begin
+                        assert exists (
+                            select 1 from operating_notice_private.shop_operating_notices
+                            where notice_type='full_close' and description is null
+                        ), '설명이 없는 원본 공지는 보존한다';
+                    end $$;
+                """)
+                for role in ("anon", "authenticated"):
+                    query(f"""
+                        set role {role};
+                        do $$ declare feed jsonb; begin
+                            assert exists (
+                                select 1 from public.shop_operating_notices
+                                where notice_category='full_close' and description=''
+                            ), '직접 조회에서도 null 설명을 빈 문자열로 반환한다';
+                            assert exists (
+                                select 1 from public.shop_operating_notices
+                                where notice_category='early_close' and description='공개원문'
+                            ), '기존 설명은 그대로 유지한다';
+                            feed := public.fetch_operating_notice_feed('2099-10-18');
+                            assert jsonb_array_length(feed->'items')=5, '설명이 없는 공지도 목록에서 유지한다';
+                            assert not exists (
+                                select 1 from jsonb_array_elements(feed->'items') item
+                                where jsonb_typeof(item->'notice'->'description') is distinct from 'string'
+                            ), '공개 목록의 모든 설명은 문자열이다';
+                            assert exists (
+                                select 1 from jsonb_array_elements(feed->'items') item
+                                where item->'notice'->>'notice_category'='planned_close'
+                                  and item->'notice'->>'description'=''
+                            ), '운영 변동도 null 설명을 빈 문자열로 반환한다';
+                        end $$;
+                        reset role;
+                    """)
+                print("PASS: null descriptions normalized for anon/authenticated direct reads and feed; source text preserved")
             print("PASS: three types, legacy preservation, canonical projection, date/visibility, region contract and role permissions")
         finally:
             subprocess.run(["pg_ctl", "-D", str(database), "-m", "immediate", "-w", "stop"], check=True, capture_output=True)

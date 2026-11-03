@@ -10,6 +10,7 @@ Apply this skill to code quality and team habits only. Read the sibling Ramap sk
 ## Source and scope
 
 - Read `AGENTS.md`, the target files, direct callers, dependencies, and related tests before editing.
+- Read and apply the team's [object-oriented principles](../../../docs/wiki/object-oriented-principles.md) when implementing, reviewing, or testing. That wiki page owns those principles; do not duplicate them here.
 - Preserve existing user changes and avoid files outside the requested scope.
 - Before editing, identify the requested screen or behavior and the minimum acceptance criteria. Give implementation agents the same bounded scope and exact files or responsibilities.
 - Follow `AGENTS.md` for routing. Ordinary implementation and validation belong to the primary agent; using these conventions does not automatically start a planner, implementer, or validator workflow.
@@ -21,14 +22,10 @@ Apply this skill to code quality and team habits only. Read the sibling Ramap sk
 
 - Use 4-space indentation, LF line endings, UTF-8, and a final newline.
 - Keep packages under `com.peto.ramap`.
-- Keep one class or interface per file, except for an established sealed-class or interface grouping. Do not declare private classes.
-- Prefer ordinary classes with constructor injection for business rules and services. Let DI own their lifetime. Use `object` for singleton values such as sealed state variants when that is their intended role.
-- Keep domain rules and state changes on the responsible type or collaborator. Use extension functions only for a necessary external-library adapter or pure presentation conversion when the owning type cannot be changed; explain the exception in the handoff.
-- Prefer code that reveals intent. Add a short comment only when the code cannot express the intent clearly.
+- Keep one class or interface per file, except for an established sealed-class or interface grouping.
+- Prefer code that reveals intent. Apply the wiki's [tests and comments principle](../../../docs/wiki/object-oriented-principles.md#주석보다-테스트로-역할과-책임을-드러낸다) when deciding how to explain behavior.
 - Avoid nesting beyond two levels; use guard clauses, early returns, or focused functions.
 - Use `when` for complex branching and explicit `for`/`if` flows when collection chains hide branching, side effects, or mutable accumulation.
-- Extract functions when they expose a distinct responsibility, abstraction level, or reason to change. Do not split a cohesive method solely to meet a line count.
-- Separate state changes, data calls, and result handling into focused functions.
 
 ## Formatting and layout
 
@@ -45,13 +42,7 @@ Apply this skill to code quality and team habits only. Read the sibling Ramap sk
 ## Names and values
 
 - Do not use abbreviations such as `cnt`, `calc`, or `usrId`.
-- Name functions to expose their action and result. Avoid `get` and `set` prefixes:
-  - reads: `fetch`, `find`, `search`
-  - mutations: `update`, `change`, `save`
-  - Boolean queries: `is`, `has`, `can`, `should`
 - Include units and meaning in names such as `elapsedMs`, `remainingRatio`, and `retryCount`.
-- Wrap primitives with domain meaning or validation rules in value classes when appropriate.
-- Use first-class collection types when a collection owns behavior or invariants.
 - Put magic numbers and non-user-facing debug error messages in `companion object` constants.
 
 ## Text, tests, and safety
@@ -67,7 +58,7 @@ Apply this skill to code quality and team habits only. Read the sibling Ramap sk
 ## Finish the change
 
 - Do not maintain a parallel per-task changelog. Use Git commits and pull requests as the shared record of changes, put validation results in the pull request or CI results, and record deployment state in the relevant pull request or release record. Keep credentials, personal data, and detailed security evidence within their existing local-only boundaries. The local-only `docs/change-history/` directory is optional and may be removed at the user's request; do not append new work to it, read it routinely, or recreate it when absent.
-- At final PR preparation, update the wiki only when approved policy, domain meaning, user-visible behavior, an important decision reason, or a documented knowledge error changes. File moves, internal refactoring, implementation parameters, and verification/deployment results alone do not require a wiki update or a fresh `source_ref`. Run the wiki check after an actual wiki edit; run validator regression tests when its rules change.
+- At final PR preparation, update the wiki only when approved policy, domain meaning, user-visible behavior, team object-oriented principles, an important decision reason, or a documented knowledge error changes. File moves, internal refactoring, implementation parameters, and verification/deployment results alone do not require a wiki update or a fresh `source_ref`. Run the wiki check after an actual wiki edit; run validator regression tests when its rules change.
 - Inspect tracked and untracked changes against the acceptance criteria before reporting completion. Preserve pre-existing user changes, and call out any necessary supporting change that extends beyond the requested surface.
 - Check changed Compose UI for direct `Text` usage and confirm any exception to the `AppText` rule. Formatting and compilation checks do not enforce this convention.
 - Run the smallest relevant Gradle test and `git diff --check`. Android host tasks use `:<module>:testAndroidHostTest`; iOS simulator tasks use `:<module>:iosSimulatorArm64Test`. Select app builds or shared integration checks only when the affected platform or dependency path requires them.
