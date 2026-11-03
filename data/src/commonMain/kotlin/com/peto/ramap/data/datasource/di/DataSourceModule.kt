@@ -5,6 +5,7 @@ import com.peto.ramap.data.datasource.appnotice.RemoteAppNoticeDataSource
 import com.peto.ramap.data.datasource.follow.FollowDataSource
 import com.peto.ramap.data.datasource.follow.RemoteFollowDataSource
 import com.peto.ramap.data.datasource.image.CachedImageUrlDataSource
+import com.peto.ramap.data.datasource.image.ExpiredImageUrlParser
 import com.peto.ramap.data.datasource.image.ImageUrlAccessPolicy
 import com.peto.ramap.data.datasource.image.ImageUrlDataSource
 import com.peto.ramap.data.datasource.image.RemoteImageUrlDataSource
@@ -47,7 +48,9 @@ import com.peto.ramap.data.feed.FeedDataSource
 import com.peto.ramap.data.feed.RemoteFeedDataSource
 import com.peto.ramap.domain.repository.PlaceLinkResolver
 import com.peto.ramap.domain.store.ReviewChangeStore
+import com.peto.ramap.network.config.RamapSecrets
 import io.github.jan.supabase.SupabaseClient
+import io.github.jan.supabase.storage.storage
 import io.ktor.client.HttpClient
 import org.koin.core.module.dsl.singleOf
 import org.koin.dsl.module
@@ -57,6 +60,13 @@ val dataSourceModule =
         single<FollowDataSource> { RemoteFollowDataSource(get(), get()) }
         single<ImageUrlAccessPolicy> { ReviewImageUrlAccessPolicy(get(), lazy { get<ReviewChangeStore>() }) }
         single<ImageUrlDataSource> { CachedImageUrlDataSource(RemoteImageUrlDataSource(get(), get()), get()) }
+        single {
+            ExpiredImageUrlParser(
+                supabaseSignedBaseUrl = get<SupabaseClient>().storage.resolveUrl("object/sign"),
+                r2AccountId = RamapSecrets.r2AccountId,
+                r2PrivateBucket = RamapSecrets.r2PrivateBucket,
+            )
+        }
         singleOf(::ReviewImageResolver)
         single<ProfileDataSource> { RemoteProfileDataSource(get(), get(), get()) }
         single<UserProfileDataSource> { RemoteUserProfileDataSource(get(), get(), get()) }

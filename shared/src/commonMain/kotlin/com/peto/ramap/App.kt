@@ -14,6 +14,8 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.repeatOnLifecycle
+import coil3.ImageLoader
+import coil3.compose.setSingletonImageLoaderFactory
 import com.peto.ramap.core.result.RamapError
 import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.designsystem.component.LoadErrorContent
@@ -23,9 +25,11 @@ import com.peto.ramap.designsystem.toast.ToastManager
 import com.peto.ramap.domain.model.auth.LoginSessionState
 import com.peto.ramap.domain.repository.AppNoticeRepository
 import com.peto.ramap.domain.repository.AppUpdateRepository
+import com.peto.ramap.domain.repository.ImageUrlRefresher
 import com.peto.ramap.domain.repository.LoginRepository
 import com.peto.ramap.domain.store.PersonalizationBootstrapState
 import com.peto.ramap.domain.store.PersonalizationStore
+import com.peto.ramap.image.ExpiredImageUrlInterceptor
 import com.peto.ramap.platform.AppVersionProvider
 import com.peto.ramap.platform.network.NetworkConnectivityObserver
 import com.peto.ramap.platform.network.NetworkConnectivityStatus
@@ -57,8 +61,15 @@ fun App(
     personalizationStore: PersonalizationStore = koinInject(),
     toastManager: ToastManager = koinInject(),
     loginGuideController: LoginGuideController = koinInject(),
+    imageUrlRefresher: ImageUrlRefresher = koinInject(),
     onExitRequested: (() -> Unit)? = null,
 ) {
+    setSingletonImageLoaderFactory { context ->
+        ImageLoader
+            .Builder(context)
+            .components { add(ExpiredImageUrlInterceptor(imageUrlRefresher)) }
+            .build()
+    }
     RamapTheme {
         AppUpdateGate(
             appUpdateRepository = appUpdateRepository,

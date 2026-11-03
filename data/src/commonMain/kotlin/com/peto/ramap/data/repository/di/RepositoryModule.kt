@@ -18,6 +18,7 @@ import com.peto.ramap.data.repository.DefaultArchiveRepository
 import com.peto.ramap.data.repository.DefaultBookmarkRepository
 import com.peto.ramap.data.repository.DefaultFollowRepository
 import com.peto.ramap.data.repository.DefaultHiddenShopRepository
+import com.peto.ramap.data.repository.DefaultImageUrlRefresher
 import com.peto.ramap.data.repository.DefaultImportationRepository
 import com.peto.ramap.data.repository.DefaultLoginRepository
 import com.peto.ramap.data.repository.DefaultNotificationSettingsRepository
@@ -43,6 +44,7 @@ import com.peto.ramap.domain.repository.ArchiveRepository
 import com.peto.ramap.domain.repository.BookmarkRepository
 import com.peto.ramap.domain.repository.FollowRepository
 import com.peto.ramap.domain.repository.HiddenShopRepository
+import com.peto.ramap.domain.repository.ImageUrlRefresher
 import com.peto.ramap.domain.repository.ImportationRepository
 import com.peto.ramap.domain.repository.LoginRepository
 import com.peto.ramap.domain.repository.NotificationSettingsRepository
@@ -66,6 +68,7 @@ import org.koin.dsl.module
 
 val repositoryModule =
     module {
+        single<ImageUrlRefresher> { DefaultImageUrlRefresher(get(), get()) }
         single<ArchiveRepository> { DefaultArchiveRepository(get(), get(), get()) }
         single { DefaultReviewChangeStore(get<ProfileDataSource>().sessionUserIds, get<ProfileDataSource>()::currentUserId) }
         single<ReviewChangeStore> { get<DefaultReviewChangeStore>() }
