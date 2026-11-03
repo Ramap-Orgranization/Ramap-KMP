@@ -68,7 +68,8 @@
 </table>
 
 ## 기술 스택
-<img width="1200" height="640" alt="ramap-architecture" src="https://github.com/user-attachments/assets/bfdd65fc-0cfa-4ee6-bb9e-76ead92969a2" />
+<img width="1200" height="640" alt="ramap-architecture" src="https://github.com/user-attachments/assets/e5921be6-4d0a-4deb-b2cf-cd61487ac7e0" />
+
 
 | 구분 | 기술 |
 | --- | --- |
