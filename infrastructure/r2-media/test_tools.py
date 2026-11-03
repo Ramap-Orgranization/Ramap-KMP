@@ -27,6 +27,13 @@ class R2ToolsTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             provision.validate({**self.config, 'r2_private_bucket': self.config['r2_public_bucket']})
 
+    def test_retired_cleanup_accepts_only_an_explicit_bucket_list(self):
+        allowed = {**self.config, 'legacy_gcs_cleanup_buckets': ['old-private', 'old-public']}
+        self.assertEqual(provision.validate(allowed), allowed)
+        for buckets in ['old-private', ['https://example.com'], ['old;other'], [None]]:
+            with self.assertRaises(ValueError):
+                provision.validate({**self.config, 'legacy_gcs_cleanup_buckets': buckets})
+
     def test_owned_domain_is_required_for_cdn(self):
         for domain in ['http://images.example.com', 'https://public.r2.dev', 'https://images.example.com/path', 'https://user:secret@images.example.com']:
             with self.assertRaises(ValueError):

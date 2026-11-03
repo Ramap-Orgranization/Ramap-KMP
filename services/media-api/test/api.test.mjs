@@ -13,7 +13,7 @@ function fixture(overrides = {}) {
   const service = {
     rpc: async (name, params) => {
       calls.push([name, params]);
-      const data = name === 'claim_media_cleanup' ? [] : item;
+      const data = ['claim_media_cleanup', 'claim_account_media_cleanup'].includes(name) ? [] : item;
       return { data, error: null };
     },
     storage: { from: () => ({ upload: async () => { calls.push(['mirror']); return { error: null }; } }) },
@@ -103,10 +103,40 @@ test('다른 worker가 삭제 lease를 보유해도 외부 사진이 남으면 �
   const f = fixture();
   f.service.rpc = async (name, params) => {
     f.calls.push([name, params]);
-    return { data: name === 'claim_media_cleanup' ? [] : name === 'account_has_external_media' ? true : null, error: null };
+    return { data: name === 'claim_account_media_cleanup' ? [] : name === 'account_has_external_media' ? true : null, error: null };
   };
   assert.equal((await f.request('v2/account/cleanup')).status, 503);
   assert.ok(f.calls.some(([name, params]) => name === 'prepare_account_media_cleanup' && params.p_user_id === id));
+});
+
+test('타인의 정리 실패와 대기 작업은 사진 없는 사용자의 탈퇴를 막지 않는다', async () => {
+  const f = fixture();
+  f.service.rpc = async (name, params) => {
+    f.calls.push([name, params]);
+    if (name === 'claim_media_cleanup') return { data: [{ id: 1, provider: 'r2', bucket: 'private', path: 'other-user.jpg' }] };
+    if (name === 'claim_account_media_cleanup') {
+      assert.equal(params.p_user_id, id);
+      return { data: [] };
+    }
+    return { data: false };
+  };
+  f.r2.remove = async () => { throw new Error('other user offline'); };
+  const response = await f.request('v2/account/cleanup');
+  assert.equal(response.status, 200);
+  assert.deepEqual(await response.json(), { deleted: true });
+  assert.ok(f.calls.some(([name]) => name === 'account_has_external_media'));
+  assert.ok(!f.calls.some(([name]) => name === 'claim_media_cleanup'));
+});
+
+test('자기 계정의 실제 삭제 실패는 재시도 대상으로 남고 탈퇴를 완료하지 않는다', async () => {
+  const f = fixture();
+  f.service.rpc = async (name, params) => {
+    f.calls.push([name, params]);
+    return { data: name === 'claim_account_media_cleanup' ? [{ id: 1, provider: 'r2', bucket: 'private', path: 'own.jpg' }] : false };
+  };
+  f.r2.remove = async () => { throw new Error('offline'); };
+  assert.equal((await f.request('v2/account/cleanup')).status, 503);
+  assert.ok(f.calls.some(([name, params]) => name === 'finish_media_cleanup' && !params.p_success));
 });
 
 test('Supabase 사진 64개는 권한 검사 후 한 번에 서명하고 경로별로 대응한다', async () => {
@@ -153,6 +183,30 @@ test('버킷별 부분 서명 실패와 누락 및 중복 응답을 다른 사�
   const response = await f.request('v2/resolve', { images: locations.map(({ bucket, path }) => ({ bucket, path })) });
   assert.equal(response.status, 200);
   assert.deepEqual((await response.json()).map(({ url }) => url), ['one-url', null, null, null, null, 'signed']);
+});
+
+test('이전 GCS 복사본은 삭제 전용 경로에서 확인한 뒤에만 완료로 기록한다', async () => {
+  const removed = [];
+  const job = { id: 8, provider: 'gcs', bucket: 'old-private', path: 'profile-avatars/old.jpg', generation: '9' };
+  const f = fixture({ legacyCleanup: { remove: async (entry) => removed.push(entry) } });
+  f.service.rpc = async (name, params) => {
+    f.calls.push([name, params]);
+    return { data: name === 'claim_media_cleanup' ? [job] : null };
+  };
+  f.r2.remove = async () => assert.fail('GCS 파일을 R2로 삭제함');
+  assert.equal(await f.api.cleanup(), 1);
+  assert.deepEqual(removed, [job]);
+  assert.ok(f.calls.some(([name, params]) => name === 'finish_media_cleanup' && params.p_success));
+});
+
+test('이전 저장소 삭제 설정이 없으면 완료를 기록하지 않는다', async () => {
+  const f = fixture();
+  f.service.rpc = async (name, params) => {
+    f.calls.push([name, params]);
+    return { data: name === 'claim_media_cleanup' ? [{ id: 8, provider: 'gcs', bucket: 'old-private', path: 'old.jpg', generation: '9' }] : null };
+  };
+  await assert.rejects(f.api.cleanup(), /media_cleanup_pending/);
+  assert.ok(f.calls.some(([name, params]) => name === 'finish_media_cleanup' && !params.p_success));
 });
 
 test('내부 사진 복사는 검증한 R2 bytes를 새 공개 사진으로 확정한다', async () => {

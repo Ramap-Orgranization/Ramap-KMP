@@ -1,7 +1,7 @@
 import { MediaError, UUID, validateImageRequest, secretMatches, digest } from './policy.mjs';
 import { rpc } from './supabase.mjs';
 
-export function createMediaApi({ service, authenticate, internalKey, r2 }) {
+export function createMediaApi({ service, authenticate, internalKey, r2, legacyCleanup }) {
   function gateway(provider) {
     const target = provider === 'r2' ? r2 : null;
     if (!target) throw new MediaError(503, 'media_provider_unavailable');
@@ -21,8 +21,10 @@ export function createMediaApi({ service, authenticate, internalKey, r2 }) {
     });
     await rpc(service, 'register_media_targets_v2', { p_id: item.id, p_targets: targets });
   }
-  async function cleanup(mediaId = null) {
-    const jobs = await rpc(service, 'claim_media_cleanup', { p_id: mediaId, p_limit: 100 });
+  async function cleanup(mediaId = null, userId = null) {
+    const jobs = userId === null
+      ? await rpc(service, 'claim_media_cleanup', { p_id: mediaId, p_limit: 100 })
+      : await rpc(service, 'claim_account_media_cleanup', { p_user_id: userId, p_limit: 100 });
     let failed = false;
     for (const job of jobs) {
       let success = false;
@@ -30,6 +32,9 @@ export function createMediaApi({ service, authenticate, internalKey, r2 }) {
         if (job.provider === 'supabase') {
           const { error } = await service.storage.from(job.bucket).remove([job.path]);
           if (error) throw error;
+        } else if (job.provider === 'gcs') {
+          if (!legacyCleanup) throw new MediaError(503, 'media_provider_unavailable');
+          await legacyCleanup.remove(job);
         } else {
           const storage = gateway(job.provider);
           await storage.remove(job);
@@ -209,7 +214,7 @@ export function createMediaApi({ service, authenticate, internalKey, r2 }) {
         result = { deleted: true };
       } else if (action === 'account/cleanup' && !internal) {
         await rpc(service, 'prepare_account_media_cleanup', { p_user_id: userId });
-        for (let batch = 0; batch < 20 && await cleanup(); batch++) { /* Bounded; the check below gates Auth deletion. */ }
+        for (let batch = 0; batch < 20 && await cleanup(null, userId); batch++) { /* Bounded; the check below gates Auth deletion. */ }
         if (await rpc(service, 'account_has_external_media', { p_user_id: userId })) throw new MediaError(503, 'media_cleanup_pending');
         result = { deleted: true };
       } else if (action === 'cleanup' && internal) result = { processed: await cleanup() };

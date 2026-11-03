@@ -78,13 +78,15 @@ def main():
     containers = previous.get('spec', {}).get('template', {}).get('spec', {}).get('containers', [])
     for entry in (containers[0].get('env', []) if containers else []):
         name = entry['name']
-        if name.startswith('R2_') or name.startswith('CLOUDFLARE_'):
+        if name.startswith('R2_') or name.startswith('CLOUDFLARE_') or name == 'LEGACY_GCS_CLEANUP_BUCKETS':
             if 'value' in entry:
                 variables[name] = entry['value']
             reference = entry.get('valueFrom', {}).get('secretKeyRef')
             if reference:
                 bindings_map[name] = reference['name'] + ':' + reference['key']
     if r2_config:
+        if 'legacy_gcs_cleanup_buckets' in r2_config:
+            variables['LEGACY_GCS_CLEANUP_BUCKETS'] = ';'.join(r2_config['legacy_gcs_cleanup_buckets'])
         variables.update({'R2_ACCOUNT_ID': r2_config['r2_account_id'], 'R2_PUBLIC_BUCKET': r2_config['r2_public_bucket'],
                           'R2_PRIVATE_BUCKET': r2_config['r2_private_bucket'], 'R2_PUBLIC_BASE_URL': r2_config.get('r2_public_base_url', ''),
                           'R2_PUBLIC_DELIVERY': r2_config.get('public_delivery', 'worker'),

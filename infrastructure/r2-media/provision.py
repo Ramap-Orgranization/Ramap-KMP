@@ -17,6 +17,9 @@ def validate(config):
     buckets = [config.get('r2_public_bucket', ''), config.get('r2_private_bucket', '')]
     if len(set(buckets)) != 2 or any(not re.fullmatch(r'[a-z0-9][a-z0-9-]{1,61}[a-z0-9]', b) for b in buckets):
         raise ValueError('Two distinct R2 bucket names are required')
+    retired_buckets = config.get('legacy_gcs_cleanup_buckets', [])
+    if not isinstance(retired_buckets, list) or any(not isinstance(bucket, str) or not re.fullmatch(r'[a-z0-9][a-z0-9._-]{1,220}[a-z0-9]', bucket) for bucket in retired_buckets):
+        raise ValueError('Invalid retired media buckets')
     delivery = config.get('public_delivery', 'worker')
     if delivery not in ('worker', 'custom_domain'):
         raise ValueError('Invalid public delivery mode')

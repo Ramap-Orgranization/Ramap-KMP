@@ -2,8 +2,9 @@ import { createServer } from 'node:http';
 import { createMediaApi } from './api.mjs';
 import { createSupabaseGateway } from './supabase.mjs';
 import { createR2Gateway } from './r2.mjs';
+import { createLegacyGcsCleanup } from './legacy-cleanup.mjs';
 
-const api = createMediaApi({ ...createSupabaseGateway(process.env), r2: createR2Gateway(process.env) });
+const api = createMediaApi({ ...createSupabaseGateway(process.env), r2: createR2Gateway(process.env), legacyCleanup: createLegacyGcsCleanup(process.env) });
 const MAX_BODY_BYTES = 64 * 1024;
 createServer(async (incoming, outgoing) => {
   try {

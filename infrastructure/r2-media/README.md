@@ -84,8 +84,14 @@ R2_SMOKE=staging node services/media-api/r2-smoke.mjs
 
 사진 삭제는 논리 접근을 먼저 막고 모든 provider의 삭제를 재시도한다. pending PUT 유효 기간과 진행 중 finalize가 끝날 때까지 물리 삭제를 유예하며, 이 상태를 탈퇴 완료로 응답하지 않는다. 정리 작업은 30분마다 실행한다. 공개 Worker는 edge 캐시 없이 R2를 읽으므로 purge 토큰을 요구하지 않는다.
 
+`20261103062331_preserve_retired_media_cleanup.sql`은 이전 GCS의 사용 중단(`retired_at`)과 물리 삭제(`deleted`)를 분리하고 계정별 cleanup RPC를 추가한다. 기존 migration이 일괄 삭제 처리한 GCS 이력은 실제 파일 부재를 다시 확인하도록 보정한다. 활성 계정의 원본은 보존하고, 삭제·탈퇴 대상 이력만 정리 큐에 넣는다. 읽기 provider를 GCS로 복구하지 않는다.
+
+서버 교체 전에 이 migration을 적용한다. GCS 위치 이력이 있으면 로컬 연결 JSON에 `legacy_gcs_cleanup_buckets` 배열로 해당 실제 버킷만 명시한다. 배포 도구는 API와 정리 worker에 동일한 `LEGACY_GCS_CLEANUP_BUCKETS` 값을 주입한다. Cloud Run 서비스 계정에는 해당 버킷의 `storage.objects.get`과 `storage.objects.delete` 권한이 필요하며 새 버킷이나 공개 접근은 만들지 않는다. 기존 설정은 재배포 시 보존하고, 명시적인 빈 배열로 비활성화할 수 있다. 설정·권한이 없으면 삭제 완료로 기록하지 않는다.
+
+삭제는 기록된 generation에 한정한다. generation이 없는 과거 이력은 실제 객체와 대조해 보완해야 하며 임의로 최신 파일을 삭제하지 않는다. GCS soft-delete 보존 중에는 파일이 아직 남아 있으므로 제공자의 보존 기한이 끝나고 부재가 확인될 때까지 재시도한다. 관련 회귀 검증은 `python3 supabase/tests/media_storage_test.py`와 `npm --prefix services/media-api test`로 실행한다.
+
 `configure_r2_media(false,false)`로 새로운 R2 선택을 중단하고 R2/Supabase 호환 앱·API를 유지한다. Worker URL이 배포됐다면 Worker와 객체 제공도 유지한다. 원본 보존 종료는 별도 결정이다. Supabase 원본의 일반 삭제는 전체 논리 사진 삭제로 전파되므로 단순 일괄 삭제하지 않는다.
 
 기존 자체 도메인 방식도 `public_delivery=custom_domain`으로 지원하지만, 그 경우 소유 도메인·Cloudflare zone·Cache Purge 토큰이 필요하다. Worker 방식으로 바꾸며 이미 배포된 자체 도메인을 끄는 작업은 별도 검토한다.
 
-사진용 Firebase/GCS SDK·버킷 생성·Rules 배포·읽기·쓰기·미러는 제거했다. 적용된 SQL 이력과 이전 위치 기록은 보존한다. 이전 저장소 주소가 고정된 앱은 새 공개 사진 주소를 지원하는 앱으로 업데이트해야 한다. Firebase 알림·분석·오류 수집은 별도 기능으로 유지한다.
+사진용 Firebase/GCS 버킷 생성·Rules 배포·읽기·쓰기·미러는 제거했다. 적용된 SQL 이력과 이전 위치 기록, 잔존 복사본의 삭제 전용 경로는 보존한다. 이전 저장소 주소가 고정된 앱은 새 공개 사진 주소를 지원하는 앱으로 업데이트해야 한다. Firebase 알림·분석·오류 수집은 별도 기능으로 유지한다.
