@@ -20,16 +20,16 @@ data class OperatingNoticeFeed(
         query: String = "",
         bookmarkedShopIds: Set<String>? = null,
     ): Map<LocalDate, List<OperatingNotice>> {
-        val filtered = filteredItems(query, bookmarkedShopIds)
+        val scheduled = scheduledNotices(query, bookmarkedShopIds)
         val groups = mutableMapOf<LocalDate, MutableList<OperatingNotice>>()
-        for (item in filtered) {
-            for (date in item.notice.scheduledDates(referenceDate)) {
-                groups.getOrPut(date) { mutableListOf() }.add(item.notice)
+        for (notice in scheduled) {
+            for (date in notice.scheduledDates(referenceDate)) {
+                groups.getOrPut(date) { mutableListOf() }.add(notice)
             }
         }
         return groups.keys.sorted().associateWith { date ->
             val scheduledShopIds = groups.getValue(date).map { it.shop.id }.toSet()
-            val applicable = filtered.map { it.notice }.filter { it.shop.id in scheduledShopIds && it.appliesOn(date) }
+            val applicable = scheduled.filter { it.shop.id in scheduledShopIds && it.appliesOn(date) }
             representativesOn(date, applicable)
         }
     }
@@ -45,14 +45,21 @@ data class OperatingNoticeFeed(
             .sortedWith(noticePriority(date))
 
     fun scheduledNoticesForShop(shopId: String): List<OperatingNotice> =
-        items
-            .map { it.notice }
+        scheduledNotices()
             .filter { it.shop.id == shopId && it.scheduledDates(referenceDate).isNotEmpty() }
             .distinctBy { it.id }
             .sortedWith(
                 compareBy<OperatingNotice> { it.scheduledDates(referenceDate).first() }
                     .thenComparator { first, second -> noticePriority(first.scheduledDates(referenceDate).first()).compare(first, second) },
             )
+
+    private fun scheduledNotices(
+        query: String = "",
+        bookmarkedShopIds: Set<String>? = null,
+    ): List<OperatingNotice> =
+        filteredItems(query, bookmarkedShopIds)
+            .map { it.notice }
+            .filter { it.startDate > referenceDate }
 
     private fun representativesOn(
         date: LocalDate,

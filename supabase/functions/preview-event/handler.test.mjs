@@ -16,6 +16,7 @@ function harness(draft) {
     Deno: { serve(value) { handler = value; }, env: { get() { return "synthetic"; } } },
     Request, Response, URL, Date, console,
     dailySchedulesSchema, validCalendarDate, validClosureSchedules,
+    mediaStorage: (client) => client.storage,
     isAdministrator: async () => true,
     createServiceClient: () => ({ from: () => query, storage: { from: () => ({ createSignedUrl: async () => ({ data: { signedUrl: "https://example.invalid/evidence.png" }, error: null }) }) } }),
     normalizeMapUrl: () => null,
