@@ -10,6 +10,7 @@ export type StorageClient = {
 };
 
 export type ServiceClient = {
+    cleanupMedia?: () => Promise<boolean>;
     storage: { from(bucket: string): StorageClient };
     auth: { admin: { deleteUser(userId: string): Promise<{ error: GatewayError }> } };
     rpc(name: string, parameters: { p_user_id: string }): PromiseLike<{ data: Array<{ bucket_id: string; name: string }> | null; error: GatewayError }>;
@@ -40,6 +41,7 @@ export async function deleteCurrentAccount(
     const { error: fenceError } = await accountClient.rpc("begin_current_user_deletion");
     if (fenceError) return failure();
 
+    if (serviceClient.cleanupMedia && !await serviceClient.cleanupMedia()) return failure();
     if (!await removeAllOwnedObjects(serviceClient, userId)) return failure();
 
     const { error: deleteError } = await serviceClient.auth.admin.deleteUser(userId);
