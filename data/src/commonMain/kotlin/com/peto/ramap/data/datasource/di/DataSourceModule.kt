@@ -54,14 +54,14 @@ import org.koin.dsl.module
 
 val dataSourceModule =
     module {
-        single<FollowDataSource> { RemoteFollowDataSource(get()) }
+        single<FollowDataSource> { RemoteFollowDataSource(get(), get()) }
         single<ImageUrlAccessPolicy> { ReviewImageUrlAccessPolicy(get(), lazy { get<ReviewChangeStore>() }) }
-        single<ImageUrlDataSource> { CachedImageUrlDataSource(RemoteImageUrlDataSource(get()), get()) }
+        single<ImageUrlDataSource> { CachedImageUrlDataSource(RemoteImageUrlDataSource(get(), get()), get()) }
         singleOf(::ReviewImageResolver)
-        single<ProfileDataSource> { RemoteProfileDataSource(get(), get()) }
+        single<ProfileDataSource> { RemoteProfileDataSource(get(), get(), get()) }
         single<UserProfileDataSource> { RemoteUserProfileDataSource(get(), get(), get()) }
         single<UserModerationDataSource> { RemoteUserModerationDataSource(get(), get()) }
-        single<ReviewDataSource> { RemoteReviewDataSource(get(), get()) }
+        single<ReviewDataSource> { RemoteReviewDataSource(get(), get(), get()) }
         single<FeedDataSource> { RemoteFeedDataSource(get(), get()) }
         single { NaverImportationDataSource(get(), get<HttpClient>()) }
         single { KakaoImportationDataSource(get()) }

@@ -3,6 +3,7 @@ package com.peto.ramap.data.datasource.image
 import com.peto.ramap.data.model.SignedImageRequest
 import com.peto.ramap.data.model.SignedImageUrl
 import com.peto.ramap.data.model.StorageSignedImageResponse
+import com.peto.ramap.network.client.media.MediaStorageClient
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.annotations.SupabaseInternal
 import io.github.jan.supabase.auth.api.authenticatedSupabaseApi
@@ -28,6 +29,7 @@ import kotlin.time.Instant
 @OptIn(SupabaseInternal::class)
 internal class RemoteImageUrlDataSource(
     private val client: SupabaseClient,
+    private val media: MediaStorageClient? = null,
 ) : ImageUrlDataSource {
     private val json = Json { ignoreUnknownKeys = true }
     private val permits = Semaphore(MAX_CONCURRENT_BATCHES)
@@ -55,6 +57,12 @@ internal class RemoteImageUrlDataSource(
     private suspend fun fetchBatch(images: List<SignedImageRequest>): Map<SignedImageRequest, SignedImageUrl?> =
         permits.withPermit {
             try {
+                if (media?.isConfigured == true) {
+                    val responses = media.fetchUrls(images.first().bucket, images.map { it.path }).groupBy { it.path }
+                    return@withPermit images.associateWith { image ->
+                        responses[image.path]?.singleOrNull()?.let { SignedImageUrl(it.url, it.expiresAt) }
+                    }
+                }
                 val expiresAt = Instant.fromEpochSeconds(Clock.System.now().epochSeconds) + SIGNED_URL_LIFETIME
                 val response =
                     api.postJson(
