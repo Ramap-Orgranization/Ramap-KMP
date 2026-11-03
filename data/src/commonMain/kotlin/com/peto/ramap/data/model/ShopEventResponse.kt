@@ -4,7 +4,9 @@ import com.peto.ramap.data.extension.toLocalDate
 import com.peto.ramap.domain.model.event.EventVenue
 import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.model.event.ShopEventType
-import com.peto.ramap.network.config.RamapSecrets
+import com.peto.ramap.network.client.media.MediaBucket
+import com.peto.ramap.network.client.media.MediaPath
+import com.peto.ramap.network.client.media.PublicMediaUrl
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -78,26 +80,8 @@ internal data class ShopEventResponse(
             )
 
     private fun toPublicEventImageUrl(path: String): String? {
-        val normalizedPath = path.trim()
-        if (
-            normalizedPath.isBlank() ||
-            normalizedPath.startsWith('/') ||
-            normalizedPath.contains("..") ||
-            normalizedPath.contains('\\') ||
-            normalizedPath.contains("://") ||
-            normalizedPath.contains('?') ||
-            normalizedPath.contains('#')
-        ) {
-            return null
-        }
-        val baseUrl = RamapSecrets.supabaseUrl.trimEnd('/')
-        if (baseUrl.isBlank()) return null
-        return "$baseUrl$STORAGE_PUBLIC_PATH$EVENT_IMAGE_BUCKET/$normalizedPath"
-    }
-
-    private companion object {
-        const val EVENT_IMAGE_BUCKET = "event-images"
-        const val STORAGE_PUBLIC_PATH = "/storage/v1/object/public/"
+        val mediaPath = MediaPath.from(path) ?: return null
+        return PublicMediaUrl(MediaBucket.EVENT_IMAGES, mediaPath).resolve()
     }
 }
 
@@ -123,23 +107,7 @@ internal data class ExternalVenueResponse(
         )
 
     private fun toPublicVenueImageUrl(path: String): String? {
-        val normalizedPath = path.trim()
-        if (
-            normalizedPath.isBlank() ||
-            normalizedPath.startsWith('/') ||
-            normalizedPath.contains("..") ||
-            normalizedPath.contains('\\') ||
-            normalizedPath.contains("://") ||
-            normalizedPath.contains('?') ||
-            normalizedPath.contains('#')
-        ) {
-            return null
-        }
-        return "${RamapSecrets.supabaseUrl.trimEnd('/')}$STORAGE_PUBLIC_PATH$PROFILE_BUCKET/$normalizedPath"
-    }
-
-    private companion object {
-        const val PROFILE_BUCKET = "shop-profile-images"
-        const val STORAGE_PUBLIC_PATH = "/storage/v1/object/public/"
+        val mediaPath = MediaPath.from(path) ?: return null
+        return PublicMediaUrl(MediaBucket.SHOP_PROFILE_IMAGES, mediaPath).resolve()
     }
 }

@@ -5,9 +5,11 @@ import com.peto.ramap.data.datasource.moderation.UserModerationDataSource
 import com.peto.ramap.data.datasource.profile.UserProfileDataSource
 import com.peto.ramap.data.model.SignedImageRequest
 import com.peto.ramap.data.model.SignedImageUrl
+import com.peto.ramap.network.client.media.MediaStorageClient
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.postgrest.Postgrest
+import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
 import io.ktor.client.engine.mock.toByteArray
@@ -46,12 +48,14 @@ class UserDataSourceModuleTest {
                             respond(response, headers = headersOf("Content-Type", "application/json"))
                         }
                 }
+            val mediaHttp = HttpClient(MockEngine { error("예상하지 않은 사진 API") })
             val application =
                 koinApplication {
                     modules(
                         dataSourceModule,
                         module {
                             single<SupabaseClient> { client }
+                            single { MediaStorageClient(client, mediaHttp, baseUrl = "") }
                             single<ImageUrlDataSource> {
                                 object : ImageUrlDataSource {
                                     override suspend fun fetchUrls(images: List<SignedImageRequest>): Map<SignedImageRequest, SignedImageUrl?> = emptyMap()
@@ -82,6 +86,7 @@ class UserDataSourceModuleTest {
                 assertEquals(expected.map { (rpc, body) -> rpc to Json.parseToJsonElement(body).jsonObject }, requests)
             } finally {
                 application.close()
+                mediaHttp.close()
                 client.close()
             }
         }
