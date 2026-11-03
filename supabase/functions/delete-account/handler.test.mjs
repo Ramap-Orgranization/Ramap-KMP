@@ -4,6 +4,14 @@ import { deleteCurrentAccount, handleAuthenticatedDeletion } from "./handler.ts"
 
 const userId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 
+test("사진 삭제 실패 시 Auth 계정을 삭제하지 않고 재시도를 허용한다", async () => {
+    const fixture = clients({});
+    fixture.service.cleanupMedia = async () => false;
+    const result = await deleteCurrentAccount(userId, fixture.account, fixture.service);
+    assert.equal(result.status, 503);
+    assert.equal(fixture.deletedUser(), null);
+});
+
 function clients(objectsByBucket, options = {}) {
     const removed = [];
     let deletedUser = null;
