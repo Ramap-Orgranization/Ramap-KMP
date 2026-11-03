@@ -15,14 +15,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Shape
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.peto.ramap.theme.GrayColor
 import org.jetbrains.compose.resources.painterResource
 import ramap.shared.generated.resources.Res
-import ramap.shared.generated.resources.ic_progress
+import ramap.shared.generated.resources.ic_app_logo
 
 @Composable
 fun RemoteShopImage(
@@ -66,17 +65,10 @@ private fun ShopImagePlaceholder() {
         contentAlignment = Alignment.Center,
     ) {
         Image(
-            painter = painterResource(Res.drawable.ic_progress),
+            painter = painterResource(Res.drawable.ic_app_logo),
             contentDescription = null,
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .graphicsLayer {
-                        scaleX = SHOP_IMAGE_PLACEHOLDER_SCALE
-                        scaleY = SHOP_IMAGE_PLACEHOLDER_SCALE
-                    },
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.Crop,
         )
     }
 }
-
-private const val SHOP_IMAGE_PLACEHOLDER_SCALE = 1.8f
