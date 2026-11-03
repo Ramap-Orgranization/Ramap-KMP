@@ -19,6 +19,8 @@ internal class FakeReviewRepository(
     private val submitPending: CompletableDeferred<RamapResult<Unit>>? = null,
     private val ignoreSubmitCancellation: Boolean = false,
 ) : ReviewRepository {
+    override suspend fun fetchMyReviewCount(): RamapResult<Int> = RamapResult.Success(0)
+
     val submissions = mutableListOf<Submission>()
     var editableReview: EditableReview? = null
     var editResult: RamapResult<Unit> = RamapResult.Success(Unit)

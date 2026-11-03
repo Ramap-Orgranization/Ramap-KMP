@@ -19,6 +19,8 @@ import kotlinx.coroutines.withContext
 internal class FakeOwnerReviews(
     private val total: Int = 12,
 ) : ReviewRepository {
+    override suspend fun fetchMyReviewCount(): RamapResult<Int> = RamapResult.Success(total - removedIds.size)
+
     val calls = mutableListOf<Pair<Long, MyReviewVisibility>>()
     var failNext = false
     var deleteResult: RamapResult<Unit> = RamapResult.Success(Unit)

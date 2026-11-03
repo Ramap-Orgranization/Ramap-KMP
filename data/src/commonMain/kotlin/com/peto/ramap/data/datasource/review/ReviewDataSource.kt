@@ -12,6 +12,8 @@ import com.peto.ramap.data.model.ShopReviewsPageResponse
 import com.peto.ramap.domain.model.review.ReviewImage
 
 internal interface ReviewDataSource {
+    suspend fun fetchMyReviewCount(): Int
+
     suspend fun fetchMyReviews(
         offset: Long,
         visibility: String,

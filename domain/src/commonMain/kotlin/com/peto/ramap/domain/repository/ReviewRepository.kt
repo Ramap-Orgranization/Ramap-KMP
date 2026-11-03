@@ -11,6 +11,8 @@ import com.peto.ramap.domain.model.review.ReviewLike
 import com.peto.ramap.domain.model.review.ShopReviewsPage
 
 interface ReviewRepository {
+    suspend fun fetchMyReviewCount(): RamapResult<Int>
+
     suspend fun fetchMyReviews(
         offset: Long,
         visibility: MyReviewVisibility,

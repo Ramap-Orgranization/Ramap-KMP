@@ -53,6 +53,8 @@ class OtherReviewsViewModel(
     private val follows: FollowRepository,
     private val reviewRepository: ReviewRepository =
         object : ReviewRepository {
+            override suspend fun fetchMyReviewCount(): RamapResult<Int> = RamapResult.Success(0)
+
             override suspend fun fetchMyReviews(
                 offset: Long,
                 visibility: MyReviewVisibility,

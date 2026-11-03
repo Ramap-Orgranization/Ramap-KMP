@@ -36,6 +36,8 @@ internal class DefaultReviewRepository(
 ) : ReviewRepository {
     private val writes = Mutex()
 
+    override suspend fun fetchMyReviewCount(): RamapResult<Int> = invokeRequest { dataSource.fetchMyReviewCount() }
+
     override suspend fun fetchMyReviews(
         offset: Long,
         visibility: MyReviewVisibility,

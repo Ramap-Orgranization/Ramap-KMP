@@ -4,7 +4,6 @@ import androidx.lifecycle.viewModelScope
 import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.profile.ProfileVisibility
-import com.peto.ramap.domain.model.review.MyReviewVisibility
 import com.peto.ramap.domain.model.review.change.ReviewChange
 import com.peto.ramap.domain.repository.FollowRepository
 import com.peto.ramap.domain.repository.ProfileRepository
@@ -320,8 +319,8 @@ class MyTabViewModel(
         launchResultTask(
             taskKey = REVIEW_COUNT,
             loadKey = MyTabLoadKey.ReviewCount,
-            request = { reviewRepository.fetchMyReviews(0, MyReviewVisibility.ALL) },
-            onSuccess = { page ->
+            request = reviewRepository::fetchMyReviewCount,
+            onSuccess = { count ->
                 val journal = changes.journal.value
                 val isSessionStale = generation != sessionGeneration || currentState.userId != userId
                 if (isSessionStale) return@launchResultTask
@@ -335,7 +334,7 @@ class MyTabViewModel(
                 if (hasGap) {
                     refreshReviewCount()
                 } else {
-                    reduce { copy(reviewCount = latest?.counts?.totalCount ?: page.totalCount) }
+                    reduce { copy(reviewCount = latest?.counts?.totalCount ?: count) }
                 }
             },
         )

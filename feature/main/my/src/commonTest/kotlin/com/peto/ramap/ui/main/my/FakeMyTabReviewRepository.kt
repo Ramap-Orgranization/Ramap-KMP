@@ -10,14 +10,24 @@ import com.peto.ramap.domain.model.review.ReviewImage
 import com.peto.ramap.domain.model.review.ReviewLike
 import com.peto.ramap.domain.model.review.ShopReviewsPage
 import com.peto.ramap.domain.repository.ReviewRepository
+import kotlinx.coroutines.CompletableDeferred
 
 internal class FakeMyTabReviewRepository(
     var totalCount: Int = 0,
 ) : ReviewRepository {
+    var countFetchCount = 0
+    var countPending: CompletableDeferred<RamapResult<Int>>? = null
+
+    override suspend fun fetchMyReviewCount(): RamapResult<Int> {
+        countFetchCount++
+        val pending = countPending ?: return RamapResult.Success(totalCount)
+        return pending.await()
+    }
+
     override suspend fun fetchMyReviews(
         offset: Long,
         visibility: MyReviewVisibility,
-    ) = RamapResult.Success(MyReviewsPage(emptyList(), totalCount, totalCount, 0, false))
+    ): RamapResult<MyReviewsPage> = error("마이탭은 리뷰 목록을 조회하면 안 됩니다")
 
     override suspend fun fetchMyReview(reviewId: String): RamapResult<MyReview?> {
         TODO("Not yet implemented")
