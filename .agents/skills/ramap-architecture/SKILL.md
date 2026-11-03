@@ -7,6 +7,8 @@ description: Apply the Ramap Kotlin Multiplatform layer responsibilities and dep
 
 Use this skill to place behavior in the correct architectural layer. Keep business meaning independent from UI, data access, and platform APIs.
 
+Read and apply the team's [object-oriented principles](../../../docs/wiki/object-oriented-principles.md) for responsibility, collaboration, and abstraction design. This skill owns concrete layer placement and module dependency direction.
+
 ## Responsibility map
 
 - `domain`: business models, repository contracts, domain stores, and use-case contracts or domain-facing rules.
@@ -50,7 +52,7 @@ Do not add direct feature-to-feature dependencies or production dependencies on 
 
 ## Ownership rules
 
-- Keep business rules out of ViewModels and composables. Put them in domain rules, use cases, stores, or the appropriate data implementation.
+- Place business rules in domain rules, use cases, stores, or the appropriate data implementation. Apply the wiki's responsibility principle when separating them from UI state and event orchestration.
 - Keep repository contracts in `domain`; keep repository implementations and remote/local data access in `data`.
 - Keep resource mapping with its consumers: `core/designsystem` owns mappings shared by its components (business hours, events, categories, shop information, and operating notices); `core/ui` owns screen-facing area/filter mappings. Let features compose their UI state using those existing mappers instead of duplicating conversions.
 - Keep platform APIs behind `expect`/`actual` or a core platform abstraction. Put platform implementations in `androidMain` or `iosMain`.

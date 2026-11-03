@@ -251,26 +251,21 @@ Run after the row exists. Skip when `instagram_url` is null. If an existing row 
    A missing or rejected `og:image` prevents image upload; it is not proof that the account is invalid. Newly discovered URLs must already have been verified during preview preparation. Preserve the approved profile URL and any existing image path if the later image fetch fails, and report that failure.
 3. Decode HTML entities. Accept only HTTPS URLs hosted by `cdninstagram.com` or a subdomain. Reject login placeholders, generic images, unavailable/private profiles, and non-image responses.
 4. Retrieve the verified original image through an available tool into a temporary directory for the approved upload. Accept only JPEG, PNG, or WebP files up to 10 MiB after checking MIME type and actual file type.
-5. Upload to the public `shop-profile-images` bucket as `<shop_uuid>.<ext>`:
+5. Upload to the logical `shop-profile-images` bucket as `<shop_uuid>.<ext>` through the shared provider-aware media tool. Keep the deployment connection JSON outside Git; see `infrastructure/r2-media/README.md`. The tool validates the final file and maintains the required legacy copy:
 
 ```text
-supabase storage cp <local_image> \
-  ss:///shop-profile-images/<shop_uuid>.<ext> \
-  --linked --content-type <mime_type> \
-  --workdir <repository>
+python3 infrastructure/r2-media/upload.py \
+  --config <local_deployment_json> --bucket shop-profile-images \
+  --path <shop_uuid>.<ext> --file <local_image> --content-type <mime_type>
 ```
 
-6. Verify the object exists in `storage.objects` and its public URL returns HTTP 200 before updating:
+6. Require `verified: true`, inspect the returned byte size/hash, and confirm the public URL returns HTTP 200 before updating. Store the same relative logical path; provider selection belongs to the registry:
 
 ```sql
 update public.ramen_shops
 set instagram_profile_image_path = '<shop_uuid>.<ext>', updated_at = now()
 where id = '<shop_uuid>'
-  and exists (
-    select 1 from storage.objects
-    where bucket_id = 'shop-profile-images'
-      and name = '<shop_uuid>.<ext>'
-  );
+  and media_private.lock_available('shop-profile-images', '<shop_uuid>.<ext>') is not null;
 ```
 
 Shared profiles still get one UUID-named object per shop. A failed image fetch or upload must not roll back a valid shop row; report the skipped image.
