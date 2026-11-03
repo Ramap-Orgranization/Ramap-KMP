@@ -11,17 +11,20 @@ import com.peto.ramap.domain.model.review.ReviewLike
 import com.peto.ramap.domain.model.review.ShopReviewsPage
 import com.peto.ramap.domain.repository.ReviewRepository
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.withContext
 
 internal class FakeMyTabReviewRepository(
     var totalCount: Int = 0,
 ) : ReviewRepository {
     var countFetchCount = 0
     var countPending: CompletableDeferred<RamapResult<Int>>? = null
+    var ignoreCountCancellation = false
 
     override suspend fun fetchMyReviewCount(): RamapResult<Int> {
         countFetchCount++
         val pending = countPending ?: return RamapResult.Success(totalCount)
-        return pending.await()
+        return if (ignoreCountCancellation) withContext(NonCancellable) { pending.await() } else pending.await()
     }
 
     override suspend fun fetchMyReviews(

@@ -4,6 +4,7 @@ import com.peto.ramap.core.result.RamapError
 import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.domain.model.follow.FollowState
 import com.peto.ramap.domain.model.profile.ProfileAccess
+import com.peto.ramap.domain.model.profile.ProfileReviewsPage
 import com.peto.ramap.domain.model.profile.PublicProfile
 import com.peto.ramap.domain.model.profile.PublicSavedShopsPage
 import com.peto.ramap.domain.model.review.ProfileReview
@@ -13,6 +14,8 @@ import com.peto.ramap.domain.repository.UserProfileRepository
 import com.peto.ramap.fake.FakeUserModerationRepository
 import com.peto.ramap.fake.FakeUserProfileRepository
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.withContext
 
 class FakeOtherReviewsRepositories :
     UserProfileRepository by FakeUserProfileRepository(),
@@ -25,6 +28,8 @@ class FakeOtherReviewsRepositories :
     var followerCount = 0L
     var followingCount = 0L
     var profileAccessPending: CompletableDeferred<RamapResult<ProfileAccess>>? = null
+    var profileReviewsPending: CompletableDeferred<RamapResult<ProfileReviewsPage>>? = null
+    var ignorePendingCancellation = false
     var reviews: List<ProfileReview> = emptyList()
     var savedShops: List<RamenShop> = emptyList()
     var reviewCount: Long? = null
@@ -39,7 +44,8 @@ class FakeOtherReviewsRepositories :
 
     override suspend fun fetchProfileAccess(userId: String): RamapResult<ProfileAccess> {
         requestedProfileUserIds += userId
-        return profileAccessPending?.await() ?: RamapResult.Success(profileAccess(userId))
+        val pending = profileAccessPending ?: return RamapResult.Success(profileAccess(userId))
+        return if (ignorePendingCancellation) withContext(NonCancellable) { pending.await() } else pending.await()
     }
 
     private fun profileAccess(userId: String): ProfileAccess {
@@ -79,6 +85,8 @@ class FakeOtherReviewsRepositories :
         userId: String,
         offset: Long,
     ): RamapResult<com.peto.ramap.domain.model.profile.ProfileReviewsPage> {
+        val pending = profileReviewsPending
+        if (pending != null) return if (ignorePendingCancellation) withContext(NonCancellable) { pending.await() } else pending.await()
         val result = fetchUserReviews(userId, offset)
         return when (result) {
             is RamapResult.Error -> result

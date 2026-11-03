@@ -19,7 +19,9 @@ import com.peto.ramap.ui.review.write.contract.ReviewWriteIntent
 import com.peto.ramap.ui.review.write.contract.ReviewWriteSideEffect
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.test.runCurrent
+import kotlinx.coroutines.withContext
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.review_load_failed
 import ramap.shared.generated.resources.shop_review_failure_message
@@ -174,13 +176,13 @@ class ReviewWriteViewModelTest {
         }
 
     @Test
-    fun `pending profile visibility update cannot submit a draft to another shop`() =
+    fun `취소를 무시한 이전 공개 설정 응답으로 다른 매장에 초안을 제출하지 않는다`() =
         coroutinesTest {
             val pendingUpdate = CompletableDeferred<RamapResult<AccountProfile>>()
             val baseProfiles = FakeProfileRepository(isProfilePublic = false)
             val profiles =
                 object : ProfileRepository by baseProfiles {
-                    override suspend fun updateProfileVisibility(isPublic: Boolean): RamapResult<AccountProfile> = pendingUpdate.await()
+                    override suspend fun updateProfileVisibility(isPublic: Boolean): RamapResult<AccountProfile> = withContext(NonCancellable) { pendingUpdate.await() }
                 }
             val reviews = FakeReviewRepository()
             val viewModel = ReviewWriteViewModel(reviews, profiles, FakeRamenShopRepository())

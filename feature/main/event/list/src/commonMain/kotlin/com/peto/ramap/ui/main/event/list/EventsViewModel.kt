@@ -36,7 +36,6 @@ class EventsViewModel(
 ) : BaseViewModel<EventsUiState, EventsIntent, EventsSideEffect>(EventsUiState()) {
     private var pendingSavedFilter = false
     private var signInSucceeded = false
-    private var sessionGeneration = 0L
 
     init {
         observePersonalization()
@@ -110,7 +109,6 @@ class EventsViewModel(
                 if (session == LoginSessionState.AUTHENTICATED) {
                     resumeSavedFilter()
                 } else {
-                    sessionGeneration += 1
                     pendingSavedFilter = false
                     signInSucceeded = false
                     cancelTask(PERSONALIZATION_TASK_KEY)
@@ -140,14 +138,13 @@ class EventsViewModel(
 
     private fun signIn(type: LoginType) {
         reduce { copy(showLoginGuide = false) }
-        val generation = sessionGeneration
         launchResultTask(
             taskKey = SIGN_IN_TASK_KEY,
             loadKey = EventsLoadKey.Login,
             policy = TaskPolicy.IgnoreNew,
             request = { signInUseCase(type, AnalyticsSource.EVENT_LIST) },
             onSuccess = {
-                if (generation == sessionGeneration && pendingSavedFilter) {
+                if (pendingSavedFilter) {
                     signInSucceeded = true
                     showToast(Res.string.login_success_message, ToastType.DEFAULT)
                     resumeSavedFilter()
@@ -168,14 +165,13 @@ class EventsViewModel(
 
     private fun refreshPersonalization(resumeSaved: Boolean = false) {
         if (resumeSaved) pendingSavedFilter = true
-        val generation = sessionGeneration
         launchResultTask(
             taskKey = PERSONALIZATION_TASK_KEY,
             loadKey = EventsLoadKey.Personalization,
             policy = TaskPolicy.IgnoreNew,
             request = personalizationStore::refresh,
             onSuccess = {
-                if (resumeSaved && pendingSavedFilter && generation == sessionGeneration && loginRepository.hasSession()) {
+                if (resumeSaved && pendingSavedFilter && loginRepository.hasSession()) {
                     pendingSavedFilter = false
                     val fresh = personalizationStore.state.value as? PersonalizationBootstrapState.Success
                     if (fresh != null) reduce { mapEventsToUiState(copy(savedOnly = true, savedFilterError = false, bookmarkedShopIds = fresh.value.bookmarkedShopIds, personalizationState = fresh)) }
@@ -184,7 +180,7 @@ class EventsViewModel(
             onError = {
                 val shouldResume = resumeSaved && pendingSavedFilter
                 pendingSavedFilter = false
-                if (shouldResume && generation == sessionGeneration && loginRepository.hasSession()) {
+                if (shouldResume && loginRepository.hasSession()) {
                     reduce { copy(savedFilterError = true) }
                 }
             },

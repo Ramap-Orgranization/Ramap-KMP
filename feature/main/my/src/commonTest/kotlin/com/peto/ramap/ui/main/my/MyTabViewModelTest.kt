@@ -137,6 +137,34 @@ class MyTabViewModelTest {
         }
 
     @Test
+    fun `같은 계정으로 다시 로그인한 뒤 이전 개수 응답이 와도 새 값을 유지한다`() =
+        coroutinesTest {
+            val oldRequest = CompletableDeferred<RamapResult<Int>>()
+            val profiles = FakeProfileRepository()
+            val reviews =
+                FakeMyTabReviewRepository().apply {
+                    countPending = oldRequest
+                    ignoreCountCancellation = true
+                }
+            val viewModel = MyTabViewModel(profiles, FakeUserModerationRepository(), FakePersonalizationRepository(), reviews, FakeFollowRepository(), FakeReviewChangeStore())
+            runCurrent()
+
+            profiles.sessionUserId.value = null
+            runCurrent()
+            reviews.countPending = null
+            reviews.totalCount = 9
+            profiles.sessionUserId.value = "first"
+            runCurrent()
+            assertEquals(9, viewModel.uiState.value.reviewCount)
+
+            oldRequest.complete(RamapResult.Success(7))
+            runCurrent()
+
+            assertEquals("first", viewModel.uiState.value.userId)
+            assertEquals(9, viewModel.uiState.value.reviewCount)
+        }
+
+    @Test
     fun `프로필과 개인화 개수를 표시하고 세션이 바뀌면 프로필을 비운다`() =
         coroutinesTest {
             val profiles = FakeProfileRepository()

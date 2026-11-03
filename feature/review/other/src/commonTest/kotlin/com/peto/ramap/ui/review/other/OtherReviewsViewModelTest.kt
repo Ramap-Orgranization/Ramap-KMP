@@ -4,6 +4,8 @@ import app.cash.turbine.test
 import com.peto.ramap.core.result.RamapError
 import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.coroutinesTest
+import com.peto.ramap.domain.model.profile.ProfileAccess
+import com.peto.ramap.domain.model.profile.ProfileReviewsPage
 import com.peto.ramap.domain.model.review.ProfileReview
 import com.peto.ramap.domain.model.review.Review
 import com.peto.ramap.domain.model.review.ReviewAuthor
@@ -15,6 +17,7 @@ import com.peto.ramap.fixture.ramenShopFixture
 import com.peto.ramap.ui.review.other.contract.OtherReviewsEffect
 import com.peto.ramap.ui.review.other.contract.OtherReviewsIntent
 import com.peto.ramap.ui.review.other.contract.OtherReviewsTab
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runCurrent
 import ramap.shared.generated.resources.Res
@@ -29,6 +32,66 @@ import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class OtherReviewsViewModelTest {
+    @Test
+    fun `같은 사용자로 돌아와도 취소를 무시한 이전 프로필 응답을 적용하지 않는다`() =
+        coroutinesTest {
+            val pending = CompletableDeferred<RamapResult<ProfileAccess>>()
+            val repositories =
+                FakeOtherReviewsRepositories().apply {
+                    profileAccessPending = pending
+                    ignorePendingCancellation = true
+                }
+            val profiles = FakeProfileRepository("viewer")
+            val viewModel = OtherReviewsViewModel(repositories, repositories, profiles, FakeFollowRepository(), changes = FakeReviewChangeStore(), reviewChangeReducer = ReviewChangeReducer())
+            runCurrent()
+            viewModel.dispatch(OtherReviewsIntent.OpenProfile("author"))
+            runCurrent()
+
+            repositories.profileAccessPending = null
+            profiles.sessionUserId.value = null
+            runCurrent()
+            profiles.sessionUserId.value = "viewer"
+            runCurrent()
+            pending.complete(RamapResult.Success(ProfileAccess.Private))
+            runCurrent()
+
+            assertTrue(viewModel.uiState.value.profileAccess is ProfileAccess.Visible)
+            assertEquals("viewer", viewModel.uiState.value.currentUserId)
+            assertEquals(
+                "라멘팬",
+                viewModel.uiState.value.profile
+                    ?.nickname,
+            )
+        }
+
+    @Test
+    fun `같은 사용자로 돌아와도 취소를 무시한 이전 리뷰 응답을 적용하지 않는다`() =
+        coroutinesTest {
+            val pending = CompletableDeferred<RamapResult<ProfileReviewsPage>>()
+            val repositories =
+                FakeOtherReviewsRepositories().apply {
+                    profileReviewsPending = pending
+                    ignorePendingCancellation = true
+                }
+            val profiles = FakeProfileRepository("viewer")
+            val viewModel = OtherReviewsViewModel(repositories, repositories, profiles, FakeFollowRepository(), changes = FakeReviewChangeStore(), reviewChangeReducer = ReviewChangeReducer())
+            runCurrent()
+            viewModel.dispatch(OtherReviewsIntent.OpenProfile("author"))
+            runCurrent()
+
+            repositories.profileReviewsPending = null
+            repositories.reviews = listOf(review(1))
+            profiles.sessionUserId.value = null
+            runCurrent()
+            profiles.sessionUserId.value = "viewer"
+            runCurrent()
+            pending.complete(RamapResult.Success(ProfileReviewsPage(ProfileAccess.Private, emptyList())))
+            runCurrent()
+
+            assertTrue(viewModel.uiState.value.profileAccess is ProfileAccess.Visible)
+            assertEquals(repositories.reviews, viewModel.uiState.value.reviews)
+        }
+
     @Test
     fun `본인 프로필은 비공개 미게시 리뷰의 등록과 수정과 삭제 및 집계를 재조회 없이 반영한다`() =
         coroutinesTest {
