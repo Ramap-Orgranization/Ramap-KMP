@@ -4,6 +4,7 @@ import com.peto.ramap.data.datasource.appnotice.AppNoticeDataSource
 import com.peto.ramap.data.datasource.appnotice.RemoteAppNoticeDataSource
 import com.peto.ramap.data.datasource.follow.FollowDataSource
 import com.peto.ramap.data.datasource.follow.RemoteFollowDataSource
+import com.peto.ramap.data.datasource.image.BatchingImageUrlDataSource
 import com.peto.ramap.data.datasource.image.CachedImageUrlDataSource
 import com.peto.ramap.data.datasource.image.ExpiredImageUrlParser
 import com.peto.ramap.data.datasource.image.ImageUrlAccessPolicy
@@ -60,6 +61,7 @@ val dataSourceModule =
         single<FollowDataSource> { RemoteFollowDataSource(get(), get()) }
         single<ImageUrlAccessPolicy> { ReviewImageUrlAccessPolicy(get(), lazy { get<ReviewChangeStore>() }) }
         single<ImageUrlDataSource> { CachedImageUrlDataSource(RemoteImageUrlDataSource(get(), get()), get()) }
+        single { BatchingImageUrlDataSource(get(), get(), get()) }
         single {
             ExpiredImageUrlParser(
                 supabaseSignedBaseUrl = get<SupabaseClient>().storage.resolveUrl("object/sign"),

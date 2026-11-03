@@ -1,6 +1,7 @@
 package com.peto.ramap.data.repository.di
 
 import com.peto.ramap.data.datasource.appnotice.AppNoticeDataSource
+import com.peto.ramap.data.datasource.image.BatchingImageUrlDataSource
 import com.peto.ramap.data.datasource.importation.ImportationDataSource
 import com.peto.ramap.data.datasource.menu.ShopMenuDataSource
 import com.peto.ramap.data.datasource.notice.OperatingNoticeDataSource
@@ -68,7 +69,7 @@ import org.koin.dsl.module
 
 val repositoryModule =
     module {
-        single<ImageUrlRefresher> { DefaultImageUrlRefresher(get(), get()) }
+        single<ImageUrlRefresher> { DefaultImageUrlRefresher(get(), get<BatchingImageUrlDataSource>()) }
         single<ArchiveRepository> { DefaultArchiveRepository(get(), get(), get()) }
         single { DefaultReviewChangeStore(get<ProfileDataSource>().sessionUserIds, get<ProfileDataSource>()::currentUserId) }
         single<ReviewChangeStore> { get<DefaultReviewChangeStore>() }
