@@ -3,6 +3,7 @@ package com.peto.ramap.data.model
 import com.peto.ramap.domain.model.event.EventVenue
 import com.peto.ramap.domain.model.event.ShopEventType
 import com.peto.ramap.fixture.ramenShopResponseFixture
+import com.peto.ramap.network.config.RamapSecrets
 import kotlinx.datetime.LocalDate
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -61,15 +62,15 @@ class ShopEventResponseTest {
 
         assertEquals(5, event.imageUrls.size)
         assertEquals(
-            "${com.peto.ramap.network.config.RamapSecrets.supabaseUrl.trimEnd(
+            "${RamapSecrets.r2PublicBaseUrl.ifBlank { "${RamapSecrets.supabaseUrl.trimEnd('/')}/storage/v1/object/public" }.trimEnd(
                 '/',
-            )}/storage/v1/object/public/event-images/events/event-1/1.png",
+            )}/event-images/events/event-1/1.png",
             event.imageUrls.first(),
         )
         assertEquals(
-            "${com.peto.ramap.network.config.RamapSecrets.supabaseUrl.trimEnd(
+            "${RamapSecrets.r2PublicBaseUrl.ifBlank { "${RamapSecrets.supabaseUrl.trimEnd('/')}/storage/v1/object/public" }.trimEnd(
                 '/',
-            )}/storage/v1/object/public/event-images/events/event-1/5.png",
+            )}/event-images/events/event-1/5.png",
             event.imageUrls.last(),
         )
     }
@@ -160,7 +161,7 @@ class ShopEventResponseTest {
         assertEquals("와루가키노 아소비", venue.name)
         assertEquals("부산 부산진구", venue.address)
         assertEquals(
-            "${com.peto.ramap.network.config.RamapSecrets.supabaseUrl.trimEnd('/')}/storage/v1/object/public/shop-profile-images/venues/warugaki.jpg",
+            "${RamapSecrets.r2PublicBaseUrl.ifBlank { "${RamapSecrets.supabaseUrl.trimEnd('/')}/storage/v1/object/public" }.trimEnd('/')}/shop-profile-images/venues/warugaki.jpg",
             venue.imageUrl,
         )
         assertEquals("https://map.naver.com/p/entry/place/1", venue.naverMapUrl)
