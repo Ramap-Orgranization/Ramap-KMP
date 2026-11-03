@@ -12,17 +12,17 @@ import com.peto.ramap.debug.admin.data.model.request.EventStatusRequest
 import com.peto.ramap.debug.admin.data.model.request.PreviewRequest
 import com.peto.ramap.debug.admin.data.model.request.RegisterRequest
 import com.peto.ramap.domain.model.event.ShopEventType
+import com.peto.ramap.network.client.media.MediaStorageClient
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.functions.functions
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.query.Columns
-import io.github.jan.supabase.storage.storage
 import io.ktor.client.call.body
-import io.ktor.http.ContentType
 import kotlin.uuid.Uuid
 
 internal class RemoteAdminRegistrationDataSource(
     private val client: SupabaseClient,
+    private val media: MediaStorageClient,
 ) : AdminRegistrationDataSource {
     override suspend fun fetchShopNames(): List<String> =
         client
@@ -204,14 +204,12 @@ internal class RemoteAdminRegistrationDataSource(
 
     private suspend fun uploadEvidence(evidence: AdminEvidence): String {
         val path = "${Uuid.random()}.${if (evidence.mimeType == "image/png") "png" else "jpg"}"
-        client.storage.from(EVIDENCE_BUCKET).upload(path, evidence.bytes) {
-            contentType = ContentType.parse(evidence.mimeType)
-        }
+        media.upload(EVIDENCE_BUCKET, path, evidence.bytes, evidence.mimeType)
         return path
     }
 
     private suspend fun deleteEvidence(path: String) {
-        client.storage.from(EVIDENCE_BUCKET).delete(path)
+        media.delete(EVIDENCE_BUCKET, path)
     }
 
     private companion object {

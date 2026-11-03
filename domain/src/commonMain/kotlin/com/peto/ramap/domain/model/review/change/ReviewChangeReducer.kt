@@ -203,7 +203,7 @@ class ReviewChangeReducer {
         for (review in rows) {
             if (review.id == change.reviewId) continue
             result +=
-                updateAuthorSummary(
+                updateRelatedReview(
                     review = review,
                     change = change,
                 )
@@ -211,13 +211,16 @@ class ReviewChangeReducer {
         return result
     }
 
-    private fun updateAuthorSummary(
+    private fun updateRelatedReview(
         review: Review,
         change: ReviewChange.Written,
     ): Review {
         if (review.author.userId != change.userId) return review
+        val deleted = change.before?.review?.takeIf { change.after == null }
+        val followsDeletedVisit = deleted != null && review.shopId == change.shopId && review.visitNumber > deleted.visitNumber
         return review.copy(
             author = review.author.copy(reviewCount = change.counts.publishedCount),
+            visitNumber = if (followsDeletedVisit) review.visitNumber - 1 else review.visitNumber,
         )
     }
 
