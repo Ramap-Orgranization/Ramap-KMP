@@ -109,6 +109,52 @@ test('다른 worker가 삭제 lease를 보유해도 외부 사진이 남으면 �
   assert.ok(f.calls.some(([name, params]) => name === 'prepare_account_media_cleanup' && params.p_user_id === id));
 });
 
+test('Supabase 사진 64개는 권한 검사 후 한 번에 서명하고 경로별로 대응한다', async () => {
+  const images = Array.from({ length: 64 }, (_, index) => ({ bucket: image.bucket, path: `${id}/${index}.jpg` }));
+  const f = fixture();
+  f.service.rpc = async (name) => {
+    assert.equal(name, 'resolve_media_locations_v2');
+    return { data: images.map((entry) => ({ ...entry, provider: 'supabase', physical_bucket: entry.bucket, object_key: entry.path })) };
+  };
+  let batches = 0;
+  f.service.storage.from = (bucket) => ({
+    createSignedUrls: async (paths, seconds) => {
+      batches++;
+      assert.equal(bucket, image.bucket);
+      assert.deepEqual(paths, images.map((entry) => entry.path));
+      assert.equal(seconds, 300);
+      return { data: paths.toReversed().map((path) => ({ path, signedUrl: `https://storage.test/${path}` })) };
+    },
+  });
+  const response = await f.request('v2/resolve', { images });
+  assert.equal(response.status, 200);
+  assert.deepEqual((await response.json()).map(({ path, url }) => [path, url]), images.map(({ path }) => [path, `https://storage.test/${path}`]));
+  assert.equal(batches, 1);
+});
+
+test('버킷별 부분 서명 실패와 누락 및 중복 응답을 다른 사진에 적용하지 않는다', async () => {
+  const locations = [
+    { bucket: 'profile-avatars', path: 'one', provider: 'supabase', physical_bucket: 'avatars', object_key: 'one' },
+    { bucket: 'profile-avatars', path: 'missing', provider: 'supabase', physical_bucket: 'avatars', object_key: 'missing' },
+    { bucket: 'profile-avatars', path: 'denied', provider: 'supabase', physical_bucket: 'avatars', object_key: 'denied' },
+    { bucket: 'profile-avatars', path: 'duplicate', provider: 'supabase', physical_bucket: 'avatars', object_key: 'duplicate' },
+    { bucket: 'shop-review-images', path: 'failed', provider: 'supabase', physical_bucket: 'reviews', object_key: 'failed' },
+    { bucket: 'shop-review-images', path: 'r2', provider: 'r2' },
+  ];
+  const user = {
+    rpc: async () => ({ data: locations }),
+    storage: { from: (bucket) => ({ createSignedUrls: async () => bucket === 'reviews' ? { error: new Error('offline') } : {
+      data: [{ path: 'one', signedUrl: 'one-url' }, { path: 'denied', error: 'denied', signedUrl: 'forbidden' },
+        { path: 'duplicate', signedUrl: 'first' }, { path: 'duplicate', signedUrl: 'second' }, { path: 'unrequested', signedUrl: 'ignored' }],
+    } }) },
+  };
+  const f = fixture({ authenticate: async () => ({ client: user, userId: id }) });
+  f.service.storage.from = () => assert.fail('사용자 서명을 service role로 우회함');
+  const response = await f.request('v2/resolve', { images: locations.map(({ bucket, path }) => ({ bucket, path })) });
+  assert.equal(response.status, 200);
+  assert.deepEqual((await response.json()).map(({ url }) => url), ['one-url', null, null, null, null, 'signed']);
+});
+
 test('내부 사진 복사는 검증한 R2 bytes를 새 공개 사진으로 확정한다', async () => {
   const f = fixture();
   const source = { state: 'ready', locations: [{ provider: 'r2', verified: true, bucket: 'private', path: 'evidence', etag: 'opaque' }] };

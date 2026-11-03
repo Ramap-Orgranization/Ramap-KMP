@@ -2,7 +2,7 @@
 
 배포·복사·복구는 [`infrastructure/r2-media/README.md`](../../infrastructure/r2-media/README.md)를 따른다.
 
-- `/v2/resolve`: 최대 64개 논리 bucket/path를 기존 Supabase 권한으로 검사하고 R2 또는 Supabase 서명 주소를 반환한다.
+- `/v2/resolve`: 최대 64개 논리 bucket/path를 기존 Supabase 권한으로 검사하고 R2 또는 Supabase 서명 주소를 반환한다. Supabase는 버킷별로 배치 서명하며 거절·누락된 경로는 null로 유지한다.
 - `/v2/prepare`, `/v2/finalize`, `/v2/delete`: Supabase 세션으로 준비·실제 파일 검증·호환 복사·확정을 분리한다.
 - `/v1/*`: 기존 클라이언트에는 Supabase 주소와 업로드 경로만 제공한다.
 - `/v2/account/cleanup`: 계정 삭제 fence 이후 모든 관리 복사본 정리를 확인한다.

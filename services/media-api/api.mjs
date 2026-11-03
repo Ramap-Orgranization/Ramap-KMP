@@ -59,16 +59,39 @@ export function createMediaApi({ service, authenticate, internalKey, r2 }) {
           physical_bucket: location.bucket, object_key: location.path, etag: location.etag });
       }
     } else locations = await rpc(client, v2 ? 'resolve_media_locations_v2' : 'resolve_media_locations', { p_images: images });
-    return Promise.all(locations.map(async (location) => {
-      if (location.provider !== 'supabase') {
+    const results = locations.map(({ bucket, path }) => ({ bucket, path, url: null }));
+    const legacyBuckets = new Map();
+    const external = [];
+    for (const [index, location] of locations.entries()) {
+      if (location.provider === 'supabase') {
+        if (!legacyBuckets.has(location.physical_bucket)) legacyBuckets.set(location.physical_bucket, []);
+        legacyBuckets.get(location.physical_bucket).push({ index, location });
+      } else {
         if (!v2) throw new MediaError(503, 'media_provider_unavailable');
-        return { bucket: location.bucket, path: location.path, ...await gateway(location.provider).signRead(location) };
+        external.push({ index, location });
       }
-      const { data, error } = await (internal ? service : client).storage.from(location.physical_bucket).createSignedUrl(location.object_key, 300);
-      return error ? { bucket: location.bucket, path: location.path, url: null } : {
-        bucket: location.bucket, path: location.path, url: data.signedUrl, expires_at: new Date(Date.now() + 300_000).toISOString(),
-      };
-    }));
+    }
+    await Promise.all([
+      ...external.map(async ({ index, location }) => {
+        results[index] = { ...results[index], ...await gateway(location.provider).signRead(location) };
+      }),
+      ...[...legacyBuckets].map(async ([bucket, entries]) => {
+        const paths = [...new Set(entries.map(({ location }) => location.object_key))];
+        const expiresAt = new Date(Date.now() + 300_000).toISOString();
+        const { data, error } = await (internal ? service : client).storage.from(bucket).createSignedUrls(paths, 300);
+        if (error) return;
+        const signed = new Map();
+        for (const row of data ?? []) {
+          // A duplicate or missing result must not be matched by response position.
+          signed.set(row.path, signed.has(row.path) ? null : row);
+        }
+        for (const { index, location } of entries) {
+          const row = signed.get(location.object_key);
+          if (row?.signedUrl && !row.error) results[index] = { ...results[index], url: row.signedUrl, expires_at: expiresAt };
+        }
+      }),
+    ]);
+    return results;
   }
   async function prepare(client, body, internal, v2) {
     validateImageRequest(body);
