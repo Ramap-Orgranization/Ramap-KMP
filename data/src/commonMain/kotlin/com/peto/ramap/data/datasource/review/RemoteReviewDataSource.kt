@@ -10,6 +10,7 @@ import com.peto.ramap.data.model.ReviewResponse
 import com.peto.ramap.data.model.ShopReviewRequest
 import com.peto.ramap.data.model.ShopReviewsPageResponse
 import com.peto.ramap.domain.model.review.ReviewImage
+import com.peto.ramap.network.client.media.MediaStorageClient
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.exceptions.RestException
@@ -27,6 +28,7 @@ import kotlin.uuid.Uuid
 internal class RemoteReviewDataSource(
     private val client: SupabaseClient,
     private val images: ReviewImageResolver,
+    private val media: MediaStorageClient? = null,
 ) : ReviewDataSource {
     override suspend fun fetchMyReviews(
         offset: Long,
@@ -230,7 +232,11 @@ internal class RemoteReviewDataSource(
             images.forEach { image ->
                 val path = "$userId/${Uuid.random()}.${image.fileExtension}"
                 paths += path
-                client.storage.from(BUCKET).upload(path, image.bytes) { contentType = ContentType.parse(image.mimeType) }
+                if (media != null) {
+                    media.upload(BUCKET, path, image.bytes, image.mimeType)
+                } else {
+                    client.storage.from(BUCKET).upload(path, image.bytes) { contentType = ContentType.parse(image.mimeType) }
+                }
             }
             return paths
         } catch (error: Throwable) {
@@ -241,7 +247,11 @@ internal class RemoteReviewDataSource(
 
     private suspend fun cleanup(paths: List<String>) =
         withContext(NonCancellable) {
-            paths.forEach { path -> runCatching { client.storage.from(BUCKET).delete(path) } }
+            paths.forEach { path ->
+                runCatching {
+                    if (media != null) media.delete(BUCKET, path) else client.storage.from(BUCKET).delete(path)
+                }
+            }
         }
 
     private suspend fun cleanupIfRejected(

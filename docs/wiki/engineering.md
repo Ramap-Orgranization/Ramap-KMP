@@ -1,7 +1,7 @@
 ---
 authority: reference
 status: active
-last_verified: 2026-10-18
+last_verified: 2026-11-03
 ---
 
 # 개발 참고
@@ -12,12 +12,13 @@ last_verified: 2026-10-18
 
 | 관심사 | 소유 지침 |
 | --- | --- |
+| 객체의 책임·협력·캡슐화·의존성·추상화·테스트 경계 | [객체지향 원칙](object-oriented-principles.md) |
 | 계층 책임과 의존성 | `.agents/skills/ramap-architecture/SKILL.md` |
 | 모듈·소스 세트·파일 배치 | `.agents/skills/ramap-module-structure/SKILL.md` |
 | 상태·로딩·데이터 접근·공통 UI 패턴 | `.agents/skills/ramap-design-patterns/SKILL.md` |
 | 이름·서식·테스트·보안·변경 기록 | `.agents/skills/ramap-coding-conventions/SKILL.md` |
 
-이 지침이 있는 작업 환경에서는 해당 파일을 읽습니다. 위키에서 개발 규칙을 복제하거나 새 우선순위를 만들지 않습니다. [DEC-0002](decisions.md#dec-0002-현재-구현을-기준으로-개발-규칙-정합성-확정)의 mapper 소유권·analytics 의존성·모듈 배치 결정도 소유 지침에서 유지합니다.
+구현·리뷰·테스트에서 객체지향 원칙과 작업에 관련된 소유 지침을 읽고 적용합니다. 객체지향 원칙은 위키에서, 나머지 개발 규칙은 위 표의 소유 스킬에서 관리하며 다른 문서에 복제하지 않습니다. [DEC-0002](decisions.md#dec-0002-현재-구현을-기준으로-개발-규칙-정합성-확정)의 mapper 소유권·analytics 의존성·모듈 배치 결정은 기존 소유 지침에서 유지합니다.
 
 ## 구현을 찾는 범위
 
