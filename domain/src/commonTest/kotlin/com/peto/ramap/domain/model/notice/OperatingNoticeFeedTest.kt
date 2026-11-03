@@ -33,29 +33,44 @@ class OperatingNoticeFeedTest {
     }
 
     @Test
-    fun `진행 중인 기간 휴무는 오늘 탭과 내일부터 종료일까지 예정에 표시한다`() {
+    fun `기간 휴무는 시작일부터 마지막 날까지 오늘에만 표시하고 종료되면 제외한다`() {
         val closure =
             notice("period", OperatingNoticeType.TEMPORARY_CLOSURE).copy(
                 startDate = LocalDate(2026, 10, 10),
                 endDate = LocalDate(2026, 10, 19),
             )
         val feed = feed(closure)
-        val expectedDates = listOf(LocalDate(2026, 10, 19))
-        assertEquals(listOf(closure), feed.representatives(false))
-        assertEquals(expectedDates, feed.scheduledGroups().keys.toList())
-        for (notices in feed.scheduledGroups().values) {
-            assertEquals(listOf(closure), notices)
-        }
-        assertEquals(listOf(closure), feed.representatives(true))
+        val beforeClosure = feed.copy(referenceDate = LocalDate(2026, 10, 9))
+        assertEquals(emptyList(), beforeClosure.representatives(false))
+        assertEquals(listOf(closure), beforeClosure.representatives(true))
+        assertEquals(listOf(closure), beforeClosure.scheduledNoticesForShop("shop"))
 
-        val lastDay = feed.copy(referenceDate = LocalDate(2026, 10, 19))
-        assertEquals(listOf(closure), lastDay.representatives(false))
-        assertEquals(emptyMap(), lastDay.scheduledGroups())
-        assertEquals(emptyList(), lastDay.representatives(true))
+        for (currentDate in listOf(closure.startDate, date, LocalDate(2026, 10, 19))) {
+            val ongoing = feed.copy(referenceDate = currentDate)
+            assertEquals(listOf(closure), ongoing.representatives(false))
+            assertEquals(emptyMap(), ongoing.scheduledGroups())
+            assertEquals(emptyList(), ongoing.representatives(true))
+            assertEquals(emptyList(), ongoing.scheduledNoticesForShop("shop"))
+        }
 
         val afterClosure = feed.copy(referenceDate = LocalDate(2026, 10, 20))
         assertEquals(emptyList(), afterClosure.representatives(false))
         assertEquals(emptyMap(), afterClosure.scheduledGroups())
+    }
+
+    @Test
+    fun `종료일이 없는 공지도 시작 전에는 예정에 표시하고 시작일부터 오늘에만 표시한다`() {
+        val closure = notice("indefinite", OperatingNoticeType.TEMPORARY_CLOSURE).copy(endDate = null)
+        val beforeClosure = feed(closure).copy(referenceDate = LocalDate(2026, 10, 17))
+        assertEquals(listOf(closure), beforeClosure.representatives(true))
+        assertEquals(emptyList(), beforeClosure.representatives(false))
+
+        for (currentDate in listOf(date, LocalDate(2026, 10, 19))) {
+            val ongoing = feed(closure).copy(referenceDate = currentDate)
+            assertEquals(listOf(closure), ongoing.representatives(false))
+            assertEquals(emptyList(), ongoing.representatives(true))
+            assertEquals(emptyList(), ongoing.scheduledNoticesForShop("shop"))
+        }
     }
 
     @Test
@@ -89,7 +104,7 @@ class OperatingNoticeFeedTest {
     }
 
     @Test
-    fun `예정 기간은 연말을 넘어 종료일까지 실제 날짜로 정렬한다`() {
+    fun `예정 기간은 연말을 넘어 정렬하고 시작일에는 오늘 목록으로 이동한다`() {
         val december = notice("december").copy(startDate = LocalDate(2026, 12, 31), endDate = LocalDate(2027, 1, 2))
         val january = december.copy(id = "january", shop = december.shop.copy(id = "other"), startDate = LocalDate(2027, 1, 1), endDate = null)
         assertEquals(
@@ -97,12 +112,16 @@ class OperatingNoticeFeedTest {
             feed(january, december).scheduledGroups().keys.toList(),
         )
         assertEquals(
-            listOf(LocalDate(2027, 1, 1), LocalDate(2027, 1, 2)),
+            listOf(LocalDate(2027, 1, 1)),
             feed(january, december)
                 .copy(referenceDate = LocalDate(2026, 12, 31))
                 .scheduledGroups()
                 .keys
                 .toList(),
+        )
+        assertEquals(
+            listOf(december),
+            feed(january, december).copy(referenceDate = december.startDate).representatives(false),
         )
     }
 
@@ -121,29 +140,30 @@ class OperatingNoticeFeedTest {
                     ),
             )
         val closing = notice("closing").copy(startDate = LocalDate(2026, 10, 21), endDate = LocalDate(2026, 10, 21))
-        val feed = feed(calendar, closing)
-        assertEquals(listOf(calendar), feed.representatives(false))
-        assertEquals(listOf(LocalDate(2026, 10, 21), LocalDate(2026, 10, 23)), feed.scheduledGroups().keys.toList())
+        val feed = feed(calendar, closing).copy(referenceDate = LocalDate(2026, 9, 30))
+        assertEquals(emptyList(), feed.representatives(false))
+        assertEquals(listOf(date, LocalDate(2026, 10, 21), LocalDate(2026, 10, 23)), feed.scheduledGroups().keys.toList())
         assertEquals(listOf(calendar), feed.scheduledGroups().getValue(LocalDate(2026, 10, 21)))
         assertEquals(listOf(calendar, closing), feed.noticesForShopOn("shop", LocalDate(2026, 10, 21)))
         assertEquals(1, feed.representatives(true).size)
+
+        val ongoing = feed.copy(referenceDate = date)
+        assertEquals(listOf(calendar), ongoing.representatives(false))
+        assertEquals(mapOf(LocalDate(2026, 10, 21) to listOf(closing)), ongoing.scheduledGroups())
+        assertEquals(listOf(closing), ongoing.scheduledNoticesForShop("shop"))
     }
 
     @Test
-    fun `진행 중인 기간 휴무는 미래 날짜에만 표시하고 겹치는 미래 마감 공지보다 우선한다`() {
+    fun `진행 중인 휴무는 예정 대표와 상세에서 제외하고 별도의 미래 공지만 표시한다`() {
         val closure = notice("period", OperatingNoticeType.TEMPORARY_CLOSURE).copy(endDate = LocalDate(2026, 10, 23))
         val future = notice("early").copy(startDate = LocalDate(2026, 10, 19), endDate = LocalDate(2026, 10, 19))
         val unrelated = closure.copy(id = "unrelated", shop = closure.shop.copy(id = "other"))
         val feed = feed(closure, future, unrelated)
         val groups = feed.scheduledGroups()
-        assertEquals(
-            listOf(LocalDate(2026, 10, 19), LocalDate(2026, 10, 20), LocalDate(2026, 10, 21), LocalDate(2026, 10, 22), LocalDate(2026, 10, 23)),
-            groups.keys.toList(),
-        )
-        for (notices in groups.values) {
-            assertEquals(setOf(closure, unrelated), notices.toSet())
-        }
-        assertEquals(2, feed.representatives(true).size)
+        assertEquals(mapOf(LocalDate(2026, 10, 19) to listOf(future)), groups)
+        assertEquals(setOf(closure, unrelated), feed.representatives(false).toSet())
+        assertEquals(listOf(future), feed.representatives(true))
+        assertEquals(listOf(future), feed.scheduledNoticesForShop("shop"))
         assertEquals(listOf(closure, future), feed.noticesForShopOn("shop", LocalDate(2026, 10, 19)))
     }
 

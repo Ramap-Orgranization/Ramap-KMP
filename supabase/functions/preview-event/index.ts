@@ -1,3 +1,4 @@
+import { mediaStorage } from "../_shared/media-storage.ts";
 import { dailySchedulesSchema, validCalendarDate, validClosureSchedules, type DailySchedule } from "../_shared/operating-notice-schedule.ts";
 import { isAdministrator } from "../_shared/admin-auth.ts";
 import { createServiceClient } from "../_shared/event-notifications.ts";
@@ -253,7 +254,7 @@ async function analyze(
 
 async function createEvidenceUrl(supabase: ReturnType<typeof createServiceClient>, path: string | null) {
   if (!path || !/^[\w-]+\.(?:jpe?g|png)$/i.test(path)) return null;
-  const { data, error } = await supabase.storage.from(EVIDENCE_BUCKET).createSignedUrl(path, 300);
+  const { data, error } = await mediaStorage(supabase).from(EVIDENCE_BUCKET).createSignedUrl(path, 300);
   if (error) throw error;
   return data.signedUrl;
 }
