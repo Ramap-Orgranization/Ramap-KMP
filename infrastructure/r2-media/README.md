@@ -8,7 +8,9 @@ R2 연결 전 기본 동작은 Supabase Storage다. 파일 추가나 로컬 검�
 
 도메인을 구매하지 않는다. Worker 배포 후 Cloudflare가 실제로 발급한 `https://ramap-images.<계정 하위 이름>.workers.dev`를 사용한다. `ramap.com`이나 DNS zone, Cache Purge 토큰이 필요 없다. `r2.dev` 개발 주소는 사용하지 않으며, R2 버킷 두 개 모두 직접 공개 접근을 끈다. 공개 사진 Worker에 공개 사진용 버킷 하나만 연결한다.
 
-Worker는 사진 바이트를 그대로 스트리밍하고 ETag/304와 단말 캐시를 제공한다. 공유·edge 캐시는 사용하지 않아서 새 네트워크 요청마다 R2 존재 여부를 확인한다. R2 삭제 후 별도 CDN purge 없이 404가 되며, 이미 단말에 저장된 사진은 원격으로 회수할 수 없다. 이 방식의 지연을 custom-domain CDN cache hit와 동일하다고 간주하지 않는다.
+Worker는 사진 바이트를 그대로 제공하고 ETag/304를 지원한다. `public_cache_enabled=true`이면 Workers Cache가 공개 사진을 1시간 저장하며, 단말에는 기존 24시간 캐시를 허용한다. 만료된 edge 응답은 재검증하고 원본 장애 시 오래된 사진을 대신 제공하지 않는다. 파일별 태그를 붙이고, 공개 R2 파일 삭제 후 같은 Worker의 인증된 purge 경로에서 전역 캐시를 삭제한다. purge 수락과 공개 주소의 404를 모두 확인해야 정리를 완료한다. 이미 단말에 저장된 공개 사진은 원격으로 회수할 수 없다. [Workers Cache](https://developers.cloudflare.com/workers/cache/), [캐시 삭제](https://developers.cloudflare.com/workers/cache/purge/)
+
+앱은 HTTP 캐시 지시를 따르며, 권한이 필요한 프로필·리뷰·증거 사진은 디스크 캐시를 사용하지 않는다. 메모리 캐시도 기존 서명 URL 발급 경로에서 현재 접근 가능 여부를 확인한 뒤 사용한다. 서명 토큰이 달라져도 같은 파일·계정·접근 범위에서는 재사용하며, 계정과 열람 범위가 바뀌면 화면과 메모리 캐시를 갱신한다. 정책 적용 후 첫 이미지 요청에서 과거 디스크 캐시를 한 번 비운다.
 
 도메인 비용과 별개로 Workers·R2·Cloud Run 사용량은 발생한다. Workers Free는 계정 내 합산 하루 10만 요청과 요청당 CPU 10ms 한도이며 초과 시 오류가 발생할 수 있다. 자동으로 유료 Workers 플랜에 가입하지 않는다. R2 Standard의 무료 사용량을 초과하면 해당 계정의 R2 구독 조건에 따라 과금될 수 있다. `workers.dev`는 개인·취미 프로젝트 용도이며 Cloudflare는 중요 운영 서비스에 자체 도메인 사용을 권장한다. [Workers 주소](https://developers.cloudflare.com/workers/configuration/routing/workers-dev/), [Workers 요금](https://developers.cloudflare.com/workers/platform/pricing/), [R2 요금](https://developers.cloudflare.com/r2/pricing/)
 
@@ -32,11 +34,20 @@ python3 infrastructure/r2-media/deploy_worker.py --config /absolute/local/r2.jso
 python3 infrastructure/r2-media/deploy_worker.py --config /absolute/local/r2.json --apply --output /absolute/local/r2-connected.json
 ```
 
-마지막 명령은 로컬 Wrangler 인증 또는 환경 API 토큰을 사용해 배포한다. 실제로 반환된 `workers.dev` URL만 출력 설정에 기록한다. 가상의 계정 이름을 운영 URL로 채우지 않는다. 전용 Worker 이름은 `public_worker_name`으로 바꿀 수 있다. Worker 바인딩은 `PUBLIC_IMAGES` 한 개이며 비공개 버킷·Supabase 키·임의 URL 프록시·업로드·삭제·목록 기능은 제공하지 않는다. 기본 Wrangler 설정은 로컬 개발용이며, 운영 배포에는 계정 연결 설정을 사용한다.
+마지막 명령은 로컬 Wrangler 인증 또는 환경 API 토큰을 사용해 배포한다. 실제로 반환된 `workers.dev` URL만 출력 설정에 기록한다. 가상의 계정 이름을 운영 URL로 채우지 않는다. 전용 Worker 이름은 `public_worker_name`으로 바꿀 수 있다. R2 바인딩은 공개 버킷용 `PUBLIC_IMAGES` 한 개이며 비공개 버킷·Supabase 키·임의 URL 프록시·파일 업로드·삭제·목록 기능은 제공하지 않는다. 캐시 삭제용 HMAC secret은 별도로 연결한다. 기본 Wrangler 설정은 로컬 개발용이며, 운영 배포에는 계정 연결 설정을 사용한다.
+
+공개 응답 캐시는 기본 비활성으로 배포한다. Workers Cache 런타임은 purge API를 사용할 수 있도록 켜 두고, `public_cache_enabled`로 응답의 캐시 허용 헤더만 전환한다. 다음 순서로 삭제 경로를 먼저 준비한다.
+
+1. `configure_cache.py --config /absolute/local/r2-connected.json --apply`를 실행한다. GCP의 `ramap-worker-cache-purge`와 Worker의 `PUBLIC_CACHE_PURGE_SECRET`에 같은 값을 연결한다. 기존 secret은 재사용하며 값은 파일·인수·출력에 넣지 않는다.
+2. `public_cache_enabled=false`로 새 Worker를 배포하고 API와 정리 작업을 재배포한다. API는 캐시 활성 여부와 무관하게 `R2_WORKER_PURGE_SECRET`을 사용하므로 이전 공개 캐시도 정리할 수 있다.
+3. 전용 검증 파일로 인증된 purge가 성공하는지 확인한 뒤 연결 JSON의 `public_cache_enabled`를 `true`로 바꾸어 Worker를 다시 배포한다. `cache.cross_version_cache=false`이므로 배포 버전 사이에 캐시를 공유하지 않는다.
+4. 같은 공개 주소를 반복 GET하여 `CF-Cache-Status: HIT`를 확인하고, 검증 파일 삭제 후 공개 주소가 404인지 확인한다. 비공개 경로와 오류 응답은 캐시하지 않는다.
+
+`configure_cache.py` 경로는 `infrastructure/r2-media/` 아래다. 재설정해도 secret을 임의로 회전하지 않는다. 장애 시 `public_cache_enabled=false`로 Worker를 다시 배포하면 edge 캐시를 중단할 수 있다. HMAC secret과 API의 삭제 확인 경로는 유지한다.
 
 ## Cloud Run 배포와 호환성
 
-로컬 환경에 `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`를 설정한 뒤 GCP Secret Manager에 저장한다. 값은 인수·출력에 포함하지 않는다. Workers 방식에는 DNS zone이나 purge secret이 필요 없다.
+로컬 환경에 `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`를 설정한 뒤 GCP Secret Manager에 저장한다. 값은 인수·출력에 포함하지 않는다. Workers 방식에는 DNS zone이나 zone Cache Purge API 토큰이 필요 없으며, 위의 전용 HMAC secret으로 캐시 삭제 요청을 인증한다.
 
 ```bash
 python3 infrastructure/r2-media/provision.py --config /absolute/local/r2-connected.json --store-secrets
@@ -82,7 +93,7 @@ R2_SMOKE=staging node services/media-api/r2-smoke.mjs
 
 ## 삭제와 복구
 
-사진 삭제는 논리 접근을 먼저 막고 모든 provider의 삭제를 재시도한다. pending PUT 유효 기간과 진행 중 finalize가 끝날 때까지 물리 삭제를 유예하며, 이 상태를 탈퇴 완료로 응답하지 않는다. 정리 작업은 30분마다 실행한다. 공개 Worker는 edge 캐시 없이 R2를 읽으므로 purge 토큰을 요구하지 않는다.
+사진 삭제는 논리 접근을 먼저 막고 모든 provider의 삭제를 재시도한다. pending PUT 유효 기간과 진행 중 finalize가 끝날 때까지 물리 삭제를 유예하며, 이 상태를 탈퇴 완료로 응답하지 않는다. 정리 작업은 30분마다 실행한다. 공개 사진은 R2 삭제와 전역 캐시 purge 및 404 확인에 모두 성공해야 완료하며, 실패한 작업은 재시도한다. R2 파일이 이미 없더라도 캐시 정리를 생략하지 않는다. 여러 공개 사진의 태그를 한 번에 삭제해 Workers Cache의 purge 요청 한도를 아낀다.
 
 `20261103062331_preserve_retired_media_cleanup.sql`은 이전 GCS의 사용 중단(`retired_at`)과 물리 삭제(`deleted`)를 분리하고 계정별 cleanup RPC를 추가한다. 기존 migration이 일괄 삭제 처리한 GCS 이력은 실제 파일 부재를 다시 확인하도록 보정한다. 활성 계정의 원본은 보존하고, 삭제·탈퇴 대상 이력만 정리 큐에 넣는다. 읽기 provider를 GCS로 복구하지 않는다.
 

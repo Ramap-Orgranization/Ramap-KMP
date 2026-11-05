@@ -1,6 +1,7 @@
 import importlib.util
 import json
 from pathlib import Path
+import subprocess
 import unittest
 from unittest.mock import patch
 
@@ -16,6 +17,7 @@ provision = load('r2_provision_test', 'provision.py')
 import sys
 sys.path.insert(0, str(DIRECTORY))
 deploy_worker = load('r2_worker_deploy_test', 'deploy_worker.py')
+configure_cache = load('r2_cache_setup_test', 'configure_cache.py')
 migrate = load('r2_migrate_test', 'migrate.py')
 
 class R2ToolsTest(unittest.TestCase):
@@ -51,7 +53,12 @@ class R2ToolsTest(unittest.TestCase):
         self.assertEqual(settings['r2_buckets'], [{'binding': 'PUBLIC_IMAGES', 'bucket_name': self.config['r2_public_bucket']}])
         self.assertTrue(settings['workers_dev'])
         self.assertNotIn('routes', settings)
-        self.assertNotIn('vars', settings)
+        self.assertEqual(settings['vars'], {'EDGE_CACHE_ENABLED': 'false'})
+        self.assertTrue(settings['cache']['enabled'])
+        enabled = deploy_worker.worker_configuration({**self.config, 'public_cache_enabled': True})
+        self.assertTrue(enabled['cache']['enabled'])
+        self.assertFalse(enabled['cache']['cross_version_cache'])
+        self.assertEqual(enabled['vars'], {'EDGE_CACHE_ENABLED': 'true'})
         self.assertNotIn(self.config['r2_private_bucket'], json.dumps(settings))
 
     def test_private_bucket_with_public_domain_is_rejected(self):
@@ -63,6 +70,36 @@ class R2ToolsTest(unittest.TestCase):
             return {}
         with patch.object(provision, 'cloudflare', api), self.assertRaises(ValueError):
             provision.provision(self.config)
+
+    def test_cache_setup_reuses_existing_secret_without_putting_it_in_arguments_or_files(self):
+        secret = 'existing-secret-fixture-' * 3
+        calls = []
+        def command(args, **options):
+            calls.append((args, options.get('input')))
+            self.assertNotIn(secret, ' '.join(args))
+            if 'secret' in args and 'put' in args:
+                self.assertNotIn(secret, Path(args[args.index('--config') + 1]).read_text())
+            output = secret if args[1:4] == ['secrets', 'versions', 'access'] else ''
+            return subprocess.CompletedProcess(args, 0, stdout=output, stderr='')
+        with patch.object(configure_cache.subprocess, 'run', command), patch.object(Path, 'exists', return_value=True):
+            result = configure_cache.configure(self.config)
+        self.assertTrue(result['reused'])
+        self.assertFalse(any(args[1:4] == ['secrets', 'versions', 'add'] for args, _ in calls))
+        self.assertEqual(calls[-1][1], secret)
+        self.assertNotIn(secret, json.dumps(result))
+
+    def test_cache_setup_generates_one_value_for_both_providers(self):
+        secret = 'a' * 64
+        inputs = []
+        def command(args, **options):
+            if options.get('input') is not None:
+                inputs.append(options['input'])
+            code = 1 if args[1:3] == ['secrets', 'describe'] else 0
+            return subprocess.CompletedProcess(args, code, stdout='', stderr='')
+        with patch.object(configure_cache.subprocess, 'run', command), patch.object(Path, 'exists', return_value=True), patch.object(configure_cache.secrets, 'token_hex', return_value=secret):
+            result = configure_cache.configure(self.config)
+        self.assertFalse(result['reused'])
+        self.assertEqual(inputs, [secret, secret])
 
     def test_provision_requests_standard_apac_and_disables_development_domain(self):
         calls = []

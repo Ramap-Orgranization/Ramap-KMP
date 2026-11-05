@@ -96,6 +96,8 @@ def main():
             bindings_map['CLOUDFLARE_CACHE_PURGE_TOKEN'] = 'ramap-r2-cache-purge:latest'
         else:
             bindings_map.pop('CLOUDFLARE_CACHE_PURGE_TOKEN', None)
+    if variables.get('R2_PUBLIC_DELIVERY') == 'worker':
+        bindings_map['R2_WORKER_PURGE_SECRET'] = 'ramap-worker-cache-purge:latest'
     bindings = ','.join(name + '=' + value for name, value in bindings_map.items())
     with tempfile.NamedTemporaryFile(mode='w', suffix='.json', prefix='ramap-media-env-') as temporary:
         json.dump(variables, temporary)

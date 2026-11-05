@@ -1,3 +1,4 @@
+import { purgeWorkerImages } from './public-cache.mjs';
 import { S3Client, PutObjectCommand, GetObjectCommand, HeadObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { digest, MediaError, PUBLIC_BUCKETS, validateBytes, requireWriteWindow } from './policy.mjs';
@@ -90,20 +91,20 @@ export function createR2Gateway(env, suppliedClient, presign = getSignedUrl) {
       ResponseCacheControl: 'private,no-store' }), { expiresIn: 300 });
     return { url, expires_at: new Date(Date.now() + 300_000).toISOString() };
   }
-  async function purge(path) {
-    // The public Worker reads R2 on every network request and disables shared caches.
-    if (publicDelivery === 'worker') return;
+  async function purge(paths) {
+    if (!paths.length) return;
+    if (publicDelivery === 'worker') return purgeWorkerImages(env, paths);
     if (!env.R2_PUBLIC_BASE_URL) return;
     if (!env.CLOUDFLARE_ZONE_ID || !env.CLOUDFLARE_CACHE_PURGE_TOKEN) throw new MediaError(503, 'media_cache_cleanup_pending');
     const base = new URL(env.R2_PUBLIC_BASE_URL);
     if (base.protocol !== 'https:' || base.pathname !== '/' || base.search || base.hash || base.username || base.password) throw new MediaError(503, 'media_location_unavailable');
     const response = await fetch(`https://api.cloudflare.com/client/v4/zones/${env.CLOUDFLARE_ZONE_ID}/purge_cache`, {
       method: 'POST', headers: { Authorization: `Bearer ${env.CLOUDFLARE_CACHE_PURGE_TOKEN}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ files: [`${base.origin}/${path.split('/').map(encodeURIComponent).join('/')}`] }), signal: AbortSignal.timeout(30_000),
+      body: JSON.stringify({ files: paths.map(path => `${base.origin}/${path.split('/').map(encodeURIComponent).join('/')}`) }), signal: AbortSignal.timeout(30_000),
     });
     if (!response.ok || !(await response.json()).success) throw new MediaError(503, 'media_cache_cleanup_pending');
   }
-  async function remove(job) {
+  async function removeObject(job) {
     checkBucket(job.bucket);
     try {
       // Keys are immutable and never reused. Cleanup waits for upload/finalize fences in SQL.
@@ -111,7 +112,24 @@ export function createR2Gateway(env, suppliedClient, presign = getSignedUrl) {
       if (job.etag && metadata.ETag !== job.etag) throw new MediaError(409, 'media_identity_conflict');
       await client.send(new DeleteObjectCommand({ Bucket: job.bucket, Key: job.path }), timeout());
     } catch (error) { if (!missing(error)) throw error; }
-    if (job.bucket === env.R2_PUBLIC_BUCKET) await purge(job.path);
   }
-  return { signUpload, finalize, signRead, remove, read, stage, store, finalBucket, pendingBucket: env.R2_PRIVATE_BUCKET };
+  async function remove(job) {
+    await removeObject(job);
+    if (job.bucket === env.R2_PUBLIC_BUCKET) await purge([job.path]);
+  }
+  async function removeBatch(jobs) {
+    const results = new Map();
+    const publicJobs = [];
+    for (const job of jobs) {
+      try {
+        await removeObject(job);
+        results.set(job.id, true);
+        if (job.bucket === env.R2_PUBLIC_BUCKET) publicJobs.push(job);
+      } catch { results.set(job.id, false); }
+    }
+    try { await purge(publicJobs.map(job => job.path)); }
+    catch { publicJobs.forEach(job => results.set(job.id, false)); }
+    return results;
+  }
+  return { signUpload, finalize, signRead, remove, removeBatch, read, stage, store, finalBucket, pendingBucket: env.R2_PRIVATE_BUCKET };
 }

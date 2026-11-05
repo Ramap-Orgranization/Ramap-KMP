@@ -20,6 +20,9 @@ def worker_configuration(config):
     return {'name': config.get('public_worker_name', 'ramap-images'), 'account_id': config['r2_account_id'],
             'main': str(WORKER / 'src.mjs'), 'compatibility_date': '2026-11-01', 'workers_dev': True,
             'preview_urls': False, 'observability': {'enabled': True},
+            # Keep the purge API available even when response caching is disabled by headers.
+            'cache': {'enabled': True, 'cross_version_cache': False},
+            'vars': {'EDGE_CACHE_ENABLED': str(config.get('public_cache_enabled', False)).lower()},
             'r2_buckets': [{'binding': 'PUBLIC_IMAGES', 'bucket_name': config['r2_public_bucket']}]}
 
 

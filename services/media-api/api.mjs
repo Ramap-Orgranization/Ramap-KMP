@@ -26,10 +26,14 @@ export function createMediaApi({ service, authenticate, internalKey, r2, legacyC
       ? await rpc(service, 'claim_media_cleanup', { p_id: mediaId, p_limit: 100 })
       : await rpc(service, 'claim_account_media_cleanup', { p_user_id: userId, p_limit: 100 });
     let failed = false;
+    const directR2Jobs = jobs.filter(job => job.provider === 'r2' && !job.path.startsWith('pending/'));
+    const r2Results = r2?.removeBatch && directR2Jobs.length ? await r2.removeBatch(directR2Jobs) : null;
     for (const job of jobs) {
       let success = false;
       try {
-        if (job.provider === 'supabase') {
+        if (r2Results?.has(job.id)) {
+          if (!r2Results.get(job.id)) throw new MediaError(503, 'media_cache_cleanup_pending');
+        } else if (job.provider === 'supabase') {
           const { error } = await service.storage.from(job.bucket).remove([job.path]);
           if (error) throw error;
         } else if (job.provider === 'gcs') {

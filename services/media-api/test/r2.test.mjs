@@ -73,11 +73,11 @@ test('공개 CDN purge가 설정되지 않으면 삭제 완료를 보고하지 �
   await assert.rejects(gateway.remove({ bucket: 'public', path: 'menu-images/photo.jpg' }), /media_cache_cleanup_pending/);
 });
 
-test('도메인 없는 Worker 제공 방식은 공개 사진 삭제에 zone purge 토큰을 요구하지 않는다', async () => {
+test('Worker 캐시 삭제 인증이 없으면 사진 정리 완료를 보고하지 않는다', async () => {
   const calls = [];
   const client = { send: async (command) => { calls.push(command.constructor.name); return { ETag: 'opaque' }; } };
   const gateway = createR2Gateway({ ...env, R2_PUBLIC_DELIVERY: 'worker', R2_PUBLIC_BASE_URL: 'https://ramap-images.example.workers.dev' }, client);
-  await gateway.remove({ bucket: 'public', path: 'menu-images/photo.jpg' });
+  await assert.rejects(gateway.remove({ bucket: 'public', path: 'menu-images/photo.jpg' }), /media_cache_cleanup_pending/);
   assert.deepEqual(calls, ['HeadObjectCommand', 'DeleteObjectCommand']);
 });
 

@@ -21,6 +21,8 @@ def validate(config):
     if not isinstance(retired_buckets, list) or any(not isinstance(bucket, str) or not re.fullmatch(r'[a-z0-9][a-z0-9._-]{1,220}[a-z0-9]', bucket) for bucket in retired_buckets):
         raise ValueError('Invalid retired media buckets')
     delivery = config.get('public_delivery', 'worker')
+    if 'public_cache_enabled' in config and not isinstance(config['public_cache_enabled'], bool):
+        raise ValueError('public_cache_enabled must be a boolean')
     if delivery not in ('worker', 'custom_domain'):
         raise ValueError('Invalid public delivery mode')
     worker = config.get('public_worker_name', 'ramap-images')

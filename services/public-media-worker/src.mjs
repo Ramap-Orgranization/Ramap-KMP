@@ -1,3 +1,5 @@
+import { cacheTag, purgeCache, PURGE_PATH } from './cache.mjs';
+
 const PUBLIC_BUCKETS = new Set(['shop-profile-images', 'menu-images', 'event-images']);
 const CLIENT_CACHE = 'private,max-age=86400,immutable';
 
@@ -23,14 +25,15 @@ function notModified(request, object) {
 }
 
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     const method = request.method;
+    const url = new URL(request.url);
+    if (url.pathname === PURGE_PATH && !url.search) return purgeCache(request, env, ctx, objectKey);
     if (!['GET', 'HEAD'].includes(method)) {
       const response = responseWithoutCache(405, method);
       response.headers.set('Allow', 'GET, HEAD');
       return response;
     }
-    const url = new URL(request.url);
     if (url.pathname === '/health' && !url.search) return new Response(method === 'HEAD' ? null : 'ok', { headers: { 'Cache-Control': 'no-store' } });
     const key = objectKey(url);
     if (!key) return responseWithoutCache(404, method);
@@ -46,11 +49,10 @@ export default {
       headers.set('Content-Length', String(object.size));
       headers.set('X-Content-Type-Options', 'nosniff');
       headers.set('Content-Security-Policy', "default-src 'none'; sandbox");
-      // Cache only on the device. workers.dev has no owned zone for global purge.
-      // Every network request reads R2, so a deleted object is never served from an edge cache.
       headers.set('Cache-Control', CLIENT_CACHE);
       headers.set('CDN-Cache-Control', 'no-store');
-      headers.set('Cloudflare-CDN-Cache-Control', 'no-store');
+      headers.set('Cloudflare-CDN-Cache-Control', env.EDGE_CACHE_ENABLED === 'true' && env.PUBLIC_CACHE_PURGE_SECRET ? 'public,max-age=3600,must-revalidate' : 'no-store');
+      headers.set('Cache-Tag', await cacheTag(key));
       if (notModified(request, object)) {
         await object.body?.cancel();
         headers.delete('Content-Length');
