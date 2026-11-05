@@ -18,9 +18,22 @@ internal class ExpiredImageUrlParser(
 ) {
     private val supabaseBase = Url(supabaseSignedBaseUrl)
 
+    fun isProtected(value: String): Boolean {
+        val url = runCatching { Url(value) }.getOrNull() ?: return false
+        return (url.host == supabaseBase.host && url.encodedPath.startsWith("${supabaseBase.encodedPath.trimEnd('/')}/")) ||
+            (R2_ACCOUNT_PATTERN.matches(r2AccountId) && url.host == "$r2AccountId.r2.cloudflarestorage.com" && url.encodedPath.startsWith("/$r2PrivateBucket/"))
+    }
+
+    fun parse(value: String): SignedImageRequest? = parseBefore(value, null)
+
     fun parseExpired(
         value: String,
         now: Instant,
+    ): SignedImageRequest? = parseBefore(value, now)
+
+    private fun parseBefore(
+        value: String,
+        now: Instant?,
     ): SignedImageRequest? {
         val url = runCatching { Url(value) }.getOrNull() ?: return null
         if (url.protocol != URLProtocol.HTTPS || !url.user.isNullOrEmpty() || !url.password.isNullOrEmpty() || url.fragment.isNotEmpty()) return null
@@ -39,14 +52,13 @@ internal class ExpiredImageUrlParser(
         url: Url,
         prefix: String,
         expiresAt: Instant?,
-        now: Instant,
+        now: Instant?,
     ): SignedImageRequest? {
-        if (expiresAt == null || expiresAt > now || !url.encodedPath.startsWith(prefix)) return null
+        if (expiresAt == null || (now != null && expiresAt > now) || !url.encodedPath.startsWith(prefix)) return null
         val relativePath = url.encodedPath.removePrefix(prefix)
         val bucket = relativePath.substringBefore('/')
         val path = relativePath.substringAfter('/', "")
-        if (bucket !in BUCKETS || !IMAGE_PATH.matches(path)) return null
-        return SignedImageRequest(bucket, path)
+        return SignedImageRequest(bucket, path).takeIf { it.isSupported }
     }
 
     private fun supabaseExpiry(url: Url): Instant? =
@@ -103,7 +115,5 @@ internal class ExpiredImageUrlParser(
         const val MAX_SIGNED_LIFETIME_SECONDS = 360L
         val R2_ACCOUNT_PATTERN = Regex("[a-f0-9]{32}")
         val AWS_DATE_PATTERN = Regex("[0-9]{8}T[0-9]{6}Z")
-        val BUCKETS = setOf("profile-avatars", "shop-review-images")
-        val IMAGE_PATH = Regex("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\\.(jpg|png)", RegexOption.IGNORE_CASE)
     }
 }

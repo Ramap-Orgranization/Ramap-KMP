@@ -2,12 +2,39 @@ package com.peto.ramap.data.store
 
 import com.peto.ramap.domain.model.review.ReviewLike
 import com.peto.ramap.domain.model.review.change.ReviewChange
+import com.peto.ramap.domain.model.review.change.ReviewOwnerCounts
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class DefaultReviewChangeStoreTest {
+    @Test
+    fun `좋아요는 사진을 유지하고 공개 범위 변경과 리뷰 삭제는 사진 재사용 범위를 갱신한다`() {
+        val sessions = MutableStateFlow<String?>("viewer")
+        val store = DefaultReviewChangeStore(sessions, { sessions.value })
+        val epoch = store.synchronizeSession()
+        store.publish(ReviewChange.Liked("review", ReviewLike(1, true)), epoch)
+        assertEquals(0L, store.journal.value.imageRevision)
+        store.publish(ReviewChange.AccessChanged("owner"), epoch)
+        val changed = store.journal.value.imageRevision
+        assertTrue(changed > 0)
+        store.publish(ReviewChange.Liked("review", ReviewLike(2, true)), epoch)
+        assertEquals(changed, store.journal.value.imageRevision)
+        store.publish(
+            ReviewChange.Written(
+                reviewId = "review",
+                userId = "owner",
+                shopId = "shop",
+                before = null,
+                after = null,
+                counts = ReviewOwnerCounts(0, 0, 0, 0, true),
+            ),
+            epoch,
+        )
+        assertTrue(store.journal.value.imageRevision > changed)
+    }
+
     @Test
     fun `방출이 합쳐져도 변경 순서를 유지하고 보관 범위 초과를 알린다`() {
         val sessions = MutableStateFlow<String?>("owner")

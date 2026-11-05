@@ -15,7 +15,10 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.repeatOnLifecycle
 import coil3.ImageLoader
+import coil3.annotation.ExperimentalCoilApi
 import coil3.compose.setSingletonImageLoaderFactory
+import coil3.network.cachecontrol.CacheControlCacheStrategy
+import coil3.network.ktor3.KtorNetworkFetcherFactory
 import com.peto.ramap.core.result.RamapError
 import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.designsystem.component.LoadErrorContent
@@ -25,11 +28,15 @@ import com.peto.ramap.designsystem.toast.ToastManager
 import com.peto.ramap.domain.model.auth.LoginSessionState
 import com.peto.ramap.domain.repository.AppNoticeRepository
 import com.peto.ramap.domain.repository.AppUpdateRepository
+import com.peto.ramap.domain.repository.ImageAccessRepository
 import com.peto.ramap.domain.repository.ImageUrlRefresher
 import com.peto.ramap.domain.repository.LoginRepository
 import com.peto.ramap.domain.store.PersonalizationBootstrapState
 import com.peto.ramap.domain.store.PersonalizationStore
+import com.peto.ramap.image.AuthorizedImageInterceptor
 import com.peto.ramap.image.ExpiredImageUrlInterceptor
+import com.peto.ramap.image.ImageAccessProvider
+import com.peto.ramap.image.ImageCacheMigrationInterceptor
 import com.peto.ramap.platform.AppVersionProvider
 import com.peto.ramap.platform.network.NetworkConnectivityObserver
 import com.peto.ramap.platform.network.NetworkConnectivityStatus
@@ -51,6 +58,7 @@ import ramap.shared.generated.resources.laduck_error_confused
 import ramap.shared.generated.resources.personalization_load_failure_message
 import ramap.shared.generated.resources.personalization_load_failure_title
 
+@OptIn(ExperimentalCoilApi::class)
 @Composable
 fun App(
     appUpdateRepository: AppUpdateRepository = koinInject(),
@@ -62,31 +70,41 @@ fun App(
     toastManager: ToastManager = koinInject(),
     loginGuideController: LoginGuideController = koinInject(),
     imageUrlRefresher: ImageUrlRefresher = koinInject(),
+    imageAccess: ImageAccessRepository = koinInject(),
     onExitRequested: (() -> Unit)? = null,
 ) {
     setSingletonImageLoaderFactory { context ->
-        ImageLoader
-            .Builder(context)
-            .components { add(ExpiredImageUrlInterceptor(imageUrlRefresher)) }
-            .build()
+        lateinit var loader: ImageLoader
+        loader =
+            ImageLoader
+                .Builder(context)
+                .components {
+                    add(ImageCacheMigrationInterceptor { loader.diskCache })
+                    add(AuthorizedImageInterceptor(imageAccess) { loader.memoryCache })
+                    add(ExpiredImageUrlInterceptor(imageUrlRefresher))
+                    add(KtorNetworkFetcherFactory(cacheStrategy = { CacheControlCacheStrategy() }))
+                }.build()
+        loader
     }
-    RamapTheme {
-        AppUpdateGate(
-            appUpdateRepository = appUpdateRepository,
-            appVersionProvider = appVersionProvider,
-        ) {
-            AppNoticeGate(
-                appNoticeRepository = appNoticeRepository,
-                appNoticeStorage = appNoticeStorage,
-                platform = appVersionProvider.platform,
+    ImageAccessProvider(imageAccess) {
+        RamapTheme {
+            AppUpdateGate(
+                appUpdateRepository = appUpdateRepository,
+                appVersionProvider = appVersionProvider,
             ) {
-                AppContent(
-                    loginRepository = loginRepository,
-                    personalizationStore = personalizationStore,
-                    toastManager = toastManager,
-                    loginGuideController = loginGuideController,
-                    onExitRequested = onExitRequested,
-                )
+                AppNoticeGate(
+                    appNoticeRepository = appNoticeRepository,
+                    appNoticeStorage = appNoticeStorage,
+                    platform = appVersionProvider.platform,
+                ) {
+                    AppContent(
+                        loginRepository = loginRepository,
+                        personalizationStore = personalizationStore,
+                        toastManager = toastManager,
+                        loginGuideController = loginGuideController,
+                        onExitRequested = onExitRequested,
+                    )
+                }
             }
         }
     }

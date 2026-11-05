@@ -52,7 +52,7 @@ internal class RemoteImageUrlDataSource(
         return unique.associateWith { resolved[it] }
     }
 
-    private fun isSupported(image: SignedImageRequest): Boolean = image.bucket in BUCKETS && IMAGE_PATH.matches(image.path)
+    private fun isSupported(image: SignedImageRequest): Boolean = image.isSupported
 
     private suspend fun fetchBatch(images: List<SignedImageRequest>): Map<SignedImageRequest, SignedImageUrl?> =
         permits.withPermit {
@@ -107,7 +107,5 @@ internal class RemoteImageUrlDataSource(
         const val SIGNED_URL_TOKEN_PARAMETER = "token"
         val SIGNED_URL_LIFETIME = 5.minutes
         val REFRESH_MARGIN = 1.minutes
-        val BUCKETS = setOf("profile-avatars", "shop-review-images")
-        val IMAGE_PATH = Regex("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\\.(jpg|png)", RegexOption.IGNORE_CASE)
     }
 }

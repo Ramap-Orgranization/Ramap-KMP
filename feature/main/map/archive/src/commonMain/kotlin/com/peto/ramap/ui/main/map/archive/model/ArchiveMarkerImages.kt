@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImagePainter
 import coil3.compose.LocalPlatformContext
 import coil3.compose.rememberAsyncImagePainter
+import com.peto.ramap.designsystem.image.LocalImageAccessScope
 import com.peto.ramap.domain.model.review.MyReviewPhoto
 import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.preview.RamenShopsPreviewParameterProvider
@@ -46,7 +47,7 @@ internal fun rememberArchiveMarkerImages(
     val images = mutableMapOf<String, MapMarkerImage>()
     for (shopId in shops.keys) {
         val marker =
-            key(shopId) {
+            key(shopId, LocalImageAccessScope.current) {
                 rememberArchiveMarkerImage(
                     shopId = shopId,
                     photo = photos[shopId],

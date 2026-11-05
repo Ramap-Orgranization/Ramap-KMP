@@ -1,6 +1,7 @@
 package com.peto.ramap.ui.main.map.archive.model
 
 import coil3.PlatformContext
+import coil3.request.CachePolicy
 import coil3.request.ImageRequest
 import com.peto.ramap.domain.model.review.MyReviewPhoto
 
@@ -14,8 +15,7 @@ internal class ArchiveMarkerImageRequestFactory {
             .Builder(context)
             .data(photo?.url)
             .size(sizePx)
-            .memoryCacheKey(photo?.reference)
-            .diskCacheKey(photo?.reference)
+            .diskCachePolicy(CachePolicy.DISABLED)
             .configureMarkerBitmapDecoding()
             .build()
 }

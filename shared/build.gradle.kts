@@ -125,6 +125,7 @@ kotlin {
             implementation(libs.compose.ui.tooling.preview)
             implementation(libs.coil.compose)
             implementation(libs.coil.network.ktor3)
+            implementation(libs.coil.network.cache.control)
             implementation(libs.androidx.lifecycle.viewmodel.compose)
             implementation(libs.androidx.lifecycle.runtime.compose)
 
@@ -148,6 +149,7 @@ kotlin {
         }
         commonTest.dependencies {
             implementation(projects.core.testing)
+            implementation(libs.ktor.client.mock)
             implementation(libs.kotlin.test)
             implementation(libs.kotlinx.coroutines.test)
             implementation(libs.turbine)

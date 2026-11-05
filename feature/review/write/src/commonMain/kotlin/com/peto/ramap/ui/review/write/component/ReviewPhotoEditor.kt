@@ -19,6 +19,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -40,6 +41,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import coil3.compose.AsyncImage
+import com.peto.ramap.designsystem.image.LocalImageAccessScope
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.domain.model.review.ReviewImage
 import com.peto.ramap.theme.AppTextStyle
@@ -273,12 +275,14 @@ private fun PhotoSlot(
                     }
                 },
     ) {
-        AsyncImage(
-            model = if (image is ReviewImage) image.bytes else image,
-            contentDescription = stringResource(Res.string.review_photo_description, imageIndex + 1),
-            modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(12.dp)),
-            contentScale = ContentScale.Crop,
-        )
+        key(LocalImageAccessScope.current) {
+            AsyncImage(
+                model = if (image is ReviewImage) image.bytes else image,
+                contentDescription = stringResource(Res.string.review_photo_description, imageIndex + 1),
+                modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(12.dp)),
+                contentScale = ContentScale.Crop,
+            )
+        }
         Surface(
             modifier = Modifier.align(Alignment.TopEnd).padding(4.dp),
             shape = CircleShape,

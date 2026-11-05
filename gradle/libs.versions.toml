@@ -122,6 +122,7 @@ supabase-storage = { module = "io.github.jan-tennert.supabase:storage-kt", versi
 coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil" }
 balloon = { module = "com.github.skydoves:balloon", version.ref = "balloon" }
 coil-network-ktor3 = { module = "io.coil-kt.coil3:coil-network-ktor3", version.ref = "coil" }
+coil-network-cache-control = { module = "io.coil-kt.coil3:coil-network-cache-control", version.ref = "coil" }
 
 # Map and Location
 naver-map = { module = "com.naver.maps:map-sdk", version.ref = "naver-map" }

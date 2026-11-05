@@ -28,8 +28,13 @@ internal class ReviewImageUrlAccessPolicy(
         val owners =
             journal
                 .changesAfter(snapshot.revision)
-                .mapNotNull { (it.change as? ReviewChange.AccessChanged)?.userId }
-                .toSet()
+                .mapNotNull {
+                    when (val change = it.change) {
+                        is ReviewChange.AccessChanged -> change.userId
+                        is ReviewChange.Written -> change.userId
+                        else -> null
+                    }
+                }.toSet()
         return images.filterTo(mutableSetOf()) { image -> owners.any { image.path.startsWith("$it/") } }
     }
 }
