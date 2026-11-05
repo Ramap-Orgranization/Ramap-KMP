@@ -53,7 +53,11 @@ def main():
             """)
             run(*psql, "-f", str(migrations / "20261102232626_allow_photo_only_reviews.sql"))
             run(*psql, "-f", str(tests / "photo_only_reviews.sql"))
-            print("PASS: 본문·사진 경계, v1/v2 작성·수정, 사진 소유권·업로드 확정, 재전송, 권한")
+            print("PASS: 이전 사진 전용 리뷰 정책의 본문·사진 경계, 재전송, 권한")
+            run(*psql, "-f", str(tests / "fixtures/require_review_body.sql"))
+            run(*psql, "-f", str(migrations / "20261105231723_require_review_body.sql"))
+            run(*psql, "-f", str(tests / "require_review_body.sql"))
+            print("PASS: v1/v2 작성·수정 본문 최소 5자, 기존 사진 전용 리뷰 보존")
         except subprocess.CalledProcessError as error:
             print(error.stdout)
             print(error.stderr)

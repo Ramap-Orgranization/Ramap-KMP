@@ -31,25 +31,25 @@ import kotlin.test.assertTrue
 @OptIn(ExperimentalCoroutinesApi::class)
 class DefaultReviewRepositoryTest {
     @Test
-    fun `본문 없이 사진을 등록하고 공백 본문은 빈 문자열로 저장한다`() =
+    fun `사진이 있어도 최소 5자 본문만 등록하고 앞뒤 공백을 제거한다`() =
         runTest {
             val source = FakeMyReviewsDataSource()
             val repository = DefaultReviewRepository(source, FakeRamenShopDataSource(), testReviewChanges(), backgroundScope)
             val image = ReviewImage(byteArrayOf(0xff.toByte(), 0xd8.toByte(), 0xff.toByte()), ReviewImage.JPEG_MIME_TYPE)
 
-            assertIs<RamapResult.Success<Unit>>(repository.submitReview("shop", "  \t\n", listOf(image), true))
-            assertEquals("", source.submittedReview?.body)
+            assertIs<RamapResult.Success<Unit>>(repository.submitReview("shop", "  12345  ", listOf(image), true))
+            assertEquals("12345", source.submittedReview?.body)
 
-            assertIs<RamapResult.Error>(repository.submitReview("shop", "", emptyList(), true))
+            assertIs<RamapResult.Error>(repository.submitReview("shop", "  \t\n", listOf(image), true))
             assertIs<RamapResult.Error>(repository.submitReview("shop", "1234", listOf(image), true))
             assertIs<RamapResult.Error>(repository.submitReview("shop", "씨발 맛없어요", listOf(image), true))
-            assertIs<RamapResult.Error>(repository.submitReview("shop", "", List(4) { image }, true))
-            assertIs<RamapResult.Error>(repository.submitReview("shop", "", listOf(image.copy(bytes = byteArrayOf())), true))
-            assertEquals("", source.submittedReview?.body)
+            assertIs<RamapResult.Error>(repository.submitReview("shop", "12345", List(4) { image }, true))
+            assertIs<RamapResult.Error>(repository.submitReview("shop", "12345", listOf(image.copy(bytes = byteArrayOf())), true))
+            assertEquals("12345", source.submittedReview?.body)
         }
 
     @Test
-    fun `본문 없는 수정은 유지하거나 새로 추가하는 사진으로 검증한다`() =
+    fun `기존 사진을 유지하거나 새 사진을 추가하는 수정에도 최소 5자 본문이 필요하다`() =
         runTest {
             val source = FakeMyReviewsDataSource()
             val updatedBodies = mutableListOf<String>()
@@ -71,14 +71,14 @@ class DefaultReviewRepositoryTest {
             val repository = DefaultReviewRepository(updatingSource, FakeRamenShopDataSource(), testReviewChanges(), backgroundScope)
             val image = ReviewImage(byteArrayOf(0xff.toByte(), 0xd8.toByte(), 0xff.toByte()), ReviewImage.JPEG_MIME_TYPE)
 
-            assertIs<RamapResult.Success<Unit>>(repository.updateReview("review", "", listOf("retained"), emptyList(), true))
-            assertIs<RamapResult.Success<Unit>>(repository.updateReview("review", " \n", emptyList(), listOf(image), false))
-            assertEquals(listOf("", ""), updatedBodies)
+            assertIs<RamapResult.Success<Unit>>(repository.updateReview("review", "12345", listOf("retained"), emptyList(), true))
+            assertIs<RamapResult.Success<Unit>>(repository.updateReview("review", " 54321 ", emptyList(), listOf(image), false))
+            assertEquals(listOf("12345", "54321"), updatedBodies)
             assertEquals(listOf(listOf("retained") to emptyList(), emptyList<String>() to listOf(image)), photos)
 
-            assertIs<RamapResult.Error>(repository.updateReview("review", "", emptyList(), emptyList(), true))
+            assertIs<RamapResult.Error>(repository.updateReview("review", "", listOf("retained"), emptyList(), true))
             assertIs<RamapResult.Error>(repository.updateReview("review", "1234", listOf("retained"), emptyList(), true))
-            assertIs<RamapResult.Error>(repository.updateReview("review", "", List(3) { "retained-$it" }, listOf(image), true))
+            assertIs<RamapResult.Error>(repository.updateReview("review", "12345", List(3) { "retained-$it" }, listOf(image), true))
             assertEquals(2, updatedBodies.size)
         }
 

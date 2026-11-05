@@ -46,9 +46,7 @@ internal fun ReviewTextEditor(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             AppText(text = stringResource(Res.string.review_body_title), style = AppTextStyle.T2, color = GrayColor.C500)
-            if (state.imageCount == 0) {
-                AppText(text = stringResource(Res.string.review_body_required), style = AppTextStyle.C1, color = SystemColor.Warning)
-            }
+            AppText(text = stringResource(Res.string.review_body_required), style = AppTextStyle.C1, color = SystemColor.Warning)
         }
         Surface(
             shape = RoundedCornerShape(16.dp),
@@ -65,7 +63,7 @@ internal fun ReviewTextEditor(
                     enabled = state.canEdit,
                     placeholder = {
                         AppText(
-                            text = stringResource(Res.string.shop_review_placeholder),
+                            text = stringResource(Res.string.shop_review_placeholder, Review.BODY_LENGTH.first),
                             style = AppTextStyle.B2,
                             color = GrayColor.C400,
                         )

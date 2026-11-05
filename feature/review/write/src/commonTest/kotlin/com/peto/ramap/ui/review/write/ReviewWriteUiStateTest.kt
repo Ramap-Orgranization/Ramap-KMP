@@ -11,22 +11,24 @@ import kotlin.test.assertTrue
 
 class ReviewWriteUiStateTest {
     @Test
-    fun `신규 사진이나 기존 사진이 있으면 본문 없이 제출할 수 있다`() {
+    fun `신규 사진이나 기존 사진이 있어도 최소 5자 본문이 있어야 제출할 수 있다`() {
         val newPhoto = ReviewWriteUiState(images = listOf(ReviewImage(byteArrayOf(1), ReviewImage.JPEG_MIME_TYPE)))
         val existingPhoto = ReviewWriteUiState(existingImages = listOf(ExistingReviewPhoto("path", null)))
         for (state in listOf(newPhoto, existingPhoto)) {
-            assertTrue(state.canSubmit)
-            assertTrue(state.copy(body = "  \t\n").canSubmit)
+            assertFalse(state.canSubmit)
+            assertFalse(state.copy(body = "  \t\n").canSubmit)
             assertFalse(state.copy(body = "1234").canSubmit)
-            assertFalse(state.copy(loadState = LoadState.loading(ReviewWriteLoadKey.Submit)).canSubmit)
-            assertFalse(state.copy(showPrivateProfileConfirmation = true).canSubmit)
+            val ready = state.copy(body = "12345")
+            assertTrue(ready.canSubmit)
+            assertFalse(ready.copy(loadState = LoadState.loading(ReviewWriteLoadKey.Submit)).canSubmit)
+            assertFalse(ready.copy(showPrivateProfileConfirmation = true).canSubmit)
         }
         assertFalse(ReviewWriteUiState().canSubmit)
     }
 
     @Test
-    fun `사진만 있는 리뷰도 수정 데이터를 불러오기 전에는 제출할 수 없다`() {
-        val state = ReviewWriteUiState(reviewId = "review", existingImages = listOf(ExistingReviewPhoto("path", null)))
+    fun `유효한 본문이 있어도 수정 데이터를 불러오기 전에는 제출할 수 없다`() {
+        val state = ReviewWriteUiState(body = "12345", reviewId = "review", existingImages = listOf(ExistingReviewPhoto("path", null)))
         assertFalse(state.canSubmit)
         assertTrue(state.copy(reviewLoaded = true).canSubmit)
         assertFalse(state.copy(reviewLoaded = true, reviewLoadFailed = true).canSubmit)

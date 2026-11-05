@@ -44,7 +44,7 @@ data class Review(
         fun isValidContent(
             body: String,
             imageCount: Int,
-        ): Boolean = imageCount in 0..ReviewImage.MAX_COUNT && if (body.isBlank()) imageCount > 0 else isValidBody(body)
+        ): Boolean = imageCount in 0..ReviewImage.MAX_COUNT && isValidBody(body)
 
         fun containsProfanity(body: String): Boolean = profanityFilter.containsProfanity(body)
 

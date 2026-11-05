@@ -33,7 +33,7 @@ import kotlin.test.assertTrue
 @OptIn(ExperimentalCoroutinesApi::class)
 class ReviewWriteViewModelTest {
     @Test
-    fun `사진만 있는 공개 리뷰도 비공개 프로필 확인의 두 선택으로 등록할 수 있다`() =
+    fun `사진과 본문이 있는 공개 리뷰는 비공개 프로필 확인의 두 선택으로 등록할 수 있다`() =
         coroutinesTest {
             for (confirmation in listOf(ReviewWriteIntent.ConfirmSubmitWithPrivateProfile, ReviewWriteIntent.ConfirmSubmitWithPublicProfile)) {
                 val reviews = FakeReviewRepository()
@@ -42,6 +42,7 @@ class ReviewWriteViewModelTest {
                 viewModel.dispatch(ReviewWriteIntent.Open("shop"))
                 runCurrent()
                 viewModel.dispatch(ReviewWriteIntent.AddImage(image))
+                viewModel.dispatch(ReviewWriteIntent.ChangeBody("12345"))
                 viewModel.dispatch(ReviewWriteIntent.Submit)
                 runCurrent()
 
@@ -50,74 +51,56 @@ class ReviewWriteViewModelTest {
                 viewModel.dispatch(confirmation)
                 runCurrent()
 
-                assertEquals("", reviews.submissions.single().body)
+                assertEquals("12345", reviews.submissions.single().body)
                 assertEquals(listOf(image), reviews.submissions.single().images)
             }
         }
 
     @Test
-    fun `마지막 신규 사진을 삭제하면 제출을 막고 사진을 다시 추가하면 등록한다`() =
+    fun `신규 사진이 있어도 본문이 5자 미만이면 등록할 수 없다`() =
         coroutinesTest {
             val reviews = FakeReviewRepository()
             val viewModel = ReviewWriteViewModel(reviews, FakeProfileRepository(), FakeRamenShopRepository())
+            val image = reviewImage(1)
             viewModel.dispatch(ReviewWriteIntent.Open("shop"))
             runCurrent()
-            viewModel.dispatch(ReviewWriteIntent.AddImage(reviewImage(1)))
-            viewModel.dispatch(ReviewWriteIntent.RemoveImage(0))
-            viewModel.dispatch(ReviewWriteIntent.Submit)
-            runCurrent()
+            viewModel.dispatch(ReviewWriteIntent.AddImage(image))
 
-            assertFalse(viewModel.uiState.value.canSubmit)
-            assertTrue(reviews.submissions.isEmpty())
-            viewModel.dispatch(ReviewWriteIntent.AddImage(reviewImage(2)))
+            for (body in listOf("", "1234")) {
+                viewModel.dispatch(ReviewWriteIntent.ChangeBody(body))
+                viewModel.dispatch(ReviewWriteIntent.Submit)
+                runCurrent()
+                assertFalse(viewModel.uiState.value.canSubmit)
+                assertTrue(reviews.submissions.isEmpty())
+            }
+
+            viewModel.dispatch(ReviewWriteIntent.ChangeBody("12345"))
             viewModel.dispatch(ReviewWriteIntent.Submit)
             runCurrent()
-            assertEquals("", reviews.submissions.single().body)
-            assertEquals(
-                1,
-                reviews.submissions
-                    .single()
-                    .images.size,
-            )
+            assertEquals("12345", reviews.submissions.single().body)
+            assertEquals(listOf(image), reviews.submissions.single().images)
         }
 
     @Test
-    fun `기존 사진을 유지하며 본문을 지울 수 있고 마지막 사진도 지우면 수정을 막는다`() =
+    fun `기존 사진 전용 리뷰는 본문을 5자 입력하면 사진을 유지하며 수정할 수 있다`() =
         coroutinesTest {
             val reviews =
                 FakeReviewRepository().apply {
-                    editableReview = EditableReview("review", "shop", "기존 리뷰입니다", listOf("retained"), listOf(null), false)
+                    editableReview = EditableReview("review", "shop", "", listOf("retained"), listOf(null), false)
                 }
             val viewModel = ReviewWriteViewModel(reviews, FakeProfileRepository(), FakeRamenShopRepository())
             viewModel.dispatch(ReviewWriteIntent.Open("shop", "review"))
             runCurrent()
-            viewModel.dispatch(ReviewWriteIntent.ChangeBody(""))
-            viewModel.dispatch(ReviewWriteIntent.Submit)
-            runCurrent()
-            assertEquals("", reviews.updates.single().body)
-            assertEquals(listOf("retained"), reviews.updates.single().retainedImagePaths)
-
-            reviews.editableReview = reviews.editableReview?.copy(body = "")
-            viewModel.dispatch(ReviewWriteIntent.Open("shop", "review"))
-            runCurrent()
-            assertTrue(viewModel.uiState.value.canSubmit)
-            viewModel.dispatch(ReviewWriteIntent.RemoveExistingImage(0))
             viewModel.dispatch(ReviewWriteIntent.Submit)
             runCurrent()
             assertFalse(viewModel.uiState.value.canSubmit)
-            assertEquals(1, reviews.updates.size)
+            assertTrue(reviews.updates.isEmpty())
 
-            viewModel.dispatch(ReviewWriteIntent.AddImage(reviewImage(1)))
+            viewModel.dispatch(ReviewWriteIntent.ChangeBody("12345"))
             viewModel.dispatch(ReviewWriteIntent.Submit)
             runCurrent()
-            assertEquals(2, reviews.updates.size)
-            assertEquals(emptyList(), reviews.updates.last().retainedImagePaths)
-            assertEquals(
-                1,
-                reviews.updates
-                    .last()
-                    .newImages.size,
-            )
+            assertEquals("12345", reviews.updates.single().body)
+            assertEquals(listOf("retained"), reviews.updates.single().retainedImagePaths)
         }
 
     @Test
