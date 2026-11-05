@@ -22,7 +22,7 @@ import ramap.shared.generated.resources.map_shop_detail_error_title
 fun ShopReviewCardHeader(
     review: Review,
     shop: RamenShop?,
-    onOpenShopDetail: () -> Unit,
+    onOpenShopDetail: (() -> Unit)?,
     actions: ReviewCardActions,
     actionsEnabled: Boolean,
     modifier: Modifier = Modifier,
@@ -49,7 +49,7 @@ fun ShopReviewCardHeader(
                 modifier =
                     Modifier
                         .weight(1f)
-                        .noRippleClickable(onClick = onOpenShopDetail),
+                        .then(onOpenShopDetail?.let { Modifier.noRippleClickable(onClick = it) } ?: Modifier),
             )
         }
         ReviewCardOverflowMenu(
