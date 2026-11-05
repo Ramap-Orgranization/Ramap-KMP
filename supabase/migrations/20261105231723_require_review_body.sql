@@ -1,4 +1,5 @@
 -- Require a body on review writes. Keep the table constraint compatible with existing photo-only rows.
+-- Trim the same Unicode whitespace as the Kotlin review writer before checking length.
 begin;
 
 CREATE OR REPLACE FUNCTION public.submit_shop_review(p_shop_id uuid, p_body text, p_image_paths text[] DEFAULT '{}'::text[], p_is_public boolean DEFAULT true)
@@ -15,7 +16,7 @@ declare canonical_payload text;
 begin
     current_user_id := community_private.require_live_user();
     if p_shop_id is null
-       or p_body is null or p_body <> btrim(p_body)
+       or p_body is null or p_body <> btrim(p_body, U&'\0009\000A\000B\000C\000D\001C\001D\001E\001F\0020\00A0\1680\2000\2001\2002\2003\2004\2005\2006\2007\2008\2009\200A\2028\2029\202F\205F\3000')
        or char_length(p_body) not between 5 and 100
        or p_is_public is null
        or p_image_paths is null or cardinality(p_image_paths) > 3
@@ -63,7 +64,7 @@ declare image_object_id uuid;
 begin
     current_user_id := community_private.require_current_member();
     if p_review_id is null
-       or p_body is null or p_body <> btrim(p_body)
+       or p_body is null or p_body <> btrim(p_body, U&'\0009\000A\000B\000C\000D\001C\001D\001E\001F\0020\00A0\1680\2000\2001\2002\2003\2004\2005\2006\2007\2008\2009\200A\2028\2029\202F\205F\3000')
        or char_length(p_body) not between 5 and 100
        or p_is_public is null
        or p_image_paths is null or cardinality(p_image_paths) > 3
