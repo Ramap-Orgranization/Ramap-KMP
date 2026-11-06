@@ -132,7 +132,6 @@ class ArchiveShopDetailContentTest {
                             displayState = ShopDetailDisplayState.Content,
                             sheetState = ShopOverviewUiState.Content(ShopOverView(shop, 0L, null, null, null)),
                             headerState = HeaderUiState(isBookmarked = false),
-                            isLoggedIn = true,
                             menuState = ShopMenuUiState(shopId = shop.id, hasLoadFailure = true),
                             reviewState = reviews,
                         ),
@@ -140,7 +139,16 @@ class ArchiveShopDetailContentTest {
                         ShopDetailActions(
                             onDismissRequest = {},
                             onRetry = {},
-                            shopActions = ShopDetailShopActions({}, {}, {}, {}, { _, _ -> }, {}, {}, { _, _ -> }),
+                            shopActions =
+                                ShopDetailShopActions(
+                                    onBookmarkToggled = {},
+                                    onShopNotificationToggled = {},
+                                    onShopShareClick = {},
+                                    onShopMapLinkClick = { _, _ -> },
+                                    onEventClick = {},
+                                    onOperatingNoticeClick = {},
+                                    onReportSubmit = { _, _ -> },
+                                ),
                             reviewActions = reviewActions,
                             externalLinkActions = ShopDetailExternalLinkActions(onExternalLinkClick = {}),
                         ),

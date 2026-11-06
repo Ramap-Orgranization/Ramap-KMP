@@ -10,5 +10,4 @@ object AnalyticsUserProperties {
     const val LOGIN_STATUS = "login_status"
     const val BOOKMARKED_COUNT = "bookmarked_count"
     const val SUBSCRIBED_COUNT = "subscribed_count"
-    const val HIDDEN_COUNT = "hidden_count"
 }

@@ -131,7 +131,6 @@ class AppConfigurationTest {
                     reviewWriteScreen = {},
                     informationScreen = {},
                     placeReportScreen = {},
-                    hiddenScreen = {},
                     notificationSettingsScreen = {},
                     subscribedShopsScreen = {},
                     bookmarkedShopsScreen = {},

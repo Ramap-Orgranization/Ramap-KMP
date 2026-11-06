@@ -37,7 +37,6 @@ fun NavigationRouter(
     reviewWriteScreen: @Composable (ScreenRoutes.ReviewWriteRoutes) -> Unit,
     informationScreen: @Composable () -> Unit,
     placeReportScreen: @Composable () -> Unit,
-    hiddenScreen: @Composable () -> Unit,
     notificationSettingsScreen: @Composable () -> Unit,
     subscribedShopsScreen: @Composable () -> Unit,
     bookmarkedShopsScreen: @Composable () -> Unit,
@@ -107,9 +106,6 @@ fun NavigationRouter(
             entry<ScreenRoutes.AccountSettingsRoutes> { FullScreen(accountSettingsScreen) }
             entry<ScreenRoutes.InformationRoutes> { FullScreen(informationScreen) }
             entry<ScreenRoutes.PlaceReportRoutes> { FullScreen(placeReportScreen) }
-            entry<ScreenRoutes.HiddenShopListRoutes> {
-                FullScreen(hiddenScreen)
-            }
             entry<ScreenRoutes.NotificationSettingsRoutes> {
                 FullScreen(notificationSettingsScreen)
             }

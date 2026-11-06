@@ -15,7 +15,6 @@ import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.search_result_empty_message
 import ramap.shared.generated.resources.search_result_filter_empty_message
-import ramap.shared.generated.resources.search_result_hidden_only_message
 import ramap.shared.generated.resources.search_result_query_filter_empty_message
 
 @Composable
@@ -29,7 +28,6 @@ internal fun SearchResultGuide(
             SearchResultGuide.FilterEmpty -> stringResource(Res.string.search_result_filter_empty_message)
             SearchResultGuide.QueryAndFilterEmpty ->
                 stringResource(Res.string.search_result_query_filter_empty_message)
-            SearchResultGuide.HiddenOnly -> stringResource(Res.string.search_result_hidden_only_message)
         }
 
     Box(

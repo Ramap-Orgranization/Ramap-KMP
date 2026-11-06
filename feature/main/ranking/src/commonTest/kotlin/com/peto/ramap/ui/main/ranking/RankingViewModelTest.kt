@@ -197,7 +197,7 @@ class RankingViewModelTest {
         }
 
     @Test
-    fun `숨긴 매장 상태와 무관하게 서버 랭킹을 표시한다`() =
+    fun `서버 랭킹을 표시한다`() =
         coroutinesTest {
             val repository =
                 FakeShopRankingRepository(
@@ -205,9 +205,7 @@ class RankingViewModelTest {
                 )
             val personalizationStore =
                 FakePersonalizationRepository(
-                    Personalization(
-                        hiddenShopIds = setOf("shop-id"),
-                    ),
+                    Personalization(),
                 )
             val viewModel =
                 rankingViewModel(

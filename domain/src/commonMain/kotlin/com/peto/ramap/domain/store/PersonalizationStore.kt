@@ -25,28 +25,10 @@ interface PersonalizationStore {
         enabled: Boolean,
     ): RamapResult<Unit>
 
-    /** 숨김 및 기존 좋아요 매장을 제외한 매장을 좋아요에 추가한다. */
+    /** 아직 좋아요하지 않은 매장을 좋아요에 추가한다. */
     suspend fun addBookmarks(shopIds: Set<String>): RamapResult<Unit>
 
-    /**
-     * [shopId]를 숨기고 해당 매장의 북마크와 알림 설정도 함께 해제한다.
-     *
-     * 원격 반영 중 실패하면 완료된 변경을 가능한 범위에서 보상하고 이전 상태로 복구한다.
-     */
-    suspend fun hideShop(shopId: String): RamapResult<Unit>
-
-    /**
-     * [shopId]의 숨김 상태만 해제한다.
-     *
-     * 숨김으로 함께 해제됐던 북마크와 알림 설정은 복구하지 않는다.
-     */
-    suspend fun unhideShop(shopId: String): RamapResult<Unit>
-
-    /**
-     * [shopId]의 알림 설정 여부를 [enabled]로 변경한다.
-     *
-     * 숨긴 매장의 알림 활성화 요청은 상태 및 원격 저장소를 변경하지 않는다.
-     */
+    /** [shopId]의 알림 설정 여부를 [enabled]로 변경한다. */
     suspend fun updateShopNotification(
         shopId: String,
         enabled: Boolean,

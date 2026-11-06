@@ -19,7 +19,6 @@ data class ShopOverviewState(
     override val loadState: LoadState = LoadState(),
 ) : LoadableState<ShopOverviewState> {
     val bookmarkedShopIds: Set<String> get() = personalization.bookmarkedShopIds
-    val hiddenShopIds: Set<String> get() = personalization.hiddenShopIds
     val notificationShopIds: Set<String> get() = personalization.notificationShopIds
     val selectedShop: RamenShop? get() =
         when (val sheet = overviewState) {

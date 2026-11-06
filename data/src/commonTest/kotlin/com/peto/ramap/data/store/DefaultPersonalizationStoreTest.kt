@@ -6,17 +6,11 @@ import com.peto.ramap.domain.model.personalization.Personalization
 import com.peto.ramap.domain.repository.BookmarkRepository
 import com.peto.ramap.domain.store.PersonalizationBootstrapState
 import com.peto.ramap.fake.FakeBookmarkRepository
-import com.peto.ramap.fake.FakeHiddenShopRepository
 import com.peto.ramap.fake.FakeSubscribedShopRepository
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -27,7 +21,6 @@ class DefaultPersonalizationStoreTest {
             val store =
                 DefaultPersonalizationStore(
                     FakeBookmarkRepository(),
-                    FakeHiddenShopRepository(),
                     FakeSubscribedShopRepository(),
                 )
 
@@ -55,7 +48,6 @@ class DefaultPersonalizationStoreTest {
             val store =
                 DefaultPersonalizationStore(
                     bookmarkRepository,
-                    FakeHiddenShopRepository(),
                     FakeSubscribedShopRepository(),
                 )
 
@@ -81,7 +73,6 @@ class DefaultPersonalizationStoreTest {
             val store =
                 DefaultPersonalizationStore(
                     bookmarkRepository,
-                    FakeHiddenShopRepository(),
                     FakeSubscribedShopRepository(),
                 )
 
@@ -98,7 +89,6 @@ class DefaultPersonalizationStoreTest {
             val store =
                 DefaultPersonalizationStore(
                     FakeBookmarkRepository(setOf("bookmark")),
-                    FakeHiddenShopRepository(setOf("hidden")),
                     FakeSubscribedShopRepository(setOf("notification")),
                 )
 
@@ -107,128 +97,10 @@ class DefaultPersonalizationStoreTest {
             assertEquals(
                 Personalization(
                     bookmarkedShopIds = setOf("bookmark"),
-                    hiddenShopIds = setOf("hidden"),
                     notificationShopIds = setOf("notification"),
                 ),
                 personalization(store),
             )
-        }
-
-    @Test
-    fun `숨김 처리하면 좋아요와 알림을 함께 해제한다`() =
-        runTest {
-            val bookmarkRepository = FakeBookmarkRepository(setOf("shop"))
-            val hiddenShopRepository = FakeHiddenShopRepository()
-            val subscribedShopRepository = FakeSubscribedShopRepository(setOf("shop"))
-            val store =
-                DefaultPersonalizationStore(
-                    bookmarkRepository,
-                    hiddenShopRepository,
-                    subscribedShopRepository,
-                )
-            store.refresh()
-
-            assertIs<RamapResult.Success<Unit>>(store.hideShop("shop"))
-
-            assertEquals(Personalization(hiddenShopIds = setOf("shop")), personalization(store))
-            assertEquals(setOf("shop"), bookmarkRepository.shopIds)
-            assertEquals(emptyList(), bookmarkRepository.removeRequests)
-            assertEquals(listOf("shop"), hiddenShopRepository.atomicHideRequests)
-            assertEquals(setOf("shop"), hiddenShopRepository.shopIds)
-            assertEquals(emptySet(), subscribedShopRepository.shopIds)
-        }
-
-    @Test
-    fun `숨김 요청 실패시 원격 상태를 보상하고 로컬 상태를 롤백한다`() =
-        runTest {
-            val bookmarkRepository = FakeBookmarkRepository(setOf("shop"))
-            val hiddenShopRepository = FakeHiddenShopRepository(shouldFailUpdate = true)
-            val subscribedShopRepository = FakeSubscribedShopRepository(setOf("shop"))
-            val store =
-                DefaultPersonalizationStore(
-                    bookmarkRepository,
-                    hiddenShopRepository,
-                    subscribedShopRepository,
-                )
-            store.refresh()
-            val previous = personalization(store)
-
-            assertIs<RamapResult.Error>(store.hideShop("shop"))
-
-            assertEquals(previous, personalization(store))
-            assertEquals(setOf("shop"), bookmarkRepository.shopIds)
-            assertEquals(setOf("shop"), subscribedShopRepository.shopIds)
-        }
-
-    @Test
-    fun `원자 숨김 요청이 취소되면 구독과 로컬 상태를 복구하고 취소를 전파한다`() =
-        runTest {
-            val hideStarted = CompletableDeferred<Unit>()
-            val hiddenShopRepository =
-                FakeHiddenShopRepository(
-                    onAtomicHide = {
-                        hideStarted.complete(Unit)
-                        awaitCancellation()
-                    },
-                )
-            val subscribedShopRepository = FakeSubscribedShopRepository(setOf("shop"))
-            val store =
-                DefaultPersonalizationStore(
-                    FakeBookmarkRepository(setOf("shop")),
-                    hiddenShopRepository,
-                    subscribedShopRepository,
-                )
-            store.refresh()
-            val previous = personalization(store)
-
-            val hide = async { store.hideShop("shop") }
-            hideStarted.await()
-            hide.cancel()
-
-            assertFailsWith<CancellationException> { hide.await() }
-            assertEquals(previous, personalization(store))
-            assertEquals(setOf("shop"), subscribedShopRepository.shopIds)
-        }
-
-    @Test
-    fun `숨김 해제하면 숨김 상태만 해제한다`() =
-        runTest {
-            val hiddenShopRepository = FakeHiddenShopRepository(setOf("shop"))
-            val store =
-                DefaultPersonalizationStore(
-                    FakeBookmarkRepository(),
-                    hiddenShopRepository,
-                    FakeSubscribedShopRepository(),
-                )
-            store.refresh()
-
-            assertIs<RamapResult.Success<Unit>>(store.unhideShop("shop"))
-
-            assertEquals(Personalization(), personalization(store))
-            assertEquals(emptySet(), hiddenShopRepository.shopIds)
-        }
-
-    @Test
-    fun `숨김 해제 요청 실패시 로컬 상태를 롤백한다`() =
-        runTest {
-            val hiddenShopRepository =
-                FakeHiddenShopRepository(
-                    initialShopIds = setOf("shop"),
-                    shouldFailUpdate = true,
-                )
-            val store =
-                DefaultPersonalizationStore(
-                    FakeBookmarkRepository(),
-                    hiddenShopRepository,
-                    FakeSubscribedShopRepository(),
-                )
-            store.refresh()
-            val previous = personalization(store)
-
-            assertIs<RamapResult.Error>(store.unhideShop("shop"))
-
-            assertEquals(previous, personalization(store))
-            assertEquals(setOf("shop"), hiddenShopRepository.shopIds)
         }
 
     @Test
@@ -238,7 +110,6 @@ class DefaultPersonalizationStoreTest {
             val store =
                 DefaultPersonalizationStore(
                     bookmarkRepository,
-                    FakeHiddenShopRepository(),
                     FakeSubscribedShopRepository(),
                 )
 
@@ -254,7 +125,6 @@ class DefaultPersonalizationStoreTest {
             val store =
                 DefaultPersonalizationStore(
                     bookmarkRepository,
-                    FakeHiddenShopRepository(),
                     FakeSubscribedShopRepository(),
                 )
             store.refresh()
@@ -275,7 +145,6 @@ class DefaultPersonalizationStoreTest {
             val store =
                 DefaultPersonalizationStore(
                     FakeBookmarkRepository(shouldFailUpdate = true),
-                    FakeHiddenShopRepository(),
                     FakeSubscribedShopRepository(),
                 )
             store.refresh()
@@ -292,7 +161,6 @@ class DefaultPersonalizationStoreTest {
             val store =
                 DefaultPersonalizationStore(
                     FakeBookmarkRepository(),
-                    FakeHiddenShopRepository(),
                     subscribedShopRepository,
                 )
 
@@ -312,7 +180,6 @@ class DefaultPersonalizationStoreTest {
             val store =
                 DefaultPersonalizationStore(
                     FakeBookmarkRepository(),
-                    FakeHiddenShopRepository(),
                     subscribedShopRepository,
                 )
             store.refresh()
@@ -332,7 +199,6 @@ class DefaultPersonalizationStoreTest {
             val store =
                 DefaultPersonalizationStore(
                     FakeBookmarkRepository(setOf("shop")),
-                    FakeHiddenShopRepository(),
                     FakeSubscribedShopRepository(),
                 )
             store.refresh()
@@ -340,26 +206,6 @@ class DefaultPersonalizationStoreTest {
             store.clear()
 
             assertEquals(Personalization(), personalization(store))
-        }
-
-    @Test
-    fun `숨김 매장의 알림 활성화는 원격 요청 없이 무시한다`() =
-        runTest {
-            val subscribedShopRepository = FakeSubscribedShopRepository()
-            val store =
-                DefaultPersonalizationStore(
-                    FakeBookmarkRepository(),
-                    FakeHiddenShopRepository(setOf("hidden")),
-                    subscribedShopRepository,
-                )
-            store.refresh()
-
-            assertIs<RamapResult.Success<Unit>>(
-                store.updateShopNotification("hidden", true),
-            )
-
-            assertEquals(emptySet(), personalization(store).notificationShopIds)
-            assertEquals(emptyList(), subscribedShopRepository.subscriptionRequests)
         }
 
     private fun personalization(store: DefaultPersonalizationStore): Personalization = assertIs<PersonalizationBootstrapState.Success>(store.state.value).value

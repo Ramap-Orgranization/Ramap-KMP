@@ -72,6 +72,7 @@ sealed interface ScreenRoutes : NavKey {
     @Serializable
     data object PlaceReportRoutes : ScreenRoutes
 
+    // 이전 버전에서 저장한 마이 탭 스택을 복원할 때 사용한다.
     @Serializable
     data object HiddenShopListRoutes : ScreenRoutes
 

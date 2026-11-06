@@ -72,10 +72,6 @@ data class MapUiState(
      */
     val notificationShopIds: Set<String> = emptySet(),
     /**
-     * 사용자가 숨김 처리한 매장 id 목록.
-     */
-    val hiddenShopIds: Set<String> = emptySet(),
-    /**
      * 북마크한 매장만 지도에 표시하는지 여부.
      */
     val isBookmarkedView: Boolean = false,
@@ -101,7 +97,7 @@ data class MapUiState(
     val searchResultShops: RamenShops
         get() =
             if (search.showsShopResults) {
-                displaySearchResults
+                filteredSearchResults
             } else {
                 RamenShops(emptyMap())
             }
@@ -119,16 +115,10 @@ data class MapUiState(
         get() {
             if (!search.showsShopResults) return null
             if (search.results.isEmpty()) return SearchResultGuide.SearchEmpty
-            if (
-                displaySearchResults.isNotEmpty() &&
-                displaySearchResults.values.all { !it.isVisible }
-            ) {
-                return SearchResultGuide.HiddenOnly
-            }
-            if (displaySearchResults.isEmpty() && filters.isNotEmpty()) {
+            if (filteredSearchResults.isEmpty() && filters.isNotEmpty()) {
                 return SearchResultGuide.QueryAndFilterEmpty
             }
-            if (displaySearchResults.isEmpty()) return SearchResultGuide.FilterEmpty
+            if (filteredSearchResults.isEmpty()) return SearchResultGuide.FilterEmpty
 
             return null
         }
@@ -154,9 +144,9 @@ data class MapUiState(
 
         val markerShops =
             if (search.showsShopResults) {
-                RamenShops(displaySearchResults + selectedMarkerShop)
+                RamenShops(filteredSearchResults + selectedMarkerShop)
             } else {
-                RamenShops(displayFilteredShops + selectedMarkerShop)
+                RamenShops(filteredShops + selectedMarkerShop)
             }
 
         return markerShops.filterByOpenStatus(filters, currentDateTime, operatingNotices)
@@ -234,7 +224,7 @@ data class MapUiState(
             if (isBookmarkedView) {
                 shops.filterByShopIds(bookmarkedShopIds)
             } else {
-                shops.filterNotHidden(hiddenShopIds)
+                shops
             }.filterByOpenStatus(
                 filters,
                 currentDateTime,
@@ -255,16 +245,4 @@ data class MapUiState(
                 currentDateTime,
                 operatingNotices,
             )
-
-    /**
-     * 숨김 매장의 표시 상태까지 반영한 검색 결과 목록.
-     */
-    private val displaySearchResults: RamenShops
-        get() = filteredSearchResults.markHidden(hiddenShopIds)
-
-    /**
-     * 숨김 매장의 표시 상태까지 반영한 전체 매장 목록.
-     */
-    private val displayFilteredShops: RamenShops
-        get() = filteredShops.markHidden(hiddenShopIds)
 }

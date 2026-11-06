@@ -112,7 +112,6 @@ kotlin {
             implementation(projects.feature.account)
             implementation(projects.feature.bookmark.list)
             implementation(projects.feature.bookmark.importation)
-            implementation(projects.feature.hidden)
             implementation(projects.feature.notification)
             implementation(projects.feature.report)
             implementation(projects.feature.settings)

@@ -12,6 +12,4 @@ sealed interface ShopOverviewSideEffect : SideEffect {
     data class ShopViewed(
         val shop: RamenShop,
     ) : ShopOverviewSideEffect
-
-    data object SelectedShopHidden : ShopOverviewSideEffect
 }

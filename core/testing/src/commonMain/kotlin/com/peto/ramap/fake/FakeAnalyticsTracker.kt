@@ -21,8 +21,12 @@ class FakeAnalyticsTracker : AnalyticsTracker {
 
     override fun userProperty(
         key: String,
-        value: String,
+        value: String?,
     ) {
-        userProperties[key] = value
+        if (value == null) {
+            userProperties.remove(key)
+        } else {
+            userProperties[key] = value
+        }
     }
 }

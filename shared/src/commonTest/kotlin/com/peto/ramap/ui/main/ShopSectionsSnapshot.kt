@@ -28,7 +28,6 @@ data class ShopSectionsSnapshot(
     val locationFocusStatus get() = map.locationFocusStatus
     val bookmarkedShopIds get() = map.bookmarkedShopIds
     val notificationShopIds get() = map.notificationShopIds
-    val hiddenShopIds get() = map.hiddenShopIds
     val isBookmarkedView get() = map.isBookmarkedView
     val isLoggedIn get() = map.isLoggedIn
     val isSearchLoading get() = map.isSearchLoading

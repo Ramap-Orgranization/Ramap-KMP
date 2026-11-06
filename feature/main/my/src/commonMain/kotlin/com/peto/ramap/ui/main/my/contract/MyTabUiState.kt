@@ -13,7 +13,6 @@ data class MyTabUiState(
     val failed: Boolean = false,
     val bookmarkedCount: Int? = null,
     val notificationCount: Int? = null,
-    val hiddenCount: Int? = null,
     val reviewCount: Int? = null,
     val blockedUserCount: Int? = null,
     val hasPendingFollowRequests: Boolean = false,
