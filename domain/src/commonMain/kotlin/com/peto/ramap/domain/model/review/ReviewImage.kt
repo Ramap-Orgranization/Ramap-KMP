@@ -20,7 +20,7 @@ data class ReviewImage(
         const val JPEG_MIME_TYPE = "image/jpeg"
         const val PNG_MIME_TYPE = "image/png"
         const val MAX_SIZE_BYTES = 5 * 1024 * 1024
-        const val MAX_COUNT = 3
+        const val MAX_COUNT = 5
 
         private val SUPPORTED_MIME_TYPES = setOf(JPEG_MIME_TYPE, PNG_MIME_TYPE)
         private val PNG_SIGNATURE = byteArrayOf(0x89.toByte(), 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A)

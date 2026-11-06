@@ -78,16 +78,16 @@ class DefaultReviewRepositoryTest {
 
             assertIs<RamapResult.Error>(repository.updateReview("review", "", listOf("retained"), emptyList(), true))
             assertIs<RamapResult.Error>(repository.updateReview("review", "1234", listOf("retained"), emptyList(), true))
-            assertIs<RamapResult.Error>(repository.updateReview("review", "12345", List(3) { "retained-$it" }, listOf(image), true))
+            assertIs<RamapResult.Error>(repository.updateReview("review", "12345", List(5) { "retained-$it" }, listOf(image), true))
             assertEquals(2, updatedBodies.size)
         }
 
     @Test
-    fun `리뷰 저장은 100자 본문을 허용하고 101자는 서버 요청 전에 거부한다`() =
+    fun `리뷰 저장은 500자 본문을 허용하고 501자는 서버 요청 전에 거부한다`() =
         runTest {
             val source = FakeMyReviewsDataSource()
             val repository = DefaultReviewRepository(source, FakeRamenShopDataSource(), testReviewChanges(), backgroundScope)
-            val body = "🍜".repeat(100)
+            val body = "🍜".repeat(500)
 
             assertIs<RamapResult.Success<Unit>>(repository.submitReview("shop", "  $body  ", emptyList(), true))
             assertEquals(body, source.submittedReview?.body)

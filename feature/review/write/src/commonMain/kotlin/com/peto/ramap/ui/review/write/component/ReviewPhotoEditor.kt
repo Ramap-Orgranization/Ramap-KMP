@@ -149,7 +149,7 @@ internal fun PhotoEditor(
             }
         }
         AppText(
-            text = stringResource(Res.string.shop_review_image_limit),
+            text = stringResource(Res.string.shop_review_image_limit, ReviewImage.MAX_COUNT),
             style = AppTextStyle.C1,
             color = GrayColor.C300,
         )

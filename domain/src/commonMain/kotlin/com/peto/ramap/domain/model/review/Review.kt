@@ -50,7 +50,7 @@ data class Review(
 
         fun bodyCharacterCount(body: String): Int = codePointCount(body)
 
-        val BODY_LENGTH = 5..100
+        val BODY_LENGTH = 5..500
 
         private fun codePointCount(value: String): Int {
             var count = 0

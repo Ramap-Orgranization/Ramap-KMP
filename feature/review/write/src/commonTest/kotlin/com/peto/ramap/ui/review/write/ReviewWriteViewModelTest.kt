@@ -384,7 +384,7 @@ class ReviewWriteViewModelTest {
         }
 
     @Test
-    fun `리뷰 본문은 Unicode 문자 100자까지 입력하고 초과 입력은 거부한다`() =
+    fun `리뷰 본문은 Unicode 문자 500자까지 입력하고 초과 입력은 거부한다`() =
         coroutinesTest {
             val viewModel =
                 ReviewWriteViewModel(
@@ -395,7 +395,7 @@ class ReviewWriteViewModelTest {
             viewModel.dispatch(ReviewWriteIntent.Open("shop"))
             runCurrent()
 
-            val body = "가😀".repeat(50)
+            val body = "가😀".repeat(250)
             viewModel.dispatch(ReviewWriteIntent.ChangeBody(body))
             runCurrent()
 
@@ -406,7 +406,7 @@ class ReviewWriteViewModelTest {
             runCurrent()
 
             assertEquals(body, viewModel.uiState.value.body)
-            assertEquals(100, Review.bodyCharacterCount(viewModel.uiState.value.body))
+            assertEquals(500, Review.bodyCharacterCount(viewModel.uiState.value.body))
         }
 
     @Test
@@ -416,11 +416,11 @@ class ReviewWriteViewModelTest {
             viewModel.dispatch(ReviewWriteIntent.Open("shop"))
             runCurrent()
 
-            val body = "가😀".repeat(49) + "끝😀"
+            val body = "가😀".repeat(249) + "끝😀"
             viewModel.dispatch(ReviewWriteIntent.ChangeBody(body))
             runCurrent()
 
-            for (insertionIndex in listOf(0, "가😀".repeat(25).length)) {
+            for (insertionIndex in listOf(0, "가😀".repeat(125).length)) {
                 val changedBody = body.substring(0, insertionIndex) + "나" + body.substring(insertionIndex)
                 viewModel.dispatch(ReviewWriteIntent.ChangeBody(changedBody))
                 runCurrent()
@@ -437,14 +437,14 @@ class ReviewWriteViewModelTest {
             viewModel.dispatch(ReviewWriteIntent.Open("shop"))
             runCurrent()
 
-            val body = "가".repeat(48) + "😀".repeat(48)
+            val body = "가".repeat(248) + "😀".repeat(248)
             viewModel.dispatch(ReviewWriteIntent.ChangeBody(body))
             runCurrent()
-            viewModel.dispatch(ReviewWriteIntent.ChangeBody("가".repeat(48) + "붙여넣기😀" + "😀".repeat(48)))
+            viewModel.dispatch(ReviewWriteIntent.ChangeBody("가".repeat(248) + "붙여넣기😀" + "😀".repeat(248)))
             runCurrent()
 
             assertEquals(body, viewModel.uiState.value.body)
-            assertEquals(96, Review.bodyCharacterCount(viewModel.uiState.value.body))
+            assertEquals(496, Review.bodyCharacterCount(viewModel.uiState.value.body))
         }
 
     @Test
@@ -454,15 +454,15 @@ class ReviewWriteViewModelTest {
             viewModel.dispatch(ReviewWriteIntent.Open("shop"))
             runCurrent()
 
-            viewModel.dispatch(ReviewWriteIntent.ChangeBody("가".repeat(100)))
+            viewModel.dispatch(ReviewWriteIntent.ChangeBody("가".repeat(500)))
             runCurrent()
-            val replacedBody = "가".repeat(50) + "😀" + "가".repeat(49)
+            val replacedBody = "가".repeat(250) + "😀" + "가".repeat(249)
             viewModel.dispatch(ReviewWriteIntent.ChangeBody(replacedBody))
             runCurrent()
             assertEquals(replacedBody, viewModel.uiState.value.body)
-            assertEquals(100, Review.bodyCharacterCount(viewModel.uiState.value.body))
+            assertEquals(500, Review.bodyCharacterCount(viewModel.uiState.value.body))
 
-            val shortenedBody = "가".repeat(99)
+            val shortenedBody = "가".repeat(499)
             viewModel.dispatch(ReviewWriteIntent.ChangeBody(shortenedBody))
             runCurrent()
             assertEquals(shortenedBody, viewModel.uiState.value.body)
@@ -541,7 +541,7 @@ class ReviewWriteViewModelTest {
         }
 
     @Test
-    fun `adding a fourth image is ignored`() =
+    fun `사진은 5장까지 첨부하고 여섯 번째 사진은 추가하지 않는다`() =
         coroutinesTest {
             val viewModel =
                 ReviewWriteViewModel(
@@ -552,10 +552,10 @@ class ReviewWriteViewModelTest {
             viewModel.dispatch(ReviewWriteIntent.Open("shop"))
             runCurrent()
 
-            (1..4).forEach { viewModel.dispatch(ReviewWriteIntent.AddImage(reviewImage(it))) }
+            (1..6).forEach { viewModel.dispatch(ReviewWriteIntent.AddImage(reviewImage(it))) }
             runCurrent()
 
-            assertEquals(3, viewModel.uiState.value.images.size)
+            assertEquals(5, viewModel.uiState.value.images.size)
         }
 
     @Test
