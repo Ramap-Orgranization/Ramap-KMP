@@ -17,7 +17,7 @@ from refresh_plan import digest, prepare_capture, serialized, state_sql
 from collection_skips import DEFAULT_REGISTRY, load_registry, skips_for_shop
 from manual_menu_protections import DEFAULT_REGISTRY as PROTECTION_REGISTRY
 from refresh_verify import expected_visible, read_state, result_rows, verification_sql, verify_plan
-from snapshot_storage import SnapshotStorage, hydrate_snapshots
+from snapshot_storage import SnapshotStorage, backend_workdir, hydrate_snapshots, linked_backend_project
 
 
 SKILL = Path(__file__).resolve().parents[1]
@@ -614,8 +614,8 @@ def drain(run_dir, query, max_actions=40, max_seconds=45):
 
 
 def cli_query(project_id):
-    linked = REPO / 'supabase/.temp/project-ref'
-    if not linked.exists() or linked.read_text().strip() != project_id:
+    workdir = backend_workdir()
+    if linked_backend_project(workdir) != project_id:
         raise ValueError('linked CLI project differs from this run; use the authenticated MCP transport')
     help_result = subprocess.run(['supabase', 'db', 'query', '--help'], capture_output=True, text=True, check=True)
     if '--linked' not in help_result.stdout or '--file' not in help_result.stdout:
@@ -624,7 +624,7 @@ def cli_query(project_id):
         if action['mode'] != 'live':
             raise ValueError('replay run cannot use a live database transport')
         result = subprocess.run(['supabase', 'db', 'query', '--linked', '--file', action['sql_path'], '--output', 'json'],
-            cwd=REPO, capture_output=True, text=True, timeout=45)
+            cwd=workdir, capture_output=True, text=True, timeout=45)
         if result.returncode:
             # Credentials or headers printed by a third-party CLI are never copied to artifacts.
             raise ValueError('Supabase CLI query failed; diagnose authentication or SQL separately')

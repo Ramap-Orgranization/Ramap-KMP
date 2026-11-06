@@ -116,6 +116,12 @@ Kotlin 공통 코드에서 화면·도메인·데이터 흐름을 공유하고, 
 
 전체 모듈 목록은 [settings.gradle.kts](settings.gradle.kts), 계층별 책임과 의존 방향은 [아키텍처 규칙](.agents/skills/ramap-architecture/SKILL.md)에서 확인합니다.
 
+## 서버 저장소
+
+Supabase 마이그레이션·Edge Functions, 서버 서비스와 배포 설정은 비공개 [Ramap-Backend](https://github.com/Ramap-Orgranization/Ramap-Backend)에서 관리합니다.
+
+운영 도구가 서버 체크아웃을 필요로 하면 이 저장소와 같은 상위 폴더에 `Ramap-Backend`를 클론합니다. 다른 위치에 클론했다면 `RAMAP_BACKEND_DIR`에 절대 경로를 설정합니다. Supabase CLI 연결은 서버 체크아웃에서 설정합니다.
+
 ## AI 에이전트 하네스
 
 Codex 에이전트가 개발과 운영 작업을 수행할 때 참고할 지침, 역할, 워크플로를 저장소에서 관리합니다. 총괄 에이전트는 일반 구현 요청의 조사·구현·검증을 담당합니다. `/impl`처럼 단계별 진행을 요청하면 작업 범위와 완료 기준을 정해 역할별 에이전트로 이어갑니다.
