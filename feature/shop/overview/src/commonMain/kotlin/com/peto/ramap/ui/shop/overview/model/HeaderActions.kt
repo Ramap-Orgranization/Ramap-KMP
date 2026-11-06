@@ -9,7 +9,6 @@ data class HeaderActions(
     val onDismissRequest: () -> Unit,
     val onBookmarkClick: () -> Unit,
     val onNotificationClick: () -> Unit,
-    val onHiddenClick: () -> Unit,
     val onReportClick: () -> Unit,
     val onShareClick: () -> Unit,
     val onEventClick: (ShopEvent) -> Unit,

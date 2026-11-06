@@ -36,11 +36,6 @@ sealed interface ShopOverviewIntent : Intent {
         val source: AnalyticsSource = AnalyticsSource.MAP,
     ) : ShopOverviewIntent
 
-    data class OnHiddenToggled(
-        val shop: RamenShop,
-        val source: AnalyticsSource = AnalyticsSource.MAP,
-    ) : ShopOverviewIntent
-
     data class OnShopReportSubmitted(
         val wrongFields: Set<ShopInformationField>,
         val description: String,

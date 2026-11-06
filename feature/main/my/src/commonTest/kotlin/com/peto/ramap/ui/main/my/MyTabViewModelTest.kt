@@ -173,7 +173,6 @@ class MyTabViewModelTest {
                     Personalization(
                         bookmarkedShopIds = setOf("one"),
                         notificationShopIds = setOf("two", "three"),
-                        hiddenShopIds = setOf("four", "five", "six"),
                     ),
                 )
             val viewModel = MyTabViewModel(profiles, FakeUserModerationRepository(), personalization, FakeMyTabReviewRepository(), FakeFollowRepository(), changes = FakeReviewChangeStore())
@@ -185,7 +184,6 @@ class MyTabViewModelTest {
             assertEquals("느긋한차슈", initialProfile?.nickname)
             assertEquals(1, viewModel.uiState.value.bookmarkedCount)
             assertEquals(2, viewModel.uiState.value.notificationCount)
-            assertEquals(3, viewModel.uiState.value.hiddenCount)
             personalization.updateBookmarkedShopIds(setOf("one", "two"))
             runCurrent()
             assertEquals(2, viewModel.uiState.value.bookmarkedCount)

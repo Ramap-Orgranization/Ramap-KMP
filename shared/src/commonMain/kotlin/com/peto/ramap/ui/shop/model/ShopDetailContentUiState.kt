@@ -11,7 +11,6 @@ data class ShopDetailContentUiState(
     val displayState: ShopDetailDisplayState,
     val sheetState: ShopOverviewUiState,
     val headerState: HeaderUiState,
-    val isLoggedIn: Boolean,
     val menuState: ShopMenuUiState? = null,
     val reviewState: ReviewsUiState = ReviewsUiState(),
     val overviewHasLoadFailure: Boolean = false,

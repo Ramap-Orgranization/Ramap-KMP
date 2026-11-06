@@ -10,7 +10,6 @@ import com.peto.ramap.domain.model.shop.RamenShop
 data class ShopDetailShopActions(
     val onBookmarkToggled: (RamenShop) -> Unit,
     val onShopNotificationToggled: (RamenShop) -> Unit,
-    val onHiddenToggled: (RamenShop) -> Unit,
     val onShopShareClick: (RamenShop) -> Unit,
     val onShopMapLinkClick: (RamenShop, String) -> Unit,
     val onEventClick: (ShopEvent) -> Unit,

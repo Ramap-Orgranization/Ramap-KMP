@@ -161,7 +161,8 @@ private fun TrackUserProperties(
     loginRepository: LoginRepository,
     personalizationStore: PersonalizationStore,
 ) {
-    LaunchedEffect(loginRepository) {
+    LaunchedEffect(appAnalytics, loginRepository) {
+        appAnalytics.clearLegacyHiddenCount()
         loginRepository.session.collect { state ->
             appAnalytics.updateLoginStatus(state)
         }

@@ -50,7 +50,6 @@ import ramap.shared.generated.resources.importation_candidates_title
 import ramap.shared.generated.resources.importation_confirm
 import ramap.shared.generated.resources.importation_count
 import ramap.shared.generated.resources.importation_guide_action_description
-import ramap.shared.generated.resources.importation_hidden_count_label
 import ramap.shared.generated.resources.importation_input_label
 import ramap.shared.generated.resources.importation_registered_count_label
 import ramap.shared.generated.resources.importation_remove_candidate
@@ -243,10 +242,6 @@ private fun ImportationPreview(
                 count = uiState.alreadyBookmarkedCount,
             )
             ImportationStat(
-                label = stringResource(Res.string.importation_hidden_count_label),
-                count = uiState.hiddenCount,
-            )
-            ImportationStat(
                 label = stringResource(Res.string.importation_unmatched_count_label),
                 count = preview.unmatchedPlaceNames.size,
             )
@@ -312,7 +307,6 @@ private fun ImportationScreenPreview(
                         ),
                     candidates = shops,
                     alreadyBookmarkedCount = 1,
-                    hiddenCount = 1,
                 ),
             onBack = {},
             onGuideNavigate = {},

@@ -119,7 +119,6 @@ fun MapRoute(
                 }
             },
         isLoggedIn = uiState.isLoggedIn,
-        hiddenShopIds = uiState.hiddenShopIds,
         notificationShopIds = uiState.notificationShopIds,
         toastManager = toastManager,
         appSettingsOpener = appSettingsOpener,
@@ -193,10 +192,6 @@ fun MapRoute(
                             shouldShowReviews = false
                             detailSource = AnalyticsSource.MAP
                             viewModel.dispatch(OnShopDetailDismissed)
-                            onDetailDismissed()
-                        },
-                        onSelectedShopHidden = {
-                            viewModel.dispatch(MapIntent.OnSelectedShopHidden)
                             onDetailDismissed()
                         },
                         onShopLoadFailed = { viewModel.dispatch(MapIntent.OnShopLoadFailed(it)) },

@@ -29,7 +29,6 @@ import ramap.shared.generated.resources.share_shop_message
 fun MapInteractionHost(
     sideEffect: Flow<ShopInteractionEffect>,
     isLoggedIn: Boolean,
-    hiddenShopIds: Set<String>,
     notificationShopIds: Set<String>,
     toastManager: ToastManager,
     appSettingsOpener: AppSettingsOpener,
@@ -72,10 +71,7 @@ fun MapInteractionHost(
     }
 
     content({ shop ->
-        val canToggleWithoutPermission =
-            !isLoggedIn ||
-                shop.id in hiddenShopIds ||
-                shop.id in notificationShopIds
+        val canToggleWithoutPermission = !isLoggedIn || shop.id in notificationShopIds
         if (canToggleWithoutPermission) {
             onNotificationToggled(shop)
         } else {

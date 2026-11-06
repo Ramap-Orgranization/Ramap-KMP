@@ -51,24 +51,6 @@ class FakePersonalizationRepository(
         return RamapResult.Success(Unit)
     }
 
-    override suspend fun hideShop(shopId: String): RamapResult<Unit> {
-        publish(
-            currentPersonalization.let {
-                it.copy(
-                    bookmarkedShopIds = it.bookmarkedShopIds - shopId,
-                    hiddenShopIds = it.hiddenShopIds + shopId,
-                    notificationShopIds = it.notificationShopIds - shopId,
-                )
-            },
-        )
-        return RamapResult.Success(Unit)
-    }
-
-    override suspend fun unhideShop(shopId: String): RamapResult<Unit> {
-        publish(currentPersonalization.copy(hiddenShopIds = currentPersonalization.hiddenShopIds - shopId))
-        return RamapResult.Success(Unit)
-    }
-
     override suspend fun updateShopNotification(
         shopId: String,
         enabled: Boolean,

@@ -49,7 +49,6 @@ fun ShopDetailHost(
     onShopViewed: (RamenShop) -> Unit = {},
     onShopLoadFailed: (String) -> Unit = {},
     onLoginGuideRequested: () -> Unit = {},
-    onSelectedShopHidden: () -> Unit = onDismiss,
     onOperatingNoticeNavigate: ((OperatingNotice) -> Unit)? = null,
     showReviewsOnOpen: Boolean = false,
     isBackEnabled: Boolean = true,
@@ -79,10 +78,6 @@ fun ShopDetailHost(
             onShopViewed = onShopViewed,
             onShopLoadFailed = onShopLoadFailed,
             onLoginGuideRequested = onLoginGuideRequested,
-            onSelectedShopHidden = {
-                clear()
-                onSelectedShopHidden()
-            },
             toastManager = toastManager,
             appSettingsOpener = appSettingsOpener,
             shopShareLinkFactory = shopShareLinkFactory,
@@ -119,10 +114,8 @@ fun ShopDetailHost(
                                             isBookmarked = uiState.selectedShop?.id in uiState.bookmarkedShopIds,
                                             isNotificationEnabled = uiState.selectedShop?.id in uiState.notificationShopIds,
                                             showNotificationActions = NotificationPermissionRequester.isSupported,
-                                            isHidden = uiState.selectedShop?.id in uiState.hiddenShopIds,
                                             isAppleMapsAvailable = ExternalUriOpener.isAppleMapsAvailable,
                                         ),
-                                    isLoggedIn = uiState.isLoggedIn,
                                     menuState = menuState,
                                     reviewState = reviewState,
                                     overviewHasLoadFailure = uiState.hasLoadFailure,
@@ -143,7 +136,6 @@ fun ShopDetailHost(
                                         ShopDetailShopActions(
                                             onBookmarkToggled = overviewActions.onBookmarkToggled,
                                             onShopNotificationToggled = overviewActions.onShopNotificationToggled,
-                                            onHiddenToggled = overviewActions.onHiddenToggled,
                                             onShopShareClick = overviewActions.onShopShareClick,
                                             onShopMapLinkClick = overviewActions.onShopMapLinkClick,
                                             onEventClick = onEventNavigate,

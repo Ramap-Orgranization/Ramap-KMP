@@ -256,9 +256,7 @@
     <string name="search_result_empty_message">검색 결과가 없어요. 검색어를 바꿔보세요.</string>
     <string name="search_result_filter_empty_message">선택한 필터에 맞는 매장이 없어요. 필터를 바꿔보세요.</string>
     <string name="search_result_query_filter_empty_message">검색어와 필터에 맞는 매장이 없어요. 검색어나 필터를 바꿔보세요.</string>
-    <string name="search_result_hidden_only_message">숨김 처리한 매장이 검색되었어요</string>
     <string name="filter_empty_visible_result_message">선택한 필터에 맞는 매장이 없어요. 필터를 바꿔보세요.</string>
-    <string name="hidden_shop_search_result_message">숨김 처리된 매장이에요</string>
     <string name="recent_searches_title">최근 검색</string>
     <string name="recent_search_clear_all">전체 삭제</string>
     <string name="recent_search_delete_action">최근 검색어 삭제</string>
@@ -274,7 +272,6 @@
     <string name="place_report_existing_shop_message">이미 존재하는 매장입니다</string>
 
     <!-- 설정 화면 -->
-    <string name="settings_hidden_shops_menu">숨긴 매장 보기</string>
     <string name="settings_notification_menu">알림 설정</string>
     <string name="settings_title">설정</string>
     <string name="settings_account_menu">계정</string>
@@ -311,7 +308,6 @@
     <string name="importation_input_label">카카오맵 또는 네이버 지도 목록 링크</string>
     <string name="importation_analyze">목록 찾기</string>
     <string name="importation_registered_count_label">이미 저장한 매장</string>
-    <string name="importation_hidden_count_label">숨긴 매장</string>
     <string name="importation_unmatched_count_label">찾지 못한 매장</string>
     <string name="importation_count">%1$d개</string>
     <string name="importation_candidates_title">추가할 매장</string>
@@ -341,11 +337,6 @@
     <string name="notification_removal_confirm_action">알림 해제</string>
     <string name="notification_removal_dismiss_action">취소</string>
 
-    <!-- 숨긴 매장 화면 -->
-    <string name="hidden_shops_empty_title">숨긴 매장이 없어요</string>
-    <string name="unhide_shop_confirm_title">숨김을 해제할까요?</string>
-    <string name="unhide_shop_confirm_action">숨김 해제</string>
-
     <!-- 계정 화면 -->
     <string name="logout_menu">로그아웃</string>
     <string name="account_delete_menu">계정 삭제</string>
@@ -368,7 +359,6 @@
     <string name="login_guide_close">닫기</string>
     <string name="login_required_bookmark_description">매장을 저장하려면 로그인이 필요해요.</string>
     <string name="login_required_saved_shops_description">저장한 매장을 보려면 로그인이 필요해요.</string>
-    <string name="login_required_hide_shop_description">매장을 숨기려면 로그인이 필요해요.</string>
     <string name="login_required_notification_description">매장 알림을 설정하려면 로그인이 필요해요.</string>
     <string name="login_required_review_write_description">리뷰를 작성하려면 로그인이 필요해요.</string>
     <string name="login_required_review_like_description">리뷰에 좋아요를 누르려면 로그인이 필요해요.</string>
@@ -378,13 +368,6 @@
     <string name="login_required_profile_description">사용자 프로필을 보려면 로그인이 필요해요.</string>
 
     <!-- 지도 화면 -->
-    <string name="hide_shop_confirm_title">이 매장을 숨길까요?</string>
-    <string name="hide_shop_confirm_description">숨기면 지도와 저장 목록에서 보이지 않아요.</string>
-    <string name="hide_shop_confirm_action">숨김 처리</string>
-    <string name="hide_shop_confirm_dismiss">취소</string>
-    <string name="hide_shop_action">숨기기</string>
-    <string name="hide_shop_success_message">매장을 숨김 처리했어요</string>
-    <string name="hidden_shop_notification_unavailable_message">숨김 매장은 알림을 설정할 수 없어요</string>
     <string name="bookmarked_shops_toggle">저장</string>
     <string name="open_shops_toggle">영업 중인 매장</string>
     <string name="current_location">내 위치</string>

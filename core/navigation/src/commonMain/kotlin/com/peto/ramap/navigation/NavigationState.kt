@@ -10,6 +10,10 @@ class NavigationState(
     selectedTabState: MutableState<TabStatus>,
     val backStacks: Map<TabStatus, NavBackStack<NavKey>>,
 ) {
+    init {
+        backStacks[TabStatus.MY]?.removeAll { it == ScreenRoutes.HiddenShopListRoutes }
+    }
+
     private var eventTabRouteId = 0
     private var sharedShopRouteId =
         backStacks.values
@@ -31,12 +35,6 @@ class NavigationState(
             currentBackStack.size > 1 ||
                 requestedMapReturnTab() != null ||
                 selectedTab != TabStatus.MAP
-
-    fun showHiddenShops() {
-        if (currentRoute != ScreenRoutes.HiddenShopListRoutes) {
-            currentBackStack.add(ScreenRoutes.HiddenShopListRoutes)
-        }
-    }
 
     fun showMyRoot() {
         val myStack = backStacks.getValue(TabStatus.MY)

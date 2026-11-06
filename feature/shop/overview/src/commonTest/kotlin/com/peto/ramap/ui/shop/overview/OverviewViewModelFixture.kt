@@ -58,10 +58,6 @@ class OverviewViewModelFixture(
                 shopId: String,
                 enabled: Boolean,
             ): RamapResult<Unit> = personalization.updateShopNotification(shopId, enabled).also { awaitPersonalizationResponse() }
-
-            override suspend fun hideShop(shopId: String): RamapResult<Unit> = personalization.hideShop(shopId).also { awaitPersonalizationResponse() }
-
-            override suspend fun unhideShop(shopId: String): RamapResult<Unit> = personalization.unhideShop(shopId).also { awaitPersonalizationResponse() }
         }
     private val history =
         object : SearchHistoryStorage {

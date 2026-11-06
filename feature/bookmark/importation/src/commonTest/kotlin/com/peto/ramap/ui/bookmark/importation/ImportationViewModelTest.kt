@@ -68,14 +68,14 @@ class ImportationViewModelTest {
         }
 
     @Test
-    fun `목록 분석은 이미 좋아요하거나 숨긴 매장을 제외한 실제 후보를 표시한다`() =
+    fun `목록 분석은 이미 좋아요한 매장만 제외한 실제 후보를 표시한다`() =
         coroutinesTest {
             val importableShop = ramenShopFixture(id = "importable-shop")
             val bookmarkedShop = ramenShopFixture(id = "bookmarked-shop")
-            val hiddenShop = ramenShopFixture(id = "hidden-shop")
+            val secondImportableShop = ramenShopFixture(id = "second-importable-shop")
             val preview =
                 importationPreview(
-                    matchedShopIds = setOf(importableShop.id, bookmarkedShop.id, hiddenShop.id),
+                    matchedShopIds = setOf(importableShop.id, bookmarkedShop.id, secondImportableShop.id),
                     unmatchedPlaceNames = listOf("매칭되지 않은 매장"),
                 )
             val analyticsTracker = FakeAnalyticsTracker()
@@ -85,10 +85,9 @@ class ImportationViewModelTest {
                         FakePersonalizationRepository(
                             Personalization(
                                 bookmarkedShopIds = setOf(bookmarkedShop.id),
-                                hiddenShopIds = setOf(hiddenShop.id),
                             ),
                         ),
-                    ramenShopRepository = FakeRamenShopRepository(fetchByIdsResult = RamenShops(listOf(importableShop))),
+                    ramenShopRepository = FakeRamenShopRepository(fetchByIdsResult = RamenShops(listOf(importableShop, secondImportableShop))),
                     importationRepository = importationRepository(RamapResult.Success(preview)),
                     importationAnalytics = ImportationAnalytics(analyticsTracker),
                 )
@@ -98,9 +97,8 @@ class ImportationViewModelTest {
             runCurrent()
 
             assertEquals(preview, viewModel.uiState.value.preview)
-            assertEquals(RamenShops(listOf(importableShop)), viewModel.uiState.value.candidates)
+            assertEquals(RamenShops(listOf(importableShop, secondImportableShop)), viewModel.uiState.value.candidates)
             assertEquals(1, viewModel.uiState.value.alreadyBookmarkedCount)
-            assertEquals(1, viewModel.uiState.value.hiddenCount)
             assertEquals(1, analyticsTracker.events.size)
             assertEquals(
                 ImportationMatchFailed(

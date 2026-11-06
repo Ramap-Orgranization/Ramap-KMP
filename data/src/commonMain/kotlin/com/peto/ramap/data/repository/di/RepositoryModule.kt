@@ -6,7 +6,6 @@ import com.peto.ramap.data.datasource.importation.ImportationDataSource
 import com.peto.ramap.data.datasource.menu.ShopMenuDataSource
 import com.peto.ramap.data.datasource.notice.OperatingNoticeDataSource
 import com.peto.ramap.data.datasource.personalization.BookmarkShopDataSource
-import com.peto.ramap.data.datasource.personalization.HiddenShopDataSource
 import com.peto.ramap.data.datasource.place.PlaceSearchDataSource
 import com.peto.ramap.data.datasource.profile.ProfileDataSource
 import com.peto.ramap.data.datasource.report.ShopReportDataSource
@@ -18,7 +17,6 @@ import com.peto.ramap.data.repository.DefaultAppUpdateRepository
 import com.peto.ramap.data.repository.DefaultArchiveRepository
 import com.peto.ramap.data.repository.DefaultBookmarkRepository
 import com.peto.ramap.data.repository.DefaultFollowRepository
-import com.peto.ramap.data.repository.DefaultHiddenShopRepository
 import com.peto.ramap.data.repository.DefaultImageAccessRepository
 import com.peto.ramap.data.repository.DefaultImageUrlRefresher
 import com.peto.ramap.data.repository.DefaultImportationRepository
@@ -45,7 +43,6 @@ import com.peto.ramap.domain.repository.AppUpdateRepository
 import com.peto.ramap.domain.repository.ArchiveRepository
 import com.peto.ramap.domain.repository.BookmarkRepository
 import com.peto.ramap.domain.repository.FollowRepository
-import com.peto.ramap.domain.repository.HiddenShopRepository
 import com.peto.ramap.domain.repository.ImageAccessRepository
 import com.peto.ramap.domain.repository.ImageUrlRefresher
 import com.peto.ramap.domain.repository.ImportationRepository
@@ -110,10 +107,9 @@ val repositoryModule =
             DefaultShopWaitingSystemRepository(get<ShopWaitingSystemDataSource>())
         }
         single<BookmarkRepository> { DefaultBookmarkRepository(get<BookmarkShopDataSource>()) }
-        single<HiddenShopRepository> { DefaultHiddenShopRepository(get<HiddenShopDataSource>()) }
         single<SubscribedShopRepository> { DefaultSubscribedShopRepository(get()) }
         single<PersonalizationStore> {
-            DefaultPersonalizationStore(get(), get(), get())
+            DefaultPersonalizationStore(get(), get())
         }
         single<ShopReportRepository> {
             DefaultShopReportRepository(get<ShopReportDataSource>())

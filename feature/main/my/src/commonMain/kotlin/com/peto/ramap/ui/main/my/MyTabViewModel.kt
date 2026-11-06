@@ -75,7 +75,6 @@ class MyTabViewModel(
                     copy(
                         bookmarkedCount = personalization?.bookmarkedShopIds?.size,
                         notificationCount = personalization?.notificationShopIds?.size,
-                        hiddenCount = personalization?.hiddenShopIds?.size,
                     )
                 }
             }

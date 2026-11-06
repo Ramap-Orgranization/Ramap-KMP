@@ -14,9 +14,4 @@ sealed interface PendingShopAction {
         val shop: RamenShop,
         val source: AnalyticsSource,
     ) : PendingShopAction
-
-    data class ToggleHidden(
-        val shop: RamenShop,
-        val source: AnalyticsSource,
-    ) : PendingShopAction
 }

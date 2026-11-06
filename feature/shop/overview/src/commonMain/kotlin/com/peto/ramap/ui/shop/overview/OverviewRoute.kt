@@ -31,7 +31,6 @@ fun OverviewRoute(
     onShopViewed: (RamenShop) -> Unit,
     onShopLoadFailed: (String) -> Unit,
     onLoginGuideRequested: () -> Unit,
-    onSelectedShopHidden: () -> Unit,
     initialShop: RamenShop? = null,
     originSource: AnalyticsSource = AnalyticsSource.MAP,
     toastManager: ToastManager = koinInject(),
@@ -45,7 +44,6 @@ fun OverviewRoute(
     val currentOnLoginGuideRequested by rememberUpdatedState(onLoginGuideRequested)
     val currentOnShopViewed by rememberUpdatedState(onShopViewed)
     val currentOnShopLoadFailed by rememberUpdatedState(onShopLoadFailed)
-    val currentOnHidden by rememberUpdatedState(onSelectedShopHidden)
     val interactions =
         remember(viewModel) {
             viewModel.sideEffect
@@ -57,10 +55,6 @@ fun OverviewRoute(
                         }
                         is ShopOverviewSideEffect.ShopViewed -> {
                             currentOnShopViewed(effect.shop)
-                            null
-                        }
-                        ShopOverviewSideEffect.SelectedShopHidden -> {
-                            currentOnHidden()
                             null
                         }
                     }
@@ -82,7 +76,6 @@ fun OverviewRoute(
     MapInteractionHost(
         sideEffect = interactions,
         isLoggedIn = uiState.isLoggedIn,
-        hiddenShopIds = uiState.hiddenShopIds,
         notificationShopIds = uiState.notificationShopIds,
         toastManager = toastManager,
         appSettingsOpener = appSettingsOpener,
@@ -102,7 +95,6 @@ fun OverviewRoute(
                 onLoginGuideRequested = requestLoginGuide,
                 onBookmarkToggled = { viewModel.dispatch(ShopOverviewIntent.OnBookmarkToggled(it, originSource)) },
                 onShopNotificationToggled = onShopNotificationToggled,
-                onHiddenToggled = { viewModel.dispatch(ShopOverviewIntent.OnHiddenToggled(it, originSource)) },
                 onShopShareClick = { viewModel.dispatch(ShopOverviewIntent.OnShopShareClicked(it)) },
                 onShopMapLinkClick = { shop, provider -> viewModel.dispatch(ShopOverviewIntent.OnShopMapLinkClicked(shop, provider)) },
                 onReportSubmit = { wrongFields, description -> viewModel.dispatch(ShopOverviewIntent.OnShopReportSubmitted(wrongFields, description)) },

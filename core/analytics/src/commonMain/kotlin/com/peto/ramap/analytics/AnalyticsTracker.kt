@@ -28,10 +28,10 @@ interface AnalyticsTracker {
      * 사용자 속성을 설정한다.
      *
      * @param key 속성 키. [AnalyticsUserProperties] 상수 사용.
-     * @param value 속성 값.
+     * @param value 속성 값. null을 전달하면 속성을 제거한다.
      */
     fun userProperty(
         key: String,
-        value: String,
+        value: String?,
     )
 }

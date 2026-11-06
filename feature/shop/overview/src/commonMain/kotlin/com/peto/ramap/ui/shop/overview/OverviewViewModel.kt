@@ -8,9 +8,7 @@ import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.auth.LoginSessionState
 import com.peto.ramap.domain.model.auth.LoginType
 import com.peto.ramap.domain.model.personalization.BookmarkChangeStatus
-import com.peto.ramap.domain.model.personalization.NotificationStatus
 import com.peto.ramap.domain.model.personalization.Personalization
-import com.peto.ramap.domain.model.personalization.VisibilityStatus
 import com.peto.ramap.domain.model.report.ShopInformationField
 import com.peto.ramap.domain.model.report.ShopInformationReport
 import com.peto.ramap.domain.model.shop.RamenShop
@@ -30,7 +28,6 @@ import com.peto.ramap.ui.shop.contract.ShopInteractionEffect.ShowToast
 import com.peto.ramap.ui.shop.model.ShopOverviewUiState
 import com.peto.ramap.ui.shop.overview.contract.ShopOverviewIntent
 import com.peto.ramap.ui.shop.overview.contract.ShopOverviewIntent.OnBookmarkToggled
-import com.peto.ramap.ui.shop.overview.contract.ShopOverviewIntent.OnHiddenToggled
 import com.peto.ramap.ui.shop.overview.contract.ShopOverviewIntent.OnLoginTypeSelected
 import com.peto.ramap.ui.shop.overview.contract.ShopOverviewIntent.OnOverviewRetry
 import com.peto.ramap.ui.shop.overview.contract.ShopOverviewIntent.OnShopIdSelected
@@ -53,11 +50,8 @@ import org.jetbrains.compose.resources.StringResource
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.apple_login_failure_message
 import ramap.shared.generated.resources.data_load_failure_message
-import ramap.shared.generated.resources.hidden_shop_notification_unavailable_message
-import ramap.shared.generated.resources.hide_shop_success_message
 import ramap.shared.generated.resources.kakao_login_failure_message
 import ramap.shared.generated.resources.login_required_bookmark_description
-import ramap.shared.generated.resources.login_required_hide_shop_description
 import ramap.shared.generated.resources.login_required_notification_description
 import ramap.shared.generated.resources.login_success_message
 import ramap.shared.generated.resources.personalization_update_failure_message
@@ -76,7 +70,6 @@ class OverviewViewModel(
         initialState(loginRepository, personalizationStore),
     ) {
     private var pendingShopAction: PendingShopAction? = null
-    private var hidingSelectedShopId: String? = null
 
     init {
         val isNotLoggedIn = !currentState.isLoggedIn
@@ -122,7 +115,6 @@ class OverviewViewModel(
         when (intent) {
             is OnBookmarkToggled -> toggleBookmark(intent.shop, intent.source)
             is OnShopNotificationToggled -> toggleShopNotification(intent.shop, intent.source)
-            is OnHiddenToggled -> toggleHidden(intent.shop, intent.source)
             else -> return false
         }
         return true
@@ -309,60 +301,16 @@ class OverviewViewModel(
         source: AnalyticsSource,
     ) {
         if (requireLogin(PendingShopAction.ToggleShopNotification(shop, source))) return
-        val toggle = currentState.personalization.notificationToggle(shop.id)
-        val isNotificationHidden = toggle is NotificationStatus.Hidden
-        if (isNotificationHidden) {
-            showToast(Res.string.hidden_shop_notification_unavailable_message)
-            return
-        }
-        val allowed = toggle as NotificationStatus.Allowed
+        val enabled = currentState.personalization.nextNotificationEnabled(shop.id)
         launchResultTask(
             taskKey = NOTIFICATION_TASK_KEY,
             policy = TaskPolicy.IgnoreNew,
             request = {
-                mapAnalytics.logShopSubscribed(shop, allowed.enabled, source)
-                personalizationStore.updateShopNotification(shop.id, allowed.enabled)
+                mapAnalytics.logShopSubscribed(shop, enabled, source)
+                personalizationStore.updateShopNotification(shop.id, enabled)
             },
             onError = { showToast(Res.string.personalization_update_failure_message, ToastType.ERROR) },
         )
-    }
-
-    private fun toggleHidden(
-        shop: RamenShop,
-        source: AnalyticsSource,
-    ) {
-        if (requireLogin(PendingShopAction.ToggleHidden(shop, source))) return
-        val hidden = !currentState.personalization.nextHiddenEnabled(shop.id)
-        val isHidingCurrentSelectedShop = !hidden && currentState.selectedShop?.id == shop.id
-        if (isHidingCurrentSelectedShop) hidingSelectedShopId = shop.id
-        launchResultTask(
-            taskKey = HIDDEN_TASK_KEY,
-            policy = TaskPolicy.IgnoreNew,
-            request = {
-                mapAnalytics.logHiddenToggled(shop, !hidden, source)
-                if (hidden) personalizationStore.unhideShop(shop.id) else personalizationStore.hideShop(shop.id)
-            },
-            onSuccess = { handleHiddenSuccess(shop.id, hidden) },
-            onError = { handleHiddenError() },
-        )
-    }
-
-    private fun handleHiddenSuccess(
-        shopId: String,
-        hidden: Boolean,
-    ) {
-        val isShopUnhidden = !hidden
-        if (isShopUnhidden) showToast(Res.string.hide_shop_success_message)
-        val isTargetSelectedShop = hidingSelectedShopId == shopId
-        if (isTargetSelectedShop) {
-            hidingSelectedShopId = null
-            trySideEffect(ShopOverviewSideEffect.SelectedShopHidden)
-        }
-    }
-
-    private fun handleHiddenError() {
-        hidingSelectedShopId = null
-        showToast(Res.string.personalization_update_failure_message, ToastType.ERROR)
     }
 
     private suspend fun awaitLogin() {
@@ -381,7 +329,7 @@ class OverviewViewModel(
         if (isLoggedOut) return
         val previousBookmarkedShopIds = currentState.bookmarkedShopIds.takeIf { currentState.hasReceivedPersonalization }
         reduce { copy(isLoggedIn = true) }
-        applyPersonalization(personalization)
+        reduce { copy(personalization = personalization, hasReceivedPersonalization = true) }
         synchronizeOverviewLikeCounts(previousBookmarkedShopIds)
         resumePendingAction()
     }
@@ -404,28 +352,6 @@ class OverviewViewModel(
         if (isDifferentShop) return
         val updatedOverview = overviewContent.overview.updateBookmarkCount(enabled)
         reduce { copy(overviewState = overviewContent.copy(overview = updatedOverview)) }
-    }
-
-    private fun applyPersonalization(personalization: Personalization) {
-        val selectedShopId = currentState.selectedShop?.id
-        val transition = personalization.visibilityChange(selectedShopId, currentState.personalization)
-        val nextOverviewState =
-            when (transition) {
-                VisibilityStatus.Hidden -> ShopOverviewUiState.Closed
-                VisibilityStatus.Visible -> overviewStateWithVisibleShop(currentState.overviewState)
-                VisibilityStatus.Unchanged -> currentState.overviewState
-            }
-        reduce {
-            copy(
-                overviewState = nextOverviewState,
-                personalization = personalization,
-                hasReceivedPersonalization = true,
-            )
-        }
-        val isHiddenSelectedShop = transition == VisibilityStatus.Hidden && hidingSelectedShopId != selectedShopId
-        if (isHiddenSelectedShop) {
-            trySideEffect(ShopOverviewSideEffect.SelectedShopHidden)
-        }
     }
 
     private fun login(type: LoginType) {
@@ -463,7 +389,6 @@ class OverviewViewModel(
         when (action) {
             is PendingShopAction.ToggleBookmark -> updateBookmark(action.shop, action.source, action.enabled)
             is PendingShopAction.ToggleShopNotification -> toggleShopNotification(action.shop, action.source)
-            is PendingShopAction.ToggleHidden -> toggleHidden(action.shop, action.source)
         }
     }
 
@@ -472,7 +397,6 @@ class OverviewViewModel(
             when (action) {
                 is PendingShopAction.ToggleBookmark -> Res.string.login_required_bookmark_description
                 is PendingShopAction.ToggleShopNotification -> Res.string.login_required_notification_description
-                is PendingShopAction.ToggleHidden -> Res.string.login_required_hide_shop_description
             }
         viewModelScope.launch {
             postSideEffect(ShopOverviewSideEffect.Interaction(ShowLoginGuide(description)))
@@ -486,19 +410,6 @@ class OverviewViewModel(
             is ShopOverviewUiState.Error -> sheet.shopId
             ShopOverviewUiState.Closed -> null
         }
-
-    private fun overviewStateWithVisibleShop(state: ShopOverviewUiState): ShopOverviewUiState =
-        when (state) {
-            ShopOverviewUiState.Closed -> state
-            is ShopOverviewUiState.Loading -> state.copy(shop = state.shop?.copy(isVisible = true))
-            is ShopOverviewUiState.Content -> visibleContentState(state)
-            is ShopOverviewUiState.Error -> state.copy(shop = state.shop?.copy(isVisible = true))
-        }
-
-    private fun visibleContentState(state: ShopOverviewUiState.Content): ShopOverviewUiState.Content {
-        val visibleShop = state.overview.shop.copy(isVisible = true)
-        return state.copy(overview = state.overview.copy(shop = visibleShop))
-    }
 
     private fun showToast(
         message: StringResource,
@@ -528,7 +439,6 @@ class OverviewViewModel(
         private const val OVERVIEW_TASK_KEY = "shop_overview"
         private const val BOOKMARK_TASK_KEY = "shop_bookmark"
         private const val NOTIFICATION_TASK_KEY = "shop_notification"
-        private const val HIDDEN_TASK_KEY = "shop_hidden"
         private const val SHOP_REPORT_TASK_KEY = "shop_report"
         private const val ACCOUNT_TASK_KEY = "shop_account"
 

@@ -21,9 +21,7 @@ import com.peto.ramap.data.datasource.moderation.UserModerationDataSource
 import com.peto.ramap.data.datasource.notice.OperatingNoticeDataSource
 import com.peto.ramap.data.datasource.notice.RemoteOperatingNoticeDataSource
 import com.peto.ramap.data.datasource.personalization.BookmarkShopDataSource
-import com.peto.ramap.data.datasource.personalization.HiddenShopDataSource
 import com.peto.ramap.data.datasource.personalization.RemoteBookmarkShopDataSource
-import com.peto.ramap.data.datasource.personalization.RemoteHiddenShopDataSource
 import com.peto.ramap.data.datasource.place.PlaceSearchDataSource
 import com.peto.ramap.data.datasource.place.RemotePlaceSearchDataSource
 import com.peto.ramap.data.datasource.profile.ProfileDataSource
@@ -96,9 +94,6 @@ val dataSourceModule =
         }
         single<BookmarkShopDataSource> {
             RemoteBookmarkShopDataSource(get<SupabaseClient>())
-        }
-        single<HiddenShopDataSource> {
-            RemoteHiddenShopDataSource(get<SupabaseClient>())
         }
         single<ShopReportDataSource> {
             RemoteShopReportDataSource(get<SupabaseClient>())

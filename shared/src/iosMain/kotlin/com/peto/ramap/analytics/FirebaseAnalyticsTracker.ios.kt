@@ -30,7 +30,7 @@ class FirebaseAnalyticsTracker : AnalyticsTracker {
 
     override fun userProperty(
         key: String,
-        value: String,
+        value: String?,
     ) {
         if (!isConfigured) return
         FIRAnalytics.setUserPropertyString(value, key)
