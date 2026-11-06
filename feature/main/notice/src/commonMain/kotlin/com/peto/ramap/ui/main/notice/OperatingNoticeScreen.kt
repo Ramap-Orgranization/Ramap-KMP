@@ -52,7 +52,7 @@ import ramap.shared.generated.resources.operating_notice_today_section
 import ramap.shared.generated.resources.search_result_empty_message
 
 @Composable
-internal fun OperatingNoticeScreen(
+fun OperatingNoticeScreen(
     uiState: OperatingNoticeUiState,
     onRefresh: () -> Unit,
     onRetry: () -> Unit,
@@ -63,6 +63,7 @@ internal fun OperatingNoticeScreen(
     onPersonalizationRetry: () -> Unit = {},
     isSourceUrlSupported: (String) -> Boolean,
     onSourceClick: (String) -> Unit,
+    showFilters: Boolean = true,
 ) {
     val todayTitle = stringResource(Res.string.operating_notice_today_section)
     val scheduledTitle = stringResource(Res.string.operating_notice_scheduled_section)
@@ -70,12 +71,14 @@ internal fun OperatingNoticeScreen(
     var selectedNotice by remember { mutableStateOf<OperatingNoticeSelection?>(null) }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        NewsFilters(
-            query = uiState.query,
-            savedOnly = uiState.savedOnly,
-            onQueryChanged = onQueryChanged,
-            onSavedToggled = onSavedToggled,
-        )
+        if (showFilters) {
+            NewsFilters(
+                query = uiState.query,
+                savedOnly = uiState.savedOnly,
+                onQueryChanged = onQueryChanged,
+                onSavedToggled = onSavedToggled,
+            )
+        }
         Box(modifier = Modifier.fillMaxSize().weight(1f)) {
             PullToRefreshBox(
                 isRefreshing = uiState.isRefreshing,

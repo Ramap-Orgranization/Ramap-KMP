@@ -73,6 +73,7 @@ fun EventsRoute(
             onQueryChanged = { viewModel.dispatch(EventsIntent.OnQueryChanged(it)) },
             onSavedToggled = { viewModel.dispatch(EventsIntent.OnSavedToggled) },
             onPersonalizationRetry = { viewModel.dispatch(EventsIntent.OnPersonalizationRetried) },
+            showFilters = true,
         )
 
         LoginGuideDialog(
@@ -84,7 +85,7 @@ fun EventsRoute(
 }
 
 @Composable
-internal fun EventsScreen(
+fun EventsScreen(
     uiState: EventsUiState,
     onClickEvent: (ShopEvent) -> Unit,
     onRefresh: () -> Unit,
@@ -92,16 +93,19 @@ internal fun EventsScreen(
     onQueryChanged: (String) -> Unit = {},
     onSavedToggled: () -> Unit = {},
     onPersonalizationRetry: () -> Unit = {},
+    showFilters: Boolean = true,
 ) {
     var selectedEventGroup by remember { mutableStateOf<ShopEvents?>(null) }
     val pullToRefreshState = rememberPullToRefreshState()
     Column(modifier = Modifier.fillMaxSize()) {
-        NewsFilters(
-            query = uiState.query,
-            savedOnly = uiState.savedOnly,
-            onQueryChanged = onQueryChanged,
-            onSavedToggled = onSavedToggled,
-        )
+        if (showFilters) {
+            NewsFilters(
+                query = uiState.query,
+                savedOnly = uiState.savedOnly,
+                onQueryChanged = onQueryChanged,
+                onSavedToggled = onSavedToggled,
+            )
+        }
         Box(modifier = Modifier.fillMaxSize().weight(1f)) {
             PullToRefreshBox(
                 isRefreshing = uiState.isRefreshing,

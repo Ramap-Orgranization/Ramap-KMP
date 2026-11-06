@@ -39,6 +39,7 @@ fun OperatingNoticeRoute(
             onNoticeClick = { viewModel.dispatch(OperatingNoticeIntent.OnNoticeClicked(it)) },
             isSourceUrlSupported = ExternalUriOpener::isSupportedWebUri,
             onSourceClick = ExternalUriOpener::open,
+            showFilters = true,
         )
 
         LoginGuideDialog(

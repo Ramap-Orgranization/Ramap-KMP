@@ -16,15 +16,13 @@ import com.peto.ramap.ui.bookmark.importation.ImportationGuideRoute
 import com.peto.ramap.ui.bookmark.importation.ImportationRoute
 import com.peto.ramap.ui.bookmark.list.BookmarkedShopListRoute
 import com.peto.ramap.ui.main.event.detail.EventDetailRoute
-import com.peto.ramap.ui.main.event.list.EventsRoute
 import com.peto.ramap.ui.main.feed.FeedRoute
 import com.peto.ramap.ui.main.map.MapRoute
 import com.peto.ramap.ui.main.map.archive.ArchiveMapRoute
 import com.peto.ramap.ui.main.map.archive.ArchiveMapViewModel
 import com.peto.ramap.ui.main.my.MyTabRoute
-import com.peto.ramap.ui.main.notice.OperatingNoticeRoute
 import com.peto.ramap.ui.main.ranking.RankingRoute
-import com.peto.ramap.ui.news.NewsScreen
+import com.peto.ramap.ui.news.NewsRoute
 import com.peto.ramap.ui.notification.NotificationSettingsRoute
 import com.peto.ramap.ui.profile.edit.ProfileEditRoute
 import com.peto.ramap.ui.profile.follow.FollowRoute
@@ -284,24 +282,15 @@ internal fun NavigationGraph(
             )
         },
         newsScreen = {
-            NewsScreen(
-                selectedTab = navigationState.selectedNewsTab,
-                onTabSelected = navigationState::selectNewsTab,
-                eventsContent = {
-                    EventsRoute(
-                        onClickEvent = { event -> navigationState.showEvent(event.id) },
+            NewsRoute(
+                onClickEvent = { event -> navigationState.showEvent(event.id) },
+                onShopClick = { shopId ->
+                    navigationState.showShopOnMap(
+                        shopId = shopId,
+                        source = NavigationSource.OPERATING_NOTICE,
                     )
                 },
-                operatingNoticesContent = {
-                    OperatingNoticeRoute(
-                        onShopClick = { shopId ->
-                            navigationState.showShopOnMap(
-                                shopId = shopId,
-                                source = NavigationSource.OPERATING_NOTICE,
-                            )
-                        },
-                    )
-                },
+                navigationState = navigationState,
             )
         },
         notificationSettingsScreen = {

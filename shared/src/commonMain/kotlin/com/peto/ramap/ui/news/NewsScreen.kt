@@ -10,6 +10,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.peto.ramap.designsystem.component.NewsFilters
 import com.peto.ramap.designsystem.tab.AppChipTabs
 import com.peto.ramap.navigation.NewsTab
 import com.peto.ramap.theme.CommonColor
@@ -22,6 +23,10 @@ import ramap.shared.generated.resources.news_tab_operating_notice
 internal fun NewsScreen(
     selectedTab: NewsTab,
     onTabSelected: (NewsTab) -> Unit,
+    query: String,
+    savedOnly: Boolean,
+    onQueryChanged: (String) -> Unit,
+    onSavedToggled: () -> Unit,
     eventsContent: @Composable () -> Unit,
     operatingNoticesContent: @Composable () -> Unit,
 ) {
@@ -33,6 +38,12 @@ internal fun NewsScreen(
                 .background(CommonColor.White)
                 .statusBarsPadding(),
     ) {
+        NewsFilters(
+            query = query,
+            savedOnly = savedOnly,
+            onQueryChanged = onQueryChanged,
+            onSavedToggled = onSavedToggled,
+        )
         AppChipTabs(
             labels =
                 NewsTab.entries.map { tab ->
