@@ -1,6 +1,6 @@
 # 실행 산출물과 도구
 
-스킬의 helper는 Python 표준 라이브러리만 사용한다. DB 인증은 연결된 Supabase MCP 또는 현재 저장소에 연결된 Supabase CLI로 수행하고 키를 출력하거나 산출물에 저장하지 않는다. CLI 명령은 현재 버전의 `--help`로 확인한다.
+스킬의 helper는 Python 표준 라이브러리만 사용한다. DB 인증은 연결된 Supabase MCP 또는 Ramap-Backend 체크아웃에 연결된 Supabase CLI로 수행하고 키를 출력하거나 산출물에 저장하지 않는다. CLI 명령은 현재 버전의 `--help`로 확인한다. Python 도구는 기본 KMP 체크아웃 옆의 `Ramap-Backend`를 사용한다. 아래 CLI 예제를 직접 실행하기 전에 [README의 서버 설정](../../../README.md#서버-저장소)에 따라 `RAMAP_BACKEND_DIR`에 백엔드 체크아웃의 절대 경로를 설정한다. `supabase link`는 서버 체크아웃에서 실행한다.
 
 DB에 원문을 저장하거나 저장된 원문을 읽을 때는 [원문 gzip 보관](raw-storage.md)을 따른다. 수집 원문 파일은 그대로 유지하며 운영 DB에는 검증된 비공개 Storage 원문의 참조를 저장한다.
 
@@ -24,9 +24,9 @@ DB에 원문을 저장하거나 저장된 원문을 읽을 때는 [원문 gzip �
 
 ```bash
 python3 <skill-dir>/scripts/refresh_plan.py select-sql --before 2026-10-06 --limit 10 > selection.sql
-supabase db query --linked --file selection.sql --output json > selection.json
+supabase --workdir "${RAMAP_BACKEND_DIR:?Set RAMAP_BACKEND_DIR}" db query --linked --file "$PWD/selection.sql" --output json > selection.json
 python3 <skill-dir>/scripts/refresh_plan.py state-sql --selection selection.json > state.sql
-supabase db query --linked --file state.sql --output json > baseline.json
+supabase --workdir "${RAMAP_BACKEND_DIR:?Set RAMAP_BACKEND_DIR}" db query --linked --file "$PWD/state.sql" --output json > baseline.json
 ```
 
 연결 프로젝트가 Ramap인지 먼저 확인한다. 상태 JSON은 `rows[0].state`에 `shops`, `sections`, `items`, `visible`, `overrides`, `rules`, `menu_timestamps`, `collection_skips` 배열을 담는다. `items`는 `shop_menu_sections`를 JOIN해 `shop_id`를 붙인 원본 전체 행이다. `shop_menu_items` 자체에는 `shop_id`가 없다.
@@ -48,7 +48,7 @@ python3 tools/menu-refresh/scripts/refresh_run.py run-cli \
 
 수집자가 원본 DOM과 수집 증거를 저장하고 판정자가 같은 산출물 폴더에 검증된 파생 `result.json`을 작성한 뒤 주 에이전트가 `submit`한다. 실행기의 collector에는 실제 원문 수집자를 기록한다. 실행기는 필수 항목·원본 대조·품질 확인·지점 판정·경로·조사 시각을 확인한다. 라이브 캡처의 기본 유효 기간은 24시간이며 `--max-age-hours`로 더 짧게 정할 수 있다. 반영 직전에도 시각과 원본 해시를 다시 확인한다. 실행 중 이미 제출한 캡처를 편집하지 않는다. 새 원본/판정이 필요하면 새 실행에 새 캡처를 제출한다.
 
-`run-cli`는 `supabase/.temp/project-ref`가 실행의 프로젝트와 같고 설치된 CLI의 `db query --help`가 필요한 옵션을 제공할 때만 동작한다. 다른 프로젝트로 자동 연결하지 않는다. 인증된 연결이 있는 MCP에서는 다음과 같이 로컬 실행기를 불러온다.
+`run-cli`는 서버 체크아웃의 `supabase/.temp/project-ref`가 실행의 프로젝트와 같고 설치된 CLI의 `db query --help`가 필요한 옵션을 제공할 때만 동작한다. 다른 프로젝트로 자동 연결하지 않는다. 인증된 연결이 있는 MCP에서는 다음과 같이 로컬 실행기를 불러온다.
 
 수집 자체가 실패한 매장은 `fail --shop-id <uuid> --reason <실제 원인>`으로 기록하고 다른 매장을 진행한다. 실패한 수집도 성공으로 표시하거나 매장 목록에서 지우지 않는다. 진단 후 한 번만 재시도할 수 있으며 캡처가 없는 경우 `waiting_capture`로 돌아간다.
 
@@ -236,7 +236,7 @@ SQL 생성 시 `source_dom.py`가 메뉴 링크의 원본 Place ID와 canonical 
 ```bash
 python3 <skill-dir>/scripts/refresh_plan.py prepare \
   --capture shop-01/result.json --state prewrite-state.json --output shop-01/prepared
-supabase db query --linked --file shop-01/prepared/apply.sql --output json > shop-01/commit-result.json
+supabase --workdir "${RAMAP_BACKEND_DIR:?Set RAMAP_BACKEND_DIR}" db query --linked --file "$PWD/shop-01/prepared/apply.sql" --output json > shop-01/commit-result.json
 ```
 
 가격 변동·메뉴 순서 갱신·메뉴 추가·삭제·이미지 변경과 같은 메뉴의 설명 갱신에는 등록 정책의 상시 실행 지시를 적용한다. 승인을 다시 요청하지 않고 plan.status가 `prepared`인지 확인한 뒤 마지막 명령을 실행하고 결과를 사후 보고한다. 삭제가 있으면 COMMIT을 ROLLBACK으로 바꾼 동일 SQL을 먼저 검증하고, 실제 삭제 처리 수·기대 상태 검사 통과를 확인한 뒤 원래 SQL을 실행한다. 도우미는 읽기 전용 준비 명령이며 실행 SQL에 부모 매장과 관련 행 잠금, 변경 전 JSON 비교, 처리 수와 변경 후 전체 메뉴 비교, 스냅샷 재실행 차단을 넣는다.

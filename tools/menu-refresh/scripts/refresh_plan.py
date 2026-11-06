@@ -639,8 +639,8 @@ def main():
         plan, sql = prepare_capture(capture, state, raw_dom, args.run_id, plan['snapshot_id'],
             description_approvals=description_approvals)
         if sql:
-            from snapshot_storage import SnapshotStorage
-            project_id = args.project_id or (Path(__file__).resolve().parents[3] / 'supabase/.temp/project-ref').read_text().strip()
+            from snapshot_storage import SnapshotStorage, backend_workdir, linked_backend_project
+            project_id = args.project_id or linked_backend_project(backend_workdir())
             archived = SnapshotStorage.from_cli(project_id).archive(raw_dom)
             (args.output / 'raw-storage.json').write_text(json.dumps(archived, indent=2) + '\n')
             (args.output / 'apply.sql').write_text(sql)

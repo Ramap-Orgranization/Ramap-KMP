@@ -11,7 +11,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import urlencode
 
-from snapshot_storage import REPO, SnapshotStorage
+from snapshot_storage import SnapshotStorage, backend_workdir, linked_backend_project
 
 
 def save(path, value):
@@ -22,7 +22,8 @@ def save(path, value):
 
 
 def statistics(project_id):
-    if (REPO / 'supabase/.temp/project-ref').read_text().strip() != project_id:
+    workdir = backend_workdir()
+    if linked_backend_project(workdir) != project_id:
         raise ValueError('linked CLI project differs from the archive project')
     sql = """SELECT jsonb_build_object(
         'measured_at',now(),
@@ -44,7 +45,7 @@ def statistics(project_id):
         stream.write(sql)
         stream.flush()
         result = subprocess.run(['supabase', 'db', 'query', '--linked', '--file', stream.name, '--output', 'json'],
-            cwd=REPO, capture_output=True, text=True, timeout=90)
+            cwd=workdir, capture_output=True, text=True, timeout=90)
     if result.returncode:
         raise ValueError('could not read archive statistics through the linked CLI')
     return json.loads(result.stdout)['rows'][0]['statistics']

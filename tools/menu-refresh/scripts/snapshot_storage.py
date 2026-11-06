@@ -4,6 +4,7 @@ import hashlib
 import http.client
 import io
 import json
+import os
 import re
 import subprocess
 import tempfile
@@ -17,6 +18,26 @@ BUCKET = 'menu-snapshot-raw'
 MAX_RAW_BYTES = 32 * 1024 * 1024
 MAX_GZIP_BYTES = 16 * 1024 * 1024
 REPO = Path(__file__).resolve().parents[3]
+
+
+def backend_workdir():
+    configured = os.environ.get('RAMAP_BACKEND_DIR')
+    if configured:
+        return Path(configured).expanduser().resolve()
+
+    result = subprocess.run(
+        ['git', 'rev-parse', '--path-format=absolute', '--git-common-dir'],
+        cwd=REPO, capture_output=True, text=True,
+    )
+    primary_checkout = Path(result.stdout.strip()).parent if result.returncode == 0 else REPO
+    return primary_checkout.parent / 'Ramap-Backend'
+
+
+def linked_backend_project(workdir):
+    ref = workdir / 'supabase/.temp/project-ref'
+    if not ref.is_file():
+        raise ValueError('link the Ramap-Backend checkout with Supabase CLI before using linked commands')
+    return ref.read_text().strip()
 
 
 def sha256(value):

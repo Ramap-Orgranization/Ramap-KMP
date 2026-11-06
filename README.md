@@ -116,6 +116,25 @@ Kotlin 공통 코드에서 화면·도메인·데이터 흐름을 공유하고, 
 
 전체 모듈 목록은 [settings.gradle.kts](settings.gradle.kts), 계층별 책임과 의존 방향은 [아키텍처 규칙](.agents/skills/ramap-architecture/SKILL.md)에서 확인합니다.
 
+## 서버 저장소
+
+Supabase 마이그레이션·Edge Functions, 서버 서비스와 배포 설정은 비공개 [Ramap-Backend](https://github.com/Ramap-Orgranization/Ramap-Backend)에서 관리합니다.
+
+Codex 프로젝트에 KMP만 연결되어 있어도 서버 작업은 별도의 로컬 백엔드 체크아웃에서 진행합니다. 기본 위치는 KMP 기본 체크아웃과 같은 상위 폴더입니다. 다른 위치에 이미 클론했다면 `RAMAP_BACKEND_DIR`에 해당 절대 경로를 설정합니다.
+
+KMP 기본 체크아웃이나 워크트리에서 아래 명령으로 기본 위치를 찾을 수 있습니다. 저장소가 처음 필요할 때 해당 경로에 클론합니다.
+
+```sh
+git_dir=$(git rev-parse --path-format=absolute --git-common-dir)
+default_backend_dir="$(dirname "$(dirname "$git_dir")")/Ramap-Backend"
+export RAMAP_BACKEND_DIR="${RAMAP_BACKEND_DIR:-$default_backend_dir}"
+if [ ! -e "$RAMAP_BACKEND_DIR" ]; then
+  git clone https://github.com/Ramap-Orgranization/Ramap-Backend.git "$RAMAP_BACKEND_DIR"
+fi
+```
+
+서버 테스트·배포 및 Supabase CLI 연결은 백엔드 체크아웃에서 실행합니다.
+
 ## AI 에이전트 하네스
 
 Codex 에이전트가 개발과 운영 작업을 수행할 때 참고할 지침, 역할, 워크플로를 저장소에서 관리합니다. 총괄 에이전트는 일반 구현 요청의 조사·구현·검증을 담당합니다. `/impl`처럼 단계별 진행을 요청하면 작업 범위와 완료 기준을 정해 역할별 에이전트로 이어갑니다.

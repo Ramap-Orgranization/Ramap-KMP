@@ -22,7 +22,7 @@ last_verified: 2026-11-03
 
 ## 구현을 찾는 범위
 
-[도메인 코드](../../domain), [데이터 코드](../../data), [기능 코드](../../feature), [공통 기반](../../core), [서버 코드](../../supabase)에서 작업할 개념을 검색합니다. Gradle 모듈의 원천은 `settings.gradle.kts`이고 실행·조립 경계는 앱 소스에서 확인합니다. 위키에 전체 의존성 그래프나 현재 클래스 위치를 다시 작성하지 않습니다.
+[도메인 코드](../../domain), [데이터 코드](../../data), [기능 코드](../../feature), [공통 기반](../../core), [서버 코드](https://github.com/Ramap-Orgranization/Ramap-Backend)에서 작업할 개념을 검색합니다. Gradle 모듈의 원천은 `settings.gradle.kts`이고 실행·조립 경계는 앱 소스에서 확인합니다. 위키에 전체 의존성 그래프나 현재 클래스 위치를 다시 작성하지 않습니다.
 
 ## 이미지 처리의 선택
 

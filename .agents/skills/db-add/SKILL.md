@@ -151,7 +151,7 @@ Use user-provided categories first. If absent, inspect the Naver/Kakao menu, off
 츠케멘 -> tsukemen
 마제소바 -> mazesoba
 아부라소바 -> aburasoba
-지로계 -> jiro
+지로케 -> jiro
 니보시/교카이/어패류 -> niboshi_gyokai
 이에케/이에케이 -> iekei
 토마토라멘 -> tomato
@@ -251,10 +251,10 @@ Run after the row exists. Skip when `instagram_url` is null. If an existing row 
    A missing or rejected `og:image` prevents image upload; it is not proof that the account is invalid. Newly discovered URLs must already have been verified during preview preparation. Preserve the approved profile URL and any existing image path if the later image fetch fails, and report that failure.
 3. Decode HTML entities. Accept only HTTPS URLs hosted by `cdninstagram.com` or a subdomain. Reject login placeholders, generic images, unavailable/private profiles, and non-image responses.
 4. Retrieve the verified original image through an available tool into a temporary directory for the approved upload. Accept only JPEG, PNG, or WebP files up to 10 MiB after checking MIME type and actual file type.
-5. Upload to the logical `shop-profile-images` bucket as `<shop_uuid>.<ext>` through the shared provider-aware media tool. Keep the deployment connection JSON outside Git; see `infrastructure/r2-media/README.md`. The tool validates the final file and maintains the required legacy copy:
+5. Upload to the logical `shop-profile-images` bucket as `<shop_uuid>.<ext>` through the shared provider-aware media tool. Keep the deployment connection JSON outside Git; see [README.md](https://github.com/Ramap-Orgranization/Ramap-Backend/blob/main/infrastructure/r2-media/README.md). Set `RAMAP_BACKEND_DIR` to the local Ramap-Backend checkout per the Ramap-KMP README before running the uploader. The tool validates the final file and maintains the required legacy copy.
 
 ```text
-python3 infrastructure/r2-media/upload.py \
+python3 "${RAMAP_BACKEND_DIR:?Set RAMAP_BACKEND_DIR}/infrastructure/r2-media/upload.py" \
   --config <local_deployment_json> --bucket shop-profile-images \
   --path <shop_uuid>.<ext> --file <local_image> --content-type <mime_type>
 ```
