@@ -35,7 +35,7 @@ actual fun rememberImagesPicker(
         {
             if (maxSelectionCount > 0 && !delegate.isPicking) {
                 val configuration = PHPickerConfiguration()
-                configuration.selectionLimit = maxSelectionCount.coerceAtMost(3).toLong()
+                configuration.selectionLimit = maxSelectionCount.toLong()
                 configuration.selection = PHPickerConfigurationSelectionOrdered
                 configuration.filter = PHPickerFilter.imagesFilter
                 val picker = PHPickerViewController(configuration = configuration)

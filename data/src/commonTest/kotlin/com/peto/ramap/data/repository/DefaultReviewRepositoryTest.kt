@@ -43,7 +43,7 @@ class DefaultReviewRepositoryTest {
             assertIs<RamapResult.Error>(repository.submitReview("shop", "  \t\n", listOf(image), true))
             assertIs<RamapResult.Error>(repository.submitReview("shop", "1234", listOf(image), true))
             assertIs<RamapResult.Error>(repository.submitReview("shop", "씨발 맛없어요", listOf(image), true))
-            assertIs<RamapResult.Error>(repository.submitReview("shop", "12345", List(4) { image }, true))
+            assertIs<RamapResult.Error>(repository.submitReview("shop", "12345", List(6) { image }, true))
             assertIs<RamapResult.Error>(repository.submitReview("shop", "12345", listOf(image.copy(bytes = byteArrayOf())), true))
             assertEquals("12345", source.submittedReview?.body)
         }
