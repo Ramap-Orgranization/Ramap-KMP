@@ -21,13 +21,12 @@ import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.bookmarked_shops_toggle
 import ramap.shared.generated.resources.event_notification_action
-import ramap.shared.generated.resources.ic_kid_star
-import ramap.shared.generated.resources.ic_kid_star_filled
 import ramap.shared.generated.resources.ic_more_vert
 import ramap.shared.generated.resources.ic_notification
 import ramap.shared.generated.resources.ic_notification_filled
 import ramap.shared.generated.resources.ic_report
 import ramap.shared.generated.resources.ic_share
+import ramap.shared.generated.resources.ic_star_filled
 import ramap.shared.generated.resources.share_shop_action
 import ramap.shared.generated.resources.shop_detail_link_report
 import ramap.shared.generated.resources.shop_detail_more_actions
@@ -75,7 +74,7 @@ internal fun OverflowMenu(
             )
             OverflowMenuItem(
                 text = stringResource(Res.string.bookmarked_shops_toggle),
-                icon = if (isBookmarked) Res.drawable.ic_kid_star_filled else Res.drawable.ic_kid_star,
+                icon = Res.drawable.ic_star_filled,
                 isActive = isBookmarked,
                 onClick = {
                     isExpanded = false

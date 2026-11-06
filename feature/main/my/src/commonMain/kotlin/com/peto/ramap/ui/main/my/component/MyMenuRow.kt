@@ -39,7 +39,7 @@ import ramap.shared.generated.resources.follow_manage
 import ramap.shared.generated.resources.follow_requests
 import ramap.shared.generated.resources.ic_chevron_right
 import ramap.shared.generated.resources.ic_person
-import ramap.shared.generated.resources.ic_profile_bookmark
+import ramap.shared.generated.resources.ic_star_filled
 import ramap.shared.generated.resources.settings_bookmarked_shops_menu
 
 @Composable
@@ -137,7 +137,7 @@ internal fun MyMenuRow(
 private fun MyMenuRowPreview() {
     RamapTheme {
         MyMenuRow(
-            icon = Res.drawable.ic_profile_bookmark,
+            icon = Res.drawable.ic_star_filled,
             title = Res.string.settings_bookmarked_shops_menu,
             count = 12,
             iconBackground = ChromaticColor.Orange050,

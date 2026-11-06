@@ -37,7 +37,6 @@ import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.ic_close
-import ramap.shared.generated.resources.ic_kid_star_filled
 import ramap.shared.generated.resources.review_close
 import ramap.shared.generated.resources.shop_detail_copy_address
 import ramap.shared.generated.resources.shop_detail_label_address
@@ -122,11 +121,9 @@ internal fun ShopHeaderSection(
                             horizontalArrangement = Arrangement.spacedBy(5.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            Image(
-                                painter = painterResource(Res.drawable.ic_kid_star_filled),
-                                contentDescription = null,
-                                modifier = Modifier.size(15.dp),
-                                colorFilter = ColorFilter.tint(GrayColor.C400),
+                            ShopBookmarkButton(
+                                isBookmarked = isBookmarked,
+                                onClick = onBookmarkClick,
                             )
                             AppText(
                                 text = "$likeCount",

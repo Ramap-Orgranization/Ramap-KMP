@@ -71,12 +71,12 @@ import ramap.shared.generated.resources.follow_saved_shops_visibility
 import ramap.shared.generated.resources.ic_notification
 import ramap.shared.generated.resources.ic_person
 import ramap.shared.generated.resources.ic_profile_blocked
-import ramap.shared.generated.resources.ic_profile_bookmark
 import ramap.shared.generated.resources.ic_profile_private
 import ramap.shared.generated.resources.ic_profile_public
 import ramap.shared.generated.resources.ic_profile_report
 import ramap.shared.generated.resources.ic_review
 import ramap.shared.generated.resources.ic_setting
+import ramap.shared.generated.resources.ic_star_filled
 import ramap.shared.generated.resources.my_reviews
 import ramap.shared.generated.resources.profile_discard
 import ramap.shared.generated.resources.profile_load_failed
@@ -413,7 +413,7 @@ internal fun MyTabContent(
                         color = GrayColor.C100,
                     )
                     MyMenuRow(
-                        icon = Res.drawable.ic_profile_bookmark,
+                        icon = Res.drawable.ic_star_filled,
                         title = Res.string.settings_bookmarked_shops_menu,
                         count = state.bookmarkedCount,
                         iconBackground = ChromaticColor.Orange050,

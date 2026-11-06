@@ -82,11 +82,11 @@ private fun ShopHeaderSkeleton() {
                     Skeleton(modifier = Modifier.fillMaxWidth(0.65f).height(18.dp))
                 }
                 Row(
-                    modifier = Modifier.height(21.dp),
+                    modifier = Modifier.height(48.dp),
                     horizontalArrangement = Arrangement.spacedBy(5.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Skeleton(modifier = Modifier.size(15.dp), shape = CircleShape)
+                    Skeleton(modifier = Modifier.size(48.dp), shape = RoundedCornerShape(8.dp))
                     Skeleton(modifier = Modifier.width(28.dp).height(14.dp))
                 }
             }

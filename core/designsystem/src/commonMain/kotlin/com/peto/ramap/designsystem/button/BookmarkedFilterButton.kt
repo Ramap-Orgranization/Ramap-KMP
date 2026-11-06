@@ -9,7 +9,7 @@ import com.peto.ramap.theme.RamapTheme
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.bookmarked_shops_toggle
-import ramap.shared.generated.resources.ic_kid_star
+import ramap.shared.generated.resources.ic_star_filled
 
 @Composable
 fun BookmarkedFilterButton(
@@ -19,7 +19,7 @@ fun BookmarkedFilterButton(
     contentDescription: String = stringResource(Res.string.bookmarked_shops_toggle),
 ) {
     AppCircleIconButton(
-        icon = Res.drawable.ic_kid_star,
+        icon = Res.drawable.ic_star_filled,
         isActive = isActive,
         contentDescription = contentDescription,
         selected = isActive,
