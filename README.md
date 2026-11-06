@@ -120,7 +120,20 @@ Kotlin 공통 코드에서 화면·도메인·데이터 흐름을 공유하고, 
 
 Supabase 마이그레이션·Edge Functions, 서버 서비스와 배포 설정은 비공개 [Ramap-Backend](https://github.com/Ramap-Orgranization/Ramap-Backend)에서 관리합니다.
 
-운영 도구가 서버 체크아웃을 필요로 하면 이 저장소와 같은 상위 폴더에 `Ramap-Backend`를 클론합니다. 다른 위치에 클론했다면 `RAMAP_BACKEND_DIR`에 절대 경로를 설정합니다. Supabase CLI 연결은 서버 체크아웃에서 설정합니다.
+Codex 프로젝트에 KMP만 연결되어 있어도 서버 작업은 별도의 로컬 백엔드 체크아웃에서 진행합니다. 기본 위치는 KMP 기본 체크아웃과 같은 상위 폴더입니다. 다른 위치에 이미 클론했다면 `RAMAP_BACKEND_DIR`에 해당 절대 경로를 설정합니다.
+
+KMP 기본 체크아웃이나 워크트리에서 아래 명령으로 기본 위치를 찾을 수 있습니다. 저장소가 처음 필요할 때 해당 경로에 클론합니다.
+
+```sh
+git_dir=$(git rev-parse --path-format=absolute --git-common-dir)
+default_backend_dir="$(dirname "$(dirname "$git_dir")")/Ramap-Backend"
+export RAMAP_BACKEND_DIR="${RAMAP_BACKEND_DIR:-$default_backend_dir}"
+if [ ! -e "$RAMAP_BACKEND_DIR" ]; then
+  git clone https://github.com/Ramap-Orgranization/Ramap-Backend.git "$RAMAP_BACKEND_DIR"
+fi
+```
+
+서버 테스트·배포 및 Supabase CLI 연결은 백엔드 체크아웃에서 실행합니다.
 
 ## AI 에이전트 하네스
 

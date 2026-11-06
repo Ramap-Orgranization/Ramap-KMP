@@ -1,6 +1,6 @@
 # 실행 산출물과 도구
 
-스킬의 helper는 Python 표준 라이브러리만 사용한다. DB 인증은 연결된 Supabase MCP 또는 Ramap-Backend 체크아웃에 연결된 Supabase CLI로 수행하고 키를 출력하거나 산출물에 저장하지 않는다. CLI 명령은 현재 버전의 `--help`로 확인한다. Ramap-KMP 루트에서 실행할 때 기본 서버 경로는 `../Ramap-Backend`이며, 별도 위치는 `RAMAP_BACKEND_DIR`에 절대 경로로 지정한다. `supabase link`는 서버 체크아웃에서 실행한다.
+스킬의 helper는 Python 표준 라이브러리만 사용한다. DB 인증은 연결된 Supabase MCP 또는 Ramap-Backend 체크아웃에 연결된 Supabase CLI로 수행하고 키를 출력하거나 산출물에 저장하지 않는다. CLI 명령은 현재 버전의 `--help`로 확인한다. Python 도구는 기본 KMP 체크아웃 옆의 `Ramap-Backend`를 사용한다. 아래 CLI 예제를 직접 실행하기 전에 [README의 서버 설정](../../../README.md#서버-저장소)에 따라 `RAMAP_BACKEND_DIR`에 백엔드 체크아웃의 절대 경로를 설정한다. `supabase link`는 서버 체크아웃에서 실행한다.
 
 DB에 원문을 저장하거나 저장된 원문을 읽을 때는 [원문 gzip 보관](raw-storage.md)을 따른다. 수집 원문 파일은 그대로 유지하며 운영 DB에는 검증된 비공개 Storage 원문의 참조를 저장한다.
 
@@ -24,9 +24,9 @@ DB에 원문을 저장하거나 저장된 원문을 읽을 때는 [원문 gzip �
 
 ```bash
 python3 <skill-dir>/scripts/refresh_plan.py select-sql --before 2026-10-06 --limit 10 > selection.sql
-supabase --workdir "${RAMAP_BACKEND_DIR:-../Ramap-Backend}" db query --linked --file "$PWD/selection.sql" --output json > selection.json
+supabase --workdir "${RAMAP_BACKEND_DIR:?Set RAMAP_BACKEND_DIR}" db query --linked --file "$PWD/selection.sql" --output json > selection.json
 python3 <skill-dir>/scripts/refresh_plan.py state-sql --selection selection.json > state.sql
-supabase --workdir "${RAMAP_BACKEND_DIR:-../Ramap-Backend}" db query --linked --file "$PWD/state.sql" --output json > baseline.json
+supabase --workdir "${RAMAP_BACKEND_DIR:?Set RAMAP_BACKEND_DIR}" db query --linked --file "$PWD/state.sql" --output json > baseline.json
 ```
 
 연결 프로젝트가 Ramap인지 먼저 확인한다. 상태 JSON은 `rows[0].state`에 `shops`, `sections`, `items`, `visible`, `overrides`, `rules`, `menu_timestamps`, `collection_skips` 배열을 담는다. `items`는 `shop_menu_sections`를 JOIN해 `shop_id`를 붙인 원본 전체 행이다. `shop_menu_items` 자체에는 `shop_id`가 없다.
@@ -236,7 +236,7 @@ SQL 생성 시 `source_dom.py`가 메뉴 링크의 원본 Place ID와 canonical 
 ```bash
 python3 <skill-dir>/scripts/refresh_plan.py prepare \
   --capture shop-01/result.json --state prewrite-state.json --output shop-01/prepared
-supabase --workdir "${RAMAP_BACKEND_DIR:-../Ramap-Backend}" db query --linked --file "$PWD/shop-01/prepared/apply.sql" --output json > shop-01/commit-result.json
+supabase --workdir "${RAMAP_BACKEND_DIR:?Set RAMAP_BACKEND_DIR}" db query --linked --file "$PWD/shop-01/prepared/apply.sql" --output json > shop-01/commit-result.json
 ```
 
 가격 변동·메뉴 순서 갱신·메뉴 추가·삭제·이미지 변경과 같은 메뉴의 설명 갱신에는 등록 정책의 상시 실행 지시를 적용한다. 승인을 다시 요청하지 않고 plan.status가 `prepared`인지 확인한 뒤 마지막 명령을 실행하고 결과를 사후 보고한다. 삭제가 있으면 COMMIT을 ROLLBACK으로 바꾼 동일 SQL을 먼저 검증하고, 실제 삭제 처리 수·기대 상태 검사 통과를 확인한 뒤 원래 SQL을 실행한다. 도우미는 읽기 전용 준비 명령이며 실행 SQL에 부모 매장과 관련 행 잠금, 변경 전 JSON 비교, 처리 수와 변경 후 전체 메뉴 비교, 스냅샷 재실행 차단을 넣는다.

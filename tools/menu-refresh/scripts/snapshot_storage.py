@@ -21,7 +21,16 @@ REPO = Path(__file__).resolve().parents[3]
 
 
 def backend_workdir():
-    return Path(os.environ.get('RAMAP_BACKEND_DIR') or REPO.parent / 'Ramap-Backend').expanduser().resolve()
+    configured = os.environ.get('RAMAP_BACKEND_DIR')
+    if configured:
+        return Path(configured).expanduser().resolve()
+
+    result = subprocess.run(
+        ['git', 'rev-parse', '--path-format=absolute', '--git-common-dir'],
+        cwd=REPO, capture_output=True, text=True,
+    )
+    primary_checkout = Path(result.stdout.strip()).parent if result.returncode == 0 else REPO
+    return primary_checkout.parent / 'Ramap-Backend'
 
 
 def linked_backend_project(workdir):

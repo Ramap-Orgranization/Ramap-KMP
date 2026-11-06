@@ -11,6 +11,14 @@ This is a modularized Kotlin Multiplatform project targeting Android and iOS. Te
 
 Read and apply the object-oriented principles when implementing, reviewing, or testing. Read the relevant skills before changing production code. Do not recreate these rules in another agent document; update the owning wiki page or skill when a team rule changes.
 
+## Backend repository ownership
+
+[Ramap-Backend](https://github.com/Ramap-Orgranization/Ramap-Backend) owns server-side changes, including Supabase schema, migrations, RPCs, access policies, Edge Functions, workers, media services, and their deployment configuration and tests. Ramap-KMP owns app code and client-side integration, including Kotlin API calls and response models.
+
+When a task starts in a Codex project connected to Ramap-KMP, inspect and edit server files in a separate local Ramap-Backend checkout. Use `RAMAP_BACKEND_DIR` if configured. Otherwise, use the `Ramap-Backend` checkout beside the primary Ramap-KMP checkout, including when the current directory is a linked KMP worktree. See the [server setup in README](README.md#서버-저장소) for the checkout path and clone instructions. Use the server checkout as the working directory for server tests, Supabase CLI linking, and deployment commands.
+
+For work spanning both repositories, keep server and app changes in separate commits and PRs. Link the dependent changes and document their application order. Preserve local configuration and credentials in each checkout.
+
 ## LLM Wiki maintenance
 
 Start with `docs/wiki/README.md` and read only the policy, domain knowledge, or development principles relevant to the task. The wiki owns reusable product rules, domain concepts and relationships, exceptions, decision reasons, and the team's object-oriented principles; other implementation rules remain in the four Ramap skills above. Do not duplicate class/module inventories, API descriptions, deployment reports, test runs, or commit histories in the wiki.
