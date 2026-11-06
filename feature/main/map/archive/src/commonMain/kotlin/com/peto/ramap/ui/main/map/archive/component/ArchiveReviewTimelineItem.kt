@@ -18,7 +18,7 @@ import com.peto.ramap.designsystem.review.ReviewCardActions
 import com.peto.ramap.designsystem.review.ReviewCardImages
 import com.peto.ramap.designsystem.review.ReviewCardOverflowMenu
 import com.peto.ramap.designsystem.review.ReviewLikeCount
-import com.peto.ramap.designsystem.review.reviewDateLabel
+import com.peto.ramap.designsystem.review.reviewWrittenTimeLabel
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.domain.model.review.MyReview
 import com.peto.ramap.domain.model.review.Review
@@ -71,13 +71,15 @@ internal fun ArchiveReviewTimelineItem(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
+            val writtenTime = reviewWrittenTimeLabel(review.createdAt)
+            val visitNumber = stringResource(Res.string.review_visit_number, review.visitNumber)
             AppText(
                 text =
-                    stringResource(
-                        Res.string.archive_review_date_and_visit,
-                        reviewDateLabel(review.createdAt),
-                        stringResource(Res.string.review_visit_number, review.visitNumber),
-                    ),
+                    if (writtenTime != null) {
+                        stringResource(Res.string.archive_review_date_and_visit, writtenTime, visitNumber)
+                    } else {
+                        visitNumber
+                    },
                 style = AppTextStyle.B1,
                 color = GrayColor.C300,
                 modifier = Modifier.weight(1f),

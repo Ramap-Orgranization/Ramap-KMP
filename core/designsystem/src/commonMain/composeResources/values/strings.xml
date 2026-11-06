@@ -506,6 +506,11 @@
     <string name="profile_policy_bullet_3">부적절하거나 타인을 비방하는 단어는 제재될 수 있어요.</string>
     <string name="review_author_review_count">리뷰 %1$d</string>
     <string name="review_visit_number">%1$d번째 방문</string>
+    <string name="review_time_just_now">방금 전</string>
+    <string name="review_time_minutes_ago">%1$d분 전</string>
+    <string name="review_time_hours_ago">%1$d시간 전</string>
+    <string name="review_time_days_ago">%1$d일 전</string>
+    <string name="review_time_date">%1$s</string>
     <string name="review_like">좋아요 %1$d</string>
     <string name="review_more">더보기</string>
     <string name="review_collapse">접기</string>

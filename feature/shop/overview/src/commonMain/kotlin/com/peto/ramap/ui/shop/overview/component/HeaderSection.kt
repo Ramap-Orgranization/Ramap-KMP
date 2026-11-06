@@ -123,6 +123,7 @@ internal fun ShopHeaderSection(
                         ) {
                             ShopBookmarkButton(
                                 isBookmarked = isBookmarked,
+                                iconSize = 16.dp,
                                 onClick = onBookmarkClick,
                             )
                             AppText(

@@ -86,7 +86,7 @@ private fun ShopHeaderSkeleton() {
                     horizontalArrangement = Arrangement.spacedBy(5.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Skeleton(modifier = Modifier.size(48.dp), shape = RoundedCornerShape(8.dp))
+                    Skeleton(modifier = Modifier.size(16.dp), shape = RoundedCornerShape(8.dp))
                     Skeleton(modifier = Modifier.width(28.dp).height(14.dp))
                 }
             }

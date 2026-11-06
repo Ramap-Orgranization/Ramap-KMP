@@ -13,6 +13,7 @@ import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.InstagramColor
@@ -25,13 +26,15 @@ import ramap.shared.generated.resources.ic_star_filled
 @Composable
 internal fun ShopBookmarkButton(
     isBookmarked: Boolean,
+    iconSize: Dp,
+    modifier: Modifier = Modifier,
     onClick: () -> Unit,
 ) {
     val bookmarkDescription = stringResource(Res.string.bookmarked_shops_toggle)
 
     Box(
         modifier =
-            Modifier
+            modifier
                 .clip(RoundedCornerShape(8.dp))
                 .toggleable(
                     value = isBookmarked,
@@ -43,7 +46,7 @@ internal fun ShopBookmarkButton(
         Image(
             painter = painterResource(Res.drawable.ic_star_filled),
             contentDescription = null,
-            modifier = Modifier.size(20.dp),
+            modifier = Modifier.size(iconSize),
             colorFilter = ColorFilter.tint(if (isBookmarked) InstagramColor.Pink else GrayColor.C300),
         )
     }

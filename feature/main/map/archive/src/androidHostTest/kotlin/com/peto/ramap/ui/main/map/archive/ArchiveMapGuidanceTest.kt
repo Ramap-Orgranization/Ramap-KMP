@@ -42,6 +42,9 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
+import kotlin.time.Clock
+import kotlin.time.Duration.Companion.days
+import kotlin.time.Duration.Companion.hours
 
 @OptIn(ExperimentalTestApi::class)
 @RunWith(RobolectricTestRunner::class)
@@ -161,10 +164,19 @@ class ArchiveMapGuidanceTest {
     @Test
     fun `방문 기록에는 저장된 방문 차수와 좋아요 영 개도 표시하고 좋아요를 누를 수 없다`() =
         runComposeUiTest {
+            val writtenAt = Clock.System.now() - 2.days - 1.hours
             setContent {
                 RamapTheme {
                     ArchiveReviewTimelineItem(
-                        review = Review("review", "shop", "사진 없는 방문 기록", "2026-10-27T00:00:00Z", visitNumber = 5, likeCount = 0),
+                        review =
+                            Review(
+                                id = "review",
+                                shopId = "shop",
+                                body = "사진 없는 방문 기록",
+                                createdAt = writtenAt.toString(),
+                                visitNumber = 5,
+                                likeCount = 0,
+                            ),
                         isLatest = true,
                         isLast = true,
                         onEdit = {},
@@ -177,7 +189,7 @@ class ArchiveMapGuidanceTest {
                 }
             }
 
-            onNodeWithText("2026.10.27 · 5번째 방문").assertExists()
+            onNodeWithText("2일 전 · 5번째 방문").assertExists()
             onNodeWithContentDescription("좋아요 0").assert(hasClickAction().not())
         }
 
