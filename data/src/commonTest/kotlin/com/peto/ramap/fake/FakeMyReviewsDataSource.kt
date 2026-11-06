@@ -15,6 +15,8 @@ internal class FakeMyReviewsDataSource(
     private val myReviewsPage: MyReviewsPageResponse? = null,
     private val myReview: MyReviewResponse? = null,
 ) : ReviewDataSource {
+    override suspend fun fetchMyReviewCount(): Int = myReviewsPage?.totalCount ?: error("Unexpected my review count fetch")
+
     var submittedReview: ShopReviewRequest? = null
     var hydrationFailure: Exception? = null
 

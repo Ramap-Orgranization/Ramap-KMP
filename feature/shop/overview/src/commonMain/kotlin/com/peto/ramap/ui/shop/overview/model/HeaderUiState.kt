@@ -9,6 +9,5 @@ data class HeaderUiState(
     val isBookmarked: Boolean,
     val isNotificationEnabled: Boolean = false,
     val showNotificationActions: Boolean = true,
-    val isHidden: Boolean = false,
     val isAppleMapsAvailable: Boolean = false,
 )

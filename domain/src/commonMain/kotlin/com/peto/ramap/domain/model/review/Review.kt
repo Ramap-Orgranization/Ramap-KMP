@@ -21,7 +21,7 @@ data class Review(
 ) {
     fun allowsLikeFrom(viewerId: String?): Boolean = author.userId != viewerId && isPublic && moderationStatus == ReviewModerationStatus.PUBLISHED
 
-    fun allowsReportFrom(viewerId: String?): Boolean = viewerId != null && id.isNotBlank() && author.userId.isNotBlank() && author.userId != viewerId
+    fun allowsReportFrom(viewerId: String?): Boolean = viewerId != null && id.isNotBlank() && (author.userId.isNotBlank() || author.isWithdrawn) && author.userId != viewerId
 
     fun allowsDeletionBy(viewerId: String?): Boolean = author.userId == viewerId
 
@@ -41,11 +41,16 @@ data class Review(
 
         fun isValidBody(body: String): Boolean = codePointCount(body.trim()) in BODY_LENGTH && !containsProfanity(body)
 
+        fun isValidContent(
+            body: String,
+            imageCount: Int,
+        ): Boolean = imageCount in 0..ReviewImage.MAX_COUNT && isValidBody(body)
+
         fun containsProfanity(body: String): Boolean = profanityFilter.containsProfanity(body)
 
         fun bodyCharacterCount(body: String): Int = codePointCount(body)
 
-        val BODY_LENGTH = 5..100
+        val BODY_LENGTH = 5..500
 
         private fun codePointCount(value: String): Int {
             var count = 0

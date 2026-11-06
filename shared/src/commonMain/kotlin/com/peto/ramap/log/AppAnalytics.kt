@@ -52,11 +52,10 @@ class AppAnalytics(
             AnalyticsUserProperties.SUBSCRIBED_COUNT,
             personalization.notificationShopIds.size.toString(),
         )
+    }
 
-        analyticsTracker.userProperty(
-            AnalyticsUserProperties.HIDDEN_COUNT,
-            personalization.hiddenShopIds.size.toString(),
-        )
+    fun clearLegacyHiddenCount() {
+        analyticsTracker.userProperty(LEGACY_HIDDEN_COUNT, null)
     }
 
     private fun loginStatus(state: LoginSessionState): String =
@@ -67,6 +66,7 @@ class AppAnalytics(
         }
 
     companion object {
+        private const val LEGACY_HIDDEN_COUNT = "hidden_count"
         private const val LOGIN_STATUS_LOGGED_IN = "logged_in"
         private const val LOGIN_STATUS_GUEST = "guest"
     }

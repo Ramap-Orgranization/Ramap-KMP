@@ -25,8 +25,7 @@ fun NavigationRouter(
     reviewShopSearchScreen: @Composable () -> Unit,
     rankingScreen: @Composable () -> Unit,
     feedScreen: @Composable () -> Unit = {},
-    eventListScreen: @Composable () -> Unit,
-    operatingNoticeScreen: @Composable () -> Unit,
+    newsScreen: @Composable () -> Unit,
     myScreen: @Composable () -> Unit,
     settingsScreen: @Composable () -> Unit,
     accountSettingsScreen: @Composable () -> Unit,
@@ -37,7 +36,6 @@ fun NavigationRouter(
     reviewWriteScreen: @Composable (ScreenRoutes.ReviewWriteRoutes) -> Unit,
     informationScreen: @Composable () -> Unit,
     placeReportScreen: @Composable () -> Unit,
-    hiddenScreen: @Composable () -> Unit,
     notificationSettingsScreen: @Composable () -> Unit,
     subscribedShopsScreen: @Composable () -> Unit,
     bookmarkedShopsScreen: @Composable () -> Unit,
@@ -66,14 +64,7 @@ fun NavigationRouter(
                 BottonNavigationTabScreen(
                     selectedTab = TabStatus.EVENT,
                     onTabSelected = onTabSelected,
-                    content = eventListScreen,
-                )
-            }
-            entry<ScreenRoutes.OperatingNoticeRoutes> {
-                BottonNavigationTabScreen(
-                    selectedTab = TabStatus.EVENT,
-                    onTabSelected = onTabSelected,
-                    content = operatingNoticeScreen,
+                    content = newsScreen,
                 )
             }
             entry<ScreenRoutes.RankingTabRoutes> {
@@ -107,9 +98,6 @@ fun NavigationRouter(
             entry<ScreenRoutes.AccountSettingsRoutes> { FullScreen(accountSettingsScreen) }
             entry<ScreenRoutes.InformationRoutes> { FullScreen(informationScreen) }
             entry<ScreenRoutes.PlaceReportRoutes> { FullScreen(placeReportScreen) }
-            entry<ScreenRoutes.HiddenShopListRoutes> {
-                FullScreen(hiddenScreen)
-            }
             entry<ScreenRoutes.NotificationSettingsRoutes> {
                 FullScreen(notificationSettingsScreen)
             }

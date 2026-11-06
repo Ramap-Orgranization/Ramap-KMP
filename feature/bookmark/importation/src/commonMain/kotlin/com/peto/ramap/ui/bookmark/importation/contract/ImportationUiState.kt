@@ -10,7 +10,6 @@ data class ImportationUiState(
     val preview: ImportationPreview? = null,
     val candidates: RamenShops = RamenShops(emptyMap()),
     val alreadyBookmarkedCount: Int = 0,
-    val hiddenCount: Int = 0,
     val error: ImportationError? = null,
     override val loadState: LoadState = LoadState(),
 ) : LoadableState<ImportationUiState> {

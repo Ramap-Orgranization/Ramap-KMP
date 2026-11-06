@@ -10,11 +10,16 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.ExperimentalTestApi
+import androidx.compose.ui.test.assertIsOff
+import androidx.compose.ui.test.assertIsOn
+import androidx.compose.ui.test.click
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performScrollToKey
+import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.v2.runComposeUiTest
 import androidx.compose.ui.unit.dp
 import androidx.navigationevent.NavigationEventDispatcher
@@ -59,6 +64,8 @@ class ShopDetailContentTest {
     private var overview by mutableStateOf(successfulOverview())
     private var menu by mutableStateOf(ShopMenuUiState(shopId = "shop", hasLoadFailure = true))
     private var reviews by mutableStateOf(ReviewsUiState(shopId = "shop", hasReviewLoadFailure = true))
+    private var headerState by mutableStateOf(HeaderUiState(isBookmarked = false))
+    private val bookmarkRequests = mutableListOf<String>()
     private var overviewRetryCount = 0
     private var menuRetryCount = 0
     private var reviewRetryCount = 0
@@ -69,6 +76,34 @@ class ShopDetailContentTest {
         val application = RuntimeEnvironment.getApplication()
         shadowOf(application.packageManager).addActivityIfNotPresent(ComponentName(application, ComponentActivity::class.java))
     }
+
+    @Test
+    fun `매장명 아래 저장 버튼을 누르면 같은 매장의 저장과 해제를 요청한다`() =
+        runComposeUiTest {
+            setContent { content() }
+            val saveButton = onNodeWithContentDescription("저장")
+
+            onNodeWithText("저 장").assertDoesNotExist()
+            onNodeWithText("저장").assertDoesNotExist()
+            saveButton.assertIsOff().performTouchInput { click() }
+            runOnIdle { assertEquals(listOf("shop"), bookmarkRequests) }
+            saveButton.assertIsOn().performTouchInput { click() }
+            runOnIdle { assertEquals(listOf("shop", "shop"), bookmarkRequests) }
+            saveButton.assertIsOff()
+        }
+
+    @Test
+    fun `매장 상세 더보기에는 저장과 공유와 제보가 표시된다`() =
+        runComposeUiTest {
+            setContent { content() }
+
+            onNodeWithContentDescription("매장 메뉴 더보기").performClick()
+
+            onNodeWithText("저장").assertExists()
+            onNodeWithText("공유하기").assertExists()
+            onNodeWithText("제보하기").assertExists()
+            onNodeWithText("숨기기").assertDoesNotExist()
+        }
 
     @Test
     fun `최초 리뷰가 끝날 때까지 내용을 가리고 완료 후 메뉴 오류와 영역 재시도를 표시한다`() =
@@ -307,8 +342,7 @@ class ShopDetailContentTest {
                             shopId = shopId,
                             displayState = rememberShopDetailDisplayState(shopId, overview, menu, reviews),
                             sheetState = overview.overviewState,
-                            headerState = HeaderUiState(isBookmarked = false),
-                            isLoggedIn = false,
+                            headerState = headerState,
                             menuState = menu,
                             reviewState = reviews,
                             overviewHasLoadFailure = overview.hasLoadFailure,
@@ -319,7 +353,19 @@ class ShopDetailContentTest {
                             onDismissRequest = {},
                             onRetry = { overviewRetryCount++ },
                             onMenuRetry = { menuRetryCount++ },
-                            shopActions = ShopDetailShopActions({}, {}, {}, {}, { _, _ -> }, {}, {}, { _, _ -> }),
+                            shopActions =
+                                ShopDetailShopActions(
+                                    onBookmarkToggled = {
+                                        bookmarkRequests.add(it.id)
+                                        headerState = headerState.copy(isBookmarked = !headerState.isBookmarked)
+                                    },
+                                    onShopNotificationToggled = {},
+                                    onShopShareClick = {},
+                                    onShopMapLinkClick = { _, _ -> },
+                                    onEventClick = {},
+                                    onOperatingNoticeClick = {},
+                                    onReportSubmit = { _, _ -> },
+                                ),
                             reviewActions =
                                 ReviewActions(
                                     onWriteReviewClick = {},

@@ -6,12 +6,11 @@ import com.peto.ramap.data.model.SignedImageRequest
 import com.peto.ramap.data.model.SignedImageUrl
 import com.peto.ramap.domain.model.profile.ProfileImage
 import com.peto.ramap.domain.model.profile.ProfileVisibility
+import com.peto.ramap.network.client.media.MediaStorageClient
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.status.SessionStatus
 import io.github.jan.supabase.postgrest.postgrest
-import io.github.jan.supabase.storage.storage
-import io.ktor.http.ContentType
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNot
 import kotlinx.coroutines.flow.map
@@ -21,6 +20,7 @@ import kotlinx.serialization.json.put
 internal class RemoteProfileDataSource(
     private val client: SupabaseClient,
     private val imageUrlDataSource: ImageUrlDataSource,
+    private val media: MediaStorageClient,
 ) : ProfileDataSource {
     override val sessionUserIds =
         client.auth.sessionStatus
@@ -75,11 +75,11 @@ internal class RemoteProfileDataSource(
     override suspend fun updateProfileVisibility(visibility: ProfileVisibility): ProfileResponse =
         client.postgrest
             .rpc(
-                "update_my_profile_visibility_v2",
+                FUNCTION_UPDATE_MY_PROFILE_VISIBILITY_V2,
                 buildJsonObject {
-                    put("p_is_public", visibility.isPublic)
-                    put("p_followers_can_read_reviews", visibility.followersCanReadReviews)
-                    put("p_followers_can_read_saved_shops", visibility.followersCanReadSavedShops)
+                    put(PARAMETER_IS_PUBLIC, visibility.isPublic)
+                    put(PARAMETER_FOLLOWERS_CAN_READ_REVIEWS, visibility.followersCanReadReviews)
+                    put(PARAMETER_FOLLOWERS_CAN_READ_SAVED_SHOPS, visibility.followersCanReadSavedShops)
                 },
             ).decodeAs()
 
@@ -89,9 +89,7 @@ internal class RemoteProfileDataSource(
         image: ProfileImage,
     ) {
         checkOwner(userId, path)
-        client.storage.from(BUCKET).upload(path, image.bytes) {
-            contentType = ContentType.parse(image.mimeType)
-        }
+        media.upload(BUCKET, path, image.bytes, image.mimeType)
     }
 
     override suspend fun deletePhoto(
@@ -99,7 +97,7 @@ internal class RemoteProfileDataSource(
         path: String,
     ) {
         checkOwner(userId, path)
-        client.storage.from(BUCKET).delete(path)
+        media.delete(BUCKET, path)
     }
 
     override suspend fun signedPhotoUrl(
@@ -126,6 +124,7 @@ internal class RemoteProfileDataSource(
         const val FUNCTION_IS_PROFILE_NICKNAME_AVAILABLE = "is_profile_nickname_available"
         const val FUNCTION_UPDATE_MY_PROFILE = "update_my_profile"
         const val FUNCTION_UPDATE_MY_PROFILE_VISIBILITY = "update_my_profile_visibility"
+        const val FUNCTION_UPDATE_MY_PROFILE_VISIBILITY_V2 = "update_my_profile_visibility_v2"
 
         const val PARAMETER_USER_ID = "p_user_id"
         const val PARAMETER_NICKNAME = "p_nickname"
@@ -133,6 +132,8 @@ internal class RemoteProfileDataSource(
         const val PARAMETER_REMOVE_PHOTO = "p_remove_photo"
         const val PARAMETER_BIO = "p_bio"
         const val PARAMETER_IS_PUBLIC = "p_is_public"
+        const val PARAMETER_FOLLOWERS_CAN_READ_REVIEWS = "p_followers_can_read_reviews"
+        const val PARAMETER_FOLLOWERS_CAN_READ_SAVED_SHOPS = "p_followers_can_read_saved_shops"
 
         const val ERROR_SESSION_CHANGED = "Profile session changed"
     }

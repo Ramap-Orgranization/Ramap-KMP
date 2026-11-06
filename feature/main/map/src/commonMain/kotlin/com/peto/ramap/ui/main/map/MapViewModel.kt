@@ -82,14 +82,12 @@ import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.apple_login_failure_message
 import ramap.shared.generated.resources.data_load_failure_message
 import ramap.shared.generated.resources.filter_empty_visible_result_message
-import ramap.shared.generated.resources.hidden_shop_search_result_message
 import ramap.shared.generated.resources.kakao_login_failure_message
 import ramap.shared.generated.resources.location_permission_enable_message
 import ramap.shared.generated.resources.location_permission_settings_action
 import ramap.shared.generated.resources.login_required_saved_shops_description
 import ramap.shared.generated.resources.login_success_message
 import ramap.shared.generated.resources.search_result_empty_message
-import ramap.shared.generated.resources.search_result_hidden_only_message
 import kotlin.time.Clock
 
 class MapViewModel(
@@ -152,12 +150,10 @@ class MapViewModel(
             val personalization = (state as? PersonalizationBootstrapState.Success)?.value ?: return@collectLatest
             val isLoggedOut = !currentState.isLoggedIn
             if (isLoggedOut) return@collectLatest
-            loadPersonalizedShops(personalization.bookmarkedShopIds + personalization.hiddenShopIds)
+            loadPersonalizedShops(personalization.bookmarkedShopIds)
             reduce {
                 copy(
-                    selectedShop = if (selectedShop?.id in hiddenShopIds && selectedShop?.id !in personalization.hiddenShopIds) selectedShop?.copy(isVisible = true) else selectedShop,
                     bookmarkedShopIds = personalization.bookmarkedShopIds,
-                    hiddenShopIds = personalization.hiddenShopIds,
                     notificationShopIds = personalization.notificationShopIds,
                 )
             }
@@ -179,10 +175,6 @@ class MapViewModel(
                     OnLocationPermissionBlocked -> showLocationPermissionBlockedToast()
                     is MapIntent.OnShopLoadFailed -> if (currentState.selectedShopId == intent.shopId) failedShopId = intent.shopId
                     is MapIntent.OnShopViewed -> recordRecentlyViewedShop(intent.shop)
-                    MapIntent.OnSelectedShopHidden -> {
-                        dismissShopDetail()
-                        reduce { copy(search = search.dismissResults()) }
-                    }
                     else -> error("Unhandled map intent: $intent")
                 }
         }
@@ -265,7 +257,6 @@ class MapViewModel(
                 isLoggedIn = isAuthenticated,
                 bookmarkedShopIds = if (isAuthenticated) bookmarkedShopIds else emptySet(),
                 notificationShopIds = if (isAuthenticated) notificationShopIds else emptySet(),
-                hiddenShopIds = if (isAuthenticated) hiddenShopIds else emptySet(),
                 isBookmarkedView = isAuthenticated && isBookmarkedView,
             )
         }
@@ -505,11 +496,7 @@ class MapViewModel(
         willShowBookmarkedShops: Boolean,
     ): Boolean {
         val shop = state.selectedShop ?: return true
-        return if (willShowBookmarkedShops) {
-            shop.id in state.bookmarkedShopIds
-        } else {
-            shop.id !in state.hiddenShopIds
-        }
+        return !willShowBookmarkedShops || shop.id in state.bookmarkedShopIds
     }
 
     private fun updateFilter(filter: RamenShopFilter) {
@@ -578,16 +565,16 @@ class MapViewModel(
         if (filteredShops.isEmpty() && currentState.filters.isNotEmpty() && places.isEmpty()) {
             showToast(Res.string.filter_empty_visible_result_message)
         }
-        if (filteredShops.size > 1 && filteredShops.values.any { !it.isVisible }) {
-            showToast(Res.string.search_result_hidden_only_message)
-        }
         handleSingleSearchDestination()
     }
 
     private fun handleSingleSearchDestination() {
         val search = currentState.search
         if (search.places.isEmpty()) {
-            handleSingleSearchResult(currentState.searchResultShops.singleShopOrNull())
+            currentState.searchResultShops
+                .singleShopOrNull()
+                ?.takeIf { it.isVisible }
+                ?.let(::selectShop)
             return
         }
         if (search.results.isNotEmpty() || search.hasSearchFailure) return
@@ -607,17 +594,6 @@ class MapViewModel(
 
     private fun showDataLoadFailure() {
         showToast(Res.string.data_load_failure_message, ToastType.ERROR)
-    }
-
-    private fun handleSingleSearchResult(shop: RamenShop?) {
-        val isShopNull = shop == null
-        if (isShopNull) return
-        val isShopVisible = shop.isVisible
-        if (isShopVisible) {
-            selectShop(shop)
-        } else {
-            showToast(Res.string.hidden_shop_search_result_message)
-        }
     }
 
     private fun showToast(
@@ -723,7 +699,7 @@ class MapViewModel(
         if (isNotPendingOrLoggedOut) return
         val personalization = (personalizationStore.state.value as? PersonalizationBootstrapState.Success)?.value ?: return
         pendingBookmarkedView = false
-        reduce { copy(bookmarkedShopIds = personalization.bookmarkedShopIds, hiddenShopIds = personalization.hiddenShopIds, notificationShopIds = personalization.notificationShopIds) }
+        reduce { copy(bookmarkedShopIds = personalization.bookmarkedShopIds, notificationShopIds = personalization.notificationShopIds) }
         updateBookmarkedView()
     }
 

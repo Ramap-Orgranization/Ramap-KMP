@@ -54,16 +54,19 @@ fun ReviewCardFooter(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.padding(top = 10.dp),
         ) {
-            AppText(
-                text = reviewDateLabel(review.createdAt),
-                style = AppTextStyle.B2,
-                color = GrayColor.C300,
-            )
-            AppText(
-                text = " · ",
-                style = AppTextStyle.T2,
-                color = GrayColor.C500,
-            )
+            val writtenTime = reviewWrittenTimeLabel(review.createdAt)
+            if (writtenTime != null) {
+                AppText(
+                    text = writtenTime,
+                    style = AppTextStyle.B2,
+                    color = GrayColor.C300,
+                )
+                AppText(
+                    text = " · ",
+                    style = AppTextStyle.T2,
+                    color = GrayColor.C500,
+                )
+            }
             AppText(
                 text =
                     stringResource(

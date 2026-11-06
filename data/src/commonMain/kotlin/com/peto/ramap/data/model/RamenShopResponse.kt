@@ -6,7 +6,9 @@ import com.peto.ramap.domain.model.shop.Location
 import com.peto.ramap.domain.model.shop.MenuCategories
 import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.domain.model.shop.WaitingSystem
-import com.peto.ramap.network.config.RamapSecrets
+import com.peto.ramap.network.client.media.MediaBucket
+import com.peto.ramap.network.client.media.MediaPath
+import com.peto.ramap.network.client.media.PublicMediaUrl
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -65,7 +67,7 @@ internal data class RamenShopResponse(
             instagramUrl = instagramUrl,
             instagramProfileImageUrl =
                 instagramProfileImagePath?.let { path ->
-                    "${RamapSecrets.supabaseUrl}$STORAGE_PUBLIC_PATH$PROFILE_BUCKET/$path"
+                    PublicMediaUrl(MediaBucket.SHOP_PROFILE_IMAGES, MediaPath(path)).resolve()
                 },
             menuCategories = MenuCategories(menuCategoryIds.orEmpty().mapNotNull(Category::fromId)),
             isVisible = isVisible,
@@ -85,9 +87,4 @@ internal data class RamenShopResponse(
                         !businessHoursNotice.isNullOrBlank()
                 },
         )
-
-    companion object {
-        private const val PROFILE_BUCKET = "shop-profile-images"
-        private const val STORAGE_PUBLIC_PATH = "/storage/v1/object/public/"
-    }
 }

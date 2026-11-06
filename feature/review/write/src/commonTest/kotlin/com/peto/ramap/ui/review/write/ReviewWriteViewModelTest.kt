@@ -19,7 +19,9 @@ import com.peto.ramap.ui.review.write.contract.ReviewWriteIntent
 import com.peto.ramap.ui.review.write.contract.ReviewWriteSideEffect
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.test.runCurrent
+import kotlinx.coroutines.withContext
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.review_load_failed
 import ramap.shared.generated.resources.shop_review_failure_message
@@ -30,6 +32,77 @@ import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ReviewWriteViewModelTest {
+    @Test
+    fun `사진과 본문이 있는 공개 리뷰는 비공개 프로필 확인의 두 선택으로 등록할 수 있다`() =
+        coroutinesTest {
+            for (confirmation in listOf(ReviewWriteIntent.ConfirmSubmitWithPrivateProfile, ReviewWriteIntent.ConfirmSubmitWithPublicProfile)) {
+                val reviews = FakeReviewRepository()
+                val viewModel = ReviewWriteViewModel(reviews, FakeProfileRepository(isProfilePublic = false), FakeRamenShopRepository())
+                val image = reviewImage(1)
+                viewModel.dispatch(ReviewWriteIntent.Open("shop"))
+                runCurrent()
+                viewModel.dispatch(ReviewWriteIntent.AddImage(image))
+                viewModel.dispatch(ReviewWriteIntent.ChangeBody("12345"))
+                viewModel.dispatch(ReviewWriteIntent.Submit)
+                runCurrent()
+
+                assertTrue(viewModel.uiState.value.showPrivateProfileConfirmation)
+                assertTrue(reviews.submissions.isEmpty())
+                viewModel.dispatch(confirmation)
+                runCurrent()
+
+                assertEquals("12345", reviews.submissions.single().body)
+                assertEquals(listOf(image), reviews.submissions.single().images)
+            }
+        }
+
+    @Test
+    fun `신규 사진이 있어도 본문이 5자 미만이면 등록할 수 없다`() =
+        coroutinesTest {
+            val reviews = FakeReviewRepository()
+            val viewModel = ReviewWriteViewModel(reviews, FakeProfileRepository(), FakeRamenShopRepository())
+            val image = reviewImage(1)
+            viewModel.dispatch(ReviewWriteIntent.Open("shop"))
+            runCurrent()
+            viewModel.dispatch(ReviewWriteIntent.AddImage(image))
+
+            for (body in listOf("", "1234")) {
+                viewModel.dispatch(ReviewWriteIntent.ChangeBody(body))
+                viewModel.dispatch(ReviewWriteIntent.Submit)
+                runCurrent()
+                assertFalse(viewModel.uiState.value.canSubmit)
+                assertTrue(reviews.submissions.isEmpty())
+            }
+
+            viewModel.dispatch(ReviewWriteIntent.ChangeBody("12345"))
+            viewModel.dispatch(ReviewWriteIntent.Submit)
+            runCurrent()
+            assertEquals("12345", reviews.submissions.single().body)
+            assertEquals(listOf(image), reviews.submissions.single().images)
+        }
+
+    @Test
+    fun `기존 사진 전용 리뷰는 본문을 5자 입력하면 사진을 유지하며 수정할 수 있다`() =
+        coroutinesTest {
+            val reviews =
+                FakeReviewRepository().apply {
+                    editableReview = EditableReview("review", "shop", "", listOf("retained"), listOf(null), false)
+                }
+            val viewModel = ReviewWriteViewModel(reviews, FakeProfileRepository(), FakeRamenShopRepository())
+            viewModel.dispatch(ReviewWriteIntent.Open("shop", "review"))
+            runCurrent()
+            viewModel.dispatch(ReviewWriteIntent.Submit)
+            runCurrent()
+            assertFalse(viewModel.uiState.value.canSubmit)
+            assertTrue(reviews.updates.isEmpty())
+
+            viewModel.dispatch(ReviewWriteIntent.ChangeBody("12345"))
+            viewModel.dispatch(ReviewWriteIntent.Submit)
+            runCurrent()
+            assertEquals("12345", reviews.updates.single().body)
+            assertEquals(listOf("retained"), reviews.updates.single().retainedImagePaths)
+        }
+
     @Test
     fun `비속어 리뷰의 신규 등록과 수정을 막고 정상 내용으로 수정하면 저장한다`() =
         coroutinesTest {
@@ -86,13 +159,13 @@ class ReviewWriteViewModelTest {
         }
 
     @Test
-    fun `pending profile visibility update cannot submit a draft to another shop`() =
+    fun `취소를 무시한 이전 공개 설정 응답으로 다른 매장에 초안을 제출하지 않는다`() =
         coroutinesTest {
             val pendingUpdate = CompletableDeferred<RamapResult<AccountProfile>>()
             val baseProfiles = FakeProfileRepository(isProfilePublic = false)
             val profiles =
                 object : ProfileRepository by baseProfiles {
-                    override suspend fun updateProfileVisibility(isPublic: Boolean): RamapResult<AccountProfile> = pendingUpdate.await()
+                    override suspend fun updateProfileVisibility(isPublic: Boolean): RamapResult<AccountProfile> = withContext(NonCancellable) { pendingUpdate.await() }
                 }
             val reviews = FakeReviewRepository()
             val viewModel = ReviewWriteViewModel(reviews, profiles, FakeRamenShopRepository())
@@ -311,7 +384,7 @@ class ReviewWriteViewModelTest {
         }
 
     @Test
-    fun `리뷰 본문은 Unicode 문자 100자까지 입력하고 초과 입력은 거부한다`() =
+    fun `리뷰 본문은 Unicode 문자 500자까지 입력하고 초과 입력은 거부한다`() =
         coroutinesTest {
             val viewModel =
                 ReviewWriteViewModel(
@@ -322,7 +395,7 @@ class ReviewWriteViewModelTest {
             viewModel.dispatch(ReviewWriteIntent.Open("shop"))
             runCurrent()
 
-            val body = "가😀".repeat(50)
+            val body = "가😀".repeat(250)
             viewModel.dispatch(ReviewWriteIntent.ChangeBody(body))
             runCurrent()
 
@@ -333,7 +406,7 @@ class ReviewWriteViewModelTest {
             runCurrent()
 
             assertEquals(body, viewModel.uiState.value.body)
-            assertEquals(100, Review.bodyCharacterCount(viewModel.uiState.value.body))
+            assertEquals(500, Review.bodyCharacterCount(viewModel.uiState.value.body))
         }
 
     @Test
@@ -343,11 +416,11 @@ class ReviewWriteViewModelTest {
             viewModel.dispatch(ReviewWriteIntent.Open("shop"))
             runCurrent()
 
-            val body = "가😀".repeat(49) + "끝😀"
+            val body = "가😀".repeat(249) + "끝😀"
             viewModel.dispatch(ReviewWriteIntent.ChangeBody(body))
             runCurrent()
 
-            for (insertionIndex in listOf(0, "가😀".repeat(25).length)) {
+            for (insertionIndex in listOf(0, "가😀".repeat(125).length)) {
                 val changedBody = body.substring(0, insertionIndex) + "나" + body.substring(insertionIndex)
                 viewModel.dispatch(ReviewWriteIntent.ChangeBody(changedBody))
                 runCurrent()
@@ -364,14 +437,14 @@ class ReviewWriteViewModelTest {
             viewModel.dispatch(ReviewWriteIntent.Open("shop"))
             runCurrent()
 
-            val body = "가".repeat(48) + "😀".repeat(48)
+            val body = "가".repeat(248) + "😀".repeat(248)
             viewModel.dispatch(ReviewWriteIntent.ChangeBody(body))
             runCurrent()
-            viewModel.dispatch(ReviewWriteIntent.ChangeBody("가".repeat(48) + "붙여넣기😀" + "😀".repeat(48)))
+            viewModel.dispatch(ReviewWriteIntent.ChangeBody("가".repeat(248) + "붙여넣기😀" + "😀".repeat(248)))
             runCurrent()
 
             assertEquals(body, viewModel.uiState.value.body)
-            assertEquals(96, Review.bodyCharacterCount(viewModel.uiState.value.body))
+            assertEquals(496, Review.bodyCharacterCount(viewModel.uiState.value.body))
         }
 
     @Test
@@ -381,15 +454,15 @@ class ReviewWriteViewModelTest {
             viewModel.dispatch(ReviewWriteIntent.Open("shop"))
             runCurrent()
 
-            viewModel.dispatch(ReviewWriteIntent.ChangeBody("가".repeat(100)))
+            viewModel.dispatch(ReviewWriteIntent.ChangeBody("가".repeat(500)))
             runCurrent()
-            val replacedBody = "가".repeat(50) + "😀" + "가".repeat(49)
+            val replacedBody = "가".repeat(250) + "😀" + "가".repeat(249)
             viewModel.dispatch(ReviewWriteIntent.ChangeBody(replacedBody))
             runCurrent()
             assertEquals(replacedBody, viewModel.uiState.value.body)
-            assertEquals(100, Review.bodyCharacterCount(viewModel.uiState.value.body))
+            assertEquals(500, Review.bodyCharacterCount(viewModel.uiState.value.body))
 
-            val shortenedBody = "가".repeat(99)
+            val shortenedBody = "가".repeat(499)
             viewModel.dispatch(ReviewWriteIntent.ChangeBody(shortenedBody))
             runCurrent()
             assertEquals(shortenedBody, viewModel.uiState.value.body)
@@ -468,7 +541,7 @@ class ReviewWriteViewModelTest {
         }
 
     @Test
-    fun `adding a fourth image is ignored`() =
+    fun `사진은 5장까지 첨부하고 여섯 번째 사진은 추가하지 않는다`() =
         coroutinesTest {
             val viewModel =
                 ReviewWriteViewModel(
@@ -479,10 +552,10 @@ class ReviewWriteViewModelTest {
             viewModel.dispatch(ReviewWriteIntent.Open("shop"))
             runCurrent()
 
-            (1..4).forEach { viewModel.dispatch(ReviewWriteIntent.AddImage(reviewImage(it))) }
+            (1..6).forEach { viewModel.dispatch(ReviewWriteIntent.AddImage(reviewImage(it))) }
             runCurrent()
 
-            assertEquals(3, viewModel.uiState.value.images.size)
+            assertEquals(5, viewModel.uiState.value.images.size)
         }
 
     @Test

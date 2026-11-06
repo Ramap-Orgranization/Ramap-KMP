@@ -49,6 +49,7 @@ internal class DefaultReviewChangeStore(
             val revision = current.revision + 1
             current.copy(
                 revision = revision,
+                imageRevision = if (change is ReviewChange.AccessChanged || change is ReviewChange.Written) revision else current.imageRevision,
                 changes = (current.changes + RevisionedReviewChange(revision, change)).takeLast(JOURNAL_LIMIT),
             )
         }

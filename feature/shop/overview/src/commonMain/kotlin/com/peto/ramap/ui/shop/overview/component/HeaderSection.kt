@@ -37,7 +37,6 @@ import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.ic_close
-import ramap.shared.generated.resources.ic_kid_star_filled
 import ramap.shared.generated.resources.review_close
 import ramap.shared.generated.resources.shop_detail_copy_address
 import ramap.shared.generated.resources.shop_detail_label_address
@@ -49,14 +48,12 @@ internal fun ShopHeaderSection(
     isBookmarked: Boolean,
     isNotificationEnabled: Boolean,
     showNotificationActions: Boolean,
-    isHidden: Boolean,
     event: ShopEvent?,
     modifier: Modifier = Modifier,
     dragAreaModifier: Modifier = Modifier,
     onDismissRequest: () -> Unit,
     onBookmarkClick: () -> Unit,
     onNotificationClick: () -> Unit,
-    onHiddenClick: () -> Unit,
     onReportClick: () -> Unit,
     onShareClick: () -> Unit,
     onEventClick: (ShopEvent) -> Unit,
@@ -124,11 +121,10 @@ internal fun ShopHeaderSection(
                             horizontalArrangement = Arrangement.spacedBy(5.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            Image(
-                                painter = painterResource(Res.drawable.ic_kid_star_filled),
-                                contentDescription = null,
-                                modifier = Modifier.size(15.dp),
-                                colorFilter = ColorFilter.tint(GrayColor.C400),
+                            ShopBookmarkButton(
+                                isBookmarked = isBookmarked,
+                                iconSize = 16.dp,
+                                onClick = onBookmarkClick,
                             )
                             AppText(
                                 text = "$likeCount",
@@ -143,10 +139,8 @@ internal fun ShopHeaderSection(
                         isBookmarked = isBookmarked,
                         isNotificationEnabled = isNotificationEnabled,
                         showNotificationActions = showNotificationActions,
-                        isHidden = isHidden,
                         onBookmarkClick = onBookmarkClick,
                         onNotificationClick = onNotificationClick,
-                        onHiddenClick = onHiddenClick,
                         onReportClick = onReportClick,
                         onShareClick = onShareClick,
                     )
@@ -200,12 +194,10 @@ private fun ShopHeaderSectionPreview(
             isBookmarked = false,
             isNotificationEnabled = false,
             showNotificationActions = true,
-            isHidden = false,
             event = null,
             onDismissRequest = {},
             onBookmarkClick = {},
             onNotificationClick = {},
-            onHiddenClick = {},
             onReportClick = {},
             onShareClick = {},
             onEventClick = {},

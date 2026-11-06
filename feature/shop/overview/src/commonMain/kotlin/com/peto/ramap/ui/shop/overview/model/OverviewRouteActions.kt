@@ -12,7 +12,6 @@ data class OverviewRouteActions(
     val onLoginGuideRequested: (StringResource) -> Unit,
     val onBookmarkToggled: (RamenShop) -> Unit,
     val onShopNotificationToggled: (RamenShop) -> Unit,
-    val onHiddenToggled: (RamenShop) -> Unit,
     val onShopShareClick: (RamenShop) -> Unit,
     val onShopMapLinkClick: (RamenShop, String) -> Unit,
     val onReportSubmit: (Set<ShopInformationField>, String) -> Unit,

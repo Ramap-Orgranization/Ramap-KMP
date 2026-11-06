@@ -35,7 +35,7 @@ import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.bookmarked_shops_toggle
-import ramap.shared.generated.resources.ic_kid_star_filled
+import ramap.shared.generated.resources.ic_star_filled
 import ramap.shared.generated.resources.ranking_bookmark_cancel_action
 
 @Composable
@@ -114,7 +114,7 @@ internal fun RankingRow(
                 contentAlignment = Alignment.Center,
             ) {
                 Image(
-                    painter = painterResource(Res.drawable.ic_kid_star_filled),
+                    painter = painterResource(Res.drawable.ic_star_filled),
                     contentDescription = null,
                     modifier = Modifier.size(25.dp),
                     colorFilter = ColorFilter.tint(bookmarkColor),

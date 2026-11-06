@@ -21,7 +21,6 @@ import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.withContext
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.login_required_bookmark_description
-import ramap.shared.generated.resources.login_required_hide_shop_description
 import ramap.shared.generated.resources.login_required_notification_description
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -31,7 +30,7 @@ import kotlin.test.assertTrue
 @OptIn(ExperimentalCoroutinesApi::class)
 class OverviewViewModelTest {
     @Test
-    fun `저장과 숨김과 알림에는 선택한 작업에 맞는 로그인 이유를 전달한다`() =
+    fun `저장과 알림에는 선택한 작업에 맞는 로그인 이유를 전달한다`() =
         coroutinesTest {
             val fixture = OverviewViewModelFixture()
             val shop = ramenShopFixture(id = "shop")
@@ -41,7 +40,6 @@ class OverviewViewModelTest {
                     val requests =
                         listOf(
                             ShopOverviewIntent.OnBookmarkToggled(shop) to Res.string.login_required_bookmark_description,
-                            ShopOverviewIntent.OnHiddenToggled(shop) to Res.string.login_required_hide_shop_description,
                             ShopOverviewIntent.OnShopNotificationToggled(shop) to Res.string.login_required_notification_description,
                         )
                     for ((intent, description) in requests) {
@@ -112,15 +110,6 @@ class OverviewViewModelTest {
             fixture.personalization.updateBookmarkedShopIds(setOf("shop", "another"))
             runCurrent()
             assertEquals(listOf("shop" to true), fixture.personalization.bookmarkUpdateRequests)
-        }
-
-    @Test
-    fun `로그인 후 대기하던 매장 숨김을 실행한다`() =
-        overviewScenario { fixture ->
-            fixture.viewModel.dispatch(ShopOverviewIntent.OnHiddenToggled(ramenShopFixture(id = "shop")))
-            runCurrent()
-            signInFromGuide(fixture)
-            assertEquals(setOf("shop"), fixture.viewModel.uiState.value.hiddenShopIds)
         }
 
     @Test
@@ -255,7 +244,7 @@ class OverviewViewModelTest {
         }
 
     @Test
-    fun `상세 저장소를 비우면 진행 중인 북마크 알림 숨김 요청을 모두 취소한다`() =
+    fun `상세 저장소를 비우면 진행 중인 북마크와 알림 요청을 모두 취소한다`() =
         overviewScenario { fixture ->
             fixture.authenticate()
             runCurrent()
@@ -277,14 +266,11 @@ class OverviewViewModelTest {
             runCurrent()
             fixture.viewModel.dispatch(ShopOverviewIntent.OnShopNotificationToggled(shop))
             runCurrent()
-            fixture.viewModel.dispatch(ShopOverviewIntent.OnHiddenToggled(shop))
-            runCurrent()
-            assertEquals(3, started)
-            assertTrue("shop" in fixture.viewModel.uiState.value.hiddenShopIds)
+            assertEquals(2, started)
 
             fixture.store.clear()
             runCurrent()
-            assertEquals(3, finished)
+            assertEquals(2, finished)
             response.complete(Unit)
             runCurrent()
             assertEquals(0, completed)

@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -24,6 +25,7 @@ import coil3.compose.LocalPlatformContext
 import coil3.request.ImageRequest
 import coil3.request.crossfade
 import com.peto.ramap.designsystem.component.shimmer
+import com.peto.ramap.designsystem.image.LocalImageAccessScope
 import com.peto.ramap.theme.GrayColor
 import org.jetbrains.compose.resources.painterResource
 import ramap.shared.generated.resources.Res
@@ -40,6 +42,7 @@ internal fun ReviewPhoto(
     onLoadFailed: () -> Unit = {},
     onLoadSucceeded: () -> Unit = {},
 ) {
+    val imageAccessScope = LocalImageAccessScope.current
     val context = LocalPlatformContext.current
     val request =
         remember(url, context) {
@@ -49,7 +52,7 @@ internal fun ReviewPhoto(
                 .crossfade(REVIEW_PHOTO_CROSSFADE_MILLIS)
                 .build()
         }
-    var imageState by remember(url) {
+    var imageState by remember(url, imageAccessScope) {
         mutableStateOf<AsyncImagePainter.State>(AsyncImagePainter.State.Empty)
     }
     Box(
@@ -73,17 +76,19 @@ internal fun ReviewPhoto(
                         ),
             )
         }
-        AsyncImage(
-            model = request,
-            contentDescription = contentDescription,
-            modifier = Modifier.matchParentSize(),
-            contentScale = contentScale,
-            onState = {
-                imageState = it
-                if (it is AsyncImagePainter.State.Error) onLoadFailed()
-                if (it is AsyncImagePainter.State.Success) onLoadSucceeded()
-            },
-        )
+        key(LocalImageAccessScope.current) {
+            AsyncImage(
+                model = request,
+                contentDescription = contentDescription,
+                modifier = Modifier.matchParentSize(),
+                contentScale = contentScale,
+                onState = {
+                    imageState = it
+                    if (it is AsyncImagePainter.State.Error) onLoadFailed()
+                    if (it is AsyncImagePainter.State.Success) onLoadSucceeded()
+                },
+            )
+        }
         if (imageState is AsyncImagePainter.State.Error) {
             Image(
                 painter = painterResource(Res.drawable.ic_photo_library),

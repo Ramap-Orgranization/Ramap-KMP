@@ -1,18 +1,14 @@
 package com.peto.ramap.ui.main.notice
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -28,10 +24,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
-import androidx.navigationevent.NavigationEventInfo
-import androidx.navigationevent.compose.NavigationBackHandler
-import androidx.navigationevent.compose.rememberNavigationEventState
-import com.peto.ramap.designsystem.button.AppFloatingActionButton
 import com.peto.ramap.designsystem.component.LoadErrorContent
 import com.peto.ramap.designsystem.component.NewsFilters
 import com.peto.ramap.designsystem.component.ShopsEmptyContent
@@ -51,8 +43,6 @@ import com.peto.ramap.ui.main.notice.model.OperatingNoticeSelection
 import kotlinx.datetime.LocalDate
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
-import ramap.shared.generated.resources.event_list_open
-import ramap.shared.generated.resources.ic_event_fab
 import ramap.shared.generated.resources.laduck_error_crying
 import ramap.shared.generated.resources.operating_notice_empty
 import ramap.shared.generated.resources.operating_notice_error_description
@@ -62,10 +52,8 @@ import ramap.shared.generated.resources.operating_notice_today_section
 import ramap.shared.generated.resources.search_result_empty_message
 
 @Composable
-internal fun OperatingNoticeScreen(
+fun OperatingNoticeScreen(
     uiState: OperatingNoticeUiState,
-    onBack: () -> Unit,
-    onEventListClick: () -> Unit,
     onRefresh: () -> Unit,
     onRetry: () -> Unit,
     onShopClick: (String) -> Unit,
@@ -75,31 +63,22 @@ internal fun OperatingNoticeScreen(
     onPersonalizationRetry: () -> Unit = {},
     isSourceUrlSupported: (String) -> Boolean,
     onSourceClick: (String) -> Unit,
+    showFilters: Boolean = true,
 ) {
     val todayTitle = stringResource(Res.string.operating_notice_today_section)
     val scheduledTitle = stringResource(Res.string.operating_notice_scheduled_section)
-    val backEventState = rememberNavigationEventState<NavigationEventInfo>(NavigationEventInfo.None)
     val pullToRefreshState = rememberPullToRefreshState()
     var selectedNotice by remember { mutableStateOf<OperatingNoticeSelection?>(null) }
 
-    NavigationBackHandler(
-        state = backEventState,
-        isBackEnabled = true,
-        onBackCompleted = onBack,
-    )
-    Column(
-        modifier =
-            Modifier
-                .fillMaxSize()
-                .background(CommonColor.White)
-                .statusBarsPadding(),
-    ) {
-        NewsFilters(
-            query = uiState.query,
-            savedOnly = uiState.savedOnly,
-            onQueryChanged = onQueryChanged,
-            onSavedToggled = onSavedToggled,
-        )
+    Column(modifier = Modifier.fillMaxSize()) {
+        if (showFilters) {
+            NewsFilters(
+                query = uiState.query,
+                savedOnly = uiState.savedOnly,
+                onQueryChanged = onQueryChanged,
+                onSavedToggled = onSavedToggled,
+            )
+        }
         Box(modifier = Modifier.fillMaxSize().weight(1f)) {
             PullToRefreshBox(
                 isRefreshing = uiState.isRefreshing,
@@ -176,16 +155,6 @@ internal fun OperatingNoticeScreen(
                         }
                 }
             }
-            AppFloatingActionButton(
-                icon = Res.drawable.ic_event_fab,
-                contentDescription = stringResource(Res.string.event_list_open),
-                onClick = onEventListClick,
-                modifier =
-                    Modifier
-                        .align(Alignment.BottomEnd)
-                        .padding(20.dp),
-                containerColor = CommonColor.White,
-            )
         }
     }
     selectedNotice?.let { selection ->
@@ -210,16 +179,30 @@ private fun addNoticeSection(
     listScope.item {
         OperatingNoticeSectionTitle(title = title, modifier = Modifier.padding(horizontal = 16.dp))
     }
-    listScope.item {
-        FlowRow(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 5.dp),
-            horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterHorizontally),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+    val rows = notices.chunked(4)
+    listScope.items(
+        count = rows.size,
+        key = { index -> "$title-row-$index" },
+    ) { rowIndex ->
+        val rowNotices = rows[rowIndex]
+        Row(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+                    .padding(vertical = 6.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            notices.forEach { notice ->
-                OngoingOperatingNoticeShop(notice = notice, onClick = { onNoticeClick(notice) })
+            rowNotices.forEach { notice ->
+                OngoingOperatingNoticeShop(
+                    notice = notice,
+                    modifier = Modifier.weight(1f),
+                    onClick = { onNoticeClick(notice) },
+                )
             }
-            repeat(10) { Spacer(modifier = Modifier.width(72.dp).height(0.dp)) }
+            repeat(4 - rowNotices.size) {
+                Spacer(modifier = Modifier.weight(1f))
+            }
         }
     }
 }
@@ -259,8 +242,6 @@ private fun OperatingNoticePreviewContent(state: OperatingNoticeUiState) {
     RamapTheme {
         OperatingNoticeScreen(
             uiState = state,
-            onBack = {},
-            onEventListClick = {},
             onRefresh = {},
             onRetry = {},
             onShopClick = {},

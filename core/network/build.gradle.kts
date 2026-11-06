@@ -31,6 +31,14 @@ buildkonfig {
     defaultConfigs {
         buildConfigField(STRING, "SUPABASE_URL", secretProperty("supabase.url", "SUPABASE_URL"))
         buildConfigField(STRING, "SUPABASE_ANON_KEY", secretProperty("supabase.anon_key", "SUPABASE_ANON_KEY"))
+        buildConfigField(
+            STRING,
+            "MEDIA_API_URL",
+            secretProperty("media.api_url", "MEDIA_API_URL"),
+        )
+        buildConfigField(STRING, "R2_ACCOUNT_ID", secretProperty("media.r2_account_id", "R2_ACCOUNT_ID"))
+        buildConfigField(STRING, "R2_PRIVATE_BUCKET", secretProperty("media.r2_private_bucket", "R2_PRIVATE_BUCKET"))
+        buildConfigField(STRING, "R2_PUBLIC_BASE_URL", secretProperty("media.r2_public_base_url", "R2_PUBLIC_BASE_URL"))
         buildConfigField(STRING, "KAKAO_NATIVE_APP_KEY", secretProperty("kakao_native_app_key", "KAKAO_NATIVE_APP_KEY"))
         buildConfigField(STRING, "NAVER_MAP_NCP_KEY_ID", secretProperty("naver_map_ncp_key_id", "NAVER_MAP_NCP_KEY_ID"))
         buildConfigField(

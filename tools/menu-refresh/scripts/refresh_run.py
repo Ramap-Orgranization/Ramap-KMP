@@ -17,6 +17,7 @@ from refresh_plan import digest, prepare_capture, serialized, state_sql
 from collection_skips import DEFAULT_REGISTRY, load_registry, skips_for_shop
 from manual_menu_protections import DEFAULT_REGISTRY as PROTECTION_REGISTRY
 from refresh_verify import expected_visible, read_state, result_rows, verification_sql, verify_plan
+from snapshot_storage import SnapshotStorage, backend_workdir, hydrate_snapshots, linked_backend_project
 
 
 SKILL = Path(__file__).resolve().parents[1]
@@ -357,6 +358,8 @@ def accept(run_dir, action_id, response=None, failed=False):
                 plan = load(directory / 'prepared/plan.json')
                 if digest(serialized(plan)) != shop['plan_hash']:
                     raise ValueError('prepared plan changed before verification')
+                if manifest['mode'] == 'live' and any(s.get('raw_storage') for s in verification['snapshots']):
+                    hydrate_snapshots(verification['snapshots'], SnapshotStorage.from_cli(manifest['project_id']))
                 save(directory / 'postwrite-state.json', verification)
                 if kind == 'recover' and not any(s['id'] == plan['snapshot_id'] for s in verification['snapshots']):
                     # Absence is evidence to diagnose, not permission to replay a write.
@@ -566,6 +569,27 @@ def write_reports(run_dir, manifest):
         'note': 'query durations include transport/response wait; browser and user wait are not measured here'})
 
 
+def archive_action(run_dir, action_id):
+    with locked(run_dir) as (run_dir, manifest):
+        check_version(manifest)
+        action = manifest['inflight']
+        if not action or action['id'] != action_id or action['kind'] not in ('rollback', 'commit'):
+            raise ValueError('archive is not bound to the outstanding menu transaction')
+        if manifest['mode'] != 'live':
+            raise ValueError('replay cannot access private Storage')
+        shop = manifest['shops'][action['shop_ids'][0]]
+        directory = shop_path(run_dir, shop)
+        _, raw_dom = read_capture(run_dir, shop, manifest)
+        plan = load(directory / 'prepared/plan.json')
+        if digest(serialized(plan)) != shop['plan_hash'] or digest(raw_dom) != plan['raw_object_sha256']:
+            raise ValueError('archive original differs from the prepared plan')
+        record = SnapshotStorage.from_cli(manifest['project_id']).archive(raw_dom)
+        save(directory / 'prepared/raw-storage.json', record)
+        event(run_dir, manifest, 'original_archived', shop_id=shop['id'], raw_sha256=record['raw_sha256'],
+            original_bytes=record['original_bytes'], gzip_bytes=record['gzip_bytes'])
+        return {'raw_sha256': record['raw_sha256'], 'verified': True}
+
+
 def drain(run_dir, query, max_actions=40, max_seconds=45):
     start = time.monotonic()
     for _ in range(max_actions):
@@ -578,6 +602,8 @@ def drain(run_dir, query, max_actions=40, max_seconds=45):
         if digest(sql) != action['sql_hash']:
             raise ValueError('issued query changed before execution')
         try:
+            if action['mode'] == 'live' and action['kind'] in ('rollback', 'commit'):
+                archive_action(run_dir, action['id'])
             response = query(action, sql)
         except Exception:
             accept(run_dir, action['id'], failed=True)
@@ -588,8 +614,8 @@ def drain(run_dir, query, max_actions=40, max_seconds=45):
 
 
 def cli_query(project_id):
-    linked = REPO / 'supabase/.temp/project-ref'
-    if not linked.exists() or linked.read_text().strip() != project_id:
+    workdir = backend_workdir()
+    if linked_backend_project(workdir) != project_id:
         raise ValueError('linked CLI project differs from this run; use the authenticated MCP transport')
     help_result = subprocess.run(['supabase', 'db', 'query', '--help'], capture_output=True, text=True, check=True)
     if '--linked' not in help_result.stdout or '--file' not in help_result.stdout:
@@ -598,7 +624,7 @@ def cli_query(project_id):
         if action['mode'] != 'live':
             raise ValueError('replay run cannot use a live database transport')
         result = subprocess.run(['supabase', 'db', 'query', '--linked', '--file', action['sql_path'], '--output', 'json'],
-            cwd=REPO, capture_output=True, text=True, timeout=45)
+            cwd=workdir, capture_output=True, text=True, timeout=45)
         if result.returncode:
             # Credentials or headers printed by a third-party CLI are never copied to artifacts.
             raise ValueError('Supabase CLI query failed; diagnose authentication or SQL separately')
@@ -619,15 +645,16 @@ def main():
     init.add_argument('--actor', default='/root')
     init.add_argument('--rehearsal', choices=('all', 'deletions'), default='all')
     init.add_argument('--max-age-hours', type=float, default=24)
-    for name in ('next', 'recover', 'status', 'run-cli', 'submit', 'accept', 'retry', 'review', 'fail'):
+    for name in ('next', 'recover', 'status', 'run-cli', 'submit', 'accept', 'retry', 'review', 'fail', 'archive'):
         sub = commands.add_parser(name)
         sub.add_argument('--run', type=Path, required=True)
         if name == 'submit':
             sub.add_argument('--capture', type=Path, required=True)
             sub.add_argument('--collector', required=True)
-        elif name == 'accept':
+        elif name in ('accept', 'archive'):
             sub.add_argument('--action-id', required=True)
-            sub.add_argument('--failed', action='store_true')
+            if name == 'accept':
+                sub.add_argument('--failed', action='store_true')
         elif name == 'retry':
             sub.add_argument('--shop-id', required=True)
             sub.add_argument('--diagnosis', required=True)
@@ -652,6 +679,8 @@ def main():
         result = next_action(args.run)
     elif args.command == 'accept':
         result = accept(args.run, args.action_id, None if args.failed else json.load(sys.stdin), args.failed)
+    elif args.command == 'archive':
+        result = archive_action(args.run, args.action_id)
     elif args.command == 'recover':
         result = recover(args.run)
     elif args.command == 'retry':

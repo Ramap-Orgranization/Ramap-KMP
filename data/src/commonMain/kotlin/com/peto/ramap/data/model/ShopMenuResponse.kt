@@ -5,6 +5,7 @@ import com.peto.ramap.domain.model.menu.MenuSection
 import com.peto.ramap.domain.model.menu.Menus
 import com.peto.ramap.domain.model.menu.Price
 import com.peto.ramap.domain.model.menu.ShopMenu
+import com.peto.ramap.network.client.media.PublicMediaUrl
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -58,7 +59,7 @@ internal data class ShopMenuResponse(
             priceKrw = item.priceKrw?.let(::Price),
             priceText = item.priceText,
             description = item.description,
-            imageUrl = item.imageUrl,
+            imageUrl = PublicMediaUrl.resolveOwnedUrl(item.imageUrl),
             sourceUrl = item.sourceUrl,
             displayOrder = item.displayOrder,
             isRepresentative = item.isRepresentative,

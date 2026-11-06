@@ -12,7 +12,6 @@ class ShopDetailRequest(
     val shopId: String,
     val initialShop: RamenShop?,
     val onDismiss: () -> Unit,
-    val onSelectedShopHidden: () -> Unit,
     val onShopLoadFailed: (String) -> Unit,
     val onLoginGuideRequested: () -> Unit,
     val onShopViewed: (RamenShop) -> Unit,

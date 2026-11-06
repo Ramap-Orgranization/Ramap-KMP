@@ -1,6 +1,7 @@
 package com.peto.ramap.network.di
 
 import com.peto.ramap.network.client.importation.ImportationFunctionClient
+import com.peto.ramap.network.client.media.MediaStorageClient
 import com.peto.ramap.network.createRamapSupabaseClient
 import io.github.jan.supabase.SupabaseClient
 import io.ktor.client.HttpClient
@@ -14,6 +15,7 @@ val networkModule =
         includes(platformNetworkModule)
         single { ImportationFunctionClient(get<SupabaseClient>()) }
         single { createRamapSupabaseClient(get()) }
+        single { MediaStorageClient(get(), get()) }
         single {
             HttpClient {
                 followRedirects = false

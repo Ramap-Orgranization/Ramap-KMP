@@ -6,6 +6,6 @@ package com.peto.ramap.ui.main.map.config
  * 일반 매장 마커의 아이콘 크기처럼 플랫폼별 지도 렌더러가 공유하는 값만 관리한다.
  */
 internal object MarkerConfig {
-    const val WIDTH = 32
-    const val HEIGHT = 40
+    const val WIDTH = 36
+    const val HEIGHT = 45
 }

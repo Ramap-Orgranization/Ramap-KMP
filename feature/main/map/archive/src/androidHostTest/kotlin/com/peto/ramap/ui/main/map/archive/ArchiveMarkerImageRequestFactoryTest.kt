@@ -1,5 +1,6 @@
 package com.peto.ramap.ui.main.map.archive
 
+import coil3.request.CachePolicy
 import coil3.request.allowHardware
 import coil3.size.Size
 import com.peto.ramap.domain.model.review.MyReviewPhoto
@@ -18,7 +19,7 @@ import kotlin.test.assertIs
 @Config(sdk = [35], manifest = Config.NONE)
 class ArchiveMarkerImageRequestFactoryTest {
     @Test
-    fun `마커 사진 요청은 software bitmap을 요구하며 reference 캐시와 썸네일 크기를 유지한다`() =
+    fun `마커 사진 요청은 software bitmap을 요구하며 디스크 재사용 없이 썸네일 크기를 유지한다`() =
         runTest {
             val photo = MyReviewPhoto(url = "https://example.com/signed-photo", reference = "owner/photo.jpg")
             val request =
@@ -30,8 +31,7 @@ class ArchiveMarkerImageRequestFactoryTest {
 
             assertFalse(request.allowHardware)
             assertEquals(photo.url, assertIs<String>(request.data))
-            assertEquals(photo.reference, request.memoryCacheKey)
-            assertEquals(photo.reference, request.diskCacheKey)
+            assertEquals(CachePolicy.DISABLED, request.diskCachePolicy)
             assertEquals(Size(174, 174), request.sizeResolver.size())
         }
 }

@@ -10,6 +10,7 @@ import com.peto.ramap.data.model.ReviewResponse
 import com.peto.ramap.data.model.ShopReviewRequest
 import com.peto.ramap.data.model.ShopReviewsPageResponse
 import com.peto.ramap.domain.model.review.ReviewImage
+import com.peto.ramap.network.client.media.MediaStorageClient
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.exceptions.RestException
@@ -27,7 +28,10 @@ import kotlin.uuid.Uuid
 internal class RemoteReviewDataSource(
     private val client: SupabaseClient,
     private val images: ReviewImageResolver,
+    private val media: MediaStorageClient? = null,
 ) : ReviewDataSource {
+    override suspend fun fetchMyReviewCount(): Int = client.postgrest.rpc(RPC_FETCH_MY_REVIEW_COUNT).decodeAs()
+
     override suspend fun fetchMyReviews(
         offset: Long,
         visibility: String,
@@ -230,7 +234,11 @@ internal class RemoteReviewDataSource(
             images.forEach { image ->
                 val path = "$userId/${Uuid.random()}.${image.fileExtension}"
                 paths += path
-                client.storage.from(BUCKET).upload(path, image.bytes) { contentType = ContentType.parse(image.mimeType) }
+                if (media != null) {
+                    media.upload(BUCKET, path, image.bytes, image.mimeType)
+                } else {
+                    client.storage.from(BUCKET).upload(path, image.bytes) { contentType = ContentType.parse(image.mimeType) }
+                }
             }
             return paths
         } catch (error: Throwable) {
@@ -241,7 +249,11 @@ internal class RemoteReviewDataSource(
 
     private suspend fun cleanup(paths: List<String>) =
         withContext(NonCancellable) {
-            paths.forEach { path -> runCatching { client.storage.from(BUCKET).delete(path) } }
+            paths.forEach { path ->
+                runCatching {
+                    if (media != null) media.delete(BUCKET, path) else client.storage.from(BUCKET).delete(path)
+                }
+            }
         }
 
     private suspend fun cleanupIfRejected(
@@ -255,6 +267,7 @@ internal class RemoteReviewDataSource(
     private companion object {
         val CONFIRMED_REJECTION_STATUSES = setOf(400, 401, 403, 404, 409, 422, 429)
         const val RPC_FETCH_MY_REVIEWS = "fetch_my_reviews"
+        const val RPC_FETCH_MY_REVIEW_COUNT = "fetch_my_review_count"
         const val RPC_FETCH_MY_REVIEW = "fetch_my_review"
         const val RPC_FETCH_SHOP_REVIEWS = "fetch_shop_reviews"
         const val RPC_FETCH_SHOP_REVIEWS_PAGE = "fetch_shop_reviews_page"

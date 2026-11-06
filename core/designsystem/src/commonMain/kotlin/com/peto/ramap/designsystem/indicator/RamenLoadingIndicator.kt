@@ -9,10 +9,12 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.ProgressBarRangeInfo
@@ -25,7 +27,7 @@ import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
-import ramap.shared.generated.resources.ic_progress
+import ramap.shared.generated.resources.ic_app_logo
 import ramap.shared.generated.resources.loading_content_description
 
 @Composable
@@ -53,12 +55,13 @@ fun RamenLoadingIndicator(modifier: Modifier = Modifier) {
         contentAlignment = Alignment.Center,
     ) {
         Image(
-            painter = painterResource(resource = Res.drawable.ic_progress),
+            painter = painterResource(resource = Res.drawable.ic_app_logo),
             contentDescription = null,
             modifier =
                 Modifier
-                    .size(120.dp)
-                    .graphicsLayer { rotationZ = rotation },
+                    .size(64.dp)
+                    .graphicsLayer { rotationZ = rotation }
+                    .clip(CircleShape),
         )
     }
 }

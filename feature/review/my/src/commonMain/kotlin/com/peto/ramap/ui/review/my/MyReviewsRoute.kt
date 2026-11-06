@@ -191,14 +191,15 @@ fun MyReviewsContent(
                     val cardReview = review.review
                     val actionsEnabled = state.actingReviewId == null
                     val onShopClick =
-                        cardReview.shopId.takeIf { it.isNotBlank() }?.let { shopId ->
-                            { onOpenShopDetail(shopId) }
+                        if (actionsEnabled && review.shop != null && cardReview.shopId.isNotBlank()) {
+                            { onOpenShopDetail(cardReview.shopId) }
+                        } else {
+                            null
                         }
                     val reviewActions =
                         ReviewCardActions(
                             onEdit = { onEditReview(cardReview.shopId, cardReview.id) },
                             onDelete = { deleteTargetReview = review },
-                            onReviewClick = onShopClick,
                         )
                     ReviewCard(
                         review = cardReview,
@@ -210,7 +211,7 @@ fun MyReviewsContent(
                                 review = cardReview,
                                 shop = review.shop,
                                 shopName = review.shopName,
-                                onOpenShopDetail = onShopClick?.takeIf { actionsEnabled } ?: {},
+                                onOpenShopDetail = onShopClick,
                                 actions = reviewActions,
                                 actionsEnabled = actionsEnabled,
                             )

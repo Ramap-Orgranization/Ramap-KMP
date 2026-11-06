@@ -3,13 +3,14 @@ package com.peto.ramap.ui.main.notice.component
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
@@ -29,25 +30,46 @@ internal fun OperatingNoticeSkeleton(modifier: Modifier = Modifier) {
         verticalArrangement = Arrangement.spacedBy(10.dp),
         userScrollEnabled = false,
     ) {
+        // Today section title
         item {
             Skeleton(
                 modifier = Modifier.padding(horizontal = 16.dp).width(80.dp).height(24.dp),
             )
         }
-        item {
-            FlowRow(
+        // Today items rows (2 rows of 4 items)
+        items(2) {
+            Row(
                 modifier =
                     Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 5.dp),
-                horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterHorizontally),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
+                        .padding(horizontal = 16.dp)
+                        .padding(vertical = 6.dp),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                repeat(8) {
-                    OperatingNoticeShopItemSkeleton()
+                repeat(4) {
+                    OperatingNoticeShopItemSkeleton(modifier = Modifier.weight(1f))
                 }
-                repeat(10) {
-                    Spacer(Modifier.width(72.dp).height(0.dp))
+            }
+        }
+        // Scheduled section title
+        item {
+            Spacer(modifier = Modifier.height(6.dp))
+            Skeleton(
+                modifier = Modifier.padding(horizontal = 16.dp).width(80.dp).height(24.dp),
+            )
+        }
+        // Scheduled items row (1 row of 4 items)
+        items(1) {
+            Row(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp)
+                        .padding(vertical = 6.dp),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                repeat(4) {
+                    OperatingNoticeShopItemSkeleton(modifier = Modifier.weight(1f))
                 }
             }
         }
@@ -55,17 +77,17 @@ internal fun OperatingNoticeSkeleton(modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun OperatingNoticeShopItemSkeleton() {
+private fun OperatingNoticeShopItemSkeleton(modifier: Modifier = Modifier) {
     Column(
-        modifier = Modifier.width(72.dp),
+        modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         Box(
-            modifier = Modifier.size(72.dp),
-            contentAlignment = Alignment.TopCenter,
+            modifier = Modifier.fillMaxWidth().aspectRatio(1f),
+            contentAlignment = Alignment.Center,
         ) {
-            Skeleton(modifier = Modifier.size(68.dp), shape = CircleShape)
+            Skeleton(modifier = Modifier.fillMaxSize(0.94f), shape = CircleShape)
         }
         Skeleton(modifier = Modifier.fillMaxWidth().height(36.dp))
     }

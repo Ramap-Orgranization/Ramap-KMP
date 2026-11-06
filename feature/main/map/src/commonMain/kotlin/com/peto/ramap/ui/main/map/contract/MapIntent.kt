@@ -111,6 +111,4 @@ sealed interface MapIntent : Intent {
     data class OnShopViewed(
         val shop: RamenShop,
     ) : MapIntent
-
-    data object OnSelectedShopHidden : MapIntent
 }

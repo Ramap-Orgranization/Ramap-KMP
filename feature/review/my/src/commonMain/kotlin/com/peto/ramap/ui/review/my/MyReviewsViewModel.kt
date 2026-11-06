@@ -29,7 +29,6 @@ class MyReviewsViewModel(
     private val changes: ReviewChangeStore,
     private val reviewChangeReducer: ReviewChangeReducer,
 ) : BaseViewModel<MyReviewsUiState, MyReviewsIntent, MyReviewsSideEffect>(MyReviewsUiState()) {
-    private var generation = 0L
     private var epoch = changes.journal.value.epoch
     private var revision = changes.journal.value.revision
 
@@ -93,7 +92,6 @@ class MyReviewsViewModel(
     private fun observeSessionUserIds() {
         viewModelScope.launch {
             profiles.sessionUserId.distinctUntilChanged().collect { userId ->
-                generation++
                 cancelTask(PAGE_TASK)
                 reduce { MyReviewsUiState(userId = userId) }
                 val hasUser = userId != null
@@ -188,7 +186,6 @@ class MyReviewsViewModel(
         val filter = currentState.filter
         val offset = if (reset) 0L else currentState.reviews.size.toLong()
         val targetSize = if (reset) maxOf(PAGE_SIZE, currentState.reviews.size) else PAGE_SIZE
-        val requestedGeneration = ++generation
         val baseline = changes.journal.value
 
         launchResultTask(
@@ -197,7 +194,7 @@ class MyReviewsViewModel(
             onStart = { copy(failed = false, failedReset = false) },
             request = { fetchExtent(offset, filter, targetSize) },
             onSuccess = { page ->
-                val isStaleRequest = requestedGeneration != generation || userId != currentState.userId || filter != currentState.filter
+                val isStaleRequest = userId != currentState.userId || filter != currentState.filter
                 if (isStaleRequest) return@launchResultTask
 
                 val isEpochChanged = baseline.epoch != changes.journal.value.epoch
@@ -216,10 +213,7 @@ class MyReviewsViewModel(
                     handlePageSuccess(page = page, reset = reset)
                 }
             },
-            onError = {
-                val isCurrentGeneration = requestedGeneration == generation
-                if (isCurrentGeneration) handlePageError(reset = reset)
-            },
+            onError = { handlePageError(reset = reset) },
         )
     }
 

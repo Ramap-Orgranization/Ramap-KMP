@@ -4,7 +4,6 @@ import androidx.lifecycle.viewModelScope
 import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.profile.ProfileVisibility
-import com.peto.ramap.domain.model.review.MyReviewVisibility
 import com.peto.ramap.domain.model.review.change.ReviewChange
 import com.peto.ramap.domain.repository.FollowRepository
 import com.peto.ramap.domain.repository.ProfileRepository
@@ -35,9 +34,6 @@ class MyTabViewModel(
     private val followRepository: FollowRepository,
     private val changes: ReviewChangeStore,
 ) : BaseViewModel<MyTabUiState, MyTabIntent, MyTabSideEffect>(MyTabUiState()) {
-    private var requestGeneration = 0L
-    private var sessionGeneration = 0L
-
     init {
         viewModelScope.launch {
             var epoch = changes.journal.value.epoch
@@ -59,8 +55,6 @@ class MyTabViewModel(
         }
         viewModelScope.launch {
             repository.sessionUserId.distinctUntilChanged().collect { userId ->
-                requestGeneration++
-                sessionGeneration++
                 cancelTask(FETCH)
                 cancelTask(VISIBILITY)
                 cancelTask(BLOCKED_USERS)
@@ -81,7 +75,6 @@ class MyTabViewModel(
                     copy(
                         bookmarkedCount = personalization?.bookmarkedShopIds?.size,
                         notificationCount = personalization?.notificationShopIds?.size,
-                        hiddenCount = personalization?.hiddenShopIds?.size,
                     )
                 }
             }
@@ -294,37 +287,33 @@ class MyTabViewModel(
 
     private fun refreshProfile() {
         val userId = currentState.userId ?: return
-        val generation = ++requestGeneration
         launchResultTask(
             taskKey = FETCH,
             loadKey = MyTabLoadKey.Fetch,
             onStart = { copy(failed = false, sessionResolved = true) },
             request = repository::fetchMyProfile,
             onSuccess = { profile ->
-                val isCurrentGeneration = generation == requestGeneration && currentState.userId == userId
-                if (isCurrentGeneration) {
+                val isSameUser = currentState.userId == userId
+                if (isSameUser) {
                     reduce { if (profile.userId == userId) copy(profile = profile) else copy(failed = true) }
                 }
             },
             onError = {
-                val isCurrentGeneration = generation == requestGeneration && currentState.userId == userId
-                if (isCurrentGeneration) reduce { copy(failed = true) }
+                if (currentState.userId == userId) reduce { copy(failed = true) }
             },
         )
     }
 
     private fun refreshReviewCount() {
         val userId = currentState.userId ?: return
-        val generation = sessionGeneration
         val baseline = changes.journal.value
         launchResultTask(
             taskKey = REVIEW_COUNT,
             loadKey = MyTabLoadKey.ReviewCount,
-            request = { reviewRepository.fetchMyReviews(0, MyReviewVisibility.ALL) },
-            onSuccess = { page ->
+            request = reviewRepository::fetchMyReviewCount,
+            onSuccess = { count ->
                 val journal = changes.journal.value
-                val isSessionStale = generation != sessionGeneration || currentState.userId != userId
-                if (isSessionStale) return@launchResultTask
+                if (currentState.userId != userId) return@launchResultTask
                 val isEpochChanged = baseline.epoch != journal.epoch
                 if (isEpochChanged) {
                     refreshReviewCount()
@@ -335,7 +324,7 @@ class MyTabViewModel(
                 if (hasGap) {
                     refreshReviewCount()
                 } else {
-                    reduce { copy(reviewCount = latest?.counts?.totalCount ?: page.totalCount) }
+                    reduce { copy(reviewCount = latest?.counts?.totalCount ?: count) }
                 }
             },
         )

@@ -72,9 +72,7 @@ class OperatingNoticeRouteTest {
                 CompositionLocalProvider(LocalNavigationEventDispatcherOwner provides owner) {
                     RamapTheme {
                         OperatingNoticeRoute(
-                            onBack = {},
-                            onEventListClick = { underlyingClickCount += 1 },
-                            onShopClick = {},
+                            onShopClick = { underlyingClickCount += 1 },
                             toastManager = toastManager,
                             viewModel = viewModel,
                         )

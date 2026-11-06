@@ -71,13 +71,12 @@ import ramap.shared.generated.resources.follow_saved_shops_visibility
 import ramap.shared.generated.resources.ic_notification
 import ramap.shared.generated.resources.ic_person
 import ramap.shared.generated.resources.ic_profile_blocked
-import ramap.shared.generated.resources.ic_profile_bookmark
 import ramap.shared.generated.resources.ic_profile_private
 import ramap.shared.generated.resources.ic_profile_public
 import ramap.shared.generated.resources.ic_profile_report
 import ramap.shared.generated.resources.ic_review
 import ramap.shared.generated.resources.ic_setting
-import ramap.shared.generated.resources.ic_visibility_off
+import ramap.shared.generated.resources.ic_star_filled
 import ramap.shared.generated.resources.my_reviews
 import ramap.shared.generated.resources.profile_discard
 import ramap.shared.generated.resources.profile_load_failed
@@ -89,7 +88,6 @@ import ramap.shared.generated.resources.review_save
 import ramap.shared.generated.resources.review_unblock
 import ramap.shared.generated.resources.review_unblock_confirm
 import ramap.shared.generated.resources.settings_bookmarked_shops_menu
-import ramap.shared.generated.resources.settings_hidden_shops_menu
 import ramap.shared.generated.resources.settings_report_menu
 import ramap.shared.generated.resources.settings_subscribed_shops_menu
 import ramap.shared.generated.resources.settings_title
@@ -99,7 +97,6 @@ import ramap.shared.generated.resources.shop_review_cancel
 fun MyTabRoute(
     onSettingsNavigate: () -> Unit,
     onReportNavigate: () -> Unit,
-    onHiddenShopsNavigate: () -> Unit,
     onSubscribedShopsNavigate: () -> Unit,
     onBookmarkedShopsNavigate: () -> Unit,
     onProfileNavigate: () -> Unit,
@@ -185,7 +182,6 @@ fun MyTabRoute(
         onRetryClick = { viewModel.dispatch(MyTabIntent.Refresh) },
         onBookmarkedShopsClick = onBookmarkedShopsNavigate,
         onSubscribedShopsClick = onSubscribedShopsNavigate,
-        onHiddenShopsClick = onHiddenShopsNavigate,
         onReportClick = onReportNavigate,
         onLoginClick = onLoginClick,
     )
@@ -212,7 +208,6 @@ internal fun MyTabContent(
     onRetryClick: () -> Unit,
     onBookmarkedShopsClick: () -> Unit,
     onSubscribedShopsClick: () -> Unit,
-    onHiddenShopsClick: () -> Unit,
     onReportClick: () -> Unit,
     onLoginClick: (LoginType) -> Unit,
 ) {
@@ -418,7 +413,7 @@ internal fun MyTabContent(
                         color = GrayColor.C100,
                     )
                     MyMenuRow(
-                        icon = Res.drawable.ic_profile_bookmark,
+                        icon = Res.drawable.ic_star_filled,
                         title = Res.string.settings_bookmarked_shops_menu,
                         count = state.bookmarkedCount,
                         iconBackground = ChromaticColor.Orange050,
@@ -439,20 +434,6 @@ internal fun MyTabContent(
                         iconTint = ChromaticColor.Yellow300,
                         isLoading = isLoading,
                         onClick = onSubscribedShopsClick,
-                    )
-                    HorizontalDivider(
-                        modifier = Modifier.padding(start = 16.dp),
-                        thickness = 1.dp,
-                        color = GrayColor.C100,
-                    )
-                    MyMenuRow(
-                        icon = Res.drawable.ic_visibility_off,
-                        title = Res.string.settings_hidden_shops_menu,
-                        count = state.hiddenCount,
-                        iconBackground = GrayColor.C050,
-                        iconTint = GrayColor.C300,
-                        isLoading = isLoading,
-                        onClick = onHiddenShopsClick,
                     )
                     HorizontalDivider(
                         modifier = Modifier.padding(start = 16.dp),
@@ -493,7 +474,6 @@ private fun MyTabRoutePreview() {
                     failed = false,
                     bookmarkedCount = 12,
                     notificationCount = 3,
-                    hiddenCount = 0,
                     reviewCount = 8,
                     blockedUserCount = 2,
                     hasPendingFollowRequests = true,
@@ -512,7 +492,6 @@ private fun MyTabRoutePreview() {
             onRetryClick = {},
             onBookmarkedShopsClick = {},
             onSubscribedShopsClick = {},
-            onHiddenShopsClick = {},
             onReportClick = {},
             onLoginClick = {},
         )

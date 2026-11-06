@@ -63,7 +63,7 @@ internal fun ReviewTextEditor(
                     enabled = state.canEdit,
                     placeholder = {
                         AppText(
-                            text = stringResource(Res.string.shop_review_placeholder),
+                            text = stringResource(Res.string.shop_review_placeholder, Review.BODY_LENGTH.first),
                             style = AppTextStyle.B2,
                             color = GrayColor.C400,
                         )

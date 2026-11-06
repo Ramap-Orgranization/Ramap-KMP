@@ -2,20 +2,28 @@
 
 ## Project structure and implementation source of truth
 
-This is a modularized Kotlin Multiplatform project targeting Android and iOS. Keep the detailed rules in separate skills so they can be evaluated and updated independently:
+This is a modularized Kotlin Multiplatform project targeting Android and iOS. Team object-oriented principles are owned by `docs/wiki/object-oriented-principles.md`. Keep the other detailed implementation rules in separate skills so they can be evaluated and updated independently:
 
 - `.agents/skills/ramap-coding-conventions/SKILL.md`: formatting, naming, tests, security, and change hygiene.
 - `.agents/skills/ramap-architecture/SKILL.md`: layer responsibility, ownership, and dependency direction.
 - `.agents/skills/ramap-module-structure/SKILL.md`: Gradle modules, source sets, package paths, and placement.
 - `.agents/skills/ramap-design-patterns/SKILL.md`: established ViewModel, data, DI, navigation, resource, and platform patterns.
 
-Read the relevant skills before changing production code. Do not recreate their rules in another agent document; update the owning skill when a team rule changes.
+Read and apply the object-oriented principles when implementing, reviewing, or testing. Read the relevant skills before changing production code. Do not recreate these rules in another agent document; update the owning wiki page or skill when a team rule changes.
+
+## Backend repository ownership
+
+[Ramap-Backend](https://github.com/Ramap-Orgranization/Ramap-Backend) owns server-side changes, including Supabase schema, migrations, RPCs, access policies, Edge Functions, workers, media services, and their deployment configuration and tests. Ramap-KMP owns app code and client-side integration, including Kotlin API calls and response models.
+
+When a task starts in a Codex project connected to Ramap-KMP, inspect and edit server files in a separate local Ramap-Backend checkout. Use `RAMAP_BACKEND_DIR` if configured. Otherwise, use the `Ramap-Backend` checkout beside the primary Ramap-KMP checkout, including when the current directory is a linked KMP worktree. See the [server setup in README](README.md#서버-저장소) for the checkout path and clone instructions. Use the server checkout as the working directory for server tests, Supabase CLI linking, and deployment commands.
+
+For work spanning both repositories, keep server and app changes in separate commits and PRs. Link the dependent changes and document their application order. Preserve local configuration and credentials in each checkout.
 
 ## LLM Wiki maintenance
 
-Start with `docs/wiki/README.md` and read only the policy or domain knowledge relevant to the task. The wiki owns reusable product rules, domain concepts and relationships, exceptions, and decision reasons; implementation rules remain in the four Ramap skills above. Do not duplicate class/module inventories, API descriptions, deployment reports, test runs, or commit histories in the wiki.
+Start with `docs/wiki/README.md` and read only the policy, domain knowledge, or development principles relevant to the task. The wiki owns reusable product rules, domain concepts and relationships, exceptions, decision reasons, and the team's object-oriented principles; other implementation rules remain in the four Ramap skills above. Do not duplicate class/module inventories, API descriptions, deployment reports, test runs, or commit histories in the wiki.
 
-At final PR preparation, use `docs/wiki/maintenance.md` to assess semantic impact: update the wiki only when approved policy, domain meaning, user-visible behavior, an important decision reason, or a documented knowledge error changes. File moves, renames, internal refactoring, implementation parameters, and verification/deployment results alone do not require a wiki update or a fresh `source_ref`. Explicit wiki requests are handled when requested. Do not turn observed implementation or a suggestion into a newly approved policy.
+At final PR preparation, use `docs/wiki/maintenance.md` to assess semantic impact: update the wiki only when approved policy, domain meaning, user-visible behavior, team object-oriented principles, an important decision reason, or a documented knowledge error changes. File moves, renames, internal refactoring, implementation parameters, and verification/deployment results alone do not require a wiki update or a fresh `source_ref`. Explicit wiki requests are handled when requested. Do not turn observed implementation or a suggestion into a newly approved policy.
 
 After an actual wiki edit, run `python3 scripts/check_wiki.py`; after changing the validator, also run its regression tests. At PR preparation, report the affected policy/domain sections and check result, or the concrete reason there is no semantic wiki impact. CI may validate existing wiki files without requiring a documentation change. Preserve local-only documents, secrets, and unrelated working-tree changes; existing Git sharing boundaries are unchanged.
 
@@ -41,11 +49,11 @@ Use subagents when the user explicitly requests delegation or a dedicated workfl
 - **Git workflows:** `git_commit`, `git_issue_branch`, and `git_pr`, together with their corresponding task skills.
 - **Menu refresh:** `menu_collector` for DOM collection and `menu_refresh_judge` for application decisions, using the model settings and limited-context handoff in `tools/menu-refresh/SKILL.md`. Keep DB writes with the primary agent and post-registration review with a separate `menu_registration_reviewer`.
 
-Each role has one standalone TOML file directly under `.codex/agents/`, such as `planner.toml` or `implementer.toml`. Its `name` is the role ID; its `description`, `model`, `model_reasoning_effort`, and `developer_instructions` define discovery, runtime settings, and responsibilities together. Use role-based names without model prefixes or model-specific directories, and do not duplicate these instructions in a paired Markdown file. The project skills remain the owners of implementation rules.
+Each role has one standalone TOML file directly under `.codex/agents/`, such as `planner.toml` or `implementer.toml`. Its `name` is the role ID; its `description`, `model`, `model_reasoning_effort`, and `developer_instructions` define discovery, runtime settings, and responsibilities together. Use role-based names without model prefixes or model-specific directories, and do not duplicate these instructions in a paired Markdown file. The object-oriented principles wiki and project skills remain the owners of their respective development rules.
 
 When a subagent is required, spawn the matching named role. A `task_name` is only the displayed task label and does not select the role or model. If a named role is unavailable in the current session, read its TOML and use those instructions, model, and reasoning effort when spawning a new agent. Existing agent turns keep the model selected when they started.
 
-An implementation subagent must read its own instruction file, this file, the four Ramap project skills above, and any approved planner handoff before editing code. Give it exact files or responsibility and acceptance criteria; it must preserve concurrent changes.
+An implementation subagent must read its own instruction file, this file, the object-oriented principles wiki, the four Ramap project skills above, and any approved planner handoff before editing code. Give it exact files or responsibility and acceptance criteria; it must preserve concurrent changes.
 
 When the user invokes `/impl` or explicitly requests a plan-approval and implementation workflow, use `.agents/skills/source-command-impl/SKILL.md`. Follow the `planner` → user approval → `git_issue_branch` → `implementer` → `test_validator` sequence and do not begin implementation before approval.
 

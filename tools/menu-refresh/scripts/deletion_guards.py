@@ -3,6 +3,7 @@ import hashlib
 import json
 import re
 from pathlib import Path
+from urllib.parse import urlparse
 
 from manual_menu_protections import normalized, protection_for_row
 from source_dom import MenuParser, image_origin
@@ -44,7 +45,11 @@ def validate_origin(row, reviews, overrides):
     required = {'registration_audit', 'human_input', 'aliases'}
     if overrides:
         required.add('manual_overrides')
-    if '/storage/v1/object/' in (row.get('image_url') or ''):
+    image_url = row.get('image_url') or ''
+    image_host = urlparse(image_url).hostname
+    if ('/storage/v1/object/' in image_url or image_host in ('storage.googleapis.com', 'firebasestorage.googleapis.com')
+        or (image_host or '').endswith(('.r2.dev', '.r2.cloudflarestorage.com'))
+        or urlparse(image_url).path.startswith(('/menu-images/', '/shop-profile-images/', '/event-images/'))):
         required.add('stored_media')
     resolutions = review.get('clue_resolutions', {})
     if any(not resolutions.get(kind) for kind in required):

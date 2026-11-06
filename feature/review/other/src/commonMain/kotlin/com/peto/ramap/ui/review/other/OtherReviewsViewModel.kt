@@ -53,6 +53,8 @@ class OtherReviewsViewModel(
     private val follows: FollowRepository,
     private val reviewRepository: ReviewRepository =
         object : ReviewRepository {
+            override suspend fun fetchMyReviewCount(): RamapResult<Int> = RamapResult.Success(0)
+
             override suspend fun fetchMyReviews(
                 offset: Long,
                 visibility: MyReviewVisibility,
@@ -94,8 +96,6 @@ class OtherReviewsViewModel(
     private val changes: ReviewChangeStore,
     private val reviewChangeReducer: ReviewChangeReducer,
 ) : BaseViewModel<OtherReviewsUiState, OtherReviewsIntent, OtherReviewsEffect>(OtherReviewsUiState()) {
-    private var generation = 0L
-
     init {
         observeChanges()
         observeSessionUserIds()
@@ -173,7 +173,6 @@ class OtherReviewsViewModel(
             if (!currentState.following) refreshFollowAccess(change.userId)
             return
         }
-        generation++
         val extent = currentState.reviews.size
         reduce { copy(reviews = emptyList(), profileAccess = null, hasMore = false) }
         loadPage(reset = true, requestedReviewExtent = extent)
@@ -185,7 +184,6 @@ class OtherReviewsViewModel(
                 .sessionUserId
                 .distinctUntilChanged()
                 .collect { currentUserId ->
-                    generation++
                     val targetId = currentState.userId
                     cancelTask(PAGE_TASK)
                     cancelTask(SAVED_SHOPS_TASK)
@@ -294,7 +292,6 @@ class OtherReviewsViewModel(
     private fun openProfile(userId: String) {
         val isInvalidOrSameUser = userId.isBlank() || currentState.userId == userId
         if (isInvalidOrSameUser) return
-        generation++
         cancelTask(PAGE_TASK)
         cancelTask(SAVED_SHOPS_TASK)
         cancelTask(BLOCK_TASK)
@@ -355,11 +352,8 @@ class OtherReviewsViewModel(
         userId: String,
         requestedReviewExtent: Int,
     ) {
-        val requestedGeneration = generation
         val result = userProfileRepository.fetchProfileAccess(userId)
         currentCoroutineContext().ensureActive()
-        val isStaleGeneration = requestedGeneration != generation
-        if (isStaleGeneration) return
         when (result) {
             is RamapResult.Success ->
                 when (val access = result.data) {
@@ -418,12 +412,9 @@ class OtherReviewsViewModel(
         offset: Long,
         reset: Boolean,
     ) {
-        val requestedGeneration = generation
         val baseline = changes.journal.value
         val result = userProfileRepository.fetchProfileReviewsPage(userId, offset)
         currentCoroutineContext().ensureActive()
-        val isStaleGeneration = requestedGeneration != generation
-        if (isStaleGeneration) return
         val isEpochChanged = baseline.epoch != changes.journal.value.epoch
         if (isEpochChanged) {
             loadPage(reset = true)

@@ -53,7 +53,7 @@ class FirebaseAnalyticsTracker : AnalyticsTracker {
 
     override fun userProperty(
         key: String,
-        value: String,
+        value: String?,
     ) {
         firebase.setUserProperty(key, value)
     }

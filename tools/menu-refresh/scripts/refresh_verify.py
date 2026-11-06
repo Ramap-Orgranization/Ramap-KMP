@@ -62,10 +62,14 @@ def verification_sql(plans):
     return (f"WITH current_state AS ({query}) SELECT jsonb_build_object("
         "'state',(SELECT state FROM current_state),"
         "'snapshots',(SELECT coalesce(jsonb_agg(to_jsonb(s) ORDER BY s.id),'[]'::jsonb) FROM "
-        "(SELECT id,shop_id,captured_at,source_url,parser_version,source_hash,menu_fingerprint,menu_items,"
-        "encode(sha256(convert_to(raw_dom,'UTF8')),'hex') AS raw_hash,"
-        f"CASE WHEN id IN ({deletion_ids}) THEN raw_dom ELSE NULL END AS deletion_raw_dom "
-        f"FROM public.shop_menu_snapshots WHERE id IN ({ids})) s)) AS verification;")
+        "(SELECT m.id,m.shop_id,m.captured_at,m.source_url,m.parser_version,m.source_hash,m.menu_fingerprint,m.menu_items,"
+        "encode(sha256(convert_to(m.raw_dom,'UTF8')),'hex') AS raw_hash,"
+        "to_jsonb(o) AS raw_storage,"
+        f"m.id IN ({deletion_ids}) AS needs_deletion_raw,"
+        f"CASE WHEN m.id IN ({deletion_ids}) THEN m.raw_dom ELSE NULL END AS deletion_raw_dom "
+        "FROM public.shop_menu_snapshots m LEFT JOIN public.menu_snapshot_raw_objects o "
+        "ON o.raw_sha256=m.raw_object_sha256 "
+        f"WHERE m.id IN ({ids})) s)) AS verification;")
 
 
 def expected_visible(plan, baseline_visible):

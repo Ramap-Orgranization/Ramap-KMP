@@ -16,6 +16,8 @@ class FakeReviewRepository(
     var reviews: List<Review> = emptyList(),
     var error: RamapError? = null,
 ) : ReviewRepository {
+    override suspend fun fetchMyReviewCount(): RamapResult<Int> = RamapResult.Success(0)
+
     val requestedShopReviews = mutableListOf<Pair<String, Long>>()
 
     override suspend fun fetchMyReviews(

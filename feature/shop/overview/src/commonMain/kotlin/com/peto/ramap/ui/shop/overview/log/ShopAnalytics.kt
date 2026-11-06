@@ -5,7 +5,6 @@ import com.peto.ramap.analytics.AnalyticsTracker
 import com.peto.ramap.analytics.common.CategoryFilterToggled
 import com.peto.ramap.analytics.common.deeplink.ShareLinkClicked
 import com.peto.ramap.analytics.common.shop.BookmarkToggled
-import com.peto.ramap.analytics.common.shop.HiddenShopToggled
 import com.peto.ramap.analytics.common.shop.ShopSelected
 import com.peto.ramap.analytics.common.shop.SubscribedToggled
 import com.peto.ramap.domain.model.shop.Category
@@ -67,21 +66,6 @@ class ShopAnalytics(
     ) {
         analyticsTracker.logEvent(
             SubscribedToggled(
-                shopId = shop.id,
-                shopName = shop.name,
-                enabled = enabled,
-                source = source,
-            ),
-        )
-    }
-
-    fun logHiddenToggled(
-        shop: RamenShop,
-        enabled: Boolean,
-        source: AnalyticsSource = AnalyticsSource.MAP,
-    ) {
-        analyticsTracker.logEvent(
-            HiddenShopToggled(
                 shopId = shop.id,
                 shopName = shop.name,
                 enabled = enabled,

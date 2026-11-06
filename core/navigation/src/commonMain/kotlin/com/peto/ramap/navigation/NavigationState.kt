@@ -2,6 +2,7 @@ package com.peto.ramap.navigation
 
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
@@ -9,7 +10,18 @@ import androidx.navigation3.runtime.NavKey
 class NavigationState(
     selectedTabState: MutableState<TabStatus>,
     val backStacks: Map<TabStatus, NavBackStack<NavKey>>,
+    selectedNewsTabState: MutableState<NewsTab> = mutableStateOf(NewsTab.EVENTS),
 ) {
+    var selectedNewsTab: NewsTab by selectedNewsTabState
+        private set
+
+    init {
+        backStacks[TabStatus.MY]?.removeAll { it == ScreenRoutes.HiddenShopListRoutes }
+        if (backStacks[TabStatus.EVENT]?.remove(ScreenRoutes.OperatingNoticeRoutes) == true) {
+            selectedNewsTab = NewsTab.OPERATING_NOTICES
+        }
+    }
+
     private var eventTabRouteId = 0
     private var sharedShopRouteId =
         backStacks.values
@@ -31,12 +43,6 @@ class NavigationState(
             currentBackStack.size > 1 ||
                 requestedMapReturnTab() != null ||
                 selectedTab != TabStatus.MAP
-
-    fun showHiddenShops() {
-        if (currentRoute != ScreenRoutes.HiddenShopListRoutes) {
-            currentBackStack.add(ScreenRoutes.HiddenShopListRoutes)
-        }
-    }
 
     fun showMyRoot() {
         val myStack = backStacks.getValue(TabStatus.MY)
@@ -127,7 +133,9 @@ class NavigationState(
         if (mapStack.isEmpty()) mapStack.add(ScreenRoutes.MapRoutes())
     }
 
-    fun showOperatingNotice() = showOnce(ScreenRoutes.OperatingNoticeRoutes)
+    fun selectNewsTab(tab: NewsTab) {
+        selectedNewsTab = tab
+    }
 
     fun showEventRoot() {
         if (
@@ -136,6 +144,7 @@ class NavigationState(
             currentBackStack.removeLastOrNull()
         }
         val eventBackStack = backStacks.getValue(TabStatus.EVENT)
+        selectedNewsTab = NewsTab.EVENTS
         eventBackStack.clear()
         eventBackStack.add(ScreenRoutes.EventTabRoutes(++eventTabRouteId))
         selectTopLevelTab(TabStatus.EVENT)
@@ -144,6 +153,11 @@ class NavigationState(
     fun pop() {
         if (currentBackStack.size > 1) {
             currentBackStack.removeLastOrNull()
+            return
+        }
+
+        if (selectedTab == TabStatus.EVENT && selectedNewsTab == NewsTab.OPERATING_NOTICES) {
+            selectedNewsTab = NewsTab.EVENTS
             return
         }
 
@@ -159,6 +173,7 @@ class NavigationState(
         if (tab == selectedTab) return
 
         if (selectedTab == TabStatus.EVENT) {
+            selectedNewsTab = NewsTab.EVENTS
             val eventBackStack = backStacks.getValue(TabStatus.EVENT)
             eventBackStack.clear()
             eventBackStack.add(ScreenRoutes.EventTabRoutes(++eventTabRouteId))

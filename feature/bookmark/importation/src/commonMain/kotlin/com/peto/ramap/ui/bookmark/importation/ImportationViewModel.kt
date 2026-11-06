@@ -104,7 +104,6 @@ class ImportationViewModel(
                 preview = preview,
                 candidates = shops.filterByShopIds(resolved.importableShopIds),
                 alreadyBookmarkedCount = resolved.alreadyBookmarkedCount,
-                hiddenCount = resolved.hiddenCount,
                 error = null,
             )
         }
@@ -156,7 +155,6 @@ class ImportationViewModel(
             preview = null,
             candidates = RamenShops(emptyMap()),
             alreadyBookmarkedCount = 0,
-            hiddenCount = 0,
             error = null,
         )
 

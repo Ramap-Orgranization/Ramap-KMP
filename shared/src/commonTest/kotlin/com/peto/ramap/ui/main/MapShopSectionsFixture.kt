@@ -112,7 +112,6 @@ class MapShopSectionsFixture(
                         when (effect) {
                             is ShopOverviewSideEffect.Interaction -> effects.send(effect.effect)
                             is ShopOverviewSideEffect.ShopViewed -> map.dispatch(MapIntent.OnShopViewed(effect.shop))
-                            ShopOverviewSideEffect.SelectedShopHidden -> map.dispatch(MapIntent.OnSelectedShopHidden)
                         }
                     }
                 },

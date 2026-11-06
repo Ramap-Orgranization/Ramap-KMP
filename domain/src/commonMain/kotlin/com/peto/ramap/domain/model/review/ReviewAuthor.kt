@@ -9,4 +9,5 @@ data class ReviewAuthor(
     val reviewCount: Int = 0,
     val avatarReference: String? = null,
     val avatarExpiresAt: Instant? = null,
+    val isWithdrawn: Boolean = false,
 )

@@ -27,6 +27,7 @@ sealed interface ScreenRoutes : NavKey {
         val instanceId: Int = 0,
     ) : ScreenRoutes
 
+    // 이전 버전에서 저장한 새소식 스택을 복원할 때 사용한다.
     @Serializable
     data object OperatingNoticeRoutes : ScreenRoutes
 
@@ -72,6 +73,7 @@ sealed interface ScreenRoutes : NavKey {
     @Serializable
     data object PlaceReportRoutes : ScreenRoutes
 
+    // 이전 버전에서 저장한 마이 탭 스택을 복원할 때 사용한다.
     @Serializable
     data object HiddenShopListRoutes : ScreenRoutes
 

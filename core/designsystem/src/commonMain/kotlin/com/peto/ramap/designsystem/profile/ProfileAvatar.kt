@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.key
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -16,6 +17,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
+import com.peto.ramap.designsystem.image.LocalImageAccessScope
 import com.peto.ramap.theme.RamapTheme
 import org.jetbrains.compose.resources.painterResource
 import ramap.shared.generated.resources.Res
@@ -50,14 +52,16 @@ fun ProfileAvatar(
                         .padding(7.dp),
             )
         } else {
-            AsyncImage(
-                model = model,
-                contentDescription = description,
-                modifier = Modifier.fillMaxSize(),
-                placeholder = fallback,
-                error = fallback,
-                contentScale = ContentScale.Crop,
-            )
+            key(LocalImageAccessScope.current) {
+                AsyncImage(
+                    model = model,
+                    contentDescription = description,
+                    modifier = Modifier.fillMaxSize(),
+                    placeholder = fallback,
+                    error = fallback,
+                    contentScale = ContentScale.Crop,
+                )
+            }
         }
     }
 }

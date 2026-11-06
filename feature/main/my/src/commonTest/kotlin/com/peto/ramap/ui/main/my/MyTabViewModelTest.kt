@@ -8,6 +8,8 @@ import com.peto.ramap.domain.model.moderation.BlockedUser
 import com.peto.ramap.domain.model.personalization.Personalization
 import com.peto.ramap.domain.model.profile.AccountProfile
 import com.peto.ramap.domain.model.profile.PublicProfile
+import com.peto.ramap.domain.model.review.change.ReviewChange
+import com.peto.ramap.domain.model.review.change.ReviewOwnerCounts
 import com.peto.ramap.fake.FakeFollowRepository
 import com.peto.ramap.fake.FakePersonalizationRepository
 import com.peto.ramap.fake.FakeReviewChangeStore
@@ -63,6 +65,7 @@ class MyTabViewModelTest {
             runCurrent()
 
             assertEquals(7, viewModel.uiState.value.reviewCount)
+            assertEquals(1, reviews.countFetchCount)
             assertEquals(1, viewModel.uiState.value.blockedUserCount)
 
             reviews.totalCount = 8
@@ -71,17 +74,45 @@ class MyTabViewModelTest {
             runCurrent()
 
             assertEquals(8, viewModel.uiState.value.reviewCount)
+            assertEquals(2, reviews.countFetchCount)
             assertEquals(0, viewModel.uiState.value.blockedUserCount)
 
             reviews.totalCount = 9
             viewModel.dispatch(MyTabIntent.ReturnedToScreen)
             runCurrent()
             assertEquals(8, viewModel.uiState.value.reviewCount)
+            assertEquals(2, reviews.countFetchCount)
 
             profiles.sessionUserId.value = null
             runCurrent()
             assertNull(viewModel.uiState.value.reviewCount)
             assertNull(viewModel.uiState.value.blockedUserCount)
+        }
+
+    @Test
+    fun `리뷰 개수 응답을 기다리는 동안 변경된 최신 리뷰 수를 유지한다`() =
+        coroutinesTest {
+            val pending = CompletableDeferred<RamapResult<Int>>()
+            val reviews = FakeMyTabReviewRepository().apply { countPending = pending }
+            val changes = FakeReviewChangeStore()
+            val viewModel = MyTabViewModel(FakeProfileRepository(), FakeUserModerationRepository(), FakePersonalizationRepository(), reviews, FakeFollowRepository(), changes)
+            runCurrent()
+            changes.publish(
+                ReviewChange.Written(
+                    reviewId = "new-review",
+                    userId = "first",
+                    shopId = "shop",
+                    before = null,
+                    after = null,
+                    counts = ReviewOwnerCounts(8, 5, 3, 5, true),
+                ),
+            )
+            runCurrent()
+            pending.complete(RamapResult.Success(7))
+            runCurrent()
+
+            assertEquals(8, viewModel.uiState.value.reviewCount)
+            assertEquals(1, reviews.countFetchCount)
         }
 
     @Test
@@ -106,6 +137,34 @@ class MyTabViewModelTest {
         }
 
     @Test
+    fun `같은 계정으로 다시 로그인한 뒤 이전 개수 응답이 와도 새 값을 유지한다`() =
+        coroutinesTest {
+            val oldRequest = CompletableDeferred<RamapResult<Int>>()
+            val profiles = FakeProfileRepository()
+            val reviews =
+                FakeMyTabReviewRepository().apply {
+                    countPending = oldRequest
+                    ignoreCountCancellation = true
+                }
+            val viewModel = MyTabViewModel(profiles, FakeUserModerationRepository(), FakePersonalizationRepository(), reviews, FakeFollowRepository(), FakeReviewChangeStore())
+            runCurrent()
+
+            profiles.sessionUserId.value = null
+            runCurrent()
+            reviews.countPending = null
+            reviews.totalCount = 9
+            profiles.sessionUserId.value = "first"
+            runCurrent()
+            assertEquals(9, viewModel.uiState.value.reviewCount)
+
+            oldRequest.complete(RamapResult.Success(7))
+            runCurrent()
+
+            assertEquals("first", viewModel.uiState.value.userId)
+            assertEquals(9, viewModel.uiState.value.reviewCount)
+        }
+
+    @Test
     fun `프로필과 개인화 개수를 표시하고 세션이 바뀌면 프로필을 비운다`() =
         coroutinesTest {
             val profiles = FakeProfileRepository()
@@ -114,7 +173,6 @@ class MyTabViewModelTest {
                     Personalization(
                         bookmarkedShopIds = setOf("one"),
                         notificationShopIds = setOf("two", "three"),
-                        hiddenShopIds = setOf("four", "five", "six"),
                     ),
                 )
             val viewModel = MyTabViewModel(profiles, FakeUserModerationRepository(), personalization, FakeMyTabReviewRepository(), FakeFollowRepository(), changes = FakeReviewChangeStore())
@@ -126,7 +184,6 @@ class MyTabViewModelTest {
             assertEquals("느긋한차슈", initialProfile?.nickname)
             assertEquals(1, viewModel.uiState.value.bookmarkedCount)
             assertEquals(2, viewModel.uiState.value.notificationCount)
-            assertEquals(3, viewModel.uiState.value.hiddenCount)
             personalization.updateBookmarkedShopIds(setOf("one", "two"))
             runCurrent()
             assertEquals(2, viewModel.uiState.value.bookmarkedCount)

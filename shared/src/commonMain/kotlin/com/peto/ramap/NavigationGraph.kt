@@ -15,16 +15,14 @@ import com.peto.ramap.ui.account.InformationRoute
 import com.peto.ramap.ui.bookmark.importation.ImportationGuideRoute
 import com.peto.ramap.ui.bookmark.importation.ImportationRoute
 import com.peto.ramap.ui.bookmark.list.BookmarkedShopListRoute
-import com.peto.ramap.ui.hidden.HiddenShopListRoute
 import com.peto.ramap.ui.main.event.detail.EventDetailRoute
-import com.peto.ramap.ui.main.event.list.EventsRoute
 import com.peto.ramap.ui.main.feed.FeedRoute
 import com.peto.ramap.ui.main.map.MapRoute
 import com.peto.ramap.ui.main.map.archive.ArchiveMapRoute
 import com.peto.ramap.ui.main.map.archive.ArchiveMapViewModel
 import com.peto.ramap.ui.main.my.MyTabRoute
-import com.peto.ramap.ui.main.notice.OperatingNoticeRoute
 import com.peto.ramap.ui.main.ranking.RankingRoute
+import com.peto.ramap.ui.news.NewsRoute
 import com.peto.ramap.ui.notification.NotificationSettingsRoute
 import com.peto.ramap.ui.profile.edit.ProfileEditRoute
 import com.peto.ramap.ui.profile.follow.FollowRoute
@@ -62,7 +60,6 @@ internal fun NavigationGraph(
                         shopId = request.shopId,
                         initialShop = request.initialShop,
                         onDismiss = request.onDismiss,
-                        onSelectedShopHidden = request.onSelectedShopHidden,
                         onShopLoadFailed = request.onShopLoadFailed,
                         onLoginGuideRequested = request.onLoginGuideRequested,
                         onShopViewed = request.onShopViewed,
@@ -97,11 +94,10 @@ internal fun NavigationGraph(
                     when (route.source) {
                         NavigationSource.BOOKMARKED_SHOPS -> AnalyticsSource.BOOKMARKED_SHOPS
                         NavigationSource.EVENT_DETAIL -> AnalyticsSource.EVENT_DETAIL
-                        NavigationSource.HIDDEN_SHOPS -> AnalyticsSource.HIDDEN_SHOPS
                         NavigationSource.RANKING -> AnalyticsSource.RANKING
                         NavigationSource.SUBSCRIBED_SHOPS -> AnalyticsSource.SUBSCRIBED_SHOPS
                         NavigationSource.OPERATING_NOTICE -> AnalyticsSource.OPERATING_NOTICE
-                        NavigationSource.SHARED_LINK, null -> AnalyticsSource.MAP
+                        NavigationSource.SHARED_LINK, NavigationSource.HIDDEN_SHOPS, null -> AnalyticsSource.MAP
                     },
             )
         },
@@ -163,7 +159,6 @@ internal fun NavigationGraph(
                 onOpenProfile = { userId -> openProfile(userId, false) },
                 onSettingsNavigate = navigationState::showSettings,
                 onReportNavigate = navigationState::showPlaceReport,
-                onHiddenShopsNavigate = navigationState::showHiddenShops,
                 onSubscribedShopsNavigate = navigationState::showSubscribedShops,
                 onBookmarkedShopsNavigate = navigationState::showBookmarkedShops,
                 onLoginClick = onLoginTypeSelected,
@@ -286,37 +281,16 @@ internal fun NavigationGraph(
                 onBack = navigationState::pop,
             )
         },
-        eventListScreen = {
-            EventsRoute(
-                onClickEvent = { event ->
-                    navigationState.showEvent(event.id)
-                },
-                onClickNotice = navigationState::showOperatingNotice,
-            )
-        },
-        operatingNoticeScreen = {
-            OperatingNoticeRoute(
-                onBack = navigationState::pop,
-                onEventListClick = navigationState::pop,
+        newsScreen = {
+            NewsRoute(
+                onClickEvent = { event -> navigationState.showEvent(event.id) },
                 onShopClick = { shopId ->
                     navigationState.showShopOnMap(
                         shopId = shopId,
                         source = NavigationSource.OPERATING_NOTICE,
                     )
                 },
-            )
-        },
-        hiddenScreen = {
-            HiddenShopListRoute(
-                onBackClick = navigationState::pop,
-                onShopOpen = { shopId ->
-                    navigationState.showShopOnMap(
-                        shopId,
-                        source = NavigationSource.HIDDEN_SHOPS,
-                        returnTab = TabStatus.MY,
-                        showShopDetail = false,
-                    )
-                },
+                navigationState = navigationState,
             )
         },
         notificationSettingsScreen = {

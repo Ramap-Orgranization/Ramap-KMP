@@ -12,6 +12,8 @@ import com.peto.ramap.domain.model.review.ShopReviewsPage
 import com.peto.ramap.domain.repository.ReviewRepository
 
 class FakeMapReviewRepository : ReviewRepository {
+    override suspend fun fetchMyReviewCount(): RamapResult<Int> = RamapResult.Success(0)
+
     var blockedReview: Review? = null
     var reviews: List<Review> = emptyList()
     val pageOffsets = mutableListOf<Long>()

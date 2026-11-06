@@ -1,3 +1,7 @@
+# 라멥
+
+라멥은 라멘 전문점을 찾고 저장하며, 방문 리뷰와 매장 소식·이벤트를 확인하는 Android·iOS 앱입니다.
+
 <p align="center">
 <a href="https://www.instagram.com/ramap.app/">Instagram</a> ·
 <a href="https://ramap-orgranization.github.io/Ramap-Landing-Page/">랜딩 페이지</a> ·
@@ -7,56 +11,160 @@
 
 <img src="https://github.com/user-attachments/assets/a28b7556-2fa3-43bb-89f6-be1264fbfbf8" alt="라멥 히어로 이미지" width="100%" />
 
-<p align="center">
-<img src="https://github.com/user-attachments/assets/b232948c-5377-4577-acd5-bf7b324edd78" width="30%"/>
-<img src="https://github.com/user-attachments/assets/a6185d53-64fe-45c9-ab91-18c40a2c717d" width="30%"/>
-<img src="https://github.com/user-attachments/assets/28eeb61e-3ca1-44c5-9640-ba786e7998fc" width="30%"/>
-</p>
-<p align="center">
-<img src="https://github.com/user-attachments/assets/6c7c7c5b-b185-40dc-b675-55062313675c" width="30%"/>
-<img src="https://github.com/user-attachments/assets/fcf54bea-4bc2-45ff-8bf1-0919ce93633f" width="30%"/>
-<img src="https://github.com/user-attachments/assets/9c17f64c-9478-4cf4-a52a-d84e6be66656" width="30%"/>
-</p>
+## 소개 및 협업
+
+### 라멥 × 웅성
+
+라멘 인플루언서 [웅성(@menolic.sw)](https://www.instagram.com/menolic.sw/)님과 협업하며 서비스를 키워나가고 있습니다.
+
+> **머니그라피에서 소개된 라멥**
+>
+> 협업 파트너 웅성님이 머니그라피에 출연해 라멥의 개발과 서비스 운영 사례를 소개했습니다.
+>
+> **[라멥 소개 장면 보기 · 1:01:35](https://www.youtube.com/watch?v=Wv7uGRB1xHM&t=3695s)**
+
+<a href="https://www.youtube.com/watch?v=Wv7uGRB1xHM&t=3695s">
+    <img src="assets/media/moneygraphy-ramap.png" alt="머니그라피에서 라멥 프로젝트를 소개하는 장면" width="100%" />
+</a>
+
+## 주요 기능
+
+| 기능 | 할 수 있는 일 |
+| --- | --- |
+| 지도·검색 | 지역과 매장 이름으로 라멘 전문점을 찾고 상세 정보 확인 |
+| 매장 정보·메뉴 | 메뉴, 영업시간, 임시 휴무·조기 마감 등 운영 변동 확인 |
+| 북마크·가져오기 | 방문하고 싶은 매장을 저장하고 외부 매장 목록 가져오기 |
+| 리뷰·피드·팔로우 | 방문 경험을 남기고 전체·저장한 매장·팔로잉의 리뷰 모아보기 |
+| 랭킹 | 매장 순위를 비교하고 관심 매장 저장 |
+| 새소식·이벤트 | 매장 소식과 이벤트를 확인하고 원하는 알림 설정 |
+
+### 앱 화면
+
+<table>
+    <tr>
+        <th width="25%">지도 탐색</th>
+        <th width="25%">매장 상세·리뷰</th>
+        <th width="25%">메뉴·가격</th>
+        <th width="25%">리뷰 피드</th>
+    </tr>
+    <tr>
+        <td><img src="assets/store-screenshots/01-map.png" alt="라멘 전문점을 지도에서 찾는 라멥 스토어 스크린샷" width="240" /></td>
+        <td><img src="assets/store-screenshots/02-shop-details.png" alt="위치와 영업시간 및 매장 리뷰를 살펴보는 라멥 스토어 스크린샷" width="240" /></td>
+        <td><img src="assets/store-screenshots/03-menu.png" alt="매장 메뉴와 가격을 미리 확인하는 라멥 스토어 스크린샷" width="240" /></td>
+        <td><img src="assets/store-screenshots/04-review-feed.png" alt="라멘 방문 사진과 리뷰를 모아보는 라멥 스토어 스크린샷" width="240" /></td>
+    </tr>
+    <tr>
+        <th width="25%">랭킹</th>
+        <th width="25%">매장 소식·이벤트</th>
+        <th width="25%">영업 변동</th>
+        <th width="25%">라멘 생활</th>
+    </tr>
+    <tr>
+        <td><img src="assets/store-screenshots/05-ranking.png" alt="다음에 방문할 라멘 매장을 랭킹에서 찾는 라멥 스토어 스크린샷" width="240" /></td>
+        <td><img src="assets/store-screenshots/06-events.png" alt="한정 메뉴와 매장 이벤트를 확인하는 라멥 스토어 스크린샷" width="240" /></td>
+        <td><img src="assets/store-screenshots/07-opening-updates.png" alt="방문 전 임시 휴무와 조기 마감 소식을 확인하는 라멥 스토어 스크린샷" width="240" /></td>
+        <td><img src="assets/store-screenshots/08-ramen-life.png" alt="매장 탐색과 저장 및 방문 리뷰를 소개하는 라멥 스토어 스크린샷" width="240" /></td>
+    </tr>
+</table>
 
 ## 기술 스택
+<img width="1200" height="640" alt="ramap-architecture" src="https://github.com/user-attachments/assets/e5921be6-4d0a-4deb-b2cf-cd61487ac7e0" />
+
 
 | 구분 | 기술 |
-|---|---|
+| --- | --- |
 | 멀티플랫폼 | Kotlin Multiplatform, Android, iOS |
 | UI | Compose Multiplatform, Jetpack Compose, Material 3 |
 | 아키텍처 | Clean Architecture, Feature-based Modularization |
 | 상태 관리 | Kotlin Coroutines, Flow, StateFlow, MVI 스타일 단방향 상태 관리 |
 | 의존성 주입 | Koin |
 | 네트워크 | Ktor Client, Kotlinx Serialization |
-| 백엔드 | Supabase Auth, PostgREST, Storage |
+| 백엔드 | Supabase Auth, PostgREST, Storage, Functions |
 | 내비게이션 | AndroidX Navigation 3, Navigation Event, 딥링크, Universal Link |
 | 지도·위치 | Naver Map SDK, Google Play Services Location |
-| 로그인 | Kakao SDK |
+| 로그인 | Kakao SDK, Apple 로그인(iOS) |
 | 분석·모니터링 | Firebase Analytics, Firebase Crashlytics |
 | 푸시 알림 | Firebase Cloud Messaging |
 | 이미지 | Coil 3 |
 | 테스트 | Kotlin Test, Coroutines Test, Turbine, Compose UI Test, Robolectric |
 | 코드 품질 | Ktlint |
 | 빌드 | Gradle Convention Plugin, BuildKonfig |
-| 개발 환경 | Kotlin `2.4.10`, AGP `9.3.0`, Android SDK `37`, JDK 17+ |
+| 개발 환경 | Kotlin `2.4.10`, AGP `9.3.0`, Gradle `9.5.0`, JDK 17 |
+
+세부 라이브러리 버전은 [버전 카탈로그](gradle/libs.versions.toml), Gradle 실행 버전은 [Wrapper 설정](gradle/wrapper/gradle-wrapper.properties)에서 관리합니다.
 
 ## 프로젝트 구조
 
-개발을 시작할 때 [Ramap LLM 위키](docs/wiki/README.md)에서 관련 코드와 검증 경로를 찾습니다. 작업 중 확정된 지식은 [유지보수 정책](docs/wiki/maintenance.md)에 따라 갱신합니다.
+Kotlin 공통 코드에서 화면·도메인·데이터 흐름을 공유하고, 플랫폼 SDK 연결은 각 모듈의 `androidMain`·`iosMain`과 앱 진입점에서 담당합니다.
 
 | 계층 | 모듈 | 역할 |
-|---|---|---|
-| Application | `androidApp` | Android 앱 진입점, Firebase·Kakao·Naver SDK 초기화 |
-| Application | `iosApp` | iOS 앱 진입점, SwiftUI 및 플랫폼 이벤트 처리 |
-| Composition Root | `shared` | 공통 앱 조립, Koin 초기화, 루트 UI 및 라우팅 |
-| Feature | `feature/*` | 지도, 랭킹, 이벤트, 마이, 북마크 등 화면별 기능 |
-| Data | `data` | DataSource, DTO, Repository 구현, Supabase 연동 |
-| Domain | `domain` | 도메인 모델, Repository 계약, Use Case |
-| Core | `core/network` | Ktor·Supabase 네트워크 계층 |
-| Core | `core/ui` | 공통 ViewModel, UI 상태, 로딩·에러 처리 |
-| Core | `core/designsystem` | 공통 Compose 컴포넌트와 디자인 리소스 |
-| Core | `core/navigation` | Navigation 3, 탭, 백스택, 딥링크 |
-| Core | `core/platform` | Android·iOS 플랫폼 기능 추상화 |
-| Core | `core/analytics` | Analytics·Crashlytics 추상화 |
-| Core | `core/notification` | 푸시 알림 및 알림 딥링크 처리 |
-| Core | `core/testing` | 테스트용 Fake와 Fixture |
+| --- | --- | --- |
+| 앱 | `androidApp` | Android 앱 진입점, Firebase·Kakao·Naver SDK 초기화 |
+| 앱 | `iosApp` | iOS 앱 진입점, SwiftUI 및 플랫폼 이벤트 처리 |
+| 앱 조립 | `shared` | Koin 초기화, 공통 루트 UI·라우팅·플랫폼 연결 |
+| 화면 기능 | `feature/*` | 지도, 매장 상세·메뉴, 리뷰·피드, 랭킹, 새소식, 북마크 등 |
+| 데이터 | `data` | DataSource, DTO, Repository 구현, Supabase 연동 |
+| 도메인 | `domain` | 도메인 모델, Repository 계약, Use Case |
+| 공통 기반 | `core/common`, `core/ui` | 결과·오류 모델, 공통 ViewModel·UI 상태, 로딩·오류 처리 |
+| UI 기반 | `core/designsystem`, `core/preview` | 공통 Compose 컴포넌트·테마·리소스, 미리보기 데이터 |
+| 네트워크 | `core/network` | Ktor·Supabase 클라이언트와 설정 |
+| 내비게이션 | `core/navigation` | Navigation 3, 탭·백스택·딥링크 |
+| 플랫폼 | `core/platform` | Android·iOS 플랫폼 기능 추상화 |
+| 분석·알림 | `core/analytics`, `core/notification` | 분석·오류 수집, 푸시 알림과 알림 딥링크 |
+| 테스트 | `core/testing` | 테스트용 Fake와 Fixture |
+| 개발 도구 | `debug/admin` | Android 디버그 빌드용 관리자 도구 |
+
+전체 모듈 목록은 [settings.gradle.kts](settings.gradle.kts), 계층별 책임과 의존 방향은 [아키텍처 규칙](.agents/skills/ramap-architecture/SKILL.md)에서 확인합니다.
+
+## 서버 저장소
+
+Supabase 마이그레이션·Edge Functions, 서버 서비스와 배포 설정은 비공개 [Ramap-Backend](https://github.com/Ramap-Orgranization/Ramap-Backend)에서 관리합니다.
+
+Codex 프로젝트에 KMP만 연결되어 있어도 서버 작업은 별도의 로컬 백엔드 체크아웃에서 진행합니다. 기본 위치는 KMP 기본 체크아웃과 같은 상위 폴더입니다. 다른 위치에 이미 클론했다면 `RAMAP_BACKEND_DIR`에 해당 절대 경로를 설정합니다.
+
+KMP 기본 체크아웃이나 워크트리에서 아래 명령으로 기본 위치를 찾을 수 있습니다. 저장소가 처음 필요할 때 해당 경로에 클론합니다.
+
+```sh
+git_dir=$(git rev-parse --path-format=absolute --git-common-dir)
+default_backend_dir="$(dirname "$(dirname "$git_dir")")/Ramap-Backend"
+export RAMAP_BACKEND_DIR="${RAMAP_BACKEND_DIR:-$default_backend_dir}"
+if [ ! -e "$RAMAP_BACKEND_DIR" ]; then
+  git clone https://github.com/Ramap-Orgranization/Ramap-Backend.git "$RAMAP_BACKEND_DIR"
+fi
+```
+
+서버 테스트·배포 및 Supabase CLI 연결은 백엔드 체크아웃에서 실행합니다.
+
+## AI 에이전트 하네스
+
+Codex 에이전트가 개발과 운영 작업을 수행할 때 참고할 지침, 역할, 워크플로를 저장소에서 관리합니다. 총괄 에이전트는 일반 구현 요청의 조사·구현·검증을 담당합니다. `/impl`처럼 단계별 진행을 요청하면 작업 범위와 완료 기준을 정해 역할별 에이전트로 이어갑니다.
+
+| 구성 | 책임 |
+| --- | --- |
+| [공통 작업 지침](AGENTS.md) | 작업 범위, 일반 요청과 전용 절차의 분기, 기존 변경 보존 |
+| [작업 스킬](.agents/skills/) | 구현 규칙과 계획·리뷰·릴리스 등 재사용 가능한 절차 |
+| [역할별 에이전트 설정](.codex/agents/) | 각 역할의 책임, 모델·추론 수준, 실행 지침 |
+| [정책·도메인 위키](docs/wiki/README.md) | 제품 규칙, 도메인 개념·관계·예외, 결정 이유 |
+| [메뉴 최신화 도구](tools/menu-refresh/README.md) | 수집·판정·반영·검토에 쓰는 도구와 재개 절차 |
+
+```mermaid
+flowchart TD
+    Request["사용자 요청"] --> Lead["총괄 에이전트"]
+    Context["작업 지침 · 스킬 · 정책 위키"] -.-> Lead
+    Lead -->|일반 구현| Direct["조사 · 구현 · 검증"]
+    Lead -->|단계별 구현 요청| Plan["계획 에이전트"]
+    Plan --> Approval["사용자 계획 승인"]
+    Approval --> Git["이슈·브랜치 관리 에이전트"]
+    Git --> Implementation["구현 에이전트"]
+    Implementation --> Validation["검증 에이전트"]
+    Validation -->|수정 필요| Implementation
+    Lead -->|전용 절차| Operations["코드 리뷰 · 릴리스 · 메뉴 최신화"]
+```
+
+단계별 구현의 상세 계약은 [계획·승인·구현 스킬](.agents/skills/source-command-impl/SKILL.md)에 있습니다. 검증 결과와 필요한 수정은 담당 에이전트에 전달하며, 전용 작업은 다음과 같이 나눕니다.
+
+| 작업 | 역할과 확인 지점 |
+| --- | --- |
+| [코드 리뷰](.agents/skills/ramap-review/SKILL.md) | 코드 리뷰 에이전트가 변경·호출 경로·상태 전이·테스트를 읽기 전용으로 검토 |
+| [릴리스](.agents/skills/release/SKILL.md) | 릴리스 관리 에이전트가 빌드·검증·미리보기를 준비하고, 사용자 승인 후 게시·스토어 심사 제출 |
+| [메뉴 최신화](tools/menu-refresh/SKILL.md) | 메뉴 수집 에이전트와 메뉴 판정 에이전트가 근거와 변경안을 준비하고, 총괄 에이전트가 DB에 반영한 뒤 별도 메뉴 등록 검토 에이전트가 독립 대조 |

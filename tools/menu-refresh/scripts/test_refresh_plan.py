@@ -1,10 +1,15 @@
 import copy
+import hashlib
 import json
 import re
+import tempfile
 import unittest
 from datetime import datetime
+from html import escape
+from pathlib import Path
 
-from refresh_plan import approved_ramen_type, image_identity, literal, make_plan, postgres_timestamp, select_sql, serialized_guard_rows, transaction_sql
+from deletion_guards import ORIGIN_CHECKS, evidence_hash
+from refresh_plan import approved_ramen_type, image_identity, literal, make_plan, postgres_timestamp, select_sql, serialized_guard_rows, state_rows, transaction_sql
 
 
 SHOP = '00000000-0000-0000-0000-000000000001'
@@ -32,13 +37,64 @@ def fixture():
         'quality': {'passed': True, 'source_count': 1, 'collected_count': 1,
             'source_image_count': 1, 'collected_image_count': 1, 'sequence_evidence': 'regular 1'},
         'scope': [{'source_id': 'naver-item-1', 'name': '쇼유라멘', 'decision': 'include', 'reason': '라멘 본품'}],
-        'source_absence_review': {'complete': True, 'source_url': 'https://m.place.naver.com/restaurant/123/menu/list',
+        'source_absence_review': {'schema_version': 2, 'complete': False, 'source_url': 'https://m.place.naver.com/restaurant/123/menu/list',
             'captured_at': '2026-10-07T02:00:00Z', 'raw_sha256': '0' * 64,
-            'reason': '전체 메뉴 확인 fixture; SQL 검증 전 실제 원문 해시 결속 필요'}}
+            'reason': '삭제 테스트는 전체 원문과 등록 경위 근거를 별도로 결속해야 함'}}
     return capture, state
 
 
+def raw_for(capture):
+    rows = []
+    for item in capture['menu_items']:
+        description = '' if item.get('description') is None else '<div class="NjVSW">' + escape(item['description']) + '</div>'
+        image = '<img src="' + escape(item['image_url'], quote=True) + '">' if item.get('image_url') else ''
+        featured = '<span class="place_blind">대표</span>' if item.get('is_featured') else ''
+        rows.append('<li><a data-nlog-area="plc_bmv.menu" data-nlog-params="{&quot;place_id&quot;:&quot;123&quot;}">'
+            '<span class="lZCdr">' + escape(item['name']) + '</span><span class="N4UFh">' + escape(item['price_text'])
+            + '</span>' + description + image + featured + '</a></li>')
+    return '<html><body><ul>' + ''.join(rows) + '</ul></body></html>'
+
+
+def bind_deletion_evidence(capture, state, rows, directory, *, absence=False):
+    """Bind deliberately synthetic automatic-registration records to real temporary evidence files."""
+    directory = Path(directory).resolve()
+    directory.mkdir(parents=True, exist_ok=True)
+    overrides = state_rows(state, 'overrides', capture['shop_id'])
+    audit_path = directory / 'registration-audit.json'
+    audit_path.write_text(json.dumps({'origin': 'synthetic_automatic_collection',
+        'items': rows, 'overrides': overrides}, ensure_ascii=False))
+    audit_ref = {'ref': str(audit_path), 'sha256': hashlib.sha256(audit_path.read_bytes()).hexdigest()}
+    capture['registration_origin_reviews'] = [{
+        'shop_id': row['shop_id'], 'menu_item_id': row['id'], 'name': row['name'],
+        'before_sha256': evidence_hash(row), 'overrides_sha256': evidence_hash(overrides),
+        'outcome': 'not_direct_registration', 'reason': '합성 자동 수집 등록 감사와 사용자 입력 부재 확인',
+        'checked': sorted(ORIGIN_CHECKS), 'aliases_reviewed': True, 'unresolved_clues': [],
+        'evidence_refs': [copy.deepcopy(audit_ref)],
+        'clue_resolutions': {kind: '합성 등록 감사의 해당 단서 조사 완료' for kind in ORIGIN_CHECKS},
+    } for row in rows]
+    raw = raw_for(capture)
+    if absence:
+        raw_path = directory / 'full-menu.html'
+        raw_path.write_text(raw)
+        raw_hash = hashlib.sha256(raw.encode()).hexdigest()
+        capture['source_absence_review'] = {
+            'schema_version': 2, 'complete': True, 'source_url': capture['source_url'],
+            'captured_at': capture['captured_at'], 'raw_sha256': raw_hash,
+            'reason': '합성 전체 원문에 삭제 후보와 별도 메뉴판이 없음을 확인',
+            'coverage': {'scope': 'full_document', 'expanded': True, 'loading_complete': True,
+                'other_menu_surfaces_reviewed': True,
+                'collection_evidence': {'ref': str(raw_path), 'sha256': raw_hash}},
+            'menu_board_reviews': [],
+        }
+    return raw
+
+
 class RefreshPlanTest(unittest.TestCase):
+    def setUp(self):
+        temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        self.evidence_dir = Path(temporary.name)
+
     def test_guard_serialization_preserves_all_fields_and_original_order(self):
         rows = [{'id': 'b', 'display_order': 0, 'description': "닭'육수", 'price_krw': None},
             {'id': 'a', 'display_order': 1, 'image_url': None, 'name': '시오라멘'}]
@@ -84,8 +140,11 @@ class RefreshPlanTest(unittest.TestCase):
 
     def test_new_ambiguous_menu_does_not_inherit_existing_scope_rule(self):
         capture, state = fixture()
-        capture['menu_items'][0]['name'] = '새로운소바'
-        capture['scope'][0].update(name='새로운소바', decision='manual', reason='구성 불명')
+        source = {**capture['menu_items'][0], 'source_id': 'naver-item-2', 'name': '새로운소바'}
+        capture['menu_items'].append(source)
+        capture['scope'].append({'source_id': source['source_id'], 'name': source['name'],
+            'decision': 'manual', 'reason': '구성 불명'})
+        capture['quality'].update(source_count=2, collected_count=2, source_image_count=2, collected_image_count=2)
         plan = make_plan(capture, state)
         self.assertEqual([], plan['additions'])
         self.assertEqual([], plan['updates'])
@@ -389,13 +448,11 @@ class RefreshPlanTest(unittest.TestCase):
             deletion_evidence='동일 이름·고정 가격·행 ID 확인, 수동 보호 없음')
         state['rules'] = [{'id': 'rule-1', 'shop_id': SHOP, 'match_type': 'name_contains',
             'match_value': '챠-항', 'is_active': True}]
+        raw = bind_deletion_evidence(capture, state, state['items'], self.evidence_dir)
         plan = make_plan(capture, state)
         self.assertEqual('prepared', plan['status'])
         self.assertEqual([ROW], [r['id'] for r in plan['deletions']])
         self.assertEqual([], plan['expected'])
-        raw = ('<li><a data-nlog-area="plc_bmv.menu" data-nlog-params="{&quot;place_id&quot;:&quot;123&quot;}">'
-            '<span class="lZCdr">챠-항</span><span class="N4UFh">5,000원</span>'
-            '<div class="NjVSW">한국인의 디저트, 볶음밥입니다</div><img src="https://example.com/menu.jpg"></a></li>')
         sql = transaction_sql(plan, raw)
         self.assertIn('DELETE FROM public.shop_menu_items WHERE id=', sql)
         self.assertIn("Deletion count mismatch", sql)
@@ -454,6 +511,7 @@ class RefreshPlanTest(unittest.TestCase):
         old = {**state['items'][0], 'id': '00000000-0000-0000-0000-000000000004',
             'name': '과거냉라멘', 'price_krw': None}
         state['items'].append(old)
+        bind_deletion_evidence(capture, state, [old], self.evidence_dir, absence=True)
         plan = make_plan(capture, state)
         self.assertEqual([old['id']], [row['id'] for row in plan['deletions']])
         self.assertEqual('source_absent', plan['deletions'][0]['reason'])
@@ -466,6 +524,7 @@ class RefreshPlanTest(unittest.TestCase):
         state['items'].append(old)
         state['overrides'] = [{'id': 'override-1', 'shop_id': SHOP, 'normalized_name': '과거냉라멘',
             'name': '과거냉라멘', 'action': 'upsert', 'source_type': 'admin_verified', 'status': 'active'}]
+        bind_deletion_evidence(capture, state, [old], self.evidence_dir, absence=True)
         plan = make_plan(capture, state)
         self.assertEqual(1, len(plan['deletions']))
         self.assertEqual([{'id': 'override-1', 'reason': 'source_absent_without_direct_registration'}], plan['override_revocations'])
@@ -479,11 +538,68 @@ class RefreshPlanTest(unittest.TestCase):
 
     def test_불완전한_원본_부재_확인은_삭제를_차단한다(self):
         capture, state = fixture()
-        state['items'][0]['name'] = '과거냉라멘'
+        old = {**state['items'][0], 'id': '00000000-0000-0000-0000-000000000004', 'name': '과거냉라멘'}
+        state['items'].append(old)
+        bind_deletion_evidence(capture, state, [old], self.evidence_dir, absence=True)
         capture['source_absence_review']['complete'] = False
         plan = make_plan(capture, state)
         self.assertEqual('blocked', plan['status'])
         self.assertEqual([], plan['deletions'])
+        self.assertIn('source absence requires v2 evidence', plan['pending'][0]['details'])
+
+    def test_등록_경위_근거가_없거나_현재_행과_달라지면_부재_삭제를_차단한다(self):
+        for failure in ('missing', 'changed_row', 'changed_overrides', 'unresolved_alias'):
+            with self.subTest(failure=failure):
+                capture, state = fixture()
+                old = {**state['items'][0], 'id': '00000000-0000-0000-0000-000000000004', 'name': '과거냉라멘'}
+                state['items'].append(old)
+                bind_deletion_evidence(capture, state, [old], self.evidence_dir, absence=True)
+                if failure == 'missing':
+                    capture.pop('registration_origin_reviews')
+                elif failure == 'changed_row':
+                    old['price_krw'] += 1000
+                elif failure == 'changed_overrides':
+                    state['overrides'].append({'id': 'override-1', 'shop_id': SHOP,
+                        'normalized_name': '과거냉라멘', 'action': 'upsert'})
+                else:
+                    capture['registration_origin_reviews'][0]['unresolved_clues'] = ['별칭의 등록 경위 미확인']
+                plan = make_plan(capture, state)
+                self.assertEqual('blocked', plan['status'])
+                self.assertEqual([], plan['deletions'])
+                self.assertEqual([], plan['override_revocations'])
+                with self.assertRaisesRegex(ValueError, 'blocked plan'):
+                    transaction_sql(plan, raw_for(capture))
+
+    def test_완전성_선언만으로_잘린_원문이나_누락된_메뉴판을_삭제_근거로_쓰지_않는다(self):
+        for failure in ('fragment', 'unreviewed_board'):
+            with self.subTest(failure=failure):
+                capture, state = fixture()
+                old = {**state['items'][0], 'id': '00000000-0000-0000-0000-000000000004', 'name': '과거냉라멘'}
+                state['items'].append(old)
+                raw = bind_deletion_evidence(capture, state, [old], self.evidence_dir, absence=True)
+                if failure == 'fragment':
+                    raw = raw.removeprefix('<html><body>').removesuffix('</body></html>')
+                    expected_error = 'complete document'
+                else:
+                    raw = raw.replace('</body>', '<img alt="메뉴판" src="https://example.com/board.jpg"></body>')
+                    expected_error = 'menu-board inventory'
+                capture['source_absence_review']['raw_sha256'] = hashlib.sha256(raw.encode()).hexdigest()
+                plan = make_plan(capture, state)
+                self.assertEqual('prepared', plan['status'])
+                with self.assertRaisesRegex(ValueError, expected_error):
+                    transaction_sql(plan, raw)
+
+    def test_등록_조사_파일이_계획_후_바뀌면_삭제_SQL을_생성하지_않는다(self):
+        capture, state = fixture()
+        old = {**state['items'][0], 'id': '00000000-0000-0000-0000-000000000004', 'name': '과거냉라멘'}
+        state['items'].append(old)
+        raw = bind_deletion_evidence(capture, state, [old], self.evidence_dir, absence=True)
+        plan = make_plan(capture, state)
+        self.assertEqual('prepared', plan['status'])
+        evidence = capture['registration_origin_reviews'][0]['evidence_refs'][0]
+        Path(evidence['ref']).write_text('변경된 조사 파일')
+        with self.assertRaisesRegex(ValueError, 'evidence is missing or changed'):
+            transaction_sql(plan, raw)
 
     def test_동일_이름_다른_UUID에_직접_등록_보호를_확대하지_않는다(self):
         capture, state = fixture()
@@ -492,6 +608,7 @@ class RefreshPlanTest(unittest.TestCase):
             'shop_id': SHOP, 'menu_item_id': '00000000-0000-0000-0000-000000000004',
             'name': '과거냉라멘', 'authority': 'human_user', 'kind': 'direct_registration', 'status': 'active',
             'evidence_ref': 'user-message:direct-registration', 'reason': '다른 행의 직접 등록'}]
+        bind_deletion_evidence(capture, state, state['items'], self.evidence_dir, absence=True)
         self.assertEqual([ROW], [row['id'] for row in make_plan(capture, state)['deletions']])
 
     def test_variable_price_cannot_replace_fixed_price(self):
@@ -599,6 +716,26 @@ class RefreshPlanTest(unittest.TestCase):
                 self.assertEqual([], plan['additions'])
                 self.assertEqual([old['name']], plan['pending'][0]['candidates'])
                 self.assertEqual([old], plan['expected'])
+                self.assertEqual('blocked', plan['status'])
+                self.assertEqual([], plan['deletions'])
+
+    def test_삭제_근거가_있어도_이름_대응이_미확정이면_기존_메뉴와_오버라이드를_유지한다(self):
+        capture, state = fixture()
+        old = state['items'][0]
+        old.update(name='쇼유라멘닭 육수', description=None, image_url=None)
+        state['overrides'] = [{'id': 'override-1', 'shop_id': SHOP,
+            'normalized_name': '쇼유라멘닭육수', 'action': 'upsert'}]
+        raw = bind_deletion_evidence(capture, state, [old], self.evidence_dir, absence=True)
+        plan = make_plan(capture, state)
+        self.assertEqual('blocked', plan['status'])
+        self.assertEqual([old['name']], plan['pending'][0]['candidates'])
+        self.assertEqual([old], plan['expected'])
+        self.assertEqual(state['overrides'], plan['expected_overrides'])
+        self.assertEqual([], plan['deletions'])
+        self.assertEqual([], plan['additions'])
+        self.assertEqual([], plan['override_revocations'])
+        with self.assertRaisesRegex(ValueError, 'blocked plan'):
+            transaction_sql(plan, raw)
 
     def test_coexisting_flavor_variants_are_added_even_with_shared_photo_and_price(self):
         capture, state = fixture()

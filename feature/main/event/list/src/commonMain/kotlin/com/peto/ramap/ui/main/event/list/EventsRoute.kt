@@ -1,13 +1,10 @@
 package com.peto.ramap.ui.main.event.list
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
@@ -23,7 +20,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.peto.ramap.designsystem.button.AppFloatingActionButton
 import com.peto.ramap.designsystem.component.LoadErrorContent
 import com.peto.ramap.designsystem.component.NewsFilters
 import com.peto.ramap.designsystem.dialog.LoginGuideDialog
@@ -51,14 +47,11 @@ import ramap.shared.generated.resources.event_list_error_description
 import ramap.shared.generated.resources.event_list_error_title
 import ramap.shared.generated.resources.event_list_ongoing_section
 import ramap.shared.generated.resources.event_list_upcoming_section
-import ramap.shared.generated.resources.ic_operating_notice_fab
 import ramap.shared.generated.resources.laduck_error_crying
-import ramap.shared.generated.resources.operating_notice_open
 
 @Composable
 fun EventsRoute(
     onClickEvent: (ShopEvent) -> Unit,
-    onClickNotice: () -> Unit,
     toastManager: ToastManager = koinInject(),
     viewModel: EventsViewModel = koinViewModel(),
 ) {
@@ -71,7 +64,6 @@ fun EventsRoute(
     Box {
         EventsScreen(
             uiState = uiState,
-            onClickNotice = onClickNotice,
             onClickEvent = { event ->
                 viewModel.dispatch(EventsIntent.OnEventClicked(event))
                 onClickEvent(event)
@@ -81,6 +73,7 @@ fun EventsRoute(
             onQueryChanged = { viewModel.dispatch(EventsIntent.OnQueryChanged(it)) },
             onSavedToggled = { viewModel.dispatch(EventsIntent.OnSavedToggled) },
             onPersonalizationRetry = { viewModel.dispatch(EventsIntent.OnPersonalizationRetried) },
+            showFilters = true,
         )
 
         LoginGuideDialog(
@@ -92,31 +85,27 @@ fun EventsRoute(
 }
 
 @Composable
-internal fun EventsScreen(
+fun EventsScreen(
     uiState: EventsUiState,
-    onClickNotice: () -> Unit,
     onClickEvent: (ShopEvent) -> Unit,
     onRefresh: () -> Unit,
     onClickRetry: () -> Unit,
     onQueryChanged: (String) -> Unit = {},
     onSavedToggled: () -> Unit = {},
     onPersonalizationRetry: () -> Unit = {},
+    showFilters: Boolean = true,
 ) {
     var selectedEventGroup by remember { mutableStateOf<ShopEvents?>(null) }
     val pullToRefreshState = rememberPullToRefreshState()
-    Column(
-        modifier =
-            Modifier
-                .fillMaxSize()
-                .background(CommonColor.White)
-                .statusBarsPadding(),
-    ) {
-        NewsFilters(
-            query = uiState.query,
-            savedOnly = uiState.savedOnly,
-            onQueryChanged = onQueryChanged,
-            onSavedToggled = onSavedToggled,
-        )
+    Column(modifier = Modifier.fillMaxSize()) {
+        if (showFilters) {
+            NewsFilters(
+                query = uiState.query,
+                savedOnly = uiState.savedOnly,
+                onQueryChanged = onQueryChanged,
+                onSavedToggled = onSavedToggled,
+            )
+        }
         Box(modifier = Modifier.fillMaxSize().weight(1f)) {
             PullToRefreshBox(
                 isRefreshing = uiState.isRefreshing,
@@ -206,18 +195,6 @@ internal fun EventsScreen(
                     }
                 }
             }
-            AppFloatingActionButton(
-                icon = Res.drawable.ic_operating_notice_fab,
-                contentDescription = stringResource(Res.string.operating_notice_open),
-                onClick = onClickNotice,
-                modifier =
-                    Modifier
-                        .align(Alignment.BottomEnd)
-                        .padding(start = 5.dp)
-                        .padding(20.dp),
-                containerColor = CommonColor.White,
-                iconModifier = Modifier.padding(start = 3.dp),
-            )
             selectedEventGroup?.let { eventGroup ->
                 EventListBottomSheet(
                     events = eventGroup,
@@ -240,7 +217,6 @@ private fun EventsRoutePreview(
     RamapTheme {
         EventsScreen(
             uiState = uiState,
-            onClickNotice = {},
             onClickEvent = {},
             onRefresh = {},
             onClickRetry = {},

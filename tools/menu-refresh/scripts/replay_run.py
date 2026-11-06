@@ -7,6 +7,7 @@ import time
 from pathlib import Path
 
 from refresh_run import counts_for, drain, initialize, load, save, submit
+from refresh_plan import digest
 from refresh_verify import read_state
 
 
@@ -38,8 +39,11 @@ class ReplayDatabase:
         if kind == 'prewrite':
             return {'rows': [{'state': copy.deepcopy(self.state)}]}
         plan = self.plan(action['shop_ids'][0])
+        raw_dom = (self.run_dir / manifest['shops'][plan['shop_id']]['directory'] / 'raw-menu.html').read_text()
         snapshot = {key: plan[key] for key in ('shop_id', 'captured_at', 'source_url', 'parser_version', 'source_hash', 'menu_fingerprint')}
-        snapshot.update(id=plan['snapshot_id'], raw_hash=plan['source_hash'], menu_items=plan['source_items'])
+        snapshot.update(id=plan['snapshot_id'], raw_hash=digest(raw_dom), menu_items=plan['source_items'])
+        if any(row['reason'] == 'source_absent' for row in plan['deletions']):
+            snapshot['deletion_raw_dom'] = raw_dom
         if kind in ('rollback', 'commit'):
             if kind == 'commit':
                 for key, expected in (('items', plan['expected']), ('visible', plan['expected_visible']),

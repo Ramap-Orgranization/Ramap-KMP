@@ -3,6 +3,7 @@ package com.peto.ramap.data.datasource.image
 import com.peto.ramap.data.model.SignedImageRequest
 import com.peto.ramap.data.model.SignedImageUrl
 import com.peto.ramap.data.model.StorageSignedImageResponse
+import com.peto.ramap.network.client.media.MediaStorageClient
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.annotations.SupabaseInternal
 import io.github.jan.supabase.auth.api.authenticatedSupabaseApi
@@ -28,6 +29,7 @@ import kotlin.time.Instant
 @OptIn(SupabaseInternal::class)
 internal class RemoteImageUrlDataSource(
     private val client: SupabaseClient,
+    private val media: MediaStorageClient? = null,
 ) : ImageUrlDataSource {
     private val json = Json { ignoreUnknownKeys = true }
     private val permits = Semaphore(MAX_CONCURRENT_BATCHES)
@@ -50,11 +52,17 @@ internal class RemoteImageUrlDataSource(
         return unique.associateWith { resolved[it] }
     }
 
-    private fun isSupported(image: SignedImageRequest): Boolean = image.bucket in BUCKETS && IMAGE_PATH.matches(image.path)
+    private fun isSupported(image: SignedImageRequest): Boolean = image.isSupported
 
     private suspend fun fetchBatch(images: List<SignedImageRequest>): Map<SignedImageRequest, SignedImageUrl?> =
         permits.withPermit {
             try {
+                if (media?.isConfigured == true) {
+                    val responses = media.fetchUrls(images.first().bucket, images.map { it.path }).groupBy { it.path }
+                    return@withPermit images.associateWith { image ->
+                        responses[image.path]?.singleOrNull()?.let { SignedImageUrl(it.url, it.expiresAt) }
+                    }
+                }
                 val expiresAt = Instant.fromEpochSeconds(Clock.System.now().epochSeconds) + SIGNED_URL_LIFETIME
                 val response =
                     api.postJson(
@@ -99,7 +107,5 @@ internal class RemoteImageUrlDataSource(
         const val SIGNED_URL_TOKEN_PARAMETER = "token"
         val SIGNED_URL_LIFETIME = 5.minutes
         val REFRESH_MARGIN = 1.minutes
-        val BUCKETS = setOf("profile-avatars", "shop-review-images")
-        val IMAGE_PATH = Regex("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\\.(jpg|png)", RegexOption.IGNORE_CASE)
     }
 }

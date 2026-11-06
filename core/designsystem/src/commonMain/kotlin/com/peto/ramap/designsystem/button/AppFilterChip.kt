@@ -28,8 +28,7 @@ import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.ic_keyboard_arrow_down
-import ramap.shared.generated.resources.ic_kid_star
-import ramap.shared.generated.resources.ic_kid_star_filled
+import ramap.shared.generated.resources.ic_star_filled
 import ramap.shared.generated.resources.operating_notice_saved
 import ramap.shared.generated.resources.ranking_all_regions
 
@@ -94,12 +93,12 @@ private fun AppFilterChipPreview() {
             AppFilterChip(
                 label = stringResource(Res.string.operating_notice_saved),
                 onClick = {},
-                icon = Res.drawable.ic_kid_star,
+                icon = Res.drawable.ic_star_filled,
             )
             AppFilterChip(
                 label = stringResource(Res.string.operating_notice_saved),
                 onClick = {},
-                icon = Res.drawable.ic_kid_star_filled,
+                icon = Res.drawable.ic_star_filled,
                 selected = true,
             )
         }

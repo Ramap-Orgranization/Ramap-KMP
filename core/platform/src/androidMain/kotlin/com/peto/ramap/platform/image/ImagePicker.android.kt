@@ -55,7 +55,7 @@ actual fun rememberImagesPicker(
     val scope = rememberCoroutineScope()
     val picked by rememberUpdatedState(onImagesPicked)
     val rejected by rememberUpdatedState(onRejected)
-    val remaining by rememberUpdatedState(maxSelectionCount.coerceIn(0, 3))
+    val remaining by rememberUpdatedState(maxSelectionCount.coerceAtLeast(0))
     val isPicking = remember { mutableStateOf(false) }
 
     fun handleSelection(uris: List<android.net.Uri>) {

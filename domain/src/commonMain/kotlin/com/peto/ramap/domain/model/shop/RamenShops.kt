@@ -51,37 +51,9 @@ data class RamenShops(
         )
 
     /**
-     * 숨김 가게를 제외한 [RamenShops]를 반환한다.
-     */
-    fun filterNotHidden(hiddenShopIds: Set<String>): RamenShops {
-        if (hiddenShopIds.isEmpty()) return this
-        return RamenShops(
-            shops.filterKeys { shopId ->
-                shopId !in hiddenShopIds
-            },
-        )
-    }
-
-    /**
      * 현재 목록에 [bounds] 안에 포함되는 노출 가게가 하나라도 있는지 반환한다.
      */
     fun hasVisibleShopIn(bounds: MapBounds): Boolean = values.any { shop -> bounds.contains(shop.location) }
-
-    /**
-     * 가게를 숨김 상태로 표시한 [RamenShops]를 반환한다.
-     */
-    fun markHidden(hiddenShopIds: Set<String>): RamenShops {
-        if (hiddenShopIds.isEmpty()) return this
-        return RamenShops(
-            mapValues { (shopId, shop) ->
-                if (shopId in hiddenShopIds) {
-                    shop.copy(isVisible = false)
-                } else {
-                    shop
-                }
-            },
-        )
-    }
 
     fun nearestTo(location: Location?): RamenShop? {
         if (location == null) return null

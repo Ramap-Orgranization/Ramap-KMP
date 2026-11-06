@@ -5,6 +5,7 @@ data class ReviewChangeJournal(
     val userId: String? = null,
     val revision: Long = 0,
     val changes: List<RevisionedReviewChange> = emptyList(),
+    val imageRevision: Long = 0,
 ) {
     fun hasGapAfter(revision: Long): Boolean = changes.firstOrNull()?.revision?.let { revision < it - 1 } == true
 
