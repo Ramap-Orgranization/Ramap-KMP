@@ -23,6 +23,7 @@ import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.review_author_review_count
 import ramap.shared.generated.resources.review_author_unknown
+import ramap.shared.generated.resources.review_author_withdrawn
 
 @Composable
 fun ReviewCardHeader(
@@ -48,7 +49,7 @@ fun ReviewCardHeader(
                     .weight(1f)
                     .heightIn(min = 48.dp)
                     .noRippleClickable(
-                        enabled = actions.onOpenProfile != null && review.author.userId.isNotBlank() && !review.isBlocked,
+                        enabled = actions.onOpenProfile != null && review.author.userId.isNotBlank() && !review.author.isWithdrawn && !review.isBlocked,
                         role = Role.Button,
                     ) {
                         actions.onOpenProfile?.invoke(review.author.userId)
@@ -78,15 +79,17 @@ fun ReviewCardHeader(
             ) {
                 AppText(
                     text =
-                        review.author.nickname.ifBlank {
-                            stringResource(Res.string.review_author_unknown)
+                        when {
+                            review.author.isWithdrawn -> stringResource(Res.string.review_author_withdrawn)
+                            review.author.nickname.isBlank() -> stringResource(Res.string.review_author_unknown)
+                            else -> review.author.nickname
                         },
                     style = AppTextStyle.T2,
                     color = GrayColor.C500,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
-                if (!review.isBlocked) {
+                if (!review.isBlocked && !review.author.isWithdrawn) {
                     AppText(
                         text = stringResource(Res.string.review_author_review_count, review.author.reviewCount),
                         style = AppTextStyle.B2,

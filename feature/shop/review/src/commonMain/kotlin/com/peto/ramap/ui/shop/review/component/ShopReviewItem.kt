@@ -37,7 +37,7 @@ internal fun ShopReviewItem(
             onReport =
                 if (
                     (!review.isBlocked || revealedReview != null) &&
-                    displayedReview.author.userId.isNotBlank() &&
+                    (displayedReview.author.userId.isNotBlank() || displayedReview.author.isWithdrawn) &&
                     displayedReview.author.userId != uiState.currentUserId
                 ) {
                     { actions.onReviewReport(displayedReview) }

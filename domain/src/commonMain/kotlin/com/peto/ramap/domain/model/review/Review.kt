@@ -21,7 +21,7 @@ data class Review(
 ) {
     fun allowsLikeFrom(viewerId: String?): Boolean = author.userId != viewerId && isPublic && moderationStatus == ReviewModerationStatus.PUBLISHED
 
-    fun allowsReportFrom(viewerId: String?): Boolean = viewerId != null && id.isNotBlank() && author.userId.isNotBlank() && author.userId != viewerId
+    fun allowsReportFrom(viewerId: String?): Boolean = viewerId != null && id.isNotBlank() && (author.userId.isNotBlank() || author.isWithdrawn) && author.userId != viewerId
 
     fun allowsDeletionBy(viewerId: String?): Boolean = author.userId == viewerId
 
