@@ -73,7 +73,6 @@ class EventsRouteTest {
                     RamapTheme {
                         EventsRoute(
                             onClickEvent = { underlyingClickCount += 1 },
-                            onClickNotice = { underlyingClickCount += 1 },
                             toastManager = toastManager,
                             viewModel = viewModel,
                         )

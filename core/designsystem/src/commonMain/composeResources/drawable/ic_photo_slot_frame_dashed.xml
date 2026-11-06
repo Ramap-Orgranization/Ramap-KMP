@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Photo-slot dashed frame. Transparent background; tint in Compose with
+    GrayColor.C300. Intended display size: 112dp x 112dp.
+    Stroke: 1dp. Centerline corner radius: 12dp. Dash / gap: 6dp / 4dp.
+    Stroke centerline is inset 0.5dp to keep the frame inside its viewport.
+    The closed contour joins its final partial dash to the first dash.
+    All dimensions scale with the drawable. No external Android resources.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="112dp"
+    android:height="112dp"
+    android:viewportWidth="112"
+    android:viewportHeight="112">
+
+    <path
+        android:name="dashed_frame"
+        android:fillColor="#00000000"
+        android:strokeColor="#FF000000"
+        android:strokeWidth="1"
+        android:strokeLineCap="butt"
+        android:strokeLineJoin="miter"
+        android:strokeMiterLimit="4"
+        android:pathData="
+            M0.977957,102.852986 A12,12 0,0 1,0.5,99.5 L0.5,93.5
+            M0.5,89.5 L0.5,83.5
+            M0.5,79.5 L0.5,73.5
+            M0.5,69.5 L0.5,63.5
+            M0.5,59.5 L0.5,53.5
+            M0.5,49.5 L0.5,43.5
+            M0.5,39.5 L0.5,33.5
+            M0.5,29.5 L0.5,23.5
+            M0.5,19.5 L0.5,13.5
+            M0.873051,9.531152 A12,12 0,0 1,3.719734,4.320335
+            M6.879369,1.897712 A12,12 0,0 1,12.5,0.5 L12.650444,0.5
+            M16.650444,0.5 L22.650444,0.5
+            M26.650444,0.5 L32.650444,0.5
+            M36.650444,0.5 L42.650444,0.5
+            M46.650444,0.5 L52.650444,0.5
+            M56.650444,0.5 L62.650444,0.5
+            M66.650444,0.5 L72.650444,0.5
+            M76.650444,0.5 L82.650444,0.5
+            M86.650444,0.5 L92.650444,0.5
+            M96.650444,0.5 L99.5,0.5 A12,12 0,0 1,102.614378,0.911184
+            M106.234752,2.568076 A12,12 0,0 1,110.171919,7.012728
+            M111.37991,10.80656 A12,12 0,0 1,111.5,12.5 L111.5,16.800888
+            M111.5,20.800888 L111.5,26.800888
+            M111.5,30.800888 L111.5,36.800888
+            M111.5,40.800888 L111.5,46.800888
+            M111.5,50.800888 L111.5,56.800888
+            M111.5,60.800888 L111.5,66.800888
+            M111.5,70.800888 L111.5,76.800888
+            M111.5,80.800888 L111.5,86.800888
+            M111.5,90.800888 L111.5,96.800888
+            M111.429556,100.798342 A12,12 0,0 1,109.346712,106.358736
+            M106.560577,109.203002 A12,12 0,0 1,101.044372,111.400206
+            M97.048668,111.5 L91.048668,111.5
+            M87.048668,111.5 L81.048668,111.5
+            M77.048668,111.5 L71.048668,111.5
+            M67.048668,111.5 L61.048668,111.5
+            M57.048668,111.5 L51.048668,111.5
+            M47.048668,111.5 L41.048668,111.5
+            M37.048668,111.5 L31.048668,111.5
+            M27.048668,111.5 L21.048668,111.5
+            M17.048668,111.5 L12.5,111.5 A12,12 0,0 1,11.052203,111.412342
+            M7.23424,110.282939 A12,12 0,0 1,2.709244,106.438379" />
+</vector>

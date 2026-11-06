@@ -105,8 +105,6 @@ class OperatingNoticeScreenTest {
             RamapTheme {
                 OperatingNoticeScreen(
                     uiState = state,
-                    onBack = {},
-                    onEventListClick = {},
                     onRefresh = {},
                     onRetry = {},
                     onShopClick = {},

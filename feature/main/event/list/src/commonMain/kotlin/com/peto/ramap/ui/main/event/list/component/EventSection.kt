@@ -3,11 +3,11 @@ package com.peto.ramap.ui.main.event.list.component
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -81,6 +81,7 @@ internal fun eventSection(
                     ) { eventGroup ->
                         OngoingEventShopItem(
                             eventGroup = eventGroup,
+                            modifier = Modifier.width(72.dp),
                             onClick = {
                                 if (eventGroup.hasMultipleEvents) {
                                     onEventGroupClick(eventGroup)
@@ -92,31 +93,36 @@ internal fun eventSection(
                     }
                 }
             } else {
-                FlowRow(
+                val rows = events.chunked(4)
+                Column(
                     modifier =
                         Modifier
                             .fillMaxWidth()
                             .padding(horizontal = horizontalContentPadding),
-                    horizontalArrangement =
-                        Arrangement.spacedBy(
-                            space = 10.dp,
-                            alignment = Alignment.CenterHorizontally,
-                        ),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    events.forEach { eventGroup ->
-                        OngoingEventShopItem(
-                            eventGroup = eventGroup,
-                            onClick = {
-                                if (eventGroup.hasMultipleEvents) {
-                                    onEventGroupClick(eventGroup)
-                                } else {
-                                    onEventClick(eventGroup.representativeEvent)
-                                }
-                            },
-                        )
-                    }
-                    repeat(10) {
-                        Spacer(modifier = Modifier.width(72.dp).height(0.dp))
+                    rows.forEach { rowEvents ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        ) {
+                            rowEvents.forEach { eventGroup ->
+                                OngoingEventShopItem(
+                                    eventGroup = eventGroup,
+                                    modifier = Modifier.weight(1f),
+                                    onClick = {
+                                        if (eventGroup.hasMultipleEvents) {
+                                            onEventGroupClick(eventGroup)
+                                        } else {
+                                            onEventClick(eventGroup.representativeEvent)
+                                        }
+                                    },
+                                )
+                            }
+                            repeat(4 - rowEvents.size) {
+                                Spacer(modifier = Modifier.weight(1f))
+                            }
+                        }
                     }
                 }
             }

@@ -4,9 +4,10 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -31,25 +32,24 @@ fun ShopThumbnail(
     Column(
         modifier =
             modifier
-                .width(72.dp)
                 .noRippleClickable(onClick = onClick),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         Box(
-            modifier = Modifier.size(72.dp),
+            modifier = Modifier.fillMaxWidth().aspectRatio(1f),
             contentAlignment = Alignment.TopCenter,
         ) {
             RemoteShopImage(
                 url = imageUrl,
-                modifier = Modifier.size(68.dp),
+                modifier = Modifier.fillMaxSize(0.94f).align(Alignment.Center),
             )
             badge()
             topEndBadge()
         }
         AppText(
             text = name,
-            modifier = Modifier.width(72.dp).height(36.dp),
+            modifier = Modifier.fillMaxWidth().height(36.dp),
             style = AppTextStyle.B3,
             color = GrayColor.C500,
             textAlign = TextAlign.Center,

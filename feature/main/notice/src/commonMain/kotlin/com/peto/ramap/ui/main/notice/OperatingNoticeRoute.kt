@@ -15,8 +15,6 @@ import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 fun OperatingNoticeRoute(
-    onBack: () -> Unit,
-    onEventListClick: () -> Unit,
     onShopClick: (String) -> Unit,
     toastManager: ToastManager = koinInject(),
     viewModel: OperatingNoticeViewModel = koinViewModel(),
@@ -32,8 +30,6 @@ fun OperatingNoticeRoute(
     Box {
         OperatingNoticeScreen(
             uiState = uiState,
-            onBack = onBack,
-            onEventListClick = onEventListClick,
             onRefresh = { viewModel.dispatch(OperatingNoticeIntent.OnRefreshed) },
             onRetry = { viewModel.dispatch(OperatingNoticeIntent.OnRetried) },
             onShopClick = onShopClick,

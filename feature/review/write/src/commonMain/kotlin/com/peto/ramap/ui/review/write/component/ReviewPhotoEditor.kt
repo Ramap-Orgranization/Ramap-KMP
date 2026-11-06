@@ -1,5 +1,6 @@
 package com.peto.ramap.ui.review.write.component
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -26,12 +27,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawWithContent
-import androidx.compose.ui.geometry.CornerRadius
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.PathEffect
-import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
@@ -56,6 +52,7 @@ import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.ic_camera_add
 import ramap.shared.generated.resources.ic_close
 import ramap.shared.generated.resources.ic_photo_library
+import ramap.shared.generated.resources.ic_photo_slot_frame_dashed
 import ramap.shared.generated.resources.review_photo_description
 import ramap.shared.generated.resources.review_photos
 import ramap.shared.generated.resources.shop_review_image_add
@@ -178,26 +175,30 @@ private fun DashedPhotoSlot(
     onClick: (() -> Unit)? = null,
     content: @Composable () -> Unit,
 ) {
-    val cornerRadius = 12.dp
     Surface(
-        modifier =
-            modifier.drawWithContent {
-                drawContent()
-                val strokeWidth = 1.dp.toPx()
-                drawRoundRect(
-                    color = GrayColor.C300,
-                    topLeft = Offset(strokeWidth / 2, strokeWidth / 2),
-                    size = Size(size.width - strokeWidth, size.height - strokeWidth),
-                    cornerRadius = CornerRadius(cornerRadius.toPx()),
-                    style = Stroke(width = strokeWidth, pathEffect = PathEffect.dashPathEffect(floatArrayOf(6.dp.toPx(), 4.dp.toPx()))),
-                )
-            },
+        modifier = modifier,
         onClick = onClick ?: {},
         enabled = onClick != null,
-        shape = RoundedCornerShape(cornerRadius),
+        shape = RoundedCornerShape(12.dp),
         color = GrayColor.C050,
     ) {
-        content()
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            propagateMinConstraints = true,
+        ) {
+            content()
+
+            Image(
+                painter =
+                    painterResource(
+                        Res.drawable.ic_photo_slot_frame_dashed,
+                    ),
+                contentDescription = null,
+                modifier = Modifier.matchParentSize(),
+                contentScale = ContentScale.FillBounds,
+                colorFilter = ColorFilter.tint(GrayColor.C300),
+            )
+        }
     }
 }
 

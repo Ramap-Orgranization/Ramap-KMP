@@ -13,7 +13,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
@@ -21,13 +20,14 @@ import coil3.compose.AsyncImage
 import com.peto.ramap.theme.GrayColor
 import org.jetbrains.compose.resources.painterResource
 import ramap.shared.generated.resources.Res
-import ramap.shared.generated.resources.ic_app_logo
+import ramap.shared.generated.resources.ic_app_logo_cutout
 
 @Composable
 fun RemoteShopImage(
     url: String?,
     modifier: Modifier = Modifier,
     shape: Shape = CircleShape,
+    placeholder: @Composable () -> Unit = { ShopImagePlaceholder() },
 ) {
     var isImageLoaded by remember(url) { mutableStateOf(false) }
 
@@ -39,7 +39,7 @@ fun RemoteShopImage(
         contentAlignment = Alignment.Center,
     ) {
         if (url.isNullOrBlank()) {
-            ShopImagePlaceholder()
+            placeholder()
             return@Box
         }
 
@@ -51,24 +51,16 @@ fun RemoteShopImage(
             onError = { isImageLoaded = false },
             onSuccess = { isImageLoaded = true },
         )
-        if (!isImageLoaded) ShopImagePlaceholder()
+        if (!isImageLoaded) placeholder()
     }
 }
 
 @Composable
 private fun ShopImagePlaceholder() {
-    Box(
-        modifier =
-            Modifier
-                .fillMaxSize()
-                .clipToBounds(),
-        contentAlignment = Alignment.Center,
-    ) {
-        Image(
-            painter = painterResource(Res.drawable.ic_app_logo),
-            contentDescription = null,
-            modifier = Modifier.fillMaxSize(),
-            contentScale = ContentScale.Crop,
-        )
-    }
+    Image(
+        painter = painterResource(Res.drawable.ic_app_logo_cutout),
+        contentDescription = null,
+        modifier = Modifier.fillMaxSize(0.65f),
+        contentScale = ContentScale.Fit,
+    )
 }

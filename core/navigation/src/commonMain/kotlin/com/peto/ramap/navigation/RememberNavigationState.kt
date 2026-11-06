@@ -21,6 +21,10 @@ fun rememberNavigationState(): NavigationState {
         ) {
             mutableStateOf(TabStatus.MAP)
         }
+    val selectedNewsTabState =
+        rememberSerializable(stateSerializer = NewsTab.serializer()) {
+            mutableStateOf(NewsTab.EVENTS)
+        }
     val mapBackStack =
         rememberNavBackStack(configuration = navigationConfiguration, ScreenRoutes.MapRoutes())
     val eventBackStack =
@@ -42,10 +46,11 @@ fun rememberNavigationState(): NavigationState {
             )
         }
 
-    return remember(selectedTabState, backStacks) {
+    return remember(selectedTabState, backStacks, selectedNewsTabState) {
         NavigationState(
             selectedTabState = selectedTabState,
             backStacks = backStacks,
+            selectedNewsTabState = selectedNewsTabState,
         )
     }
 }

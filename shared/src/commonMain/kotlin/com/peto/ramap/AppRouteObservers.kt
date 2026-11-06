@@ -21,7 +21,6 @@ import com.peto.ramap.navigation.deeplink.ShopDeepLinkParser
 import com.peto.ramap.notification.NotificationDeepLink
 import com.peto.ramap.notification.NotificationDeepLinkParser
 import com.peto.ramap.notification.NotificationLaunchDispatcher
-import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
 
 @Composable
@@ -145,13 +144,11 @@ private fun TrackScreenViews(
 ) {
     LaunchedEffect(navigationState) {
         snapshotFlow {
-            navigationState.currentRoute
-        }.distinctUntilChanged()
-            .collect { route ->
-                appAnalytics.logScreenView(
-                    route.analyticsScreenName,
-                )
-            }
+            val route = navigationState.currentRoute
+            route to route.analyticsScreenName(navigationState.selectedNewsTab)
+        }.collect { (_, screenName) ->
+            appAnalytics.logScreenView(screenName)
+        }
     }
 }
 

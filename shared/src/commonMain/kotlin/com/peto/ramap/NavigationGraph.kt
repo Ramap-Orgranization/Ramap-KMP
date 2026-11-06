@@ -24,6 +24,7 @@ import com.peto.ramap.ui.main.map.archive.ArchiveMapViewModel
 import com.peto.ramap.ui.main.my.MyTabRoute
 import com.peto.ramap.ui.main.notice.OperatingNoticeRoute
 import com.peto.ramap.ui.main.ranking.RankingRoute
+import com.peto.ramap.ui.news.NewsScreen
 import com.peto.ramap.ui.notification.NotificationSettingsRoute
 import com.peto.ramap.ui.profile.edit.ProfileEditRoute
 import com.peto.ramap.ui.profile.follow.FollowRoute
@@ -282,22 +283,23 @@ internal fun NavigationGraph(
                 onBack = navigationState::pop,
             )
         },
-        eventListScreen = {
-            EventsRoute(
-                onClickEvent = { event ->
-                    navigationState.showEvent(event.id)
+        newsScreen = {
+            NewsScreen(
+                selectedTab = navigationState.selectedNewsTab,
+                onTabSelected = navigationState::selectNewsTab,
+                eventsContent = {
+                    EventsRoute(
+                        onClickEvent = { event -> navigationState.showEvent(event.id) },
+                    )
                 },
-                onClickNotice = navigationState::showOperatingNotice,
-            )
-        },
-        operatingNoticeScreen = {
-            OperatingNoticeRoute(
-                onBack = navigationState::pop,
-                onEventListClick = navigationState::pop,
-                onShopClick = { shopId ->
-                    navigationState.showShopOnMap(
-                        shopId = shopId,
-                        source = NavigationSource.OPERATING_NOTICE,
+                operatingNoticesContent = {
+                    OperatingNoticeRoute(
+                        onShopClick = { shopId ->
+                            navigationState.showShopOnMap(
+                                shopId = shopId,
+                                source = NavigationSource.OPERATING_NOTICE,
+                            )
+                        },
                     )
                 },
             )

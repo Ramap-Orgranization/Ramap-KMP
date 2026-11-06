@@ -241,6 +241,52 @@ class NavigationStateTest {
     }
 
     @Test
+    fun `영업 변동 탭은 새소식 경로에서 전환하고 뒤로 가면 이벤트 탭으로 돌아간다`() {
+        val state = navigationState(selectedTab = TabStatus.EVENT)
+        val newsRoute = state.currentRoute
+
+        state.selectNewsTab(NewsTab.OPERATING_NOTICES)
+        assertEquals(NewsTab.OPERATING_NOTICES, state.selectedNewsTab)
+        assertEquals(listOf(newsRoute), state.currentBackStack.toList())
+
+        state.pop()
+        assertEquals(NewsTab.EVENTS, state.selectedNewsTab)
+        assertEquals(newsRoute, state.currentRoute)
+
+        state.pop()
+        assertEquals(TabStatus.MAP, state.selectedTab)
+    }
+
+    @Test
+    fun `새소식을 떠나면 다시 들어올 때 이벤트 탭을 보여 준다`() {
+        val state = navigationState(selectedTab = TabStatus.EVENT)
+        state.selectNewsTab(NewsTab.OPERATING_NOTICES)
+
+        state.selectTopLevelTab(TabStatus.FEED)
+        state.selectTopLevelTab(TabStatus.EVENT)
+
+        assertEquals(NewsTab.EVENTS, state.selectedNewsTab)
+    }
+
+    @Test
+    fun `이전 버전에서 열었던 영업 변동 화면을 새소식 탭 선택으로 복원한다`() {
+        val json = Json { serializersModule = navKeySerializersModule() }
+        val legacyRoute =
+            json.decodeFromString(
+                PolymorphicSerializer(NavKey::class),
+                """{"type":"com.peto.ramap.navigation.ScreenRoutes.OperatingNoticeRoutes"}""",
+            )
+        val state =
+            navigationState(
+                selectedTab = TabStatus.EVENT,
+                eventBackStack = NavBackStack(ScreenRoutes.EventTabRoutes(), legacyRoute),
+            )
+
+        assertEquals(NewsTab.OPERATING_NOTICES, state.selectedNewsTab)
+        assertEquals(listOf(ScreenRoutes.EventTabRoutes()), state.currentBackStack.toList())
+    }
+
+    @Test
     fun `이벤트에서 매장을 열면 지도 스택을 교체하고 이벤트 스택을 초기화한다`() {
         val navigationState = navigationState(selectedTab = TabStatus.EVENT)
         navigationState.showEvent("event-id")
@@ -530,6 +576,7 @@ class NavigationStateTest {
         rankingBackStack: NavBackStack<NavKey> = NavBackStack(ScreenRoutes.RankingTabRoutes),
         mapBackStack: NavBackStack<NavKey> = NavBackStack(ScreenRoutes.MapRoutes()),
         myBackStack: NavBackStack<NavKey> = NavBackStack(ScreenRoutes.MyTabRoutes),
+        eventBackStack: NavBackStack<NavKey> = NavBackStack(ScreenRoutes.EventTabRoutes()),
     ): NavigationState =
         NavigationState(
             selectedTabState = mutableStateOf(selectedTab),
@@ -537,7 +584,7 @@ class NavigationStateTest {
                 mapOf(
                     TabStatus.MAP to mapBackStack,
                     TabStatus.RANKING to rankingBackStack,
-                    TabStatus.EVENT to NavBackStack<NavKey>(ScreenRoutes.EventTabRoutes()),
+                    TabStatus.EVENT to eventBackStack,
                     TabStatus.FEED to NavBackStack<NavKey>(ScreenRoutes.FeedTabRoutes),
                     TabStatus.MY to myBackStack,
                 ),
