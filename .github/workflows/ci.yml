@@ -20,11 +20,28 @@ jobs:
       uses: actions/checkout@v4
 
     - name: Set up JDK 17
+      id: java
       uses: actions/setup-java@v4
       with:
         java-version: '17'
         distribution: 'temurin'
         cache: gradle
+
+    - name: Locate Gradle cache
+      if: steps.java.outputs.cache-hit != 'true'
+      id: gradle-cache
+      run: echo "home=$HOME/.gradle" >> "$GITHUB_OUTPUT"
+
+    # Reuse resolved artifacts across cache keys when an upstream Maven repository is unavailable.
+    - name: Restore recent Gradle cache
+      if: steps.java.outputs.cache-hit != 'true'
+      uses: actions/cache/restore@v4
+      with:
+        path: |
+          ${{ steps.gradle-cache.outputs.home }}/caches
+          ${{ steps.gradle-cache.outputs.home }}/wrapper
+        key: setup-java-Linux-x64-gradle-fallback
+        restore-keys: setup-java-Linux-x64-gradle-
 
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
