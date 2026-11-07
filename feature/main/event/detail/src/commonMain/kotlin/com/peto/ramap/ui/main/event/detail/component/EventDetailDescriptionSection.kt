@@ -19,7 +19,7 @@ fun EventDetailDescriptionSection(
     SectionCard(modifier = modifier) {
         EventDetailValue(
             value = description,
-            modifier = Modifier.padding(horizontal = 15.dp, vertical = 10.dp),
+            modifier = Modifier.padding(16.dp),
         )
     }
 }
