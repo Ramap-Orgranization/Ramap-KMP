@@ -65,6 +65,14 @@
         <td><img src="assets/store-screenshots/07-opening-updates.png" alt="방문 전 임시 휴무와 조기 마감 소식을 확인하는 라멥 스토어 스크린샷" width="240" /></td>
         <td><img src="assets/store-screenshots/08-ramen-life.png" alt="매장 탐색과 저장 및 방문 리뷰를 소개하는 라멥 스토어 스크린샷" width="240" /></td>
     </tr>
+    <tr>
+        <th>나만의 라멘 지도</th>
+        <th>방문 기록</th>
+    </tr>
+    <tr>
+        <td><img src="assets/store-screenshots/09-archive-map.png" alt="다녀온 라멘집을 리뷰 사진과 함께 모아 보는 아카이빙 지도" width="240" /></td>
+        <td><img src="assets/store-screenshots/10-visit-history.png" alt="매장별로 지난 방문의 리뷰와 사진을 확인하는 라멥 화면" width="240" /></td>
+    </tr>
 </table>
 
 ## 기술 스택
