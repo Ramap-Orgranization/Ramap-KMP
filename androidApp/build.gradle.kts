@@ -115,8 +115,8 @@ android {
             libs.versions.android.target.sdk
                 .get()
                 .toInt()
-        versionCode = 33
-        versionName = "1.1.15"
+        versionCode = 34
+        versionName = "1.1.16"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         manifestPlaceholders["KAKAO_NATIVE_APP_KEY"] = kakaoNativeAppKey
     }
