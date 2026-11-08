@@ -2,10 +2,12 @@ package com.peto.ramap.data.store
 
 import com.peto.ramap.core.result.RamapError
 import com.peto.ramap.core.result.RamapResult
+import com.peto.ramap.domain.model.auth.LoginSessionState
 import com.peto.ramap.domain.model.personalization.Personalization
 import com.peto.ramap.domain.repository.BookmarkRepository
 import com.peto.ramap.domain.store.PersonalizationBootstrapState
 import com.peto.ramap.fake.FakeBookmarkRepository
+import com.peto.ramap.fake.FakeLoginRepository
 import com.peto.ramap.fake.FakeSubscribedShopRepository
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
@@ -22,6 +24,7 @@ class DefaultPersonalizationStoreTest {
                 DefaultPersonalizationStore(
                     FakeBookmarkRepository(),
                     FakeSubscribedShopRepository(),
+                    FakeLoginRepository(LoginSessionState.AUTHENTICATED),
                 )
 
             assertEquals(PersonalizationBootstrapState.Loading, store.state.value)
@@ -49,6 +52,7 @@ class DefaultPersonalizationStoreTest {
                 DefaultPersonalizationStore(
                     bookmarkRepository,
                     FakeSubscribedShopRepository(),
+                    FakeLoginRepository(LoginSessionState.AUTHENTICATED),
                 )
 
             assertIs<RamapResult.Error>(store.refresh())
@@ -74,6 +78,7 @@ class DefaultPersonalizationStoreTest {
                 DefaultPersonalizationStore(
                     bookmarkRepository,
                     FakeSubscribedShopRepository(),
+                    FakeLoginRepository(LoginSessionState.AUTHENTICATED),
                 )
 
             val result = assertIs<RamapResult.Error>(store.refresh())
@@ -90,6 +95,7 @@ class DefaultPersonalizationStoreTest {
                 DefaultPersonalizationStore(
                     FakeBookmarkRepository(setOf("bookmark")),
                     FakeSubscribedShopRepository(setOf("notification")),
+                    FakeLoginRepository(LoginSessionState.AUTHENTICATED),
                 )
 
             assertIs<RamapResult.Success<Unit>>(store.refresh())
@@ -111,6 +117,7 @@ class DefaultPersonalizationStoreTest {
                 DefaultPersonalizationStore(
                     bookmarkRepository,
                     FakeSubscribedShopRepository(),
+                    FakeLoginRepository(LoginSessionState.AUTHENTICATED),
                 )
 
             assertIs<RamapResult.Error>(store.updateBookmark("shop", true))
@@ -126,6 +133,7 @@ class DefaultPersonalizationStoreTest {
                 DefaultPersonalizationStore(
                     bookmarkRepository,
                     FakeSubscribedShopRepository(),
+                    FakeLoginRepository(LoginSessionState.AUTHENTICATED),
                 )
             store.refresh()
 
@@ -146,6 +154,7 @@ class DefaultPersonalizationStoreTest {
                 DefaultPersonalizationStore(
                     FakeBookmarkRepository(shouldFailUpdate = true),
                     FakeSubscribedShopRepository(),
+                    FakeLoginRepository(LoginSessionState.AUTHENTICATED),
                 )
             store.refresh()
 
@@ -162,6 +171,7 @@ class DefaultPersonalizationStoreTest {
                 DefaultPersonalizationStore(
                     FakeBookmarkRepository(),
                     subscribedShopRepository,
+                    FakeLoginRepository(LoginSessionState.AUTHENTICATED),
                 )
 
             assertIs<RamapResult.Success<Unit>>(
@@ -181,6 +191,7 @@ class DefaultPersonalizationStoreTest {
                 DefaultPersonalizationStore(
                     FakeBookmarkRepository(),
                     subscribedShopRepository,
+                    FakeLoginRepository(LoginSessionState.AUTHENTICATED),
                 )
             store.refresh()
 
@@ -200,6 +211,7 @@ class DefaultPersonalizationStoreTest {
                 DefaultPersonalizationStore(
                     FakeBookmarkRepository(setOf("shop")),
                     FakeSubscribedShopRepository(),
+                    FakeLoginRepository(LoginSessionState.AUTHENTICATED),
                 )
             store.refresh()
 
