@@ -151,7 +151,10 @@ class ShopEventResponseTest {
         assertEquals("와루가키노 아소비", venue.name)
         assertEquals("부산 부산진구", venue.address)
         assertEquals(
-            RamapSecrets.r2PublicBaseUrl.trimEnd('/').takeIf(String::isNotBlank)?.let { "$it/shop-profile-images/venues/warugaki.jpg" },
+            RamapSecrets.r2PublicBaseUrl
+                .trimEnd('/')
+                .takeIf(String::isNotBlank)
+                ?.let { "$it/shop-profile-images/venues/warugaki.jpg" },
             venue.imageUrl,
         )
         assertEquals("https://map.naver.com/p/entry/place/1", venue.naverMapUrl)
