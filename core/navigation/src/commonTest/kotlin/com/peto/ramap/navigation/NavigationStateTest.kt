@@ -12,6 +12,19 @@ import kotlin.test.assertTrue
 
 class NavigationStateTest {
     @Test
+    fun `운영 알림은 기존 새소식 영업 변동 탭을 연다`() {
+        val state = navigationState(selectedTab = TabStatus.MY)
+        state.showEvent("event")
+        state.showOperatingNotices()
+        assertEquals(TabStatus.EVENT, state.selectedTab)
+        assertEquals(NewsTab.OPERATING_NOTICES, state.selectedNewsTab)
+        assertEquals(1, state.currentBackStack.size)
+        assertTrue(state.currentRoute is ScreenRoutes.EventTabRoutes)
+        state.pop()
+        assertEquals(NewsTab.EVENTS, state.selectedNewsTab)
+    }
+
+    @Test
     fun `아카이브에서 매장을 찾아 첫 리뷰를 저장하면 아카이브로 돌아간다`() {
         val state = navigationState()
         state.showArchiveMap()

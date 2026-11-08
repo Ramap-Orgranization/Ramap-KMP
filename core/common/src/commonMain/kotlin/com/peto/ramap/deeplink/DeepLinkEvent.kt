@@ -7,5 +7,6 @@ sealed interface DeepLinkEvent {
 
     data class Notification(
         val value: String,
+        val notificationId: String? = null,
     ) : DeepLinkEvent
 }

@@ -4,6 +4,7 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Intent
+import android.net.Uri
 import android.os.Build
 import androidx.core.app.NotificationCompat
 import com.google.firebase.analytics.FirebaseAnalytics
@@ -13,6 +14,7 @@ import com.google.firebase.messaging.RemoteMessage
 import com.peto.ramap.MainActivity
 import com.peto.ramap.R
 import com.peto.ramap.notification.DeepLinkKey.NOTIFICATION_DEEP_LINK_KEY
+import com.peto.ramap.notification.DeepLinkKey.NOTIFICATION_ID_KEY
 import org.koin.android.ext.android.inject
 
 /**
@@ -59,15 +61,20 @@ class RamapFirebaseMessagingService : FirebaseMessagingService() {
         )
         val notificationManager = getSystemService(NotificationManager::class.java)
         createNotificationChannel(notificationManager)
+        val notificationId =
+            message.data[NOTIFICATION_ID_KEY] ?: message.messageId ?: java.util.UUID
+                .randomUUID()
+                .toString()
         notificationManager.notify(
-            message.messageId?.hashCode() ?: notification.hashCode(),
+            notificationId,
+            0,
             NotificationCompat
                 .Builder(this, CHANNEL_ID)
                 .setSmallIcon(R.mipmap.ic_launcher)
                 .setContentTitle(notification.title)
                 .setContentText(notification.body)
                 .setAutoCancel(true)
-                .setContentIntent(createContentIntent(message.data[NOTIFICATION_DEEP_LINK_KEY]))
+                .setContentIntent(createContentIntent(message.data[NOTIFICATION_DEEP_LINK_KEY], notificationId))
                 .build(),
         )
     }
@@ -114,15 +121,26 @@ class RamapFirebaseMessagingService : FirebaseMessagingService() {
      * extra를 최신 값으로 갱신한다. [PendingIntent.FLAG_IMMUTABLE]은 생성 후 다른 주체가 내부
      * Intent를 변경하지 못하게 하며 Android 12(API 31) 이상의 mutability 지정 요구도 충족한다.
      */
-    private fun createContentIntent(deepLink: String?): PendingIntent {
+    private fun createContentIntent(
+        deepLink: String?,
+        notificationId: String,
+    ): PendingIntent {
         val launchIntent =
             Intent(this, MainActivity::class.java).apply {
                 flags = Intent.FLAG_ACTIVITY_SINGLE_TOP
+                data =
+                    Uri
+                        .Builder()
+                        .scheme("ramap-notification")
+                        .authority("open")
+                        .appendPath(notificationId)
+                        .build()
                 putExtra(NOTIFICATION_DEEP_LINK_KEY, deepLink)
+                putExtra(NOTIFICATION_ID_KEY, notificationId)
             }
         return PendingIntent.getActivity(
             this,
-            deepLink.hashCode(),
+            notificationId.hashCode(),
             launchIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )

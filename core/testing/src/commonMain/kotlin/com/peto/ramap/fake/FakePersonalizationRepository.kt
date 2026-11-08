@@ -2,6 +2,7 @@ package com.peto.ramap.fake
 
 import com.peto.ramap.core.result.RamapError
 import com.peto.ramap.core.result.RamapResult
+import com.peto.ramap.domain.model.notification.NotificationSettings
 import com.peto.ramap.domain.model.personalization.Personalization
 import com.peto.ramap.domain.store.PersonalizationBootstrapState
 import com.peto.ramap.domain.store.PersonalizationStore
@@ -66,6 +67,13 @@ class FakePersonalizationRepository(
         )
         return RamapResult.Success(Unit)
     }
+
+    override fun publishNotificationSettings(settings: NotificationSettings): Boolean {
+        publish(currentPersonalization.changeNotificationSubscription(settings.shopId, settings.hasEffectiveSubscription))
+        return true
+    }
+
+    override suspend fun clearShopNotifications(shopId: String): RamapResult<Unit> = updateShopNotification(shopId, false)
 
     override suspend fun clear() {
         publish(Personalization())

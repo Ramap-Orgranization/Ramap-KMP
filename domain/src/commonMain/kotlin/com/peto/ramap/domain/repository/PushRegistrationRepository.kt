@@ -5,5 +5,7 @@ interface PushRegistrationRepository {
         identifier: String,
         platform: String,
         targetType: String,
+        expectedAccountId: String,
+        supportedProtocolVersion: Int,
     )
 }

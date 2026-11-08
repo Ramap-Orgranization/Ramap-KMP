@@ -12,10 +12,13 @@ fun trackIosPushToken(token: String) {
     )
 }
 
-fun dispatchNotificationDeepLink(rawUrl: String?) {
+fun dispatchNotificationDeepLink(
+    rawUrl: String?,
+    notificationId: String?,
+) {
     KoinPlatformTools
         .defaultContext()
         .get()
         .get<NotificationLaunchDispatcher>()
-        .dispatch(rawUrl)
+        .dispatch(rawUrl, notificationId)
 }

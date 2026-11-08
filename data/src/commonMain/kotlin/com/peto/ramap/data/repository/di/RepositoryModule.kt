@@ -92,7 +92,7 @@ val repositoryModule =
             DefaultLoginRepository(get())
         }
         single<PushRegistrationRepository> {
-            DefaultPushRegistrationRepository(get())
+            DefaultPushRegistrationRepository(get(), get())
         }
         single<RamenShopRepository> {
             DefaultRamenShopRepository(get<RamenShopDataSource>())
@@ -107,9 +107,9 @@ val repositoryModule =
             DefaultShopWaitingSystemRepository(get<ShopWaitingSystemDataSource>())
         }
         single<BookmarkRepository> { DefaultBookmarkRepository(get<BookmarkShopDataSource>()) }
-        single<SubscribedShopRepository> { DefaultSubscribedShopRepository(get()) }
+        single<SubscribedShopRepository> { DefaultSubscribedShopRepository(get(), get()) }
         single<PersonalizationStore> {
-            DefaultPersonalizationStore(get(), get())
+            DefaultPersonalizationStore(get(), get(), get())
         }
         single<ShopReportRepository> {
             DefaultShopReportRepository(get<ShopReportDataSource>())

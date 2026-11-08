@@ -1,69 +1,46 @@
 package com.peto.ramap.notification
 
-import co.touchlab.kermit.Logger
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.intOrNull
 
 class NotificationDeepLinkParser {
-    private val logger = Logger.withTag("NotificationDeepLinkParser")
+    private val externalUrlValidator = NotificationExternalUrlValidator()
 
     fun parse(value: String?): NotificationDeepLink? {
-        val deepLink = normalizedDeepLink(value) ?: return null
-        if (!hasSupportedEventPrefix(deepLink)) return null
-
-        val eventId = extractEventId(deepLink) ?: return null
-        if (!EVENT_ID_REGEX.matches(eventId)) {
-            logger.d { "딥 링크 파싱 실패: event_id 형식이 올바르지 않음: $eventId" }
-            return null
+        val raw = value?.trim()?.takeIf { it.isNotBlank() && it.length <= MAX_PAYLOAD_LENGTH } ?: return null
+        if (raw.startsWith(LEGACY_EVENT_PREFIX)) return parseLegacyEvent(raw)
+        val payload = runCatching { Json.parseToJsonElement(raw) as? JsonObject }.getOrNull() ?: return null
+        val version = payload["version"] as? JsonPrimitive ?: return null
+        if (version.isString || version.intOrNull != PROTOCOL_VERSION) return null
+        return when (payload.string("action")) {
+            "event_detail" -> {
+                if (payload.keys != setOf("version", "action", "event_id")) return null
+                payload.string("event_id")?.takeIf(EVENT_ID::matches)?.let { NotificationDeepLink.Event(it) }
+            }
+            "operating_notices" -> if (payload.keys == setOf("version", "action")) NotificationDeepLink.OperatingNotices else null
+            "external_url" -> {
+                if (payload.keys != setOf("version", "action", "url")) return null
+                payload.string("url")?.takeIf(externalUrlValidator::isValid)?.let { NotificationDeepLink.ExternalUrl(it) }
+            }
+            "none" -> if (payload.keys == setOf("version", "action")) NotificationDeepLink.None else null
+            else -> null
         }
-
-        return NotificationDeepLink.Event(eventId)
     }
 
-    private fun normalizedDeepLink(value: String?): String? {
-        val deepLink = value?.trim().orEmpty()
-        if (deepLink.isNotEmpty()) return deepLink
-
-        logger.d { "딥 링크 파싱 실패: 값이 비어 있음" }
-        return null
+    private fun parseLegacyEvent(raw: String): NotificationDeepLink? {
+        val parameters = raw.removePrefix(LEGACY_EVENT_PREFIX).split('&')
+        val ids = parameters.filter { it.startsWith("event_id=") }.map { it.removePrefix("event_id=") }
+        return ids.singleOrNull()?.takeIf(EVENT_ID::matches)?.let { NotificationDeepLink.Event(it) }
     }
 
-    private fun hasSupportedEventPrefix(deepLink: String): Boolean {
-        if (deepLink.startsWith(EVENT_PREFIX)) return true
+    private fun JsonObject.string(key: String): String? = (this[key] as? JsonPrimitive)?.takeIf { it.isString }?.content
 
-        logger.d { "딥 링크 파싱 실패: 지원하지 않는 경로: $deepLink" }
-        return false
-    }
-
-    private fun extractEventId(deepLink: String): String? {
-        val eventId =
-            deepLink
-                .substringAfter(QUERY_DELIMITER, missingDelimiterValue = "")
-                .split(PARAMETER_DELIMITER)
-                .firstNotNullOfOrNull(::eventIdParameterValue)
-        if (eventId != null) return eventId
-
-        logger.d { "딥 링크 파싱 실패: event_id 파라미터가 없음" }
-        return null
-    }
-
-    private fun eventIdParameterValue(parameter: String): String? {
-        val parts = parameter.split(KEY_VALUE_DELIMITER, limit = KEY_VALUE_SPLIT_LIMIT)
-        return parts
-            .takeIf { it.size == KEY_VALUE_SPLIT_LIMIT && it[0] == EVENT_ID_PARAMETER }
-            ?.get(PARAMETER_VALUE_INDEX)
-    }
-
-    private companion object {
-        private const val DEEP_LINK_SCHEME = "ramap"
-        private const val EVENT_HOST_PATH = "notification/event"
-        private const val QUERY_DELIMITER = '?'
-        private const val EVENT_PREFIX = "$DEEP_LINK_SCHEME://$EVENT_HOST_PATH$QUERY_DELIMITER"
-
-        private const val PARAMETER_DELIMITER = '&'
-        private const val KEY_VALUE_DELIMITER = '='
-        private const val KEY_VALUE_SPLIT_LIMIT = 2
-        private const val PARAMETER_VALUE_INDEX = 1
-
-        private const val EVENT_ID_PARAMETER = "event_id"
-        val EVENT_ID_REGEX = Regex("[0-9a-fA-F-]{36}")
+    companion object {
+        const val PROTOCOL_VERSION = 1
+        private const val MAX_PAYLOAD_LENGTH = 4096
+        private const val LEGACY_EVENT_PREFIX = "ramap://notification/event?"
+        private val EVENT_ID = Regex("[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}")
     }
 }
