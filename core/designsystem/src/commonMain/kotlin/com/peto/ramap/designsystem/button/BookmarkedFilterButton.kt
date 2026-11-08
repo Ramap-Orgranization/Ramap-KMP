@@ -17,6 +17,7 @@ fun BookmarkedFilterButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     contentDescription: String = stringResource(Res.string.bookmarked_shops_toggle),
+    text: String? = null,
 ) {
     AppCircleIconButton(
         icon = Res.drawable.ic_star_filled,
@@ -26,6 +27,7 @@ fun BookmarkedFilterButton(
         onClick = onClick,
         modifier = modifier,
         tint = if (isActive) CommonColor.White else GrayColor.C500,
+        text = text,
     )
 }
 

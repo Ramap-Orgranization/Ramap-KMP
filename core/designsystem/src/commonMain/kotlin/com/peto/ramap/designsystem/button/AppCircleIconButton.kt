@@ -1,7 +1,9 @@
 package com.peto.ramap.designsystem.button
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -17,6 +19,8 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import com.peto.ramap.designsystem.text.AppText
+import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
 import org.jetbrains.compose.resources.DrawableResource
@@ -32,6 +36,7 @@ fun AppCircleIconButton(
     modifier: Modifier = Modifier,
     tint: Color? = null,
     isLoading: Boolean = false,
+    text: String? = null,
 ) {
     Surface(
         modifier =
@@ -50,7 +55,7 @@ fun AppCircleIconButton(
         onClick = { if (!isLoading) onClick() },
     ) {
         Box(
-            modifier = Modifier.padding(12.dp),
+            modifier = Modifier.padding(if (text != null) 4.dp else 12.dp),
             contentAlignment = Alignment.Center,
         ) {
             if (isLoading) {
@@ -59,6 +64,23 @@ fun AppCircleIconButton(
                     color = GrayColor.C500,
                     strokeWidth = 2.dp,
                 )
+            } else if (text != null) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center,
+                ) {
+                    Image(
+                        painter = painterResource(icon),
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp),
+                        colorFilter = tint?.let { ColorFilter.tint(it) },
+                    )
+                    AppText(
+                        text = text,
+                        style = AppTextStyle.C3,
+                        color = tint ?: if (isActive) CommonColor.White else GrayColor.C500,
+                    )
+                }
             } else {
                 Image(
                     painter = painterResource(icon),
