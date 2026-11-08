@@ -6,16 +6,15 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNull
 
 class PublicMediaUrlTest {
-    private val configuredBaseUrl =
-        RamapSecrets.r2PublicBaseUrl
-            .ifBlank {
-                "${RamapSecrets.supabaseUrl.trimEnd('/')}${PublicMediaUrl.SUPABASE_PUBLIC_STORAGE_PATH}"
-            }.trimEnd('/')
+    private val configuredImageUrl =
+        RamapSecrets.r2PublicBaseUrl.trimEnd('/').takeIf(String::isNotBlank)?.let {
+            "$it/${MediaBucket.MENU_IMAGES_NAME}/$TEST_IMAGE_PATH"
+        }
 
     @Test
     fun `공개 사진만 설정된 저장소의 논리 경로로 변환한다`() {
         assertEquals(
-            "$configuredBaseUrl/${MediaBucket.MENU_IMAGES_NAME}/$TEST_IMAGE_PATH",
+            configuredImageUrl,
             PublicMediaUrl(MediaBucket.MENU_IMAGES, MediaPath(TEST_IMAGE_PATH)).resolve(),
         )
         assertNull(PublicMediaUrl(MediaBucket(UNSUPPORTED_PRIVATE_BUCKET), MediaPath(PRIVATE_IMAGE_PATH)).resolve())
@@ -25,7 +24,7 @@ class PublicMediaUrlTest {
     fun `외부 사진 주소를 유지하고 자체 저장소 주소만 전환한다`() {
         assertEquals(EXTERNAL_IMAGE_URL, PublicMediaUrl.resolveOwnedUrl(EXTERNAL_IMAGE_URL))
         assertEquals(
-            "$configuredBaseUrl/${MediaBucket.MENU_IMAGES_NAME}/$TEST_IMAGE_PATH",
+            configuredImageUrl,
             PublicMediaUrl.resolveOwnedUrl(
                 "${RamapSecrets.supabaseUrl.trimEnd('/')}${PublicMediaUrl.SUPABASE_PUBLIC_STORAGE_PATH}/${MediaBucket.MENU_IMAGES_NAME}/$TEST_IMAGE_PATH",
             ),
@@ -33,11 +32,8 @@ class PublicMediaUrlTest {
     }
 
     @Test
-    fun `공개 사진 설정이 없으면 Supabase 공개 주소를 사용한다`() {
-        assertEquals(
-            "${RamapSecrets.supabaseUrl.trimEnd('/')}${PublicMediaUrl.SUPABASE_PUBLIC_STORAGE_PATH}/${MediaBucket.MENU_IMAGES_NAME}/$TEST_IMAGE_PATH",
-            PublicMediaUrl(MediaBucket.MENU_IMAGES, MediaPath(TEST_IMAGE_PATH), publicBaseUrl = "").resolve(),
-        )
+    fun `공개 사진 설정이 없으면 이전 저장소 주소를 만들지 않는다`() {
+        assertNull(PublicMediaUrl(MediaBucket.MENU_IMAGES, MediaPath(TEST_IMAGE_PATH), publicBaseUrl = "").resolve())
     }
 
     @Test

@@ -49,7 +49,6 @@ import com.peto.ramap.domain.repository.PlaceLinkResolver
 import com.peto.ramap.domain.store.ReviewChangeStore
 import com.peto.ramap.network.config.RamapSecrets
 import io.github.jan.supabase.SupabaseClient
-import io.github.jan.supabase.storage.storage
 import io.ktor.client.HttpClient
 import org.koin.core.module.dsl.singleOf
 import org.koin.dsl.module
@@ -62,7 +61,7 @@ val dataSourceModule =
         single { BatchingImageUrlDataSource(get(), get(), get()) }
         single {
             ExpiredImageUrlParser(
-                supabaseSignedBaseUrl = get<SupabaseClient>().storage.resolveUrl("object/sign"),
+                supabaseSignedBaseUrl = "${RamapSecrets.supabaseUrl.trimEnd('/')}/storage/v1/object/sign",
                 r2AccountId = RamapSecrets.r2AccountId,
                 r2PrivateBucket = RamapSecrets.r2PrivateBucket,
             )

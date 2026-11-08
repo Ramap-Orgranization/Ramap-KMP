@@ -60,19 +60,9 @@ class ShopEventResponseTest {
                     ),
             ).toDomain()
 
-        assertEquals(5, event.imageUrls.size)
-        assertEquals(
-            "${RamapSecrets.r2PublicBaseUrl.ifBlank { "${RamapSecrets.supabaseUrl.trimEnd('/')}/storage/v1/object/public" }.trimEnd(
-                '/',
-            )}/event-images/events/event-1/1.png",
-            event.imageUrls.first(),
-        )
-        assertEquals(
-            "${RamapSecrets.r2PublicBaseUrl.ifBlank { "${RamapSecrets.supabaseUrl.trimEnd('/')}/storage/v1/object/public" }.trimEnd(
-                '/',
-            )}/event-images/events/event-1/5.png",
-            event.imageUrls.last(),
-        )
+        val base = RamapSecrets.r2PublicBaseUrl.trimEnd('/')
+        val expectedUrls = if (base.isBlank()) emptyList() else (1..5).map { "$base/event-images/events/event-1/$it.png" }
+        assertEquals(expectedUrls, event.imageUrls)
     }
 
     @Test
@@ -161,7 +151,7 @@ class ShopEventResponseTest {
         assertEquals("와루가키노 아소비", venue.name)
         assertEquals("부산 부산진구", venue.address)
         assertEquals(
-            "${RamapSecrets.r2PublicBaseUrl.ifBlank { "${RamapSecrets.supabaseUrl.trimEnd('/')}/storage/v1/object/public" }.trimEnd('/')}/shop-profile-images/venues/warugaki.jpg",
+            RamapSecrets.r2PublicBaseUrl.trimEnd('/').takeIf(String::isNotBlank)?.let { "$it/shop-profile-images/venues/warugaki.jpg" },
             venue.imageUrl,
         )
         assertEquals("https://map.naver.com/p/entry/place/1", venue.naverMapUrl)

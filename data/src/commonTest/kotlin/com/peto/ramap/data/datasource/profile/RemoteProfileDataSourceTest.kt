@@ -76,11 +76,12 @@ class RemoteProfileDataSourceTest {
         withSupabaseSessionFixture { client ->
             val http = HttpClient(MockEngine { error("예상하지 않은 사진 API") })
             try {
+                val media = MediaStorageClient(supabase = client, http = http, baseUrl = "")
                 val dataSource =
                     RemoteProfileDataSource(
                         client = client,
-                        imageUrlDataSource = RemoteImageUrlDataSource(client),
-                        media = MediaStorageClient(supabase = client, http = http, baseUrl = ""),
+                        imageUrlDataSource = RemoteImageUrlDataSource(client, media),
+                        media = media,
                     )
                 test(client, dataSource)
             } finally {

@@ -7,8 +7,10 @@ import com.peto.ramap.data.model.SignedImageUrl
 import com.peto.ramap.data.repository.DefaultReviewRepository
 import com.peto.ramap.data.testReviewChanges
 import com.peto.ramap.fake.FakeRamenShopDataSource
+import com.peto.ramap.network.client.media.MediaStorageClient
 import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.postgrest.Postgrest
+import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
 import io.ktor.http.headersOf
@@ -36,8 +38,9 @@ class RemoteReviewCountTest {
                 object : ImageUrlDataSource {
                     override suspend fun fetchUrls(images: List<SignedImageRequest>): Map<SignedImageRequest, SignedImageUrl?> = error("개수 조회 중 사진 주소를 요청했습니다")
                 }
+            val mediaHttp = HttpClient(MockEngine { error("예상하지 않은 사진 API") })
             try {
-                val source = RemoteReviewDataSource(client, ReviewImageResolver(images))
+                val source = RemoteReviewDataSource(client, ReviewImageResolver(images), MediaStorageClient(client, mediaHttp))
                 val shops = FakeRamenShopDataSource()
                 val repository = DefaultReviewRepository(source, shops, testReviewChanges(), backgroundScope)
 
@@ -45,6 +48,7 @@ class RemoteReviewCountTest {
                 assertEquals(listOf("/rest/v1/rpc/fetch_my_review_count"), requests)
                 assertNull(shops.requestedShopIds)
             } finally {
+                mediaHttp.close()
                 client.close()
             }
         }

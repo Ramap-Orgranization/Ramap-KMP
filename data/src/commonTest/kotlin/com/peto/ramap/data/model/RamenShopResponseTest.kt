@@ -16,7 +16,7 @@ class RamenShopResponseTest {
         val shop = response.toDomain()
 
         assertEquals(
-            "${RamapSecrets.r2PublicBaseUrl.ifBlank { "${RamapSecrets.supabaseUrl.trimEnd('/')}/storage/v1/object/public" }}/shop-profile-images/shop-1/profile.jpg",
+            RamapSecrets.r2PublicBaseUrl.trimEnd('/').takeIf(String::isNotBlank)?.let { "$it/shop-profile-images/shop-1/profile.jpg" },
             shop.instagramProfileImageUrl,
         )
     }

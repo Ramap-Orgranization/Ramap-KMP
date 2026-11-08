@@ -3,7 +3,6 @@ package com.peto.ramap.network.client.media
 import com.peto.ramap.network.config.RamapSecrets
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
-import io.github.jan.supabase.storage.storage
 import io.ktor.client.HttpClient
 import io.ktor.client.request.header
 import io.ktor.client.request.post
@@ -36,18 +35,12 @@ class MediaStorageClient(
     private val r2AccountId: String = RamapSecrets.r2AccountId,
     private val r2PrivateBucket: String = RamapSecrets.r2PrivateBucket,
 ) {
-    val isConfigured: Boolean get() = baseUrl.isNotBlank() && R2_ACCOUNT_PATTERN.matches(r2AccountId) && r2PrivateBucket.isNotBlank()
-
     suspend fun upload(
         bucket: String,
         path: String,
         bytes: ByteArray,
         mimeType: String,
     ) {
-        if (!isConfigured) {
-            uploadLegacy(bucket, path, bytes, mimeType)
-            return
-        }
         val userId = currentUserId()
         val prepared =
             request(
@@ -56,16 +49,12 @@ class MediaStorageClient(
             ).jsonObject
         checkSessionUnchanged(userId)
 
-        if (prepared[KEY_PROVIDER]?.jsonPrimitive?.content == PROVIDER_SUPABASE) {
-            uploadLegacy(bucket, path, bytes, mimeType)
-            return
-        }
+        check(prepared[KEY_PROVIDER]?.jsonPrimitive?.content == PROVIDER_R2) { ERROR_INVALID_TARGET }
         if (prepared[KEY_READY]?.jsonPrimitive?.content == VALUE_TRUE) return
 
         val id = requireNotNull(prepared[KEY_ID]?.jsonPrimitive?.content)
         val target = Url(requireNotNull(prepared[KEY_URL]?.jsonPrimitive?.content))
-        val provider = prepared[KEY_PROVIDER]?.jsonPrimitive?.content
-        val validTarget = provider == PROVIDER_R2 && validR2Url(target) && target.encodedPath == "/$r2PrivateBucket/$PATH_PENDING/$id"
+        val validTarget = validR2Url(target) && target.encodedPath == "/$r2PrivateBucket/$PATH_PENDING/$id"
         check(validTarget) { ERROR_INVALID_TARGET }
 
         val response =
@@ -85,10 +74,6 @@ class MediaStorageClient(
         bucket: String,
         path: String,
     ) {
-        if (!isConfigured) {
-            supabase.storage.from(bucket).delete(path)
-            return
-        }
         request(
             ACTION_DELETE,
             buildDeletePayload(bucket, path),
@@ -128,16 +113,7 @@ class MediaStorageClient(
 
         if (expiry <= now + MIN_EXPIRY_MARGIN || expiry > now + MAX_EXPIRY_MARGIN) return null
 
-        val legacy = Url(supabase.storage.resolveUrl("$LEGACY_SIGN_PATH_PREFIX/$bucket/$path"))
-        val validLegacy =
-            url.protocol == legacy.protocol &&
-                url.host == legacy.host &&
-                url.port == legacy.port &&
-                url.encodedPath == legacy.encodedPath &&
-                !url.parameters[PARAM_TOKEN].isNullOrBlank()
-
-        val validR2 = validR2Url(url) && url.encodedPath == "/$r2PrivateBucket/$bucket/$path"
-        if ((!validLegacy && !validR2) || url.fragment.isNotEmpty() || !url.user.isNullOrEmpty() || !url.password.isNullOrEmpty()) return null
+        if (!validR2Url(url) || url.encodedPath != "/$r2PrivateBucket/$bucket/$path") return null
 
         return MediaImageUrl(path, url.toString(), expiry)
     }
@@ -179,15 +155,6 @@ class MediaStorageClient(
             url.fragment.isEmpty() &&
             url.parameters[PARAM_X_AMZ_ALGORITHM] == VALUE_AWS_SIGNATURE &&
             !url.parameters[PARAM_X_AMZ_SIGNATURE].isNullOrBlank()
-
-    private suspend fun uploadLegacy(
-        bucket: String,
-        path: String,
-        bytes: ByteArray,
-        mimeType: String,
-    ) {
-        supabase.storage.from(bucket).upload(path, bytes) { contentType = ContentType.parse(mimeType) }
-    }
 
     private fun currentUserId(): String? = supabase.auth.currentUserOrNull()?.id
 
@@ -262,7 +229,6 @@ class MediaStorageClient(
         const val KEY_IMAGES = "images"
         const val KEY_EXPIRES_AT = "expires_at"
 
-        const val PROVIDER_SUPABASE = "supabase"
         const val PROVIDER_R2 = "r2"
         const val VALUE_ANY = "*"
         const val PARAM_X_AMZ_SIGNATURE = "X-Amz-Signature"
@@ -272,14 +238,12 @@ class MediaStorageClient(
         const val VALUE_TRUE = "true"
 
         const val PATH_PENDING = "pending"
-        const val LEGACY_SIGN_PATH_PREFIX = "object/sign"
 
         const val PROTOCOL_HTTPS = "https"
         const val PORT_HTTPS = 443
         const val HTTP_PRECONDITION_FAILED = 412
 
         const val AUTH_SCHEME_BEARER = "Bearer"
-        const val PARAM_TOKEN = "token"
 
         val MIN_EXPIRY_MARGIN = 1.minutes
         val MAX_EXPIRY_MARGIN = 6.minutes

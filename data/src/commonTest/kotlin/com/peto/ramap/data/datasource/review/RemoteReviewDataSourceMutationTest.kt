@@ -9,13 +9,14 @@ import com.peto.ramap.data.model.SignedImageRequest
 import com.peto.ramap.data.model.SignedImageUrl
 import com.peto.ramap.domain.model.review.change.ReviewChange
 import com.peto.ramap.fake.FakeReviewChangeStore
+import com.peto.ramap.network.client.media.MediaStorageClient
 import io.github.jan.supabase.annotations.SupabaseInternal
 import io.github.jan.supabase.auth.Auth
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.minimalConfig
 import io.github.jan.supabase.auth.status.SessionStatus
 import io.github.jan.supabase.createSupabaseClient
-import io.github.jan.supabase.storage.Storage
+import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -42,17 +43,17 @@ class RemoteReviewDataSourceMutationTest {
             val client =
                 createSupabaseClient("https://example.com", "test-key") {
                     httpEngine = MockEngine { error("Hydration must not query reviews") }
-                    install(Storage)
                     install(Auth) {
                         minimalConfig()
                         autoSetupPlatform = false
                     }
                 }
             client.auth.setSessionStatus(SessionStatus.NotAuthenticated())
+            val mediaHttp = HttpClient(MockEngine { error("예상하지 않은 사진 API") })
             try {
                 val changes = FakeReviewChangeStore()
                 val images = CachedImageUrlDataSource(signer, ReviewImageUrlAccessPolicy(client, lazy { changes }))
-                val source = RemoteReviewDataSource(client, ReviewImageResolver(images))
+                val source = RemoteReviewDataSource(client, ReviewImageResolver(images), MediaStorageClient(client, mediaHttp))
                 source.hydrateMutation(receipt(listOf("owner/retained")))
                 val pending = receipt(listOf("owner/retained", "owner/new"))
                 source.hydrateMutation(pending)
@@ -67,6 +68,7 @@ class RemoteReviewDataSourceMutationTest {
                 source.hydrateMutation(pending)
                 assertEquals(listOf("owner/retained", "owner/new"), calls.last().map { it.path })
             } finally {
+                mediaHttp.close()
                 client.close()
             }
         }
