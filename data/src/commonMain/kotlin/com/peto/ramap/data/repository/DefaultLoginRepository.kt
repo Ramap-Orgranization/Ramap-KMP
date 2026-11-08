@@ -20,9 +20,6 @@ import io.github.jan.supabase.postgrest.postgrest
 import io.ktor.client.call.body
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.filterNot
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapNotNull
 
 /**
@@ -38,15 +35,6 @@ internal class DefaultLoginRepository(
     /**
      * 앱이 Supabase 구현을 알지 않고 인증 여부에 반응할 수 있도록 세션 상태를 변환합니다.
      */
-    override val accountId: Flow<String?> =
-        supabaseClient.auth.sessionStatus
-            // 세션 복원과 재시도 가능한 갱신 실패는 사용자 변경이 아니다.
-            .filterNot { it is SessionStatus.Initializing || it is SessionStatus.RefreshFailure }
-            .map { status -> (status as? SessionStatus.Authenticated)?.session?.user?.id }
-            .distinctUntilChanged()
-
-    override fun currentAccountId(): String? = supabaseClient.auth.currentUserOrNull()?.id
-
     override val session: Flow<LoginSessionState> =
         supabaseClient.auth.sessionStatus
             .mapNotNull(::loginSessionState)

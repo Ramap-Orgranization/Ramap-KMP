@@ -1,7 +1,11 @@
 package com.peto.ramap.ui.shop.component
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.rememberCoroutineScope
 import com.peto.ramap.designsystem.toast.ToastManager
+import com.peto.ramap.designsystem.toast.model.ToastAction
+import com.peto.ramap.designsystem.toast.model.ToastData
+import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.auth.LoginType
 import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.navigation.deeplink.ShopShareLinkFactory
@@ -11,24 +15,31 @@ import com.peto.ramap.ui.base.ObserveAsEvents
 import com.peto.ramap.ui.login.rememberLoginGuideRequest
 import com.peto.ramap.ui.shop.contract.ShopInteractionEffect
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
+import ramap.shared.generated.resources.location_permission_settings_action
+import ramap.shared.generated.resources.notification_permission_enable_message
 import ramap.shared.generated.resources.share_shop_chooser_title
 import ramap.shared.generated.resources.share_shop_message
 
 @Composable
 fun MapInteractionHost(
     sideEffect: Flow<ShopInteractionEffect>,
+    isLoggedIn: Boolean,
+    notificationShopIds: Set<String>,
     toastManager: ToastManager,
     appSettingsOpener: AppSettingsOpener,
     shopShareLinkFactory: ShopShareLinkFactory,
+    requestNotificationPermission: suspend () -> Boolean,
     onNotificationToggled: (RamenShop) -> Unit,
     onLoginTypeSelected: (LoginType) -> Unit,
     onLoginDismissed: () -> Unit,
     content: @Composable ((RamenShop) -> Unit, (StringResource) -> Unit) -> Unit,
 ) {
+    val coroutineScope = rememberCoroutineScope()
     val requestLoginGuide =
         rememberLoginGuideRequest(
             onLoginTypeSelected = onLoginTypeSelected,
@@ -59,5 +70,28 @@ fun MapInteractionHost(
         }
     }
 
-    content(onNotificationToggled, requestLoginGuide)
+    content({ shop ->
+        val canToggleWithoutPermission = !isLoggedIn || shop.id in notificationShopIds
+        if (canToggleWithoutPermission) {
+            onNotificationToggled(shop)
+        } else {
+            coroutineScope.launch {
+                if (requestNotificationPermission()) {
+                    onNotificationToggled(shop)
+                } else {
+                    toastManager.show(
+                        ToastData(
+                            message = Res.string.notification_permission_enable_message,
+                            type = ToastType.DEFAULT,
+                            action =
+                                ToastAction(
+                                    label = Res.string.location_permission_settings_action,
+                                    onClick = appSettingsOpener::open,
+                                ),
+                        ),
+                    )
+                }
+            }
+        }
+    }, requestLoginGuide)
 }

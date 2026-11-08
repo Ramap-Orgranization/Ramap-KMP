@@ -1,7 +1,5 @@
 package com.peto.ramap.ui.shop.overview.contract
 
-import com.peto.ramap.domain.model.notification.NotificationSelection
-import com.peto.ramap.domain.model.notification.NotificationSettings
 import com.peto.ramap.domain.model.personalization.Personalization
 import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.domain.model.shop.ShopOverView
@@ -18,15 +16,6 @@ data class ShopOverviewState(
     val hasReceivedPersonalization: Boolean = false,
     val hasLoadFailure: Boolean = false,
     val isShopUnavailable: Boolean = false,
-    val notificationSettingsShopId: String? = null,
-    val notificationSettings: NotificationSettings? = null,
-    val notificationDraft: NotificationSelection? = null,
-    val shouldClearAllNotificationPreferences: Boolean = false,
-    val hasNotificationLoadFailure: Boolean = false,
-    val hasNotificationRevisionMismatch: Boolean = false,
-    val isNotificationPermissionGranted: Boolean? = null,
-    val hasRequestedNotificationPermission: Boolean = false,
-    val notificationPermissionGeneration: Long? = null,
     override val loadState: LoadState = LoadState(),
 ) : LoadableState<ShopOverviewState> {
     val bookmarkedShopIds: Set<String> get() = personalization.bookmarkedShopIds
@@ -40,9 +29,6 @@ data class ShopOverviewState(
         }
     val shopOverview: ShopOverView? get() = (overviewState as? ShopOverviewUiState.Content)?.overview
     val isLoading: Boolean get() = loadState.isLoading(ShopOverviewLoadKey.Overview)
-
-    val isNotificationSettingsLoading: Boolean get() = loadState.isLoading(ShopOverviewLoadKey.NotificationSettings)
-    val isNotificationSettingsSaving: Boolean get() = loadState.isLoading(ShopOverviewLoadKey.NotificationSave)
 
     override fun withLoadingState(loadState: LoadState): ShopOverviewState = copy(loadState = loadState)
 }

@@ -202,7 +202,7 @@ class SubscribedShopsViewModel(
             request = {
                 when (target) {
                     is SubscribedRemovalTarget.Shop ->
-                        personalizationStore.clearShopNotifications(target.shopId)
+                        personalizationStore.updateShopNotification(target.shopId, false)
 
                     is SubscribedRemovalTarget.EventOverride ->
                         notificationRepository.clearEventNotificationOverride(target.eventId)

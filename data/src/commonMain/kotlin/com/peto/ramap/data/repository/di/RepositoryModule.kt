@@ -107,9 +107,9 @@ val repositoryModule =
             DefaultShopWaitingSystemRepository(get<ShopWaitingSystemDataSource>())
         }
         single<BookmarkRepository> { DefaultBookmarkRepository(get<BookmarkShopDataSource>()) }
-        single<SubscribedShopRepository> { DefaultSubscribedShopRepository(get(), get()) }
+        single<SubscribedShopRepository> { DefaultSubscribedShopRepository(get()) }
         single<PersonalizationStore> {
-            DefaultPersonalizationStore(get(), get(), get())
+            DefaultPersonalizationStore(get(), get())
         }
         single<ShopReportRepository> {
             DefaultShopReportRepository(get<ShopReportDataSource>())

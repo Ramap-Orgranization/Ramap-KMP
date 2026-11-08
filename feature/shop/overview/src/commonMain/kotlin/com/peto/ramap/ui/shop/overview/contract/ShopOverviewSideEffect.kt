@@ -5,12 +5,6 @@ import com.peto.ramap.ui.base.SideEffect
 import com.peto.ramap.ui.shop.contract.ShopInteractionEffect
 
 sealed interface ShopOverviewSideEffect : SideEffect {
-    data object ShowNotificationSaveFailure : ShopOverviewSideEffect
-
-    data class RequestNotificationPermission(
-        val generation: Long,
-    ) : ShopOverviewSideEffect
-
     data class Interaction(
         val effect: ShopInteractionEffect,
     ) : ShopOverviewSideEffect

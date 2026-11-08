@@ -11,18 +11,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 class FakeLoginRepository(
     initialSessionState: LoginSessionState = LoginSessionState.NOT_AUTHENTICATED,
     private val userEmail: String? = null,
-    initialAccountId: String = "test-account",
 ) : LoginRepository {
-    private val mutableAccountId = MutableStateFlow(initialAccountId.takeIf { initialSessionState == LoginSessionState.AUTHENTICATED })
-    override val accountId: Flow<String?> = mutableAccountId
-
-    override fun currentAccountId(): String? = mutableAccountId.value
-
-    fun updateAccountId(accountId: String?) {
-        mutableAccountId.value = accountId
-        mutableSessionState.value = if (accountId == null) LoginSessionState.NOT_AUTHENTICATED else LoginSessionState.AUTHENTICATED
-    }
-
     private val mutableSessionState = MutableStateFlow(initialSessionState)
 
     var signInWithKakaoCallCount = 0
@@ -41,7 +30,6 @@ class FakeLoginRepository(
     override suspend fun awaitInitialization() = Unit
 
     fun updateSessionState(sessionState: LoginSessionState) {
-        mutableAccountId.value = if (sessionState == LoginSessionState.AUTHENTICATED) mutableAccountId.value ?: "test-account" else null
         mutableSessionState.value = sessionState
     }
 
@@ -59,14 +47,14 @@ class FakeLoginRepository(
 
     override suspend fun signOut(): RamapResult<Unit> {
         signOutCallCount += 1
-        updateAccountId(null)
+        mutableSessionState.value = LoginSessionState.NOT_AUTHENTICATED
         return RamapResult.Success(Unit)
     }
 
     override suspend fun deleteAccount(): RamapResult<Unit> {
         deleteAccountCallCount += 1
         deleteAccountError?.let { return RamapResult.Error(RamapError.Unknown(it)) }
-        updateAccountId(null)
+        mutableSessionState.value = LoginSessionState.NOT_AUTHENTICATED
         return RamapResult.Success(Unit)
     }
 }

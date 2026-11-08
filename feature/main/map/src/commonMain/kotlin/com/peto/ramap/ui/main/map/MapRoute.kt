@@ -118,9 +118,12 @@ fun MapRoute(
                     }
                 }
             },
+        isLoggedIn = uiState.isLoggedIn,
+        notificationShopIds = uiState.notificationShopIds,
         toastManager = toastManager,
         appSettingsOpener = appSettingsOpener,
         shopShareLinkFactory = shopShareLinkFactory,
+        requestNotificationPermission = requestNotificationPermission,
         onNotificationToggled = {},
         onLoginTypeSelected = { viewModel.dispatch(OnLoginTypeSelected(it)) },
         onLoginDismissed = { viewModel.dispatch(OnLoginSelectionDismissed) },

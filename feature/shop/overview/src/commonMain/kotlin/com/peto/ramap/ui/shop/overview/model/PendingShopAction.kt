@@ -10,7 +10,7 @@ sealed interface PendingShopAction {
         val enabled: Boolean,
     ) : PendingShopAction
 
-    data class OpenNotificationSettings(
+    data class ToggleShopNotification(
         val shop: RamenShop,
         val source: AnalyticsSource,
     ) : PendingShopAction

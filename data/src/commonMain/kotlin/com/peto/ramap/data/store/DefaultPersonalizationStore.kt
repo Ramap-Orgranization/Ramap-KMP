@@ -2,10 +2,8 @@ package com.peto.ramap.data.store
 
 import com.peto.ramap.core.result.RamapError
 import com.peto.ramap.core.result.RamapResult
-import com.peto.ramap.domain.model.notification.NotificationSettings
 import com.peto.ramap.domain.model.personalization.Personalization
 import com.peto.ramap.domain.repository.BookmarkRepository
-import com.peto.ramap.domain.repository.LoginRepository
 import com.peto.ramap.domain.repository.SubscribedShopRepository
 import com.peto.ramap.domain.store.PersonalizationBootstrapState
 import com.peto.ramap.domain.store.PersonalizationStore
@@ -15,164 +13,151 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
+/**
+ * 역할별 저장소를 조합해 [PersonalizationStore]를 제공하는 기본 구현.
+ *
+ * 역할별 저장소의 결과를 공유 개인화 상태로 발행하고, 원격 반영 실패 시 로컬 상태를 롤백한다.
+ */
 internal class DefaultPersonalizationStore(
     private val bookmarkRepository: BookmarkRepository,
     private val subscribedShopRepository: SubscribedShopRepository,
-    private val loginRepository: LoginRepository,
 ) : PersonalizationStore {
-    private val mutableState = MutableStateFlow<PersonalizationBootstrapState>(PersonalizationBootstrapState.Loading)
-    override val state = mutableState.asStateFlow()
-    private var lastPersonalization = Personalization()
-    private var notificationVersion = 0L
-    private var generation = 0L
-    private var refreshGeneration = 0L
-    private var ownerAccountId: String? = loginRepository.currentAccountId()
-    private val bookmarkVersions = mutableMapOf<String, Long>()
+    private val _state =
+        MutableStateFlow<PersonalizationBootstrapState>(PersonalizationBootstrapState.Loading)
+    override val state = _state.asStateFlow()
 
+    /**
+     * 북마크와 구독의 최신 값을 병렬 조회해 일관된 개인화 상태로 한 번에 발행한다.
+     *
+     * 어느 한 조회라도 실패하면 기존 상태를 유지하고 해당 오류를 반환한다.
+     */
     override suspend fun refresh(): RamapResult<Unit> {
-        val account = loginRepository.currentAccountId()
-        if (ownerAccountId != account) {
-            generation += 1
-            lastPersonalization = Personalization()
-            bookmarkVersions.clear()
-        }
-        val requestGeneration = generation
-        val requestRefreshGeneration = ++refreshGeneration
-        ownerAccountId = account
-        val initialBookmarkVersions = bookmarkVersions.toMap()
-        val initialNotificationVersion = notificationVersion
-        mutableState.value = PersonalizationBootstrapState.Loading
-        return try {
-            val (bookmarks, subscriptions) =
-                coroutineScope {
-                    val bookmarks = async { bookmarkRepository.fetchBookmarkedShopIds() }
-                    val subscriptions = async { subscribedShopRepository.fetchSubscribedShopIds() }
-                    bookmarks.await() to subscriptions.await()
-                }
-            if (!isCurrent(account, requestGeneration) || requestRefreshGeneration != refreshGeneration) return staleResult()
-            when {
-                bookmarks is RamapResult.Error -> bookmarks.also { mutableState.value = PersonalizationBootstrapState.Error }
-                subscriptions is RamapResult.Error -> subscriptions.also { mutableState.value = PersonalizationBootstrapState.Error }
-                else -> {
-                    var mergedBookmarks = (bookmarks as RamapResult.Success).data
-                    for ((shopId, version) in bookmarkVersions) {
-                        if (initialBookmarkVersions[shopId] == version) continue
-                        mergedBookmarks = if (shopId in currentPersonalization.bookmarkedShopIds) mergedBookmarks + shopId else mergedBookmarks - shopId
-                    }
-                    val mergedSubscriptions =
-                        if (initialNotificationVersion == notificationVersion) {
-                            (subscriptions as RamapResult.Success).data
-                        } else {
-                            currentPersonalization.notificationShopIds
-                        }
-                    publish(Personalization(mergedBookmarks, mergedSubscriptions))
-                    RamapResult.Success(Unit)
-                }
-            }
-        } catch (cancellation: CancellationException) {
-            throw cancellation
-        } catch (failure: Throwable) {
-            if (isCurrent(account, requestGeneration) && requestRefreshGeneration == refreshGeneration) mutableState.value = PersonalizationBootstrapState.Error
-            RamapResult.Error(RamapError.Unknown(failure))
+        _state.value = PersonalizationBootstrapState.Loading
+        return fetchAndPublishRefresh().also { result ->
+            if (result is RamapResult.Error) _state.value = PersonalizationBootstrapState.Error
         }
     }
 
+    private suspend fun fetchAndPublishRefresh(): RamapResult<Unit> =
+        try {
+            val (bookmarks, subscribedShops) = fetchPersonalization()
+            publishRefresh(bookmarks, subscribedShops)
+        } catch (cancellation: CancellationException) {
+            throw cancellation
+        } catch (throwable: Throwable) {
+            RamapResult.Error(RamapError.Unknown(throwable))
+        }
+
+    /**
+     * 북마크와 구독 매장 ID를 병렬 조회한다.
+     */
+    private suspend fun fetchPersonalization() =
+        coroutineScope {
+            val bookmarks = async { bookmarkRepository.fetchBookmarkedShopIds() }
+            val subscribedShops = async { subscribedShopRepository.fetchSubscribedShopIds() }
+            Pair(bookmarks.await(), subscribedShops.await())
+        }
+
+    /**
+     * 새로고침 결과가 모두 성공한 경우에만 하나의 상태로 발행한다.
+     */
+    private fun publishRefresh(
+        bookmarks: RamapResult<Set<String>>,
+        subscribedShops: RamapResult<Set<String>>,
+    ): RamapResult<Unit> {
+        if (bookmarks is RamapResult.Error) return bookmarks
+        if (subscribedShops is RamapResult.Error) return subscribedShops
+
+        publish(
+            Personalization(
+                bookmarkedShopIds = (bookmarks as RamapResult.Success).data,
+                notificationShopIds = (subscribedShops as RamapResult.Success).data,
+            ),
+        )
+        return RamapResult.Success(Unit)
+    }
+
+    /**
+     * 북마크 상태를 낙관적으로 변경하고 원격 반영 실패 시 변경 전 상태로 롤백한다.
+     */
     override suspend fun updateBookmark(
         shopId: String,
         enabled: Boolean,
     ): RamapResult<Unit> {
-        val account = loginRepository.currentAccountId()
-        val requestGeneration = generation
-        val wasBookmarked = shopId in currentPersonalization.bookmarkedShopIds
-        val version = (bookmarkVersions[shopId] ?: 0) + 1
-        bookmarkVersions[shopId] = version
-        publish(currentPersonalization.changeBookmark(shopId, isBookmarked = enabled))
-        val result = if (enabled) bookmarkRepository.addBookmark(shopId) else bookmarkRepository.removeBookmark(shopId)
-        if (!isCurrent(account, requestGeneration)) return staleResult()
-        if (bookmarkVersions[shopId] == version) {
-            bookmarkVersions[shopId] = version + 1
-            val persistedBookmark = if (result is RamapResult.Success) enabled else wasBookmarked
-            publish(currentPersonalization.changeBookmark(shopId, isBookmarked = persistedBookmark))
-        }
-        return result
+        val previous = currentPersonalization
+        publish(previous.changeBookmark(shopId, isBookmarked = enabled))
+
+        val result =
+            if (enabled) {
+                bookmarkRepository.addBookmark(shopId)
+            } else {
+                bookmarkRepository.removeBookmark(shopId)
+            }
+
+        return rollbackOnError(result, previous)
     }
 
+    /** 모든 원격 북마크 저장이 성공한 뒤에만 공유 개인화 상태를 갱신한다. */
     override suspend fun addBookmarks(shopIds: Set<String>): RamapResult<Unit> {
-        val account = loginRepository.currentAccountId()
-        val requestGeneration = generation
-        val newShopIds = shopIds - currentPersonalization.bookmarkedShopIds
+        val previous = currentPersonalization
+        val newShopIds = shopIds - previous.bookmarkedShopIds
         if (newShopIds.isEmpty()) return RamapResult.Success(Unit)
+
         val result = bookmarkRepository.addBookmarks(newShopIds)
-        if (!isCurrent(account, requestGeneration)) return staleResult()
-        if (result is RamapResult.Success) {
-            newShopIds.forEach { bookmarkVersions[it] = (bookmarkVersions[it] ?: 0) + 1 }
-            publish(currentPersonalization.addBookmarks(newShopIds))
-        }
+        if (result is RamapResult.Success) publish(previous.addBookmarks(newShopIds))
         return result
     }
 
+    /**
+     * 매장 구독 상태를 낙관적으로 변경하고 원격 반영 실패 시 롤백한다.
+     */
     override suspend fun updateShopNotification(
         shopId: String,
         enabled: Boolean,
     ): RamapResult<Unit> {
-        val account = loginRepository.currentAccountId()
-        val requestGeneration = generation
-        val result = if (enabled) subscribedShopRepository.subscribeShop(shopId) else subscribedShopRepository.unsubscribeShop(shopId)
-        if (!isCurrent(account, requestGeneration)) return staleResult()
-        if (result is RamapResult.Error) return result
-        return when (val ids = subscribedShopRepository.fetchSubscribedShopIds()) {
-            is RamapResult.Error -> ids
-            is RamapResult.Success -> {
-                if (!isCurrent(account, requestGeneration)) return staleResult()
-                notificationVersion += 1
-                publish(currentPersonalization.copy(notificationShopIds = ids.data))
-                RamapResult.Success(Unit)
-            }
+        val previous = currentPersonalization
+        publish(previous.changeNotificationSubscription(shopId, isSubscribed = enabled))
+        val result = changeSubscriptionRemotely(shopId, shouldSubscribe = enabled)
+        return rollbackOnError(result, previous)
+    }
+
+    /**
+     * 요청 상태에 따라 구독 또는 구독 해제 명령을 명시적으로 호출한다.
+     */
+    private suspend fun changeSubscriptionRemotely(
+        shopId: String,
+        shouldSubscribe: Boolean,
+    ): RamapResult<Unit> =
+        if (shouldSubscribe) {
+            subscribedShopRepository.subscribeShop(shopId)
+        } else {
+            subscribedShopRepository.unsubscribeShop(shopId)
         }
-    }
 
-    override fun publishNotificationSettings(settings: NotificationSettings): Boolean {
-        if (settings.accountId != loginRepository.currentAccountId() || settings.accountId != ownerAccountId) return false
-        notificationVersion += 1
-        publish(currentPersonalization.changeNotificationSubscription(settings.shopId, settings.hasEffectiveSubscription))
-        return true
-    }
-
-    override suspend fun clearShopNotifications(shopId: String): RamapResult<Unit> {
-        val account = loginRepository.currentAccountId() ?: return staleResult()
-        val requestGeneration = generation
-        return when (val result = subscribedShopRepository.clearNotificationSettings(shopId, account)) {
-            is RamapResult.Error -> result
-            is RamapResult.Success -> {
-                if (!isCurrent(account, requestGeneration) || !publishNotificationSettings(result.data)) return staleResult()
-                RamapResult.Success(Unit)
-            }
-        }
-    }
-
+    /**
+     * 저장된 개인화 상태를 비운다.
+     *
+     * 로그아웃 시 공유 개인화 상태를 초기화한다.
+     */
     override suspend fun clear() {
-        generation += 1
-        ownerAccountId = loginRepository.currentAccountId()
-        bookmarkVersions.clear()
         publish(Personalization())
     }
 
-    private fun isCurrent(
-        account: String?,
-        requestGeneration: Long,
-    ): Boolean = account == loginRepository.currentAccountId() && account == ownerAccountId && requestGeneration == generation
-
-    private fun staleResult(): RamapResult.Error = RamapResult.Error(RamapError.Unknown(IllegalStateException(STALE_SESSION)))
-
-    private val currentPersonalization: Personalization
-        get() = lastPersonalization
-
-    private fun publish(personalization: Personalization) {
-        lastPersonalization = personalization
-        mutableState.value = PersonalizationBootstrapState.Success(personalization)
+    /**
+     * 원격 결과가 오류일 때만 로컬 상태를 복구하고 결과 타입과 값을 보존한다.
+     */
+    private fun <T> rollbackOnError(
+        result: RamapResult<T>,
+        previous: Personalization,
+    ): RamapResult<T> {
+        if (result is RamapResult.Error) publish(previous)
+        return result
     }
 
-    private companion object {
-        const val STALE_SESSION = "Personalization session changed"
+    private val currentPersonalization: Personalization
+        get() = (state.value as? PersonalizationBootstrapState.Success)?.value ?: Personalization()
+
+    private fun publish(personalization: Personalization) {
+        _state.value = PersonalizationBootstrapState.Success(personalization)
     }
 }

@@ -1,7 +1,6 @@
 package com.peto.ramap.domain.store
 
 import com.peto.ramap.core.result.RamapResult
-import com.peto.ramap.domain.model.notification.NotificationSettings
 import kotlinx.coroutines.flow.StateFlow
 
 /**
@@ -10,10 +9,6 @@ import kotlinx.coroutines.flow.StateFlow
  * [state]는 초기 동기화 상태와 성공한 개인화 값을 하나의 원자적인 상태로 제공한다.
  */
 interface PersonalizationStore {
-    fun publishNotificationSettings(settings: NotificationSettings): Boolean
-
-    suspend fun clearShopNotifications(shopId: String): RamapResult<Unit>
-
     /** 현재 세션의 초기 동기화 상태와 성공한 개인화 값. */
     val state: StateFlow<PersonalizationBootstrapState>
 

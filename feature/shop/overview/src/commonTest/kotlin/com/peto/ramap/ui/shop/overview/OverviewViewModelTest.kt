@@ -113,17 +113,12 @@ class OverviewViewModelTest {
         }
 
     @Test
-    fun `로그인 후 대기하던 매장 알림 설정을 열고 저장 전에는 구독을 바꾸지 않는다`() =
+    fun `로그인 후 대기하던 매장 알림을 실행한다`() =
         overviewScenario { fixture ->
             fixture.viewModel.dispatch(ShopOverviewIntent.OnShopNotificationToggled(ramenShopFixture(id = "shop")))
             runCurrent()
             signInFromGuide(fixture)
-            assertEquals("shop", fixture.viewModel.uiState.value.notificationSettingsShopId)
-            assertTrue(
-                fixture.viewModel.uiState.value.notificationShopIds
-                    .isEmpty(),
-            )
-            assertTrue(fixture.notificationSaveRequests.isEmpty())
+            assertEquals(setOf("shop"), fixture.viewModel.uiState.value.notificationShopIds)
         }
 
     @Test
@@ -266,7 +261,6 @@ class OverviewViewModelTest {
                     finished++
                 }
             }
-            fixture.awaitNotificationResponse = fixture.awaitPersonalizationResponse
             val shop = ramenShopFixture(id = "shop")
             fixture.viewModel.dispatch(ShopOverviewIntent.OnBookmarkToggled(shop))
             runCurrent()

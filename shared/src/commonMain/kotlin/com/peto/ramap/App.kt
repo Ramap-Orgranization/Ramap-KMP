@@ -25,6 +25,7 @@ import com.peto.ramap.designsystem.component.LoadErrorContent
 import com.peto.ramap.designsystem.indicator.RamenLoadingIndicator
 import com.peto.ramap.designsystem.toast.ToastHost
 import com.peto.ramap.designsystem.toast.ToastManager
+import com.peto.ramap.domain.model.auth.LoginSessionState
 import com.peto.ramap.domain.repository.AppNoticeRepository
 import com.peto.ramap.domain.repository.AppUpdateRepository
 import com.peto.ramap.domain.repository.ImageAccessRepository
@@ -188,27 +189,25 @@ internal suspend fun observeSessionPersonalization(
     retryRequests: Flow<Unit> = emptyFlow(),
 ) {
     awaitSessionInitialization(loginRepository)
-    var previousAccountId: String? = null
-    var hasObservedAccount = false
-    loginRepository.accountId
+    var previousSessionState: LoginSessionState? = null
+    loginRepository.session
         .distinctUntilChanged()
-        .collectLatest { accountId ->
-            val accountChanged = hasObservedAccount && previousAccountId != accountId
-            previousAccountId = accountId
-            hasObservedAccount = true
-            if (accountId == null) {
+        .collectLatest { sessionState ->
+            val authenticatedAfterGuest =
+                sessionState == LoginSessionState.AUTHENTICATED &&
+                    previousSessionState == LoginSessionState.NOT_AUTHENTICATED
+            previousSessionState = sessionState
+            if (sessionState != LoginSessionState.AUTHENTICATED) {
                 personalizationStore.clear()
                 NetworkRetryGenerator.clear()
                 return@collectLatest
             }
-            if (accountChanged) {
-                personalizationStore.clear()
-                NetworkRetryGenerator.clear()
-            }
+
             retryRequests
                 .onStart {
-                    val hasPersonalization = personalizationStore.state.value is PersonalizationBootstrapState.Success
-                    if (accountChanged || !hasPersonalization) emit(Unit)
+                    val hasPersonalization =
+                        personalizationStore.state.value is PersonalizationBootstrapState.Success
+                    if (authenticatedAfterGuest || !hasPersonalization) emit(Unit)
                 }.collectLatest { refreshPersonalization(personalizationStore) }
         }
 }

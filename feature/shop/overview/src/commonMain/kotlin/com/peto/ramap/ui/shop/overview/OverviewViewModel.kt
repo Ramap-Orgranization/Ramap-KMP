@@ -3,13 +3,10 @@ package com.peto.ramap.ui.shop.overview
 import androidx.lifecycle.viewModelScope
 import com.peto.ramap.analytics.AnalyticsSource
 import com.peto.ramap.core.result.RamapError
-import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.auth.LoginSessionState
 import com.peto.ramap.domain.model.auth.LoginType
-import com.peto.ramap.domain.model.notification.NotificationSelection
-import com.peto.ramap.domain.model.notification.NotificationSettings
 import com.peto.ramap.domain.model.personalization.BookmarkChangeStatus
 import com.peto.ramap.domain.model.personalization.Personalization
 import com.peto.ramap.domain.model.report.ShopInformationField
@@ -18,7 +15,6 @@ import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.domain.model.shop.ShopOverView
 import com.peto.ramap.domain.repository.LoginRepository
 import com.peto.ramap.domain.repository.ShopReportRepository
-import com.peto.ramap.domain.repository.SubscribedShopRepository
 import com.peto.ramap.domain.store.PersonalizationBootstrapState
 import com.peto.ramap.domain.store.PersonalizationStore
 import com.peto.ramap.domain.usecase.FetchShopOverviewUseCase
@@ -61,7 +57,6 @@ import ramap.shared.generated.resources.login_success_message
 import ramap.shared.generated.resources.personalization_update_failure_message
 import ramap.shared.generated.resources.shop_information_report_failure_message
 import ramap.shared.generated.resources.shop_information_report_success_message
-import ramap.shared.generated.resources.shop_notification_settings_save_success
 
 class OverviewViewModel(
     private val loginRepository: LoginRepository,
@@ -71,41 +66,20 @@ class OverviewViewModel(
     private val mapSearchHistoryStorage: SearchHistoryStorage,
     private val mapAnalytics: ShopAnalytics,
     private val signInUseCase: SignInUseCase,
-    private val subscribedShopRepository: SubscribedShopRepository,
 ) : BaseViewModel<ShopOverviewState, ShopOverviewIntent, ShopOverviewSideEffect>(
         initialState(loginRepository, personalizationStore),
     ) {
     private var pendingShopAction: PendingShopAction? = null
-    private var observedAccountId = loginRepository.currentAccountId()
-    private var notificationPermissionRequestGeneration = 0L
 
     init {
         val isNotLoggedIn = !currentState.isLoggedIn
         if (isNotLoggedIn) viewModelScope.launch { awaitLogin() }
         viewModelScope.launch { observePersonalization() }
-        viewModelScope.launch {
-            loginRepository.accountId.collect { accountId ->
-                if (accountId != observedAccountId) {
-                    val hadAccount = observedAccountId != null
-                    observedAccountId = accountId
-                    closeNotificationSettings()
-                    if (hadAccount) pendingShopAction = null
-                    reduce {
-                        copy(
-                            isLoggedIn = accountId != null,
-                            personalization = Personalization(),
-                            hasReceivedPersonalization = false,
-                        )
-                    }
-                }
-            }
-        }
     }
 
     override suspend fun handleIntent(intent: ShopOverviewIntent) {
         when {
             handleShopIntent(intent) -> Unit
-            handleNotificationSettingsIntent(intent) -> Unit
             handlePersonalizationIntent(intent) -> Unit
             else -> handleAccountIntent(intent)
         }
@@ -132,10 +106,6 @@ class OverviewViewModel(
             is OnShopMapLinkClicked -> openShopMapLink(intent.shop, intent.mapProvider)
             OnOverviewRetry -> retryOverview()
             is OnShopReportSubmitted -> submitShopReport(intent.wrongFields, intent.description)
-            ShopOverviewIntent.OnOverviewDismissed -> {
-                closeNotificationSettings()
-                pendingShopAction = null
-            }
             else -> return false
         }
         return true
@@ -170,10 +140,6 @@ class OverviewViewModel(
         shopId: String,
         initialShop: RamenShop?,
     ) {
-        if (currentSheetShopId() != shopId) {
-            closeNotificationSettings()
-            pendingShopAction = null
-        }
         val cachedOverview = (fetchShopOverviewUseCase.findCached(shopId) as? ShopOverviewCacheLookup.Hit)?.overview
         val hasCachedOverview = cachedOverview != null
         val nextSheet =
@@ -334,160 +300,17 @@ class OverviewViewModel(
         shop: RamenShop,
         source: AnalyticsSource,
     ) {
-        if (requireLogin(PendingShopAction.OpenNotificationSettings(shop, source))) return
-        openNotificationSettings(shop.id)
-    }
-
-    private fun handleNotificationSettingsIntent(intent: ShopOverviewIntent): Boolean {
-        when (intent) {
-            is ShopOverviewIntent.OnNotificationTypeToggled -> changeNotificationDraft { settings, draft -> draft.toggle(intent.id, settings.catalog) }
-            ShopOverviewIntent.OnNotificationSelectAll -> changeNotificationDraft { settings, _ -> settings.catalog.selectAll() }
-            ShopOverviewIntent.OnNotificationClear -> clearNotificationDraft()
-            ShopOverviewIntent.OnNotificationCancel -> closeNotificationSettings()
-            ShopOverviewIntent.OnNotificationRetry -> currentState.notificationSettingsShopId?.let(::openNotificationSettings)
-            ShopOverviewIntent.OnNotificationSave -> saveNotificationSettings()
-            is ShopOverviewIntent.OnNotificationPermissionChecked -> updateNotificationPermission(intent.granted)
-            is ShopOverviewIntent.OnNotificationPermissionResult -> completeNotificationPermission(intent.generation, intent.granted)
-            else -> return false
-        }
-        return true
-    }
-
-    private fun changeNotificationDraft(
-        change: (NotificationSettings, NotificationSelection) -> NotificationSelection,
-    ) {
-        if (currentState.isNotificationSettingsSaving || currentState.hasNotificationRevisionMismatch) return
-        val settings = currentState.notificationSettings ?: return
-        val draft = currentState.notificationDraft ?: return
-        val updatedDraft = change(settings, draft)
-        reduce { copy(notificationDraft = updatedDraft) }
-        if (updatedDraft.hasNewSelectionsComparedWith(draft)) requestNotificationPermission()
-    }
-
-    private fun clearNotificationDraft() {
-        if (currentState.isNotificationSettingsSaving || currentState.hasNotificationRevisionMismatch) return
-        val settings = currentState.notificationSettings ?: return
-        reduce {
-            copy(
-                notificationDraft = settings.catalog.clear(),
-                shouldClearAllNotificationPreferences = true,
-            )
-        }
-    }
-
-    private fun openNotificationSettings(shopId: String) {
-        if (currentSheetShopId() != shopId) return
-        val accountId = loginRepository.currentAccountId() ?: return
-        closeNotificationSettings()
-        reduce { copy(notificationSettingsShopId = shopId) }
+        if (requireLogin(PendingShopAction.ToggleShopNotification(shop, source))) return
+        val enabled = currentState.personalization.nextNotificationEnabled(shop.id)
         launchResultTask(
             taskKey = NOTIFICATION_TASK_KEY,
-            loadKey = ShopOverviewLoadKey.NotificationSettings,
-            policy = TaskPolicy.CancelPrevious,
-            request = {
-                if (isCurrentNotificationRequest(accountId, shopId)) {
-                    subscribedShopRepository.fetchNotificationSettings(shopId, accountId)
-                } else {
-                    RamapResult.Error(RamapError.Unknown(IllegalStateException(STALE_NOTIFICATION_REQUEST)))
-                }
-            },
-            onSuccess = { settings ->
-                if (isCurrentNotificationRequest(accountId, shopId) && settings.accountId == accountId && settings.shopId == shopId) {
-                    reduce { copy(notificationSettings = settings, notificationDraft = settings.selection) }
-                }
-            },
-            onError = {
-                if (isCurrentNotificationRequest(accountId, shopId)) reduce { copy(hasNotificationLoadFailure = true) }
-            },
-        )
-    }
-
-    private fun requestNotificationPermission() {
-        if (currentState.hasRequestedNotificationPermission || currentState.isNotificationPermissionGranted == true) return
-        val generation = ++notificationPermissionRequestGeneration
-        reduce {
-            copy(
-                hasRequestedNotificationPermission = true,
-                notificationPermissionGeneration = generation,
-            )
-        }
-        trySideEffect(ShopOverviewSideEffect.RequestNotificationPermission(generation))
-    }
-
-    private fun updateNotificationPermission(granted: Boolean) {
-        if (currentState.notificationSettingsShopId == null || currentState.notificationPermissionGeneration != null) return
-        reduce { copy(isNotificationPermissionGranted = granted) }
-    }
-
-    private fun completeNotificationPermission(
-        generation: Long,
-        granted: Boolean,
-    ) {
-        if (currentState.notificationPermissionGeneration != generation) return
-        reduce { copy(notificationPermissionGeneration = null, isNotificationPermissionGranted = granted) }
-    }
-
-    private fun saveNotificationSettings() {
-        if (currentState.isNotificationSettingsSaving || currentState.hasNotificationRevisionMismatch) return
-        val settings = currentState.notificationSettings ?: return
-        val draft = currentState.notificationDraft ?: return
-        val clearAll = currentState.shouldClearAllNotificationPreferences
-        if (!isCurrentNotificationRequest(settings.accountId, settings.shopId)) return
-        launchResultTask(
-            taskKey = NOTIFICATION_SAVE_TASK_KEY,
-            loadKey = ShopOverviewLoadKey.NotificationSave,
             policy = TaskPolicy.IgnoreNew,
             request = {
-                if (isCurrentNotificationRequest(settings.accountId, settings.shopId)) {
-                    subscribedShopRepository.saveNotificationSettings(settings, draft, clearAll)
-                } else {
-                    RamapResult.Error(RamapError.Unknown(IllegalStateException(STALE_NOTIFICATION_REQUEST)))
-                }
+                mapAnalytics.logShopSubscribed(shop, enabled, source)
+                personalizationStore.updateShopNotification(shop.id, enabled)
             },
-            onSuccess = { persisted ->
-                if (isCurrentNotificationRequest(settings.accountId, settings.shopId) && persisted.accountId == settings.accountId && persisted.shopId == settings.shopId) {
-                    personalizationStore.publishNotificationSettings(persisted)
-                    closeNotificationSettings()
-                    showToast(Res.string.shop_notification_settings_save_success, ToastType.SUCCESS)
-                }
-            },
-            onError = { error ->
-                if (isCurrentNotificationRequest(settings.accountId, settings.shopId)) {
-                    val isRevisionMismatch = error is RamapError.Http && (error.status == 409 || error.serverMessage?.contains("catalog_revision_mismatch") == true)
-                    if (isRevisionMismatch) {
-                        reduce { copy(hasNotificationRevisionMismatch = true) }
-                    } else {
-                        trySideEffect(ShopOverviewSideEffect.ShowNotificationSaveFailure)
-                    }
-                }
-            },
+            onError = { showToast(Res.string.personalization_update_failure_message, ToastType.ERROR) },
         )
-    }
-
-    private fun isCurrentNotificationRequest(
-        accountId: String,
-        shopId: String,
-    ): Boolean =
-        loginRepository.currentAccountId() == accountId &&
-            currentState.notificationSettingsShopId == shopId &&
-            currentSheetShopId() == shopId
-
-    private fun closeNotificationSettings() {
-        cancelTask(NOTIFICATION_TASK_KEY)
-        cancelTask(NOTIFICATION_SAVE_TASK_KEY)
-        reduce {
-            copy(
-                notificationSettingsShopId = null,
-                notificationSettings = null,
-                notificationDraft = null,
-                shouldClearAllNotificationPreferences = false,
-                hasNotificationLoadFailure = false,
-                hasNotificationRevisionMismatch = false,
-                isNotificationPermissionGranted = null,
-                hasRequestedNotificationPermission = false,
-                notificationPermissionGeneration = null,
-            )
-        }
     }
 
     private suspend fun awaitLogin() {
@@ -565,7 +388,7 @@ class OverviewViewModel(
     private fun executePendingAction(action: PendingShopAction) {
         when (action) {
             is PendingShopAction.ToggleBookmark -> updateBookmark(action.shop, action.source, action.enabled)
-            is PendingShopAction.OpenNotificationSettings -> toggleShopNotification(action.shop, action.source)
+            is PendingShopAction.ToggleShopNotification -> toggleShopNotification(action.shop, action.source)
         }
     }
 
@@ -573,7 +396,7 @@ class OverviewViewModel(
         val description =
             when (action) {
                 is PendingShopAction.ToggleBookmark -> Res.string.login_required_bookmark_description
-                is PendingShopAction.OpenNotificationSettings -> Res.string.login_required_notification_description
+                is PendingShopAction.ToggleShopNotification -> Res.string.login_required_notification_description
             }
         viewModelScope.launch {
             postSideEffect(ShopOverviewSideEffect.Interaction(ShowLoginGuide(description)))
@@ -616,8 +439,6 @@ class OverviewViewModel(
         private const val OVERVIEW_TASK_KEY = "shop_overview"
         private const val BOOKMARK_TASK_KEY = "shop_bookmark"
         private const val NOTIFICATION_TASK_KEY = "shop_notification"
-        private const val STALE_NOTIFICATION_REQUEST = "Notification settings context changed"
-        private const val NOTIFICATION_SAVE_TASK_KEY = "shop_notification_save"
         private const val SHOP_REPORT_TASK_KEY = "shop_report"
         private const val ACCOUNT_TASK_KEY = "shop_account"
 

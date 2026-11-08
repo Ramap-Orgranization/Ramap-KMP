@@ -2,7 +2,6 @@ package com.peto.ramap.ui.shop.overview.contract
 
 import com.peto.ramap.analytics.AnalyticsSource
 import com.peto.ramap.domain.model.auth.LoginType
-import com.peto.ramap.domain.model.notification.NotificationTypeId
 import com.peto.ramap.domain.model.report.ShopInformationField
 import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.ui.base.Intent
@@ -36,31 +35,6 @@ sealed interface ShopOverviewIntent : Intent {
         val shop: RamenShop,
         val source: AnalyticsSource = AnalyticsSource.MAP,
     ) : ShopOverviewIntent
-
-    data class OnNotificationTypeToggled(
-        val id: NotificationTypeId,
-    ) : ShopOverviewIntent
-
-    data object OnNotificationSelectAll : ShopOverviewIntent
-
-    data object OnNotificationClear : ShopOverviewIntent
-
-    data object OnNotificationCancel : ShopOverviewIntent
-
-    data object OnNotificationRetry : ShopOverviewIntent
-
-    data object OnNotificationSave : ShopOverviewIntent
-
-    data class OnNotificationPermissionChecked(
-        val granted: Boolean,
-    ) : ShopOverviewIntent
-
-    data class OnNotificationPermissionResult(
-        val generation: Long,
-        val granted: Boolean,
-    ) : ShopOverviewIntent
-
-    data object OnOverviewDismissed : ShopOverviewIntent
 
     data class OnShopReportSubmitted(
         val wrongFields: Set<ShopInformationField>,

@@ -24,27 +24,6 @@ import kotlin.test.assertTrue
 @OptIn(ExperimentalCoroutinesApi::class)
 class AppPersonalizationTest {
     @Test
-    fun `인증 상태가 같아도 계정이 바뀌면 이전 개인 설정을 비우고 다시 조회한다`() =
-        runTest {
-            val login = FakeLoginRepository(LoginSessionState.AUTHENTICATED)
-            val fake = FakePersonalizationRepository(Personalization(bookmarkedShopIds = setOf("account-a-shop")))
-            var refreshCount = 0
-            val store =
-                object : PersonalizationStore by fake {
-                    override suspend fun refresh(): RamapResult<Unit> {
-                        refreshCount += 1
-                        assertTrue((state.value as PersonalizationBootstrapState.Success).value.bookmarkedShopIds.isEmpty())
-                        return RamapResult.Success(Unit)
-                    }
-                }
-            backgroundScope.launch { observeSessionPersonalization(login, store) }
-            runCurrent()
-            login.updateAccountId("account-b")
-            runCurrent()
-            assertEquals(1, refreshCount)
-        }
-
-    @Test
     fun `게스트에서 로그인하면 빈 성공 상태여도 개인 설정을 다시 조회한다`() =
         runTest {
             val loginRepository = FakeLoginRepository(LoginSessionState.NOT_AUTHENTICATED)
