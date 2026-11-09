@@ -24,8 +24,6 @@ import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.domain.model.announcement.Announcement
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.GrayColor
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toLocalDateTime
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
@@ -111,12 +109,7 @@ private fun AnnouncementHeader(announcement: Announcement) {
             color = GrayColor.C500,
         )
         AppText(
-            text =
-                announcement.publishedAt
-                    .toLocalDateTime(TimeZone.currentSystemDefault())
-                    .date
-                    .toString()
-                    .replace('-', '.'),
+            text = announcement.formattedPublishedDate(),
             style = AppTextStyle.C1,
             color = GrayColor.C300,
         )

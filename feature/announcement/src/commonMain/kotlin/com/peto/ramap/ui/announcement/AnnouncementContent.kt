@@ -30,15 +30,13 @@ import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.designsystem.topbar.BackTopBar
 import com.peto.ramap.domain.model.announcement.Announcement
 import com.peto.ramap.theme.AppTextStyle
+import com.peto.ramap.theme.ChromaticColor
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.RamapTheme
 import com.peto.ramap.ui.announcement.component.AnnouncementDialog
 import com.peto.ramap.ui.announcement.contract.AnnouncementIntent
 import com.peto.ramap.ui.announcement.contract.AnnouncementUiState
-import kotlin.time.Instant
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toLocalDateTime
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.announcement_empty
@@ -46,6 +44,7 @@ import ramap.shared.generated.resources.announcement_error_description
 import ramap.shared.generated.resources.announcement_error_title
 import ramap.shared.generated.resources.announcement_title
 import ramap.shared.generated.resources.notification_load_error_illustration
+import kotlin.time.Instant
 
 @Composable
 internal fun AnnouncementContent(
@@ -160,16 +159,12 @@ private fun AnnouncementRow(
                 overflow = TextOverflow.Ellipsis,
             )
             AppText(
-                text =
-                    announcement.publishedAt
-                        .toLocalDateTime(TimeZone.currentSystemDefault())
-                        .date
-                        .toString(),
+                text = announcement.formattedPublishedDate("-"),
                 style = AppTextStyle.C1,
                 color = GrayColor.C400,
             )
         }
-        if (isUnread) NewBadge(backgroundColor = GrayColor.C500)
+        if (isUnread) NewBadge(backgroundColor = ChromaticColor.Orange400)
     }
 }
 
@@ -203,3 +198,14 @@ private fun AnnouncementContentPreview() {
     }
 }
 
+@Preview(showBackground = true)
+@Composable
+private fun AnnouncementContentErrorPreview() {
+    RamapTheme {
+        AnnouncementContent(
+            state = AnnouncementUiState(failed = true),
+            onBack = {},
+            onIntent = {},
+        )
+    }
+}
