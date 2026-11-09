@@ -1,63 +1,60 @@
 package com.peto.ramap.data.datasource.personalization
 
-import com.peto.ramap.data.model.PersonalizationRequest
+import com.peto.ramap.data.model.AccountBookmarkRequest
 import com.peto.ramap.data.model.PersonalizationResponse
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.from
-import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Columns
-import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.buildJsonArray
-import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.put
+import io.github.jan.supabase.postgrest.query.Order
 
 internal class RemoteBookmarkShopDataSource(
     private val client: SupabaseClient,
 ) : BookmarkShopDataSource {
-    override suspend fun fetchBookmarkedShopIds(): List<PersonalizationResponse> =
-        client
-            .from(TABLE_NAME)
-            .select(columns = Columns.list(COLUMN_SHOP_ID))
-            .decodeList()
-
-    override suspend fun addBookmark(shopId: String) {
-        client
-            .from(TABLE_NAME)
-            .upsert(value = PersonalizationRequest(shopId)) {
-                onConflict = "$COLUMN_USER_ID,$COLUMN_SHOP_ID"
-                ignoreDuplicates = true
-            }
+    override suspend fun fetchBookmarkedShopIds(accountId: String): Set<String> {
+        val shopIds = mutableSetOf<String>()
+        var offset = 0L
+        do {
+            val page =
+                client
+                    .from(TABLE_NAME)
+                    .select(columns = Columns.list(COLUMN_SHOP_ID)) {
+                        filter { eq(COLUMN_USER_ID, accountId) }
+                        order(COLUMN_SHOP_ID, Order.ASCENDING)
+                        range(offset, offset + PAGE_SIZE - 1)
+                    }.decodeList<PersonalizationResponse>()
+            page.mapTo(shopIds) { it.shopId }
+            offset += page.size
+        } while (page.size == PAGE_SIZE)
+        return shopIds
     }
 
-    override suspend fun addBookmarks(shopIds: Set<String>) {
+    override suspend fun addBookmarks(
+        shopIds: Set<String>,
+        accountId: String,
+    ) {
         if (shopIds.isEmpty()) return
-        client.postgrest.rpc(
-            function = ADD_BOOKMARKS_RPC,
-            parameters =
-                buildJsonObject {
-                    put(
-                        SHOP_IDS_PARAMETER,
-                        buildJsonArray { shopIds.forEach { add(JsonPrimitive(it)) } },
-                    )
-                },
-        )
+        client.from(TABLE_NAME).upsert(shopIds.map { AccountBookmarkRequest(accountId, it) }) {
+            onConflict = "$COLUMN_USER_ID,$COLUMN_SHOP_ID"
+            ignoreDuplicates = true
+        }
     }
 
-    override suspend fun removeBookmark(shopId: String) {
-        client
-            .from(TABLE_NAME)
-            .delete {
-                filter {
-                    eq(COLUMN_SHOP_ID, shopId)
-                }
+    override suspend fun removeBookmark(
+        shopId: String,
+        accountId: String,
+    ) {
+        client.from(TABLE_NAME).delete {
+            filter {
+                eq(COLUMN_USER_ID, accountId)
+                eq(COLUMN_SHOP_ID, shopId)
             }
+        }
     }
 
-    companion object {
-        private const val TABLE_NAME = "user_shop_bookmarks"
-        private const val COLUMN_USER_ID = "user_id"
-        private const val COLUMN_SHOP_ID = "shop_id"
-        private const val ADD_BOOKMARKS_RPC = "add_shop_bookmarks"
-        private const val SHOP_IDS_PARAMETER = "p_shop_ids"
+    private companion object {
+        const val TABLE_NAME = "user_shop_bookmarks"
+        const val COLUMN_USER_ID = "user_id"
+        const val COLUMN_SHOP_ID = "shop_id"
+        const val PAGE_SIZE = 100
     }
 }

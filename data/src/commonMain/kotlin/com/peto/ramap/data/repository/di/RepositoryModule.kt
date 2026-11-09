@@ -5,7 +5,6 @@ import com.peto.ramap.data.datasource.image.BatchingImageUrlDataSource
 import com.peto.ramap.data.datasource.importation.ImportationDataSource
 import com.peto.ramap.data.datasource.menu.ShopMenuDataSource
 import com.peto.ramap.data.datasource.notice.OperatingNoticeDataSource
-import com.peto.ramap.data.datasource.personalization.BookmarkShopDataSource
 import com.peto.ramap.data.datasource.place.PlaceSearchDataSource
 import com.peto.ramap.data.datasource.profile.ProfileDataSource
 import com.peto.ramap.data.datasource.report.ShopReportDataSource
@@ -112,7 +111,7 @@ val repositoryModule =
         single<ShopWaitingSystemRepository> {
             DefaultShopWaitingSystemRepository(get<ShopWaitingSystemDataSource>())
         }
-        single<BookmarkRepository> { DefaultBookmarkRepository(get<BookmarkShopDataSource>()) }
+        single<BookmarkRepository> { DefaultBookmarkRepository(get(), get(), get()) }
         single<SubscribedShopRepository> { DefaultSubscribedShopRepository(get(), get()) }
         single<PersonalizationStore> {
             DefaultPersonalizationStore(get(), get(), get())

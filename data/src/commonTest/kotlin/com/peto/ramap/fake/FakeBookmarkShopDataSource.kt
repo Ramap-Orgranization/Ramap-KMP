@@ -1,33 +1,33 @@
 package com.peto.ramap.fake
 
 import com.peto.ramap.data.datasource.personalization.BookmarkShopDataSource
-import com.peto.ramap.data.model.PersonalizationResponse
 
-internal class FakeBookmarkShopDataSource(
-    initialBookmarks: List<PersonalizationResponse> = emptyList(),
-) : BookmarkShopDataSource {
-    private val bookmarks = initialBookmarks.toMutableList()
-    var error: Throwable? = null
+internal class FakeBookmarkShopDataSource : BookmarkShopDataSource {
+    val bookmarksByAccount = mutableMapOf<String, Set<String>>()
+    val addRequests = mutableListOf<Pair<String, Set<String>>>()
+    var add: suspend (String, Set<String>) -> Unit = ::save
 
-    override suspend fun fetchBookmarkedShopIds(): List<PersonalizationResponse> {
-        error?.let { throw it }
-        return bookmarks.toList()
+    override suspend fun fetchBookmarkedShopIds(accountId: String): Set<String> = bookmarksByAccount[accountId].orEmpty()
+
+    override suspend fun addBookmarks(
+        shopIds: Set<String>,
+        accountId: String,
+    ) {
+        addRequests += accountId to shopIds
+        add(accountId, shopIds)
     }
 
-    override suspend fun addBookmark(shopId: String) {
-        error?.let { throw it }
-        if (bookmarks.none { it.shopId == shopId }) {
-            bookmarks += PersonalizationResponse(shopId)
-        }
+    override suspend fun removeBookmark(
+        shopId: String,
+        accountId: String,
+    ) {
+        bookmarksByAccount[accountId] = bookmarksByAccount[accountId].orEmpty() - shopId
     }
 
-    override suspend fun addBookmarks(shopIds: Set<String>) {
-        error?.let { throw it }
-        bookmarks += shopIds.filter { shopId -> bookmarks.none { it.shopId == shopId } }.map(::PersonalizationResponse)
-    }
-
-    override suspend fun removeBookmark(shopId: String) {
-        error?.let { throw it }
-        bookmarks.removeAll { it.shopId == shopId }
+    fun save(
+        accountId: String,
+        shopIds: Set<String>,
+    ) {
+        bookmarksByAccount[accountId] = bookmarksByAccount[accountId].orEmpty() + shopIds
     }
 }

@@ -45,8 +45,11 @@ internal class DefaultPersonalizationStore(
         return try {
             val (bookmarks, subscriptions) =
                 coroutineScope {
-                    val bookmarks = async { bookmarkRepository.fetchBookmarkedShopIds() }
-                    val subscriptions = async { subscribedShopRepository.fetchSubscribedShopIds() }
+                    val bookmarks = async { bookmarkRepository.fetchBookmarkedShopIds(account) }
+                    val subscriptions =
+                        async {
+                            if (account == null) RamapResult.Success(emptySet()) else subscribedShopRepository.fetchSubscribedShopIds()
+                        }
                     bookmarks.await() to subscriptions.await()
                 }
             if (!isCurrent(account, requestGeneration) || requestRefreshGeneration != refreshGeneration) return staleResult()
@@ -83,11 +86,14 @@ internal class DefaultPersonalizationStore(
     ): RamapResult<Unit> {
         val account = loginRepository.currentAccountId()
         val requestGeneration = generation
+        if (!isCurrent(account, requestGeneration)) return staleResult()
+        if (account == null) return updateGuestBookmark(shopId, enabled, requestGeneration)
+
         val wasBookmarked = shopId in currentPersonalization.bookmarkedShopIds
         val version = (bookmarkVersions[shopId] ?: 0) + 1
         bookmarkVersions[shopId] = version
         publish(currentPersonalization.changeBookmark(shopId, isBookmarked = enabled))
-        val result = if (enabled) bookmarkRepository.addBookmark(shopId) else bookmarkRepository.removeBookmark(shopId)
+        val result = persistBookmark(shopId, enabled, account)
         if (!isCurrent(account, requestGeneration)) return staleResult()
         if (bookmarkVersions[shopId] == version) {
             bookmarkVersions[shopId] = version + 1
@@ -97,15 +103,40 @@ internal class DefaultPersonalizationStore(
         return result
     }
 
+    private suspend fun updateGuestBookmark(
+        shopId: String,
+        enabled: Boolean,
+        requestGeneration: Long,
+    ): RamapResult<Unit> {
+        val result = persistBookmark(shopId, enabled, accountId = null)
+        if (!isCurrent(null, requestGeneration)) return staleResult()
+        if (result is RamapResult.Success) {
+            bookmarkVersions[shopId] = (bookmarkVersions[shopId] ?: 0) + 1
+            if (mutableState.value !is PersonalizationBootstrapState.Success) return refresh()
+            publish(currentPersonalization.changeBookmark(shopId, isBookmarked = enabled))
+        }
+        return result
+    }
+
+    private suspend fun persistBookmark(
+        shopId: String,
+        enabled: Boolean,
+        accountId: String?,
+    ): RamapResult<Unit> = if (enabled) bookmarkRepository.addBookmarks(setOf(shopId), accountId) else bookmarkRepository.removeBookmark(shopId, accountId)
+
+    override suspend fun synchronizeGuestBookmarks(accountId: String): RamapResult<Unit> = bookmarkRepository.synchronizeGuestBookmarks(accountId)
+
     override suspend fun addBookmarks(shopIds: Set<String>): RamapResult<Unit> {
         val account = loginRepository.currentAccountId()
         val requestGeneration = generation
+        if (!isCurrent(account, requestGeneration)) return staleResult()
         val newShopIds = shopIds - currentPersonalization.bookmarkedShopIds
         if (newShopIds.isEmpty()) return RamapResult.Success(Unit)
-        val result = bookmarkRepository.addBookmarks(newShopIds)
+        val result = bookmarkRepository.addBookmarks(newShopIds, account)
         if (!isCurrent(account, requestGeneration)) return staleResult()
         if (result is RamapResult.Success) {
             newShopIds.forEach { bookmarkVersions[it] = (bookmarkVersions[it] ?: 0) + 1 }
+            if (account == null && mutableState.value !is PersonalizationBootstrapState.Success) return refresh()
             publish(currentPersonalization.addBookmarks(newShopIds))
         }
         return result
@@ -154,7 +185,8 @@ internal class DefaultPersonalizationStore(
         generation += 1
         ownerAccountId = loginRepository.currentAccountId()
         bookmarkVersions.clear()
-        publish(Personalization())
+        lastPersonalization = Personalization()
+        mutableState.value = PersonalizationBootstrapState.Loading
     }
 
     private fun isCurrent(
