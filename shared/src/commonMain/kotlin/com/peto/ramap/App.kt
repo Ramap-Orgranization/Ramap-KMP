@@ -43,6 +43,7 @@ import com.peto.ramap.platform.network.NetworkConnectivityStatus
 import com.peto.ramap.platform.storage.notice.AppNoticeStorage
 import com.peto.ramap.theme.RamapTheme
 import com.peto.ramap.ui.login.LoginGuideController
+import com.peto.ramap.ui.onboarding.OnboardingGate
 import com.peto.ramap.ui.retry.NetworkRetryGenerator
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
@@ -92,18 +93,20 @@ fun App(
                 appUpdateRepository = appUpdateRepository,
                 appVersionProvider = appVersionProvider,
             ) {
-                AppNoticeGate(
-                    appNoticeRepository = appNoticeRepository,
-                    appNoticeStorage = appNoticeStorage,
-                    platform = appVersionProvider.platform,
-                ) {
-                    AppContent(
-                        loginRepository = loginRepository,
-                        personalizationStore = personalizationStore,
-                        toastManager = toastManager,
-                        loginGuideController = loginGuideController,
-                        onExitRequested = onExitRequested,
-                    )
+                OnboardingGate {
+                    AppNoticeGate(
+                        appNoticeRepository = appNoticeRepository,
+                        appNoticeStorage = appNoticeStorage,
+                        platform = appVersionProvider.platform,
+                    ) {
+                        AppContent(
+                            loginRepository = loginRepository,
+                            personalizationStore = personalizationStore,
+                            toastManager = toastManager,
+                            loginGuideController = loginGuideController,
+                            onExitRequested = onExitRequested,
+                        )
+                    }
                 }
             }
         }

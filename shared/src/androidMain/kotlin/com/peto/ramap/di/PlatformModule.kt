@@ -12,12 +12,14 @@ import com.peto.ramap.platform.createAnnouncementReadStorage
 import com.peto.ramap.platform.createAppNoticeStorage
 import com.peto.ramap.platform.createGuestBookmarkStorage
 import com.peto.ramap.platform.createMapSearchHistoryStorage
+import com.peto.ramap.platform.createOnboardingStorage
 import com.peto.ramap.platform.network.AndroidNetworkConnectivityObserver
 import com.peto.ramap.platform.network.NetworkConnectivityObserver
 import com.peto.ramap.platform.storage.announcement.AnnouncementReadStorage
 import com.peto.ramap.platform.storage.bookmark.GuestBookmarkStorage
 import com.peto.ramap.platform.storage.history.SearchHistoryStorage
 import com.peto.ramap.platform.storage.notice.AppNoticeStorage
+import com.peto.ramap.platform.storage.onboarding.OnboardingStorage
 import org.koin.android.ext.koin.androidContext
 import org.koin.dsl.module
 
@@ -30,6 +32,7 @@ actual val platformModule =
         }
         single<AppVersionProvider> { AndroidAppVersionProvider(androidContext()) }
         single<AppNoticeStorage> { createAppNoticeStorage(androidContext()) }
+        single<OnboardingStorage> { createOnboardingStorage(androidContext()) }
         single<SearchHistoryStorage> { createMapSearchHistoryStorage(androidContext()) }
         single<NetworkConnectivityObserver> { AndroidNetworkConnectivityObserver(androidContext()) }
         single<AnalyticsTracker> { FirebaseAnalyticsTracker() }
