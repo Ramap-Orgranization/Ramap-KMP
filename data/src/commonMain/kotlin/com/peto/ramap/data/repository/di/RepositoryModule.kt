@@ -12,6 +12,7 @@ import com.peto.ramap.data.datasource.report.ShopReportDataSource
 import com.peto.ramap.data.datasource.shop.RamenShopDataSource
 import com.peto.ramap.data.datasource.update.AppUpdatePolicyDataSource
 import com.peto.ramap.data.datasource.waiting.ShopWaitingSystemDataSource
+import com.peto.ramap.data.repository.DefaultAnnouncementRepository
 import com.peto.ramap.data.repository.DefaultAppNoticeRepository
 import com.peto.ramap.data.repository.DefaultAppUpdateRepository
 import com.peto.ramap.data.repository.DefaultArchiveRepository
@@ -36,8 +37,10 @@ import com.peto.ramap.data.repository.DefaultShopWaitingSystemRepository
 import com.peto.ramap.data.repository.DefaultSubscribedShopRepository
 import com.peto.ramap.data.repository.DefaultUserModerationRepository
 import com.peto.ramap.data.repository.DefaultUserProfileRepository
+import com.peto.ramap.data.store.DefaultAnnouncementReadStore
 import com.peto.ramap.data.store.DefaultPersonalizationStore
 import com.peto.ramap.data.store.DefaultReviewChangeStore
+import com.peto.ramap.domain.repository.AnnouncementRepository
 import com.peto.ramap.domain.repository.AppNoticeRepository
 import com.peto.ramap.domain.repository.AppUpdateRepository
 import com.peto.ramap.domain.repository.ArchiveRepository
@@ -62,12 +65,15 @@ import com.peto.ramap.domain.repository.ShopWaitingSystemRepository
 import com.peto.ramap.domain.repository.SubscribedShopRepository
 import com.peto.ramap.domain.repository.UserModerationRepository
 import com.peto.ramap.domain.repository.UserProfileRepository
+import com.peto.ramap.domain.store.AnnouncementReadStore
 import com.peto.ramap.domain.store.PersonalizationStore
 import com.peto.ramap.domain.store.ReviewChangeStore
 import org.koin.dsl.module
 
 val repositoryModule =
     module {
+        single<AnnouncementRepository> { DefaultAnnouncementRepository(get()) }
+        single<AnnouncementReadStore> { DefaultAnnouncementReadStore(get(), get(), get()) }
         single<ImageUrlRefresher> { DefaultImageUrlRefresher(get(), get<BatchingImageUrlDataSource>()) }
         single<ImageAccessRepository> {
             DefaultImageAccessRepository(get(), get<BatchingImageUrlDataSource>(), get(), get<ProfileDataSource>().sessionUserIds, get<ProfileDataSource>()::currentUserId)

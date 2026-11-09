@@ -8,10 +8,12 @@ import com.peto.ramap.platform.AndroidAppSettingsOpener
 import com.peto.ramap.platform.AndroidAppVersionProvider
 import com.peto.ramap.platform.AppSettingsOpener
 import com.peto.ramap.platform.AppVersionProvider
+import com.peto.ramap.platform.createAnnouncementReadStorage
 import com.peto.ramap.platform.createAppNoticeStorage
 import com.peto.ramap.platform.createMapSearchHistoryStorage
 import com.peto.ramap.platform.network.AndroidNetworkConnectivityObserver
 import com.peto.ramap.platform.network.NetworkConnectivityObserver
+import com.peto.ramap.platform.storage.AnnouncementReadStorage
 import com.peto.ramap.platform.storage.AppNoticeStorage
 import com.peto.ramap.platform.storage.SearchHistoryStorage
 import org.koin.android.ext.koin.androidContext
@@ -19,6 +21,7 @@ import org.koin.dsl.module
 
 actual val platformModule =
     module {
+        single<AnnouncementReadStorage> { createAnnouncementReadStorage(androidContext()) }
         single<AppSettingsOpener> {
             AndroidAppSettingsOpener(androidContext())
         }

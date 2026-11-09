@@ -12,6 +12,7 @@ kotlin {
     sourceSets.commonMain.dependencies {
         api(projects.domain)
         implementation(projects.core.network)
+        implementation(projects.core.platform)
         implementation(project.dependencies.platform(libs.koin.bom))
         implementation(libs.koin.core)
         implementation(libs.supabase.auth)
