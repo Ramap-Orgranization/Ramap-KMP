@@ -628,4 +628,5 @@
     <string name="announcement_detail_error_title">공지 내용을 표시하지 못했어요</string>
     <string name="announcement_detail_error_description">잠시 후 공지사항을 다시 열어 주세요.</string>
     <string name="new_badge">N</string>
+    <string name="follow_new">새 팔로우 또는 받은 요청</string>
 </resources>

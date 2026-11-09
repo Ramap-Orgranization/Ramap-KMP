@@ -70,7 +70,7 @@ class MyTabViewModel(
                 cancelTask(BLOCKED_USERS)
                 cancelTask(REVIEW_COUNT)
                 cancelTask(BLOCKED_USER_COUNT)
-                cancelTask(FOLLOW_REQUESTS)
+                cancelTask(FOLLOW_STATUS)
                 cancelTask(UNBLOCK)
                 val isSessionResolved = userId == null
                 reduce {
@@ -108,20 +108,20 @@ class MyTabViewModel(
             }
             MyTabIntent.ReturnedToScreen -> {
                 refreshBlockedUserCount()
-                refreshPendingFollowRequests()
+                refreshFollowStatus()
             }
             MyTabIntent.ReturnedFromProfileEdit -> {
                 refreshProfile()
-                refreshPendingFollowRequests()
+                refreshFollowStatus()
             }
             MyTabIntent.ReturnedFromReviews -> {
-                refreshPendingFollowRequests()
+                refreshFollowStatus()
             }
             MyTabIntent.ReturnedFromBlockedProfile -> {
                 refreshBlockedUserCount()
-                refreshPendingFollowRequests()
+                refreshFollowStatus()
             }
-            MyTabIntent.ReturnedFromFollows -> refreshPendingFollowRequests()
+            MyTabIntent.ReturnedFromFollows -> refreshFollowStatus()
             is MyTabIntent.SaveVisibility ->
                 saveVisibility(
                     ProfileVisibility(
@@ -291,18 +291,25 @@ class MyTabViewModel(
     private fun refresh() {
         refreshReviewCount()
         refreshBlockedUserCount()
-        refreshPendingFollowRequests()
+        refreshFollowStatus()
         refreshProfile()
     }
 
-    private fun refreshPendingFollowRequests() {
+    private fun refreshFollowStatus() {
         val userId = currentState.userId ?: return
         launchResultTask(
-            taskKey = FOLLOW_REQUESTS,
+            taskKey = FOLLOW_STATUS,
             request = followRepository::fetchCounts,
             onSuccess = { counts ->
                 val isSameUser = currentState.userId == userId
-                if (isSameUser) reduce { copy(hasPendingFollowRequests = counts.requests > 0L) }
+                if (isSameUser) {
+                    reduce {
+                        copy(
+                            hasPendingFollowRequests = counts.requests > 0L,
+                            hasUnreadFollowConnections = counts.hasUnreadConnections,
+                        )
+                    }
+                }
             },
         )
     }
@@ -387,7 +394,7 @@ class MyTabViewModel(
         private const val BLOCKED_USERS = "my-tab-blocked-users"
         private const val REVIEW_COUNT = "my-tab-review-count"
         private const val BLOCKED_USER_COUNT = "my-tab-blocked-user-count"
-        private const val FOLLOW_REQUESTS = "my-tab-follow-requests"
+        private const val FOLLOW_STATUS = "my-tab-follow-status"
         private const val UNBLOCK = "my-tab-unblock-user"
     }
 }

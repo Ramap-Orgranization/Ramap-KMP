@@ -66,6 +66,7 @@ import org.koin.compose.viewmodel.koinViewModel
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.announcement_title
 import ramap.shared.generated.resources.follow_manage
+import ramap.shared.generated.resources.follow_new
 import ramap.shared.generated.resources.follow_requests
 import ramap.shared.generated.resources.follow_reviews_visibility
 import ramap.shared.generated.resources.follow_saved_shops_visibility
@@ -398,6 +399,8 @@ internal fun MyTabContent(
                         iconTint = ChromaticColor.Orange400,
                         hasCount = false,
                         notification = if (state.hasPendingFollowRequests) Res.string.follow_requests else null,
+                        isNew = state.hasUnreadFollowConnections,
+                        newBadgeDescription = Res.string.follow_new,
                         onClick = onFollowClick,
                     )
                     HorizontalDivider(
@@ -498,6 +501,7 @@ private fun MyTabRoutePreview() {
                     reviewCount = 8,
                     blockedUserCount = 2,
                     hasPendingFollowRequests = true,
+                    hasUnreadFollowConnections = true,
                 ),
             onSettingsClick = {},
             onVisibilityClick = {},

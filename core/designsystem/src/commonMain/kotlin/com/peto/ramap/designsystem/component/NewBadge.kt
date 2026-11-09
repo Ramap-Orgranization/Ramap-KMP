@@ -24,8 +24,8 @@ import ramap.shared.generated.resources.new_badge
 fun NewBadge(
     modifier: Modifier = Modifier,
     backgroundColor: Color = ChromaticColor.Orange400,
+    description: String = stringResource(Res.string.announcement_new),
 ) {
-    val description = stringResource(Res.string.announcement_new)
     Box(
         modifier =
             modifier

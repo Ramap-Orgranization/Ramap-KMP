@@ -42,6 +42,7 @@ import ramap.shared.generated.resources.follow_count
 import ramap.shared.generated.resources.follow_empty
 import ramap.shared.generated.resources.follow_empty_illustration
 import ramap.shared.generated.resources.follow_manage
+import ramap.shared.generated.resources.follow_new
 import ramap.shared.generated.resources.profile_retry
 
 @Composable
@@ -64,6 +65,8 @@ fun FollowContent(
                         label = stringResource(FollowResourceMapper.listLabel(list)),
                         count = state.counts?.count(list)?.let { stringResource(Res.string.follow_count, it) },
                         hasCountBadge = list == FollowList.REQUESTS,
+                        isNew = state.counts?.hasUnread(list) == true,
+                        newBadgeDescription = stringResource(Res.string.follow_new),
                     )
                 }
             AppSegmentedTabs(

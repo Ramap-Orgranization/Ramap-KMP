@@ -14,6 +14,7 @@ class FakeFollowRepository : FollowRepository {
     var changeResult: RamapResult<Unit> = RamapResult.Success(Unit)
     var onChanged: (String, FollowAction) -> Unit = { _, _ -> }
     var connections: Map<FollowList, List<PublicProfile>> = emptyMap()
+    var onConnectionsFetched: (FollowList) -> Unit = {}
     val calls = mutableListOf<Pair<FollowList, Long>>()
 
     override suspend fun fetchCounts(): RamapResult<FollowCounts> = countsPending?.await() ?: countsResult
@@ -23,6 +24,7 @@ class FakeFollowRepository : FollowRepository {
         offset: Long,
     ): RamapResult<List<PublicProfile>> {
         calls += list to offset
+        onConnectionsFetched(list)
         return RamapResult.Success(connections[list].orEmpty().drop(offset.toInt()).take(20))
     }
 

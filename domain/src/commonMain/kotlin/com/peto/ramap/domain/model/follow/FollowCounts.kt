@@ -4,7 +4,18 @@ data class FollowCounts(
     val followers: Long,
     val following: Long,
     val requests: Long,
+    val hasUnreadFollowers: Boolean = false,
+    val hasUnreadRequests: Boolean = false,
 ) {
+    val hasUnreadConnections: Boolean get() = hasUnread(FollowList.FOLLOWERS) || hasUnread(FollowList.REQUESTS)
+
+    fun hasUnread(list: FollowList): Boolean =
+        when (list) {
+            FollowList.FOLLOWERS -> followers > 0L && hasUnreadFollowers
+            FollowList.REQUESTS -> requests > 0L && hasUnreadRequests
+            FollowList.FOLLOWING -> false
+        }
+
     fun count(list: FollowList): Long =
         when (list) {
             FollowList.FOLLOWERS -> followers

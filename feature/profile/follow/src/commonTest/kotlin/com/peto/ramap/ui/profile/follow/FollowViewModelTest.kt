@@ -21,6 +21,44 @@ import kotlin.test.assertTrue
 @OptIn(ExperimentalCoroutinesApi::class)
 class FollowViewModelTest {
     @Test
+    fun `팔로워 목록 확인 후 다른 목록의 신규 표시는 유지한다`() =
+        coroutinesTest {
+            val counts = FollowCounts(1L, 1L, 1L, hasUnreadFollowers = true, hasUnreadRequests = true)
+            val repository =
+                FakeFollowRepository().apply {
+                    countsResult = RamapResult.Success(counts)
+                    connections = mapOf(FollowList.FOLLOWERS to listOf(PublicProfile("follower", "팔로워")))
+                    onConnectionsFetched = { list ->
+                        if (list == FollowList.FOLLOWERS) {
+                            countsResult = RamapResult.Success(counts.copy(hasUnreadFollowers = false))
+                        }
+                    }
+                }
+            val viewModel = FollowViewModel(repository, FakeProfileRepository())
+            runCurrent()
+            assertTrue(
+                viewModel.uiState.value.counts!!
+                    .hasUnread(FollowList.FOLLOWERS),
+            )
+            assertTrue(
+                viewModel.uiState.value.counts!!
+                    .hasUnread(FollowList.REQUESTS),
+            )
+
+            viewModel.dispatch(FollowIntent.Select(FollowList.FOLLOWERS))
+            runCurrent()
+
+            assertFalse(
+                viewModel.uiState.value.counts!!
+                    .hasUnread(FollowList.FOLLOWERS),
+            )
+            assertTrue(
+                viewModel.uiState.value.counts!!
+                    .hasUnread(FollowList.REQUESTS),
+            )
+        }
+
+    @Test
     fun requestsTabAppearsOnlyAfterPositiveCountsArrive() =
         coroutinesTest {
             val repository = FakeFollowRepository()
