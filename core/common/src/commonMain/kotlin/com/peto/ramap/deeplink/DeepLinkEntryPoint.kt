@@ -11,8 +11,11 @@ class DeepLinkEntryPoint {
         value?.trim()?.takeIf(String::isNotEmpty)?.let { _events.value = DeepLinkEvent.Url(it) }
     }
 
-    fun submitNotification(value: String?) {
-        value?.trim()?.takeIf(String::isNotEmpty)?.let { _events.value = DeepLinkEvent.Notification(it) }
+    fun submitNotification(
+        value: String?,
+        notificationId: String? = null,
+    ) {
+        value?.trim()?.takeIf(String::isNotEmpty)?.let { _events.value = DeepLinkEvent.Notification(it, notificationId) }
     }
 
     fun consume(event: DeepLinkEvent) {

@@ -19,6 +19,7 @@ import com.peto.ramap.fake.FakeOperatingNoticeRepository
 import com.peto.ramap.fake.FakePersonalizationRepository
 import com.peto.ramap.fake.FakeRamenShopRepository
 import com.peto.ramap.fake.FakeShopReportRepository
+import com.peto.ramap.fake.FakeSubscribedShopRepository
 import com.peto.ramap.fixture.ramenShopFixture
 import com.peto.ramap.ui.main.FakeMapSearchHistoryStorage
 import com.peto.ramap.ui.shop.overview.OverviewViewModel
@@ -78,6 +79,7 @@ class OverviewBookmarkCountFixture {
             mapSearchHistoryStorage = FakeMapSearchHistoryStorage(),
             mapAnalytics = ShopAnalytics(analytics),
             signInUseCase = SignInUseCase(login, LoginAnalytics(analytics, FakeCrashReporter())),
+            subscribedShopRepository = FakeSubscribedShopRepository(),
         )
     private val store = ViewModelStore().apply { put("overview", viewModel) }
 

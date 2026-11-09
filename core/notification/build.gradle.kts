@@ -13,5 +13,6 @@ kotlin {
         implementation(libs.koin.core)
         implementation(libs.kotlinx.coroutines.core)
         implementation(libs.kermit)
+        implementation(libs.kotlinx.serialization.json)
     }
 }
