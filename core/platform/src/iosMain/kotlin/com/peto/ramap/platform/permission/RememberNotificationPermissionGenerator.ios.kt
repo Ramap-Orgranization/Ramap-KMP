@@ -7,7 +7,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 
 @Composable
-actual fun rememberNotificationPermissionGenerator(onResult: (Boolean) -> Unit): NotificationPermissionGenerator {
+actual fun rememberNotificationPermissionGenerator(onResult: (NotificationPermissionOutcome) -> Unit): NotificationPermissionGenerator {
     val currentOnResult by rememberUpdatedState(onResult)
     val scope = rememberCoroutineScope()
 

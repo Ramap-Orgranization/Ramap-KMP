@@ -7,19 +7,19 @@ import kotlinx.coroutines.launch
 
 internal class IosNotificationPermissionGenerator(
     private val scope: CoroutineScope,
-    private val onResult: (Boolean) -> Unit,
+    private val onResult: (NotificationPermissionOutcome) -> Unit,
 ) : NotificationPermissionGenerator {
     override fun requestPermission() {
         scope.launch {
-            val granted =
+            val outcome =
                 try {
-                    NotificationPermissionRequester.request()
+                    NotificationPermissionRequester.requestOutcome()
                 } catch (cancellation: CancellationException) {
                     throw cancellation
                 } catch (_: Exception) {
-                    false
+                    NotificationPermissionOutcome.Failed
                 }
-            onResult(granted)
+            onResult(outcome)
         }
     }
 }

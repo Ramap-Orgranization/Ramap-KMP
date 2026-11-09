@@ -11,17 +11,27 @@ import androidx.core.content.ContextCompat
 internal class AndroidNotificationPermissionGenerator(
     private val context: Context,
     private val permissionLauncher: ActivityResultLauncher<String>,
-    private val onResult: (Boolean) -> Unit,
+    private val onResult: (NotificationPermissionOutcome) -> Unit,
 ) : NotificationPermissionGenerator {
     override fun requestPermission() {
         val hasRuntimePermission =
             Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
                 ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
         if (hasRuntimePermission) {
-            onResult(NotificationManagerCompat.from(context).areNotificationsEnabled())
+            val outcome =
+                when {
+                    !NotificationManagerCompat.from(context).areNotificationsEnabled() -> NotificationPermissionOutcome.DisabledInSettings
+                    Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU -> NotificationPermissionOutcome.EnabledWithoutRuntimeRequest
+                    else -> NotificationPermissionOutcome.AlreadyGranted
+                }
+            onResult(outcome)
             return
         }
 
-        permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        try {
+            permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        } catch (_: Exception) {
+            onResult(NotificationPermissionOutcome.Failed)
+        }
     }
 }

@@ -18,7 +18,7 @@ class AndroidNotificationPermissionGeneratorTest {
         val application = RuntimeEnvironment.getApplication()
         shadowOf(application).denyPermissions(Manifest.permission.POST_NOTIFICATIONS)
         val launcher = RecordingNotificationPermissionLauncher()
-        val results = mutableListOf<Boolean>()
+        val results = mutableListOf<NotificationPermissionOutcome>()
         val generator = AndroidNotificationPermissionGenerator(application, launcher, results::add)
 
         generator.requestPermission()
@@ -32,13 +32,13 @@ class AndroidNotificationPermissionGeneratorTest {
         val application = RuntimeEnvironment.getApplication()
         shadowOf(application).grantPermissions(Manifest.permission.POST_NOTIFICATIONS)
         val launcher = RecordingNotificationPermissionLauncher()
-        val results = mutableListOf<Boolean>()
+        val results = mutableListOf<NotificationPermissionOutcome>()
         val generator = AndroidNotificationPermissionGenerator(application, launcher, results::add)
 
         generator.requestPermission()
 
         assertTrue(launcher.requestedPermissions.isEmpty())
-        assertEquals(listOf(true), results)
+        assertEquals(listOf(NotificationPermissionOutcome.AlreadyGranted), results)
     }
 
     @Test
@@ -46,12 +46,12 @@ class AndroidNotificationPermissionGeneratorTest {
     fun `안드로이드 12 이하는 런타임 알림 권한을 요청하지 않는다`() {
         val application = RuntimeEnvironment.getApplication()
         val launcher = RecordingNotificationPermissionLauncher()
-        val results = mutableListOf<Boolean>()
+        val results = mutableListOf<NotificationPermissionOutcome>()
         val generator = AndroidNotificationPermissionGenerator(application, launcher, results::add)
 
         generator.requestPermission()
 
         assertTrue(launcher.requestedPermissions.isEmpty())
-        assertEquals(listOf(true), results)
+        assertEquals(listOf(NotificationPermissionOutcome.EnabledWithoutRuntimeRequest), results)
     }
 }
