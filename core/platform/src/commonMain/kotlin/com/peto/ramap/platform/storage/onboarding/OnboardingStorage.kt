@@ -4,4 +4,8 @@ interface OnboardingStorage {
     suspend fun isPermissionGuideConfirmed(): Boolean
 
     suspend fun confirmPermissionGuide()
+
+    suspend fun isOnboardingCompleted(): Boolean
+
+    suspend fun completeOnboarding()
 }

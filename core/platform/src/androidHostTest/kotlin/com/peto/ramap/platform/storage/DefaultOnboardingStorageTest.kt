@@ -24,14 +24,18 @@ class DefaultOnboardingStorageTest {
             try {
                 val storage = DefaultOnboardingStorage(PreferenceDataStoreFactory.create(scope = firstScope) { file })
                 assertFalse(storage.isPermissionGuideConfirmed())
+                assertFalse(storage.isOnboardingCompleted())
 
                 storage.confirmPermissionGuide()
                 storage.confirmPermissionGuide()
                 assertTrue(storage.isPermissionGuideConfirmed())
+                assertFalse(storage.isOnboardingCompleted())
+                storage.completeOnboarding()
                 firstScope.coroutineContext[Job]!!.cancelAndJoin()
 
                 val reopened = DefaultOnboardingStorage(PreferenceDataStoreFactory.create(scope = secondScope) { file })
                 assertTrue(reopened.isPermissionGuideConfirmed())
+                assertTrue(reopened.isOnboardingCompleted())
             } finally {
                 firstScope.coroutineContext[Job]!!.cancelAndJoin()
                 secondScope.coroutineContext[Job]!!.cancelAndJoin()
