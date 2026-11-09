@@ -24,6 +24,7 @@ internal class OnboardingViewModel(
     override suspend fun handleIntent(intent: OnboardingIntent) {
         when (intent) {
             OnboardingIntent.ConfirmPermissionGuide -> confirmPermissionGuide()
+            OnboardingIntent.ShopSelectionCompleted -> reduce { copy(hasCompletedOnboarding = true) }
             is OnboardingIntent.PermissionRequestFinished -> finishPermissionRequest(intent.permission)
         }
     }
@@ -42,12 +43,21 @@ internal class OnboardingViewModel(
                     handleError(exception)
                     false
                 }
-            reduce { copy(hasConfirmedPermissionGuide = hasConfirmed) }
+            val hasCompleted =
+                try {
+                    storage.isOnboardingCompleted()
+                } catch (cancellation: CancellationException) {
+                    throw cancellation
+                } catch (exception: Exception) {
+                    handleError(exception)
+                    false
+                }
+            reduce { copy(hasConfirmedPermissionGuide = hasConfirmed, hasCompletedOnboarding = hasCompleted) }
         }
     }
 
     private fun confirmPermissionGuide() {
-        if (currentState.hasConfirmedPermissionGuide || currentState.loadState.isLoading(OnboardingLoadKey.ReadConfirmation)) return
+        if (currentState.hasCompletedOnboarding || currentState.hasConfirmedPermissionGuide || currentState.loadState.isLoading(OnboardingLoadKey.ReadConfirmation)) return
 
         launchTask(
             taskKey = SAVE_CONFIRMATION_TASK_KEY,

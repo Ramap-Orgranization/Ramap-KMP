@@ -18,6 +18,31 @@ import kotlin.test.assertTrue
 @OptIn(ExperimentalCoroutinesApi::class)
 class OnboardingViewModelTest {
     @Test
+    fun `권한 안내만 확인한 사용자는 온보딩을 마치지 않은 상태로 복원한다`() =
+        coroutinesTest {
+            val viewModel = OnboardingViewModel(FakeOnboardingStorage().apply { confirmed = true })
+            runCurrent()
+            assertTrue(viewModel.uiState.value.hasConfirmedPermissionGuide)
+            assertFalse(viewModel.uiState.value.hasCompletedOnboarding)
+        }
+
+    @Test
+    fun `매장 선택까지 완료하면 다음 실행에서 온보딩 전체를 건너뛴다`() =
+        coroutinesTest {
+            val storage = FakeOnboardingStorage().apply { confirmed = true }
+            val viewModel = OnboardingViewModel(storage)
+            runCurrent()
+            storage.completeOnboarding()
+            viewModel.dispatch(OnboardingIntent.ShopSelectionCompleted)
+            runCurrent()
+            assertTrue(viewModel.uiState.value.hasCompletedOnboarding)
+
+            val reopened = OnboardingViewModel(storage)
+            runCurrent()
+            assertTrue(reopened.uiState.value.hasCompletedOnboarding)
+        }
+
+    @Test
     fun `확인 기록을 읽는 동안 메인 진입 여부를 확정하지 않는다`() =
         coroutinesTest {
             val pending = CompletableDeferred<Unit>()

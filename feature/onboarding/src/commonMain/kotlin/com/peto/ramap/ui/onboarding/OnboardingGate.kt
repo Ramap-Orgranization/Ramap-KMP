@@ -56,7 +56,9 @@ fun OnboardingGate(content: @Composable () -> Unit) {
 
     when {
         state.loadState.isLoading(OnboardingLoadKey.ReadConfirmation) -> RamenLoadingIndicator(modifier = Modifier.fillMaxSize())
-        state.hasConfirmedPermissionGuide -> content()
+        state.hasCompletedOnboarding -> content()
+        state.hasConfirmedPermissionGuide ->
+            ShopSelectionRoute(onCompleted = { viewModel.dispatch(OnboardingIntent.ShopSelectionCompleted) })
         else ->
             PermissionGuideContent(
                 isConfirming = state.loadState.isLoading(OnboardingLoadKey.ConfirmPermissionGuide),
