@@ -100,6 +100,7 @@ kotlin {
             implementation(projects.domain)
             implementation(projects.data)
             implementation(projects.feature.main)
+            implementation(projects.feature.announcement)
             implementation(projects.feature.shop.menu)
             implementation(projects.feature.shop.review)
             implementation(projects.feature.shop.overview)
