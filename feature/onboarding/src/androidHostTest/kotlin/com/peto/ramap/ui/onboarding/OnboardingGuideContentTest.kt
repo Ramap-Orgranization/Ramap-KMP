@@ -121,24 +121,28 @@ class OnboardingGuideContentTest {
         }
 
     @Test
-    fun `다음과 건너뛰기로 이동하고 좌우 스와이프해도 매장 세 곳 저장 조건은 유지한다`() =
+    fun `스와이프는 안내 안에서만 이동하고 건너뛰면 필수 매장 선택을 표시한다`() =
         runComposeUiTest {
             var state by mutableStateOf(selection.copy(bookmarks = OnboardingBookmarks(setOf("shop-1", "shop-2"))))
             val intents = mutableListOf<ShopSelectionIntent>()
+            val selectionHeading = onNodeWithText("가보고 싶은 라멘집\n3곳을 저장해 주세요")
+            val reviewGuide = onNodeWithText("리뷰를 남기면\n나만의 라멘 지도가 채워져요")
             setContent {
                 TestContent { OnboardingGuideContent(uiState = state, onIntent = intents::add) }
             }
             onNodeWithText("다음").performClick()
             onNodeWithText("이벤트와 영업 변동 중\n받고 싶은 소식만 골라보세요.").assertIsDisplayed()
             onNodeWithText("다음").performClick()
-            onNodeWithText("리뷰를 남기면\n나만의 라멘 지도가 채워져요").assertIsDisplayed()
+            reviewGuide.assertIsDisplayed()
             onNodeWithContentDescription("리뷰를 남긴 라멘집이 사진으로 표시된 지도 예시 화면").assertIsDisplayed()
             onNodeWithContentDescription("사용법 안내 3 / 3").assertIsDisplayed()
+            onRoot().performTouchInput { swipeLeft() }
+            reviewGuide.assertIsDisplayed()
+            selectionHeading.assertDoesNotExist()
             onRoot().performTouchInput { swipeRight() }
             onNodeWithText("이벤트와 영업 변동 중\n받고 싶은 소식만 골라보세요.").assertIsDisplayed()
             onRoot().performTouchInput { swipeRight() }
             onNodeWithText("매장 더보기에서 알림을 설정할 수 있어요.").assertIsDisplayed()
-            val selectionHeading = onNodeWithText("가보고 싶은 라멘집\n3곳을 저장해 주세요")
             val startButton = onNodeWithText("시작하기")
             onNodeWithText("건너뛰기").performClick()
             selectionHeading.assertIsDisplayed()
@@ -148,9 +152,8 @@ class OnboardingGuideContentTest {
             onRoot().performTouchInput { swipeLeft() }
             selectionHeading.assertIsDisplayed()
             onRoot().performTouchInput { swipeRight() }
-            onNodeWithText("리뷰를 남기면\n나만의 라멘 지도가 채워져요").assertIsDisplayed()
-            onNodeWithText("건너뛰기").performClick()
             selectionHeading.assertIsDisplayed()
+            reviewGuide.assertDoesNotExist()
             startButton.assertDoesNotExist()
             runOnIdle {
                 assertTrue(intents.isEmpty())
@@ -164,8 +167,12 @@ class OnboardingGuideContentTest {
     fun `매장 선택에서 이전 안내를 보고 돌아와도 검색어와 저장 상태를 유지한다`() =
         runComposeUiTest {
             var state by mutableStateOf(selection)
+            val input =
+                object : NavigationEventInput() {
+                    fun completeBack() = dispatchOnBackCompleted()
+                }
             setContent {
-                TestContent {
+                TestContent(input) {
                     OnboardingGuideContent(
                         uiState = state,
                         onIntent = { if (it is ShopSelectionIntent.QueryChanged) state = state.copy(query = it.query) },
@@ -174,9 +181,9 @@ class OnboardingGuideContentTest {
             }
             onNodeWithText("건너뛰기").performClick()
             onNode(hasSetTextAction()).performTextInput("라멘")
-            onRoot().performTouchInput { swipeRight() }
+            runOnIdle { input.completeBack() }
             onNodeWithText("리뷰를 남기면\n나만의 라멘 지도가 채워져요").assertIsDisplayed()
-            onRoot().performTouchInput { swipeLeft() }
+            onNodeWithText("다음").performClick()
             onNode(hasSetTextAction()).assertTextContains("라멘")
             onNodeWithText("시작하기").assertIsEnabled()
             runOnIdle { assertEquals(3, state.bookmarks.savedCount) }
@@ -205,7 +212,7 @@ class OnboardingGuideContentTest {
         }
 
     @Test
-    fun `시스템 뒤로 가기는 이전 페이지로 이동하고 완료 처리 중에는 스와이프와 함께 막는다`() =
+    fun `시스템 뒤로 가기는 저장 화면에서 안내로 이동하고 완료 처리 중에는 막는다`() =
         runComposeUiTest {
             var state by mutableStateOf(selection)
             val input =
@@ -230,7 +237,7 @@ class OnboardingGuideContentTest {
                 onNodeWithText("가보고 싶은 라멘집\n3곳을 저장해 주세요").assertIsDisplayed()
             }
             runOnIdle { state = selection }
-            onRoot().performTouchInput { swipeRight() }
+            runOnIdle { input.completeBack() }
             onNodeWithText("리뷰를 남기면\n나만의 라멘 지도가 채워져요").assertIsDisplayed()
         }
 

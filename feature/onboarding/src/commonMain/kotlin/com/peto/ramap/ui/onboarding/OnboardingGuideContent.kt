@@ -15,7 +15,12 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.saveable.rememberSaveableStateHolder
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.ProgressBarRangeInfo
@@ -43,33 +48,46 @@ internal fun OnboardingGuideContent(
     onIntent: (ShopSelectionIntent) -> Unit,
 ) {
     val guidePages = OnboardingGuidePage.entries
-    val pagerState = rememberPagerState(pageCount = { guidePages.size + 1 })
+    val pagerState = rememberPagerState(pageCount = { guidePages.size })
+    var showShopSelection by rememberSaveable { mutableStateOf(false) }
+    val screenStateHolder = rememberSaveableStateHolder()
     val scope = rememberCoroutineScope()
     val canNavigate = !uiState.isCompleting && !uiState.isCompleted
 
     NavigationBackHandler(
         state = rememberNavigationEventState<NavigationEventInfo>(NavigationEventInfo.None),
-        isBackEnabled = pagerState.currentPage > 0,
+        isBackEnabled = showShopSelection || pagerState.currentPage > 0,
         onBackCompleted = {
-            if (canNavigate && !pagerState.isScrollInProgress) {
+            if (!canNavigate) return@NavigationBackHandler
+            if (showShopSelection) {
+                pagerState.requestScrollToPage(guidePages.lastIndex)
+                showShopSelection = false
+            } else if (!pagerState.isScrollInProgress) {
                 scope.launch { pagerState.animateScrollToPage(pagerState.currentPage - 1) }
             }
         },
     )
-    OnboardingGuideLayout(page = guidePages.getOrNull(pagerState.settledPage)) {
-        HorizontalPager(
-            state = pagerState,
-            userScrollEnabled = canNavigate,
-            modifier = Modifier.fillMaxSize(),
-        ) { page ->
-            if (page < guidePages.size) {
-                OnboardingGuidePageContent(
-                    page = guidePages[page],
-                    onNext = { scope.launch { pagerState.animateScrollToPage(page + 1) } },
-                    onSkip = { scope.launch { pagerState.animateScrollToPage(guidePages.size) } },
-                )
-            } else {
+    OnboardingGuideLayout(page = if (showShopSelection) null else guidePages.getOrNull(pagerState.settledPage)) {
+        screenStateHolder.SaveableStateProvider(showShopSelection) {
+            if (showShopSelection) {
                 ShopSelectionContent(uiState = uiState, onIntent = onIntent)
+            } else {
+                HorizontalPager(
+                    state = pagerState,
+                    modifier = Modifier.fillMaxSize(),
+                ) { page ->
+                    OnboardingGuidePageContent(
+                        page = guidePages[page],
+                        onNext = {
+                            if (page == guidePages.lastIndex) {
+                                showShopSelection = true
+                            } else {
+                                scope.launch { pagerState.animateScrollToPage(page + 1) }
+                            }
+                        },
+                        onSkip = { showShopSelection = true },
+                    )
+                }
             }
         }
     }
