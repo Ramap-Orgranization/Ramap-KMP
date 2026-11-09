@@ -15,8 +15,8 @@ internal class RemoteAnnouncementDataSource(
                 client
                     .from(TABLE_NAME)
                     .select {
-                        order("published_at", Order.DESCENDING)
-                        order("id", Order.DESCENDING)
+                        order(COLUMN_PUBLISHED_AT, Order.DESCENDING)
+                        order(COLUMN_ID, Order.DESCENDING)
                         range(announcements.size.toLong(), announcements.size.toLong() + PAGE_SIZE - 1)
                     }.decodeList<AnnouncementResponse>()
             announcements.addAll(page)
@@ -26,6 +26,8 @@ internal class RemoteAnnouncementDataSource(
 
     private companion object {
         const val TABLE_NAME = "service_announcements"
+        const val COLUMN_PUBLISHED_AT = "published_at"
+        const val COLUMN_ID = "id"
         const val PAGE_SIZE = 100
     }
 }
