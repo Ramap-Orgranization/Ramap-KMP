@@ -5,6 +5,10 @@ sealed interface NotificationDeepLink {
         val eventId: String,
     ) : NotificationDeepLink
 
+    data class OperatingNotice(
+        val noticeId: String,
+    ) : NotificationDeepLink
+
     data object OperatingNotices : NotificationDeepLink
 
     data class ExternalUrl(

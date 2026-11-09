@@ -196,6 +196,7 @@ private fun HandleNotificationDeepLink(
                         appAnalytics.logNotificationOpened(eventId = destination.eventId)
                         navigationState.showEvent(destination.eventId)
                     }
+                    is NotificationDeepLink.OperatingNotice -> navigationState.showOperatingNotices(destination.noticeId)
                     NotificationDeepLink.OperatingNotices -> navigationState.showOperatingNotices()
                     is NotificationDeepLink.ExternalUrl -> ExternalUriOpener.open(destination.url)
                     NotificationDeepLink.None -> Unit

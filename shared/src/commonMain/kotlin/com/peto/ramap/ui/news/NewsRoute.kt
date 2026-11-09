@@ -2,12 +2,16 @@ package com.peto.ramap.ui.news
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.peto.ramap.designsystem.dialog.LoginGuideDialog
 import com.peto.ramap.designsystem.toast.ToastManager
 import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.navigation.NavigationState
 import com.peto.ramap.navigation.NewsTab
+import com.peto.ramap.navigation.ScreenRoutes
 import com.peto.ramap.platform.ExternalUriOpener
 import com.peto.ramap.ui.base.ObserveAsEvents
 import com.peto.ramap.ui.main.event.list.EventsScreen
@@ -23,6 +27,7 @@ import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 fun NewsRoute(
+    route: ScreenRoutes.EventTabRoutes,
     onClickEvent: (ShopEvent) -> Unit,
     onShopClick: (String) -> Unit,
     navigationState: NavigationState,
@@ -43,6 +48,8 @@ fun NewsRoute(
             is OperatingNoticeSideEffect.ShowToast -> toastManager.show(sideEffect.data)
         }
     }
+
+    var noticeOpened by rememberSaveable(route.instanceId) { mutableStateOf(false) }
 
     val activeTab = navigationState.selectedNewsTab
 
@@ -87,6 +94,8 @@ fun NewsRoute(
         operatingNoticesContent = {
             OperatingNoticeScreen(
                 uiState = noticeUiState,
+                initialNoticeId = route.noticeId?.takeUnless { noticeOpened },
+                onInitialNoticeOpened = { noticeOpened = true },
                 onRefresh = { noticeViewModel.dispatch(OperatingNoticeIntent.OnRefreshed) },
                 onRetry = { noticeViewModel.dispatch(OperatingNoticeIntent.OnRetried) },
                 onShopClick = onShopClick,
