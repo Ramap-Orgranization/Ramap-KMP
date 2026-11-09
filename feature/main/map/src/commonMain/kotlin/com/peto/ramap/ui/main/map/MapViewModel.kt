@@ -85,7 +85,6 @@ import ramap.shared.generated.resources.filter_empty_visible_result_message
 import ramap.shared.generated.resources.kakao_login_failure_message
 import ramap.shared.generated.resources.location_permission_enable_message
 import ramap.shared.generated.resources.location_permission_settings_action
-import ramap.shared.generated.resources.login_required_saved_shops_description
 import ramap.shared.generated.resources.login_success_message
 import ramap.shared.generated.resources.search_result_empty_message
 import kotlin.time.Clock
@@ -103,7 +102,6 @@ class MapViewModel(
     private val placeSearchRepository: PlaceSearchRepository,
 ) : BaseViewModel<MapUiState, MapIntent, MapSideEffect>(initialState = MapUiState()) {
     private val viewportShopLoader = ViewportShopLoader(ramenShopRepository, viewModelScope)
-    private var pendingBookmarkedView = false
     private var pendingArchiveLogin = false
     private var archiveLoginSucceeded = false
     private var failedShopId: String? = null
@@ -147,17 +145,18 @@ class MapViewModel(
 
     private suspend fun observePersonalization() {
         personalizationStore.state.collectLatest { state ->
-            val personalization = (state as? PersonalizationBootstrapState.Success)?.value ?: return@collectLatest
-            val isLoggedOut = !currentState.isLoggedIn
-            if (isLoggedOut) return@collectLatest
-            loadPersonalizedShops(personalization.bookmarkedShopIds)
+            if (state == PersonalizationBootstrapState.Error && currentState.isBookmarkedView) {
+                updateBookmarkedView(enabled = false)
+                showBookmarkLoadFailure()
+            }
+            val personalization = (state as? PersonalizationBootstrapState.Success)?.value
+            loadPersonalizedShops(personalization?.bookmarkedShopIds.orEmpty())
             reduce {
                 copy(
-                    bookmarkedShopIds = personalization.bookmarkedShopIds,
-                    notificationShopIds = personalization.notificationShopIds,
+                    bookmarkedShopIds = personalization?.bookmarkedShopIds.orEmpty(),
+                    notificationShopIds = personalization?.notificationShopIds.orEmpty(),
                 )
             }
-            resumeBookmarkedView()
         }
     }
 
@@ -169,9 +168,7 @@ class MapViewModel(
             else ->
                 when (intent) {
                     OnBookmarkedShopsToggled -> toggleBookmarkedView()
-                    is MapIntent.OnLoginTypeSelected -> login(intent.type)
-                    is MapIntent.OnArchiveLoginTypeSelected -> login(intent.type, continueToArchive = true)
-                    MapIntent.OnLoginSelectionDismissed -> pendingBookmarkedView = false
+                    is MapIntent.OnArchiveLoginTypeSelected -> loginForArchive(intent.type)
                     OnLocationPermissionBlocked -> showLocationPermissionBlockedToast()
                     is MapIntent.OnShopLoadFailed -> if (currentState.selectedShopId == intent.shopId) failedShopId = intent.shopId
                     is MapIntent.OnShopViewed -> recordRecentlyViewedShop(intent.shop)
@@ -193,6 +190,7 @@ class MapViewModel(
                     if (placeFocusRequest == intent.request) copy(placeFocusRequest = null) else this
                 }
             OnMapTabExited -> {
+                cancelTask(BOOKMARK_FILTER_TASK_KEY)
                 pendingArchiveLogin = false
                 archiveLoginSucceeded = false
                 dismissBottomSheet()
@@ -246,7 +244,6 @@ class MapViewModel(
         loginRepository.session.collectLatest { sessionState ->
             val isAuthenticated = sessionState == LoginSessionState.AUTHENTICATED
             updateAuthState(isAuthenticated)
-            if (isAuthenticated) resumeBookmarkedView()
             resumeArchiveAfterLogin()
         }
     }
@@ -255,9 +252,7 @@ class MapViewModel(
         reduce {
             copy(
                 isLoggedIn = isAuthenticated,
-                bookmarkedShopIds = if (isAuthenticated) bookmarkedShopIds else emptySet(),
                 notificationShopIds = if (isAuthenticated) notificationShopIds else emptySet(),
-                isBookmarkedView = isAuthenticated && isBookmarkedView,
             )
         }
     }
@@ -277,7 +272,6 @@ class MapViewModel(
                 search = search.consumeResultFocus(shop.id in search.results),
             )
         }
-        pendingBookmarkedView = false
         reduce { copy(selectedShopId = shop.id, selectedShop = shop, shopSelectionKey = shopSelectionKey + 1) }
     }
 
@@ -291,7 +285,6 @@ class MapViewModel(
         consumeInitialLocationFocus()
         val focusRequest = ShopFocusRequest(shopId, ++shopFocusSequence)
         reduce { copy(selectedShopFocusRequest = focusRequest, placeFocusRequest = null) }
-        pendingBookmarkedView = false
         reduce { copy(selectedShopId = shopId, selectedShop = null, shopSelectionKey = shopSelectionKey + 1) }
         if (!showDetail) loadSelectedShopLocation(shopId)
     }
@@ -475,17 +468,42 @@ class MapViewModel(
     }
 
     private fun toggleBookmarkedView() {
-        if (currentState.isLoggedIn) {
-            updateBookmarkedView()
-        } else {
-            dismissShopDetail()
-            pendingBookmarkedView = true
-            showInteraction(ShopInteractionEffect.ShowLoginGuide(Res.string.login_required_saved_shops_description))
+        if (currentState.isBookmarkedView) {
+            updateBookmarkedView(enabled = false)
+            return
         }
+
+        val ready = personalizationStore.state.value as? PersonalizationBootstrapState.Success
+        if (ready != null) {
+            applyBookmarkedView(ready)
+            return
+        }
+
+        launchResultTask(
+            taskKey = BOOKMARK_FILTER_TASK_KEY,
+            policy = TaskPolicy.IgnoreNew,
+            request = {
+                val state = personalizationStore.state.first { it != PersonalizationBootstrapState.Loading }
+                if (state is PersonalizationBootstrapState.Success) RamapResult.Success(Unit) else personalizationStore.refresh()
+            },
+            onSuccess = {
+                val refreshed = personalizationStore.state.value as? PersonalizationBootstrapState.Success
+                if (refreshed != null) applyBookmarkedView(refreshed)
+            },
+            onError = { showBookmarkLoadFailure() },
+        )
     }
 
-    private fun updateBookmarkedView() {
-        val enabled = !currentState.isBookmarkedView
+    private fun applyBookmarkedView(state: PersonalizationBootstrapState.Success) {
+        reduce { copy(bookmarkedShopIds = state.value.bookmarkedShopIds) }
+        updateBookmarkedView(enabled = true)
+    }
+
+    private fun showBookmarkLoadFailure() {
+        showInteraction(ShowToast(ToastData(Res.string.data_load_failure_message, ToastType.ERROR)))
+    }
+
+    private fun updateBookmarkedView(enabled: Boolean) {
         val shouldKeep = shouldKeepSelectedShop(currentState, enabled)
         if (!shouldKeep) dismissShopDetail()
         reduce { copy(isBookmarkedView = enabled) }
@@ -672,7 +690,6 @@ class MapViewModel(
 
     private fun dismissShopDetail() {
         cancelTask(SELECTED_SHOP_TASK_KEY)
-        pendingBookmarkedView = false
         reduce { copy(selectedShopId = null, selectedShop = null, selectedShopFocusRequest = null) }
     }
 
@@ -694,15 +711,6 @@ class MapViewModel(
         )
     }
 
-    private fun resumeBookmarkedView() {
-        val isNotPendingOrLoggedOut = !pendingBookmarkedView || !currentState.isLoggedIn
-        if (isNotPendingOrLoggedOut) return
-        val personalization = (personalizationStore.state.value as? PersonalizationBootstrapState.Success)?.value ?: return
-        pendingBookmarkedView = false
-        reduce { copy(bookmarkedShopIds = personalization.bookmarkedShopIds, notificationShopIds = personalization.notificationShopIds) }
-        updateBookmarkedView()
-    }
-
     private fun resumeArchiveAfterLogin() {
         if (!pendingArchiveLogin || !archiveLoginSucceeded || !currentState.isLoggedIn) return
         pendingArchiveLogin = false
@@ -710,11 +718,8 @@ class MapViewModel(
         trySideEffect(MapSideEffect.NavigateToArchive)
     }
 
-    private fun login(
-        type: LoginType,
-        continueToArchive: Boolean = false,
-    ) {
-        pendingArchiveLogin = continueToArchive
+    private fun loginForArchive(type: LoginType) {
+        pendingArchiveLogin = true
         archiveLoginSucceeded = false
         launchResultTask(
             taskKey = "map-login",
@@ -747,6 +752,7 @@ class MapViewModel(
         private const val SELECTED_SHOP_TASK_KEY = "map-selected-shop"
         private const val SEARCH_TASK_KEY = "map-search"
         private val DEFAULT_SEARCH_CENTER = Location(37.5665, 126.9780)
+        private const val BOOKMARK_FILTER_TASK_KEY = "map-bookmark-filter"
         private const val PERSONALIZED_SHOPS_TASK_KEY = "map-personalized-shops"
         private const val OPERATING_NOTICES_TASK_KEY = "map-operating-notices"
     }

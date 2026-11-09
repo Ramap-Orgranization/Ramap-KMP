@@ -22,7 +22,6 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.peto.ramap.designsystem.component.LoadErrorContent
 import com.peto.ramap.designsystem.component.NewsFilters
-import com.peto.ramap.designsystem.dialog.LoginGuideDialog
 import com.peto.ramap.designsystem.toast.ToastManager
 import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.model.event.ShopEvents
@@ -61,27 +60,19 @@ fun EventsRoute(
             is EventsSideEffect.ShowEventsToast -> toastManager.show(sideEffect.data)
         }
     }
-    Box {
-        EventsScreen(
-            uiState = uiState,
-            onClickEvent = { event ->
-                viewModel.dispatch(EventsIntent.OnEventClicked(event))
-                onClickEvent(event)
-            },
-            onRefresh = { viewModel.dispatch(EventsIntent.OnEventsRefreshed) },
-            onClickRetry = { viewModel.dispatch(EventsIntent.OnEventsRetried) },
-            onQueryChanged = { viewModel.dispatch(EventsIntent.OnQueryChanged(it)) },
-            onSavedToggled = { viewModel.dispatch(EventsIntent.OnSavedToggled) },
-            onPersonalizationRetry = { viewModel.dispatch(EventsIntent.OnPersonalizationRetried) },
-            showFilters = true,
-        )
-
-        LoginGuideDialog(
-            visible = uiState.showLoginGuide,
-            onDismiss = { viewModel.dispatch(EventsIntent.OnLoginDismissed) },
-            onLoginTypeSelected = { viewModel.dispatch(EventsIntent.OnLoginSelected(it)) },
-        )
-    }
+    EventsScreen(
+        uiState = uiState,
+        onClickEvent = { event ->
+            viewModel.dispatch(EventsIntent.OnEventClicked(event))
+            onClickEvent(event)
+        },
+        onRefresh = { viewModel.dispatch(EventsIntent.OnEventsRefreshed) },
+        onClickRetry = { viewModel.dispatch(EventsIntent.OnEventsRetried) },
+        onQueryChanged = { viewModel.dispatch(EventsIntent.OnQueryChanged(it)) },
+        onSavedToggled = { viewModel.dispatch(EventsIntent.OnSavedToggled) },
+        onPersonalizationRetry = { viewModel.dispatch(EventsIntent.OnPersonalizationRetried) },
+        showFilters = true,
+    )
 }
 
 @Composable
@@ -128,7 +119,7 @@ fun EventsScreen(
                     uiState.savedOnly && uiState.personalizationState == PersonalizationBootstrapState.Loading ->
                         EventListSkeleton(modifier = Modifier.fillMaxSize())
 
-                    uiState.savedFilterError || (uiState.savedOnly && uiState.personalizationState == PersonalizationBootstrapState.Error) ->
+                    uiState.savedFilterError ->
                         LoadErrorContent(
                             image = Res.drawable.laduck_error_crying,
                             title = stringResource(Res.string.event_list_error_title),

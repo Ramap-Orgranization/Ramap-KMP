@@ -436,20 +436,22 @@ internal fun MyTabContent(
                         thickness = 1.dp,
                         color = GrayColor.C100,
                     )
-                    MyMenuRow(
-                        icon = Res.drawable.ic_star_filled,
-                        title = Res.string.settings_bookmarked_shops_menu,
-                        count = state.bookmarkedCount,
-                        iconBackground = ChromaticColor.Orange050,
-                        iconTint = ChromaticColor.Orange300,
-                        isLoading = isLoading,
-                        onClick = onBookmarkedShopsClick,
-                    )
-                    HorizontalDivider(
-                        modifier = Modifier.padding(start = 16.dp),
-                        thickness = 1.dp,
-                        color = GrayColor.C100,
-                    )
+                }
+                MyMenuRow(
+                    icon = Res.drawable.ic_star_filled,
+                    title = Res.string.settings_bookmarked_shops_menu,
+                    count = state.bookmarkedCount,
+                    iconBackground = ChromaticColor.Orange050,
+                    iconTint = ChromaticColor.Orange300,
+                    isLoading = isLoading,
+                    onClick = onBookmarkedShopsClick,
+                )
+                HorizontalDivider(
+                    modifier = Modifier.padding(start = 16.dp),
+                    thickness = 1.dp,
+                    color = GrayColor.C100,
+                )
+                if (!isGuest) {
                     MyMenuRow(
                         icon = Res.drawable.ic_notification,
                         title = Res.string.settings_subscribed_shops_menu,

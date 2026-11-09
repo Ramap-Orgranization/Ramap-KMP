@@ -27,8 +27,6 @@ import com.peto.ramap.ui.main.map.contract.MapIntent.OnCameraPositionChanged
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnCategoryFilterToggled
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnInitialLocationFocusConsumed
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnLocationPermissionBlocked
-import com.peto.ramap.ui.main.map.contract.MapIntent.OnLoginSelectionDismissed
-import com.peto.ramap.ui.main.map.contract.MapIntent.OnLoginTypeSelected
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnMyLocationChanged
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnOpenFilterToggled
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnOperatingNoticesRefreshRequested
@@ -122,8 +120,8 @@ fun MapRoute(
         appSettingsOpener = appSettingsOpener,
         shopShareLinkFactory = shopShareLinkFactory,
         onNotificationToggled = {},
-        onLoginTypeSelected = { viewModel.dispatch(OnLoginTypeSelected(it)) },
-        onLoginDismissed = { viewModel.dispatch(OnLoginSelectionDismissed) },
+        onLoginTypeSelected = {},
+        onLoginDismissed = {},
     ) { _, _ ->
         MapContent(
             uiState = uiState,
@@ -192,7 +190,7 @@ fun MapRoute(
                             onDetailDismissed()
                         },
                         onShopLoadFailed = { viewModel.dispatch(MapIntent.OnShopLoadFailed(it)) },
-                        onLoginGuideRequested = { viewModel.dispatch(OnLoginSelectionDismissed) },
+                        onLoginGuideRequested = {},
                         onShopViewed = { viewModel.dispatch(MapIntent.OnShopViewed(it)) },
                         onShowOnMap = null,
                         onReviewNavigate = onReviewNavigate,

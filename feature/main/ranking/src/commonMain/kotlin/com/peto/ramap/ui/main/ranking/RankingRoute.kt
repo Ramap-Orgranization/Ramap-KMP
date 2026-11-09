@@ -35,15 +35,12 @@ import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.RamapTheme
 import com.peto.ramap.ui.base.ObserveAsEvents
 import com.peto.ramap.ui.component.area.AreaSheetContent
-import com.peto.ramap.ui.login.rememberLoginGuideRequest
 import com.peto.ramap.ui.main.ranking.component.RankingFilters
 import com.peto.ramap.ui.main.ranking.contract.RankingIntent
 import com.peto.ramap.ui.main.ranking.contract.RankingSideEffect
 import com.peto.ramap.ui.main.ranking.contract.RankingUiState
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
-import ramap.shared.generated.resources.Res
-import ramap.shared.generated.resources.login_required_bookmark_description
 
 @Composable
 fun RankingRoute(
@@ -72,18 +69,8 @@ fun RankingRoute(
         onDispose { rankingDetailShopId = null }
     }
 
-    val requestLoginGuide =
-        rememberLoginGuideRequest(
-            onLoginTypeSelected = { viewModel.dispatch(RankingIntent.OnLoginTypeSelected(it)) },
-            onDismiss = { viewModel.dispatch(RankingIntent.OnLoginSelectionDismissed) },
-            ownerKey = viewModel,
-        )
     ObserveAsEvents(viewModel.sideEffect) { sideEffect ->
         when (sideEffect) {
-            RankingSideEffect.ShowLoginGuide -> {
-                requestLoginGuide(Res.string.login_required_bookmark_description)
-            }
-
             is RankingSideEffect.ShowToast -> {
                 toastManager.show(sideEffect.data)
             }

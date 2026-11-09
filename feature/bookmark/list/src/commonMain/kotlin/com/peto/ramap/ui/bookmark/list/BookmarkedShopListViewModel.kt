@@ -17,8 +17,6 @@ import com.peto.ramap.ui.bookmark.list.contract.BookmarkedShopListUiState
 import com.peto.ramap.ui.bookmark.list.contract.BookmarkedShopLoadKey
 import com.peto.ramap.ui.task.TaskPolicy
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.StringResource
 import ramap.shared.generated.resources.Res
@@ -44,7 +42,11 @@ class BookmarkedShopListViewModel(
     }
 
     private fun retryCurrentBookmarks() {
-        syncBookmarkedShops(currentBookmarkedShopIds(), forceFetch = true)
+        when (val state = personalizationStore.state.value) {
+            is PersonalizationBootstrapState.Success -> syncBookmarkedShops(state.value.bookmarkedShopIds, forceFetch = true)
+            PersonalizationBootstrapState.Error -> refreshPersonalization()
+            PersonalizationBootstrapState.Loading -> Unit
+        }
     }
 
     private fun handleRemovalConfirmed(intent: BookmarkedShopListIntent.OnRemovalConfirmed) {
@@ -53,22 +55,29 @@ class BookmarkedShopListViewModel(
 
     private fun observeBookmarkedShopIds() {
         viewModelScope.launch {
-            personalizationStore.state
-                .map { state ->
-                    (state as? PersonalizationBootstrapState.Success)?.value?.bookmarkedShopIds
-                }.distinctUntilChanged()
-                .collectLatest { shopIds ->
-                    if (shopIds == null) return@collectLatest
-                    syncBookmarkedShops(shopIds)
+            personalizationStore.state.collectLatest { state ->
+                when (state) {
+                    is PersonalizationBootstrapState.Success -> syncBookmarkedShops(state.value.bookmarkedShopIds)
+                    PersonalizationBootstrapState.Error -> clearBookmarkedShops(showError = true)
+                    PersonalizationBootstrapState.Loading -> clearBookmarkedShops(showError = false)
                 }
+            }
         }
     }
 
-    private fun currentBookmarkedShopIds(): Set<String> =
-        (personalizationStore.state.value as? PersonalizationBootstrapState.Success)
-            ?.value
-            ?.bookmarkedShopIds
-            ?: emptySet()
+    private fun clearBookmarkedShops(showError: Boolean) {
+        cancelTask(FETCH_BOOKMARKS_TASK_KEY)
+        reduce { copy(shops = RamenShops(emptyMap()), showError = showError, hasLoaded = showError) }
+    }
+
+    private fun refreshPersonalization() {
+        launchResultTask(
+            taskKey = PERSONALIZATION_TASK_KEY,
+            loadKey = BookmarkedShopLoadKey.PERSONALIZATION,
+            policy = TaskPolicy.IgnoreNew,
+            request = personalizationStore::refresh,
+        )
+    }
 
     private fun syncBookmarkedShops(
         shopIds: Set<String>,
@@ -163,6 +172,7 @@ class BookmarkedShopListViewModel(
     }
 
     companion object {
+        private const val PERSONALIZATION_TASK_KEY = "refresh-bookmark-personalization"
         private const val FETCH_BOOKMARKS_TASK_KEY = "fetch-bookmarks"
         private const val REMOVE_BOOKMARK_TASK_KEY = "remove-bookmark"
     }

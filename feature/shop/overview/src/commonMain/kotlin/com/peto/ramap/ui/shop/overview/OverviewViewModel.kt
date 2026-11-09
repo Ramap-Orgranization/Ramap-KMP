@@ -55,7 +55,6 @@ import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.apple_login_failure_message
 import ramap.shared.generated.resources.data_load_failure_message
 import ramap.shared.generated.resources.kakao_login_failure_message
-import ramap.shared.generated.resources.login_required_bookmark_description
 import ramap.shared.generated.resources.login_required_notification_description
 import ramap.shared.generated.resources.login_success_message
 import ramap.shared.generated.resources.personalization_update_failure_message
@@ -76,6 +75,7 @@ class OverviewViewModel(
         initialState(loginRepository, personalizationStore),
     ) {
     private var pendingShopAction: PendingShopAction? = null
+    private var previousBookmarkOwner: String? = null
     private var observedAccountId = loginRepository.currentAccountId()
     private var notificationPermissionRequestGeneration = 0L
 
@@ -93,8 +93,6 @@ class OverviewViewModel(
                     reduce {
                         copy(
                             isLoggedIn = accountId != null,
-                            personalization = Personalization(),
-                            hasReceivedPersonalization = false,
                         )
                     }
                 }
@@ -308,7 +306,6 @@ class OverviewViewModel(
         source: AnalyticsSource,
     ) {
         val enabled = currentState.personalization.nextBookmarkEnabled(shop.id)
-        if (requireLogin(PendingShopAction.ToggleBookmark(shop, source, enabled))) return
         updateBookmark(shop, source, enabled)
     }
 
@@ -501,14 +498,21 @@ class OverviewViewModel(
     }
 
     private fun handlePersonalizationStateChange(state: PersonalizationBootstrapState) {
-        val personalization = (state as? PersonalizationBootstrapState.Success)?.value ?: return
-        val isLoggedOut = !loginRepository.hasSession()
-        if (isLoggedOut) return
-        val previousBookmarkedShopIds = currentState.bookmarkedShopIds.takeIf { currentState.hasReceivedPersonalization }
-        reduce { copy(isLoggedIn = true) }
-        reduce { copy(personalization = personalization, hasReceivedPersonalization = true) }
-        synchronizeOverviewLikeCounts(previousBookmarkedShopIds)
-        resumePendingAction()
+        val personalization = (state as? PersonalizationBootstrapState.Success)?.value
+        val accountId = loginRepository.currentAccountId()
+        val previousBookmarkedShopIds =
+            currentState.bookmarkedShopIds.takeIf { currentState.hasReceivedPersonalization && accountId != null && accountId == previousBookmarkOwner }
+        previousBookmarkOwner = accountId
+        reduce {
+            copy(
+                personalization = personalization ?: Personalization(),
+                hasReceivedPersonalization = personalization != null,
+            )
+        }
+        if (personalization != null) {
+            synchronizeOverviewLikeCounts(previousBookmarkedShopIds)
+            resumePendingAction()
+        }
     }
 
     private fun synchronizeOverviewLikeCounts(previousBookmarkedShopIds: Set<String>?) {
@@ -564,7 +568,6 @@ class OverviewViewModel(
 
     private fun executePendingAction(action: PendingShopAction) {
         when (action) {
-            is PendingShopAction.ToggleBookmark -> updateBookmark(action.shop, action.source, action.enabled)
             is PendingShopAction.OpenNotificationSettings -> toggleShopNotification(action.shop, action.source)
         }
     }
@@ -572,7 +575,6 @@ class OverviewViewModel(
     private fun requestLoginGuide(action: PendingShopAction) {
         val description =
             when (action) {
-                is PendingShopAction.ToggleBookmark -> Res.string.login_required_bookmark_description
                 is PendingShopAction.OpenNotificationSettings -> Res.string.login_required_notification_description
             }
         viewModelScope.launch {
@@ -627,12 +629,7 @@ class OverviewViewModel(
         ): ShopOverviewState {
             val hasSession = loginRepository.hasSession()
             val personalizationSuccess = personalizationStore.state.value as? PersonalizationBootstrapState.Success
-            val personalization =
-                if (hasSession) {
-                    personalizationSuccess?.value ?: Personalization()
-                } else {
-                    Personalization()
-                }
+            val personalization = personalizationSuccess?.value ?: Personalization()
             return ShopOverviewState(
                 isLoggedIn = hasSession,
                 personalization = personalization,

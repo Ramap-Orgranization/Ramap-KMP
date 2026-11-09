@@ -1,14 +1,12 @@
 package com.peto.ramap.ui.main.ranking
 
 import app.cash.turbine.test
-import com.peto.ramap.analytics.common.login.LoginAnalytics
 import com.peto.ramap.core.result.RamapError
 import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.coroutinesTest
 import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.auth.LoginSessionState
-import com.peto.ramap.domain.model.auth.LoginType
 import com.peto.ramap.domain.model.personalization.Personalization
 import com.peto.ramap.domain.model.rank.RankingCursor
 import com.peto.ramap.domain.model.rank.RankingPage
@@ -25,9 +23,7 @@ import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.domain.repository.LoginRepository
 import com.peto.ramap.domain.store.PersonalizationBootstrapState
 import com.peto.ramap.domain.store.PersonalizationStore
-import com.peto.ramap.domain.usecase.SignInUseCase
 import com.peto.ramap.fake.FakeAnalyticsTracker
-import com.peto.ramap.fake.FakeCrashReporter
 import com.peto.ramap.fake.FakeLoginRepository
 import com.peto.ramap.fake.FakePersonalizationRepository
 import com.peto.ramap.ui.main.ranking.contract.RankingIntent
@@ -556,63 +552,30 @@ class RankingViewModelTest {
         }
 
     @Test
-    fun `비로그인 사용자의 좋아요 요청은 로그인 안내만 보낸다`() =
+    fun `비회원 저장과 해제는 별표에 반영하고 랭킹 저장 수는 바꾸지 않는다`() =
         coroutinesTest {
             val shop = ramenShop()
-            val personalizationStore = FakePersonalizationRepository()
-            val loginRepository =
-                FakeLoginRepository(
-                    LoginSessionState.NOT_AUTHENTICATED,
-                )
+            val store = FakePersonalizationRepository()
             val viewModel =
                 rankingViewModel(
-                    personalizationStore = personalizationStore,
-                    loginRepository = loginRepository,
+                    repository = FakeShopRankingRepository(pageOf(shopRanking(likeCount = 3))),
+                    personalizationStore = store,
+                    loginRepository = FakeLoginRepository(),
                 )
-
             runCurrent()
-
-            viewModel.sideEffect.test {
-                viewModel.dispatch(
-                    RankingIntent.OnBookmarkChanged(
-                        shop = shop,
-                        enabled = true,
-                    ),
-                )
-
-                assertEquals(
-                    RankingSideEffect.ShowLoginGuide,
-                    awaitItem(),
-                )
-                assertEquals(
-                    emptyList(),
-                    personalizationStore.bookmarkUpdateRequests,
-                )
-            }
-        }
-
-    @Test
-    fun `개인화 상태를 동기화한 뒤 대기 중인 좋아요 요청을 재개한다`() =
-        coroutinesTest {
-            val shop = ramenShop()
-            val personalizationStore = FakePersonalizationRepository()
-            val loginRepository = FakeLoginRepository(LoginSessionState.NOT_AUTHENTICATED)
-            val viewModel =
-                rankingViewModel(
-                    personalizationStore = personalizationStore,
-                    loginRepository = loginRepository,
-                )
 
             viewModel.dispatch(RankingIntent.OnBookmarkChanged(shop, enabled = true))
             runCurrent()
-            viewModel.dispatch(RankingIntent.OnLoginTypeSelected(LoginType.APPLE))
-            runCurrent()
-            loginRepository.updateSessionState(LoginSessionState.AUTHENTICATED)
-            personalizationStore.updateBookmarkedShopIds(setOf("existing-shop"))
-            runCurrent()
+            assertEquals(setOf(shop.id), viewModel.uiState.value.bookmarkedShopIds)
+            assertEquals(3L, viewModel.uiState.value.displayedLikeCount(viewModel.uiState.value.shops[0]))
 
-            assertEquals(1, loginRepository.signInWithAppleCallCount)
-            assertEquals(listOf(shop.id to true), personalizationStore.bookmarkUpdateRequests)
+            viewModel.dispatch(RankingIntent.OnBookmarkChanged(shop, enabled = false))
+            runCurrent()
+            assertTrue(
+                viewModel.uiState.value.bookmarkedShopIds
+                    .isEmpty(),
+            )
+            assertEquals(3L, viewModel.uiState.value.displayedLikeCount(viewModel.uiState.value.shops[0]))
         }
 
     @Test
@@ -703,8 +666,6 @@ class RankingViewModelTest {
             loginRepository.updateSessionState(LoginSessionState.NOT_AUTHENTICATED)
             personalizationStore.clear()
             runCurrent()
-            viewModel.dispatch(RankingIntent.OnBookmarkChanged(shop, enabled = true))
-            runCurrent()
             loginRepository.updateSessionState(LoginSessionState.AUTHENTICATED)
             personalizationStore.updateBookmarkedShopIds(setOf(shop.id))
             runCurrent()
@@ -777,89 +738,6 @@ class RankingViewModelTest {
 
             assertEquals(
                 emptyList(),
-                personalizationStore.bookmarkUpdateRequests,
-            )
-        }
-
-    @Test
-    fun `로그인 안내를 닫으면 이후 로그인해도 북마크를 저장하지 않는다`() =
-        coroutinesTest {
-            val shop = ramenShop()
-            val personalizationStore = FakePersonalizationRepository()
-            val loginRepository =
-                FakeLoginRepository(LoginSessionState.NOT_AUTHENTICATED)
-            val viewModel =
-                rankingViewModel(
-                    personalizationStore = personalizationStore,
-                    loginRepository = loginRepository,
-                )
-            runCurrent()
-
-            viewModel.dispatch(
-                RankingIntent.OnBookmarkChanged(
-                    shop = shop,
-                    enabled = true,
-                ),
-            )
-            runCurrent()
-            viewModel.dispatch(RankingIntent.OnLoginSelectionDismissed)
-            runCurrent()
-
-            loginRepository.updateSessionState(LoginSessionState.AUTHENTICATED)
-            personalizationStore.updateBookmarkedShopIds(setOf("existing-shop"))
-            runCurrent()
-
-            assertEquals(
-                emptyList(),
-                personalizationStore.bookmarkUpdateRequests,
-            )
-        }
-
-    @Test
-    fun `로그인을 선택하면 대기 북마크를 한 번만 저장한다`() =
-        coroutinesTest {
-            val shop = ramenShop()
-            val personalizationStore = FakePersonalizationRepository()
-            val loginRepository =
-                FakeLoginRepository(LoginSessionState.NOT_AUTHENTICATED)
-            val viewModel =
-                rankingViewModel(
-                    personalizationStore = personalizationStore,
-                    loginRepository = loginRepository,
-                )
-            runCurrent()
-
-            viewModel.dispatch(
-                RankingIntent.OnBookmarkChanged(
-                    shop = shop,
-                    enabled = true,
-                ),
-            )
-            runCurrent()
-            viewModel.dispatch(RankingIntent.OnLoginTypeSelected(LoginType.KAKAO))
-            runCurrent()
-
-            assertEquals(1, loginRepository.signInWithKakaoCallCount)
-            assertEquals(
-                emptyList(),
-                personalizationStore.bookmarkUpdateRequests,
-            )
-
-            loginRepository.updateSessionState(LoginSessionState.AUTHENTICATED)
-            personalizationStore.updateBookmarkedShopIds(setOf("existing-shop"))
-            runCurrent()
-
-            assertEquals(
-                listOf(shop.id to true),
-                personalizationStore.bookmarkUpdateRequests,
-            )
-
-            // 이후 서버 상태가 바뀌어도 소비한 대기 요청을 재실행하지 않는다.
-            personalizationStore.updateBookmarkedShopIds(setOf("existing-shop"))
-            runCurrent()
-
-            assertEquals(
-                listOf(shop.id to true),
                 personalizationStore.bookmarkUpdateRequests,
             )
         }
@@ -978,15 +856,5 @@ private fun rankingViewModel(
         rankingAnalytics =
             RankingAnalytics(
                 analyticsTracker,
-            ),
-        loginAnalytics =
-            LoginAnalytics(
-                analyticsTracker,
-                FakeCrashReporter(),
-            ),
-        signInUseCase =
-            SignInUseCase(
-                loginRepository,
-                LoginAnalytics(analyticsTracker, FakeCrashReporter()),
             ),
     )

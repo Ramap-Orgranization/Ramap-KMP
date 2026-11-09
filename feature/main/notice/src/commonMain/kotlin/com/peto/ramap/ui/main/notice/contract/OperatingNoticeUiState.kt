@@ -17,8 +17,6 @@ data class OperatingNoticeUiState(
     val todayOperatingNotices: List<OperatingNotice> = emptyList(),
     val scheduledOperatingNotices: List<OperatingNotice> = emptyList(),
     val feed: OperatingNoticeFeed? = null,
-    val savedFilterError: Boolean = false,
-    val showLoginGuide: Boolean = false,
     val query: String = "",
     val savedOnly: Boolean = false,
     val bookmarkedShopIds: Set<String> = emptySet(),
@@ -28,6 +26,9 @@ data class OperatingNoticeUiState(
     val fallbackReferenceDate: LocalDate = Clock.System.todayIn(TimeZone.of("Asia/Seoul")),
 ) : State,
     LoadableState<OperatingNoticeUiState> {
+    val savedFilterError: Boolean
+        get() = savedOnly && personalizationState == PersonalizationBootstrapState.Error
+
     val isLoading: Boolean
         get() = loadState.isLoading(OperatingNoticeLoadKey.Fetch)
 

@@ -119,7 +119,7 @@ fun OperatingNoticeScreen(
 
                         uiState.savedOnly && uiState.personalizationState == PersonalizationBootstrapState.Loading ->
                             OperatingNoticeSkeleton(Modifier.fillMaxSize())
-                        uiState.savedFilterError || (uiState.savedOnly && uiState.personalizationState == PersonalizationBootstrapState.Error) ->
+                        uiState.savedFilterError ->
                             LoadErrorContent(
                                 image = Res.drawable.laduck_error_crying,
                                 title = stringResource(Res.string.operating_notice_error_title),
