@@ -1,12 +1,8 @@
 package com.peto.ramap.ui.main.ranking
 
 import androidx.lifecycle.viewModelScope
-import com.peto.ramap.analytics.AnalyticsSource
-import com.peto.ramap.analytics.common.login.LoginAnalytics
 import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
-import com.peto.ramap.domain.model.auth.LoginSessionState
-import com.peto.ramap.domain.model.auth.LoginType
 import com.peto.ramap.domain.model.rank.RankedShops
 import com.peto.ramap.domain.model.rank.RankingCursor
 import com.peto.ramap.domain.model.rank.RankingPage
@@ -20,7 +16,6 @@ import com.peto.ramap.domain.repository.LoginRepository
 import com.peto.ramap.domain.repository.ShopRankingRepository
 import com.peto.ramap.domain.store.PersonalizationBootstrapState
 import com.peto.ramap.domain.store.PersonalizationStore
-import com.peto.ramap.domain.usecase.SignInUseCase
 import com.peto.ramap.ui.base.BaseViewModel
 import com.peto.ramap.ui.main.ranking.contract.RankingIntent
 import com.peto.ramap.ui.main.ranking.contract.RankingLoadKey
@@ -32,9 +27,6 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.StringResource
 import ramap.shared.generated.resources.Res
-import ramap.shared.generated.resources.apple_login_failure_message
-import ramap.shared.generated.resources.kakao_login_failure_message
-import ramap.shared.generated.resources.login_success_message
 import ramap.shared.generated.resources.personalization_update_failure_message
 import ramap.shared.generated.resources.ranking_refresh_failure_message
 
@@ -43,15 +35,12 @@ class RankingViewModel(
     private val personalizationStore: PersonalizationStore,
     private val loginRepository: LoginRepository,
     private val rankingAnalytics: RankingAnalytics,
-    private val loginAnalytics: LoginAnalytics,
-    private val signInUseCase: SignInUseCase,
 ) : BaseViewModel<RankingUiState, RankingIntent, RankingSideEffect>(
         RankingUiState(),
     ) {
-    private var pendingBookmarkRequest: Pair<RamenShop, Boolean>? = null
+    private var previousBookmarkOwner: String? = null
 
     init {
-        observeSessionState()
         observePersonalization()
         loadFirstPage()
     }
@@ -65,15 +54,6 @@ class RankingViewModel(
             -> loadNextPage()
             RankingIntent.OnAllCategoriesSelected -> selectAllCategories()
             RankingIntent.OnAreaSheetOpened -> restoreAreaSelection()
-            RankingIntent.OnLoginSelectionDismissed -> {
-                pendingBookmarkRequest = null
-            }
-            is RankingIntent.OnLoginTypeSelected -> {
-                when (intent.type) {
-                    LoginType.KAKAO -> signInWithKakao()
-                    LoginType.APPLE -> signInWithApple()
-                }
-            }
             is RankingIntent.OnAreaFilterSelected -> selectAreaFilter(intent.areaFilter)
             is RankingIntent.OnAdministrativeAreaSelected -> selectAdministrativeArea(intent.area)
             RankingIntent.OnAreaSelectionBack -> showAdministrativeAreas()
@@ -86,35 +66,18 @@ class RankingViewModel(
     private fun observePersonalization() {
         viewModelScope.launch {
             personalizationStore.state.collectLatest { state ->
-                val personalization =
-                    (state as? PersonalizationBootstrapState.Success)?.value
-                        ?: return@collectLatest
-                val isLoggedOut = !loginRepository.hasSession()
-                if (isLoggedOut) return@collectLatest
-                synchronizeLikeCounts(personalization.bookmarkedShopIds)
+                val personalization = (state as? PersonalizationBootstrapState.Success)?.value
+                val accountId = loginRepository.currentAccountId()
+                if (accountId != previousBookmarkOwner) {
+                    reduce { copy(hasReceivedPersonalization = false, bookmarkLikeCountDeltas = emptyMap()) }
+                }
+                previousBookmarkOwner = accountId
+                if (accountId != null && personalization != null) synchronizeLikeCounts(personalization.bookmarkedShopIds)
                 reduce {
                     copy(
-                        bookmarkedShopIds = personalization.bookmarkedShopIds,
-                        hasReceivedPersonalization = true,
+                        bookmarkedShopIds = personalization?.bookmarkedShopIds.orEmpty(),
+                        hasReceivedPersonalization = personalization != null,
                     )
-                }
-                resumePendingBookmark()
-            }
-        }
-    }
-
-    private fun observeSessionState() {
-        viewModelScope.launch {
-            loginRepository.session.collectLatest { sessionState ->
-                val isNotAuthenticated = sessionState != LoginSessionState.AUTHENTICATED
-                if (isNotAuthenticated) {
-                    reduce {
-                        copy(
-                            bookmarkedShopIds = emptySet(),
-                            hasReceivedPersonalization = false,
-                            bookmarkLikeCountDeltas = emptyMap(),
-                        )
-                    }
                 }
             }
         }
@@ -266,15 +229,10 @@ class RankingViewModel(
         loadFirstPage()
     }
 
-    private suspend fun updateBookmark(
+    private fun updateBookmark(
         shop: RamenShop,
         enabled: Boolean,
     ) {
-        val hasSession = hasBookmarkSessionOrShowGuide()
-        if (!hasSession) {
-            pendingBookmarkRequest = shop to enabled
-            return
-        }
         val isAlreadyUpdating = shop.id in currentState.bookmarkUpdatingShopIds
         if (isAlreadyUpdating) return
         val isBookmarkUnchanged = !shouldUpdateBookmark(shop.id, enabled)
@@ -282,14 +240,6 @@ class RankingViewModel(
 
         rankingAnalytics.logBookmarkToggled(shop, enabled)
         executeBookmarkUpdate(shop.id, enabled)
-    }
-
-    private suspend fun hasBookmarkSessionOrShowGuide(): Boolean {
-        val hasSession = loginRepository.hasSession()
-        if (hasSession) return true
-
-        postSideEffect(RankingSideEffect.ShowLoginGuide)
-        return false
     }
 
     private fun shouldUpdateBookmark(
@@ -428,44 +378,6 @@ class RankingViewModel(
         }
     }
 
-    private fun signInWithKakao() {
-        launchResultTask(
-            taskKey = SIGN_IN_TASK_KEY,
-            policy = TaskPolicy.IgnoreNew,
-            request = { signInUseCase(LoginType.KAKAO, AnalyticsSource.RANKING) },
-            onSuccess = { showToast(Res.string.login_success_message, ToastType.SUCCESS) },
-            onError = { handleKakaoLoginFailure() },
-        )
-    }
-
-    private fun signInWithApple() {
-        launchResultTask(
-            taskKey = SIGN_IN_TASK_KEY,
-            policy = TaskPolicy.IgnoreNew,
-            request = { signInUseCase(LoginType.APPLE, AnalyticsSource.RANKING) },
-            onSuccess = { showToast(Res.string.login_success_message, ToastType.SUCCESS) },
-            onError = { showToast(Res.string.apple_login_failure_message, ToastType.ERROR) },
-        )
-    }
-
-    private fun resumePendingBookmark() {
-        val pending = pendingBookmarkRequest ?: return
-        pendingBookmarkRequest = null
-        val (shop, enabled) = pending
-        val isAlreadyUpdating = shop.id in currentState.bookmarkUpdatingShopIds
-        if (isAlreadyUpdating) return
-        val isBookmarkUnchanged = !shouldUpdateBookmark(shop.id, enabled)
-        if (isBookmarkUnchanged) return
-
-        rankingAnalytics.logBookmarkToggled(shop, enabled)
-        executeBookmarkUpdate(shop.id, enabled)
-    }
-
-    private fun handleKakaoLoginFailure() {
-        loginAnalytics.logLoginFailed(AnalyticsSource.RANKING)
-        showToast(Res.string.kakao_login_failure_message, ToastType.ERROR)
-    }
-
     private fun createRankingQuery(cursor: RankingCursor?): RankingQuery =
         RankingQuery(
             areaFilter = currentState.areaFilter,
@@ -488,7 +400,6 @@ class RankingViewModel(
         private const val BOOKMARK_TASK_KEY = "bookmark-shop:"
         private const val RANKINGS_TASK_KEY = "rankings"
         private const val NEXT_PAGE_TASK_KEY = "ranking-next-page"
-        private const val SIGN_IN_TASK_KEY = "ranking-sign-in"
         private const val DISTRICTS_TASK_KEY = "ranking-districts"
     }
 }

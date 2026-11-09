@@ -133,7 +133,7 @@ class ShopSheetCompositionTest {
         }
 
     @Test
-    fun `바텀시트를 닫은 뒤 로그인해도 이전 북마크 대기 액션을 실행하지 않는다`() =
+    fun `비회원 저장 후 바텀시트를 닫고 로그인해도 이전 시트는 저장을 반복하지 않는다`() =
         coroutinesTest {
             val recomposer = Recomposer(coroutineContext)
             val composition = Composition(ShopTestApplier(), recomposer)
@@ -146,12 +146,15 @@ class ShopSheetCompositionTest {
                 runCurrent()
                 requireNotNull(models).first.dispatch(ShopOverviewIntent.OnBookmarkToggled(ramenShopFixture(id = "shop")))
                 runCurrent()
+                assertEquals(listOf("shop" to true), personalization.bookmarkUpdateRequests)
+                assertEquals(setOf("shop"), personalization.bookmarkedShopIds.value)
+
                 composition.setContent { }
                 runCurrent()
                 login.updateSessionState(LoginSessionState.AUTHENTICATED)
-                personalization.updateBookmarkedShopIds(setOf("existing"))
+                personalization.updateBookmarkedShopIds(setOf("existing", "shop"))
                 runCurrent()
-                assertEquals(emptyList(), personalization.bookmarkUpdateRequests)
+                assertEquals(listOf("shop" to true), personalization.bookmarkUpdateRequests)
                 assertEquals(0, profile.sessionUserId.subscriptionCount.value)
             } finally {
                 composition.dispose()

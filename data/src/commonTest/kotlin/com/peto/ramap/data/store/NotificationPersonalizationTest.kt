@@ -60,7 +60,7 @@ class NotificationPersonalizationTest {
             login.updateAccountId("account-b")
             store.clear()
             assertFalse(store.publishNotificationSettings(settings("test-account")))
-            assertTrue(value(store).notificationShopIds.isEmpty())
+            assertEquals(PersonalizationBootstrapState.Loading, store.state.value)
         }
 
     @Test
@@ -69,7 +69,7 @@ class NotificationPersonalizationTest {
             val gate = CompletableDeferred<Unit>()
             val bookmarkRepository =
                 object : BookmarkRepository by FakeBookmarkRepository() {
-                    override suspend fun fetchBookmarkedShopIds(): RamapResult<Set<String>> {
+                    override suspend fun fetchBookmarkedShopIds(accountId: String?): RamapResult<Set<String>> {
                         gate.await()
                         return RamapResult.Success(setOf("bookmark"))
                     }
@@ -91,12 +91,15 @@ class NotificationPersonalizationTest {
             val fetchGate = CompletableDeferred<Unit>()
             val bookmarks =
                 object : BookmarkRepository by FakeBookmarkRepository() {
-                    override suspend fun addBookmark(shopId: String): RamapResult<Unit> {
+                    override suspend fun addBookmarks(
+                        shopIds: Set<String>,
+                        accountId: String?,
+                    ): RamapResult<Unit> {
                         updateGate.await()
                         return RamapResult.Error(RamapError.Unknown(IllegalStateException("failure")))
                     }
 
-                    override suspend fun fetchBookmarkedShopIds(): RamapResult<Set<String>> {
+                    override suspend fun fetchBookmarkedShopIds(accountId: String?): RamapResult<Set<String>> {
                         fetchGate.await()
                         return RamapResult.Success(emptySet())
                     }

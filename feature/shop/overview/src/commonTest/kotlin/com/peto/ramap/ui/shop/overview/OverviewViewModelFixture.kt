@@ -23,7 +23,7 @@ import com.peto.ramap.fake.FakePersonalizationRepository
 import com.peto.ramap.fake.FakeShopReportRepository
 import com.peto.ramap.fake.FakeSubscribedShopRepository
 import com.peto.ramap.fixture.ramenShopFixture
-import com.peto.ramap.platform.storage.SearchHistoryStorage
+import com.peto.ramap.platform.storage.history.SearchHistoryStorage
 import com.peto.ramap.ui.shop.overview.log.ShopAnalytics
 import kotlinx.coroutines.flow.MutableStateFlow
 

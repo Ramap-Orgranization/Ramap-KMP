@@ -72,7 +72,6 @@ class MapShopSectionsFixture(
     private var overview: OverviewViewModel? = null
     private var menu: ShopMenuViewModel? = null
     private var review: ReviewsViewModel? = null
-    private var mapLogin = false
 
     init {
         scope.launch(start = CoroutineStart.UNDISPATCHED) {
@@ -164,24 +163,12 @@ class MapShopSectionsFixture(
     }
 
     fun dispatch(intent: MapIntent) {
-        if (intent == MapIntent.OnBookmarkedShopsToggled && !map.uiState.value.isLoggedIn) mapLogin = true
-        when {
-            intent is MapIntent.OnLoginTypeSelected && !mapLogin -> overview?.dispatch(ShopOverviewIntent.OnLoginTypeSelected(intent.type))
-            intent == MapIntent.OnLoginSelectionDismissed && !mapLogin -> overview?.dispatch(ShopOverviewIntent.OnLoginSelectionDismissed)
-            else -> map.dispatch(intent)
-        }
+        map.dispatch(intent)
     }
 
     fun dispatch(intent: ShopOverviewIntent) {
         if (overview == null) open(null)
-        when {
-            mapLogin && intent is ShopOverviewIntent.OnLoginTypeSelected -> map.dispatch(MapIntent.OnLoginTypeSelected(intent.type))
-            mapLogin && intent == ShopOverviewIntent.OnLoginSelectionDismissed -> {
-                map.dispatch(MapIntent.OnLoginSelectionDismissed)
-                mapLogin = false
-            }
-            else -> overview?.dispatch(intent)
-        }
+        overview?.dispatch(intent)
     }
 
     fun dispatch(intent: ShopMenuIntent) {

@@ -18,5 +18,6 @@ data class BookmarkedShopListUiState(
 
     val isOverlayLoading =
         loadState.isLoading(BookmarkedShopLoadKey.REMOVE) ||
-            loadState.isLoading(BookmarkedShopLoadKey.FETCH)
+            loadState.isLoading(BookmarkedShopLoadKey.FETCH) ||
+            loadState.isLoading(BookmarkedShopLoadKey.PERSONALIZATION)
 }

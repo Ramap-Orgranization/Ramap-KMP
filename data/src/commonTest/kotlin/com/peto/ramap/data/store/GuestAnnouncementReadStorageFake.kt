@@ -1,6 +1,6 @@
 package com.peto.ramap.data.store
 
-import com.peto.ramap.platform.storage.AnnouncementReadStorage
+import com.peto.ramap.platform.storage.announcement.AnnouncementReadStorage
 import kotlinx.coroutines.flow.MutableStateFlow
 
 internal class GuestAnnouncementReadStorageFake : AnnouncementReadStorage {

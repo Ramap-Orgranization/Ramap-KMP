@@ -9,7 +9,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.click
-import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performTouchInput
@@ -17,20 +16,11 @@ import androidx.compose.ui.test.v2.runComposeUiTest
 import androidx.navigationevent.NavigationEventDispatcher
 import androidx.navigationevent.NavigationEventDispatcherOwner
 import androidx.navigationevent.compose.LocalNavigationEventDispatcherOwner
-import com.peto.ramap.analytics.common.login.LoginAnalytics
-import com.peto.ramap.designsystem.toast.ToastManager
 import com.peto.ramap.domain.model.notice.OperatingNotice
 import com.peto.ramap.domain.model.notice.OperatingNoticeType
-import com.peto.ramap.domain.usecase.SignInUseCase
-import com.peto.ramap.fake.FakeAnalyticsTracker
-import com.peto.ramap.fake.FakeCrashReporter
-import com.peto.ramap.fake.FakeLoginRepository
-import com.peto.ramap.fake.FakeOperatingNoticeRepository
-import com.peto.ramap.fake.FakePersonalizationRepository
 import com.peto.ramap.fixture.ramenShopFixture
 import com.peto.ramap.theme.RamapTheme
 import com.peto.ramap.ui.main.notice.contract.OperatingNoticeUiState
-import com.peto.ramap.ui.main.notice.log.OperatingNoticeAnalytics
 import kotlinx.datetime.LocalDate
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -116,53 +106,5 @@ class OperatingNoticeRouteTest {
             waitForIdle()
             onNodeWithText("알림 대상 공지").assertDoesNotExist()
             runOnIdle { assertEquals(1, opens) }
-        }
-
-    @Test
-    fun `저장 필터에서 연 로그인 안내의 버튼 터치가 로그인 호출로 전달된다`() =
-        runComposeUiTest {
-            val login = FakeLoginRepository()
-            val tracker = FakeAnalyticsTracker()
-            val toastManager = ToastManager()
-            var underlyingClickCount = 0
-            setContent {
-                val dispatcher = remember { NavigationEventDispatcher() }
-                DisposableEffect(dispatcher) { onDispose { dispatcher.dispose() } }
-                val owner =
-                    remember(dispatcher) {
-                        object : NavigationEventDispatcherOwner {
-                            override val navigationEventDispatcher = dispatcher
-                        }
-                    }
-                val viewModel =
-                    remember {
-                        OperatingNoticeViewModel(
-                            FakeOperatingNoticeRepository(),
-                            OperatingNoticeAnalytics(tracker),
-                            FakePersonalizationRepository(),
-                            login,
-                            SignInUseCase(login, LoginAnalytics(tracker, FakeCrashReporter())),
-                        )
-                    }
-                CompositionLocalProvider(LocalNavigationEventDispatcherOwner provides owner) {
-                    RamapTheme {
-                        OperatingNoticeRoute(
-                            onShopClick = { underlyingClickCount += 1 },
-                            toastManager = toastManager,
-                            viewModel = viewModel,
-                        )
-                    }
-                }
-            }
-            waitForIdle()
-            onNodeWithContentDescription("저장한 매장").performTouchInput { click() }
-            waitForIdle()
-            mainClock.advanceTimeBy(500)
-            onNodeWithText("카카오로 시작하기").assertExists().performTouchInput { click() }
-            waitForIdle()
-            runOnIdle {
-                assertEquals(1, login.signInWithKakaoCallCount)
-                assertEquals(0, underlyingClickCount)
-            }
         }
 }

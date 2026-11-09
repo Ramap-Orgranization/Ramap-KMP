@@ -1,4 +1,4 @@
-package com.peto.ramap.platform.storage
+package com.peto.ramap.platform.storage.announcement
 
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences

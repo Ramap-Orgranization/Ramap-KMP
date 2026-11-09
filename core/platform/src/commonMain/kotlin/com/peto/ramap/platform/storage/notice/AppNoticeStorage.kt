@@ -1,4 +1,4 @@
-package com.peto.ramap.platform.storage
+package com.peto.ramap.platform.storage.notice
 
 interface AppNoticeStorage {
     suspend fun fetchHiddenNoticeId(): String?

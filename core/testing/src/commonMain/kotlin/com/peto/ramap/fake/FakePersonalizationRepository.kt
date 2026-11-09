@@ -21,6 +21,8 @@ class FakePersonalizationRepository(
     var bookmarkUpdateError: RamapError? = null
     var shopNotificationError: RamapError? = null
 
+    override suspend fun synchronizeGuestBookmarks(accountId: String): RamapResult<Unit> = RamapResult.Success(Unit)
+
     override suspend fun refresh(): RamapResult<Unit> {
         publish(currentPersonalization)
         return RamapResult.Success(Unit)

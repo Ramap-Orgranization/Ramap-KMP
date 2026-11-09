@@ -3,7 +3,7 @@ package com.peto.ramap
 import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.domain.model.appnotice.AppNotice
 import com.peto.ramap.domain.repository.AppNoticeRepository
-import com.peto.ramap.platform.storage.AppNoticeStorage
+import com.peto.ramap.platform.storage.notice.AppNoticeStorage
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals

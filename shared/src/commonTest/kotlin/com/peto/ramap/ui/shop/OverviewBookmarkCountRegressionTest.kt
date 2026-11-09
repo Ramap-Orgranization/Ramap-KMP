@@ -79,12 +79,12 @@ class OverviewBookmarkCountRegressionTest {
     fun `로그인 재조회 응답에 이미 저장이 반영돼 있어도 상세 저장 수를 중복 증가시키지 않는다`() = delayedLoginOverviewScenario(RamapResult.Success(23L))
 
     @Test
-    fun `로그인 재조회가 실패해도 재개한 저장 수와 기존 상세를 유지한다`() = delayedLoginOverviewScenario(RamapResult.Error(RamapError.Http(500)))
+    fun `로그인 재조회가 실패해도 회원 저장 수와 기존 상세를 유지한다`() = delayedLoginOverviewScenario(RamapResult.Error(RamapError.Http(500)))
 
     @Test
-    fun `로그인 상세 재조회가 먼저 끝나도 이후 재개한 저장 수를 반영한다`() =
+    fun `로그인 상세 재조회가 먼저 끝나도 이후 회원 저장 수를 반영한다`() =
         scenario { fixture ->
-            requestBookmarkAndLogin(fixture)
+            requestLogin(fixture)
             assertEquals(listOf("shop", "shop"), fixture.requestedShopIds)
             assertEquals(
                 22L,
@@ -94,26 +94,36 @@ class OverviewBookmarkCountRegressionTest {
 
             fixture.personalization.updateBookmarkedShopIds(emptySet())
             runCurrent()
+            fixture.viewModel.dispatch(ShopOverviewIntent.OnBookmarkToggled(fixture.shop))
+            runCurrent()
 
             assertEquals(listOf("shop" to true), fixture.personalization.bookmarkUpdateRequests)
             assertCount(fixture, 23L)
         }
 
     @Test
-    fun `로그인 후 이미 저장한 매장임을 알게 되면 저장 수를 증가시키지 않는다`() =
+    fun `비회원 저장과 로그인 후 기존 계정 목록을 받아도 상세와 캐시의 저장 수를 더하지 않는다`() =
         scenario { fixture ->
-            requestBookmarkAndLogin(fixture)
+            fixture.personalization.updateBookmarkedShopIds(emptySet())
+            runCurrent()
+            fixture.viewModel.dispatch(ShopOverviewIntent.OnBookmarkToggled(fixture.shop))
+            runCurrent()
+            assertEquals(setOf("shop"), fixture.viewModel.uiState.value.bookmarkedShopIds)
+            assertCount(fixture, 22L)
+
+            requestLogin(fixture)
             fixture.personalization.updateBookmarkedShopIds(setOf("shop"))
             runCurrent()
 
-            assertTrue(fixture.personalization.bookmarkUpdateRequests.isEmpty())
+            assertEquals(listOf("shop" to true), fixture.personalization.bookmarkUpdateRequests)
+            assertEquals(setOf("shop"), fixture.viewModel.uiState.value.bookmarkedShopIds)
             assertCount(fixture, 22L)
         }
 
     @Test
-    fun `로그인 안내를 취소한 뒤 로그인하면 상세 재조회만 하고 저장 수는 유지한다`() =
+    fun `알림 로그인 안내를 취소한 뒤 로그인하면 상세 재조회만 하고 저장 수는 유지한다`() =
         scenario { fixture ->
-            fixture.viewModel.dispatch(ShopOverviewIntent.OnBookmarkToggled(fixture.shop))
+            fixture.viewModel.dispatch(ShopOverviewIntent.OnShopNotificationToggled(fixture.shop))
             fixture.viewModel.dispatch(ShopOverviewIntent.OnLoginSelectionDismissed)
             runCurrent()
             fixture.authenticate()
@@ -122,6 +132,7 @@ class OverviewBookmarkCountRegressionTest {
 
             assertEquals(listOf("shop", "shop"), fixture.requestedShopIds)
             assertTrue(fixture.personalization.bookmarkUpdateRequests.isEmpty())
+            assertEquals(null, fixture.viewModel.uiState.value.notificationSettingsShopId)
             assertCount(fixture, 22L)
         }
 
@@ -129,10 +140,12 @@ class OverviewBookmarkCountRegressionTest {
         scenario { fixture ->
             val overviewResponse = CompletableDeferred<RamapResult<ShopOverView>>()
             fixture.fetchOverview = { overviewResponse.await() }
-            requestBookmarkAndLogin(fixture)
+            requestLogin(fixture)
             assertEquals(listOf("shop", "shop"), fixture.requestedShopIds)
 
             fixture.personalization.updateBookmarkedShopIds(emptySet())
+            runCurrent()
+            fixture.viewModel.dispatch(ShopOverviewIntent.OnBookmarkToggled(fixture.shop))
             runCurrent()
             assertEquals(listOf("shop" to true), fixture.personalization.bookmarkUpdateRequests)
             assertEquals(
@@ -180,8 +193,7 @@ class OverviewBookmarkCountRegressionTest {
             assertEquals(listOf("shop" to !initiallyBookmarked), fixture.personalization.bookmarkUpdateRequests)
         }
 
-    private fun TestScope.requestBookmarkAndLogin(fixture: OverviewBookmarkCountFixture) {
-        fixture.viewModel.dispatch(ShopOverviewIntent.OnBookmarkToggled(fixture.shop))
+    private fun TestScope.requestLogin(fixture: OverviewBookmarkCountFixture) {
         fixture.viewModel.dispatch(ShopOverviewIntent.OnLoginTypeSelected(LoginType.APPLE))
         runCurrent()
         fixture.authenticate()

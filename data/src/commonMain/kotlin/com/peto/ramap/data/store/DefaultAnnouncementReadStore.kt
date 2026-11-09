@@ -7,7 +7,7 @@ import com.peto.ramap.domain.model.announcement.AnnouncementReadState
 import com.peto.ramap.domain.repository.LoginRepository
 import com.peto.ramap.domain.store.AnnouncementReadStore
 import com.peto.ramap.network.execute.invokeRequest
-import com.peto.ramap.platform.storage.AnnouncementReadStorage
+import com.peto.ramap.platform.storage.announcement.AnnouncementReadStorage
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged

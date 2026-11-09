@@ -6,7 +6,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.peto.ramap.designsystem.dialog.LoginGuideDialog
 import com.peto.ramap.designsystem.toast.ToastManager
 import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.navigation.NavigationState
@@ -107,28 +106,6 @@ fun NewsRoute(
                 onSourceClick = ExternalUriOpener::open,
                 showFilters = false,
             )
-        },
-    )
-
-    val showLoginGuide =
-        when (activeTab) {
-            NewsTab.EVENTS -> eventsUiState.showLoginGuide
-            NewsTab.OPERATING_NOTICES -> noticeUiState.showLoginGuide
-        }
-
-    LoginGuideDialog(
-        visible = showLoginGuide,
-        onDismiss = {
-            when (activeTab) {
-                NewsTab.EVENTS -> eventsViewModel.dispatch(EventsIntent.OnLoginDismissed)
-                NewsTab.OPERATING_NOTICES -> noticeViewModel.dispatch(OperatingNoticeIntent.OnLoginDismissed)
-            }
-        },
-        onLoginTypeSelected = { type ->
-            when (activeTab) {
-                NewsTab.EVENTS -> eventsViewModel.dispatch(EventsIntent.OnLoginSelected(type))
-                NewsTab.OPERATING_NOTICES -> noticeViewModel.dispatch(OperatingNoticeIntent.OnLoginSelected(type))
-            }
         },
     )
 }
