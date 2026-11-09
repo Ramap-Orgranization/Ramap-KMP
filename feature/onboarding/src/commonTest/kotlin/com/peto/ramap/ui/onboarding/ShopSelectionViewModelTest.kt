@@ -10,6 +10,7 @@ import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.domain.repository.LoginRepository
 import com.peto.ramap.domain.store.PersonalizationStore
 import com.peto.ramap.domain.usecase.SearchRamenShopsUseCase
+import com.peto.ramap.fake.FakeAnalyticsTracker
 import com.peto.ramap.fake.FakeLoginRepository
 import com.peto.ramap.fake.FakePersonalizationRepository
 import com.peto.ramap.fake.FakeRamenShopRepository
@@ -17,6 +18,7 @@ import com.peto.ramap.fixture.ramenShopFixture
 import com.peto.ramap.ui.onboarding.contract.ShopSelectionIntent
 import com.peto.ramap.ui.onboarding.contract.ShopSelectionLoadKey
 import com.peto.ramap.ui.onboarding.contract.ShopSelectionSideEffect
+import com.peto.ramap.ui.onboarding.log.OnboardingAnalytics
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -174,7 +176,9 @@ class ShopSelectionViewModelTest {
         coroutinesTest {
             val store = FakePersonalizationRepository(Personalization(bookmarkedShopIds = shops.keys))
             val storage = FakeOnboardingStorage().apply { completionFailure = IllegalStateException() }
-            val viewModel = createViewModel(store = store, storage = storage)
+            val tracker = FakeAnalyticsTracker()
+            val analytics = OnboardingAnalytics(tracker).apply { start(resumesAfterPermissions = true) }
+            val viewModel = createViewModel(store = store, storage = storage, analytics = analytics)
             runCurrent()
             viewModel.sideEffect.test {
                 repeat(2) { viewModel.dispatch(ShopSelectionIntent.Complete) }
@@ -192,6 +196,10 @@ class ShopSelectionViewModelTest {
                 assertEquals(ShopSelectionSideEffect.Completed, awaitItem())
                 assertTrue(storage.completed)
             }
+            assertEquals(
+                listOf("onboarding_finish_requested", "onboarding_finish_failed", "onboarding_finish_requested", "onboarding_completed"),
+                tracker.events.map { it.name }.filter { it.startsWith("onboarding_finish_") || it == "onboarding_completed" },
+            )
         }
 
     @Test
@@ -349,5 +357,6 @@ class ShopSelectionViewModelTest {
         login: LoginRepository = FakeLoginRepository(),
         repository: FakeRamenShopRepository = FakeRamenShopRepository(fetchByIdsResult = shops),
         ranking: FakeOnboardingRankingRepository = FakeOnboardingRankingRepository(shops),
-    ): ShopSelectionViewModel = ShopSelectionViewModel(SearchRamenShopsUseCase(repository), repository, ranking, store, login, storage)
+        analytics: OnboardingAnalytics = OnboardingAnalytics(FakeAnalyticsTracker()),
+    ): ShopSelectionViewModel = ShopSelectionViewModel(SearchRamenShopsUseCase(repository), repository, ranking, store, login, storage, analytics)
 }

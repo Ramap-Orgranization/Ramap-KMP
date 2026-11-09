@@ -21,6 +21,7 @@ import com.peto.ramap.ui.onboarding.contract.ShopSelectionIntent
 import com.peto.ramap.ui.onboarding.contract.ShopSelectionLoadKey
 import com.peto.ramap.ui.onboarding.contract.ShopSelectionSideEffect
 import com.peto.ramap.ui.onboarding.contract.ShopSelectionUiState
+import com.peto.ramap.ui.onboarding.log.OnboardingAnalytics
 import com.peto.ramap.ui.onboarding.model.ShopSuggestionsPage
 import com.peto.ramap.ui.task.TaskPolicy
 import kotlinx.coroutines.CancellationException
@@ -37,6 +38,7 @@ internal class ShopSelectionViewModel(
     private val personalizationStore: PersonalizationStore,
     private val loginRepository: LoginRepository,
     private val storage: OnboardingStorage,
+    private val analytics: OnboardingAnalytics,
 ) : BaseViewModel<ShopSelectionUiState, ShopSelectionIntent, ShopSelectionSideEffect>(ShopSelectionUiState()) {
     private var bookmarkOwnerAccountId: String? = null
 
@@ -81,7 +83,10 @@ internal class ShopSelectionViewModel(
                 observePersonalization()
                 loadSuggestions()
             },
-            onError = { reduce { copy(hasPersonalizationError = true) } },
+            onError = { error ->
+                analytics.shopLoadFailed("personalization", error)
+                reduce { copy(hasPersonalizationError = true) }
+            },
         )
     }
 
@@ -107,8 +112,14 @@ internal class ShopSelectionViewModel(
             loadKey = ShopSelectionLoadKey.Suggestions,
             onStart = { copy(hasSuggestionsError = false, nextCursor = null, hasNextPageError = false) },
             request = { fetchSuggestions() },
-            onSuccess = { page -> reduce { copy(suggestedShops = RamenShops(suggestedShops + page.shops), nextCursor = page.nextCursor) } },
-            onError = { reduce { copy(hasSuggestionsError = true) } },
+            onSuccess = { page ->
+                analytics.shopLoadResult("suggestions", page.shops.size)
+                reduce { copy(suggestedShops = RamenShops(suggestedShops + page.shops), nextCursor = page.nextCursor) }
+            },
+            onError = { error ->
+                analytics.shopLoadFailed("suggestions", error)
+                reduce { copy(hasSuggestionsError = true) }
+            },
         )
     }
 
@@ -137,6 +148,7 @@ internal class ShopSelectionViewModel(
             onStart = { copy(hasNextPageError = false) },
             request = { rankingRepository.fetchShopRankings(RankingQuery(AreaFilter.Nationwide, emptySet(), cursor = cursor, limit = SUGGESTION_LIMIT)) },
             onSuccess = { page ->
+                analytics.shopLoadResult("next_page", page.items.size)
                 reduce {
                     copy(
                         suggestedShops = RamenShops(suggestedShops + RamenShops(page.items.map { it.shop })),
@@ -144,7 +156,10 @@ internal class ShopSelectionViewModel(
                     )
                 }
             },
-            onError = { reduce { copy(hasNextPageError = true) } },
+            onError = { error ->
+                analytics.shopLoadFailed("next_page", error)
+                reduce { copy(hasNextPageError = true) }
+            },
         )
     }
 
@@ -166,8 +181,14 @@ internal class ShopSelectionViewModel(
                 if (debounce) delay(SEARCH_DEBOUNCE_MS.milliseconds)
                 searchShops(query)
             },
-            onSuccess = { shops -> reduce { copy(searchResults = shops) } },
-            onError = { reduce { copy(hasSearchError = true) } },
+            onSuccess = { shops ->
+                analytics.shopLoadResult("search", shops.size)
+                reduce { copy(searchResults = shops) }
+            },
+            onError = { error ->
+                analytics.shopLoadFailed("search", error)
+                reduce { copy(hasSearchError = true) }
+            },
         )
     }
 
@@ -181,9 +202,11 @@ internal class ShopSelectionViewModel(
             policy = TaskPolicy.IgnoreNew,
             request = { personalizationStore.updateBookmark(shopId, enabled) },
             onSuccess = {
+                analytics.bookmarkResult(enabled = enabled, savedCount = savedShopCount())
                 reduce { copy(suggestedShops = RamenShops(suggestedShops + (shopId to shop))) }
             },
-            onError = {
+            onError = { error ->
+                analytics.bookmarkResult(enabled = enabled, savedCount = savedShopCount(), error = error)
                 postSideEffect(
                     ShopSelectionSideEffect.ShowToast(
                         ToastData(message = Res.string.personalization_update_failure_message, type = ToastType.ERROR),
@@ -193,6 +216,10 @@ internal class ShopSelectionViewModel(
         )
     }
 
+    private fun savedShopCount(): Int =
+        (personalizationStore.state.value as? PersonalizationBootstrapState.Success)?.value?.bookmarkedShopIds?.size
+            ?: currentState.bookmarks.savedCount
+
     private fun isCurrentBookmarkOwner(): Boolean {
         if (bookmarkOwnerAccountId == loginRepository.currentAccountId()) return true
         loadPersonalization()
@@ -201,13 +228,16 @@ internal class ShopSelectionViewModel(
 
     private fun complete() {
         if (!currentState.canComplete || !isCurrentBookmarkOwner()) return
+        val savedCount = currentState.bookmarks.savedCount
         launchTask(
             taskKey = COMPLETE_TASK,
             loadKey = ShopSelectionLoadKey.Complete,
             policy = TaskPolicy.IgnoreNew,
         ) {
+            analytics.finishRequested(savedCount)
             try {
                 storage.completeOnboarding()
+                analytics.completed(savedCount)
                 cancelTask(OBSERVE_PERSONALIZATION_TASK)
                 cancelTask(SEARCH_TASK)
                 cancelTask(SUGGESTIONS_TASK)
@@ -217,6 +247,7 @@ internal class ShopSelectionViewModel(
             } catch (cancellation: CancellationException) {
                 throw cancellation
             } catch (exception: Exception) {
+                analytics.finishFailed(savedCount)
                 handleError(exception)
                 postSideEffect(
                     ShopSelectionSideEffect.ShowToast(

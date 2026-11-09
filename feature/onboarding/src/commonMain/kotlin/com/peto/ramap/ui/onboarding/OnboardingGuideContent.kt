@@ -15,6 +15,7 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
@@ -36,6 +37,7 @@ import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.ui.onboarding.contract.ShopSelectionIntent
 import com.peto.ramap.ui.onboarding.contract.ShopSelectionUiState
+import com.peto.ramap.ui.onboarding.log.OnboardingAnalyticsStage
 import com.peto.ramap.ui.onboarding.model.OnboardingGuidePage
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
@@ -46,6 +48,9 @@ import ramap.shared.generated.resources.onboarding_guide_progress
 internal fun OnboardingGuideContent(
     uiState: ShopSelectionUiState,
     onIntent: (ShopSelectionIntent) -> Unit,
+    onStageViewed: (OnboardingAnalyticsStage) -> Unit = {},
+    onGuideAction: (OnboardingAnalyticsStage, String) -> Unit = { _, _ -> },
+    onShopGoalReached: (Int) -> Unit = {},
 ) {
     val guidePages = OnboardingGuidePage.entries
     val pagerState = rememberPagerState(pageCount = { guidePages.size })
@@ -53,6 +58,15 @@ internal fun OnboardingGuideContent(
     val screenStateHolder = rememberSaveableStateHolder()
     val scope = rememberCoroutineScope()
     val canNavigate = !uiState.isCompleting && !uiState.isCompleted
+    val settledGuide = guidePages.getOrNull(pagerState.settledPage)
+    val visibleStage = if (showShopSelection) OnboardingAnalyticsStage.ShopSelection else settledGuide?.analyticsStage
+
+    LaunchedEffect(visibleStage) {
+        visibleStage?.let(onStageViewed)
+    }
+    LaunchedEffect(showShopSelection, uiState.canComplete) {
+        if (showShopSelection && uiState.canComplete) onShopGoalReached(uiState.bookmarks.savedCount)
+    }
 
     NavigationBackHandler(
         state = rememberNavigationEventState<NavigationEventInfo>(NavigationEventInfo.None),
@@ -60,14 +74,16 @@ internal fun OnboardingGuideContent(
         onBackCompleted = {
             if (!canNavigate) return@NavigationBackHandler
             if (showShopSelection) {
+                onGuideAction(OnboardingAnalyticsStage.ShopSelection, "system_back")
                 pagerState.requestScrollToPage(guidePages.lastIndex)
                 showShopSelection = false
             } else if (!pagerState.isScrollInProgress) {
+                settledGuide?.let { onGuideAction(it.analyticsStage, "system_back") }
                 scope.launch { pagerState.animateScrollToPage(pagerState.currentPage - 1) }
             }
         },
     )
-    OnboardingGuideLayout(page = if (showShopSelection) null else guidePages.getOrNull(pagerState.settledPage)) {
+    OnboardingGuideLayout(page = if (showShopSelection) null else settledGuide) {
         screenStateHolder.SaveableStateProvider(showShopSelection) {
             if (showShopSelection) {
                 ShopSelectionContent(uiState = uiState, onIntent = onIntent)
@@ -76,16 +92,21 @@ internal fun OnboardingGuideContent(
                     state = pagerState,
                     modifier = Modifier.fillMaxSize(),
                 ) { page ->
+                    val guide = guidePages[page]
                     OnboardingGuidePageContent(
-                        page = guidePages[page],
+                        page = guide,
                         onNext = {
+                            onGuideAction(guide.analyticsStage, "next")
                             if (page == guidePages.lastIndex) {
                                 showShopSelection = true
                             } else {
                                 scope.launch { pagerState.animateScrollToPage(page + 1) }
                             }
                         },
-                        onSkip = { showShopSelection = true },
+                        onSkip = {
+                            onGuideAction(guide.analyticsStage, "skip")
+                            showShopSelection = true
+                        },
                     )
                 }
             }

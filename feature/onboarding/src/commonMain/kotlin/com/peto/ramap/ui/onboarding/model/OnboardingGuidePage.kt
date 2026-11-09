@@ -1,6 +1,7 @@
 package com.peto.ramap.ui.onboarding.model
 
 import androidx.compose.ui.geometry.Rect
+import com.peto.ramap.ui.onboarding.log.OnboardingAnalyticsStage
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.StringResource
 import ramap.shared.generated.resources.Res
@@ -15,6 +16,7 @@ import ramap.shared.generated.resources.onboarding_review_map_image_description
 import ramap.shared.generated.resources.onboarding_review_map_screen
 
 internal enum class OnboardingGuidePage(
+    val analyticsStage: OnboardingAnalyticsStage,
     val image: DrawableResource,
     val message: StringResource,
     val imageDescription: StringResource,
@@ -22,6 +24,7 @@ internal enum class OnboardingGuidePage(
     val highlights: List<Rect>,
 ) {
     NotificationMenu(
+        analyticsStage = OnboardingAnalyticsStage.NotificationMenu,
         image = Res.drawable.onboarding_notification_menu_screen,
         message = Res.string.onboarding_notification_menu_guide,
         imageDescription = Res.string.onboarding_notification_menu_image_description,
@@ -29,6 +32,7 @@ internal enum class OnboardingGuidePage(
         highlights = listOf(Rect(826f, 1202f, 916f, 1318f), Rect(493f, 1642f, 917f, 1770f)),
     ),
     NotificationTypes(
+        analyticsStage = OnboardingAnalyticsStage.NotificationTypes,
         image = Res.drawable.onboarding_notification_types_screen,
         message = Res.string.onboarding_notification_types_guide,
         imageDescription = Res.string.onboarding_notification_types_image_description,
@@ -36,6 +40,7 @@ internal enum class OnboardingGuidePage(
         highlights = listOf(Rect(112f, 545f, 968f, 2060f)),
     ),
     ReviewMap(
+        analyticsStage = OnboardingAnalyticsStage.ReviewMap,
         image = Res.drawable.onboarding_review_map_screen,
         message = Res.string.onboarding_review_map_guide,
         imageDescription = Res.string.onboarding_review_map_image_description,

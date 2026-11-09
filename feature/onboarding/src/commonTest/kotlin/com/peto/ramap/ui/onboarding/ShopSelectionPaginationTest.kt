@@ -11,12 +11,14 @@ import com.peto.ramap.domain.model.rank.ShopRankings
 import com.peto.ramap.domain.model.shop.AreaFilter
 import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.domain.usecase.SearchRamenShopsUseCase
+import com.peto.ramap.fake.FakeAnalyticsTracker
 import com.peto.ramap.fake.FakeLoginRepository
 import com.peto.ramap.fake.FakePersonalizationRepository
 import com.peto.ramap.fake.FakeRamenShopRepository
 import com.peto.ramap.fixture.ramenShopFixture
 import com.peto.ramap.ui.onboarding.contract.ShopSelectionIntent
 import com.peto.ramap.ui.onboarding.contract.ShopSelectionSideEffect
+import com.peto.ramap.ui.onboarding.log.OnboardingAnalytics
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -228,6 +230,6 @@ class ShopSelectionPaginationTest {
                 fetchByIdsResult = shops.filterByShopIds(store.bookmarkedShopIds.value),
                 searchResult = shops.filterByShopIds(setOf("shop-4")),
             )
-        return ShopSelectionViewModel(SearchRamenShopsUseCase(repository), repository, ranking, store, FakeLoginRepository(), FakeOnboardingStorage())
+        return ShopSelectionViewModel(SearchRamenShopsUseCase(repository), repository, ranking, store, FakeLoginRepository(), FakeOnboardingStorage(), OnboardingAnalytics(FakeAnalyticsTracker()))
     }
 }

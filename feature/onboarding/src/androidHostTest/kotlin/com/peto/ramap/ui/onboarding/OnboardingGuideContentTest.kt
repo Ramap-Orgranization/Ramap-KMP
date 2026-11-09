@@ -42,6 +42,7 @@ import com.peto.ramap.ui.onboarding.contract.OnboardingUiState
 import com.peto.ramap.ui.onboarding.contract.ShopSelectionIntent
 import com.peto.ramap.ui.onboarding.contract.ShopSelectionLoadKey
 import com.peto.ramap.ui.onboarding.contract.ShopSelectionUiState
+import com.peto.ramap.ui.onboarding.log.OnboardingAnalyticsStage
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
@@ -98,8 +99,9 @@ class OnboardingGuideContentTest {
     @Test
     fun `안내를 옆으로 드래그하는 동안 인디케이터는 같은 위치에 표시된다`() =
         runComposeUiTest {
+            val viewedStages = mutableListOf<OnboardingAnalyticsStage>()
             setContent {
-                TestContent { OnboardingGuideContent(uiState = selection, onIntent = {}) }
+                TestContent { OnboardingGuideContent(uiState = selection, onIntent = {}, onStageViewed = viewedStages::add) }
             }
             val indicator = onNodeWithContentDescription("사용법 안내 1 / 3")
             val message = onNodeWithText("매장 더보기에서 알림을 설정할 수 있어요.")
@@ -113,11 +115,13 @@ class OnboardingGuideContentTest {
             }
             assertTrue(message.fetchSemanticsNode().boundsInRoot.left < messageLeft)
             assertEquals(indicatorBounds, indicator.fetchSemanticsNode().boundsInRoot)
+            runOnIdle { assertEquals(listOf(OnboardingAnalyticsStage.NotificationMenu), viewedStages) }
             onRoot().performTouchInput { cancel() }
 
             onNodeWithText("다음").performClick()
             val nextIndicator = onNodeWithContentDescription("사용법 안내 2 / 3")
             assertEquals(indicatorBounds, nextIndicator.fetchSemanticsNode().boundsInRoot)
+            runOnIdle { assertEquals(listOf(OnboardingAnalyticsStage.NotificationMenu, OnboardingAnalyticsStage.NotificationTypes), viewedStages) }
         }
 
     @Test

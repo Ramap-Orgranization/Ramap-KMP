@@ -21,6 +21,8 @@ kotlin {
     }
 
     sourceSets.commonMain.dependencies {
+        implementation(libs.kermit)
+        implementation(projects.core.analytics)
         implementation(projects.core.platform)
         implementation(projects.core.preview)
     }

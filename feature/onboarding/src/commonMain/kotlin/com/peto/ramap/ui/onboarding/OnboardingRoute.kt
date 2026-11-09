@@ -1,10 +1,12 @@
 package com.peto.ramap.ui.onboarding
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.repeatOnLifecycle
@@ -14,6 +16,8 @@ import com.peto.ramap.platform.permission.rememberNotificationPermissionGenerato
 import com.peto.ramap.ui.onboarding.contract.OnboardingIntent
 import com.peto.ramap.ui.onboarding.contract.OnboardingPermission
 import com.peto.ramap.ui.onboarding.contract.OnboardingSideEffect
+import com.peto.ramap.ui.onboarding.contract.OnboardingStep
+import com.peto.ramap.ui.onboarding.log.OnboardingAnalyticsStage
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -26,14 +30,32 @@ fun OnboardingRoute(
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val currentOnCompleted by rememberUpdatedState(onCompleted)
     val lifecycleOwner = LocalLifecycleOwner.current
+    val analytics = viewModel.analytics
     val locationPermission =
         rememberLocationPermissionGenerator {
-            viewModel.dispatch(OnboardingIntent.PermissionRequestFinished(OnboardingPermission.Location))
+            viewModel.dispatch(OnboardingIntent.LocationPermissionFinished(it))
         }
     val notificationPermission =
         rememberNotificationPermissionGenerator {
-            viewModel.dispatch(OnboardingIntent.PermissionRequestFinished(OnboardingPermission.Notification))
+            viewModel.dispatch(OnboardingIntent.NotificationPermissionFinished(it))
         }
+
+    DisposableEffect(lifecycleOwner, analytics) {
+        val observer =
+            LifecycleEventObserver { _, event ->
+                when (event) {
+                    Lifecycle.Event.ON_STOP -> analytics.backgrounded()
+                    Lifecycle.Event.ON_START -> analytics.foregrounded()
+                    else -> Unit
+                }
+            }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
+    LaunchedEffect(state.step, analytics) {
+        if (state.step == OnboardingStep.PermissionGuide) analytics.viewStage(OnboardingAnalyticsStage.PermissionGuide)
+    }
 
     LaunchedEffect(viewModel, lifecycleOwner, locationPermission, notificationPermission) {
         // 앞선 시스템 팝업이 닫히고 앱이 활성화된 뒤 다음 권한을 요청한다.
@@ -57,6 +79,7 @@ fun OnboardingRoute(
     ) {
         OnboardingGuideRoute(
             onCompleted = { viewModel.dispatch(OnboardingIntent.ShopSelectionCompleted) },
+            analytics = analytics,
             toastManager = toastManager,
         )
     }
