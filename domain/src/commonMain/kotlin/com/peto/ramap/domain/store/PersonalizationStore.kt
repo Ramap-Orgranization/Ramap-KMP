@@ -18,11 +18,13 @@ interface PersonalizationStore {
     val state: StateFlow<PersonalizationBootstrapState>
 
     /**
-     * 원격 저장소의 개인화 데이터를 다시 불러와 [PersonalizationBootstrapState.Success]로 한 번에 교체한다.
+     * 현재 사용자의 개인화 데이터를 다시 불러와 [PersonalizationBootstrapState.Success]로 한 번에 교체한다.
      *
      * 하나의 저장소라도 조회에 실패하면 기존 상태를 유지한다.
      */
     suspend fun refresh(): RamapResult<Unit>
+
+    suspend fun synchronizeGuestBookmarks(accountId: String): RamapResult<Unit>
 
     /** [shopId]의 북마크 여부를 [enabled]로 변경한다. */
     suspend fun updateBookmark(
