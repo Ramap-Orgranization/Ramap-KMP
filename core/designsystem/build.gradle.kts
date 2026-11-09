@@ -25,6 +25,8 @@ kotlin {
         implementation(libs.compose.material3)
         implementation(libs.compose.components.resources)
         implementation(libs.coil.compose)
+        implementation(libs.markdown.m3)
+        implementation(libs.markdown.coil3)
         implementation(libs.coil.network.ktor3)
         implementation(project.dependencies.platform(libs.koin.bom))
         implementation(libs.koin.core)

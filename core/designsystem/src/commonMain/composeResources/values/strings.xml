@@ -620,4 +620,12 @@
     <string name="visited_shops_loading_photos">추억이 담긴 사진을 불러오고 있어요</string>
     <string name="visited_shops_loading_map">매장들을 지도에 모으고 있어요</string>
     <string name="visited_shops_loading_description">내가 남긴 리뷰와 사진을 불러오는 중이에요.</string>
+    <string name="announcement_title">공지사항</string>
+    <string name="announcement_empty">등록된 공지사항이 없어요</string>
+    <string name="announcement_new">새 공지사항</string>
+    <string name="announcement_error_title">공지사항을 불러오지 못했어요</string>
+    <string name="announcement_error_description">잠시 후 다시 시도해 주세요.</string>
+    <string name="announcement_detail_error_title">공지 내용을 표시하지 못했어요</string>
+    <string name="announcement_detail_error_description">잠시 후 공지사항을 다시 열어 주세요.</string>
+    <string name="new_badge">N</string>
 </resources>
