@@ -2,6 +2,8 @@ package com.peto.ramap.ui.main.notice
 
 import android.content.ComponentName
 import androidx.activity.ComponentActivity
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
@@ -9,11 +11,16 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.ExperimentalTestApi
+import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.click
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.v2.runComposeUiTest
 import androidx.navigationevent.NavigationEventDispatcher
 import androidx.navigationevent.NavigationEventDispatcherOwner
@@ -68,6 +75,47 @@ class OperatingNoticeScreenTest {
         }
 
     @Test
+    fun `새소식의 세로 배치 안에서 오늘 매장을 누르면 오늘 공지 상세가 보인다`() =
+        runComposeUiTest {
+            val todayNotice = notice("오늘 매장", today).copy(description = "오늘 임시 휴무 안내")
+            val scheduledNotice =
+                todayNotice.copy(
+                    id = "scheduled",
+                    startDate = LocalDate(2026, 10, 23),
+                    endDate = LocalDate(2026, 10, 23),
+                    description = "내일 임시 휴무 안내",
+                )
+            state = state(todayNotice, scheduledNotice)
+            setContent { content(showFilters = false) }
+
+            onAllNodesWithText("오늘 매장")[0].performTouchInput { click() }
+
+            onNodeWithText("오늘 임시 휴무 안내").assertIsDisplayed()
+            onNodeWithText("내일 임시 휴무 안내").assertDoesNotExist()
+        }
+
+    @Test
+    fun `새소식의 세로 배치 안에서 예정 매장을 누르면 시작 전 공지 상세가 함께 보인다`() =
+        runComposeUiTest {
+            val scheduledNotice =
+                notice("예정 매장", LocalDate(2026, 10, 23)).copy(description = "내일 임시 휴무 안내")
+            val laterNotice =
+                scheduledNotice.copy(
+                    id = "later",
+                    startDate = LocalDate(2026, 10, 24),
+                    endDate = LocalDate(2026, 10, 24),
+                    description = "모레 임시 휴무 안내",
+                )
+            state = state(scheduledNotice, laterNotice)
+            setContent { content(showFilters = false) }
+
+            onNodeWithText("예정 매장").performTouchInput { click() }
+
+            onNodeWithText("내일 임시 휴무 안내").assertIsDisplayed()
+            onNodeWithText("모레 임시 휴무 안내").assertIsDisplayed()
+        }
+
+    @Test
     fun `전체 공지가 없으면 기존 빈 안내를 표시한다`() =
         runComposeUiTest {
             state = state()
@@ -92,7 +140,7 @@ class OperatingNoticeScreenTest {
         }
 
     @Composable
-    private fun content() {
+    private fun content(showFilters: Boolean = true) {
         val dispatcher = remember { NavigationEventDispatcher() }
         DisposableEffect(dispatcher) { onDispose { dispatcher.dispose() } }
         val owner =
@@ -103,16 +151,19 @@ class OperatingNoticeScreenTest {
             }
         CompositionLocalProvider(LocalNavigationEventDispatcherOwner provides owner) {
             RamapTheme {
-                OperatingNoticeScreen(
-                    uiState = state,
-                    onRefresh = {},
-                    onRetry = {},
-                    onShopClick = {},
-                    onNoticeClick = {},
-                    onQueryChanged = { state = state.copy(query = it) },
-                    isSourceUrlSupported = { true },
-                    onSourceClick = {},
-                )
+                Column(modifier = Modifier.fillMaxSize()) {
+                    OperatingNoticeScreen(
+                        uiState = state,
+                        onRefresh = {},
+                        onRetry = {},
+                        onShopClick = {},
+                        onNoticeClick = {},
+                        onQueryChanged = { state = state.copy(query = it) },
+                        isSourceUrlSupported = { true },
+                        onSourceClick = {},
+                        showFilters = showFilters,
+                    )
+                }
             }
         }
     }
