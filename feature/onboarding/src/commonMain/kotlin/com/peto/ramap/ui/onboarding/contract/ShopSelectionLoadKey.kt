@@ -7,6 +7,8 @@ internal sealed interface ShopSelectionLoadKey : LoadKey {
 
     data object Suggestions : ShopSelectionLoadKey
 
+    data object NextPage : ShopSelectionLoadKey
+
     data object Search : ShopSelectionLoadKey
 
     data object Complete : ShopSelectionLoadKey

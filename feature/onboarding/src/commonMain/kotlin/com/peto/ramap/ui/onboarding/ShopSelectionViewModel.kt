@@ -2,6 +2,8 @@ package com.peto.ramap.ui.onboarding
 
 import com.peto.ramap.core.result.RamapError
 import com.peto.ramap.core.result.RamapResult
+import com.peto.ramap.designsystem.toast.model.ToastData
+import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.onboarding.OnboardingBookmarks
 import com.peto.ramap.domain.model.rank.RankingQuery
 import com.peto.ramap.domain.model.shop.AreaFilter
@@ -19,12 +21,14 @@ import com.peto.ramap.ui.onboarding.contract.ShopSelectionIntent
 import com.peto.ramap.ui.onboarding.contract.ShopSelectionLoadKey
 import com.peto.ramap.ui.onboarding.contract.ShopSelectionSideEffect
 import com.peto.ramap.ui.onboarding.contract.ShopSelectionUiState
+import com.peto.ramap.ui.onboarding.model.ShopSuggestionsPage
 import com.peto.ramap.ui.task.TaskPolicy
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.onboarding_completion_failure
 import ramap.shared.generated.resources.personalization_update_failure_message
+import kotlin.time.Duration.Companion.milliseconds
 
 internal class ShopSelectionViewModel(
     private val searchShops: SearchRamenShopsUseCase,
@@ -46,6 +50,8 @@ internal class ShopSelectionViewModel(
             is ShopSelectionIntent.ToggleBookmark -> toggleBookmark(intent.shopId)
             ShopSelectionIntent.Search -> search()
             ShopSelectionIntent.RetryShops -> if (currentState.isSearching) search() else loadSuggestions()
+            ShopSelectionIntent.LoadNextPage -> loadNextPage()
+            ShopSelectionIntent.RetryNextPage -> loadNextPage(isRetry = true)
             ShopSelectionIntent.RetryPersonalization -> loadPersonalization()
             ShopSelectionIntent.Complete -> complete()
         }
@@ -53,11 +59,13 @@ internal class ShopSelectionViewModel(
 
     private fun loadPersonalization() {
         cancelTask(OBSERVE_PERSONALIZATION_TASK)
+        cancelTask(SUGGESTIONS_TASK)
+        cancelTask(NEXT_PAGE_TASK)
         launchResultTask(
             taskKey = PERSONALIZATION_TASK,
             loadKey = ShopSelectionLoadKey.Personalization,
             policy = TaskPolicy.IgnoreNew,
-            onStart = { copy(hasPersonalization = false, hasPersonalizationError = false) },
+            onStart = { copy(hasPersonalization = false, hasPersonalizationError = false, nextCursor = null, hasNextPageError = false) },
             request = {
                 try {
                     loginRepository.awaitInitialization()
@@ -93,29 +101,56 @@ internal class ShopSelectionViewModel(
     }
 
     private fun loadSuggestions() {
+        cancelTask(NEXT_PAGE_TASK)
         launchResultTask(
             taskKey = SUGGESTIONS_TASK,
             loadKey = ShopSelectionLoadKey.Suggestions,
-            onStart = { copy(hasSuggestionsError = false) },
+            onStart = { copy(hasSuggestionsError = false, nextCursor = null, hasNextPageError = false) },
             request = { fetchSuggestions() },
-            onSuccess = { shops -> reduce { copy(suggestedShops = RamenShops(suggestedShops + shops)) } },
+            onSuccess = { page -> reduce { copy(suggestedShops = RamenShops(suggestedShops + page.shops), nextCursor = page.nextCursor) } },
             onError = { reduce { copy(hasSuggestionsError = true) } },
         )
     }
 
-    private suspend fun fetchSuggestions(): RamapResult<RamenShops> {
+    private suspend fun fetchSuggestions(): RamapResult<ShopSuggestionsPage> {
         val savedIds = (personalizationStore.state.value as? PersonalizationBootstrapState.Success)?.value?.bookmarkedShopIds.orEmpty()
         val savedShops = if (savedIds.isEmpty()) RamapResult.Success(RamenShops(emptyMap())) else shopRepository.fetchRamenShops(savedIds)
         if (savedShops is RamapResult.Error) return savedShops
         val rankings = rankingRepository.fetchShopRankings(RankingQuery(AreaFilter.Nationwide, emptySet(), limit = SUGGESTION_LIMIT))
         if (rankings is RamapResult.Error) return rankings
+        val page = (rankings as RamapResult.Success).data
         return RamapResult.Success(
-            RamenShops((savedShops as RamapResult.Success).data.values + (rankings as RamapResult.Success).data.items.map { it.shop }),
+            ShopSuggestionsPage(
+                shops = RamenShops((savedShops as RamapResult.Success).data.values + page.items.map { it.shop }),
+                nextCursor = page.nextCursor,
+            ),
+        )
+    }
+
+    private fun loadNextPage(isRetry: Boolean = false) {
+        val cursor = currentState.nextCursor ?: return
+        if (!currentState.canLoadNextPage || (currentState.hasNextPageError && !isRetry)) return
+        launchResultTask(
+            taskKey = NEXT_PAGE_TASK,
+            loadKey = ShopSelectionLoadKey.NextPage,
+            policy = TaskPolicy.IgnoreNew,
+            onStart = { copy(hasNextPageError = false) },
+            request = { rankingRepository.fetchShopRankings(RankingQuery(AreaFilter.Nationwide, emptySet(), cursor = cursor, limit = SUGGESTION_LIMIT)) },
+            onSuccess = { page ->
+                reduce {
+                    copy(
+                        suggestedShops = RamenShops(suggestedShops + RamenShops(page.items.map { it.shop })),
+                        nextCursor = page.nextCursor,
+                    )
+                }
+            },
+            onError = { reduce { copy(hasNextPageError = true) } },
         )
     }
 
     private fun changeQuery(query: String) {
         cancelTask(SEARCH_TASK)
+        cancelTask(NEXT_PAGE_TASK)
         reduce { copy(query = query.take(SearchQuery.MAX_LENGTH), searchResults = RamenShops(emptyMap()), hasSearchError = false) }
         search(debounce = true)
     }
@@ -128,7 +163,7 @@ internal class ShopSelectionViewModel(
             loadKey = ShopSelectionLoadKey.Search,
             onStart = { copy(hasSearchError = false) },
             request = {
-                if (debounce) delay(SEARCH_DEBOUNCE_MS)
+                if (debounce) delay(SEARCH_DEBOUNCE_MS.milliseconds)
                 searchShops(query)
             },
             onSuccess = { shops -> reduce { copy(searchResults = shops) } },
@@ -144,12 +179,17 @@ internal class ShopSelectionViewModel(
             taskKey = BOOKMARK_TASK,
             loadKey = ShopSelectionLoadKey.BookmarkUpdates,
             policy = TaskPolicy.IgnoreNew,
-            onStart = { copy(actionError = null) },
             request = { personalizationStore.updateBookmark(shopId, enabled) },
             onSuccess = {
                 reduce { copy(suggestedShops = RamenShops(suggestedShops + (shopId to shop))) }
             },
-            onError = { reduce { copy(actionError = Res.string.personalization_update_failure_message) } },
+            onError = {
+                postSideEffect(
+                    ShopSelectionSideEffect.ShowToast(
+                        ToastData(message = Res.string.personalization_update_failure_message, type = ToastType.ERROR),
+                    ),
+                )
+            },
         )
     }
 
@@ -165,20 +205,24 @@ internal class ShopSelectionViewModel(
             taskKey = COMPLETE_TASK,
             loadKey = ShopSelectionLoadKey.Complete,
             policy = TaskPolicy.IgnoreNew,
-            onStart = { copy(actionError = null) },
         ) {
             try {
                 storage.completeOnboarding()
                 cancelTask(OBSERVE_PERSONALIZATION_TASK)
                 cancelTask(SEARCH_TASK)
                 cancelTask(SUGGESTIONS_TASK)
+                cancelTask(NEXT_PAGE_TASK)
                 reduce { copy(isCompleted = true) }
                 postSideEffect(ShopSelectionSideEffect.Completed)
             } catch (cancellation: CancellationException) {
                 throw cancellation
             } catch (exception: Exception) {
                 handleError(exception)
-                reduce { copy(actionError = Res.string.onboarding_completion_failure) }
+                postSideEffect(
+                    ShopSelectionSideEffect.ShowToast(
+                        ToastData(message = Res.string.onboarding_completion_failure, type = ToastType.ERROR),
+                    ),
+                )
             }
         }
     }
@@ -187,6 +231,7 @@ internal class ShopSelectionViewModel(
         const val PERSONALIZATION_TASK = "onboarding-personalization"
         const val OBSERVE_PERSONALIZATION_TASK = "onboarding-observe-personalization"
         const val SUGGESTIONS_TASK = "onboarding-suggestions"
+        const val NEXT_PAGE_TASK = "onboarding-next-page"
         const val SEARCH_TASK = "onboarding-search"
         const val BOOKMARK_TASK = "onboarding-bookmark"
         const val COMPLETE_TASK = "onboarding-complete"

@@ -3,6 +3,8 @@ package com.peto.ramap.ui.onboarding
 import app.cash.turbine.test
 import com.peto.ramap.core.result.RamapError
 import com.peto.ramap.coroutinesTest
+import com.peto.ramap.designsystem.toast.model.ToastData
+import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.personalization.Personalization
 import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.domain.repository.LoginRepository
@@ -15,16 +17,18 @@ import com.peto.ramap.fixture.ramenShopFixture
 import com.peto.ramap.ui.onboarding.contract.ShopSelectionIntent
 import com.peto.ramap.ui.onboarding.contract.ShopSelectionLoadKey
 import com.peto.ramap.ui.onboarding.contract.ShopSelectionSideEffect
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runCurrent
+import ramap.shared.generated.resources.Res
+import ramap.shared.generated.resources.onboarding_completion_failure
+import ramap.shared.generated.resources.personalization_update_failure_message
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
-import kotlin.test.assertNotNull
-import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -94,22 +98,54 @@ class ShopSelectionViewModelTest {
         }
 
     @Test
-    fun `저장 실패는 개수와 완료 기록을 바꾸지 않고 재선택으로 복구한다`() =
+    fun `저장 실패는 오류 토스트 한 번과 선택 유지로 안내하고 재선택으로 복구한다`() =
         coroutinesTest {
             val store = FakePersonalizationRepository(Personalization(bookmarkedShopIds = setOf("shop-1", "shop-2")))
             store.bookmarkUpdateError = RamapError.Unknown(IllegalStateException())
+            val storage = FakeOnboardingStorage()
+            val viewModel = createViewModel(store = store, storage = storage)
+            runCurrent()
+            viewModel.sideEffect.test {
+                repeat(2) { viewModel.dispatch(ShopSelectionIntent.ToggleBookmark("shop-3")) }
+                assertEquals(
+                    ShopSelectionSideEffect.ShowToast(ToastData(Res.string.personalization_update_failure_message, ToastType.ERROR)),
+                    awaitItem(),
+                )
+                runCurrent()
+                expectNoEvents()
+                assertEquals(2, viewModel.uiState.value.bookmarks.savedCount)
+                assertFalse("shop-3" in viewModel.uiState.value.bookmarks)
+                assertFalse(viewModel.uiState.value.canComplete)
+                assertFalse(storage.completed)
+
+                store.bookmarkUpdateError = null
+                viewModel.dispatch(ShopSelectionIntent.ToggleBookmark("shop-3"))
+                runCurrent()
+                assertTrue(viewModel.uiState.value.canComplete)
+                assertTrue("shop-3" in viewModel.uiState.value.bookmarks)
+                expectNoEvents()
+            }
+        }
+
+    @Test
+    fun `저장 해제 실패도 오류 토스트를 보내고 기존 선택과 시작 가능 상태를 유지한다`() =
+        coroutinesTest {
+            val store = FakePersonalizationRepository(Personalization(bookmarkedShopIds = setOf("shop-1", "shop-2", "shop-3")))
+            store.bookmarkUpdateError = RamapError.Unknown(IllegalStateException())
             val viewModel = createViewModel(store = store)
             runCurrent()
-            viewModel.dispatch(ShopSelectionIntent.ToggleBookmark("shop-3"))
-            runCurrent()
-            assertEquals(2, viewModel.uiState.value.bookmarks.savedCount)
-            assertNotNull(viewModel.uiState.value.actionError)
-            assertFalse(viewModel.uiState.value.canComplete)
-            store.bookmarkUpdateError = null
-            viewModel.dispatch(ShopSelectionIntent.ToggleBookmark("shop-3"))
-            runCurrent()
-            assertTrue(viewModel.uiState.value.canComplete)
-            assertNull(viewModel.uiState.value.actionError)
+            viewModel.sideEffect.test {
+                viewModel.dispatch(ShopSelectionIntent.ToggleBookmark("shop-3"))
+                assertEquals(
+                    ShopSelectionSideEffect.ShowToast(ToastData(Res.string.personalization_update_failure_message, ToastType.ERROR)),
+                    awaitItem(),
+                )
+                runCurrent()
+                assertEquals(3, viewModel.uiState.value.bookmarks.savedCount)
+                assertTrue("shop-3" in viewModel.uiState.value.bookmarks)
+                assertTrue(viewModel.uiState.value.canComplete)
+                expectNoEvents()
+            }
         }
 
     @Test
@@ -134,10 +170,35 @@ class ShopSelectionViewModelTest {
         }
 
     @Test
-    fun `완료 기록 저장 실패 후 선택을 유지하고 다시 시도할 수 있다`() =
+    fun `시작하기 실패는 오류 토스트 한 번과 선택 유지로 안내하고 재시도할 수 있다`() =
         coroutinesTest {
             val store = FakePersonalizationRepository(Personalization(bookmarkedShopIds = shops.keys))
             val storage = FakeOnboardingStorage().apply { completionFailure = IllegalStateException() }
+            val viewModel = createViewModel(store = store, storage = storage)
+            runCurrent()
+            viewModel.sideEffect.test {
+                repeat(2) { viewModel.dispatch(ShopSelectionIntent.Complete) }
+                assertEquals(
+                    ShopSelectionSideEffect.ShowToast(ToastData(Res.string.onboarding_completion_failure, ToastType.ERROR)),
+                    awaitItem(),
+                )
+                runCurrent()
+                expectNoEvents()
+                assertFalse(storage.completed)
+                assertTrue(viewModel.uiState.value.canComplete)
+                assertEquals(shops.size, viewModel.uiState.value.bookmarks.savedCount)
+                storage.completionFailure = null
+                viewModel.dispatch(ShopSelectionIntent.Complete)
+                assertEquals(ShopSelectionSideEffect.Completed, awaitItem())
+                assertTrue(storage.completed)
+            }
+        }
+
+    @Test
+    fun `시작하기 작업 취소는 오류 토스트나 완료 이벤트를 보내지 않는다`() =
+        coroutinesTest {
+            val store = FakePersonalizationRepository(Personalization(bookmarkedShopIds = shops.keys))
+            val storage = FakeOnboardingStorage().apply { completionFailure = CancellationException() }
             val viewModel = createViewModel(store = store, storage = storage)
             runCurrent()
             viewModel.sideEffect.test {
@@ -146,12 +207,28 @@ class ShopSelectionViewModelTest {
                 expectNoEvents()
                 assertFalse(storage.completed)
                 assertTrue(viewModel.uiState.value.canComplete)
-                assertNotNull(viewModel.uiState.value.actionError)
-                storage.completionFailure = null
-                viewModel.dispatch(ShopSelectionIntent.Complete)
-                assertEquals(ShopSelectionSideEffect.Completed, awaitItem())
-                assertTrue(storage.completed)
             }
+        }
+
+    @Test
+    fun `최초 매장 조회 실패 후 재시도하면 오류를 지우고 목록을 표시한다`() =
+        coroutinesTest {
+            val ranking = FakeOnboardingRankingRepository(shops).apply { error = RamapError.Unknown(IllegalStateException()) }
+            val viewModel = createViewModel(ranking = ranking)
+            runCurrent()
+            assertTrue(viewModel.uiState.value.hasShopsError)
+            assertTrue(
+                viewModel.uiState.value.shops
+                    .isEmpty(),
+            )
+            assertFalse(viewModel.uiState.value.isLoadingShops)
+
+            ranking.error = null
+            viewModel.dispatch(ShopSelectionIntent.RetryShops)
+            runCurrent()
+            assertFalse(viewModel.uiState.value.hasShopsError)
+            assertEquals(shops.keys, viewModel.uiState.value.shops.keys)
+            assertFalse(viewModel.uiState.value.isLoadingShops)
         }
 
     @Test

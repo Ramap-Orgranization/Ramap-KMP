@@ -15,6 +15,10 @@ internal sealed interface ShopSelectionIntent : Intent {
 
     data object RetryShops : ShopSelectionIntent
 
+    data object LoadNextPage : ShopSelectionIntent
+
+    data object RetryNextPage : ShopSelectionIntent
+
     data object RetryPersonalization : ShopSelectionIntent
 
     data object Complete : ShopSelectionIntent
