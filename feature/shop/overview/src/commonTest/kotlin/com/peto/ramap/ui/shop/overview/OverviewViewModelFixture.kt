@@ -4,7 +4,13 @@ import androidx.lifecycle.ViewModelStore
 import com.peto.ramap.analytics.common.login.LoginAnalytics
 import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.domain.model.auth.LoginSessionState
+import com.peto.ramap.domain.model.notification.NotificationCatalog
+import com.peto.ramap.domain.model.notification.NotificationSelection
+import com.peto.ramap.domain.model.notification.NotificationSettings
+import com.peto.ramap.domain.model.notification.NotificationType
+import com.peto.ramap.domain.model.notification.NotificationTypeId
 import com.peto.ramap.domain.model.shop.ShopOverView
+import com.peto.ramap.domain.repository.SubscribedShopRepository
 import com.peto.ramap.domain.store.PersonalizationBootstrapState
 import com.peto.ramap.domain.store.PersonalizationStore
 import com.peto.ramap.domain.usecase.FetchShopOverviewUseCase
@@ -15,6 +21,7 @@ import com.peto.ramap.fake.FakeCrashReporter
 import com.peto.ramap.fake.FakeLoginRepository
 import com.peto.ramap.fake.FakePersonalizationRepository
 import com.peto.ramap.fake.FakeShopReportRepository
+import com.peto.ramap.fake.FakeSubscribedShopRepository
 import com.peto.ramap.fixture.ramenShopFixture
 import com.peto.ramap.platform.storage.SearchHistoryStorage
 import com.peto.ramap.ui.shop.overview.log.ShopAnalytics
@@ -29,6 +36,49 @@ class OverviewViewModelFixture(
     var fetchOverview: suspend (String) -> RamapResult<ShopOverView> = { shopId ->
         RamapResult.Success(ShopOverView(ramenShopFixture(id = shopId), 0L, null, null, null))
     }
+    val notificationCatalog =
+        NotificationCatalog(
+            revision = 1L,
+            types =
+                listOf(
+                    NotificationType(NotificationTypeId("future-server-type"), "새 서버 항목", "서버 설명", 20),
+                    NotificationType(NotificationTypeId("event"), "이벤트", "기존 이벤트", 10),
+                ),
+        )
+    val notificationClearAllSaveRequests = mutableListOf<Boolean>()
+    val notificationSaveRequests = mutableListOf<NotificationSelection>()
+    val notificationLoadRequests = mutableListOf<Pair<String, String>>()
+    var awaitNotificationResponse: suspend () -> Unit = {}
+    var fetchNotificationSettings: suspend (String, String) -> RamapResult<NotificationSettings> = { shopId, accountId ->
+        RamapResult.Success(NotificationSettings(accountId, shopId, notificationCatalog, notificationCatalog.clear()))
+    }
+    var saveNotificationSettings: suspend (NotificationSettings, NotificationSelection) -> RamapResult<NotificationSettings> = { settings, selection ->
+        RamapResult.Success(settings.copy(selection = selection))
+    }
+    private val notifications =
+        object : SubscribedShopRepository by FakeSubscribedShopRepository() {
+            override suspend fun fetchNotificationSettings(
+                shopId: String,
+                expectedAccountId: String,
+            ): RamapResult<NotificationSettings> {
+                notificationLoadRequests += shopId to expectedAccountId
+                awaitNotificationResponse()
+                return fetchNotificationSettings.invoke(shopId, expectedAccountId)
+            }
+
+            override suspend fun saveNotificationSettings(
+                settings: NotificationSettings,
+                selection: NotificationSelection,
+                clearAll: Boolean,
+            ): RamapResult<NotificationSettings> {
+                notificationClearAllSaveRequests += clearAll
+                notificationSaveRequests += selection
+                return when (val result = saveNotificationSettings.invoke(settings, selection)) {
+                    is RamapResult.Error -> result
+                    is RamapResult.Success -> RamapResult.Success(result.data.copy(hasHiddenEffectiveSubscription = !clearAll && result.data.hasHiddenEffectiveSubscription))
+                }
+            }
+        }
     var awaitPersonalizationResponse: suspend () -> Unit = {}
 
     private val queries =
@@ -82,6 +132,7 @@ class OverviewViewModelFixture(
             mapSearchHistoryStorage = history,
             mapAnalytics = ShopAnalytics(analytics),
             signInUseCase = SignInUseCase(login, LoginAnalytics(analytics, FakeCrashReporter())),
+            subscribedShopRepository = notifications,
         )
     val store = ViewModelStore().apply { put("overview", viewModel) }
 

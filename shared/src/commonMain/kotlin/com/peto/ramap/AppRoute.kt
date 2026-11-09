@@ -13,7 +13,6 @@ import com.peto.ramap.log.AppAnalytics
 import com.peto.ramap.navigation.deeplink.ShopDeepLinkDispatcher
 import com.peto.ramap.navigation.deeplink.ShopDeepLinkParser
 import com.peto.ramap.navigation.rememberNavigationState
-import com.peto.ramap.notification.NotificationDeepLinkParser
 import com.peto.ramap.notification.NotificationLaunchDispatcher
 import org.koin.compose.koinInject
 
@@ -21,7 +20,6 @@ import org.koin.compose.koinInject
 internal fun AppRoute(
     toastManager: ToastManager,
     onExitRequested: (() -> Unit)?,
-    notificationDeepLinkParser: NotificationDeepLinkParser = koinInject(),
     notificationLaunchDispatcher: NotificationLaunchDispatcher = koinInject(),
     shopDeepLinkParser: ShopDeepLinkParser = koinInject(),
     shopDeepLinkDispatcher: ShopDeepLinkDispatcher = koinInject(),
@@ -36,7 +34,6 @@ internal fun AppRoute(
         navigationState = navigationState,
         toastManager = toastManager,
         onExitRequested = onExitRequested,
-        notificationDeepLinkParser = notificationDeepLinkParser,
         notificationLaunchDispatcher = notificationLaunchDispatcher,
         shopDeepLinkParser = shopDeepLinkParser,
         shopDeepLinkDispatcher = shopDeepLinkDispatcher,

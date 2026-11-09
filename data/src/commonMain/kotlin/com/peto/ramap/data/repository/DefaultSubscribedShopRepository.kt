@@ -1,53 +1,57 @@
 package com.peto.ramap.data.repository
 
 import com.peto.ramap.core.result.RamapResult
-import com.peto.ramap.data.model.ShopEventNotificationSubscriptionResponse
+import com.peto.ramap.data.datasource.personalization.NotificationDataSource
+import com.peto.ramap.domain.model.notification.NotificationSelection
+import com.peto.ramap.domain.model.notification.NotificationSettings
+import com.peto.ramap.domain.repository.LoginRepository
 import com.peto.ramap.domain.repository.SubscribedShopRepository
 import com.peto.ramap.network.execute.invokeRequest
-import io.github.jan.supabase.SupabaseClient
-import io.github.jan.supabase.postgrest.from
-import io.github.jan.supabase.postgrest.postgrest
-import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.put
 
 internal class DefaultSubscribedShopRepository(
-    private val client: SupabaseClient,
+    private val dataSource: NotificationDataSource,
+    private val loginRepository: LoginRepository,
 ) : SubscribedShopRepository {
     override suspend fun fetchSubscribedShopIds(): RamapResult<Set<String>> =
         invokeRequest {
-            client
-                .from(SHOP_SUBSCRIPTION_TABLE)
-                .select()
-                .decodeList<ShopEventNotificationSubscriptionResponse>()
-                .mapTo(mutableSetOf()) { it.shopId }
+            val accountId = loginRepository.currentAccountId() ?: return@invokeRequest emptySet()
+            dataSource.fetchSubscribedShopIds(accountId)
         }
 
-    override suspend fun subscribeShop(shopId: String): RamapResult<Unit> = changeSubscription(shopId, enabled = true)
-
-    override suspend fun unsubscribeShop(shopId: String): RamapResult<Unit> = changeSubscription(shopId, enabled = false)
-
-    /**
-     * 구독 변경 RPC에 요청 상태를 전달한다.
-     */
-    private suspend fun changeSubscription(
+    override suspend fun fetchNotificationSettings(
         shopId: String,
-        enabled: Boolean,
-    ): RamapResult<Unit> =
+        expectedAccountId: String,
+    ): RamapResult<NotificationSettings> =
         invokeRequest {
-            client.postgrest.rpc(
-                function = SET_SHOP_NOTIFICATION_RPC,
-                parameters =
-                    buildJsonObject {
-                        put(SHOP_ID_PARAMETER, shopId)
-                        put(ENABLED_PARAMETER, enabled)
-                    },
-            )
+            dataSource.fetchSettings(shopId, expectedAccountId).toDomain()
         }
 
-    private companion object {
-        private const val SET_SHOP_NOTIFICATION_RPC = "set_shop_event_notification"
-        private const val SHOP_SUBSCRIPTION_TABLE = "shop_event_notification_subscriptions"
-        private const val SHOP_ID_PARAMETER = "shop_id"
-        private const val ENABLED_PARAMETER = "enabled"
-    }
+    override suspend fun saveNotificationSettings(
+        settings: NotificationSettings,
+        selection: NotificationSelection,
+        clearAll: Boolean,
+    ): RamapResult<NotificationSettings> =
+        invokeRequest {
+            settings.catalog.selection(selection.ids)
+            dataSource
+                .saveSettings(
+                    shopId = settings.shopId,
+                    expectedAccountId = settings.accountId,
+                    revision = settings.catalog.revision,
+                    selectedIds = selection.ids.mapTo(mutableSetOf()) { it.value },
+                    clearAll = clearAll,
+                ).toDomain()
+        }
+
+    override suspend fun clearNotificationSettings(
+        shopId: String,
+        expectedAccountId: String,
+    ): RamapResult<NotificationSettings> =
+        invokeRequest {
+            dataSource.clearSettings(shopId, expectedAccountId).toDomain()
+        }
+
+    override suspend fun subscribeShop(shopId: String): RamapResult<Unit> = invokeRequest { dataSource.changeEventSubscription(shopId, true) }
+
+    override suspend fun unsubscribeShop(shopId: String): RamapResult<Unit> = invokeRequest { dataSource.changeEventSubscription(shopId, false) }
 }

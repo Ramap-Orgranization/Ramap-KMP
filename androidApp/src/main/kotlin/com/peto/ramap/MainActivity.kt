@@ -41,7 +41,7 @@ class MainActivity : ComponentActivity() {
         NaverMapSdk.getInstance(applicationContext).client =
             NaverMapSdk.NcpKeyClient(RamapSecrets.naverMapNcpKeyId)
         handleAuthDeepLink(intent)
-        dispatchDeepLinks(intent)
+        if (savedInstanceState == null) dispatchDeepLinks(intent)
 
         setContent {
             App(onExitRequested = ::finish)
@@ -65,9 +65,10 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun dispatchDeepLinks(intent: Intent) {
-        deepLinkEntryPoint.submitUrl(intent.dataString)
+        if (!intent.hasExtra(DeepLinkKey.NOTIFICATION_DEEP_LINK_KEY)) deepLinkEntryPoint.submitUrl(intent.dataString)
         deepLinkEntryPoint.submitNotification(
             intent.getStringExtra(DeepLinkKey.NOTIFICATION_DEEP_LINK_KEY),
+            intent.getStringExtra(DeepLinkKey.NOTIFICATION_ID_KEY) ?: intent.getStringExtra("google.message_id"),
         )
     }
 }

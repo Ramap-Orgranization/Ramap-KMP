@@ -25,6 +25,7 @@ import com.peto.ramap.fake.FakePersonalizationRepository
 import com.peto.ramap.fake.FakeProfileRepository
 import com.peto.ramap.fake.FakeReviewChangeStore
 import com.peto.ramap.fake.FakeShopReportRepository
+import com.peto.ramap.fake.FakeSubscribedShopRepository
 import com.peto.ramap.fake.FakeUserModerationRepository
 import com.peto.ramap.fixture.ramenShopFixture
 import com.peto.ramap.ui.lifecycle.ScreenViewModelScope
@@ -224,7 +225,7 @@ class ShopSheetCompositionTest {
             val changes = FakeReviewChangeStore().apply { reset(profile.sessionUserId.value) }
             val factory =
                 viewModelFactory {
-                    initializer { OverviewViewModel(login, FakeShopReportRepository(), personalization, queries, FakeMapSearchHistoryStorage(), ShopAnalytics(FakeAnalyticsTracker()), SignInUseCase(login, LoginAnalytics(FakeAnalyticsTracker(), FakeCrashReporter()))) }
+                    initializer { OverviewViewModel(login, FakeShopReportRepository(), personalization, queries, FakeMapSearchHistoryStorage(), ShopAnalytics(FakeAnalyticsTracker()), SignInUseCase(login, LoginAnalytics(FakeAnalyticsTracker(), FakeCrashReporter())), FakeSubscribedShopRepository()) }
                     initializer { ShopMenuViewModel(queries) }
                     initializer { ReviewsViewModel(queries, FakeUserModerationRepository(), profile, login, changes, reducer, FeatchShopReviewsUseCase(queries, changes, reducer, ShopReviewCache(changes, reducer))) }
                 }

@@ -20,8 +20,12 @@ import com.peto.ramap.data.datasource.moderation.RemoteUserModerationDataSource
 import com.peto.ramap.data.datasource.moderation.UserModerationDataSource
 import com.peto.ramap.data.datasource.notice.OperatingNoticeDataSource
 import com.peto.ramap.data.datasource.notice.RemoteOperatingNoticeDataSource
+import com.peto.ramap.data.datasource.notification.PushRegistrationDataSource
+import com.peto.ramap.data.datasource.notification.RemotePushRegistrationDataSource
 import com.peto.ramap.data.datasource.personalization.BookmarkShopDataSource
+import com.peto.ramap.data.datasource.personalization.NotificationDataSource
 import com.peto.ramap.data.datasource.personalization.RemoteBookmarkShopDataSource
+import com.peto.ramap.data.datasource.personalization.RemoteNotificationDataSource
 import com.peto.ramap.data.datasource.place.PlaceSearchDataSource
 import com.peto.ramap.data.datasource.place.RemotePlaceSearchDataSource
 import com.peto.ramap.data.datasource.profile.ProfileDataSource
@@ -55,6 +59,8 @@ import org.koin.dsl.module
 
 val dataSourceModule =
     module {
+        single<PushRegistrationDataSource> { RemotePushRegistrationDataSource(get()) }
+        single<NotificationDataSource> { RemoteNotificationDataSource(get()) }
         single<FollowDataSource> { RemoteFollowDataSource(get(), get()) }
         single<ImageUrlAccessPolicy> { ReviewImageUrlAccessPolicy(get(), lazy { get<ReviewChangeStore>() }) }
         single<ImageUrlDataSource> { CachedImageUrlDataSource(RemoteImageUrlDataSource(get(), get()), get()) }

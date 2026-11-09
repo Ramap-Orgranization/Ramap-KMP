@@ -6,6 +6,10 @@ import com.peto.ramap.domain.model.auth.LoginType
 import kotlinx.coroutines.flow.Flow
 
 interface LoginRepository {
+    val accountId: Flow<String?>
+
+    fun currentAccountId(): String?
+
     val session: Flow<LoginSessionState>
 
     suspend fun awaitInitialization()

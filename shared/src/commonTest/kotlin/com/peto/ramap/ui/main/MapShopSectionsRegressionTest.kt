@@ -1,5 +1,6 @@
 package com.peto.ramap.ui.main
 
+import androidx.lifecycle.ViewModelStore
 import app.cash.turbine.test
 import com.peto.ramap.analytics.common.login.LoginAnalytics
 import com.peto.ramap.core.result.RamapError
@@ -12,6 +13,10 @@ import com.peto.ramap.domain.model.auth.LoginType
 import com.peto.ramap.domain.model.businesshour.BusinessHours
 import com.peto.ramap.domain.model.businesshour.BusinessHoursDay
 import com.peto.ramap.domain.model.menu.ShopMenu
+import com.peto.ramap.domain.model.notification.NotificationCatalog
+import com.peto.ramap.domain.model.notification.NotificationSettings
+import com.peto.ramap.domain.model.notification.NotificationType
+import com.peto.ramap.domain.model.notification.NotificationTypeId
 import com.peto.ramap.domain.model.personalization.Personalization
 import com.peto.ramap.domain.model.place.PlaceSearchErrorCode
 import com.peto.ramap.domain.model.place.PlaceSearchException
@@ -43,6 +48,7 @@ import com.peto.ramap.domain.usecase.ShopOverviewCacheLookup
 import com.peto.ramap.domain.usecase.SignInUseCase
 import com.peto.ramap.fake.FakeAnalyticsTracker
 import com.peto.ramap.fake.FakeCrashReporter
+import com.peto.ramap.fake.FakeFollowRepository
 import com.peto.ramap.fake.FakeLoginRepository
 import com.peto.ramap.fake.FakeNotificationSettingsRepository
 import com.peto.ramap.fake.FakeOperatingNoticeRepository
@@ -53,6 +59,7 @@ import com.peto.ramap.fake.FakeRamenShopRepository
 import com.peto.ramap.fake.FakeReviewChangeStore
 import com.peto.ramap.fake.FakeShopReportRepository
 import com.peto.ramap.fake.FakeShopWaitingSystemRepository
+import com.peto.ramap.fake.FakeSubscribedShopRepository
 import com.peto.ramap.fake.FakeUserModerationRepository
 import com.peto.ramap.fixture.BOUNDS_FIXTURE
 import com.peto.ramap.fixture.ramenShopFixture
@@ -83,6 +90,7 @@ import com.peto.ramap.ui.main.map.model.CameraPosition
 import com.peto.ramap.ui.main.map.model.location.LocationFocusStatus
 import com.peto.ramap.ui.main.map.model.search.SearchResultGuide
 import com.peto.ramap.ui.main.map.model.search.SearchUiModel
+import com.peto.ramap.ui.main.my.MyTabViewModel
 import com.peto.ramap.ui.shop.contract.ShopInteractionEffect.ShareShop
 import com.peto.ramap.ui.shop.contract.ShopInteractionEffect.ShowLoginGuide
 import com.peto.ramap.ui.shop.contract.ShopInteractionEffect.ShowToast
@@ -90,11 +98,15 @@ import com.peto.ramap.ui.shop.menu.contract.ShopMenuIntent
 import com.peto.ramap.ui.shop.menu.contract.ShopMenuLoadKey
 import com.peto.ramap.ui.shop.model.ShopOverviewUiState
 import com.peto.ramap.ui.shop.overview.contract.ShopOverviewIntent.OnBookmarkToggled
+import com.peto.ramap.ui.shop.overview.contract.ShopOverviewIntent.OnNotificationClear
+import com.peto.ramap.ui.shop.overview.contract.ShopOverviewIntent.OnNotificationSave
+import com.peto.ramap.ui.shop.overview.contract.ShopOverviewIntent.OnNotificationTypeToggled
 import com.peto.ramap.ui.shop.overview.contract.ShopOverviewIntent.OnOverviewRetry
 import com.peto.ramap.ui.shop.overview.contract.ShopOverviewIntent.OnShopNotificationToggled
 import com.peto.ramap.ui.shop.overview.contract.ShopOverviewIntent.OnShopReportSubmitted
 import com.peto.ramap.ui.shop.overview.contract.ShopOverviewIntent.OnShopShareClicked
 import com.peto.ramap.ui.shop.review.contract.ReviewsIntent
+import com.peto.ramap.ui.subscribed.SubscribedShopsViewModel
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.NonCancellable
@@ -2000,44 +2012,130 @@ class MapShopSectionsRegressionTest {
         }
 
     @Test
-    fun `매장 알림을 활성화하면 저장한다`() =
+    fun `매장 알림 설정을 열 때는 변경하지 않고 권한 허용 후 저장하면 반영한다`() =
         coroutinesTest {
             val shop = ramenShopFixture(id = "permission-granted-shop")
             val personalizationRepository = FakePersonalizationRepository()
+            val subscriptions = FakeSubscribedShopRepository().apply { catalog = notificationCatalogFixture() }
             val viewModel =
                 mapViewModel(
+                    ramenShopRepository = FakeRamenShopRepository(fetchByIdsResult = RamenShops(mapOf(shop.id to shop))),
                     loginRepository = loggedInRepository(),
                     personalizationRepository = personalizationRepository,
+                    subscribedShopRepository = subscriptions,
+                    notificationPermissionGranted = true,
                 )
+            viewModel.dispatch(OnShopSelected(shop))
             runCurrent()
-
             viewModel.dispatch(OnShopNotificationToggled(shop))
             runCurrent()
+            assertTrue(subscriptions.saveRequests.isEmpty())
+            assertEquals(emptySet(), personalization(personalizationRepository).notificationShopIds)
+            assertEquals(shop.id, viewModel.uiState.value.overview.notificationSettingsShopId)
 
+            viewModel.dispatch(OnNotificationTypeToggled(NotificationTypeId("event")))
+            viewModel.dispatch(OnNotificationSave)
+            runCurrent()
+
+            assertEquals(setOf(NotificationTypeId("event")), subscriptions.settings[shop.id]?.selection?.ids)
             assertEquals(setOf(shop.id), viewModel.uiState.value.notificationShopIds)
             assertEquals(setOf(shop.id), personalization(personalizationRepository).notificationShopIds)
         }
 
     @Test
-    fun `매장 알림을 비활성화하면 저장한다`() =
+    fun `매장 알림 전체 해제는 저장할 때 반영하며 권한 허용 없이도 완료한다`() =
         coroutinesTest {
             val shop = ramenShopFixture(id = "notification-disable-shop")
-            val personalizationRepository =
-                FakePersonalizationRepository(
-                    Personalization(notificationShopIds = setOf(shop.id)),
-                )
+            val login = loggedInRepository()
+            val personalizationRepository = FakePersonalizationRepository(Personalization(notificationShopIds = setOf(shop.id)))
+            val subscriptions =
+                FakeSubscribedShopRepository(setOf(shop.id)).apply {
+                    catalog = notificationCatalogFixture()
+                    settings[shop.id] = NotificationSettings(requireNotNull(login.currentAccountId()), shop.id, catalog, catalog.selectAll())
+                }
             val viewModel =
                 mapViewModel(
-                    loginRepository = loggedInRepository(),
+                    ramenShopRepository = FakeRamenShopRepository(fetchByIdsResult = RamenShops(mapOf(shop.id to shop))),
+                    loginRepository = login,
                     personalizationRepository = personalizationRepository,
+                    subscribedShopRepository = subscriptions,
                 )
+            viewModel.dispatch(OnShopSelected(shop))
             runCurrent()
-
             viewModel.dispatch(OnShopNotificationToggled(shop))
             runCurrent()
+            assertTrue(subscriptions.saveRequests.isEmpty())
+            assertEquals(setOf(shop.id), personalization(personalizationRepository).notificationShopIds)
 
+            viewModel.dispatch(OnNotificationClear)
+            viewModel.dispatch(OnNotificationSave)
+            runCurrent()
+
+            assertEquals(emptySet(), subscriptions.settings[shop.id]?.selection?.ids)
             assertEquals(emptySet(), viewModel.uiState.value.notificationShopIds)
             assertEquals(emptySet(), personalization(personalizationRepository).notificationShopIds)
+        }
+
+    @Test
+    fun `운영 알림만 저장해도 지도와 상세 종 구독 매장 목록과 마이 개수가 함께 갱신된다`() =
+        coroutinesTest {
+            val shop = ramenShopFixture(id = "operating-only-shop")
+            val personalizationRepository = FakePersonalizationRepository()
+            val subscriptions = FakeSubscribedShopRepository().apply { catalog = notificationCatalogFixture() }
+            val shops = FakeRamenShopRepository(fetchByIdsResult = RamenShops(mapOf(shop.id to shop)))
+            val viewModel =
+                mapViewModel(
+                    ramenShopRepository = shops,
+                    loginRepository = loggedInRepository(),
+                    personalizationRepository = personalizationRepository,
+                    subscribedShopRepository = subscriptions,
+                    notificationPermissionGranted = true,
+                )
+            val subscribedViewModel =
+                SubscribedShopsViewModel(
+                    notificationRepository = FakeNotificationSettingsRepository(),
+                    ramenShopRepository = shops,
+                    personalizationStore = personalizationRepository,
+                    analyticsTracker = FakeAnalyticsTracker(),
+                )
+            val myViewModel =
+                MyTabViewModel(
+                    repository = FakeProfileRepository("test-account"),
+                    userModerationRepository = FakeUserModerationRepository(),
+                    personalizationStore = personalizationRepository,
+                    reviewRepository = FakeMapReviewRepository(),
+                    followRepository = FakeFollowRepository(),
+                    changes = FakeReviewChangeStore(),
+                )
+            val store =
+                ViewModelStore().apply {
+                    put("subscribed", subscribedViewModel)
+                    put("my", myViewModel)
+                }
+            try {
+                viewModel.dispatch(OnShopSelected(shop))
+                runCurrent()
+                assertTrue(
+                    subscribedViewModel.uiState.value.shops
+                        .isEmpty(),
+                )
+                assertEquals(0, myViewModel.uiState.value.notificationCount)
+                viewModel.dispatch(OnShopNotificationToggled(shop))
+                runCurrent()
+                viewModel.dispatch(OnNotificationTypeToggled(NotificationTypeId("server_operating_type")))
+                runCurrent()
+                assertTrue(subscriptions.saveRequests.isEmpty())
+                viewModel.dispatch(OnNotificationSave)
+                runCurrent()
+
+                assertEquals(setOf(NotificationTypeId("server_operating_type")), subscriptions.settings[shop.id]?.selection?.ids)
+                assertEquals(setOf(shop.id), viewModel.uiState.value.map.notificationShopIds)
+                assertEquals(setOf(shop.id), viewModel.uiState.value.overview.notificationShopIds)
+                assertEquals(RamenShops(mapOf(shop.id to shop)), subscribedViewModel.uiState.value.shops)
+                assertEquals(1, myViewModel.uiState.value.notificationCount)
+            } finally {
+                store.clear()
+            }
         }
 
     @Test
@@ -3209,6 +3307,8 @@ private fun TestScope.mapViewModel(
     loginRepository: FakeLoginRepository = FakeLoginRepository(),
     shopReportRepository: ShopReportRepository = FakeShopReportRepository(),
     notificationSettingsRepository: FakeNotificationSettingsRepository = FakeNotificationSettingsRepository(),
+    subscribedShopRepository: FakeSubscribedShopRepository = FakeSubscribedShopRepository(),
+    notificationPermissionGranted: Boolean = false,
     detailUseCase: FetchShopOverviewUseCase? = null,
     reviewRepository: ReviewRepository? = null,
     moderationRepository: FakeUserModerationRepository = FakeUserModerationRepository(),
@@ -3280,6 +3380,8 @@ private fun TestScope.mapViewModel(
         moderation = moderationRepository,
         changes = reviewChanges,
         menus = menuRepository,
+        subscribedShops = subscribedShopRepository,
+        notificationPermissionGranted = notificationPermissionGranted,
     )
 }
 
@@ -3320,3 +3422,13 @@ private fun loggedInRepository(): FakeLoginRepository =
     )
 
 private fun personalization(repository: FakePersonalizationRepository): Personalization = (repository.state.value as PersonalizationBootstrapState.Success).value
+
+private fun notificationCatalogFixture(): NotificationCatalog =
+    NotificationCatalog(
+        revision = 1L,
+        types =
+            listOf(
+                NotificationType(NotificationTypeId("event"), "이벤트", "이벤트 소식", 0),
+                NotificationType(NotificationTypeId("server_operating_type"), "운영 소식", "서버에서 추가한 항목", 1),
+            ),
+    )
