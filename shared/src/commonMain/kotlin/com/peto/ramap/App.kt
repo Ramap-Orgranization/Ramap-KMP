@@ -43,7 +43,7 @@ import com.peto.ramap.platform.network.NetworkConnectivityStatus
 import com.peto.ramap.platform.storage.notice.AppNoticeStorage
 import com.peto.ramap.theme.RamapTheme
 import com.peto.ramap.ui.login.LoginGuideController
-import com.peto.ramap.ui.onboarding.OnboardingGate
+import com.peto.ramap.ui.onboarding.OnboardingRoute
 import com.peto.ramap.ui.retry.NetworkRetryGenerator
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
@@ -74,6 +74,7 @@ fun App(
     imageAccess: ImageAccessRepository = koinInject(),
     onExitRequested: (() -> Unit)? = null,
 ) {
+    var hasCompletedOnboarding by rememberSaveable { mutableStateOf(false) }
     setSingletonImageLoaderFactory { context ->
         lateinit var loader: ImageLoader
         loader =
@@ -89,25 +90,33 @@ fun App(
     }
     ImageAccessProvider(imageAccess) {
         RamapTheme {
-            AppUpdateGate(
-                appUpdateRepository = appUpdateRepository,
-                appVersionProvider = appVersionProvider,
-            ) {
-                OnboardingGate {
-                    AppNoticeGate(
-                        appNoticeRepository = appNoticeRepository,
-                        appNoticeStorage = appNoticeStorage,
-                        platform = appVersionProvider.platform,
-                    ) {
-                        AppContent(
-                            loginRepository = loginRepository,
-                            personalizationStore = personalizationStore,
+            Box(modifier = Modifier.fillMaxSize()) {
+                AppUpdateGate(
+                    appUpdateRepository = appUpdateRepository,
+                    appVersionProvider = appVersionProvider,
+                ) {
+                    if (hasCompletedOnboarding) {
+                        AppNoticeGate(
+                            appNoticeRepository = appNoticeRepository,
+                            appNoticeStorage = appNoticeStorage,
+                            platform = appVersionProvider.platform,
+                        ) {
+                            AppContent(
+                                loginRepository = loginRepository,
+                                personalizationStore = personalizationStore,
+                                toastManager = toastManager,
+                                loginGuideController = loginGuideController,
+                                onExitRequested = onExitRequested,
+                            )
+                        }
+                    } else {
+                        OnboardingRoute(
+                            onCompleted = { hasCompletedOnboarding = true },
                             toastManager = toastManager,
-                            loginGuideController = loginGuideController,
-                            onExitRequested = onExitRequested,
                         )
                     }
                 }
+                ToastHost(toastManager = toastManager)
             }
         }
     }
@@ -179,7 +188,6 @@ private fun AppContent(
         }
 
         LoginGuideHost(controller = loginGuideController)
-        ToastHost(toastManager = toastManager)
     }
 }
 

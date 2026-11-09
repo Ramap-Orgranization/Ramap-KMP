@@ -1,6 +1,6 @@
 package com.peto.ramap.ui.onboarding.contract
 
-internal enum class OnboardingPermission {
+enum class OnboardingPermission {
     Location,
     Notification,
 }

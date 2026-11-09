@@ -1,28 +1,30 @@
 package com.peto.ramap.ui.onboarding
 
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Modifier
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.repeatOnLifecycle
-import com.peto.ramap.designsystem.indicator.RamenLoadingIndicator
+import com.peto.ramap.designsystem.toast.ToastManager
 import com.peto.ramap.platform.permission.rememberLocationPermissionGenerator
 import com.peto.ramap.platform.permission.rememberNotificationPermissionGenerator
 import com.peto.ramap.ui.onboarding.contract.OnboardingIntent
-import com.peto.ramap.ui.onboarding.contract.OnboardingLoadKey
 import com.peto.ramap.ui.onboarding.contract.OnboardingPermission
 import com.peto.ramap.ui.onboarding.contract.OnboardingSideEffect
-import kotlinx.coroutines.CancellationException
+import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
-fun OnboardingGate(content: @Composable () -> Unit) {
-    val viewModel: OnboardingViewModel = koinViewModel()
+fun OnboardingRoute(
+    onCompleted: () -> Unit,
+    toastManager: ToastManager = koinInject(),
+    viewModel: OnboardingViewModel = koinViewModel(),
+) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val currentOnCompleted by rememberUpdatedState(onCompleted)
     val lifecycleOwner = LocalLifecycleOwner.current
     val locationPermission =
         rememberLocationPermissionGenerator {
@@ -38,31 +40,24 @@ fun OnboardingGate(content: @Composable () -> Unit) {
         lifecycleOwner.repeatOnLifecycle(Lifecycle.State.RESUMED) {
             viewModel.sideEffect.collect { effect ->
                 when (effect) {
+                    OnboardingSideEffect.Completed -> currentOnCompleted()
                     is OnboardingSideEffect.RequestPermission ->
-                        try {
-                            when (effect.permission) {
-                                OnboardingPermission.Location -> locationPermission.requestPermission()
-                                OnboardingPermission.Notification -> notificationPermission.requestPermission()
-                            }
-                        } catch (cancellation: CancellationException) {
-                            throw cancellation
-                        } catch (_: Exception) {
-                            viewModel.dispatch(OnboardingIntent.PermissionRequestFinished(effect.permission))
+                        when (effect.permission) {
+                            OnboardingPermission.Location -> locationPermission.requestPermission()
+                            OnboardingPermission.Notification -> notificationPermission.requestPermission()
                         }
                 }
             }
         }
     }
 
-    when {
-        state.loadState.isLoading(OnboardingLoadKey.ReadConfirmation) -> RamenLoadingIndicator(modifier = Modifier.fillMaxSize())
-        state.hasCompletedOnboarding -> content()
-        state.hasConfirmedPermissionGuide ->
-            ShopSelectionRoute(onCompleted = { viewModel.dispatch(OnboardingIntent.ShopSelectionCompleted) })
-        else ->
-            PermissionGuideContent(
-                isConfirming = state.loadState.isLoading(OnboardingLoadKey.ConfirmPermissionGuide),
-                onConfirm = { viewModel.dispatch(OnboardingIntent.ConfirmPermissionGuide) },
-            )
+    OnboardingContent(
+        uiState = state,
+        onIntent = viewModel::dispatch,
+    ) {
+        ShopSelectionRoute(
+            onCompleted = { viewModel.dispatch(OnboardingIntent.ShopSelectionCompleted) },
+            toastManager = toastManager,
+        )
     }
 }

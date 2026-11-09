@@ -6,12 +6,13 @@ import com.peto.ramap.ui.onboarding.contract.OnboardingIntent
 import com.peto.ramap.ui.onboarding.contract.OnboardingLoadKey
 import com.peto.ramap.ui.onboarding.contract.OnboardingPermission
 import com.peto.ramap.ui.onboarding.contract.OnboardingSideEffect
+import com.peto.ramap.ui.onboarding.contract.OnboardingStep
 import com.peto.ramap.ui.onboarding.contract.OnboardingUiState
 import com.peto.ramap.ui.task.TaskPolicy
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 
-internal class OnboardingViewModel(
+class OnboardingViewModel(
     private val storage: OnboardingStorage,
 ) : BaseViewModel<OnboardingUiState, OnboardingIntent, OnboardingSideEffect>(OnboardingUiState()) {
     private var pendingPermission: OnboardingPermission? = null
@@ -24,7 +25,7 @@ internal class OnboardingViewModel(
     override suspend fun handleIntent(intent: OnboardingIntent) {
         when (intent) {
             OnboardingIntent.ConfirmPermissionGuide -> confirmPermissionGuide()
-            OnboardingIntent.ShopSelectionCompleted -> reduce { copy(hasCompletedOnboarding = true) }
+            OnboardingIntent.ShopSelectionCompleted -> completeShopSelection()
             is OnboardingIntent.PermissionRequestFinished -> finishPermissionRequest(intent.permission)
         }
     }
@@ -52,12 +53,19 @@ internal class OnboardingViewModel(
                     handleError(exception)
                     false
                 }
-            reduce { copy(hasConfirmedPermissionGuide = hasConfirmed, hasCompletedOnboarding = hasCompleted) }
+            val step =
+                when {
+                    hasCompleted -> OnboardingStep.Completed
+                    hasConfirmed -> OnboardingStep.ShopSelection
+                    else -> OnboardingStep.PermissionGuide
+                }
+            reduce { copy(step = step) }
+            if (step == OnboardingStep.Completed) postSideEffect(OnboardingSideEffect.Completed)
         }
     }
 
     private fun confirmPermissionGuide() {
-        if (currentState.hasCompletedOnboarding || currentState.hasConfirmedPermissionGuide || currentState.loadState.isLoading(OnboardingLoadKey.ReadConfirmation)) return
+        if (currentState.step != OnboardingStep.PermissionGuide) return
 
         launchTask(
             taskKey = SAVE_CONFIRMATION_TASK_KEY,
@@ -74,8 +82,14 @@ internal class OnboardingViewModel(
                 handleError(exception)
                 // 안내 기록을 저장하지 못해도 현재 실행에서 앱 이용을 막지 않는다.
             }
-            reduce { copy(hasConfirmedPermissionGuide = true) }
+            reduce { copy(step = OnboardingStep.ShopSelection) }
         }
+    }
+
+    private suspend fun completeShopSelection() {
+        if (currentState.step != OnboardingStep.ShopSelection) return
+        reduce { copy(step = OnboardingStep.Completed) }
+        postSideEffect(OnboardingSideEffect.Completed)
     }
 
     private suspend fun requestPermission(permission: OnboardingPermission) {

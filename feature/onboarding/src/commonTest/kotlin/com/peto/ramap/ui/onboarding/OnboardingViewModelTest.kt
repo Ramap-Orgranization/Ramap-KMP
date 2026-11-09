@@ -6,6 +6,7 @@ import com.peto.ramap.ui.onboarding.contract.OnboardingIntent
 import com.peto.ramap.ui.onboarding.contract.OnboardingLoadKey
 import com.peto.ramap.ui.onboarding.contract.OnboardingPermission
 import com.peto.ramap.ui.onboarding.contract.OnboardingSideEffect
+import com.peto.ramap.ui.onboarding.contract.OnboardingStep
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -22,8 +23,7 @@ class OnboardingViewModelTest {
         coroutinesTest {
             val viewModel = OnboardingViewModel(FakeOnboardingStorage().apply { confirmed = true })
             runCurrent()
-            assertTrue(viewModel.uiState.value.hasConfirmedPermissionGuide)
-            assertFalse(viewModel.uiState.value.hasCompletedOnboarding)
+            assertEquals(OnboardingStep.ShopSelection, viewModel.uiState.value.step)
         }
 
     @Test
@@ -32,14 +32,23 @@ class OnboardingViewModelTest {
             val storage = FakeOnboardingStorage().apply { confirmed = true }
             val viewModel = OnboardingViewModel(storage)
             runCurrent()
-            storage.completeOnboarding()
-            viewModel.dispatch(OnboardingIntent.ShopSelectionCompleted)
-            runCurrent()
-            assertTrue(viewModel.uiState.value.hasCompletedOnboarding)
+            viewModel.sideEffect.test {
+                expectNoEvents()
+                storage.completeOnboarding()
+                repeat(2) { viewModel.dispatch(OnboardingIntent.ShopSelectionCompleted) }
+                runCurrent()
+                assertEquals(OnboardingStep.Completed, viewModel.uiState.value.step)
+                assertEquals(OnboardingSideEffect.Completed, awaitItem())
+                expectNoEvents()
+            }
 
             val reopened = OnboardingViewModel(storage)
             runCurrent()
-            assertTrue(reopened.uiState.value.hasCompletedOnboarding)
+            assertEquals(OnboardingStep.Completed, reopened.uiState.value.step)
+            reopened.sideEffect.test {
+                assertEquals(OnboardingSideEffect.Completed, awaitItem())
+                expectNoEvents()
+            }
         }
 
     @Test
@@ -50,19 +59,25 @@ class OnboardingViewModelTest {
             val viewModel = OnboardingViewModel(storage)
             runCurrent()
 
-            assertFalse(viewModel.uiState.value.hasConfirmedPermissionGuide)
+            assertEquals(OnboardingStep.Initializing, viewModel.uiState.value.step)
             assertTrue(
                 viewModel.uiState.value.loadState
                     .isLoading(OnboardingLoadKey.ReadConfirmation),
             )
             viewModel.dispatch(OnboardingIntent.ConfirmPermissionGuide)
+            viewModel.dispatch(OnboardingIntent.ShopSelectionCompleted)
             runCurrent()
             assertFalse(storage.confirmed)
+            assertEquals(OnboardingStep.Initializing, viewModel.uiState.value.step)
 
             pending.complete(Unit)
             runCurrent()
-            assertEquals(false, viewModel.uiState.value.hasConfirmedPermissionGuide)
+            assertEquals(OnboardingStep.PermissionGuide, viewModel.uiState.value.step)
             assertFalse(viewModel.uiState.value.loadState.isAnyLoading)
+            viewModel.dispatch(OnboardingIntent.ShopSelectionCompleted)
+            runCurrent()
+            assertEquals(OnboardingStep.PermissionGuide, viewModel.uiState.value.step)
+            viewModel.sideEffect.test { expectNoEvents() }
         }
 
     @Test
@@ -71,20 +86,20 @@ class OnboardingViewModelTest {
             val storage = FakeOnboardingStorage()
             val firstLaunch = OnboardingViewModel(storage)
             runCurrent()
-            assertEquals(false, firstLaunch.uiState.value.hasConfirmedPermissionGuide)
+            assertEquals(OnboardingStep.PermissionGuide, firstLaunch.uiState.value.step)
 
             val beforeConfirmation = OnboardingViewModel(storage)
             runCurrent()
-            assertEquals(false, beforeConfirmation.uiState.value.hasConfirmedPermissionGuide)
+            assertEquals(OnboardingStep.PermissionGuide, beforeConfirmation.uiState.value.step)
 
             beforeConfirmation.dispatch(OnboardingIntent.ConfirmPermissionGuide)
             finishPermissionRequests(beforeConfirmation)
             runCurrent()
-            assertEquals(true, beforeConfirmation.uiState.value.hasConfirmedPermissionGuide)
+            assertEquals(OnboardingStep.ShopSelection, beforeConfirmation.uiState.value.step)
 
             val afterConfirmation = OnboardingViewModel(storage)
             runCurrent()
-            assertEquals(true, afterConfirmation.uiState.value.hasConfirmedPermissionGuide)
+            assertEquals(OnboardingStep.ShopSelection, afterConfirmation.uiState.value.step)
         }
 
     @Test
@@ -98,7 +113,7 @@ class OnboardingViewModelTest {
             repeat(2) { viewModel.dispatch(OnboardingIntent.ConfirmPermissionGuide) }
             finishPermissionRequests(viewModel)
             runCurrent()
-            assertEquals(false, viewModel.uiState.value.hasConfirmedPermissionGuide)
+            assertEquals(OnboardingStep.PermissionGuide, viewModel.uiState.value.step)
             assertTrue(
                 viewModel.uiState.value.loadState
                     .isLoading(OnboardingLoadKey.ConfirmPermissionGuide),
@@ -108,7 +123,7 @@ class OnboardingViewModelTest {
             pending.complete(Unit)
             runCurrent()
             assertTrue(storage.confirmed)
-            assertEquals(true, viewModel.uiState.value.hasConfirmedPermissionGuide)
+            assertEquals(OnboardingStep.ShopSelection, viewModel.uiState.value.step)
             assertFalse(viewModel.uiState.value.loadState.isAnyLoading)
         }
 
@@ -119,7 +134,7 @@ class OnboardingViewModelTest {
             val viewModel = OnboardingViewModel(storage)
             runCurrent()
 
-            assertEquals(false, viewModel.uiState.value.hasConfirmedPermissionGuide)
+            assertEquals(OnboardingStep.PermissionGuide, viewModel.uiState.value.step)
             assertFalse(viewModel.uiState.value.loadState.isAnyLoading)
         }
 
@@ -133,13 +148,13 @@ class OnboardingViewModelTest {
             finishPermissionRequests(viewModel)
             runCurrent()
 
-            assertEquals(true, viewModel.uiState.value.hasConfirmedPermissionGuide)
+            assertEquals(OnboardingStep.ShopSelection, viewModel.uiState.value.step)
             assertFalse(viewModel.uiState.value.loadState.isAnyLoading)
             assertFalse(storage.confirmed)
 
             val nextLaunch = OnboardingViewModel(storage)
             runCurrent()
-            assertEquals(false, nextLaunch.uiState.value.hasConfirmedPermissionGuide)
+            assertEquals(OnboardingStep.PermissionGuide, nextLaunch.uiState.value.step)
         }
 
     @Test
@@ -152,7 +167,7 @@ class OnboardingViewModelTest {
             finishPermissionRequests(viewModel)
             runCurrent()
 
-            assertEquals(false, viewModel.uiState.value.hasConfirmedPermissionGuide)
+            assertEquals(OnboardingStep.PermissionGuide, viewModel.uiState.value.step)
             assertFalse(storage.confirmed)
             assertFalse(viewModel.uiState.value.loadState.isAnyLoading)
         }
@@ -169,7 +184,7 @@ class OnboardingViewModelTest {
                 repeat(2) { viewModel.dispatch(OnboardingIntent.ConfirmPermissionGuide) }
                 assertEquals(OnboardingSideEffect.RequestPermission(OnboardingPermission.Location), awaitItem())
                 assertFalse(storage.confirmed)
-                assertFalse(viewModel.uiState.value.hasConfirmedPermissionGuide)
+                assertEquals(OnboardingStep.PermissionGuide, viewModel.uiState.value.step)
                 expectNoEvents()
 
                 viewModel.dispatch(OnboardingIntent.PermissionRequestFinished(OnboardingPermission.Notification))
@@ -189,14 +204,14 @@ class OnboardingViewModelTest {
                 viewModel.dispatch(OnboardingIntent.PermissionRequestFinished(OnboardingPermission.Notification))
                 runCurrent()
                 assertTrue(storage.confirmed)
-                assertTrue(viewModel.uiState.value.hasConfirmedPermissionGuide)
+                assertEquals(OnboardingStep.ShopSelection, viewModel.uiState.value.step)
                 assertFalse(viewModel.uiState.value.loadState.isAnyLoading)
                 expectNoEvents()
             }
         }
 
     @Test
-    fun `이미 완료한 사용자는 권한 요청을 다시 시작하지 않는다`() =
+    fun `권한 안내를 마친 사용자는 권한 요청을 다시 시작하지 않는다`() =
         coroutinesTest {
             val storage = FakeOnboardingStorage().apply { confirmed = true }
             val viewModel = OnboardingViewModel(storage)
@@ -206,8 +221,25 @@ class OnboardingViewModelTest {
                 viewModel.dispatch(OnboardingIntent.ConfirmPermissionGuide)
                 runCurrent()
                 expectNoEvents()
-                assertTrue(viewModel.uiState.value.hasConfirmedPermissionGuide)
+                assertEquals(OnboardingStep.ShopSelection, viewModel.uiState.value.step)
                 assertFalse(viewModel.uiState.value.loadState.isAnyLoading)
+            }
+        }
+
+    @Test
+    fun `온보딩 완료 기록은 권한 안내 기록보다 우선하고 권한을 재요청하지 않는다`() =
+        coroutinesTest {
+            val storage = FakeOnboardingStorage().apply { completed = true }
+            val viewModel = OnboardingViewModel(storage)
+            runCurrent()
+
+            viewModel.sideEffect.test {
+                assertEquals(OnboardingStep.Completed, viewModel.uiState.value.step)
+                assertEquals(OnboardingSideEffect.Completed, awaitItem())
+                viewModel.dispatch(OnboardingIntent.ConfirmPermissionGuide)
+                runCurrent()
+                expectNoEvents()
+                assertEquals(OnboardingStep.Completed, viewModel.uiState.value.step)
             }
         }
 
