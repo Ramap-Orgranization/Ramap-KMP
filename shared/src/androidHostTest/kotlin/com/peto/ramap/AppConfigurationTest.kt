@@ -122,6 +122,7 @@ class AppConfigurationTest {
                     rankingScreen = {},
                     newsScreen = {},
                     myScreen = {},
+                    announcementScreen = {},
                     settingsScreen = {},
                     accountSettingsScreen = {},
                     profileEditScreen = {},

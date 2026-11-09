@@ -24,6 +24,7 @@ internal fun ScreenRoutes.analyticsScreenName(newsTab: NewsTab): String =
         ScreenRoutes.MyTabRoutes, ScreenRoutes.HiddenShopListRoutes -> "my"
         is ScreenRoutes.SettingsRoutes -> "settings"
         is ScreenRoutes.AccountSettingsRoutes -> "account_settings"
+        ScreenRoutes.AnnouncementRoutes -> "announcements"
         is ScreenRoutes.FollowRoutes -> "my_follows"
         is ScreenRoutes.ProfileEditRoutes -> "my_profile"
         ScreenRoutes.MyReviewsRoutes -> "my_reviews"

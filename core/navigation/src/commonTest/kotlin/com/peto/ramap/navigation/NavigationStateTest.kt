@@ -12,6 +12,17 @@ import kotlin.test.assertTrue
 
 class NavigationStateTest {
     @Test
+    fun `마이 공지사항은 중복으로 쌓이지 않고 뒤로 가면 마이로 돌아온다`() {
+        val state = navigationState(selectedTab = TabStatus.MY)
+        state.showAnnouncements()
+        state.showAnnouncements()
+        assertEquals(listOf(ScreenRoutes.MyTabRoutes, ScreenRoutes.AnnouncementRoutes), state.currentBackStack.toList())
+        state.pop()
+        assertEquals(ScreenRoutes.MyTabRoutes, state.currentRoute)
+        assertEquals(TabStatus.MY, state.selectedTab)
+    }
+
+    @Test
     fun `공지 알림은 대상 ID를 보존하고 반복 클릭마다 새 경로를 연다`() {
         val state = navigationState(selectedTab = TabStatus.MY)
         state.showOperatingNotices("notice")

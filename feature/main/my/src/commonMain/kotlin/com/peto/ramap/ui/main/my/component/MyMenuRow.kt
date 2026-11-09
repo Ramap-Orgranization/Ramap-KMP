@@ -23,6 +23,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.peto.ramap.designsystem.component.NewBadge
 import com.peto.ramap.designsystem.component.Skeleton
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.theme.AppTextStyle
@@ -50,6 +51,7 @@ internal fun MyMenuRow(
     iconBackground: Color,
     iconTint: Color,
     hasCount: Boolean = true,
+    isNew: Boolean = false,
     isLoading: Boolean = false,
     notification: StringResource? = null,
     onClick: () -> Unit,
@@ -104,6 +106,7 @@ internal fun MyMenuRow(
                     .weight(1f)
                     .padding(start = 12.dp),
         )
+        if (isNew) NewBadge()
         if (hasCount && isLoading && count == null) {
             Skeleton(
                 modifier = Modifier.size(width = 24.dp, height = 18.dp),
