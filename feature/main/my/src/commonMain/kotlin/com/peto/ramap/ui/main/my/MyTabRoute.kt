@@ -64,10 +64,12 @@ import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 import ramap.shared.generated.resources.Res
+import ramap.shared.generated.resources.announcement_title
 import ramap.shared.generated.resources.follow_manage
 import ramap.shared.generated.resources.follow_requests
 import ramap.shared.generated.resources.follow_reviews_visibility
 import ramap.shared.generated.resources.follow_saved_shops_visibility
+import ramap.shared.generated.resources.ic_news
 import ramap.shared.generated.resources.ic_notification
 import ramap.shared.generated.resources.ic_person
 import ramap.shared.generated.resources.ic_profile_blocked
@@ -100,6 +102,7 @@ fun MyTabRoute(
     onSubscribedShopsNavigate: () -> Unit,
     onBookmarkedShopsNavigate: () -> Unit,
     onProfileNavigate: () -> Unit,
+    onAnnouncementsNavigate: () -> Unit,
     onFollowNavigate: () -> Unit = {},
     onMyReviewsNavigate: () -> Unit,
     onOpenProfile: (String) -> Unit = {},
@@ -113,6 +116,7 @@ fun MyTabRoute(
     var returningFromBlockedProfile by rememberSaveable { mutableStateOf(false) }
     var returningFromFollows by rememberSaveable { mutableStateOf(false) }
     RefreshOnReturnEffect {
+        viewModel.dispatch(MyTabIntent.RefreshAnnouncements)
         if (returningFromProfileEdit) {
             returningFromProfileEdit = false
             viewModel.dispatch(MyTabIntent.ReturnedFromProfileEdit)
@@ -153,6 +157,7 @@ fun MyTabRoute(
         onVisibilitySave = { visibility ->
             viewModel.dispatch(MyTabIntent.SaveProfileVisibility(visibility))
         },
+        onAnnouncementsClick = onAnnouncementsNavigate,
         onFollowClick = {
             returningFromFollows = true
             onFollowNavigate()
@@ -196,6 +201,7 @@ internal fun MyTabContent(
     onVisibilityClick: () -> Unit,
     onVisibilityDismiss: () -> Unit,
     onVisibilitySave: (ProfileVisibility) -> Unit,
+    onAnnouncementsClick: () -> Unit = {},
     onFollowClick: () -> Unit = {},
     onBlockedUsersClick: () -> Unit,
     onBlockedUsersDismiss: () -> Unit,
@@ -368,6 +374,21 @@ internal fun MyTabContent(
                         .border(1.dp, GrayColor.C100, RoundedCornerShape(16.dp))
                         .clip(RoundedCornerShape(16.dp)),
             ) {
+                MyMenuRow(
+                    icon = Res.drawable.ic_news,
+                    title = Res.string.announcement_title,
+                    count = null,
+                    iconBackground = ChromaticColor.Blue050,
+                    iconTint = ChromaticColor.Blue400,
+                    hasCount = false,
+                    isNew = state.hasUnreadAnnouncements,
+                    onClick = onAnnouncementsClick,
+                )
+                HorizontalDivider(
+                    modifier = Modifier.padding(start = 16.dp),
+                    thickness = 1.dp,
+                    color = GrayColor.C100,
+                )
                 if (!isGuest) {
                     MyMenuRow(
                         icon = Res.drawable.ic_person,

@@ -1,5 +1,6 @@
 package com.peto.ramap.ui.main.my.contract
 
+import com.peto.ramap.domain.model.announcement.Announcement
 import com.peto.ramap.domain.model.moderation.BlockedUser
 import com.peto.ramap.domain.model.profile.AccountProfile
 import com.peto.ramap.domain.model.profile.PublicProfile
@@ -7,6 +8,9 @@ import com.peto.ramap.ui.loading.LoadState
 import com.peto.ramap.ui.loading.LoadableState
 
 data class MyTabUiState(
+    val announcements: List<Announcement> = emptyList(),
+    val readAnnouncementIds: Set<String> = emptySet(),
+    val announcementReadAccountId: String? = null,
     val userId: String? = null,
     val sessionResolved: Boolean = false,
     val profile: AccountProfile? = null,
@@ -20,6 +24,7 @@ data class MyTabUiState(
     val pendingUnblockUser: PublicProfile? = null,
     override val loadState: LoadState = LoadState(),
 ) : LoadableState<MyTabUiState> {
+    val hasUnreadAnnouncements: Boolean get() = announcements.any { it.isUnread(readAnnouncementIds.takeIf { announcementReadAccountId == userId }.orEmpty()) }
     val loading: Boolean get() = loadState.isLoading(MyTabLoadKey.Fetch)
     val savingVisibility: Boolean get() = loadState.isLoading(MyTabLoadKey.Visibility)
     val loadingReviewCount: Boolean get() = loadState.isLoading(MyTabLoadKey.ReviewCount)

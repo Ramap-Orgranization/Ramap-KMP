@@ -5,10 +5,12 @@ import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.profile.ProfileVisibility
 import com.peto.ramap.domain.model.review.change.ReviewChange
+import com.peto.ramap.domain.repository.AnnouncementRepository
 import com.peto.ramap.domain.repository.FollowRepository
 import com.peto.ramap.domain.repository.ProfileRepository
 import com.peto.ramap.domain.repository.ReviewRepository
 import com.peto.ramap.domain.repository.UserModerationRepository
+import com.peto.ramap.domain.store.AnnouncementReadStore
 import com.peto.ramap.domain.store.PersonalizationBootstrapState
 import com.peto.ramap.domain.store.PersonalizationStore
 import com.peto.ramap.domain.store.ReviewChangeStore
@@ -33,8 +35,16 @@ class MyTabViewModel(
     private val reviewRepository: ReviewRepository,
     private val followRepository: FollowRepository,
     private val changes: ReviewChangeStore,
+    private val announcementRepository: AnnouncementRepository,
+    private val announcementReadStore: AnnouncementReadStore,
 ) : BaseViewModel<MyTabUiState, MyTabIntent, MyTabSideEffect>(MyTabUiState()) {
     init {
+        launchTask(taskKey = ANNOUNCEMENT_READS) {
+            announcementReadStore.state.collect { reads ->
+                reduce { copy(readAnnouncementIds = reads.readIds, announcementReadAccountId = reads.accountId) }
+            }
+        }
+        refreshAnnouncements()
         viewModelScope.launch {
             var epoch = changes.journal.value.epoch
             var revision = changes.journal.value.revision
@@ -63,7 +73,15 @@ class MyTabViewModel(
                 cancelTask(FOLLOW_REQUESTS)
                 cancelTask(UNBLOCK)
                 val isSessionResolved = userId == null
-                reduce { MyTabUiState(userId = userId, sessionResolved = isSessionResolved) }
+                reduce {
+                    MyTabUiState(
+                        userId = userId,
+                        sessionResolved = isSessionResolved,
+                        announcements = announcements,
+                        readAnnouncementIds = readAnnouncementIds,
+                        announcementReadAccountId = announcementReadAccountId,
+                    )
+                }
                 val hasUserId = userId != null
                 if (hasUserId) refresh()
             }
@@ -83,7 +101,11 @@ class MyTabViewModel(
 
     override suspend fun handleIntent(intent: MyTabIntent) {
         when (intent) {
-            MyTabIntent.Refresh -> refresh()
+            MyTabIntent.RefreshAnnouncements -> refreshAnnouncements()
+            MyTabIntent.Refresh -> {
+                refreshAnnouncements()
+                refresh()
+            }
             MyTabIntent.ReturnedToScreen -> {
                 refreshBlockedUserCount()
                 refreshPendingFollowRequests()
@@ -343,7 +365,23 @@ class MyTabViewModel(
         )
     }
 
+    private fun refreshAnnouncements() {
+        launchResultTask(
+            taskKey = ANNOUNCEMENT_READ_REFRESH,
+            request = announcementReadStore::refresh,
+        )
+        launchResultTask(
+            taskKey = ANNOUNCEMENTS,
+            policy = TaskPolicy.IgnoreNew,
+            request = announcementRepository::fetchAnnouncements,
+            onSuccess = { reduce { copy(announcements = it) } },
+        )
+    }
+
     companion object {
+        private const val ANNOUNCEMENTS = "my-tab-announcements"
+        private const val ANNOUNCEMENT_READS = "my-tab-announcement-reads"
+        private const val ANNOUNCEMENT_READ_REFRESH = "my-tab-announcement-read-refresh"
         private const val FETCH = "my-tab-profile-fetch"
         private const val VISIBILITY = "my-tab-profile-visibility"
         private const val BLOCKED_USERS = "my-tab-blocked-users"

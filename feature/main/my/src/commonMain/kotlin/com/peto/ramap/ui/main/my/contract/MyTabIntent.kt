@@ -4,6 +4,8 @@ import com.peto.ramap.domain.model.profile.ProfileVisibility
 import com.peto.ramap.ui.base.Intent
 
 sealed interface MyTabIntent : Intent {
+    data object RefreshAnnouncements : MyTabIntent
+
     data object Refresh : MyTabIntent
 
     data object ReturnedToScreen : MyTabIntent
