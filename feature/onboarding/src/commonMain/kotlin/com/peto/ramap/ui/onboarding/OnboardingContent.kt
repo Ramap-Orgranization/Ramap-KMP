@@ -15,7 +15,7 @@ import com.peto.ramap.ui.onboarding.contract.OnboardingUiState
 internal fun OnboardingContent(
     uiState: OnboardingUiState,
     onIntent: (OnboardingIntent) -> Unit,
-    shopSelectionContent: @Composable () -> Unit,
+    guideContent: @Composable () -> Unit,
 ) {
     when (uiState.step) {
         OnboardingStep.Initializing,
@@ -28,7 +28,7 @@ internal fun OnboardingContent(
                 onConfirm = { onIntent(OnboardingIntent.ConfirmPermissionGuide) },
             )
 
-        OnboardingStep.ShopSelection -> shopSelectionContent()
+        OnboardingStep.Guide -> guideContent()
     }
 }
 
@@ -39,7 +39,7 @@ private fun OnboardingContentPreview() {
         OnboardingContent(
             uiState = OnboardingUiState(step = OnboardingStep.PermissionGuide),
             onIntent = {},
-            shopSelectionContent = {},
+            guideContent = {},
         )
     }
 }

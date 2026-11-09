@@ -643,4 +643,13 @@
     <string name="onboarding_completion_failure">시작하지 못했어요. 다시 시도해 주세요.</string>
     <string name="onboarding_shop_load_failure_title">매장을 불러오지 못했어요</string>
     <string name="onboarding_shop_load_failure_description">잠시 후 다시 시도해 주세요.</string>
+    <string name="onboarding_guide_next">다음</string>
+    <string name="onboarding_guide_skip">건너뛰기</string>
+    <string name="onboarding_guide_progress">사용법 안내 %1$d / %2$d</string>
+    <string name="onboarding_notification_menu_guide">매장 더보기에서 알림을 설정할 수 있어요.</string>
+    <string name="onboarding_notification_types_guide">이벤트와 영업 변동 중\n받고 싶은 소식만 골라보세요.</string>
+    <string name="onboarding_notification_menu_image_description">매장 상세의 더보기 버튼과 메뉴 안의 알림 항목을 강조한 예시 화면</string>
+    <string name="onboarding_notification_types_image_description">이벤트, 임시휴무, 오픈 지연, 조기 마감, 단축 영업, 영업 일시 중단을 선택할 수 있는 매장 알림 예시 화면</string>
+    <string name="onboarding_review_map_guide">리뷰를 남기면\n나만의 라멘 지도가 채워져요</string>
+    <string name="onboarding_review_map_image_description">리뷰를 남긴 라멘집이 사진으로 표시된 지도 예시 화면</string>
 </resources>

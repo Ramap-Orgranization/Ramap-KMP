@@ -55,7 +55,7 @@ fun OnboardingRoute(
         uiState = state,
         onIntent = viewModel::dispatch,
     ) {
-        ShopSelectionRoute(
+        OnboardingGuideRoute(
             onCompleted = { viewModel.dispatch(OnboardingIntent.ShopSelectionCompleted) },
             toastManager = toastManager,
         )

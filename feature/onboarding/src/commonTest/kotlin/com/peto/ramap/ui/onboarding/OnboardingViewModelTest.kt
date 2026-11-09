@@ -23,7 +23,7 @@ class OnboardingViewModelTest {
         coroutinesTest {
             val viewModel = OnboardingViewModel(FakeOnboardingStorage().apply { confirmed = true })
             runCurrent()
-            assertEquals(OnboardingStep.ShopSelection, viewModel.uiState.value.step)
+            assertEquals(OnboardingStep.Guide, viewModel.uiState.value.step)
         }
 
     @Test
@@ -95,11 +95,11 @@ class OnboardingViewModelTest {
             beforeConfirmation.dispatch(OnboardingIntent.ConfirmPermissionGuide)
             finishPermissionRequests(beforeConfirmation)
             runCurrent()
-            assertEquals(OnboardingStep.ShopSelection, beforeConfirmation.uiState.value.step)
+            assertEquals(OnboardingStep.Guide, beforeConfirmation.uiState.value.step)
 
             val afterConfirmation = OnboardingViewModel(storage)
             runCurrent()
-            assertEquals(OnboardingStep.ShopSelection, afterConfirmation.uiState.value.step)
+            assertEquals(OnboardingStep.Guide, afterConfirmation.uiState.value.step)
         }
 
     @Test
@@ -123,7 +123,7 @@ class OnboardingViewModelTest {
             pending.complete(Unit)
             runCurrent()
             assertTrue(storage.confirmed)
-            assertEquals(OnboardingStep.ShopSelection, viewModel.uiState.value.step)
+            assertEquals(OnboardingStep.Guide, viewModel.uiState.value.step)
             assertFalse(viewModel.uiState.value.loadState.isAnyLoading)
         }
 
@@ -148,7 +148,7 @@ class OnboardingViewModelTest {
             finishPermissionRequests(viewModel)
             runCurrent()
 
-            assertEquals(OnboardingStep.ShopSelection, viewModel.uiState.value.step)
+            assertEquals(OnboardingStep.Guide, viewModel.uiState.value.step)
             assertFalse(viewModel.uiState.value.loadState.isAnyLoading)
             assertFalse(storage.confirmed)
 
@@ -204,7 +204,7 @@ class OnboardingViewModelTest {
                 viewModel.dispatch(OnboardingIntent.PermissionRequestFinished(OnboardingPermission.Notification))
                 runCurrent()
                 assertTrue(storage.confirmed)
-                assertEquals(OnboardingStep.ShopSelection, viewModel.uiState.value.step)
+                assertEquals(OnboardingStep.Guide, viewModel.uiState.value.step)
                 assertFalse(viewModel.uiState.value.loadState.isAnyLoading)
                 expectNoEvents()
             }
@@ -221,7 +221,7 @@ class OnboardingViewModelTest {
                 viewModel.dispatch(OnboardingIntent.ConfirmPermissionGuide)
                 runCurrent()
                 expectNoEvents()
-                assertEquals(OnboardingStep.ShopSelection, viewModel.uiState.value.step)
+                assertEquals(OnboardingStep.Guide, viewModel.uiState.value.step)
                 assertFalse(viewModel.uiState.value.loadState.isAnyLoading)
             }
         }

@@ -56,7 +56,7 @@ class OnboardingViewModel(
             val step =
                 when {
                     hasCompleted -> OnboardingStep.Completed
-                    hasConfirmed -> OnboardingStep.ShopSelection
+                    hasConfirmed -> OnboardingStep.Guide
                     else -> OnboardingStep.PermissionGuide
                 }
             reduce { copy(step = step) }
@@ -82,12 +82,12 @@ class OnboardingViewModel(
                 handleError(exception)
                 // 안내 기록을 저장하지 못해도 현재 실행에서 앱 이용을 막지 않는다.
             }
-            reduce { copy(step = OnboardingStep.ShopSelection) }
+            reduce { copy(step = OnboardingStep.Guide) }
         }
     }
 
     private suspend fun completeShopSelection() {
-        if (currentState.step != OnboardingStep.ShopSelection) return
+        if (currentState.step != OnboardingStep.Guide) return
         reduce { copy(step = OnboardingStep.Completed) }
         postSideEffect(OnboardingSideEffect.Completed)
     }

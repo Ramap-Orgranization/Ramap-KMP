@@ -10,7 +10,7 @@ import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
-internal fun ShopSelectionRoute(
+internal fun OnboardingGuideRoute(
     onCompleted: () -> Unit,
     toastManager: ToastManager = koinInject(),
     viewModel: ShopSelectionViewModel = koinViewModel(),
@@ -23,5 +23,8 @@ internal fun ShopSelectionRoute(
             is ShopSelectionSideEffect.ShowToast -> toastManager.show(effect.data)
         }
     }
-    ShopSelectionContent(uiState = state, onIntent = viewModel::dispatch)
+    OnboardingGuideContent(
+        uiState = state,
+        onIntent = viewModel::dispatch,
+    )
 }
