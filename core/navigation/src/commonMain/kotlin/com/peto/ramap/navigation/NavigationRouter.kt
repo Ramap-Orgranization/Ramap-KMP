@@ -25,11 +25,12 @@ fun NavigationRouter(
     reviewShopSearchScreen: @Composable () -> Unit,
     rankingScreen: @Composable () -> Unit,
     feedScreen: @Composable () -> Unit = {},
-    newsScreen: @Composable () -> Unit,
+    newsScreen: @Composable (ScreenRoutes.EventTabRoutes) -> Unit,
     myScreen: @Composable () -> Unit,
     settingsScreen: @Composable () -> Unit,
     accountSettingsScreen: @Composable () -> Unit,
     profileEditScreen: @Composable () -> Unit,
+    announcementScreen: @Composable () -> Unit,
     followScreen: @Composable (ScreenRoutes.FollowRoutes) -> Unit = {},
     myReviewsScreen: @Composable () -> Unit,
     otherReviewsScreen: @Composable (ScreenRoutes.OtherReviewsRoutes) -> Unit,
@@ -60,11 +61,11 @@ fun NavigationRouter(
                     content = archiveMapScreen,
                 )
             }
-            entry<ScreenRoutes.EventTabRoutes> {
+            entry<ScreenRoutes.EventTabRoutes> { route ->
                 BottonNavigationTabScreen(
                     selectedTab = TabStatus.EVENT,
                     onTabSelected = onTabSelected,
-                    content = newsScreen,
+                    content = { newsScreen(route) },
                 )
             }
             entry<ScreenRoutes.RankingTabRoutes> {
@@ -88,6 +89,7 @@ fun NavigationRouter(
                     content = feedScreen,
                 )
             }
+            entry<ScreenRoutes.AnnouncementRoutes> { FullScreen(announcementScreen) }
             entry<ScreenRoutes.FollowRoutes> { route -> FullScreen { followScreen(route) } }
             entry<ScreenRoutes.ProfileEditRoutes> { FullScreen(profileEditScreen) }
             entry<ScreenRoutes.MyReviewsRoutes> { FullScreen(myReviewsScreen) }

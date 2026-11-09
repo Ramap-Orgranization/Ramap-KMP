@@ -4,13 +4,7 @@ import com.peto.ramap.analytics.AnalyticsSource
 import com.peto.ramap.domain.model.shop.RamenShop
 
 sealed interface PendingShopAction {
-    data class ToggleBookmark(
-        val shop: RamenShop,
-        val source: AnalyticsSource,
-        val enabled: Boolean,
-    ) : PendingShopAction
-
-    data class ToggleShopNotification(
+    data class OpenNotificationSettings(
         val shop: RamenShop,
         val source: AnalyticsSource,
     ) : PendingShopAction

@@ -24,16 +24,38 @@ import kotlin.test.assertTrue
 @OptIn(ExperimentalCoroutinesApi::class)
 class AppPersonalizationTest {
     @Test
+    fun `인증 상태가 같아도 계정이 바뀌면 이전 개인 설정을 비우고 다시 조회한다`() =
+        runTest {
+            val login = FakeLoginRepository(LoginSessionState.AUTHENTICATED)
+            val fake = FakePersonalizationRepository(Personalization(bookmarkedShopIds = setOf("account-a-shop")))
+            var refreshCount = 0
+            val store =
+                object : PersonalizationStore by fake {
+                    override suspend fun refresh(): RamapResult<Unit> {
+                        refreshCount += 1
+                        assertTrue((state.value as PersonalizationBootstrapState.Success).value.bookmarkedShopIds.isEmpty())
+                        return RamapResult.Success(Unit)
+                    }
+                }
+            backgroundScope.launch { observeSessionPersonalization(login, store) }
+            runCurrent()
+            login.updateAccountId("account-b")
+            runCurrent()
+            assertEquals(1, refreshCount)
+        }
+
+    @Test
     fun `게스트에서 로그인하면 빈 성공 상태여도 개인 설정을 다시 조회한다`() =
         runTest {
             val loginRepository = FakeLoginRepository(LoginSessionState.NOT_AUTHENTICATED)
-            val fakeStore = FakePersonalizationRepository()
+            val fakeStore = FakePersonalizationRepository(initialState = PersonalizationBootstrapState.Loading)
             var refreshCount = 0
             val store =
                 object : PersonalizationStore by fakeStore {
                     override suspend fun refresh(): RamapResult<Unit> {
                         refreshCount++
-                        fakeStore.updateBookmarkedShopIds(setOf("saved-shop"))
+                        val ids = if (loginRepository.currentAccountId() == null) setOf("guest-shop") else setOf("saved-shop")
+                        fakeStore.updateBookmarkedShopIds(ids)
                         return fakeStore.refresh()
                     }
                 }
@@ -45,13 +67,13 @@ class AppPersonalizationTest {
                 )
             }
             runCurrent()
-            assertEquals(0, refreshCount)
-            assertTrue(store.state.value is PersonalizationBootstrapState.Success)
+            assertEquals(1, refreshCount)
+            assertEquals(setOf("guest-shop"), (store.state.value as PersonalizationBootstrapState.Success).value.bookmarkedShopIds)
 
             loginRepository.updateSessionState(LoginSessionState.AUTHENTICATED)
             runCurrent()
 
-            assertEquals(1, refreshCount)
+            assertEquals(2, refreshCount)
             val personalization = store.state.value as PersonalizationBootstrapState.Success
             assertEquals(1, personalization.value.bookmarkedShopIds.size)
         }
@@ -157,6 +179,45 @@ class AppPersonalizationTest {
         }
 
     @Test
+    fun `기기 저장 이전이 실패해도 계정 목록을 열고 연결이 복구되면 다시 시도한다`() =
+        runTest {
+            NetworkRetryGenerator.clear()
+            val login = FakeLoginRepository(LoginSessionState.AUTHENTICATED)
+            val fake = FakePersonalizationRepository(initialState = PersonalizationBootstrapState.Loading)
+            val syncOwners = mutableListOf<String>()
+            val store =
+                object : PersonalizationStore by fake {
+                    override suspend fun synchronizeGuestBookmarks(accountId: String): RamapResult<Unit> {
+                        syncOwners += accountId
+                        return if (syncOwners.size == 1) {
+                            RamapResult.Error(RamapError.Network(IllegalStateException("offline")))
+                        } else {
+                            RamapResult.Success(Unit)
+                        }
+                    }
+
+                    override suspend fun refresh(): RamapResult<Unit> {
+                        fake.updateBookmarkedShopIds(setOf("server-shop"))
+                        return RamapResult.Success(Unit)
+                    }
+                }
+
+            try {
+                backgroundScope.launch { observeSessionPersonalization(login, store) }
+                runCurrent()
+
+                assertEquals(listOf("test-account"), syncOwners)
+                val state = store.state.value as PersonalizationBootstrapState.Success
+                assertEquals(setOf("server-shop"), state.value.bookmarkedShopIds)
+
+                NetworkRetryGenerator.retryPending()
+                assertEquals(listOf("test-account", "test-account"), syncOwners)
+            } finally {
+                NetworkRetryGenerator.clear()
+            }
+        }
+
+    @Test
     fun `초기 동기화 예외 후에도 사용자 재시도를 받는다`() =
         runTest {
             var refreshCount = 0
@@ -246,8 +307,8 @@ class AppPersonalizationTest {
                     initialState = PersonalizationBootstrapState.Loading,
                 ) {
                     override suspend fun refresh(): RamapResult<Unit> {
-                        refreshStarted.complete(Unit)
-                        awaitCancellation()
+                        if (refreshStarted.complete(Unit)) awaitCancellation()
+                        return RamapResult.Success(Unit)
                     }
 
                     override suspend fun clear() {

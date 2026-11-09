@@ -15,14 +15,12 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
     private var isKoinReady = false
     private var pendingFCMToken: String?
     private var pendingNotificationDeepLink: String?
+    private var pendingNotificationId: String?
 
     func application(
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
     ) -> Bool {
-        if let userInfo = launchOptions?[.remoteNotification] as? [AnyHashable: Any] {
-            pendingNotificationDeepLink = userInfo["deep_link"] as? String
-        }
         configureFirebaseIfNeeded()
         guard FirebaseApp.app() != nil else { return true }
 
@@ -108,9 +106,14 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
         didReceive response: UNNotificationResponse,
         withCompletionHandler completionHandler: @escaping () -> Void
     ) {
+        guard response.actionIdentifier == UNNotificationDefaultActionIdentifier else {
+            completionHandler()
+            return
+        }
         let userInfo = response.notification.request.content.userInfo
         print("User opened a remote notification.")
         pendingNotificationDeepLink = userInfo["deep_link"] as? String
+        pendingNotificationId = userInfo["notification_id"] as? String ?? userInfo["gcm.message_id"] as? String ?? response.notification.request.identifier
         dispatchPendingNotificationDeepLink()
         completionHandler()
     }
@@ -123,8 +126,9 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
 
     private func dispatchPendingNotificationDeepLink() {
         guard isKoinReady, let deepLink = pendingNotificationDeepLink else { return }
-        IosNotificationBridgeKt.dispatchNotificationDeepLink(rawUrl: deepLink)
+        IosNotificationBridgeKt.dispatchNotificationDeepLink(rawUrl: deepLink, notificationId: pendingNotificationId)
         pendingNotificationDeepLink = nil
+        pendingNotificationId = nil
     }
 }
 

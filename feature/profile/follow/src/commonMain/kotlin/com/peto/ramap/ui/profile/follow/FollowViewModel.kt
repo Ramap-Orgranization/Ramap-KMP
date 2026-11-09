@@ -104,6 +104,7 @@ class FollowViewModel(
                             hasMore = page.size == PAGE_SIZE,
                         )
                     }
+                    if (list != FollowList.FOLLOWING) loadCounts()
                 }
             },
             onError = {

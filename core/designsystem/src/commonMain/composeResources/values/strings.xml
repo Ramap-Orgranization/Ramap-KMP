@@ -70,6 +70,7 @@
     <string name="review_author_withdrawn">탈퇴한 사용자</string>
     <string name="review_report">신고</string>
     <string name="review_photo_description">리뷰 사진 %1$d</string>
+    <string name="review_photo_position">%1$d / %2$d</string>
     <string name="review_status_removed">삭제된 리뷰</string>
     <string name="review_action_failed">정보를 불러오지 못했어요.\n잠시 후 다시 시도해 주세요.</string>
     <string name="review_action_success">신고를 접수했어요.</string>
@@ -158,6 +159,19 @@
     <string name="event_notification_enable">이벤트 알림 켜기</string>
     <string name="event_notification_disable">이벤트 알림 끄기</string>
     <string name="event_notification_action">이벤트 알림</string>
+    <string name="shop_notification_action">알림</string>
+    <string name="shop_notification_settings_title">매장 알림</string>
+    <string name="shop_notification_settings_subtitle">매장의 주요 소식을 실시간으로 받아보세요</string>
+    <string name="shop_notification_settings_select_all">전체 선택</string>
+    <string name="shop_notification_settings_clear">전체 해제</string>
+    <string name="shop_notification_settings_cancel">취소</string>
+    <string name="shop_notification_settings_save">저장</string>
+    <string name="shop_notification_settings_load_failure">알림 설정을 불러오지 못했어요. 다시 시도해 주세요.</string>
+    <string name="shop_notification_settings_save_failure">알림 설정을 저장하지 못했어요. 다시 시도해주세요</string>
+    <string name="shop_notification_settings_save_success">알림 설정을 저장했어요.</string>
+    <string name="shop_notification_settings_revision_message">알림 항목이 변경됐어요. 새로 불러온 뒤 다시 선택해 주세요.</string>
+    <string name="shop_notification_settings_refresh">새로 불러오기</string>
+    <string name="shop_notification_permission_guide">매장 알림을 받기 위해 알림 권한을 허용해주세요</string>
 
     <!-- 이벤트 알림 설정 화면 -->
     <string name="event_notification_master_action">이벤트 알림</string>
@@ -607,4 +621,36 @@
     <string name="visited_shops_loading_photos">추억이 담긴 사진을 불러오고 있어요</string>
     <string name="visited_shops_loading_map">매장들을 지도에 모으고 있어요</string>
     <string name="visited_shops_loading_description">내가 남긴 리뷰와 사진을 불러오는 중이에요.</string>
+    <string name="announcement_title">공지사항</string>
+    <string name="announcement_empty">등록된 공지사항이 없어요</string>
+    <string name="announcement_new">새 공지사항</string>
+    <string name="announcement_error_title">공지사항을 불러오지 못했어요</string>
+    <string name="announcement_error_description">잠시 후 다시 시도해 주세요.</string>
+    <string name="announcement_detail_error_title">공지 내용을 표시하지 못했어요</string>
+    <string name="announcement_detail_error_description">잠시 후 공지사항을 다시 열어 주세요.</string>
+    <string name="new_badge">N</string>
+    <string name="follow_new">새 팔로우 또는 받은 요청</string>
+    <string name="onboarding_permission_title">앱 접근 권한이 필요해요.</string>
+    <string name="onboarding_permission_optional">선택</string>
+    <string name="onboarding_permission_location_title">위치</string>
+    <string name="onboarding_permission_location_description">내 주변 라멘집을 찾을 때 사용해요</string>
+    <string name="onboarding_permission_notification_title">알림</string>
+    <string name="onboarding_permission_notification_description">관심 매장의 이벤트와 영업 변동 소식을 받아요</string>
+    <string name="onboarding_permission_notice">* 선택 권한을 허용하지 않아도 라멥을 이용할 수 있어요.</string>
+    <string name="onboarding_permission_confirm">다음</string>
+    <string name="onboarding_shop_title">가보고 싶은 라멘집\n3곳을 저장해 주세요</string>
+    <string name="onboarding_shop_confirm">시작하기</string>
+    <string name="onboarding_shop_empty">매장 이름으로 검색해 보세요.</string>
+    <string name="onboarding_completion_failure">시작하지 못했어요. 다시 시도해 주세요.</string>
+    <string name="onboarding_shop_load_failure_title">매장을 불러오지 못했어요</string>
+    <string name="onboarding_shop_load_failure_description">잠시 후 다시 시도해 주세요.</string>
+    <string name="onboarding_guide_next">다음</string>
+    <string name="onboarding_guide_skip">건너뛰기</string>
+    <string name="onboarding_guide_progress">사용법 안내 %1$d / %2$d</string>
+    <string name="onboarding_notification_menu_guide">매장 더보기에서 알림을 설정할 수 있어요.</string>
+    <string name="onboarding_notification_types_guide">이벤트와 영업 변동 중\n받고 싶은 소식만 골라보세요.</string>
+    <string name="onboarding_notification_menu_image_description">매장 상세의 더보기 버튼과 메뉴 안의 알림 항목을 강조한 예시 화면</string>
+    <string name="onboarding_notification_types_image_description">이벤트, 임시휴무, 오픈 지연, 조기 마감, 단축 영업, 영업 일시 중단을 선택할 수 있는 매장 알림 예시 화면</string>
+    <string name="onboarding_review_map_guide">리뷰를 남기면\n나만의 라멘 지도가 채워져요</string>
+    <string name="onboarding_review_map_image_description">리뷰를 남긴 라멘집이 사진으로 표시된 지도 예시 화면</string>
 </resources>

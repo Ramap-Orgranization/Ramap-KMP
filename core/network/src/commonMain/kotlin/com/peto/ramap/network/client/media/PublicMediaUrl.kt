@@ -16,28 +16,24 @@ class PublicMediaUrl(
             return null
         }
         val mediaBase = publicBaseUrl.trimEnd(PATH_SEPARATOR_CHAR)
-        if (mediaBase.isNotBlank()) {
-            val base = runCatching { Url(mediaBase) }.getOrNull() ?: return null
-            if (base.protocol.name != HTTPS_SCHEME ||
-                base.port != HTTPS_DEFAULT_PORT ||
-                !base.user.isNullOrEmpty() ||
-                !base.password.isNullOrEmpty() ||
-                base.parameters.isEmpty().not() ||
-                base.fragment.isNotEmpty()
-            ) {
-                return null
-            }
-            if (base.encodedPath !in VALID_ENCODED_PATHS ||
-                base.host.endsWith(R2_DEV_HOST_SUFFIX) ||
-                base.host.endsWith(R2_STORAGE_HOST_SUFFIX)
-            ) {
-                return null
-            }
-            return "$mediaBase/${bucket.value}/${path.value}"
+        if (mediaBase.isBlank()) return null
+        val base = runCatching { Url(mediaBase) }.getOrNull() ?: return null
+        if (base.protocol.name != HTTPS_SCHEME ||
+            base.port != HTTPS_DEFAULT_PORT ||
+            !base.user.isNullOrEmpty() ||
+            !base.password.isNullOrEmpty() ||
+            base.parameters.isEmpty().not() ||
+            base.fragment.isNotEmpty()
+        ) {
+            return null
         }
-        val supabaseBase = RamapSecrets.supabaseUrl.trimEnd(PATH_SEPARATOR_CHAR)
-        if (supabaseBase.isBlank()) return null
-        return "$supabaseBase$SUPABASE_PUBLIC_STORAGE_PATH/${bucket.value}/${path.value}"
+        if (base.encodedPath !in VALID_ENCODED_PATHS ||
+            base.host.endsWith(R2_DEV_HOST_SUFFIX) ||
+            base.host.endsWith(R2_STORAGE_HOST_SUFFIX)
+        ) {
+            return null
+        }
+        return "$mediaBase/${bucket.value}/${path.value}"
     }
 
     companion object {
@@ -52,18 +48,17 @@ class PublicMediaUrl(
         private val VALID_ENCODED_PATHS = setOf("", "/")
 
         fun resolveOwnedUrl(url: String?): String? {
-            if (url == null || RamapSecrets.r2PublicBaseUrl.isBlank()) return url
-            val prefixes =
-                listOf(
-                    "${RamapSecrets.supabaseUrl.trimEnd(PATH_SEPARATOR_CHAR)}$SUPABASE_PUBLIC_STORAGE_PATH/",
-                )
-            val prefix = prefixes.firstOrNull { url.startsWith(it) } ?: return url
+            if (url == null) return null
+            val supabaseBase = RamapSecrets.supabaseUrl.trimEnd(PATH_SEPARATOR_CHAR)
+            if (supabaseBase.isBlank()) return url
+            val prefix = "$supabaseBase$SUPABASE_PUBLIC_STORAGE_PATH/"
+            if (!url.startsWith(prefix)) return url
             val location = url.removePrefix(prefix)
             return PublicMediaUrl(
                 bucket = MediaBucket(location.substringBefore(PATH_SEPARATOR_CHAR)),
                 path = MediaPath(location.substringAfter(PATH_SEPARATOR_CHAR, "")),
                 publicBaseUrl = RamapSecrets.r2PublicBaseUrl,
-            ).resolve() ?: url
+            ).resolve()
         }
     }
 }

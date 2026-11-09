@@ -3,6 +3,9 @@ package com.peto.ramap
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.snapshotFlow
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.repeatOnLifecycle
 import com.peto.ramap.deeplink.DeepLinkEntryPoint
 import com.peto.ramap.deeplink.DeepLinkEvent
 import com.peto.ramap.designsystem.toast.ToastManager
@@ -19,8 +22,8 @@ import com.peto.ramap.navigation.deeplink.ShopDeepLink
 import com.peto.ramap.navigation.deeplink.ShopDeepLinkDispatcher
 import com.peto.ramap.navigation.deeplink.ShopDeepLinkParser
 import com.peto.ramap.notification.NotificationDeepLink
-import com.peto.ramap.notification.NotificationDeepLinkParser
 import com.peto.ramap.notification.NotificationLaunchDispatcher
+import com.peto.ramap.platform.ExternalUriOpener
 import kotlinx.coroutines.flow.filterNotNull
 
 @Composable
@@ -28,7 +31,6 @@ internal fun AppRouteObservers(
     navigationState: NavigationState,
     toastManager: ToastManager,
     onExitRequested: (() -> Unit)?,
-    notificationDeepLinkParser: NotificationDeepLinkParser,
     notificationLaunchDispatcher: NotificationLaunchDispatcher,
     shopDeepLinkParser: ShopDeepLinkParser,
     shopDeepLinkDispatcher: ShopDeepLinkDispatcher,
@@ -61,7 +63,6 @@ internal fun AppRouteObservers(
 
     HandleNotificationDeepLink(
         navigationState = navigationState,
-        notificationDeepLinkParser = notificationDeepLinkParser,
         notificationLaunchDispatcher = notificationLaunchDispatcher,
         appAnalytics = appAnalytics,
     )
@@ -103,7 +104,7 @@ private fun HandleDeepLinkEvents(
                     appAnalytics.logDeepLinkReceived()
                     if (!shopDispatcher.dispatch(event.value)) appAnalytics.logDeepLinkParseFailed()
                 }
-                is DeepLinkEvent.Notification -> notificationDispatcher.dispatch(event.value)
+                is DeepLinkEvent.Notification -> notificationDispatcher.dispatch(event.value, event.notificationId)
             }
             entryPoint.consume(event)
         }
@@ -177,32 +178,32 @@ private fun TrackUserProperties(
 @Composable
 private fun HandleNotificationDeepLink(
     navigationState: NavigationState,
-    notificationDeepLinkParser: NotificationDeepLinkParser,
     notificationLaunchDispatcher: NotificationLaunchDispatcher,
     appAnalytics: AppAnalytics,
 ) {
+    val lifecycleOwner = LocalLifecycleOwner.current
     LaunchedEffect(
         navigationState,
-        notificationDeepLinkParser,
         notificationLaunchDispatcher,
+        lifecycleOwner,
     ) {
-        notificationLaunchDispatcher.pendingDeepLink.collect { value ->
-            if (value == null) return@collect
+        lifecycleOwner.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+            notificationLaunchDispatcher.pendingDeepLink.collect { value ->
+                if (value == null) return@collect
 
-            val deepLink = notificationDeepLinkParser.parse(value)
-            if (deepLink is NotificationDeepLink.Event) {
-                appAnalytics.logNotificationOpened(
-                    eventId = deepLink.eventId,
-                )
+                when (val destination = value.destination) {
+                    is NotificationDeepLink.Event -> {
+                        appAnalytics.logNotificationOpened(eventId = destination.eventId)
+                        navigationState.showEvent(destination.eventId)
+                    }
+                    is NotificationDeepLink.OperatingNotice -> navigationState.showOperatingNotices(destination.noticeId)
+                    NotificationDeepLink.OperatingNotices -> navigationState.showOperatingNotices()
+                    is NotificationDeepLink.ExternalUrl -> ExternalUriOpener.open(destination.url)
+                    NotificationDeepLink.None -> Unit
+                }
 
-                navigationState.showEvent(
-                    deepLink.eventId,
-                )
-            } else {
-                // TODO: 다른 타입의 딥링크 처리 또는 미지원 로깅
+                notificationLaunchDispatcher.consume(value)
             }
-
-            notificationLaunchDispatcher.consume(value)
         }
     }
 }

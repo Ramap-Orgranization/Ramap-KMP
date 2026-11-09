@@ -1,10 +1,8 @@
 package com.peto.ramap.ui.main.notice
 
-import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.peto.ramap.designsystem.dialog.LoginGuideDialog
 import com.peto.ramap.designsystem.toast.ToastManager
 import com.peto.ramap.platform.ExternalUriOpener
 import com.peto.ramap.ui.base.ObserveAsEvents
@@ -27,25 +25,17 @@ fun OperatingNoticeRoute(
         }
     }
 
-    Box {
-        OperatingNoticeScreen(
-            uiState = uiState,
-            onRefresh = { viewModel.dispatch(OperatingNoticeIntent.OnRefreshed) },
-            onRetry = { viewModel.dispatch(OperatingNoticeIntent.OnRetried) },
-            onShopClick = onShopClick,
-            onQueryChanged = { viewModel.dispatch(OperatingNoticeIntent.OnQueryChanged(it)) },
-            onSavedToggled = { viewModel.dispatch(OperatingNoticeIntent.OnSavedToggled) },
-            onPersonalizationRetry = { viewModel.dispatch(OperatingNoticeIntent.OnPersonalizationRetried) },
-            onNoticeClick = { viewModel.dispatch(OperatingNoticeIntent.OnNoticeClicked(it)) },
-            isSourceUrlSupported = ExternalUriOpener::isSupportedWebUri,
-            onSourceClick = ExternalUriOpener::open,
-            showFilters = true,
-        )
-
-        LoginGuideDialog(
-            visible = uiState.showLoginGuide,
-            onDismiss = { viewModel.dispatch(OperatingNoticeIntent.OnLoginDismissed) },
-            onLoginTypeSelected = { viewModel.dispatch(OperatingNoticeIntent.OnLoginSelected(it)) },
-        )
-    }
+    OperatingNoticeScreen(
+        uiState = uiState,
+        onRefresh = { viewModel.dispatch(OperatingNoticeIntent.OnRefreshed) },
+        onRetry = { viewModel.dispatch(OperatingNoticeIntent.OnRetried) },
+        onShopClick = onShopClick,
+        onQueryChanged = { viewModel.dispatch(OperatingNoticeIntent.OnQueryChanged(it)) },
+        onSavedToggled = { viewModel.dispatch(OperatingNoticeIntent.OnSavedToggled) },
+        onPersonalizationRetry = { viewModel.dispatch(OperatingNoticeIntent.OnPersonalizationRetried) },
+        onNoticeClick = { viewModel.dispatch(OperatingNoticeIntent.OnNoticeClicked(it)) },
+        isSourceUrlSupported = ExternalUriOpener::isSupportedWebUri,
+        onSourceClick = ExternalUriOpener::open,
+        showFilters = true,
+    )
 }

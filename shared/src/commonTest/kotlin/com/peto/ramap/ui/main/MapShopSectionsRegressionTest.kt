@@ -1,5 +1,6 @@
 package com.peto.ramap.ui.main
 
+import androidx.lifecycle.ViewModelStore
 import app.cash.turbine.test
 import com.peto.ramap.analytics.common.login.LoginAnalytics
 import com.peto.ramap.core.result.RamapError
@@ -12,6 +13,10 @@ import com.peto.ramap.domain.model.auth.LoginType
 import com.peto.ramap.domain.model.businesshour.BusinessHours
 import com.peto.ramap.domain.model.businesshour.BusinessHoursDay
 import com.peto.ramap.domain.model.menu.ShopMenu
+import com.peto.ramap.domain.model.notification.NotificationCatalog
+import com.peto.ramap.domain.model.notification.NotificationSettings
+import com.peto.ramap.domain.model.notification.NotificationType
+import com.peto.ramap.domain.model.notification.NotificationTypeId
 import com.peto.ramap.domain.model.personalization.Personalization
 import com.peto.ramap.domain.model.place.PlaceSearchErrorCode
 import com.peto.ramap.domain.model.place.PlaceSearchException
@@ -42,7 +47,10 @@ import com.peto.ramap.domain.usecase.FetchShopOverviewUseCase
 import com.peto.ramap.domain.usecase.ShopOverviewCacheLookup
 import com.peto.ramap.domain.usecase.SignInUseCase
 import com.peto.ramap.fake.FakeAnalyticsTracker
+import com.peto.ramap.fake.FakeAnnouncementReadStore
+import com.peto.ramap.fake.FakeAnnouncementRepository
 import com.peto.ramap.fake.FakeCrashReporter
+import com.peto.ramap.fake.FakeFollowRepository
 import com.peto.ramap.fake.FakeLoginRepository
 import com.peto.ramap.fake.FakeNotificationSettingsRepository
 import com.peto.ramap.fake.FakeOperatingNoticeRepository
@@ -53,6 +61,7 @@ import com.peto.ramap.fake.FakeRamenShopRepository
 import com.peto.ramap.fake.FakeReviewChangeStore
 import com.peto.ramap.fake.FakeShopReportRepository
 import com.peto.ramap.fake.FakeShopWaitingSystemRepository
+import com.peto.ramap.fake.FakeSubscribedShopRepository
 import com.peto.ramap.fake.FakeUserModerationRepository
 import com.peto.ramap.fixture.BOUNDS_FIXTURE
 import com.peto.ramap.fixture.ramenShopFixture
@@ -65,7 +74,6 @@ import com.peto.ramap.ui.main.map.contract.MapIntent.OnBoundsChanged
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnCameraPositionChanged
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnCategoryFilterToggled
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnInitialLocationFocusConsumed
-import com.peto.ramap.ui.main.map.contract.MapIntent.OnLoginTypeSelected
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnMapTabExited
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnMyLocationChanged
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnOpenFilterToggled
@@ -83,18 +91,22 @@ import com.peto.ramap.ui.main.map.model.CameraPosition
 import com.peto.ramap.ui.main.map.model.location.LocationFocusStatus
 import com.peto.ramap.ui.main.map.model.search.SearchResultGuide
 import com.peto.ramap.ui.main.map.model.search.SearchUiModel
+import com.peto.ramap.ui.main.my.MyTabViewModel
 import com.peto.ramap.ui.shop.contract.ShopInteractionEffect.ShareShop
-import com.peto.ramap.ui.shop.contract.ShopInteractionEffect.ShowLoginGuide
 import com.peto.ramap.ui.shop.contract.ShopInteractionEffect.ShowToast
 import com.peto.ramap.ui.shop.menu.contract.ShopMenuIntent
 import com.peto.ramap.ui.shop.menu.contract.ShopMenuLoadKey
 import com.peto.ramap.ui.shop.model.ShopOverviewUiState
 import com.peto.ramap.ui.shop.overview.contract.ShopOverviewIntent.OnBookmarkToggled
+import com.peto.ramap.ui.shop.overview.contract.ShopOverviewIntent.OnNotificationClear
+import com.peto.ramap.ui.shop.overview.contract.ShopOverviewIntent.OnNotificationSave
+import com.peto.ramap.ui.shop.overview.contract.ShopOverviewIntent.OnNotificationTypeToggled
 import com.peto.ramap.ui.shop.overview.contract.ShopOverviewIntent.OnOverviewRetry
 import com.peto.ramap.ui.shop.overview.contract.ShopOverviewIntent.OnShopNotificationToggled
 import com.peto.ramap.ui.shop.overview.contract.ShopOverviewIntent.OnShopReportSubmitted
 import com.peto.ramap.ui.shop.overview.contract.ShopOverviewIntent.OnShopShareClicked
 import com.peto.ramap.ui.shop.review.contract.ReviewsIntent
+import com.peto.ramap.ui.subscribed.SubscribedShopsViewModel
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.NonCancellable
@@ -107,8 +119,6 @@ import kotlinx.coroutines.withContext
 import org.jetbrains.compose.resources.StringResource
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.data_load_failure_message
-import ramap.shared.generated.resources.login_required_bookmark_description
-import ramap.shared.generated.resources.login_required_saved_shops_description
 import ramap.shared.generated.resources.place_search_daily_limited_minutes
 import ramap.shared.generated.resources.place_search_rate_limited
 import ramap.shared.generated.resources.search_result_empty_message
@@ -1635,16 +1645,83 @@ class MapShopSectionsRegressionTest {
         }
 
     @Test
-    fun `비로그인 상태에서 좋아요 토글을 누르면 로그인 안내를 요청한다`() =
+    fun `비회원도 지도에서 저장한 매장 보기를 켤 수 있다`() =
         coroutinesTest {
             val viewModel = mapViewModel()
+            viewModel.sideEffect.test {
+                viewModel.dispatch(OnBookmarkedShopsToggled)
+                runCurrent()
+                assertTrue(viewModel.uiState.value.isBookmarkedView)
+                expectNoEvents()
+            }
+        }
+
+    @Test
+    fun `지도 저장 조회 재시도가 실패하면 전체 보기를 유지하고 성공하면 저장 필터를 켠다`() =
+        coroutinesTest {
+            val personalization = FakePersonalizationRepository(initialState = PersonalizationBootstrapState.Error)
+            var refreshCount = 0
+            val store =
+                object : PersonalizationStore by personalization {
+                    override suspend fun refresh(): RamapResult<Unit> {
+                        refreshCount += 1
+                        if (refreshCount == 1) return RamapResult.Error(RamapError.Http(500))
+                        personalization.updateBookmarkedShopIds(setOf("saved-shop"))
+                        return RamapResult.Success(Unit)
+                    }
+                }
+            val viewModel = mapViewModel(personalizationRepository = store)
+            runCurrent()
 
             viewModel.sideEffect.test {
                 viewModel.dispatch(OnBookmarkedShopsToggled)
                 runCurrent()
+                assertFalse(viewModel.uiState.value.isBookmarkedView)
+                assertEquals(ShowToast(ToastData(Res.string.data_load_failure_message, ToastType.ERROR)), awaitItem())
 
-                assertEquals(ShowLoginGuide(Res.string.login_required_saved_shops_description), awaitItem())
+                viewModel.dispatch(OnBookmarkedShopsToggled)
+                runCurrent()
+                assertTrue(viewModel.uiState.value.isBookmarkedView)
+                assertEquals(setOf("saved-shop"), viewModel.uiState.value.bookmarkedShopIds)
+                expectNoEvents()
             }
+        }
+
+    @Test
+    fun `지도 저장 필터를 켠 뒤 조회가 실패하면 전체 보기와 오류 안내를 표시한다`() =
+        coroutinesTest {
+            val personalization = FakePersonalizationRepository()
+            val viewModel = mapViewModel(personalizationRepository = personalization)
+            runCurrent()
+
+            viewModel.sideEffect.test {
+                viewModel.dispatch(OnBookmarkedShopsToggled)
+                runCurrent()
+                assertTrue(viewModel.uiState.value.isBookmarkedView)
+
+                personalization.updateBootstrapState(PersonalizationBootstrapState.Error)
+                runCurrent()
+                assertFalse(viewModel.uiState.value.isBookmarkedView)
+                assertEquals(ShowToast(ToastData(Res.string.data_load_failure_message, ToastType.ERROR)), awaitItem())
+            }
+        }
+
+    @Test
+    fun `지도에서 나가면 저장 조회가 끝나도 대기 중이던 필터를 켜지 않는다`() =
+        coroutinesTest {
+            val personalization = FakePersonalizationRepository(initialState = PersonalizationBootstrapState.Loading)
+            val viewModel = mapViewModel(personalizationRepository = personalization)
+            runCurrent()
+
+            viewModel.dispatch(OnBookmarkedShopsToggled)
+            runCurrent()
+            assertFalse(viewModel.uiState.value.isBookmarkedView)
+
+            viewModel.dispatch(MapIntent.OnMapTabExited)
+            runCurrent()
+            personalization.updateBookmarkedShopIds(setOf("saved-shop"))
+            runCurrent()
+            assertFalse(viewModel.uiState.value.isBookmarkedView)
         }
 
     @Test
@@ -2000,44 +2077,132 @@ class MapShopSectionsRegressionTest {
         }
 
     @Test
-    fun `매장 알림을 활성화하면 저장한다`() =
+    fun `매장 알림 설정을 열 때는 변경하지 않고 권한 허용 후 저장하면 반영한다`() =
         coroutinesTest {
             val shop = ramenShopFixture(id = "permission-granted-shop")
             val personalizationRepository = FakePersonalizationRepository()
+            val subscriptions = FakeSubscribedShopRepository().apply { catalog = notificationCatalogFixture() }
             val viewModel =
                 mapViewModel(
+                    ramenShopRepository = FakeRamenShopRepository(fetchByIdsResult = RamenShops(mapOf(shop.id to shop))),
                     loginRepository = loggedInRepository(),
                     personalizationRepository = personalizationRepository,
+                    subscribedShopRepository = subscriptions,
+                    notificationPermissionGranted = true,
                 )
+            viewModel.dispatch(OnShopSelected(shop))
             runCurrent()
-
             viewModel.dispatch(OnShopNotificationToggled(shop))
             runCurrent()
+            assertTrue(subscriptions.saveRequests.isEmpty())
+            assertEquals(emptySet(), personalization(personalizationRepository).notificationShopIds)
+            assertEquals(shop.id, viewModel.uiState.value.overview.notificationSettingsShopId)
 
+            viewModel.dispatch(OnNotificationTypeToggled(NotificationTypeId("event")))
+            viewModel.dispatch(OnNotificationSave)
+            runCurrent()
+
+            assertEquals(setOf(NotificationTypeId("event")), subscriptions.settings[shop.id]?.selection?.ids)
             assertEquals(setOf(shop.id), viewModel.uiState.value.notificationShopIds)
             assertEquals(setOf(shop.id), personalization(personalizationRepository).notificationShopIds)
         }
 
     @Test
-    fun `매장 알림을 비활성화하면 저장한다`() =
+    fun `매장 알림 전체 해제는 저장할 때 반영하며 권한 허용 없이도 완료한다`() =
         coroutinesTest {
             val shop = ramenShopFixture(id = "notification-disable-shop")
-            val personalizationRepository =
-                FakePersonalizationRepository(
-                    Personalization(notificationShopIds = setOf(shop.id)),
-                )
+            val login = loggedInRepository()
+            val personalizationRepository = FakePersonalizationRepository(Personalization(notificationShopIds = setOf(shop.id)))
+            val subscriptions =
+                FakeSubscribedShopRepository(setOf(shop.id)).apply {
+                    catalog = notificationCatalogFixture()
+                    settings[shop.id] = NotificationSettings(requireNotNull(login.currentAccountId()), shop.id, catalog, catalog.selectAll())
+                }
             val viewModel =
                 mapViewModel(
-                    loginRepository = loggedInRepository(),
+                    ramenShopRepository = FakeRamenShopRepository(fetchByIdsResult = RamenShops(mapOf(shop.id to shop))),
+                    loginRepository = login,
                     personalizationRepository = personalizationRepository,
+                    subscribedShopRepository = subscriptions,
                 )
+            viewModel.dispatch(OnShopSelected(shop))
             runCurrent()
-
             viewModel.dispatch(OnShopNotificationToggled(shop))
             runCurrent()
+            assertTrue(subscriptions.saveRequests.isEmpty())
+            assertEquals(setOf(shop.id), personalization(personalizationRepository).notificationShopIds)
 
+            viewModel.dispatch(OnNotificationClear)
+            viewModel.dispatch(OnNotificationSave)
+            runCurrent()
+
+            assertEquals(emptySet(), subscriptions.settings[shop.id]?.selection?.ids)
             assertEquals(emptySet(), viewModel.uiState.value.notificationShopIds)
             assertEquals(emptySet(), personalization(personalizationRepository).notificationShopIds)
+        }
+
+    @Test
+    fun `운영 알림만 저장해도 지도와 상세 종 구독 매장 목록과 마이 개수가 함께 갱신된다`() =
+        coroutinesTest {
+            val shop = ramenShopFixture(id = "operating-only-shop")
+            val personalizationRepository = FakePersonalizationRepository()
+            val subscriptions = FakeSubscribedShopRepository().apply { catalog = notificationCatalogFixture() }
+            val shops = FakeRamenShopRepository(fetchByIdsResult = RamenShops(mapOf(shop.id to shop)))
+            val viewModel =
+                mapViewModel(
+                    ramenShopRepository = shops,
+                    loginRepository = loggedInRepository(),
+                    personalizationRepository = personalizationRepository,
+                    subscribedShopRepository = subscriptions,
+                    notificationPermissionGranted = true,
+                )
+            val subscribedViewModel =
+                SubscribedShopsViewModel(
+                    notificationRepository = FakeNotificationSettingsRepository(),
+                    ramenShopRepository = shops,
+                    personalizationStore = personalizationRepository,
+                    analyticsTracker = FakeAnalyticsTracker(),
+                )
+            val myViewModel =
+                MyTabViewModel(
+                    announcementRepository = FakeAnnouncementRepository(),
+                    announcementReadStore = FakeAnnouncementReadStore(),
+                    repository = FakeProfileRepository("test-account"),
+                    userModerationRepository = FakeUserModerationRepository(),
+                    personalizationStore = personalizationRepository,
+                    reviewRepository = FakeMapReviewRepository(),
+                    followRepository = FakeFollowRepository(),
+                    changes = FakeReviewChangeStore(),
+                )
+            val store =
+                ViewModelStore().apply {
+                    put("subscribed", subscribedViewModel)
+                    put("my", myViewModel)
+                }
+            try {
+                viewModel.dispatch(OnShopSelected(shop))
+                runCurrent()
+                assertTrue(
+                    subscribedViewModel.uiState.value.shops
+                        .isEmpty(),
+                )
+                assertEquals(0, myViewModel.uiState.value.notificationCount)
+                viewModel.dispatch(OnShopNotificationToggled(shop))
+                runCurrent()
+                viewModel.dispatch(OnNotificationTypeToggled(NotificationTypeId("server_operating_type")))
+                runCurrent()
+                assertTrue(subscriptions.saveRequests.isEmpty())
+                viewModel.dispatch(OnNotificationSave)
+                runCurrent()
+
+                assertEquals(setOf(NotificationTypeId("server_operating_type")), subscriptions.settings[shop.id]?.selection?.ids)
+                assertEquals(setOf(shop.id), viewModel.uiState.value.map.notificationShopIds)
+                assertEquals(setOf(shop.id), viewModel.uiState.value.overview.notificationShopIds)
+                assertEquals(RamenShops(mapOf(shop.id to shop)), subscribedViewModel.uiState.value.shops)
+                assertEquals(1, myViewModel.uiState.value.notificationCount)
+            } finally {
+                store.clear()
+            }
         }
 
     @Test
@@ -2540,20 +2705,6 @@ class MapShopSectionsRegressionTest {
     }
 
     @Test
-    fun `비로그인 상태에서 북마크를 누르면 로그인 안내를 요청한다`() =
-        coroutinesTest {
-            val viewModel = mapViewModel()
-            val shop = ramenShopFixture()
-
-            viewModel.sideEffect.test {
-                viewModel.dispatch(OnBookmarkToggled(shop))
-                runCurrent()
-
-                assertEquals(ShowLoginGuide(Res.string.login_required_bookmark_description), awaitItem())
-            }
-        }
-
-    @Test
     fun `매장 상세에서 북마크를 저장하거나 해제하면 좋아요 수를 갱신한다`() =
         coroutinesTest {
             val shop = ramenShopFixture()
@@ -2711,86 +2862,6 @@ class MapShopSectionsRegressionTest {
         }
 
     @Test
-    fun `로그아웃 후 로그인하면 이미 저장된 매장을 다시 저장하지 않는다`() =
-        coroutinesTest {
-            val shop = ramenShopFixture()
-            val loginRepository = FakeLoginRepository(LoginSessionState.AUTHENTICATED)
-            val personalizationRepository = FakePersonalizationRepository()
-            val viewModel =
-                mapViewModel(
-                    ramenShopRepository =
-                        FakeRamenShopRepository(
-                            fetchByIdsResult = RamenShops(mapOf(shop.id to shop)),
-                        ),
-                    personalizationRepository = personalizationRepository,
-                    loginRepository = loginRepository,
-                )
-
-            runCurrent()
-            viewModel.dispatch(OnShopSelected(shop))
-            runCurrent()
-            viewModel.dispatch(OnBookmarkToggled(shop))
-            runCurrent()
-            assertEquals(
-                1L,
-                viewModel.uiState.value
-                    .shopOverview
-                    ?.likeCount,
-            )
-
-            loginRepository.updateSessionState(LoginSessionState.NOT_AUTHENTICATED)
-            personalizationRepository.clear()
-            runCurrent()
-
-            viewModel.dispatch(OnShopDetailDismissed)
-            runCurrent()
-            viewModel.dispatch(OnShopSelected(shop))
-            runCurrent()
-
-            viewModel.dispatch(OnBookmarkToggled(shop))
-            runCurrent()
-            viewModel.dispatch(OnLoginTypeSelected(LoginType.APPLE))
-            runCurrent()
-
-            loginRepository.updateSessionState(LoginSessionState.AUTHENTICATED)
-            runCurrent()
-            personalizationRepository.updateBookmarkedShopIds(setOf(shop.id))
-            runCurrent()
-
-            assertEquals(listOf(shop.id to true), personalizationRepository.bookmarkUpdateRequests)
-            assertEquals(
-                1L,
-                viewModel.uiState.value
-                    .shopOverview
-                    ?.likeCount,
-            )
-        }
-
-    @Test
-    fun `Apple 로그인 성공 후 대기 중인 북마크 요청을 재개한다`() =
-        coroutinesTest {
-            val shop = ramenShopFixture()
-            val loginRepository = FakeLoginRepository()
-            val personalizationRepository = FakePersonalizationRepository()
-            val viewModel =
-                mapViewModel(
-                    loginRepository = loginRepository,
-                    personalizationRepository = personalizationRepository,
-                )
-
-            viewModel.dispatch(OnBookmarkToggled(shop))
-            runCurrent()
-            viewModel.dispatch(OnLoginTypeSelected(LoginType.APPLE))
-            runCurrent()
-            loginRepository.updateSessionState(LoginSessionState.AUTHENTICATED)
-            personalizationRepository.updateBookmarkedShopIds(setOf("existing-shop"))
-            runCurrent()
-
-            assertEquals(1, loginRepository.signInWithAppleCallCount)
-            assertEquals(listOf(shop.id to true), personalizationRepository.bookmarkUpdateRequests)
-        }
-
-    @Test
     fun `다른 화면에서 북마크 상태를 변경하면 지도 북마크 상태도 갱신한다`() =
         coroutinesTest {
             val shop = ramenShopFixture(id = "externally-bookmarked-shop")
@@ -2809,7 +2880,7 @@ class MapShopSectionsRegressionTest {
         }
 
     @Test
-    fun `비로그인 상태에서는 공유 저장소의 북마크 상태를 노출하지 않는다`() =
+    fun `비회원의 기기 저장과 이후 변경을 지도에 반영한다`() =
         coroutinesTest {
             val shop = ramenShopFixture(id = "cached-bookmarked-shop")
             val personalizationRepository =
@@ -2819,12 +2890,12 @@ class MapShopSectionsRegressionTest {
             val viewModel = mapViewModel(personalizationRepository = personalizationRepository)
             runCurrent()
 
-            assertEquals(emptySet(), viewModel.uiState.value.bookmarkedShopIds)
+            assertEquals(setOf(shop.id), viewModel.uiState.value.bookmarkedShopIds)
 
             personalizationRepository.updateBookmarkedShopIds(setOf(shop.id, "another-shop"))
             runCurrent()
 
-            assertEquals(emptySet(), viewModel.uiState.value.bookmarkedShopIds)
+            assertEquals(setOf(shop.id, "another-shop"), viewModel.uiState.value.bookmarkedShopIds)
         }
 
     @Test
@@ -3209,6 +3280,8 @@ private fun TestScope.mapViewModel(
     loginRepository: FakeLoginRepository = FakeLoginRepository(),
     shopReportRepository: ShopReportRepository = FakeShopReportRepository(),
     notificationSettingsRepository: FakeNotificationSettingsRepository = FakeNotificationSettingsRepository(),
+    subscribedShopRepository: FakeSubscribedShopRepository = FakeSubscribedShopRepository(),
+    notificationPermissionGranted: Boolean = false,
     detailUseCase: FetchShopOverviewUseCase? = null,
     reviewRepository: ReviewRepository? = null,
     moderationRepository: FakeUserModerationRepository = FakeUserModerationRepository(),
@@ -3280,6 +3353,8 @@ private fun TestScope.mapViewModel(
         moderation = moderationRepository,
         changes = reviewChanges,
         menus = menuRepository,
+        subscribedShops = subscribedShopRepository,
+        notificationPermissionGranted = notificationPermissionGranted,
     )
 }
 
@@ -3320,3 +3395,13 @@ private fun loggedInRepository(): FakeLoginRepository =
     )
 
 private fun personalization(repository: FakePersonalizationRepository): Personalization = (repository.state.value as PersonalizationBootstrapState.Success).value
+
+private fun notificationCatalogFixture(): NotificationCatalog =
+    NotificationCatalog(
+        revision = 1L,
+        types =
+            listOf(
+                NotificationType(NotificationTypeId("event"), "이벤트", "이벤트 소식", 0),
+                NotificationType(NotificationTypeId("server_operating_type"), "운영 소식", "서버에서 추가한 항목", 1),
+            ),
+    )

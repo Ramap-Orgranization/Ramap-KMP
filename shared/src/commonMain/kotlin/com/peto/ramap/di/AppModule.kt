@@ -10,6 +10,7 @@ import com.peto.ramap.navigation.deeplink.ShopLinkConfig
 import com.peto.ramap.navigation.deeplink.ShopShareLinkFactory
 import com.peto.ramap.network.config.RamapSecrets
 import com.peto.ramap.ui.account.di.accountModule
+import com.peto.ramap.ui.announcement.di.announcementModule
 import com.peto.ramap.ui.bookmark.importation.di.importationModule
 import com.peto.ramap.ui.bookmark.list.di.bookmarkListModule
 import com.peto.ramap.ui.main.event.detail.di.eventDetailModule
@@ -21,6 +22,7 @@ import com.peto.ramap.ui.main.my.di.myTabModule
 import com.peto.ramap.ui.main.notice.di.noticeModule
 import com.peto.ramap.ui.main.ranking.di.rankingModule
 import com.peto.ramap.ui.notification.di.notificationSettingsModule
+import com.peto.ramap.ui.onboarding.di.onboardingModule
 import com.peto.ramap.ui.profile.edit.di.profileEditModule
 import com.peto.ramap.ui.profile.follow.di.followModule
 import com.peto.ramap.ui.report.di.reportModule
@@ -43,6 +45,7 @@ import org.koin.dsl.module
 internal val appModule =
     module {
         includes(
+            announcementModule,
             accountModule,
             bookmarkListModule,
             eventDetailModule,
@@ -54,6 +57,7 @@ internal val appModule =
             rankingModule,
             feedModule,
             notificationSettingsModule,
+            onboardingModule,
             reportModule,
             myTabModule,
             profileEditModule,

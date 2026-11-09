@@ -14,11 +14,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
+import com.peto.ramap.designsystem.component.NewBadge
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.ChromaticColor
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
+import org.jetbrains.compose.resources.stringResource
+import ramap.shared.generated.resources.Res
+import ramap.shared.generated.resources.announcement_new
 
 @Composable
 fun AppSegmentedTabs(
@@ -57,6 +61,9 @@ fun AppSegmentedTabs(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 AppText(text = tab.label, style = if (selected) AppTextStyle.B1 else AppTextStyle.B2, color = textColor)
+                if (tab.isNew) {
+                    NewBadge(description = tab.newBadgeDescription ?: stringResource(Res.string.announcement_new))
+                }
                 tab.count?.let { count ->
                     val countModifier =
                         if (tab.hasCountBadge) {

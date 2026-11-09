@@ -28,42 +28,30 @@
 </a>
 
 ## 주요 기능
-
-| 기능 | 할 수 있는 일 |
-| --- | --- |
-| 지도·검색 | 지역과 매장 이름으로 라멘 전문점을 찾고 상세 정보 확인 |
-| 매장 정보·메뉴 | 메뉴, 영업시간, 임시 휴무·조기 마감 등 운영 변동 확인 |
-| 북마크·가져오기 | 방문하고 싶은 매장을 저장하고 외부 매장 목록 가져오기 |
-| 리뷰·피드·팔로우 | 방문 경험을 남기고 전체·저장한 매장·팔로잉의 리뷰 모아보기 |
-| 랭킹 | 매장 순위를 비교하고 관심 매장 저장 |
-| 새소식·이벤트 | 매장 소식과 이벤트를 확인하고 원하는 알림 설정 |
-
-### 앱 화면
-
 <table>
     <tr>
-        <th width="25%">지도 탐색</th>
+        <th width="25%">나만의 라멘 지도</th>
+        <th width="25%">방문 기록</th>
         <th width="25%">매장 상세·리뷰</th>
         <th width="25%">메뉴·가격</th>
-        <th width="25%">리뷰 피드</th>
     </tr>
     <tr>
-        <td><img src="assets/store-screenshots/01-map.png" alt="라멘 전문점을 지도에서 찾는 라멥 스토어 스크린샷" width="240" /></td>
+        <td><img src="assets/store-screenshots/09-archive-map.png" alt="다녀온 라멘집을 리뷰 사진과 함께 모아 보는 아카이빙 지도" width="240" /></td>
+        <td><img src="assets/store-screenshots/10-visit-history.png" alt="매장별로 지난 방문의 리뷰와 사진을 확인하는 라멥 화면" width="240" /></td>
         <td><img src="assets/store-screenshots/02-shop-details.png" alt="위치와 영업시간 및 매장 리뷰를 살펴보는 라멥 스토어 스크린샷" width="240" /></td>
         <td><img src="assets/store-screenshots/03-menu.png" alt="매장 메뉴와 가격을 미리 확인하는 라멥 스토어 스크린샷" width="240" /></td>
-        <td><img src="assets/store-screenshots/04-review-feed.png" alt="라멘 방문 사진과 리뷰를 모아보는 라멥 스토어 스크린샷" width="240" /></td>
     </tr>
     <tr>
+        <th width="25%">리뷰 피드</th>
         <th width="25%">랭킹</th>
         <th width="25%">매장 소식·이벤트</th>
         <th width="25%">영업 변동</th>
-        <th width="25%">라멘 생활</th>
     </tr>
     <tr>
+        <td><img src="assets/store-screenshots/04-review-feed.png" alt="라멘 방문 사진과 리뷰를 모아보는 라멥 스토어 스크린샷" width="240" /></td>
         <td><img src="assets/store-screenshots/05-ranking.png" alt="다음에 방문할 라멘 매장을 랭킹에서 찾는 라멥 스토어 스크린샷" width="240" /></td>
         <td><img src="assets/store-screenshots/06-events.png" alt="한정 메뉴와 매장 이벤트를 확인하는 라멥 스토어 스크린샷" width="240" /></td>
         <td><img src="assets/store-screenshots/07-opening-updates.png" alt="방문 전 임시 휴무와 조기 마감 소식을 확인하는 라멥 스토어 스크린샷" width="240" /></td>
-        <td><img src="assets/store-screenshots/08-ramen-life.png" alt="매장 탐색과 저장 및 방문 리뷰를 소개하는 라멥 스토어 스크린샷" width="240" /></td>
     </tr>
 </table>
 
@@ -113,27 +101,6 @@ Kotlin 공통 코드에서 화면·도메인·데이터 흐름을 공유하고, 
 | 분석·알림 | `core/analytics`, `core/notification` | 분석·오류 수집, 푸시 알림과 알림 딥링크 |
 | 테스트 | `core/testing` | 테스트용 Fake와 Fixture |
 | 개발 도구 | `debug/admin` | Android 디버그 빌드용 관리자 도구 |
-
-전체 모듈 목록은 [settings.gradle.kts](settings.gradle.kts), 계층별 책임과 의존 방향은 [아키텍처 규칙](.agents/skills/ramap-architecture/SKILL.md)에서 확인합니다.
-
-## 서버 저장소
-
-Supabase 마이그레이션·Edge Functions, 서버 서비스와 배포 설정은 비공개 [Ramap-Backend](https://github.com/Ramap-Orgranization/Ramap-Backend)에서 관리합니다.
-
-Codex 프로젝트에 KMP만 연결되어 있어도 서버 작업은 별도의 로컬 백엔드 체크아웃에서 진행합니다. 기본 위치는 KMP 기본 체크아웃과 같은 상위 폴더입니다. 다른 위치에 이미 클론했다면 `RAMAP_BACKEND_DIR`에 해당 절대 경로를 설정합니다.
-
-KMP 기본 체크아웃이나 워크트리에서 아래 명령으로 기본 위치를 찾을 수 있습니다. 저장소가 처음 필요할 때 해당 경로에 클론합니다.
-
-```sh
-git_dir=$(git rev-parse --path-format=absolute --git-common-dir)
-default_backend_dir="$(dirname "$(dirname "$git_dir")")/Ramap-Backend"
-export RAMAP_BACKEND_DIR="${RAMAP_BACKEND_DIR:-$default_backend_dir}"
-if [ ! -e "$RAMAP_BACKEND_DIR" ]; then
-  git clone https://github.com/Ramap-Orgranization/Ramap-Backend.git "$RAMAP_BACKEND_DIR"
-fi
-```
-
-서버 테스트·배포 및 Supabase CLI 연결은 백엔드 체크아웃에서 실행합니다.
 
 ## AI 에이전트 하네스
 

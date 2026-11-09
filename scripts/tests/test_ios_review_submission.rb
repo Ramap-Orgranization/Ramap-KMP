@@ -63,6 +63,7 @@ class IosReviewSubmissionTest < Minitest::Test
         @info = AppInfo.new("PREPARE_FOR_SUBMISSION", [@korean, @english])
         Api.app_infos = [@info]
         Api.app_info_reads = 0
+        @store_name = File.read(File.expand_path("../../iosApp/fastlane/metadata/ko/name.txt", __dir__), encoding: "UTF-8").strip
     end
 
     def submission(pause: -> {})
@@ -84,21 +85,21 @@ class IosReviewSubmissionTest < Minitest::Test
         assert_empty @korean.updates
     end
 
-    def test_다음_심사제출_전에_한국어_스토어_이름만_라멥으로_저장한다
+    def test_다음_심사제출_전에_한국어_스토어_이름만_메타데이터에_맞춰_저장한다
         published = Localization.new("ko", "라맵", [], true)
         Api.app_infos.unshift(AppInfo.new("READY_FOR_DISTRIBUTION", [published]))
         submission.submit do
-            assert_equal "라멥", @korean.name
+            assert_equal @store_name, @korean.name
             @version.app_version_state = "WAITING_FOR_REVIEW"
         end
-        assert_equal [{ name: "라멥" }], @korean.updates
+        assert_equal [{ name: @store_name }], @korean.updates
         assert_empty published.updates
         assert_empty @english.updates
         assert_equal "Ramap", @english.name
     end
 
-    def test_이미_라멥인_초안은_이름을_다시_저장하지_않는다
-        @korean.name = "라멥"
+    def test_메타데이터와_같은_초안_이름은_다시_저장하지_않는다
+        @korean.name = @store_name
         submission.submit { @version.app_version_state = "WAITING_FOR_REVIEW" }
         assert_empty @korean.updates
     end

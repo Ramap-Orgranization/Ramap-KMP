@@ -2,6 +2,8 @@ package com.peto.ramap.ui.main
 
 import androidx.lifecycle.ViewModelStore
 import com.peto.ramap.analytics.common.login.LoginAnalytics
+import com.peto.ramap.designsystem.toast.model.ToastData
+import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.review.ShopReviewCache
 import com.peto.ramap.domain.model.review.change.ReviewChangeReducer
 import com.peto.ramap.domain.repository.LoginRepository
@@ -17,6 +19,7 @@ import com.peto.ramap.domain.usecase.FetchShopOverviewUseCase
 import com.peto.ramap.domain.usecase.SignInUseCase
 import com.peto.ramap.fake.FakeAnalyticsTracker
 import com.peto.ramap.fake.FakeCrashReporter
+import com.peto.ramap.fake.FakeSubscribedShopRepository
 import com.peto.ramap.ui.main.map.MapViewModel
 import com.peto.ramap.ui.main.map.contract.MapIntent
 import com.peto.ramap.ui.main.map.contract.MapSideEffect
@@ -40,6 +43,8 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
+import ramap.shared.generated.resources.Res
+import ramap.shared.generated.resources.shop_notification_settings_save_failure
 
 /** 실제 ViewModel 세 개와 지도 콜백을 함께 검증하는 테스트 전용 바텀시트. */
 class MapShopSectionsFixture(
@@ -54,6 +59,8 @@ class MapShopSectionsFixture(
     private val moderation: UserModerationRepository,
     private val changes: ReviewChangeStore,
     private val menus: ShopMenuRepository,
+    private val subscribedShops: FakeSubscribedShopRepository = FakeSubscribedShopRepository(),
+    private val notificationPermissionGranted: Boolean = false,
 ) {
     val uiState = MutableStateFlow(ShopSectionsSnapshot(map.uiState.value))
     private val effects = Channel<ShopInteractionEffect>(Channel.BUFFERED)
@@ -65,7 +72,6 @@ class MapShopSectionsFixture(
     private var overview: OverviewViewModel? = null
     private var menu: ShopMenuViewModel? = null
     private var review: ReviewsViewModel? = null
-    private var mapLogin = false
 
     init {
         scope.launch(start = CoroutineStart.UNDISPATCHED) {
@@ -86,7 +92,7 @@ class MapShopSectionsFixture(
     }
 
     private fun open(shopId: String?) {
-        val overviewVm = OverviewViewModel(login, reports, personalization, overviewQuery, FakeMapSearchHistoryStorage(), ShopAnalytics(FakeAnalyticsTracker()), SignInUseCase(login, LoginAnalytics(FakeAnalyticsTracker(), FakeCrashReporter())))
+        val overviewVm = OverviewViewModel(login, reports, personalization, overviewQuery, FakeMapSearchHistoryStorage(), ShopAnalytics(FakeAnalyticsTracker()), SignInUseCase(login, LoginAnalytics(FakeAnalyticsTracker(), FakeCrashReporter())), subscribedShops)
         val menuVm = ShopMenuViewModel(menus)
         val reducer = ReviewChangeReducer()
         val reviewVm = ReviewsViewModel(reviews, moderation, profile, login, changes, reducer, FeatchShopReviewsUseCase(reviews, changes, reducer, ShopReviewCache(changes, reducer)))
@@ -110,6 +116,12 @@ class MapShopSectionsFixture(
                 scope.launch {
                     overviewVm.sideEffect.collect { effect ->
                         when (effect) {
+                            ShopOverviewSideEffect.ShowNotificationSaveFailure ->
+                                effects.send(
+                                    ShopInteractionEffect.ShowToast(ToastData(Res.string.shop_notification_settings_save_failure, ToastType.ERROR)),
+                                )
+                            is ShopOverviewSideEffect.RequestNotificationPermission ->
+                                overviewVm.dispatch(ShopOverviewIntent.OnNotificationPermissionResult(effect.generation, notificationPermissionGranted))
                             is ShopOverviewSideEffect.Interaction -> effects.send(effect.effect)
                             is ShopOverviewSideEffect.ShopViewed -> map.dispatch(MapIntent.OnShopViewed(effect.shop))
                         }
@@ -151,24 +163,12 @@ class MapShopSectionsFixture(
     }
 
     fun dispatch(intent: MapIntent) {
-        if (intent == MapIntent.OnBookmarkedShopsToggled && !map.uiState.value.isLoggedIn) mapLogin = true
-        when {
-            intent is MapIntent.OnLoginTypeSelected && !mapLogin -> overview?.dispatch(ShopOverviewIntent.OnLoginTypeSelected(intent.type))
-            intent == MapIntent.OnLoginSelectionDismissed && !mapLogin -> overview?.dispatch(ShopOverviewIntent.OnLoginSelectionDismissed)
-            else -> map.dispatch(intent)
-        }
+        map.dispatch(intent)
     }
 
     fun dispatch(intent: ShopOverviewIntent) {
         if (overview == null) open(null)
-        when {
-            mapLogin && intent is ShopOverviewIntent.OnLoginTypeSelected -> map.dispatch(MapIntent.OnLoginTypeSelected(intent.type))
-            mapLogin && intent == ShopOverviewIntent.OnLoginSelectionDismissed -> {
-                map.dispatch(MapIntent.OnLoginSelectionDismissed)
-                mapLogin = false
-            }
-            else -> overview?.dispatch(intent)
-        }
+        overview?.dispatch(intent)
     }
 
     fun dispatch(intent: ShopMenuIntent) {

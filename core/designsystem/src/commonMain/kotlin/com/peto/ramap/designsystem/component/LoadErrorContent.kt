@@ -20,7 +20,7 @@ import org.jetbrains.compose.resources.painterResource
 @Composable
 fun LoadErrorContent(
     image: DrawableResource,
-    title: String,
+    title: String = "",
     description: String = "",
     modifier: Modifier = Modifier,
     onRetry: (() -> Unit)? = null,
@@ -44,12 +44,14 @@ fun LoadErrorContent(
             contentDescription = null,
             modifier = Modifier.size(if (compact) 130.dp else 200.dp),
         )
-        AppText(
-            text = title,
-            style = AppTextStyle.H3,
-            color = GrayColor.C500,
-            textAlign = TextAlign.Center,
-        )
+        if (title.isNotBlank()) {
+            AppText(
+                text = title,
+                style = AppTextStyle.H3,
+                color = GrayColor.C500,
+                textAlign = TextAlign.Center,
+            )
+        }
         if (description.isNotBlank()) {
             AppText(
                 text = description,

@@ -13,15 +13,9 @@ import com.peto.ramap.ui.main.map.model.PlaceFocusRequest
 import com.peto.ramap.ui.main.map.model.ShopFocusRequest
 
 sealed interface MapIntent : Intent {
-    data class OnLoginTypeSelected(
-        val type: LoginType,
-    ) : MapIntent
-
     data class OnArchiveLoginTypeSelected(
         val type: LoginType,
     ) : MapIntent
-
-    data object OnLoginSelectionDismissed : MapIntent
 
     data class OnBoundsChanged(
         val bounds: MapBounds,

@@ -1,5 +1,9 @@
 package com.peto.ramap.data.datasource.di
 
+import com.peto.ramap.data.datasource.announcement.AnnouncementDataSource
+import com.peto.ramap.data.datasource.announcement.AnnouncementReadDataSource
+import com.peto.ramap.data.datasource.announcement.RemoteAnnouncementDataSource
+import com.peto.ramap.data.datasource.announcement.RemoteAnnouncementReadDataSource
 import com.peto.ramap.data.datasource.appnotice.AppNoticeDataSource
 import com.peto.ramap.data.datasource.appnotice.RemoteAppNoticeDataSource
 import com.peto.ramap.data.datasource.follow.FollowDataSource
@@ -20,8 +24,12 @@ import com.peto.ramap.data.datasource.moderation.RemoteUserModerationDataSource
 import com.peto.ramap.data.datasource.moderation.UserModerationDataSource
 import com.peto.ramap.data.datasource.notice.OperatingNoticeDataSource
 import com.peto.ramap.data.datasource.notice.RemoteOperatingNoticeDataSource
+import com.peto.ramap.data.datasource.notification.PushRegistrationDataSource
+import com.peto.ramap.data.datasource.notification.RemotePushRegistrationDataSource
 import com.peto.ramap.data.datasource.personalization.BookmarkShopDataSource
+import com.peto.ramap.data.datasource.personalization.NotificationDataSource
 import com.peto.ramap.data.datasource.personalization.RemoteBookmarkShopDataSource
+import com.peto.ramap.data.datasource.personalization.RemoteNotificationDataSource
 import com.peto.ramap.data.datasource.place.PlaceSearchDataSource
 import com.peto.ramap.data.datasource.place.RemotePlaceSearchDataSource
 import com.peto.ramap.data.datasource.profile.ProfileDataSource
@@ -49,20 +57,23 @@ import com.peto.ramap.domain.repository.PlaceLinkResolver
 import com.peto.ramap.domain.store.ReviewChangeStore
 import com.peto.ramap.network.config.RamapSecrets
 import io.github.jan.supabase.SupabaseClient
-import io.github.jan.supabase.storage.storage
 import io.ktor.client.HttpClient
 import org.koin.core.module.dsl.singleOf
 import org.koin.dsl.module
 
 val dataSourceModule =
     module {
+        single<AnnouncementDataSource> { RemoteAnnouncementDataSource(get()) }
+        single<AnnouncementReadDataSource> { RemoteAnnouncementReadDataSource(get()) }
+        single<PushRegistrationDataSource> { RemotePushRegistrationDataSource(get()) }
+        single<NotificationDataSource> { RemoteNotificationDataSource(get()) }
         single<FollowDataSource> { RemoteFollowDataSource(get(), get()) }
         single<ImageUrlAccessPolicy> { ReviewImageUrlAccessPolicy(get(), lazy { get<ReviewChangeStore>() }) }
         single<ImageUrlDataSource> { CachedImageUrlDataSource(RemoteImageUrlDataSource(get(), get()), get()) }
         single { BatchingImageUrlDataSource(get(), get(), get()) }
         single {
             ExpiredImageUrlParser(
-                supabaseSignedBaseUrl = get<SupabaseClient>().storage.resolveUrl("object/sign"),
+                supabaseSignedBaseUrl = "${RamapSecrets.supabaseUrl.trimEnd('/')}/storage/v1/object/sign",
                 r2AccountId = RamapSecrets.r2AccountId,
                 r2PrivateBucket = RamapSecrets.r2PrivateBucket,
             )

@@ -6,15 +6,18 @@ import com.peto.ramap.designsystem.toast.ToastManager
 import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.auth.LoginType
+import com.peto.ramap.domain.repository.LoginRepository
 import com.peto.ramap.navigation.NavigationRouter
 import com.peto.ramap.navigation.NavigationSource
 import com.peto.ramap.navigation.NavigationState
 import com.peto.ramap.navigation.TabStatus
 import com.peto.ramap.ui.account.AccountSettingsRoute
 import com.peto.ramap.ui.account.InformationRoute
+import com.peto.ramap.ui.announcement.AnnouncementRoute
 import com.peto.ramap.ui.bookmark.importation.ImportationGuideRoute
 import com.peto.ramap.ui.bookmark.importation.ImportationRoute
 import com.peto.ramap.ui.bookmark.list.BookmarkedShopListRoute
+import com.peto.ramap.ui.login.rememberLoginGuideRequest
 import com.peto.ramap.ui.main.event.detail.EventDetailRoute
 import com.peto.ramap.ui.main.feed.FeedRoute
 import com.peto.ramap.ui.main.map.MapRoute
@@ -35,9 +38,11 @@ import com.peto.ramap.ui.settings.SettingsRoute
 import com.peto.ramap.ui.shop.ArchiveShopDetailHost
 import com.peto.ramap.ui.shop.ShopDetailHost
 import com.peto.ramap.ui.subscribed.SubscribedShopsRoute
+import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.event_not_found_message
+import ramap.shared.generated.resources.login_required_description
 
 @Composable
 internal fun NavigationGraph(
@@ -154,6 +159,7 @@ internal fun NavigationGraph(
         myScreen = {
             MyTabRoute(
                 onProfileNavigate = navigationState::showProfileEdit,
+                onAnnouncementsNavigate = navigationState::showAnnouncements,
                 onFollowNavigate = navigationState::showFollows,
                 onMyReviewsNavigate = navigationState::showMyReviews,
                 onOpenProfile = { userId -> openProfile(userId, false) },
@@ -203,6 +209,7 @@ internal fun NavigationGraph(
                 onBack = navigationState::pop,
             )
         },
+        announcementScreen = { AnnouncementRoute(onBack = navigationState::pop) },
         followScreen = {
             FollowRoute(
                 isUncovered = !hasActiveOverlay,
@@ -281,8 +288,9 @@ internal fun NavigationGraph(
                 onBack = navigationState::pop,
             )
         },
-        newsScreen = {
+        newsScreen = { route ->
             NewsRoute(
+                route = route,
                 onClickEvent = { event -> navigationState.showEvent(event.id) },
                 onShopClick = { shopId ->
                     navigationState.showShopOnMap(
@@ -313,9 +321,17 @@ internal fun NavigationGraph(
             )
         },
         bookmarkedShopsScreen = {
+            val loginRepository: LoginRepository = koinInject()
+            val requestLogin = rememberLoginGuideRequest(onLoginTypeSelected = onLoginTypeSelected)
             BookmarkedShopListRoute(
                 onBack = navigationState::pop,
-                onImportationNavigate = navigationState::showImportation,
+                onImportationNavigate = {
+                    if (loginRepository.hasSession()) {
+                        navigationState.showImportation()
+                    } else {
+                        requestLogin(Res.string.login_required_description)
+                    }
+                },
                 onShopOpen = { shopId ->
                     navigationState.showShopOnMap(
                         shopId,

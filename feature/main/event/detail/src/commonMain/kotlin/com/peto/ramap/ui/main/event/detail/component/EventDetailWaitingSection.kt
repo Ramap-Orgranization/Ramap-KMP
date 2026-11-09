@@ -1,5 +1,6 @@
 package com.peto.ramap.ui.main.event.detail.component
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -33,16 +34,16 @@ fun EventDetailWaitingSection(
         title = stringResource(Res.string.event_waiting),
         modifier = modifier,
     ) {
-        Column(modifier = Modifier.padding(horizontal = 20.dp).padding(vertical = 10.dp)) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
             EventDetailValue(waitingMethod)
             waitingUrl?.takeIf(ExternalUriOpener::isSupportedWebUri)?.let { url ->
                 AppButton(
                     text = stringResource(Res.string.event_waiting_action),
                     icon = Res.drawable.catchtable,
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(top = 12.dp),
+                    modifier = Modifier.fillMaxWidth(),
                     textColor = CommonColor.Black,
                     backgroundColor = GrayColor.C100,
                     onClick = { onWaitingLinkClick(url) },

@@ -17,8 +17,6 @@ data class OperatingNoticeUiState(
     val todayOperatingNotices: List<OperatingNotice> = emptyList(),
     val scheduledOperatingNotices: List<OperatingNotice> = emptyList(),
     val feed: OperatingNoticeFeed? = null,
-    val savedFilterError: Boolean = false,
-    val showLoginGuide: Boolean = false,
     val query: String = "",
     val savedOnly: Boolean = false,
     val bookmarkedShopIds: Set<String> = emptySet(),
@@ -28,6 +26,9 @@ data class OperatingNoticeUiState(
     val fallbackReferenceDate: LocalDate = Clock.System.todayIn(TimeZone.of("Asia/Seoul")),
 ) : State,
     LoadableState<OperatingNoticeUiState> {
+    val savedFilterError: Boolean
+        get() = savedOnly && personalizationState == PersonalizationBootstrapState.Error
+
     val isLoading: Boolean
         get() = loadState.isLoading(OperatingNoticeLoadKey.Fetch)
 
@@ -73,6 +74,17 @@ data class OperatingNoticeUiState(
                 referenceDate = fallbackReferenceDate,
                 items = (todayOperatingNotices + scheduledOperatingNotices).distinctBy { it.id }.map { OperatingNoticeFeedItem(it) },
             )
+
+    fun selectNoticeById(noticeId: String): OperatingNoticeSelection? {
+        val notice = noticeFeed.items.firstOrNull { it.notice.id == noticeId }?.notice ?: return null
+        val selection =
+            when {
+                notice.appliesOn(referenceDate) -> selectNotice(notice, referenceDate)
+                notice.startDate > referenceDate -> selectScheduledNotice(notice)
+                else -> return null
+            }
+        return selection.copy(notices = listOf(notice) + selection.notices.filterNot { it.id == notice.id })
+    }
 
     fun selectNotice(
         notice: OperatingNotice,

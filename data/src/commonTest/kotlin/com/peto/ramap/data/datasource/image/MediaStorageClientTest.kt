@@ -9,7 +9,6 @@ import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.minimalConfig
 import io.github.jan.supabase.auth.status.SessionStatus
 import io.github.jan.supabase.createSupabaseClient
-import io.github.jan.supabase.storage.Storage
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
@@ -152,7 +151,6 @@ class MediaStorageClientTest {
         val supabase =
             createSupabaseClient("https://supabase.invalid", "anon") {
                 httpEngine = MockEngine { error("사진 경로가 Supabase로 우회됨") }
-                install(Storage)
                 install(Auth) {
                     minimalConfig()
                     autoSetupPlatform = false

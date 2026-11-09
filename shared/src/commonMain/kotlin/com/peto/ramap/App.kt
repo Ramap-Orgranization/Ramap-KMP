@@ -40,9 +40,10 @@ import com.peto.ramap.image.ImageCacheMigrationInterceptor
 import com.peto.ramap.platform.AppVersionProvider
 import com.peto.ramap.platform.network.NetworkConnectivityObserver
 import com.peto.ramap.platform.network.NetworkConnectivityStatus
-import com.peto.ramap.platform.storage.AppNoticeStorage
+import com.peto.ramap.platform.storage.notice.AppNoticeStorage
 import com.peto.ramap.theme.RamapTheme
 import com.peto.ramap.ui.login.LoginGuideController
+import com.peto.ramap.ui.onboarding.OnboardingRoute
 import com.peto.ramap.ui.retry.NetworkRetryGenerator
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
@@ -73,6 +74,7 @@ fun App(
     imageAccess: ImageAccessRepository = koinInject(),
     onExitRequested: (() -> Unit)? = null,
 ) {
+    var hasCompletedOnboarding by rememberSaveable { mutableStateOf(false) }
     setSingletonImageLoaderFactory { context ->
         lateinit var loader: ImageLoader
         loader =
@@ -88,23 +90,33 @@ fun App(
     }
     ImageAccessProvider(imageAccess) {
         RamapTheme {
-            AppUpdateGate(
-                appUpdateRepository = appUpdateRepository,
-                appVersionProvider = appVersionProvider,
-            ) {
-                AppNoticeGate(
-                    appNoticeRepository = appNoticeRepository,
-                    appNoticeStorage = appNoticeStorage,
-                    platform = appVersionProvider.platform,
+            Box(modifier = Modifier.fillMaxSize()) {
+                AppUpdateGate(
+                    appUpdateRepository = appUpdateRepository,
+                    appVersionProvider = appVersionProvider,
                 ) {
-                    AppContent(
-                        loginRepository = loginRepository,
-                        personalizationStore = personalizationStore,
-                        toastManager = toastManager,
-                        loginGuideController = loginGuideController,
-                        onExitRequested = onExitRequested,
-                    )
+                    if (hasCompletedOnboarding) {
+                        AppNoticeGate(
+                            appNoticeRepository = appNoticeRepository,
+                            appNoticeStorage = appNoticeStorage,
+                            platform = appVersionProvider.platform,
+                        ) {
+                            AppContent(
+                                loginRepository = loginRepository,
+                                personalizationStore = personalizationStore,
+                                toastManager = toastManager,
+                                loginGuideController = loginGuideController,
+                                onExitRequested = onExitRequested,
+                            )
+                        }
+                    } else {
+                        OnboardingRoute(
+                            onCompleted = { hasCompletedOnboarding = true },
+                            toastManager = toastManager,
+                        )
+                    }
                 }
+                ToastHost(toastManager = toastManager)
             }
         }
     }
@@ -122,10 +134,12 @@ private fun AppContent(
     val networkConnectivityObserver: NetworkConnectivityObserver = koinInject()
     val lifecycleOwner = LocalLifecycleOwner.current
     val personalizationState by personalizationStore.state.collectAsStateWithLifecycle()
+    val loginSession by loginRepository.session.collectAsStateWithLifecycle(initialValue = null)
     // 구성 변경이 새로고침의 Loading 상태에서 끝나도 네비게이션 저장소를 다시 연결한다.
     var hasShownAppRoute by rememberSaveable { mutableStateOf(false) }
 
-    if (personalizationState is PersonalizationBootstrapState.Success) {
+    val canShowGuestRoute = loginSession == LoginSessionState.NOT_AUTHENTICATED
+    if (personalizationState is PersonalizationBootstrapState.Success || canShowGuestRoute) {
         hasShownAppRoute = true
     }
 
@@ -174,7 +188,6 @@ private fun AppContent(
         }
 
         LoginGuideHost(controller = loginGuideController)
-        ToastHost(toastManager = toastManager)
     }
 }
 
@@ -189,26 +202,25 @@ internal suspend fun observeSessionPersonalization(
     retryRequests: Flow<Unit> = emptyFlow(),
 ) {
     awaitSessionInitialization(loginRepository)
-    var previousSessionState: LoginSessionState? = null
-    loginRepository.session
+    var previousAccountId: String? = null
+    var hasObservedAccount = false
+    loginRepository.accountId
         .distinctUntilChanged()
-        .collectLatest { sessionState ->
-            val authenticatedAfterGuest =
-                sessionState == LoginSessionState.AUTHENTICATED &&
-                    previousSessionState == LoginSessionState.NOT_AUTHENTICATED
-            previousSessionState = sessionState
-            if (sessionState != LoginSessionState.AUTHENTICATED) {
+        .collectLatest { accountId ->
+            val accountChanged = hasObservedAccount && previousAccountId != accountId
+            previousAccountId = accountId
+            hasObservedAccount = true
+            if (accountChanged || accountId == null) {
                 personalizationStore.clear()
                 NetworkRetryGenerator.clear()
-                return@collectLatest
             }
-
             retryRequests
                 .onStart {
-                    val hasPersonalization =
-                        personalizationStore.state.value is PersonalizationBootstrapState.Success
-                    if (authenticatedAfterGuest || !hasPersonalization) emit(Unit)
-                }.collectLatest { refreshPersonalization(personalizationStore) }
+                    val hasPersonalization = personalizationStore.state.value is PersonalizationBootstrapState.Success
+                    if (accountChanged || accountId == null || !hasPersonalization) emit(Unit)
+                }.collectLatest {
+                    refreshPersonalization(loginRepository, personalizationStore, accountId)
+                }
         }
 }
 
@@ -223,24 +235,28 @@ private suspend fun awaitSessionInitialization(loginRepository: LoginRepository)
 }
 
 private suspend fun refreshPersonalization(
+    loginRepository: LoginRepository,
     personalizationStore: PersonalizationStore,
+    accountId: String?,
     retryAttempt: Int = 0,
 ) {
+    if (loginRepository.currentAccountId() != accountId) return
     if (retryAttempt == 0) NetworkRetryGenerator.remove(personalizationStore, PERSONALIZATION_TASK_KEY)
 
     try {
-        when (val result = personalizationStore.refresh()) {
-            is RamapResult.Success -> Unit
-            is RamapResult.Error -> {
-                if (result.error is RamapError.Network) {
-                    NetworkRetryGenerator.enqueue(
-                        owner = personalizationStore,
-                        taskKey = PERSONALIZATION_TASK_KEY,
-                        retryAttempt = retryAttempt + 1,
-                    ) {
-                        refreshPersonalization(personalizationStore, retryAttempt + 1)
-                    }
-                }
+        val syncResult = accountId?.let { personalizationStore.synchronizeGuestBookmarks(it) }
+        if (loginRepository.currentAccountId() != accountId) return
+
+        val refreshResult = personalizationStore.refresh()
+        val refreshError = (refreshResult as? RamapResult.Error)?.error
+        val shouldRetry = syncResult is RamapResult.Error || refreshError is RamapError.Network || refreshError is RamapError.Timeout
+        if (shouldRetry && loginRepository.currentAccountId() == accountId) {
+            NetworkRetryGenerator.enqueue(
+                owner = personalizationStore,
+                taskKey = PERSONALIZATION_TASK_KEY,
+                retryAttempt = retryAttempt + 1,
+            ) {
+                refreshPersonalization(loginRepository, personalizationStore, accountId, retryAttempt + 1)
             }
         }
     } catch (cancellation: CancellationException) {

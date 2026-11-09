@@ -1,6 +1,6 @@
 package com.peto.ramap.ui.review.search
 
-import com.peto.ramap.platform.storage.SearchHistoryStorage
+import com.peto.ramap.platform.storage.history.SearchHistoryStorage
 import kotlinx.coroutines.flow.MutableStateFlow
 
 internal class FakeReviewSearchHistory(

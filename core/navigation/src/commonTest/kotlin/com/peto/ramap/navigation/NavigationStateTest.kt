@@ -12,6 +12,43 @@ import kotlin.test.assertTrue
 
 class NavigationStateTest {
     @Test
+    fun `마이 공지사항은 중복으로 쌓이지 않고 뒤로 가면 마이로 돌아온다`() {
+        val state = navigationState(selectedTab = TabStatus.MY)
+        state.showAnnouncements()
+        state.showAnnouncements()
+        assertEquals(listOf(ScreenRoutes.MyTabRoutes, ScreenRoutes.AnnouncementRoutes), state.currentBackStack.toList())
+        state.pop()
+        assertEquals(ScreenRoutes.MyTabRoutes, state.currentRoute)
+        assertEquals(TabStatus.MY, state.selectedTab)
+    }
+
+    @Test
+    fun `공지 알림은 대상 ID를 보존하고 반복 클릭마다 새 경로를 연다`() {
+        val state = navigationState(selectedTab = TabStatus.MY)
+        state.showOperatingNotices("notice")
+        val first = state.currentRoute as ScreenRoutes.EventTabRoutes
+        assertEquals("notice", first.noticeId)
+        state.showOperatingNotices("notice")
+        val second = state.currentRoute as ScreenRoutes.EventTabRoutes
+        assertEquals("notice", second.noticeId)
+        assertTrue(first.instanceId != second.instanceId)
+        assertEquals(NewsTab.OPERATING_NOTICES, state.selectedNewsTab)
+    }
+
+    @Test
+    fun `운영 알림은 기존 새소식 영업 변동 탭을 연다`() {
+        val state = navigationState(selectedTab = TabStatus.MY)
+        state.showEvent("event")
+        state.showOperatingNotices()
+        assertEquals(TabStatus.EVENT, state.selectedTab)
+        assertEquals(NewsTab.OPERATING_NOTICES, state.selectedNewsTab)
+        assertEquals(1, state.currentBackStack.size)
+        assertTrue(state.currentRoute is ScreenRoutes.EventTabRoutes)
+        state.pop()
+        assertEquals(NewsTab.EVENTS, state.selectedNewsTab)
+    }
+
+    @Test
     fun `아카이브에서 매장을 찾아 첫 리뷰를 저장하면 아카이브로 돌아간다`() {
         val state = navigationState()
         state.showArchiveMap()

@@ -65,8 +65,8 @@ fun EventDetailInfoSection(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .padding(15.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
+                    .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),

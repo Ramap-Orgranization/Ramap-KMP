@@ -8,7 +8,6 @@ import io.github.jan.supabase.auth.SessionManager
 import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.functions.Functions
 import io.github.jan.supabase.postgrest.Postgrest
-import io.github.jan.supabase.storage.Storage
 import kotlin.time.Duration.Companion.seconds
 
 @OptIn(SupabaseInternal::class)
@@ -19,7 +18,6 @@ internal fun createRamapSupabaseClient(sessionManager: SessionManager) =
     ) {
         requestTimeout = 10.seconds
         install(Postgrest)
-        install(Storage)
         install(Functions)
         install(Auth) {
             this.sessionManager = sessionManager

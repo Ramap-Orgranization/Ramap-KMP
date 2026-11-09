@@ -63,6 +63,8 @@ class NavigationState(
         selectedTab = TabStatus.MAP
     }
 
+    fun showAnnouncements() = showOnce(ScreenRoutes.AnnouncementRoutes)
+
     fun showFollows() = showOnce(ScreenRoutes.FollowRoutes)
 
     fun showProfileEdit() = showOnce(ScreenRoutes.ProfileEditRoutes)
@@ -135,6 +137,14 @@ class NavigationState(
 
     fun selectNewsTab(tab: NewsTab) {
         selectedNewsTab = tab
+    }
+
+    fun showOperatingNotices(noticeId: String? = null) {
+        val eventBackStack = backStacks.getValue(TabStatus.EVENT)
+        eventBackStack.clear()
+        eventBackStack.add(ScreenRoutes.EventTabRoutes(++eventTabRouteId, noticeId))
+        selectTopLevelTab(TabStatus.EVENT)
+        selectedNewsTab = NewsTab.OPERATING_NOTICES
     }
 
     fun showEventRoot() {

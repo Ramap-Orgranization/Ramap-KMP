@@ -7,4 +7,6 @@ data class AppSegmentedTab(
     val label: String,
     val count: String? = null,
     val hasCountBadge: Boolean = false,
+    val isNew: Boolean = false,
+    val newBadgeDescription: String? = null,
 )

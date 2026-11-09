@@ -13,7 +13,7 @@ import com.peto.ramap.designsystem.dialog.CommonDialog
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.domain.model.appnotice.AppNotice
 import com.peto.ramap.domain.repository.AppNoticeRepository
-import com.peto.ramap.platform.storage.AppNoticeStorage
+import com.peto.ramap.platform.storage.notice.AppNoticeStorage
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.GrayColor
 import kotlinx.coroutines.CancellationException

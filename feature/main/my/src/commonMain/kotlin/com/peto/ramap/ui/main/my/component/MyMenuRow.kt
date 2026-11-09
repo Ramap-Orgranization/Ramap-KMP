@@ -23,6 +23,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.peto.ramap.designsystem.component.NewBadge
 import com.peto.ramap.designsystem.component.Skeleton
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.theme.AppTextStyle
@@ -35,7 +36,9 @@ import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
+import ramap.shared.generated.resources.announcement_new
 import ramap.shared.generated.resources.follow_manage
+import ramap.shared.generated.resources.follow_new
 import ramap.shared.generated.resources.follow_requests
 import ramap.shared.generated.resources.ic_chevron_right
 import ramap.shared.generated.resources.ic_person
@@ -50,6 +53,8 @@ internal fun MyMenuRow(
     iconBackground: Color,
     iconTint: Color,
     hasCount: Boolean = true,
+    isNew: Boolean = false,
+    newBadgeDescription: StringResource = Res.string.announcement_new,
     isLoading: Boolean = false,
     notification: StringResource? = null,
     onClick: () -> Unit,
@@ -104,6 +109,7 @@ internal fun MyMenuRow(
                     .weight(1f)
                     .padding(start = 12.dp),
         )
+        if (isNew) NewBadge(description = stringResource(newBadgeDescription))
         if (hasCount && isLoading && count == null) {
             Skeleton(
                 modifier = Modifier.size(width = 24.dp, height = 18.dp),
@@ -159,6 +165,8 @@ private fun MyFollowMenuRowWithRequestsPreview() {
             iconTint = ChromaticColor.Orange400,
             hasCount = false,
             notification = Res.string.follow_requests,
+            isNew = true,
+            newBadgeDescription = Res.string.follow_new,
             onClick = {},
         )
     }

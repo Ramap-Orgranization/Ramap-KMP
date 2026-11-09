@@ -15,8 +15,6 @@ import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.exceptions.RestException
 import io.github.jan.supabase.postgrest.postgrest
-import io.github.jan.supabase.storage.storage
-import io.ktor.http.ContentType
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.JsonArray
@@ -28,7 +26,7 @@ import kotlin.uuid.Uuid
 internal class RemoteReviewDataSource(
     private val client: SupabaseClient,
     private val images: ReviewImageResolver,
-    private val media: MediaStorageClient? = null,
+    private val media: MediaStorageClient,
 ) : ReviewDataSource {
     override suspend fun fetchMyReviewCount(): Int = client.postgrest.rpc(RPC_FETCH_MY_REVIEW_COUNT).decodeAs()
 
@@ -234,11 +232,7 @@ internal class RemoteReviewDataSource(
             images.forEach { image ->
                 val path = "$userId/${Uuid.random()}.${image.fileExtension}"
                 paths += path
-                if (media != null) {
-                    media.upload(BUCKET, path, image.bytes, image.mimeType)
-                } else {
-                    client.storage.from(BUCKET).upload(path, image.bytes) { contentType = ContentType.parse(image.mimeType) }
-                }
+                media.upload(BUCKET, path, image.bytes, image.mimeType)
             }
             return paths
         } catch (error: Throwable) {
@@ -251,7 +245,7 @@ internal class RemoteReviewDataSource(
         withContext(NonCancellable) {
             paths.forEach { path ->
                 runCatching {
-                    if (media != null) media.delete(BUCKET, path) else client.storage.from(BUCKET).delete(path)
+                    media.delete(BUCKET, path)
                 }
             }
         }

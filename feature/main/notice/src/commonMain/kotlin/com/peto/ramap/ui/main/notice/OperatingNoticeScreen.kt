@@ -15,6 +15,7 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -64,108 +65,119 @@ fun OperatingNoticeScreen(
     isSourceUrlSupported: (String) -> Boolean,
     onSourceClick: (String) -> Unit,
     showFilters: Boolean = true,
+    initialNoticeId: String? = null,
+    onInitialNoticeOpened: () -> Unit = {},
 ) {
     val todayTitle = stringResource(Res.string.operating_notice_today_section)
     val scheduledTitle = stringResource(Res.string.operating_notice_scheduled_section)
     val pullToRefreshState = rememberPullToRefreshState()
     var selectedNotice by remember { mutableStateOf<OperatingNoticeSelection?>(null) }
 
-    Column(modifier = Modifier.fillMaxSize()) {
-        if (showFilters) {
-            NewsFilters(
-                query = uiState.query,
-                savedOnly = uiState.savedOnly,
-                onQueryChanged = onQueryChanged,
-                onSavedToggled = onSavedToggled,
-            )
-        }
-        Box(modifier = Modifier.fillMaxSize().weight(1f)) {
-            PullToRefreshBox(
-                isRefreshing = uiState.isRefreshing,
-                onRefresh = onRefresh,
-                modifier = Modifier.fillMaxSize(),
-                state = pullToRefreshState,
-                indicator = {
-                    PullToRefreshDefaults.Indicator(
-                        state = pullToRefreshState,
-                        isRefreshing = uiState.isRefreshing,
-                        modifier = Modifier.align(Alignment.TopCenter),
-                        containerColor = CommonColor.White,
-                        color = CommonColor.Black,
-                    )
-                },
-            ) {
-                when {
-                    uiState.isLoading -> OperatingNoticeSkeleton(Modifier.fillMaxSize())
-                    uiState.showOperatingNoticeError ->
-                        LoadErrorContent(
-                            image = Res.drawable.laduck_error_crying,
-                            title = stringResource(Res.string.operating_notice_error_title),
-                            description = stringResource(Res.string.operating_notice_error_description),
-                            onRetry = onRetry,
-                            modifier = Modifier.fillMaxSize(),
-                        )
+    LaunchedEffect(initialNoticeId, uiState) {
+        val selection = initialNoticeId?.let(uiState::selectNoticeById) ?: return@LaunchedEffect
+        selectedNotice = selection
+        onInitialNoticeOpened()
+        onNoticeClick(selection.notice)
+    }
 
-                    uiState.savedOnly && uiState.personalizationState == PersonalizationBootstrapState.Loading ->
-                        OperatingNoticeSkeleton(Modifier.fillMaxSize())
-                    uiState.savedFilterError || (uiState.savedOnly && uiState.personalizationState == PersonalizationBootstrapState.Error) ->
-                        LoadErrorContent(
-                            image = Res.drawable.laduck_error_crying,
-                            title = stringResource(Res.string.operating_notice_error_title),
-                            description = stringResource(Res.string.operating_notice_error_description),
-                            onRetry = onPersonalizationRetry,
-                            modifier = Modifier.fillMaxSize(),
+    Box(modifier = Modifier.fillMaxSize()) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            if (showFilters) {
+                NewsFilters(
+                    query = uiState.query,
+                    savedOnly = uiState.savedOnly,
+                    onQueryChanged = onQueryChanged,
+                    onSavedToggled = onSavedToggled,
+                )
+            }
+            Box(modifier = Modifier.fillMaxSize().weight(1f)) {
+                PullToRefreshBox(
+                    isRefreshing = uiState.isRefreshing,
+                    onRefresh = onRefresh,
+                    modifier = Modifier.fillMaxSize(),
+                    state = pullToRefreshState,
+                    indicator = {
+                        PullToRefreshDefaults.Indicator(
+                            state = pullToRefreshState,
+                            isRefreshing = uiState.isRefreshing,
+                            modifier = Modifier.align(Alignment.TopCenter),
+                            containerColor = CommonColor.White,
+                            color = CommonColor.Black,
                         )
-
-                    uiState.todayShops.isEmpty() && uiState.scheduledShops.isEmpty() ->
-                        ShopsEmptyContent(
-                            title =
-                                stringResource(
-                                    if (uiState.query.isNotBlank()) Res.string.search_result_empty_message else Res.string.operating_notice_empty,
-                                ),
-                            modifier = Modifier.fillMaxSize(),
-                        )
-
-                    else ->
-                        Box {
-                            LazyColumn(
+                    },
+                ) {
+                    when {
+                        uiState.isLoading -> OperatingNoticeSkeleton(Modifier.fillMaxSize())
+                        uiState.showOperatingNoticeError ->
+                            LoadErrorContent(
+                                image = Res.drawable.laduck_error_crying,
+                                title = stringResource(Res.string.operating_notice_error_title),
+                                description = stringResource(Res.string.operating_notice_error_description),
+                                onRetry = onRetry,
                                 modifier = Modifier.fillMaxSize(),
-                                contentPadding = PaddingValues(vertical = 16.dp),
-                                verticalArrangement = Arrangement.spacedBy(10.dp),
-                            ) {
-                                addNoticeSection(
-                                    listScope = this,
-                                    title = todayTitle,
-                                    notices = uiState.todayShops,
-                                    onNoticeClick = { notice ->
-                                        onNoticeClick(notice)
-                                        selectedNotice = uiState.selectNotice(notice, uiState.referenceDate)
-                                    },
-                                )
-                                addNoticeSection(
-                                    listScope = this,
-                                    title = scheduledTitle,
-                                    notices = uiState.scheduledShops,
-                                    onNoticeClick = { notice ->
-                                        onNoticeClick(notice)
-                                        selectedNotice = uiState.selectScheduledNotice(notice)
-                                    },
-                                )
+                            )
+
+                        uiState.savedOnly && uiState.personalizationState == PersonalizationBootstrapState.Loading ->
+                            OperatingNoticeSkeleton(Modifier.fillMaxSize())
+                        uiState.savedFilterError ->
+                            LoadErrorContent(
+                                image = Res.drawable.laduck_error_crying,
+                                title = stringResource(Res.string.operating_notice_error_title),
+                                description = stringResource(Res.string.operating_notice_error_description),
+                                onRetry = onPersonalizationRetry,
+                                modifier = Modifier.fillMaxSize(),
+                            )
+
+                        uiState.todayShops.isEmpty() && uiState.scheduledShops.isEmpty() ->
+                            ShopsEmptyContent(
+                                title =
+                                    stringResource(
+                                        if (uiState.query.isNotBlank()) Res.string.search_result_empty_message else Res.string.operating_notice_empty,
+                                    ),
+                                modifier = Modifier.fillMaxSize(),
+                            )
+
+                        else ->
+                            Box {
+                                LazyColumn(
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentPadding = PaddingValues(vertical = 16.dp),
+                                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                                ) {
+                                    addNoticeSection(
+                                        listScope = this,
+                                        title = todayTitle,
+                                        notices = uiState.todayShops,
+                                        onNoticeClick = { notice ->
+                                            onNoticeClick(notice)
+                                            selectedNotice = uiState.selectNotice(notice, uiState.referenceDate)
+                                        },
+                                    )
+                                    addNoticeSection(
+                                        listScope = this,
+                                        title = scheduledTitle,
+                                        notices = uiState.scheduledShops,
+                                        onNoticeClick = { notice ->
+                                            onNoticeClick(notice)
+                                            selectedNotice = uiState.selectScheduledNotice(notice)
+                                        },
+                                    )
+                                }
                             }
-                        }
+                    }
                 }
             }
         }
-    }
-    selectedNotice?.let { selection ->
-        OperatingNoticeBottomSheet(
-            notice = selection.notice,
-            notices = selection.notices,
-            isSourceUrlSupported = isSourceUrlSupported,
-            onSourceClick = onSourceClick,
-            onShopClick = onShopClick,
-            onDismiss = { selectedNotice = null },
-        )
+        selectedNotice?.let { selection ->
+            OperatingNoticeBottomSheet(
+                notice = selection.notice,
+                notices = selection.notices,
+                isSourceUrlSupported = isSourceUrlSupported,
+                onSourceClick = onSourceClick,
+                onShopClick = onShopClick,
+                onDismiss = { selectedNotice = null },
+            )
+        }
     }
 }
 

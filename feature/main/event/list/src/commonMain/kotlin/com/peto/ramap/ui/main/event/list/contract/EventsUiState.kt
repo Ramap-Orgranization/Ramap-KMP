@@ -12,8 +12,6 @@ data class EventsUiState(
     val summerLimitedEvents: List<ShopEvents> = emptyList(),
     val ongoingEvents: List<ShopEvents> = emptyList(),
     val upcomingEvents: List<ShopEvents> = emptyList(),
-    val savedFilterError: Boolean = false,
-    val showLoginGuide: Boolean = false,
     val query: String = "",
     val savedOnly: Boolean = false,
     val bookmarkedShopIds: Set<String> = emptySet(),
@@ -22,6 +20,9 @@ data class EventsUiState(
     override val loadState: TaskLoadState = TaskLoadState(),
 ) : State,
     LoadableState<EventsUiState> {
+    val savedFilterError: Boolean
+        get() = savedOnly && personalizationState == PersonalizationBootstrapState.Error
+
     val isLoading: Boolean
         get() = loadState.isLoading(EventsLoadKey.Fetch)
 

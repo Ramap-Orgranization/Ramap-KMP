@@ -12,12 +12,12 @@ kotlin {
     sourceSets.commonMain.dependencies {
         api(projects.domain)
         implementation(projects.core.network)
+        implementation(projects.core.platform)
         implementation(project.dependencies.platform(libs.koin.bom))
         implementation(libs.koin.core)
         implementation(libs.supabase.auth)
         implementation(libs.supabase.functions)
         implementation(libs.supabase.postgrest)
-        implementation(libs.supabase.storage)
         implementation(libs.ktor.client.core)
         implementation(libs.kotlinx.serialization.json)
         implementation(libs.kotlinx.coroutines.core)

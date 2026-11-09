@@ -1,35 +1,28 @@
 package com.peto.ramap.data.repository
 
+import com.peto.ramap.data.datasource.notification.PushRegistrationDataSource
+import com.peto.ramap.domain.repository.LoginRepository
 import com.peto.ramap.domain.repository.PushRegistrationRepository
-import io.github.jan.supabase.SupabaseClient
-import io.github.jan.supabase.postgrest.postgrest
-import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.put
+import kotlinx.coroutines.CancellationException
 
 internal class DefaultPushRegistrationRepository(
-    private val supabaseClient: SupabaseClient,
+    private val dataSource: PushRegistrationDataSource,
+    private val loginRepository: LoginRepository,
 ) : PushRegistrationRepository {
     override suspend fun register(
         identifier: String,
         platform: String,
         targetType: String,
+        expectedAccountId: String,
+        supportedProtocolVersion: Int,
     ) {
         if (identifier.isBlank()) return
-        supabaseClient.postgrest.rpc(
-            function = RPC_REGISTER_PUSH_REGISTRATION,
-            parameters =
-                buildJsonObject {
-                    put(PARAM_REGISTRATION_IDENTIFIER, identifier)
-                    put(PARAM_DEVICE_PLATFORM, platform)
-                    put(PARAM_REGISTRATION_TARGET_TYPE, targetType)
-                },
-        )
+        if (loginRepository.currentAccountId() != expectedAccountId) throw CancellationException(ACCOUNT_CHANGED)
+        dataSource.register(identifier, platform, targetType, expectedAccountId, supportedProtocolVersion)
+        if (loginRepository.currentAccountId() != expectedAccountId) throw CancellationException(ACCOUNT_CHANGED)
     }
 
     private companion object {
-        const val RPC_REGISTER_PUSH_REGISTRATION = "register_push_registration"
-        const val PARAM_REGISTRATION_IDENTIFIER = "registration_identifier"
-        const val PARAM_DEVICE_PLATFORM = "device_platform"
-        const val PARAM_REGISTRATION_TARGET_TYPE = "registration_target_type"
+        const val ACCOUNT_CHANGED = "Push registration account changed"
     }
 }
