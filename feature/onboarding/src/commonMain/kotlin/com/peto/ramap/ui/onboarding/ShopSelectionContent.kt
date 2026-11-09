@@ -49,7 +49,6 @@ import ramap.shared.generated.resources.onboarding_shop_confirm
 import ramap.shared.generated.resources.onboarding_shop_empty
 import ramap.shared.generated.resources.onboarding_shop_load_failure_description
 import ramap.shared.generated.resources.onboarding_shop_load_failure_title
-import ramap.shared.generated.resources.onboarding_shop_remaining
 import ramap.shared.generated.resources.onboarding_shop_title
 import ramap.shared.generated.resources.personalization_load_failure_title
 import ramap.shared.generated.resources.search_result_empty_message
@@ -151,24 +150,21 @@ internal fun ShopSelectionContent(
                 }
             }
         }
-        AppButton(
-            text =
-                if (uiState.bookmarks.canComplete) {
-                    stringResource(Res.string.onboarding_shop_confirm)
-                } else {
-                    stringResource(Res.string.onboarding_shop_remaining, uiState.bookmarks.savedCount)
-                },
-            onClick = { onIntent(ShopSelectionIntent.Complete) },
-            enabled = uiState.canComplete || uiState.isCompleting,
-            isLoading = uiState.isCompleting,
-            disabledBackgroundColor = if (uiState.bookmarks.canComplete) GrayColor.C500 else GrayColor.C100,
-            disabledTextColor = if (uiState.bookmarks.canComplete) CommonColor.White else GrayColor.C300,
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 15.dp)
-                    .padding(horizontal = 15.dp),
-        )
+        if (uiState.bookmarks.canComplete) {
+            AppButton(
+                text = stringResource(Res.string.onboarding_shop_confirm),
+                onClick = { onIntent(ShopSelectionIntent.Complete) },
+                enabled = uiState.canComplete || uiState.isCompleting,
+                isLoading = uiState.isCompleting,
+                disabledBackgroundColor = GrayColor.C500,
+                disabledTextColor = CommonColor.White,
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 15.dp)
+                        .padding(horizontal = 15.dp),
+            )
+        }
     }
 }
 
