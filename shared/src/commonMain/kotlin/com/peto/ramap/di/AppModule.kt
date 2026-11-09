@@ -22,6 +22,7 @@ import com.peto.ramap.ui.main.my.di.myTabModule
 import com.peto.ramap.ui.main.notice.di.noticeModule
 import com.peto.ramap.ui.main.ranking.di.rankingModule
 import com.peto.ramap.ui.notification.di.notificationSettingsModule
+import com.peto.ramap.ui.onboarding.di.onboardingModule
 import com.peto.ramap.ui.profile.edit.di.profileEditModule
 import com.peto.ramap.ui.profile.follow.di.followModule
 import com.peto.ramap.ui.report.di.reportModule
@@ -56,6 +57,7 @@ internal val appModule =
             rankingModule,
             feedModule,
             notificationSettingsModule,
+            onboardingModule,
             reportModule,
             myTabModule,
             profileEditModule,

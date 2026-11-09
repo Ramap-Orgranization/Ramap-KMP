@@ -629,4 +629,20 @@
     <string name="announcement_detail_error_description">잠시 후 공지사항을 다시 열어 주세요.</string>
     <string name="new_badge">N</string>
     <string name="follow_new">새 팔로우 또는 받은 요청</string>
+    <string name="onboarding_permission_title">앱 접근 권한이 필요해요.</string>
+    <string name="onboarding_permission_optional">선택</string>
+    <string name="onboarding_permission_location_title">위치</string>
+    <string name="onboarding_permission_location_description">내 주변 라멘집을 찾을 때 사용해요</string>
+    <string name="onboarding_permission_notification_title">알림</string>
+    <string name="onboarding_permission_notification_description">관심 매장의 이벤트와 영업 변동 소식을 받아요</string>
+    <string name="onboarding_permission_notice">* 선택 권한을 허용하지 않아도 라멥을 이용할 수 있어요.</string>
+    <string name="onboarding_permission_confirm">다음</string>
+    <string name="onboarding_shop_title">가보고 싶은 라멘집\n3곳을 저장해 주세요</string>
+    <string name="onboarding_shop_description">로그인 없이 저장하고, 나중에 쉽게 찾아보세요.</string>
+    <string name="onboarding_shop_suggestions">저장한 매장과 인기 매장</string>
+    <string name="onboarding_shop_count">현재 %1$d곳 저장됨</string>
+    <string name="onboarding_shop_remaining">%1$d곳 더 저장해 주세요</string>
+    <string name="onboarding_shop_confirm">라멥 시작하기</string>
+    <string name="onboarding_shop_empty">매장 이름으로 검색해 보세요.</string>
+    <string name="onboarding_completion_failure">완료 상태를 저장하지 못했어요. 다시 눌러 주세요.</string>
 </resources>

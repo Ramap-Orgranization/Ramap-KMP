@@ -114,6 +114,7 @@ kotlin {
             implementation(projects.feature.bookmark.list)
             implementation(projects.feature.bookmark.importation)
             implementation(projects.feature.notification)
+            implementation(projects.feature.onboarding)
             implementation(projects.feature.report)
             implementation(projects.feature.settings)
             implementation(projects.feature.subscribed)

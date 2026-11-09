@@ -1,0 +1,15 @@
+package com.peto.ramap.ui.onboarding.contract
+
+import com.peto.ramap.ui.loading.LoadKey
+
+internal sealed interface ShopSelectionLoadKey : LoadKey {
+    data object Personalization : ShopSelectionLoadKey
+
+    data object Suggestions : ShopSelectionLoadKey
+
+    data object Search : ShopSelectionLoadKey
+
+    data object Complete : ShopSelectionLoadKey
+
+    data object BookmarkUpdates : ShopSelectionLoadKey
+}
