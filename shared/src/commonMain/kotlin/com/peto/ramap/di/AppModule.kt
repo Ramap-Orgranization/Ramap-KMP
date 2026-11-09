@@ -10,6 +10,7 @@ import com.peto.ramap.navigation.deeplink.ShopLinkConfig
 import com.peto.ramap.navigation.deeplink.ShopShareLinkFactory
 import com.peto.ramap.network.config.RamapSecrets
 import com.peto.ramap.ui.account.di.accountModule
+import com.peto.ramap.ui.announcement.di.announcementModule
 import com.peto.ramap.ui.bookmark.importation.di.importationModule
 import com.peto.ramap.ui.bookmark.list.di.bookmarkListModule
 import com.peto.ramap.ui.main.event.detail.di.eventDetailModule
@@ -43,6 +44,7 @@ import org.koin.dsl.module
 internal val appModule =
     module {
         includes(
+            announcementModule,
             accountModule,
             bookmarkListModule,
             eventDetailModule,

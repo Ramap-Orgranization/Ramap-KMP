@@ -47,6 +47,8 @@ import com.peto.ramap.domain.usecase.FetchShopOverviewUseCase
 import com.peto.ramap.domain.usecase.ShopOverviewCacheLookup
 import com.peto.ramap.domain.usecase.SignInUseCase
 import com.peto.ramap.fake.FakeAnalyticsTracker
+import com.peto.ramap.fake.FakeAnnouncementReadStore
+import com.peto.ramap.fake.FakeAnnouncementRepository
 import com.peto.ramap.fake.FakeCrashReporter
 import com.peto.ramap.fake.FakeFollowRepository
 import com.peto.ramap.fake.FakeLoginRepository
@@ -2100,6 +2102,8 @@ class MapShopSectionsRegressionTest {
                 )
             val myViewModel =
                 MyTabViewModel(
+                    announcementRepository = FakeAnnouncementRepository(),
+                    announcementReadStore = FakeAnnouncementReadStore(),
                     repository = FakeProfileRepository("test-account"),
                     userModerationRepository = FakeUserModerationRepository(),
                     personalizationStore = personalizationRepository,

@@ -12,6 +12,7 @@ import com.peto.ramap.navigation.NavigationState
 import com.peto.ramap.navigation.TabStatus
 import com.peto.ramap.ui.account.AccountSettingsRoute
 import com.peto.ramap.ui.account.InformationRoute
+import com.peto.ramap.ui.announcement.AnnouncementRoute
 import com.peto.ramap.ui.bookmark.importation.ImportationGuideRoute
 import com.peto.ramap.ui.bookmark.importation.ImportationRoute
 import com.peto.ramap.ui.bookmark.list.BookmarkedShopListRoute
@@ -154,6 +155,7 @@ internal fun NavigationGraph(
         myScreen = {
             MyTabRoute(
                 onProfileNavigate = navigationState::showProfileEdit,
+                onAnnouncementsNavigate = navigationState::showAnnouncements,
                 onFollowNavigate = navigationState::showFollows,
                 onMyReviewsNavigate = navigationState::showMyReviews,
                 onOpenProfile = { userId -> openProfile(userId, false) },
@@ -203,6 +205,7 @@ internal fun NavigationGraph(
                 onBack = navigationState::pop,
             )
         },
+        announcementScreen = { AnnouncementRoute(onBack = navigationState::pop) },
         followScreen = {
             FollowRoute(
                 isUncovered = !hasActiveOverlay,
