@@ -159,7 +159,7 @@ private fun AnnouncementRow(
                 overflow = TextOverflow.Ellipsis,
             )
             AppText(
-                text = announcement.formattedPublishedDate("-"),
+                text = announcement.formattedPublishedDate(),
                 style = AppTextStyle.C1,
                 color = GrayColor.C400,
             )
