@@ -15,6 +15,7 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -64,11 +65,20 @@ fun OperatingNoticeScreen(
     isSourceUrlSupported: (String) -> Boolean,
     onSourceClick: (String) -> Unit,
     showFilters: Boolean = true,
+    initialNoticeId: String? = null,
+    onInitialNoticeOpened: () -> Unit = {},
 ) {
     val todayTitle = stringResource(Res.string.operating_notice_today_section)
     val scheduledTitle = stringResource(Res.string.operating_notice_scheduled_section)
     val pullToRefreshState = rememberPullToRefreshState()
     var selectedNotice by remember { mutableStateOf<OperatingNoticeSelection?>(null) }
+
+    LaunchedEffect(initialNoticeId, uiState) {
+        val selection = initialNoticeId?.let(uiState::selectNoticeById) ?: return@LaunchedEffect
+        selectedNotice = selection
+        onInitialNoticeOpened()
+        onNoticeClick(selection.notice)
+    }
 
     Column(modifier = Modifier.fillMaxSize()) {
         if (showFilters) {

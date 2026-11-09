@@ -74,6 +74,17 @@ data class OperatingNoticeUiState(
                 items = (todayOperatingNotices + scheduledOperatingNotices).distinctBy { it.id }.map { OperatingNoticeFeedItem(it) },
             )
 
+    fun selectNoticeById(noticeId: String): OperatingNoticeSelection? {
+        val notice = noticeFeed.items.firstOrNull { it.notice.id == noticeId }?.notice ?: return null
+        val selection =
+            when {
+                notice.appliesOn(referenceDate) -> selectNotice(notice, referenceDate)
+                notice.startDate > referenceDate -> selectScheduledNotice(notice)
+                else -> return null
+            }
+        return selection.copy(notices = listOf(notice) + selection.notices.filterNot { it.id == notice.id })
+    }
+
     fun selectNotice(
         notice: OperatingNotice,
         date: LocalDate,

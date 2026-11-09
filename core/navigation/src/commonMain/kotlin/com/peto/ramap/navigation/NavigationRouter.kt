@@ -25,7 +25,7 @@ fun NavigationRouter(
     reviewShopSearchScreen: @Composable () -> Unit,
     rankingScreen: @Composable () -> Unit,
     feedScreen: @Composable () -> Unit = {},
-    newsScreen: @Composable () -> Unit,
+    newsScreen: @Composable (ScreenRoutes.EventTabRoutes) -> Unit,
     myScreen: @Composable () -> Unit,
     settingsScreen: @Composable () -> Unit,
     accountSettingsScreen: @Composable () -> Unit,
@@ -60,11 +60,11 @@ fun NavigationRouter(
                     content = archiveMapScreen,
                 )
             }
-            entry<ScreenRoutes.EventTabRoutes> {
+            entry<ScreenRoutes.EventTabRoutes> { route ->
                 BottonNavigationTabScreen(
                     selectedTab = TabStatus.EVENT,
                     onTabSelected = onTabSelected,
-                    content = newsScreen,
+                    content = { newsScreen(route) },
                 )
             }
             entry<ScreenRoutes.RankingTabRoutes> {

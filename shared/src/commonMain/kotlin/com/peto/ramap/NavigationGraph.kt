@@ -281,8 +281,9 @@ internal fun NavigationGraph(
                 onBack = navigationState::pop,
             )
         },
-        newsScreen = {
+        newsScreen = { route ->
             NewsRoute(
+                route = route,
                 onClickEvent = { event -> navigationState.showEvent(event.id) },
                 onShopClick = { shopId ->
                     navigationState.showShopOnMap(

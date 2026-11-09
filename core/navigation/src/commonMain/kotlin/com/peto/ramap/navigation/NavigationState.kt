@@ -137,10 +137,10 @@ class NavigationState(
         selectedNewsTab = tab
     }
 
-    fun showOperatingNotices() {
+    fun showOperatingNotices(noticeId: String? = null) {
         val eventBackStack = backStacks.getValue(TabStatus.EVENT)
         eventBackStack.clear()
-        eventBackStack.add(ScreenRoutes.EventTabRoutes(++eventTabRouteId))
+        eventBackStack.add(ScreenRoutes.EventTabRoutes(++eventTabRouteId, noticeId))
         selectTopLevelTab(TabStatus.EVENT)
         selectedNewsTab = NewsTab.OPERATING_NOTICES
     }

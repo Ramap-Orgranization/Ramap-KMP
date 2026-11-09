@@ -21,6 +21,26 @@ class OperatingNoticeUiStateTest {
     private val later = LocalDate(2026, 10, 23)
 
     @Test
+    fun `알림 공지는 검색과 저장 필터 및 대표 공지에 관계없이 찾는다`() {
+        val first = notice("first", today)
+        val target = notice("target", today)
+        val future = notice("future", next)
+        val filtered = state(first, target, future).copy(query = "없는 매장", savedOnly = true)
+        assertEquals(target, filtered.selectNoticeById("target")?.notice)
+        assertEquals(target, filtered.selectNoticeById("target")?.notices?.first())
+        assertEquals(
+            setOf("first", "target"),
+            filtered
+                .selectNoticeById("target")
+                ?.notices
+                ?.map { it.id }
+                ?.toSet(),
+        )
+        assertEquals(future, filtered.selectNoticeById("future")?.notice)
+        assertNull(filtered.selectNoticeById("missing"))
+    }
+
+    @Test
     fun `같은 매장의 오늘과 각 예정 날짜를 표시하되 탭 숫자는 고유 매장 수다`() {
         val current = notice("today", today)
         val future = notice("future", next)

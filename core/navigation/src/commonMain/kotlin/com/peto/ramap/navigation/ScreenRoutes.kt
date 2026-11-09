@@ -25,6 +25,7 @@ sealed interface ScreenRoutes : NavKey {
     @Serializable
     data class EventTabRoutes(
         val instanceId: Int = 0,
+        val noticeId: String? = null,
     ) : ScreenRoutes
 
     // 이전 버전에서 저장한 새소식 스택을 복원할 때 사용한다.

@@ -12,6 +12,19 @@ import kotlin.test.assertTrue
 
 class NavigationStateTest {
     @Test
+    fun `공지 알림은 대상 ID를 보존하고 반복 클릭마다 새 경로를 연다`() {
+        val state = navigationState(selectedTab = TabStatus.MY)
+        state.showOperatingNotices("notice")
+        val first = state.currentRoute as ScreenRoutes.EventTabRoutes
+        assertEquals("notice", first.noticeId)
+        state.showOperatingNotices("notice")
+        val second = state.currentRoute as ScreenRoutes.EventTabRoutes
+        assertEquals("notice", second.noticeId)
+        assertTrue(first.instanceId != second.instanceId)
+        assertEquals(NewsTab.OPERATING_NOTICES, state.selectedNewsTab)
+    }
+
+    @Test
     fun `운영 알림은 기존 새소식 영업 변동 탭을 연다`() {
         val state = navigationState(selectedTab = TabStatus.MY)
         state.showEvent("event")
