@@ -1,3 +1,5 @@
+import com.android.build.api.dsl.KotlinMultiplatformAndroidHostTestCompilation
+
 plugins {
     id("ramap.kmp.compose")
     id("ramap.kmp.test")
@@ -17,6 +19,15 @@ kotlin {
         androidResources {
             enable = true
         }
+        compilations.withType(KotlinMultiplatformAndroidHostTestCompilation::class.java).configureEach {
+            isIncludeAndroidResources = true
+        }
+    }
+
+    sourceSets.androidHostTest.dependencies {
+        implementation(libs.androidx.activity.compose)
+        implementation(libs.compose.ui.test)
+        implementation(libs.robolectric)
     }
 
     sourceSets.commonMain.dependencies {

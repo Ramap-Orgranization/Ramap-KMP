@@ -70,6 +70,7 @@
     <string name="review_author_withdrawn">탈퇴한 사용자</string>
     <string name="review_report">신고</string>
     <string name="review_photo_description">리뷰 사진 %1$d</string>
+    <string name="review_photo_position">%1$d / %2$d</string>
     <string name="review_status_removed">삭제된 리뷰</string>
     <string name="review_action_failed">정보를 불러오지 못했어요.\n잠시 후 다시 시도해 주세요.</string>
     <string name="review_action_success">신고를 접수했어요.</string>

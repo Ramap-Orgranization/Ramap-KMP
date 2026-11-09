@@ -70,13 +70,11 @@ fun ReviewCardImages(
             }
         }
     }
-    selectedIndex?.let { index ->
-        imageUrls.getOrNull(index)?.let { url ->
-            ReviewPhotoViewer(
-                url = url,
-                contentDescription = stringResource(Res.string.review_photo_description, index + 1),
-                onDismiss = { selectedIndex = null },
-            )
-        }
+    selectedIndex?.takeIf { it in imageUrls.indices }?.let { index ->
+        ReviewPhotoViewer(
+            imageUrls = imageUrls,
+            initialPage = index,
+            onDismiss = { selectedIndex = null },
+        )
     }
 }
