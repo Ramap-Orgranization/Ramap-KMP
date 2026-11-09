@@ -24,7 +24,7 @@ import com.peto.ramap.domain.store.PersonalizationStore
 import com.peto.ramap.domain.usecase.FetchShopOverviewUseCase
 import com.peto.ramap.domain.usecase.ShopOverviewCacheLookup
 import com.peto.ramap.domain.usecase.SignInUseCase
-import com.peto.ramap.platform.storage.SearchHistoryStorage
+import com.peto.ramap.platform.storage.history.SearchHistoryStorage
 import com.peto.ramap.ui.base.BaseViewModel
 import com.peto.ramap.ui.shop.contract.ShopInteractionEffect.ShareShop
 import com.peto.ramap.ui.shop.contract.ShopInteractionEffect.ShowLoginGuide

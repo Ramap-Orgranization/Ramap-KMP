@@ -28,7 +28,7 @@ import com.peto.ramap.domain.store.PersonalizationBootstrapState
 import com.peto.ramap.domain.store.PersonalizationStore
 import com.peto.ramap.domain.usecase.SearchRamenShopsUseCase
 import com.peto.ramap.domain.usecase.SignInUseCase
-import com.peto.ramap.platform.storage.SearchHistoryStorage
+import com.peto.ramap.platform.storage.history.SearchHistoryStorage
 import com.peto.ramap.ui.base.BaseViewModel
 import com.peto.ramap.ui.location.CurrentLocationStore
 import com.peto.ramap.ui.main.map.contract.MapIntent

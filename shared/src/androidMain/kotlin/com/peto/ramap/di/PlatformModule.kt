@@ -14,10 +14,10 @@ import com.peto.ramap.platform.createGuestBookmarkStorage
 import com.peto.ramap.platform.createMapSearchHistoryStorage
 import com.peto.ramap.platform.network.AndroidNetworkConnectivityObserver
 import com.peto.ramap.platform.network.NetworkConnectivityObserver
-import com.peto.ramap.platform.storage.AnnouncementReadStorage
-import com.peto.ramap.platform.storage.AppNoticeStorage
-import com.peto.ramap.platform.storage.GuestBookmarkStorage
-import com.peto.ramap.platform.storage.SearchHistoryStorage
+import com.peto.ramap.platform.storage.announcement.AnnouncementReadStorage
+import com.peto.ramap.platform.storage.bookmark.GuestBookmarkStorage
+import com.peto.ramap.platform.storage.history.SearchHistoryStorage
+import com.peto.ramap.platform.storage.notice.AppNoticeStorage
 import org.koin.android.ext.koin.androidContext
 import org.koin.dsl.module
 

@@ -1,10 +1,9 @@
-package com.peto.ramap.platform.storage.impl
+package com.peto.ramap.platform.storage.bookmark
 
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringSetPreferencesKey
-import com.peto.ramap.platform.storage.GuestBookmarkStorage
 import kotlinx.coroutines.flow.first
 
 class DefaultGuestBookmarkStorage(

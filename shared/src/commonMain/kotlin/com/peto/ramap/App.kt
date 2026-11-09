@@ -40,7 +40,7 @@ import com.peto.ramap.image.ImageCacheMigrationInterceptor
 import com.peto.ramap.platform.AppVersionProvider
 import com.peto.ramap.platform.network.NetworkConnectivityObserver
 import com.peto.ramap.platform.network.NetworkConnectivityStatus
-import com.peto.ramap.platform.storage.AppNoticeStorage
+import com.peto.ramap.platform.storage.notice.AppNoticeStorage
 import com.peto.ramap.theme.RamapTheme
 import com.peto.ramap.ui.login.LoginGuideController
 import com.peto.ramap.ui.retry.NetworkRetryGenerator

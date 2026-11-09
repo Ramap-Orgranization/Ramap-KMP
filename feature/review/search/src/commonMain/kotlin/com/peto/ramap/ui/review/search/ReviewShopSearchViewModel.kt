@@ -5,7 +5,7 @@ import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.domain.model.shop.SearchQuery
 import com.peto.ramap.domain.repository.RamenShopRepository
 import com.peto.ramap.domain.usecase.SearchRamenShopsUseCase
-import com.peto.ramap.platform.storage.SearchHistoryStorage
+import com.peto.ramap.platform.storage.history.SearchHistoryStorage
 import com.peto.ramap.ui.base.BaseViewModel
 import com.peto.ramap.ui.review.search.contract.ReviewShopSearchIntent
 import com.peto.ramap.ui.review.search.contract.ReviewShopSearchLoadKey

@@ -1,7 +1,7 @@
 package com.peto.ramap.platform.storage
 
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
-import com.peto.ramap.platform.storage.impl.DefaultGuestBookmarkStorage
+import com.peto.ramap.platform.storage.bookmark.DefaultGuestBookmarkStorage
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job

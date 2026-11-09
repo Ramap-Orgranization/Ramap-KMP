@@ -1,8 +1,8 @@
 package com.peto.ramap.platform
 
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
-import com.peto.ramap.platform.storage.AnnouncementReadStorage
-import com.peto.ramap.platform.storage.impl.DefaultAnnouncementReadStorage
+import com.peto.ramap.platform.storage.announcement.AnnouncementReadStorage
+import com.peto.ramap.platform.storage.announcement.DefaultAnnouncementReadStorage
 import okio.Path.Companion.toPath
 import platform.Foundation.NSHomeDirectory
 

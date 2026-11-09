@@ -1,8 +1,8 @@
 package com.peto.ramap.platform
 
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
-import com.peto.ramap.platform.storage.GuestBookmarkStorage
-import com.peto.ramap.platform.storage.impl.DefaultGuestBookmarkStorage
+import com.peto.ramap.platform.storage.bookmark.DefaultGuestBookmarkStorage
+import com.peto.ramap.platform.storage.bookmark.GuestBookmarkStorage
 import okio.Path.Companion.toPath
 import platform.Foundation.NSHomeDirectory
 

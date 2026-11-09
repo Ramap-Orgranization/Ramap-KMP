@@ -1,10 +1,9 @@
-package com.peto.ramap.platform.storage.impl
+package com.peto.ramap.platform.storage.notice
 
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
-import com.peto.ramap.platform.storage.AppNoticeStorage
 import kotlinx.coroutines.flow.first
 
 class DefaultAppNoticeStorage(

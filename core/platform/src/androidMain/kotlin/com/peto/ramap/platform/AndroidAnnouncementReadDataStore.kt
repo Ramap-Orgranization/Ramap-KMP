@@ -3,8 +3,8 @@ package com.peto.ramap.platform
 import android.content.Context
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.preferencesDataStoreFile
-import com.peto.ramap.platform.storage.AnnouncementReadStorage
-import com.peto.ramap.platform.storage.impl.DefaultAnnouncementReadStorage
+import com.peto.ramap.platform.storage.announcement.AnnouncementReadStorage
+import com.peto.ramap.platform.storage.announcement.DefaultAnnouncementReadStorage
 
 fun createAnnouncementReadStorage(context: Context): AnnouncementReadStorage =
     DefaultAnnouncementReadStorage(

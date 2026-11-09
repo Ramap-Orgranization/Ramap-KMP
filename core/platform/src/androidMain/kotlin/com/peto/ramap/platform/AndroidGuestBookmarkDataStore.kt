@@ -3,8 +3,8 @@ package com.peto.ramap.platform
 import android.content.Context
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.preferencesDataStoreFile
-import com.peto.ramap.platform.storage.GuestBookmarkStorage
-import com.peto.ramap.platform.storage.impl.DefaultGuestBookmarkStorage
+import com.peto.ramap.platform.storage.bookmark.DefaultGuestBookmarkStorage
+import com.peto.ramap.platform.storage.bookmark.GuestBookmarkStorage
 
 fun createGuestBookmarkStorage(context: Context): GuestBookmarkStorage =
     DefaultGuestBookmarkStorage(

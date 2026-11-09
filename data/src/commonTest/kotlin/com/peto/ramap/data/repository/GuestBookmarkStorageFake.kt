@@ -1,6 +1,6 @@
 package com.peto.ramap.data.repository
 
-import com.peto.ramap.platform.storage.GuestBookmarkStorage
+import com.peto.ramap.platform.storage.bookmark.GuestBookmarkStorage
 
 internal class GuestBookmarkStorageFake : GuestBookmarkStorage {
     private var guestBookmarks = emptySet<String>()

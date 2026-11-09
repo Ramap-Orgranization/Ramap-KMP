@@ -5,7 +5,7 @@ import com.peto.ramap.data.datasource.personalization.BookmarkShopDataSource
 import com.peto.ramap.domain.repository.BookmarkRepository
 import com.peto.ramap.domain.repository.LoginRepository
 import com.peto.ramap.network.execute.invokeRequest
-import com.peto.ramap.platform.storage.GuestBookmarkStorage
+import com.peto.ramap.platform.storage.bookmark.GuestBookmarkStorage
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock

@@ -1,4 +1,4 @@
-package com.peto.ramap.platform.storage
+package com.peto.ramap.platform.storage.bookmark
 
 interface GuestBookmarkStorage {
     suspend fun fetchGuestBookmarks(): Set<String>

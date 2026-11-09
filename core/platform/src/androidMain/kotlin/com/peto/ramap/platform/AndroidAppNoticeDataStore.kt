@@ -3,8 +3,8 @@ package com.peto.ramap.platform
 import android.content.Context
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.preferencesDataStoreFile
-import com.peto.ramap.platform.storage.AppNoticeStorage
-import com.peto.ramap.platform.storage.impl.DefaultAppNoticeStorage
+import com.peto.ramap.platform.storage.notice.AppNoticeStorage
+import com.peto.ramap.platform.storage.notice.DefaultAppNoticeStorage
 
 fun createAppNoticeStorage(context: Context): AppNoticeStorage =
     DefaultAppNoticeStorage(

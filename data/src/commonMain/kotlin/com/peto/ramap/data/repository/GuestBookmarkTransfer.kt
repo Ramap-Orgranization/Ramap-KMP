@@ -2,7 +2,7 @@ package com.peto.ramap.data.repository
 
 import com.peto.ramap.data.datasource.personalization.BookmarkShopDataSource
 import com.peto.ramap.domain.repository.LoginRepository
-import com.peto.ramap.platform.storage.GuestBookmarkStorage
+import com.peto.ramap.platform.storage.bookmark.GuestBookmarkStorage
 import kotlinx.coroutines.CancellationException
 
 internal class GuestBookmarkTransfer(
