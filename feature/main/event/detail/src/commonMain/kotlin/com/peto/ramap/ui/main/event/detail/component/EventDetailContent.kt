@@ -39,7 +39,7 @@ fun EventDetailContent(
                 .fillMaxWidth()
                 .padding(horizontal = 24.dp)
                 .verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(15.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         EventDetailHeader(event = event)
 
