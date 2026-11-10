@@ -99,7 +99,7 @@ internal fun eventSection(
                         Modifier
                             .fillMaxWidth()
                             .padding(horizontal = horizontalContentPadding),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(3.dp),
                 ) {
                     rows.forEach { rowEvents ->
                         Row(
@@ -215,8 +215,8 @@ private fun EventSectionPreview(
         val title = stringResource(Res.string.event_list_ongoing_section)
         Box {
             LazyColumn(
-                contentPadding = PaddingValues(vertical = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
+                contentPadding = PaddingValues(vertical = 4.dp),
+                verticalArrangement = Arrangement.spacedBy(5.dp),
             ) {
                 eventSection(
                     scope = this,

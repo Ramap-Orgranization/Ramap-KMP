@@ -34,7 +34,7 @@ fun ShopThumbnail(
             modifier
                 .noRippleClickable(onClick = onClick),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(6.dp),
+        verticalArrangement = Arrangement.spacedBy(3.dp),
     ) {
         Box(
             modifier = Modifier.fillMaxWidth().aspectRatio(1f),

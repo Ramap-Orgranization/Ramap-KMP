@@ -73,7 +73,7 @@ private fun OngoingEventShopItemSkeleton(modifier: Modifier = Modifier) {
     Column(
         modifier = modifier.width(72.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(6.dp),
+        verticalArrangement = Arrangement.spacedBy(3.dp),
     ) {
         Box(
             modifier = Modifier.size(72.dp),

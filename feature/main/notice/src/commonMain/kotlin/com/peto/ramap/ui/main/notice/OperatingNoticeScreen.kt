@@ -143,8 +143,8 @@ fun OperatingNoticeScreen(
                             Box {
                                 LazyColumn(
                                     modifier = Modifier.fillMaxSize(),
-                                    contentPadding = PaddingValues(vertical = 16.dp),
-                                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                                    contentPadding = PaddingValues(vertical = 8.dp),
+                                    verticalArrangement = Arrangement.spacedBy(5.dp),
                                 ) {
                                     addNoticeSection(
                                         listScope = this,
@@ -204,7 +204,7 @@ private fun addNoticeSection(
                 Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp)
-                    .padding(vertical = 6.dp),
+                    .padding(vertical = 1.dp),
             horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             rowNotices.forEach { notice ->

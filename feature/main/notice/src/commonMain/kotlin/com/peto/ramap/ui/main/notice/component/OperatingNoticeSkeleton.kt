@@ -26,8 +26,8 @@ import com.peto.ramap.theme.RamapTheme
 internal fun OperatingNoticeSkeleton(modifier: Modifier = Modifier) {
     LazyColumn(
         modifier = modifier,
-        contentPadding = PaddingValues(vertical = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
+        contentPadding = PaddingValues(vertical = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(5.dp),
         userScrollEnabled = false,
     ) {
         // Today section title
@@ -43,7 +43,7 @@ internal fun OperatingNoticeSkeleton(modifier: Modifier = Modifier) {
                     Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp)
-                        .padding(vertical = 6.dp),
+                        .padding(vertical = 1.dp),
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 repeat(4) {
@@ -53,7 +53,7 @@ internal fun OperatingNoticeSkeleton(modifier: Modifier = Modifier) {
         }
         // Scheduled section title
         item {
-            Spacer(modifier = Modifier.height(6.dp))
+            Spacer(modifier = Modifier.height(3.dp))
             Skeleton(
                 modifier = Modifier.padding(horizontal = 16.dp).width(80.dp).height(24.dp),
             )
@@ -65,7 +65,7 @@ internal fun OperatingNoticeSkeleton(modifier: Modifier = Modifier) {
                     Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp)
-                        .padding(vertical = 6.dp),
+                        .padding(vertical = 1.dp),
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 repeat(4) {
@@ -81,7 +81,7 @@ private fun OperatingNoticeShopItemSkeleton(modifier: Modifier = Modifier) {
     Column(
         modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(6.dp),
+        verticalArrangement = Arrangement.spacedBy(3.dp),
     ) {
         Box(
             modifier = Modifier.fillMaxWidth().aspectRatio(1f),
