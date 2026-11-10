@@ -11,7 +11,6 @@ import com.peto.ramap.ui.onboarding.contract.OnboardingUiState
 import com.peto.ramap.ui.onboarding.log.OnboardingAnalytics
 import com.peto.ramap.ui.onboarding.permission.contract.OnboardingPermission
 import com.peto.ramap.ui.task.TaskPolicy
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 
 class OnboardingViewModel(

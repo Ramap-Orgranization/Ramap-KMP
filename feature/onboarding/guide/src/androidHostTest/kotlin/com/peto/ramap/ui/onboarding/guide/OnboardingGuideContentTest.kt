@@ -83,7 +83,6 @@ class OnboardingGuideContentTest {
                 TestContent {
                     OnboardingContent(
                         uiState = OnboardingUiState(step = step),
-                        onIntent = intents::add,
                         guideContent = { OnboardingGuideContent(uiState = selection, onIntent = {}) },
                     )
                 }

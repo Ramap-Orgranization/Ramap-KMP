@@ -71,7 +71,6 @@ fun OnboardingRoute(
 
     OnboardingContent(
         uiState = uiState,
-        onIntent = viewModel::dispatch,
         permissionContent = {
             PermissionGuideRoute(
                 isConfirming = uiState.loadState.isLoading(OnboardingLoadKey.ConfirmPermissionGuide),
