@@ -25,7 +25,6 @@ import com.peto.ramap.theme.RamapTheme
 @Composable
 internal fun NotificationSettingsSkeleton(
     modifier: Modifier = Modifier,
-    itemCount: Int = 3,
 ) {
     Column(
         modifier = modifier.fillMaxWidth(),
@@ -40,7 +39,7 @@ internal fun NotificationSettingsSkeleton(
                 shape = RoundedCornerShape(10.dp),
             )
         }
-        repeat(itemCount) { index ->
+        repeat(6) { index ->
             NotificationTypeChoiceSkeleton(
                 titleWidthFraction =
                     when (index % 3) {
@@ -98,7 +97,7 @@ private fun NotificationTypeChoiceSkeleton(
     }
 }
 
-@Preview(name = "알림 설정 스켈레톤", showBackground = true)
+@Preview(showBackground = true)
 @Composable
 private fun NotificationSettingsSkeletonPreview() {
     RamapTheme {
