@@ -117,6 +117,7 @@ import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.withContext
+import kotlinx.datetime.LocalDateTime
 import org.jetbrains.compose.resources.StringResource
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.data_load_failure_message
@@ -2769,6 +2770,38 @@ class MapShopSectionsRegressionTest {
         assertEquals(openShops, uiState.searchResultShops)
         assertEquals(openShops, uiState.markerShops)
         assertEquals(true, uiState.showSearchResults)
+    }
+
+    @Test
+    fun `추천 목록과 검색 결과의 지도 마커는 라스트오더 시각부터 매장을 제외한다`() {
+        val hours =
+            BusinessHours(
+                weekly = mapOf("mon" to BusinessHoursDay(false, "11:00", "22:00", false, null)),
+                breakTimes = emptyMap(),
+                lastOrders = emptyMap(),
+                notice = null,
+            )
+        val openShop = ramenShopFixture(id = "open-shop").copy(isRecommended = true, businessHoursDetails = hours)
+        val lastOrderShop =
+            ramenShopFixture(id = "last-order-shop").copy(
+                isRecommended = true,
+                businessHoursDetails = hours.copy(lastOrders = mapOf("mon" to listOf("21:30"))),
+            )
+        val shops = RamenShops(listOf(openShop, lastOrderShop))
+        val mapState =
+            MapUiState(
+                currentDateTime = LocalDateTime(2026, 8, 10, 21, 30),
+                filters = RamenShopFilter(isOpenSelected = true),
+                isRecommendationEnabled = true,
+                recommendedShops = shops,
+            )
+        val searchState = mapState.copy(search = loadedSearchUiModel(input = "라멘", results = shops))
+
+        assertEquals(listOf(openShop), mapState.recommendationListShops)
+        assertEquals(setOf(openShop.id), mapState.markerShops.keys)
+        assertEquals(setOf(openShop.id), searchState.searchResultShops.keys)
+        assertEquals(setOf(openShop.id), searchState.copy(selectedShop = lastOrderShop).markerShops.keys)
+        assertEquals(shops.keys, mapState.copy(filters = RamenShopFilter()).markerShops.keys)
     }
 
     @Test

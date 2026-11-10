@@ -579,19 +579,20 @@ class MapViewModel(
     }
 
     private fun updateFilter(filter: RamenShopFilter) {
+        val now = Clock.System.now().toLocalDateTime(TimeZone.of("Asia/Seoul"))
         val selectedShop = currentState.selectedShop
         val shopToMatch = if (currentState.isRecommendationEnabled) selectedShop else selectedShop?.let { currentState.shops[it.id] }
         val isSelectedShopFilteredOut =
             selectedShop != null &&
                 shopToMatch?.isOpened(
                     filter,
-                    Clock.System.now().toLocalDateTime(TimeZone.of("Asia/Seoul")),
+                    now,
                     currentState.operatingNotices,
                 ) != true
         if (isSelectedShopFilteredOut) {
             dismissShopDetail()
         }
-        reduce { copy(filters = filter) }
+        reduce { copy(filters = filter, currentDateTime = now) }
         showEmptyFilterResultMessageIfNeeded(includeSelectedShop = !isSelectedShopFilteredOut)
     }
 

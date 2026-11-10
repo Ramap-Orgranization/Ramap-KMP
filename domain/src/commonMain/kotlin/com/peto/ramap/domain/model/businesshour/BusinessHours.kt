@@ -19,5 +19,10 @@ data class BusinessHours(
 
     fun statusAt(currentDateTime: LocalDateTime): BusinessHoursStatus? = BusinessHoursStatusCalculator.statusAt(this, currentDateTime)
 
+    internal fun statusAt(
+        currentDateTime: LocalDateTime,
+        stopAtLastOrder: Boolean,
+    ): BusinessHoursStatus? = BusinessHoursStatusCalculator.statusAt(this, currentDateTime, stopAtLastOrder)
+
     fun nextOpeningTimeAt(currentDateTime: LocalDateTime): String? = BusinessHoursStatusCalculator.nextOpeningTimeAt(this, currentDateTime)
 }
