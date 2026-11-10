@@ -1,6 +1,7 @@
 package com.peto.ramap.ui.shop.menu.component
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -33,7 +34,7 @@ import com.peto.ramap.theme.RamapTheme
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
-import ramap.shared.generated.resources.ic_app_logo
+import ramap.shared.generated.resources.ic_app_logo_cutout
 import ramap.shared.generated.resources.shop_menu_price
 import ramap.shared.generated.resources.shop_menu_representative
 import ramap.shared.generated.resources.shop_menu_source
@@ -55,10 +56,14 @@ internal fun MenuRow(
                 shape = RoundedCornerShape(16.dp),
             ) {
                 Image(
-                    painter = painterResource(Res.drawable.ic_app_logo),
+                    painter = painterResource(Res.drawable.ic_app_logo_cutout),
                     contentDescription = null,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop,
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .background(CommonColor.White)
+                            .padding(28.dp),
+                    contentScale = ContentScale.Fit,
                 )
             }
         }
