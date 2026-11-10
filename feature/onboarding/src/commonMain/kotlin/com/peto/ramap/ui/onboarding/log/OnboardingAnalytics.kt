@@ -6,14 +6,18 @@ import com.peto.ramap.analytics.AnalyticsTracker
 import com.peto.ramap.core.result.RamapError
 import com.peto.ramap.platform.permission.NotificationPermissionOutcome
 import com.peto.ramap.platform.permission.PermissionStatus
-import com.peto.ramap.ui.onboarding.contract.OnboardingPermission
+import com.peto.ramap.ui.onboarding.guide.log.GuideAnalytics
+import com.peto.ramap.ui.onboarding.guide.log.OnboardingAnalyticsStage
+import com.peto.ramap.ui.onboarding.permission.contract.OnboardingPermission
+import com.peto.ramap.ui.onboarding.shopselection.log.ShopSelectionAnalytics
 import kotlin.time.TimeMark
 import kotlin.time.TimeSource
 import kotlin.uuid.Uuid
 
-internal class OnboardingAnalytics(
+public class OnboardingAnalytics(
     private val tracker: AnalyticsTracker,
-) {
+) : GuideAnalytics,
+    ShopSelectionAnalytics {
     private val attemptId = Uuid.random().toString()
     private var startedAt: TimeMark? = null
     private var stageShownAt: TimeMark? = null
@@ -25,14 +29,14 @@ internal class OnboardingAnalytics(
     private var hasReachedShopGoal = false
     private var hasCompleted = false
 
-    internal fun start(resumesAfterPermissions: Boolean) {
+    public fun start(resumesAfterPermissions: Boolean) {
         if (startedAt != null) return
         startedAt = TimeSource.Monotonic.markNow()
         val entry = if (resumesAfterPermissions) "permissions_confirmed" else "permission_guide"
         log("onboarding_started", "entry" to entry)
     }
 
-    internal fun viewStage(stage: OnboardingAnalyticsStage) {
+    override fun viewStage(stage: OnboardingAnalyticsStage) {
         val previous = visibleStage
         if (previous == stage || startedAt == null || hasCompleted) return
         val previousElapsed = stageShownAt?.elapsedNow()?.inWholeMilliseconds
@@ -50,14 +54,14 @@ internal class OnboardingAnalytics(
         log("onboarding_stage_viewed", *previousStageParams)
     }
 
-    internal fun permissionGuideConfirmed() = log("onboarding_permission_guide_next")
+    public fun permissionGuideConfirmed(): Unit = log("onboarding_permission_guide_next")
 
-    internal fun permissionRequested(permission: OnboardingPermission) {
+    public fun permissionRequested(permission: OnboardingPermission) {
         pendingPermission = permission
         log("onboarding_permission_requested", "permission" to permission.name.lowercase())
     }
 
-    internal fun locationResult(status: PermissionStatus) {
+    public fun locationResult(status: PermissionStatus) {
         val result =
             when (status) {
                 PermissionStatus.Granted -> "granted"
@@ -67,7 +71,7 @@ internal class OnboardingAnalytics(
         permissionResult(OnboardingPermission.Location, result, status == PermissionStatus.Granted)
     }
 
-    internal fun notificationResult(outcome: NotificationPermissionOutcome) {
+    public fun notificationResult(outcome: NotificationPermissionOutcome) {
         val result =
             when (outcome) {
                 NotificationPermissionOutcome.Granted -> "newly_granted"
@@ -95,30 +99,31 @@ internal class OnboardingAnalytics(
         )
     }
 
-    internal fun guideAction(
+    override fun guideAction(
         stage: OnboardingAnalyticsStage,
         action: String,
-    ) = log("onboarding_guide_action", "action_stage" to stage.key, "action" to action)
+    ): Unit = log("onboarding_guide_action", "action_stage" to stage.key, "action" to action)
 
-    internal fun shopLoadResult(
+    override fun shopLoadResult(
         operation: String,
         resultCount: Int,
-    ) = log(
-        "onboarding_shop_load_result",
-        "operation" to operation,
-        "result" to if (resultCount == 0) "empty" else "success",
-        "result_count" to resultCount,
-    )
+    ): Unit =
+        log(
+            "onboarding_shop_load_result",
+            "operation" to operation,
+            "result" to if (resultCount == 0) "empty" else "success",
+            "result_count" to resultCount,
+        )
 
-    internal fun shopLoadFailed(
+    override fun shopLoadFailed(
         operation: String,
         error: RamapError,
-    ) = log("onboarding_shop_load_result", "operation" to operation, "result" to "failed", "error_type" to error.analyticsType)
+    ): Unit = log("onboarding_shop_load_result", "operation" to operation, "result" to "failed", "error_type" to error.analyticsType)
 
-    internal fun bookmarkResult(
+    override fun bookmarkResult(
         enabled: Boolean,
         savedCount: Int,
-        error: RamapError? = null,
+        error: RamapError?,
     ) {
         val resultParams = if (error == null) emptyArray() else arrayOf("error_type" to error.analyticsType)
         log(
@@ -130,28 +135,28 @@ internal class OnboardingAnalytics(
         )
     }
 
-    internal fun shopGoalReached(savedCount: Int) {
+    override fun shopGoalReached(savedCount: Int) {
         if (hasReachedShopGoal) return
         hasReachedShopGoal = true
         log("onboarding_shop_goal_reached", "saved_count" to savedCount)
     }
 
-    internal fun finishRequested(savedCount: Int) = log("onboarding_finish_requested", "saved_count" to savedCount)
+    override fun finishRequested(savedCount: Int): Unit = log("onboarding_finish_requested", "saved_count" to savedCount)
 
-    internal fun finishFailed(savedCount: Int) = log("onboarding_finish_failed", "saved_count" to savedCount)
+    override fun finishFailed(savedCount: Int): Unit = log("onboarding_finish_failed", "saved_count" to savedCount)
 
-    internal fun completed(savedCount: Int) {
+    override fun completed(savedCount: Int) {
         log("onboarding_completed", "saved_count" to savedCount)
         hasCompleted = true
     }
 
-    internal fun backgrounded() {
+    public fun backgrounded() {
         if (visibleStage == null || isBackgrounded || hasCompleted) return
         isBackgrounded = true
         log("onboarding_backgrounded", "pending_permission" to (pendingPermission?.name?.lowercase() ?: "none"))
     }
 
-    internal fun foregrounded() {
+    public fun foregrounded() {
         if (!isBackgrounded) return
         isBackgrounded = false
         log("onboarding_foregrounded")

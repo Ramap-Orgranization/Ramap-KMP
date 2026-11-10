@@ -25,5 +25,15 @@ kotlin {
         implementation(projects.core.analytics)
         implementation(projects.core.platform)
         implementation(projects.core.preview)
+        api(projects.feature.onboarding.permission)
+        api(projects.feature.onboarding.guide)
+        api(projects.feature.onboarding.shopSelection)
+    }
+
+    sourceSets.commonTest.dependencies {
+        implementation(projects.core.testing)
+        implementation(libs.kotlin.test)
+        implementation(libs.kotlinx.coroutines.test)
+        implementation(libs.turbine)
     }
 }

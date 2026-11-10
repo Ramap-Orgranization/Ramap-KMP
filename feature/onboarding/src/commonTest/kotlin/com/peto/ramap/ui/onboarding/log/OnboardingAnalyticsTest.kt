@@ -11,17 +11,18 @@ import com.peto.ramap.domain.store.PersonalizationStore
 import com.peto.ramap.domain.usecase.SearchRamenShopsUseCase
 import com.peto.ramap.fake.FakeAnalyticsTracker
 import com.peto.ramap.fake.FakeLoginRepository
+import com.peto.ramap.fake.FakeOnboardingRankingRepository
+import com.peto.ramap.fake.FakeOnboardingStorage
 import com.peto.ramap.fake.FakePersonalizationRepository
 import com.peto.ramap.fake.FakeRamenShopRepository
 import com.peto.ramap.platform.permission.NotificationPermissionOutcome
 import com.peto.ramap.platform.storage.onboarding.OnboardingStorage
-import com.peto.ramap.ui.onboarding.FakeOnboardingRankingRepository
-import com.peto.ramap.ui.onboarding.FakeOnboardingStorage
 import com.peto.ramap.ui.onboarding.OnboardingViewModel
-import com.peto.ramap.ui.onboarding.ShopSelectionViewModel
-import com.peto.ramap.ui.onboarding.contract.OnboardingPermission
-import com.peto.ramap.ui.onboarding.contract.ShopSelectionIntent
 import com.peto.ramap.ui.onboarding.di.onboardingModule
+import com.peto.ramap.ui.onboarding.guide.log.OnboardingAnalyticsStage
+import com.peto.ramap.ui.onboarding.permission.contract.OnboardingPermission
+import com.peto.ramap.ui.onboarding.shopselection.ShopSelectionViewModel
+import com.peto.ramap.ui.onboarding.shopselection.contract.ShopSelectionIntent
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runCurrent
 import org.koin.core.parameter.parametersOf
@@ -43,7 +44,7 @@ class OnboardingAnalyticsTest {
                         onboardingModule,
                         module {
                             single<AnalyticsTracker> { tracker }
-                            single<OnboardingStorage> { FakeOnboardingStorage().apply { confirmed = true } }
+                            single<OnboardingStorage> { FakeOnboardingStorage().also { it.confirmed = true } }
                             single<LoginRepository> { FakeLoginRepository() }
                             single<RamenShopRepository> { FakeRamenShopRepository() }
                             single<ShopRankingRepository> { FakeOnboardingRankingRepository(RamenShops(emptyMap())) }

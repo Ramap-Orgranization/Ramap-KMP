@@ -5,11 +5,11 @@ import com.peto.ramap.platform.storage.onboarding.OnboardingStorage
 import com.peto.ramap.ui.base.BaseViewModel
 import com.peto.ramap.ui.onboarding.contract.OnboardingIntent
 import com.peto.ramap.ui.onboarding.contract.OnboardingLoadKey
-import com.peto.ramap.ui.onboarding.contract.OnboardingPermission
 import com.peto.ramap.ui.onboarding.contract.OnboardingSideEffect
 import com.peto.ramap.ui.onboarding.contract.OnboardingStep
 import com.peto.ramap.ui.onboarding.contract.OnboardingUiState
 import com.peto.ramap.ui.onboarding.log.OnboardingAnalytics
+import com.peto.ramap.ui.onboarding.permission.contract.OnboardingPermission
 import com.peto.ramap.ui.task.TaskPolicy
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
@@ -32,6 +32,7 @@ class OnboardingViewModel(
             OnboardingIntent.ShopSelectionCompleted -> completeShopSelection()
             is OnboardingIntent.LocationPermissionFinished ->
                 finishPermissionRequest(OnboardingPermission.Location) { analytics.locationResult(intent.status) }
+
             is OnboardingIntent.NotificationPermissionFinished ->
                 finishPermissionRequest(OnboardingPermission.Notification) { analytics.notificationResult(intent.outcome) }
         }
@@ -42,24 +43,9 @@ class OnboardingViewModel(
             taskKey = READ_CONFIRMATION_TASK_KEY,
             loadKey = OnboardingLoadKey.ReadConfirmation,
         ) {
-            val hasConfirmed =
-                try {
-                    storage.isPermissionGuideConfirmed()
-                } catch (cancellation: CancellationException) {
-                    throw cancellation
-                } catch (exception: Exception) {
-                    handleError(exception)
-                    false
-                }
-            val hasCompleted =
-                try {
-                    storage.isOnboardingCompleted()
-                } catch (cancellation: CancellationException) {
-                    throw cancellation
-                } catch (exception: Exception) {
-                    handleError(exception)
-                    false
-                }
+            val hasConfirmed = storage.isPermissionGuideConfirmed()
+            val hasCompleted = storage.isOnboardingCompleted()
+
             val step =
                 when {
                     hasCompleted -> OnboardingStep.Completed
@@ -83,14 +69,8 @@ class OnboardingViewModel(
             analytics.permissionGuideConfirmed()
             requestPermission(OnboardingPermission.Location)
             requestPermission(OnboardingPermission.Notification)
-            try {
-                storage.confirmPermissionGuide()
-            } catch (cancellation: CancellationException) {
-                throw cancellation
-            } catch (exception: Exception) {
-                handleError(exception)
-                // 안내 기록을 저장하지 못해도 현재 실행에서 앱 이용을 막지 않는다.
-            }
+            storage.confirmPermissionGuide()
+
             reduce { copy(step = OnboardingStep.Guide) }
         }
     }

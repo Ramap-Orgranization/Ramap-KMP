@@ -7,14 +7,20 @@ import androidx.compose.ui.tooling.preview.Preview
 import com.peto.ramap.designsystem.indicator.RamenLoadingIndicator
 import com.peto.ramap.theme.RamapTheme
 import com.peto.ramap.ui.onboarding.contract.OnboardingIntent
-import com.peto.ramap.ui.onboarding.contract.OnboardingLoadKey
 import com.peto.ramap.ui.onboarding.contract.OnboardingStep
 import com.peto.ramap.ui.onboarding.contract.OnboardingUiState
+import com.peto.ramap.ui.onboarding.permission.PermissionGuideContent
 
 @Composable
-internal fun OnboardingContent(
+fun OnboardingContent(
     uiState: OnboardingUiState,
     onIntent: (OnboardingIntent) -> Unit,
+    permissionContent: @Composable () -> Unit = {
+        PermissionGuideContent(
+            isConfirming = false,
+            onConfirm = {},
+        )
+    },
     guideContent: @Composable () -> Unit,
 ) {
     when (uiState.step) {
@@ -22,11 +28,7 @@ internal fun OnboardingContent(
         OnboardingStep.Completed,
         -> RamenLoadingIndicator(modifier = Modifier.fillMaxSize())
 
-        OnboardingStep.PermissionGuide ->
-            PermissionGuideContent(
-                isConfirming = uiState.loadState.isLoading(OnboardingLoadKey.ConfirmPermissionGuide),
-                onConfirm = { onIntent(OnboardingIntent.ConfirmPermissionGuide) },
-            )
+        OnboardingStep.PermissionGuide -> permissionContent()
 
         OnboardingStep.Guide -> guideContent()
     }

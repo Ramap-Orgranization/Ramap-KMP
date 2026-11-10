@@ -1,7 +1,7 @@
 package com.peto.ramap.ui.onboarding.di
 
 import com.peto.ramap.ui.onboarding.OnboardingViewModel
-import com.peto.ramap.ui.onboarding.ShopSelectionViewModel
+import com.peto.ramap.ui.onboarding.shopselection.ShopSelectionViewModel
 import org.koin.core.module.dsl.viewModelOf
 import org.koin.dsl.module
 

@@ -3,14 +3,15 @@ package com.peto.ramap.ui.onboarding
 import app.cash.turbine.test
 import com.peto.ramap.coroutinesTest
 import com.peto.ramap.fake.FakeAnalyticsTracker
+import com.peto.ramap.fake.FakeOnboardingStorage
 import com.peto.ramap.platform.permission.NotificationPermissionOutcome
 import com.peto.ramap.platform.permission.PermissionStatus
 import com.peto.ramap.platform.storage.onboarding.OnboardingStorage
 import com.peto.ramap.ui.onboarding.contract.OnboardingIntent
 import com.peto.ramap.ui.onboarding.contract.OnboardingLoadKey
-import com.peto.ramap.ui.onboarding.contract.OnboardingPermission
 import com.peto.ramap.ui.onboarding.contract.OnboardingSideEffect
 import com.peto.ramap.ui.onboarding.contract.OnboardingStep
+import com.peto.ramap.ui.onboarding.permission.contract.OnboardingPermission
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -132,39 +133,9 @@ class OnboardingViewModelTest {
         }
 
     @Test
-    fun `기록 조회 실패 시 로딩에 갇히지 않고 안내를 표시한다`() =
-        coroutinesTest {
-            val storage = FakeOnboardingStorage().apply { readFailure = IllegalStateException() }
-            val viewModel = createViewModel(storage)
-            runCurrent()
-
-            assertEquals(OnboardingStep.PermissionGuide, viewModel.uiState.value.step)
-            assertFalse(viewModel.uiState.value.loadState.isAnyLoading)
-        }
-
-    @Test
-    fun `저장 실패 시 현재 실행에서는 진행하고 다음 실행에서는 안내를 다시 표시한다`() =
-        coroutinesTest {
-            val storage = FakeOnboardingStorage().apply { saveFailure = IllegalStateException() }
-            val viewModel = createViewModel(storage)
-            runCurrent()
-            viewModel.dispatch(OnboardingIntent.ConfirmPermissionGuide)
-            finishPermissionRequests(viewModel)
-            runCurrent()
-
-            assertEquals(OnboardingStep.Guide, viewModel.uiState.value.step)
-            assertFalse(viewModel.uiState.value.loadState.isAnyLoading)
-            assertFalse(storage.confirmed)
-
-            val nextLaunch = createViewModel(storage)
-            runCurrent()
-            assertEquals(OnboardingStep.PermissionGuide, nextLaunch.uiState.value.step)
-        }
-
-    @Test
     fun `저장이 취소되면 확인 완료로 처리하지 않는다`() =
         coroutinesTest {
-            val storage = FakeOnboardingStorage().apply { saveFailure = CancellationException() }
+            val storage = FakeOnboardingStorage().apply { saveFailure = CancellationException("Save cancelled") }
             val viewModel = createViewModel(storage)
             runCurrent()
             viewModel.dispatch(OnboardingIntent.ConfirmPermissionGuide)

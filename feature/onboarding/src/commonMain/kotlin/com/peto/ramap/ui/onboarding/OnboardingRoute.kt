@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -11,13 +12,15 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.repeatOnLifecycle
 import com.peto.ramap.designsystem.toast.ToastManager
-import com.peto.ramap.platform.permission.rememberLocationPermissionGenerator
-import com.peto.ramap.platform.permission.rememberNotificationPermissionGenerator
 import com.peto.ramap.ui.onboarding.contract.OnboardingIntent
-import com.peto.ramap.ui.onboarding.contract.OnboardingPermission
+import com.peto.ramap.ui.onboarding.contract.OnboardingLoadKey
 import com.peto.ramap.ui.onboarding.contract.OnboardingSideEffect
 import com.peto.ramap.ui.onboarding.contract.OnboardingStep
-import com.peto.ramap.ui.onboarding.log.OnboardingAnalyticsStage
+import com.peto.ramap.ui.onboarding.guide.OnboardingGuideRoute
+import com.peto.ramap.ui.onboarding.guide.log.OnboardingAnalyticsStage
+import com.peto.ramap.ui.onboarding.permission.PermissionGuideRoute
+import kotlinx.coroutines.flow.filterIsInstance
+import kotlinx.coroutines.flow.map
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -27,18 +30,10 @@ fun OnboardingRoute(
     toastManager: ToastManager = koinInject(),
     viewModel: OnboardingViewModel = koinViewModel(),
 ) {
-    val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val currentOnCompleted by rememberUpdatedState(onCompleted)
     val lifecycleOwner = LocalLifecycleOwner.current
     val analytics = viewModel.analytics
-    val locationPermission =
-        rememberLocationPermissionGenerator {
-            viewModel.dispatch(OnboardingIntent.LocationPermissionFinished(it))
-        }
-    val notificationPermission =
-        rememberNotificationPermissionGenerator {
-            viewModel.dispatch(OnboardingIntent.NotificationPermissionFinished(it))
-        }
 
     DisposableEffect(lifecycleOwner, analytics) {
         val observer =
@@ -53,34 +48,45 @@ fun OnboardingRoute(
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
-    LaunchedEffect(state.step, analytics) {
-        if (state.step == OnboardingStep.PermissionGuide) analytics.viewStage(OnboardingAnalyticsStage.PermissionGuide)
+    LaunchedEffect(uiState.step, analytics) {
+        if (uiState.step == OnboardingStep.PermissionGuide) analytics.viewStage(OnboardingAnalyticsStage.PermissionGuide)
     }
 
-    LaunchedEffect(viewModel, lifecycleOwner, locationPermission, notificationPermission) {
-        // 앞선 시스템 팝업이 닫히고 앱이 활성화된 뒤 다음 권한을 요청한다.
+    LaunchedEffect(viewModel, lifecycleOwner) {
         lifecycleOwner.repeatOnLifecycle(Lifecycle.State.RESUMED) {
             viewModel.sideEffect.collect { effect ->
-                when (effect) {
-                    OnboardingSideEffect.Completed -> currentOnCompleted()
-                    is OnboardingSideEffect.RequestPermission ->
-                        when (effect.permission) {
-                            OnboardingPermission.Location -> locationPermission.requestPermission()
-                            OnboardingPermission.Notification -> notificationPermission.requestPermission()
-                        }
+                if (effect is OnboardingSideEffect.Completed) {
+                    currentOnCompleted()
                 }
             }
         }
     }
 
+    val requestPermissionFlow =
+        remember(viewModel.sideEffect) {
+            viewModel.sideEffect
+                .filterIsInstance<OnboardingSideEffect.RequestPermission>()
+                .map { it.permission }
+        }
+
     OnboardingContent(
-        uiState = state,
+        uiState = uiState,
         onIntent = viewModel::dispatch,
-    ) {
-        OnboardingGuideRoute(
-            onCompleted = { viewModel.dispatch(OnboardingIntent.ShopSelectionCompleted) },
-            analytics = analytics,
-            toastManager = toastManager,
-        )
-    }
+        permissionContent = {
+            PermissionGuideRoute(
+                isConfirming = uiState.loadState.isLoading(OnboardingLoadKey.ConfirmPermissionGuide),
+                onRequestPermission = requestPermissionFlow,
+                onConfirm = { viewModel.dispatch(OnboardingIntent.ConfirmPermissionGuide) },
+                onLocationPermissionFinished = { viewModel.dispatch(OnboardingIntent.LocationPermissionFinished(it)) },
+                onNotificationPermissionFinished = { viewModel.dispatch(OnboardingIntent.NotificationPermissionFinished(it)) },
+            )
+        },
+        guideContent = {
+            OnboardingGuideRoute(
+                onCompleted = { viewModel.dispatch(OnboardingIntent.ShopSelectionCompleted) },
+                analytics = analytics,
+                toastManager = toastManager,
+            )
+        },
+    )
 }
