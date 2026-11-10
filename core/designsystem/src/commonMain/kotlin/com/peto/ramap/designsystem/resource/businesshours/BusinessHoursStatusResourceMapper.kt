@@ -33,7 +33,7 @@ object BusinessHoursStatusResourceMapper {
             is BusinessHoursStatus.TemporaryClosure -> {
                 val end = status.endDate
                 if (end != null && status.startDate != end) {
-                    UiText(Res.string.business_hours_today_closed_until, listOf(dateLabel(end, status.startDate.year != end.year)))
+                    UiText(Res.string.business_hours_today_closed_until, listOf(dateLabel(end)))
                 } else {
                     UiText(Res.string.business_hours_today_closed)
                 }
@@ -63,16 +63,15 @@ object BusinessHoursStatusResourceMapper {
     ): UiText {
         val end = status.endDate
         val includeYear = end != null && status.startDate.year != end.year
-        val start = dateLabel(status.startDate, includeYear)
+        val start = dateLabel(status.startDate)
         return when {
             end == null -> UiText(Res.string.business_hours_temporary_closure_since, listOf(start, startWeekday))
             end == status.startDate -> UiText(Res.string.business_hours_temporary_closure_date, listOf(start, startWeekday))
-            else -> UiText(Res.string.business_hours_temporary_closure_period, listOf(start, startWeekday, dateLabel(end, includeYear), endWeekday))
+            else -> UiText(Res.string.business_hours_temporary_closure_period, listOf(start, startWeekday, dateLabel(end), endWeekday))
         }
     }
 
     private fun dateLabel(
         date: LocalDate,
-        includeYear: Boolean,
     ): String = date.toDotFormatted()
 }
