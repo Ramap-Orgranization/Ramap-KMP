@@ -188,6 +188,7 @@ private fun AppContent(
         }
 
         LoginGuideHost(controller = loginGuideController)
+        SignupConsentHost()
     }
 }
 

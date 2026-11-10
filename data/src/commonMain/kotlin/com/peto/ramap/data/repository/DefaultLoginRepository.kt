@@ -2,6 +2,7 @@ package com.peto.ramap.data.repository
 
 import co.touchlab.kermit.Logger
 import com.peto.ramap.core.result.RamapResult
+import com.peto.ramap.data.auth.SignupConsentSignIn
 import com.peto.ramap.data.auth.loginWithApple
 import com.peto.ramap.data.auth.loginWithKakao
 import com.peto.ramap.data.model.DeleteAccountResponse
@@ -32,6 +33,7 @@ import kotlinx.coroutines.flow.mapNotNull
  */
 internal class DefaultLoginRepository(
     private val supabaseClient: SupabaseClient,
+    private val signupConsentSignIn: SignupConsentSignIn,
 ) : LoginRepository {
     private val logger = Logger.withTag("LoginRepository")
 
@@ -69,24 +71,8 @@ internal class DefaultLoginRepository(
     override suspend fun signIn(type: LoginType): RamapResult<Unit> {
         val result =
             invokeRequest {
-                when (type) {
-                    LoginType.KAKAO -> {
-                        val token = loginWithKakao()
-                        supabaseClient.auth.signInWith(IDToken) {
-                            idToken = token.idToken
-                            provider = Kakao
-                            accessToken = token.accessToken
-                        }
-                    }
-                    LoginType.APPLE -> {
-                        val token = loginWithApple()
-                        supabaseClient.auth.signInWith(IDToken) {
-                            idToken = token.idToken
-                            provider = Apple
-                            nonce = token.nonce
-                        }
-                    }
-                }
+                val credentials = requestProviderCredentials(type)
+                signupConsentSignIn.signIn(credentials)
             }
 
         if (result is RamapResult.Error) {
@@ -96,6 +82,28 @@ internal class DefaultLoginRepository(
         }
         return result
     }
+
+    private suspend fun requestProviderCredentials(type: LoginType): IDToken.Config.() -> Unit =
+        when (type) {
+            LoginType.KAKAO -> {
+                val token = loginWithKakao()
+                val credentials: IDToken.Config.() -> Unit = {
+                    idToken = token.idToken
+                    provider = Kakao
+                    accessToken = token.accessToken
+                }
+                credentials
+            }
+            LoginType.APPLE -> {
+                val token = loginWithApple()
+                val credentials: IDToken.Config.() -> Unit = {
+                    idToken = token.idToken
+                    provider = Apple
+                    nonce = token.nonce
+                }
+                credentials
+            }
+        }
 
     override suspend fun signOut(): RamapResult<Unit> =
         invokeRequest {

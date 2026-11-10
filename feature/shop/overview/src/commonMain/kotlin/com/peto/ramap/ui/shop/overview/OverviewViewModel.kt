@@ -8,6 +8,7 @@ import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.auth.LoginSessionState
 import com.peto.ramap.domain.model.auth.LoginType
+import com.peto.ramap.domain.model.auth.SignupConsentDismissedException
 import com.peto.ramap.domain.model.notification.NotificationSelection
 import com.peto.ramap.domain.model.notification.NotificationSettings
 import com.peto.ramap.domain.model.personalization.BookmarkChangeStatus
@@ -536,6 +537,7 @@ class OverviewViewModel(
     }
 
     private fun login(type: LoginType) {
+        val actionAtSignIn = pendingShopAction
         val failureMessage =
             when (type) {
                 LoginType.KAKAO -> Res.string.kakao_login_failure_message
@@ -544,7 +546,14 @@ class OverviewViewModel(
         launchResultTask(
             taskKey = ACCOUNT_TASK_KEY,
             policy = TaskPolicy.CancelPrevious,
-            request = { signInUseCase(type, AnalyticsSource.MAP) },
+            request = {
+                try {
+                    signInUseCase(type, AnalyticsSource.MAP)
+                } catch (exception: SignupConsentDismissedException) {
+                    if (pendingShopAction === actionAtSignIn) pendingShopAction = null
+                    throw exception
+                }
+            },
             onSuccess = { showToast(Res.string.login_success_message) },
             onError = { error -> showErrorToast(error, failureMessage) },
         )

@@ -9,6 +9,7 @@ import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.designsystem.toast.ToastManager
 import com.peto.ramap.domain.model.auth.LoginSessionState
 import com.peto.ramap.domain.model.auth.LoginType
+import com.peto.ramap.domain.model.auth.SignupConsentDismissedException
 import com.peto.ramap.domain.repository.LoginRepository
 import com.peto.ramap.domain.usecase.SignInUseCase
 import com.peto.ramap.fake.FakeAnalyticsTracker
@@ -137,6 +138,24 @@ class ReviewSearchLoginFlowTest {
             overlay.resumeReviewShopSearch()
 
             assertEquals(ScreenRoutes.FeedTabRoutes, navigation.currentRoute)
+        }
+
+    @Test
+    fun `가입 동의를 닫으면 로그인 뒤 열려고 했던 프로필을 폐기한다`() =
+        runTest {
+            val session = FakeLoginRepository()
+            val login =
+                object : LoginRepository by session {
+                    override suspend fun signIn(type: LoginType): RamapResult<Unit> = throw SignupConsentDismissedException()
+                }
+            val guide = LoginGuideController()
+            val overlay = overlayState(login, navigationState(), guide, backgroundScope)
+            overlay.openProfile("other-account", asOverlay = true)
+            guide.select(assertNotNull(guide.request.value), LoginType.KAKAO)
+            runCurrent()
+
+            assertNull(overlay.pendingProfileTarget)
+            assertNull(overlay.overlayProfileUserId)
         }
 
     @Test

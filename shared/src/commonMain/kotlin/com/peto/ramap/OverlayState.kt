@@ -9,6 +9,7 @@ import com.peto.ramap.designsystem.toast.ToastManager
 import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.auth.LoginType
+import com.peto.ramap.domain.model.auth.SignupConsentDismissedException
 import com.peto.ramap.domain.repository.LoginRepository
 import com.peto.ramap.domain.usecase.SignInUseCase
 import com.peto.ramap.navigation.NavigationState
@@ -123,6 +124,7 @@ internal class OverlayState(
         type: LoginType,
         onFinished: (Boolean) -> Unit,
     ) {
+        val profileTargetAtSignIn = pendingProfileTarget
         coroutineScope.launch {
             var completed = false
             try {
@@ -153,6 +155,8 @@ internal class OverlayState(
                         )
                     }
                 }
+            } catch (_: SignupConsentDismissedException) {
+                if (pendingProfileTarget === profileTargetAtSignIn) pendingProfileTarget = null
             } finally {
                 if (!completed) onFinished(false)
             }

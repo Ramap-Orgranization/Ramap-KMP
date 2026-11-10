@@ -1,6 +1,7 @@
 package com.peto.ramap.data.repository
 
 import app.cash.turbine.test
+import com.peto.ramap.data.auth.SignupConsentSignIn
 import com.peto.ramap.domain.model.auth.LoginSessionState
 import com.peto.ramap.fixture.authenticatedSessionFixture
 import com.peto.ramap.fixture.withSupabaseSessionFixture
@@ -21,7 +22,7 @@ class LoginSessionStateTest {
         runTest {
             withSupabaseSessionFixture { client ->
                 client.auth.setSessionStatus(authenticatedSessionFixture())
-                DefaultLoginRepository(client).session.test {
+                DefaultLoginRepository(client, SignupConsentSignIn(client) { error("가입 동의를 요청하면 안 됩니다.") }).session.test {
                     assertEquals(LoginSessionState.AUTHENTICATED, awaitItem())
                     client.auth.setSessionStatus(SessionStatus.RefreshFailure(RefreshFailureCause.NetworkError(IllegalStateException("offline"))))
                     expectNoEvents()
@@ -38,7 +39,7 @@ class LoginSessionStateTest {
         runTest {
             withSupabaseSessionFixture { client ->
                 client.auth.setSessionStatus(SessionStatus.RefreshFailure(RefreshFailureCause.NetworkError(IllegalStateException("offline"))))
-                DefaultLoginRepository(client).session.test {
+                DefaultLoginRepository(client, SignupConsentSignIn(client) { error("가입 동의를 요청하면 안 됩니다.") }).session.test {
                     expectNoEvents()
                     client.auth.setSessionStatus(SessionStatus.NotAuthenticated())
                     assertEquals(LoginSessionState.NOT_AUTHENTICATED, awaitItem())
@@ -51,7 +52,7 @@ class LoginSessionStateTest {
         runTest {
             withSupabaseSessionFixture { client ->
                 client.auth.setSessionStatus(authenticatedSessionFixture())
-                DefaultLoginRepository(client).session.test {
+                DefaultLoginRepository(client, SignupConsentSignIn(client) { error("가입 동의를 요청하면 안 됩니다.") }).session.test {
                     assertEquals(LoginSessionState.AUTHENTICATED, awaitItem())
 
                     client.auth.setSessionStatus(SessionStatus.Initializing)
@@ -69,7 +70,7 @@ class LoginSessionStateTest {
     fun `초기 세션 확인이 끝나야 로그인 여부를 알린다`() =
         runTest {
             withSupabaseSessionFixture { client ->
-                DefaultLoginRepository(client).session.test {
+                DefaultLoginRepository(client, SignupConsentSignIn(client) { error("가입 동의를 요청하면 안 됩니다.") }).session.test {
                     expectNoEvents()
                     client.auth.setSessionStatus(SessionStatus.NotAuthenticated())
                     assertEquals(LoginSessionState.NOT_AUTHENTICATED, awaitItem())

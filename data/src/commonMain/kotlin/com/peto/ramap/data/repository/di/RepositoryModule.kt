@@ -1,5 +1,6 @@
 package com.peto.ramap.data.repository.di
 
+import com.peto.ramap.data.auth.SignupConsentSignIn
 import com.peto.ramap.data.datasource.appnotice.AppNoticeDataSource
 import com.peto.ramap.data.datasource.image.BatchingImageUrlDataSource
 import com.peto.ramap.data.datasource.importation.ImportationDataSource
@@ -94,7 +95,7 @@ val repositoryModule =
         }
         single<ImportationRepository> { DefaultImportationRepository(get<ImportationDataSource>()) }
         single<LoginRepository> {
-            DefaultLoginRepository(get())
+            DefaultLoginRepository(get(), SignupConsentSignIn(get(), get()))
         }
         single<PushRegistrationRepository> {
             DefaultPushRegistrationRepository(get(), get())
