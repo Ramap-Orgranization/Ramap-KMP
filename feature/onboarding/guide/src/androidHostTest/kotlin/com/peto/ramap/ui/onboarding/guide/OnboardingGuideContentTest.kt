@@ -36,11 +36,8 @@ import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.fixture.ramenShopFixture
 import com.peto.ramap.theme.RamapTheme
 import com.peto.ramap.ui.loading.LoadState
-import com.peto.ramap.ui.onboarding.OnboardingContent
-import com.peto.ramap.ui.onboarding.contract.OnboardingIntent
-import com.peto.ramap.ui.onboarding.contract.OnboardingStep
-import com.peto.ramap.ui.onboarding.contract.OnboardingUiState
 import com.peto.ramap.ui.onboarding.guide.log.OnboardingAnalyticsStage
+import com.peto.ramap.ui.onboarding.permission.PermissionGuideContent
 import com.peto.ramap.ui.onboarding.shopselection.contract.ShopSelectionIntent
 import com.peto.ramap.ui.onboarding.shopselection.contract.ShopSelectionLoadKey
 import com.peto.ramap.ui.onboarding.shopselection.contract.ShopSelectionUiState
@@ -75,25 +72,30 @@ class OnboardingGuideContentTest {
     }
 
     @Test
-    fun `권한 화면은 스와이프 대상이 아니며 첫 안내에서도 권한 화면으로 돌아가지 않는다`() =
+    fun `권한 화면은 좌우로 스와이프해도 유지된다`() =
         runComposeUiTest {
-            var step by mutableStateOf(OnboardingStep.PermissionGuide)
-            val intents = mutableListOf<OnboardingIntent>()
             setContent {
                 TestContent {
-                    OnboardingContent(
-                        uiState = OnboardingUiState(step = step),
-                        guideContent = { OnboardingGuideContent(uiState = selection, onIntent = {}) },
+                    PermissionGuideContent(
+                        isConfirming = false,
+                        onConfirm = {},
                     )
                 }
             }
             onRoot().performTouchInput { swipeLeft() }
             onRoot().performTouchInput { swipeRight() }
             onNodeWithText("앱 접근 권한이 필요해요.").assertIsDisplayed()
-            runOnIdle { step = OnboardingStep.Guide }
+        }
+
+    @Test
+    fun `첫 안내에서 오른쪽으로 스와이프해도 첫 페이지를 유지한다`() =
+        runComposeUiTest {
+            setContent {
+                TestContent { OnboardingGuideContent(uiState = selection, onIntent = {}) }
+            }
             onRoot().performTouchInput { swipeRight() }
             onNodeWithText("매장 더보기에서 알림을 설정할 수 있어요.").assertIsDisplayed()
-            runOnIdle { assertTrue(intents.isEmpty()) }
+            onNodeWithContentDescription("사용법 안내 1 / 3").assertIsDisplayed()
         }
 
     @Test

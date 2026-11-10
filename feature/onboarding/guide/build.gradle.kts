@@ -15,7 +15,6 @@ kotlin {
         }
     }
     sourceSets.getByName("androidHostTest").dependencies {
-        implementation(projects.feature.onboarding)
         implementation(projects.feature.onboarding.permission)
         implementation(libs.androidx.activity.compose)
         implementation(libs.compose.ui.test)
