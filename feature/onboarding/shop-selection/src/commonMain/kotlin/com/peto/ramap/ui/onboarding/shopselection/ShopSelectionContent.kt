@@ -51,6 +51,7 @@ import ramap.shared.generated.resources.onboarding_shop_load_failure_description
 import ramap.shared.generated.resources.onboarding_shop_load_failure_title
 import ramap.shared.generated.resources.onboarding_shop_title
 import ramap.shared.generated.resources.personalization_load_failure_title
+import ramap.shared.generated.resources.search_bar_placeholder
 import ramap.shared.generated.resources.search_result_empty_message
 
 @Composable
@@ -83,6 +84,7 @@ public fun ShopSelectionContent(
                     query = uiState.query,
                     onQueryChange = { onIntent(ShopSelectionIntent.QueryChanged(it)) },
                     onSearch = { onIntent(ShopSelectionIntent.Search) },
+                    placeholder = stringResource(Res.string.search_bar_placeholder),
                 )
             }
             when {

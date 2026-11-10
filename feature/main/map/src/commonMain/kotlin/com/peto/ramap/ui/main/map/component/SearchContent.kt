@@ -64,6 +64,7 @@ import ramap.shared.generated.resources.recommendation_sheet_drag_handle
 import ramap.shared.generated.resources.retry_action
 import kotlin.math.roundToInt
 
+private val MapFilterButtonSize = 46.dp
 private val RecommendationHandlePadding = 22.dp
 private val RecommendationHandleBarHeight = 4.dp
 
@@ -163,17 +164,21 @@ internal fun SearchContent(
                 )
 
                 if (!isSearchFocused) {
+                    val filterButtonModifier = Modifier.size(MapFilterButtonSize)
                     RecommendationFilterButton(
                         isActive = uiState.isRecommendationEnabled,
                         onClick = onRecommendationToggled,
+                        modifier = filterButtonModifier,
                     )
                     OpenFilterButton(
                         isActive = uiState.filters.isOpenSelected,
                         onClick = onOpenFilterToggled,
+                        modifier = filterButtonModifier,
                     )
                     BookmarkedFilterButton(
                         isActive = uiState.isBookmarkedView,
                         onClick = onBookmarkedShopsToggle,
+                        modifier = filterButtonModifier,
                     )
                 }
             }
