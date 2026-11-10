@@ -1,21 +1,26 @@
 package com.peto.ramap.ui.bookmark.list
 
-import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.peto.ramap.designsystem.component.RamenShopSummaries
+import com.peto.ramap.designsystem.button.RetryButton
+import com.peto.ramap.designsystem.component.RamenShopSummary
 import com.peto.ramap.designsystem.component.SettingsListPage
 import com.peto.ramap.designsystem.component.ShopListCount
 import com.peto.ramap.designsystem.component.ShopsEmptyContent
+import com.peto.ramap.designsystem.indicator.RamenLoadingIndicator
 import com.peto.ramap.designsystem.toast.ToastManager
 import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.theme.GrayColor
@@ -23,6 +28,8 @@ import com.peto.ramap.ui.base.ObserveAsEvents
 import com.peto.ramap.ui.bookmark.list.contract.BookmarkedShopListIntent
 import com.peto.ramap.ui.bookmark.list.contract.BookmarkedShopListSideEffect
 import com.peto.ramap.ui.bookmark.list.contract.BookmarkedShopListUiState
+import com.peto.ramap.ui.paging.InfiniteLazyColumn
+import com.peto.ramap.ui.paging.InfiniteScrollState
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
@@ -61,6 +68,7 @@ fun BookmarkedShopListRoute(
             viewModel.dispatch(BookmarkedShopListIntent.OnRemovalConfirmed(shop.id))
         },
         onRetry = { viewModel.dispatch(BookmarkedShopListIntent.OnRetry) },
+        onLoadMore = { viewModel.dispatch(BookmarkedShopListIntent.LoadMore) },
     )
 }
 
@@ -72,6 +80,7 @@ internal fun BookmarkedShopListScreen(
     onShopOpen: (RamenShop) -> Unit,
     onRemovalRequested: (RamenShop) -> Unit,
     onRetry: () -> Unit,
+    onLoadMore: () -> Unit,
 ) {
     SettingsListPage(
         title = Res.string.settings_bookmarked_shops_menu,
@@ -93,7 +102,13 @@ internal fun BookmarkedShopListScreen(
             }
         },
     ) {
-        BookmarkedShopListContent(uiState, onShopOpen, onRemovalRequested)
+        BookmarkedShopListContent(
+            uiState = uiState,
+            onShopOpen = onShopOpen,
+            onRemovalRequested = onRemovalRequested,
+            onRetry = onRetry,
+            onLoadMore = onLoadMore,
+        )
     }
 }
 
@@ -102,23 +117,58 @@ private fun BookmarkedShopListContent(
     uiState: BookmarkedShopListUiState,
     onShopOpen: (RamenShop) -> Unit,
     onRemovalRequested: (RamenShop) -> Unit,
+    onRetry: () -> Unit,
+    onLoadMore: () -> Unit,
 ) {
     if (uiState.shops.isEmpty()) {
         ShopsEmptyContent(
             title = stringResource(Res.string.bookmarked_shops_empty_title),
         )
-    } else {
-        Column(
-            modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
-        ) {
-            ShopListCount(count = uiState.shops.size)
-            RamenShopSummaries(
-                shops = uiState.shops,
-                onShopClick = onShopOpen,
-                itemActionLabel = stringResource(Res.string.bookmark_removal_confirm_action),
-                onItemAction = onRemovalRequested,
-                modifier = Modifier.padding(horizontal = 15.dp),
+        return
+    }
+
+    val shops = remember(uiState.shops) { uiState.shops.values.toList() }
+    val shopIds = remember(shops) { shops.map(RamenShop::id) }
+    val removalLabel = stringResource(Res.string.bookmark_removal_confirm_action)
+    InfiniteLazyColumn(
+        loadMoreState =
+            InfiniteScrollState(
+                itemCount = shops.size,
+                hasMore = uiState.hasMore,
+                isLoading = uiState.isPageLoading,
+                itemKeys = shopIds,
+                // 조회 결과가 비어 있어도 다음 페이지 요청을 허용한다.
+                requestKey = uiState.remainingShopCount,
+            ),
+        onLoadMore = onLoadMore,
+        loadMoreEnabled = !uiState.appendFailed,
+        modifier = Modifier.fillMaxSize(),
+    ) {
+        item { ShopListCount(count = uiState.shopCount) }
+        itemsIndexed(items = shops, key = { _, shop -> shop.id }) { index, shop ->
+            RamenShopSummary(
+                shop = shop,
+                onClick = { onShopOpen(shop) },
+                actionLabel = removalLabel,
+                onAction = { onRemovalRequested(shop) },
+                modifier =
+                    Modifier
+                        .padding(horizontal = 15.dp)
+                        .padding(bottom = if (index == shops.lastIndex) 0.dp else 12.dp),
             )
+        }
+        if (uiState.isPageLoading) {
+            item { RamenLoadingIndicator(modifier = Modifier.fillMaxWidth().height(60.dp)) }
+        }
+        if (uiState.appendFailed) {
+            item {
+                Box(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    RetryButton(onClick = onRetry)
+                }
+            }
         }
     }
 }
