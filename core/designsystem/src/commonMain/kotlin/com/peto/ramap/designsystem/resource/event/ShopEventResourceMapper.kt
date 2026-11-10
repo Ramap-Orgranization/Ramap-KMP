@@ -245,7 +245,7 @@ object ShopEventResourceMapper {
             null -> withoutParticle
         }
 
-    private fun hasFinalConsonant(name: String): Boolean? {
+    fun hasFinalConsonant(name: String): Boolean? {
         val lastCharacter = name.trimEnd().lastOrNull() ?: return null
         if (lastCharacter !in HANGUL_SYLLABLES) return null
         return (lastCharacter.code - HANGUL_SYLLABLES.first.code) % HANGUL_FINAL_CONSONANT_COUNT != 0
