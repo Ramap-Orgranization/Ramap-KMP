@@ -199,7 +199,7 @@ class MapViewModel(
                 dismissBottomSheet()
             }
             OnOperatingNoticesRefreshRequested -> loadOperatingNotices()
-            OnStatusTimeRefreshed -> reduce { copy(currentDateTime = Clock.System.now().toLocalDateTime(TimeZone.of("Asia/Seoul"))) }
+            OnStatusTimeRefreshed -> reduce { copy(currentDateTime = Clock.System.now().toLocalDateTime(TimeZone.of(SEOUL_TIME_ZONE))) }
             else -> return false
         }
         return true
@@ -579,7 +579,7 @@ class MapViewModel(
     }
 
     private fun updateFilter(filter: RamenShopFilter) {
-        val now = Clock.System.now().toLocalDateTime(TimeZone.of("Asia/Seoul"))
+        val now = Clock.System.now().toLocalDateTime(TimeZone.of(SEOUL_TIME_ZONE))
         val selectedShop = currentState.selectedShop
         val shopToMatch = if (currentState.isRecommendationEnabled) selectedShop else selectedShop?.let { currentState.shops[it.id] }
         val isSelectedShopFilteredOut =
@@ -808,7 +808,7 @@ class MapViewModel(
         pendingArchiveLogin = true
         archiveLoginSucceeded = false
         launchResultTask(
-            taskKey = "map-login",
+            taskKey = LOGIN_TASK_KEY,
             request = {
                 try {
                     signInUseCase(type, AnalyticsSource.MAP)
@@ -863,7 +863,7 @@ class MapViewModel(
         )
     }
 
-    private fun bookmarkTaskKey(shopId: String): String = "map-bookmark-$shopId"
+    private fun bookmarkTaskKey(shopId: String): String = "$BOOKMARK_TASK_KEY_PREFIX$shopId"
 
     private fun showBookmarkUpdateFailure() {
         showInteraction(ShowToast(ToastData(Res.string.personalization_update_failure_message, ToastType.ERROR)))
@@ -882,5 +882,8 @@ class MapViewModel(
         private const val BOOKMARK_FILTER_TASK_KEY = "map-bookmark-filter"
         private const val PERSONALIZED_SHOPS_TASK_KEY = "map-personalized-shops"
         private const val OPERATING_NOTICES_TASK_KEY = "map-operating-notices"
+        private const val LOGIN_TASK_KEY = "map-login"
+        private const val BOOKMARK_TASK_KEY_PREFIX = "map-bookmark-"
+        private const val SEOUL_TIME_ZONE = "Asia/Seoul"
     }
 }
