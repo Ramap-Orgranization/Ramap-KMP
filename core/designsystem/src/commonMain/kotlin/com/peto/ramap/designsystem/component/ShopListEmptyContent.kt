@@ -42,6 +42,7 @@ fun ShopsEmptyContent(
     title: String,
     modifier: Modifier = Modifier,
     image: DrawableResource = Res.drawable.search_empty_illustration,
+    titleStyle: AppTextStyle = AppTextStyle.H3,
 ) {
     Column(
         modifier = modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 32.dp),
@@ -54,7 +55,7 @@ fun ShopsEmptyContent(
         )
         AppText(
             text = title,
-            style = AppTextStyle.H3,
+            style = titleStyle,
             color = GrayColor.C500,
             textAlign = TextAlign.Center,
             modifier = Modifier.fillMaxWidth(),

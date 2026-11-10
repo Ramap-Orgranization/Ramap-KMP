@@ -177,7 +177,9 @@
     <string name="event_notification_master_action">이벤트 알림</string>
 
     <!-- 이벤트 목록 화면 -->
-    <string name="event_list_empty">진행 중이거나 예정된 새소식이 없어요</string>
+    <string name="event_list_empty">진행 중이거나 예정된 이벤트가 없어요</string>
+    <string name="event_list_search_empty">조건에 맞는 이벤트가 없어요.</string>
+    <string name="event_list_saved_empty">저장한 매장에 이벤트가 없어요.</string>
     <string name="event_list_error_title">새소식을 불러오지 못했어요</string>
     <string name="event_list_error_description">잠시 후 다시 시도해 주세요.</string>
     <string name="event_list_refresh_failure_message">새소식을 새로고침하지 못했어요. 잠시 후 다시 시도해 주세요.</string>

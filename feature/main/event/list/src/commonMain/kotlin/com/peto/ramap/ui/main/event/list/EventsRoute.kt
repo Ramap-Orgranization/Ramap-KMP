@@ -22,15 +22,16 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.peto.ramap.designsystem.component.LoadErrorContent
 import com.peto.ramap.designsystem.component.NewsFilters
+import com.peto.ramap.designsystem.component.ShopsEmptyContent
 import com.peto.ramap.designsystem.toast.ToastManager
 import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.model.event.ShopEvents
 import com.peto.ramap.domain.store.PersonalizationBootstrapState
+import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.RamapTheme
 import com.peto.ramap.ui.base.ObserveAsEvents
 import com.peto.ramap.ui.main.event.list.component.EventListBottomSheet
-import com.peto.ramap.ui.main.event.list.component.EventListEmptyContent
 import com.peto.ramap.ui.main.event.list.component.EventListSkeleton
 import com.peto.ramap.ui.main.event.list.component.eventSection
 import com.peto.ramap.ui.main.event.list.contract.EventsIntent
@@ -42,9 +43,12 @@ import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.event_filter_summer_limited
+import ramap.shared.generated.resources.event_list_empty
 import ramap.shared.generated.resources.event_list_error_description
 import ramap.shared.generated.resources.event_list_error_title
 import ramap.shared.generated.resources.event_list_ongoing_section
+import ramap.shared.generated.resources.event_list_saved_empty
+import ramap.shared.generated.resources.event_list_search_empty
 import ramap.shared.generated.resources.event_list_upcoming_section
 import ramap.shared.generated.resources.laduck_error_crying
 
@@ -149,7 +153,16 @@ fun EventsScreen(
                         ) {
                             if (uiState.isEmpty) {
                                 item {
-                                    EventListEmptyContent(modifier = Modifier.fillMaxSize())
+                                    val emptyMessage =
+                                        when {
+                                            uiState.query.isNotBlank() -> Res.string.event_list_search_empty
+                                            uiState.savedOnly -> Res.string.event_list_saved_empty
+                                            else -> Res.string.event_list_empty
+                                        }
+                                    ShopsEmptyContent(
+                                        title = stringResource(emptyMessage),
+                                        titleStyle = AppTextStyle.T1,
+                                    )
                                 }
                             } else {
                                 eventSection(

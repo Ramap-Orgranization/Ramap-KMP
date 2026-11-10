@@ -34,6 +34,7 @@ import com.peto.ramap.domain.model.notice.OperatingNoticeFeed
 import com.peto.ramap.domain.model.notice.OperatingNoticeFeedItem
 import com.peto.ramap.domain.store.PersonalizationBootstrapState
 import com.peto.ramap.preview.OperatingNoticePreviewParameterProvider
+import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.RamapTheme
 import com.peto.ramap.ui.main.notice.component.OngoingOperatingNoticeShop
@@ -135,6 +136,7 @@ fun OperatingNoticeScreen(
                                         if (uiState.query.isNotBlank()) Res.string.search_result_empty_message else Res.string.operating_notice_empty,
                                     ),
                                 modifier = Modifier.fillMaxSize(),
+                                titleStyle = AppTextStyle.T1,
                             )
 
                         else ->
