@@ -58,6 +58,11 @@ internal class FakeRamenShopDataSource(
         return responses
     }
 
+    override suspend fun fetchRecommendedShops(): List<RamenShopResponse> {
+        error?.let { throw it }
+        return responses.filter { it.isVisible && it.isRecommended }
+    }
+
     override suspend fun fetchRamenShopsByIds(shopIds: Set<String>): List<RamenShopResponse> {
         requestedShopIds = shopIds
         requestedShopIdsHistory += shopIds
@@ -79,8 +84,9 @@ internal class FakeRamenShopDataSource(
         query: SearchQuery,
         center: Location?,
         limit: Int,
+        recommendedOnly: Boolean,
     ): List<RamenShopResponse> {
         requestedSearchCenter = center
-        return searchRamenShops(query, limit)
+        return searchRamenShops(query, limit).filter { !recommendedOnly || it.isRecommended }
     }
 }

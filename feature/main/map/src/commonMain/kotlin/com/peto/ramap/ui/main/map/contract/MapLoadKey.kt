@@ -4,4 +4,5 @@ import com.peto.ramap.ui.loading.LoadKey
 
 enum class MapLoadKey : LoadKey {
     Search,
+    Recommendation,
 }

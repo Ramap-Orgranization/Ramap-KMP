@@ -94,6 +94,10 @@ sealed interface MapIntent : Intent {
 
     data object OnOpenFilterToggled : MapIntent
 
+    data object OnRecommendationToggled : MapIntent
+
+    data object OnRecommendationLoadRetry : MapIntent
+
     data object OnBookmarkedShopsToggled : MapIntent
 
     data object OnLocationPermissionBlocked : MapIntent
@@ -104,5 +108,10 @@ sealed interface MapIntent : Intent {
 
     data class OnShopViewed(
         val shop: RamenShop,
+    ) : MapIntent
+
+    data class OnBookmarkChanged(
+        val shop: RamenShop,
+        val enabled: Boolean,
     ) : MapIntent
 }

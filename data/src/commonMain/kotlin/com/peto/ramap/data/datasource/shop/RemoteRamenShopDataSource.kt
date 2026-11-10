@@ -62,6 +62,16 @@ internal class RemoteRamenShopDataSource(
                 }
             }.decodeList()
 
+    override suspend fun fetchRecommendedShops(): List<RamenShopResponse> =
+        client
+            .from(TABLE_NAME)
+            .select {
+                filter {
+                    eq(COLUMN_IS_VISIBLE, true)
+                    eq(COLUMN_IS_RECOMMENDED, true)
+                }
+            }.decodeList()
+
     override suspend fun fetchRamenShopsByIds(shopIds: Set<String>): List<RamenShopResponse> {
         if (shopIds.isEmpty()) return emptyList()
 
@@ -114,6 +124,7 @@ internal class RemoteRamenShopDataSource(
         query: SearchQuery,
         center: Location?,
         limit: Int,
+        recommendedOnly: Boolean,
     ): List<RamenShopResponse> =
         client.postgrest
             .rpc(
@@ -124,6 +135,7 @@ internal class RemoteRamenShopDataSource(
                         put(LAT_PARAMETER, center?.lat?.let(::JsonPrimitive) ?: JsonNull)
                         put(LNG_PARAMETER, center?.lng?.let(::JsonPrimitive) ?: JsonNull)
                         put(LIMIT_PARAMETER, limit)
+                        put(RECOMMENDED_ONLY_PARAMETER, recommendedOnly)
                     },
             ).decodeList()
 
@@ -132,16 +144,19 @@ internal class RemoteRamenShopDataSource(
         private const val FETCH_ACTIVE_EVENTS_RPC = "fetch_active_events"
         private const val FETCH_ACTIVE_SHOP_EVENTS_RPC = "fetch_active_shop_events"
         private const val FETCH_SHOP_OVERVIEW_RPC = "fetch_shop_detail_v3"
-        private const val SEARCH_MAP_RAMEN_SHOPS_RPC = "search_map_ramen_shops"
+        private const val SEARCH_MAP_RAMEN_SHOPS_RPC = "search_map_ramen_shops_v2"
         private const val SHOP_ID_PARAMETER = "p_shop_id"
         private const val EVENT_ID_PARAMETER = "p_event_id"
         private const val QUERY_PARAMETER = "p_query"
         private const val LAT_PARAMETER = "p_lat"
         private const val LNG_PARAMETER = "p_lng"
         private const val LIMIT_PARAMETER = "p_limit"
+        private const val RECOMMENDED_ONLY_PARAMETER = "p_recommended_only"
         private const val EVENT_PARTICIPANT_TABLE = "shop_event_participants"
         private const val COLUMN_EVENT_ID = "event_id"
         private const val COLUMN_ID = "id"
+        private const val COLUMN_IS_VISIBLE = "is_visible"
+        private const val COLUMN_IS_RECOMMENDED = "is_woongseong_recommended"
 
         private const val COLUMN_LAT = "lat"
         private const val COLUMN_LNG = "lng"

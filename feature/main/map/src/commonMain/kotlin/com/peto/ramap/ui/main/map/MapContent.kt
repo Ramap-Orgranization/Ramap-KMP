@@ -71,8 +71,11 @@ internal fun MapContent(
     onSelectedShopFocusConsumed: () -> Unit,
     onCategoryFilterToggled: (Category) -> Unit,
     onOpenFilterToggled: () -> Unit,
+    onRecommendationToggled: () -> Unit,
+    onRecommendationLoadRetry: () -> Unit,
     onViewportLoadRetry: () -> Unit,
     onBookmarkedShopsToggle: () -> Unit,
+    onBookmarkClick: (RamenShop, Boolean) -> Unit,
     onArchiveNavigate: () -> Unit = {},
 ) {
     val selectedShop: RamenShop? = uiState.selectedShop
@@ -198,6 +201,7 @@ internal fun MapContent(
         SearchContent(
             uiState = uiState,
             isSearchFocused = isSearchFocused,
+            isBackEnabled = isBackEnabled && !clusterBalloonState.isVisible,
             maxHeight = maxHeight,
             onSearchFocusChanged = { isSearchFocused = it },
             onQueryChanged = onQueryChanged,
@@ -211,11 +215,14 @@ internal fun MapContent(
             onShopSelected = onShopSelected,
             onCategoryFilterToggled = onCategoryFilterToggled,
             onOpenFilterToggled = onOpenFilterToggled,
+            onRecommendationToggled = onRecommendationToggled,
+            onRecommendationLoadRetry = onRecommendationLoadRetry,
             onViewportLoadRetry = onViewportLoadRetry,
             onBookmarkedShopsToggle = onBookmarkedShopsToggle,
+            onBookmarkClick = onBookmarkClick,
         )
 
-        if (!isSearchFocused && !isImeVisible && !uiState.showSearchResults && uiState.selectedShopId == null) {
+        if (!isSearchFocused && !isImeVisible && !uiState.showSearchResults && !uiState.showRecommendationList && uiState.selectedShopId == null) {
             MapModeSwitchFab(
                 isVisitedMode = false,
                 onClick = onArchiveNavigate,
@@ -256,8 +263,11 @@ private fun MapContentPreview(
             onSelectedShopFocusConsumed = {},
             onCategoryFilterToggled = {},
             onOpenFilterToggled = {},
+            onRecommendationToggled = {},
+            onRecommendationLoadRetry = {},
             onViewportLoadRetry = {},
             onBookmarkedShopsToggle = {},
+            onBookmarkClick = { _, _ -> },
         )
     }
 }

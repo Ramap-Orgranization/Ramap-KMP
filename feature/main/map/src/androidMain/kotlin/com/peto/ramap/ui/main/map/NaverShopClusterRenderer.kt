@@ -17,10 +17,13 @@ import com.peto.ramap.ui.main.map.model.ShopKey
 
 internal class NaverShopClusterRenderer(
     markerBitmap: Bitmap,
+    recommendedMarkerBitmap: Bitmap,
     onShopClick: (RamenShop) -> Unit,
     onClusterClick: (List<RamenShop>, Int, Int) -> Unit,
 ) {
     private var naverMap: NaverMap? = null
+    private val shopIcon = OverlayImage.fromBitmap(markerBitmap)
+    private val recommendedShopIcon = OverlayImage.fromBitmap(recommendedMarkerBitmap)
     private val clusterer =
         Clusterer
             .ComplexBuilder<ShopKey>()
@@ -54,7 +57,7 @@ internal class NaverShopClusterRenderer(
                     ) {
                         super.updateLeafMarker(info, marker)
                         val shop = (info.key as ShopKey).shop
-                        marker.icon = OverlayImage.fromBitmap(markerBitmap)
+                        marker.icon = if (shop.isRecommended) recommendedShopIcon else shopIcon
                         marker.captionText = shop.name
                         marker.alpha = if (shop.isVisible) 1.0f else MapInteractionConfig.HIDDEN_SHOP_ALPHA
                         marker.onClickListener =
