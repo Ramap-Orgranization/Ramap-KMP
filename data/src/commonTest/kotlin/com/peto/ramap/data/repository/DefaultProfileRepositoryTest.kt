@@ -183,7 +183,7 @@ class DefaultProfileRepositoryTest {
     fun `공개 범위 저장은 아바타 서명 취소를 전파한다`() =
         runTest {
             val source = ProfileDataSourceFake()
-            source.afterSignedUrl = { throw CancellationException() }
+            source.afterSignedUrl = { throw CancellationException("Cancelled") }
 
             assertFailsWith<CancellationException> {
                 DefaultProfileRepository(source, changes = testReviewChanges()).updateProfileVisibility(true)

@@ -105,7 +105,7 @@ class ExpiredImageUrlInterceptorTest {
         runTest {
             var downloadCount = 0
             assertFailsWith<CancellationException> {
-                load(ImageUrlRefresher { throw CancellationException() }) { request ->
+                load(ImageUrlRefresher { throw CancellationException("Cancelled") }) { request ->
                     downloadCount++
                     expired(request, 403)
                 }

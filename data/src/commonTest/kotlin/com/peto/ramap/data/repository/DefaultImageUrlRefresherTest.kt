@@ -94,7 +94,7 @@ class DefaultImageUrlRefresherTest {
         runTest {
             val remote =
                 object : ImageUrlDataSource {
-                    override suspend fun fetchUrls(images: List<SignedImageRequest>): Map<SignedImageRequest, SignedImageUrl?> = throw CancellationException()
+                    override suspend fun fetchUrls(images: List<SignedImageRequest>): Map<SignedImageRequest, SignedImageUrl?> = throw CancellationException("Cancelled")
                 }
             assertFailsWith<CancellationException> { DefaultImageUrlRefresher(parser, remote).refreshExpiredUrl(EXPIRED_URL) }
         }
