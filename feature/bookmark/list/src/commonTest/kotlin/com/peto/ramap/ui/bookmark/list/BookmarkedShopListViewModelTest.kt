@@ -55,6 +55,112 @@ class BookmarkedShopListViewModelTest {
         }
 
     @Test
+    fun `첫 화면과 더 불러오기 요청에서 매장을 20개씩 읽고 마지막 페이지에서 멈춘다`() =
+        coroutinesTest {
+            val shops = (1..45).map { ramenShopFixture(id = "shop-$it") }
+            val shopIds = shops.map(RamenShop::id)
+            val repository = FakeRamenShopRepository(fetchByIdsResult = RamenShops(shops))
+            val viewModel =
+                BookmarkedShopListViewModel(
+                    personalizationStore = FakePersonalizationRepository(Personalization(bookmarkedShopIds = shopIds.toSet())),
+                    ramenShopRepository = repository,
+                    analyticsTracker = FakeAnalyticsTracker(),
+                )
+            runCurrent()
+
+            assertEquals(listOf(shopIds.take(20).toSet()), repository.requestedShopIdsHistory)
+            assertEquals(
+                shopIds.take(20),
+                viewModel.uiState.value.shops.keys
+                    .toList(),
+            )
+            assertEquals(45, viewModel.uiState.value.shopCount)
+
+            viewModel.dispatch(BookmarkedShopListIntent.LoadMore)
+            runCurrent()
+            assertEquals(
+                shopIds.take(40),
+                viewModel.uiState.value.shops.keys
+                    .toList(),
+            )
+
+            viewModel.dispatch(BookmarkedShopListIntent.LoadMore)
+            runCurrent()
+            viewModel.dispatch(BookmarkedShopListIntent.LoadMore)
+            runCurrent()
+
+            assertEquals(shopIds.chunked(20).map { it.toSet() }, repository.requestedShopIdsHistory)
+            assertEquals(
+                shopIds,
+                viewModel.uiState.value.shops.keys
+                    .toList(),
+            )
+            assertEquals(false, viewModel.uiState.value.hasMore)
+        }
+
+    @Test
+    fun `다음 페이지가 실패하면 기존 매장을 유지하고 같은 페이지를 재시도한다`() =
+        coroutinesTest {
+            val shops = (1..25).map { ramenShopFixture(id = "shop-$it") }
+            val shopIds = shops.map(RamenShop::id)
+            val repository = FakeRamenShopRepository(fetchByIdsResult = RamenShops(shops))
+            val viewModel =
+                BookmarkedShopListViewModel(
+                    personalizationStore = FakePersonalizationRepository(Personalization(bookmarkedShopIds = shopIds.toSet())),
+                    ramenShopRepository = repository,
+                    analyticsTracker = FakeAnalyticsTracker(),
+                )
+            runCurrent()
+
+            repository.error = RamapError.Unknown(IllegalStateException("failure"))
+            viewModel.dispatch(BookmarkedShopListIntent.LoadMore)
+            runCurrent()
+            assertEquals(
+                shopIds.take(20),
+                viewModel.uiState.value.shops.keys
+                    .toList(),
+            )
+            assertEquals(false, viewModel.uiState.value.showError)
+            assertEquals(true, viewModel.uiState.value.appendFailed)
+
+            viewModel.dispatch(BookmarkedShopListIntent.LoadMore)
+            runCurrent()
+            assertEquals(2, repository.requestedShopIdsHistory.size)
+
+            repository.error = null
+            viewModel.dispatch(BookmarkedShopListIntent.OnRetry)
+            runCurrent()
+            val lastPage = shopIds.drop(20).toSet()
+            assertEquals(listOf(shopIds.take(20).toSet(), lastPage, lastPage), repository.requestedShopIdsHistory)
+            assertEquals(
+                shopIds,
+                viewModel.uiState.value.shops.keys
+                    .toList(),
+            )
+            assertEquals(false, viewModel.uiState.value.appendFailed)
+        }
+
+    @Test
+    fun `첫 페이지에 표시할 매장이 없으면 다음 페이지를 찾아 표시한다`() =
+        coroutinesTest {
+            val shop = ramenShopFixture(id = "visible-shop")
+            val unavailableShopIds = (1..20).map { "unavailable-$it" }.toSet()
+            val repository = FakeRamenShopRepository(fetchByIdsResult = RamenShops(listOf(shop)))
+            val viewModel =
+                BookmarkedShopListViewModel(
+                    personalizationStore = FakePersonalizationRepository(Personalization(bookmarkedShopIds = unavailableShopIds + shop.id)),
+                    ramenShopRepository = repository,
+                    analyticsTracker = FakeAnalyticsTracker(),
+                )
+            runCurrent()
+
+            assertEquals(listOf(unavailableShopIds, setOf(shop.id)), repository.requestedShopIdsHistory)
+            assertEquals(RamenShops(listOf(shop)), viewModel.uiState.value.shops)
+            assertEquals(1, viewModel.uiState.value.shopCount)
+            assertEquals(false, viewModel.uiState.value.isOnlyLoading)
+        }
+
+    @Test
     fun `공유 북마크 상태가 비어 있으면 빈 목록을 표시한다`() =
         coroutinesTest {
             val ramenShopRepository = FakeRamenShopRepository()

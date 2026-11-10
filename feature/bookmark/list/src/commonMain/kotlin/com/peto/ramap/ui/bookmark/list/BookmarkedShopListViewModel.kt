@@ -30,6 +30,9 @@ class BookmarkedShopListViewModel(
 ) : BaseViewModel<BookmarkedShopListUiState, BookmarkedShopListIntent, BookmarkedShopListSideEffect>(
         initialState = BookmarkedShopListUiState(),
     ) {
+    private var bookmarkedShopIds: Set<String>? = null
+    private var resolvedShopIds = emptySet<String>()
+
     init {
         observeBookmarkedShopIds()
     }
@@ -37,13 +40,14 @@ class BookmarkedShopListViewModel(
     override suspend fun handleIntent(intent: BookmarkedShopListIntent) {
         when (intent) {
             BookmarkedShopListIntent.OnRetry -> retryCurrentBookmarks()
+            BookmarkedShopListIntent.LoadMore -> if (!currentState.appendFailed) loadMore()
             is BookmarkedShopListIntent.OnRemovalConfirmed -> handleRemovalConfirmed(intent)
         }
     }
 
     private fun retryCurrentBookmarks() {
-        when (val state = personalizationStore.state.value) {
-            is PersonalizationBootstrapState.Success -> syncBookmarkedShops(state.value.bookmarkedShopIds, forceFetch = true)
+        when (personalizationStore.state.value) {
+            is PersonalizationBootstrapState.Success -> loadMore()
             PersonalizationBootstrapState.Error -> refreshPersonalization()
             PersonalizationBootstrapState.Loading -> Unit
         }
@@ -67,7 +71,17 @@ class BookmarkedShopListViewModel(
 
     private fun clearBookmarkedShops(showError: Boolean) {
         cancelTask(FETCH_BOOKMARKS_TASK_KEY)
-        reduce { copy(shops = RamenShops(emptyMap()), showError = showError, hasLoaded = showError) }
+        bookmarkedShopIds = null
+        resolvedShopIds = emptySet()
+        reduce {
+            copy(
+                shops = RamenShops(emptyMap()),
+                remainingShopCount = 0,
+                showError = showError,
+                appendFailed = false,
+                hasLoaded = showError,
+            )
+        }
     }
 
     private fun refreshPersonalization() {
@@ -79,59 +93,67 @@ class BookmarkedShopListViewModel(
         )
     }
 
-    private fun syncBookmarkedShops(
-        shopIds: Set<String>,
-        forceFetch: Boolean = false,
-    ) {
-        val isShopIdsEmpty = shopIds.isEmpty()
-        if (isShopIdsEmpty) {
-            applyExistingBookmarkedShops(shopIds)
-            return
-        }
+    private fun syncBookmarkedShops(shopIds: Set<String>) {
+        if (bookmarkedShopIds == shopIds) return
 
-        val isAlreadyCached = !forceFetch && currentState.shops.containsAll(shopIds)
-        if (isAlreadyCached) {
-            applyExistingBookmarkedShops(shopIds)
-            return
-        }
+        bookmarkedShopIds = shopIds
+        resolvedShopIds = resolvedShopIds intersect shopIds
 
-        fetchBookmarkedShops(shopIds)
-    }
-
-    private fun applyExistingBookmarkedShops(shopIds: Set<String>) {
-        cancelTask(FETCH_BOOKMARKS_TASK_KEY)
+        val remaining = remainingShopIds()
+        val visibleShops = currentState.shops.filterByShopIds(shopIds)
+        val shouldFetch = remaining.isNotEmpty() && visibleShops.isEmpty()
+        if (remaining.isEmpty() || shouldFetch) cancelTask(FETCH_BOOKMARKS_TASK_KEY)
 
         reduce {
             copy(
-                shops = shops.filterByShopIds(shopIds),
+                shops = visibleShops,
+                remainingShopCount = remaining.size,
                 showError = false,
-                hasLoaded = true,
+                appendFailed = appendFailed && remaining.isNotEmpty() && !shouldFetch,
+                hasLoaded = remaining.isEmpty() || visibleShops.isNotEmpty(),
             )
         }
+        if (shouldFetch) fetchNextPage()
     }
 
-    private fun fetchBookmarkedShops(shopIds: Set<String>) {
+    private fun loadMore() {
+        val latest = personalizationStore.state.value as? PersonalizationBootstrapState.Success ?: return
+        if (latest.value.bookmarkedShopIds != bookmarkedShopIds || currentState.isPageLoading) return
+        fetchNextPage()
+    }
+
+    private fun remainingShopIds(): Set<String> = bookmarkedShopIds.orEmpty() - resolvedShopIds
+
+    private fun fetchNextPage() {
+        val pageIds = remainingShopIds().take(PAGE_SIZE).toSet()
+        if (pageIds.isEmpty()) return
         launchResultTask(
             taskKey = FETCH_BOOKMARKS_TASK_KEY,
             loadKey = BookmarkedShopLoadKey.FETCH,
-            onStart = { copy(showError = false) },
-            request = { ramenShopRepository.fetchRamenShops(shopIds) },
-            onSuccess = { shops -> handleFetchSuccess(shops, shopIds) },
-            onError = { reduce { copy(showError = true, hasLoaded = true) } },
+            onStart = { copy(showError = false, appendFailed = false) },
+            request = { ramenShopRepository.fetchRamenShops(pageIds) },
+            onSuccess = { shops -> applyPage(shops, pageIds) },
+            onError = { reduce { copy(showError = shops.isEmpty(), appendFailed = shops.isNotEmpty(), hasLoaded = true) } },
         )
     }
 
-    private fun handleFetchSuccess(
-        shops: RamenShops,
+    private fun applyPage(
+        fetchedShops: RamenShops,
         requestedShopIds: Set<String>,
     ) {
+        val activeIds = requestedShopIds intersect bookmarkedShopIds.orEmpty()
+        resolvedShopIds = resolvedShopIds + activeIds
+        val remaining = remainingShopIds()
+        val page = activeIds.mapNotNull(fetchedShops::get)
         reduce {
+            val combinedShops = RamenShops(shops.values + page)
             copy(
-                shops = shops.filterByShopIds(requestedShopIds),
-                showError = false,
-                hasLoaded = true,
+                shops = combinedShops,
+                remainingShopCount = remaining.size,
+                hasLoaded = combinedShops.isNotEmpty() || remaining.isEmpty(),
             )
         }
+        if (!currentState.hasLoaded) fetchNextPage()
     }
 
     private fun removeBookmark(shopId: String) {
@@ -150,13 +172,14 @@ class BookmarkedShopListViewModel(
             loadKey = BookmarkedShopLoadKey.REMOVE,
             policy = TaskPolicy.IgnoreNew,
             request = { personalizationStore.updateBookmark(shopId, false) },
-            onSuccess = { handleBookmarkRemovalSuccess(shopId) },
+            onSuccess = { handleBookmarkRemovalSuccess() },
             onError = { showToast(Res.string.personalization_update_failure_message, type = ToastType.ERROR) },
         )
     }
 
-    private fun handleBookmarkRemovalSuccess(shopId: String) {
-        reduce { copy(shops = shops.remove(shopId)) }
+    private fun handleBookmarkRemovalSuccess() {
+        val state = personalizationStore.state.value as? PersonalizationBootstrapState.Success
+        state?.let { syncBookmarkedShops(it.value.bookmarkedShopIds) }
         showToast(Res.string.bookmark_removal_success_message, ToastType.SUCCESS)
     }
 
@@ -172,6 +195,7 @@ class BookmarkedShopListViewModel(
     }
 
     companion object {
+        private const val PAGE_SIZE = 20
         private const val PERSONALIZATION_TASK_KEY = "refresh-bookmark-personalization"
         private const val FETCH_BOOKMARKS_TASK_KEY = "fetch-bookmarks"
         private const val REMOVE_BOOKMARK_TASK_KEY = "remove-bookmark"

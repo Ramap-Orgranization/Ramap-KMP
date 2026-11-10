@@ -21,6 +21,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
 import com.peto.ramap.designsystem.component.MenuCategoryLabels
+import com.peto.ramap.designsystem.component.RecommendationBadge
 import com.peto.ramap.designsystem.image.RemoteShopImage
 import com.peto.ramap.designsystem.resource.event.ShopEventResourceMapper
 import com.peto.ramap.designsystem.resource.format
@@ -156,6 +157,14 @@ internal fun ShopHeaderSection(
                             colorFilter = ColorFilter.tint(GrayColor.C500),
                         )
                     }
+                }
+
+                if (shop.isRecommended) {
+                    RecommendationBadge(
+                        modifier =
+                            Modifier
+                                .padding(start = 20.dp, top = 10.dp),
+                    )
                 }
 
                 MenuCategoryLabels(

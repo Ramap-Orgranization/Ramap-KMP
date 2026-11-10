@@ -12,6 +12,7 @@ import com.peto.ramap.designsystem.button.BookmarkedFilterButton
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.operating_notice_saved
+import ramap.shared.generated.resources.search_bar_placeholder
 
 @Composable
 fun NewsFilters(
@@ -32,6 +33,7 @@ fun NewsFilters(
         AppSearchBar(
             query = query,
             onQueryChange = onQueryChanged,
+            placeholder = stringResource(Res.string.search_bar_placeholder),
             modifier = Modifier.weight(1f),
         )
         BookmarkedFilterButton(

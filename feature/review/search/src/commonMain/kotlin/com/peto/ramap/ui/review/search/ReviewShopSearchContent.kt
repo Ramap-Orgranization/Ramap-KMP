@@ -65,6 +65,7 @@ internal fun ReviewShopSearchContent(
             query = state.query,
             onQueryChange = { onIntent(ReviewShopSearchIntent.QueryChanged(it)) },
             onSearch = { onIntent(ReviewShopSearchIntent.Search) },
+            placeholder = stringResource(Res.string.search_bar_placeholder),
             modifier = Modifier.padding(16.dp),
         )
         Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
@@ -77,6 +78,7 @@ internal fun ReviewShopSearchContent(
                         onRetry = { onIntent(ReviewShopSearchIntent.Retry) },
                         modifier = Modifier.fillMaxSize(),
                     )
+
                 state.shops.isNotEmpty() ->
                     LazyColumn(
                         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
@@ -95,6 +97,7 @@ internal fun ReviewShopSearchContent(
                             )
                         }
                     }
+
                 else ->
                     Column(
                         modifier = Modifier.align(Alignment.Center).padding(24.dp),

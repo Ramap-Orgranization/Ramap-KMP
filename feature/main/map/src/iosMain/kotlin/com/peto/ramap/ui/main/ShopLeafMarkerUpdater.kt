@@ -15,6 +15,7 @@ import kotlinx.cinterop.ExperimentalForeignApi
 import platform.UIKit.UIImage
 
 private const val MARKER_IMAGE_NAME = "marker_ramen"
+private const val RECOMMENDED_MARKER_IMAGE_NAME = "marker_ramen_woongseong"
 private val leafLogger = Logger.withTag("RamapIosLeafMarker")
 
 internal class ShopLeafMarkerUpdater(
@@ -38,7 +39,8 @@ internal class ShopLeafMarkerUpdater(
                 is ShopClusteringKey -> source.shop
                 else -> return
             }
-        val image = UIImage.imageNamed(MARKER_IMAGE_NAME)
+        val imageName = if (shop.isRecommended) RECOMMENDED_MARKER_IMAGE_NAME else MARKER_IMAGE_NAME
+        val image = UIImage.imageNamed(imageName)
         leafLogger.d {
             "updateLeafMarker shop: id=${shop.id}, name=${shop.name}, visible=${shop.isVisible}, imageLoaded=${image != null}, markerBeforeAlpha=${_1.alpha}"
         }
@@ -46,7 +48,7 @@ internal class ShopLeafMarkerUpdater(
             _1.iconImage =
                 NMFOverlayImage.overlayImageWithImage(
                     image = it,
-                    reuseIdentifier = MARKER_IMAGE_NAME,
+                    reuseIdentifier = imageName,
                 )
         }
         _1.captionText = shop.name

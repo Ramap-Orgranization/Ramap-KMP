@@ -13,10 +13,11 @@ class SearchRamenShopsUseCase(
     suspend operator fun invoke(
         query: SearchQuery,
         center: Location? = null,
+        recommendedOnly: Boolean = false,
     ): RamapResult<RamenShops> {
         val normalized = query.normalizeShopSearchQuery()
         if (!normalized.isValidForShopSearch()) return RamapResult.Success(RamenShops(emptyMap()))
-        return ramenShopRepository.searchMapRamenShops(normalized, center, RESULT_LIMIT)
+        return ramenShopRepository.searchMapRamenShops(normalized, center, RESULT_LIMIT, recommendedOnly)
     }
 
     companion object {

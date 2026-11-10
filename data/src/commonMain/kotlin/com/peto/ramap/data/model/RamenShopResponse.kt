@@ -49,6 +49,8 @@ internal data class RamenShopResponse(
     val updatedAt: String,
     @SerialName("is_visible")
     val isVisible: Boolean = true,
+    @SerialName("is_woongseong_recommended")
+    val isRecommended: Boolean = false,
 ) {
     fun toWaitingSystem(): WaitingSystem? =
         ShopWaitingSystemResponse(
@@ -71,6 +73,7 @@ internal data class RamenShopResponse(
                 },
             menuCategories = MenuCategories(menuCategoryIds.orEmpty().mapNotNull(Category::fromId)),
             isVisible = isVisible,
+            isRecommended = isRecommended,
             createdAt = createdAt,
             updatedAt = updatedAt,
             businessHoursDetails =

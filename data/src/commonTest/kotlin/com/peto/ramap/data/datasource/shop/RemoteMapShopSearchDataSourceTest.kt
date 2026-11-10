@@ -18,6 +18,8 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 class RemoteMapShopSearchDataSourceTest {
     @Test
@@ -30,14 +32,15 @@ class RemoteMapShopSearchDataSourceTest {
                     httpEngine =
                         MockEngine { request ->
                             calls++
-                            assertEquals("/rest/v1/rpc/search_map_ramen_shops", request.url.encodedPath)
+                            assertEquals("/rest/v1/rpc/search_map_ramen_shops_v2", request.url.encodedPath)
                             val parameters = Json.parseToJsonElement(request.body.toByteArray().decodeToString()).jsonObject
                             assertEquals("멘야 타마시", parameters.getValue("p_query").jsonPrimitive.content)
                             assertEquals("37.5", parameters.getValue("p_lat").jsonPrimitive.content)
                             assertEquals("127.0", parameters.getValue("p_lng").jsonPrimitive.content)
                             assertEquals("50", parameters.getValue("p_limit").jsonPrimitive.content)
+                            assertEquals("false", parameters.getValue("p_recommended_only").jsonPrimitive.content)
                             respond(
-                                """[{"id":"name","name":"멘야 타마시","address":"세종","lat":36.48,"lng":127.29,"created_at":"2026-10-22","updated_at":"2026-10-22"},{"id":"address","name":"다른 매장","address":"서울","lat":37.5,"lng":127.0,"created_at":"2026-10-22","updated_at":"2026-10-22"}]""",
+                                """[{"id":"name","is_woongseong_recommended":true,"name":"멘야 타마시","address":"세종","lat":36.48,"lng":127.29,"created_at":"2026-10-22","updated_at":"2026-10-22"},{"id":"address","name":"다른 매장","address":"서울","lat":37.5,"lng":127.0,"created_at":"2026-10-22","updated_at":"2026-10-22"}]""",
                                 headers = headersOf("Content-Type", "application/json"),
                             )
                         }
@@ -46,6 +49,8 @@ class RemoteMapShopSearchDataSourceTest {
                 val search = SearchRamenShopsUseCase(DefaultRamenShopRepository(RemoteRamenShopDataSource(client)))
                 val shops = search(SearchQuery("  멘야   타마시  "), Location(37.5, 127.0)).getOrThrow()
                 assertEquals(listOf("name", "address"), shops.keys.toList())
+                assertTrue(shops.getValue("name").isRecommended)
+                assertFalse(shops.getValue("address").isRecommended)
                 assertEquals(1, calls)
             } finally {
                 client.close()
@@ -65,12 +70,13 @@ class RemoteMapShopSearchDataSourceTest {
                             val parameters = Json.parseToJsonElement(request.body.toByteArray().decodeToString()).jsonObject
                             assertEquals(JsonNull, parameters.getValue("p_lat"))
                             assertEquals(JsonNull, parameters.getValue("p_lng"))
+                            assertEquals("true", parameters.getValue("p_recommended_only").jsonPrimitive.content)
                             respond("[]", headers = headersOf("Content-Type", "application/json"))
                         }
                 }
             try {
                 val search = SearchRamenShopsUseCase(DefaultRamenShopRepository(RemoteRamenShopDataSource(client)))
-                search(SearchQuery("세종")).getOrThrow()
+                search(SearchQuery("세종"), recommendedOnly = true).getOrThrow()
                 search(SearchQuery(" ")).getOrThrow()
                 assertEquals(1, calls)
             } finally {

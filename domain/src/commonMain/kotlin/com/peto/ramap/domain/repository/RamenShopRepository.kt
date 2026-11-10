@@ -15,6 +15,8 @@ interface RamenShopRepository {
 
     suspend fun fetchRamenShops(bounds: MapBounds): RamapResult<RamenShops>
 
+    suspend fun fetchRecommendedShops(): RamapResult<RamenShops>
+
     suspend fun fetchRamenShops(shopIds: Set<String>): RamapResult<RamenShops>
 
     suspend fun fetchActiveShopEvent(shopId: String): RamapResult<ShopEvent?>
@@ -39,5 +41,6 @@ interface RamenShopRepository {
         query: SearchQuery,
         center: Location?,
         limit: Int,
+        recommendedOnly: Boolean = false,
     ): RamapResult<RamenShops>
 }

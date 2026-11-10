@@ -132,6 +132,46 @@ class BusinessHoursTest {
     }
 
     @Test
+    fun `영업 중 필터는 라스트오더부터 매장을 제외하고 주문 마감이 없는 다음 영업 구간에는 다시 포함한다`() {
+        val shop =
+            ramenShopFixture().copy(
+                businessHoursDetails =
+                    BusinessHours(
+                        weekly = mapOf("mon" to BusinessHoursDay(false, "11:00", "22:00", false, null)),
+                        breakTimes = mapOf("mon" to listOf(BreakTime("15:00", "17:00"))),
+                        lastOrders = mapOf("mon" to listOf("14:30")),
+                        notice = null,
+                    ),
+            )
+
+        assertEquals(true, shop.isOpenAt(LocalDateTime(2026, 8, 10, 14, 29)))
+        assertEquals(false, shop.isOpenAt(LocalDateTime(2026, 8, 10, 14, 30)))
+        assertEquals(BusinessHoursStatus.OpenUntil("22:00"), shop.businessHoursStatus(LocalDateTime(2026, 8, 10, 14, 30)))
+        assertEquals(false, shop.isOpenAt(LocalDateTime(2026, 8, 10, 16, 0)))
+        assertEquals(true, shop.isOpenAt(LocalDateTime(2026, 8, 10, 17, 0)))
+        assertEquals(true, shop.isOpenAt(LocalDateTime(2026, 8, 10, 21, 59)))
+        assertEquals(false, shop.isOpenAt(LocalDateTime(2026, 8, 10, 22, 0)))
+    }
+
+    @Test
+    fun `영업 중 필터는 자정을 넘기는 영업 구간에도 전날 일정의 라스트오더를 적용한다`() {
+        val shop =
+            ramenShopFixture().copy(
+                businessHoursDetails =
+                    BusinessHours(
+                        weekly = mapOf("mon" to BusinessHoursDay(false, "18:00", "02:00", true, null)),
+                        breakTimes = emptyMap(),
+                        lastOrders = mapOf("mon" to listOf("01:30")),
+                        notice = null,
+                    ),
+            )
+
+        assertEquals(true, shop.isOpenAt(LocalDateTime(2026, 8, 10, 23, 59)))
+        assertEquals(true, shop.isOpenAt(LocalDateTime(2026, 8, 11, 1, 29)))
+        assertEquals(false, shop.isOpenAt(LocalDateTime(2026, 8, 11, 1, 30)))
+    }
+
+    @Test
     fun `영업시간 데이터의 의미 필드를 보존한다`() {
         val hours =
             BusinessHours(

@@ -45,6 +45,9 @@ data class MapUiState(
      * 지도와 검색 결과에 적용 중인 매장 필터.
      */
     val filters: RamenShopFilter = RamenShopFilter(),
+    val isRecommendationEnabled: Boolean = false,
+    val recommendationToggleKey: Long = 0,
+    val recommendedShops: RamenShops? = null,
     /**
      * 운영 공지 목록
      */
@@ -67,6 +70,7 @@ data class MapUiState(
      * 사용자가 북마크한 매장 id 목록.
      */
     val bookmarkedShopIds: Set<String> = emptySet(),
+    val bookmarkUpdatingShopIds: Set<String> = emptySet(),
     /**
      * 사용자가 일림 설정한 매장 id 목록.
      */
@@ -80,8 +84,24 @@ data class MapUiState(
      */
     val isLoggedIn: Boolean = false,
 ) : LoadableState<MapUiState> {
+    val hasActiveFilters: Boolean
+        get() = isRecommendationEnabled || isBookmarkedView || filters.isNotEmpty()
+
     val isSearchLoading: Boolean
         get() = loadState.isLoading(MapLoadKey.Search)
+
+    val isRecommendationLoading: Boolean
+        get() = loadState.isLoading(MapLoadKey.Recommendation)
+
+    val showRecommendationList: Boolean
+        get() = isRecommendationEnabled && search.input.isBlank() && !showBottomSheet
+
+    val recommendationListShops: List<RamenShop>
+        get() =
+            recommendedShops
+                ?.let(::applyShopFilters)
+                ?.orderedByDistanceThenName(currentLocation)
+                .orEmpty()
 
     val showsLoadingOverlay: Boolean
         get() = isSearchLoading
@@ -138,6 +158,7 @@ data class MapUiState(
             selectedShop
                 ?.takeIf { shop ->
                     includeSelectedShop &&
+                        (!isRecommendationEnabled || (shop.isVisible && shop.isRecommended)) &&
                         (!filters.isOpenSelected || shop.isOpenAt(currentDateTime, operatingNotices))
                 }?.let { shop -> mapOf(shop.id to shop) }
                 .orEmpty()
@@ -156,10 +177,12 @@ data class MapUiState(
      * 검색 결과 리스트 바텀시트를 보여줄지 여부.
      */
     val showSearchResults: Boolean
-        get() =
-            search.showsShopResults &&
-                !search.isResultsDismissed &&
-                (searchResultShops.size > 1 || search.places.isNotEmpty())
+        get() {
+            if (!search.showsShopResults || search.isResultsDismissed) return false
+
+            val minimumShopCount = if (isRecommendationEnabled) 1 else 2
+            return search.places.isNotEmpty() || searchResultShops.size >= minimumShopCount
+        }
 
     /**
      * 지도 화면의 바텀시트를 열지 여부.
@@ -220,29 +243,17 @@ data class MapUiState(
      * 북마크 보기 여부와 카테고리 필터가 적용된 전체 매장 목록.
      */
     private val filteredShops: RamenShops
-        get() =
-            if (isBookmarkedView) {
-                shops.filterByShopIds(bookmarkedShopIds)
-            } else {
-                shops
-            }.filterByOpenStatus(
-                filters,
-                currentDateTime,
-                operatingNotices,
-            )
+        get() = applyShopFilters(if (isRecommendationEnabled) recommendedShops ?: shops else shops)
 
     /**
      * 북마크 보기 여부와 카테고리 필터가 적용된 검색 결과 목록.
      */
     private val filteredSearchResults: RamenShops
-        get() =
-            if (isBookmarkedView) {
-                search.results.filterByShopIds(bookmarkedShopIds)
-            } else {
-                search.results
-            }.filterByOpenStatus(
-                filters,
-                currentDateTime,
-                operatingNotices,
-            )
+        get() = applyShopFilters(search.results)
+
+    private fun applyShopFilters(shops: RamenShops): RamenShops {
+        val scopedShops = if (isRecommendationEnabled) shops.visibleRecommendations() else shops
+        val savedShops = if (isBookmarkedView) scopedShops.filterByShopIds(bookmarkedShopIds) else scopedShops
+        return savedShops.filterByOpenStatus(filters, currentDateTime, operatingNotices)
+    }
 }

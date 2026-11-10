@@ -26,6 +26,7 @@ class FakeRamenShopRepository(
     var shopLikeCountError: RamapError? = null,
     var shopOverview: ShopOverView? = null,
     var shopOverviewError: RamapError? = null,
+    private val recommendedShops: RamenShops = RamenShops(emptyMap()),
 ) : RamenShopRepository {
     val requestedShopOverviewIds = mutableListOf<String>()
 
@@ -72,11 +73,14 @@ class FakeRamenShopRepository(
     val requestedSearchQueries = mutableListOf<SearchQuery>()
     val requestedSearchLimits = mutableListOf<Int>()
     val requestedSearchCenters = mutableListOf<Location?>()
+    val requestedRecommendationScopes = mutableListOf<Boolean>()
 
     override suspend fun fetchRamenShops(bounds: MapBounds): RamapResult<RamenShops> {
         requestedBoundsHistory += bounds
         return error?.let { RamapResult.Error(it) } ?: RamapResult.Success(result)
     }
+
+    override suspend fun fetchRecommendedShops(): RamapResult<RamenShops> = error?.let { RamapResult.Error(it) } ?: RamapResult.Success(recommendedShops)
 
     override suspend fun fetchRamenShops(shopIds: Set<String>): RamapResult<RamenShops> {
         requestedShopIdsHistory += shopIds
@@ -98,8 +102,18 @@ class FakeRamenShopRepository(
         query: SearchQuery,
         center: Location?,
         limit: Int,
+        recommendedOnly: Boolean,
     ): RamapResult<RamenShops> {
         requestedSearchCenters += center
-        return searchRamenShops(query, limit)
+        requestedRecommendationScopes += recommendedOnly
+        return when (val result = searchRamenShops(query, limit)) {
+            is RamapResult.Error -> result
+            is RamapResult.Success ->
+                if (recommendedOnly) {
+                    RamapResult.Success(RamenShops(result.data.values.filter { it.isRecommended }))
+                } else {
+                    result
+                }
+        }
     }
 }

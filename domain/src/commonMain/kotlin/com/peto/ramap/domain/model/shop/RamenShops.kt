@@ -55,6 +55,10 @@ data class RamenShops(
      */
     fun hasVisibleShopIn(bounds: MapBounds): Boolean = values.any { shop -> bounds.contains(shop.location) }
 
+    fun visibleRecommendations(): RamenShops = RamenShops(shops.filterValues { shop -> shop.isVisible && shop.isRecommended })
+
+    fun orderedByDistanceThenName(location: Location?): List<RamenShop> = values.sortedWith(compareBy<RamenShop> { location?.distanceMetersTo(it.location) }.thenBy { it.name }.thenBy { it.id })
+
     fun nearestTo(location: Location?): RamenShop? {
         if (location == null) return null
 

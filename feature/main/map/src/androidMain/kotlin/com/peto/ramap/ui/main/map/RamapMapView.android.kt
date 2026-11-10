@@ -43,9 +43,11 @@ import com.peto.ramap.ui.main.map.model.CameraPosition
 import com.peto.ramap.ui.main.map.model.PlaceFocusRequest
 import com.peto.ramap.ui.main.map.model.location.CurrentLocationRequestState
 import kotlinx.coroutines.delay
+import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.marker_ramen
+import ramap.shared.generated.resources.marker_ramen_woongseong
 import kotlin.time.Duration.Companion.milliseconds
 
 @Composable
@@ -105,11 +107,13 @@ internal actual fun RamapMapView(
             currentLocationRequestState = currentLocationRequestState.finish()
         }
     }
-    val markerBitmap = rememberMarkerBitmap()
+    val markerBitmap = rememberMarkerBitmap(Res.drawable.marker_ramen)
+    val recommendedMarkerBitmap = rememberMarkerBitmap(Res.drawable.marker_ramen_woongseong)
     val clusterRenderer =
-        remember(markerBitmap, onShopClick) {
+        remember(markerBitmap, recommendedMarkerBitmap, onShopClick) {
             NaverShopClusterRenderer(
                 markerBitmap = markerBitmap,
+                recommendedMarkerBitmap = recommendedMarkerBitmap,
                 onShopClick = onShopClick,
                 onClusterClick = { shops, x, y -> onClusterClick(shops, IntOffset(x, y)) },
             )
@@ -325,9 +329,9 @@ private fun notifyBounds(
 }
 
 @Composable
-private fun rememberMarkerBitmap(): Bitmap {
+private fun rememberMarkerBitmap(resource: DrawableResource): Bitmap {
     val density = LocalDensity.current
-    val painter = painterResource(Res.drawable.marker_ramen)
+    val painter = painterResource(resource)
     return remember(painter, density) {
         RamenShopMarkerBitmapFactory().create(
             painter = painter,

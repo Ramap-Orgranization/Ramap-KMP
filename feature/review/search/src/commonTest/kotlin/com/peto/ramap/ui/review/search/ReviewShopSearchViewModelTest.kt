@@ -64,6 +64,7 @@ class ReviewShopSearchViewModelTest {
                         query: SearchQuery,
                         center: Location?,
                         limit: Int,
+                        recommendedOnly: Boolean,
                     ): RamapResult<RamenShops> = withContext(NonCancellable) { pending.await() }
                 }
             val viewModel = ReviewShopSearchViewModel(SearchRamenShopsUseCase(repository), repository, FakeReviewSearchHistory())
