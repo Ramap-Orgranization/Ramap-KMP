@@ -1,6 +1,13 @@
 package com.peto.ramap
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
 import com.peto.ramap.analytics.AnalyticsSource
 import com.peto.ramap.designsystem.toast.ToastManager
 import com.peto.ramap.designsystem.toast.model.ToastData
@@ -307,40 +314,46 @@ internal fun NavigationGraph(
             )
         },
         subscribedShopsScreen = {
-            SubscribedShopsRoute(
-                onBack = navigationState::pop,
-                onShopOpen = { shopId ->
-                    navigationState.showShopOnMap(
-                        shopId,
-                        source = NavigationSource.SUBSCRIBED_SHOPS,
-                        returnTab = TabStatus.MY,
-                        showShopDetail = false,
-                    )
-                },
-                onEventOpen = navigationState::showEvent,
-            )
+            ShopListWithDetail(
+                navigationState = navigationState,
+                navigationSource = NavigationSource.SUBSCRIBED_SHOPS,
+                originSource = AnalyticsSource.SUBSCRIBED_SHOPS,
+                hasActiveOverlay = hasActiveOverlay,
+                openProfile = openProfile,
+                onOpenReviewWriteOverlay = onOpenReviewWriteOverlay,
+                onOpenReviewEditOverlay = onOpenReviewEditOverlay,
+            ) { onShopOpen ->
+                SubscribedShopsRoute(
+                    onBack = navigationState::pop,
+                    onShopOpen = onShopOpen,
+                    onEventOpen = navigationState::showEvent,
+                )
+            }
         },
         bookmarkedShopsScreen = {
             val loginRepository: LoginRepository = koinInject()
             val requestLogin = rememberLoginGuideRequest(onLoginTypeSelected = onLoginTypeSelected)
-            BookmarkedShopListRoute(
-                onBack = navigationState::pop,
-                onImportationNavigate = {
-                    if (loginRepository.hasSession()) {
-                        navigationState.showImportation()
-                    } else {
-                        requestLogin(Res.string.login_required_description)
-                    }
-                },
-                onShopOpen = { shopId ->
-                    navigationState.showShopOnMap(
-                        shopId,
-                        source = NavigationSource.BOOKMARKED_SHOPS,
-                        returnTab = TabStatus.MY,
-                        showShopDetail = false,
-                    )
-                },
-            )
+            ShopListWithDetail(
+                navigationState = navigationState,
+                navigationSource = NavigationSource.BOOKMARKED_SHOPS,
+                originSource = AnalyticsSource.BOOKMARKED_SHOPS,
+                hasActiveOverlay = hasActiveOverlay,
+                openProfile = openProfile,
+                onOpenReviewWriteOverlay = onOpenReviewWriteOverlay,
+                onOpenReviewEditOverlay = onOpenReviewEditOverlay,
+            ) { onShopOpen ->
+                BookmarkedShopListRoute(
+                    onBack = navigationState::pop,
+                    onImportationNavigate = {
+                        if (loginRepository.hasSession()) {
+                            navigationState.showImportation()
+                        } else {
+                            requestLogin(Res.string.login_required_description)
+                        }
+                    },
+                    onShopOpen = onShopOpen,
+                )
+            }
         },
         importationScreen = {
             ImportationRoute(
@@ -382,6 +395,50 @@ internal fun NavigationGraph(
             )
         },
     )
+}
+
+@Composable
+private fun ShopListWithDetail(
+    navigationState: NavigationState,
+    navigationSource: NavigationSource,
+    originSource: AnalyticsSource,
+    hasActiveOverlay: Boolean,
+    openProfile: (userId: String, asOverlay: Boolean) -> Unit,
+    onOpenReviewWriteOverlay: (shopId: String) -> Unit,
+    onOpenReviewEditOverlay: (shopId: String, reviewId: String?) -> Unit,
+    content: @Composable ((String) -> Unit) -> Unit,
+) {
+    var selectedShopId by rememberSaveable { mutableStateOf<String?>(null) }
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        content { selectedShopId = it }
+
+        selectedShopId?.let { shopId ->
+            ShopDetailHost(
+                shopId = shopId,
+                onDismiss = { selectedShopId = null },
+                onShowOnMap = { selectedId ->
+                    navigationState.showShopOnMap(
+                        shopId = selectedId,
+                        source = navigationSource,
+                        returnTab = TabStatus.MY,
+                        showShopDetail = false,
+                    )
+                },
+                onReviewNavigate = onOpenReviewWriteOverlay,
+                onEditReview = onOpenReviewEditOverlay,
+                onOpenProfile = { userId -> openProfile(userId, true) },
+                onEventNavigate = { event ->
+                    selectedShopId = null
+                    navigationState.showEvent(event.id)
+                },
+                originSource = originSource,
+                isUncovered = !hasActiveOverlay,
+                isBackEnabled = !hasActiveOverlay,
+                isNavigationBarPadded = true,
+            )
+        }
+    }
 }
 
 internal fun returnFromUnavailableEvent(
