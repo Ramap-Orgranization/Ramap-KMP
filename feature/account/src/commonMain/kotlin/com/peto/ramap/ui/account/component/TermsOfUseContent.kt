@@ -15,16 +15,12 @@ import com.peto.ramap.theme.RamapTheme
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.signup_consent_next
-import ramap.shared.generated.resources.signup_consent_return
 
 @Composable
 internal fun TermsOfUseContent(
     checked: Boolean,
-    openedDocument: TermsOfUseDocument?,
     onCheck: (Boolean) -> Unit,
-    onOpenDocument: (TermsOfUseDocument) -> Unit,
-    onOpenFullDocument: (TermsOfUseDocument) -> Unit,
-    onBack: () -> Unit,
+    onOpenFullDocument: (TermsOfUseDocument?) -> Unit,
     onContinue: () -> Unit,
 ) {
     Column(
@@ -33,41 +29,26 @@ internal fun TermsOfUseContent(
                 .widthIn(max = 480.dp)
                 .fillMaxWidth(),
     ) {
-        val horizontalPadding = if (openedDocument == null) 24.dp else 20.dp
         Column(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .padding(
-                        start = horizontalPadding,
-                        end = horizontalPadding,
-                        bottom = if (openedDocument == null) 20.dp else 8.dp,
-                    ),
+                    .padding(horizontal = 24.dp)
+                    .padding(bottom = 20.dp),
         ) {
-            if (openedDocument == null) {
-                TermsOfUseOverview(
-                    checked = checked,
-                    onCheck = onCheck,
-                    onOpenDocument = onOpenDocument,
-                )
-                Spacer(modifier = Modifier.height(24.dp))
-                AppButton(
-                    text = stringResource(Res.string.signup_consent_next),
-                    onClick = onContinue,
-                    enabled = checked,
-                    height = 56.dp,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            } else {
-                TermsOfUseDocumentOverview(
-                    document = openedDocument,
-                    onOpen = { onOpenFullDocument(openedDocument) },
-                )
-                TermsOfUseTextAction(
-                    text = stringResource(Res.string.signup_consent_return),
-                    onClick = onBack,
-                )
-            }
+            TermsOfUseOverview(
+                checked = checked,
+                onCheck = onCheck,
+                onOpenFullDocument = onOpenFullDocument,
+            )
+            Spacer(modifier = Modifier.height(24.dp))
+            AppButton(
+                text = stringResource(Res.string.signup_consent_next),
+                onClick = onContinue,
+                enabled = checked,
+                height = 56.dp,
+                modifier = Modifier.fillMaxWidth(),
+            )
         }
     }
 }
@@ -78,11 +59,8 @@ private fun TermsOfUseContentPreview() {
     RamapTheme {
         TermsOfUseContent(
             checked = false,
-            openedDocument = null,
             onCheck = {},
-            onOpenDocument = {},
             onOpenFullDocument = {},
-            onBack = {},
             onContinue = {},
         )
     }

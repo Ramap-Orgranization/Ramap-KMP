@@ -8,9 +8,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.navigationevent.NavigationEventInfo
-import androidx.navigationevent.compose.NavigationBackHandler
-import androidx.navigationevent.compose.rememberNavigationEventState
 import com.peto.ramap.designsystem.bottomsheet.CommonBottomSheet
 import com.peto.ramap.designsystem.bottomsheet.CommonBottomSheetConfig
 import com.peto.ramap.domain.model.auth.SignupTerms
@@ -25,42 +22,28 @@ fun TermsOfUseBottomSheet(
     onDismiss: () -> Unit,
 ) {
     var checked by rememberSaveable(terms.version) { mutableStateOf(false) }
-    var openedDocument by rememberSaveable(terms.version) { mutableStateOf<TermsOfUseDocument?>(null) }
-    val goBack: () -> Unit = {
-        if (openedDocument != null) openedDocument = null else onDismiss()
-    }
-
-    val backEventState =
-        rememberNavigationEventState<NavigationEventInfo>(
-            currentInfo = NavigationEventInfo.None,
-        )
-    NavigationBackHandler(
-        state = backEventState,
-        isBackEnabled = openedDocument != null,
-        onBackCompleted = { openedDocument = null },
-    )
 
     CommonBottomSheet(
         visible = true,
         onDismissRequest = onDismiss,
-        isBackEnabled = openedDocument == null,
+        isBackEnabled = true,
         config =
             CommonBottomSheetConfig(
                 scrimColor = GrayColor.C500.copy(alpha = 0.4f),
                 shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
                 showHandle = true,
-                isDraggable = openedDocument == null,
-                isContentDraggable = openedDocument == null,
+                isDraggable = true,
+                isContentDraggable = true,
                 isNavigationBarPadded = true,
             ),
     ) {
         TermsOfUseContent(
             checked = checked,
-            openedDocument = openedDocument,
             onCheck = { checked = it },
-            onOpenDocument = { openedDocument = it },
-            onOpenFullDocument = { ExternalUriOpener.open(it.publicUrl ?: terms.url) },
-            onBack = goBack,
+            onOpenFullDocument = { document ->
+                val url = document?.publicUrl ?: terms.url
+                ExternalUriOpener.open(url)
+            },
             onContinue = { if (checked) onAccept() },
         )
     }

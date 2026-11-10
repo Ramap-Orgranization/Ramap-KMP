@@ -12,15 +12,15 @@ import com.peto.ramap.theme.RamapTheme
 internal fun TermsOfUseOverview(
     checked: Boolean,
     onCheck: (Boolean) -> Unit,
-    onOpenDocument: (TermsOfUseDocument) -> Unit,
+    onOpenFullDocument: (TermsOfUseDocument?) -> Unit,
 ) {
     TermsOfUseRequiredAgreement(
         checked = checked,
         onCheck = onCheck,
-        onOpenTerms = { onOpenDocument(TermsOfUseDocument.Terms) },
+        onOpenTerms = { onOpenFullDocument(null) },
     )
-    TermsOfUseDocumentRow(TermsOfUseDocument.Privacy, onOpenDocument)
-    TermsOfUseDocumentRow(TermsOfUseDocument.Community, onOpenDocument)
+    TermsOfUseDocumentRow(TermsOfUseDocument.Privacy, onOpen = { onOpenFullDocument(it) })
+    TermsOfUseDocumentRow(TermsOfUseDocument.Community, onOpen = { onOpenFullDocument(it) })
 }
 
 @Preview(showBackground = true)
@@ -33,7 +33,7 @@ private fun TermsOfUseOverviewPreview() {
             TermsOfUseOverview(
                 checked = false,
                 onCheck = {},
-                onOpenDocument = {},
+                onOpenFullDocument = {},
             )
         }
     }
