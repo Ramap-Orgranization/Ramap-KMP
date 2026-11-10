@@ -13,6 +13,8 @@ internal interface RamenShopDataSource {
 
     suspend fun fetchRamenShops(bounds: MapBounds): List<RamenShopResponse>
 
+    suspend fun fetchRecommendedShops(): List<RamenShopResponse>
+
     suspend fun fetchRamenShopsByIds(shopIds: Set<String>): List<RamenShopResponse>
 
     suspend fun fetchActiveShopEvents(shopId: String): List<ShopEventResponse>
@@ -30,5 +32,6 @@ internal interface RamenShopDataSource {
         query: SearchQuery,
         center: Location?,
         limit: Int,
+        recommendedOnly: Boolean,
     ): List<RamenShopResponse>
 }

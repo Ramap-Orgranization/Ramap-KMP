@@ -25,6 +25,7 @@ data class RamenShop(
     val updatedAt: String,
     val instagramProfileImageUrl: String? = null,
     val businessHoursDetails: BusinessHours? = null,
+    val isRecommended: Boolean = false,
 ) {
     val hasCategory: Boolean
         get() = menuCategories.hasCategory

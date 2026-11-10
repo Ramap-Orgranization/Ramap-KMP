@@ -154,6 +154,11 @@ internal class DefaultRamenShopRepository(
             )
         }
 
+    override suspend fun fetchRecommendedShops(): RamapResult<RamenShops> =
+        invokeRequest {
+            RamenShops(dataSource.fetchRecommendedShops().map { it.toDomain() })
+        }
+
     override suspend fun fetchRamenShops(shopIds: Set<String>): RamapResult<RamenShops> =
         invokeRequest {
             RamenShops(
@@ -181,9 +186,10 @@ internal class DefaultRamenShopRepository(
         query: SearchQuery,
         center: Location?,
         limit: Int,
+        recommendedOnly: Boolean,
     ): RamapResult<RamenShops> =
         invokeRequest {
-            RamenShops(dataSource.searchMapRamenShops(query, center, limit).map { it.toDomain() })
+            RamenShops(dataSource.searchMapRamenShops(query, center, limit, recommendedOnly).map { it.toDomain() })
         }
 
     private companion object {
