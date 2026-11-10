@@ -2,7 +2,6 @@ package com.peto.ramap.ui.main.map.component
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -63,20 +62,14 @@ internal fun RecommendationFilterButton(
                     ),
             shape = CircleShape,
             color = if (isActive) RecommendationColor.Gold else CommonColor.White,
-            border = if (isActive) BorderStroke(2.dp, RecommendationColor.Brown) else null,
+            border = if (isActive) BorderStroke(2.dp, RecommendationColor.Brown) else BorderStroke(1.dp, GrayColor.C200),
             onClick = onClick,
         ) {
             Box(contentAlignment = Alignment.Center) {
                 Image(
                     painter = painterResource(Res.drawable.ic_app_logo_cutout),
                     contentDescription = null,
-                    modifier = Modifier
-                        .size(26.dp)
-                        .border(
-                            width = 1.dp,
-                            color = RecommendationColor.Brown,
-                            shape = CircleShape,
-                        ),
+                    modifier = Modifier.size(26.dp),
                 )
             }
         }
