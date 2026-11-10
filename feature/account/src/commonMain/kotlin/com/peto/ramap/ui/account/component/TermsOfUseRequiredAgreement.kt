@@ -16,8 +16,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.peto.ramap.designsystem.button.AppIconButton
 import com.peto.ramap.designsystem.text.AppText
+import com.peto.ramap.extension.noRippleClickable
 import com.peto.ramap.extension.noRippleToggleable
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.GrayColor
@@ -42,16 +42,17 @@ internal fun TermsOfUseRequiredAgreement(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .clip(shape),
+                .clip(shape)
+                .padding(horizontal = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(5.dp),
     ) {
         Row(
             modifier =
                 Modifier
                     .weight(1f)
                     .heightIn(min = 40.dp)
-                    .noRippleToggleable(value = checked, role = Role.Checkbox, onValueChange = onCheck)
-                    .padding(start = 12.dp),
+                    .noRippleToggleable(value = checked, role = Role.Checkbox, onValueChange = onCheck),
             horizontalArrangement = Arrangement.spacedBy(10.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -68,11 +69,14 @@ internal fun TermsOfUseRequiredAgreement(
                 modifier = Modifier.weight(1f),
             )
         }
-        AppIconButton(
-            icon = Res.drawable.ic_chevron_right,
+        Icon(
+            painter = painterResource(Res.drawable.ic_chevron_right),
             contentDescription = stringResource(Res.string.signup_consent_terms_open),
-            onClick = onOpenTerms,
             tint = GrayColor.C300,
+            modifier =
+                Modifier
+                    .size(20.dp)
+                    .noRippleClickable(role = Role.Button, onClick = onOpenTerms),
         )
     }
 }

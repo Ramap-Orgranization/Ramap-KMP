@@ -6,6 +6,8 @@ kotlin {
     sourceSets.commonMain {
         dependencies {
             implementation(projects.core.platform)
+            implementation(projects.core.navigation)
+            implementation(projects.core.designsystem)
         }
     }
 }
