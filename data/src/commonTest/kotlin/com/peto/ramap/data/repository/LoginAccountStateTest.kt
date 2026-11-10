@@ -1,6 +1,7 @@
 package com.peto.ramap.data.repository
 
 import app.cash.turbine.test
+import com.peto.ramap.data.auth.SignupConsentSignIn
 import com.peto.ramap.fixture.authenticatedSessionFixture
 import com.peto.ramap.fixture.withSupabaseSessionFixture
 import io.github.jan.supabase.annotations.SupabaseInternal
@@ -19,7 +20,7 @@ class LoginAccountStateTest {
         runTest {
             withSupabaseSessionFixture { client ->
                 client.auth.setSessionStatus(authenticatedSessionFixture())
-                DefaultLoginRepository(client).accountId.test {
+                DefaultLoginRepository(client, SignupConsentSignIn(client) { error("가입 동의를 요청하면 안 됩니다.") }).accountId.test {
                     assertEquals("viewer", awaitItem())
                     client.auth.setSessionStatus(SessionStatus.Initializing)
                     expectNoEvents()
@@ -38,7 +39,7 @@ class LoginAccountStateTest {
         runTest {
             withSupabaseSessionFixture { client ->
                 client.auth.setSessionStatus(authenticatedSessionFixture())
-                DefaultLoginRepository(client).accountId.test {
+                DefaultLoginRepository(client, SignupConsentSignIn(client) { error("가입 동의를 요청하면 안 됩니다.") }).accountId.test {
                     assertEquals("viewer", awaitItem())
                     client.auth.setSessionStatus(SessionStatus.RefreshFailure(RefreshFailureCause.NetworkError(IllegalStateException("offline"))))
                     expectNoEvents()
@@ -54,7 +55,7 @@ class LoginAccountStateTest {
     fun `초기 세션 확인이 끝나기 전에는 게스트 계정을 알리지 않는다`() =
         runTest {
             withSupabaseSessionFixture { client ->
-                DefaultLoginRepository(client).accountId.test {
+                DefaultLoginRepository(client, SignupConsentSignIn(client) { error("가입 동의를 요청하면 안 됩니다.") }).accountId.test {
                     expectNoEvents()
                     client.auth.setSessionStatus(SessionStatus.NotAuthenticated())
                     assertNull(awaitItem())

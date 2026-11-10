@@ -10,6 +10,7 @@ import coil3.request.ImageRequest
 import com.peto.ramap.data.repository.di.repositoryModule
 import com.peto.ramap.domain.repository.ImageUrlRefresher
 import com.peto.ramap.domain.repository.LoginRepository
+import com.peto.ramap.domain.usecase.SignupConsentRequester
 import io.github.jan.supabase.annotations.SupabaseInternal
 import io.github.jan.supabase.auth.Auth
 import io.github.jan.supabase.auth.auth
@@ -70,7 +71,12 @@ internal class ImageLogoutCacheFixture(
         koinApplication {
             modules(
                 repositoryModule,
-                module { single { supabase } },
+                module {
+                    single { supabase }
+                    single<SignupConsentRequester> {
+                        SignupConsentRequester { error("not used") }
+                    }
+                },
             )
         }
     val login = dependencies.koin.get<LoginRepository>()
