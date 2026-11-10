@@ -270,9 +270,12 @@
     <string name="search_bar_placeholder">매장명을 입력해주세요</string>
     <string name="search_bar_search_icon">검색</string>
     <string name="search_bar_clear_action">검색어 지우기</string>
+    <string name="recommendation_for">웅성의 추천 라멘</string>
     <string name="recommendation_title">추천 라멘</string>
     <string name="recommendation_sheet_drag_handle">드래그 핸들</string>
     <string name="recommendation_brand">웅성의</string>
+    <string name="recommendation_shop_label">추천 매장</string>
+    <string name="recommendation_shop_count">%1$d곳</string>
     <string name="search_result_empty_message">검색 결과가 없어요. 검색어를 바꿔보세요.</string>
     <string name="filtered_result_empty_message">검색 결과가 없어요. 필터를 해제하거나 검색어를 바꿔보세요.</string>
     <string name="search_result_filter_empty_message">선택한 필터에 맞는 매장이 없어요. 필터를 바꿔보세요.</string>
