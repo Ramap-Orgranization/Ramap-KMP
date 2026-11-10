@@ -72,17 +72,14 @@ internal class RemoteRamenShopDataSource(
                 }
             }.decodeList()
 
-    override suspend fun fetchRamenShopsByIds(shopIds: Set<String>): List<RamenShopResponse> {
-        if (shopIds.isEmpty()) return emptyList()
-
-        return client
-            .from(TABLE_NAME)
-            .select {
-                filter {
-                    isIn(COLUMN_ID, shopIds.toList())
-                }
-            }.decodeList()
-    }
+    override suspend fun fetchRamenShopsByIds(shopIds: Set<String>): List<RamenShopResponse> =
+        shopIds.chunked(MAX_SHOP_IDS_PER_REQUEST).flatMap { batch ->
+            client
+                .from(TABLE_NAME)
+                .select {
+                    filter { isIn(COLUMN_ID, batch) }
+                }.decodeList<RamenShopResponse>()
+        }
 
     override suspend fun searchRamenShops(
         query: SearchQuery,
@@ -157,6 +154,9 @@ internal class RemoteRamenShopDataSource(
         private const val COLUMN_ID = "id"
         private const val COLUMN_IS_VISIBLE = "is_visible"
         private const val COLUMN_IS_RECOMMENDED = "is_woongseong_recommended"
+
+        // Keep the encoded UUID filter below the Supabase client's 8,000-character URL limit.
+        private const val MAX_SHOP_IDS_PER_REQUEST = 100
 
         private const val COLUMN_LAT = "lat"
         private const val COLUMN_LNG = "lng"
