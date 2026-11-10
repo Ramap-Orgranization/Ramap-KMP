@@ -10,6 +10,7 @@ import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.auth.LoginSessionState
 import com.peto.ramap.domain.model.auth.LoginType
+import com.peto.ramap.domain.model.auth.SignupConsentDismissedException
 import com.peto.ramap.domain.model.place.PlaceSearchResult
 import com.peto.ramap.domain.model.place.PlaceSearchResultKind
 import com.peto.ramap.domain.model.place.PlaceSearchResults
@@ -723,7 +724,14 @@ class MapViewModel(
         archiveLoginSucceeded = false
         launchResultTask(
             taskKey = "map-login",
-            request = { signInUseCase(type, AnalyticsSource.MAP) },
+            request = {
+                try {
+                    signInUseCase(type, AnalyticsSource.MAP)
+                } catch (exception: SignupConsentDismissedException) {
+                    pendingArchiveLogin = false
+                    throw exception
+                }
+            },
             onSuccess = {
                 if (pendingArchiveLogin) {
                     archiveLoginSucceeded = true
