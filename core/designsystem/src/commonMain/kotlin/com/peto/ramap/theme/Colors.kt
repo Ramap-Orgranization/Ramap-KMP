@@ -58,3 +58,10 @@ object InstagramColor {
     val Purple = Color(0xFFD300C5)
     val Blue = Color(0xFF7638FA)
 }
+
+object RecommendationColor {
+    val Gold = Color(0xFFE6C05D)
+    val Cream = Color(0xFFFFF4D6)
+    val Brown = Color(0xFF6C2921)
+    val Border = Color(0xFFD4AD55)
+}

@@ -16,8 +16,9 @@ internal fun SearchBar(
     onFocusChanged: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
     isSearchMode: Boolean = false,
+    resetKey: Long = 0,
 ) {
-    var internalValue by rememberSaveable(query) { mutableStateOf(query) }
+    var internalValue by rememberSaveable(query, resetKey) { mutableStateOf(query) }
 
     AppSearchBar(
         query = internalValue,

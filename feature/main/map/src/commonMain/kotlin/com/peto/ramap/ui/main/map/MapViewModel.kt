@@ -82,11 +82,12 @@ import org.jetbrains.compose.resources.StringResource
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.apple_login_failure_message
 import ramap.shared.generated.resources.data_load_failure_message
-import ramap.shared.generated.resources.filter_empty_visible_result_message
+import ramap.shared.generated.resources.filtered_result_empty_message
 import ramap.shared.generated.resources.kakao_login_failure_message
 import ramap.shared.generated.resources.location_permission_enable_message
 import ramap.shared.generated.resources.location_permission_settings_action
 import ramap.shared.generated.resources.login_success_message
+import ramap.shared.generated.resources.personalization_update_failure_message
 import ramap.shared.generated.resources.search_result_empty_message
 import kotlin.time.Clock
 
@@ -173,6 +174,7 @@ class MapViewModel(
                     OnLocationPermissionBlocked -> showLocationPermissionBlockedToast()
                     is MapIntent.OnShopLoadFailed -> if (currentState.selectedShopId == intent.shopId) failedShopId = intent.shopId
                     is MapIntent.OnShopViewed -> recordRecentlyViewedShop(intent.shop)
+                    is MapIntent.OnBookmarkChanged -> updateBookmark(intent.shop, intent.enabled)
                     else -> error("Unhandled map intent: $intent")
                 }
         }
@@ -218,7 +220,13 @@ class MapViewModel(
             is OnShopIdSelected -> selectShopId(intent.shopId, intent.showDetail)
             is OnShopNavigationRequested -> openShopFromNavigation(intent.shopId, intent.showDetail)
             OnRequestedShopDismissed, OnShopDetailDismissed -> {
-                reduce { copy(search = if (search.results.size == 1) search.dismissResults() else search) }
+                reduce {
+                    if (!isRecommendationEnabled && search.results.size == 1) {
+                        copy(search = search.dismissResults())
+                    } else {
+                        this
+                    }
+                }
                 dismissShopDetail()
             }
             else -> return false
@@ -230,12 +238,14 @@ class MapViewModel(
         when (intent) {
             is OnSearchResultsDismissed -> dismissSearchResults()
             is MapIntent.OnPlaceSelected -> selectPlace(intent.place)
-            is OnQueryChanged -> updateQuery(intent.query, clearFilters = true)
+            is OnQueryChanged -> updateQuery(intent.query, clearFilters = !currentState.isRecommendationEnabled)
             is OnRecentSearchSelected -> updateQuery(intent.query)
             is OnRecentSearchDeleted -> mapSearchHistoryStorage.removeRecentSearch(intent.query)
             OnRecentSearchesCleared -> mapSearchHistoryStorage.clearRecentSearches()
             is OnCategoryFilterToggled -> toggleCategoryFilter(intent.category)
             OnOpenFilterToggled -> toggleOpenFilter()
+            MapIntent.OnRecommendationToggled -> toggleRecommendation()
+            MapIntent.OnRecommendationLoadRetry -> loadRecommendations()
             else -> return false
         }
         return true
@@ -296,7 +306,16 @@ class MapViewModel(
     ) {
         if (shopId.isBlank()) return
         cancelTask(SEARCH_TASK_KEY)
-        reduce { copy(search = search.reset(), filters = RamenShopFilter(), isBookmarkedView = false) }
+        cancelTask(BOOKMARK_FILTER_TASK_KEY)
+        cancelTask(RECOMMENDATION_TASK_KEY)
+        reduce {
+            copy(
+                search = search.reset(),
+                filters = RamenShopFilter(),
+                isBookmarkedView = false,
+                isRecommendationEnabled = false,
+            )
+        }
         dismissShopDetail()
         selectShopId(shopId, showDetail)
     }
@@ -362,12 +381,13 @@ class MapViewModel(
     }
 
     private fun searchShops(query: SearchQuery) {
+        val recommendedOnly = currentState.isRecommendationEnabled
         val shopCenter = currentState.currentLocation
         val placeCenter = currentState.cameraPosition?.center ?: shopCenter ?: DEFAULT_SEARCH_CENTER
         if (canReuseSearchResults(query, shopCenter, placeCenter)) {
             cancelTask(SEARCH_TASK_KEY)
             recordRecentSearch(query.value)
-            handleSingleSearchDestination()
+            presentSearchResults()
             return
         }
 
@@ -378,12 +398,18 @@ class MapViewModel(
             policy = TaskPolicy.CancelPrevious,
         ) {
             coroutineScope {
-                val shops = async { searchRamenShopsUseCase(query, shopCenter) }
+                val shops = async { searchRamenShopsUseCase(query, shopCenter, recommendedOnly) }
                 val places = async { placeSearchRepository.search(query, placeCenter) }
                 val shopResult = shops.await()
                 val placeResult = places.await()
-                if (currentCoroutineContext().isActive) {
-                    handleSearchResults(query, shopCenter, placeCenter, shopResult, placeResult)
+                if (currentCoroutineContext().isActive && currentState.isRecommendationEnabled == recommendedOnly) {
+                    handleSearchResults(
+                        query = query,
+                        shopCenter = shopCenter,
+                        placeCenter = placeCenter,
+                        shopResult = shopResult,
+                        placeResult = placeResult,
+                    )
                 }
             }
         }
@@ -453,6 +479,40 @@ class MapViewModel(
         updateFilter(filter.copy(isOpenSelected = !filter.isOpenSelected))
     }
 
+    private fun toggleRecommendation() {
+        val enableRecommendation = !currentState.isRecommendationEnabled
+        cancelTask(SEARCH_TASK_KEY)
+        cancelTask(BOOKMARK_FILTER_TASK_KEY)
+        cancelTask(SELECTED_SHOP_TASK_KEY)
+        if (!enableRecommendation) cancelTask(RECOMMENDATION_TASK_KEY)
+        reduce {
+            copy(
+                isRecommendationEnabled = enableRecommendation,
+                recommendationToggleKey = recommendationToggleKey + 1,
+                locationFocusStatus = if (enableRecommendation) LocationFocusStatus.Consumed else locationFocusStatus,
+                filters = filters.clear(),
+                isBookmarkedView = false,
+                search = search.reset(),
+                placeFocusRequest = null,
+                selectedShopId = null,
+                selectedShop = null,
+                selectedShopFocusRequest = null,
+            )
+        }
+        if (enableRecommendation && currentState.recommendedShops == null) loadRecommendations()
+    }
+
+    private fun loadRecommendations() {
+        if (!currentState.isRecommendationEnabled) return
+        launchResultTask(
+            taskKey = RECOMMENDATION_TASK_KEY,
+            loadKey = MapLoadKey.Recommendation,
+            policy = TaskPolicy.IgnoreNew,
+            request = ramenShopRepository::fetchRecommendedShops,
+            onSuccess = { shops -> reduce { copy(recommendedShops = shops.visibleRecommendations()) } },
+        )
+    }
+
     private fun loadPersonalizedShops(shopIds: Set<String>) {
         if (shopIds.isEmpty()) return
 
@@ -520,14 +580,14 @@ class MapViewModel(
 
     private fun updateFilter(filter: RamenShopFilter) {
         val selectedShop = currentState.selectedShop
+        val shopToMatch = if (currentState.isRecommendationEnabled) selectedShop else selectedShop?.let { currentState.shops[it.id] }
         val isSelectedShopFilteredOut =
             selectedShop != null &&
-                !currentState.shops
-                    .filterByOpenStatus(
-                        filter,
-                        Clock.System.now().toLocalDateTime(TimeZone.of("Asia/Seoul")),
-                        currentState.operatingNotices,
-                    ).containsKey(selectedShop.id)
+                shopToMatch?.isOpened(
+                    filter,
+                    Clock.System.now().toLocalDateTime(TimeZone.of("Asia/Seoul")),
+                    currentState.operatingNotices,
+                ) != true
         if (isSelectedShopFilteredOut) {
             dismissShopDetail()
         }
@@ -539,7 +599,7 @@ class MapViewModel(
         val state = currentState
         val isFilterActiveAndNoVisibleShop = !state.filters.isEmpty() && !state.markerShops(includeSelectedShop).hasVisibleShopIn(state.bounds)
         if (isFilterActiveAndNoVisibleShop) {
-            showToast(Res.string.filter_empty_visible_result_message)
+            showEmptyFilteredResultToast()
         }
     }
 
@@ -574,23 +634,35 @@ class MapViewModel(
             handleFailedSearchResult(placeResult.error)
         }
         if (shops.isEmpty() && places.isEmpty()) {
-            if (!hasFailure) {
-                showToast(Res.string.search_result_empty_message)
-                reduce { copy(search = search.reset(), placeFocusRequest = null) }
-            }
+            if (!hasFailure) presentEmptySearchResult()
             return
         }
-        val filteredShops = currentState.searchResultShops
-        if (filteredShops.isEmpty() && currentState.filters.isNotEmpty() && places.isEmpty()) {
-            showToast(Res.string.filter_empty_visible_result_message)
-        }
-        handleSingleSearchDestination()
+        presentSearchResults()
     }
 
-    private fun handleSingleSearchDestination() {
-        val search = currentState.search
+    private fun presentEmptySearchResult() {
+        if (currentState.hasActiveFilters) {
+            showEmptyFilteredResultToast()
+        } else {
+            showToast(Res.string.search_result_empty_message)
+        }
+
+        if (!currentState.isRecommendationEnabled) {
+            reduce { copy(search = search.reset(), placeFocusRequest = null) }
+        }
+    }
+
+    private fun presentSearchResults() {
+        val state = currentState
+        val search = state.search
         if (search.places.isEmpty()) {
-            currentState.searchResultShops
+            val shops = state.searchResultShops
+            if (shops.isEmpty() && state.hasActiveFilters && !search.hasSearchFailure) {
+                showEmptyFilteredResultToast()
+            }
+            if (state.isRecommendationEnabled) return
+
+            shops
                 .singleShopOrNull()
                 ?.takeIf { it.isVisible }
                 ?.let(::selectShop)
@@ -613,6 +685,18 @@ class MapViewModel(
 
     private fun showDataLoadFailure() {
         showToast(Res.string.data_load_failure_message, ToastType.ERROR)
+    }
+
+    private fun showEmptyFilteredResultToast() {
+        showInteraction(
+            ShowToast(
+                ToastData(
+                    message = Res.string.filtered_result_empty_message,
+                    type = ToastType.DEFAULT,
+                    durationMills = FILTERED_RESULT_EMPTY_TOAST_DURATION_MILLIS,
+                ),
+            ),
+        )
     }
 
     private fun showToast(
@@ -752,6 +836,38 @@ class MapViewModel(
         )
     }
 
+    private fun updateBookmark(
+        shop: RamenShop,
+        enabled: Boolean,
+    ) {
+        val isAlreadyUpdating = shop.id in currentState.bookmarkUpdatingShopIds
+        if (isAlreadyUpdating) return
+        val isBookmarkUnchanged = (shop.id in currentState.bookmarkedShopIds) == enabled
+        if (isBookmarkUnchanged) return
+
+        executeBookmarkUpdate(shop.id, enabled)
+    }
+
+    private fun executeBookmarkUpdate(
+        shopId: String,
+        enabled: Boolean,
+    ) {
+        launchResultTask(
+            taskKey = bookmarkTaskKey(shopId),
+            policy = TaskPolicy.IgnoreNew,
+            onStart = { copy(bookmarkUpdatingShopIds = bookmarkUpdatingShopIds + shopId) },
+            onFinish = { copy(bookmarkUpdatingShopIds = bookmarkUpdatingShopIds - shopId) },
+            request = { personalizationStore.updateBookmark(shopId, enabled) },
+            onError = { showBookmarkUpdateFailure() },
+        )
+    }
+
+    private fun bookmarkTaskKey(shopId: String): String = "map-bookmark-$shopId"
+
+    private fun showBookmarkUpdateFailure() {
+        showInteraction(ShowToast(ToastData(Res.string.personalization_update_failure_message, ToastType.ERROR)))
+    }
+
     private fun showInteraction(effect: ShopInteractionEffect) {
         trySideEffect(MapSideEffect.Interaction(effect))
     }
@@ -759,6 +875,8 @@ class MapViewModel(
     companion object {
         private const val SELECTED_SHOP_TASK_KEY = "map-selected-shop"
         private const val SEARCH_TASK_KEY = "map-search"
+        private const val RECOMMENDATION_TASK_KEY = "map-recommendation"
+        private const val FILTERED_RESULT_EMPTY_TOAST_DURATION_MILLIS = 4_000L
         private val DEFAULT_SEARCH_CENTER = Location(37.5665, 126.9780)
         private const val BOOKMARK_FILTER_TASK_KEY = "map-bookmark-filter"
         private const val PERSONALIZED_SHOPS_TASK_KEY = "map-personalized-shops"

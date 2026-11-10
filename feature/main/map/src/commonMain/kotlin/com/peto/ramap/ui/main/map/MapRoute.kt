@@ -165,8 +165,13 @@ fun MapRoute(
             },
             onCategoryFilterToggled = { viewModel.dispatch(OnCategoryFilterToggled(it)) },
             onOpenFilterToggled = { viewModel.dispatch(OnOpenFilterToggled) },
+            onRecommendationToggled = { viewModel.dispatch(MapIntent.OnRecommendationToggled) },
+            onRecommendationLoadRetry = { viewModel.dispatch(MapIntent.OnRecommendationLoadRetry) },
             onViewportLoadRetry = { viewModel.dispatch(OnViewportLoadRetry) },
             onBookmarkedShopsToggle = { viewModel.dispatch(OnBookmarkedShopsToggled) },
+            onBookmarkClick = { shop, isBookmarked ->
+                viewModel.dispatch(MapIntent.OnBookmarkChanged(shop, !isBookmarked))
+            },
             onArchiveNavigate = {
                 if (uiState.isLoggedIn) {
                     onArchiveNavigate()

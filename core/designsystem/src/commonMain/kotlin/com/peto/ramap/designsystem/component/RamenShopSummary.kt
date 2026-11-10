@@ -36,8 +36,9 @@ fun RamenShopSummary(
     modifier: Modifier = Modifier,
     actionLabel: String? = null,
     onAction: (() -> Unit)? = null,
+    trailingContent: @Composable (BoxScope.() -> Unit)? = null,
 ) {
-    val hasAction = actionLabel != null && onAction != null
+    val hasAction = (actionLabel != null && onAction != null) || trailingContent != null
 
     Box(
         modifier =
@@ -87,10 +88,14 @@ fun RamenShopSummary(
             }
         }
 
-        RamenShopSummaryAction(
-            actionLabel = actionLabel,
-            onAction = onAction,
-        )
+        if (trailingContent != null) {
+            trailingContent()
+        } else {
+            RamenShopSummaryAction(
+                actionLabel = actionLabel,
+                onAction = onAction,
+            )
+        }
     }
 }
 

@@ -78,6 +78,7 @@ import com.peto.ramap.ui.main.map.contract.MapIntent.OnMapTabExited
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnMyLocationChanged
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnOpenFilterToggled
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnQueryChanged
+import com.peto.ramap.ui.main.map.contract.MapIntent.OnRecentSearchSelected
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnRequestedShopDismissed
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnSelectedShopFocusConsumed
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnShopDetailDismissed
@@ -119,6 +120,7 @@ import kotlinx.coroutines.withContext
 import org.jetbrains.compose.resources.StringResource
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.data_load_failure_message
+import ramap.shared.generated.resources.filtered_result_empty_message
 import ramap.shared.generated.resources.place_search_daily_limited_minutes
 import ramap.shared.generated.resources.place_search_rate_limited
 import ramap.shared.generated.resources.search_result_empty_message
@@ -1921,6 +1923,27 @@ class MapShopSectionsRegressionTest {
         }
 
     @Test
+    fun `카테고리 필터를 적용한 지도와 최근 검색의 빈 결과에 공통 토스트를 보여준다`() =
+        coroutinesTest {
+            val viewModel = mapViewModel()
+
+            viewModel.sideEffect.test {
+                viewModel.dispatch(OnCategoryFilterToggled(Category.MAZESOBA))
+                runCurrent()
+                assertEquals(emptyFilteredResultToastSideEffect(), awaitItem())
+
+                viewModel.dispatch(OnRecentSearchSelected("없는 라멘집"))
+                runCurrent()
+
+                val state = viewModel.uiState.value.map
+                assertEquals(setOf(Category.MAZESOBA), state.filters.toSet())
+                assertFalse(state.showSearchResults)
+                assertEquals(emptyFilteredResultToastSideEffect(), awaitItem())
+                expectNoEvents()
+            }
+        }
+
+    @Test
     fun `좋아요 보기 상태에서도 선택한 매장은 마커로 유지한다`() {
         val hiddenShop =
             ramenShopFixture(
@@ -2512,6 +2535,168 @@ class MapShopSectionsRegressionTest {
 
             assertEquals(RamenShopFilter(), viewModel.uiState.value.filters)
             assertEquals(false, viewModel.uiState.value.isBookmarkedView)
+        }
+
+    @Test
+    fun `추천을 켜면 검색과 기존 필터를 해제하고 화면 밖의 추천 매장도 목록에 표시한다`() =
+        coroutinesTest {
+            val regularShop = ramenShopFixture(id = "regular-shop", name = "가라멘")
+            val recommendedShop = ramenShopFixture(id = "nationwide-shop", name = "나라멘").copy(isRecommended = true)
+            val repository =
+                FakeRamenShopRepository(
+                    result = RamenShops(listOf(regularShop)),
+                    searchResult = RamenShops(listOf(regularShop)),
+                    searchDelayMillis = 500,
+                    recommendedShops = RamenShops(listOf(recommendedShop)),
+                )
+            val viewModel = mapViewModel(repository)
+            val camera = CameraPosition(center = Location(37.5, 127.0), zoom = 12.0)
+            runCurrent()
+
+            viewModel.dispatch(OnCameraPositionChanged(camera))
+            viewModel.dispatch(OnQueryChanged("라멘"))
+            viewModel.dispatch(OnCategoryFilterToggled(Category.MAZESOBA))
+            viewModel.dispatch(OnOpenFilterToggled)
+            viewModel.dispatch(OnBookmarkedShopsToggled)
+            runCurrent()
+            assertTrue(viewModel.uiState.value.map.isBookmarkedView)
+
+            viewModel.dispatch(MapIntent.OnRecommendationToggled)
+            advanceTimeBy(600)
+            runCurrent()
+
+            val state = viewModel.uiState.value.map
+            assertEquals(camera, state.cameraPosition)
+            assertEquals("", state.search.input)
+            assertTrue(state.search.results.isEmpty())
+            assertFalse(state.isBookmarkedView)
+            assertEquals(RamenShopFilter(), state.filters)
+            assertEquals(listOf(recommendedShop), state.recommendationListShops)
+            assertEquals(setOf(recommendedShop.id), state.markerShops.keys)
+
+            viewModel.dispatch(OnShopSelected(recommendedShop))
+            runCurrent()
+            assertFalse(viewModel.uiState.value.map.showRecommendationList)
+            viewModel.dispatch(OnShopDetailDismissed)
+            runCurrent()
+            assertTrue(viewModel.uiState.value.map.showRecommendationList)
+            viewModel.dispatch(OnMapTabExited)
+            runCurrent()
+            assertTrue(viewModel.uiState.value.map.showRecommendationList)
+            assertEquals(listOf(recommendedShop), viewModel.uiState.value.map.recommendationListShops)
+        }
+
+    @Test
+    fun `추천 검색 결과가 없으면 바텀시트 없이 빈 결과 토스트만 보여준다`() =
+        coroutinesTest {
+            val viewModel = mapViewModel()
+
+            viewModel.sideEffect.test {
+                viewModel.dispatch(MapIntent.OnRecommendationToggled)
+                runCurrent()
+                assertTrue(viewModel.uiState.value.map.showRecommendationList)
+
+                viewModel.dispatch(OnQueryChanged("없는 라멘집"))
+                runCurrent()
+
+                val state = viewModel.uiState.value.map
+                assertEquals("없는 라멘집", state.search.input)
+                assertFalse(state.showSearchResults)
+                assertFalse(state.showRecommendationList)
+                assertFalse(state.showBottomSheet)
+                assertEquals(emptyFilteredResultToastSideEffect(), awaitItem())
+                expectNoEvents()
+            }
+        }
+
+    @Test
+    fun `추천 검색 결과가 저장 필터로 모두 제외되면 바텀시트 없이 필터 토스트만 보여준다`() =
+        coroutinesTest {
+            val shop = ramenShopFixture(id = "recommended-shop").copy(isRecommended = true)
+            val viewModel = mapViewModel(FakeRamenShopRepository(searchResult = RamenShops(listOf(shop))))
+
+            viewModel.sideEffect.test {
+                viewModel.dispatch(MapIntent.OnRecommendationToggled)
+                viewModel.dispatch(OnBookmarkedShopsToggled)
+                runCurrent()
+
+                repeat(2) {
+                    viewModel.dispatch(OnQueryChanged("라멘"))
+                    runCurrent()
+
+                    val state = viewModel.uiState.value.map
+                    assertTrue(state.isBookmarkedView)
+                    assertFalse(state.showSearchResults)
+                    assertFalse(state.showRecommendationList)
+                    assertEquals(emptyFilteredResultToastSideEffect(), awaitItem())
+                    expectNoEvents()
+                }
+            }
+        }
+
+    @Test
+    fun `추천 검색은 한 건도 목록으로 보여주고 추천을 끄면 검색어와 추가 필터를 초기화한다`() =
+        coroutinesTest {
+            val category = Category.MAZESOBA
+            val recommendedShop =
+                ramenShopFixture(id = "recommended-shop", name = "나라멘", menuCategories = listOf(category))
+                    .copy(isRecommended = true)
+            val regularShop = ramenShopFixture(id = "regular-shop", name = "가라멘", menuCategories = listOf(category))
+            val repository =
+                FakeRamenShopRepository(
+                    searchResult = RamenShops(listOf(recommendedShop, regularShop)),
+                    recommendedShops = RamenShops(listOf(recommendedShop)),
+                )
+            val viewModel = mapViewModel(repository)
+            runCurrent()
+
+            viewModel.dispatch(MapIntent.OnRecommendationToggled)
+            viewModel.dispatch(OnCategoryFilterToggled(category))
+            viewModel.dispatch(OnQueryChanged("라멘"))
+            runCurrent()
+
+            val recommended = viewModel.uiState.value.map
+            assertEquals(listOf(true), repository.requestedRecommendationScopes)
+            assertEquals(setOf(category), recommended.filters.toSet())
+            assertTrue(recommended.showSearchResults)
+            assertEquals(setOf(recommendedShop.id), recommended.searchResultShops.keys)
+            assertEquals(null, recommended.selectedShopId)
+
+            viewModel.dispatch(OnOpenFilterToggled)
+            viewModel.dispatch(OnBookmarkedShopsToggled)
+            runCurrent()
+            assertTrue(viewModel.uiState.value.map.filters.isOpenSelected)
+            assertTrue(viewModel.uiState.value.map.isBookmarkedView)
+
+            viewModel.dispatch(MapIntent.OnRecommendationToggled)
+            runCurrent()
+
+            val allShops = viewModel.uiState.value.map
+            assertEquals(listOf(true), repository.requestedRecommendationScopes)
+            assertFalse(allShops.isRecommendationEnabled)
+            assertEquals(SearchUiModel(), allShops.search)
+            assertEquals(RamenShopFilter(), allShops.filters)
+            assertFalse(allShops.isBookmarkedView)
+        }
+
+    @Test
+    fun `추천을 끄면 대기 중인 저장 필터가 뒤늦게 켜지지 않는다`() =
+        coroutinesTest {
+            val personalization = FakePersonalizationRepository(initialState = PersonalizationBootstrapState.Loading)
+            val viewModel = mapViewModel(personalizationRepository = personalization)
+            runCurrent()
+
+            viewModel.dispatch(MapIntent.OnRecommendationToggled)
+            viewModel.dispatch(OnBookmarkedShopsToggled)
+            runCurrent()
+            assertFalse(viewModel.uiState.value.map.isBookmarkedView)
+
+            viewModel.dispatch(MapIntent.OnRecommendationToggled)
+            runCurrent()
+            personalization.updateBookmarkedShopIds(setOf("saved-shop"))
+            runCurrent()
+
+            assertFalse(viewModel.uiState.value.map.isBookmarkedView)
         }
 
     @Test
@@ -3264,6 +3449,15 @@ private fun loadedSearchUiModel(
             query = SearchQuery(input).normalizeShopSearchQuery(),
             results = results,
         ).consumeResultFocus(isResultFocusConsumed)
+
+private fun emptyFilteredResultToastSideEffect(): ShowToast =
+    ShowToast(
+        ToastData(
+            message = Res.string.filtered_result_empty_message,
+            type = ToastType.DEFAULT,
+            durationMills = 4_000L,
+        ),
+    )
 
 private fun showToastSideEffect(message: StringResource): ShowToast =
     ShowToast(
