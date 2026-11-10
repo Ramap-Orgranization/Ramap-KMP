@@ -225,9 +225,9 @@
     <string name="event_date_event">행사 기간</string>
     <string name="event_date_new_menu">출시일</string>
     <string name="event_date_store_renewal">변경일</string>
-    <string name="event_date_end_unknown">%1$s년 %2$d월 %3$d일 ~ 종료일 미정</string>
-    <string name="event_single_date_format">%1$s년 %2$d월 %3$d일</string>
-    <string name="event_date_range_format">%1$s년 %2$d월 %3$d일 ~ %4$s년 %5$d월 %6$d일</string>
+    <string name="event_date_end_unknown">%1$s ~ 종료일 미정</string>
+    <string name="event_single_date_format">%1$s</string>
+    <string name="event_date_range_format">%1$s ~ %2$s</string>
     <string name="shop_event_notice_store_renewal_today">오늘 매장 리뉴얼이 진행돼요 &gt;</string>
     <string name="shop_event_notice_store_renewal_upcoming">매장 리뉴얼이 진행 예정이에요 &gt;</string>
     <string name="event_waiting">대기 방법</string>

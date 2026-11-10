@@ -1,5 +1,6 @@
 package com.peto.ramap.designsystem.resource.review
 
+import com.peto.ramap.datetime.toDotFormatted
 import com.peto.ramap.designsystem.resource.UiText
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
@@ -35,8 +36,7 @@ internal fun reviewTimeResource(
                 writtenAt
                     .toLocalDateTime(timeZone)
                     .date
-                    .toString()
-                    .replace('-', '.')
+                    .toDotFormatted()
             UiText(Res.string.review_time_date, listOf(date))
         }
 

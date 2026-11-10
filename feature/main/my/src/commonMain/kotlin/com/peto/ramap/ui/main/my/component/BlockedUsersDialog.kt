@@ -21,6 +21,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.peto.ramap.datetime.toDotFormatted
 import com.peto.ramap.designsystem.button.AppButton
 import com.peto.ramap.designsystem.dialog.CommonDialog
 import com.peto.ramap.designsystem.profile.ProfileAvatar
@@ -121,7 +122,7 @@ private fun BlockedUserRow(
     onUnblockClick: (String) -> Unit,
 ) {
     val profile = user.profile
-    val blockedDate = user.blockedOn.toString().replace('-', '.')
+    val blockedDate = user.blockedOn.toDotFormatted()
     Row(
         modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,

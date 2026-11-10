@@ -7,7 +7,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.peto.ramap.designsystem.text.AppText
+import com.peto.ramap.datetime.toDotFormatted
+import com.peto.ramap.datetime.toLocalDateOrNull
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.RamapTheme
@@ -22,35 +23,19 @@ fun eventDateText(
     startDate: String,
     endDate: String?,
 ): String {
-    val start = parseDate(startDate) ?: return startDate
+    val start = startDate.toLocalDateOrNull()?.toDotFormatted() ?: startDate
     if (endDate == null) {
-        return stringResource(Res.string.event_date_end_unknown, start.first, start.second, start.third)
+        return stringResource(Res.string.event_date_end_unknown, start)
     }
-    if (startDate == endDate) {
-        return stringResource(Res.string.event_single_date_format, start.first, start.second, start.third)
+    val end = endDate.toLocalDateOrNull()?.toDotFormatted() ?: endDate
+    if (start == end) {
+        return stringResource(Res.string.event_single_date_format, start)
     }
-    val end = parseDate(endDate) ?: return endDate
     return stringResource(
         Res.string.event_date_range_format,
-        start.first,
-        start.second,
-        start.third,
-        end.first,
-        end.second,
-        end.third,
+        start,
+        end,
     )
-}
-
-private fun parseDate(date: String): Triple<String, Int, Int>? {
-    if (
-        date.length != 10 ||
-        date[4] != '-' ||
-        date[7] != '-' ||
-        !date.indices.all { it == 4 || it == 7 || date[it] in '0'..'9' }
-    ) {
-        return null
-    }
-    return Triple(date.take(4), date.substring(5, 7).toInt(), date.takeLast(2).toInt())
 }
 
 @Preview

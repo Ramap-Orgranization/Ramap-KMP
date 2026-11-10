@@ -54,21 +54,21 @@ class BusinessHoursStatusResourceMapperTest {
         val status = BusinessHoursStatus.TemporaryClosure(date, date)
         assertEquals(UiText(Res.string.business_hours_today_closed), BusinessHoursStatusResourceMapper.status(status))
         assertEquals(UiText(Res.string.business_hours_today_closed), BusinessHoursStatusResourceMapper.noticeLabel(status))
-        assertEquals(UiText(Res.string.business_hours_temporary_closure_date, listOf("10/24", "토")), BusinessHoursStatusResourceMapper.closurePeriod(status, "토", "토"))
+        assertEquals(UiText(Res.string.business_hours_temporary_closure_date, listOf("2026.10.24", "토")), BusinessHoursStatusResourceMapper.closurePeriod(status, "토", "토"))
     }
 
     @Test
     fun `연속 휴무는 종료일과 전체 기간을 표시한다`() {
         val status = BusinessHoursStatus.TemporaryClosure(LocalDate(2026, 10, 24), LocalDate(2026, 10, 30))
-        assertEquals(UiText(Res.string.business_hours_today_closed_until, listOf("10/30")), BusinessHoursStatusResourceMapper.status(status))
-        assertEquals(UiText(Res.string.business_hours_temporary_closure_period, listOf("10/24", "토", "10/30", "금")), BusinessHoursStatusResourceMapper.closurePeriod(status, "토", "금"))
+        assertEquals(UiText(Res.string.business_hours_today_closed_until, listOf("2026.10.30")), BusinessHoursStatusResourceMapper.status(status))
+        assertEquals(UiText(Res.string.business_hours_temporary_closure_period, listOf("2026.10.24", "토", "2026.10.30", "금")), BusinessHoursStatusResourceMapper.closurePeriod(status, "토", "금"))
     }
 
     @Test
     fun `종료일 없는 휴무는 시작일과 요일만 안내한다`() {
         val status = BusinessHoursStatus.TemporaryClosure(LocalDate(2026, 10, 24), null)
         assertEquals(
-            UiText(Res.string.business_hours_temporary_closure_since, listOf("10/24", "토")),
+            UiText(Res.string.business_hours_temporary_closure_since, listOf("2026.10.24", "토")),
             BusinessHoursStatusResourceMapper.closurePeriod(status, "토", "토"),
         )
     }
@@ -76,7 +76,7 @@ class BusinessHoursStatusResourceMapperTest {
     @Test
     fun `해를 넘는 휴무는 연도를 포함해 기간을 구분한다`() {
         val status = BusinessHoursStatus.TemporaryClosure(LocalDate(2026, 12, 30), LocalDate(2027, 1, 2))
-        assertEquals(UiText(Res.string.business_hours_today_closed_until, listOf("2027/1/2")), BusinessHoursStatusResourceMapper.status(status))
-        assertEquals(UiText(Res.string.business_hours_temporary_closure_period, listOf("2026/12/30", "수", "2027/1/2", "토")), BusinessHoursStatusResourceMapper.closurePeriod(status, "수", "토"))
+        assertEquals(UiText(Res.string.business_hours_today_closed_until, listOf("2027.01.02")), BusinessHoursStatusResourceMapper.status(status))
+        assertEquals(UiText(Res.string.business_hours_temporary_closure_period, listOf("2026.12.30", "수", "2027.01.02", "토")), BusinessHoursStatusResourceMapper.closurePeriod(status, "수", "토"))
     }
 }

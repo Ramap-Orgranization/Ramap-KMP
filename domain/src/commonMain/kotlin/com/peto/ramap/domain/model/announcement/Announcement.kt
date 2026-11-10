@@ -1,5 +1,6 @@
 package com.peto.ramap.domain.model.announcement
 
+import com.peto.ramap.datetime.toDotFormatted
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import kotlin.time.Instant
@@ -15,10 +16,12 @@ data class Announcement(
     fun formattedPublishedDate(
         delimiter: String = ".",
         timeZone: TimeZone = TimeZone.currentSystemDefault(),
-    ): String =
-        publishedAt
-            .toLocalDateTime(timeZone)
-            .date
-            .toString()
-            .replace("-", delimiter)
+    ): String {
+        val date = publishedAt.toLocalDateTime(timeZone).date
+        return if (delimiter == ".") {
+            date.toDotFormatted()
+        } else {
+            date.toString().replace("-", delimiter)
+        }
+    }
 }

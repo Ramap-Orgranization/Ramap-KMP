@@ -1,5 +1,6 @@
 package com.peto.ramap.designsystem.resource.businesshours
 
+import com.peto.ramap.datetime.toDotFormatted
 import com.peto.ramap.designsystem.resource.UiText
 import com.peto.ramap.domain.model.businesshour.BusinessHoursStatus
 import kotlinx.datetime.LocalDate
@@ -73,5 +74,5 @@ object BusinessHoursStatusResourceMapper {
     private fun dateLabel(
         date: LocalDate,
         includeYear: Boolean,
-    ): String = if (includeYear) "${date.year}/${date.month.ordinal + 1}/${date.day}" else "${date.month.ordinal + 1}/${date.day}"
+    ): String = date.toDotFormatted()
 }
