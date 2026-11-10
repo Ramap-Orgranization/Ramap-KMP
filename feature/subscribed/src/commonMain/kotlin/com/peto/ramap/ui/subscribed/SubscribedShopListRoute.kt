@@ -9,6 +9,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.peto.ramap.designsystem.component.SettingsListPage
 import com.peto.ramap.designsystem.toast.ToastManager
+import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.preview.RamenShopPreviewParameterProvider
 import com.peto.ramap.preview.ShopEventPreviewParameterProvider
@@ -19,7 +20,6 @@ import com.peto.ramap.ui.subscribed.component.SubscribedShopListContent
 import com.peto.ramap.ui.subscribed.contract.SubscribedShopsIntent
 import com.peto.ramap.ui.subscribed.contract.SubscribedShopsSideEffect
 import com.peto.ramap.ui.subscribed.contract.SubscribedShopsUiState
-import com.peto.ramap.ui.subscribed.model.SubscribedRemovalTarget
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 import ramap.shared.generated.resources.Res
@@ -31,6 +31,7 @@ import ramap.shared.generated.resources.settings_subscribed_shops_menu
 fun SubscribedShopsRoute(
     onBack: () -> Unit,
     onShopOpen: (String) -> Unit,
+    onShopNotificationSettingsOpen: (RamenShop) -> Unit,
     onEventOpen: (String) -> Unit,
     toastManager: ToastManager = koinInject(),
     viewModel: SubscribedShopsViewModel = koinViewModel(),
@@ -47,9 +48,10 @@ fun SubscribedShopsRoute(
         uiState = uiState,
         onBack = onBack,
         onShopOpen = onShopOpen,
+        onShopNotificationSettingsOpen = onShopNotificationSettingsOpen,
         onEventOpen = onEventOpen,
         onRetry = { viewModel.dispatch(SubscribedShopsIntent.OnRetry) },
-        onRemovalConfirmed = { viewModel.dispatch(SubscribedShopsIntent.OnRemovalConfirmed(it)) },
+        onEventRemovalConfirmed = { viewModel.dispatch(SubscribedShopsIntent.OnEventRemovalConfirmed(it)) },
     )
 }
 
@@ -58,11 +60,12 @@ private fun SubscribedShopsRouteContent(
     uiState: SubscribedShopsUiState,
     onBack: () -> Unit,
     onShopOpen: (String) -> Unit,
+    onShopNotificationSettingsOpen: (RamenShop) -> Unit,
     onEventOpen: (String) -> Unit,
     onRetry: () -> Unit,
-    onRemovalConfirmed: (SubscribedRemovalTarget) -> Unit,
+    onEventRemovalConfirmed: (String) -> Unit,
 ) {
-    var removalTarget by remember { mutableStateOf<SubscribedRemovalTarget?>(null) }
+    var eventIdToRemove by remember { mutableStateOf<String?>(null) }
 
     SettingsListPage(
         title = Res.string.settings_subscribed_shops_menu,
@@ -77,19 +80,18 @@ private fun SubscribedShopsRouteContent(
         SubscribedShopListContent(
             uiState = uiState,
             onShopOpen = { onShopOpen(it.id) },
+            onShopNotificationSettingsOpen = onShopNotificationSettingsOpen,
             onEventOpen = { onEventOpen(it.id) },
-            onRemovalRequested = { removalTarget = it },
+            onEventRemovalRequested = { eventIdToRemove = it },
         )
     }
     SubscribedRemovalConfirmDialog(
-        visible = removalTarget != null,
+        visible = eventIdToRemove != null,
         onConfirm = {
-            removalTarget?.let { target ->
-                onRemovalConfirmed(target)
-            }
-            removalTarget = null
+            eventIdToRemove?.let(onEventRemovalConfirmed)
+            eventIdToRemove = null
         },
-        onDismiss = { removalTarget = null },
+        onDismiss = { eventIdToRemove = null },
     )
 }
 
@@ -107,9 +109,10 @@ private fun SubscribedShopsRoutePreview() {
                 ),
             onBack = {},
             onShopOpen = {},
+            onShopNotificationSettingsOpen = {},
             onEventOpen = {},
             onRetry = {},
-            onRemovalConfirmed = {},
+            onEventRemovalConfirmed = {},
         )
     }
 }

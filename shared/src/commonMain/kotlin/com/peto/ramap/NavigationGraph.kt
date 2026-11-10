@@ -44,6 +44,7 @@ import com.peto.ramap.ui.review.write.ShopReviewWriteRoute
 import com.peto.ramap.ui.settings.SettingsRoute
 import com.peto.ramap.ui.shop.ArchiveShopDetailHost
 import com.peto.ramap.ui.shop.ShopDetailHost
+import com.peto.ramap.ui.shop.overview.ShopNotificationSettingsHost
 import com.peto.ramap.ui.subscribed.SubscribedShopsRoute
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
@@ -323,11 +324,14 @@ internal fun NavigationGraph(
                 onOpenReviewWriteOverlay = onOpenReviewWriteOverlay,
                 onOpenReviewEditOverlay = onOpenReviewEditOverlay,
             ) { onShopOpen ->
-                SubscribedShopsRoute(
-                    onBack = navigationState::pop,
-                    onShopOpen = onShopOpen,
-                    onEventOpen = navigationState::showEvent,
-                )
+                ShopNotificationSettingsHost(originSource = AnalyticsSource.SUBSCRIBED_SHOPS) { onShopNotificationSettingsOpen ->
+                    SubscribedShopsRoute(
+                        onBack = navigationState::pop,
+                        onShopOpen = onShopOpen,
+                        onShopNotificationSettingsOpen = onShopNotificationSettingsOpen,
+                        onEventOpen = navigationState::showEvent,
+                    )
+                }
             }
         },
         bookmarkedShopsScreen = {

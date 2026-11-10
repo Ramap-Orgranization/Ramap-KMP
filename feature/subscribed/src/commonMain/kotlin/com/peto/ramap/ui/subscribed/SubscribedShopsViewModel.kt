@@ -4,7 +4,6 @@ import androidx.lifecycle.viewModelScope
 import com.peto.ramap.analytics.AnalyticsSource
 import com.peto.ramap.analytics.AnalyticsTracker
 import com.peto.ramap.analytics.common.event.EventNotificationToggled
-import com.peto.ramap.analytics.common.shop.SubscribedToggled
 import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
@@ -16,11 +15,10 @@ import com.peto.ramap.domain.store.PersonalizationBootstrapState
 import com.peto.ramap.domain.store.PersonalizationStore
 import com.peto.ramap.ui.base.BaseViewModel
 import com.peto.ramap.ui.subscribed.contract.SubscribedShopsIntent
-import com.peto.ramap.ui.subscribed.contract.SubscribedShopsIntent.OnRemovalConfirmed
+import com.peto.ramap.ui.subscribed.contract.SubscribedShopsIntent.OnEventRemovalConfirmed
 import com.peto.ramap.ui.subscribed.contract.SubscribedShopsLoadKey
 import com.peto.ramap.ui.subscribed.contract.SubscribedShopsSideEffect
 import com.peto.ramap.ui.subscribed.contract.SubscribedShopsUiState
-import com.peto.ramap.ui.subscribed.model.SubscribedRemovalTarget
 import com.peto.ramap.ui.task.TaskPolicy
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -57,7 +55,7 @@ class SubscribedShopsViewModel(
     override suspend fun handleIntent(intent: SubscribedShopsIntent) {
         when (intent) {
             SubscribedShopsIntent.OnRetry -> retryCurrentSubscriptions()
-            is OnRemovalConfirmed -> confirmRemoval(intent.target)
+            is OnEventRemovalConfirmed -> confirmEventRemoval(intent.eventId)
         }
     }
 
@@ -193,66 +191,29 @@ class SubscribedShopsViewModel(
         return RamapResult.Success(events)
     }
 
-    private fun confirmRemoval(target: SubscribedRemovalTarget) {
-        logRemoval(target)
+    private fun confirmEventRemoval(eventId: String) {
+        analyticsTracker.logEvent(
+            EventNotificationToggled(
+                eventId = eventId,
+                enabled = false,
+                source = AnalyticsSource.SUBSCRIBED_SHOPS,
+            ),
+        )
         launchResultTask(
             taskKey = REMOVE_SUBSCRIPTION_TASK_KEY,
             loadKey = SubscribedShopsLoadKey.REMOVE,
             policy = TaskPolicy.IgnoreNew,
-            request = {
-                when (target) {
-                    is SubscribedRemovalTarget.Shop ->
-                        personalizationStore.clearShopNotifications(target.shopId)
-
-                    is SubscribedRemovalTarget.EventOverride ->
-                        notificationRepository.clearEventNotificationOverride(target.eventId)
-                }
+            request = { notificationRepository.clearEventNotificationOverride(eventId) },
+            onSuccess = {
+                reduce { copy(subscribedEvents = subscribedEvents.filterNot { it.id == eventId }) }
             },
-            onSuccess = { removeTargetFromState(target) },
-            onError = { handleRemovalFailure() },
-        )
-    }
-
-    private fun logRemoval(target: SubscribedRemovalTarget) {
-        when (target) {
-            is SubscribedRemovalTarget.Shop -> {
-                currentState.shops[target.shopId]?.let { shop ->
-                    analyticsTracker.logEvent(
-                        SubscribedToggled(
-                            shopId = shop.id,
-                            shopName = shop.name,
-                            enabled = false,
-                            source = AnalyticsSource.SUBSCRIBED_SHOPS,
-                        ),
-                    )
-                }
-            }
-
-            is SubscribedRemovalTarget.EventOverride ->
-                analyticsTracker.logEvent(
-                    EventNotificationToggled(
-                        eventId = target.eventId,
-                        enabled = false,
-                        source = AnalyticsSource.SUBSCRIBED_SHOPS,
+            onError = {
+                trySideEffect(
+                    SubscribedShopsSideEffect.ShowToast(
+                        ToastData(Res.string.personalization_update_failure_message, ToastType.ERROR),
                     ),
                 )
-        }
-    }
-
-    private fun removeTargetFromState(target: SubscribedRemovalTarget) {
-        reduce {
-            when (target) {
-                is SubscribedRemovalTarget.Shop -> copy(shops = shops.remove(target.shopId))
-                is SubscribedRemovalTarget.EventOverride -> copy(subscribedEvents = subscribedEvents.filterNot { it.id == target.eventId })
-            }
-        }
-    }
-
-    private fun handleRemovalFailure() {
-        trySideEffect(
-            SubscribedShopsSideEffect.ShowToast(
-                ToastData(Res.string.personalization_update_failure_message, ToastType.ERROR),
-            ),
+            },
         )
     }
 

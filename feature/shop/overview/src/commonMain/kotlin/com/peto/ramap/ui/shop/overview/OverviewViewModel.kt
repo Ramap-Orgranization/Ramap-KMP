@@ -46,6 +46,7 @@ import com.peto.ramap.ui.shop.overview.contract.ShopOverviewSideEffect
 import com.peto.ramap.ui.shop.overview.contract.ShopOverviewState
 import com.peto.ramap.ui.shop.overview.log.ShopAnalytics
 import com.peto.ramap.ui.shop.overview.model.PendingShopAction
+import com.peto.ramap.ui.shop.overview.model.PendingShopAction.OpenNotificationSettings
 import com.peto.ramap.ui.task.TaskPolicy
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.flow.first
@@ -76,6 +77,7 @@ class OverviewViewModel(
         initialState(loginRepository, personalizationStore),
     ) {
     private var pendingShopAction: PendingShopAction? = null
+    private var notificationSettingsTarget: OpenNotificationSettings? = null
     private var previousBookmarkOwner: String? = null
     private var observedAccountId = loginRepository.currentAccountId()
     private var notificationPermissionRequestGeneration = 0L
@@ -332,8 +334,11 @@ class OverviewViewModel(
         shop: RamenShop,
         source: AnalyticsSource,
     ) {
-        if (requireLogin(PendingShopAction.OpenNotificationSettings(shop, source))) return
-        openNotificationSettings(shop.id)
+        val sheetShopId = currentSheetShopId()
+        if (sheetShopId != null && sheetShopId != shop.id) return
+        val target = OpenNotificationSettings(shop, source)
+        if (requireLogin(target)) return
+        openNotificationSettings(target)
     }
 
     private fun handleNotificationSettingsIntent(intent: ShopOverviewIntent): Boolean {
@@ -342,7 +347,7 @@ class OverviewViewModel(
             ShopOverviewIntent.OnNotificationSelectAll -> changeNotificationDraft { settings, _ -> settings.catalog.selectAll() }
             ShopOverviewIntent.OnNotificationClear -> clearNotificationDraft()
             ShopOverviewIntent.OnNotificationCancel -> closeNotificationSettings()
-            ShopOverviewIntent.OnNotificationRetry -> currentState.notificationSettingsShopId?.let(::openNotificationSettings)
+            ShopOverviewIntent.OnNotificationRetry -> notificationSettingsTarget?.let(::openNotificationSettings)
             ShopOverviewIntent.OnNotificationSave -> saveNotificationSettings()
             is ShopOverviewIntent.OnNotificationPermissionChecked -> updateNotificationPermission(intent.granted)
             is ShopOverviewIntent.OnNotificationPermissionResult -> completeNotificationPermission(intent.generation, intent.granted)
@@ -373,10 +378,11 @@ class OverviewViewModel(
         }
     }
 
-    private fun openNotificationSettings(shopId: String) {
-        if (currentSheetShopId() != shopId) return
+    private fun openNotificationSettings(target: OpenNotificationSettings) {
         val accountId = loginRepository.currentAccountId() ?: return
+        val shopId = target.shop.id
         closeNotificationSettings()
+        notificationSettingsTarget = target
         reduce { copy(notificationSettingsShopId = shopId) }
         launchResultTask(
             taskKey = NOTIFICATION_TASK_KEY,
@@ -427,6 +433,7 @@ class OverviewViewModel(
 
     private fun saveNotificationSettings() {
         if (currentState.isNotificationSettingsSaving || currentState.hasNotificationRevisionMismatch) return
+        val target = notificationSettingsTarget ?: return
         val settings = currentState.notificationSettings ?: return
         val draft = currentState.notificationDraft ?: return
         val clearAll = currentState.shouldClearAllNotificationPreferences
@@ -445,6 +452,9 @@ class OverviewViewModel(
             onSuccess = { persisted ->
                 if (isCurrentNotificationRequest(settings.accountId, settings.shopId) && persisted.accountId == settings.accountId && persisted.shopId == settings.shopId) {
                     personalizationStore.publishNotificationSettings(persisted)
+                    if (target.source == AnalyticsSource.SUBSCRIBED_SHOPS && settings.hasEffectiveSubscription != persisted.hasEffectiveSubscription) {
+                        mapAnalytics.logShopSubscribed(target.shop, persisted.hasEffectiveSubscription, target.source)
+                    }
                     closeNotificationSettings()
                     showToast(Res.string.shop_notification_settings_save_success, ToastType.SUCCESS)
                 }
@@ -465,14 +475,12 @@ class OverviewViewModel(
     private fun isCurrentNotificationRequest(
         accountId: String,
         shopId: String,
-    ): Boolean =
-        loginRepository.currentAccountId() == accountId &&
-            currentState.notificationSettingsShopId == shopId &&
-            currentSheetShopId() == shopId
+    ): Boolean = loginRepository.currentAccountId() == accountId && currentState.notificationSettingsShopId == shopId
 
     private fun closeNotificationSettings() {
         cancelTask(NOTIFICATION_TASK_KEY)
         cancelTask(NOTIFICATION_SAVE_TASK_KEY)
+        notificationSettingsTarget = null
         reduce {
             copy(
                 notificationSettingsShopId = null,
@@ -577,14 +585,14 @@ class OverviewViewModel(
 
     private fun executePendingAction(action: PendingShopAction) {
         when (action) {
-            is PendingShopAction.OpenNotificationSettings -> toggleShopNotification(action.shop, action.source)
+            is OpenNotificationSettings -> toggleShopNotification(action.shop, action.source)
         }
     }
 
     private fun requestLoginGuide(action: PendingShopAction) {
         val description =
             when (action) {
-                is PendingShopAction.OpenNotificationSettings -> Res.string.login_required_notification_description
+                is OpenNotificationSettings -> Res.string.login_required_notification_description
             }
         viewModelScope.launch {
             postSideEffect(ShopOverviewSideEffect.Interaction(ShowLoginGuide(description)))

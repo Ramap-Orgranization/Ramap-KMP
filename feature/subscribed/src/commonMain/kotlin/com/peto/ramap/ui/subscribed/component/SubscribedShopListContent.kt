@@ -23,10 +23,10 @@ import com.peto.ramap.preview.RamenShopPreviewParameterProvider
 import com.peto.ramap.preview.ShopEventPreviewParameterProvider
 import com.peto.ramap.theme.RamapTheme
 import com.peto.ramap.ui.subscribed.contract.SubscribedShopsUiState
-import com.peto.ramap.ui.subscribed.model.SubscribedRemovalTarget
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.notification_removal_confirm_action
+import ramap.shared.generated.resources.shop_notification_settings_title
 import ramap.shared.generated.resources.subscribed_shops_empty_title
 import ramap.shared.generated.resources.top_level_tab_event
 
@@ -34,8 +34,9 @@ import ramap.shared.generated.resources.top_level_tab_event
 internal fun SubscribedShopListContent(
     uiState: SubscribedShopsUiState,
     onShopOpen: (RamenShop) -> Unit,
+    onShopNotificationSettingsOpen: (RamenShop) -> Unit,
     onEventOpen: (ShopEvent) -> Unit,
-    onRemovalRequested: (SubscribedRemovalTarget) -> Unit,
+    onEventRemovalRequested: (String) -> Unit,
 ) {
     if (uiState.showsEmptyContent) {
         ShopsEmptyContent(
@@ -67,9 +68,7 @@ internal fun SubscribedShopListContent(
                             isCancelled = event.isCancelledToday,
                             isSoldOut = event.isSoldOutToday,
                             actionLabel = stringResource(Res.string.notification_removal_confirm_action),
-                            onAction = {
-                                onRemovalRequested(SubscribedRemovalTarget.EventOverride(event.id))
-                            },
+                            onAction = { onEventRemovalRequested(event.id) },
                             modifier = Modifier.padding(horizontal = 20.dp),
                         )
                     }
@@ -80,10 +79,8 @@ internal fun SubscribedShopListContent(
                 RamenShopSummaries(
                     shops = uiState.shops,
                     onShopClick = onShopOpen,
-                    itemActionLabel = stringResource(Res.string.notification_removal_confirm_action),
-                    onItemAction = {
-                        onRemovalRequested(SubscribedRemovalTarget.Shop(it.id))
-                    },
+                    itemActionLabel = stringResource(Res.string.shop_notification_settings_title),
+                    onItemAction = onShopNotificationSettingsOpen,
                     modifier = Modifier.padding(horizontal = 15.dp),
                 )
             }
@@ -107,8 +104,9 @@ private fun SubscribedShopListContentPreview() {
                     haveEventsLoaded = true,
                 ),
             onShopOpen = {},
+            onShopNotificationSettingsOpen = {},
             onEventOpen = {},
-            onRemovalRequested = {},
+            onEventRemovalRequested = {},
         )
     }
 }
@@ -124,8 +122,9 @@ private fun SubscribedShopListContentEmptyPreview() {
                     haveEventsLoaded = true,
                 ),
             onShopOpen = {},
+            onShopNotificationSettingsOpen = {},
             onEventOpen = {},
-            onRemovalRequested = {},
+            onEventRemovalRequested = {},
         )
     }
 }

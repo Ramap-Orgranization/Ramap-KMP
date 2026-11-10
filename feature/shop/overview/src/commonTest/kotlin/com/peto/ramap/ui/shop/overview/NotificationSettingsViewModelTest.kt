@@ -1,6 +1,7 @@
 package com.peto.ramap.ui.shop.overview
 
 import app.cash.turbine.test
+import com.peto.ramap.analytics.AnalyticsSource
 import com.peto.ramap.core.result.RamapError
 import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.coroutinesTest
@@ -30,6 +31,37 @@ import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class NotificationSettingsViewModelTest {
+    @Test
+    fun `구독 목록에서 매장 상세를 열지 않고 기존 알림을 불러와 해제할 수 있다`() =
+        coroutinesTest {
+            val fixture = OverviewViewModelFixture(LoginSessionState.AUTHENTICATED)
+            try {
+                val shop = ramenShopFixture(id = "subscribed-shop")
+                val eventSelection = fixture.notificationCatalog.selection(setOf(NotificationTypeId("event")))
+                fixture.personalization.updateShopNotification(shop.id, true)
+                fixture.fetchNotificationSettings = { shopId, accountId ->
+                    RamapResult.Success(NotificationSettings(accountId, shopId, fixture.notificationCatalog, eventSelection))
+                }
+                fixture.viewModel.dispatch(ShopOverviewIntent.OnShopNotificationToggled(shop, AnalyticsSource.SUBSCRIBED_SHOPS))
+                runCurrent()
+
+                assertEquals(shop.id, fixture.viewModel.uiState.value.notificationSettingsShopId)
+                assertEquals(eventSelection, fixture.viewModel.uiState.value.notificationDraft)
+                assertTrue(fixture.requestedShopIds.isEmpty())
+
+                fixture.viewModel.dispatch(ShopOverviewIntent.OnNotificationClear)
+                fixture.viewModel.dispatch(ShopOverviewIntent.OnNotificationSave)
+                runCurrent()
+
+                assertEquals(listOf(true), fixture.notificationClearAllSaveRequests)
+                assertEquals(listOf(fixture.notificationCatalog.clear()), fixture.notificationSaveRequests)
+                assertNull(fixture.viewModel.uiState.value.notificationSettingsShopId)
+                assertFalse(shop.id in fixture.viewModel.uiState.value.notificationShopIds)
+            } finally {
+                fixture.store.clear()
+            }
+        }
+
     @Test
     fun `서버에서 새로 추가한 항목을 순서와 제목대로 읽고 선택해 저장한다`() =
         settingsScenario { fixture ->

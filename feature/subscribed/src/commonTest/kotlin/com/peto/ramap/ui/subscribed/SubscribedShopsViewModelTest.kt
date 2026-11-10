@@ -3,7 +3,6 @@ package com.peto.ramap.ui.subscribed
 import app.cash.turbine.test
 import com.peto.ramap.analytics.AnalyticsSource
 import com.peto.ramap.analytics.common.event.EventNotificationToggled
-import com.peto.ramap.analytics.common.shop.SubscribedToggled
 import com.peto.ramap.core.result.RamapError
 import com.peto.ramap.coroutinesTest
 import com.peto.ramap.designsystem.toast.model.ToastData
@@ -12,9 +11,10 @@ import com.peto.ramap.domain.model.event.EventVenue
 import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.model.event.ShopEventType
 import com.peto.ramap.domain.model.notification.EventNotificationOverride
+import com.peto.ramap.domain.model.notification.NotificationCatalog
+import com.peto.ramap.domain.model.notification.NotificationSettings
 import com.peto.ramap.domain.model.personalization.Personalization
 import com.peto.ramap.domain.model.shop.RamenShops
-import com.peto.ramap.domain.store.PersonalizationBootstrapState
 import com.peto.ramap.fake.FakeAnalyticsTracker
 import com.peto.ramap.fake.FakeNotificationSettingsRepository
 import com.peto.ramap.fake.FakePersonalizationRepository
@@ -22,7 +22,6 @@ import com.peto.ramap.fake.FakeRamenShopRepository
 import com.peto.ramap.fixture.ramenShopFixture
 import com.peto.ramap.ui.subscribed.contract.SubscribedShopsIntent
 import com.peto.ramap.ui.subscribed.contract.SubscribedShopsSideEffect
-import com.peto.ramap.ui.subscribed.model.SubscribedRemovalTarget
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runCurrent
 import ramap.shared.generated.resources.Res
@@ -141,96 +140,38 @@ class SubscribedShopsViewModelTest {
         }
 
     @Test
-    fun `구독 매장 해제를 확인하면 목록과 저장소에서 제거한다`() =
+    fun `매장 알림을 모두 해제한 설정이 저장되면 해당 매장만 목록에서 제거한다`() =
         coroutinesTest {
-            val shop = ramenShopFixture(id = "subscribed-shop")
-            val repository = FakeNotificationSettingsRepository(shopIds = mutableSetOf(shop.id))
-            val analyticsTracker = FakeAnalyticsTracker()
+            val clearedShop = ramenShopFixture(id = "cleared-shop")
+            val remainingShop = ramenShopFixture(id = "remaining-shop")
             val personalizationStore =
                 FakePersonalizationRepository(
-                    Personalization(notificationShopIds = setOf(shop.id)),
+                    Personalization(notificationShopIds = setOf(clearedShop.id, remainingShop.id)),
                 )
             val viewModel =
                 SubscribedShopsViewModel(
                     personalizationStore = personalizationStore,
-                    notificationRepository = repository,
+                    notificationRepository = FakeNotificationSettingsRepository(),
                     ramenShopRepository =
-                        FakeRamenShopRepository(fetchByIdsResult = RamenShops(listOf(shop))),
-                    analyticsTracker = analyticsTracker,
-                )
-            runCurrent()
-
-            viewModel.dispatch(
-                SubscribedShopsIntent.OnRemovalConfirmed(
-                    SubscribedRemovalTarget.Shop(shop.id),
-                ),
-            )
-            runCurrent()
-
-            assertEquals(RamenShops(emptyMap()), viewModel.uiState.value.shops)
-            assertEquals(false, viewModel.uiState.value.isOverlayLoading)
-            assertTrue(
-                (personalizationStore.state.value as PersonalizationBootstrapState.Success)
-                    .value
-                    .notificationShopIds
-                    .isEmpty(),
-            )
-            assertEquals(
-                SubscribedToggled(
-                    shopId = shop.id,
-                    shopName = shop.name,
-                    enabled = false,
-                    source = AnalyticsSource.SUBSCRIBED_SHOPS,
-                ),
-                analyticsTracker.events.single(),
-            )
-        }
-
-    @Test
-    fun `구독 매장 해제에 실패하면 목록을 유지하고 다이얼로그를 닫은 뒤 에러 토스트를 표시한다`() =
-        coroutinesTest {
-            val shop = ramenShopFixture(id = "subscribed-shop")
-            val repository =
-                FakeNotificationSettingsRepository(shopIds = mutableSetOf(shop.id)).apply {
-                    shopNotificationError =
-                        RamapError.Unknown(IllegalStateException("failure"))
-                }
-            val personalizationStore =
-                FakePersonalizationRepository(
-                    Personalization(notificationShopIds = setOf(shop.id)),
-                ).apply {
-                    shopNotificationError =
-                        RamapError.Unknown(IllegalStateException("failure"))
-                }
-            val viewModel =
-                SubscribedShopsViewModel(
-                    personalizationStore = personalizationStore,
-                    notificationRepository = repository,
-                    ramenShopRepository =
-                        FakeRamenShopRepository(fetchByIdsResult = RamenShops(listOf(shop))),
+                        FakeRamenShopRepository(fetchByIdsResult = RamenShops(listOf(clearedShop, remainingShop))),
                     analyticsTracker = FakeAnalyticsTracker(),
                 )
             runCurrent()
+            assertEquals(RamenShops(listOf(clearedShop, remainingShop)), viewModel.uiState.value.shops)
 
-            viewModel.sideEffect.test {
-                viewModel.dispatch(
-                    SubscribedShopsIntent.OnRemovalConfirmed(
-                        SubscribedRemovalTarget.Shop(shop.id),
-                    ),
-                )
+            val catalog = NotificationCatalog(revision = 1, types = emptyList())
+            personalizationStore.publishNotificationSettings(
+                NotificationSettings(
+                    accountId = "account",
+                    shopId = clearedShop.id,
+                    catalog = catalog,
+                    selection = catalog.clear(),
+                ),
+            )
+            runCurrent()
 
-                assertEquals(
-                    SubscribedShopsSideEffect.ShowToast(
-                        ToastData(
-                            Res.string.personalization_update_failure_message,
-                            ToastType.ERROR,
-                        ),
-                    ),
-                    awaitItem(),
-                )
-                assertEquals(RamenShops(listOf(shop)), viewModel.uiState.value.shops)
-                assertEquals(false, viewModel.uiState.value.isOverlayLoading)
-            }
+            assertEquals(RamenShops(listOf(remainingShop)), viewModel.uiState.value.shops)
+            assertEquals(false, viewModel.uiState.value.isOverlayLoading)
         }
 
     @Test
@@ -252,9 +193,7 @@ class SubscribedShopsViewModelTest {
             runCurrent()
 
             viewModel.dispatch(
-                SubscribedShopsIntent.OnRemovalConfirmed(
-                    SubscribedRemovalTarget.EventOverride(event.id),
-                ),
+                SubscribedShopsIntent.OnEventRemovalConfirmed(event.id),
             )
             runCurrent()
 
@@ -295,9 +234,7 @@ class SubscribedShopsViewModelTest {
 
             viewModel.sideEffect.test {
                 viewModel.dispatch(
-                    SubscribedShopsIntent.OnRemovalConfirmed(
-                        SubscribedRemovalTarget.EventOverride(event.id),
-                    ),
+                    SubscribedShopsIntent.OnEventRemovalConfirmed(event.id),
                 )
 
                 assertEquals(
