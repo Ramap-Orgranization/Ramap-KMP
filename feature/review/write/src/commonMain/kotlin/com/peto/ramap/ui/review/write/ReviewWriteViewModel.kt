@@ -24,6 +24,7 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.review_load_failed
+import ramap.shared.generated.resources.review_save_failed_after_profile_published
 import ramap.shared.generated.resources.shop_review_failure_message
 
 class ReviewWriteViewModel(
@@ -272,7 +273,7 @@ class ReviewWriteViewModel(
                     submitDraft(draft)
                 }
             },
-            onError = { showSubmitFailureIfAuthenticated() },
+            onError = { showSubmitFailure() },
         )
     }
 
@@ -304,12 +305,15 @@ class ReviewWriteViewModel(
             loadKey = ReviewWriteLoadKey.Submit,
             policy = TaskPolicy.IgnoreNew,
             request = { profileRepository.updateProfileVisibility(isPublic = true) },
-            onSuccess = { submitDraft(draft) },
-            onError = { showSubmitFailureIfAuthenticated() },
+            onSuccess = { profile -> submitDraft(draft, madeProfilePublic = profile.isPublic) },
+            onError = { showSubmitFailure() },
         )
     }
 
-    private fun submitDraft(draft: ReviewWriteUiState) {
+    private fun submitDraft(
+        draft: ReviewWriteUiState,
+        madeProfilePublic: Boolean = false,
+    ) {
         val shopId = shopId ?: return
         val editReviewId = reviewId
         launchTask(
@@ -320,7 +324,7 @@ class ReviewWriteViewModel(
             val result = executeSubmitRequest(shopId, editReviewId, draft)
             val isInactive = !currentCoroutineContext().isActive
             if (isInactive) return@launchTask
-            handleSubmitResult(result)
+            handleSubmitResult(result, madeProfilePublic)
         }
     }
 
@@ -346,9 +350,12 @@ class ReviewWriteViewModel(
             )
         }
 
-    private suspend fun handleSubmitResult(result: RamapResult<Unit>) {
+    private suspend fun handleSubmitResult(
+        result: RamapResult<Unit>,
+        madeProfilePublic: Boolean,
+    ) {
         when (result) {
-            is RamapResult.Error -> showSubmitFailureIfAuthenticated()
+            is RamapResult.Error -> showSubmitFailure(madeProfilePublic)
             is RamapResult.Success -> {
                 reduce { copy(body = "", images = emptyList(), isPublic = true) }
                 postSideEffect(ReviewWriteSideEffect.Submitted)
@@ -356,10 +363,16 @@ class ReviewWriteViewModel(
         }
     }
 
-    private suspend fun showSubmitFailureIfAuthenticated() {
+    private suspend fun showSubmitFailure(madeProfilePublic: Boolean = false) {
+        val message =
+            if (madeProfilePublic) {
+                Res.string.review_save_failed_after_profile_published
+            } else {
+                Res.string.shop_review_failure_message
+            }
         postSideEffect(
             ReviewWriteSideEffect.ShowToast(
-                ToastData(Res.string.shop_review_failure_message, ToastType.ERROR),
+                ToastData(message, ToastType.ERROR),
             ),
         )
     }

@@ -66,6 +66,7 @@
     <string name="shop_review_submit">리뷰 등록</string>
     <string name="shop_review_cancel">취소</string>
     <string name="shop_review_failure_message">리뷰를 저장하지 못했어요. 다시 시도해 주세요.</string>
+    <string name="review_save_failed_after_profile_published">프로필이 공개로 변경됐어요. 리뷰를 저장하지 못했어요.</string>
     <string name="review_author_unknown">알 수 없는 사용자</string>
     <string name="review_author_withdrawn">탈퇴한 사용자</string>
     <string name="review_report">신고</string>

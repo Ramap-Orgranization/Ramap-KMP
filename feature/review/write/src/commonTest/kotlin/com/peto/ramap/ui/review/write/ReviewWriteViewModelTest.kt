@@ -24,6 +24,7 @@ import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.withContext
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.review_load_failed
+import ramap.shared.generated.resources.review_save_failed_after_profile_published
 import ramap.shared.generated.resources.shop_review_failure_message
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -359,6 +360,36 @@ class ReviewWriteViewModelTest {
 
             assertEquals(1, reviews.submissions.size)
             assertEquals("12345", viewModel.uiState.value.body)
+            assertFalse(viewModel.uiState.value.isSubmitting)
+        }
+
+    @Test
+    fun `프로필 공개만 성공하면 공개 상태와 리뷰 저장 실패를 안내하고 초안을 유지한다`() =
+        coroutinesTest {
+            val profiles = FakeProfileRepository(isProfilePublic = false)
+            val reviews = FakeReviewRepository(submitResult = RamapResult.Error(RamapError.Http(500)))
+            val shop = ramenShopFixture(id = "shop")
+            val ramenShops = FakeRamenShopRepository(shopOverview = ShopOverView(shop, 0, null, null, null))
+            val viewModel = ReviewWriteViewModel(reviews, profiles, ramenShops)
+            val image = reviewImage(1)
+
+            viewModel.sideEffect.test {
+                viewModel.dispatch(ReviewWriteIntent.Open("shop"))
+                runCurrent()
+                viewModel.dispatch(ReviewWriteIntent.AddImage(image))
+                viewModel.dispatch(ReviewWriteIntent.ChangeBody("리뷰 초안입니다"))
+                viewModel.dispatch(ReviewWriteIntent.Submit)
+                runCurrent()
+                viewModel.dispatch(ReviewWriteIntent.ConfirmSubmitWithPublicProfile)
+
+                assertEquals(
+                    ReviewWriteSideEffect.ShowToast(ToastData(Res.string.review_save_failed_after_profile_published, ToastType.ERROR)),
+                    awaitItem(),
+                )
+            }
+            assertTrue(profiles.isProfilePublic)
+            assertEquals("리뷰 초안입니다", viewModel.uiState.value.body)
+            assertEquals(listOf(image), viewModel.uiState.value.images)
             assertFalse(viewModel.uiState.value.isSubmitting)
         }
 
