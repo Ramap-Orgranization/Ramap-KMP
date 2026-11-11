@@ -42,14 +42,6 @@ Run the iOS app from Xcode by opening `iosApp`.
 
 Create new Ramap Git worktrees and separate app checkouts under `~/Documents/Android/worktrees`.
 
-Copy the ignored Firebase configuration from the primary Ramap-KMP checkout into the same relative paths in each new app checkout.
-
-- `androidApp/google-services.json` enables the Google Services and Crashlytics Gradle plugins and provides the base Android configuration.
-- `androidApp/src/debug/google-services.json` provides the Firebase client for `com.peto.ramap.debug`.
-- `iosApp/iosApp/GoogleService-Info.plist` provides the Firebase configuration for iOS runs.
-
-Keep these files Git-ignored. When building the Android debug app, verify that `:androidApp:processDebugGoogleServices` runs successfully for `com.peto.ramap.debug`. The app initializes Firebase on startup, so a debug APK built with the Firebase plugins skipped can crash on launch.
-
 When a Ramap task uses a Git worktree or a separate checkout for app changes, open that checkout's project root in Android Studio before starting implementation, builds, or tests. Verify that Android Studio opened the exact task path, then use that path for commands and agent handoffs.
 
 ## Implementation Agent Routing
