@@ -7,11 +7,13 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.key
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.peto.ramap.designsystem.component.LoadErrorContent
 import com.peto.ramap.designsystem.indicator.RamenLoadingIndicator
+import com.peto.ramap.designsystem.review.ReviewCardImages
 import com.peto.ramap.designsystem.review.ReviewWriteCard
 import com.peto.ramap.domain.model.review.Review
 import com.peto.ramap.domain.model.review.ReviewAuthor
@@ -65,6 +67,18 @@ internal fun reviewsContent(
                 compact = true,
                 modifier = Modifier.fillMaxWidth(),
             )
+        }
+    }
+    val photoUrls = uiState.photoUrls
+    if (photoUrls.isNotEmpty()) {
+        scope.item(key = "shop_review_photos", contentType = "review_photos") {
+            key(uiState.shopId, uiState.currentUserId) {
+                ReviewCardImages(
+                    imageUrls = photoUrls,
+                    modifier = Modifier.padding(bottom = 20.dp),
+                    centerSingleImage = false,
+                )
+            }
         }
     }
     scope.item(key = "shop_review_write", contentType = "review_write") {
@@ -122,7 +136,7 @@ private fun ReviewsContentPreview() {
                                             shopId = "preview-shop",
                                             body = "국물이 진하고 면발의 식감이 아주 좋습니다. 또 방문하고 싶네요!",
                                             createdAt = "2026-02-15T12:00:00Z",
-                                            imageUrls = emptyList(),
+                                            imageUrls = listOf("https://example.com/review-photo-1.jpg", "https://example.com/review-photo-2.jpg"),
                                             author = ReviewAuthor("preview-author-1", "면발수집가"),
                                         ),
                                         Review(
