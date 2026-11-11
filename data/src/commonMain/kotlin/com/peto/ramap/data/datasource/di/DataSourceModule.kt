@@ -26,8 +26,6 @@ import com.peto.ramap.data.datasource.notice.OperatingNoticeDataSource
 import com.peto.ramap.data.datasource.notice.RemoteOperatingNoticeDataSource
 import com.peto.ramap.data.datasource.notification.PushRegistrationDataSource
 import com.peto.ramap.data.datasource.notification.RemotePushRegistrationDataSource
-import com.peto.ramap.data.datasource.onboarding.RemoteShopSuggestionsDataSource
-import com.peto.ramap.data.datasource.onboarding.ShopSuggestionsDataSource
 import com.peto.ramap.data.datasource.personalization.BookmarkShopDataSource
 import com.peto.ramap.data.datasource.personalization.NotificationDataSource
 import com.peto.ramap.data.datasource.personalization.RemoteBookmarkShopDataSource
@@ -105,7 +103,6 @@ val dataSourceModule =
         single<ShopRankingDataSource> {
             RemoteShopRankingDataSource(get<SupabaseClient>())
         }
-        single<ShopSuggestionsDataSource> { RemoteShopSuggestionsDataSource(get()) }
         single<ShopWaitingSystemDataSource> {
             RemoteShopWaitingSystemDataSource(get<SupabaseClient>())
         }

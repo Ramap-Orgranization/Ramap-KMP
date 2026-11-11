@@ -34,7 +34,6 @@ import com.peto.ramap.data.repository.DefaultReviewRepository
 import com.peto.ramap.data.repository.DefaultShopMenuRepository
 import com.peto.ramap.data.repository.DefaultShopRankingRepository
 import com.peto.ramap.data.repository.DefaultShopReportRepository
-import com.peto.ramap.data.repository.DefaultShopSuggestionsRepository
 import com.peto.ramap.data.repository.DefaultShopWaitingSystemRepository
 import com.peto.ramap.data.repository.DefaultSubscribedShopRepository
 import com.peto.ramap.data.repository.DefaultUserModerationRepository
@@ -64,7 +63,6 @@ import com.peto.ramap.domain.repository.ReviewRepository
 import com.peto.ramap.domain.repository.ShopMenuRepository
 import com.peto.ramap.domain.repository.ShopRankingRepository
 import com.peto.ramap.domain.repository.ShopReportRepository
-import com.peto.ramap.domain.repository.ShopSuggestionsRepository
 import com.peto.ramap.domain.repository.ShopWaitingSystemRepository
 import com.peto.ramap.domain.repository.SubscribedShopRepository
 import com.peto.ramap.domain.repository.UserModerationRepository
@@ -128,5 +126,4 @@ val repositoryModule =
         single<ShopRankingRepository> {
             DefaultShopRankingRepository(get())
         }
-        single<ShopSuggestionsRepository> { DefaultShopSuggestionsRepository(get()) }
     }
