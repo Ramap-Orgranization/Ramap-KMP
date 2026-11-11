@@ -1,5 +1,6 @@
 package com.peto.ramap.data.feed
 
+import com.peto.ramap.data.datasource.review.ReviewCommentDataSource
 import com.peto.ramap.data.datasource.review.ReviewImageResolver
 import com.peto.ramap.data.model.ReviewFeedPageResponse
 import com.peto.ramap.data.model.ReviewResponse
@@ -14,6 +15,7 @@ import kotlinx.serialization.json.put
 internal class RemoteFeedDataSource(
     private val client: SupabaseClient,
     private val images: ReviewImageResolver,
+    private val comments: ReviewCommentDataSource,
 ) : FeedDataSource {
     override suspend fun fetchReviewsPage(
         cursor: ReviewFeedCursor?,
@@ -43,7 +45,9 @@ internal class RemoteFeedDataSource(
                         if (sort == ReviewFeedSort.POPULAR) put(PARAM_LIKE_COUNT, cursor?.likeCount)
                     },
                 ).decodeAs<ReviewFeedPageResponse>()
-        return page.copy(reviews = images.resolveProfileReviews(page.reviews))
+        val counts = comments.fetchCounts(page.reviews.filterNot { it.review.isBlocked }.map { it.review.id })
+        val reviews = page.reviews.map { it.copy(review = it.review.copy(commentCount = counts[it.review.id])) }
+        return page.copy(reviews = images.resolveProfileReviews(reviews))
     }
 
     override suspend fun fetchBlockedReviewOnce(reviewId: String): ReviewResponse? {
