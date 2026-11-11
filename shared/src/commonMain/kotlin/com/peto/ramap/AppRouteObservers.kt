@@ -124,11 +124,16 @@ private fun HandleShopDeepLink(
             val deepLink = parser.parse(value)
             if (deepLink is ShopDeepLink.Shop) {
                 appAnalytics.logDeepLinkParseSucceeded(deepLink.shopId)
-                appAnalytics.logSharedShopLinkOpened(deepLink.shopId)
-                navigationState.showShopOnMap(
-                    shopId = deepLink.shopId,
-                    source = NavigationSource.SHARED_LINK,
-                )
+                val reviewId = deepLink.reviewId
+                if (reviewId != null) {
+                    navigationState.showReviewDetail(reviewId)
+                } else {
+                    appAnalytics.logSharedShopLinkOpened(deepLink.shopId)
+                    navigationState.showShopOnMap(
+                        shopId = deepLink.shopId,
+                        source = NavigationSource.SHARED_LINK,
+                    )
+                }
                 appAnalytics.logDeepLinkNavigationSucceeded(deepLink.shopId)
             } else {
                 appAnalytics.logDeepLinkNavigationFailed()
@@ -197,6 +202,7 @@ private fun HandleNotificationDeepLink(
                         navigationState.showEvent(destination.eventId)
                     }
                     is NotificationDeepLink.OperatingNotice -> navigationState.showOperatingNotices(destination.noticeId)
+                    is NotificationDeepLink.Review -> navigationState.showReviewDetail(destination.reviewId)
                     NotificationDeepLink.OperatingNotices -> navigationState.showOperatingNotices()
                     is NotificationDeepLink.ExternalUrl -> ExternalUriOpener.open(destination.url)
                     NotificationDeepLink.None -> Unit

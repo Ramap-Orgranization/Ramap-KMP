@@ -32,6 +32,8 @@ import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.InstagramColor
 import com.peto.ramap.theme.RamapTheme
+import org.jetbrains.compose.resources.DrawableResource
+import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
@@ -46,6 +48,10 @@ private val ReviewWriteCardWatermarkColor = ChromaticColor.Apricot400.copy(alpha
 fun ReviewWriteCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    prompt: StringResource = Res.string.shop_review_prompt_title,
+    actionLabel: StringResource = Res.string.shop_review_write_action,
+    icon: DrawableResource = Res.drawable.ic_profile_edit,
+    enabled: Boolean = true,
 ) {
     Box(
         modifier =
@@ -58,7 +64,7 @@ fun ReviewWriteCard(
                 ),
     ) {
         Image(
-            painter = painterResource(resource = Res.drawable.ic_profile_edit),
+            painter = painterResource(resource = icon),
             contentDescription = null,
             colorFilter = ColorFilter.tint(color = ReviewWriteCardWatermarkColor),
             modifier =
@@ -82,13 +88,14 @@ fun ReviewWriteCard(
             verticalArrangement = Arrangement.spacedBy(space = 14.dp),
         ) {
             AppText(
-                text = stringResource(resource = Res.string.shop_review_prompt_title),
+                text = stringResource(resource = prompt),
                 style = AppTextStyle.T2,
                 color = GrayColor.C500,
             )
 
             Surface(
                 onClick = onClick,
+                enabled = enabled,
                 modifier =
                     Modifier
                         .fillMaxWidth()
@@ -105,7 +112,7 @@ fun ReviewWriteCard(
                         horizontalArrangement = Arrangement.Center,
                     ) {
                         Image(
-                            painter = painterResource(resource = Res.drawable.ic_profile_edit),
+                            painter = painterResource(resource = icon),
                             contentDescription = null,
                             colorFilter = ColorFilter.tint(color = InstagramColor.Orange),
                             modifier = Modifier.size(size = 18.dp),
@@ -114,7 +121,7 @@ fun ReviewWriteCard(
                         Spacer(modifier = Modifier.width(width = 6.dp))
 
                         AppText(
-                            text = stringResource(resource = Res.string.shop_review_write_action),
+                            text = stringResource(resource = actionLabel),
                             style = AppTextStyle.T3,
                             color = CommonColor.White,
                             textAlign = TextAlign.Center,

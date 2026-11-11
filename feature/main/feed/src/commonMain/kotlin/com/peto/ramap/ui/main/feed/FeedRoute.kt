@@ -31,6 +31,8 @@ fun FeedRoute(
     shopDetailContent: @Composable (String, () -> Unit) -> Unit,
     viewModel: FeedViewModel = koinViewModel(),
     toastManager: ToastManager = koinInject(),
+    reviewCommentsContent: (@Composable (String) -> Unit)? = null,
+    onOpenReviewDetail: ((String) -> Unit)? = null,
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val listState = rememberLazyListState()
@@ -54,6 +56,8 @@ fun FeedRoute(
             onOpenShop = { detailShopId = it },
             onEditReview = onEditReview,
             onFindVisitedShop = onFindVisitedShop,
+            reviewCommentsContent = reviewCommentsContent,
+            onOpenReviewDetail = onOpenReviewDetail,
         )
         FeedDialogs(state = state, onIntent = viewModel::dispatch)
         detailShopId?.let { shopId ->

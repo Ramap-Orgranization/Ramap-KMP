@@ -70,6 +70,8 @@ internal fun FeedContent(
     onOpenShop: (String) -> Unit,
     onEditReview: (String, String) -> Unit,
     onFindVisitedShop: () -> Unit,
+    reviewCommentsContent: (@Composable (String) -> Unit)? = null,
+    onOpenReviewDetail: ((String) -> Unit)? = null,
 ) {
     val pullToRefreshState = rememberPullToRefreshState()
     LaunchedEffect(state.sort, state.filter) {
@@ -144,6 +146,8 @@ internal fun FeedContent(
                             onOpenProfile = onOpenProfile,
                             onOpenShop = onOpenShop,
                             onEditReview = onEditReview,
+                            reviewCommentsContent = reviewCommentsContent,
+                            onOpenReviewDetail = onOpenReviewDetail,
                         )
                     }
                     if (state.hasError || state.hasAppendError) {

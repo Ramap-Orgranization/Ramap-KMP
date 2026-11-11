@@ -6,6 +6,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
@@ -41,6 +42,24 @@ fun AppText(
             maxLines = maxLines,
             overflow = overflow,
             onTextLayout = onTextLayout,
+        )
+    }
+}
+
+@Composable
+fun AppText(
+    text: AnnotatedString,
+    style: AppTextStyle,
+    color: Color,
+    modifier: Modifier = Modifier,
+) {
+    val textStyle = style.toTextStyle(LocalAppTypography.current)
+    CompositionLocalProvider(LocalDensity provides Density(LocalDensity.current.density, fontScale = 1f)) {
+        Text(
+            text = text,
+            modifier = modifier,
+            style = textStyle,
+            color = color,
         )
     }
 }

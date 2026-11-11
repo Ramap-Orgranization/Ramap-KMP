@@ -1,5 +1,7 @@
 package com.peto.ramap.navigation.deeplink
 
+import kotlin.uuid.Uuid
+
 class ShopShareLinkFactory(
     private val config: ShopLinkConfig,
 ) {
@@ -7,6 +9,11 @@ class ShopShareLinkFactory(
         require(shopId.isNotBlank())
         return "${config.baseUrl.trimEnd('/')}/shops/${encodePathSegment(shopId)}"
     }
+
+    fun createReview(
+        shopId: String,
+        reviewId: String,
+    ): String = "${create(shopId)}?review=${Uuid.parse(reviewId)}"
 
     private fun encodePathSegment(value: String): String =
         buildString {

@@ -34,6 +34,7 @@ internal class OverlayState(
     private val loginGuideController: LoginGuideController,
 ) {
     var overlayProfileUserId by mutableStateOf<String?>(null)
+    var overlayReviewDetailId by mutableStateOf<String?>(null)
     var overlayReviewWriteArgs by mutableStateOf<Pair<String, String?>?>(null)
     var pendingProfileTarget by mutableStateOf<Pair<String, Boolean>?>(null)
     private var pendingReviewShopSearch = false
@@ -41,7 +42,7 @@ internal class OverlayState(
     private var reviewSearchRequestGeneration = 0L
 
     val isOverlayActive: Boolean
-        get() = overlayProfileUserId != null || overlayReviewWriteArgs != null
+        get() = overlayProfileUserId != null || overlayReviewWriteArgs != null || overlayReviewDetailId != null
 
     fun openProfile(
         userId: String,

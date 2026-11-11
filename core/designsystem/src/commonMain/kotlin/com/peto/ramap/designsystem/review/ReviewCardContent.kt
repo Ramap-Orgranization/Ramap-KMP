@@ -6,6 +6,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -25,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.domain.model.review.Review
 import com.peto.ramap.domain.model.review.ReviewModerationStatus
+import com.peto.ramap.extension.noRippleClickable
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.GrayColor
 import org.jetbrains.compose.resources.painterResource
@@ -33,6 +35,7 @@ import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.ic_review_private
 import ramap.shared.generated.resources.review_blocked_review
 import ramap.shared.generated.resources.review_collapse
+import ramap.shared.generated.resources.review_detail_title
 import ramap.shared.generated.resources.review_more
 import ramap.shared.generated.resources.review_private_status
 import ramap.shared.generated.resources.review_status_removed
@@ -43,6 +46,8 @@ fun ReviewCardContent(
     currentUserId: String?,
     currentProfileIsPublic: Boolean?,
     modifier: Modifier = Modifier,
+    showFullBody: Boolean = false,
+    onBodyClick: (() -> Unit)? = null,
 ) {
     var expanded by rememberSaveable(review.id, review.body) { mutableStateOf(false) }
     var hasOverflow by remember(review.id, review.body) { mutableStateOf(false) }
@@ -62,13 +67,24 @@ fun ReviewCardContent(
             text = review.body,
             style = AppTextStyle.B2,
             color = GrayColor.C500,
-            maxLines = if (expanded) Int.MAX_VALUE else 3,
+            modifier =
+                if (onBodyClick != null) {
+                    Modifier
+                        .fillMaxWidth()
+                        .noRippleClickable(
+                            onClickLabel = stringResource(Res.string.review_detail_title),
+                            onClick = onBodyClick,
+                        )
+                } else {
+                    Modifier
+                },
+            maxLines = if (expanded || showFullBody) Int.MAX_VALUE else 3,
             overflow = TextOverflow.Ellipsis,
             onTextLayout = { layout ->
                 if (!expanded) hasOverflow = layout.hasVisualOverflow
             },
         )
-        if (hasOverflow || expanded) {
+        if (!showFullBody && (hasOverflow || expanded)) {
             AppText(
                 text = stringResource(if (expanded) Res.string.review_collapse else Res.string.review_more),
                 modifier = Modifier.clickable(role = Role.Button) { expanded = !expanded },

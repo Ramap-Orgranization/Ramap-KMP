@@ -25,6 +25,10 @@ fun ReviewCardFooter(
     isLikeLoading: Boolean,
     actionsEnabled: Boolean,
     modifier: Modifier = Modifier,
+    commentsExpanded: Boolean = false,
+    canExpandComments: Boolean = false,
+    onCommentsToggle: (() -> Unit)? = null,
+    showWrittenTime: Boolean = true,
 ) {
     Row(
         modifier =
@@ -48,13 +52,21 @@ fun ReviewCardFooter(
                         Modifier
                     },
             )
+            if (onCommentsToggle != null) {
+                ReviewCommentButton(
+                    count = review.commentCount,
+                    expanded = commentsExpanded,
+                    enabled = actionsEnabled && canExpandComments,
+                    onToggle = onCommentsToggle,
+                )
+            }
         }
         Spacer(modifier = Modifier.weight(1f))
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.padding(top = 10.dp),
         ) {
-            val writtenTime = reviewWrittenTimeLabel(review.createdAt)
+            val writtenTime = if (showWrittenTime) reviewWrittenTimeLabel(review.createdAt) else null
             if (writtenTime != null) {
                 AppText(
                     text = writtenTime,

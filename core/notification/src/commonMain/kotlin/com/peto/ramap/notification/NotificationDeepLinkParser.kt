@@ -22,10 +22,14 @@ class NotificationDeepLinkParser {
             "operating_notices" -> {
                 when {
                     payload.keys == setOf("version", "action") -> NotificationDeepLink.OperatingNotices
-                    version.intOrNull == 2 && payload.keys == setOf("version", "action", "notice_id") ->
+                    (version.intOrNull ?: 0) >= 2 && payload.keys == setOf("version", "action", "notice_id") ->
                         payload.string("notice_id")?.takeIf(EVENT_ID::matches)?.let { NotificationDeepLink.OperatingNotice(it) }
                     else -> null
                 }
+            }
+            "review_detail" -> {
+                if (version.intOrNull != 3 || payload.keys != setOf("version", "action", "review_id")) return null
+                payload.string("review_id")?.takeIf(EVENT_ID::matches)?.let { NotificationDeepLink.Review(it) }
             }
             "external_url" -> {
                 if (payload.keys != setOf("version", "action", "url")) return null
@@ -45,7 +49,7 @@ class NotificationDeepLinkParser {
     private fun JsonObject.string(key: String): String? = (this[key] as? JsonPrimitive)?.takeIf { it.isString }?.content
 
     companion object {
-        const val PROTOCOL_VERSION = 2
+        const val PROTOCOL_VERSION = 3
         private const val MAX_PAYLOAD_LENGTH = 4096
         private const val LEGACY_EVENT_PREFIX = "ramap://notification/event?"
         private val EVENT_ID = Regex("[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}")

@@ -25,6 +25,7 @@ import com.peto.ramap.ui.main.map.archive.ArchiveShopDetailContent
 import com.peto.ramap.ui.main.map.archive.contract.ArchiveMapIntent
 import com.peto.ramap.ui.main.map.archive.model.ArchiveShopDetailTab
 import com.peto.ramap.ui.main.map.archive.model.ArchiveShopDetailUiModel
+import com.peto.ramap.ui.review.detail.ReviewCommentsPreviewRoute
 import com.peto.ramap.ui.shop.component.ShopDetailBody
 import com.peto.ramap.ui.shop.component.ShopDetailBottomSheet
 import com.peto.ramap.ui.shop.menu.ShopMenuRoute
@@ -50,6 +51,7 @@ fun ArchiveShopDetailHost(
     appSettingsOpener: AppSettingsOpener = koinInject(),
     shopShareLinkFactory: ShopShareLinkFactory = koinInject(),
     requestNotificationPermission: suspend () -> Boolean = NotificationPermissionRequester::request,
+    onOpenReviewDetail: ((String) -> Unit)? = null,
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val shop = state.shops[state.selectedShopId] ?: return
@@ -103,6 +105,8 @@ fun ArchiveShopDetailHost(
                     onEditReview = onEditReview,
                     onLoginGuideRequested = overviewActions.onLoginGuideRequested,
                     onLoginRequired = {},
+                    reviewCommentsContent = { ReviewCommentsPreviewRoute(it) },
+                    onOpenReviewDetail = onOpenReviewDetail,
                     toastManager = toastManager,
                 ) { reviewState, reviewActions ->
                     val detailState =

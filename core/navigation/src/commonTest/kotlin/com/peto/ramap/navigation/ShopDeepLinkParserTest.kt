@@ -29,6 +29,17 @@ class ShopDeepLinkParserTest {
     }
 
     @Test
+    fun preservesSingleReviewIdInShareAndAppLinks() {
+        val reviewId = "123e4567-e89b-42d3-a456-426614174000"
+        val shareLink = ShopShareLinkFactory(config).createReview("shop/id", reviewId)
+
+        assertEquals(ShopDeepLink.Shop("shop/id", reviewId), parser.parse(shareLink))
+        assertEquals(ShopDeepLink.Shop("shop-id", reviewId), parser.parse("ramap://shop/shop-id?review=$reviewId"))
+        assertEquals(ShopDeepLink.Shop("shop-id"), parser.parse("ramap://shop/shop-id?review=$reviewId&review=$reviewId"))
+        assertEquals(ShopDeepLink.Shop("shop-id"), parser.parse("ramap://shop/shop-id?review=invalid"))
+    }
+
+    @Test
     fun rejectsUnsupportedOrMalformedLinks() {
         listOf(
             null,

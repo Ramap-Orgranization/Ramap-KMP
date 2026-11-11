@@ -55,12 +55,12 @@ class MyReviewsViewModel(
                 }
                 for (record in journal.changesAfter(revision)) {
                     val change = record.change
-                    val isAccessChangedForUser = change is ReviewChange.AccessChanged && change.userId == currentState.userId
+                    val shouldRefreshAccess = change is ReviewChange.AccessChanged && (change.userId == currentState.userId || change.followAction == null)
                     val isWrittenForUser = change is ReviewChange.Written && change.userId == currentState.userId
                     val isHydrated = change is ReviewChange.Hydrated
-                    if (isAccessChangedForUser) {
+                    if (shouldRefreshAccess) {
                         loadPage(reset = true)
-                    } else if (isWrittenForUser || isHydrated) {
+                    } else if (isWrittenForUser || isHydrated || change is ReviewChange.Commented) {
                         reduce {
                             val updated = reviewChangeReducer.updateOwnerRows(reviews, change, filter, hasMore)
                             val counts = (change as? ReviewChange.Written)?.counts
@@ -197,12 +197,15 @@ class MyReviewsViewModel(
                 val isStaleRequest = userId != currentState.userId || filter != currentState.filter
                 if (isStaleRequest) return@launchResultTask
 
-                val isEpochChanged = baseline.epoch != changes.journal.value.epoch
-                val hasGap = changes.journal.value.hasGapAfter(baseline.revision)
+                val journal = changes.journal.value
+                val updates = journal.changesAfter(baseline.revision).map { it.change }
+                val isEpochChanged = baseline.epoch != journal.epoch
+                val hasGap = journal.hasGapAfter(baseline.revision)
                 val hasUserChanges =
-                    changes.journal.value
-                        .changesAfter(baseline.revision)
-                        .any { (it.change as? ReviewChange.Written)?.userId == userId || (it.change as? ReviewChange.AccessChanged)?.userId == userId }
+                    updates.any { change ->
+                        (change as? ReviewChange.Written)?.userId == userId ||
+                            (change is ReviewChange.AccessChanged && (change.userId == userId || change.followAction == null))
+                    }
 
                 if (isEpochChanged || hasGap || hasUserChanges) {
                     loadPage(reset)
@@ -210,7 +213,11 @@ class MyReviewsViewModel(
                 }
                 val isContextValid = userId == currentState.userId && filter == currentState.filter
                 if (isContextValid) {
-                    handlePageSuccess(page = page, reset = reset)
+                    val patchedRows =
+                        updates.filterIsInstance<ReviewChange.Commented>().fold(page.reviews) { rows, change ->
+                            reviewChangeReducer.updateOwnerRows(rows, change, filter, hasMore = true)
+                        }
+                    handlePageSuccess(page = page.copy(reviews = patchedRows), reset = reset)
                 }
             },
             onError = { handlePageError(reset = reset) },

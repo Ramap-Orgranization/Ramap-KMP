@@ -59,6 +59,7 @@ internal fun AppRoute(
             openProfile = overlayState::openProfile,
             onLoginTypeSelected = onLoginTypeSelected,
             onFindVisitedShop = overlayState::openReviewShopSearch,
+            onOpenReviewDetailOverlay = { reviewId -> overlayState.overlayReviewDetailId = reviewId },
             onOpenReviewWriteOverlay = { shopId ->
                 overlayState.overlayReviewWriteArgs = shopId to null
             },

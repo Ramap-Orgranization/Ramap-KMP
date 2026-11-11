@@ -9,6 +9,14 @@ class NotificationDeepLinkParserTest {
     private val eventId = "123e4567-e89b-12d3-a456-426614174000"
 
     @Test
+    fun `리뷰 알림 링크는 버전 삼의 유효한 리뷰 ID만 파싱한다`() {
+        assertEquals(NotificationDeepLink.Review(eventId), parser.parse("""{"version":3,"action":"review_detail","review_id":"$eventId"}"""))
+        assertNull(parser.parse("""{"version":2,"action":"review_detail","review_id":"$eventId"}"""))
+        assertNull(parser.parse("""{"version":3,"action":"review_detail","review_id":"invalid"}"""))
+        assertNull(parser.parse("""{"version":3,"action":"review_detail","review_id":"$eventId","url":"https://example.com"}"""))
+    }
+
+    @Test
     fun `공지 ID를 포함한 새 프로토콜을 파싱하고 잘못된 ID와 이전 버전 확장을 거절한다`() {
         assertEquals(NotificationDeepLink.OperatingNotice(eventId), parser.parse("""{"version":2,"action":"operating_notices","notice_id":"$eventId"}"""))
         assertNull(parser.parse("""{"version":2,"action":"operating_notices","notice_id":"invalid"}"""))
@@ -36,7 +44,7 @@ class NotificationDeepLinkParserTest {
 
     @Test
     fun `미지원 버전 동작과 모호한 이벤트 링크를 거절한다`() {
-        for (value in listOf(null, "", "ramap://auth/callback", "ramap://notification/event?event_id=invalid", "ramap://notification/event?event_id=$eventId&event_id=$eventId", """{"version":3,"action":"none"}""", """{"version":"1","action":"none"}""", """{"version":1,"action":"unknown"}""", """{"version":1,"action":"none","url":"https://example.com"}""", "{")) {
+        for (value in listOf(null, "", "ramap://auth/callback", "ramap://notification/event?event_id=invalid", "ramap://notification/event?event_id=$eventId&event_id=$eventId", """{"version":4,"action":"none"}""", """{"version":"1","action":"none"}""", """{"version":1,"action":"unknown"}""", """{"version":1,"action":"none","url":"https://example.com"}""", "{")) {
             assertNull(parser.parse(value), value)
         }
     }

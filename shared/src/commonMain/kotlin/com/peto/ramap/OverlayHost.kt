@@ -13,6 +13,8 @@ import com.peto.ramap.domain.model.auth.LoginType
 import com.peto.ramap.navigation.NavigationState
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.ui.lifecycle.ScreenViewModelScope
+import com.peto.ramap.ui.review.ReviewDetailHost
+import com.peto.ramap.ui.review.detail.ReviewCommentsPreviewRoute
 import com.peto.ramap.ui.review.other.OtherReviewsRoute
 import com.peto.ramap.ui.review.write.ShopReviewWriteRoute
 import com.peto.ramap.ui.shop.ShopDetailHost
@@ -32,10 +34,10 @@ internal fun OverlayHost(
         state = backEventState,
         isBackEnabled = overlayState.isOverlayActive,
         onBackCompleted = {
-            if (overlayState.overlayProfileUserId != null) {
-                overlayState.overlayProfileUserId = null
-            } else if (overlayState.overlayReviewWriteArgs != null) {
-                overlayState.overlayReviewWriteArgs = null
+            when {
+                overlayState.overlayReviewWriteArgs != null -> overlayState.overlayReviewWriteArgs = null
+                overlayState.overlayReviewDetailId != null -> overlayState.overlayReviewDetailId = null
+                overlayState.overlayProfileUserId != null -> overlayState.overlayProfileUserId = null
             }
         },
     )
@@ -46,6 +48,8 @@ internal fun OverlayHost(
                 userId = overlayState.overlayProfileUserId!!,
                 onBack = { overlayState.overlayProfileUserId = null },
                 onLoginTypeSelected = onLoginTypeSelected,
+                reviewCommentsContent = { ReviewCommentsPreviewRoute(it) },
+                onOpenReviewDetail = { overlayState.overlayReviewDetailId = it },
                 onShowShop = { shopId ->
                     overlayState.overlayProfileUserId = null
                     navigationState.showShopOnMap(shopId)
@@ -71,9 +75,41 @@ internal fun OverlayHost(
                         onEventNavigate = onEventNavigate,
                         isNavigationBarPadded = true,
                         originSource = AnalyticsSource.REVIEW_PROFILE,
+                        isBackEnabled = overlayState.overlayReviewDetailId == null,
+                        onOpenReviewDetail = { overlayState.overlayReviewDetailId = it },
                     )
                 },
             )
+        }
+    }
+
+    overlayState.overlayReviewDetailId?.let { reviewId ->
+        FullScreenOverlay {
+            ScreenViewModelScope(reviewId) {
+                ReviewDetailHost(
+                    reviewId = reviewId,
+                    onBack = { overlayState.overlayReviewDetailId = null },
+                    onOpenProfile = { userId ->
+                        overlayState.overlayReviewDetailId = null
+                        overlayState.openProfile(userId, true)
+                    },
+                    onShowShopOnMap = { shopId ->
+                        overlayState.overlayReviewDetailId = null
+                        overlayState.overlayProfileUserId = null
+                        navigationState.showShopOnMap(shopId)
+                    },
+                    onEditReview = { shopId, editedReviewId -> overlayState.overlayReviewWriteArgs = shopId to editedReviewId },
+                    onWriteReview = { shopId -> overlayState.overlayReviewWriteArgs = shopId to null },
+                    onOpenReviewDetail = { overlayState.overlayReviewDetailId = it },
+                    onOpenEvent = { eventId ->
+                        overlayState.overlayReviewDetailId = null
+                        overlayState.overlayProfileUserId = null
+                        navigationState.showEvent(eventId)
+                    },
+                    onLoginTypeSelected = onLoginTypeSelected,
+                    isUncovered = overlayState.overlayReviewWriteArgs == null,
+                )
+            }
         }
     }
 

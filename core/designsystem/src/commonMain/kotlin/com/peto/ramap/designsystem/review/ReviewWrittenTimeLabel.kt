@@ -8,6 +8,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import com.peto.ramap.designsystem.resource.format
 import com.peto.ramap.designsystem.resource.review.reviewCreationTime
+import com.peto.ramap.designsystem.resource.review.reviewDateTimeResource
 import com.peto.ramap.designsystem.resource.review.reviewTimeResource
 import kotlinx.coroutines.delay
 import kotlinx.datetime.TimeZone
@@ -32,4 +33,11 @@ fun reviewWrittenTimeLabel(createdAt: String): String? {
     }
 
     return label.format()
+}
+
+@Composable
+fun reviewWrittenDateTimeLabel(createdAt: String): String? {
+    val timeZone = TimeZone.currentSystemDefault()
+    val label = remember(createdAt, timeZone) { reviewDateTimeResource(createdAt, timeZone) }
+    return label?.format()
 }

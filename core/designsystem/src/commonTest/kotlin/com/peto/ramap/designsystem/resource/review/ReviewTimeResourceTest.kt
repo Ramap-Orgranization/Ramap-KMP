@@ -76,6 +76,27 @@ class ReviewTimeResourceTest {
         assertNull(reviewCreationTime("2026-02-30", TimeZone.UTC))
     }
 
+    @Test
+    fun `리뷰 상세는 기기 시간대의 작성 날짜와 시각을 분까지 표시한다`() {
+        assertEquals(
+            UiText(Res.string.review_time_date, listOf("2026/01/01 00:05")),
+            reviewDateTimeResource("2025-12-31T15:05:00Z", timeZone),
+        )
+    }
+
+    @Test
+    fun `리뷰 상세에서 날짜만 있는 기록은 작성일만 표시한다`() {
+        assertEquals(
+            UiText(Res.string.review_time_date, listOf("2026.03.07")),
+            reviewDateTimeResource("2026-03-07", timeZone),
+        )
+    }
+
+    @Test
+    fun `리뷰 상세에서 올바르지 않은 작성일은 생략한다`() {
+        assertNull(reviewDateTimeResource("2026-02-30", timeZone))
+    }
+
     private fun labelAfter(elapsed: Duration): UiText =
         reviewTimeResource(
             writtenAt = writtenAt,

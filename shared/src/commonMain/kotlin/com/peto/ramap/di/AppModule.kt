@@ -26,6 +26,7 @@ import com.peto.ramap.ui.onboarding.di.onboardingModule
 import com.peto.ramap.ui.profile.edit.di.profileEditModule
 import com.peto.ramap.ui.profile.follow.di.followModule
 import com.peto.ramap.ui.report.di.reportModule
+import com.peto.ramap.ui.review.detail.di.reviewDetailModule
 import com.peto.ramap.ui.review.my.di.reviewMyModule
 import com.peto.ramap.ui.review.other.di.reviewOtherModule
 import com.peto.ramap.ui.review.search.di.reviewSearchModule
@@ -64,6 +65,7 @@ internal val appModule =
             followModule,
             reviewWriteModule,
             reviewSearchModule,
+            reviewDetailModule,
             reviewMyModule,
             reviewOtherModule,
             settingsModule,

@@ -1,14 +1,7 @@
 package com.peto.ramap.ui.main.feed.component
 
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
-import com.peto.ramap.designsystem.component.RamenShopCompactSummary
 import com.peto.ramap.designsystem.review.ReviewCard
 import com.peto.ramap.designsystem.review.ReviewCardActions
 import com.peto.ramap.designsystem.review.ReviewCardHeader
@@ -27,6 +20,8 @@ internal fun FeedReviewItem(
     onOpenProfile: (String) -> Unit,
     onOpenShop: (String) -> Unit,
     onEditReview: (String, String) -> Unit,
+    reviewCommentsContent: (@Composable (String) -> Unit)? = null,
+    onOpenReviewDetail: ((String) -> Unit)? = null,
 ) {
     val original = row.review
     val displayed = state.revealed[original.id] ?: original
@@ -40,6 +35,7 @@ internal fun FeedReviewItem(
             onDelete = { onIntent(FeedIntent.RequestDelete(original)) }.takeIf { isOwner },
             onViewBlockedReview = { onIntent(FeedIntent.Reveal(original)) }.takeIf { original.isBlocked },
             onUnblockBlockedUser = { onIntent(FeedIntent.RequestUnblock(original)) }.takeIf { original.isBlocked },
+            onOpenReviewDetail = onOpenReviewDetail?.let { open -> { open(original.id) } },
         )
     ReviewCard(
         review = displayed,
@@ -49,22 +45,15 @@ internal fun FeedReviewItem(
         isLikeLoading = state.actingId == original.id,
         showBlockedContent = original.id in state.revealed,
         isBlockedReviewLoading = state.revealingId == original.id,
+        commentsContent = reviewCommentsContent,
         header = {
-            Column {
-                ReviewCardHeader(
-                    review = displayed,
-                    actions = actions,
-                    actionsEnabled = state.actingId == null,
-                )
-                RamenShopCompactSummary(
-                    shop = row.shop,
-                    onClick = { onOpenShop(row.shop.id) },
-                    modifier =
-                        Modifier
-                            .padding(start = 12.dp, top = 12.dp, end = 12.dp, bottom = 7.dp)
-                            .clip(RoundedCornerShape(12.dp)),
-                )
-            }
+            ReviewCardHeader(
+                review = displayed,
+                actions = actions,
+                actionsEnabled = state.actingId == null,
+                shop = row.shop,
+                onOpenShop = { onOpenShop(row.shop.id) },
+            )
         },
     )
 }

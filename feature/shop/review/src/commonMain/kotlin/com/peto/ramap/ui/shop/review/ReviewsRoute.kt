@@ -31,6 +31,8 @@ fun ReviewsRoute(
     onLoginRequired: () -> Unit,
     toastManager: ToastManager = koinInject(),
     viewModel: ReviewsViewModel = koinViewModel(),
+    reviewCommentsContent: (@Composable (String) -> Unit)? = null,
+    onOpenReviewDetail: ((String) -> Unit)? = null,
     content: @Composable (ReviewsUiState, ReviewActions) -> Unit,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -67,6 +69,8 @@ fun ReviewsRoute(
             onReviewDelete = { viewModel.dispatch(ReviewsIntent.OnReviewDeleted(it)) },
             onReviewReport = { viewModel.dispatch(ReviewsIntent.OnReviewReportRequested(it)) },
             onLoadMoreReviews = { viewModel.dispatch(ReviewsIntent.OnLoadMore) },
+            reviewCommentsContent = reviewCommentsContent,
+            onOpenReviewDetail = onOpenReviewDetail,
         ),
     )
 

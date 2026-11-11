@@ -37,6 +37,8 @@ import com.peto.ramap.ui.notification.NotificationSettingsRoute
 import com.peto.ramap.ui.profile.edit.ProfileEditRoute
 import com.peto.ramap.ui.profile.follow.FollowRoute
 import com.peto.ramap.ui.report.PlaceReportRoute
+import com.peto.ramap.ui.review.ReviewDetailHost
+import com.peto.ramap.ui.review.detail.ReviewCommentsPreviewRoute
 import com.peto.ramap.ui.review.my.MyReviewsRoute
 import com.peto.ramap.ui.review.other.OtherReviewsRoute
 import com.peto.ramap.ui.review.search.ReviewShopSearchRoute
@@ -62,6 +64,7 @@ internal fun NavigationGraph(
     onFindVisitedShop: () -> Unit,
     onOpenReviewWriteOverlay: (shopId: String) -> Unit,
     onOpenReviewEditOverlay: (shopId: String, reviewId: String?) -> Unit,
+    onOpenReviewDetailOverlay: (String) -> Unit,
 ) {
     NavigationRouter(
         navigationState = navigationState,
@@ -70,6 +73,7 @@ internal fun NavigationGraph(
                 onArchiveNavigate = navigationState::showArchiveMap,
                 detailContent = { request ->
                     ShopDetailHost(
+                        onOpenReviewDetail = onOpenReviewDetailOverlay,
                         shopId = request.shopId,
                         initialShop = request.initialShop,
                         onDismiss = request.onDismiss,
@@ -123,6 +127,7 @@ internal fun NavigationGraph(
                 onFindVisitedShop = navigationState::showReviewShopSearch,
             )
             ArchiveShopDetailHost(
+                onOpenReviewDetail = onOpenReviewDetailOverlay,
                 viewModel = viewModel,
                 onEditReview = { shopId, reviewId -> onOpenReviewEditOverlay(shopId, reviewId) },
                 onReviewNavigate = onOpenReviewWriteOverlay,
@@ -151,6 +156,7 @@ internal fun NavigationGraph(
                 onEventNavigate = { event -> navigationState.showEvent(event.id) },
                 shopDetailContent = { shopId, onDismiss, onShowOnMap, onEventNavigate ->
                     ShopDetailHost(
+                        onOpenReviewDetail = onOpenReviewDetailOverlay,
                         isUncovered = !hasActiveOverlay,
                         shopId = shopId,
                         onDismiss = onDismiss,
@@ -180,12 +186,15 @@ internal fun NavigationGraph(
         },
         feedScreen = {
             FeedRoute(
+                reviewCommentsContent = { ReviewCommentsPreviewRoute(it) },
+                onOpenReviewDetail = navigationState::showReviewDetail,
                 onFindVisitedShop = onFindVisitedShop,
                 onOpenProfile = { userId -> openProfile(userId, true) },
                 onEditReview = { shopId, reviewId -> onOpenReviewEditOverlay(shopId, reviewId) },
                 onLoginTypeSelected = onLoginTypeSelected,
                 shopDetailContent = { shopId, onDismiss ->
                     ShopDetailHost(
+                        onOpenReviewDetail = onOpenReviewDetailOverlay,
                         shopId = shopId,
                         onDismiss = onDismiss,
                         onShowOnMap = { selectedShopId ->
@@ -233,6 +242,8 @@ internal fun NavigationGraph(
         },
         myReviewsScreen = {
             MyReviewsRoute(
+                reviewCommentsContent = { ReviewCommentsPreviewRoute(it) },
+                onOpenReviewDetail = navigationState::showReviewDetail,
                 isUncovered = !hasActiveOverlay,
                 onBack = navigationState::pop,
                 onShowShop = navigationState::showReviewShopOnMap,
@@ -240,6 +251,7 @@ internal fun NavigationGraph(
                 onEventNavigate = { event -> navigationState.showEvent(event.id) },
                 shopDetailContent = { shopId, onDismiss, onShowOnMap, onEventNavigate ->
                     ShopDetailHost(
+                        onOpenReviewDetail = onOpenReviewDetailOverlay,
                         isUncovered = !hasActiveOverlay,
                         shopId = shopId,
                         onDismiss = onDismiss,
@@ -256,6 +268,8 @@ internal fun NavigationGraph(
         },
         otherReviewsScreen = { route ->
             OtherReviewsRoute(
+                reviewCommentsContent = { ReviewCommentsPreviewRoute(it) },
+                onOpenReviewDetail = navigationState::showReviewDetail,
                 userId = route.userId,
                 onBack = navigationState::pop,
                 onLoginTypeSelected = onLoginTypeSelected,
@@ -263,6 +277,7 @@ internal fun NavigationGraph(
                 onEventNavigate = { event -> navigationState.showEvent(event.id) },
                 shopDetailContent = { shopId, onDismiss, onShowOnMap, onEventNavigate ->
                     ShopDetailHost(
+                        onOpenReviewDetail = onOpenReviewDetailOverlay,
                         isUncovered = !hasActiveOverlay,
                         shopId = shopId,
                         onDismiss = onDismiss,
@@ -275,6 +290,20 @@ internal fun NavigationGraph(
                         originSource = AnalyticsSource.REVIEW_PROFILE,
                     )
                 },
+            )
+        },
+        reviewDetailScreen = { route ->
+            ReviewDetailHost(
+                reviewId = route.reviewId,
+                onBack = navigationState::pop,
+                onOpenProfile = { userId -> openProfile(userId, true) },
+                onShowShopOnMap = { shopId -> navigationState.showShopOnMap(shopId) },
+                onEditReview = navigationState::showReviewEdit,
+                onWriteReview = onOpenReviewWriteOverlay,
+                onOpenReviewDetail = onOpenReviewDetailOverlay,
+                onOpenEvent = navigationState::showEvent,
+                onLoginTypeSelected = onLoginTypeSelected,
+                isUncovered = !hasActiveOverlay,
             )
         },
         reviewWriteScreen = { route ->
@@ -323,6 +352,7 @@ internal fun NavigationGraph(
                 openProfile = openProfile,
                 onOpenReviewWriteOverlay = onOpenReviewWriteOverlay,
                 onOpenReviewEditOverlay = onOpenReviewEditOverlay,
+                onOpenReviewDetailOverlay = onOpenReviewDetailOverlay,
             ) { onShopOpen ->
                 ShopNotificationSettingsHost(originSource = AnalyticsSource.SUBSCRIBED_SHOPS) { onShopNotificationSettingsOpen ->
                     SubscribedShopsRoute(
@@ -345,6 +375,7 @@ internal fun NavigationGraph(
                 openProfile = openProfile,
                 onOpenReviewWriteOverlay = onOpenReviewWriteOverlay,
                 onOpenReviewEditOverlay = onOpenReviewEditOverlay,
+                onOpenReviewDetailOverlay = onOpenReviewDetailOverlay,
             ) { onShopOpen ->
                 BookmarkedShopListRoute(
                     onBack = navigationState::pop,
@@ -384,6 +415,7 @@ internal fun NavigationGraph(
                 onEventNavigate = { event -> navigationState.showEvent(event.id) },
                 shopDetailContent = { shopId, onDismiss, onShowOnMap, onEventNavigate ->
                     ShopDetailHost(
+                        onOpenReviewDetail = onOpenReviewDetailOverlay,
                         isUncovered = !hasActiveOverlay,
                         shopId = shopId,
                         onDismiss = onDismiss,
@@ -410,6 +442,7 @@ private fun ShopListWithDetail(
     openProfile: (userId: String, asOverlay: Boolean) -> Unit,
     onOpenReviewWriteOverlay: (shopId: String) -> Unit,
     onOpenReviewEditOverlay: (shopId: String, reviewId: String?) -> Unit,
+    onOpenReviewDetailOverlay: (String) -> Unit,
     content: @Composable ((String) -> Unit) -> Unit,
 ) {
     var selectedShopId by rememberSaveable { mutableStateOf<String?>(null) }
@@ -419,6 +452,7 @@ private fun ShopListWithDetail(
 
         selectedShopId?.let { shopId ->
             ShopDetailHost(
+                onOpenReviewDetail = onOpenReviewDetailOverlay,
                 shopId = shopId,
                 onDismiss = { selectedShopId = null },
                 onShowOnMap = { selectedId ->
