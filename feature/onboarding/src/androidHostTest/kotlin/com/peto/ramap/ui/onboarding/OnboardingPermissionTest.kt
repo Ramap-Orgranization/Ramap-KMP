@@ -27,10 +27,10 @@ import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.domain.usecase.SearchRamenShopsUseCase
 import com.peto.ramap.fake.FakeAnalyticsTracker
 import com.peto.ramap.fake.FakeLoginRepository
-import com.peto.ramap.fake.FakeOnboardingRankingRepository
 import com.peto.ramap.fake.FakeOnboardingStorage
 import com.peto.ramap.fake.FakePersonalizationRepository
 import com.peto.ramap.fake.FakeRamenShopRepository
+import com.peto.ramap.fake.FakeShopSuggestionsRepository
 import com.peto.ramap.theme.RamapTheme
 import com.peto.ramap.ui.onboarding.shopselection.ShopSelectionViewModel
 import org.junit.runner.RunWith
@@ -118,7 +118,7 @@ class OnboardingPermissionTest {
                         ShopSelectionViewModel(
                             searchShops = SearchRamenShopsUseCase(shops),
                             shopRepository = shops,
-                            rankingRepository = FakeOnboardingRankingRepository(RamenShops(emptyMap())),
+                            suggestionsRepository = FakeShopSuggestionsRepository(RamenShops(emptyMap())),
                             personalizationStore = FakePersonalizationRepository(),
                             loginRepository = FakeLoginRepository(),
                             storage = storage,
