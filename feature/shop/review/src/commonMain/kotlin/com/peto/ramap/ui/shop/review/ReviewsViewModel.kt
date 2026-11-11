@@ -1,7 +1,6 @@
 package com.peto.ramap.ui.shop.review
 
 import androidx.lifecycle.viewModelScope
-import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.auth.LoginSessionState
 import com.peto.ramap.domain.model.moderation.ReportReason
@@ -68,7 +67,7 @@ class ReviewsViewModel(
                 val canLoadMore = currentState.hasMoreReviews && !currentState.isLoadingMoreReviews
                 if (canLoadMore) loadPage(append = true)
             }
-            is ReviewsIntent.OnReviewLikeToggled -> toggleLike(intent.review)
+            is ReviewsIntent.OnReviewLikeToggled -> toggleLike(intent.review.id)
             is ReviewsIntent.OnReviewDeleted -> deleteReview(intent.review)
             is ReviewsIntent.OnReviewReportRequested -> requestReport(intent.review)
             is ReviewsIntent.OnReviewReportSubmitted -> submitReport(intent.reason, intent.description)
@@ -130,12 +129,16 @@ class ReviewsViewModel(
             val hasGap = journal.hasGapAfter(revision)
             if (hasGap) {
                 revision = journal.revision
+                currentState.currentUserId?.let(::loadProfile)
                 loadPage(append = false)
                 return@collect
             }
             for (record in journal.changesAfter(revision)) {
                 val change = record.change
                 val state = currentState
+                if (change is ReviewChange.AccessChanged && change.userId == state.currentUserId) {
+                    loadProfile(change.userId)
+                }
                 val shopId = state.shopId
                 if (shopId != null) {
                     val updated = reviewChangeReducer.updateShopPage(state.page, change, shopId, state.currentUserId, state.hasMoreReviews)
@@ -164,12 +167,16 @@ class ReviewsViewModel(
     }
 
     private fun loadProfile(viewer: String) {
-        viewModelScope.launch {
-            val result = profileRepository.fetchMyProfile()
-            val profile = (result as? RamapResult.Success)?.data ?: return@launch
-            val isCurrentViewer = isActive && profile.userId == viewer
-            if (isCurrentViewer) reduce { copy(currentProfileIsPublic = profile.isPublic) }
-        }
+        launchResultTask(
+            taskKey = PROFILE_TASK_KEY,
+            onStart = { copy(currentProfileIsPublic = null) },
+            request = profileRepository::fetchMyProfile,
+            onSuccess = { profile ->
+                if (profile.userId == viewer && currentState.currentUserId == viewer) {
+                    reduce { copy(currentProfileIsPublic = profile.isPublic) }
+                }
+            },
+        )
     }
 
     private fun cancelReviewTasks() {
@@ -247,9 +254,10 @@ class ReviewsViewModel(
         )
     }
 
-    private fun toggleLike(review: Review) {
+    private fun toggleLike(reviewId: String) {
+        val review = currentState.reviews.firstOrNull { it.id == reviewId } ?: return
         val isDifferentShop = review.shopId != currentState.shopId
-        val cannotLike = !review.allowsLikeFrom(currentState.currentUserId)
+        val cannotLike = !currentState.allowsLike(review)
         if (isDifferentShop || cannotLike) return
         val isLoggedOut = currentState.currentUserId == null
         if (isLoggedOut) {
@@ -356,6 +364,7 @@ class ReviewsViewModel(
 
     companion object {
         private const val REVIEWS_TASK_KEY = "shop_reviews"
+        private const val PROFILE_TASK_KEY = "shop_review_profile"
         private const val ACTION_TASK_KEY = "shop_review_action"
         private const val REPORT_TASK_KEY = "shop_review_report"
         private const val REVEAL_TASK_KEY = "shop_review_reveal"

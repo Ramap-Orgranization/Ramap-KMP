@@ -19,7 +19,14 @@ data class Review(
     val isLiked: Boolean = false,
     val isBlocked: Boolean = false,
 ) {
-    fun allowsLikeFrom(viewerId: String?): Boolean = author.userId != viewerId && isPublic && moderationStatus == ReviewModerationStatus.PUBLISHED
+    fun allowsLikeFrom(
+        viewerId: String?,
+        viewerProfileIsPublic: Boolean?,
+    ): Boolean =
+        !isBlocked &&
+            isPublic &&
+            moderationStatus == ReviewModerationStatus.PUBLISHED &&
+            (author.userId != viewerId || viewerProfileIsPublic == true)
 
     fun allowsReportFrom(viewerId: String?): Boolean = viewerId != null && id.isNotBlank() && (author.userId.isNotBlank() || author.isWithdrawn) && author.userId != viewerId
 

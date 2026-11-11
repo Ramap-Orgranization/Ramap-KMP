@@ -212,6 +212,39 @@ class ReviewsLoginTest {
         }
 
     @Test
+    fun `매장 리뷰에서 내 프로필을 공개하면 본인 공개 리뷰에 좋아요를 누르고 취소할 수 있다`() =
+        reviewScenario { fixture ->
+            val ownReview = fixture.ownReview.copy(isPublic = true)
+            val viewModel = fixture.viewModel
+            fixture.reviews.reviews = listOf(ownReview)
+            viewModel.dispatch(ReviewsIntent.OnShopSelected("shop"))
+            authenticate(fixture)
+
+            viewModel.dispatch(ReviewsIntent.OnReviewLikeToggled(ownReview))
+            runCurrent()
+            assertTrue(fixture.likeRequests.isEmpty())
+
+            fixture.profile.isProfilePublic = true
+            fixture.changes.publish(ReviewChange.AccessChanged("owner"))
+            runCurrent()
+            viewModel.dispatch(ReviewsIntent.OnReviewLikeToggled(ownReview))
+            runCurrent()
+            val likedReview =
+                viewModel.uiState.value.reviews
+                    .single()
+            assertTrue(likedReview.isLiked)
+
+            viewModel.dispatch(ReviewsIntent.OnReviewLikeToggled(likedReview))
+            runCurrent()
+            assertFalse(
+                viewModel.uiState.value.reviews
+                    .single()
+                    .isLiked,
+            )
+            assertEquals(listOf(ownReview.id to true, ownReview.id to false), fixture.likeRequests)
+        }
+
+    @Test
     fun `로그인 후 좋아요 저장이 실패하면 낙관적으로 바꾼 표시를 되돌린다`() =
         reviewScenario { fixture ->
             fixture.reviews.reviews = listOf(fixture.otherReview)

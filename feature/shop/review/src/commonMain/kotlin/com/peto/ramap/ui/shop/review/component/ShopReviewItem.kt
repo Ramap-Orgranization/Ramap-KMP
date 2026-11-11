@@ -6,7 +6,6 @@ import com.peto.ramap.designsystem.review.ReviewCard
 import com.peto.ramap.designsystem.review.ReviewCardActions
 import com.peto.ramap.designsystem.review.ReviewCardHeader
 import com.peto.ramap.domain.model.review.Review
-import com.peto.ramap.domain.model.review.ReviewModerationStatus
 import com.peto.ramap.ui.shop.review.contract.ReviewsUiState
 import com.peto.ramap.ui.shop.review.model.ReviewActions
 
@@ -23,17 +22,7 @@ internal fun ShopReviewItem(
     val reviewActions =
         ReviewCardActions(
             onOpenProfile = actions.onOpenProfile,
-            onLike =
-                if (
-                    !review.isBlocked &&
-                    review.author.userId != uiState.currentUserId &&
-                    review.isPublic &&
-                    review.moderationStatus == ReviewModerationStatus.PUBLISHED
-                ) {
-                    { actions.onReviewLike(review) }
-                } else {
-                    null
-                },
+            onLike = { actions.onReviewLike(review) }.takeIf { uiState.allowsLike(review) },
             onReport =
                 if (
                     (!review.isBlocked || revealedReview != null) &&

@@ -304,7 +304,7 @@ class FeedViewModel(
 
     private fun toggleLike(review: Review) {
         val row = findReview(review) ?: return
-        if (row.isBlocked || !row.allowsLikeFrom(currentState.currentUserId)) return
+        if (!currentState.allowsLike(row)) return
         if (currentState.currentUserId == null) {
             trySideEffect(FeedSideEffect.LoginRequired(Res.string.login_required_review_like_description))
             return

@@ -47,6 +47,9 @@ data class FeedUiState(
     val hasAppendError: Boolean
         get() = appendFailed
 
+    // The feed only returns reviews from public profiles and preserved public reviews.
+    fun allowsLike(review: Review): Boolean = review.allowsLikeFrom(currentUserId, viewerProfileIsPublic = true)
+
     override fun withLoadingState(loadState: LoadState): FeedUiState = copy(loadState = loadState)
 
     fun clearAccess(): FeedUiState = copy(revealed = emptyMap(), revealingId = null, reportReview = null, unblockReview = null, deleteReview = null)

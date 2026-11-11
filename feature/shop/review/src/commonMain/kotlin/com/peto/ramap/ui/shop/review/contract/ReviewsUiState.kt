@@ -45,6 +45,8 @@ data class ReviewsUiState(
     val isReportingReview: Boolean get() = loadState.isLoading(ReviewsLoadKey.ReviewReport)
     val isUnblockingReview: Boolean get() = loadState.isLoading(ReviewsLoadKey.BlockedReviewUnblock)
 
+    fun allowsLike(review: Review): Boolean = review.allowsLikeFrom(currentUserId, currentProfileIsPublic)
+
     fun clearAccess(): ReviewsUiState = copy(revealedBlockedReviews = emptyMap(), revealingBlockedReviewId = null, pendingUnblockReview = null)
 
     override fun withLoadingState(loadState: LoadState): ReviewsUiState = copy(loadState = loadState)

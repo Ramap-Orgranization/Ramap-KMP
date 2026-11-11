@@ -34,7 +34,7 @@ internal fun FeedReviewItem(
     val actions =
         ReviewCardActions(
             onOpenProfile = onOpenProfile.takeUnless { original.isBlocked },
-            onLike = { onIntent(FeedIntent.ToggleLike(original)) }.takeIf { !original.isBlocked && !isOwner },
+            onLike = { onIntent(FeedIntent.ToggleLike(original)) }.takeIf { state.allowsLike(original) },
             onReport = { onIntent(FeedIntent.RequestReport(displayed)) }.takeIf { !isOwner && (!original.isBlocked || original.id in state.revealed) },
             onEdit = { onEditReview(original.shopId, original.id) }.takeIf { isOwner },
             onDelete = { onIntent(FeedIntent.RequestDelete(original)) }.takeIf { isOwner },

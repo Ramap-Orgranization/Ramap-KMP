@@ -1,12 +1,28 @@
 package com.peto.ramap.domain.model.shop
 
 import com.peto.ramap.domain.model.review.Review
+import com.peto.ramap.domain.model.review.ReviewAuthor
+import com.peto.ramap.domain.model.review.ReviewModerationStatus
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class ReviewTest {
+    @Test
+    fun `본인 공개 리뷰에는 프로필도 공개일 때만 좋아요를 허용한다`() {
+        val review = Review("review", "shop", "맛있는 라멘", "2026-11-11", author = ReviewAuthor("author", "작성자"))
+
+        assertTrue(review.allowsLikeFrom("author", viewerProfileIsPublic = true))
+        assertFalse(review.allowsLikeFrom("author", viewerProfileIsPublic = false))
+        assertFalse(review.allowsLikeFrom("author", viewerProfileIsPublic = null))
+        assertTrue(review.allowsLikeFrom("reader", viewerProfileIsPublic = false))
+        assertTrue(review.allowsLikeFrom(null, viewerProfileIsPublic = null))
+        assertFalse(review.copy(isPublic = false).allowsLikeFrom("author", viewerProfileIsPublic = true))
+        assertFalse(review.copy(moderationStatus = ReviewModerationStatus.PENDING).allowsLikeFrom("author", viewerProfileIsPublic = true))
+        assertFalse(review.copy(isBlocked = true).allowsLikeFrom("reader", viewerProfileIsPublic = true))
+    }
+
     @Test
     fun `사진이 있어도 입력한 본문의 길이와 비속어 조건을 지킨다`() {
         for (imageCount in 0..5) {
