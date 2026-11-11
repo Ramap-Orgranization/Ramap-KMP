@@ -13,7 +13,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.peto.ramap.designsystem.component.LoadErrorContent
 import com.peto.ramap.designsystem.indicator.RamenLoadingIndicator
-import com.peto.ramap.designsystem.review.ReviewCardImages
+import com.peto.ramap.designsystem.review.ReviewPhotoGallery
 import com.peto.ramap.designsystem.review.ReviewWriteCard
 import com.peto.ramap.domain.model.review.Review
 import com.peto.ramap.domain.model.review.ReviewAuthor
@@ -69,12 +69,12 @@ internal fun reviewsContent(
             )
         }
     }
-    val photoUrls = uiState.photoUrls
-    if (photoUrls.isNotEmpty()) {
+    val photos = uiState.photos
+    if (photos.isNotEmpty()) {
         scope.item(key = "shop_review_photos", contentType = "review_photos") {
             key(uiState.shopId, uiState.currentUserId) {
-                ReviewCardImages(
-                    imageUrls = photoUrls,
+                ReviewPhotoGallery(
+                    photos = photos,
                     modifier = Modifier.padding(bottom = 20.dp),
                     centerSingleImage = false,
                 )

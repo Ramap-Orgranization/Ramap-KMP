@@ -1,5 +1,6 @@
 package com.peto.ramap.ui.shop.review
 
+import com.peto.ramap.domain.model.review.MyReviewPhoto
 import com.peto.ramap.domain.model.review.Review
 import com.peto.ramap.domain.model.review.ReviewAuthor
 import com.peto.ramap.domain.model.review.ReviewModerationStatus
@@ -23,7 +24,20 @@ class ReviewsUiStateTest {
             )
         val state = ReviewsUiState(page = ShopReviewsPage(reviews, totalCount = 3))
 
-        assertEquals(listOf(first, second, third), state.photoUrls)
+        assertEquals(listOf(first, second, third), state.photos.map { it.url })
+    }
+
+    @Test
+    fun `서명 주소가 바뀌어도 같은 리뷰 사진의 ID는 유지한다`() {
+        val url = "https://example.com/photo.jpg"
+        val original = review("review", listOf(url)).copy(images = listOf(MyReviewPhoto(url, "author/photo.jpg")))
+        val renewedUrl = "$url?renewed"
+        val renewed = original.copy(imageUrls = listOf(renewedUrl), images = listOf(MyReviewPhoto(renewedUrl, "author/photo.jpg")))
+        val before = ReviewsUiState(page = ShopReviewsPage(listOf(original), totalCount = 1)).photos.single()
+        val after = ReviewsUiState(page = ShopReviewsPage(listOf(renewed), totalCount = 1)).photos.single()
+
+        assertEquals(before.id, after.id)
+        assertEquals(renewedUrl, after.url)
     }
 
     @Test
@@ -36,7 +50,7 @@ class ReviewsUiStateTest {
                 revealedBlockedReviews = mapOf(blocked.id to revealed),
             )
 
-        assertTrue(state.photoUrls.isEmpty())
+        assertTrue(state.photos.isEmpty())
     }
 
     @Test
@@ -52,7 +66,7 @@ class ReviewsUiStateTest {
                 currentUserId = owner.userId,
             )
 
-        assertEquals(listOf(privatePhoto, pendingPhoto), state.photoUrls)
+        assertEquals(listOf(privatePhoto, pendingPhoto), state.photos.map { it.url })
     }
 
     private fun review(

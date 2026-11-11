@@ -1,5 +1,6 @@
 package com.peto.ramap.ui.shop.review.contract
 
+import com.peto.ramap.designsystem.review.ReviewGalleryPhoto
 import com.peto.ramap.domain.model.review.Review
 import com.peto.ramap.domain.model.review.ShopReviewsPage
 import com.peto.ramap.ui.loading.LoadState
@@ -23,13 +24,18 @@ data class ReviewsUiState(
 ) : LoadableState<ReviewsUiState> {
     val reviews: List<Review> get() = page.reviews
 
-    internal val photoUrls: List<String>
+    internal val photos: List<ReviewGalleryPhoto>
         get() =
             reviews
                 .asSequence()
                 .filterNot { it.isBlocked }
-                .flatMap { it.imageUrls }
-                .filter { it.isNotBlank() }
+                .flatMap { review ->
+                    val references = review.images.associate { it.url to it.reference }
+                    review.imageUrls.filter(String::isNotBlank).map { url ->
+                        val reference = references[url] ?: url
+                        ReviewGalleryPhoto(id = "${review.id}:$reference", url = url)
+                    }
+                }.distinctBy { it.id }
                 .toList()
 
     val reviewCount: Int get() = page.totalCount

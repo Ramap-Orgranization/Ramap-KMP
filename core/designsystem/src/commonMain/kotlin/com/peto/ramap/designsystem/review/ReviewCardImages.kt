@@ -9,6 +9,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
@@ -35,16 +36,43 @@ fun ReviewCardImages(
     onImageLoadSucceeded: (String) -> Unit = {},
     imageRetryKeys: Map<String, Int> = emptyMap(),
 ) {
-    if (imageUrls.isEmpty()) return
-    var selectedIndex by remember(imageUrls, photoViewerEnabled) { mutableStateOf<Int?>(null) }
+    val photos = remember(imageUrls) { imageUrls.mapIndexed { index, url -> ReviewGalleryPhoto(id = "$index:$url", url = url) } }
+    ReviewPhotoGallery(
+        photos = photos,
+        modifier = modifier,
+        photoViewerEnabled = photoViewerEnabled,
+        imageSize = imageSize,
+        contentPadding = contentPadding,
+        centerSingleImage = centerSingleImage,
+        onImageLoadFailed = onImageLoadFailed,
+        onImageLoadSucceeded = onImageLoadSucceeded,
+        imageRetryKeys = imageRetryKeys,
+    )
+}
+
+@Composable
+fun ReviewPhotoGallery(
+    photos: List<ReviewGalleryPhoto>,
+    modifier: Modifier = Modifier,
+    photoViewerEnabled: Boolean = true,
+    imageSize: Dp = 220.dp,
+    contentPadding: PaddingValues = PaddingValues(horizontal = 16.dp),
+    centerSingleImage: Boolean = true,
+    onImageLoadFailed: (String) -> Unit = {},
+    onImageLoadSucceeded: (String) -> Unit = {},
+    imageRetryKeys: Map<String, Int> = emptyMap(),
+) {
+    if (photos.isEmpty()) return
+    var viewedPhotoId by remember(photoViewerEnabled) { mutableStateOf<String?>(null) }
 
     LazyRow(
         modifier = modifier.fillMaxWidth(),
         horizontalArrangement =
-            if (imageUrls.size == 1 && centerSingleImage) Arrangement.Center else Arrangement.spacedBy(4.dp),
+            if (photos.size == 1 && centerSingleImage) Arrangement.Center else Arrangement.spacedBy(4.dp),
         contentPadding = contentPadding,
     ) {
-        itemsIndexed(imageUrls) { index, url ->
+        itemsIndexed(photos, key = { _, photo -> photo.id }) { index, photo ->
+            val url = photo.url
             key(imageRetryKeys[url] ?: 0) {
                 ReviewPhoto(
                     url = url,
@@ -59,7 +87,7 @@ fun ReviewCardImages(
                             .clip(RoundedCornerShape(12.dp))
                             .then(
                                 if (photoViewerEnabled) {
-                                    Modifier.clickable(role = Role.Button) { selectedIndex = index }
+                                    Modifier.clickable(role = Role.Button) { viewedPhotoId = photo.id }
                                 } else {
                                     Modifier
                                 },
@@ -70,11 +98,15 @@ fun ReviewCardImages(
             }
         }
     }
-    selectedIndex?.takeIf { it in imageUrls.indices }?.let { index ->
+    val selectedIndex = photos.indexOfFirst { it.id == viewedPhotoId }
+    if (selectedIndex >= 0) {
         ReviewPhotoViewer(
-            imageUrls = imageUrls,
-            initialPage = index,
-            onDismiss = { selectedIndex = null },
+            photos = photos,
+            initialPage = selectedIndex,
+            onPhotoChanged = { viewedPhotoId = it },
+            onDismiss = { viewedPhotoId = null },
         )
+    } else if (viewedPhotoId != null) {
+        LaunchedEffect(viewedPhotoId) { viewedPhotoId = null }
     }
 }

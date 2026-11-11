@@ -22,6 +22,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -45,17 +47,27 @@ import ramap.shared.generated.resources.review_photo_position
 
 @Composable
 internal fun ReviewPhotoViewer(
-    imageUrls: List<String>,
+    photos: List<ReviewGalleryPhoto>,
     initialPage: Int,
+    onPhotoChanged: (String) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    val pagerState = rememberPagerState(initialPage = initialPage, pageCount = { imageUrls.size })
-    val scope = rememberCoroutineScope()
-    val hasMultiplePhotos = imageUrls.size > 1
-
     ReviewPhotoViewerDialog(
         onDismissRequest = onDismiss,
     ) {
+        val pagerState = rememberPagerState(initialPage = initialPage, pageCount = { photos.size })
+        val scope = rememberCoroutineScope()
+        val hasMultiplePhotos = photos.size > 1
+        val currentOnPhotoChanged = rememberUpdatedState(onPhotoChanged)
+        LaunchedEffect(pagerState) {
+            snapshotFlow {
+                pagerState.layoutInfo.visiblePagesInfo
+                    .firstOrNull { it.index == pagerState.currentPage }
+                    ?.key as? String
+            }.collect { photoId ->
+                if (photoId != null) currentOnPhotoChanged.value(photoId)
+            }
+        }
         Column(
             modifier =
                 Modifier
@@ -72,7 +84,7 @@ internal fun ReviewPhotoViewer(
             ) {
                 if (hasMultiplePhotos) {
                     AppText(
-                        text = stringResource(Res.string.review_photo_position, pagerState.currentPage + 1, imageUrls.size),
+                        text = stringResource(Res.string.review_photo_position, pagerState.currentPage + 1, photos.size),
                         style = AppTextStyle.B2,
                         color = CommonColor.White,
                     )
@@ -88,6 +100,7 @@ internal fun ReviewPhotoViewer(
 
             HorizontalPager(
                 state = pagerState,
+                key = { photos[it].id },
                 modifier =
                     Modifier
                         .weight(1f)
@@ -95,7 +108,7 @@ internal fun ReviewPhotoViewer(
                 userScrollEnabled = hasMultiplePhotos,
             ) { page ->
                 ReviewPhoto(
-                    url = imageUrls[page],
+                    url = photos[page].url,
                     contentDescription = stringResource(Res.string.review_photo_description, page + 1),
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Fit,
@@ -106,7 +119,7 @@ internal fun ReviewPhotoViewer(
 
             if (hasMultiplePhotos) {
                 ReviewPhotoThumbnails(
-                    imageUrls = imageUrls,
+                    photos = photos,
                     selectedPage = pagerState.currentPage,
                     onPhotoSelected = { page -> scope.launch { pagerState.animateScrollToPage(page) } },
                 )
@@ -123,7 +136,7 @@ internal expect fun ReviewPhotoViewerDialog(
 
 @Composable
 private fun ReviewPhotoThumbnails(
-    imageUrls: List<String>,
+    photos: List<ReviewGalleryPhoto>,
     selectedPage: Int,
     onPhotoSelected: (Int) -> Unit,
 ) {
@@ -149,10 +162,10 @@ private fun ReviewPhotoThumbnails(
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
     ) {
-        itemsIndexed(imageUrls) { index, url ->
+        itemsIndexed(photos, key = { _, photo -> photo.id }) { index, photo ->
             val selected = index == selectedPage
             ReviewPhoto(
-                url = url,
+                url = photo.url,
                 contentDescription = stringResource(Res.string.review_photo_description, index + 1),
                 modifier =
                     Modifier

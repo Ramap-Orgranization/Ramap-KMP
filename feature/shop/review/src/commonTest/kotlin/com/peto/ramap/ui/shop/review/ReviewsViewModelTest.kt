@@ -115,16 +115,27 @@ class ReviewsViewModelTest {
             viewModel.dispatch(ReviewsIntent.OnShopSelected("shop"))
             runCurrent()
             assertEquals(listOf(0L), fake.pageOffsets)
-            assertEquals(emptyList(), viewModel.uiState.value.photoUrls)
+            assertTrue(
+                viewModel.uiState.value.photos
+                    .isEmpty(),
+            )
             viewModel.dispatch(ReviewsIntent.OnLoadMore)
             runCurrent()
             assertEquals(40, viewModel.uiState.value.reviews.size)
-            assertEquals(listOf(photoUrl), viewModel.uiState.value.photoUrls)
+            assertEquals(
+                listOf(photoUrl),
+                viewModel.uiState.value.photos
+                    .map { it.url },
+            )
             viewModel.dispatch(ReviewsIntent.OnRetry)
             runCurrent()
             assertEquals(listOf(0L, 20L, 0L, 20L), fake.pageOffsets)
             assertEquals(40, viewModel.uiState.value.reviews.size)
-            assertEquals(listOf(photoUrl), viewModel.uiState.value.photoUrls)
+            assertEquals(
+                listOf(photoUrl),
+                viewModel.uiState.value.photos
+                    .map { it.url },
+            )
             assertTrue(viewModel.uiState.value.hasMoreReviews)
         }
 
@@ -173,12 +184,19 @@ class ReviewsViewModelTest {
             val viewModel = viewModel(fake, profile = FakeProfileRepository("owner"), changes = changes, login = FakeLoginRepository(LoginSessionState.AUTHENTICATED))
             viewModel.dispatch(ReviewsIntent.OnShopSelected("shop"))
             runCurrent()
-            assertEquals(listOf(photoUrl), viewModel.uiState.value.photoUrls)
+            assertEquals(
+                listOf(photoUrl),
+                viewModel.uiState.value.photos
+                    .map { it.url },
+            )
             fake.reviews = emptyList()
             changes.publish(ReviewChange.AccessChanged("author"))
             runCurrent()
             assertEquals(emptyList(), viewModel.uiState.value.reviews)
-            assertEquals(emptyList(), viewModel.uiState.value.photoUrls)
+            assertTrue(
+                viewModel.uiState.value.photos
+                    .isEmpty(),
+            )
             assertEquals(listOf(0L, 0L), fake.pageOffsets)
         }
 

@@ -2,6 +2,7 @@ package com.peto.ramap.designsystem.review
 
 import android.content.ComponentName
 import androidx.activity.ComponentActivity
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsSelected
@@ -96,6 +97,30 @@ class ReviewPhotoViewerTest {
             onNodeWithContentDescription("닫기").performClick()
             onNodeWithContentDescription("리뷰 사진 3").performClick()
             onNodeWithText("3 / 3").assertIsDisplayed()
+        }
+
+    @Test
+    fun `새 페이지의 사진이 붙어도 현재 보고 있던 사진을 유지한다`() =
+        runComposeUiTest {
+            val photos = mutableStateOf(imageUrls.take(2).mapIndexed { index, url -> ReviewGalleryPhoto("photo-$index", url) })
+            setContent {
+                RamapTheme {
+                    ReviewPhotoGallery(photos = photos.value, imageSize = 72.dp)
+                }
+            }
+
+            onNodeWithContentDescription("리뷰 사진 1").performClick()
+            onNode(inViewer and hasClickAction() and hasContentDescription("리뷰 사진 2")).performClick().assertIsSelected()
+            runOnIdle { photos.value += ReviewGalleryPhoto("photo-2", imageUrls.last()) }
+            onNodeWithText("2 / 3").assertIsDisplayed()
+            onNode(inViewer and hasClickAction() and hasContentDescription("리뷰 사진 2")).assertIsSelected()
+
+            runOnIdle { photos.value = photos.value.filterNot { it.id == "photo-0" } }
+            onNodeWithText("1 / 2").assertIsDisplayed()
+            onNode(inViewer and hasClickAction() and hasContentDescription("리뷰 사진 1")).assertIsSelected()
+
+            runOnIdle { photos.value = photos.value.filterNot { it.id == "photo-1" } }
+            onNode(isDialog()).assertDoesNotExist()
         }
 
     @Test
