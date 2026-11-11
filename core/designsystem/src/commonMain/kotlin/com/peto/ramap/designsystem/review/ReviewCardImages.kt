@@ -19,8 +19,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.peto.ramap.extension.noRippleClickable
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
+import ramap.shared.generated.resources.review_detail_title
 import ramap.shared.generated.resources.review_photo_description
 
 @Composable
@@ -34,9 +36,11 @@ fun ReviewCardImages(
     onImageLoadFailed: (String) -> Unit = {},
     onImageLoadSucceeded: (String) -> Unit = {},
     imageRetryKeys: Map<String, Int> = emptyMap(),
+    onPhotoClick: (() -> Unit)? = null,
 ) {
     if (imageUrls.isEmpty()) return
-    var selectedIndex by remember(imageUrls, photoViewerEnabled) { mutableStateOf<Int?>(null) }
+    val showPhotoViewerOnClick = photoViewerEnabled && onPhotoClick == null
+    var selectedIndex by remember(imageUrls, showPhotoViewerOnClick) { mutableStateOf<Int?>(null) }
 
     LazyRow(
         modifier = modifier.fillMaxWidth(),
@@ -58,10 +62,15 @@ fun ReviewCardImages(
                             .size(imageSize)
                             .clip(RoundedCornerShape(12.dp))
                             .then(
-                                if (photoViewerEnabled) {
-                                    Modifier.clickable(role = Role.Button) { selectedIndex = index }
-                                } else {
-                                    Modifier
+                                when {
+                                    onPhotoClick != null ->
+                                        Modifier.noRippleClickable(
+                                            onClickLabel = stringResource(Res.string.review_detail_title),
+                                            onClick = onPhotoClick,
+                                        )
+                                    showPhotoViewerOnClick ->
+                                        Modifier.clickable(role = Role.Button) { selectedIndex = index }
+                                    else -> Modifier
                                 },
                             ),
                     onLoadFailed = { onImageLoadFailed(url) },

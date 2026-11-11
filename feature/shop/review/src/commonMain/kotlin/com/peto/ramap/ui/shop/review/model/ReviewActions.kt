@@ -1,5 +1,6 @@
 package com.peto.ramap.ui.shop.review.model
 
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import com.peto.ramap.domain.model.review.Review
 
@@ -15,4 +16,6 @@ data class ReviewActions(
     val onLoadMoreReviews: () -> Unit,
     val onViewBlockedReview: ((Review) -> Unit)? = null,
     val onUnblockBlockedUser: ((Review) -> Unit)? = null,
+    val reviewCommentsContent: (@Composable (String) -> Unit)? = null,
+    val onOpenReviewDetail: ((String) -> Unit)? = null,
 )

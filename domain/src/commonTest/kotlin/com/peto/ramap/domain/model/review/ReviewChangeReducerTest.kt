@@ -19,6 +19,29 @@ class ReviewChangeReducerTest {
     private val reducer = ReviewChangeReducer()
 
     @Test
+    fun `댓글 수는 대상 리뷰에만 적용하고 뒤따르는 리뷰 수정 영수증이 지우지 않는다`() {
+        val current = createMyReview(id = "target", created = "02", shop = null)
+        val other = createMyReview(id = "other", created = "01", shop = null)
+        val afterComment =
+            reducer.updateOwnerRows(
+                rows = listOf(current, other),
+                change = ReviewChange.Commented("target", 4),
+                filter = MyReviewVisibility.ALL,
+                hasMore = false,
+            )
+        val afterEdit =
+            reducer.updateOwnerRows(
+                rows = afterComment,
+                change = createWrittenChange(before = current.review, after = current.review.copy(body = "수정 본문"), published = 2),
+                filter = MyReviewVisibility.ALL,
+                hasMore = false,
+            )
+
+        assertEquals(listOf(4, null), afterEdit.map { it.review.commentCount })
+        assertEquals("수정 본문", afterEdit.first().review.body)
+    }
+
+    @Test
     fun `처음 등록한 매장의 내 리뷰에는 사진과 주소와 카테고리가 포함된다`() {
         val image =
             MyReviewPhoto(

@@ -34,14 +34,15 @@ import ramap.shared.generated.resources.ic_chevron_right
 
 @Composable
 fun RamenShopCompactSummary(
-    shop: RamenShop,
+    shop: RamenShop?,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    fallbackShopName: String = "",
 ) {
     RamenShopCompactSummary(
-        shopName = shop.name,
-        address = shop.address,
-        profileImageUrl = shop.instagramProfileImageUrl,
+        shopName = shop?.name ?: fallbackShopName,
+        address = shop?.address.orEmpty(),
+        profileImageUrl = shop?.instagramProfileImageUrl,
         onClick = onClick,
         modifier =
             modifier

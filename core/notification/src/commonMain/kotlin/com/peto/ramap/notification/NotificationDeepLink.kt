@@ -9,6 +9,10 @@ sealed interface NotificationDeepLink {
         val noticeId: String,
     ) : NotificationDeepLink
 
+    data class Review(
+        val reviewId: String,
+    ) : NotificationDeepLink
+
     data object OperatingNotices : NotificationDeepLink
 
     data class ExternalUrl(

@@ -4,6 +4,7 @@ import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.coroutinesTest
 import com.peto.ramap.domain.model.review.MyReviewVisibility
 import com.peto.ramap.domain.model.review.MyReviewsPage
+import com.peto.ramap.domain.model.review.change.ReviewChange
 import com.peto.ramap.domain.model.review.change.ReviewChangeReducer
 import com.peto.ramap.fake.FakeProfileRepository
 import com.peto.ramap.fake.FakeReviewChangeStore
@@ -18,6 +19,43 @@ import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class MyReviewsViewModelTest {
+    @Test
+    fun `내 리뷰 댓글 수는 새로고침 응답보다 최신인 등록 결과를 반영한다`() =
+        coroutinesTest {
+            val repository = FakeOwnerReviews()
+            val store = FakeReviewChangeStore()
+            val viewModel = MyReviewsViewModel(repository, FakeProfileRepository("owner"), store, ReviewChangeReducer())
+            runCurrent()
+            val previous = viewModel.uiState.value
+            val targetId =
+                previous.reviews
+                    .first()
+                    .review.id
+            val pending = CompletableDeferred<RamapResult<MyReviewsPage>>()
+            repository.pendingResults += pending
+            viewModel.dispatch(MyReviewsIntent.Retry)
+            runCurrent()
+            store.publish(ReviewChange.Commented(targetId, 3))
+            runCurrent()
+            assertEquals(
+                3,
+                viewModel.uiState.value.reviews
+                    .first()
+                    .review.commentCount,
+            )
+            pending.complete(
+                RamapResult.Success(MyReviewsPage(previous.reviews, previous.totalCount, previous.publicCount, previous.privateCount, previous.profileIsPublic)),
+            )
+            runCurrent()
+
+            assertEquals(
+                3,
+                viewModel.uiState.value.reviews
+                    .first()
+                    .review.commentCount,
+            )
+        }
+
     @Test
     fun `필터는 저장된 공개 여부를 사용하며 작성자 집계를 유지한다`() =
         coroutinesTest {

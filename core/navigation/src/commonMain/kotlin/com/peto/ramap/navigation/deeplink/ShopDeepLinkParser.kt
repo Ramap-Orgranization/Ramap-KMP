@@ -1,5 +1,7 @@
 package com.peto.ramap.navigation.deeplink
 
+import kotlin.uuid.Uuid
+
 class ShopDeepLinkParser(
     private val config: ShopLinkConfig,
 ) {
@@ -8,7 +10,7 @@ class ShopDeepLinkParser(
         return parseWebLink(value) ?: parseCustomLink(value)
     }
 
-    private fun parseWebLink(value: String): ShopDeepLink? =
+    private fun parseWebLink(value: String): ShopDeepLink.Shop? =
         parseShopId(
             value = value,
             prefix = "https://${config.webHost}/shops/",
@@ -26,12 +28,21 @@ class ShopDeepLinkParser(
         value: String,
         prefix: String,
         ignoreCase: Boolean,
-    ): ShopDeepLink? {
+    ): ShopDeepLink.Shop? {
         if (!value.startsWith(prefix, ignoreCase = ignoreCase)) return null
         val pathAndSuffix = value.substring(prefix.length)
         val shopId = pathAndSuffix.substringBefore('?').substringBefore('#')
         if (shopId.isBlank() || '/' in shopId) return null
-        return ShopDeepLink.Shop(shopId = decodePathSegment(shopId) ?: return null)
+        val reviewId =
+            pathAndSuffix
+                .substringBefore('#')
+                .substringAfter('?', "")
+                .split('&')
+                .filter { it.startsWith("review=") }
+                .singleOrNull()
+                ?.removePrefix("review=")
+                ?.let { Uuid.parseOrNull(it) }
+        return ShopDeepLink.Shop(shopId = decodePathSegment(shopId) ?: return null, reviewId = reviewId?.toString())
     }
 
     private fun decodePathSegment(value: String): String? {

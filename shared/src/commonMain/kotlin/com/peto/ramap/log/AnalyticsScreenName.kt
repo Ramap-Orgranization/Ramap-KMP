@@ -29,6 +29,7 @@ internal fun ScreenRoutes.analyticsScreenName(newsTab: NewsTab): String =
         is ScreenRoutes.ProfileEditRoutes -> "my_profile"
         ScreenRoutes.MyReviewsRoutes -> "my_reviews"
         is ScreenRoutes.OtherReviewsRoutes -> "other_reviews"
+        is ScreenRoutes.ReviewDetailRoutes -> "review_detail"
         is ScreenRoutes.ReviewWriteRoutes -> "review_write"
         is ScreenRoutes.InformationRoutes -> "information"
         is ScreenRoutes.PlaceReportRoutes -> "place_report"

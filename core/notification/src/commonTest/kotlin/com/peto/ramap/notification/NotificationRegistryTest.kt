@@ -91,7 +91,7 @@ class NotificationRegistryTest {
             runCurrent()
             login.updateAccountId(null)
             runCurrent()
-            assertEquals(listOf("account-a" to 2, "account-b" to 2), owners)
+            assertEquals(listOf("account-a" to 3, "account-b" to 3), owners)
         }
 
     private fun recordingRepository(registrations: MutableList<String>): PushRegistrationRepository =

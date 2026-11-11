@@ -45,10 +45,13 @@ import com.peto.ramap.data.datasource.ranking.ShopRankingDataSource
 import com.peto.ramap.data.datasource.report.RemotePlaceLinkResolver
 import com.peto.ramap.data.datasource.report.RemoteShopReportDataSource
 import com.peto.ramap.data.datasource.report.ShopReportDataSource
+import com.peto.ramap.data.datasource.review.RemoteReviewCommentDataSource
 import com.peto.ramap.data.datasource.review.RemoteReviewDataSource
+import com.peto.ramap.data.datasource.review.ReviewCommentDataSource
 import com.peto.ramap.data.datasource.review.ReviewDataSource
 import com.peto.ramap.data.datasource.review.ReviewImageResolver
 import com.peto.ramap.data.datasource.review.ReviewImageUrlAccessPolicy
+import com.peto.ramap.data.datasource.review.ReviewNotificationDataSource
 import com.peto.ramap.data.datasource.shop.RamenShopDataSource
 import com.peto.ramap.data.datasource.shop.RemoteRamenShopDataSource
 import com.peto.ramap.data.datasource.update.AppUpdatePolicyDataSource
@@ -87,8 +90,10 @@ val dataSourceModule =
         single<UserProfileDataSource> { RemoteUserProfileDataSource(get(), get(), get()) }
         single<ProfileVisitRankingDataSource> { RemoteProfileVisitRankingDataSource(get()) }
         single<UserModerationDataSource> { RemoteUserModerationDataSource(get(), get()) }
-        single<ReviewDataSource> { RemoteReviewDataSource(get(), get(), get()) }
-        single<FeedDataSource> { RemoteFeedDataSource(get(), get()) }
+        single<ReviewCommentDataSource> { RemoteReviewCommentDataSource(get(), get()) }
+        single { ReviewNotificationDataSource(get()) }
+        single<ReviewDataSource> { RemoteReviewDataSource(get(), get(), get(), get()) }
+        single<FeedDataSource> { RemoteFeedDataSource(get(), get(), get()) }
         single { NaverImportationDataSource(get(), get<HttpClient>()) }
         single { KakaoImportationDataSource(get()) }
         single<ImportationDataSource> { RemoteImportationDataSource(get(), get()) }

@@ -29,7 +29,9 @@ import com.peto.ramap.data.repository.DefaultProfileRepository
 import com.peto.ramap.data.repository.DefaultProfileVisitRankingRepository
 import com.peto.ramap.data.repository.DefaultPushRegistrationRepository
 import com.peto.ramap.data.repository.DefaultRamenShopRepository
+import com.peto.ramap.data.repository.DefaultReviewCommentRepository
 import com.peto.ramap.data.repository.DefaultReviewFeedRepository
+import com.peto.ramap.data.repository.DefaultReviewNotificationRepository
 import com.peto.ramap.data.repository.DefaultReviewRepository
 import com.peto.ramap.data.repository.DefaultShopMenuRepository
 import com.peto.ramap.data.repository.DefaultShopRankingRepository
@@ -59,7 +61,9 @@ import com.peto.ramap.domain.repository.ProfileRepository
 import com.peto.ramap.domain.repository.ProfileVisitRankingRepository
 import com.peto.ramap.domain.repository.PushRegistrationRepository
 import com.peto.ramap.domain.repository.RamenShopRepository
+import com.peto.ramap.domain.repository.ReviewCommentRepository
 import com.peto.ramap.domain.repository.ReviewFeedRepository
+import com.peto.ramap.domain.repository.ReviewNotificationRepository
 import com.peto.ramap.domain.repository.ReviewRepository
 import com.peto.ramap.domain.repository.ShopMenuRepository
 import com.peto.ramap.domain.repository.ShopRankingRepository
@@ -90,7 +94,9 @@ val repositoryModule =
         single<UserProfileRepository> { DefaultUserProfileRepository(get()) }
         single<ProfileVisitRankingRepository> { DefaultProfileVisitRankingRepository(get()) }
         single<UserModerationRepository> { DefaultUserModerationRepository(get(), get()) }
+        single<ReviewCommentRepository> { DefaultReviewCommentRepository(get(), get(), get()) }
         single<ReviewFeedRepository> { DefaultReviewFeedRepository(get()) }
+        single<ReviewNotificationRepository> { DefaultReviewNotificationRepository(get()) }
         single<ReviewRepository> { DefaultReviewRepository(get(), get<RamenShopDataSource>(), get()) }
         single<AppUpdateRepository> {
             DefaultAppUpdateRepository(get<AppUpdatePolicyDataSource>())

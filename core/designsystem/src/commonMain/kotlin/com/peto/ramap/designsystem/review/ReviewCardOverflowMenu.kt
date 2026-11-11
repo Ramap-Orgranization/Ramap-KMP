@@ -24,7 +24,10 @@ import ramap.shared.generated.resources.ic_more_vert
 import ramap.shared.generated.resources.review_blocked_options
 import ramap.shared.generated.resources.review_delete
 import ramap.shared.generated.resources.review_edit
+import ramap.shared.generated.resources.review_notification_disable_action
+import ramap.shared.generated.resources.review_notification_enable_action
 import ramap.shared.generated.resources.review_report
+import ramap.shared.generated.resources.review_share_action
 import ramap.shared.generated.resources.review_unblock_user
 import ramap.shared.generated.resources.shop_detail_more_actions
 
@@ -33,15 +36,21 @@ fun ReviewCardOverflowMenu(
     review: Review,
     actions: ReviewCardActions,
     actionsEnabled: Boolean,
+    modifier: Modifier = Modifier,
+    notificationsEnabled: Boolean? = null,
+    isNotificationUpdating: Boolean = false,
 ) {
     var menuExpanded by remember(review.id) { mutableStateOf(false) }
+    val onToggleNotifications = actions.onToggleNotifications
     if (
         actions.onEdit != null ||
         actions.onDelete != null ||
         actions.onReport != null ||
+        actions.onShare != null ||
+        (onToggleNotifications != null && notificationsEnabled != null) ||
         (review.isBlocked && actions.onUnblockBlockedUser != null)
     ) {
-        Box {
+        Box(modifier = modifier) {
             Image(
                 painter = painterResource(Res.drawable.ic_more_vert),
                 contentDescription =
@@ -90,6 +99,33 @@ fun ReviewCardOverflowMenu(
                         onClick = {
                             menuExpanded = false
                             onReport()
+                        },
+                    )
+                }
+                actions.onShare?.let { onShare ->
+                    AppDropdownMenuItem(
+                        text = stringResource(Res.string.review_share_action),
+                        enabled = actionsEnabled,
+                        onClick = {
+                            menuExpanded = false
+                            onShare()
+                        },
+                    )
+                }
+                if (onToggleNotifications != null && notificationsEnabled != null) {
+                    AppDropdownMenuItem(
+                        text =
+                            stringResource(
+                                if (notificationsEnabled) {
+                                    Res.string.review_notification_disable_action
+                                } else {
+                                    Res.string.review_notification_enable_action
+                                },
+                            ),
+                        enabled = actionsEnabled && !isNotificationUpdating,
+                        onClick = {
+                            menuExpanded = false
+                            onToggleNotifications()
                         },
                     )
                 }

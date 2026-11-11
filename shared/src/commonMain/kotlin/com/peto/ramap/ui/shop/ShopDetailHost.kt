@@ -21,6 +21,7 @@ import com.peto.ramap.platform.AppSettingsOpener
 import com.peto.ramap.platform.ExternalUriOpener
 import com.peto.ramap.platform.NotificationPermissionRequester
 import com.peto.ramap.ui.lifecycle.ScreenViewModelScope
+import com.peto.ramap.ui.review.detail.ReviewCommentsPreviewRoute
 import com.peto.ramap.ui.shop.component.ShopDetailContent
 import com.peto.ramap.ui.shop.menu.ShopMenuRoute
 import com.peto.ramap.ui.shop.model.ShopDetailActions
@@ -56,6 +57,7 @@ fun ShopDetailHost(
     appSettingsOpener: AppSettingsOpener = koinInject(),
     shopShareLinkFactory: ShopShareLinkFactory = koinInject(),
     requestNotificationPermission: suspend () -> Boolean = NotificationPermissionRequester::request,
+    onOpenReviewDetail: ((String) -> Unit)? = null,
 ) {
     var visible by remember(shopId) { mutableStateOf(true) }
     if (!visible) return
@@ -92,6 +94,8 @@ fun ShopDetailHost(
                     onEditReview = onEditReview,
                     onLoginGuideRequested = overviewActions.onLoginGuideRequested,
                     onLoginRequired = onLoginGuideRequested,
+                    reviewCommentsContent = { ReviewCommentsPreviewRoute(it) },
+                    onOpenReviewDetail = onOpenReviewDetail,
                     toastManager = toastManager,
                 ) { reviewState, reviewActions ->
                     val displayState =

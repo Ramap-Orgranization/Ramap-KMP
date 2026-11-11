@@ -40,7 +40,8 @@ class RemoteReviewCountTest {
                 }
             val mediaHttp = HttpClient(MockEngine { error("예상하지 않은 사진 API") })
             try {
-                val source = RemoteReviewDataSource(client, ReviewImageResolver(images), MediaStorageClient(client, mediaHttp))
+                val resolver = ReviewImageResolver(images)
+                val source = RemoteReviewDataSource(client, resolver, MediaStorageClient(client, mediaHttp), RemoteReviewCommentDataSource(client, resolver))
                 val shops = FakeRamenShopDataSource()
                 val repository = DefaultReviewRepository(source, shops, testReviewChanges(), backgroundScope)
 

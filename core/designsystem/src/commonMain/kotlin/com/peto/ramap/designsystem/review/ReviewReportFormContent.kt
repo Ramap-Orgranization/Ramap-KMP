@@ -38,6 +38,7 @@ import com.peto.ramap.theme.ChromaticColor
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.LocalAppTypography
 import com.peto.ramap.theme.RamapTheme
+import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
@@ -56,6 +57,7 @@ fun ReviewReportFormContent(
     onDetailsChanged: (String) -> Unit,
     isActing: Boolean,
     modifier: Modifier = Modifier,
+    policyBody: StringResource = Res.string.review_report_policy_body,
 ) {
     Column(
         modifier = modifier,
@@ -66,7 +68,7 @@ fun ReviewReportFormContent(
                     .verticalScroll(rememberScrollState())
                     .selectableGroup(),
         ) {
-            ReportPolicyNotice()
+            ReportPolicyNotice(policyBody)
             AppText(
                 text = stringResource(Res.string.review_report_description),
                 modifier = Modifier.padding(top = 20.dp),
@@ -93,7 +95,7 @@ fun ReviewReportFormContent(
 }
 
 @Composable
-private fun ReportPolicyNotice() {
+private fun ReportPolicyNotice(policyBody: StringResource) {
     Row(
         modifier =
             Modifier
@@ -118,7 +120,7 @@ private fun ReportPolicyNotice() {
                 color = ChromaticColor.Blue500,
             )
             AppText(
-                text = stringResource(Res.string.review_report_policy_body),
+                text = stringResource(policyBody),
                 style = AppTextStyle.C2,
                 color = ChromaticColor.Blue500,
             )

@@ -172,6 +172,9 @@ class OtherReviewsViewModel(
                         }
                     }
                     revision = record.revision
+                    if (change is ReviewChange.AccessChanged && !isAccessChangedForUser && change.followAction == null && currentState.reviews.isNotEmpty()) {
+                        loadPage(reset = true)
+                    }
                 }
                 if (rankingChanged && !accessChanged) refreshProfileSummary()
             }
@@ -519,7 +522,11 @@ class OtherReviewsViewModel(
         val hasUserChanges =
             changes.journal.value
                 .changesAfter(baseline.revision)
-                .any { (it.change as? ReviewChange.Written)?.userId == userId || (it.change as? ReviewChange.AccessChanged)?.userId == userId }
+                .any {
+                    val change = it.change
+                    (change as? ReviewChange.Written)?.userId == userId ||
+                        (change is ReviewChange.AccessChanged && (change.userId == userId || change.followAction == null))
+                }
         if (hasGap || hasUserChanges) {
             loadPage(reset)
             return

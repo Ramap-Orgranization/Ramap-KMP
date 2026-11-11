@@ -86,6 +86,8 @@ fun OtherReviewsRoute(
     shopDetailContent: @Composable (String, () -> Unit, (String) -> Unit, (ShopEvent) -> Unit) -> Unit,
     viewModel: OtherReviewsViewModel = koinViewModel(),
     toastManager: ToastManager = koinInject(),
+    reviewCommentsContent: (@Composable (String) -> Unit)? = null,
+    onOpenReviewDetail: ((String) -> Unit)? = null,
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val requestLoginGuide =
@@ -109,6 +111,8 @@ fun OtherReviewsRoute(
             onBack = onBack,
             onOpenShopDetail = { selectedShopId = it },
             onIntent = viewModel::dispatch,
+            reviewCommentsContent = reviewCommentsContent,
+            onOpenReviewDetail = onOpenReviewDetail,
         )
         selectedShopId?.let { shopId ->
             shopDetailContent(
@@ -133,6 +137,8 @@ internal fun OtherReviewsContent(
     onBack: () -> Unit,
     onOpenShopDetail: (String) -> Unit,
     onIntent: (OtherReviewsIntent) -> Unit,
+    reviewCommentsContent: (@Composable (String) -> Unit)? = null,
+    onOpenReviewDetail: ((String) -> Unit)? = null,
 ) {
     val reviewListState = rememberLazyListState()
     val savedShopsListState = rememberLazyListState()
@@ -307,12 +313,12 @@ internal fun OtherReviewsContent(
                 val reviewActions =
                     ReviewCardActions(
                         onLike = { onIntent(OtherReviewsIntent.ToggleLike(review)) },
-                        onReviewClick = { onOpenShopDetail(review.shopId) },
+                        onOpenReviewDetail = onOpenReviewDetail?.let { open -> { open(review.id) } },
                     )
                 ReviewCard(
                     review = review,
                     actions = reviewActions,
-                    photoViewerEnabled = false,
+                    commentsContent = reviewCommentsContent,
                     header = {
                         ShopReviewCardHeader(
                             review = review,

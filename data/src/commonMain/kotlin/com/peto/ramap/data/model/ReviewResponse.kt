@@ -29,6 +29,11 @@ internal data class ReviewResponse(
     @SerialName("is_withdrawn") val isWithdrawn: Boolean = false,
     @SerialName("shop_name") val shopName: String = "",
     @SerialName("moderation_note") val moderationNote: String? = null,
+    @SerialName("comment_count") val commentCount: Int? = null,
+    @SerialName("can_like") val canLike: Boolean = false,
+    @SerialName("can_write_comments") val canWriteComments: Boolean = false,
+    @SerialName("can_share") val canShare: Boolean = false,
+    @SerialName("review_notifications_enabled") val reviewNotificationsEnabled: Boolean? = null,
     @Transient val imageReferences: List<MyReviewPhoto> = emptyList(),
     @Transient val imageUrls: List<String> = emptyList(),
     @Transient val avatarUrl: String? = null,
@@ -58,5 +63,6 @@ internal data class ReviewResponse(
             likeCount = likeCount,
             isLiked = isLiked,
             isBlocked = isBlocked,
+            commentCount = commentCount,
         )
 }

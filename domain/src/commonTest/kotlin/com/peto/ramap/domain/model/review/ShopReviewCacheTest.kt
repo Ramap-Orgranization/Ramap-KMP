@@ -46,7 +46,7 @@ class ShopReviewCacheTest {
         cache.save(anonymous, empty)
         val written = review("shop", "private-review").copy(isPublic = false)
         changes.publish(ReviewChange.Written(written.id, "author", "shop", null, ReviewSnapshot(written, "매장"), ReviewOwnerCounts(1, 0, 1, 0, false)))
-        val ownerPage = ShopReviewsPage(listOf(written), 1)
+        val ownerPage = ShopReviewsPage(listOf(written.copy(commentCount = 0)), 1)
         assertEquals(ownerPage, cache.find(owner))
         assertEquals(ownerPage, cache.find(owner))
         assertEquals(empty, cache.find(anonymous))

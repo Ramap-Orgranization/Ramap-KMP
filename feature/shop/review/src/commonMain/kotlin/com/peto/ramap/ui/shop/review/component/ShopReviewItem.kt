@@ -23,6 +23,7 @@ internal fun ShopReviewItem(
     val reviewActions =
         ReviewCardActions(
             onOpenProfile = actions.onOpenProfile,
+            onOpenReviewDetail = actions.onOpenReviewDetail?.let { open -> { open(review.id) } },
             onLike =
                 if (
                     !review.isBlocked &&
@@ -73,6 +74,7 @@ internal fun ShopReviewItem(
         review = displayedReview,
         actions = reviewActions,
         modifier = modifier,
+        commentsContent = actions.reviewCommentsContent,
         header = {
             ReviewCardHeader(
                 review = displayedReview,

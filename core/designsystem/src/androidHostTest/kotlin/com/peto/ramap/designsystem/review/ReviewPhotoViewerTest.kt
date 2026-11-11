@@ -17,6 +17,7 @@ import androidx.compose.ui.test.swipeLeft
 import androidx.compose.ui.test.v2.runComposeUiTest
 import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
+import com.peto.ramap.domain.model.review.Review
 import com.peto.ramap.theme.RamapTheme
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -103,7 +104,18 @@ class ReviewPhotoViewerTest {
         runComposeUiTest {
             setContent {
                 RamapTheme {
-                    ReviewCardImages(imageUrls = imageUrls.take(1))
+                    ReviewCard(
+                        review =
+                            Review(
+                                id = "review",
+                                shopId = "shop",
+                                body = "리뷰 본문",
+                                createdAt = "2026-11-11T08:00:00Z",
+                                imageUrls = imageUrls.take(1),
+                            ),
+                        photoViewerEnabled = true,
+                        header = {},
+                    )
                 }
             }
 

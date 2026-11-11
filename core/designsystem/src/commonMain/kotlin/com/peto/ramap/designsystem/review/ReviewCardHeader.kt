@@ -7,15 +7,19 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.peto.ramap.designsystem.component.RamenShopCompactSummary
 import com.peto.ramap.designsystem.profile.ProfileAvatar
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.domain.model.review.Review
+import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.extension.noRippleClickable
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.GrayColor
@@ -30,7 +34,38 @@ fun ReviewCardHeader(
     review: Review,
     actions: ReviewCardActions,
     actionsEnabled: Boolean,
+    shop: RamenShop?,
+    onOpenShop: () -> Unit,
     modifier: Modifier = Modifier,
+    fallbackShopName: String = "",
+    authorSubtitle: (@Composable () -> Unit)? = null,
+) {
+    Column(modifier = modifier) {
+        ReviewCardHeader(
+            review = review,
+            actions = actions,
+            actionsEnabled = actionsEnabled,
+            authorSubtitle = authorSubtitle,
+        )
+        RamenShopCompactSummary(
+            shop = shop,
+            onClick = onOpenShop,
+            modifier =
+                Modifier
+                    .padding(start = 12.dp, top = 12.dp, end = 12.dp, bottom = 7.dp)
+                    .clip(RoundedCornerShape(12.dp)),
+            fallbackShopName = fallbackShopName,
+        )
+    }
+}
+
+@Composable
+fun ReviewCardHeader(
+    review: Review,
+    actions: ReviewCardActions,
+    actionsEnabled: Boolean,
+    modifier: Modifier = Modifier,
+    authorSubtitle: (@Composable () -> Unit)? = null,
 ) {
     Row(
         modifier =
@@ -89,7 +124,9 @@ fun ReviewCardHeader(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
-                if (!review.isBlocked && !review.author.isWithdrawn) {
+                if (authorSubtitle != null) {
+                    authorSubtitle()
+                } else if (!review.isBlocked && !review.author.isWithdrawn) {
                     AppText(
                         text = stringResource(Res.string.review_author_review_count, review.author.reviewCount),
                         style = AppTextStyle.B2,

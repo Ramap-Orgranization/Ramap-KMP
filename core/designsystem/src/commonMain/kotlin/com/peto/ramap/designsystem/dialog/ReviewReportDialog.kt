@@ -32,6 +32,7 @@ import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.RamapTheme
 import com.peto.ramap.theme.SystemColor
+import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
@@ -39,6 +40,7 @@ import ramap.shared.generated.resources.ic_close
 import ramap.shared.generated.resources.ic_report_warning_circle
 import ramap.shared.generated.resources.review_close
 import ramap.shared.generated.resources.review_report_false_warning
+import ramap.shared.generated.resources.review_report_policy_body
 import ramap.shared.generated.resources.review_report_send
 import ramap.shared.generated.resources.review_report_title
 import ramap.shared.generated.resources.shop_review_cancel
@@ -53,6 +55,8 @@ fun ReviewReportDialog(
     isActing: Boolean,
     onDismissRequest: () -> Unit,
     onSubmit: (ReportReason, String) -> Unit,
+    title: StringResource = Res.string.review_report_title,
+    policyBody: StringResource = Res.string.review_report_policy_body,
 ) {
     if (!visible) return
 
@@ -81,6 +85,8 @@ fun ReviewReportDialog(
                 onDismissRequest = onDismissRequest,
                 onSubmit = onSubmit,
                 modifier = Modifier.fillMaxWidth(),
+                title = title,
+                policyBody = policyBody,
             )
         }
     }
@@ -95,6 +101,8 @@ private fun ReviewReportDialogContent(
     isActing: Boolean,
     onDismissRequest: () -> Unit,
     onSubmit: (ReportReason, String) -> Unit,
+    title: StringResource,
+    policyBody: StringResource,
     modifier: Modifier = Modifier,
 ) {
     Surface(
@@ -112,7 +120,7 @@ private fun ReviewReportDialogContent(
                 contentAlignment = Alignment.Center,
             ) {
                 AppText(
-                    text = stringResource(Res.string.review_report_title),
+                    text = stringResource(title),
                     style = AppTextStyle.T1,
                     color = GrayColor.C500,
                 )
@@ -135,6 +143,7 @@ private fun ReviewReportDialogContent(
                 onDetailsChanged = onDetailsChanged,
                 isActing = isActing,
                 modifier = Modifier.weight(1f).fillMaxWidth().padding(12.dp),
+                policyBody = policyBody,
             )
             HorizontalDivider(color = GrayColor.C100)
             Row(
@@ -193,6 +202,8 @@ private fun ReviewReportDialogContentPreview() {
             selectedReason = ReportReason.SPAM,
             onReasonSelected = {},
             details = "같은 광고 문구가 반복됩니다.",
+            title = Res.string.review_report_title,
+            policyBody = Res.string.review_report_policy_body,
             onDetailsChanged = {},
             isActing = false,
             onDismissRequest = {},

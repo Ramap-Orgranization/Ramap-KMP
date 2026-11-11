@@ -128,6 +128,7 @@ class AppConfigurationTest {
                     profileEditScreen = {},
                     myReviewsScreen = {},
                     otherReviewsScreen = {},
+                    reviewDetailScreen = {},
                     reviewWriteScreen = {},
                     informationScreen = {},
                     placeReportScreen = {},

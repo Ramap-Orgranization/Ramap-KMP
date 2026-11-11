@@ -67,6 +67,8 @@ fun MyReviewsRoute(
     shopDetailContent: @Composable (String, () -> Unit, (String) -> Unit, (ShopEvent) -> Unit) -> Unit,
     isUncovered: Boolean = true,
     toastManager: ToastManager = koinInject(),
+    reviewCommentsContent: (@Composable (String) -> Unit)? = null,
+    onOpenReviewDetail: ((String) -> Unit)? = null,
     viewModel: MyReviewsViewModel = koinViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -85,6 +87,8 @@ fun MyReviewsRoute(
                 onEditReview(shopId, reviewId)
             },
             onIntent = viewModel::dispatch,
+            reviewCommentsContent = reviewCommentsContent,
+            onOpenReviewDetail = onOpenReviewDetail,
         )
         selectedShopId?.let { shopId ->
             shopDetailContent(
@@ -112,6 +116,8 @@ fun MyReviewsContent(
     onOpenShopDetail: (String) -> Unit,
     onEditReview: (String, String) -> Unit,
     onIntent: (MyReviewsIntent) -> Unit,
+    reviewCommentsContent: (@Composable (String) -> Unit)? = null,
+    onOpenReviewDetail: ((String) -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     var deleteTargetReview by remember { mutableStateOf<MyReview?>(null) }
@@ -200,12 +206,13 @@ fun MyReviewsContent(
                         ReviewCardActions(
                             onEdit = { onEditReview(cardReview.shopId, cardReview.id) },
                             onDelete = { deleteTargetReview = review },
+                            onOpenReviewDetail = onOpenReviewDetail?.let { open -> { open(cardReview.id) } },
                         )
                     ReviewCard(
                         review = cardReview,
                         actions = reviewActions,
                         actionsEnabled = actionsEnabled,
-                        photoViewerEnabled = true,
+                        commentsContent = reviewCommentsContent,
                         header = {
                             ShopReviewCardHeader(
                                 review = cardReview,
