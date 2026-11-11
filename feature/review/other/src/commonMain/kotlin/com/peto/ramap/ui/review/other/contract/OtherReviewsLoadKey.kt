@@ -4,6 +4,7 @@ import com.peto.ramap.ui.loading.LoadKey
 
 enum class OtherReviewsLoadKey : LoadKey {
     Page,
+    VisitRanking,
     SavedShops,
     Block,
     Follow,

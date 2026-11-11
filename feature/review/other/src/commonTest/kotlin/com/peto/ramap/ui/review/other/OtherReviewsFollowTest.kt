@@ -14,6 +14,7 @@ import com.peto.ramap.domain.model.review.change.ReviewChange
 import com.peto.ramap.domain.model.review.change.ReviewChangeReducer
 import com.peto.ramap.fake.FakeFollowRepository
 import com.peto.ramap.fake.FakeProfileRepository
+import com.peto.ramap.fake.FakeProfileVisitRankingRepository
 import com.peto.ramap.fake.FakeReviewChangeStore
 import com.peto.ramap.fake.FakeShopReviewRepository
 import com.peto.ramap.fixture.ramenShopFixture
@@ -261,6 +262,7 @@ class OtherReviewsFollowTest {
         reviewRepository = FakeShopReviewRepository(),
         changes = changes,
         reviewChangeReducer = ReviewChangeReducer(),
+        visitRankings = FakeProfileVisitRankingRepository(),
     )
 
     private fun review(number: Int) =

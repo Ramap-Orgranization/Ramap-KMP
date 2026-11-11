@@ -9,6 +9,7 @@ import com.peto.ramap.fake.FakeAnnouncementRepository
 import com.peto.ramap.fake.FakeFollowRepository
 import com.peto.ramap.fake.FakePersonalizationRepository
 import com.peto.ramap.fake.FakeProfileRepository
+import com.peto.ramap.fake.FakeProfileVisitRankingRepository
 import com.peto.ramap.fake.FakeReviewChangeStore
 import com.peto.ramap.fake.FakeUserModerationRepository
 import com.peto.ramap.ui.main.my.contract.MyTabIntent
@@ -105,5 +106,6 @@ class MyTabFollowBadgeTest {
             FakeReviewChangeStore(),
             FakeAnnouncementRepository(),
             FakeAnnouncementReadStore(),
+            FakeProfileVisitRankingRepository(),
         )
 }

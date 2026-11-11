@@ -8,6 +8,7 @@ import com.peto.ramap.domain.model.review.change.ReviewChange
 import com.peto.ramap.domain.repository.AnnouncementRepository
 import com.peto.ramap.domain.repository.FollowRepository
 import com.peto.ramap.domain.repository.ProfileRepository
+import com.peto.ramap.domain.repository.ProfileVisitRankingRepository
 import com.peto.ramap.domain.repository.ReviewRepository
 import com.peto.ramap.domain.repository.UserModerationRepository
 import com.peto.ramap.domain.store.AnnouncementReadStore
@@ -37,6 +38,7 @@ class MyTabViewModel(
     private val changes: ReviewChangeStore,
     private val announcementRepository: AnnouncementRepository,
     private val announcementReadStore: AnnouncementReadStore,
+    private val visitRankings: ProfileVisitRankingRepository,
 ) : BaseViewModel<MyTabUiState, MyTabIntent, MyTabSideEffect>(MyTabUiState()) {
     init {
         launchTask(taskKey = ANNOUNCEMENT_READS) {
@@ -49,12 +51,17 @@ class MyTabViewModel(
             var epoch = changes.journal.value.epoch
             var revision = changes.journal.value.revision
             changes.journal.collect { journal ->
-                if (epoch != journal.epoch) {
+                val isEpochChanged = epoch != journal.epoch
+                if (isEpochChanged) {
                     epoch = journal.epoch
                     revision = journal.revision
                 }
                 val hasGap = journal.hasGapAfter(revision)
                 if (hasGap) refreshReviewCount()
+                val userId = currentState.userId
+                if (userId != null && (isEpochChanged || journal.requiresProfileVisitRankingReloadAfter(revision, userId))) {
+                    refreshVisitRanking()
+                }
                 for (record in journal.changesAfter(revision)) {
                     val change = record.change as? ReviewChange.Written ?: continue
                     val isMyReview = change.userId == currentState.userId
@@ -69,6 +76,7 @@ class MyTabViewModel(
                 cancelTask(VISIBILITY)
                 cancelTask(BLOCKED_USERS)
                 cancelTask(REVIEW_COUNT)
+                cancelTask(VISIT_RANKING)
                 cancelTask(BLOCKED_USER_COUNT)
                 cancelTask(FOLLOW_STATUS)
                 cancelTask(UNBLOCK)
@@ -106,6 +114,7 @@ class MyTabViewModel(
                 refreshAnnouncements()
                 refresh()
             }
+            MyTabIntent.RetryVisitRanking -> refreshVisitRanking()
             MyTabIntent.ReturnedToScreen -> {
                 refreshBlockedUserCount()
                 refreshFollowStatus()
@@ -290,6 +299,7 @@ class MyTabViewModel(
 
     private fun refresh() {
         refreshReviewCount()
+        refreshVisitRanking()
         refreshBlockedUserCount()
         refreshFollowStatus()
         refreshProfile()
@@ -359,6 +369,30 @@ class MyTabViewModel(
         )
     }
 
+    private fun refreshVisitRanking() {
+        val userId = currentState.userId ?: return
+        val baseline = changes.journal.value
+        launchResultTask(
+            taskKey = VISIT_RANKING,
+            loadKey = MyTabLoadKey.VisitRanking,
+            policy = TaskPolicy.CancelPrevious,
+            onStart = { copy(visitRankingFailed = false) },
+            request = { visitRankings.fetchProfileVisitRanking(userId) },
+            onSuccess = { ranking ->
+                if (currentState.userId != userId) return@launchResultTask
+                val journal = changes.journal.value
+                if (baseline.epoch != journal.epoch || journal.requiresProfileVisitRankingReloadAfter(baseline.revision, userId)) {
+                    refreshVisitRanking()
+                } else {
+                    reduce { copy(visitRanking = ranking) }
+                }
+            },
+            onError = {
+                if (currentState.userId == userId) reduce { copy(visitRanking = null, visitRankingFailed = true) }
+            },
+        )
+    }
+
     private fun refreshBlockedUserCount() {
         val userId = currentState.userId ?: return
         launchResultTask(
@@ -393,6 +427,7 @@ class MyTabViewModel(
         private const val VISIBILITY = "my-tab-profile-visibility"
         private const val BLOCKED_USERS = "my-tab-blocked-users"
         private const val REVIEW_COUNT = "my-tab-review-count"
+        private const val VISIT_RANKING = "my-tab-visit-ranking"
         private const val BLOCKED_USER_COUNT = "my-tab-blocked-user-count"
         private const val FOLLOW_STATUS = "my-tab-follow-status"
         private const val UNBLOCK = "my-tab-unblock-user"

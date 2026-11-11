@@ -38,6 +38,12 @@ After an actual wiki edit, run `python3 scripts/check_wiki.py`; after changing t
 
 Run the iOS app from Xcode by opening `iosApp`.
 
+## Worktree setup
+
+Create new Ramap Git worktrees and separate app checkouts under `~/Documents/Android/worktrees`.
+
+When a Ramap task uses a Git worktree or a separate checkout for app changes, open that checkout's project root in Android Studio before starting implementation, builds, or tests. Verify that Android Studio opened the exact task path, then use that path for commands and agent handoffs.
+
 ## Implementation Agent Routing
 
 The primary agent owns ordinary implementation requests from investigation through code changes and validation. Read the relevant project skills, inspect the existing behavior, make routine implementation decisions, and complete the request. Do not spawn a planner, implementer, or validator merely because a request spans modules, touches Supabase, or needs a plan to organize the work.

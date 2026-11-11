@@ -8,6 +8,7 @@ import com.peto.ramap.fake.FakeAnnouncementReadStore
 import com.peto.ramap.fake.FakeAnnouncementRepository
 import com.peto.ramap.fake.FakeFollowRepository
 import com.peto.ramap.fake.FakePersonalizationRepository
+import com.peto.ramap.fake.FakeProfileVisitRankingRepository
 import com.peto.ramap.fake.FakeReviewChangeStore
 import com.peto.ramap.fake.FakeUserModerationRepository
 import com.peto.ramap.ui.main.my.contract.MyTabIntent
@@ -35,6 +36,7 @@ class MyTabAnnouncementsTest {
                     FakeReviewChangeStore(),
                     FakeAnnouncementRepository(RamapResult.Success(listOf(announcement("first")))),
                     storage,
+                    FakeProfileVisitRankingRepository(),
                 )
             runCurrent()
             assertTrue(viewModel.uiState.value.sessionResolved)
@@ -94,6 +96,7 @@ class MyTabAnnouncementsTest {
             FakeReviewChangeStore(),
             repository,
             storage,
+            FakeProfileVisitRankingRepository(),
         )
 
     private fun announcement(id: String): Announcement = Announcement(id, "공지", "본문", Instant.parse("2026-11-09T00:00:00Z"))
