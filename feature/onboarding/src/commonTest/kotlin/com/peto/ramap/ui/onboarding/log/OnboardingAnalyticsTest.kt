@@ -6,15 +6,15 @@ import com.peto.ramap.domain.model.personalization.Personalization
 import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.domain.repository.LoginRepository
 import com.peto.ramap.domain.repository.RamenShopRepository
-import com.peto.ramap.domain.repository.ShopRankingRepository
+import com.peto.ramap.domain.repository.ShopSuggestionsRepository
 import com.peto.ramap.domain.store.PersonalizationStore
 import com.peto.ramap.domain.usecase.SearchRamenShopsUseCase
 import com.peto.ramap.fake.FakeAnalyticsTracker
 import com.peto.ramap.fake.FakeLoginRepository
-import com.peto.ramap.fake.FakeOnboardingRankingRepository
 import com.peto.ramap.fake.FakeOnboardingStorage
 import com.peto.ramap.fake.FakePersonalizationRepository
 import com.peto.ramap.fake.FakeRamenShopRepository
+import com.peto.ramap.fake.FakeShopSuggestionsRepository
 import com.peto.ramap.platform.permission.NotificationPermissionOutcome
 import com.peto.ramap.platform.storage.onboarding.OnboardingStorage
 import com.peto.ramap.ui.onboarding.OnboardingViewModel
@@ -47,7 +47,7 @@ class OnboardingAnalyticsTest {
                             single<OnboardingStorage> { FakeOnboardingStorage().also { it.confirmed = true } }
                             single<LoginRepository> { FakeLoginRepository() }
                             single<RamenShopRepository> { FakeRamenShopRepository() }
-                            single<ShopRankingRepository> { FakeOnboardingRankingRepository(RamenShops(emptyMap())) }
+                            single<ShopSuggestionsRepository> { FakeShopSuggestionsRepository(RamenShops(emptyMap())) }
                             single<PersonalizationStore> {
                                 FakePersonalizationRepository(Personalization(bookmarkedShopIds = setOf("one", "two", "three")))
                             }

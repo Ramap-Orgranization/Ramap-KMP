@@ -1,7 +1,7 @@
 package com.peto.ramap.ui.onboarding.shopselection.contract
 
 import com.peto.ramap.domain.model.onboarding.OnboardingBookmarks
-import com.peto.ramap.domain.model.rank.RankingCursor
+import com.peto.ramap.domain.model.onboarding.ShopSuggestionsCursor
 import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.ui.loading.LoadState
 import com.peto.ramap.ui.loading.LoadableState
@@ -9,7 +9,7 @@ import com.peto.ramap.ui.loading.LoadableState
 public data class ShopSelectionUiState(
     val query: String = "",
     val suggestedShops: RamenShops = RamenShops(emptyMap()),
-    val nextCursor: RankingCursor? = null,
+    val nextCursor: ShopSuggestionsCursor? = null,
     val searchResults: RamenShops = RamenShops(emptyMap()),
     val bookmarks: OnboardingBookmarks = OnboardingBookmarks(emptySet()),
     val hasPersonalization: Boolean = false,

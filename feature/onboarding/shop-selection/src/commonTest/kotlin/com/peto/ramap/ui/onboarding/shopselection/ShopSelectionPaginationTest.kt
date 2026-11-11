@@ -3,48 +3,45 @@ package com.peto.ramap.ui.onboarding.shopselection
 import app.cash.turbine.test
 import com.peto.ramap.core.result.RamapError
 import com.peto.ramap.coroutinesTest
+import com.peto.ramap.domain.model.onboarding.ShopSuggestionsCursor
+import com.peto.ramap.domain.model.onboarding.ShopSuggestionsPage
 import com.peto.ramap.domain.model.personalization.Personalization
-import com.peto.ramap.domain.model.rank.RankingCursor
-import com.peto.ramap.domain.model.rank.RankingPage
-import com.peto.ramap.domain.model.rank.ShopRanking
-import com.peto.ramap.domain.model.rank.ShopRankings
-import com.peto.ramap.domain.model.shop.AreaFilter
 import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.domain.usecase.SearchRamenShopsUseCase
 import com.peto.ramap.fake.FakeLoginRepository
-import com.peto.ramap.fake.FakeOnboardingRankingRepository
 import com.peto.ramap.fake.FakeOnboardingStorage
 import com.peto.ramap.fake.FakePersonalizationRepository
 import com.peto.ramap.fake.FakeRamenShopRepository
+import com.peto.ramap.fake.FakeShopSuggestionsRepository
 import com.peto.ramap.fixture.ramenShopFixture
 import com.peto.ramap.ui.onboarding.shopselection.contract.ShopSelectionIntent
 import com.peto.ramap.ui.onboarding.shopselection.contract.ShopSelectionSideEffect
 import com.peto.ramap.ui.onboarding.shopselection.log.ShopSelectionAnalytics
-import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.advanceUntilIdle
-import kotlinx.coroutines.test.runCurrent
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runCurrent
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ShopSelectionPaginationTest {
     private val shops = RamenShops((1..4).map { ramenShopFixture(id = "shop-$it", name = "라멘 $it") })
-    private val firstCursor = RankingCursor(likeCount = 10, name = "라멘 2", shopId = "shop-2")
-    private val secondCursor = RankingCursor(likeCount = 10, name = "라멘 3", shopId = "shop-3")
+    private val firstCursor = ShopSuggestionsCursor("first-page-cursor")
+    private val secondCursor = ShopSuggestionsCursor("second-page-cursor")
 
     @Test
     fun `커서로 목록을 이어 붙이며 중복 매장과 기존 저장을 유지하고 마지막 페이지에서 멈춘다`() =
         coroutinesTest {
-            val ranking = pagedRepository()
+            val suggestions = pagedRepository()
             val store = FakePersonalizationRepository(Personalization(bookmarkedShopIds = setOf("shop-4")))
-            val viewModel = createViewModel(ranking = ranking, store = store)
+            val viewModel = createViewModel(suggestions = suggestions, store = store)
             runCurrent()
             assertEquals(
-                listOf("shop-4", "shop-1", "shop-2"),
+                listOf("shop-4", "shop-2", "shop-1"),
                 viewModel.uiState.value.shops.keys
                     .toList(),
             )
@@ -56,7 +53,7 @@ class ShopSelectionPaginationTest {
             viewModel.dispatch(ShopSelectionIntent.LoadNextPage)
             runCurrent()
             assertEquals(
-                listOf("shop-4", "shop-1", "shop-2", "shop-3"),
+                listOf("shop-4", "shop-2", "shop-1", "shop-3"),
                 viewModel.uiState.value.shops.keys
                     .toList(),
             )
@@ -69,8 +66,8 @@ class ShopSelectionPaginationTest {
             viewModel.dispatch(ShopSelectionIntent.RetryNextPage)
             runCurrent()
 
-            assertEquals(listOf(null, firstCursor, secondCursor), ranking.requestedQueries.map { it.cursor })
-            assertTrue(ranking.requestedQueries.all { it.limit == 20 && it.areaFilter == AreaFilter.Nationwide && it.categories.isEmpty() })
+            assertEquals(listOf(null, firstCursor, secondCursor), suggestions.requests.map { it.cursor })
+            assertTrue(suggestions.requests.all { it.limit == 20 })
             assertEquals(4, viewModel.uiState.value.shops.size)
             assertEquals(3, viewModel.uiState.value.bookmarks.savedCount)
             assertTrue(viewModel.uiState.value.canComplete)
@@ -79,14 +76,14 @@ class ShopSelectionPaginationTest {
     @Test
     fun `추가 로딩 중 중복 요청을 막고 기존 목록에서 계속 저장할 수 있다`() =
         coroutinesTest {
-            val ranking = pagedRepository()
-            val viewModel = createViewModel(ranking = ranking)
+            val suggestions = pagedRepository()
+            val viewModel = createViewModel(suggestions = suggestions)
             runCurrent()
             val pending = CompletableDeferred<Unit>()
-            ranking.pendingRequest = pending
+            suggestions.pendingRequest = pending
             repeat(3) { viewModel.dispatch(ShopSelectionIntent.LoadNextPage) }
             runCurrent()
-            assertEquals(2, ranking.requestedQueries.size)
+            assertEquals(2, suggestions.requests.size)
             assertTrue(viewModel.uiState.value.isLoadingNextPage)
             assertFalse(viewModel.uiState.value.isLoadingShops)
             assertEquals(setOf("shop-1", "shop-2"), viewModel.uiState.value.shops.keys)
@@ -103,12 +100,12 @@ class ShopSelectionPaginationTest {
     @Test
     fun `추가 조회 실패는 목록과 커서를 유지하고 명시적 재시도로 같은 페이지를 가져온다`() =
         coroutinesTest {
-            val ranking = pagedRepository()
-            val viewModel = createViewModel(ranking = ranking)
+            val suggestions = pagedRepository()
+            val viewModel = createViewModel(suggestions = suggestions)
             runCurrent()
             viewModel.dispatch(ShopSelectionIntent.ToggleBookmark("shop-1"))
             runCurrent()
-            ranking.error = RamapError.Unknown(IllegalStateException())
+            suggestions.error = RamapError.Unknown(IllegalStateException())
             viewModel.dispatch(ShopSelectionIntent.LoadNextPage)
             runCurrent()
             assertTrue(viewModel.uiState.value.hasNextPageError)
@@ -118,12 +115,12 @@ class ShopSelectionPaginationTest {
             assertEquals(setOf("shop-1", "shop-2"), viewModel.uiState.value.shops.keys)
             viewModel.dispatch(ShopSelectionIntent.LoadNextPage)
             runCurrent()
-            assertEquals(2, ranking.requestedQueries.size)
+            assertEquals(2, suggestions.requests.size)
 
-            ranking.error = null
+            suggestions.error = null
             viewModel.dispatch(ShopSelectionIntent.RetryNextPage)
             runCurrent()
-            assertEquals(listOf(null, firstCursor, firstCursor), ranking.requestedQueries.map { it.cursor })
+            assertEquals(listOf(null, firstCursor, firstCursor), suggestions.requests.map { it.cursor })
             assertFalse(viewModel.uiState.value.hasNextPageError)
             assertEquals(setOf("shop-1", "shop-2", "shop-3"), viewModel.uiState.value.shops.keys)
             assertTrue("shop-1" in viewModel.uiState.value.bookmarks)
@@ -132,11 +129,11 @@ class ShopSelectionPaginationTest {
     @Test
     fun `검색 전환은 추가 조회를 취소하고 검색 해제 후 기존 커서부터 재개한다`() =
         coroutinesTest {
-            val ranking = pagedRepository()
-            val viewModel = createViewModel(ranking = ranking)
+            val suggestions = pagedRepository()
+            val viewModel = createViewModel(suggestions = suggestions)
             runCurrent()
             val pending = CompletableDeferred<Unit>()
-            ranking.pendingRequest = pending
+            suggestions.pendingRequest = pending
             viewModel.dispatch(ShopSelectionIntent.LoadNextPage)
             runCurrent()
             viewModel.dispatch(ShopSelectionIntent.QueryChanged("라멘"))
@@ -148,14 +145,14 @@ class ShopSelectionPaginationTest {
             assertFalse(viewModel.uiState.value.showsNextPageFooter)
             assertEquals(setOf("shop-4"), viewModel.uiState.value.shops.keys)
             assertEquals(setOf("shop-1", "shop-2"), viewModel.uiState.value.suggestedShops.keys)
-            assertEquals(2, ranking.requestedQueries.size)
+            assertEquals(2, suggestions.requests.size)
 
             viewModel.dispatch(ShopSelectionIntent.ToggleBookmark("shop-4"))
             runCurrent()
             viewModel.dispatch(ShopSelectionIntent.QueryChanged(""))
             viewModel.dispatch(ShopSelectionIntent.LoadNextPage)
             runCurrent()
-            assertEquals(listOf(null, firstCursor, firstCursor), ranking.requestedQueries.map { it.cursor })
+            assertEquals(listOf(null, firstCursor, firstCursor), suggestions.requests.map { it.cursor })
             assertEquals(shops.keys, viewModel.uiState.value.shops.keys)
             assertTrue("shop-4" in viewModel.uiState.value.bookmarks)
         }
@@ -163,20 +160,20 @@ class ShopSelectionPaginationTest {
     @Test
     fun `첫 페이지 재조회는 진행 중이던 다음 페이지 결과를 무시한다`() =
         coroutinesTest {
-            val ranking = pagedRepository()
-            val viewModel = createViewModel(ranking = ranking)
+            val suggestions = pagedRepository()
+            val viewModel = createViewModel(suggestions = suggestions)
             runCurrent()
             val pending = CompletableDeferred<Unit>()
-            ranking.pendingRequest = pending
+            suggestions.pendingRequest = pending
             viewModel.dispatch(ShopSelectionIntent.LoadNextPage)
             runCurrent()
-            ranking.pendingRequest = null
-            ranking.pages = ranking.pages + (null to page("shop-4"))
+            suggestions.pendingRequest = null
+            suggestions.pages = suggestions.pages + (null to page("shop-4"))
             viewModel.dispatch(ShopSelectionIntent.RetryShops)
             runCurrent()
             pending.complete(Unit)
             runCurrent()
-            assertEquals(listOf(null, firstCursor, null), ranking.requestedQueries.map { it.cursor })
+            assertEquals(listOf(null, firstCursor, null), suggestions.requests.map { it.cursor })
             assertEquals(setOf("shop-1", "shop-2", "shop-4"), viewModel.uiState.value.shops.keys)
             assertNull(viewModel.uiState.value.nextCursor)
             assertFalse(viewModel.uiState.value.isLoadingNextPage)
@@ -185,12 +182,12 @@ class ShopSelectionPaginationTest {
     @Test
     fun `온보딩을 완료하면 진행 중인 페이지 조회를 취소하고 추가 요청을 막는다`() =
         coroutinesTest {
-            val ranking = pagedRepository()
+            val suggestions = pagedRepository()
             val store = FakePersonalizationRepository(Personalization(bookmarkedShopIds = setOf("shop-1", "shop-2", "shop-4")))
-            val viewModel = createViewModel(ranking = ranking, store = store)
+            val viewModel = createViewModel(suggestions = suggestions, store = store)
             runCurrent()
             val pending = CompletableDeferred<Unit>()
-            ranking.pendingRequest = pending
+            suggestions.pendingRequest = pending
             viewModel.dispatch(ShopSelectionIntent.LoadNextPage)
             runCurrent()
             viewModel.sideEffect.test {
@@ -199,7 +196,7 @@ class ShopSelectionPaginationTest {
                 pending.complete(Unit)
                 viewModel.dispatch(ShopSelectionIntent.LoadNextPage)
                 runCurrent()
-                assertEquals(2, ranking.requestedQueries.size)
+                assertEquals(2, suggestions.requests.size)
                 assertFalse(viewModel.uiState.value.isLoadingNextPage)
                 assertFalse(viewModel.uiState.value.canLoadNextPage)
                 assertFalse("shop-3" in viewModel.uiState.value.shops)
@@ -207,11 +204,11 @@ class ShopSelectionPaginationTest {
             }
         }
 
-    private fun pagedRepository(): FakeOnboardingRankingRepository =
-        FakeOnboardingRankingRepository(shops).apply {
+    private fun pagedRepository(): FakeShopSuggestionsRepository =
+        FakeShopSuggestionsRepository(shops).apply {
             pages =
                 mapOf(
-                    null to page("shop-1", "shop-2", nextCursor = firstCursor),
+                    null to page("shop-2", "shop-1", nextCursor = firstCursor),
                     firstCursor to page("shop-2", "shop-3", nextCursor = secondCursor),
                     secondCursor to page("shop-3", "shop-4"),
                 )
@@ -219,11 +216,11 @@ class ShopSelectionPaginationTest {
 
     private fun page(
         vararg ids: String,
-        nextCursor: RankingCursor? = null,
-    ): RankingPage = RankingPage(ShopRankings(ids.map { ShopRanking(shops.getValue(it), 10L) }), nextCursor)
+        nextCursor: ShopSuggestionsCursor? = null,
+    ): ShopSuggestionsPage = ShopSuggestionsPage(RamenShops(ids.map(shops::getValue)), nextCursor)
 
     private fun createViewModel(
-        ranking: FakeOnboardingRankingRepository,
+        suggestions: FakeShopSuggestionsRepository,
         store: FakePersonalizationRepository = FakePersonalizationRepository(),
     ): ShopSelectionViewModel {
         val repository =
@@ -234,7 +231,7 @@ class ShopSelectionPaginationTest {
         return ShopSelectionViewModel(
             SearchRamenShopsUseCase(repository),
             repository,
-            ranking,
+            suggestions,
             store,
             FakeLoginRepository(),
             FakeOnboardingStorage(),
