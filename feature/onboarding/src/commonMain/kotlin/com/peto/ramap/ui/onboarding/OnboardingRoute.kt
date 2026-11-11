@@ -5,7 +5,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
@@ -18,6 +17,8 @@ import com.peto.ramap.analytics.AnalyticsEvent
 import com.peto.ramap.analytics.AnalyticsTracker
 import com.peto.ramap.designsystem.indicator.RamenLoadingIndicator
 import com.peto.ramap.designsystem.toast.ToastManager
+import com.peto.ramap.platform.permission.rememberLocationPermissionGenerator
+import com.peto.ramap.platform.permission.rememberNotificationPermissionGenerator
 import com.peto.ramap.theme.RamapTheme
 import com.peto.ramap.ui.onboarding.contract.OnboardingIntent
 import com.peto.ramap.ui.onboarding.contract.OnboardingLoadKey
@@ -27,12 +28,8 @@ import com.peto.ramap.ui.onboarding.contract.OnboardingUiState
 import com.peto.ramap.ui.onboarding.guide.OnboardingGuideRoute
 import com.peto.ramap.ui.onboarding.guide.log.OnboardingAnalyticsStage
 import com.peto.ramap.ui.onboarding.log.OnboardingAnalytics
-import com.peto.ramap.ui.onboarding.permission.PermissionGuideRoute
+import com.peto.ramap.ui.onboarding.permission.PermissionGuideContent
 import com.peto.ramap.ui.onboarding.permission.contract.OnboardingPermission
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.emptyFlow
-import kotlinx.coroutines.flow.filterIsInstance
-import kotlinx.coroutines.flow.map
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -46,6 +43,14 @@ fun OnboardingRoute(
     val currentOnCompleted by rememberUpdatedState(onCompleted)
     val lifecycleOwner = LocalLifecycleOwner.current
     val analytics = viewModel.analytics
+    val locationPermission =
+        rememberLocationPermissionGenerator {
+            viewModel.dispatch(OnboardingIntent.LocationPermissionFinished(it))
+        }
+    val notificationPermission =
+        rememberNotificationPermissionGenerator {
+            viewModel.dispatch(OnboardingIntent.NotificationPermissionFinished(it))
+        }
 
     DisposableEffect(lifecycleOwner, analytics) {
         val observer =
@@ -64,28 +69,25 @@ fun OnboardingRoute(
         if (uiState.step == OnboardingStep.PermissionGuide) analytics.viewStage(OnboardingAnalyticsStage.PermissionGuide)
     }
 
-    LaunchedEffect(viewModel, lifecycleOwner) {
+    LaunchedEffect(viewModel, lifecycleOwner, locationPermission, notificationPermission) {
         lifecycleOwner.repeatOnLifecycle(Lifecycle.State.RESUMED) {
             viewModel.sideEffect.collect { effect ->
-                if (effect is OnboardingSideEffect.Completed) {
-                    currentOnCompleted()
+                when (effect) {
+                    OnboardingSideEffect.Completed -> currentOnCompleted()
+                    is OnboardingSideEffect.RequestPermission ->
+                        when (effect.permission) {
+                            OnboardingPermission.Location -> locationPermission.requestPermission()
+                            OnboardingPermission.Notification -> notificationPermission.requestPermission()
+                        }
                 }
             }
         }
     }
 
-    val requestPermissionFlow =
-        remember(viewModel.sideEffect) {
-            viewModel.sideEffect
-                .filterIsInstance<OnboardingSideEffect.RequestPermission>()
-                .map { it.permission }
-        }
-
     OnboardingRouteContent(
         uiState = uiState,
         analytics = analytics,
         toastManager = toastManager,
-        requestPermissionFlow = requestPermissionFlow,
         onIntent = viewModel::dispatch,
     )
 }
@@ -95,7 +97,6 @@ internal fun OnboardingRouteContent(
     uiState: OnboardingUiState,
     analytics: OnboardingAnalytics,
     toastManager: ToastManager,
-    requestPermissionFlow: Flow<OnboardingPermission>,
     onIntent: (OnboardingIntent) -> Unit,
 ) {
     when (uiState.step) {
@@ -104,12 +105,9 @@ internal fun OnboardingRouteContent(
         -> RamenLoadingIndicator(modifier = Modifier.fillMaxSize())
 
         OnboardingStep.PermissionGuide ->
-            PermissionGuideRoute(
+            PermissionGuideContent(
                 isConfirming = uiState.loadState.isLoading(OnboardingLoadKey.ConfirmPermissionGuide),
-                onRequestPermission = requestPermissionFlow,
                 onConfirm = { onIntent(OnboardingIntent.ConfirmPermissionGuide) },
-                onLocationPermissionFinished = { onIntent(OnboardingIntent.LocationPermissionFinished(it)) },
-                onNotificationPermissionFinished = { onIntent(OnboardingIntent.NotificationPermissionFinished(it)) },
             )
 
         OnboardingStep.Guide ->
@@ -144,7 +142,6 @@ private fun OnboardingRoutePermissionGuidePreview() {
                     },
                 ),
             toastManager = ToastManager(),
-            requestPermissionFlow = emptyFlow(),
             onIntent = {},
         )
     }
