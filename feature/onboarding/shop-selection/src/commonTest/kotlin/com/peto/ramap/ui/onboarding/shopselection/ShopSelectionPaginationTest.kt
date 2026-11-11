@@ -17,15 +17,15 @@ import com.peto.ramap.fixture.ramenShopFixture
 import com.peto.ramap.ui.onboarding.shopselection.contract.ShopSelectionIntent
 import com.peto.ramap.ui.onboarding.shopselection.contract.ShopSelectionSideEffect
 import com.peto.ramap.ui.onboarding.shopselection.log.ShopSelectionAnalytics
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runCurrent
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
-import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.advanceUntilIdle
-import kotlinx.coroutines.test.runCurrent
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ShopSelectionPaginationTest {

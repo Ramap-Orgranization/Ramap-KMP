@@ -11,10 +11,10 @@ import com.peto.ramap.domain.repository.LoginRepository
 import com.peto.ramap.domain.store.PersonalizationStore
 import com.peto.ramap.domain.usecase.SearchRamenShopsUseCase
 import com.peto.ramap.fake.FakeLoginRepository
-import com.peto.ramap.fake.FakeShopSuggestionsRepository
 import com.peto.ramap.fake.FakeOnboardingStorage
 import com.peto.ramap.fake.FakePersonalizationRepository
 import com.peto.ramap.fake.FakeRamenShopRepository
+import com.peto.ramap.fake.FakeShopSuggestionsRepository
 import com.peto.ramap.fixture.ramenShopFixture
 import com.peto.ramap.ui.onboarding.shopselection.contract.ShopSelectionIntent
 import com.peto.ramap.ui.onboarding.shopselection.contract.ShopSelectionLoadKey
