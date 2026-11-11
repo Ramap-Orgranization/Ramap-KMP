@@ -529,12 +529,8 @@
     <string name="profile_load_failed">프로필을 불러오지 못했어요.</string>
     <string name="profile_retry">다시 시도</string>
     <string name="profile_visit_ranking_title">방문 통계</string>
-    <string name="profile_visit_ranking_empty">표시할 리뷰가 없어요</string>
-    <string name="profile_visit_ranking_failed">통계를 불러오지 못했어요</string>
-    <string name="profile_visit_ranking_scope_description">방문 통계 집계 기준</string>
-    <string name="profile_visit_ranking_own_scope">공개 여부와 관계없이 내가 작성한 리뷰를 기준으로 집계해요</string>
-    <string name="profile_visit_ranking_public_scope">볼 수 있는 공개 리뷰를 기준으로 집계해요</string>
     <string name="profile_visit_rank">%1$d위</string>
+    <string name="profile_visit_rank_tied">-</string>
     <string name="profile_visit_count">%1$d번</string>
     <string name="profile_discard">취소</string>
     <string name="profile_visibility">프로필 공개</string>
