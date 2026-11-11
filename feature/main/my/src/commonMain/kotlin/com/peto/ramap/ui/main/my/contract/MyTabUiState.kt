@@ -3,6 +3,7 @@ package com.peto.ramap.ui.main.my.contract
 import com.peto.ramap.domain.model.announcement.Announcement
 import com.peto.ramap.domain.model.moderation.BlockedUser
 import com.peto.ramap.domain.model.profile.AccountProfile
+import com.peto.ramap.domain.model.profile.ProfileVisitRanking
 import com.peto.ramap.domain.model.profile.PublicProfile
 import com.peto.ramap.ui.loading.LoadState
 import com.peto.ramap.ui.loading.LoadableState
@@ -18,6 +19,7 @@ data class MyTabUiState(
     val bookmarkedCount: Int? = null,
     val notificationCount: Int? = null,
     val reviewCount: Int? = null,
+    val visitRanking: ProfileVisitRanking? = null,
     val blockedUserCount: Int? = null,
     val hasPendingFollowRequests: Boolean = false,
     val hasUnreadFollowConnections: Boolean = false,

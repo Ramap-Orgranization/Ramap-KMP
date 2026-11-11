@@ -1,6 +1,7 @@
 package com.peto.ramap.ui.main.my
 
 import androidx.lifecycle.viewModelScope
+import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.profile.ProfileVisibility
@@ -8,6 +9,7 @@ import com.peto.ramap.domain.model.review.change.ReviewChange
 import com.peto.ramap.domain.repository.AnnouncementRepository
 import com.peto.ramap.domain.repository.FollowRepository
 import com.peto.ramap.domain.repository.ProfileRepository
+import com.peto.ramap.domain.repository.ProfileVisitRankingRepository
 import com.peto.ramap.domain.repository.ReviewRepository
 import com.peto.ramap.domain.repository.UserModerationRepository
 import com.peto.ramap.domain.store.AnnouncementReadStore
@@ -20,6 +22,8 @@ import com.peto.ramap.ui.main.my.contract.MyTabLoadKey
 import com.peto.ramap.ui.main.my.contract.MyTabSideEffect
 import com.peto.ramap.ui.main.my.contract.MyTabUiState
 import com.peto.ramap.ui.task.TaskPolicy
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import ramap.shared.generated.resources.Res
@@ -37,6 +41,7 @@ class MyTabViewModel(
     private val changes: ReviewChangeStore,
     private val announcementRepository: AnnouncementRepository,
     private val announcementReadStore: AnnouncementReadStore,
+    private val visitRankings: ProfileVisitRankingRepository,
 ) : BaseViewModel<MyTabUiState, MyTabIntent, MyTabSideEffect>(MyTabUiState()) {
     init {
         launchTask(taskKey = ANNOUNCEMENT_READS) {
@@ -49,12 +54,17 @@ class MyTabViewModel(
             var epoch = changes.journal.value.epoch
             var revision = changes.journal.value.revision
             changes.journal.collect { journal ->
-                if (epoch != journal.epoch) {
+                val isEpochChanged = epoch != journal.epoch
+                if (isEpochChanged) {
                     epoch = journal.epoch
                     revision = journal.revision
                 }
                 val hasGap = journal.hasGapAfter(revision)
                 if (hasGap) refreshReviewCount()
+                val userId = currentState.userId
+                if (userId != null && (isEpochChanged || journal.requiresProfileVisitRankingReloadAfter(revision, userId))) {
+                    refreshProfile()
+                }
                 for (record in journal.changesAfter(revision)) {
                     val change = record.change as? ReviewChange.Written ?: continue
                     val isMyReview = change.userId == currentState.userId
@@ -316,19 +326,40 @@ class MyTabViewModel(
 
     private fun refreshProfile() {
         val userId = currentState.userId ?: return
+        val baseline = changes.journal.value
         launchResultTask(
             taskKey = FETCH,
             loadKey = MyTabLoadKey.Fetch,
             onStart = { copy(failed = false, sessionResolved = true) },
-            request = repository::fetchMyProfile,
-            onSuccess = { profile ->
-                val isSameUser = currentState.userId == userId
-                if (isSameUser) {
-                    reduce { if (profile.userId == userId) copy(profile = profile) else copy(failed = true) }
+            request = {
+                coroutineScope {
+                    val ranking = async { visitRankings.fetchProfileVisitRanking(userId) }
+                    when (val profile = repository.fetchMyProfile()) {
+                        is RamapResult.Error -> {
+                            ranking.cancel()
+                            profile
+                        }
+                        is RamapResult.Success ->
+                            when (val result = ranking.await()) {
+                                is RamapResult.Error -> result
+                                is RamapResult.Success -> RamapResult.Success(profile.data to result.data)
+                            }
+                    }
+                }
+            },
+            onSuccess = { (profile, ranking) ->
+                if (currentState.userId != userId) return@launchResultTask
+                val journal = changes.journal.value
+                if (profile.userId != userId) {
+                    reduce { copy(failed = true, visitRanking = null) }
+                } else if (baseline.epoch != journal.epoch || journal.requiresProfileVisitRankingReloadAfter(baseline.revision, userId)) {
+                    refreshProfile()
+                } else {
+                    reduce { copy(profile = profile, visitRanking = ranking) }
                 }
             },
             onError = {
-                if (currentState.userId == userId) reduce { copy(failed = true) }
+                if (currentState.userId == userId) reduce { copy(failed = true, visitRanking = null) }
             },
         )
     }

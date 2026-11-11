@@ -27,6 +27,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.peto.ramap.designsystem.component.RamenShopSummary
 import com.peto.ramap.designsystem.indicator.RamenLoadingIndicator
 import com.peto.ramap.designsystem.profile.ProfileHeader
+import com.peto.ramap.designsystem.profile.ProfileVisitRankingCard
 import com.peto.ramap.designsystem.review.ReviewCard
 import com.peto.ramap.designsystem.review.ReviewCardActions
 import com.peto.ramap.designsystem.review.ReviewEmptyContent
@@ -36,6 +37,7 @@ import com.peto.ramap.designsystem.toast.ToastManager
 import com.peto.ramap.domain.model.auth.LoginType
 import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.domain.model.profile.ProfileAccess
+import com.peto.ramap.domain.model.profile.ProfileVisitRanking
 import com.peto.ramap.domain.model.profile.PublicProfile
 import com.peto.ramap.domain.model.review.ProfileReview
 import com.peto.ramap.domain.model.review.Review
@@ -218,6 +220,16 @@ internal fun OtherReviewsContent(
                     PrivateProfileCard(text = stringResource(Res.string.follow_content_private))
                 }
             }
+            val showsVisitRanking = state.canReadVisitRanking && state.visitRanking?.hasPodium == true
+            if (showsVisitRanking) {
+                item(key = "profile-visit-ranking-${state.userId}") {
+                    ProfileVisitRankingCard(
+                        ranking = state.visitRanking,
+                        onShopClick = onOpenShopDetail,
+                        modifier = Modifier.padding(start = 12.dp, end = 12.dp, bottom = 12.dp),
+                    )
+                }
+            }
             if (state.profileAccess is ProfileAccess.Visible) {
                 stickyHeader(key = "profile-tabs") {
                     OtherProfileTabs(
@@ -240,9 +252,16 @@ internal fun OtherReviewsContent(
             }
             if (state.activeFailed) {
                 item {
+                    val showReviewIllustration = state.profileFailed || state.selectedTab == OtherReviewsTab.Reviews
                     OtherReviewsErrorContent(
                         onRetry = { onIntent(OtherReviewsIntent.Retry) },
-                        modifier = Modifier.fillParentMaxHeight(0.5f),
+                        showReviewIllustration = showReviewIllustration,
+                        modifier =
+                            if (showReviewIllustration) {
+                                Modifier.padding(vertical = 24.dp)
+                            } else {
+                                Modifier.fillParentMaxHeight(0.5f)
+                            },
                     )
                 }
             }
@@ -396,35 +415,50 @@ private fun OtherReviewsContentPreview() {
     }
 }
 
-@Preview(showBackground = true)
+@Preview(name = "로딩 중", group = "다른 사람 프로필 조회", widthDp = 360, heightDp = 780, showBackground = true)
 @Composable
-private fun OtherReviewsContentLoadingPreview() {
-    RamapTheme {
-        OtherReviewsContent(
-            state =
-                OtherReviewsUiState(
-                    loadState = LoadState.loading(OtherReviewsLoadKey.Page),
-                ),
-            onBack = {},
-            onOpenShopDetail = {},
-            onIntent = {},
-        )
-    }
-}
+internal fun OtherProfileLoadingPreview() =
+    OtherProfilePreview(
+        state =
+            OtherReviewsUiState(
+                userId = "preview",
+                currentUserId = "me",
+                sessionResolved = true,
+                loadState = LoadState.loading(OtherReviewsLoadKey.Page),
+            ),
+    )
 
-@Preview(showBackground = true)
+@Preview(name = "조회 실패와 다시 시도", group = "다른 사람 프로필 조회", widthDp = 360, heightDp = 780, showBackground = true)
 @Composable
-private fun OtherReviewsContentEmptyPreview() {
+internal fun OtherProfileLoadFailedPreview() =
+    OtherProfilePreview(
+        state = OtherReviewsUiState(userId = "preview", currentUserId = "me", sessionResolved = true, profileFailed = true),
+    )
+
+@Preview(name = "조회 성공 · 순위 없음", group = "다른 사람 프로필 조회", widthDp = 360, heightDp = 780, showBackground = true)
+@Composable
+internal fun OtherProfileWithoutRankingPreview() =
+    OtherProfilePreview(
+        state =
+            OtherReviewsUiState(
+                userId = "preview",
+                currentUserId = "me",
+                sessionResolved = true,
+                profileAccess =
+                    ProfileAccess.Visible(
+                        profile = PublicProfile(userId = "preview", nickname = "라멘팬", bio = "동네 라멘집을 찾아다녀요"),
+                        reviewCount = 0L,
+                        savedShopCount = 0L,
+                    ),
+                visitRanking = ProfileVisitRanking(emptyList()),
+            ),
+    )
+
+@Composable
+private fun OtherProfilePreview(state: OtherReviewsUiState) {
     RamapTheme {
         OtherReviewsContent(
-            state =
-                OtherReviewsUiState(
-                    profileAccess =
-                        ProfileAccess.Visible(
-                            PublicProfile(userId = "preview", nickname = "느긋한차슈", bio = "라멘을 좋아해요"),
-                        ),
-                    reviews = emptyList(),
-                ),
+            state = state,
             onBack = {},
             onOpenShopDetail = {},
             onIntent = {},

@@ -26,6 +26,8 @@ import com.peto.ramap.data.datasource.notice.OperatingNoticeDataSource
 import com.peto.ramap.data.datasource.notice.RemoteOperatingNoticeDataSource
 import com.peto.ramap.data.datasource.notification.PushRegistrationDataSource
 import com.peto.ramap.data.datasource.notification.RemotePushRegistrationDataSource
+import com.peto.ramap.data.datasource.onboarding.RemoteShopSuggestionsDataSource
+import com.peto.ramap.data.datasource.onboarding.ShopSuggestionsDataSource
 import com.peto.ramap.data.datasource.personalization.BookmarkShopDataSource
 import com.peto.ramap.data.datasource.personalization.NotificationDataSource
 import com.peto.ramap.data.datasource.personalization.RemoteBookmarkShopDataSource
@@ -33,7 +35,9 @@ import com.peto.ramap.data.datasource.personalization.RemoteNotificationDataSour
 import com.peto.ramap.data.datasource.place.PlaceSearchDataSource
 import com.peto.ramap.data.datasource.place.RemotePlaceSearchDataSource
 import com.peto.ramap.data.datasource.profile.ProfileDataSource
+import com.peto.ramap.data.datasource.profile.ProfileVisitRankingDataSource
 import com.peto.ramap.data.datasource.profile.RemoteProfileDataSource
+import com.peto.ramap.data.datasource.profile.RemoteProfileVisitRankingDataSource
 import com.peto.ramap.data.datasource.profile.RemoteUserProfileDataSource
 import com.peto.ramap.data.datasource.profile.UserProfileDataSource
 import com.peto.ramap.data.datasource.ranking.RemoteShopRankingDataSource
@@ -84,6 +88,7 @@ val dataSourceModule =
         singleOf(::ReviewImageResolver)
         single<ProfileDataSource> { RemoteProfileDataSource(get(), get(), get()) }
         single<UserProfileDataSource> { RemoteUserProfileDataSource(get(), get(), get()) }
+        single<ProfileVisitRankingDataSource> { RemoteProfileVisitRankingDataSource(get()) }
         single<UserModerationDataSource> { RemoteUserModerationDataSource(get(), get()) }
         single<ReviewCommentDataSource> { RemoteReviewCommentDataSource(get(), get()) }
         single { ReviewNotificationDataSource(get()) }
@@ -105,6 +110,7 @@ val dataSourceModule =
         single<ShopRankingDataSource> {
             RemoteShopRankingDataSource(get<SupabaseClient>())
         }
+        single<ShopSuggestionsDataSource> { RemoteShopSuggestionsDataSource(get()) }
         single<ShopWaitingSystemDataSource> {
             RemoteShopWaitingSystemDataSource(get<SupabaseClient>())
         }

@@ -57,6 +57,7 @@ import com.peto.ramap.fake.FakeOperatingNoticeRepository
 import com.peto.ramap.fake.FakePersonalizationRepository
 import com.peto.ramap.fake.FakePlaceSearchRepository
 import com.peto.ramap.fake.FakeProfileRepository
+import com.peto.ramap.fake.FakeProfileVisitRankingRepository
 import com.peto.ramap.fake.FakeRamenShopRepository
 import com.peto.ramap.fake.FakeReviewChangeStore
 import com.peto.ramap.fake.FakeShopReportRepository
@@ -2197,6 +2198,7 @@ class MapShopSectionsRegressionTest {
                     reviewRepository = FakeMapReviewRepository(),
                     followRepository = FakeFollowRepository(),
                     changes = FakeReviewChangeStore(),
+                    visitRankings = FakeProfileVisitRankingRepository(),
                 )
             val store =
                 ViewModelStore().apply {

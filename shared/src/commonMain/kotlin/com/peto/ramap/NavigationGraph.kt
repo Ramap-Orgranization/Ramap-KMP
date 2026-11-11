@@ -171,18 +171,30 @@ internal fun NavigationGraph(
             )
         },
         myScreen = {
-            MyTabRoute(
-                onProfileNavigate = navigationState::showProfileEdit,
-                onAnnouncementsNavigate = navigationState::showAnnouncements,
-                onFollowNavigate = navigationState::showFollows,
-                onMyReviewsNavigate = navigationState::showMyReviews,
-                onOpenProfile = { userId -> openProfile(userId, false) },
-                onSettingsNavigate = navigationState::showSettings,
-                onReportNavigate = navigationState::showPlaceReport,
-                onSubscribedShopsNavigate = navigationState::showSubscribedShops,
-                onBookmarkedShopsNavigate = navigationState::showBookmarkedShops,
-                onLoginClick = onLoginTypeSelected,
-            )
+            ShopListWithDetail(
+                navigationState = navigationState,
+                navigationSource = null,
+                originSource = AnalyticsSource.REVIEW_PROFILE,
+                hasActiveOverlay = hasActiveOverlay,
+                openProfile = openProfile,
+                onOpenReviewWriteOverlay = onOpenReviewWriteOverlay,
+                onOpenReviewEditOverlay = onOpenReviewEditOverlay,
+                onOpenReviewDetailOverlay = onOpenReviewDetailOverlay,
+            ) { onOpenShopDetail ->
+                MyTabRoute(
+                    onProfileNavigate = navigationState::showProfileEdit,
+                    onAnnouncementsNavigate = navigationState::showAnnouncements,
+                    onFollowNavigate = navigationState::showFollows,
+                    onMyReviewsNavigate = navigationState::showMyReviews,
+                    onOpenProfile = { userId -> openProfile(userId, false) },
+                    onOpenShopDetail = onOpenShopDetail,
+                    onSettingsNavigate = navigationState::showSettings,
+                    onReportNavigate = navigationState::showPlaceReport,
+                    onSubscribedShopsNavigate = navigationState::showSubscribedShops,
+                    onBookmarkedShopsNavigate = navigationState::showBookmarkedShops,
+                    onLoginClick = onLoginTypeSelected,
+                )
+            }
         },
         feedScreen = {
             FeedRoute(
@@ -436,7 +448,7 @@ internal fun NavigationGraph(
 @Composable
 private fun ShopListWithDetail(
     navigationState: NavigationState,
-    navigationSource: NavigationSource,
+    navigationSource: NavigationSource?,
     originSource: AnalyticsSource,
     hasActiveOverlay: Boolean,
     openProfile: (userId: String, asOverlay: Boolean) -> Unit,

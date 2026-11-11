@@ -1,100 +1,53 @@
 package com.peto.ramap.ui.main.my
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.Switch
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.peto.ramap.designsystem.dialog.CommonDialog
 import com.peto.ramap.designsystem.profile.ProfileHeader
-import com.peto.ramap.designsystem.text.AppText
+import com.peto.ramap.designsystem.profile.ProfileVisitRankingCard
 import com.peto.ramap.designsystem.toast.ToastManager
 import com.peto.ramap.domain.model.auth.LoginType
 import com.peto.ramap.domain.model.profile.AccountProfile
 import com.peto.ramap.domain.model.profile.ProfileVisibility
-import com.peto.ramap.theme.AppTextStyle
-import com.peto.ramap.theme.ChromaticColor
-import com.peto.ramap.theme.CommonColor
+import com.peto.ramap.domain.model.profile.ProfileVisitRanking
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.RamapTheme
 import com.peto.ramap.ui.base.ObserveAsEvents
+import com.peto.ramap.ui.loading.LoadState
 import com.peto.ramap.ui.main.my.component.BlockedUsersDialog
 import com.peto.ramap.ui.main.my.component.GuestProfileHeader
-import com.peto.ramap.ui.main.my.component.MyMenuRow
+import com.peto.ramap.ui.main.my.component.MyTabMenuList
 import com.peto.ramap.ui.main.my.component.MyTabSkeleton
+import com.peto.ramap.ui.main.my.component.MyTabTopBar
+import com.peto.ramap.ui.main.my.component.ProfileLoadFailedBanner
+import com.peto.ramap.ui.main.my.component.ProfileVisibilityDialog
+import com.peto.ramap.ui.main.my.component.UnblockConfirmDialog
 import com.peto.ramap.ui.main.my.contract.MyTabIntent
+import com.peto.ramap.ui.main.my.contract.MyTabLoadKey
 import com.peto.ramap.ui.main.my.contract.MyTabSideEffect
 import com.peto.ramap.ui.main.my.contract.MyTabUiState
 import com.peto.ramap.ui.refresh.RefreshOnReturnEffect
-import org.jetbrains.compose.resources.painterResource
-import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
-import ramap.shared.generated.resources.Res
-import ramap.shared.generated.resources.announcement_title
-import ramap.shared.generated.resources.follow_manage
-import ramap.shared.generated.resources.follow_new
-import ramap.shared.generated.resources.follow_requests
-import ramap.shared.generated.resources.follow_reviews_visibility
-import ramap.shared.generated.resources.follow_saved_shops_visibility
-import ramap.shared.generated.resources.ic_news
-import ramap.shared.generated.resources.ic_notification
-import ramap.shared.generated.resources.ic_person
-import ramap.shared.generated.resources.ic_profile_blocked
-import ramap.shared.generated.resources.ic_profile_private
-import ramap.shared.generated.resources.ic_profile_public
-import ramap.shared.generated.resources.ic_profile_report
-import ramap.shared.generated.resources.ic_review
-import ramap.shared.generated.resources.ic_setting
-import ramap.shared.generated.resources.ic_star_filled
-import ramap.shared.generated.resources.my_reviews
-import ramap.shared.generated.resources.profile_discard
-import ramap.shared.generated.resources.profile_load_failed
-import ramap.shared.generated.resources.profile_retry
-import ramap.shared.generated.resources.profile_visibility
-import ramap.shared.generated.resources.profile_visibility_public
-import ramap.shared.generated.resources.review_blocked_users
-import ramap.shared.generated.resources.review_save
-import ramap.shared.generated.resources.review_unblock
-import ramap.shared.generated.resources.review_unblock_confirm
-import ramap.shared.generated.resources.settings_bookmarked_shops_menu
-import ramap.shared.generated.resources.settings_report_menu
-import ramap.shared.generated.resources.settings_subscribed_shops_menu
-import ramap.shared.generated.resources.settings_title
-import ramap.shared.generated.resources.shop_review_cancel
 
 @Composable
 fun MyTabRoute(
@@ -107,6 +60,7 @@ fun MyTabRoute(
     onFollowNavigate: () -> Unit = {},
     onMyReviewsNavigate: () -> Unit,
     onOpenProfile: (String) -> Unit = {},
+    onOpenShopDetail: (String) -> Unit,
     onLoginClick: (LoginType) -> Unit,
     toastManager: ToastManager = koinInject(),
     viewModel: MyTabViewModel = koinViewModel(),
@@ -186,6 +140,7 @@ fun MyTabRoute(
             onMyReviewsNavigate()
         },
         onRetryClick = { viewModel.dispatch(MyTabIntent.Refresh) },
+        onOpenShopDetail = onOpenShopDetail,
         onBookmarkedShopsClick = onBookmarkedShopsNavigate,
         onSubscribedShopsClick = onSubscribedShopsNavigate,
         onReportClick = onReportNavigate,
@@ -213,6 +168,7 @@ internal fun MyTabContent(
     onProfileClick: () -> Unit,
     onMyReviewsClick: () -> Unit = {},
     onRetryClick: () -> Unit,
+    onOpenShopDetail: (String) -> Unit,
     onBookmarkedShopsClick: () -> Unit,
     onSubscribedShopsClick: () -> Unit,
     onReportClick: () -> Unit,
@@ -221,85 +177,28 @@ internal fun MyTabContent(
     val isLoading = !state.sessionResolved || (state.loading && state.profile == null)
     val isGuest = state.sessionResolved && state.userId == null
     val isPublic = state.profile?.isPublic == true
-    var draftPublic by remember(isVisibilityDialogOpen, state.profile) { mutableStateOf(isPublic) }
-    var draftReviews by remember(isVisibilityDialogOpen, state.profile) {
-        mutableStateOf(state.profile?.followersCanReadReviews ?: true)
-    }
-    var draftSavedShops by remember(isVisibilityDialogOpen, state.profile) {
-        mutableStateOf(state.profile?.followersCanReadSavedShops ?: true)
-    }
+
     Column(
         modifier =
             Modifier
                 .fillMaxSize()
-                .background(CommonColor.White)
+                .background(GrayColor.C050)
                 .padding(top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding())
                 .verticalScroll(rememberScrollState()),
     ) {
-        Row(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .height(56.dp)
-                    .padding(end = 14.dp),
-            horizontalArrangement = Arrangement.End,
-        ) {
-            if (state.userId != null) {
-                IconButton(onClick = onVisibilityClick, enabled = state.profile != null) {
-                    Image(
-                        painter =
-                            painterResource(
-                                if (isPublic) Res.drawable.ic_profile_public else Res.drawable.ic_profile_private,
-                            ),
-                        contentDescription = stringResource(Res.string.profile_visibility),
-                        modifier = Modifier.size(36.dp),
-                    )
-                }
-            }
-            IconButton(onClick = onSettingsClick) {
-                Icon(
-                    painter = painterResource(Res.drawable.ic_setting),
-                    contentDescription = stringResource(Res.string.settings_title),
-                    tint = GrayColor.C500,
-                )
-            }
-        }
-        CommonDialog(
+        MyTabTopBar(
+            isLoggedIn = state.userId != null,
+            isPublic = isPublic,
+            isProfileLoaded = state.profile != null,
+            onVisibilityClick = onVisibilityClick,
+            onSettingsClick = onSettingsClick,
+        )
+        ProfileVisibilityDialog(
             visible = isVisibilityDialogOpen,
-            confirmText = stringResource(Res.string.review_save),
-            dismissText = stringResource(Res.string.profile_discard),
-            confirmEnabled = !state.savingVisibility,
-            onDismissRequest = onVisibilityDismiss,
-            onConfirm = {
-                onVisibilitySave(ProfileVisibility(draftPublic, draftReviews, draftSavedShops))
-            },
+            profile = state.profile,
+            savingVisibility = state.savingVisibility,
             onDismiss = onVisibilityDismiss,
-            content = {
-                AppText(
-                    text = stringResource(Res.string.profile_visibility),
-                    style = AppTextStyle.T1,
-                    color = GrayColor.C500,
-                    textAlign = TextAlign.Center,
-                )
-                VisibilitySwitch(
-                    label = stringResource(Res.string.profile_visibility_public),
-                    checked = draftPublic,
-                    enabled = !state.savingVisibility,
-                    onCheckedChange = { draftPublic = it },
-                )
-                VisibilitySwitch(
-                    label = stringResource(Res.string.follow_reviews_visibility),
-                    checked = draftReviews,
-                    enabled = !state.savingVisibility,
-                    onCheckedChange = { draftReviews = it },
-                )
-                VisibilitySwitch(
-                    label = stringResource(Res.string.follow_saved_shops_visibility),
-                    checked = draftSavedShops,
-                    enabled = !state.savingVisibility,
-                    onCheckedChange = { draftSavedShops = it },
-                )
-            },
+            onSave = onVisibilitySave,
         )
         BlockedUsersDialog(
             visible = isBlockedUsersDialogOpen && state.pendingUnblockUser == null,
@@ -308,203 +207,115 @@ internal fun MyTabContent(
             onProfileClick = onBlockedUserProfileClick,
             onUnblockClick = onUnblockClick,
         )
-        CommonDialog(
+        UnblockConfirmDialog(
             visible = isBlockedUsersDialogOpen && state.pendingUnblockUser != null,
-            confirmText = stringResource(Res.string.review_unblock),
-            dismissText = stringResource(Res.string.shop_review_cancel),
-            confirmEnabled = !state.unblocking,
-            confirmIsLoading = state.unblocking,
-            dismissEnabled = !state.unblocking,
-            dismissOnBackPress = !state.unblocking,
-            dismissOnClickOutside = !state.unblocking,
-            onDismissRequest = onUnblockDismiss,
+            pendingUnblockUser = state.pendingUnblockUser,
+            unblocking = state.unblocking,
             onDismiss = onUnblockDismiss,
             onConfirm = onUnblockConfirm,
-        ) {
-            AppText(
-                text =
-                    stringResource(
-                        Res.string.review_unblock_confirm,
-                        state.pendingUnblockUser?.nickname.orEmpty(),
-                    ),
-                style = AppTextStyle.B2,
-                color = GrayColor.C500,
-            )
-        }
+        )
         when {
             isLoading -> MyTabSkeleton()
 
             isGuest -> GuestProfileHeader(onLoginClick = onLoginClick)
+
+            state.failed -> ProfileLoadFailedBanner(onRetryClick = onRetryClick)
 
             else ->
                 ProfileHeader(
                     nickname = state.profile?.nickname,
                     avatarUrl = state.profile?.avatarUrl,
                     bio = state.profile?.bio,
-                    showEmptyBio = (state.profile != null) && !state.failed,
+                    showEmptyBio = state.profile != null,
                     onProfileClick = onProfileClick,
                 )
         }
-        if (state.failed && !isGuest) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                AppText(
-                    text = stringResource(Res.string.profile_load_failed),
-                    style = AppTextStyle.C1,
-                    color = GrayColor.C400,
+        val showsVisitRanking = !state.failed && state.profile != null && state.visitRanking?.hasPodium == true
+        if (showsVisitRanking) {
+            key(state.userId) {
+                ProfileVisitRankingCard(
+                    ranking = state.visitRanking,
+                    onShopClick = onOpenShopDetail,
+                    modifier = Modifier.padding(start = 12.dp, top = 16.dp, end = 12.dp),
                 )
-                TextButton(onClick = onRetryClick) {
-                    AppText(
-                        text = stringResource(Res.string.profile_retry),
-                        style = AppTextStyle.B4,
-                        color = GrayColor.C500,
-                    )
-                }
             }
         }
         if (state.sessionResolved) {
-            Spacer(modifier = Modifier.height(if (isGuest) 40.dp else 26.dp))
-            Column(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = if (isGuest) 22.dp else 12.dp)
-                        .border(1.dp, GrayColor.C100, RoundedCornerShape(16.dp))
-                        .clip(RoundedCornerShape(16.dp)),
-            ) {
-                MyMenuRow(
-                    icon = Res.drawable.ic_news,
-                    title = Res.string.announcement_title,
-                    count = null,
-                    iconBackground = ChromaticColor.Blue050,
-                    iconTint = ChromaticColor.Blue400,
-                    hasCount = false,
-                    isNew = state.hasUnreadAnnouncements,
-                    onClick = onAnnouncementsClick,
-                )
-                HorizontalDivider(
-                    modifier = Modifier.padding(start = 16.dp),
-                    thickness = 1.dp,
-                    color = GrayColor.C100,
-                )
-                if (!isGuest) {
-                    MyMenuRow(
-                        icon = Res.drawable.ic_person,
-                        title = Res.string.follow_manage,
-                        count = null,
-                        iconBackground = ChromaticColor.Orange050,
-                        iconTint = ChromaticColor.Orange400,
-                        hasCount = false,
-                        notification = if (state.hasPendingFollowRequests) Res.string.follow_requests else null,
-                        isNew = state.hasUnreadFollowConnections,
-                        newBadgeDescription = Res.string.follow_new,
-                        onClick = onFollowClick,
-                    )
-                    HorizontalDivider(
-                        modifier = Modifier.padding(start = 16.dp),
-                        thickness = 1.dp,
-                        color = GrayColor.C100,
-                    )
-                    MyMenuRow(
-                        icon = Res.drawable.ic_review,
-                        title = Res.string.my_reviews,
-                        count = state.reviewCount,
-                        iconBackground = ChromaticColor.Purple050,
-                        iconTint = ChromaticColor.Purple300,
-                        isLoading = state.loadingReviewCount,
-                        onClick = onMyReviewsClick,
-                    )
-                    HorizontalDivider(
-                        modifier = Modifier.padding(start = 16.dp),
-                        thickness = 1.dp,
-                        color = GrayColor.C100,
-                    )
-                    MyMenuRow(
-                        icon = Res.drawable.ic_profile_blocked,
-                        title = Res.string.review_blocked_users,
-                        count = state.blockedUserCount,
-                        iconBackground = GrayColor.C050,
-                        iconTint = GrayColor.C300,
-                        isLoading = state.loadingBlockedUserCount,
-                        onClick = onBlockedUsersClick,
-                    )
-                    HorizontalDivider(
-                        modifier = Modifier.padding(start = 16.dp),
-                        thickness = 1.dp,
-                        color = GrayColor.C100,
-                    )
+            val menuTopPadding =
+                when {
+                    isGuest -> 40.dp
+                    showsVisitRanking -> 12.dp
+                    else -> 26.dp
                 }
-                MyMenuRow(
-                    icon = Res.drawable.ic_star_filled,
-                    title = Res.string.settings_bookmarked_shops_menu,
-                    count = state.bookmarkedCount,
-                    iconBackground = ChromaticColor.Orange050,
-                    iconTint = ChromaticColor.Orange300,
-                    isLoading = isLoading,
-                    onClick = onBookmarkedShopsClick,
-                )
-                HorizontalDivider(
-                    modifier = Modifier.padding(start = 16.dp),
-                    thickness = 1.dp,
-                    color = GrayColor.C100,
-                )
-                if (!isGuest) {
-                    MyMenuRow(
-                        icon = Res.drawable.ic_notification,
-                        title = Res.string.settings_subscribed_shops_menu,
-                        count = state.notificationCount,
-                        iconBackground = ChromaticColor.Yellow050,
-                        iconTint = ChromaticColor.Yellow300,
-                        isLoading = isLoading,
-                        onClick = onSubscribedShopsClick,
-                    )
-                    HorizontalDivider(
-                        modifier = Modifier.padding(start = 16.dp),
-                        thickness = 1.dp,
-                        color = GrayColor.C100,
-                    )
-                }
-                MyMenuRow(
-                    icon = Res.drawable.ic_profile_report,
-                    title = Res.string.settings_report_menu,
-                    count = null,
-                    iconBackground = ChromaticColor.Red050,
-                    iconTint = ChromaticColor.Red300,
-                    hasCount = false,
-                    onClick = onReportClick,
-                )
-            }
+            Spacer(modifier = Modifier.height(menuTopPadding))
+            MyTabMenuList(
+                isGuest = isGuest,
+                hasUnreadAnnouncements = state.hasUnreadAnnouncements,
+                hasPendingFollowRequests = state.hasPendingFollowRequests,
+                hasUnreadFollowConnections = state.hasUnreadFollowConnections,
+                reviewCount = state.reviewCount,
+                loadingReviewCount = state.loadingReviewCount,
+                blockedUserCount = state.blockedUserCount,
+                loadingBlockedUserCount = state.loadingBlockedUserCount,
+                bookmarkedCount = state.bookmarkedCount,
+                notificationCount = state.notificationCount,
+                isLoading = isLoading,
+                onAnnouncementsClick = onAnnouncementsClick,
+                onFollowClick = onFollowClick,
+                onMyReviewsClick = onMyReviewsClick,
+                onBlockedUsersClick = onBlockedUsersClick,
+                onBookmarkedShopsClick = onBookmarkedShopsClick,
+                onSubscribedShopsClick = onSubscribedShopsClick,
+                onReportClick = onReportClick,
+            )
             Spacer(modifier = Modifier.height(24.dp))
         }
     }
 }
 
-@Preview
+@Preview(name = "로딩 중", group = "내 프로필 조회", widthDp = 360, heightDp = 780)
 @Composable
-private fun MyTabRoutePreview() {
+internal fun MyProfileLoadingPreview() =
+    MyTabPreview(
+        state =
+            MyTabUiState(
+                userId = "preview",
+                sessionResolved = true,
+                loadState = LoadState.loading(MyTabLoadKey.Fetch),
+            ),
+    )
+
+@Preview(name = "조회 실패와 다시 시도", group = "내 프로필 조회", widthDp = 360, heightDp = 780)
+@Composable
+internal fun MyProfileLoadFailedPreview() =
+    MyTabPreview(
+        state = MyTabUiState(userId = "preview", sessionResolved = true, failed = true),
+    )
+
+@Preview(name = "조회 성공 · 순위 없음", group = "내 프로필 조회", widthDp = 360, heightDp = 780)
+@Composable
+internal fun MyProfileWithoutRankingPreview() =
+    MyTabPreview(
+        state =
+            MyTabUiState(
+                userId = "preview",
+                sessionResolved = true,
+                profile = AccountProfile(userId = "preview", nickname = "느긋한차슈", bio = "라멘을 좋아해요"),
+                visitRanking = ProfileVisitRanking(emptyList()),
+                bookmarkedCount = 12,
+                notificationCount = 3,
+                reviewCount = 0,
+                blockedUserCount = 2,
+                hasPendingFollowRequests = true,
+                hasUnreadFollowConnections = true,
+            ),
+    )
+
+@Composable
+private fun MyTabPreview(state: MyTabUiState) {
     RamapTheme {
         MyTabContent(
-            state =
-                MyTabUiState(
-                    userId = "preview",
-                    sessionResolved = true,
-                    profile =
-                        AccountProfile(
-                            userId = "preview",
-                            nickname = "느긋한차슈",
-                            bio = "",
-                        ),
-                    failed = false,
-                    bookmarkedCount = 12,
-                    notificationCount = 3,
-                    reviewCount = 8,
-                    blockedUserCount = 2,
-                    hasPendingFollowRequests = true,
-                    hasUnreadFollowConnections = true,
-                ),
+            state = state,
             onSettingsClick = {},
             onVisibilityClick = {},
             onVisibilityDismiss = {},
@@ -517,27 +328,11 @@ private fun MyTabRoutePreview() {
             onUnblockConfirm = {},
             onProfileClick = {},
             onRetryClick = {},
+            onOpenShopDetail = {},
             onBookmarkedShopsClick = {},
             onSubscribedShopsClick = {},
             onReportClick = {},
             onLoginClick = {},
         )
-    }
-}
-
-@Composable
-private fun VisibilitySwitch(
-    label: String,
-    checked: Boolean,
-    enabled: Boolean,
-    onCheckedChange: (Boolean) -> Unit,
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween,
-    ) {
-        AppText(text = label, style = AppTextStyle.B2, color = GrayColor.C500, modifier = Modifier.weight(1f))
-        Switch(checked = checked, enabled = enabled, onCheckedChange = onCheckedChange)
     }
 }

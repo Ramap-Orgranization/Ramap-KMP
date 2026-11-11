@@ -12,6 +12,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.TextUnit
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.LocalAppTypography
 import com.peto.ramap.theme.toTextStyle
@@ -26,6 +27,8 @@ fun AppText(
     textDecoration: TextDecoration? = null,
     maxLines: Int = Int.MAX_VALUE,
     overflow: TextOverflow = TextOverflow.Clip,
+    minLines: Int = 1,
+    fontSize: TextUnit = TextUnit.Unspecified,
     onTextLayout: ((TextLayoutResult) -> Unit)? = null,
 ) {
     val typography = LocalAppTypography.current
@@ -37,9 +40,11 @@ fun AppText(
             modifier = modifier,
             style = baseStyle,
             color = color,
+            fontSize = fontSize,
             textAlign = textAlign,
             textDecoration = textDecoration,
             maxLines = maxLines,
+            minLines = minLines,
             overflow = overflow,
             onTextLayout = onTextLayout,
         )
