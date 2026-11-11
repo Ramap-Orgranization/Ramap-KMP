@@ -11,10 +11,10 @@ import com.peto.ramap.domain.repository.LoginRepository
 import com.peto.ramap.domain.store.PersonalizationStore
 import com.peto.ramap.domain.usecase.SearchRamenShopsUseCase
 import com.peto.ramap.fake.FakeLoginRepository
-import com.peto.ramap.fake.FakeOnboardingRankingRepository
 import com.peto.ramap.fake.FakeOnboardingStorage
 import com.peto.ramap.fake.FakePersonalizationRepository
 import com.peto.ramap.fake.FakeRamenShopRepository
+import com.peto.ramap.fake.FakeShopSuggestionsRepository
 import com.peto.ramap.fixture.ramenShopFixture
 import com.peto.ramap.ui.onboarding.shopselection.contract.ShopSelectionIntent
 import com.peto.ramap.ui.onboarding.shopselection.contract.ShopSelectionLoadKey
@@ -221,8 +221,8 @@ class ShopSelectionViewModelTest {
     @Test
     fun `최초 매장 조회 실패 후 재시도하면 오류를 지우고 목록을 표시한다`() =
         coroutinesTest {
-            val ranking = FakeOnboardingRankingRepository(shops).apply { error = RamapError.Unknown(IllegalStateException()) }
-            val viewModel = createViewModel(ranking = ranking)
+            val suggestions = FakeShopSuggestionsRepository(shops).apply { error = RamapError.Unknown(IllegalStateException()) }
+            val viewModel = createViewModel(suggestions = suggestions)
             runCurrent()
             assertTrue(viewModel.uiState.value.hasShopsError)
             assertTrue(
@@ -231,7 +231,7 @@ class ShopSelectionViewModelTest {
             )
             assertFalse(viewModel.uiState.value.isLoadingShops)
 
-            ranking.error = null
+            suggestions.error = null
             viewModel.dispatch(ShopSelectionIntent.RetryShops)
             runCurrent()
             assertFalse(viewModel.uiState.value.hasShopsError)
@@ -302,12 +302,12 @@ class ShopSelectionViewModelTest {
         }
 
     @Test
-    fun `인기 목록 실패해도 검색한 매장을 저장할 수 있고 검색 해제 후에도 선택은 유지한다`() =
+    fun `추천 목록 실패해도 검색한 매장을 저장할 수 있고 검색 해제 후에도 선택은 유지한다`() =
         coroutinesTest {
-            val ranking = FakeOnboardingRankingRepository(shops).apply { error = RamapError.Unknown(IllegalStateException()) }
+            val suggestions = FakeShopSuggestionsRepository(shops).apply { error = RamapError.Unknown(IllegalStateException()) }
             val searchedShop = ramenShopFixture(id = "searched-shop")
             val repository = FakeRamenShopRepository(searchResult = RamenShops(listOf(searchedShop)))
-            val viewModel = createViewModel(repository = repository, ranking = ranking)
+            val viewModel = createViewModel(repository = repository, suggestions = suggestions)
             runCurrent()
             assertTrue(viewModel.uiState.value.hasShopsError)
             viewModel.dispatch(ShopSelectionIntent.QueryChanged("  라멘  "))
@@ -323,7 +323,7 @@ class ShopSelectionViewModelTest {
         }
 
     @Test
-    fun `검색어를 지우면 진행 중 검색의 늦은 결과가 인기 목록을 덮어쓰지 않는다`() =
+    fun `검색어를 지우면 진행 중 검색의 늦은 결과가 추천 목록을 덮어쓰지 않는다`() =
         coroutinesTest {
             val repository = FakeRamenShopRepository(searchResult = RamenShops(listOf(ramenShopFixture(id = "search"))), searchDelayMillis = 1000)
             val viewModel = createViewModel(repository = repository)
@@ -344,8 +344,8 @@ class ShopSelectionViewModelTest {
     fun `이미 세 곳이 저장되어 있으면 목록 네트워크 오류가 있어도 시작할 수 있다`() =
         coroutinesTest {
             val store = FakePersonalizationRepository(Personalization(bookmarkedShopIds = shops.keys))
-            val ranking = FakeOnboardingRankingRepository(shops).apply { error = RamapError.Unknown(IllegalStateException()) }
-            val viewModel = createViewModel(store = store, ranking = ranking)
+            val suggestions = FakeShopSuggestionsRepository(shops).apply { error = RamapError.Unknown(IllegalStateException()) }
+            val viewModel = createViewModel(store = store, suggestions = suggestions)
             runCurrent()
             assertTrue(viewModel.uiState.value.hasShopsError)
             assertTrue(viewModel.uiState.value.canComplete)
@@ -356,7 +356,7 @@ class ShopSelectionViewModelTest {
         storage: FakeOnboardingStorage = FakeOnboardingStorage(),
         login: LoginRepository = FakeLoginRepository(),
         repository: FakeRamenShopRepository = FakeRamenShopRepository(fetchByIdsResult = shops),
-        ranking: FakeOnboardingRankingRepository = FakeOnboardingRankingRepository(shops),
+        suggestions: FakeShopSuggestionsRepository = FakeShopSuggestionsRepository(shops),
         analytics: ShopSelectionAnalytics = FakeShopSelectionAnalytics(),
-    ): ShopSelectionViewModel = ShopSelectionViewModel(SearchRamenShopsUseCase(repository), repository, ranking, store, login, storage, analytics)
+    ): ShopSelectionViewModel = ShopSelectionViewModel(SearchRamenShopsUseCase(repository), repository, suggestions, store, login, storage, analytics)
 }

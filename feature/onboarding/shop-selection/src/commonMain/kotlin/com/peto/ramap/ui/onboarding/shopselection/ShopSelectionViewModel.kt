@@ -5,13 +5,12 @@ import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.onboarding.OnboardingBookmarks
-import com.peto.ramap.domain.model.rank.RankingQuery
-import com.peto.ramap.domain.model.shop.AreaFilter
+import com.peto.ramap.domain.model.onboarding.ShopSuggestionsPage
 import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.domain.model.shop.SearchQuery
 import com.peto.ramap.domain.repository.LoginRepository
 import com.peto.ramap.domain.repository.RamenShopRepository
-import com.peto.ramap.domain.repository.ShopRankingRepository
+import com.peto.ramap.domain.repository.ShopSuggestionsRepository
 import com.peto.ramap.domain.store.PersonalizationBootstrapState
 import com.peto.ramap.domain.store.PersonalizationStore
 import com.peto.ramap.domain.usecase.SearchRamenShopsUseCase
@@ -22,7 +21,6 @@ import com.peto.ramap.ui.onboarding.shopselection.contract.ShopSelectionLoadKey
 import com.peto.ramap.ui.onboarding.shopselection.contract.ShopSelectionSideEffect
 import com.peto.ramap.ui.onboarding.shopselection.contract.ShopSelectionUiState
 import com.peto.ramap.ui.onboarding.shopselection.log.ShopSelectionAnalytics
-import com.peto.ramap.ui.onboarding.shopselection.model.ShopSuggestionsPage
 import com.peto.ramap.ui.task.TaskPolicy
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
@@ -34,7 +32,7 @@ import kotlin.time.Duration.Companion.milliseconds
 public class ShopSelectionViewModel(
     private val searchShops: SearchRamenShopsUseCase,
     private val shopRepository: RamenShopRepository,
-    private val rankingRepository: ShopRankingRepository,
+    private val suggestionsRepository: ShopSuggestionsRepository,
     private val personalizationStore: PersonalizationStore,
     private val loginRepository: LoginRepository,
     private val storage: OnboardingStorage,
@@ -127,14 +125,11 @@ public class ShopSelectionViewModel(
         val savedIds = (personalizationStore.state.value as? PersonalizationBootstrapState.Success)?.value?.bookmarkedShopIds.orEmpty()
         val savedShops = if (savedIds.isEmpty()) RamapResult.Success(RamenShops(emptyMap())) else shopRepository.fetchRamenShops(savedIds)
         if (savedShops is RamapResult.Error) return savedShops
-        val rankings = rankingRepository.fetchShopRankings(RankingQuery(AreaFilter.Nationwide, emptySet(), limit = SUGGESTION_LIMIT))
-        if (rankings is RamapResult.Error) return rankings
-        val page = (rankings as RamapResult.Success).data
+        val suggestions = suggestionsRepository.fetchSuggestions(cursor = null, limit = SUGGESTION_LIMIT)
+        if (suggestions is RamapResult.Error) return suggestions
+        val page = (suggestions as RamapResult.Success).data
         return RamapResult.Success(
-            ShopSuggestionsPage(
-                shops = RamenShops((savedShops as RamapResult.Success).data.values + page.items.map { it.shop }),
-                nextCursor = page.nextCursor,
-            ),
+            page.copy(shops = RamenShops((savedShops as RamapResult.Success).data + page.shops)),
         )
     }
 
@@ -146,12 +141,12 @@ public class ShopSelectionViewModel(
             loadKey = ShopSelectionLoadKey.NextPage,
             policy = TaskPolicy.IgnoreNew,
             onStart = { copy(hasNextPageError = false) },
-            request = { rankingRepository.fetchShopRankings(RankingQuery(AreaFilter.Nationwide, emptySet(), cursor = cursor, limit = SUGGESTION_LIMIT)) },
+            request = { suggestionsRepository.fetchSuggestions(cursor = cursor, limit = SUGGESTION_LIMIT) },
             onSuccess = { page ->
-                analytics.shopLoadResult("next_page", page.items.size)
+                analytics.shopLoadResult("next_page", page.shops.size)
                 reduce {
                     copy(
-                        suggestedShops = RamenShops(suggestedShops + RamenShops(page.items.map { it.shop })),
+                        suggestedShops = RamenShops(suggestedShops + page.shops),
                         nextCursor = page.nextCursor,
                     )
                 }
