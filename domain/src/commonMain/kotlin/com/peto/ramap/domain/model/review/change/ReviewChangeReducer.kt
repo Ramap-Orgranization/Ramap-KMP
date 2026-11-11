@@ -89,12 +89,19 @@ class ReviewChangeReducer {
                     rows = rows,
                     change = change,
                 )
+            is ReviewChange.Commented ->
+                rows.map { review ->
+                    if (review.id == change.reviewId) review.copy(commentCount = change.count) else review
+                }
             is ReviewChange.Hydrated ->
                 hydrateReviews(
                     rows = rows,
                     hydrated = change.snapshot.review,
                 )
-            is ReviewChange.AccessChanged -> rows.filterNot { it.author.userId == change.userId }
+            is ReviewChange.AccessChanged ->
+                rows.filterNot { it.author.userId == change.userId }.map { review ->
+                    if (change.followAction == null && review.commentCount != null) review.copy(commentCount = null) else review
+                }
             is ReviewChange.Written ->
                 patchWritten(
                     rows = rows,
@@ -190,7 +197,11 @@ class ReviewChangeReducer {
                     next = next,
                     previous = previous,
                 )
-            result += retained.copy(author = retained.author.copy(reviewCount = change.counts.publishedCount))
+            result +=
+                retained.copy(
+                    author = retained.author.copy(reviewCount = change.counts.publishedCount),
+                    commentCount = previous?.commentCount ?: retained.commentCount ?: 0.takeIf { change.before == null },
+                )
         }
         return result.sortedWith(reviewOrder)
     }

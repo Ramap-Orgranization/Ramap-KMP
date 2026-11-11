@@ -18,6 +18,7 @@ data class Review(
     val likeCount: Int = 0,
     val isLiked: Boolean = false,
     val isBlocked: Boolean = false,
+    val commentCount: Int? = null,
 ) {
     fun allowsLikeFrom(viewerId: String?): Boolean = author.userId != viewerId && isPublic && moderationStatus == ReviewModerationStatus.PUBLISHED
 

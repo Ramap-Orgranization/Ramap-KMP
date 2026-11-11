@@ -27,6 +27,7 @@ internal class RemoteReviewDataSource(
     private val client: SupabaseClient,
     private val images: ReviewImageResolver,
     private val media: MediaStorageClient,
+    private val comments: ReviewCommentDataSource,
 ) : ReviewDataSource {
     override suspend fun fetchMyReviewCount(): Int = client.postgrest.rpc(RPC_FETCH_MY_REVIEW_COUNT).decodeAs()
 
@@ -35,7 +36,9 @@ internal class RemoteReviewDataSource(
         visibility: String,
     ): MyReviewsPageResponse {
         val page = fetchMyReviewsMetadata(offset, visibility)
-        return page.copy(reviews = images.resolveMyReviews(page.reviews))
+        val counts = comments.fetchCounts(page.reviews.map { it.id })
+        val reviews = page.reviews.map { it.copy(commentCount = counts[it.id]) }
+        return page.copy(reviews = images.resolveMyReviews(reviews))
     }
 
     override suspend fun fetchMyReviewsMetadata(offset: Long): MyReviewsPageResponse = fetchMyReviewsMetadata(offset, "all")
@@ -88,7 +91,9 @@ internal class RemoteReviewDataSource(
                         put(PARAM_OFFSET, offset)
                     },
                 ).decodeAs<ShopReviewsPageResponse>()
-        return page.copy(reviews = images.resolveReviews(page.reviews))
+        val counts = comments.fetchCounts(page.reviews.filterNot { it.isBlocked }.map { it.id })
+        val reviews = page.reviews.map { it.copy(commentCount = counts[it.id]) }
+        return page.copy(reviews = images.resolveReviews(reviews))
     }
 
     override suspend fun fetchBlockedShopReviewOnce(reviewId: String): ReviewResponse? {
@@ -114,7 +119,9 @@ internal class RemoteReviewDataSource(
                         put(PARAM_OFFSET, offset)
                     },
                 ).decodeAs<ProfileReviewsPageResponse>()
-        return page.copy(reviews = images.resolveProfileReviews(page.reviews))
+        val counts = comments.fetchCounts(page.reviews.filterNot { it.review.isBlocked }.map { it.review.id })
+        val reviews = page.reviews.map { it.copy(review = it.review.copy(commentCount = counts[it.review.id])) }
+        return page.copy(reviews = images.resolveProfileReviews(reviews))
     }
 
     override suspend fun fetchProfileReviews(

@@ -22,6 +22,11 @@ sealed interface ReviewChange {
         val result: ReviewLike,
     ) : ReviewChange
 
+    data class Commented(
+        val reviewId: String,
+        val count: Int,
+    ) : ReviewChange
+
     data class AccessChanged(
         val userId: String,
         val followAction: FollowAction? = null,

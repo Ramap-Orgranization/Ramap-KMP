@@ -53,7 +53,8 @@ class RemoteReviewDataSourceMutationTest {
             try {
                 val changes = FakeReviewChangeStore()
                 val images = CachedImageUrlDataSource(signer, ReviewImageUrlAccessPolicy(client, lazy { changes }))
-                val source = RemoteReviewDataSource(client, ReviewImageResolver(images), MediaStorageClient(client, mediaHttp))
+                val resolver = ReviewImageResolver(images)
+                val source = RemoteReviewDataSource(client, resolver, MediaStorageClient(client, mediaHttp), RemoteReviewCommentDataSource(client, resolver))
                 source.hydrateMutation(receipt(listOf("owner/retained")))
                 val pending = receipt(listOf("owner/retained", "owner/new"))
                 source.hydrateMutation(pending)
