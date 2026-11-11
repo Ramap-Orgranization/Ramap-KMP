@@ -103,9 +103,11 @@ internal fun SearchContent(
             rememberStandardBottomSheetState(initialValue = SheetValue.PartiallyExpanded)
         }
     val searchResultSheetState =
-        rememberStandardBottomSheetState(
-            initialValue = SheetValue.Expanded,
-        )
+        key(uiState.search.focusRequestKey) {
+            rememberStandardBottomSheetState(
+                initialValue = SheetValue.PartiallyExpanded,
+            )
+        }
     val searchResultScaffoldState =
         rememberBottomSheetScaffoldState(
             bottomSheetState = if (showRecommendationList) recommendationSheetState else searchResultSheetState,
@@ -123,7 +125,7 @@ internal fun SearchContent(
         uiState.showSearchResults,
     ) {
         if (!isSearchFocused && uiState.showSearchResults) {
-            searchResultSheetState.expand()
+            searchResultSheetState.partialExpand()
         }
     }
 
@@ -230,7 +232,7 @@ internal fun SearchContent(
 
             BottomSheetScaffold(
                 scaffoldState = searchResultScaffoldState,
-                sheetPeekHeight = if (showRecommendationList) 142.dp - RecommendationHandlePadding else BottomSheetDefaults.SheetPeekHeight - 10.dp,
+                sheetPeekHeight = if (showRecommendationList) 142.dp - RecommendationHandlePadding else maxHeight * 0.5f,
                 containerColor = Color.Transparent,
                 sheetContainerColor = CommonColor.White,
                 sheetShape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
