@@ -26,6 +26,7 @@ import com.peto.ramap.data.repository.DefaultNotificationSettingsRepository
 import com.peto.ramap.data.repository.DefaultOperatingNoticeRepository
 import com.peto.ramap.data.repository.DefaultPlaceSearchRepository
 import com.peto.ramap.data.repository.DefaultProfileRepository
+import com.peto.ramap.data.repository.DefaultProfileVisitRankingRepository
 import com.peto.ramap.data.repository.DefaultPushRegistrationRepository
 import com.peto.ramap.data.repository.DefaultRamenShopRepository
 import com.peto.ramap.data.repository.DefaultReviewFeedRepository
@@ -55,6 +56,7 @@ import com.peto.ramap.domain.repository.NotificationSettingsRepository
 import com.peto.ramap.domain.repository.OperatingNoticeRepository
 import com.peto.ramap.domain.repository.PlaceSearchRepository
 import com.peto.ramap.domain.repository.ProfileRepository
+import com.peto.ramap.domain.repository.ProfileVisitRankingRepository
 import com.peto.ramap.domain.repository.PushRegistrationRepository
 import com.peto.ramap.domain.repository.RamenShopRepository
 import com.peto.ramap.domain.repository.ReviewFeedRepository
@@ -86,6 +88,7 @@ val repositoryModule =
         single<FollowRepository> { DefaultFollowRepository(get(), get()) }
         single<ProfileRepository> { DefaultProfileRepository(get(), get()) }
         single<UserProfileRepository> { DefaultUserProfileRepository(get()) }
+        single<ProfileVisitRankingRepository> { DefaultProfileVisitRankingRepository(get()) }
         single<UserModerationRepository> { DefaultUserModerationRepository(get(), get()) }
         single<ReviewFeedRepository> { DefaultReviewFeedRepository(get()) }
         single<ReviewRepository> { DefaultReviewRepository(get(), get<RamenShopDataSource>(), get()) }

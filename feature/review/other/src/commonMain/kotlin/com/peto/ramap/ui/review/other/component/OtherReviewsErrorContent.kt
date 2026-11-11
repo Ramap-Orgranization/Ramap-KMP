@@ -1,8 +1,10 @@
 package com.peto.ramap.ui.review.other.component
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -14,13 +16,16 @@ import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.RamapTheme
+import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.review_action_failed
+import ramap.shared.generated.resources.review_load_error_illustration
 
 @Composable
 internal fun OtherReviewsErrorContent(
     onRetry: () -> Unit,
+    showReviewIllustration: Boolean,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -32,6 +37,13 @@ internal fun OtherReviewsErrorContent(
             ),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
+        if (showReviewIllustration) {
+            Image(
+                painter = painterResource(Res.drawable.review_load_error_illustration),
+                contentDescription = null,
+                modifier = Modifier.size(130.dp),
+            )
+        }
         AppText(
             text = stringResource(Res.string.review_action_failed),
             style = AppTextStyle.T1,
@@ -48,6 +60,6 @@ internal fun OtherReviewsErrorContent(
 @Composable
 private fun OtherReviewsErrorContentPreview() {
     RamapTheme {
-        OtherReviewsErrorContent(onRetry = {})
+        OtherReviewsErrorContent(onRetry = {}, showReviewIllustration = true)
     }
 }

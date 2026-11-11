@@ -528,6 +528,10 @@
     <string name="profile_image_rejected">5MB 이하의 JPG, PNG 사진을 선택해 주세요.</string>
     <string name="profile_load_failed">프로필을 불러오지 못했어요.</string>
     <string name="profile_retry">다시 시도</string>
+    <string name="profile_visit_ranking_title">방문 통계</string>
+    <string name="profile_visit_rank">%1$d위</string>
+    <string name="profile_visit_rank_tied">-</string>
+    <string name="profile_visit_count">%1$d번</string>
     <string name="profile_discard">취소</string>
     <string name="profile_visibility">프로필 공개</string>
     <string name="profile_visibility_body">프로필을 공개하면 다른 사용자가 내 프로필과 저장한 매장을 볼 수 있어요.</string>

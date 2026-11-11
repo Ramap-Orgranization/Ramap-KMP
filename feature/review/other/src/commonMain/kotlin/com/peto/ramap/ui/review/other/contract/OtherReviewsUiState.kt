@@ -1,6 +1,7 @@
 package com.peto.ramap.ui.review.other.contract
 
 import com.peto.ramap.domain.model.profile.ProfileAccess
+import com.peto.ramap.domain.model.profile.ProfileVisitRanking
 import com.peto.ramap.domain.model.profile.PublicProfile
 import com.peto.ramap.domain.model.review.ProfileReview
 import com.peto.ramap.domain.model.shop.RamenShop
@@ -12,6 +13,8 @@ data class OtherReviewsUiState(
     val currentUserId: String? = null,
     val sessionResolved: Boolean = false,
     val profileAccess: ProfileAccess? = null,
+    val visitRanking: ProfileVisitRanking? = null,
+    val profileFailed: Boolean = false,
     val reviews: List<ProfileReview> = emptyList(),
     val reviewsOffset: Long = 0L,
     val selectedTab: OtherReviewsTab = OtherReviewsTab.Reviews,
@@ -25,11 +28,12 @@ data class OtherReviewsUiState(
     override val loadState: LoadState = LoadState(),
 ) : LoadableState<OtherReviewsUiState> {
     val loading: Boolean get() = loadState.isLoading(OtherReviewsLoadKey.Page)
+    val canReadVisitRanking: Boolean get() = (profileAccess as? ProfileAccess.Visible)?.canReadReviews == true
     val savedShopsLoading: Boolean get() = loadState.isLoading(OtherReviewsLoadKey.SavedShops)
     val activeLoading: Boolean
         get() = if (selectedTab == OtherReviewsTab.Reviews || profileAccess == null) loading else savedShopsLoading
     val activeFailed: Boolean
-        get() = if (selectedTab == OtherReviewsTab.Reviews || profileAccess == null) failed else savedShopsFailed
+        get() = profileFailed || if (selectedTab == OtherReviewsTab.Reviews || profileAccess == null) failed else savedShopsFailed
     val activeHasMore: Boolean
         get() = if (selectedTab == OtherReviewsTab.Reviews) hasMore else savedShopsHasMore
     val activeEmpty: Boolean
@@ -40,6 +44,7 @@ data class OtherReviewsUiState(
                 savedShopsLoaded &&
                 !savedShopsLoading &&
                 !savedShopsFailed &&
+                !profileFailed &&
                 savedShops.isEmpty() &&
                 !contentRestricted &&
                 profileAccess is ProfileAccess.Visible
@@ -62,7 +67,7 @@ data class OtherReviewsUiState(
             }
     val isBlocked: Boolean get() = profileAccess is ProfileAccess.Blocked
     val isPrivate: Boolean get() = profileAccess == ProfileAccess.Private
-    val loaded: Boolean get() = profileAccess != null || failed
+    val loaded: Boolean get() = profileAccess != null || profileFailed || failed
 
     val showsProfileHeader: Boolean get() = profile != null
     val showsBlockAction: Boolean
@@ -77,6 +82,7 @@ data class OtherReviewsUiState(
         get() =
             selectedTab == OtherReviewsTab.Reviews &&
                 !loading &&
+                !profileFailed &&
                 !failed &&
                 profileAccess is ProfileAccess.Visible &&
                 reviews.isEmpty() &&

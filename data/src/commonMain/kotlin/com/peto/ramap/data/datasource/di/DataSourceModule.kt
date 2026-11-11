@@ -35,7 +35,9 @@ import com.peto.ramap.data.datasource.personalization.RemoteNotificationDataSour
 import com.peto.ramap.data.datasource.place.PlaceSearchDataSource
 import com.peto.ramap.data.datasource.place.RemotePlaceSearchDataSource
 import com.peto.ramap.data.datasource.profile.ProfileDataSource
+import com.peto.ramap.data.datasource.profile.ProfileVisitRankingDataSource
 import com.peto.ramap.data.datasource.profile.RemoteProfileDataSource
+import com.peto.ramap.data.datasource.profile.RemoteProfileVisitRankingDataSource
 import com.peto.ramap.data.datasource.profile.RemoteUserProfileDataSource
 import com.peto.ramap.data.datasource.profile.UserProfileDataSource
 import com.peto.ramap.data.datasource.ranking.RemoteShopRankingDataSource
@@ -83,6 +85,7 @@ val dataSourceModule =
         singleOf(::ReviewImageResolver)
         single<ProfileDataSource> { RemoteProfileDataSource(get(), get(), get()) }
         single<UserProfileDataSource> { RemoteUserProfileDataSource(get(), get(), get()) }
+        single<ProfileVisitRankingDataSource> { RemoteProfileVisitRankingDataSource(get()) }
         single<UserModerationDataSource> { RemoteUserModerationDataSource(get(), get()) }
         single<ReviewDataSource> { RemoteReviewDataSource(get(), get(), get()) }
         single<FeedDataSource> { RemoteFeedDataSource(get(), get()) }

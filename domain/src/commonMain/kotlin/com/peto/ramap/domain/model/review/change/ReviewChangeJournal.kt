@@ -11,6 +11,19 @@ data class ReviewChangeJournal(
 
     fun changesAfter(revision: Long): List<RevisionedReviewChange> = changes.filter { it.revision > revision }
 
+    fun requiresProfileVisitRankingReloadAfter(
+        revision: Long,
+        userId: String,
+    ): Boolean =
+        hasGapAfter(revision) ||
+            changesAfter(revision).any { record ->
+                when (val change = record.change) {
+                    is ReviewChange.Written -> change.userId == userId
+                    is ReviewChange.AccessChanged -> change.userId == userId
+                    else -> false
+                }
+            }
+
     fun requiresShopReloadAfter(
         revision: Long,
         shopId: String,
