@@ -15,6 +15,10 @@ kotlin {
         implementation(projects.core.testing)
     }
 
+    sourceSets.androidMain.dependencies {
+        implementation(libs.androidx.core)
+    }
+
     androidLibrary {
         androidResources {
             enable = true

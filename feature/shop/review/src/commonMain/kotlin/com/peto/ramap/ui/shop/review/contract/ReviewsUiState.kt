@@ -22,6 +22,16 @@ data class ReviewsUiState(
     override val loadState: LoadState = LoadState(),
 ) : LoadableState<ReviewsUiState> {
     val reviews: List<Review> get() = page.reviews
+
+    internal val photoUrls: List<String>
+        get() =
+            reviews
+                .asSequence()
+                .filterNot { it.isBlocked }
+                .flatMap { it.imageUrls }
+                .filter { it.isNotBlank() }
+                .toList()
+
     val reviewCount: Int get() = page.totalCount
     val hasMoreReviews: Boolean get() = hasLoaded && page.hasMore
     val isLoading: Boolean get() = loadState.isLoading(ReviewsLoadKey.Reviews)

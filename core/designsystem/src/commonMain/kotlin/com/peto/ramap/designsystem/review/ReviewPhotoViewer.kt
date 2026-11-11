@@ -31,8 +31,6 @@ import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
 import com.peto.ramap.designsystem.button.AppIconButton
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.theme.AppTextStyle
@@ -55,9 +53,8 @@ internal fun ReviewPhotoViewer(
     val scope = rememberCoroutineScope()
     val hasMultiplePhotos = imageUrls.size > 1
 
-    Dialog(
+    ReviewPhotoViewerDialog(
         onDismissRequest = onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false),
     ) {
         Column(
             modifier =
@@ -117,6 +114,12 @@ internal fun ReviewPhotoViewer(
         }
     }
 }
+
+@Composable
+internal expect fun ReviewPhotoViewerDialog(
+    onDismissRequest: () -> Unit,
+    content: @Composable () -> Unit,
+)
 
 @Composable
 private fun ReviewPhotoThumbnails(

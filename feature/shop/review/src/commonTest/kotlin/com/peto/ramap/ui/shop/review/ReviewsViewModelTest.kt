@@ -104,19 +104,27 @@ class ReviewsViewModelTest {
     fun `같은 매장의 중복 선택은 재조회하지 않고 페이징과 새로고침에서 펼친 범위를 유지한다`() =
         coroutinesTest {
             val fake = FakeShopReviewRepository()
-            fake.reviews = (0 until 45).map { review("shop", "review-$it") }
+            val photoUrl = "https://example.com/second-page.jpg"
+            fake.reviews =
+                (0 until 45).map { index ->
+                    val textReview = review("shop", "review-$index")
+                    if (index == 20) textReview.copy(imageUrls = listOf(photoUrl)) else textReview
+                }
             val viewModel = viewModel(fake)
             viewModel.dispatch(ReviewsIntent.OnShopSelected("shop"))
             viewModel.dispatch(ReviewsIntent.OnShopSelected("shop"))
             runCurrent()
             assertEquals(listOf(0L), fake.pageOffsets)
+            assertEquals(emptyList(), viewModel.uiState.value.photoUrls)
             viewModel.dispatch(ReviewsIntent.OnLoadMore)
             runCurrent()
             assertEquals(40, viewModel.uiState.value.reviews.size)
+            assertEquals(listOf(photoUrl), viewModel.uiState.value.photoUrls)
             viewModel.dispatch(ReviewsIntent.OnRetry)
             runCurrent()
             assertEquals(listOf(0L, 20L, 0L, 20L), fake.pageOffsets)
             assertEquals(40, viewModel.uiState.value.reviews.size)
+            assertEquals(listOf(photoUrl), viewModel.uiState.value.photoUrls)
             assertTrue(viewModel.uiState.value.hasMoreReviews)
         }
 
@@ -156,18 +164,21 @@ class ReviewsViewModelTest {
     fun `매장 변경 후 늦게 도착한 리뷰 실패 응답은 새 목록에 오류를 표시하지 않는다`() = lateShopResponseScenario(fails = true)
 
     @Test
-    fun `차단 접근 변경은 해당 사용자의 리뷰를 즉시 숨기고 독립 재조회한다`() =
+    fun `차단 접근 변경은 해당 사용자의 리뷰와 사진을 숨기고 독립 재조회한다`() =
         coroutinesTest {
             val fake = FakeShopReviewRepository()
-            fake.reviews = listOf(review("shop"))
+            val photoUrl = "https://example.com/author-photo.jpg"
+            fake.reviews = listOf(review("shop").copy(imageUrls = listOf(photoUrl)))
             val changes = FakeReviewChangeStore()
             val viewModel = viewModel(fake, profile = FakeProfileRepository("owner"), changes = changes, login = FakeLoginRepository(LoginSessionState.AUTHENTICATED))
             viewModel.dispatch(ReviewsIntent.OnShopSelected("shop"))
             runCurrent()
+            assertEquals(listOf(photoUrl), viewModel.uiState.value.photoUrls)
             fake.reviews = emptyList()
             changes.publish(ReviewChange.AccessChanged("author"))
             runCurrent()
             assertEquals(emptyList(), viewModel.uiState.value.reviews)
+            assertEquals(emptyList(), viewModel.uiState.value.photoUrls)
             assertEquals(listOf(0L, 0L), fake.pageOffsets)
         }
 
