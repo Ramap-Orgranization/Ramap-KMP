@@ -6,9 +6,12 @@ import com.peto.ramap.analytics.common.event.EventNotificationToggled
 import com.peto.ramap.core.result.RamapError
 import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.coroutinesTest
+import com.peto.ramap.domain.model.auth.LoginSessionState
 import com.peto.ramap.domain.repository.NotificationSettingsRepository
 import com.peto.ramap.fake.FakeAnalyticsTracker
+import com.peto.ramap.fake.FakeLoginRepository
 import com.peto.ramap.fake.FakeNotificationSettingsRepository
+import com.peto.ramap.fake.FakeReviewNotificationRepository
 import com.peto.ramap.ui.notification.contract.NotificationSettingsIntent
 import com.peto.ramap.ui.notification.contract.NotificationSettingsLoadKey
 import com.peto.ramap.ui.notification.contract.NotificationSettingsSideEffect
@@ -31,6 +34,8 @@ class NotificationSettingsViewModelTest {
                 NotificationSettingsViewModel(
                     FakeNotificationSettingsRepository(enabled = true),
                     FakeAnalyticsTracker(),
+                    FakeReviewNotificationRepository(),
+                    login(),
                 )
 
             runCurrent()
@@ -49,7 +54,7 @@ class NotificationSettingsViewModelTest {
                 FakeNotificationSettingsRepository().apply {
                     fetchEnabledError = RamapError.Unknown(IllegalStateException("failure"))
                 }
-            val viewModel = NotificationSettingsViewModel(repository, FakeAnalyticsTracker())
+            val viewModel = NotificationSettingsViewModel(repository, FakeAnalyticsTracker(), FakeReviewNotificationRepository(), login())
 
             runCurrent()
 
@@ -65,7 +70,7 @@ class NotificationSettingsViewModelTest {
         coroutinesTest {
             val repository = FakeNotificationSettingsRepository(enabled = true)
             val analyticsTracker = FakeAnalyticsTracker()
-            val viewModel = NotificationSettingsViewModel(repository, analyticsTracker)
+            val viewModel = NotificationSettingsViewModel(repository, analyticsTracker, FakeReviewNotificationRepository(), login())
             runCurrent()
 
             viewModel.dispatch(NotificationSettingsIntent.OnEventNotificationsEnabledChanged(false))
@@ -96,7 +101,7 @@ class NotificationSettingsViewModelTest {
                         return if (enabled) firstResult.await() else RamapResult.Success(Unit)
                     }
                 }
-            val viewModel = NotificationSettingsViewModel(repository, FakeAnalyticsTracker())
+            val viewModel = NotificationSettingsViewModel(repository, FakeAnalyticsTracker(), FakeReviewNotificationRepository(), login())
             runCurrent()
 
             viewModel.dispatch(NotificationSettingsIntent.OnEventNotificationsEnabledChanged(true))
@@ -122,7 +127,7 @@ class NotificationSettingsViewModelTest {
                     NotificationSettingsRepository by FakeNotificationSettingsRepository(enabled = true) {
                     override suspend fun updateEventNotificationsEnabled(enabled: Boolean): RamapResult<Unit> = RamapResult.Error(RamapError.Unknown(IllegalStateException("failure")))
                 }
-            val viewModel = NotificationSettingsViewModel(repository, FakeAnalyticsTracker())
+            val viewModel = NotificationSettingsViewModel(repository, FakeAnalyticsTracker(), FakeReviewNotificationRepository(), login())
             runCurrent()
 
             viewModel.sideEffect.test {
@@ -137,4 +142,40 @@ class NotificationSettingsViewModelTest {
                 )
             }
         }
+
+    @Test
+    fun `리뷰 알림을 켜도 이벤트 알림 설정은 바뀌지 않는다`() =
+        coroutinesTest {
+            val events = FakeNotificationSettingsRepository(enabled = false)
+            val reviews = FakeReviewNotificationRepository()
+            val viewModel = NotificationSettingsViewModel(events, FakeAnalyticsTracker(), reviews, login())
+            runCurrent()
+
+            viewModel.dispatch(NotificationSettingsIntent.OnReviewNotificationsEnabledChanged("viewer", true))
+            runCurrent()
+
+            assertEquals(true, viewModel.uiState.value.reviewNotificationsEnabled)
+            assertFalse(viewModel.uiState.value.areEnabled)
+            assertTrue(events.enabledUpdates.isEmpty())
+            assertEquals(listOf(true), reviews.enabledUpdates)
+        }
+
+    @Test
+    fun `이전 계정의 리뷰 알림 요청은 새 계정에 적용하지 않는다`() =
+        coroutinesTest {
+            val login = login()
+            val reviews = FakeReviewNotificationRepository()
+            val viewModel = NotificationSettingsViewModel(FakeNotificationSettingsRepository(), FakeAnalyticsTracker(), reviews, login)
+            runCurrent()
+
+            login.updateAccountId("other")
+            viewModel.dispatch(NotificationSettingsIntent.OnReviewNotificationsEnabledChanged("viewer", true))
+            runCurrent()
+
+            assertEquals("other", viewModel.uiState.value.reviewAccountId)
+            assertEquals(false, viewModel.uiState.value.reviewNotificationsEnabled)
+            assertTrue(reviews.enabledUpdates.isEmpty())
+        }
+
+    private fun login() = FakeLoginRepository(LoginSessionState.AUTHENTICATED, initialAccountId = "viewer")
 }
