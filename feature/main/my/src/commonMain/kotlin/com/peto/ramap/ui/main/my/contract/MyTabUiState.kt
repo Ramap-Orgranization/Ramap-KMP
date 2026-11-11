@@ -20,7 +20,6 @@ data class MyTabUiState(
     val notificationCount: Int? = null,
     val reviewCount: Int? = null,
     val visitRanking: ProfileVisitRanking? = null,
-    val visitRankingFailed: Boolean = false,
     val blockedUserCount: Int? = null,
     val hasPendingFollowRequests: Boolean = false,
     val hasUnreadFollowConnections: Boolean = false,
@@ -32,7 +31,6 @@ data class MyTabUiState(
     val loading: Boolean get() = loadState.isLoading(MyTabLoadKey.Fetch)
     val savingVisibility: Boolean get() = loadState.isLoading(MyTabLoadKey.Visibility)
     val loadingReviewCount: Boolean get() = loadState.isLoading(MyTabLoadKey.ReviewCount)
-    val loadingVisitRanking: Boolean get() = loadState.isLoading(MyTabLoadKey.VisitRanking)
     val loadingBlockedUserCount: Boolean get() = loadState.isLoading(MyTabLoadKey.BlockedUserCount)
     val unblocking: Boolean get() = loadState.isLoading(MyTabLoadKey.Unblock)
 

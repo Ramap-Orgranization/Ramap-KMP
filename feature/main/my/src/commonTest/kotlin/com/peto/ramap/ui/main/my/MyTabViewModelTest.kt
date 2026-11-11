@@ -38,6 +38,50 @@ import kotlin.test.assertTrue
 @OptIn(ExperimentalCoroutinesApi::class)
 class MyTabViewModelTest {
     @Test
+    fun `프로필 조회와 순위 조회를 동시에 시작하고 순위가 실패하면 둘을 다시 조회한다`() =
+        coroutinesTest {
+            val profile = AccountProfile("first", "느긋한차슈")
+            val pendingProfile = CompletableDeferred<RamapResult<AccountProfile>>()
+            val profiles = FakeProfileRepository().apply { fetchPending = pendingProfile }
+            val ranking = ProfileVisitRanking(emptyList())
+            var rankingRequests = 0
+            val visits =
+                FakeProfileVisitRankingRepository {
+                    rankingRequests++
+                    if (rankingRequests == 1) RamapResult.Error(RamapError.Http(500)) else RamapResult.Success(ranking)
+                }
+            val viewModel =
+                MyTabViewModel(
+                    repository = profiles,
+                    userModerationRepository = FakeUserModerationRepository(),
+                    personalizationStore = FakePersonalizationRepository(),
+                    reviewRepository = FakeMyTabReviewRepository(),
+                    followRepository = FakeFollowRepository(),
+                    changes = FakeReviewChangeStore(),
+                    announcementRepository = FakeAnnouncementRepository(),
+                    announcementReadStore = FakeAnnouncementReadStore(),
+                    visitRankings = visits,
+                )
+
+            runCurrent()
+            assertEquals(1, profiles.fetchCount)
+            assertEquals(1, rankingRequests)
+            assertTrue(viewModel.uiState.value.loading)
+            pendingProfile.complete(RamapResult.Success(profile))
+            runCurrent()
+            assertTrue(viewModel.uiState.value.failed)
+            assertNull(viewModel.uiState.value.profile)
+
+            viewModel.dispatch(MyTabIntent.Refresh)
+            runCurrent()
+            assertEquals(2, profiles.fetchCount)
+            assertEquals(2, rankingRequests)
+            assertFalse(viewModel.uiState.value.failed)
+            assertEquals(profile, viewModel.uiState.value.profile)
+            assertEquals(ranking, viewModel.uiState.value.visitRanking)
+        }
+
+    @Test
     fun `방문 기록 변경을 반영하고 로그아웃하면 방문 순위를 지운다`() =
         coroutinesTest {
             val profiles = FakeProfileRepository()

@@ -8,8 +8,6 @@ sealed interface MyTabIntent : Intent {
 
     data object Refresh : MyTabIntent
 
-    data object RetryVisitRanking : MyTabIntent
-
     data object ReturnedToScreen : MyTabIntent
 
     data object ReturnedFromProfileEdit : MyTabIntent

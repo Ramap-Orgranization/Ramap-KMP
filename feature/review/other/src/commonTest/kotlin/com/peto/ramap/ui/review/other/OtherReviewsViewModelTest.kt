@@ -40,6 +40,53 @@ import kotlin.test.assertTrue
 @OptIn(ExperimentalCoroutinesApi::class)
 class OtherReviewsViewModelTest {
     @Test
+    fun `순위 조회가 끝날 때까지 프로필을 기다리고 실패하면 프로필과 순위를 재시도한다`() =
+        coroutinesTest {
+            val repositories = FakeOtherReviewsRepositories()
+            val pendingRanking = CompletableDeferred<RamapResult<ProfileVisitRanking?>>()
+            var rankingRequests = 0
+            val visits =
+                FakeProfileVisitRankingRepository {
+                    rankingRequests++
+                    pendingRanking.await()
+                }
+            val viewModel =
+                OtherReviewsViewModel(
+                    userProfileRepository = repositories,
+                    userModerationRepository = repositories,
+                    profiles = FakeProfileRepository("viewer"),
+                    follows = FakeFollowRepository(),
+                    changes = FakeReviewChangeStore(),
+                    reviewChangeReducer = ReviewChangeReducer(),
+                    visitRankings = visits,
+                )
+            viewModel.dispatch(OtherReviewsIntent.OpenProfile("author"))
+            runCurrent()
+            assertEquals(listOf("author"), repositories.requestedProfileUserIds)
+            assertEquals(1, rankingRequests)
+            assertTrue(viewModel.uiState.value.showsInitialLoading)
+            assertNull(viewModel.uiState.value.profile)
+
+            pendingRanking.complete(RamapResult.Error(RamapError.Http(500)))
+            runCurrent()
+            assertTrue(viewModel.uiState.value.activeFailed)
+            assertNull(viewModel.uiState.value.profile)
+
+            val ranking = ProfileVisitRanking(emptyList())
+            visits.fetch = {
+                rankingRequests++
+                RamapResult.Success(ranking)
+            }
+            viewModel.dispatch(OtherReviewsIntent.Retry)
+            runCurrent()
+            assertEquals(listOf("author", "author"), repositories.requestedProfileUserIds)
+            assertEquals(2, rankingRequests)
+            assertFalse(viewModel.uiState.value.activeFailed)
+            assertEquals(repositories.profile, viewModel.uiState.value.profile)
+            assertEquals(ranking, viewModel.uiState.value.visitRanking)
+        }
+
+    @Test
     fun `리뷰 열람 권한을 잃으면 이전 순위와 늦은 응답을 표시하지 않는다`() =
         coroutinesTest {
             val repositories = FakeOtherReviewsRepositories()
@@ -63,9 +110,9 @@ class OtherReviewsViewModelTest {
 
             val pending = CompletableDeferred<RamapResult<ProfileVisitRanking?>>()
             visits.fetch = { withContext(NonCancellable) { pending.await() } }
-            viewModel.dispatch(OtherReviewsIntent.RetryVisitRanking)
+            viewModel.dispatch(OtherReviewsIntent.Retry)
             runCurrent()
-            assertTrue(viewModel.uiState.value.loadingVisitRanking)
+            assertTrue(viewModel.uiState.value.loading)
 
             repositories.canReadReviews = false
             changes.publish(ReviewChange.AccessChanged("author"))
@@ -76,7 +123,7 @@ class OtherReviewsViewModelTest {
             pending.complete(RamapResult.Success(ranking))
             runCurrent()
             assertNull(viewModel.uiState.value.visitRanking)
-            assertFalse(viewModel.uiState.value.loadingVisitRanking)
+            assertFalse(viewModel.uiState.value.loading)
         }
 
     @Test

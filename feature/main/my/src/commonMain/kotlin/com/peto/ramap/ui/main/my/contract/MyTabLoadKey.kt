@@ -7,7 +7,6 @@ enum class MyTabLoadKey : LoadKey {
     Visibility,
     BlockedUsers,
     ReviewCount,
-    VisitRanking,
     BlockedUserCount,
     Unblock,
 }

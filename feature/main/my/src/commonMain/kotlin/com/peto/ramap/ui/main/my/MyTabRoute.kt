@@ -28,9 +28,11 @@ import com.peto.ramap.designsystem.toast.ToastManager
 import com.peto.ramap.domain.model.auth.LoginType
 import com.peto.ramap.domain.model.profile.AccountProfile
 import com.peto.ramap.domain.model.profile.ProfileVisibility
-import com.peto.ramap.theme.CommonColor
+import com.peto.ramap.domain.model.profile.ProfileVisitRanking
+import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.RamapTheme
 import com.peto.ramap.ui.base.ObserveAsEvents
+import com.peto.ramap.ui.loading.LoadState
 import com.peto.ramap.ui.main.my.component.BlockedUsersDialog
 import com.peto.ramap.ui.main.my.component.GuestProfileHeader
 import com.peto.ramap.ui.main.my.component.MyTabMenuList
@@ -40,6 +42,7 @@ import com.peto.ramap.ui.main.my.component.ProfileLoadFailedBanner
 import com.peto.ramap.ui.main.my.component.ProfileVisibilityDialog
 import com.peto.ramap.ui.main.my.component.UnblockConfirmDialog
 import com.peto.ramap.ui.main.my.contract.MyTabIntent
+import com.peto.ramap.ui.main.my.contract.MyTabLoadKey
 import com.peto.ramap.ui.main.my.contract.MyTabSideEffect
 import com.peto.ramap.ui.main.my.contract.MyTabUiState
 import com.peto.ramap.ui.refresh.RefreshOnReturnEffect
@@ -57,6 +60,7 @@ fun MyTabRoute(
     onFollowNavigate: () -> Unit = {},
     onMyReviewsNavigate: () -> Unit,
     onOpenProfile: (String) -> Unit = {},
+    onOpenShopDetail: (String) -> Unit,
     onLoginClick: (LoginType) -> Unit,
     toastManager: ToastManager = koinInject(),
     viewModel: MyTabViewModel = koinViewModel(),
@@ -136,7 +140,7 @@ fun MyTabRoute(
             onMyReviewsNavigate()
         },
         onRetryClick = { viewModel.dispatch(MyTabIntent.Refresh) },
-        onRetryVisitRankingClick = { viewModel.dispatch(MyTabIntent.RetryVisitRanking) },
+        onOpenShopDetail = onOpenShopDetail,
         onBookmarkedShopsClick = onBookmarkedShopsNavigate,
         onSubscribedShopsClick = onSubscribedShopsNavigate,
         onReportClick = onReportNavigate,
@@ -164,7 +168,7 @@ internal fun MyTabContent(
     onProfileClick: () -> Unit,
     onMyReviewsClick: () -> Unit = {},
     onRetryClick: () -> Unit,
-    onRetryVisitRankingClick: () -> Unit,
+    onOpenShopDetail: (String) -> Unit,
     onBookmarkedShopsClick: () -> Unit,
     onSubscribedShopsClick: () -> Unit,
     onReportClick: () -> Unit,
@@ -178,7 +182,7 @@ internal fun MyTabContent(
         modifier =
             Modifier
                 .fillMaxSize()
-                .background(CommonColor.White)
+                .background(GrayColor.C050)
                 .padding(top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding())
                 .verticalScroll(rememberScrollState()),
     ) {
@@ -215,28 +219,23 @@ internal fun MyTabContent(
 
             isGuest -> GuestProfileHeader(onLoginClick = onLoginClick)
 
+            state.failed -> ProfileLoadFailedBanner(onRetryClick = onRetryClick)
+
             else ->
                 ProfileHeader(
                     nickname = state.profile?.nickname,
                     avatarUrl = state.profile?.avatarUrl,
                     bio = state.profile?.bio,
-                    showEmptyBio = (state.profile != null) && !state.failed,
+                    showEmptyBio = state.profile != null,
                     onProfileClick = onProfileClick,
                 )
         }
-        if (state.failed && !isGuest) {
-            ProfileLoadFailedBanner(onRetryClick = onRetryClick)
-        }
-        val showsVisitRanking = state.profile != null && (state.visitRanking != null || state.loadingVisitRanking || state.visitRankingFailed)
+        val showsVisitRanking = !state.failed && state.profile != null && state.visitRanking?.hasPodium == true
         if (showsVisitRanking) {
             key(state.userId) {
                 ProfileVisitRankingCard(
                     ranking = state.visitRanking,
-                    onShopClick = {},
-                    loading = state.loadingVisitRanking,
-                    failed = state.visitRankingFailed,
-                    publicReviewsOnly = false,
-                    onRetry = onRetryVisitRankingClick,
+                    onShopClick = onOpenShopDetail,
                     modifier = Modifier.padding(start = 12.dp, top = 16.dp, end = 12.dp),
                 )
             }
@@ -274,29 +273,49 @@ internal fun MyTabContent(
     }
 }
 
-@Preview
+@Preview(name = "로딩 중", group = "내 프로필 조회", widthDp = 360, heightDp = 780)
 @Composable
-private fun MyTabRoutePreview() {
+internal fun MyProfileLoadingPreview() =
+    MyTabPreview(
+        state =
+            MyTabUiState(
+                userId = "preview",
+                sessionResolved = true,
+                loadState = LoadState.loading(MyTabLoadKey.Fetch),
+            ),
+    )
+
+@Preview(name = "조회 실패와 다시 시도", group = "내 프로필 조회", widthDp = 360, heightDp = 780)
+@Composable
+internal fun MyProfileLoadFailedPreview() =
+    MyTabPreview(
+        state = MyTabUiState(userId = "preview", sessionResolved = true, failed = true),
+    )
+
+@Preview(name = "조회 성공 · 순위 없음", group = "내 프로필 조회", widthDp = 360, heightDp = 780)
+@Composable
+internal fun MyProfileWithoutRankingPreview() =
+    MyTabPreview(
+        state =
+            MyTabUiState(
+                userId = "preview",
+                sessionResolved = true,
+                profile = AccountProfile(userId = "preview", nickname = "느긋한차슈", bio = "라멘을 좋아해요"),
+                visitRanking = ProfileVisitRanking(emptyList()),
+                bookmarkedCount = 12,
+                notificationCount = 3,
+                reviewCount = 0,
+                blockedUserCount = 2,
+                hasPendingFollowRequests = true,
+                hasUnreadFollowConnections = true,
+            ),
+    )
+
+@Composable
+private fun MyTabPreview(state: MyTabUiState) {
     RamapTheme {
         MyTabContent(
-            state =
-                MyTabUiState(
-                    userId = "preview",
-                    sessionResolved = true,
-                    profile =
-                        AccountProfile(
-                            userId = "preview",
-                            nickname = "느긋한차슈",
-                            bio = "",
-                        ),
-                    failed = false,
-                    bookmarkedCount = 12,
-                    notificationCount = 3,
-                    reviewCount = 8,
-                    blockedUserCount = 2,
-                    hasPendingFollowRequests = true,
-                    hasUnreadFollowConnections = true,
-                ),
+            state = state,
             onSettingsClick = {},
             onVisibilityClick = {},
             onVisibilityDismiss = {},
@@ -309,7 +328,7 @@ private fun MyTabRoutePreview() {
             onUnblockConfirm = {},
             onProfileClick = {},
             onRetryClick = {},
-            onRetryVisitRankingClick = {},
+            onOpenShopDetail = {},
             onBookmarkedShopsClick = {},
             onSubscribedShopsClick = {},
             onReportClick = {},

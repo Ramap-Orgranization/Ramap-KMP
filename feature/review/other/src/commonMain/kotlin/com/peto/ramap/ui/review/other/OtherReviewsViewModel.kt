@@ -7,6 +7,7 @@ import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.follow.FollowAction
 import com.peto.ramap.domain.model.follow.FollowState
 import com.peto.ramap.domain.model.profile.ProfileAccess
+import com.peto.ramap.domain.model.profile.ProfileVisitRanking
 import com.peto.ramap.domain.model.profile.PublicProfile
 import com.peto.ramap.domain.model.profile.PublicSavedShopsPage
 import com.peto.ramap.domain.model.review.MyReviewVisibility
@@ -31,6 +32,8 @@ import com.peto.ramap.ui.review.other.contract.OtherReviewsLoadKey
 import com.peto.ramap.ui.review.other.contract.OtherReviewsTab
 import com.peto.ramap.ui.review.other.contract.OtherReviewsUiState
 import com.peto.ramap.ui.task.TaskPolicy
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -113,7 +116,7 @@ class OtherReviewsViewModel(
                     epoch = journal.epoch
                     revision = journal.revision
                     clearVisitRanking()
-                    refreshVisitRanking()
+                    refreshProfileSummary()
                     return@collect
                 }
                 val hasGap = journal.hasGapAfter(revision)
@@ -170,7 +173,7 @@ class OtherReviewsViewModel(
                     }
                     revision = record.revision
                 }
-                if (rankingChanged && !accessChanged) refreshVisitRanking()
+                if (rankingChanged && !accessChanged) refreshProfileSummary()
             }
         }
     }
@@ -196,7 +199,7 @@ class OtherReviewsViewModel(
                 .collect { currentUserId ->
                     val targetId = currentState.userId
                     cancelTask(PAGE_TASK)
-                    cancelTask(VISIT_RANKING_TASK)
+                    cancelTask(PROFILE_SUMMARY_TASK)
                     cancelTask(SAVED_SHOPS_TASK)
                     cancelTask(BLOCK_TASK)
                     cancelTask(FOLLOW_TASK)
@@ -220,7 +223,6 @@ class OtherReviewsViewModel(
             is OtherReviewsIntent.OpenProfile -> openProfile(intent.userId)
             OtherReviewsIntent.LoadMore -> handleLoadMore()
             OtherReviewsIntent.Retry -> handleRetry()
-            OtherReviewsIntent.RetryVisitRanking -> refreshVisitRanking()
             OtherReviewsIntent.ToggleBlock -> toggleBlock()
             OtherReviewsIntent.ToggleFollow -> toggleFollow()
             is OtherReviewsIntent.ToggleLike -> toggleLike(intent.review)
@@ -291,6 +293,10 @@ class OtherReviewsViewModel(
     }
 
     private fun handleRetry() {
+        if (currentState.profileFailed) {
+            loadPage(reset = true)
+            return
+        }
         val isSavedShopsTab = currentState.selectedTab == OtherReviewsTab.SavedShops
         val isProfileVisible = currentState.profileAccess is ProfileAccess.Visible
         if (isSavedShopsTab && isProfileVisible) {
@@ -305,7 +311,7 @@ class OtherReviewsViewModel(
         val isInvalidOrSameUser = userId.isBlank() || currentState.userId == userId
         if (isInvalidOrSameUser) return
         cancelTask(PAGE_TASK)
-        cancelTask(VISIT_RANKING_TASK)
+        cancelTask(PROFILE_SUMMARY_TASK)
         cancelTask(SAVED_SHOPS_TASK)
         cancelTask(BLOCK_TASK)
         cancelTask(FOLLOW_TASK)
@@ -343,6 +349,7 @@ class OtherReviewsViewModel(
                 if (reset) {
                     copy(
                         profileAccess = null,
+                        profileFailed = false,
                         reviews = emptyList(),
                         reviewsOffset = 0L,
                         failed = false,
@@ -366,14 +373,14 @@ class OtherReviewsViewModel(
         userId: String,
         requestedReviewExtent: Int,
     ) {
-        val result = userProfileRepository.fetchProfileAccess(userId)
+        val result = fetchProfileWithVisitRanking(userId)
         currentCoroutineContext().ensureActive()
         when (result) {
-            is RamapResult.Success ->
-                when (val access = result.data) {
+            is RamapResult.Success -> {
+                val (access, ranking) = result.data
+                when (access) {
                     is ProfileAccess.Visible -> {
-                        reduce { copy(profileAccess = access) }
-                        if (access.canReadReviews) refreshVisitRanking()
+                        reduce { copy(profileAccess = access, visitRanking = ranking) }
                         val hasCurrentUser = currentState.currentUserId != null
                         if (hasCurrentUser) loadSavedShops()
                         if (access.canReadReviews) {
@@ -388,7 +395,8 @@ class OtherReviewsViewModel(
                     }
                     else -> applyProfileAccess(userId, access)
                 }
-            is RamapResult.Error -> fail(userId)
+            }
+            is RamapResult.Error -> failProfile(userId)
         }
     }
 
@@ -400,42 +408,74 @@ class OtherReviewsViewModel(
         if (access.canReadReviews) fetchAndApplyUserReviews(userId, offset, reset = false)
     }
 
-    private fun refreshVisitRanking() {
+    private suspend fun fetchProfileWithVisitRanking(userId: String): RamapResult<Pair<ProfileAccess, ProfileVisitRanking?>> {
+        while (true) {
+            val baseline = changes.journal.value
+            val result = fetchProfileWithVisitRankingOnce(userId)
+            currentCoroutineContext().ensureActive()
+            val journal = changes.journal.value
+            val isStale = baseline.epoch != journal.epoch || journal.requiresProfileVisitRankingReloadAfter(baseline.revision, userId)
+            if (result is RamapResult.Error || !isStale) return result
+        }
+    }
+
+    private suspend fun fetchProfileWithVisitRankingOnce(userId: String): RamapResult<Pair<ProfileAccess, ProfileVisitRanking?>> =
+        coroutineScope {
+            val ranking = async { visitRankings.fetchProfileVisitRanking(userId) }
+            val access =
+                when (val profile = userProfileRepository.fetchProfileAccess(userId)) {
+                    is RamapResult.Success -> profile.data
+                    is RamapResult.Error -> {
+                        ranking.cancel()
+                        return@coroutineScope profile
+                    }
+                }
+            if (access !is ProfileAccess.Visible || !access.canReadReviews) {
+                ranking.cancel()
+                return@coroutineScope RamapResult.Success(access to null)
+            }
+            when (val result = ranking.await()) {
+                is RamapResult.Success -> RamapResult.Success(access to result.data)
+                is RamapResult.Error -> result
+            }
+        }
+
+    private fun refreshProfileSummary() {
         val userId = currentState.userId ?: return
-        if (!currentState.canReadVisitRanking) return
+        if (!currentState.canReadVisitRanking || currentState.following) return
         val viewerId = currentState.currentUserId
-        val baseline = changes.journal.value
         launchResultTask(
-            taskKey = VISIT_RANKING_TASK,
-            loadKey = OtherReviewsLoadKey.VisitRanking,
-            policy = TaskPolicy.CancelPrevious,
-            onStart = { copy(visitRankingFailed = false) },
-            request = { visitRankings.fetchProfileVisitRanking(userId) },
-            onSuccess = { ranking ->
-                if (!isCurrentVisitRankingRequest(userId, viewerId)) return@launchResultTask
-                val journal = changes.journal.value
-                if (baseline.epoch != journal.epoch || journal.requiresProfileVisitRankingReloadAfter(baseline.revision, userId)) {
-                    refreshVisitRanking()
+            taskKey = PROFILE_SUMMARY_TASK,
+            request = { fetchProfileWithVisitRanking(userId) },
+            onSuccess = { (access, ranking) ->
+                if (!isCurrentProfileRequest(userId, viewerId)) return@launchResultTask
+                val currentAccess = currentState.profileAccess as? ProfileAccess.Visible ?: return@launchResultTask
+                val accessChanged =
+                    access !is ProfileAccess.Visible ||
+                        access.canReadReviews != currentAccess.canReadReviews ||
+                        access.canReadSavedShops != currentAccess.canReadSavedShops
+                if (accessChanged) {
+                    if (access !is ProfileAccess.Visible || !access.canReadReviews) cancelTask(PAGE_TASK)
+                    if (access !is ProfileAccess.Visible || !access.canReadSavedShops) cancelTask(SAVED_SHOPS_TASK)
+                    applyProfileSummary(userId, access, ranking)
                 } else {
-                    reduce { copy(visitRanking = ranking) }
+                    reduce { copy(profileFailed = false, visitRanking = ranking) }
                 }
             },
             onError = {
-                if (isCurrentVisitRankingRequest(userId, viewerId)) {
-                    reduce { copy(visitRanking = null, visitRankingFailed = true) }
-                }
+                if (isCurrentProfileRequest(userId, viewerId)) failProfile(userId)
             },
         )
     }
 
-    private fun isCurrentVisitRankingRequest(
+    private fun isCurrentProfileRequest(
         userId: String,
         viewerId: String?,
-    ): Boolean = currentState.userId == userId && currentState.currentUserId == viewerId && currentState.canReadVisitRanking
+    ): Boolean = currentState.userId == userId && currentState.currentUserId == viewerId
 
     private fun clearVisitRanking() {
-        cancelTask(VISIT_RANKING_TASK)
-        reduce { copy(visitRanking = null, visitRankingFailed = false) }
+        cancelTask(PROFILE_SUMMARY_TASK)
+        reduce { copy(visitRanking = null) }
     }
 
     private fun applyProfileAccess(
@@ -448,6 +488,7 @@ class OtherReviewsViewModel(
         reduce {
             copy(
                 profileAccess = access,
+                profileFailed = false,
                 reviews = emptyList(),
                 reviewsOffset = 0L,
                 hasMore = false,
@@ -528,7 +569,7 @@ class OtherReviewsViewModel(
                         savedShopsHasMore = access.canReadSavedShops && savedShopsHasMore,
                     )
                 }
-                if (access.canReadReviews && !previouslyCouldReadReviews) refreshVisitRanking()
+                if (access.canReadReviews && !previouslyCouldReadReviews) refreshProfileSummary()
             }
 
             is RamapResult.Error -> fail(userId)
@@ -538,6 +579,10 @@ class OtherReviewsViewModel(
     private fun fail(userId: String) {
         val isSameUser = currentState.userId == userId
         if (isSameUser) reduce { copy(failed = true) }
+    }
+
+    private fun failProfile(userId: String) {
+        if (currentState.userId == userId) reduce { copy(profileFailed = true, visitRanking = null) }
     }
 
     private fun toggleFollow() {
@@ -617,13 +662,11 @@ class OtherReviewsViewModel(
             taskKey = FOLLOW_ACCESS_TASK,
             loadKey = OtherReviewsLoadKey.Follow,
             policy = TaskPolicy.CancelPrevious,
-            request = { userProfileRepository.fetchProfileAccess(userId) },
-            onSuccess = { access ->
-                val isStaleContext = currentState.currentUserId != currentUserId || currentState.userId != userId
-                if (isStaleContext) return@launchResultTask
-                applyFollowAccess(userId, access)
+            request = { fetchProfileWithVisitRanking(userId) },
+            onSuccess = { (access, ranking) ->
+                if (!isCurrentProfileRequest(userId, currentUserId)) return@launchResultTask
+                applyProfileSummary(userId, access, ranking)
                 if (access !is ProfileAccess.Visible) return@launchResultTask
-                if (access.canReadReviews) refreshVisitRanking()
 
                 val shouldLoadPage =
                     access.canReadReviews &&
@@ -648,9 +691,7 @@ class OtherReviewsViewModel(
                 }
             },
             onError = {
-                if (isCurrentVisitRankingRequest(userId, currentUserId)) {
-                    reduce { copy(visitRankingFailed = true) }
-                }
+                if (isCurrentProfileRequest(userId, currentUserId)) failProfile(userId)
                 showActionFailure(
                     targetUserId = userId,
                     message = Res.string.follow_load_failure_message,
@@ -659,9 +700,10 @@ class OtherReviewsViewModel(
         )
     }
 
-    private fun applyFollowAccess(
+    private fun applyProfileSummary(
         userId: String,
         access: ProfileAccess,
+        ranking: ProfileVisitRanking?,
     ) {
         if (access !is ProfileAccess.Visible) {
             applyProfileAccess(userId, access)
@@ -670,6 +712,8 @@ class OtherReviewsViewModel(
         reduce {
             copy(
                 profileAccess = access.copy(profile = profile ?: access.profile),
+                profileFailed = false,
+                visitRanking = ranking,
                 reviews = if (access.canReadReviews) reviews else emptyList(),
                 reviewsOffset = if (access.canReadReviews) reviewsOffset else 0L,
                 hasMore = access.canReadReviews && hasMore,
@@ -702,6 +746,7 @@ class OtherReviewsViewModel(
                     } else {
                         ProfileAccess.Blocked(PublicProfile(targetProfile.userId, targetProfile.nickname))
                     },
+                profileFailed = false,
                 reviews = emptyList(),
                 reviewsOffset = 0L,
                 hasMore = false,
@@ -788,7 +833,7 @@ class OtherReviewsViewModel(
                 savedShopsOffset = savedShopsOffset + page.shops.size,
             )
         }
-        if (access.canReadReviews && !previouslyCouldReadReviews) refreshVisitRanking()
+        if (access.canReadReviews && !previouslyCouldReadReviews) refreshProfileSummary()
     }
 
     private fun likeTaskKey(reviewId: String): String = "$LIKE_TASK_KEY$reviewId"
@@ -798,7 +843,7 @@ class OtherReviewsViewModel(
         const val FOLLOW_ACCESS_TASK = "other-profile-follow-access"
         const val SAVED_SHOPS_TASK = "other-profile-saved-shops"
         const val PAGE_TASK = "other-reviews-page"
-        const val VISIT_RANKING_TASK = "other-profile-visit-ranking"
+        const val PROFILE_SUMMARY_TASK = "other-profile-summary"
         const val FOLLOW_TASK = "other-profile-follow"
         const val BLOCK_TASK = "other-reviews-block"
         const val PAGE_SIZE = 20

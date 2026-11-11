@@ -1,6 +1,6 @@
 package com.peto.ramap.ui.main.my.component
 
-import androidx.compose.foundation.border
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -12,6 +12,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.peto.ramap.theme.ChromaticColor
+import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.RamapTheme
 import ramap.shared.generated.resources.Res
@@ -59,8 +60,8 @@ internal fun MyTabMenuList(
             modifier
                 .fillMaxWidth()
                 .padding(horizontal = if (isGuest) 22.dp else 12.dp)
-                .border(1.dp, GrayColor.C100, RoundedCornerShape(16.dp))
-                .clip(RoundedCornerShape(16.dp)),
+                .clip(RoundedCornerShape(16.dp))
+                .background(CommonColor.White),
     ) {
         MyMenuRow(
             icon = Res.drawable.ic_news,
