@@ -1,7 +1,6 @@
 package com.peto.ramap.designsystem.tab
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -15,7 +14,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
@@ -24,8 +22,7 @@ import androidx.compose.ui.unit.dp
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.extension.noRippleClickable
 import com.peto.ramap.theme.AppTextStyle
-import com.peto.ramap.theme.ChromaticColor
-import com.peto.ramap.theme.CommonColor
+import com.peto.ramap.theme.BrandColor
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.RamapTheme
 import org.jetbrains.compose.resources.stringResource
@@ -41,6 +38,7 @@ fun AppChipTabs(
     onSelect: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val tabShape = RoundedCornerShape(10.dp)
     Row(
         modifier =
             modifier
@@ -55,12 +53,8 @@ fun AppChipTabs(
                 modifier =
                     Modifier
                         .background(
-                            color = if (isSelected) ChromaticColor.Orange400 else Color.Transparent,
-                            shape = RoundedCornerShape(10.dp),
-                        ).border(
-                            width = 1.dp,
-                            color = if (isSelected) ChromaticColor.Orange400 else GrayColor.C100,
-                            shape = RoundedCornerShape(10.dp),
+                            color = if (isSelected) BrandColor.Fill else GrayColor.C100,
+                            shape = tabShape,
                         ).semantics { this.selected = isSelected }
                         .noRippleClickable(
                             role = Role.Tab,
@@ -72,7 +66,7 @@ fun AppChipTabs(
                 AppText(
                     text = label,
                     style = AppTextStyle.B1,
-                    color = if (isSelected) CommonColor.White else GrayColor.C300,
+                    color = if (isSelected) BrandColor.OnFill else GrayColor.C400,
                     maxLines = 1,
                 )
             }
@@ -92,7 +86,7 @@ private fun AppChipTabsPreview() {
     RamapTheme {
         Column(
             modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             for (selectedIndex in labels.indices) {
                 AppChipTabs(

@@ -1,11 +1,13 @@
 package com.peto.ramap.designsystem.button
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
-import com.peto.ramap.theme.CommonColor
+import androidx.compose.ui.unit.dp
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.RamapTheme
+import com.peto.ramap.theme.RecommendationColor
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.bookmarked_shops_toggle
@@ -25,7 +27,9 @@ fun BookmarkedFilterButton(
         selected = isActive,
         onClick = onClick,
         modifier = modifier,
-        tint = if (isActive) CommonColor.White else GrayColor.C500,
+        tint = if (isActive) RecommendationColor.Brown else GrayColor.C500,
+        activeColor = RecommendationColor.Gold,
+        activeBorder = BorderStroke(2.dp, RecommendationColor.Brown),
     )
 }
 

@@ -31,6 +31,7 @@ import com.peto.ramap.extension.noRippleClickable
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
+import com.peto.ramap.theme.SurfaceColor
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
@@ -53,7 +54,7 @@ fun BlockedReviewCard(
         modifier =
             modifier
                 .fillMaxWidth()
-                .background(CommonColor.White),
+                .background(SurfaceColor.Background),
     ) {
         Row(
             modifier =

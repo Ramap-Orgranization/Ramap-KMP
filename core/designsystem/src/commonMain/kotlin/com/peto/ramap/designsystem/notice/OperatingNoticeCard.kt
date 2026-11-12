@@ -26,6 +26,7 @@ import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.RamapTheme
+import com.peto.ramap.theme.SurfaceColor
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.operating_notice_source_action
@@ -43,7 +44,7 @@ fun OperatingNoticeCard(
         modifier =
             modifier
                 .fillMaxWidth()
-                .background(CommonColor.White),
+                .background(SurfaceColor.Background),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         if (showShop) {

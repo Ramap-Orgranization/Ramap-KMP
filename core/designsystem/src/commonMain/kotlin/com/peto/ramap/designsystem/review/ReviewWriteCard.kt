@@ -27,7 +27,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.theme.AppTextStyle
-import com.peto.ramap.theme.ChromaticColor
+import com.peto.ramap.theme.BrandColor
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.InstagramColor
@@ -41,8 +41,8 @@ import ramap.shared.generated.resources.ic_profile_edit
 import ramap.shared.generated.resources.shop_review_prompt_title
 import ramap.shared.generated.resources.shop_review_write_action
 
-private val ReviewWriteCardBackgroundColor = ChromaticColor.Cream400
-private val ReviewWriteCardWatermarkColor = ChromaticColor.Apricot400.copy(alpha = 0.5f)
+private val ReviewWriteCardBackgroundColor = BrandColor.SubtleFill
+private val ReviewWriteCardWatermarkColor = BrandColor.Fill.copy(alpha = 0.2f)
 
 @Composable
 fun ReviewWriteCard(

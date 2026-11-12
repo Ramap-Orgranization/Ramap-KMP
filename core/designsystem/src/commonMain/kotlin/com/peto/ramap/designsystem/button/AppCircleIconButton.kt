@@ -1,5 +1,6 @@
 package com.peto.ramap.designsystem.button
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
@@ -32,6 +33,8 @@ fun AppCircleIconButton(
     modifier: Modifier = Modifier,
     tint: Color? = null,
     isLoading: Boolean = false,
+    activeColor: Color = GrayColor.C500,
+    activeBorder: BorderStroke? = null,
 ) {
     Surface(
         modifier =
@@ -45,7 +48,8 @@ fun AppCircleIconButton(
                     shape = CircleShape,
                     clip = false,
                 ),
-        color = if (isActive) GrayColor.C500 else CommonColor.White,
+        color = if (isActive) activeColor else CommonColor.White,
+        border = if (isActive) activeBorder else null,
         shape = CircleShape,
         onClick = { if (!isLoading) onClick() },
     ) {

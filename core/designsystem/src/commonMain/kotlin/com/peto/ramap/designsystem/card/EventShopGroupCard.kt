@@ -28,6 +28,7 @@ import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.ChromaticColor
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
+import com.peto.ramap.theme.SurfaceColor
 import com.peto.ramap.theme.SystemColor
 import org.jetbrains.compose.resources.stringResource
 
@@ -47,7 +48,7 @@ fun EventShopGroupCard(
             modifier
                 .fillMaxWidth()
                 .clip(cardShape)
-                .background(CommonColor.White)
+                .background(SurfaceColor.Background)
                 .border(1.dp, GrayColor.C100, cardShape)
                 .padding(14.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),

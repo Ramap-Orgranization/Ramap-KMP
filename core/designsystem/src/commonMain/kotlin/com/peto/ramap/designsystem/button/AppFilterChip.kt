@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.dp
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.extension.noRippleClickable
 import com.peto.ramap.theme.AppTextStyle
+import com.peto.ramap.theme.BrandColor
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.RamapTheme
@@ -44,8 +45,8 @@ fun AppFilterChip(
     Surface(
         modifier = modifier.semantics { this.selected = selected }.noRippleClickable(onClick = onClick),
         shape = RoundedCornerShape(10.dp),
-        color = if (selected) GrayColor.C050 else CommonColor.White,
-        border = BorderStroke(1.dp, if (selected) GrayColor.C500 else GrayColor.C100),
+        color = if (selected) BrandColor.Fill else CommonColor.White,
+        border = BorderStroke(1.dp, if (selected) BrandColor.Foreground else GrayColor.C100),
     ) {
         Row(
             modifier = Modifier.heightIn(min = 40.dp).padding(horizontal = 12.dp, vertical = 8.dp),
