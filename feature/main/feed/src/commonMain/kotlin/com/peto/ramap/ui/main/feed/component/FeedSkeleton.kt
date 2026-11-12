@@ -23,16 +23,16 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.peto.ramap.designsystem.component.Skeleton
-import com.peto.ramap.theme.ChromaticColor
-import com.peto.ramap.theme.CommonColor
+import com.peto.ramap.theme.BrandColor
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.RamapTheme
+import com.peto.ramap.theme.SurfaceColor
 
 @Composable
 internal fun FeedSkeleton(
     modifier: Modifier = Modifier,
 ) {
-    Column(modifier = modifier.fillMaxWidth().background(CommonColor.White)) {
+    Column(modifier = modifier.fillMaxWidth().background(SurfaceColor.Background)) {
         repeat(2) {
             FeedItemSkeleton()
         }
@@ -105,7 +105,7 @@ private fun FeedShopSkeleton() {
                 .fillMaxWidth()
                 .padding(start = 12.dp, top = 12.dp, end = 12.dp, bottom = 7.dp)
                 .clip(RoundedCornerShape(12.dp))
-                .background(ChromaticColor.Orange050)
+                .background(BrandColor.SubtleFill)
                 .padding(8.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(10.dp),

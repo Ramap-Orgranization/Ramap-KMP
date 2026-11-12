@@ -25,9 +25,9 @@ import androidx.compose.ui.unit.dp
 import com.peto.ramap.designsystem.button.AppButton
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.theme.AppTextStyle
-import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.RamapTheme
+import com.peto.ramap.theme.SurfaceColor
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.painterResource
@@ -53,7 +53,7 @@ fun PermissionGuideContent(
         modifier =
             Modifier
                 .fillMaxSize()
-                .background(CommonColor.White)
+                .background(SurfaceColor.Background)
                 .safeDrawingPadding(),
     ) {
         Column(

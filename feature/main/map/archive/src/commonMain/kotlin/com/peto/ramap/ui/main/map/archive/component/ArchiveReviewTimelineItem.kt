@@ -24,7 +24,7 @@ import com.peto.ramap.domain.model.review.MyReview
 import com.peto.ramap.domain.model.review.Review
 import com.peto.ramap.preview.MyReviewPreviewParameterProvider
 import com.peto.ramap.theme.AppTextStyle
-import com.peto.ramap.theme.ChromaticColor
+import com.peto.ramap.theme.BrandColor
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.RamapTheme
 import org.jetbrains.compose.resources.stringResource
@@ -59,7 +59,7 @@ internal fun ArchiveReviewTimelineItem(
                         strokeWidth = 1.dp.toPx(),
                     )
                     drawCircle(
-                        color = ChromaticColor.Orange400,
+                        color = BrandColor.Foreground,
                         radius = 3.5.dp.toPx(),
                         center = center,
                     )

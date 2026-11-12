@@ -13,6 +13,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.unit.dp
+import com.peto.ramap.designsystem.component.ShopBookmarkIcon
 import com.peto.ramap.designsystem.menu.AppDropdownMenu
 import com.peto.ramap.extension.noRippleClickable
 import com.peto.ramap.theme.GrayColor
@@ -25,7 +26,6 @@ import ramap.shared.generated.resources.ic_notification
 import ramap.shared.generated.resources.ic_notification_filled
 import ramap.shared.generated.resources.ic_report
 import ramap.shared.generated.resources.ic_share
-import ramap.shared.generated.resources.ic_star_filled
 import ramap.shared.generated.resources.share_shop_action
 import ramap.shared.generated.resources.shop_detail_link_report
 import ramap.shared.generated.resources.shop_detail_more_actions
@@ -65,8 +65,7 @@ internal fun OverflowMenu(
         ) {
             OverflowMenuItem(
                 text = stringResource(Res.string.share_shop_action),
-                icon = Res.drawable.ic_share,
-                isActive = false,
+                leadingIcon = { OverflowMenuIcon(icon = Res.drawable.ic_share) },
                 onClick = {
                     isExpanded = false
                     onShareClick()
@@ -74,8 +73,12 @@ internal fun OverflowMenu(
             )
             OverflowMenuItem(
                 text = stringResource(Res.string.bookmarked_shops_toggle),
-                icon = Res.drawable.ic_star_filled,
-                isActive = isBookmarked,
+                leadingIcon = {
+                    ShopBookmarkIcon(
+                        isBookmarked = isBookmarked,
+                        modifier = Modifier.size(20.dp),
+                    )
+                },
                 onClick = {
                     isExpanded = false
                     onBookmarkClick()
@@ -84,13 +87,12 @@ internal fun OverflowMenu(
             if (showNotificationActions) {
                 OverflowMenuItem(
                     text = stringResource(Res.string.shop_notification_action),
-                    icon =
-                        if (isNotificationEnabled) {
-                            Res.drawable.ic_notification_filled
-                        } else {
-                            Res.drawable.ic_notification
-                        },
-                    isActive = isNotificationEnabled,
+                    leadingIcon = {
+                        OverflowMenuIcon(
+                            icon = if (isNotificationEnabled) Res.drawable.ic_notification_filled else Res.drawable.ic_notification,
+                            isActive = isNotificationEnabled,
+                        )
+                    },
                     onClick = {
                         isExpanded = false
                         onNotificationClick()
@@ -99,8 +101,7 @@ internal fun OverflowMenu(
             }
             OverflowMenuItem(
                 text = stringResource(Res.string.shop_detail_link_report),
-                icon = Res.drawable.ic_report,
-                isActive = false,
+                leadingIcon = { OverflowMenuIcon(icon = Res.drawable.ic_report) },
                 onClick = {
                     isExpanded = false
                     onReportClick()

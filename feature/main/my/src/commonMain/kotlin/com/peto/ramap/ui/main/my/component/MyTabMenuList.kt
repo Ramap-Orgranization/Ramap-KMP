@@ -11,10 +11,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.peto.ramap.theme.BrandColor
 import com.peto.ramap.theme.ChromaticColor
-import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.RamapTheme
+import com.peto.ramap.theme.SurfaceColor.Background
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.announcement_title
 import ramap.shared.generated.resources.follow_manage
@@ -59,14 +60,12 @@ internal fun MyTabMenuList(
         modifier =
             modifier
                 .fillMaxWidth()
-                .padding(horizontal = if (isGuest) 22.dp else 12.dp)
                 .clip(RoundedCornerShape(16.dp))
-                .background(CommonColor.White),
+                .background(Background),
     ) {
         MyMenuRow(
             icon = Res.drawable.ic_news,
             title = Res.string.announcement_title,
-            count = null,
             iconBackground = ChromaticColor.Blue050,
             iconTint = ChromaticColor.Blue400,
             hasCount = false,
@@ -74,7 +73,6 @@ internal fun MyTabMenuList(
             onClick = onAnnouncementsClick,
         )
         HorizontalDivider(
-            modifier = Modifier.padding(start = 16.dp),
             thickness = 1.dp,
             color = GrayColor.C100,
         )
@@ -83,8 +81,8 @@ internal fun MyTabMenuList(
                 icon = Res.drawable.ic_person,
                 title = Res.string.follow_manage,
                 count = null,
-                iconBackground = ChromaticColor.Orange050,
-                iconTint = ChromaticColor.Orange400,
+                iconBackground = ChromaticColor.Green050,
+                iconTint = ChromaticColor.Green500,
                 hasCount = false,
                 notification = if (hasPendingFollowRequests) Res.string.follow_requests else null,
                 isNew = hasUnreadFollowConnections,
@@ -129,8 +127,8 @@ internal fun MyTabMenuList(
             icon = Res.drawable.ic_star_filled,
             title = Res.string.settings_bookmarked_shops_menu,
             count = bookmarkedCount,
-            iconBackground = ChromaticColor.Orange050,
-            iconTint = ChromaticColor.Orange300,
+            iconBackground = BrandColor.SubtleFill,
+            iconTint = BrandColor.Foreground,
             isLoading = isLoading,
             onClick = onBookmarkedShopsClick,
         )
@@ -144,8 +142,8 @@ internal fun MyTabMenuList(
                 icon = Res.drawable.ic_notification,
                 title = Res.string.settings_subscribed_shops_menu,
                 count = notificationCount,
-                iconBackground = ChromaticColor.Yellow050,
-                iconTint = ChromaticColor.Yellow300,
+                iconBackground = ChromaticColor.Magenta050,
+                iconTint = ChromaticColor.Magenta500,
                 isLoading = isLoading,
                 onClick = onSubscribedShopsClick,
             )

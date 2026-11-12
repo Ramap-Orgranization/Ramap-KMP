@@ -36,9 +36,10 @@ import com.peto.ramap.domain.model.review.comment.ReviewComment
 import com.peto.ramap.domain.model.review.comment.ReviewCommentThread
 import com.peto.ramap.extension.noRippleClickable
 import com.peto.ramap.theme.AppTextStyle
+import com.peto.ramap.theme.BrandColor
 import com.peto.ramap.theme.ChromaticColor
-import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
+import com.peto.ramap.theme.SurfaceColor
 import com.peto.ramap.ui.review.detail.contract.ReviewDetailIntent
 import com.peto.ramap.ui.review.detail.contract.ReviewDetailLoadKey
 import com.peto.ramap.ui.review.detail.contract.ReviewDetailUiState
@@ -188,7 +189,7 @@ private fun ReviewCommentItem(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .background(if (isReply) ChromaticColor.Cream400 else CommonColor.White)
+                .background(if (isReply) BrandColor.SubtleFill else SurfaceColor.Background)
                 .padding(
                     start = if (isReply) 44.dp else 16.dp,
                     end = 8.dp,

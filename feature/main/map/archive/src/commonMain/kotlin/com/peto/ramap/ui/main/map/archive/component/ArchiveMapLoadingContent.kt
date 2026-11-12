@@ -42,10 +42,10 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.theme.AppTextStyle
-import com.peto.ramap.theme.ChromaticColor
-import com.peto.ramap.theme.CommonColor
+import com.peto.ramap.theme.BrandColor
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.RamapTheme
+import com.peto.ramap.theme.SurfaceColor
 import com.peto.ramap.ui.main.map.archive.model.ArchiveLoadingStage
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
@@ -63,7 +63,7 @@ internal fun ArchiveMapLoadingContent(
     BoxWithConstraints(
         modifier =
             modifier
-                .background(CommonColor.White)
+                .background(SurfaceColor.Background)
                 .pointerInput(Unit) {
                     awaitPointerEventScope {
                         while (true) {
@@ -148,7 +148,7 @@ private fun ArchiveLoadingDots(transition: InfiniteTransition) {
                         .graphicsLayer {
                             alpha = 0.3f + 0.7f * progress
                             translationY = -2.dp.toPx() * progress
-                        }.background(color = ChromaticColor.Orange400, shape = CircleShape),
+                        }.background(color = BrandColor.Fill, shape = CircleShape),
             )
         }
     }

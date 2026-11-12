@@ -39,7 +39,7 @@ import com.peto.ramap.domain.model.feed.ReviewFeedFilter
 import com.peto.ramap.domain.model.review.ProfileReview
 import com.peto.ramap.preview.RamenShopPreviewParameterProvider
 import com.peto.ramap.preview.ReviewPreviewParameterProvider
-import com.peto.ramap.theme.ChromaticColor
+import com.peto.ramap.theme.BrandColor
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.RamapTheme
 import com.peto.ramap.ui.main.feed.component.FeedReviewItem
@@ -178,8 +178,8 @@ internal fun FeedContent(
                     .align(Alignment.BottomEnd)
                     .padding(20.dp)
                     .size(48.dp),
-            containerColor = ChromaticColor.Orange400,
-            iconTint = CommonColor.White,
+            containerColor = BrandColor.Fill,
+            iconTint = BrandColor.OnFill,
         )
         AnimatedVisibility(
             visible = showScrollToTop,

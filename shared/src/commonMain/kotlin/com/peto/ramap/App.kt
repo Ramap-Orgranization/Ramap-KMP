@@ -1,5 +1,6 @@
 package com.peto.ramap
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
@@ -42,6 +43,7 @@ import com.peto.ramap.platform.network.NetworkConnectivityObserver
 import com.peto.ramap.platform.network.NetworkConnectivityStatus
 import com.peto.ramap.platform.storage.notice.AppNoticeStorage
 import com.peto.ramap.theme.RamapTheme
+import com.peto.ramap.theme.SurfaceColor
 import com.peto.ramap.ui.login.LoginGuideController
 import com.peto.ramap.ui.onboarding.OnboardingRoute
 import com.peto.ramap.ui.retry.NetworkRetryGenerator
@@ -90,7 +92,7 @@ fun App(
     }
     ImageAccessProvider(imageAccess) {
         RamapTheme {
-            Box(modifier = Modifier.fillMaxSize()) {
+            Box(modifier = Modifier.fillMaxSize().background(SurfaceColor.Background)) {
                 AppUpdateGate(
                     appUpdateRepository = appUpdateRepository,
                     appVersionProvider = appVersionProvider,

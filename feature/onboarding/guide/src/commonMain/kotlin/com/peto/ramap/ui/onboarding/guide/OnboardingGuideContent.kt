@@ -32,9 +32,9 @@ import androidx.compose.ui.unit.dp
 import androidx.navigationevent.NavigationEventInfo
 import androidx.navigationevent.compose.NavigationBackHandler
 import androidx.navigationevent.compose.rememberNavigationEventState
-import com.peto.ramap.theme.ChromaticColor
-import com.peto.ramap.theme.CommonColor
+import com.peto.ramap.theme.BrandColor
 import com.peto.ramap.theme.GrayColor
+import com.peto.ramap.theme.SurfaceColor
 import com.peto.ramap.ui.onboarding.guide.log.OnboardingAnalyticsStage
 import com.peto.ramap.ui.onboarding.guide.model.OnboardingGuidePage
 import com.peto.ramap.ui.onboarding.shopselection.ShopSelectionContent
@@ -121,7 +121,7 @@ fun OnboardingGuideLayout(
     content: @Composable () -> Unit,
 ) {
     Column(
-        modifier = Modifier.fillMaxSize().background(CommonColor.White).safeDrawingPadding(),
+        modifier = Modifier.fillMaxSize().background(SurfaceColor.Background).safeDrawingPadding(),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         if (page != null) OnboardingGuideIndicator(page = page)
@@ -149,7 +149,7 @@ private fun OnboardingGuideIndicator(page: OnboardingGuidePage) {
             Spacer(
                 modifier =
                     Modifier.weight(1f).height(4.dp).background(
-                        color = if (item == page) ChromaticColor.Orange400 else GrayColor.C100,
+                        color = if (item == page) BrandColor.Foreground else GrayColor.C100,
                         shape = RoundedCornerShape(2.dp),
                     ),
             )

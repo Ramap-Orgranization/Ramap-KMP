@@ -32,9 +32,9 @@ import com.peto.ramap.domain.model.importation.ImportationProvider
 import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.preview.RamenShopsPreviewParameterProvider
 import com.peto.ramap.theme.AppTextStyle
+import com.peto.ramap.theme.BrandColor
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
-import com.peto.ramap.theme.InstagramColor
 import com.peto.ramap.theme.RamapTheme
 import com.peto.ramap.ui.base.ObserveAsEvents
 import com.peto.ramap.ui.bookmark.importation.contract.ImportationIntent
@@ -259,7 +259,7 @@ private fun ImportationPreview(
             AppText(
                 text = stringResource(Res.string.importation_count, uiState.candidates.size),
                 style = AppTextStyle.T2,
-                color = InstagramColor.Pink,
+                color = BrandColor.Foreground,
             )
         }
 

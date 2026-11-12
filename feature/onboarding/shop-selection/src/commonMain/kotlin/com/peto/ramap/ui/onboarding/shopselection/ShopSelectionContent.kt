@@ -9,10 +9,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -25,6 +23,7 @@ import com.peto.ramap.designsystem.button.AppButton
 import com.peto.ramap.designsystem.component.AppSearchBar
 import com.peto.ramap.designsystem.component.LoadErrorContent
 import com.peto.ramap.designsystem.component.RamenShopSummary
+import com.peto.ramap.designsystem.component.ShopBookmarkIcon
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.domain.model.onboarding.OnboardingBookmarks
 import com.peto.ramap.extension.noRippleToggleable
@@ -32,18 +31,16 @@ import com.peto.ramap.preview.RamenShopsPreviewParameterProvider
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
-import com.peto.ramap.theme.InstagramColor
 import com.peto.ramap.theme.RamapTheme
+import com.peto.ramap.theme.SurfaceColor
 import com.peto.ramap.ui.loading.LoadState
 import com.peto.ramap.ui.onboarding.shopselection.component.ShopSelectionNextPageFooter
 import com.peto.ramap.ui.onboarding.shopselection.component.ShopSelectionSkeleton
 import com.peto.ramap.ui.onboarding.shopselection.contract.ShopSelectionIntent
 import com.peto.ramap.ui.onboarding.shopselection.contract.ShopSelectionLoadKey
 import com.peto.ramap.ui.onboarding.shopselection.contract.ShopSelectionUiState
-import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
-import ramap.shared.generated.resources.ic_star_filled
 import ramap.shared.generated.resources.menu_load_error_illustration
 import ramap.shared.generated.resources.onboarding_shop_confirm
 import ramap.shared.generated.resources.onboarding_shop_empty
@@ -63,7 +60,7 @@ public fun ShopSelectionContent(
         modifier =
             Modifier
                 .fillMaxSize()
-                .background(color = CommonColor.White)
+                .background(SurfaceColor.Background)
                 .safeDrawingPadding(),
     ) {
         LazyColumn(
@@ -132,12 +129,7 @@ public fun ShopSelectionContent(
                             horizontalArrangement = Arrangement.spacedBy(12.dp),
                         ) {
                             RamenShopSummary(shop = shop, modifier = Modifier.weight(1f))
-                            Icon(
-                                painter = painterResource(Res.drawable.ic_star_filled),
-                                contentDescription = null,
-                                tint = if (saved) InstagramColor.Pink else GrayColor.C200,
-                                modifier = Modifier.size(24.dp),
-                            )
+                            ShopBookmarkIcon(isBookmarked = saved)
                         }
                     }
                     if (uiState.showsNextPageFooter) {

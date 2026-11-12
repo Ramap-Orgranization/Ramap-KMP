@@ -13,7 +13,7 @@ import androidx.compose.ui.unit.dp
 import com.peto.ramap.designsystem.component.NewsFilters
 import com.peto.ramap.designsystem.tab.AppChipTabs
 import com.peto.ramap.navigation.NewsTab
-import com.peto.ramap.theme.CommonColor
+import com.peto.ramap.theme.SurfaceColor
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.news_tab_event
@@ -35,7 +35,7 @@ internal fun NewsScreen(
         modifier =
             Modifier
                 .fillMaxSize()
-                .background(CommonColor.White)
+                .background(SurfaceColor.Background)
                 .statusBarsPadding(),
     ) {
         NewsFilters(

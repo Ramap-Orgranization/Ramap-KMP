@@ -20,8 +20,7 @@ import androidx.compose.ui.unit.dp
 import com.peto.ramap.designsystem.button.AppButton
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.theme.AppTextStyle
-import com.peto.ramap.theme.ChromaticColor
-import com.peto.ramap.theme.CommonColor
+import com.peto.ramap.theme.BrandColor
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.RamapTheme
 import org.jetbrains.compose.resources.stringResource
@@ -66,9 +65,10 @@ internal fun ArchiveMapEmptyContent(
             AppButton(
                 text = stringResource(Res.string.find_visited_shop),
                 onClick = onFindVisitedShop,
-                backgroundColor = ChromaticColor.Orange400,
+                backgroundColor = BrandColor.Fill,
+                textColor = BrandColor.OnFill,
                 icon = Res.drawable.ic_notice_search,
-                iconTint = CommonColor.White,
+                iconTint = BrandColor.OnFill,
                 modifier = Modifier.fillMaxWidth().padding(top = 28.dp),
             )
         }

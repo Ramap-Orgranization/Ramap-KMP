@@ -31,8 +31,8 @@ import com.peto.ramap.domain.model.shop.AreaFilter
 import com.peto.ramap.domain.model.shop.Category
 import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.preview.RamenShopPreviewParameterProvider
-import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.RamapTheme
+import com.peto.ramap.theme.SurfaceColor
 import com.peto.ramap.ui.base.ObserveAsEvents
 import com.peto.ramap.ui.component.area.AreaSheetContent
 import com.peto.ramap.ui.main.ranking.component.RankingFilters
@@ -155,7 +155,7 @@ internal fun RankingScreen(
         modifier =
             Modifier
                 .fillMaxSize()
-                .background(CommonColor.White),
+                .background(SurfaceColor.Background),
     ) {
         Column(
             modifier =

@@ -55,10 +55,11 @@ import com.peto.ramap.domain.model.profile.AccountProfile
 import com.peto.ramap.domain.model.profile.ProfileBio
 import com.peto.ramap.extension.noRippleClickable
 import com.peto.ramap.theme.AppTextStyle
-import com.peto.ramap.theme.ChromaticColor
+import com.peto.ramap.theme.BrandColor
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.RamapTheme
+import com.peto.ramap.theme.SurfaceColor
 import com.peto.ramap.theme.SystemColor
 import com.peto.ramap.ui.loading.LoadState
 import com.peto.ramap.ui.profile.edit.contract.ProfileIntent
@@ -107,7 +108,7 @@ internal fun ProfileEditContent(
         modifier =
             Modifier
                 .fillMaxSize()
-                .background(CommonColor.White)
+                .background(SurfaceColor.Background)
                 .safeDrawingPadding()
                 .imePadding(),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -150,7 +151,7 @@ internal fun ProfileEditContent(
                 AppText(
                     text = stringResource(Res.string.profile_complete),
                     style = AppTextStyle.B1,
-                    color = if (state.canSave) ChromaticColor.Orange400 else GrayColor.C300,
+                    color = if (state.canSave) BrandColor.Foreground else GrayColor.C300,
                     textAlign = TextAlign.Center,
                 )
             }
@@ -279,7 +280,7 @@ private fun ProfileEdit(
                                 .size(40.dp)
                                 .border(2.dp, Color.White, CircleShape)
                                 .clip(CircleShape)
-                                .background(ChromaticColor.Orange400)
+                                .background(BrandColor.Fill)
                                 .noRippleClickable(enabled = !state.saving, onClick = onPickImage),
                         contentAlignment = Alignment.Center,
                     ) {
@@ -287,7 +288,7 @@ private fun ProfileEdit(
                             painter = painterResource(Res.drawable.ic_camera_add),
                             contentDescription = stringResource(Res.string.profile_photo_change),
                             modifier = Modifier.size(26.dp),
-                            tint = Color.White,
+                            tint = BrandColor.OnFill,
                         )
                     }
                     if (photo != null) {
@@ -398,7 +399,7 @@ private fun ProfileEdit(
                     shape = RoundedCornerShape(12.dp),
                     colors =
                         OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = ChromaticColor.Orange400,
+                            focusedBorderColor = BrandColor.Foreground,
                             unfocusedBorderColor = CommonColor.White,
                             focusedTextColor = GrayColor.C500,
                             unfocusedTextColor = GrayColor.C500,
@@ -467,7 +468,7 @@ private fun ProfileEdit(
                 shape = RoundedCornerShape(12.dp),
                 colors =
                     OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = ChromaticColor.Orange400,
+                        focusedBorderColor = BrandColor.Foreground,
                         unfocusedBorderColor = CommonColor.White,
                         focusedTextColor = GrayColor.C500,
                         unfocusedTextColor = GrayColor.C500,

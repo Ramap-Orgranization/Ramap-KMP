@@ -8,7 +8,7 @@ import androidx.compose.ui.unit.dp
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.extension.noRippleClickable
 import com.peto.ramap.theme.AppTextStyle
-import com.peto.ramap.theme.ChromaticColor
+import com.peto.ramap.theme.BrandColor
 import com.peto.ramap.theme.GrayColor
 
 @Composable
@@ -26,6 +26,6 @@ internal fun ReviewDetailTextAction(
                 .noRippleClickable(enabled = enabled, onClick = onClick)
                 .padding(vertical = 10.dp),
         style = AppTextStyle.B2,
-        color = if (enabled) ChromaticColor.Orange400 else GrayColor.C300,
+        color = if (enabled) BrandColor.Foreground else GrayColor.C300,
     )
 }

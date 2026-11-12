@@ -8,8 +8,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.peto.ramap.platform.NotificationPermissionRequester
+import com.peto.ramap.theme.BrandColor
 import com.peto.ramap.theme.GrayColor
-import com.peto.ramap.theme.InstagramColor
 import com.peto.ramap.theme.RamapTheme
 import com.peto.ramap.ui.main.event.detail.contract.EventDetailUiState
 import org.jetbrains.compose.resources.painterResource
@@ -51,7 +51,7 @@ internal fun EventNotificationButton(
                 ),
             tint =
                 if (uiState.isNotificationEnabled && !uiState.isNotificationLoading) {
-                    InstagramColor.Pink
+                    BrandColor.Foreground
                 } else {
                     GrayColor.C300
                 },

@@ -34,6 +34,7 @@ import com.peto.ramap.domain.model.review.Review
 import com.peto.ramap.domain.model.review.comment.ReviewComment
 import com.peto.ramap.domain.model.review.comment.ReviewCommentBody
 import com.peto.ramap.theme.AppTextStyle
+import com.peto.ramap.theme.BrandColor
 import com.peto.ramap.theme.ChromaticColor
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
@@ -176,10 +177,10 @@ internal fun ReviewCommentComposer(
                         .padding(bottom = 5.dp)
                         .size(44.dp)
                         .background(
-                            color = if (canSubmit) ChromaticColor.Orange400 else ChromaticColor.Orange050,
+                            color = if (canSubmit) BrandColor.Fill else BrandColor.SubtleFill,
                             shape = CircleShape,
                         ),
-                tint = CommonColor.White,
+                tint = if (canSubmit) BrandColor.OnFill else GrayColor.C300,
                 enabled = canSubmit,
                 isLoading = state.isSubmitting,
             )
