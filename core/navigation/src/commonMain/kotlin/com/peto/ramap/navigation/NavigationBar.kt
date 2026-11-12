@@ -24,8 +24,8 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.theme.AppTextStyle
-import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
+import com.peto.ramap.theme.SurfaceColor
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
@@ -52,7 +52,7 @@ internal fun NavigationBar(
     Column(
         modifier =
             Modifier
-                .background(CommonColor.White)
+                .background(SurfaceColor.Background)
                 .navigationBarsPadding(),
     ) {
         HorizontalDivider(thickness = 1.dp, color = GrayColor.C100)
@@ -62,7 +62,7 @@ internal fun NavigationBar(
                 Modifier
                     .fillMaxWidth()
                     .height(58.dp)
-                    .background(CommonColor.White),
+                    .background(SurfaceColor.Background),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             TabStatus.entries.forEach { tab ->

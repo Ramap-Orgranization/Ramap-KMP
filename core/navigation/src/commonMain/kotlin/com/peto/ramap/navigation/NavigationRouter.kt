@@ -15,7 +15,7 @@ import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberDecoratedNavEntries
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
-import com.peto.ramap.theme.CommonColor
+import com.peto.ramap.theme.SurfaceColor
 
 @Composable
 fun NavigationRouter(
@@ -129,7 +129,7 @@ fun NavigationRouter(
 
     NavDisplay(
         entries = decoratedEntries.getValue(navigationState.selectedTab),
-        modifier = Modifier.fillMaxSize().background(CommonColor.White),
+        modifier = Modifier.fillMaxSize().background(SurfaceColor.Background),
         onBack = navigationState::pop,
     )
 }
@@ -163,7 +163,7 @@ private fun BottonNavigationTabScreen(
         modifier =
             Modifier
                 .fillMaxSize()
-                .background(CommonColor.White),
+                .background(SurfaceColor.Background),
     ) {
         Box(
             modifier =
@@ -187,7 +187,7 @@ private fun FullScreen(content: @Composable () -> Unit) {
         modifier =
             Modifier
                 .fillMaxSize()
-                .background(CommonColor.White),
+                .background(SurfaceColor.Background),
     ) {
         content()
     }
