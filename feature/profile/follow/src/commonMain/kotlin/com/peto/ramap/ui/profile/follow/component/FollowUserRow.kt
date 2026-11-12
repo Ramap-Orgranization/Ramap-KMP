@@ -23,7 +23,7 @@ import com.peto.ramap.domain.model.follow.FollowAction
 import com.peto.ramap.domain.model.follow.FollowList
 import com.peto.ramap.domain.model.profile.PublicProfile
 import com.peto.ramap.theme.AppTextStyle
-import com.peto.ramap.theme.ChromaticColor
+import com.peto.ramap.theme.BrandColor
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
 import org.jetbrains.compose.resources.stringResource
@@ -85,7 +85,8 @@ internal fun FollowUserRow(
                             enabled = enabled,
                             isLoading = actingAction == FollowAction.APPROVE,
                             textStyle = AppTextStyle.C1,
-                            backgroundColor = ChromaticColor.Orange400,
+                            backgroundColor = BrandColor.Fill,
+                            textColor = BrandColor.OnFill,
                             cornerRadius = 22.dp,
                             height = 44.dp,
                             modifier = Modifier.width(48.dp),

@@ -5,8 +5,8 @@ import androidx.compose.material3.Tab
 import androidx.compose.runtime.Composable
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.theme.AppTextStyle
-import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
+import com.peto.ramap.theme.SurfaceColor
 import com.peto.ramap.ui.review.other.contract.OtherReviewsTab
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
@@ -24,7 +24,7 @@ internal fun OtherProfileTabs(
 ) {
     PrimaryTabRow(
         selectedTabIndex = selectedTab.ordinal,
-        containerColor = CommonColor.White,
+        containerColor = SurfaceColor.Background,
         contentColor = GrayColor.C500,
     ) {
         OtherReviewsTab.entries.forEach { tab ->

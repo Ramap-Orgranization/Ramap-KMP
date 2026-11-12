@@ -1,5 +1,6 @@
 package com.peto.ramap.designsystem.component
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
@@ -15,9 +16,11 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.theme.AppTextStyle
+import com.peto.ramap.theme.BrandColor
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.RamapTheme
+import com.peto.ramap.theme.RecommendationColor
 
 @Composable
 fun CategoryFilterChip(
@@ -34,7 +37,8 @@ fun CategoryFilterChip(
                 role = Role.Tab
             },
         shape = RoundedCornerShape(999.dp),
-        color = if (selected) GrayColor.C500 else CommonColor.White,
+        color = if (selected) BrandColor.SubtleFill else CommonColor.White,
+        border = if (selected) BorderStroke(1.dp, RecommendationColor.Brown) else null,
         onClick = onClick,
         shadowElevation = 6.dp,
         content = {
@@ -42,7 +46,7 @@ fun CategoryFilterChip(
                 text = label,
                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
                 style = style,
-                color = if (selected) CommonColor.White else GrayColor.C400,
+                color = if (selected) BrandColor.Foreground else GrayColor.C400,
             )
         },
     )

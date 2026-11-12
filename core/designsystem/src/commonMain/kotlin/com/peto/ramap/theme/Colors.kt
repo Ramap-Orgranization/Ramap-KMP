@@ -16,6 +16,18 @@ object CommonColor {
     val Black = Color(0xFF000000)
 }
 
+object SurfaceColor {
+    val Background = CommonColor.White
+}
+
+object BrandColor {
+    val Fill = Color(0xFFE6C05D)
+    val OnFill = Color(0xFF171717)
+    val OnSelectionFill = Color(0xFFFFFFFF)
+    val SubtleFill = Color(0xFFFFF4D6)
+    val Foreground = Color(0xFF745500)
+}
+
 object DimmedColor {
     val D070 = Color(0x0D000000).copy(alpha = 0.7f)
     val D020 = Color(0x0D000000).copy(alpha = 0.2f)
@@ -32,18 +44,20 @@ object ChromaticColor {
     val Blue500 = Color(0xFF1E4FC4)
     val Orange050 = Color(0xFFFFF3E9)
     val Orange300 = Color(0xFFE77730)
+    val Orange400 = Color(0xFFE95432)
     val Yellow050 = Color(0xFFFFF8E9)
     val Yellow300 = Color(0xFFEAA827)
     val Red050 = Color(0xFFFFF0F1)
     val Red300 = Color(0xFFF33151)
     val Purple050 = Color(0xFFF2F0FF)
     val Purple300 = Color(0xFF7C6CF2)
+    val Green050 = Color(0xFFECF6E8)
     val Green400 = Color(0xFFBEF0A3)
+    val Green500 = Color(0xFF36712D)
+    val Magenta050 = Color(0xFFFCEAF7)
+    val Magenta500 = Color(0xFF9A347E)
     val Blue400 = Color(0xFF3972FD)
     val Yellow400 = Color(0xFFFDF2E3)
-    val Orange400 = Color(0xFFE95432)
-    val Cream400 = Color(0xFFFFF8EC)
-    val Apricot400 = Color(0xFFFDE0B2)
 }
 
 object SocialColor {
@@ -60,8 +74,8 @@ object InstagramColor {
 }
 
 object RecommendationColor {
-    val Gold = Color(0xFFE6C05D)
-    val Cream = Color(0xFFFFF4D6)
+    val Gold = BrandColor.Fill
+    val Cream = BrandColor.SubtleFill
     val Brown = Color(0xFF6C2921)
     val Border = Color(0xFFD4AD55)
 }

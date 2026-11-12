@@ -29,8 +29,8 @@ import com.peto.ramap.domain.model.auth.LoginType
 import com.peto.ramap.domain.model.profile.AccountProfile
 import com.peto.ramap.domain.model.profile.ProfileVisibility
 import com.peto.ramap.domain.model.profile.ProfileVisitRanking
-import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.RamapTheme
+import com.peto.ramap.theme.SurfaceColor
 import com.peto.ramap.ui.base.ObserveAsEvents
 import com.peto.ramap.ui.loading.LoadState
 import com.peto.ramap.ui.main.my.component.BlockedUsersDialog
@@ -182,7 +182,7 @@ internal fun MyTabContent(
         modifier =
             Modifier
                 .fillMaxSize()
-                .background(GrayColor.C050)
+                .background(SurfaceColor.Background)
                 .padding(top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding())
                 .verticalScroll(rememberScrollState()),
     ) {
@@ -268,12 +268,11 @@ internal fun MyTabContent(
                 onSubscribedShopsClick = onSubscribedShopsClick,
                 onReportClick = onReportClick,
             )
-            Spacer(modifier = Modifier.height(24.dp))
         }
     }
 }
 
-@Preview(name = "로딩 중", group = "내 프로필 조회", widthDp = 360, heightDp = 780)
+@Preview
 @Composable
 internal fun MyProfileLoadingPreview() =
     MyTabPreview(

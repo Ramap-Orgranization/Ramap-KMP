@@ -17,7 +17,7 @@ import androidx.compose.ui.unit.dp
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.extension.noRippleClickable
 import com.peto.ramap.theme.AppTextStyle
-import com.peto.ramap.theme.ChromaticColor
+import com.peto.ramap.theme.BrandColor
 import com.peto.ramap.theme.GrayColor
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
@@ -51,7 +51,7 @@ internal fun ReviewCommentButton(
             painter = painterResource(Res.drawable.ic_review_comment_outline),
             contentDescription = null,
             modifier = Modifier.size(20.dp),
-            colorFilter = ColorFilter.tint(if (expanded) ChromaticColor.Orange400 else GrayColor.C300),
+            colorFilter = ColorFilter.tint(if (expanded) BrandColor.Foreground else GrayColor.C300),
         )
         AppText(text = count?.toString() ?: "–", style = AppTextStyle.B2, color = GrayColor.C500)
     }

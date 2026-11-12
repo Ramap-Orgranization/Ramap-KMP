@@ -33,6 +33,7 @@ import com.peto.ramap.theme.ChromaticColor
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.RamapTheme
+import com.peto.ramap.theme.SurfaceColor
 import com.peto.ramap.theme.SystemColor
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
@@ -57,7 +58,7 @@ fun EventCard(
             modifier
                 .fillMaxWidth()
                 .clip(cardShape)
-                .background(CommonColor.White)
+                .background(SurfaceColor.Background)
                 .border(1.dp, GrayColor.C100, cardShape)
                 .clickable(onClick = onClick)
                 .padding(14.dp),

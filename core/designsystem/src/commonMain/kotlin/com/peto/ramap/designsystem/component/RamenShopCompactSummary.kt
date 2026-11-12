@@ -25,7 +25,7 @@ import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.extension.noRippleClickable
 import com.peto.ramap.preview.RamenShopPreviewParameterProvider
 import com.peto.ramap.theme.AppTextStyle
-import com.peto.ramap.theme.ChromaticColor
+import com.peto.ramap.theme.BrandColor
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.RamapTheme
 import org.jetbrains.compose.resources.painterResource
@@ -46,9 +46,9 @@ fun RamenShopCompactSummary(
         onClick = onClick,
         modifier =
             modifier
-                .background(ChromaticColor.Orange050)
+                .background(BrandColor.SubtleFill)
                 .padding(8.dp),
-        chevronColor = ChromaticColor.Orange300,
+        chevronColor = BrandColor.Foreground,
     )
 }
 

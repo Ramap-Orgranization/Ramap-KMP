@@ -31,7 +31,7 @@ import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.domain.model.profile.ProfileVisitedShop
 import com.peto.ramap.extension.noRippleClickable
 import com.peto.ramap.theme.AppTextStyle
-import com.peto.ramap.theme.ChromaticColor
+import com.peto.ramap.theme.BrandColor
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.RamapTheme
 import org.jetbrains.compose.resources.stringResource
@@ -46,7 +46,7 @@ internal fun ProfileVisitRankingPodiumStep(
     modifier: Modifier = Modifier,
 ) {
     val isFirst = rank == 1
-    val photoBorder = if (isFirst) Modifier.border(2.dp, ChromaticColor.Orange300, CircleShape) else Modifier
+    val photoBorder = if (isFirst) Modifier.border(2.dp, BrandColor.Foreground, CircleShape) else Modifier
     Column(
         modifier = modifier.noRippleClickable(onClick = onClick),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -89,13 +89,13 @@ internal fun ProfileVisitRankingPodiumBase(
             bottomEnd = if (rank == 3) 6.dp else 0.dp,
         )
     val frontShape = RoundedCornerShape(topStart = topStart, topEnd = topEnd)
-    val topColor = if (isFirst) Color(0xFFFFB873) else Color(0xFFF7F6F3)
+    val topColor = if (isFirst) BrandColor.SubtleFill else Color(0xFFF7F6F3)
     val frontBrush =
         remember(isFirst) {
             Brush.verticalGradient(
                 colors =
                     if (isFirst) {
-                        listOf(Color(0xFFF58B3D), Color(0xFFE97328))
+                        listOf(BrandColor.SubtleFill, BrandColor.Fill)
                     } else {
                         listOf(Color(0xFFF0EFEC), Color(0xFFE7E5E1))
                     },

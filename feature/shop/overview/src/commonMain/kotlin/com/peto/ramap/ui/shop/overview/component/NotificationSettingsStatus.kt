@@ -15,7 +15,7 @@ import com.peto.ramap.designsystem.button.AppButton
 import com.peto.ramap.designsystem.component.LoadErrorContent
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.theme.AppTextStyle
-import com.peto.ramap.theme.ChromaticColor
+import com.peto.ramap.theme.BrandColor
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.RamapTheme
 import org.jetbrains.compose.resources.stringResource
@@ -62,7 +62,7 @@ internal fun NotificationSettingsStatus(
             modifier =
                 modifier
                     .fillMaxWidth()
-                    .background(ChromaticColor.Orange050, RoundedCornerShape(12.dp))
+                    .background(BrandColor.SubtleFill, RoundedCornerShape(12.dp))
                     .padding(16.dp)
                     .semantics { liveRegion = LiveRegionMode.Polite },
         )

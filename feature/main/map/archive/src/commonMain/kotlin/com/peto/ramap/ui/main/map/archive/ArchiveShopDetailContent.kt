@@ -42,10 +42,10 @@ import com.peto.ramap.extension.noRippleClickable
 import com.peto.ramap.preview.MyReviewPreviewParameterProvider
 import com.peto.ramap.preview.RamenShopPreviewParameterProvider
 import com.peto.ramap.theme.AppTextStyle
-import com.peto.ramap.theme.ChromaticColor
-import com.peto.ramap.theme.CommonColor
+import com.peto.ramap.theme.BrandColor
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.RamapTheme
+import com.peto.ramap.theme.SurfaceColor
 import com.peto.ramap.ui.main.map.archive.component.ArchiveReviewTimelineItem
 import com.peto.ramap.ui.main.map.archive.model.ArchiveShopDetailTab
 import com.peto.ramap.ui.main.map.archive.model.ArchiveShopDetailUiModel
@@ -128,7 +128,7 @@ private fun ArchiveDetailTabs(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .background(CommonColor.White)
+                .background(SurfaceColor.Background)
                 .padding(top = 10.dp, bottom = 12.dp),
     ) {
         Row(
@@ -153,11 +153,11 @@ private fun ArchiveDetailTabs(
                         modifier =
                             Modifier
                                 .background(
-                                    color = if (isSelected) ChromaticColor.Orange400 else Color.Transparent,
+                                    color = if (isSelected) BrandColor.Fill else Color.Transparent,
                                     shape = RoundedCornerShape(10.dp),
                                 ).border(
                                     width = 1.dp,
-                                    color = if (isSelected) ChromaticColor.Orange400 else GrayColor.C100,
+                                    color = if (isSelected) BrandColor.Foreground else GrayColor.C100,
                                     shape = RoundedCornerShape(10.dp),
                                 ).semantics { this.selected = isSelected }
                                 .noRippleClickable(
@@ -176,12 +176,12 @@ private fun ArchiveDetailTabs(
                                     AppText(
                                         text = stringResource(Res.string.my_reviews),
                                         style = AppTextStyle.B1,
-                                        color = if (isSelected) CommonColor.White else GrayColor.C500,
+                                        color = if (isSelected) BrandColor.OnFill else GrayColor.C500,
                                     )
                                     AppText(
                                         text = stringResource(Res.string.my_reviews_filter_number, reviewCount),
                                         style = AppTextStyle.B1,
-                                        color = if (isSelected) CommonColor.White else ChromaticColor.Orange400,
+                                        color = if (isSelected) BrandColor.OnFill else BrandColor.Foreground,
                                         modifier = Modifier.padding(top = 2.dp),
                                     )
                                 }
@@ -191,7 +191,7 @@ private fun ArchiveDetailTabs(
                                 AppText(
                                     text = stringResource(Res.string.archive_shop_information_tab),
                                     style = AppTextStyle.B1,
-                                    color = if (isSelected) CommonColor.White else GrayColor.C300,
+                                    color = if (isSelected) BrandColor.OnFill else GrayColor.C300,
                                     maxLines = 1,
                                 )
                             }

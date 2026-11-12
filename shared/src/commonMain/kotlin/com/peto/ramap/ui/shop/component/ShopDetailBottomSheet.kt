@@ -37,8 +37,8 @@ import androidx.compose.ui.unit.dp
 import androidx.navigationevent.NavigationEventInfo
 import androidx.navigationevent.compose.NavigationBackHandler
 import androidx.navigationevent.compose.rememberNavigationEventState
-import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
+import com.peto.ramap.theme.SurfaceColor
 import com.peto.ramap.ui.paging.InfiniteLazyColumn
 import com.peto.ramap.ui.paging.InfiniteScrollState
 
@@ -109,7 +109,7 @@ fun ShopDetailBottomSheet(
                 sheetPeekHeight = maxHeight * collapsedHeightFraction,
                 sheetMaxWidth = Dp.Unspecified,
                 sheetShape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
-                sheetContainerColor = CommonColor.White,
+                sheetContainerColor = SurfaceColor.Background,
                 sheetShadowElevation = 16.dp,
                 containerColor = Color.Transparent,
                 sheetDragHandle = null,

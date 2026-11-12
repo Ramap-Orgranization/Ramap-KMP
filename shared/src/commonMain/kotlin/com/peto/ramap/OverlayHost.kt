@@ -11,7 +11,7 @@ import androidx.navigationevent.compose.rememberNavigationEventState
 import com.peto.ramap.analytics.AnalyticsSource
 import com.peto.ramap.domain.model.auth.LoginType
 import com.peto.ramap.navigation.NavigationState
-import com.peto.ramap.theme.CommonColor
+import com.peto.ramap.theme.SurfaceColor
 import com.peto.ramap.ui.lifecycle.ScreenViewModelScope
 import com.peto.ramap.ui.review.ReviewDetailHost
 import com.peto.ramap.ui.review.detail.ReviewCommentsPreviewRoute
@@ -137,7 +137,7 @@ private fun FullScreenOverlay(content: @Composable () -> Unit) {
         modifier =
             Modifier
                 .fillMaxSize()
-                .background(CommonColor.White),
+                .background(SurfaceColor.Background),
     ) {
         content()
     }

@@ -1,6 +1,5 @@
 package com.peto.ramap.designsystem.component
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -23,7 +22,6 @@ import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.extension.noRippleClickable
 import com.peto.ramap.theme.AppTextStyle
-import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
 import org.jetbrains.compose.resources.painterResource
 import ramap.shared.generated.resources.Res
@@ -45,7 +43,6 @@ fun RamenShopSummary(
             modifier
                 .fillMaxWidth()
                 .then(if (onClick != null) Modifier.noRippleClickable(onClick = onClick) else Modifier)
-                .background(CommonColor.White)
                 .padding(start = 8.dp),
     ) {
         Row(

@@ -29,9 +29,9 @@ import com.peto.ramap.domain.model.review.ReviewDetail
 import com.peto.ramap.domain.model.review.comment.ReviewComment
 import com.peto.ramap.preview.ReviewDetailPreviewParameterProvider
 import com.peto.ramap.theme.AppTextStyle
-import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.RamapTheme
+import com.peto.ramap.theme.SurfaceColor
 import com.peto.ramap.ui.review.detail.component.ReviewCommentComposer
 import com.peto.ramap.ui.review.detail.component.ReviewCommentStatus
 import com.peto.ramap.ui.review.detail.component.ReviewCommentThreadContent
@@ -64,7 +64,7 @@ internal fun ReviewDetailContent(
     ReviewPage(
         title = stringResource(Res.string.review_detail_title),
         onBack = onBack,
-        modifier = Modifier.background(CommonColor.White),
+        modifier = Modifier.background(SurfaceColor.Background),
         action = {
             state.detail?.let { detail ->
                 ReviewCardOverflowMenu(

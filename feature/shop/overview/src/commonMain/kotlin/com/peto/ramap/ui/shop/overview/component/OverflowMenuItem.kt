@@ -10,8 +10,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.theme.AppTextStyle
+import com.peto.ramap.theme.BrandColor
 import com.peto.ramap.theme.GrayColor
-import com.peto.ramap.theme.InstagramColor
 import com.peto.ramap.theme.RamapTheme
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
@@ -21,8 +21,7 @@ import ramap.shared.generated.resources.ic_share
 @Composable
 internal fun OverflowMenuItem(
     text: String,
-    icon: DrawableResource,
-    isActive: Boolean,
+    leadingIcon: @Composable () -> Unit,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -35,21 +34,21 @@ internal fun OverflowMenuItem(
                 color = GrayColor.C500,
             )
         },
-        leadingIcon = {
-            Image(
-                painter = painterResource(icon),
-                contentDescription = null,
-                modifier = Modifier.size(20.dp),
-                colorFilter =
-                    ColorFilter.tint(
-                        when {
-                            isActive -> InstagramColor.Pink
-                            else -> GrayColor.C300
-                        },
-                    ),
-            )
-        },
+        leadingIcon = leadingIcon,
         onClick = onClick,
+    )
+}
+
+@Composable
+internal fun OverflowMenuIcon(
+    icon: DrawableResource,
+    isActive: Boolean = false,
+) {
+    Image(
+        painter = painterResource(icon),
+        contentDescription = null,
+        modifier = Modifier.size(20.dp),
+        colorFilter = ColorFilter.tint(if (isActive) BrandColor.Foreground else GrayColor.C300),
     )
 }
 
@@ -59,8 +58,7 @@ private fun OverflowMenuItemPreview() {
     RamapTheme {
         OverflowMenuItem(
             text = "공유하기",
-            icon = Res.drawable.ic_share,
-            isActive = false,
+            leadingIcon = { OverflowMenuIcon(icon = Res.drawable.ic_share) },
             onClick = {},
         )
     }

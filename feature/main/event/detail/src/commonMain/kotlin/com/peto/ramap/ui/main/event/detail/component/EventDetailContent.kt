@@ -14,8 +14,8 @@ import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
 import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.platform.ExternalUriOpener
-import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.RamapTheme
+import com.peto.ramap.theme.SurfaceColor
 import com.peto.ramap.ui.main.event.detail.contract.EventDetailUiState
 import com.peto.ramap.ui.main.event.detail.preview.EventDetailPreviewParameterProvider
 
@@ -100,7 +100,7 @@ private fun EventDetailContentPreview(
                 onCollaboratorInstagramClick = {},
                 onWaitingLinkClick = {},
                 onSourceLinkClick = {},
-                modifier = Modifier.background(CommonColor.White),
+                modifier = Modifier.background(SurfaceColor.Background),
             )
         }
     }

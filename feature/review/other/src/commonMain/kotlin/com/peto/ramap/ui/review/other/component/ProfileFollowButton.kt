@@ -9,7 +9,7 @@ import androidx.compose.ui.unit.dp
 import com.peto.ramap.designsystem.button.AppButton
 import com.peto.ramap.domain.model.follow.FollowState
 import com.peto.ramap.theme.AppTextStyle
-import com.peto.ramap.theme.ChromaticColor
+import com.peto.ramap.theme.BrandColor
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.ui.resource.FollowResourceMapper
@@ -24,13 +24,13 @@ internal fun ProfileFollowButton(
 ) {
     val backgroundColor =
         when (state) {
-            FollowState.NONE -> ChromaticColor.Orange400
+            FollowState.NONE -> BrandColor.Fill
             FollowState.FOLLOWING -> CommonColor.White
             FollowState.PENDING -> GrayColor.C050
         }
     val textColor =
         when (state) {
-            FollowState.NONE -> CommonColor.White
+            FollowState.NONE -> BrandColor.OnFill
             FollowState.FOLLOWING -> GrayColor.C500
             FollowState.PENDING -> GrayColor.C300
         }
@@ -50,6 +50,6 @@ internal fun ProfileFollowButton(
         icon = FollowResourceMapper.stateIcon(state),
         isLoading = isLoading,
         iconSize = 17.dp,
-        iconTint = if (state == FollowState.FOLLOWING) ChromaticColor.Orange400 else textColor,
+        iconTint = if (state == FollowState.FOLLOWING) BrandColor.Foreground else textColor,
     )
 }

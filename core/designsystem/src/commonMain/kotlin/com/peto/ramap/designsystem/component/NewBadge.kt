@@ -13,7 +13,6 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.unit.dp
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.theme.AppTextStyle
-import com.peto.ramap.theme.ChromaticColor
 import com.peto.ramap.theme.CommonColor
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
@@ -23,7 +22,7 @@ import ramap.shared.generated.resources.new_badge
 @Composable
 fun NewBadge(
     modifier: Modifier = Modifier,
-    backgroundColor: Color = ChromaticColor.Orange400,
+    backgroundColor: Color,
     description: String = stringResource(Res.string.announcement_new),
 ) {
     Box(

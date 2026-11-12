@@ -40,9 +40,9 @@ import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.platform.AppSettingsOpener
 import com.peto.ramap.theme.AppTextStyle
-import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.RamapTheme
+import com.peto.ramap.theme.SurfaceColor
 import com.peto.ramap.ui.base.ObserveAsEvents
 import com.peto.ramap.ui.main.map.archive.component.ArchiveMapCanvas
 import com.peto.ramap.ui.main.map.archive.component.ArchiveMapClusterPopup
@@ -136,7 +136,7 @@ internal fun ArchiveMapContent(
             if (overlappingShops.isNotEmpty()) overlappingShops = emptyList() else onReturnToMap()
         },
     )
-    Box(modifier = Modifier.fillMaxSize().background(CommonColor.White)) {
+    Box(modifier = Modifier.fillMaxSize().background(SurfaceColor.Background)) {
         if (hasMapShops) {
             ArchiveMapCanvas(
                 shops = state.shops,
@@ -162,7 +162,7 @@ internal fun ArchiveMapContent(
             )
         }
         if (!isMapReady) {
-            Box(modifier = Modifier.fillMaxSize().background(CommonColor.White))
+            Box(modifier = Modifier.fillMaxSize().background(SurfaceColor.Background))
         }
         when {
             state.hasError ->

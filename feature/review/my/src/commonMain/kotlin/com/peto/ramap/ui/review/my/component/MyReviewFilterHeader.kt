@@ -20,8 +20,7 @@ import androidx.compose.ui.unit.dp
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.domain.model.review.MyReviewVisibility
 import com.peto.ramap.theme.AppTextStyle
-import com.peto.ramap.theme.CommonColor
-import com.peto.ramap.theme.GrayColor
+import com.peto.ramap.theme.BrandColor
 import com.peto.ramap.theme.RamapTheme
 import com.peto.ramap.ui.review.my.contract.MyReviewsUiState
 import org.jetbrains.compose.resources.stringResource
@@ -71,8 +70,8 @@ private fun FilterChip(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val backgroundColor = if (selected) GrayColor.C500 else GrayColor.C100
-    val labelColor = if (selected) CommonColor.White else CommonColor.Black
+    val backgroundColor = if (selected) BrandColor.Fill else BrandColor.SubtleFill
+    val labelColor = if (selected) BrandColor.OnSelectionFill else BrandColor.Foreground
 
     Row(
         modifier =

@@ -26,7 +26,7 @@ import androidx.compose.ui.unit.dp
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.extension.noRippleClickable
 import com.peto.ramap.theme.AppTextStyle
-import com.peto.ramap.theme.ChromaticColor
+import com.peto.ramap.theme.BrandColor
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.RamapTheme
@@ -108,14 +108,14 @@ private fun BoxScope.ProfileEditBadge() {
                 .size(40.dp)
                 .border(2.dp, CommonColor.White, CircleShape)
                 .clip(CircleShape)
-                .background(ChromaticColor.Orange400),
+                .background(BrandColor.Fill),
         contentAlignment = Alignment.Center,
     ) {
         Icon(
             painter = painterResource(Res.drawable.ic_profile_edit),
             contentDescription = null,
             modifier = Modifier.size(20.dp),
-            tint = CommonColor.White,
+            tint = BrandColor.OnFill,
         )
     }
 }

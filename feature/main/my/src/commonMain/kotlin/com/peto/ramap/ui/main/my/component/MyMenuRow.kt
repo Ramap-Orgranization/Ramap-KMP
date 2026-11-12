@@ -27,6 +27,7 @@ import com.peto.ramap.designsystem.component.NewBadge
 import com.peto.ramap.designsystem.component.Skeleton
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.theme.AppTextStyle
+import com.peto.ramap.theme.BrandColor
 import com.peto.ramap.theme.ChromaticColor
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
@@ -49,9 +50,9 @@ import ramap.shared.generated.resources.settings_bookmarked_shops_menu
 internal fun MyMenuRow(
     icon: DrawableResource,
     title: StringResource,
-    count: Int?,
     iconBackground: Color,
     iconTint: Color,
+    count: Int? = null,
     hasCount: Boolean = true,
     isNew: Boolean = false,
     newBadgeDescription: StringResource = Res.string.announcement_new,
@@ -95,7 +96,7 @@ internal fun MyMenuRow(
                         Modifier
                             .align(Alignment.TopEnd)
                             .size(10.dp)
-                            .background(iconTint, CircleShape)
+                            .background(ChromaticColor.Orange400, CircleShape)
                             .border(1.dp, CommonColor.White, CircleShape),
                 )
             }
@@ -109,7 +110,12 @@ internal fun MyMenuRow(
                     .weight(1f)
                     .padding(start = 12.dp),
         )
-        if (isNew) NewBadge(description = stringResource(newBadgeDescription))
+        if (isNew) {
+            NewBadge(
+                backgroundColor = ChromaticColor.Orange400,
+                description = stringResource(newBadgeDescription),
+            )
+        }
         if (hasCount && isLoading && count == null) {
             Skeleton(
                 modifier = Modifier.size(width = 24.dp, height = 18.dp),
@@ -146,8 +152,8 @@ private fun MyMenuRowPreview() {
             icon = Res.drawable.ic_star_filled,
             title = Res.string.settings_bookmarked_shops_menu,
             count = 12,
-            iconBackground = ChromaticColor.Orange050,
-            iconTint = ChromaticColor.Orange300,
+            iconBackground = BrandColor.SubtleFill,
+            iconTint = BrandColor.Foreground,
             onClick = {},
         )
     }
@@ -161,8 +167,8 @@ private fun MyFollowMenuRowWithRequestsPreview() {
             icon = Res.drawable.ic_person,
             title = Res.string.follow_manage,
             count = null,
-            iconBackground = ChromaticColor.Orange050,
-            iconTint = ChromaticColor.Orange400,
+            iconBackground = ChromaticColor.Green050,
+            iconTint = ChromaticColor.Green500,
             hasCount = false,
             notification = Res.string.follow_requests,
             isNew = true,
@@ -180,8 +186,8 @@ private fun MyFollowMenuRowWithoutRequestsPreview() {
             icon = Res.drawable.ic_person,
             title = Res.string.follow_manage,
             count = null,
-            iconBackground = ChromaticColor.Orange050,
-            iconTint = ChromaticColor.Orange400,
+            iconBackground = ChromaticColor.Green050,
+            iconTint = ChromaticColor.Green500,
             hasCount = false,
             onClick = {},
         )

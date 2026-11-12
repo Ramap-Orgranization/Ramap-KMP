@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.dp
 import com.peto.ramap.designsystem.component.NewBadge
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.theme.AppTextStyle
+import com.peto.ramap.theme.BrandColor
 import com.peto.ramap.theme.ChromaticColor
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
@@ -62,7 +63,10 @@ fun AppSegmentedTabs(
             ) {
                 AppText(text = tab.label, style = if (selected) AppTextStyle.B1 else AppTextStyle.B2, color = textColor)
                 if (tab.isNew) {
-                    NewBadge(description = tab.newBadgeDescription ?: stringResource(Res.string.announcement_new))
+                    NewBadge(
+                        backgroundColor = ChromaticColor.Orange400,
+                        description = tab.newBadgeDescription ?: stringResource(Res.string.announcement_new),
+                    )
                 }
                 tab.count?.let { count ->
                     val countModifier =
@@ -74,7 +78,12 @@ fun AppSegmentedTabs(
                     AppText(
                         text = count,
                         style = AppTextStyle.C1,
-                        color = if (selected || tab.hasCountBadge) ChromaticColor.Orange400 else GrayColor.C300,
+                        color =
+                            when {
+                                tab.hasCountBadge -> ChromaticColor.Orange400
+                                selected -> BrandColor.Foreground
+                                else -> GrayColor.C300
+                            },
                         modifier = countModifier,
                     )
                 }

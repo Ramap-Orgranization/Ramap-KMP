@@ -1,5 +1,6 @@
 package com.peto.ramap.ui.main.map.component
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -16,6 +17,7 @@ import androidx.compose.ui.unit.dp
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.RamapTheme
+import com.peto.ramap.theme.RecommendationColor
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
@@ -41,17 +43,15 @@ internal fun OpenFilterButton(
                     shape = CircleShape,
                     clip = false,
                 ),
-        color = if (isActive) GrayColor.C500 else CommonColor.White,
+        color = if (isActive) RecommendationColor.Gold else CommonColor.White,
+        border = if (isActive) BorderStroke(2.dp, RecommendationColor.Brown) else null,
         shape = CircleShape,
         onClick = onClick,
     ) {
         Image(
             painter = painterResource(Res.drawable.ic_open),
             contentDescription = null,
-            colorFilter =
-                ColorFilter.tint(
-                    if (isActive) CommonColor.White else GrayColor.C500,
-                ),
+            colorFilter = ColorFilter.tint(if (isActive) RecommendationColor.Brown else GrayColor.C500),
         )
     }
 }

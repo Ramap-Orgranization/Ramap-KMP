@@ -1,5 +1,6 @@
 """Bind a canonical capture to saved Naver menu DOM, without executing page code."""
 import json
+from collections import Counter
 import re
 from html.parser import HTMLParser
 from urllib.parse import parse_qs, urlparse
@@ -71,6 +72,15 @@ def first(nodes, classes):
     return next((node for node in nodes if node.has_class(classes)), None)
 
 
+def menu_section(element):
+    parent = element.parent
+    while parent:
+        if parent.has_class({'place_section'}):
+            return parent
+        parent = parent.parent
+    return None
+
+
 def heading(element):
     parent = element.parent
     while parent:
@@ -95,6 +105,36 @@ def recommendation_signature(row):
     # Same name/price alone can hide distinct source configurations or photos.
     return (compact(row['name']), price_key(row['price_text']), text_content(row['description']),
         image_origin(row['image_url']))
+
+
+def representative_summaries(rows):
+    sections = {}
+    for row in rows:
+        sections.setdefault(row['section'], []).append(row)
+    groups = list(sections.values())
+    representative = [group for group in groups if compact(group[0]['heading']) == '대표메뉴']
+    counts = {id(group): Counter(signature(row) for row in group) for group in groups}
+    # A preceding proper subset proves a separate summary surface, even when
+    # the following actual category has exactly the same displayed heading.
+    actual = [group for group in groups if group not in representative]
+    resolved_categories = []
+    for index, group in enumerate(representative):
+        current = counts[id(group)]
+        if any(counts[id(prior)] != current and not (counts[id(prior)] - current)
+                for prior in representative[:index]):
+            resolved_categories.append(group)
+    if len(resolved_categories) > 1:
+        raise ValueError('representative sections have ambiguous actual category membership')
+    actual.extend(resolved_categories)
+    available = Counter(signature(row) for group in actual for row in group)
+    summaries = []
+    for group in representative:
+        if any(group is category for category in actual):
+            continue
+        if counts[id(group)] - available:
+            raise ValueError('representative summary contains a menu missing from actual categories')
+        summaries.extend(group)
+    return summaries
 
 
 def canonical_dom(raw_dom, place_id):
@@ -132,20 +172,17 @@ def canonical_dom(raw_dom, place_id):
         rows.append({'name': name.text().strip(), 'price_text': price.text().strip(),
             'description': description.text().strip() if description else None,
             'image_url': image.attrs['src'] if image else None, 'is_featured': featured,
-            'recommended': link.attrs['data-nlog-area'] == 'plc_bmv.recmenu', 'heading': heading(element)})
+            'recommended': link.attrs['data-nlog-area'] == 'plc_bmv.recmenu', 'heading': heading(element),
+            'section': id(menu_section(element))})
     if not rows:
         raise ValueError('raw DOM contains no recognized menu rows; inspect changed source markup')
-    summaries = [r for r in rows if compact(r['heading']) == '대표메뉴']
-    menus = [r for r in rows if compact(r['heading']) != '대표메뉴']
-    actual_signatures = {signature(r) for r in menus}
-    if any(signature(r) not in actual_signatures for r in summaries):
-        raise ValueError('representative summary contains a menu missing from actual categories')
-    # Representative panels are rendered before the general categories even
-    # when Naver labels their links as plc_bmv.menu rather than recmenu.
+    summaries = representative_summaries(rows)
+    summary_ids = {id(row) for row in summaries}
+    menus = [row for row in rows if id(row) not in summary_ids]
     recommendations = []
     recommended_keys = set()
-    for row in rows:
-        if row['recommended'] or compact(row['heading']) == '대표메뉴':
+    for row in menus:
+        if row['recommended']:
             key = recommendation_signature(row)
             if key not in recommended_keys:
                 recommendations.append(row)
@@ -153,6 +190,8 @@ def canonical_dom(raw_dom, place_id):
     regular = [r for r in menus if not r['recommended']
         and recommendation_signature(r) not in recommended_keys]
     canonical = recommendations + regular
+    for row in canonical:
+        row.pop('section')
     return canonical, {'parsed_rows': len(rows), 'summary_rows': len(summaries),
         'duplicate_complete_panels': duplicate_panels, 'recommendation_duplicates': len(menus) - len(canonical)}
 

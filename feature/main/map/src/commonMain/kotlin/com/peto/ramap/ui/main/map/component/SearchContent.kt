@@ -55,7 +55,7 @@ import com.peto.ramap.designsystem.button.BookmarkedFilterButton
 import com.peto.ramap.domain.model.place.PlaceSearchResult
 import com.peto.ramap.domain.model.shop.Category
 import com.peto.ramap.domain.model.shop.RamenShop
-import com.peto.ramap.theme.CommonColor
+import com.peto.ramap.theme.SurfaceColor
 import com.peto.ramap.ui.main.map.contract.MapUiState
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
@@ -104,7 +104,7 @@ internal fun SearchContent(
         }
     val searchResultSheetState =
         rememberStandardBottomSheetState(
-            initialValue = SheetValue.Expanded,
+            initialValue = SheetValue.PartiallyExpanded,
         )
     val searchResultScaffoldState =
         rememberBottomSheetScaffoldState(
@@ -113,8 +113,21 @@ internal fun SearchContent(
 
     NavigationBackHandler(
         state = rememberNavigationEventState<NavigationEventInfo>(currentInfo = NavigationEventInfo.None),
-        isBackEnabled = isBackEnabled && showRecommendationList && recommendationSheetState.currentValue == SheetValue.Expanded,
-        onBackCompleted = { coroutineScope.launch { recommendationSheetState.partialExpand() } },
+        isBackEnabled =
+            isBackEnabled &&
+                (
+                    (showRecommendationList && recommendationSheetState.currentValue == SheetValue.Expanded) ||
+                        (!showRecommendationList && uiState.showSearchResults && searchResultSheetState.currentValue == SheetValue.Expanded)
+                ),
+        onBackCompleted = {
+            coroutineScope.launch {
+                if (showRecommendationList) {
+                    recommendationSheetState.partialExpand()
+                } else {
+                    searchResultSheetState.partialExpand()
+                }
+            }
+        },
     )
 
     LaunchedEffect(
@@ -123,7 +136,7 @@ internal fun SearchContent(
         uiState.showSearchResults,
     ) {
         if (!isSearchFocused && uiState.showSearchResults) {
-            searchResultSheetState.expand()
+            searchResultSheetState.partialExpand()
         }
     }
 
@@ -133,7 +146,7 @@ internal fun SearchContent(
                 .fillMaxSize()
                 .then(
                     if (isSearchFocused) {
-                        Modifier.background(CommonColor.White)
+                        Modifier.background(SurfaceColor.Background)
                     } else {
                         Modifier
                     },
@@ -227,12 +240,13 @@ internal fun SearchContent(
             val mapControlsHeight = with(density) { mapControlsHeightPx.toDp() }
             val recommendationContentHeight =
                 (maxHeight - mapControlsHeight - 8.dp - RecommendationHandlePadding - RecommendationHandleBarHeight).coerceAtLeast(110.dp)
+            val searchResultPeekHeight = (maxHeight / 2).coerceAtLeast(140.dp)
 
             BottomSheetScaffold(
                 scaffoldState = searchResultScaffoldState,
-                sheetPeekHeight = if (showRecommendationList) 142.dp - RecommendationHandlePadding else BottomSheetDefaults.SheetPeekHeight - 10.dp,
+                sheetPeekHeight = if (showRecommendationList) 142.dp - RecommendationHandlePadding else searchResultPeekHeight,
                 containerColor = Color.Transparent,
-                sheetContainerColor = CommonColor.White,
+                sheetContainerColor = SurfaceColor.Background,
                 sheetShape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
                 sheetDragHandle = {
                     if (showRecommendationList) {

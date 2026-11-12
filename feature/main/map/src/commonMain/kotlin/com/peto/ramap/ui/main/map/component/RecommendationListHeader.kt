@@ -24,7 +24,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.theme.AppTextStyle
-import com.peto.ramap.theme.ChromaticColor
+import com.peto.ramap.theme.BrandColor
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.RamapTheme
 import com.peto.ramap.theme.RecommendationColor
@@ -68,7 +68,7 @@ internal fun RecommendationListHeader(
                         .drawBehind {
                             val underlineHeight = 7.dp.toPx()
                             drawRect(
-                                color = ChromaticColor.Orange400.copy(alpha = 0.5f),
+                                color = BrandColor.Fill.copy(alpha = 0.5f),
                                 topLeft = Offset(x = 0f, y = size.height - underlineHeight - 2.dp.toPx()),
                                 size = Size(width = size.width, height = underlineHeight),
                             )

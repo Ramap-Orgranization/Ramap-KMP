@@ -28,8 +28,8 @@ import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.domain.model.follow.FollowAction
 import com.peto.ramap.domain.model.follow.FollowList
 import com.peto.ramap.theme.AppTextStyle
-import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
+import com.peto.ramap.theme.SurfaceColor
 import com.peto.ramap.ui.paging.ObserveLoadMoreNearListEnd
 import com.peto.ramap.ui.profile.follow.component.FollowUserRow
 import com.peto.ramap.ui.profile.follow.component.RemoveFollowerDialog
@@ -56,7 +56,7 @@ fun FollowContent(
     val removeTarget = state.profiles.firstOrNull { it.userId == removeTargetId }
     LaunchedEffect(state.currentUserId, state.selectedList) { removeTargetId = null }
     LaunchedEffect(removeTarget) { if (removeTarget == null) removeTargetId = null }
-    Box(modifier = Modifier.fillMaxSize().background(CommonColor.White)) {
+    Box(modifier = Modifier.fillMaxSize().background(SurfaceColor.Background)) {
         ReviewPage(title = stringResource(Res.string.follow_manage), onBack = onBack) {
             val lists = state.availableLists
             val tabs =

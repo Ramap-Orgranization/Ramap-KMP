@@ -45,8 +45,8 @@ import androidx.compose.ui.unit.dp
 import androidx.navigationevent.NavigationEventInfo
 import androidx.navigationevent.compose.NavigationBackHandler
 import androidx.navigationevent.compose.rememberNavigationEventState
-import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
+import com.peto.ramap.theme.SurfaceColor
 import kotlinx.coroutines.delay
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -182,7 +182,7 @@ private fun BottomSheetContent(
             shape = config.shape,
             tonalElevation = 0.dp,
             shadowElevation = 16.dp,
-            color = CommonColor.White,
+            color = SurfaceColor.Background,
             modifier =
                 Modifier
                     .fillMaxWidth()

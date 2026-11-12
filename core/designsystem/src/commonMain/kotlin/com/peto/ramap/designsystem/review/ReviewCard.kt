@@ -18,9 +18,9 @@ import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
 import com.peto.ramap.domain.model.review.Review
 import com.peto.ramap.preview.ReviewPreviewParameterProvider
-import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.RamapTheme
+import com.peto.ramap.theme.SurfaceColor
 
 @Composable
 fun ReviewCard(
@@ -58,7 +58,7 @@ fun ReviewCard(
         Surface(
             modifier = Modifier.fillMaxWidth(),
             shape = RectangleShape,
-            color = CommonColor.White,
+            color = SurfaceColor.Background,
         ) {
             Column {
                 header()
@@ -99,7 +99,7 @@ fun ReviewCard(
             }
         }
         if (showComments && commentsContent != null) {
-            Surface(color = CommonColor.White) {
+            Surface(color = SurfaceColor.Background) {
                 Column {
                     commentsContent(review.id)
                     HorizontalDivider(color = GrayColor.C100)
