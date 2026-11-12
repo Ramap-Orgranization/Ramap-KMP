@@ -86,21 +86,21 @@ class SourceDOMTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'missing from actual categories'):
             reconcile_source([original], summary, URL)
 
-    def test_representative_panel_order_precedes_reversed_general_categories(self):
+    def test_representative_summary_does_not_reorder_actual_categories(self):
         first, second = item('돈코츠라멘'), item('라멘세트', 16000)
         summary = ('<div class="place_section"><h2 class="place_section_header_title">대표메뉴</h2>'
             + row(first) + row(second) + '</div>')
         raw = summary + row(second) + row(first)
-        self.assertEqual(2, reconcile_source([first, second], raw, URL)['canonical_rows'])
+        self.assertEqual(2, reconcile_source([second, first], raw, URL)['canonical_rows'])
         with self.assertRaisesRegex(ValueError, 'order/name'):
-            reconcile_source([second, first], raw, URL)
+            reconcile_source([first, second], raw, URL)
 
     def test_representative_panel_preserves_distinct_regular_photo_variant(self):
         original, variant = item(), item(image='https://example.com/alternate.jpg')
         summary = ('<div class="place_section"><h2 class="place_section_header_title">대표메뉴</h2>'
             + row(original) + '</div>')
         raw = summary + row(variant) + row(original)
-        self.assertEqual(2, reconcile_source([original, variant], raw, URL)['canonical_rows'])
+        self.assertEqual(2, reconcile_source([variant, original], raw, URL)['canonical_rows'])
 
     def test_representative_and_recommended_panels_share_only_one_exact_item(self):
         original = item()
@@ -108,6 +108,43 @@ class SourceDOMTest(unittest.TestCase):
             + row(original) + '</div>')
         raw = summary + row(original, recommended=True) + row(original)
         self.assertEqual(1, reconcile_source([original], raw, URL)['canonical_rows'])
+
+    def test_동일제목_요약과_실제메뉴_순서보존(self):
+        first, second, side = item('Shoyu'), item('Shio'), item('Side', 9000)
+        def section(items):
+            return ('<div class="place_section"><h2 class="place_section_header_title">대표메뉴</h2>'
+                + ''.join(row(value) for value in items) + '</div>')
+        raw = section([side]) + section([first, second, side])
+        result = reconcile_source([first, second, side], raw, URL)
+        self.assertEqual(1, result['summary_rows'])
+        self.assertEqual(3, result['canonical_rows'])
+        with self.assertRaisesRegex(ValueError, 'order/name'):
+            reconcile_source([side, first, second], raw, URL)
+
+    def test_동일제목_원문충돌_거부(self):
+        original, other = item(), item('Other')
+        altered = {**original, 'description': 'different configuration'}
+        def section(items):
+            return ('<div class="place_section"><h2 class="place_section_header_title">대표메뉴</h2>'
+                + ''.join(row(value) for value in items) + '</div>')
+        with self.assertRaisesRegex(ValueError, 'missing from actual categories'):
+            reconcile_source([altered, other], section([original]) + section([altered, other]), URL)
+
+    def test_동일제목_동일섹션_모호성_보류(self):
+        original = item()
+        section = ('<div class="place_section"><h2 class="place_section_header_title">대표메뉴</h2>'
+            + row(original) + '</div>')
+        with self.assertRaisesRegex(ValueError, 'missing from actual categories'):
+            reconcile_source([original], section + section, URL)
+
+    def test_동일제목_포함관계_연쇄_모호성_보류(self):
+        first, second, third = item('A'), item('B'), item('C')
+        def section(items):
+            return ('<div class="place_section"><h2 class="place_section_header_title">대표메뉴</h2>'
+                + ''.join(row(value) for value in items) + '</div>')
+        raw = section([first]) + section([first, second]) + section([first, second, third])
+        with self.assertRaisesRegex(ValueError, 'ambiguous actual category'):
+            reconcile_source([first, second, third], raw, URL)
 
     def test_legacy_duplicate_complete_panels_do_not_remove_duplicate_rows(self):
         first, second = item(), item(image='https://example.com/alternate.jpg')
