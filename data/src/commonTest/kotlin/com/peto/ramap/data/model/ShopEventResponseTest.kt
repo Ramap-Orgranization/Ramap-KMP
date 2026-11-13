@@ -32,8 +32,6 @@ class ShopEventResponseTest {
         assertEquals(null, event.endDate)
     }
 
-
-
     @Test
     fun `이벤트 이미지 경로를 허가된 공개 Storage URL로 최대 다섯 장 매핑한다`() {
         val event =

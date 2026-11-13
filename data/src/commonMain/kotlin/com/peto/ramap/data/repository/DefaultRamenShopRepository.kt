@@ -78,8 +78,7 @@ internal class DefaultRamenShopRepository(
         )
     }
 
-    private fun activeShopEvents(responses: List<ShopEventResponse>): List<ShopEvent> =
-        responses.map(::toDomain)
+    private fun activeShopEvents(responses: List<ShopEventResponse>): List<ShopEvent> = responses.map(::toDomain)
 
     private fun needsCollaborationParticipants(events: List<ShopEvent>): Boolean = events.size == 1 && events.single().type == ShopEventType.COLLAB && !events.single().isToday
 
