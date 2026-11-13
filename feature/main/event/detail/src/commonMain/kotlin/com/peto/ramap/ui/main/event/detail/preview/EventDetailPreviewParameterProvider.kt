@@ -72,21 +72,7 @@ class EventDetailPreviewParameterProvider : PreviewParameterProvider<EventDetail
             EventDetailUiState(
                 event = previewEvent(type = ShopEventType.POPUP, title = "장소명만 있는 팝업", venueShop = null, venueName = "라멘 전시장"),
             ),
-            EventDetailUiState(
-                event =
-                    previewEvent(
-                        type = ShopEventType.STORE_RENEWAL,
-                        title = "이리에 라멘 리뉴얼 오픈",
-                        description = "",
-                        endDate = null,
-                        imageUrls =
-                            listOf(
-                                "https://picsum.photos",
-                                "https://picsum.photos",
-                                "https://picsum.photos",
-                            ),
-                    ),
-            ),
+
             EventDetailUiState(
                 event =
                     previewEvent(

@@ -41,7 +41,6 @@ internal data class ShopEventResponse(
 ) {
     fun toDomain(): ShopEvent {
         val type = ShopEventType.from(eventType)
-        val finalEndDate = if (type == ShopEventType.STORE_RENEWAL) null else endDate
 
         return ShopEvent(
             id = id,
@@ -49,7 +48,7 @@ internal data class ShopEventResponse(
             title = title,
             description = description,
             startDate = startDate,
-            endDate = finalEndDate,
+            endDate = endDate,
             sourceUrl = sourceUrl,
             isToday = isToday,
             isVenue = isVenue,

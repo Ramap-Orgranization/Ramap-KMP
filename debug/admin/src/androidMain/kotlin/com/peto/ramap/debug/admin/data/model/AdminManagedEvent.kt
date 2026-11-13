@@ -19,12 +19,6 @@ internal data class AdminManagedEvent(
     val effectiveEndDate: String?
         get() =
             when (eventType) {
-                "store_renewal" ->
-                    LocalDate
-                        .parse(startDate)
-                        .plusMonths(1)
-                        .minusDays(1)
-                        .toString()
                 "new_menu" -> LocalDate.parse(startDate).plusDays(6).toString()
                 else -> endDate
             }
@@ -40,6 +34,6 @@ internal data class AdminManagedEvent(
     fun isSoldOutOn(today: LocalDate): Boolean = occursOn(today) && today.toString() in soldOutDates
 
     private companion object {
-        val NON_STATUS_EVENT_TYPES = setOf("new_menu", "store_renewal")
+        val NON_STATUS_EVENT_TYPES = setOf("new_menu")
     }
 }

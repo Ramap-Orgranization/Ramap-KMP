@@ -12,12 +12,7 @@ import kotlin.test.assertTrue
 class AdminManagedEventTest {
     private val today = LocalDate.parse("2026-10-11")
 
-    @Test
-    fun `renewal remains editable for one month including month end boundaries`() {
-        assertTrue(event("renewal", "2026-09-29", null, "store_renewal").isManageableOn(today))
-        assertFalse(event("renewal", "2026-09-11", null, "store_renewal").isManageableOn(today))
-        assertEquals("2026-02-27", event("renewal", "2026-01-31", null, "store_renewal").effectiveEndDate)
-    }
+
 
     @Test
     fun `legacy new menu with no end expires after seven days`() {

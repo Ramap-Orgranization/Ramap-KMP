@@ -61,7 +61,7 @@ internal fun AdminEventCard(
                 color = GrayColor.C500,
             )
             AppText(
-                text = formatDateRange(event.startDate, if (event.eventType == "store_renewal") null else event.effectiveEndDate).orEmpty(),
+                text = formatDateRange(event.startDate, event.effectiveEndDate).orEmpty(),
                 style = AppTextStyle.B4,
                 color = GrayColor.C400,
             )

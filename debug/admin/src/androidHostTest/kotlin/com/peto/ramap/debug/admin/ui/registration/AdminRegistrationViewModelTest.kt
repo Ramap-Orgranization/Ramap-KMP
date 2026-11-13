@@ -71,14 +71,11 @@ class AdminRegistrationViewModelTest {
         }
 
     @Test
-    fun `renewal today has no end date and new menu uses seven days`() =
+    fun `new menu uses seven days`() =
         coroutinesTest {
             val viewModel = viewModel()
-            viewModel.dispatch(AdminRegistrationIntent.OnEventTypeSelected(ShopEventType.STORE_RENEWAL))
-            viewModel.dispatch(AdminRegistrationIntent.OnTodaySelected)
-            runCurrent()
-            assertNull(viewModel.uiState.value.selectedEndDate)
             viewModel.dispatch(AdminRegistrationIntent.OnEventTypeSelected(ShopEventType.NEW_MENU))
+            viewModel.dispatch(AdminRegistrationIntent.OnTodaySelected)
             runCurrent()
             assertEquals("2026-10-17", viewModel.uiState.value.selectedEndDate)
         }

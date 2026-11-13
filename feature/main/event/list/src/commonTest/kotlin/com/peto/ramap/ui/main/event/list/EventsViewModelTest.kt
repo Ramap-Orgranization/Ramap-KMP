@@ -222,8 +222,6 @@ class EventsViewModelTest {
                             event("summer-today", ShopEventType.SUMMER_LIMITED, isToday = true),
                             event("summer-upcoming", ShopEventType.SUMMER_LIMITED),
                             event("new-menu-upcoming", ShopEventType.NEW_MENU),
-                            event("renewal-today", ShopEventType.STORE_RENEWAL, isToday = true),
-                            event("renewal-upcoming", ShopEventType.STORE_RENEWAL),
                         ),
                 )
             val viewModel = eventsViewModel(repository)
@@ -237,13 +235,13 @@ class EventsViewModelTest {
                     .map { it.id },
             )
             assertEquals(
-                listOf("summer-upcoming", "new-menu-upcoming", "renewal-upcoming"),
+                listOf("summer-upcoming", "new-menu-upcoming"),
                 viewModel.uiState.value.upcomingEvents
                     .flatten()
                     .map { it.id },
             )
             assertEquals(
-                listOf("renewal-today"),
+                emptyList(),
                 viewModel.uiState.value.ongoingEvents
                     .flatten()
                     .map { it.id },

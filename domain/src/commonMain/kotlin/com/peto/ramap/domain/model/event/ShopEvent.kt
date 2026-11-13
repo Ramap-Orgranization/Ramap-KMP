@@ -79,7 +79,6 @@ data class ShopEvent(
 
     fun occursOn(date: LocalDate): Boolean {
         val start = LocalDate.parse(startDate)
-        if (type == ShopEventType.STORE_RENEWAL) return date == start
         val end = LocalDate.parse(endDate ?: startDate)
         return date in start..end
     }

@@ -12,7 +12,7 @@ import com.peto.ramap.domain.model.event.ShopEventType
 import kotlinx.coroutines.CompletableDeferred
 
 internal class FakeAdminRegistrationDataSource : AdminRegistrationDataSource {
-    var events = listOf(event("active"), event("ended", "2026-10-01", "2026-10-10"), event("old-renewal", "2026-08-01", null, "store_renewal"), event("upcoming", "2026-10-12", "2026-10-13"))
+    var events = listOf(event("active"), event("ended", "2026-10-01", "2026-10-10"), event("upcoming", "2026-10-12", "2026-10-13"))
     var eventsFailure: Throwable? = null
     var gate: CompletableDeferred<Unit>? = null
     var saves = 0

@@ -72,14 +72,13 @@ class EventListGroupingTest {
                 event("summer-upcoming", false, ShopEventType.SUMMER_LIMITED),
                 event("event-today", true, ShopEventType.POPUP),
                 event("new-menu-upcoming", false, ShopEventType.NEW_MENU),
-                event("renewal-upcoming", false, ShopEventType.STORE_RENEWAL),
             )
         val state = mapEventsToUiState(EventsUiState(), events)
 
         assertEquals(listOf("summer-today"), state.summerLimitedEvents.flatten().map { it.id })
         assertEquals(listOf("event-today"), state.ongoingEvents.flatten().map { it.id })
         assertEquals(
-            listOf("summer-upcoming", "new-menu-upcoming", "renewal-upcoming"),
+            listOf("summer-upcoming", "new-menu-upcoming"),
             state.upcomingEvents.flatten().map { it.id },
         )
     }

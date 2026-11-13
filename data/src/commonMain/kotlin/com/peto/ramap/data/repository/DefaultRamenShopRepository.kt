@@ -2,7 +2,6 @@ package com.peto.ramap.data.repository
 
 import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.data.datasource.shop.RamenShopDataSource
-import com.peto.ramap.data.extension.toLocalDate
 import com.peto.ramap.data.model.ShopEventParticipantResponse
 import com.peto.ramap.data.model.ShopEventResponse
 import com.peto.ramap.data.model.ShopOverviewResponse
@@ -15,10 +14,8 @@ import com.peto.ramap.domain.model.shop.SearchQuery
 import com.peto.ramap.domain.model.shop.ShopOverView
 import com.peto.ramap.domain.repository.RamenShopRepository
 import com.peto.ramap.network.execute.invokeRequest
-import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
-import kotlinx.datetime.plus
 import kotlinx.datetime.todayIn
 import kotlin.time.Clock
 
@@ -39,7 +36,6 @@ internal class DefaultRamenShopRepository(
                 .fetchEvents(eventId)
                 .singleOrNull()
                 ?.let(::toDomain)
-                ?.takeIf(::isVisibleInActiveEvents)
         }
 
     override suspend fun fetchActiveEvents(): RamapResult<List<ShopEvent>> =
@@ -47,7 +43,6 @@ internal class DefaultRamenShopRepository(
             dataSource
                 .fetchEvents(eventId = null)
                 .map(::toDomain)
-                .filter(::isVisibleInActiveEvents)
         }
 
     override suspend fun fetchEvent(eventId: String): RamapResult<ShopEvent?> =
@@ -84,10 +79,7 @@ internal class DefaultRamenShopRepository(
     }
 
     private fun activeShopEvents(responses: List<ShopEventResponse>): List<ShopEvent> =
-        responses
-            .map(::toDomain)
-            .filter(::isVisibleInActiveEvents)
-            .filterNot(::isGenericOngoingRenewal)
+        responses.map(::toDomain)
 
     private fun needsCollaborationParticipants(events: List<ShopEvent>): Boolean = events.size == 1 && events.single().type == ShopEventType.COLLAB && !events.single().isToday
 
@@ -112,35 +104,8 @@ internal class DefaultRamenShopRepository(
         val event = response.toDomain()
         val today = today()
         val isStartDateToday = event.startDate == today.toString()
-        if (event.type != ShopEventType.STORE_RENEWAL) {
-            return event.copy(isStartDateToday = isStartDateToday)
-        }
-        return event.copy(
-            isToday = isRenewalOngoingOn(event.startDate, today),
-            isStartDateToday = isStartDateToday,
-        )
+        return event.copy(isStartDateToday = isStartDateToday)
     }
-
-    private fun isRenewalOngoingOn(
-        startDate: String,
-        today: LocalDate,
-    ): Boolean {
-        val start = startDate.toLocalDate()
-        return today >= start && today < start.plus(1, DateTimeUnit.MONTH)
-    }
-
-    private fun isVisibleInActiveEvents(event: ShopEvent): Boolean {
-        if (event.type != ShopEventType.STORE_RENEWAL) return true
-        val startDate = event.startDate.toLocalDate()
-        return today() < startDate.plus(1, DateTimeUnit.MONTH)
-    }
-
-    private fun isGenericOngoingRenewal(event: ShopEvent): Boolean =
-        event.type == ShopEventType.STORE_RENEWAL &&
-            event.isToday &&
-            !event.isStartDateToday &&
-            !event.isCancelledToday &&
-            !event.isSoldOutToday
 
     private fun today(): LocalDate = Clock.System.todayIn(TimeZone.of(SEOUL_TIME_ZONE))
 

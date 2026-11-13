@@ -484,7 +484,7 @@ internal class AdminRegistrationViewModel(
             state.shopName.isBlank() ||
             state.imageOnlyTitle.isBlank() ||
             startDate == null ||
-            (state.selectedEventType != ShopEventType.STORE_RENEWAL && endDate == null)
+            endDate == null
         ) {
             showToast(Res.string.admin_registration_image_only_required)
             return
@@ -503,7 +503,7 @@ internal class AdminRegistrationViewModel(
                     title = state.imageOnlyTitle,
                     eventType = state.selectedEventType,
                     startDate = startDate,
-                    endDate = if (state.selectedEventType == ShopEventType.STORE_RENEWAL) null else endDate,
+                    endDate = endDate,
                     evidence = evidence,
                 )
                 reduce { copy(imageOnlyTitle = "", evidence = null, message = AdminRegistrationMessage.SUCCESS) }
@@ -580,7 +580,6 @@ private fun normalizedEndDate(
     endDate: String?,
 ): String? =
     when (type) {
-        ShopEventType.STORE_RENEWAL -> null
         ShopEventType.NEW_MENU -> startDate?.let { LocalDate.parse(it).plusDays(6).toString() }
         else -> endDate
     }

@@ -11,19 +11,7 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class ShopEventTest {
-    @Test
-    fun `매장 리뉴얼은 시작일부터 한 달간 진행한다`() {
-        val renewal =
-            event(
-                type = ShopEventType.STORE_RENEWAL,
-                startDate = "2024-02-28",
-                endDate = null,
-            )
 
-        assertTrue(renewal.occursOn(LocalDate(2024, 2, 28)))
-        assertFalse(renewal.occursOn(LocalDate(2024, 2, 29)))
-        assertFalse(renewal.occursOn(LocalDate(2024, 3, 1)))
-    }
 
     @Test
     fun `도메인 이미지 노출 목록은 최대 다섯 장으로 제한한다`() {

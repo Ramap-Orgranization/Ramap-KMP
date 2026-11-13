@@ -11,9 +11,7 @@ import ramap.shared.generated.resources.event_collaborator_person
 import ramap.shared.generated.resources.event_collaborator_shop
 import ramap.shared.generated.resources.event_date_event
 import ramap.shared.generated.resources.event_date_new_menu
-import ramap.shared.generated.resources.event_date_store_renewal
 import ramap.shared.generated.resources.event_detail_new_menu_title
-import ramap.shared.generated.resources.event_detail_store_renewal_title
 import ramap.shared.generated.resources.event_detail_title
 import ramap.shared.generated.resources.event_new_menu_venue
 import ramap.shared.generated.resources.event_sold_out_notice
@@ -21,12 +19,10 @@ import ramap.shared.generated.resources.event_status_cancelled
 import ramap.shared.generated.resources.event_status_sold_out
 import ramap.shared.generated.resources.event_status_today
 import ramap.shared.generated.resources.event_status_upcoming
-import ramap.shared.generated.resources.event_store_renewal_venue
 import ramap.shared.generated.resources.event_type_collab
 import ramap.shared.generated.resources.event_type_limited_menu
 import ramap.shared.generated.resources.event_type_new_menu
 import ramap.shared.generated.resources.event_type_popup
-import ramap.shared.generated.resources.event_type_store_renewal
 import ramap.shared.generated.resources.event_type_summer_limited
 import ramap.shared.generated.resources.event_venue
 import ramap.shared.generated.resources.shop_event_notice_collab_participant_today
@@ -48,8 +44,6 @@ import ramap.shared.generated.resources.shop_event_notice_participant_today
 import ramap.shared.generated.resources.shop_event_notice_participant_upcoming
 import ramap.shared.generated.resources.shop_event_notice_popup_today
 import ramap.shared.generated.resources.shop_event_notice_popup_upcoming
-import ramap.shared.generated.resources.shop_event_notice_store_renewal_today
-import ramap.shared.generated.resources.shop_event_notice_store_renewal_upcoming
 
 object ShopEventResourceMapper {
     fun detailTitle(type: ShopEventType): StringResource =
@@ -61,7 +55,6 @@ object ShopEventResourceMapper {
             -> Res.string.event_detail_title
 
             ShopEventType.NEW_MENU -> Res.string.event_detail_new_menu_title
-            ShopEventType.STORE_RENEWAL -> Res.string.event_detail_store_renewal_title
         }
 
     fun venueTitle(type: ShopEventType): StringResource =
@@ -73,7 +66,6 @@ object ShopEventResourceMapper {
             -> Res.string.event_venue
 
             ShopEventType.NEW_MENU -> Res.string.event_new_menu_venue
-            ShopEventType.STORE_RENEWAL -> Res.string.event_store_renewal_venue
         }
 
     fun dateTitle(type: ShopEventType): StringResource =
@@ -85,7 +77,6 @@ object ShopEventResourceMapper {
             -> Res.string.event_date_event
 
             ShopEventType.NEW_MENU -> Res.string.event_date_new_menu
-            ShopEventType.STORE_RENEWAL -> Res.string.event_date_store_renewal
         }
 
     fun displayEndDate(event: ShopEvent): String? = if (isStartDateBased(event.type)) event.startDate else event.endDate
@@ -112,7 +103,7 @@ object ShopEventResourceMapper {
             else -> null
         }
 
-    private fun isStartDateBased(type: ShopEventType): Boolean = type == ShopEventType.NEW_MENU || type == ShopEventType.STORE_RENEWAL
+    private fun isStartDateBased(type: ShopEventType): Boolean = type == ShopEventType.NEW_MENU
 
     fun typeLabel(type: ShopEventType): StringResource =
         when (type) {
@@ -121,7 +112,6 @@ object ShopEventResourceMapper {
             ShopEventType.LIMITED_MENU -> Res.string.event_type_limited_menu
             ShopEventType.SUMMER_LIMITED -> Res.string.event_type_summer_limited
             ShopEventType.NEW_MENU -> Res.string.event_type_new_menu
-            ShopEventType.STORE_RENEWAL -> Res.string.event_type_store_renewal
         }
 
     fun collaboratorLabel(event: ShopEvent): StringResource =
@@ -194,13 +184,6 @@ object ShopEventResourceMapper {
                         Res.string.shop_event_notice_new_menu_today
                     } else {
                         Res.string.shop_event_notice_new_menu_upcoming
-                    }
-
-                ShopEventType.STORE_RENEWAL ->
-                    if (event.isToday) {
-                        Res.string.shop_event_notice_store_renewal_today
-                    } else {
-                        Res.string.shop_event_notice_store_renewal_upcoming
                     }
             }
         return UiText(resource)

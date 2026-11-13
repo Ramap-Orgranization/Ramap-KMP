@@ -26,9 +26,7 @@ internal object AdminRegistrationPreviewStateReducer {
         val resolvedNoticeType = if (isMonthly) "full_close" else state.selectedNoticeType?.let(::noticeTypeRequestValue) ?: preview.noticeType
         val resolvedEventType = if (state.hasSelectedEventType) state.selectedEventType else resolveEventType(preview.eventType, state.selectedEventType)
         val resolvedEndDate =
-            if (!state.isOperatingNotice && resolvedEventType == ShopEventType.STORE_RENEWAL) {
-                null
-            } else if (!state.isOperatingNotice && resolvedEventType == ShopEventType.NEW_MENU) {
+            if (!state.isOperatingNotice && resolvedEventType == ShopEventType.NEW_MENU) {
                 (state.selectedStartDate ?: preview.startDate)?.let {
                     java.time.LocalDate
                         .parse(it)

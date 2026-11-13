@@ -32,15 +32,7 @@ class ShopEventResponseTest {
         assertEquals(null, event.endDate)
     }
 
-    @Test
-    fun `매장 리뉴얼 타입은 종료일을 무시하고 시작일 하루 규칙을 사용한다`() {
-        val event =
-            response(eventType = "store_renewal", endDate = "2026-08-10")
-                .toDomain()
 
-        assertEquals(ShopEventType.STORE_RENEWAL, event.type)
-        assertEquals(null, event.endDate)
-    }
 
     @Test
     fun `이벤트 이미지 경로를 허가된 공개 Storage URL로 최대 다섯 장 매핑한다`() {

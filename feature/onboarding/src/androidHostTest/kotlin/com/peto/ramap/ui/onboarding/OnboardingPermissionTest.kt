@@ -179,7 +179,7 @@ class OnboardingPermissionTest {
             onNodeWithText("건너뛰기").performClick()
             onNodeWithText("다음").performClick()
             onNodeWithText("저장한 라멘집 소식을\n알림으로 받아보세요").assertIsDisplayed()
-            onNodeWithText("로그인하면 이벤트나 임시휴무 알림을 설정하고, 다녀온 매장에 리뷰를 남길 수 있어요.").assertIsDisplayed()
+            onNodeWithText("로그인하면 이벤트나 임시휴무 알림을 설정하고\n다녀온 매장에 리뷰를 남길 수 있어요.").assertIsDisplayed()
             onNodeWithText("카카오로 시작하기").assertIsDisplayed()
             runOnIdle {
                 assertFalse(didComplete)

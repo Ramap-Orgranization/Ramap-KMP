@@ -6,7 +6,6 @@ enum class ShopEventType {
     LIMITED_MENU,
     SUMMER_LIMITED,
     NEW_MENU,
-    STORE_RENEWAL,
     ;
 
     companion object {
