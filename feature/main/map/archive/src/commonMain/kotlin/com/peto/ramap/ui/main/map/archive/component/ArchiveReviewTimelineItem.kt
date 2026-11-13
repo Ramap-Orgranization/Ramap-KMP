@@ -59,7 +59,7 @@ internal fun ArchiveReviewTimelineItem(
                         strokeWidth = 1.dp.toPx(),
                     )
                     drawCircle(
-                        color = BrandColor.Foreground,
+                        color = BrandColor.SecondPrimary,
                         radius = 3.5.dp.toPx(),
                         center = center,
                     )

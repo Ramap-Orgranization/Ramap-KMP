@@ -37,6 +37,7 @@ import com.peto.ramap.domain.model.shop.Location
 import com.peto.ramap.domain.model.shop.MapBounds
 import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.domain.model.shop.RamenShops
+import com.peto.ramap.domain.model.shop.ShopHoursFilter
 import com.peto.ramap.preview.RamenShopsPreviewParameterProvider
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
@@ -70,7 +71,7 @@ internal fun MapContent(
     onInitialLocationFocusConsumed: () -> Unit,
     onSelectedShopFocusConsumed: () -> Unit,
     onCategoryFilterToggled: (Category) -> Unit,
-    onOpenFilterToggled: () -> Unit,
+    onHoursFilterApplied: (ShopHoursFilter) -> Unit,
     onRecommendationToggled: () -> Unit,
     onRecommendationLoadRetry: () -> Unit,
     onViewportLoadRetry: () -> Unit,
@@ -122,7 +123,8 @@ internal fun MapContent(
         NavigationBackHandler(
             state = backEventState,
             isBackEnabled =
-                isBackEnabled && (clusterBalloonState.isVisible || isSearchFocused || uiState.showSearchResults || uiState.selectedShopId != null),
+                isBackEnabled &&
+                    (clusterBalloonState.isVisible || isSearchFocused || uiState.showSearchResults || uiState.selectedShopId != null),
             onBackCompleted = {
                 when {
                     clusterBalloonState.isVisible -> clusterBalloonState.dismiss()
@@ -184,6 +186,7 @@ internal fun MapContent(
                             shops = overlappingClusterShops,
                             operatingNotices = uiState.operatingNotices,
                             currentDateTime = uiState.currentDateTime,
+                            isVisitTimeSelected = uiState.isVisitTimeSelected,
                             onShopClick = { shop ->
                                 clusterBalloonState.dismiss()
                                 onShopSelected(shop, false, AnalyticsSource.MARKER)
@@ -214,7 +217,8 @@ internal fun MapContent(
             },
             onShopSelected = onShopSelected,
             onCategoryFilterToggled = onCategoryFilterToggled,
-            onOpenFilterToggled = onOpenFilterToggled,
+            onHoursFilterOpened = { clusterBalloonState.dismiss() },
+            onHoursFilterApplied = onHoursFilterApplied,
             onRecommendationToggled = onRecommendationToggled,
             onRecommendationLoadRetry = onRecommendationLoadRetry,
             onViewportLoadRetry = onViewportLoadRetry,
@@ -262,7 +266,7 @@ private fun MapContentPreview(
             onInitialLocationFocusConsumed = {},
             onSelectedShopFocusConsumed = {},
             onCategoryFilterToggled = {},
-            onOpenFilterToggled = {},
+            onHoursFilterApplied = {},
             onRecommendationToggled = {},
             onRecommendationLoadRetry = {},
             onViewportLoadRetry = {},

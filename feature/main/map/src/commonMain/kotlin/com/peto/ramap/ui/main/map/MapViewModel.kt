@@ -37,11 +37,11 @@ import com.peto.ramap.ui.main.map.contract.MapIntent.OnBookmarkedShopsToggled
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnBoundsChanged
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnCameraPositionChanged
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnCategoryFilterToggled
+import com.peto.ramap.ui.main.map.contract.MapIntent.OnHoursFilterApplied
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnInitialLocationFocusConsumed
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnLocationPermissionBlocked
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnMapTabExited
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnMyLocationChanged
-import com.peto.ramap.ui.main.map.contract.MapIntent.OnOpenFilterToggled
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnOperatingNoticesRefreshRequested
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnQueryChanged
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnRecentSearchDeleted
@@ -243,7 +243,7 @@ class MapViewModel(
             is OnRecentSearchDeleted -> mapSearchHistoryStorage.removeRecentSearch(intent.query)
             OnRecentSearchesCleared -> mapSearchHistoryStorage.clearRecentSearches()
             is OnCategoryFilterToggled -> toggleCategoryFilter(intent.category)
-            OnOpenFilterToggled -> toggleOpenFilter()
+            is OnHoursFilterApplied -> updateFilter(currentState.filters.copy(hours = intent.hours))
             MapIntent.OnRecommendationToggled -> toggleRecommendation()
             MapIntent.OnRecommendationLoadRetry -> loadRecommendations()
             else -> return false
@@ -455,7 +455,7 @@ class MapViewModel(
             copy(
                 search = search.updateInput(query),
                 placeFocusRequest = null,
-                filters = if (clearFilters) filters.clear() else filters,
+                filters = if (clearFilters) RamenShopFilter(hours = filters.hours) else filters,
                 isBookmarkedView = if (clearFilters) false else isBookmarkedView,
             )
         }
@@ -472,11 +472,6 @@ class MapViewModel(
             }
         mapAnalytics.logCategoryFilterToggled(category, !isCategorySelected)
         updateFilter(nextFilter)
-    }
-
-    private fun toggleOpenFilter() {
-        val filter = currentState.filters
-        updateFilter(filter.copy(isOpenSelected = !filter.isOpenSelected))
     }
 
     private fun toggleRecommendation() {
@@ -580,14 +575,22 @@ class MapViewModel(
 
     private fun updateFilter(filter: RamenShopFilter) {
         val now = Clock.System.now().toLocalDateTime(TimeZone.of(SEOUL_TIME_ZONE))
-        val selectedShop = currentState.selectedShop
-        val shopToMatch = if (currentState.isRecommendationEnabled) selectedShop else selectedShop?.let { currentState.shops[it.id] }
+        val state = currentState
+        val selectedShop = state.selectedShop
+        val shopToMatch =
+            selectedShop?.let {
+                when {
+                    state.isRecommendationEnabled -> it
+                    filter.hours != state.filters.hours -> state.search.results[it.id] ?: state.shops[it.id] ?: it
+                    else -> state.shops[it.id]
+                }
+            }
         val isSelectedShopFilteredOut =
             selectedShop != null &&
                 shopToMatch?.isOpened(
                     filter,
                     now,
-                    currentState.operatingNotices,
+                    state.operatingNotices,
                 ) != true
         if (isSelectedShopFilteredOut) {
             dismissShopDetail()
@@ -598,8 +601,13 @@ class MapViewModel(
 
     private fun showEmptyFilterResultMessageIfNeeded(includeSelectedShop: Boolean = true) {
         val state = currentState
-        val isFilterActiveAndNoVisibleShop = !state.filters.isEmpty() && !state.markerShops(includeSelectedShop).hasVisibleShopIn(state.bounds)
-        if (isFilterActiveAndNoVisibleShop) {
+        val isEmpty =
+            if (state.hasHoursFilter) {
+                state.hoursFilterResultCount(state.filters.hours, includeSelectedShop) == 0
+            } else {
+                state.filters.isNotEmpty() && !state.markerShops(includeSelectedShop).hasVisibleShopIn(state.bounds)
+            }
+        if (isEmpty) {
             showEmptyFilteredResultToast()
         }
     }
@@ -661,7 +669,7 @@ class MapViewModel(
             if (shops.isEmpty() && state.hasActiveFilters && !search.hasSearchFailure) {
                 showEmptyFilteredResultToast()
             }
-            if (state.isRecommendationEnabled) return
+            if (state.isRecommendationEnabled || state.hasHoursFilter) return
 
             shops
                 .singleShopOrNull()

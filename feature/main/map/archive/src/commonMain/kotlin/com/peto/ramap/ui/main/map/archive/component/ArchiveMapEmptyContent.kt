@@ -65,7 +65,7 @@ internal fun ArchiveMapEmptyContent(
             AppButton(
                 text = stringResource(Res.string.find_visited_shop),
                 onClick = onFindVisitedShop,
-                backgroundColor = BrandColor.Fill,
+                backgroundColor = BrandColor.Primary,
                 textColor = BrandColor.OnFill,
                 icon = Res.drawable.ic_notice_search,
                 iconTint = BrandColor.OnFill,

@@ -148,7 +148,7 @@ private fun ArchiveLoadingDots(transition: InfiniteTransition) {
                         .graphicsLayer {
                             alpha = 0.3f + 0.7f * progress
                             translationY = -2.dp.toPx() * progress
-                        }.background(color = BrandColor.Fill, shape = CircleShape),
+                        }.background(color = BrandColor.Primary, shape = CircleShape),
             )
         }
     }

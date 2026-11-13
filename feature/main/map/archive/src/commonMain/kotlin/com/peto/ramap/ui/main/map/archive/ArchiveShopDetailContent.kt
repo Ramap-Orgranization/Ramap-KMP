@@ -153,11 +153,11 @@ private fun ArchiveDetailTabs(
                         modifier =
                             Modifier
                                 .background(
-                                    color = if (isSelected) BrandColor.Fill else Color.Transparent,
+                                    color = if (isSelected) BrandColor.Primary else Color.Transparent,
                                     shape = RoundedCornerShape(10.dp),
                                 ).border(
                                     width = 1.dp,
-                                    color = if (isSelected) BrandColor.Foreground else GrayColor.C100,
+                                    color = if (isSelected) BrandColor.SecondPrimary else GrayColor.C100,
                                     shape = RoundedCornerShape(10.dp),
                                 ).semantics { this.selected = isSelected }
                                 .noRippleClickable(
@@ -181,7 +181,7 @@ private fun ArchiveDetailTabs(
                                     AppText(
                                         text = stringResource(Res.string.my_reviews_filter_number, reviewCount),
                                         style = AppTextStyle.B1,
-                                        color = if (isSelected) BrandColor.OnFill else BrandColor.Foreground,
+                                        color = if (isSelected) BrandColor.OnFill else BrandColor.SecondPrimary,
                                         modifier = Modifier.padding(top = 2.dp),
                                     )
                                 }

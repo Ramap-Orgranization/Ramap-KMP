@@ -32,6 +32,9 @@ import com.peto.ramap.ui.main.map.config.MapInteractionConfig
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
+import org.jetbrains.compose.resources.stringResource
+import ramap.shared.generated.resources.Res
+import ramap.shared.generated.resources.map_hours_filter_visit_available
 import kotlin.time.Clock
 
 @Composable
@@ -41,6 +44,7 @@ internal fun ClusterShopList(
     currentDateTime: LocalDateTime,
     onShopClick: (RamenShop) -> Unit,
     modifier: Modifier = Modifier,
+    isVisitTimeSelected: Boolean = false,
 ) {
     Column(
         modifier = modifier.fillMaxWidth(),
@@ -51,6 +55,7 @@ internal fun ClusterShopList(
                 shop = shop,
                 currentDateTime = currentDateTime,
                 operatingNotices = operatingNotices,
+                isVisitTimeSelected = isVisitTimeSelected,
                 onClick = { onShopClick(shop) },
             )
             if (index != shops.lastIndex) {
@@ -65,6 +70,7 @@ private fun ClusterShopItem(
     shop: RamenShop,
     currentDateTime: LocalDateTime,
     operatingNotices: List<OperatingNotice>,
+    isVisitTimeSelected: Boolean,
     onClick: () -> Unit,
 ) {
     Row(
@@ -92,7 +98,14 @@ private fun ClusterShopItem(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
-            shop.businessHoursStatus(currentDateTime, operatingNotices)?.let { status ->
+            val status = if (isVisitTimeSelected) null else shop.businessHoursStatus(currentDateTime, operatingNotices)
+            if (isVisitTimeSelected) {
+                AppText(
+                    text = stringResource(Res.string.map_hours_filter_visit_available),
+                    style = AppTextStyle.B2,
+                    color = ChromaticColor.Green500,
+                )
+            } else if (status != null) {
                 val statusText = BusinessHoursStatusResourceMapper.status(status).format()
                 val highlightedLabel = BusinessHoursStatusResourceMapper.noticeLabel(status)?.format()
                 if (highlightedLabel == null) {

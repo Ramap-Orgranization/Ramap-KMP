@@ -1,9 +1,16 @@
+import com.android.build.api.dsl.KotlinMultiplatformAndroidHostTestCompilation
+
 plugins {
     id("ramap.kmp.feature")
     kotlin("native.cocoapods")
 }
 
 kotlin {
+    android {
+        compilations.withType(KotlinMultiplatformAndroidHostTestCompilation::class.java).configureEach {
+            isIncludeAndroidResources = true
+        }
+    }
     cocoapods {
         summary = "Map feature for Ramap"
         homepage = "https://github.com/chanho0908/Ramap-kmp"
@@ -33,5 +40,10 @@ kotlin {
             implementation(libs.play.services.location)
             implementation(libs.compose.ui.tooling.preview)
         }
+    }
+    sourceSets.androidHostTest.dependencies {
+        implementation(libs.robolectric)
+        implementation(libs.compose.ui.test)
+        implementation(libs.androidx.activity.compose)
     }
 }

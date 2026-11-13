@@ -25,10 +25,10 @@ import com.peto.ramap.ui.main.map.contract.MapIntent.OnBookmarkedShopsToggled
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnBoundsChanged
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnCameraPositionChanged
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnCategoryFilterToggled
+import com.peto.ramap.ui.main.map.contract.MapIntent.OnHoursFilterApplied
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnInitialLocationFocusConsumed
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnLocationPermissionBlocked
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnMyLocationChanged
-import com.peto.ramap.ui.main.map.contract.MapIntent.OnOpenFilterToggled
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnOperatingNoticesRefreshRequested
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnQueryChanged
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnRecentSearchDeleted
@@ -164,7 +164,7 @@ fun MapRoute(
                 selectedShopFocusRequest?.let { viewModel.dispatch(OnSelectedShopFocusConsumed(it)) }
             },
             onCategoryFilterToggled = { viewModel.dispatch(OnCategoryFilterToggled(it)) },
-            onOpenFilterToggled = { viewModel.dispatch(OnOpenFilterToggled) },
+            onHoursFilterApplied = { viewModel.dispatch(OnHoursFilterApplied(it)) },
             onRecommendationToggled = { viewModel.dispatch(MapIntent.OnRecommendationToggled) },
             onRecommendationLoadRetry = { viewModel.dispatch(MapIntent.OnRecommendationLoadRetry) },
             onViewportLoadRetry = { viewModel.dispatch(OnViewportLoadRetry) },

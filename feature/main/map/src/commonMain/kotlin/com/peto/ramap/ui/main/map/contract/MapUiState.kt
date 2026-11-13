@@ -6,6 +6,7 @@ import com.peto.ramap.domain.model.shop.MapBounds
 import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.domain.model.shop.RamenShopFilter
 import com.peto.ramap.domain.model.shop.RamenShops
+import com.peto.ramap.domain.model.shop.ShopHoursFilter
 import com.peto.ramap.ui.loading.LoadState
 import com.peto.ramap.ui.loading.LoadableState
 import com.peto.ramap.ui.main.map.model.CameraPosition
@@ -87,6 +88,12 @@ data class MapUiState(
     val hasActiveFilters: Boolean
         get() = isRecommendationEnabled || isBookmarkedView || filters.isNotEmpty()
 
+    val hasHoursFilter: Boolean
+        get() = filters.hours != ShopHoursFilter.All
+
+    val isVisitTimeSelected: Boolean
+        get() = filters.hours is ShopHoursFilter.VisitTime
+
     val isSearchLoading: Boolean
         get() = loadState.isLoading(MapLoadKey.Search)
 
@@ -159,18 +166,24 @@ data class MapUiState(
                 ?.takeIf { shop ->
                     includeSelectedShop &&
                         (!isRecommendationEnabled || (shop.isVisible && shop.isRecommended)) &&
-                        (!filters.isOpenSelected || shop.isOpenAt(currentDateTime, operatingNotices))
+                        shop.isOpened(filters, currentDateTime, operatingNotices)
                 }?.let { shop -> mapOf(shop.id to shop) }
                 .orEmpty()
 
-        val markerShops =
-            if (search.showsShopResults) {
-                RamenShops(filteredSearchResults + selectedMarkerShop)
-            } else {
-                RamenShops(filteredShops + selectedMarkerShop)
-            }
+        val shopsToShow = if (search.showsShopResults) filteredSearchResults else filteredShops
+        return RamenShops(shopsToShow + selectedMarkerShop)
+    }
 
-        return markerShops.filterByOpenStatus(filters, currentDateTime, operatingNotices)
+    internal fun hoursFilterResultCount(
+        hours: ShopHoursFilter,
+        includeSelectedShop: Boolean = true,
+    ): Int {
+        val preview = if (hours == filters.hours) this else copy(filters = filters.copy(hours = hours))
+        return when {
+            search.showsShopResults -> preview.searchResultShops.size
+            isRecommendationEnabled -> recommendedShops?.let(preview::applyShopFilters)?.size ?: 0
+            else -> preview.markerShops(includeSelectedShop).values.count { bounds.contains(it.location) }
+        }
     }
 
     /**
@@ -179,6 +192,7 @@ data class MapUiState(
     val showSearchResults: Boolean
         get() {
             if (!search.showsShopResults || search.isResultsDismissed) return false
+            if (hasHoursFilter && search.results.isNotEmpty()) return true
 
             val minimumShopCount = if (isRecommendationEnabled) 1 else 2
             return search.places.isNotEmpty() || searchResultShops.size >= minimumShopCount

@@ -55,6 +55,7 @@ import com.peto.ramap.designsystem.button.BookmarkedFilterButton
 import com.peto.ramap.domain.model.place.PlaceSearchResult
 import com.peto.ramap.domain.model.shop.Category
 import com.peto.ramap.domain.model.shop.RamenShop
+import com.peto.ramap.domain.model.shop.ShopHoursFilter
 import com.peto.ramap.theme.SurfaceColor
 import com.peto.ramap.ui.main.map.contract.MapUiState
 import kotlinx.coroutines.launch
@@ -84,7 +85,8 @@ internal fun SearchContent(
     onRecentlyViewedShopSelected: (RamenShop) -> Unit,
     onShopSelected: (RamenShop, Boolean, AnalyticsSource) -> Unit,
     onCategoryFilterToggled: (Category) -> Unit,
-    onOpenFilterToggled: () -> Unit,
+    onHoursFilterOpened: () -> Unit,
+    onHoursFilterApplied: (ShopHoursFilter) -> Unit,
     onRecommendationToggled: () -> Unit,
     onRecommendationLoadRetry: () -> Unit,
     onViewportLoadRetry: () -> Unit,
@@ -183,11 +185,6 @@ internal fun SearchContent(
                         onClick = onRecommendationToggled,
                         modifier = filterButtonModifier,
                     )
-                    OpenFilterButton(
-                        isActive = uiState.filters.isOpenSelected,
-                        onClick = onOpenFilterToggled,
-                        modifier = filterButtonModifier,
-                    )
                     BookmarkedFilterButton(
                         isActive = uiState.isBookmarkedView,
                         onClick = onBookmarkedShopsToggle,
@@ -218,6 +215,10 @@ internal fun SearchContent(
             } else {
                 MenuCategoryFilterRow(
                     selectedFilter = uiState.filters,
+                    now = uiState.currentDateTime,
+                    hoursFilterResultCount = { uiState.hoursFilterResultCount(it) },
+                    onHoursFilterOpened = onHoursFilterOpened,
+                    onHoursFilterApplied = onHoursFilterApplied,
                     onCategoryClick = onCategoryFilterToggled,
                 )
 
@@ -281,6 +282,7 @@ internal fun SearchContent(
                                     shops = uiState.searchResultShops,
                                     operatingNotices = uiState.operatingNotices,
                                     currentDateTime = uiState.currentDateTime,
+                                    isVisitTimeSelected = uiState.isVisitTimeSelected,
                                     onShopClick = { onShopSelected(it, true, AnalyticsSource.SEARCH_RESULT) },
                                 )
                             }

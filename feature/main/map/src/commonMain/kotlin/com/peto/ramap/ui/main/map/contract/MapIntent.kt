@@ -7,6 +7,7 @@ import com.peto.ramap.domain.model.shop.Category
 import com.peto.ramap.domain.model.shop.Location
 import com.peto.ramap.domain.model.shop.MapBounds
 import com.peto.ramap.domain.model.shop.RamenShop
+import com.peto.ramap.domain.model.shop.ShopHoursFilter
 import com.peto.ramap.ui.base.Intent
 import com.peto.ramap.ui.main.map.model.CameraPosition
 import com.peto.ramap.ui.main.map.model.PlaceFocusRequest
@@ -92,7 +93,9 @@ sealed interface MapIntent : Intent {
         val category: Category,
     ) : MapIntent
 
-    data object OnOpenFilterToggled : MapIntent
+    data class OnHoursFilterApplied(
+        val hours: ShopHoursFilter,
+    ) : MapIntent
 
     data object OnRecommendationToggled : MapIntent
 
