@@ -55,7 +55,7 @@ class ShopSelectionViewModelTest {
             viewModel.dispatch(ShopSelectionIntent.Complete)
             viewModel.dispatch(ShopSelectionIntent.ToggleBookmark("unknown"))
             runCurrent()
-            assertFalse(storage.completed)
+            assertEquals(null, storage.selectionCount)
             assertTrue(store.bookmarkUpdateRequests.isEmpty())
             assertEquals(0, login.signInWithKakaoCallCount + login.signInWithAppleCallCount)
         }
@@ -71,15 +71,16 @@ class ShopSelectionViewModelTest {
             runCurrent()
             assertTrue(viewModel.uiState.value.canComplete)
             assertEquals(setOf("shop-1", "shop-2", "shop-3"), store.bookmarkedShopIds.value)
-            assertFalse(storage.completed)
+            assertEquals(null, storage.selectionCount)
 
             val reopened = createViewModel(store = store, storage = storage)
             runCurrent()
             assertEquals(3, reopened.uiState.value.bookmarks.savedCount)
             reopened.sideEffect.test {
                 reopened.dispatch(ShopSelectionIntent.Complete)
-                assertEquals(ShopSelectionSideEffect.Completed, awaitItem())
-                assertTrue(storage.completed)
+                assertEquals(ShopSelectionSideEffect.Completed(3), awaitItem())
+                assertEquals(3, storage.selectionCount)
+                assertFalse(storage.completed)
             }
         }
 
@@ -119,7 +120,7 @@ class ShopSelectionViewModelTest {
                 assertEquals(2, viewModel.uiState.value.bookmarks.savedCount)
                 assertFalse("shop-3" in viewModel.uiState.value.bookmarks)
                 assertFalse(viewModel.uiState.value.canComplete)
-                assertFalse(storage.completed)
+                assertEquals(null, storage.selectionCount)
 
                 store.bookmarkUpdateError = null
                 viewModel.dispatch(ShopSelectionIntent.ToggleBookmark("shop-3"))
@@ -165,7 +166,7 @@ class ShopSelectionViewModelTest {
             runCurrent()
             assertEquals(3, viewModel.uiState.value.bookmarks.savedCount)
             assertFalse(viewModel.uiState.value.canComplete)
-            assertFalse(storage.completed)
+            assertEquals(null, storage.selectionCount)
             pending.complete(Unit)
             runCurrent()
             assertEquals(2, viewModel.uiState.value.bookmarks.savedCount)
@@ -173,12 +174,11 @@ class ShopSelectionViewModelTest {
         }
 
     @Test
-    fun `시작하기 실패는 오류 토스트 한 번과 선택 유지로 안내하고 재시도할 수 있다`() =
+    fun `선택 기록 저장 실패는 오류 토스트 한 번과 선택 유지로 안내하고 재시도할 수 있다`() =
         coroutinesTest {
             val store = FakePersonalizationRepository(Personalization(bookmarkedShopIds = shops.keys))
-            val storage = FakeOnboardingStorage().apply { completionFailure = IllegalStateException() }
-            val analytics = FakeShopSelectionAnalytics()
-            val viewModel = createViewModel(store = store, storage = storage, analytics = analytics)
+            val storage = FakeOnboardingStorage().apply { selectionFailure = IllegalStateException() }
+            val viewModel = createViewModel(store = store, storage = storage)
             runCurrent()
             viewModel.sideEffect.test {
                 repeat(2) { viewModel.dispatch(ShopSelectionIntent.Complete) }
@@ -188,32 +188,28 @@ class ShopSelectionViewModelTest {
                 )
                 runCurrent()
                 expectNoEvents()
-                assertFalse(storage.completed)
+                assertEquals(null, storage.selectionCount)
                 assertTrue(viewModel.uiState.value.canComplete)
                 assertEquals(shops.size, viewModel.uiState.value.bookmarks.savedCount)
-                storage.completionFailure = null
+                storage.selectionFailure = null
                 viewModel.dispatch(ShopSelectionIntent.Complete)
-                assertEquals(ShopSelectionSideEffect.Completed, awaitItem())
-                assertTrue(storage.completed)
+                assertEquals(ShopSelectionSideEffect.Completed(shops.size), awaitItem())
+                assertEquals(shops.size, storage.selectionCount)
             }
-            assertEquals(
-                listOf("finish_requested:4", "finish_failed:4", "finish_requested:4", "completed:4"),
-                analytics.events.filter { it.startsWith("finish_") || it.startsWith("completed") },
-            )
         }
 
     @Test
-    fun `시작하기 작업 취소는 오류 토스트나 완료 이벤트를 보내지 않는다`() =
+    fun `선택 기록 저장 취소는 오류 토스트나 완료 이벤트를 보내지 않는다`() =
         coroutinesTest {
             val store = FakePersonalizationRepository(Personalization(bookmarkedShopIds = shops.keys))
-            val storage = FakeOnboardingStorage().apply { completionFailure = CancellationException("Completion cancelled") }
+            val storage = FakeOnboardingStorage().apply { selectionFailure = CancellationException("Selection cancelled") }
             val viewModel = createViewModel(store = store, storage = storage)
             runCurrent()
             viewModel.sideEffect.test {
                 viewModel.dispatch(ShopSelectionIntent.Complete)
                 runCurrent()
                 expectNoEvents()
-                assertFalse(storage.completed)
+                assertEquals(null, storage.selectionCount)
                 assertTrue(viewModel.uiState.value.canComplete)
             }
         }
@@ -240,11 +236,11 @@ class ShopSelectionViewModelTest {
         }
 
     @Test
-    fun `완료 기록 저장 중에는 선택 변경을 막고 성공 이벤트는 한 번만 보낸다`() =
+    fun `선택 기록 저장 중에는 선택 변경을 막고 성공 이벤트는 한 번만 보낸다`() =
         coroutinesTest {
             val store = FakePersonalizationRepository(Personalization(bookmarkedShopIds = shops.keys))
             val pending = CompletableDeferred<Unit>()
-            val storage = FakeOnboardingStorage().apply { pendingCompletion = pending }
+            val storage = FakeOnboardingStorage().apply { pendingSelection = pending }
             val viewModel = createViewModel(store = store, storage = storage)
             runCurrent()
             viewModel.sideEffect.test {
@@ -255,7 +251,7 @@ class ShopSelectionViewModelTest {
                 assertTrue(store.bookmarkUpdateRequests.isEmpty())
                 expectNoEvents()
                 pending.complete(Unit)
-                assertEquals(ShopSelectionSideEffect.Completed, awaitItem())
+                assertEquals(ShopSelectionSideEffect.Completed(shops.size), awaitItem())
                 viewModel.dispatch(ShopSelectionIntent.Complete)
                 runCurrent()
                 expectNoEvents()

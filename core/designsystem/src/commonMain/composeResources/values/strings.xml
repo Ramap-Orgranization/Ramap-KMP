@@ -663,9 +663,12 @@
     <string name="onboarding_permission_notice">* 선택 권한을 허용하지 않아도 라멥을 이용할 수 있어요.</string>
     <string name="onboarding_permission_confirm">다음</string>
     <string name="onboarding_shop_title">가보고 싶은 라멘집\n3곳 이상을 저장해 주세요</string>
-    <string name="onboarding_shop_confirm">시작하기</string>
+    <string name="onboarding_shop_confirm">다음</string>
     <string name="onboarding_shop_empty">매장 이름으로 검색해 보세요.</string>
     <string name="onboarding_completion_failure">시작하지 못했어요. 다시 시도해 주세요.</string>
+    <string name="onboarding_login_title">저장한 라멘집 소식을\n알림으로 받아보세요</string>
+    <string name="onboarding_login_benefit">로그인하면 이벤트나 임시휴무 알림을 설정하고\n다녀온 매장에 리뷰를 남길 수 있어요.</string>
+    <string name="onboarding_login_continue_as_guest">로그인 없이 시작하기 -&gt;</string>
     <string name="onboarding_shop_load_failure_title">매장을 불러오지 못했어요</string>
     <string name="onboarding_shop_load_failure_description">잠시 후 다시 시도해 주세요.</string>
     <string name="onboarding_guide_next">다음</string>

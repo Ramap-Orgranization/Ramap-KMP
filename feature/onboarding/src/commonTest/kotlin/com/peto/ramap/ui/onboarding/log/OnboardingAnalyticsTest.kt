@@ -1,5 +1,6 @@
 package com.peto.ramap.ui.onboarding.log
 
+import app.cash.turbine.test
 import com.peto.ramap.analytics.AnalyticsTracker
 import com.peto.ramap.coroutinesTest
 import com.peto.ramap.domain.model.personalization.Personalization
@@ -18,11 +19,14 @@ import com.peto.ramap.fake.FakeShopSuggestionsRepository
 import com.peto.ramap.platform.permission.NotificationPermissionOutcome
 import com.peto.ramap.platform.storage.onboarding.OnboardingStorage
 import com.peto.ramap.ui.onboarding.OnboardingViewModel
+import com.peto.ramap.ui.onboarding.contract.OnboardingIntent
+import com.peto.ramap.ui.onboarding.contract.OnboardingStep
 import com.peto.ramap.ui.onboarding.di.onboardingModule
 import com.peto.ramap.ui.onboarding.guide.log.OnboardingAnalyticsStage
 import com.peto.ramap.ui.onboarding.permission.contract.OnboardingPermission
 import com.peto.ramap.ui.onboarding.shopselection.ShopSelectionViewModel
 import com.peto.ramap.ui.onboarding.shopselection.contract.ShopSelectionIntent
+import com.peto.ramap.ui.onboarding.shopselection.contract.ShopSelectionSideEffect
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runCurrent
 import org.koin.core.parameter.parametersOf
@@ -60,13 +64,22 @@ class OnboardingAnalyticsTest {
                 runCurrent()
                 val selection = application.koin.get<ShopSelectionViewModel> { parametersOf(onboarding.analytics) }
                 runCurrent()
-                selection.dispatch(ShopSelectionIntent.Complete)
+                selection.sideEffect.test {
+                    selection.dispatch(ShopSelectionIntent.Complete)
+                    val effect = awaitItem() as ShopSelectionSideEffect.Completed
+                    onboarding.dispatch(OnboardingIntent.ShopSelectionCompleted(effect.savedShopCount))
+                    runCurrent()
+                }
+                assertFalse(tracker.events.any { it.name == "onboarding_completed" })
+                onboarding.analytics.viewStage(OnboardingAnalyticsStage.Login)
+                onboarding.dispatch(OnboardingIntent.LoginStepCompleted)
                 runCurrent()
 
                 val started = tracker.events.single { it.name == "onboarding_started" }.params()
                 val completed = tracker.events.single { it.name == "onboarding_completed" }.params()
                 assertEquals(started["attempt_id"], completed["attempt_id"])
                 assertEquals(3, completed["saved_count"])
+                assertEquals("login", completed["stage"])
             } finally {
                 application.close()
             }
@@ -77,21 +90,22 @@ class OnboardingAnalyticsTest {
         val tracker = FakeAnalyticsTracker()
         val analytics = OnboardingAnalytics(tracker)
 
-        analytics.start(resumesAfterPermissions = true)
+        analytics.start(OnboardingStep.Guide)
         analytics.viewStage(OnboardingAnalyticsStage.NotificationMenu)
         analytics.viewStage(OnboardingAnalyticsStage.NotificationMenu)
         analytics.viewStage(OnboardingAnalyticsStage.NotificationTypes)
         analytics.viewStage(OnboardingAnalyticsStage.NotificationMenu)
         analytics.viewStage(OnboardingAnalyticsStage.ReviewMap)
         analytics.viewStage(OnboardingAnalyticsStage.ShopSelection)
+        analytics.viewStage(OnboardingAnalyticsStage.Login)
         analytics.shopGoalReached(3)
         analytics.shopGoalReached(4)
         analytics.completed(4)
         analytics.backgrounded()
 
         val views = tracker.events.filter { it.name == "onboarding_stage_viewed" }.map { it.params() }
-        assertEquals(listOf("notification_menu", "notification_types", "notification_menu", "review_map", "shop_selection"), views.map { it["stage"] })
-        assertEquals(listOf(1, 2, 2, 3, 3), views.map { it["guide_pages_viewed"] })
+        assertEquals(listOf("notification_menu", "notification_types", "notification_menu", "review_map", "shop_selection", "login"), views.map { it["stage"] })
+        assertEquals(listOf(1, 2, 2, 3, 3, 3), views.map { it["guide_pages_viewed"] })
         assertEquals(1, tracker.events.count { it.name == "onboarding_shop_goal_reached" })
         assertEquals("onboarding_completed", tracker.events.last().name)
         assertEquals(
@@ -109,7 +123,7 @@ class OnboardingAnalyticsTest {
         val tracker = FakeAnalyticsTracker()
         val analytics = OnboardingAnalytics(tracker)
 
-        analytics.start(resumesAfterPermissions = false)
+        analytics.start(OnboardingStep.PermissionGuide)
         analytics.viewStage(OnboardingAnalyticsStage.PermissionGuide)
         analytics.permissionRequested(OnboardingPermission.Notification)
         analytics.backgrounded()

@@ -180,7 +180,7 @@ class ShopSelectionPaginationTest {
         }
 
     @Test
-    fun `온보딩을 완료하면 진행 중인 페이지 조회를 취소하고 추가 요청을 막는다`() =
+    fun `매장 선택을 완료하면 진행 중인 페이지 조회를 취소하고 추가 요청을 막는다`() =
         coroutinesTest {
             val suggestions = pagedRepository()
             val store = FakePersonalizationRepository(Personalization(bookmarkedShopIds = setOf("shop-1", "shop-2", "shop-4")))
@@ -192,7 +192,7 @@ class ShopSelectionPaginationTest {
             runCurrent()
             viewModel.sideEffect.test {
                 viewModel.dispatch(ShopSelectionIntent.Complete)
-                assertEquals(ShopSelectionSideEffect.Completed, awaitItem())
+                assertEquals(ShopSelectionSideEffect.Completed(3), awaitItem())
                 pending.complete(Unit)
                 viewModel.dispatch(ShopSelectionIntent.LoadNextPage)
                 runCurrent()
@@ -263,17 +263,5 @@ internal class FakeShopSelectionAnalytics : ShopSelectionAnalytics {
         error: RamapError?,
     ) {
         events += "bookmark_result:$enabled:$savedCount"
-    }
-
-    override fun finishRequested(savedCount: Int) {
-        events += "finish_requested:$savedCount"
-    }
-
-    override fun finishFailed(savedCount: Int) {
-        events += "finish_failed:$savedCount"
-    }
-
-    override fun completed(savedCount: Int) {
-        events += "completed:$savedCount"
     }
 }

@@ -5,6 +5,10 @@ interface OnboardingStorage {
 
     suspend fun confirmPermissionGuide()
 
+    suspend fun savedShopCount(): Int?
+
+    suspend fun saveShopSelection(savedShopCount: Int)
+
     suspend fun isOnboardingCompleted(): Boolean
 
     suspend fun completeOnboarding()

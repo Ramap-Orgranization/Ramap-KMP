@@ -6,6 +6,7 @@ import com.peto.ramap.analytics.AnalyticsTracker
 import com.peto.ramap.core.result.RamapError
 import com.peto.ramap.platform.permission.NotificationPermissionOutcome
 import com.peto.ramap.platform.permission.PermissionStatus
+import com.peto.ramap.ui.onboarding.contract.OnboardingStep
 import com.peto.ramap.ui.onboarding.guide.log.GuideAnalytics
 import com.peto.ramap.ui.onboarding.guide.log.OnboardingAnalyticsStage
 import com.peto.ramap.ui.onboarding.permission.contract.OnboardingPermission
@@ -29,10 +30,16 @@ public class OnboardingAnalytics(
     private var hasReachedShopGoal = false
     private var hasCompleted = false
 
-    public fun start(resumesAfterPermissions: Boolean) {
+    internal fun start(step: OnboardingStep) {
         if (startedAt != null) return
+        val entry =
+            when (step) {
+                OnboardingStep.PermissionGuide -> "permission_guide"
+                OnboardingStep.Guide -> "permissions_confirmed"
+                is OnboardingStep.Login -> "shop_selection_completed"
+                else -> return
+            }
         startedAt = TimeSource.Monotonic.markNow()
-        val entry = if (resumesAfterPermissions) "permissions_confirmed" else "permission_guide"
         log("onboarding_started", "entry" to entry)
     }
 
@@ -42,7 +49,7 @@ public class OnboardingAnalytics(
         val previousElapsed = stageShownAt?.elapsedNow()?.inWholeMilliseconds
         visibleStage = stage
         stageShownAt = TimeSource.Monotonic.markNow()
-        if (stage != OnboardingAnalyticsStage.PermissionGuide && stage != OnboardingAnalyticsStage.ShopSelection) {
+        if (stage.isGuidePage) {
             viewedGuides += stage
         }
         val previousStageParams =
@@ -141,11 +148,11 @@ public class OnboardingAnalytics(
         log("onboarding_shop_goal_reached", "saved_count" to savedCount)
     }
 
-    override fun finishRequested(savedCount: Int): Unit = log("onboarding_finish_requested", "saved_count" to savedCount)
+    internal fun finishRequested(savedCount: Int): Unit = log("onboarding_finish_requested", "saved_count" to savedCount)
 
-    override fun finishFailed(savedCount: Int): Unit = log("onboarding_finish_failed", "saved_count" to savedCount)
+    internal fun finishFailed(savedCount: Int): Unit = log("onboarding_finish_failed", "saved_count" to savedCount)
 
-    override fun completed(savedCount: Int) {
+    internal fun completed(savedCount: Int) {
         log("onboarding_completed", "saved_count" to savedCount)
         hasCompleted = true
     }

@@ -27,6 +27,7 @@ fun LoginButton(
     type: LoginType,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    enabled: Boolean = true,
 ) {
     val uiModel = LoginTypeUiModel.from(type)
 
@@ -38,7 +39,7 @@ fun LoginButton(
                 .clip(RoundedCornerShape(12.dp))
                 .background(uiModel.buttonBackground)
                 .border(1.dp, uiModel.buttonBorder, RoundedCornerShape(12.dp))
-                .noRippleClickable(onClick = onClick),
+                .noRippleClickable(enabled = enabled, onClick = onClick),
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically,
     ) {

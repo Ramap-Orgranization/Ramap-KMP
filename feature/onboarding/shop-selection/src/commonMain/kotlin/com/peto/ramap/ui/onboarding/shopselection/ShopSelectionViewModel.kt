@@ -229,20 +229,17 @@ public class ShopSelectionViewModel(
             loadKey = ShopSelectionLoadKey.Complete,
             policy = TaskPolicy.IgnoreNew,
         ) {
-            analytics.finishRequested(savedCount)
             try {
-                storage.completeOnboarding()
-                analytics.completed(savedCount)
+                storage.saveShopSelection(savedCount)
                 cancelTask(OBSERVE_PERSONALIZATION_TASK)
                 cancelTask(SEARCH_TASK)
                 cancelTask(SUGGESTIONS_TASK)
                 cancelTask(NEXT_PAGE_TASK)
                 reduce { copy(isCompleted = true) }
-                postSideEffect(ShopSelectionSideEffect.Completed)
+                postSideEffect(ShopSelectionSideEffect.Completed(savedCount))
             } catch (cancellation: CancellationException) {
                 throw cancellation
             } catch (exception: Exception) {
-                analytics.finishFailed(savedCount)
                 handleError(exception)
                 postSideEffect(
                     ShopSelectionSideEffect.ShowToast(

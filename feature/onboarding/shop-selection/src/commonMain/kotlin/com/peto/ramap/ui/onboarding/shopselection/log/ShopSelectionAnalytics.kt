@@ -18,10 +18,4 @@ public interface ShopSelectionAnalytics {
         savedCount: Int,
         error: RamapError? = null,
     )
-
-    fun finishRequested(savedCount: Int)
-
-    fun finishFailed(savedCount: Int)
-
-    fun completed(savedCount: Int)
 }

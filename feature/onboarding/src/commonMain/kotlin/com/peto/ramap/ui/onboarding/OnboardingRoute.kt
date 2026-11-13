@@ -28,6 +28,7 @@ import com.peto.ramap.ui.onboarding.contract.OnboardingUiState
 import com.peto.ramap.ui.onboarding.guide.OnboardingGuideRoute
 import com.peto.ramap.ui.onboarding.guide.log.OnboardingAnalyticsStage
 import com.peto.ramap.ui.onboarding.log.OnboardingAnalytics
+import com.peto.ramap.ui.onboarding.login.OnboardingLoginRoute
 import com.peto.ramap.ui.onboarding.permission.PermissionGuideContent
 import com.peto.ramap.ui.onboarding.permission.contract.OnboardingPermission
 import org.koin.compose.koinInject
@@ -66,14 +67,19 @@ fun OnboardingRoute(
     }
 
     LaunchedEffect(uiState.step, analytics) {
-        if (uiState.step == OnboardingStep.PermissionGuide) analytics.viewStage(OnboardingAnalyticsStage.PermissionGuide)
+        when (uiState.step) {
+            OnboardingStep.PermissionGuide -> analytics.viewStage(OnboardingAnalyticsStage.PermissionGuide)
+            is OnboardingStep.Login -> analytics.viewStage(OnboardingAnalyticsStage.Login)
+            else -> Unit
+        }
     }
 
-    LaunchedEffect(viewModel, lifecycleOwner, locationPermission, notificationPermission) {
+    LaunchedEffect(viewModel, lifecycleOwner, locationPermission, notificationPermission, toastManager) {
         lifecycleOwner.repeatOnLifecycle(Lifecycle.State.RESUMED) {
             viewModel.sideEffect.collect { effect ->
                 when (effect) {
                     OnboardingSideEffect.Completed -> currentOnCompleted()
+                    is OnboardingSideEffect.ShowToast -> toastManager.show(effect.data)
                     is OnboardingSideEffect.RequestPermission ->
                         when (effect.permission) {
                             OnboardingPermission.Location -> locationPermission.requestPermission()
@@ -112,8 +118,15 @@ internal fun OnboardingRouteContent(
 
         OnboardingStep.Guide ->
             OnboardingGuideRoute(
-                onCompleted = { onIntent(OnboardingIntent.ShopSelectionCompleted) },
+                onCompleted = { onIntent(OnboardingIntent.ShopSelectionCompleted(it)) },
                 analytics = analytics,
+                toastManager = toastManager,
+            )
+
+        is OnboardingStep.Login ->
+            OnboardingLoginRoute(
+                isCompleting = uiState.loadState.isLoading(OnboardingLoadKey.Complete),
+                onCompleted = { onIntent(OnboardingIntent.LoginStepCompleted) },
                 toastManager = toastManager,
             )
     }

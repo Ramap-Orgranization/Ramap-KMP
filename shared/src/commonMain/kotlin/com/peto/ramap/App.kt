@@ -118,6 +118,7 @@ fun App(
                         )
                     }
                 }
+                SignupConsentHost()
                 ToastHost(toastManager = toastManager)
             }
         }
@@ -190,7 +191,6 @@ private fun AppContent(
         }
 
         LoginGuideHost(controller = loginGuideController)
-        SignupConsentHost()
     }
 }
 

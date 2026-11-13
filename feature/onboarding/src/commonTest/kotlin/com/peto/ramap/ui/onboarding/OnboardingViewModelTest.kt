@@ -2,8 +2,15 @@ package com.peto.ramap.ui.onboarding
 
 import app.cash.turbine.test
 import com.peto.ramap.coroutinesTest
+import com.peto.ramap.domain.model.auth.LoginSessionState
+import com.peto.ramap.domain.model.personalization.Personalization
+import com.peto.ramap.domain.repository.LoginRepository
+import com.peto.ramap.domain.store.PersonalizationBootstrapState
+import com.peto.ramap.domain.store.PersonalizationStore
 import com.peto.ramap.fake.FakeAnalyticsTracker
+import com.peto.ramap.fake.FakeLoginRepository
 import com.peto.ramap.fake.FakeOnboardingStorage
+import com.peto.ramap.fake.FakePersonalizationRepository
 import com.peto.ramap.platform.permission.NotificationPermissionOutcome
 import com.peto.ramap.platform.permission.PermissionStatus
 import com.peto.ramap.platform.storage.onboarding.OnboardingStorage
@@ -32,20 +39,36 @@ class OnboardingViewModelTest {
         }
 
     @Test
-    fun `매장 선택까지 완료하면 다음 실행에서 온보딩 전체를 건너뛴다`() =
+    fun `매장 선택 뒤에는 로그인 화면을 표시하고 로그인 없이 시작하면 다음 실행에서 온보딩을 건너뛴다`() =
         coroutinesTest {
             val storage = FakeOnboardingStorage().apply { confirmed = true }
-            val viewModel = createViewModel(storage)
+            val login = FakeLoginRepository()
+            val viewModel = createViewModel(storage, login = login)
             runCurrent()
             viewModel.sideEffect.test {
-                expectNoEvents()
-                storage.completeOnboarding()
-                repeat(2) { viewModel.dispatch(OnboardingIntent.ShopSelectionCompleted) }
+                viewModel.dispatch(OnboardingIntent.LoginStepCompleted)
                 runCurrent()
-                assertEquals(OnboardingStep.Completed, viewModel.uiState.value.step)
+                expectNoEvents()
+                storage.saveShopSelection(3)
+                viewModel.dispatch(OnboardingIntent.ShopSelectionCompleted(3))
+                runCurrent()
+                assertEquals(OnboardingStep.Login(3), viewModel.uiState.value.step)
+                assertFalse(storage.completed)
+                expectNoEvents()
+            }
+
+            val resumed = createViewModel(storage, login = login)
+            runCurrent()
+            assertEquals(OnboardingStep.Login(3), resumed.uiState.value.step)
+            resumed.sideEffect.test {
+                repeat(2) { resumed.dispatch(OnboardingIntent.LoginStepCompleted) }
+                runCurrent()
+                assertEquals(OnboardingStep.Completed, resumed.uiState.value.step)
                 assertEquals(OnboardingSideEffect.Completed, awaitItem())
                 expectNoEvents()
             }
+            assertTrue(storage.completed)
+            assertEquals(0, login.signInWithKakaoCallCount + login.signInWithAppleCallCount)
 
             val reopened = createViewModel(storage)
             runCurrent()
@@ -53,6 +76,49 @@ class OnboardingViewModelTest {
             reopened.sideEffect.test {
                 assertEquals(OnboardingSideEffect.Completed, awaitItem())
                 expectNoEvents()
+            }
+        }
+
+    @Test
+    fun `선택 기록을 복원할 때 이미 로그인되어 있으면 로그인 화면 없이 완료한다`() =
+        coroutinesTest {
+            val storage = FakeOnboardingStorage().apply { selectionCount = 3 }
+            val login = FakeLoginRepository(initialSessionState = LoginSessionState.AUTHENTICATED)
+            val viewModel = createViewModel(storage, login = login)
+
+            viewModel.sideEffect.test {
+                assertEquals(OnboardingSideEffect.Completed, awaitItem())
+                assertEquals(OnboardingStep.Completed, viewModel.uiState.value.step)
+                assertTrue(storage.completed)
+            }
+        }
+
+    @Test
+    fun `로그인 단계에서 인증이 완료되면 계정 목록을 새로 불러올 수 있게 한다`() =
+        coroutinesTest {
+            val storage = FakeOnboardingStorage().apply { selectionCount = 3 }
+            val login = FakeLoginRepository()
+            val guestPersonalization = Personalization(bookmarkedShopIds = setOf("one", "two", "three"))
+            val store = FakePersonalizationRepository(guestPersonalization)
+            val personalization =
+                object : PersonalizationStore by store {
+                    override suspend fun clear() {
+                        store.updateBootstrapState(PersonalizationBootstrapState.Loading)
+                    }
+                }
+            val viewModel = createViewModel(storage, login = login, personalizationStore = personalization)
+            runCurrent()
+
+            viewModel.sideEffect.test {
+                assertEquals(OnboardingStep.Login(3), viewModel.uiState.value.step)
+                assertEquals(PersonalizationBootstrapState.Success(guestPersonalization), store.state.value)
+                assertFalse(storage.completed)
+
+                login.updateSessionState(LoginSessionState.AUTHENTICATED)
+                viewModel.dispatch(OnboardingIntent.LoginStepCompleted)
+                assertEquals(OnboardingSideEffect.Completed, awaitItem())
+                assertEquals(PersonalizationBootstrapState.Loading, store.state.value)
+                assertTrue(storage.completed)
             }
         }
 
@@ -70,7 +136,7 @@ class OnboardingViewModelTest {
                     .isLoading(OnboardingLoadKey.ReadConfirmation),
             )
             viewModel.dispatch(OnboardingIntent.ConfirmPermissionGuide)
-            viewModel.dispatch(OnboardingIntent.ShopSelectionCompleted)
+            viewModel.dispatch(OnboardingIntent.ShopSelectionCompleted(3))
             runCurrent()
             assertFalse(storage.confirmed)
             assertEquals(OnboardingStep.Initializing, viewModel.uiState.value.step)
@@ -79,7 +145,7 @@ class OnboardingViewModelTest {
             runCurrent()
             assertEquals(OnboardingStep.PermissionGuide, viewModel.uiState.value.step)
             assertFalse(viewModel.uiState.value.loadState.isAnyLoading)
-            viewModel.dispatch(OnboardingIntent.ShopSelectionCompleted)
+            viewModel.dispatch(OnboardingIntent.ShopSelectionCompleted(3))
             runCurrent()
             assertEquals(OnboardingStep.PermissionGuide, viewModel.uiState.value.step)
             viewModel.sideEffect.test { expectNoEvents() }
@@ -228,7 +294,9 @@ class OnboardingViewModelTest {
     private fun createViewModel(
         storage: OnboardingStorage,
         tracker: FakeAnalyticsTracker = FakeAnalyticsTracker(),
-    ): OnboardingViewModel = OnboardingViewModel(storage, tracker)
+        login: LoginRepository = FakeLoginRepository(),
+        personalizationStore: PersonalizationStore = FakePersonalizationRepository(),
+    ): OnboardingViewModel = OnboardingViewModel(storage, tracker, login, personalizationStore)
 
     private suspend fun finishPermissionRequests(viewModel: OnboardingViewModel) {
         viewModel.sideEffect.test {

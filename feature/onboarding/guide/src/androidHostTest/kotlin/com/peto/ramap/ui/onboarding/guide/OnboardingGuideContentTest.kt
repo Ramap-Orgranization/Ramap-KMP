@@ -149,10 +149,10 @@ class OnboardingGuideContentTest {
             onNodeWithText("이벤트와 영업 변동 중\n받고 싶은 소식만 골라보세요.").assertIsDisplayed()
             onRoot().performTouchInput { swipeRight() }
             onNodeWithText("매장 더보기에서 알림을 설정할 수 있어요.").assertIsDisplayed()
-            val startButton = onNodeWithText("시작하기")
+            val nextButton = onNodeWithText("다음")
             onNodeWithText("건너뛰기").performClick()
             selectionHeading.assertIsDisplayed()
-            startButton.assertDoesNotExist()
+            nextButton.assertDoesNotExist()
             onNodeWithText("2 / 3").assertDoesNotExist()
             onNodeWithContentDescription("사용법 안내 1 / 3").assertDoesNotExist()
             onRoot().performTouchInput { swipeLeft() }
@@ -160,12 +160,12 @@ class OnboardingGuideContentTest {
             onRoot().performTouchInput { swipeRight() }
             selectionHeading.assertIsDisplayed()
             reviewGuide.assertDoesNotExist()
-            startButton.assertDoesNotExist()
+            nextButton.assertDoesNotExist()
             runOnIdle {
                 assertTrue(intents.isEmpty())
                 state = selection
             }
-            startButton.assertIsDisplayed().assertIsEnabled().performClick()
+            nextButton.assertIsDisplayed().assertIsEnabled().performClick()
             runOnIdle { assertEquals(listOf<ShopSelectionIntent>(ShopSelectionIntent.Complete), intents) }
         }
 
@@ -191,7 +191,7 @@ class OnboardingGuideContentTest {
             onNodeWithText("리뷰를 남기면\n나만의 라멘 지도가 채워져요").assertIsDisplayed()
             onNodeWithText("다음").performClick()
             onNode(hasSetTextAction()).assertTextContains("라멘")
-            onNodeWithText("시작하기").assertIsEnabled()
+            onNodeWithText("다음").assertIsEnabled()
             runOnIdle { assertEquals(3, state.bookmarks.savedCount) }
         }
 
@@ -214,7 +214,7 @@ class OnboardingGuideContentTest {
             onNode(verticalScroll).performTouchInput { swipeUp() }
             val shopScroll = onNode(verticalScroll).fetchSemanticsNode().config[SemanticsProperties.VerticalScrollAxisRange]
             runOnIdle { assertTrue(shopScroll.value() > 0f) }
-            onNodeWithText("시작하기").assertIsDisplayed()
+            onNodeWithText("다음").assertIsDisplayed()
         }
 
     @Test
@@ -232,7 +232,7 @@ class OnboardingGuideContentTest {
             }
             onNodeWithText("건너뛰기").performClick()
             runOnIdle { input.cancelBack() }
-            onNodeWithText("시작하기").assertIsDisplayed()
+            onNodeWithText("다음").assertIsDisplayed()
             runOnIdle { input.completeBack() }
             onNodeWithText("리뷰를 남기면\n나만의 라멘 지도가 채워져요").assertIsDisplayed()
             onNodeWithText("다음").performClick()

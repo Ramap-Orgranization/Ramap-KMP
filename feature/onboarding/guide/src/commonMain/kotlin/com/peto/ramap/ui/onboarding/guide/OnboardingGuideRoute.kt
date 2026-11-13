@@ -14,7 +14,7 @@ import org.koin.core.parameter.parametersOf
 
 @Composable
 public fun OnboardingGuideRoute(
-    onCompleted: () -> Unit,
+    onCompleted: (Int) -> Unit,
     analytics: GuideAnalytics,
     toastManager: ToastManager = koinInject(),
     viewModel: ShopSelectionViewModel = koinViewModel(parameters = { parametersOf(analytics) }),
@@ -23,7 +23,7 @@ public fun OnboardingGuideRoute(
 
     ObserveAsEvents(viewModel.sideEffect) { effect ->
         when (effect) {
-            ShopSelectionSideEffect.Completed -> onCompleted()
+            is ShopSelectionSideEffect.Completed -> onCompleted(effect.savedShopCount)
             is ShopSelectionSideEffect.ShowToast -> toastManager.show(effect.data)
         }
     }

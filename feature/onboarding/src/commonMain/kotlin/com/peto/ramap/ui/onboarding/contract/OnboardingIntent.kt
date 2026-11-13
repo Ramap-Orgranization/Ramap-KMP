@@ -7,7 +7,11 @@ import com.peto.ramap.ui.base.Intent
 sealed interface OnboardingIntent : Intent {
     data object ConfirmPermissionGuide : OnboardingIntent
 
-    data object ShopSelectionCompleted : OnboardingIntent
+    data class ShopSelectionCompleted(
+        val savedShopCount: Int,
+    ) : OnboardingIntent
+
+    data object LoginStepCompleted : OnboardingIntent
 
     data class LocationPermissionFinished(
         val status: PermissionStatus,

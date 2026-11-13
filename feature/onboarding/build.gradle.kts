@@ -25,6 +25,7 @@ kotlin {
         implementation(projects.core.analytics)
         implementation(projects.core.platform)
         implementation(projects.core.preview)
+        implementation(projects.feature.onboarding.login)
         api(projects.feature.onboarding.permission)
         api(projects.feature.onboarding.guide)
         api(projects.feature.onboarding.shopSelection)

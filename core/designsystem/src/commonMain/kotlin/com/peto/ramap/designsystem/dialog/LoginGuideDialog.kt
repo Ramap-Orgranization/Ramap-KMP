@@ -15,7 +15,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.peto.ramap.designsystem.bottomsheet.CommonBottomSheet
@@ -61,8 +60,7 @@ fun LoginGuideDialog(
                 Image(
                     painter = painterResource(Res.drawable.login_illustration),
                     contentDescription = null,
-                    modifier = Modifier.size(width = 200.dp, height = 144.dp),
-                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.size(144.dp),
                 )
                 Spacer(modifier = Modifier.height(20.dp))
                 AppText(
