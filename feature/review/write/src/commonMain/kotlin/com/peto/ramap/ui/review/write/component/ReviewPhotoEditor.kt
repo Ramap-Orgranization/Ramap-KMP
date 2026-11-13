@@ -1,7 +1,9 @@
 package com.peto.ramap.ui.review.write.component
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
+import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -19,11 +21,13 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -32,13 +36,18 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import coil3.compose.AsyncImage
 import com.peto.ramap.designsystem.image.LocalImageAccessScope
 import com.peto.ramap.designsystem.text.AppText
+import com.peto.ramap.domain.model.review.ReviewAttachment
 import com.peto.ramap.domain.model.review.ReviewImage
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.CommonColor
@@ -46,6 +55,7 @@ import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.RamapTheme
 import com.peto.ramap.ui.review.write.contract.ReviewWriteIntent
 import com.peto.ramap.ui.review.write.contract.ReviewWriteUiState
+import kotlinx.coroutines.isActive
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
@@ -56,9 +66,10 @@ import ramap.shared.generated.resources.ic_photo_slot_frame_dashed
 import ramap.shared.generated.resources.review_photo_description
 import ramap.shared.generated.resources.review_photos
 import ramap.shared.generated.resources.shop_review_image_add
+import ramap.shared.generated.resources.shop_review_image_change
 import ramap.shared.generated.resources.shop_review_image_count
-import ramap.shared.generated.resources.shop_review_image_limit
 import ramap.shared.generated.resources.shop_review_image_remove
+import kotlin.math.roundToInt
 
 @Composable
 internal fun PhotoEditor(
@@ -66,6 +77,8 @@ internal fun PhotoEditor(
     onPick: () -> Unit,
     dispatch: (ReviewWriteIntent) -> Unit,
 ) {
+    val scrollState = rememberScrollState()
+    val onAddPhoto = onPick.takeIf { state.canEdit }
     Column(
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
@@ -84,7 +97,7 @@ internal fun PhotoEditor(
                 text =
                     stringResource(
                         Res.string.shop_review_image_count,
-                        state.images.size + state.existingImages.size,
+                        state.imageCount,
                         ReviewImage.MAX_COUNT,
                     ),
                 style = AppTextStyle.C1,
@@ -95,61 +108,31 @@ internal fun PhotoEditor(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState()),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    .horizontalScroll(scrollState),
+            horizontalArrangement = Arrangement.spacedBy(PHOTO_SLOT_SPACING),
         ) {
-            val slotPitchPx = with(LocalDensity.current) { (PHOTO_SLOT_SIZE + PHOTO_SLOT_SPACING).toPx() }
-
             repeat(ReviewImage.MAX_COUNT) { index ->
-                val existing = state.existingImages.getOrNull(index)
-                val image = state.images.getOrNull(index - state.existingImages.size)
-                if (image == null) {
-                    if (existing != null) {
-                        PhotoSlot(
-                            image = existing.url ?: "",
-                            index = index,
-                            size = PHOTO_SLOT_SIZE,
-                            isSubmitting = !state.canEdit,
-                            onPick = null,
-                            onRemove = { dispatch(ReviewWriteIntent.RemoveExistingImage(index)) },
-                        )
-                    } else if (index == state.images.size + state.existingImages.size) {
-                        PhotoSlot(
-                            image = null,
-                            index = null,
-                            size = PHOTO_SLOT_SIZE,
-                            onPick = onPick,
-                            isPickEnabled = state.canEdit,
-                        )
-                    } else {
-                        EmptyPhotoSlot(PHOTO_SLOT_SIZE)
-                    }
+                val attachment = state.attachments.getOrNull(index)
+                if (attachment == null) {
+                    AddPhotoSlot(
+                        showLabel = index == state.imageCount,
+                        onPick = onAddPhoto,
+                    )
                 } else {
-                    PhotoSlot(
-                        image = image,
+                    AttachedPhotoSlot(
+                        attachment = attachment,
                         index = index,
-                        size = PHOTO_SLOT_SIZE,
-                        slotPitchPx = slotPitchPx,
-                        imageCount = state.images.size + state.existingImages.size,
-                        isSubmitting = !state.canEdit,
-                        onPick = null,
-                        onMove = { fromIndex, toIndex ->
-                            if (toIndex >= state.existingImages.size) {
-                                dispatch(
-                                    ReviewWriteIntent.MoveImage(
-                                        fromIndex - state.existingImages.size,
-                                        toIndex - state.existingImages.size,
-                                    ),
-                                )
-                            }
-                        },
-                        onRemove = { dispatch(ReviewWriteIntent.RemoveImage(index - state.existingImages.size)) },
+                        imageCount = state.imageCount,
+                        canEdit = state.canEdit,
+                        scrollState = scrollState,
+                        onMove = { dispatch(ReviewWriteIntent.MoveImage(index, it)) },
+                        onRemove = { dispatch(ReviewWriteIntent.RemoveImage(index)) },
                     )
                 }
             }
         }
         AppText(
-            text = stringResource(Res.string.shop_review_image_limit, ReviewImage.MAX_COUNT),
+            text = stringResource(Res.string.shop_review_image_change),
             style = AppTextStyle.C1,
             color = GrayColor.C300,
         )
@@ -157,14 +140,39 @@ internal fun PhotoEditor(
 }
 
 @Composable
-private fun EmptyPhotoSlot(size: Dp) {
-    DashedPhotoSlot(modifier = Modifier.size(size)) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Icon(
-                painter = painterResource(Res.drawable.ic_photo_library),
-                contentDescription = null,
-                tint = GrayColor.C300,
-            )
+private fun AddPhotoSlot(
+    showLabel: Boolean,
+    onPick: (() -> Unit)?,
+) {
+    val label = stringResource(Res.string.shop_review_image_add)
+    DashedPhotoSlot(
+        modifier = Modifier.size(PHOTO_SLOT_SIZE).semantics { role = Role.Button },
+        onClick = onPick,
+    ) {
+        if (showLabel) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center,
+            ) {
+                Icon(
+                    painter = painterResource(Res.drawable.ic_camera_add),
+                    contentDescription = null,
+                    tint = GrayColor.C500,
+                )
+                AppText(
+                    text = label,
+                    style = AppTextStyle.C1,
+                    color = GrayColor.C500,
+                )
+            }
+        } else {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Icon(
+                    painter = painterResource(Res.drawable.ic_photo_library),
+                    contentDescription = label,
+                    tint = GrayColor.C300,
+                )
+            }
         }
     }
 }
@@ -172,7 +180,7 @@ private fun EmptyPhotoSlot(size: Dp) {
 @Composable
 private fun DashedPhotoSlot(
     modifier: Modifier,
-    onClick: (() -> Unit)? = null,
+    onClick: (() -> Unit)?,
     content: @Composable () -> Unit,
 ) {
     Surface(
@@ -203,83 +211,101 @@ private fun DashedPhotoSlot(
 }
 
 @Composable
-private fun PhotoSlot(
-    image: Any?,
-    index: Int?,
-    size: Dp,
-    slotPitchPx: Float = 0f,
-    imageCount: Int = 0,
-    isSubmitting: Boolean = false,
-    onPick: (() -> Unit)?,
-    isPickEnabled: Boolean = false,
-    onMove: ((Int, Int) -> Unit)? = null,
-    onRemove: (() -> Unit)? = null,
+private fun AttachedPhotoSlot(
+    attachment: ReviewAttachment,
+    index: Int,
+    imageCount: Int,
+    canEdit: Boolean,
+    scrollState: ScrollState,
+    onMove: (Int) -> Unit,
+    onRemove: () -> Unit,
 ) {
-    if (image == null) {
-        DashedPhotoSlot(
-            modifier = Modifier.size(size),
-            onClick = onPick?.takeIf { isPickEnabled },
-        ) {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center,
-            ) {
-                Icon(
-                    painter = painterResource(Res.drawable.ic_camera_add),
-                    contentDescription = stringResource(Res.string.shop_review_image_add),
-                    tint = GrayColor.C500,
-                )
-                AppText(
-                    text = stringResource(Res.string.shop_review_image_add),
-                    style = AppTextStyle.C1,
-                    color = GrayColor.C500,
-                )
-            }
+    val density = LocalDensity.current
+    val slotWidthPx = with(density) { PHOTO_SLOT_SIZE.roundToPx() }
+    val slotPitchPx = slotWidthPx + with(density) { PHOTO_SLOT_SPACING.roundToPx() }
+    val direction = if (LocalLayoutDirection.current == LayoutDirection.Ltr) 1 else -1
+    val canMove = canEdit && imageCount > 1
+    var dragOffsetPx by remember(attachment, index, canMove, imageCount) { mutableStateOf(0f) }
+    var dragStartScrollPx by remember(attachment, index, canMove, imageCount) { mutableStateOf(0) }
+    var dragStartPointerPx by remember(attachment, index, canMove, imageCount) { mutableStateOf<Float?>(null) }
+    val isDragging = dragStartPointerPx != null
+
+    LaunchedEffect(dragStartPointerPx, slotPitchPx, imageCount, canMove) {
+        val start = dragStartPointerPx ?: return@LaunchedEffect
+        val edgePx = with(density) { DRAG_SCROLL_EDGE.toPx() }
+        val speedPxPerSecond = with(density) { DRAG_SCROLL_SPEED.toPx() }
+        var previousFrame = withFrameNanos { it }
+        while (isActive) {
+            val frame = withFrameNanos { it }
+            val elapsedSeconds = (frame - previousFrame) / NANOS_PER_SECOND
+            previousFrame = frame
+            val viewportPx = scrollState.viewportSize
+            val maxScrollPx = ((imageCount - 1) * slotPitchPx + slotWidthPx - viewportPx).coerceAtLeast(0)
+            if (dragOffsetPx == 0f) continue
+            val pointerPx = start + dragOffsetPx
+            val distancePx =
+                when {
+                    pointerPx < edgePx -> -minOf(edgePx - pointerPx, edgePx)
+                    pointerPx > viewportPx - edgePx -> minOf(pointerPx - viewportPx + edgePx, edgePx)
+                    else -> 0f
+                }
+            val step = distancePx / edgePx * speedPxPerSecond * elapsedSeconds
+            val scrollStep =
+                if (step > 0) {
+                    step.coerceAtMost((maxScrollPx - scrollState.value).coerceAtLeast(0).toFloat())
+                } else {
+                    step
+                }
+            if (scrollStep != 0f) scrollState.scrollBy(scrollStep)
         }
-        return
     }
 
-    val imageIndex = requireNotNull(index)
-    var dragOffsetX by remember(index, image) { mutableStateOf(0f) }
-    var isDragging by remember(index, image) { mutableStateOf(false) }
     Box(
         modifier =
             Modifier
-                .size(size)
+                .size(PHOTO_SLOT_SIZE)
                 .zIndex(if (isDragging) 1f else 0f)
-                .graphicsLayer { translationX = dragOffsetX }
-                .pointerInput(imageIndex, imageCount, isSubmitting, slotPitchPx) {
-                    if (!isSubmitting) {
+                .pointerInput(attachment, index, imageCount, canMove, slotPitchPx, direction) {
+                    if (canMove) {
                         detectDragGesturesAfterLongPress(
-                            onDragStart = { isDragging = true },
+                            onDragStart = { start ->
+                                dragStartScrollPx = scrollState.value
+                                dragOffsetPx = 0f
+                                val pointerInSlotPx = if (direction == 1) start.x else slotWidthPx - start.x
+                                dragStartPointerPx = index * slotPitchPx - dragStartScrollPx + pointerInSlotPx
+                            },
                             onDragCancel = {
-                                dragOffsetX = 0f
-                                isDragging = false
+                                dragStartPointerPx = null
                             },
                             onDrag = { change, dragAmount ->
                                 change.consume()
-                                dragOffsetX += dragAmount.x
+                                dragOffsetPx += direction * dragAmount.x
                             },
                             onDragEnd = {
-                                val indexDelta =
-                                    if (dragOffsetX >= 0f) {
-                                        ((dragOffsetX + slotPitchPx / 2) / slotPitchPx).toInt()
-                                    } else {
-                                        ((dragOffsetX - slotPitchPx / 2) / slotPitchPx).toInt()
-                                    }
-                                val targetIndex = (imageIndex + indexDelta).coerceIn(0, imageCount - 1)
-                                dragOffsetX = 0f
-                                isDragging = false
-                                if (targetIndex != imageIndex) onMove?.invoke(imageIndex, targetIndex)
+                                val displacementPx = dragOffsetPx + scrollState.value - dragStartScrollPx
+                                val targetIndex = (index + (displacementPx / slotPitchPx).roundToInt()).coerceIn(0, imageCount - 1)
+                                dragStartPointerPx = null
+                                if (targetIndex != index) onMove(targetIndex)
                             },
                         )
                     }
+                }.graphicsLayer {
+                    translationX =
+                        if (isDragging) {
+                            direction * (dragOffsetPx + scrollState.value - dragStartScrollPx)
+                        } else {
+                            0f
+                        }
                 },
     ) {
         key(LocalImageAccessScope.current) {
             AsyncImage(
-                model = if (image is ReviewImage) image.bytes else image,
-                contentDescription = stringResource(Res.string.review_photo_description, imageIndex + 1),
+                model =
+                    when (attachment) {
+                        is ReviewAttachment.Existing -> attachment.url
+                        is ReviewAttachment.New -> attachment.image.bytes
+                    },
+                contentDescription = stringResource(Res.string.review_photo_description, index + 1),
                 modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(12.dp)),
                 contentScale = ContentScale.Crop,
             )
@@ -290,8 +316,8 @@ private fun PhotoSlot(
             color = CommonColor.Black.copy(alpha = 0.55f),
         ) {
             IconButton(
-                onClick = { onRemove?.invoke() },
-                enabled = !isSubmitting,
+                onClick = onRemove,
+                enabled = canEdit,
                 modifier = Modifier.size(28.dp),
             ) {
                 Icon(
@@ -306,6 +332,9 @@ private fun PhotoSlot(
 
 private val PHOTO_SLOT_SIZE = 112.dp
 private val PHOTO_SLOT_SPACING = 8.dp
+private val DRAG_SCROLL_EDGE = 36.dp
+private val DRAG_SCROLL_SPEED = 360.dp
+private const val NANOS_PER_SECOND = 1_000_000_000f
 
 @Preview(showBackground = true)
 @Composable

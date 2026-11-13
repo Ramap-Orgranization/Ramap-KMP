@@ -7,6 +7,7 @@ import com.peto.ramap.domain.model.review.MyReview
 import com.peto.ramap.domain.model.review.MyReviewVisibility
 import com.peto.ramap.domain.model.review.MyReviewsPage
 import com.peto.ramap.domain.model.review.Review
+import com.peto.ramap.domain.model.review.ReviewAttachment
 import com.peto.ramap.domain.model.review.ReviewImage
 import com.peto.ramap.domain.model.review.ReviewLike
 import com.peto.ramap.domain.model.review.ShopReviewsPage
@@ -49,8 +50,7 @@ class FakeReviewRepository(
     override suspend fun updateReview(
         reviewId: String,
         body: String,
-        retainedImagePaths: List<String>,
-        newImages: List<ReviewImage>,
+        attachments: List<ReviewAttachment>,
         isPublic: Boolean,
     ): RamapResult<Unit> = error("Unexpected review update")
 

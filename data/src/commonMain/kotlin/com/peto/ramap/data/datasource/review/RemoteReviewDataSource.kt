@@ -9,6 +9,7 @@ import com.peto.ramap.data.model.ReviewMutationResponse
 import com.peto.ramap.data.model.ReviewResponse
 import com.peto.ramap.data.model.ShopReviewRequest
 import com.peto.ramap.data.model.ShopReviewsPageResponse
+import com.peto.ramap.domain.model.review.ReviewAttachment
 import com.peto.ramap.domain.model.review.ReviewImage
 import com.peto.ramap.network.client.media.MediaStorageClient
 import io.github.jan.supabase.SupabaseClient
@@ -172,19 +173,26 @@ internal class RemoteReviewDataSource(
     override suspend fun updateReview(
         reviewId: String,
         body: String,
-        retainedImagePaths: List<String>,
-        newImages: List<ReviewImage>,
+        attachments: List<ReviewAttachment>,
         isPublic: Boolean,
     ): ReviewMutationResponse {
-        val uploadedPaths = uploadImages(newImages)
+        val uploadedPaths = uploadImages(attachments.filterIsInstance<ReviewAttachment.New>().map { it.image })
         try {
+            val uploads = uploadedPaths.iterator()
+            val paths =
+                attachments.map { attachment ->
+                    when (attachment) {
+                        is ReviewAttachment.Existing -> attachment.path
+                        is ReviewAttachment.New -> uploads.next()
+                    }
+                }
             return client.postgrest
                 .rpc(
                     RPC_UPDATE_REVIEW,
                     buildJsonObject {
                         put(PARAM_REVIEW_ID, reviewId)
                         put(PARAM_BODY, body)
-                        put(PARAM_IMAGE_PATHS, JsonArray((retainedImagePaths + uploadedPaths).map(::JsonPrimitive)))
+                        put(PARAM_IMAGE_PATHS, JsonArray(paths.map(::JsonPrimitive)))
                         put(PARAM_IS_PUBLIC, isPublic)
                     },
                 ).decodeAs<ReviewMutationResponse>()

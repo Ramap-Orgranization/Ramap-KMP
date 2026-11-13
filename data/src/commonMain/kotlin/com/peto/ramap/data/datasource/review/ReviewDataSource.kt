@@ -9,6 +9,7 @@ import com.peto.ramap.data.model.ReviewMutationResponse
 import com.peto.ramap.data.model.ReviewResponse
 import com.peto.ramap.data.model.ShopReviewRequest
 import com.peto.ramap.data.model.ShopReviewsPageResponse
+import com.peto.ramap.domain.model.review.ReviewAttachment
 import com.peto.ramap.domain.model.review.ReviewImage
 
 internal interface ReviewDataSource {
@@ -58,8 +59,7 @@ internal interface ReviewDataSource {
     suspend fun updateReview(
         reviewId: String,
         body: String,
-        retainedImagePaths: List<String>,
-        newImages: List<ReviewImage>,
+        attachments: List<ReviewAttachment>,
         isPublic: Boolean,
     ): ReviewMutationResponse
 

@@ -9,6 +9,7 @@ import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.profile.AccountProfile
 import com.peto.ramap.domain.model.review.EditableReview
 import com.peto.ramap.domain.model.review.Review
+import com.peto.ramap.domain.model.review.ReviewAttachment
 import com.peto.ramap.domain.model.review.ReviewImage
 import com.peto.ramap.domain.model.shop.ShopOverView
 import com.peto.ramap.domain.repository.ProfileRepository
@@ -100,7 +101,7 @@ class ReviewWriteViewModelTest {
             viewModel.dispatch(ReviewWriteIntent.Submit)
             runCurrent()
             assertEquals("12345", reviews.updates.single().body)
-            assertEquals(listOf("retained"), reviews.updates.single().retainedImagePaths)
+            assertEquals(listOf(ReviewAttachment.Existing("retained", null)), reviews.updates.single().attachments)
         }
 
     @Test
@@ -153,7 +154,8 @@ class ReviewWriteViewModelTest {
             assertEquals("수정한 내용", viewModel.uiState.value.body)
             assertEquals(
                 listOf("new"),
-                viewModel.uiState.value.existingImages
+                viewModel.uiState.value.attachments
+                    .filterIsInstance<ReviewAttachment.Existing>()
                     .map { it.path },
             )
         }
@@ -207,23 +209,46 @@ class ReviewWriteViewModelTest {
             assertEquals("기존 리뷰입니다", viewModel.uiState.value.body)
             assertEquals(
                 listOf("first", "second"),
-                viewModel.uiState.value.existingImages
+                viewModel.uiState.value.attachments
+                    .filterIsInstance<ReviewAttachment.Existing>()
                     .map { it.path },
             )
             assertFalse(viewModel.uiState.value.isPublic)
 
-            viewModel.dispatch(ReviewWriteIntent.RemoveExistingImage(0))
-            viewModel.dispatch(ReviewWriteIntent.AddImage(reviewImage(1)))
+            viewModel.dispatch(ReviewWriteIntent.RemoveImage(0))
+            val newImage = reviewImage(1)
+            viewModel.dispatch(ReviewWriteIntent.AddImage(newImage))
             viewModel.dispatch(ReviewWriteIntent.Submit)
             runCurrent()
-            assertEquals(listOf("second"), reviews.updates.single().retainedImagePaths)
             assertEquals(
-                1,
-                reviews.updates
-                    .single()
-                    .newImages.size,
+                listOf(ReviewAttachment.Existing("second", "signed-second"), ReviewAttachment.New(newImage)),
+                reviews.updates.single().attachments,
             )
             assertFalse(reviews.updates.single().isPublic)
+        }
+
+    @Test
+    fun `리뷰 수정에서 기존 사진과 새 사진을 섞어 순서를 바꾸면 그 순서로 저장한다`() =
+        coroutinesTest {
+            val reviews =
+                FakeReviewRepository().apply {
+                    editableReview = EditableReview("review", "shop", "기존 리뷰입니다", listOf("first", "second"), listOf(null, null), false)
+                }
+            val viewModel = ReviewWriteViewModel(reviews, FakeProfileRepository(), FakeRamenShopRepository())
+            val added = reviewImage(1)
+            viewModel.dispatch(ReviewWriteIntent.Open("shop", "review"))
+            runCurrent()
+
+            viewModel.dispatch(ReviewWriteIntent.AddImage(added))
+            viewModel.dispatch(ReviewWriteIntent.MoveImage(2, 0))
+            viewModel.dispatch(ReviewWriteIntent.MoveImage(1, 2))
+            viewModel.dispatch(ReviewWriteIntent.Submit)
+            runCurrent()
+
+            assertEquals(
+                listOf(ReviewAttachment.New(added), ReviewAttachment.Existing("second", null), ReviewAttachment.Existing("first", null)),
+                reviews.updates.single().attachments,
+            )
         }
 
     @Test
@@ -243,10 +268,11 @@ class ReviewWriteViewModelTest {
             assertEquals("수정된 리뷰입니다", viewModel.uiState.value.body)
             assertEquals(
                 listOf("path"),
-                viewModel.uiState.value.existingImages
+                viewModel.uiState.value.attachments
+                    .filterIsInstance<ReviewAttachment.Existing>()
                     .map { it.path },
             )
-            assertEquals(listOf("path"), reviews.updates.single().retainedImagePaths)
+            assertEquals(listOf(ReviewAttachment.Existing("path", null)), reviews.updates.single().attachments)
         }
 
     @Test
@@ -268,7 +294,8 @@ class ReviewWriteViewModelTest {
             assertEquals("새 계정 리뷰", viewModel.uiState.value.body)
             assertEquals(
                 listOf("second"),
-                viewModel.uiState.value.existingImages
+                viewModel.uiState.value.attachments
+                    .filterIsInstance<ReviewAttachment.Existing>()
                     .map { it.path },
             )
         }
@@ -555,7 +582,7 @@ class ReviewWriteViewModelTest {
             (1..6).forEach { viewModel.dispatch(ReviewWriteIntent.AddImage(reviewImage(it))) }
             runCurrent()
 
-            assertEquals(5, viewModel.uiState.value.images.size)
+            assertEquals(5, viewModel.uiState.value.imageCount)
         }
 
     @Test
@@ -579,7 +606,7 @@ class ReviewWriteViewModelTest {
             viewModel.dispatch(ReviewWriteIntent.MoveImage(0, 2))
             runCurrent()
 
-            assertEquals(listOf(first, second), viewModel.uiState.value.images)
+            assertEquals(listOf(ReviewAttachment.New(first), ReviewAttachment.New(second)), viewModel.uiState.value.attachments)
         }
 
     @Test

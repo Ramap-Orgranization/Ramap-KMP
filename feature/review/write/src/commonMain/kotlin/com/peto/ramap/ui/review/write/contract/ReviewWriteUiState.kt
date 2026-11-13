@@ -1,15 +1,14 @@
 package com.peto.ramap.ui.review.write.contract
 
 import com.peto.ramap.domain.model.review.Review
-import com.peto.ramap.domain.model.review.ReviewImage
+import com.peto.ramap.domain.model.review.ReviewAttachment
 import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.ui.loading.LoadState
 import com.peto.ramap.ui.loading.LoadableState
 
 data class ReviewWriteUiState(
     val body: String = "",
-    val images: List<ReviewImage> = emptyList(),
-    val existingImages: List<ExistingReviewPhoto> = emptyList(),
+    val attachments: List<ReviewAttachment> = emptyList(),
     val reviewId: String? = null,
     val reviewLoadFailed: Boolean = false,
     val reviewLoaded: Boolean = false,
@@ -23,7 +22,7 @@ data class ReviewWriteUiState(
     val isLoadingReview: Boolean get() = loadState.isLoading(ReviewWriteLoadKey.Review)
     val isSubmitting: Boolean get() = loadState.isLoading(ReviewWriteLoadKey.Submit)
     val showsLoadingOverlay: Boolean get() = isSubmitting || isLoadingReview
-    val imageCount: Int get() = images.size + existingImages.size
+    val imageCount: Int get() = attachments.size
     val canEdit: Boolean
         get() =
             !isSubmitting &&

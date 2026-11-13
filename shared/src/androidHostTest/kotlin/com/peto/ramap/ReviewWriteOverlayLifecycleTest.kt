@@ -18,7 +18,7 @@ import com.peto.ramap.core.result.RamapResult
 import com.peto.ramap.designsystem.toast.ToastManager
 import com.peto.ramap.domain.model.auth.LoginSessionState
 import com.peto.ramap.domain.model.review.EditableReview
-import com.peto.ramap.domain.model.review.ReviewImage
+import com.peto.ramap.domain.model.review.ReviewAttachment
 import com.peto.ramap.domain.model.shop.ShopOverView
 import com.peto.ramap.domain.repository.ReviewRepository
 import com.peto.ramap.domain.usecase.SignInUseCase
@@ -76,8 +76,7 @@ class ReviewWriteOverlayLifecycleTest {
                     override suspend fun updateReview(
                         reviewId: String,
                         body: String,
-                        retainedImagePaths: List<String>,
-                        newImages: List<ReviewImage>,
+                        attachments: List<ReviewAttachment>,
                         isPublic: Boolean,
                     ): RamapResult<Unit> {
                         started.complete(Unit)

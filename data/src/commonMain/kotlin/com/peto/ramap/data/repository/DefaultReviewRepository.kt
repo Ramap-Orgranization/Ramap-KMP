@@ -11,6 +11,7 @@ import com.peto.ramap.domain.model.review.MyReview
 import com.peto.ramap.domain.model.review.MyReviewVisibility
 import com.peto.ramap.domain.model.review.MyReviewsPage
 import com.peto.ramap.domain.model.review.Review
+import com.peto.ramap.domain.model.review.ReviewAttachment
 import com.peto.ramap.domain.model.review.ReviewImage
 import com.peto.ramap.domain.model.review.ReviewLike
 import com.peto.ramap.domain.model.review.ShopReviewsPage
@@ -105,15 +106,14 @@ internal class DefaultReviewRepository(
     override suspend fun updateReview(
         reviewId: String,
         body: String,
-        retainedImagePaths: List<String>,
-        newImages: List<ReviewImage>,
+        attachments: List<ReviewAttachment>,
         isPublic: Boolean,
     ): RamapResult<Unit> =
         write {
-            require(Review.isValidContent(body, retainedImagePaths.size + newImages.size)) { ERROR_INVALID_REVIEW_BODY }
-            require(retainedImagePaths.size + newImages.size <= ReviewImage.MAX_COUNT) { ERROR_TOO_MANY_IMAGES }
-            require(newImages.all(ReviewImage::isValid)) { ERROR_INVALID_REVIEW_IMAGES }
-            dataSource.updateReview(reviewId, body.trim(), retainedImagePaths, newImages, isPublic)
+            require(Review.isValidContent(body, attachments.size)) { ERROR_INVALID_REVIEW_BODY }
+            require(attachments.size <= ReviewImage.MAX_COUNT) { ERROR_TOO_MANY_IMAGES }
+            require(attachments.filterIsInstance<ReviewAttachment.New>().all { it.image.isValid() }) { ERROR_INVALID_REVIEW_IMAGES }
+            dataSource.updateReview(reviewId, body.trim(), attachments, isPublic)
         }
 
     override suspend fun deleteReview(reviewId: String): RamapResult<Unit> = write { dataSource.deleteReview(reviewId) }

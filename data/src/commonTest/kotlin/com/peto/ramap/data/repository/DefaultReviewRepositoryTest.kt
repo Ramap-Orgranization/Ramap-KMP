@@ -12,6 +12,7 @@ import com.peto.ramap.data.model.ReviewMutationResponse
 import com.peto.ramap.data.model.ShopReviewRequest
 import com.peto.ramap.data.testReviewChanges
 import com.peto.ramap.domain.model.review.MyReviewVisibility
+import com.peto.ramap.domain.model.review.ReviewAttachment
 import com.peto.ramap.domain.model.review.ReviewImage
 import com.peto.ramap.domain.model.review.change.ReviewChange
 import com.peto.ramap.fake.FakeMyReviewsDataSource
@@ -53,32 +54,31 @@ class DefaultReviewRepositoryTest {
         runTest {
             val source = FakeMyReviewsDataSource()
             val updatedBodies = mutableListOf<String>()
-            val photos = mutableListOf<Pair<List<String>, List<ReviewImage>>>()
+            val photos = mutableListOf<List<ReviewAttachment>>()
             val updatingSource =
                 object : ReviewDataSource by source {
                     override suspend fun updateReview(
                         reviewId: String,
                         body: String,
-                        retainedImagePaths: List<String>,
-                        newImages: List<ReviewImage>,
+                        attachments: List<ReviewAttachment>,
                         isPublic: Boolean,
                     ): ReviewMutationResponse {
                         updatedBodies += body
-                        photos += retainedImagePaths to newImages
-                        return source.submitReview(ShopReviewRequest("shop", body, retainedImagePaths, isPublic), newImages)
+                        photos += attachments
+                        return source.submitReview(ShopReviewRequest("shop", body, emptyList(), isPublic), emptyList())
                     }
                 }
             val repository = DefaultReviewRepository(updatingSource, FakeRamenShopDataSource(), testReviewChanges(), backgroundScope)
             val image = ReviewImage(byteArrayOf(0xff.toByte(), 0xd8.toByte(), 0xff.toByte()), ReviewImage.JPEG_MIME_TYPE)
 
-            assertIs<RamapResult.Success<Unit>>(repository.updateReview("review", "12345", listOf("retained"), emptyList(), true))
-            assertIs<RamapResult.Success<Unit>>(repository.updateReview("review", " 54321 ", emptyList(), listOf(image), false))
+            assertIs<RamapResult.Success<Unit>>(repository.updateReview("review", "12345", listOf(ReviewAttachment.Existing("retained", null)), true))
+            assertIs<RamapResult.Success<Unit>>(repository.updateReview("review", " 54321 ", listOf(ReviewAttachment.New(image)), false))
             assertEquals(listOf("12345", "54321"), updatedBodies)
-            assertEquals(listOf(listOf("retained") to emptyList(), emptyList<String>() to listOf(image)), photos)
+            assertEquals(listOf(listOf(ReviewAttachment.Existing("retained", null)), listOf(ReviewAttachment.New(image))), photos)
 
-            assertIs<RamapResult.Error>(repository.updateReview("review", "", listOf("retained"), emptyList(), true))
-            assertIs<RamapResult.Error>(repository.updateReview("review", "1234", listOf("retained"), emptyList(), true))
-            assertIs<RamapResult.Error>(repository.updateReview("review", "12345", List(5) { "retained-$it" }, listOf(image), true))
+            assertIs<RamapResult.Error>(repository.updateReview("review", "", listOf(ReviewAttachment.Existing("retained", null)), true))
+            assertIs<RamapResult.Error>(repository.updateReview("review", "1234", listOf(ReviewAttachment.Existing("retained", null)), true))
+            assertIs<RamapResult.Error>(repository.updateReview("review", "12345", List(5) { ReviewAttachment.Existing("retained-$it", null) } + ReviewAttachment.New(image), true))
             assertEquals(2, updatedBodies.size)
         }
 
@@ -262,7 +262,7 @@ class DefaultReviewRepositoryTest {
             val dataSource = FakeMyReviewsDataSource()
             val repository = DefaultReviewRepository(dataSource, FakeRamenShopDataSource(), changes = testReviewChanges())
             val submitted = assertIs<RamapResult.Error>(repository.submitReview("shop", "씨발 맛없어요", emptyList(), true))
-            val updated = assertIs<RamapResult.Error>(repository.updateReview("review", "씨.발 맛없어요", emptyList(), emptyList(), false))
+            val updated = assertIs<RamapResult.Error>(repository.updateReview("review", "씨.발 맛없어요", emptyList(), false))
             assertIs<IllegalArgumentException>(assertIs<RamapError.Unknown>(submitted.error).cause)
             assertIs<IllegalArgumentException>(assertIs<RamapError.Unknown>(updated.error).cause)
             assertNull(dataSource.submittedReview)

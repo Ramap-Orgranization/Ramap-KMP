@@ -6,12 +6,12 @@ import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
 import com.peto.ramap.domain.model.review.EditableReview
 import com.peto.ramap.domain.model.review.Review
+import com.peto.ramap.domain.model.review.ReviewAttachment
 import com.peto.ramap.domain.model.review.ReviewImage
 import com.peto.ramap.domain.repository.ProfileRepository
 import com.peto.ramap.domain.repository.RamenShopRepository
 import com.peto.ramap.domain.repository.ReviewRepository
 import com.peto.ramap.ui.base.BaseViewModel
-import com.peto.ramap.ui.review.write.contract.ExistingReviewPhoto
 import com.peto.ramap.ui.review.write.contract.ReviewWriteIntent
 import com.peto.ramap.ui.review.write.contract.ReviewWriteLoadKey
 import com.peto.ramap.ui.review.write.contract.ReviewWriteSideEffect
@@ -45,7 +45,6 @@ class ReviewWriteViewModel(
             is ReviewWriteIntent.ChangeVisibility -> changeVisibility(intent.isPublic)
             is ReviewWriteIntent.AddImage -> addImage(intent.image)
             is ReviewWriteIntent.RemoveImage -> removeImage(intent.index)
-            is ReviewWriteIntent.RemoveExistingImage -> removeExistingImage(intent.index)
             is ReviewWriteIntent.MoveImage -> moveImage(intent.fromIndex, intent.toIndex)
             ReviewWriteIntent.ReloadReview -> loadEditableReview()
             ReviewWriteIntent.Load -> loadShop()
@@ -119,23 +118,16 @@ class ReviewWriteViewModel(
     private fun addImage(image: ReviewImage) {
         val cannotEditOrInvalid = !currentState.canEdit || !image.isValid()
         if (cannotEditOrInvalid) return
-        val currentTotalCount = currentState.images.size + currentState.existingImages.size
-        val canAddMore = currentTotalCount < ReviewImage.MAX_COUNT
+        val canAddMore = currentState.imageCount < ReviewImage.MAX_COUNT
         if (canAddMore) {
-            reduce { copy(images = images + image) }
+            reduce { copy(attachments = attachments + ReviewAttachment.New(image)) }
         }
     }
 
     private fun removeImage(index: Int) {
         val cannotEdit = !currentState.canEdit
         if (cannotEdit) return
-        reduce { copy(images = images.filterIndexed { i, _ -> i != index }) }
-    }
-
-    private fun removeExistingImage(index: Int) {
-        val cannotEdit = !currentState.canEdit
-        if (cannotEdit) return
-        reduce { copy(existingImages = existingImages.filterIndexed { i, _ -> i != index }) }
+        reduce { copy(attachments = attachments.filterIndexed { i, _ -> i != index }) }
     }
 
     private fun moveImage(
@@ -144,12 +136,11 @@ class ReviewWriteViewModel(
     ) {
         val cannotEdit = !currentState.canEdit
         if (cannotEdit) return
-        val isFromIndexInvalid = fromIndex !in currentState.images.indices
-        val isToIndexInvalid = toIndex !in currentState.images.indices
-        if (isFromIndexInvalid || isToIndexInvalid) return
+        val indices = currentState.attachments.indices
+        if (fromIndex == toIndex || fromIndex !in indices || toIndex !in indices) return
         reduce {
             copy(
-                images = images.toMutableList().apply { add(toIndex, removeAt(fromIndex)) },
+                attachments = attachments.toMutableList().apply { add(toIndex, removeAt(fromIndex)) },
             )
         }
     }
@@ -207,16 +198,15 @@ class ReviewWriteViewModel(
             return
         }
         val existingPhotos =
-            review.imagePaths.zip(review.imageUrls).map { (path, url) ->
-                ExistingReviewPhoto(path, url)
+            review.imagePaths.mapIndexed { index, path ->
+                ReviewAttachment.Existing(path, review.imageUrls.getOrNull(index))
             }
         reduce {
             copy(
                 reviewLoaded = true,
                 body = review.body,
                 isPublic = review.isPublic,
-                existingImages = existingPhotos,
-                images = emptyList(),
+                attachments = existingPhotos,
             )
         }
     }
@@ -333,15 +323,14 @@ class ReviewWriteViewModel(
             reviewRepository.submitReview(
                 shopId = shopId,
                 body = draft.body,
-                images = draft.images,
+                images = draft.attachments.filterIsInstance<ReviewAttachment.New>().map { it.image },
                 isPublic = draft.isPublic,
             )
         } else {
             reviewRepository.updateReview(
                 reviewId = editReviewId,
                 body = draft.body,
-                retainedImagePaths = draft.existingImages.map { it.path },
-                newImages = draft.images,
+                attachments = draft.attachments,
                 isPublic = draft.isPublic,
             )
         }
@@ -350,7 +339,7 @@ class ReviewWriteViewModel(
         when (result) {
             is RamapResult.Error -> showSubmitFailureIfAuthenticated()
             is RamapResult.Success -> {
-                reduce { copy(body = "", images = emptyList(), isPublic = true) }
+                reduce { copy(body = "", attachments = emptyList(), isPublic = true) }
                 postSideEffect(ReviewWriteSideEffect.Submitted)
             }
         }

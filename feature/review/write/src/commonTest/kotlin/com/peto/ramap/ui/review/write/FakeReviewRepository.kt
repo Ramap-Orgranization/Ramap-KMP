@@ -6,6 +6,7 @@ import com.peto.ramap.domain.model.review.MyReview
 import com.peto.ramap.domain.model.review.MyReviewVisibility
 import com.peto.ramap.domain.model.review.MyReviewsPage
 import com.peto.ramap.domain.model.review.Review
+import com.peto.ramap.domain.model.review.ReviewAttachment
 import com.peto.ramap.domain.model.review.ReviewImage
 import com.peto.ramap.domain.model.review.ReviewLike
 import com.peto.ramap.domain.model.review.ShopReviewsPage
@@ -61,8 +62,7 @@ internal class FakeReviewRepository(
     data class Update(
         val reviewId: String,
         val body: String,
-        val retainedImagePaths: List<String>,
-        val newImages: List<ReviewImage>,
+        val attachments: List<ReviewAttachment>,
         val isPublic: Boolean,
     )
 
@@ -71,11 +71,10 @@ internal class FakeReviewRepository(
     override suspend fun updateReview(
         reviewId: String,
         body: String,
-        retainedImagePaths: List<String>,
-        newImages: List<ReviewImage>,
+        attachments: List<ReviewAttachment>,
         isPublic: Boolean,
     ): RamapResult<Unit> {
-        updates += Update(reviewId, body, retainedImagePaths, newImages, isPublic)
+        updates += Update(reviewId, body, attachments, isPublic)
         return editResult
     }
 

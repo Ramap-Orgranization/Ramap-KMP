@@ -21,10 +21,6 @@ sealed interface ReviewWriteIntent : Intent {
         val index: Int,
     ) : ReviewWriteIntent
 
-    data class RemoveExistingImage(
-        val index: Int,
-    ) : ReviewWriteIntent
-
     data object ReloadReview : ReviewWriteIntent
 
     data class MoveImage(

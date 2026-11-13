@@ -53,7 +53,7 @@ fun ShopReviewWriteRoute(
     }
     val imagePicker =
         rememberImagesPicker(
-            maxSelectionCount = if (uiState.canEdit) ReviewImage.MAX_COUNT - uiState.images.size - uiState.existingImages.size else 0,
+            maxSelectionCount = if (uiState.canEdit) ReviewImage.MAX_COUNT - uiState.imageCount else 0,
             onImagesPicked = { images ->
                 for ((bytes, mimeType) in images) {
                     viewModel.dispatch(ReviewWriteIntent.AddImage(ReviewImage(bytes, mimeType)))
