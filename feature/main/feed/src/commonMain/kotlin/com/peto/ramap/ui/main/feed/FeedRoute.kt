@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -35,7 +36,7 @@ fun FeedRoute(
     onOpenReviewDetail: ((String) -> Unit)? = null,
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-    val listState = rememberLazyListState()
+    val listState = key(state.sort, state.filter) { rememberLazyListState() }
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
         viewModel.dispatch(FeedIntent.Resume)
     }

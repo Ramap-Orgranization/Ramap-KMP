@@ -21,7 +21,6 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -74,9 +73,6 @@ internal fun FeedContent(
     onOpenReviewDetail: ((String) -> Unit)? = null,
 ) {
     val pullToRefreshState = rememberPullToRefreshState()
-    LaunchedEffect(state.sort, state.filter) {
-        listState.scrollToItem(0)
-    }
     ObserveLoadMoreNearListEnd(
         listState = listState,
         itemThreshold = PREFETCH_ITEM_THRESHOLD,
@@ -85,7 +81,7 @@ internal fun FeedContent(
         onLoadMore = { onIntent(FeedIntent.LoadMore) },
     )
     val coroutineScope = rememberCoroutineScope()
-    val showScrollToTop by remember {
+    val showScrollToTop by remember(listState) {
         derivedStateOf {
             listState.firstVisibleItemIndex > 0 || listState.firstVisibleItemScrollOffset > 200
         }
