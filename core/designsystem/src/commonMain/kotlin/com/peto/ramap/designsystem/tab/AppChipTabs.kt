@@ -23,7 +23,6 @@ import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.extension.noRippleClickable
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.BrandColor
-import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.RamapTheme
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
@@ -53,7 +52,7 @@ fun AppChipTabs(
                 modifier =
                     Modifier
                         .background(
-                            color = if (isSelected) BrandColor.Fill else GrayColor.C100,
+                            color = if (isSelected) BrandColor.Primary else BrandColor.SubtleFill,
                             shape = tabShape,
                         ).semantics { this.selected = isSelected }
                         .noRippleClickable(
@@ -66,7 +65,7 @@ fun AppChipTabs(
                 AppText(
                     text = label,
                     style = AppTextStyle.B1,
-                    color = if (isSelected) BrandColor.OnFill else GrayColor.C400,
+                    color = if (isSelected) BrandColor.OnSelectionFill else BrandColor.SecondPrimary,
                     maxLines = 1,
                 )
             }

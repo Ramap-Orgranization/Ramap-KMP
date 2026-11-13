@@ -45,8 +45,8 @@ fun AppFilterChip(
     Surface(
         modifier = modifier.semantics { this.selected = selected }.noRippleClickable(onClick = onClick),
         shape = RoundedCornerShape(10.dp),
-        color = if (selected) BrandColor.Fill else CommonColor.White,
-        border = BorderStroke(1.dp, if (selected) BrandColor.Foreground else GrayColor.C100),
+        color = if (selected) BrandColor.Primary else CommonColor.White,
+        border = BorderStroke(1.dp, if (selected) BrandColor.SecondPrimary else GrayColor.C100),
     ) {
         Row(
             modifier = Modifier.heightIn(min = 40.dp).padding(horizontal = 12.dp, vertical = 8.dp),

@@ -42,7 +42,7 @@ import ramap.shared.generated.resources.shop_review_prompt_title
 import ramap.shared.generated.resources.shop_review_write_action
 
 private val ReviewWriteCardBackgroundColor = BrandColor.SubtleFill
-private val ReviewWriteCardWatermarkColor = BrandColor.Fill.copy(alpha = 0.2f)
+private val ReviewWriteCardWatermarkColor = BrandColor.Primary.copy(alpha = 0.2f)
 
 @Composable
 fun ReviewWriteCard(

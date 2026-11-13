@@ -9,14 +9,14 @@ class BrandColorContrastTest {
     @Test
     fun `강조 글자는 밝은 화면과 카드와 배지 배경에서 읽을 수 있다`() {
         listOf(SurfaceColor.Background, CommonColor.White, BrandColor.SubtleFill).forEach { background ->
-            assertContrast(foreground = BrandColor.Foreground, background = background, minimum = 4.5f)
+            assertContrast(foreground = BrandColor.SecondPrimary, background = background, minimum = 4.5f)
         }
     }
 
     @Test
     fun `골드 배경 위 글자와 저장 별의 윤곽을 구별할 수 있다`() {
-        assertContrast(foreground = BrandColor.OnFill, background = BrandColor.Fill, minimum = 4.5f)
-        assertContrast(foreground = BrandColor.Foreground, background = BrandColor.Fill, minimum = 3f)
+        assertContrast(foreground = BrandColor.OnFill, background = BrandColor.Primary, minimum = 4.5f)
+        assertContrast(foreground = BrandColor.SecondPrimary, background = BrandColor.Primary, minimum = 3f)
     }
 
     @Test

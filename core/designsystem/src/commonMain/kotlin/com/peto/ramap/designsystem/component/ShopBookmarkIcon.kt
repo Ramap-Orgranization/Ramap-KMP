@@ -24,14 +24,14 @@ fun ShopBookmarkIcon(
             painter = painterResource(Res.drawable.ic_star_filled),
             contentDescription = null,
             modifier = Modifier.matchParentSize(),
-            colorFilter = ColorFilter.tint(if (isBookmarked) BrandColor.Fill else CommonColor.Black),
+            colorFilter = ColorFilter.tint(if (isBookmarked) BrandColor.Primary else CommonColor.Black),
         )
         if (isBookmarked) {
             Image(
                 painter = painterResource(Res.drawable.ic_star_outline),
                 contentDescription = null,
                 modifier = Modifier.matchParentSize(),
-                colorFilter = ColorFilter.tint(BrandColor.Foreground),
+                colorFilter = ColorFilter.tint(BrandColor.SecondPrimary),
             )
         }
     }

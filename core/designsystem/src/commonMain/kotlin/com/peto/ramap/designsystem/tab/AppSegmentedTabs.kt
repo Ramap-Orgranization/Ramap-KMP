@@ -81,7 +81,7 @@ fun AppSegmentedTabs(
                         color =
                             when {
                                 tab.hasCountBadge -> ChromaticColor.Orange400
-                                selected -> BrandColor.Foreground
+                                selected -> BrandColor.SecondPrimary
                                 else -> GrayColor.C300
                             },
                         modifier = countModifier,

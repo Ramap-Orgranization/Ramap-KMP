@@ -4,9 +4,12 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
@@ -21,6 +24,8 @@ import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
 import com.peto.ramap.theme.RamapTheme
 import com.peto.ramap.theme.RecommendationColor
+import org.jetbrains.compose.resources.DrawableResource
+import org.jetbrains.compose.resources.painterResource
 
 @Composable
 fun CategoryFilterChip(
@@ -29,12 +34,14 @@ fun CategoryFilterChip(
     modifier: Modifier = Modifier,
     selected: Boolean = false,
     style: AppTextStyle = AppTextStyle.C2,
+    trailingIcon: DrawableResource? = null,
+    leadingIcon: DrawableResource? = null,
 ) {
     Surface(
         modifier =
             modifier.semantics {
                 this.selected = selected
-                role = Role.Tab
+                role = if (trailingIcon == null) Role.Tab else Role.Button
             },
         shape = RoundedCornerShape(999.dp),
         color = if (selected) BrandColor.SubtleFill else CommonColor.White,
@@ -42,12 +49,30 @@ fun CategoryFilterChip(
         onClick = onClick,
         shadowElevation = 6.dp,
         content = {
-            AppText(
-                text = label,
+            val contentColor = if (selected) BrandColor.SecondPrimary else GrayColor.C400
+            Row(
                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                style = style,
-                color = if (selected) BrandColor.Foreground else GrayColor.C400,
-            )
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                leadingIcon?.let {
+                    Icon(
+                        painter = painterResource(it),
+                        contentDescription = null,
+                        tint = contentColor,
+                        modifier = Modifier.size(16.dp),
+                    )
+                }
+                AppText(text = label, style = style, color = contentColor)
+                trailingIcon?.let {
+                    Icon(
+                        painter = painterResource(it),
+                        contentDescription = null,
+                        tint = contentColor,
+                        modifier = Modifier.size(16.dp),
+                    )
+                }
+            }
         },
     )
 }

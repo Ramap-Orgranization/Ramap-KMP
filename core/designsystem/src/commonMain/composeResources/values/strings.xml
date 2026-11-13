@@ -398,7 +398,26 @@
 
     <!-- 지도 화면 -->
     <string name="bookmarked_shops_toggle">저장</string>
-    <string name="open_shops_toggle">영업 중인 매장</string>
+    <string name="map_hours_filter_all_shops">전체 매장</string>
+    <string name="map_hours_filter_open_now">영업 중</string>
+    <string name="map_hours_filter_visit">방문 시간 선택</string>
+    <string name="map_hours_filter_dialog_title">영업시간 필터 설정</string>
+    <string name="map_hours_filter_close">닫기</string>
+    <string name="map_hours_filter_select_date">방문 날짜 선택</string>
+    <string name="map_hours_filter_month">%1$d년 %2$d월</string>
+    <string name="map_hours_filter_am">오전</string>
+    <string name="map_hours_filter_pm">오후</string>
+    <string name="map_hours_filter_today">오늘</string>
+    <string name="map_hours_filter_tomorrow">내일</string>
+    <string name="map_hours_filter_short_date">%1$d/%2$d</string>
+    <string name="map_hours_filter_date_description">%1$d월 %2$d일 %3$s요일</string>
+    <string name="map_hours_filter_visit_label">%1$s %2$s</string>
+    <string name="map_hours_filter_reset">초기화</string>
+    <string name="map_hours_filter_apply">필터 적용하기</string>
+    <string name="map_hours_filter_apply_with_count">필터 적용(%1$d개)</string>
+    <string name="map_hours_filter_store_count">%1$d곳</string>
+    <string name="map_hours_filter_result_count">%1$d개 매장</string>
+    <string name="map_hours_filter_visit_available">방문 시간에 주문 가능</string>
     <string name="current_location">내 위치</string>
     <string name="current_location_timeout_message">현재 위치를 찾지 못했어요. 잠시 후 다시 시도해 주세요.</string>
     <string name="map_shop_detail_error_title">매장 정보를 불러오지 못했어요</string>

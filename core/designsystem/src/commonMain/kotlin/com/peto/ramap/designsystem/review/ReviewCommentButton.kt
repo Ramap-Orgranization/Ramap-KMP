@@ -51,7 +51,7 @@ internal fun ReviewCommentButton(
             painter = painterResource(Res.drawable.ic_review_comment_outline),
             contentDescription = null,
             modifier = Modifier.size(20.dp),
-            colorFilter = ColorFilter.tint(if (expanded) BrandColor.Foreground else GrayColor.C300),
+            colorFilter = ColorFilter.tint(if (expanded) BrandColor.SecondPrimary else GrayColor.C300),
         )
         AppText(text = count?.toString() ?: "–", style = AppTextStyle.B2, color = GrayColor.C500)
     }

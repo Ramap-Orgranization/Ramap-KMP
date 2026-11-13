@@ -21,11 +21,11 @@ object SurfaceColor {
 }
 
 object BrandColor {
-    val Fill = Color(0xFFE6C05D)
+    val Primary = Color(0xFFE6C05D)
+    val SecondPrimary = Color(0xFF745500)
     val OnFill = Color(0xFF171717)
     val OnSelectionFill = Color(0xFFFFFFFF)
     val SubtleFill = Color(0xFFFFF4D6)
-    val Foreground = Color(0xFF745500)
 }
 
 object DimmedColor {
@@ -74,7 +74,7 @@ object InstagramColor {
 }
 
 object RecommendationColor {
-    val Gold = BrandColor.Fill
+    val Gold = BrandColor.Primary
     val Cream = BrandColor.SubtleFill
     val Brown = Color(0xFF6C2921)
     val Border = Color(0xFFD4AD55)

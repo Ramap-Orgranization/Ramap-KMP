@@ -14,7 +14,6 @@ import ramap.shared.generated.resources.event_date_new_menu
 import ramap.shared.generated.resources.event_detail_new_menu_title
 import ramap.shared.generated.resources.event_detail_title
 import ramap.shared.generated.resources.event_new_menu_venue
-import ramap.shared.generated.resources.event_sold_out_notice
 import ramap.shared.generated.resources.event_status_cancelled
 import ramap.shared.generated.resources.event_status_sold_out
 import ramap.shared.generated.resources.event_status_today
@@ -214,8 +213,6 @@ class ShopEventResourceMapperTest {
             ),
         )
     }
-
-
 
     @Test
     fun `신메뉴 안내 문구와 타입을 매핑한다`() {

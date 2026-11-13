@@ -46,7 +46,7 @@ internal fun ProfileVisitRankingPodiumStep(
     modifier: Modifier = Modifier,
 ) {
     val isFirst = rank == 1
-    val photoBorder = if (isFirst) Modifier.border(2.dp, BrandColor.Foreground, CircleShape) else Modifier
+    val photoBorder = if (isFirst) Modifier.border(2.dp, BrandColor.SecondPrimary, CircleShape) else Modifier
     Column(
         modifier = modifier.noRippleClickable(onClick = onClick),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -95,7 +95,7 @@ internal fun ProfileVisitRankingPodiumBase(
             Brush.verticalGradient(
                 colors =
                     if (isFirst) {
-                        listOf(BrandColor.SubtleFill, BrandColor.Fill)
+                        listOf(BrandColor.SubtleFill, BrandColor.Primary)
                     } else {
                         listOf(Color(0xFFF0EFEC), Color(0xFFE7E5E1))
                     },

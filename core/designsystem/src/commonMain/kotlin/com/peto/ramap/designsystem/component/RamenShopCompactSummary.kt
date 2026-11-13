@@ -48,7 +48,7 @@ fun RamenShopCompactSummary(
             modifier
                 .background(BrandColor.SubtleFill)
                 .padding(8.dp),
-        chevronColor = BrandColor.Foreground,
+        chevronColor = BrandColor.SecondPrimary,
     )
 }
 

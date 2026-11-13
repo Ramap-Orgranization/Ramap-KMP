@@ -108,7 +108,7 @@ private fun BoxScope.ProfileEditBadge() {
                 .size(40.dp)
                 .border(2.dp, CommonColor.White, CircleShape)
                 .clip(CircleShape)
-                .background(BrandColor.Fill),
+                .background(BrandColor.Primary),
         contentAlignment = Alignment.Center,
     ) {
         Icon(
