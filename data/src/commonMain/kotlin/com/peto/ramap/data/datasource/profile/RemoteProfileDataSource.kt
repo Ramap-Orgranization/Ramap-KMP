@@ -65,13 +65,6 @@ internal class RemoteProfileDataSource(
                 },
             ).decodeAs()
 
-    override suspend fun updateProfileVisibility(isPublic: Boolean): ProfileResponse =
-        client.postgrest
-            .rpc(
-                FUNCTION_UPDATE_MY_PROFILE_VISIBILITY,
-                buildJsonObject { put(PARAMETER_IS_PUBLIC, isPublic) },
-            ).decodeAs()
-
     override suspend fun updateProfileVisibility(visibility: ProfileVisibility): ProfileResponse =
         client.postgrest
             .rpc(
@@ -123,7 +116,6 @@ internal class RemoteProfileDataSource(
         const val FUNCTION_FETCH_OR_CREATE_MY_PROFILE = "fetch_or_create_my_profile"
         const val FUNCTION_IS_PROFILE_NICKNAME_AVAILABLE = "is_profile_nickname_available"
         const val FUNCTION_UPDATE_MY_PROFILE = "update_my_profile"
-        const val FUNCTION_UPDATE_MY_PROFILE_VISIBILITY = "update_my_profile_visibility"
         const val FUNCTION_UPDATE_MY_PROFILE_VISIBILITY_V2 = "update_my_profile_visibility_v2"
 
         const val PARAMETER_USER_ID = "p_user_id"

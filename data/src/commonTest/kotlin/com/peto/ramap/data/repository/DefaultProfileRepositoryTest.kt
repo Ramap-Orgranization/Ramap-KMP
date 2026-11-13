@@ -253,9 +253,12 @@ class DefaultProfileRepositoryTest {
     private fun photo() = ProfileImage(byteArrayOf(0xff.toByte(), 0xd8.toByte(), 0xff.toByte()), "image/jpeg")
 
     @Test
-    fun `현재 계정으로 프로필 공개 범위를 변경한다`() =
+    fun `현재 계정을 공개로 바꿀 때 팔로워 열람 설정을 유지한다`() =
         runTest {
-            val source = ProfileDataSourceFake()
+            val source =
+                ProfileDataSourceFake().apply {
+                    visibility = ProfileVisibility(isPublic = false, followersCanReadReviews = false)
+                }
 
             val result =
                 assertIs<RamapResult.Success<AccountProfile>>(
@@ -264,6 +267,17 @@ class DefaultProfileRepositoryTest {
 
             assertEquals("owner", source.visibilityOwner)
             assertTrue(result.data.isPublic)
+            assertEquals(ProfileVisibility(isPublic = true, followersCanReadReviews = false), source.visibility)
+        }
+
+    @Test
+    fun `기존 공개 범위를 읽는 동안 계정이 바뀌면 공개 설정을 저장하지 않는다`() =
+        runTest {
+            val source = ProfileDataSourceFake().apply { afterFetch = { userId = "other" } }
+            val repository = DefaultProfileRepository(source, changes = testReviewChanges())
+
+            assertIs<RamapResult.Error>(repository.updateProfileVisibility(true))
+            assertEquals(null, source.visibilityOwner)
         }
 
     @Test
@@ -299,13 +313,14 @@ internal class ProfileDataSourceFake : ProfileDataSource {
     var afterSignedUrl: () -> Unit = {}
     var signedExpiry: () -> Instant = { Clock.System.now() + 5.minutes }
     var visibilityOwner: String? = null
+    var visibility = ProfileVisibility(isPublic = false)
 
     override fun currentUserId() = userId
 
     override suspend fun fetchProfile(userId: String): ProfileResponse {
         requestOwner = userId
         afterFetch()
-        return ProfileResponse(userId, "라멘", "$userId/old.jpg", bio)
+        return profileResponse(userId)
     }
 
     override suspend fun isNicknameAvailable(nickname: String): Boolean {
@@ -353,11 +368,21 @@ internal class ProfileDataSourceFake : ProfileDataSource {
         return SignedImageUrl(url = "signed:$path", expiresAt = signedExpiry())
     }
 
-    override suspend fun updateProfileVisibility(visibility: ProfileVisibility): ProfileResponse = updateProfileVisibility(visibility.isPublic)
-
-    override suspend fun updateProfileVisibility(isPublic: Boolean): ProfileResponse {
+    override suspend fun updateProfileVisibility(visibility: ProfileVisibility): ProfileResponse {
         val owner = requireNotNull(userId)
         visibilityOwner = owner
-        return ProfileResponse(owner, "라멘", "$owner/old.jpg", bio, isPublic)
+        this.visibility = visibility
+        return profileResponse(owner)
     }
+
+    private fun profileResponse(owner: String): ProfileResponse =
+        ProfileResponse(
+            userId = owner,
+            nickname = "라멘",
+            avatarPath = "$owner/old.jpg",
+            bio = bio,
+            isPublic = visibility.isPublic,
+            followersCanReadReviews = visibility.followersCanReadReviews,
+            followersCanReadSavedShops = visibility.followersCanReadSavedShops,
+        )
 }

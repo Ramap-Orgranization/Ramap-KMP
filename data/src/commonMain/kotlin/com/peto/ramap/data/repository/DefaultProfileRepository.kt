@@ -59,22 +59,37 @@ internal class DefaultProfileRepository(
     override suspend fun updateProfileVisibility(isPublic: Boolean): RamapResult<AccountProfile> =
         invokeRequest {
             val userId = requireNotNull(dataSource.currentUserId()) { ERROR_MISSING_AUTHENTICATED_USER }
-            val epoch = changes.synchronizeSession()
-            val response = dataSource.updateProfileVisibility(isPublic)
-            check(response.userId == userId) { ERROR_MISMATCHED_PROFILE_OWNER }
-            changes.publish(ReviewChange.AccessChanged(userId), epoch)
-            accountProfile(userId, response, tolerateAvatarSigningFailure = true)
+            val currentProfile = dataSource.fetchProfile(userId)
+            check(currentProfile.userId == userId) { ERROR_MISMATCHED_PROFILE_OWNER }
+            saveProfileVisibility(
+                userId = userId,
+                visibility =
+                    ProfileVisibility(
+                        isPublic = isPublic,
+                        followersCanReadReviews = currentProfile.followersCanReadReviews,
+                        followersCanReadSavedShops = currentProfile.followersCanReadSavedShops,
+                    ),
+            )
         }
 
     override suspend fun updateProfileVisibility(visibility: ProfileVisibility): RamapResult<AccountProfile> =
         invokeRequest {
             val userId = requireNotNull(dataSource.currentUserId()) { ERROR_MISSING_AUTHENTICATED_USER }
-            val epoch = changes.synchronizeSession()
-            val response = dataSource.updateProfileVisibility(visibility)
-            check(response.userId == userId) { ERROR_MISMATCHED_PROFILE_OWNER }
-            changes.publish(ReviewChange.AccessChanged(userId), epoch)
-            accountProfile(userId, response, tolerateAvatarSigningFailure = true)
+            saveProfileVisibility(userId = userId, visibility = visibility)
         }
+
+    private suspend fun saveProfileVisibility(
+        userId: String,
+        visibility: ProfileVisibility,
+    ): AccountProfile {
+        val epoch = changes.synchronizeSession()
+        currentCoroutineContext().ensureActive()
+        check(dataSource.currentUserId() == userId) { ERROR_SESSION_CHANGED }
+        val response = dataSource.updateProfileVisibility(visibility)
+        check(response.userId == userId) { ERROR_MISMATCHED_PROFILE_OWNER }
+        changes.publish(ReviewChange.AccessChanged(userId), epoch)
+        return accountProfile(userId, response, tolerateAvatarSigningFailure = true)
+    }
 
     private suspend fun updateProfile(
         userId: String,
@@ -205,5 +220,6 @@ internal class DefaultProfileRepository(
         const val ERROR_MISSING_AUTHENTICATED_USER = "Missing authenticated user"
         const val ERROR_INVALID_PROFILE_NICKNAME = "Invalid profile nickname"
         const val ERROR_MISMATCHED_PROFILE_OWNER = "Mismatched profile owner"
+        const val ERROR_SESSION_CHANGED = "Profile session changed"
     }
 }
