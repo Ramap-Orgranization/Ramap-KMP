@@ -17,6 +17,7 @@ import com.peto.ramap.domain.model.menu.ShopMenu
 import com.peto.ramap.domain.model.review.ShopReviewCache
 import com.peto.ramap.domain.model.review.change.ReviewChangeReducer
 import com.peto.ramap.domain.usecase.FeatchShopReviewsUseCase
+import com.peto.ramap.domain.usecase.RefreshReviewListUseCase
 import com.peto.ramap.domain.usecase.SignInUseCase
 import com.peto.ramap.fake.FakeAnalyticsTracker
 import com.peto.ramap.fake.FakeCrashReporter
@@ -230,7 +231,7 @@ class ShopSheetCompositionTest {
                 viewModelFactory {
                     initializer { OverviewViewModel(login, FakeShopReportRepository(), personalization, queries, FakeMapSearchHistoryStorage(), ShopAnalytics(FakeAnalyticsTracker()), SignInUseCase(login, LoginAnalytics(FakeAnalyticsTracker(), FakeCrashReporter())), FakeSubscribedShopRepository()) }
                     initializer { ShopMenuViewModel(queries) }
-                    initializer { ReviewsViewModel(queries, FakeUserModerationRepository(), profile, login, changes, reducer, FeatchShopReviewsUseCase(queries, changes, reducer, ShopReviewCache(changes, reducer))) }
+                    initializer { ReviewsViewModel(queries, FakeUserModerationRepository(), profile, login, changes, reducer, FeatchShopReviewsUseCase(queries, changes, reducer, ShopReviewCache(changes, reducer), RefreshReviewListUseCase(reducer)), RefreshReviewListUseCase(reducer)) }
                 }
             val provider = ViewModelProvider.create(owner, factory)
             val overview = provider[OverviewViewModel::class]

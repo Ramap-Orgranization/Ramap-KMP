@@ -85,7 +85,7 @@ internal fun FollowUserRow(
                             enabled = enabled,
                             isLoading = actingAction == FollowAction.APPROVE,
                             textStyle = AppTextStyle.C1,
-                            backgroundColor = BrandColor.Fill,
+                            backgroundColor = BrandColor.Primary,
                             textColor = BrandColor.OnFill,
                             cornerRadius = 22.dp,
                             height = 44.dp,

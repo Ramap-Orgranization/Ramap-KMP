@@ -19,14 +19,13 @@ import com.peto.ramap.domain.repository.ReviewFeedRepository
 import com.peto.ramap.domain.repository.ReviewRepository
 import com.peto.ramap.domain.repository.UserModerationRepository
 import com.peto.ramap.domain.store.ReviewChangeStore
+import com.peto.ramap.domain.usecase.RefreshReviewListUseCase
 import com.peto.ramap.ui.base.BaseViewModel
 import com.peto.ramap.ui.main.feed.contract.FeedIntent
 import com.peto.ramap.ui.main.feed.contract.FeedLoadKey
 import com.peto.ramap.ui.main.feed.contract.FeedSideEffect
 import com.peto.ramap.ui.main.feed.contract.FeedUiState
 import com.peto.ramap.ui.task.TaskPolicy
-import kotlinx.coroutines.currentCoroutineContext
-import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.StringResource
@@ -50,6 +49,7 @@ class FeedViewModel(
     private val reviews: ReviewRepository,
     private val changes: ReviewChangeStore,
     private val reducer: ReviewChangeReducer,
+    private val refreshReviews: RefreshReviewListUseCase,
 ) : BaseViewModel<FeedUiState, FeedIntent, FeedSideEffect>(FeedUiState()) {
     private var sessionEpoch: Long? = null
     private var lastAppliedRevision = changes.journal.value.revision
@@ -63,14 +63,13 @@ class FeedViewModel(
             combine(profilesRepository.sessionUserId, changes.journal) { viewer, journal -> viewer to journal }
                 .collect { (viewer, journal) ->
                     if (viewer != journal.userId) {
-                        invalidateSession(viewer)
+                        invalidateSession(viewer ?: journal.userId, resolved = false)
                         return@collect
                     }
                     if (!currentState.sessionResolved || sessionEpoch != journal.epoch || currentState.currentUserId != viewer) {
-                        invalidateSession(viewer)
                         sessionEpoch = journal.epoch
                         lastAppliedRevision = journal.revision
-                        reduce { copy(sessionResolved = true) }
+                        invalidateSession(viewer, resolved = true)
                         loadPage(append = false)
                         return@collect
                     }
@@ -93,14 +92,21 @@ class FeedViewModel(
         }
     }
 
-    private fun invalidateSession(viewer: String?) {
+    private fun invalidateSession(
+        viewer: String?,
+        resolved: Boolean,
+    ) {
         cancelTasks()
-        sessionEpoch = null
         reduce {
+            val retained = refreshReviews.retainGuestReviews(currentUserId, viewer, reviews, ProfileReview::review)
             FeedUiState(
-                currentUserId = viewer,
+                currentUserId = viewer.takeIf { resolved },
+                sessionResolved = resolved,
                 sort = sort,
                 filter = if (viewer != null && viewer == currentUserId) filter else ReviewFeedFilter.ALL,
+                reviews = retained,
+                hasLoaded = retained.isNotEmpty(),
+                isUsingGuestReviews = retained.isNotEmpty(),
             )
         }
     }
@@ -133,6 +139,7 @@ class FeedViewModel(
     }
 
     override suspend fun handleIntent(intent: FeedIntent) {
+        if (currentState.isUsingGuestReviews && !intent.canRunWithGuestReviews()) return
         when (intent) {
             is FeedIntent.SelectSort -> selectSort(intent.sort)
             is FeedIntent.SelectFilter -> selectFilter(intent.filter)
@@ -171,6 +178,12 @@ class FeedViewModel(
         }
     }
 
+    private fun FeedIntent.canRunWithGuestReviews(): Boolean =
+        when (this) {
+            FeedIntent.Refresh, FeedIntent.Retry, is FeedIntent.SelectFilter, is FeedIntent.SelectSort -> true
+            else -> false
+        }
+
     private fun requiresReload(change: ReviewChange): Boolean =
         change is ReviewChange.AccessChanged ||
             change is ReviewChange.Written ||
@@ -201,7 +214,7 @@ class FeedViewModel(
     ) {
         cancelTask(PAGE_TASK)
         reduce {
-            clearAccess().copy(sort = sort, filter = filter, reviews = emptyList(), nextCursor = null, hasFilterTargets = null, hasLoaded = false, failed = false, appendFailed = false)
+            clearAccess().copy(sort = sort, filter = filter, reviews = emptyList(), nextCursor = null, hasFilterTargets = null, hasLoaded = false, failed = false, appendFailed = false, isUsingGuestReviews = false)
         }
         loadPage(append = false)
     }
@@ -239,6 +252,7 @@ class FeedViewModel(
                         nextCursor = page.nextCursor,
                         hasFilterTargets = page.hasFilterTargets,
                         hasLoaded = true,
+                        isUsingGuestReviews = false,
                     )
                 }
             },
@@ -256,23 +270,21 @@ class FeedViewModel(
         sort: ReviewFeedSort,
         filter: ReviewFeedFilter,
     ): RamapResult<ReviewFeedPage> {
-        var next = cursor
-        var hasFilterTargets: Boolean? = null
-        val rows = mutableListOf<ProfileReview>()
-        do {
-            val previous = next
-            when (val result = reviewFeedRepository.fetchPage(next, sort, filter)) {
-                is RamapResult.Error -> return result
-                is RamapResult.Success -> {
-                    if (previous == cursor) hasFilterTargets = result.data.hasFilterTargets
-                    rows += result.data.reviews
-                    next = result.data.nextCursor
-                }
+        val result =
+            refreshReviews.fetchExtent(
+                start = cursor,
+                reviewCount = extent,
+                fetchPage = { reviewFeedRepository.fetchPage(it, sort, filter) },
+                countReviews = { it.reviews.size },
+                nextCursor = { _, page -> page.nextCursor },
+            )
+        return when (result) {
+            is RamapResult.Error -> result
+            is RamapResult.Success -> {
+                val (pages, nextCursor) = result.data
+                RamapResult.Success(ReviewFeedPage(pages.flatMap { it.reviews }, nextCursor, pages.first().hasFilterTargets))
             }
-            currentCoroutineContext().ensureActive()
-            if (next == previous) next = null
-        } while (rows.size < extent && next != null)
-        return RamapResult.Success(ReviewFeedPage(rows, next, hasFilterTargets))
+        }
     }
 
     private fun findReview(review: Review): Review? = currentState.reviews.firstOrNull { it.review.id == review.id }?.review

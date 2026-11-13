@@ -16,6 +16,7 @@ data class OtherReviewsUiState(
     val visitRanking: ProfileVisitRanking? = null,
     val profileFailed: Boolean = false,
     val reviews: List<ProfileReview> = emptyList(),
+    val isUsingGuestReviews: Boolean = false,
     val reviewsOffset: Long = 0L,
     val selectedTab: OtherReviewsTab = OtherReviewsTab.Reviews,
     val savedShops: List<RamenShop> = emptyList(),
@@ -74,7 +75,7 @@ data class OtherReviewsUiState(
         get() = profileAccess is ProfileAccess.Visible && profile?.userId != currentUserId
     val showsSummaryHeader: Boolean get() = profileAccess is ProfileAccess.Visible && reviews.isNotEmpty()
     val showsInitialLoading: Boolean get() = activeLoading && activeEmpty
-    val showsAppendLoading: Boolean get() = activeLoading && !activeEmpty
+    val showsAppendLoading: Boolean get() = activeLoading && !activeEmpty && !isUsingGuestReviews
     val showsUnavailableProfile: Boolean
         get() = !failed && (profileAccess == ProfileAccess.Private || profileAccess == ProfileAccess.Unavailable)
     val showsBlockedContent: Boolean get() = loaded && !failed && isBlocked

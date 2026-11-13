@@ -12,6 +12,7 @@ import com.peto.ramap.domain.model.review.change.ReviewChange
 import com.peto.ramap.domain.model.review.change.ReviewChangeReducer
 import com.peto.ramap.domain.repository.ReviewRepository
 import com.peto.ramap.domain.usecase.FeatchShopReviewsUseCase
+import com.peto.ramap.domain.usecase.RefreshReviewListUseCase
 import com.peto.ramap.fake.FakeLoginRepository
 import com.peto.ramap.fake.FakeProfileRepository
 import com.peto.ramap.fake.FakeReviewChangeStore
@@ -247,7 +248,7 @@ class ReviewsViewModelTest {
         login: FakeLoginRepository = FakeLoginRepository(),
     ): ReviewsViewModel {
         val reducer = ReviewChangeReducer()
-        return ReviewsViewModel(repository, FakeUserModerationRepository(), profile, login, changes, reducer, FeatchShopReviewsUseCase(repository, changes, reducer, ShopReviewCache(changes, reducer)))
+        return ReviewsViewModel(repository, FakeUserModerationRepository(), profile, login, changes, reducer, FeatchShopReviewsUseCase(repository, changes, reducer, ShopReviewCache(changes, reducer), RefreshReviewListUseCase(reducer)), RefreshReviewListUseCase(reducer))
     }
 
     private fun review(

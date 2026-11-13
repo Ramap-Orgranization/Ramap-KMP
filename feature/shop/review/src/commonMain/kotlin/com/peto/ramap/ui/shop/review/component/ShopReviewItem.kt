@@ -6,7 +6,6 @@ import com.peto.ramap.designsystem.review.ReviewCard
 import com.peto.ramap.designsystem.review.ReviewCardActions
 import com.peto.ramap.designsystem.review.ReviewCardHeader
 import com.peto.ramap.domain.model.review.Review
-import com.peto.ramap.domain.model.review.ReviewModerationStatus
 import com.peto.ramap.ui.shop.review.contract.ReviewsUiState
 import com.peto.ramap.ui.shop.review.model.ReviewActions
 
@@ -20,6 +19,7 @@ internal fun ShopReviewItem(
 ) {
     val revealedReview = uiState.revealedBlockedReviews[review.id]
     val displayedReview = revealedReview ?: review
+    val canChangeOwnReview = !uiState.isUsingGuestReviews && uiState.currentUserId != null && review.allowsDeletionBy(uiState.currentUserId)
     val reviewActions =
         ReviewCardActions(
             onOpenProfile = actions.onOpenProfile,
@@ -27,9 +27,8 @@ internal fun ShopReviewItem(
             onLike =
                 if (
                     !review.isBlocked &&
-                    review.author.userId != uiState.currentUserId &&
-                    review.isPublic &&
-                    review.moderationStatus == ReviewModerationStatus.PUBLISHED
+                    !uiState.isUsingGuestReviews &&
+                    review.allowsLikeFrom(uiState.currentUserId)
                 ) {
                     { actions.onReviewLike(review) }
                 } else {
@@ -37,6 +36,7 @@ internal fun ShopReviewItem(
                 },
             onReport =
                 if (
+                    !uiState.isUsingGuestReviews &&
                     (!review.isBlocked || revealedReview != null) &&
                     (displayedReview.author.userId.isNotBlank() || displayedReview.author.isWithdrawn) &&
                     displayedReview.author.userId != uiState.currentUserId
@@ -46,13 +46,13 @@ internal fun ShopReviewItem(
                     null
                 },
             onEdit =
-                if (uiState.currentUserId != null && review.author.userId == uiState.currentUserId) {
+                if (canChangeOwnReview) {
                     { actions.onReviewEdit(review) }
                 } else {
                     null
                 },
             onDelete =
-                if (uiState.currentUserId != null && review.author.userId == uiState.currentUserId) {
+                if (canChangeOwnReview) {
                     { onDeleteReview(review) }
                 } else {
                     null

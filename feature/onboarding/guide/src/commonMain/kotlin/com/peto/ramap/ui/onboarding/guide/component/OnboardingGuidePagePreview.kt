@@ -167,7 +167,7 @@ private fun GuideScreenshot(
         drawPath(path = dimmedArea, color = CommonColor.Black.copy(alpha = 0.18f))
         targets.forEach { target ->
             drawRoundRect(
-                color = BrandColor.Foreground,
+                color = BrandColor.SecondPrimary,
                 topLeft = target.topLeft,
                 size = target.size,
                 cornerRadius = cornerRadius,

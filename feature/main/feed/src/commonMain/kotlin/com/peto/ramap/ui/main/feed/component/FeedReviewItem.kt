@@ -29,10 +29,10 @@ internal fun FeedReviewItem(
     val actions =
         ReviewCardActions(
             onOpenProfile = onOpenProfile.takeUnless { original.isBlocked },
-            onLike = { onIntent(FeedIntent.ToggleLike(original)) }.takeIf { !original.isBlocked && !isOwner },
-            onReport = { onIntent(FeedIntent.RequestReport(displayed)) }.takeIf { !isOwner && (!original.isBlocked || original.id in state.revealed) },
-            onEdit = { onEditReview(original.shopId, original.id) }.takeIf { isOwner },
-            onDelete = { onIntent(FeedIntent.RequestDelete(original)) }.takeIf { isOwner },
+            onLike = { onIntent(FeedIntent.ToggleLike(original)) }.takeIf { !state.isUsingGuestReviews && !original.isBlocked && !isOwner },
+            onReport = { onIntent(FeedIntent.RequestReport(displayed)) }.takeIf { !state.isUsingGuestReviews && !isOwner && (!original.isBlocked || original.id in state.revealed) },
+            onEdit = { onEditReview(original.shopId, original.id) }.takeIf { !state.isUsingGuestReviews && isOwner },
+            onDelete = { onIntent(FeedIntent.RequestDelete(original)) }.takeIf { !state.isUsingGuestReviews && isOwner },
             onViewBlockedReview = { onIntent(FeedIntent.Reveal(original)) }.takeIf { original.isBlocked },
             onUnblockBlockedUser = { onIntent(FeedIntent.RequestUnblock(original)) }.takeIf { original.isBlocked },
             onOpenReviewDetail = onOpenReviewDetail?.let { open -> { open(original.id) } },

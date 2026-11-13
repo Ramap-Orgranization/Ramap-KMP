@@ -13,6 +13,7 @@ import com.peto.ramap.domain.repository.ProfileRepository
 import com.peto.ramap.domain.repository.ReviewRepository
 import com.peto.ramap.domain.repository.UserModerationRepository
 import com.peto.ramap.domain.usecase.FeatchShopReviewsUseCase
+import com.peto.ramap.domain.usecase.RefreshReviewListUseCase
 import com.peto.ramap.fake.FakeLoginRepository
 import com.peto.ramap.fake.FakeProfileRepository
 import com.peto.ramap.fake.FakeReviewChangeStore
@@ -63,6 +64,6 @@ class ReviewsViewModelFixture(
             }
         }
     private val reducer = ReviewChangeReducer()
-    val viewModel = ReviewsViewModel(repository, moderation, profiles, login, changes, reducer, FeatchShopReviewsUseCase(repository, changes, reducer, ShopReviewCache(changes, reducer)))
+    val viewModel = ReviewsViewModel(repository, moderation, profiles, login, changes, reducer, FeatchShopReviewsUseCase(repository, changes, reducer, ShopReviewCache(changes, reducer), RefreshReviewListUseCase(reducer)), RefreshReviewListUseCase(reducer))
     val store = ViewModelStore().apply { put("reviews", viewModel) }
 }

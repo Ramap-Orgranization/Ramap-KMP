@@ -178,7 +178,7 @@ internal fun FeedContent(
                     .align(Alignment.BottomEnd)
                     .padding(20.dp)
                     .size(48.dp),
-            containerColor = BrandColor.Fill,
+            containerColor = BrandColor.Primary,
             iconTint = BrandColor.OnFill,
         )
         AnimatedVisibility(

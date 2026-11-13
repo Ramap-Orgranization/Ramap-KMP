@@ -10,6 +10,7 @@ import com.peto.ramap.domain.model.review.Review
 import com.peto.ramap.domain.model.review.ReviewLike
 import com.peto.ramap.domain.model.review.change.ReviewChange
 import com.peto.ramap.domain.model.review.change.ReviewChangeReducer
+import com.peto.ramap.domain.usecase.RefreshReviewListUseCase
 import com.peto.ramap.fake.FakeProfileRepository
 import com.peto.ramap.fake.FakeReviewChangeStore
 import com.peto.ramap.fake.FakeShopReviewRepository
@@ -29,6 +30,37 @@ import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class FeedViewModelSortTest {
+    @Test
+    fun `로그인할 때 두 신호가 도착하는 동안 기존 페이지를 유지하고 새 계정의 목록을 한 번에 반영한다`() =
+        coroutinesTest {
+            val profiles = FakeProfileRepository(null)
+            val changes = FakeReviewChangeStore().apply { reset(null) }
+            val feed = FakeReviewFeedRepository()
+            feed.response = { cursor, _ -> if (cursor == null) page("first", next = cursor()) else page("second") }
+            val viewModel = createViewModel(feed, profiles, changes)
+            runCurrent()
+            viewModel.dispatch(FeedIntent.LoadMore)
+            runCurrent()
+            val previous = viewModel.uiState.value.reviews
+            val secondPage = CompletableDeferred<RamapResult<ReviewFeedPage>>()
+            feed.response = { cursor, _ -> if (cursor == null) page("first", next = cursor()) else secondPage.await() }
+
+            changes.reset("owner")
+            runCurrent()
+            assertEquals(previous, viewModel.uiState.value.reviews)
+            assertFalse(viewModel.uiState.value.isLoadingInitial)
+            profiles.sessionUserId.value = "owner"
+            runCurrent()
+            assertEquals(previous, viewModel.uiState.value.reviews)
+            assertEquals(4, feed.requests.size)
+
+            secondPage.complete(page("second", "third"))
+            runCurrent()
+            val updated = viewModel.uiState.value
+            assertEquals(listOf("first", "second", "third"), updated.reviews.map { it.review.id })
+            assertFalse(updated.isUsingGuestReviews)
+        }
+
     @Test
     fun `정렬을 바꾸면 이전 목록과 커서를 지우고 새 정렬의 첫 페이지를 표시한다`() =
         coroutinesTest {
@@ -185,6 +217,7 @@ class FeedViewModelSortTest {
         reviews = FakeShopReviewRepository(),
         changes = changes,
         reducer = ReviewChangeReducer(),
+        refreshReviews = RefreshReviewListUseCase(ReviewChangeReducer()),
     )
 
     private fun page(

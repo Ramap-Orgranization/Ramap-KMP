@@ -128,7 +128,7 @@ internal fun MyTabMenuList(
             title = Res.string.settings_bookmarked_shops_menu,
             count = bookmarkedCount,
             iconBackground = BrandColor.SubtleFill,
-            iconTint = BrandColor.Foreground,
+            iconTint = BrandColor.SecondPrimary,
             isLoading = isLoading,
             onClick = onBookmarkedShopsClick,
         )

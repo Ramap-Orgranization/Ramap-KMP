@@ -13,6 +13,7 @@ import com.peto.ramap.domain.model.review.Review
 import com.peto.ramap.domain.model.review.ReviewAuthor
 import com.peto.ramap.domain.model.review.change.ReviewChange
 import com.peto.ramap.domain.model.review.change.ReviewChangeReducer
+import com.peto.ramap.domain.usecase.RefreshReviewListUseCase
 import com.peto.ramap.fake.FakeFollowRepository
 import com.peto.ramap.fake.FakeProfileRepository
 import com.peto.ramap.fake.FakeProfileVisitRankingRepository
@@ -40,6 +41,79 @@ import kotlin.test.assertTrue
 @OptIn(ExperimentalCoroutinesApi::class)
 class OtherReviewsViewModelTest {
     @Test
+    fun `로그인할 때 두 번째 페이지까지 갱신된 뒤에만 기존 프로필 리뷰를 교체한다`() =
+        coroutinesTest {
+            val repositories = FakeOtherReviewsRepositories().apply { reviews = (1..40).map(::review) }
+            val profiles = FakeProfileRepository(null)
+            val changes = FakeReviewChangeStore().apply { reset(null) }
+            val viewModel = profileWithReviews(repositories, profiles, changes)
+            viewModel.dispatch(OtherReviewsIntent.OpenProfile("author"))
+            runCurrent()
+            viewModel.dispatch(OtherReviewsIntent.LoadMore)
+            runCurrent()
+            val previous = viewModel.uiState.value.reviews
+            assertEquals(40, previous.size)
+            val secondPage = CompletableDeferred<RamapResult<ProfileReviewsPage>>()
+            repositories.pendingReviewOffset = 20L
+            repositories.profileReviewsPending = secondPage
+
+            profiles.sessionUserId.value = "viewer"
+            changes.reset("viewer")
+            runCurrent()
+            assertEquals(previous, viewModel.uiState.value.reviews)
+            assertFalse(viewModel.uiState.value.showsInitialLoading)
+            assertEquals(listOf(0L, 20L, 0L), repositories.requestedOffsets)
+
+            val likedReview = review(40).let { it.copy(review = it.review.copy(isLiked = true, likeCount = 1)) }
+            val access = ProfileAccess.Visible(requireNotNull(repositories.profile))
+            secondPage.complete(RamapResult.Success(ProfileReviewsPage(access, previous.drop(20).dropLast(1) + likedReview)))
+            runCurrent()
+            val updated = viewModel.uiState.value
+            assertEquals(previous.dropLast(1) + likedReview, updated.reviews)
+            assertFalse(updated.isUsingGuestReviews)
+        }
+
+    @Test
+    fun `로그인 후 프로필 접근이 제한되면 표시 중이던 리뷰를 즉시 제거한다`() =
+        coroutinesTest {
+            val repositories = FakeOtherReviewsRepositories().apply { reviews = listOf(review(1)) }
+            val profiles = FakeProfileRepository(null)
+            val changes = FakeReviewChangeStore().apply { reset(null) }
+            val viewModel = profileWithReviews(repositories, profiles, changes)
+            viewModel.dispatch(OtherReviewsIntent.OpenProfile("author"))
+            runCurrent()
+            assertEquals(listOf(review(1)), viewModel.uiState.value.reviews)
+            repositories.canReadReviews = false
+            profiles.sessionUserId.value = "viewer"
+            changes.reset("viewer")
+            runCurrent()
+
+            val updated = viewModel.uiState.value
+            assertTrue(updated.reviews.isEmpty())
+            assertTrue(updated.contentRestricted)
+            assertFalse(updated.isUsingGuestReviews)
+            assertEquals(listOf(0L), repositories.requestedOffsets)
+        }
+
+    private fun profileWithReviews(
+        repositories: FakeOtherReviewsRepositories,
+        profiles: FakeProfileRepository,
+        changes: FakeReviewChangeStore,
+    ): OtherReviewsViewModel {
+        val reducer = ReviewChangeReducer()
+        return OtherReviewsViewModel(
+            userProfileRepository = repositories,
+            userModerationRepository = repositories,
+            profiles = profiles,
+            follows = FakeFollowRepository(),
+            changes = changes,
+            reviewChangeReducer = reducer,
+            visitRankings = FakeProfileVisitRankingRepository(),
+            refreshReviews = RefreshReviewListUseCase(reducer),
+        )
+    }
+
+    @Test
     fun `순위 조회가 끝날 때까지 프로필을 기다리고 실패하면 프로필과 순위를 재시도한다`() =
         coroutinesTest {
             val repositories = FakeOtherReviewsRepositories()
@@ -58,6 +132,7 @@ class OtherReviewsViewModelTest {
                     follows = FakeFollowRepository(),
                     changes = FakeReviewChangeStore(),
                     reviewChangeReducer = ReviewChangeReducer(),
+                    refreshReviews = RefreshReviewListUseCase(ReviewChangeReducer()),
                     visitRankings = visits,
                 )
             viewModel.dispatch(OtherReviewsIntent.OpenProfile("author"))
@@ -101,6 +176,7 @@ class OtherReviewsViewModelTest {
                     follows = FakeFollowRepository(),
                     changes = changes,
                     reviewChangeReducer = ReviewChangeReducer(),
+                    refreshReviews = RefreshReviewListUseCase(ReviewChangeReducer()),
                     visitRankings = visits,
                 )
             runCurrent()
@@ -136,7 +212,7 @@ class OtherReviewsViewModelTest {
                     ignorePendingCancellation = true
                 }
             val profiles = FakeProfileRepository("viewer")
-            val viewModel = OtherReviewsViewModel(repositories, repositories, profiles, FakeFollowRepository(), changes = FakeReviewChangeStore(), reviewChangeReducer = ReviewChangeReducer(), visitRankings = FakeProfileVisitRankingRepository())
+            val viewModel = OtherReviewsViewModel(repositories, repositories, profiles, FakeFollowRepository(), changes = FakeReviewChangeStore(), reviewChangeReducer = ReviewChangeReducer(), visitRankings = FakeProfileVisitRankingRepository(), refreshReviews = RefreshReviewListUseCase(ReviewChangeReducer()))
             runCurrent()
             viewModel.dispatch(OtherReviewsIntent.OpenProfile("author"))
             runCurrent()
@@ -168,7 +244,7 @@ class OtherReviewsViewModelTest {
                     ignorePendingCancellation = true
                 }
             val profiles = FakeProfileRepository("viewer")
-            val viewModel = OtherReviewsViewModel(repositories, repositories, profiles, FakeFollowRepository(), changes = FakeReviewChangeStore(), reviewChangeReducer = ReviewChangeReducer(), visitRankings = FakeProfileVisitRankingRepository())
+            val viewModel = OtherReviewsViewModel(repositories, repositories, profiles, FakeFollowRepository(), changes = FakeReviewChangeStore(), reviewChangeReducer = ReviewChangeReducer(), visitRankings = FakeProfileVisitRankingRepository(), refreshReviews = RefreshReviewListUseCase(ReviewChangeReducer()))
             runCurrent()
             viewModel.dispatch(OtherReviewsIntent.OpenProfile("author"))
             runCurrent()
@@ -205,6 +281,7 @@ class OtherReviewsViewModelTest {
                     follows = FakeFollowRepository(),
                     changes = changes,
                     reviewChangeReducer = ReviewChangeReducer(),
+                    refreshReviews = RefreshReviewListUseCase(ReviewChangeReducer()),
                     visitRankings = FakeProfileVisitRankingRepository(),
                 )
             runCurrent()
@@ -271,6 +348,7 @@ class OtherReviewsViewModelTest {
                     follows = FakeFollowRepository(),
                     changes = FakeReviewChangeStore(),
                     reviewChangeReducer = ReviewChangeReducer(),
+                    refreshReviews = RefreshReviewListUseCase(ReviewChangeReducer()),
                     visitRankings = FakeProfileVisitRankingRepository(),
                 )
             runCurrent()
@@ -298,6 +376,7 @@ class OtherReviewsViewModelTest {
                     follows = FakeFollowRepository(),
                     changes = FakeReviewChangeStore(),
                     reviewChangeReducer = ReviewChangeReducer(),
+                    refreshReviews = RefreshReviewListUseCase(ReviewChangeReducer()),
                     visitRankings = FakeProfileVisitRankingRepository(),
                 )
             runCurrent()
@@ -335,6 +414,7 @@ class OtherReviewsViewModelTest {
                     follows = FakeFollowRepository(),
                     changes = FakeReviewChangeStore(),
                     reviewChangeReducer = ReviewChangeReducer(),
+                    refreshReviews = RefreshReviewListUseCase(ReviewChangeReducer()),
                     visitRankings = FakeProfileVisitRankingRepository(),
                 )
             runCurrent()
@@ -364,6 +444,7 @@ class OtherReviewsViewModelTest {
                     follows = FakeFollowRepository(),
                     changes = FakeReviewChangeStore(),
                     reviewChangeReducer = ReviewChangeReducer(),
+                    refreshReviews = RefreshReviewListUseCase(ReviewChangeReducer()),
                     visitRankings = FakeProfileVisitRankingRepository(),
                 )
             runCurrent()
@@ -397,6 +478,7 @@ class OtherReviewsViewModelTest {
                     follows = FakeFollowRepository(),
                     changes = FakeReviewChangeStore(),
                     reviewChangeReducer = ReviewChangeReducer(),
+                    refreshReviews = RefreshReviewListUseCase(ReviewChangeReducer()),
                     visitRankings = FakeProfileVisitRankingRepository(),
                 )
             runCurrent()
@@ -425,6 +507,7 @@ class OtherReviewsViewModelTest {
                     follows = FakeFollowRepository(),
                     changes = FakeReviewChangeStore(),
                     reviewChangeReducer = ReviewChangeReducer(),
+                    refreshReviews = RefreshReviewListUseCase(ReviewChangeReducer()),
                     visitRankings = FakeProfileVisitRankingRepository(),
                 )
             runCurrent()
@@ -452,6 +535,7 @@ class OtherReviewsViewModelTest {
                     follows = FakeFollowRepository(),
                     changes = FakeReviewChangeStore(),
                     reviewChangeReducer = ReviewChangeReducer(),
+                    refreshReviews = RefreshReviewListUseCase(ReviewChangeReducer()),
                     visitRankings = FakeProfileVisitRankingRepository(),
                 )
             runCurrent()
@@ -484,6 +568,7 @@ class OtherReviewsViewModelTest {
                     follows = FakeFollowRepository(),
                     changes = FakeReviewChangeStore(),
                     reviewChangeReducer = ReviewChangeReducer(),
+                    refreshReviews = RefreshReviewListUseCase(ReviewChangeReducer()),
                     visitRankings = FakeProfileVisitRankingRepository(),
                 )
             runCurrent()
@@ -520,6 +605,7 @@ class OtherReviewsViewModelTest {
                     follows = FakeFollowRepository(),
                     changes = FakeReviewChangeStore(),
                     reviewChangeReducer = ReviewChangeReducer(),
+                    refreshReviews = RefreshReviewListUseCase(ReviewChangeReducer()),
                     visitRankings = FakeProfileVisitRankingRepository(),
                 )
             runCurrent()
@@ -551,6 +637,7 @@ class OtherReviewsViewModelTest {
                     follows = FakeFollowRepository(),
                     changes = FakeReviewChangeStore(),
                     reviewChangeReducer = ReviewChangeReducer(),
+                    refreshReviews = RefreshReviewListUseCase(ReviewChangeReducer()),
                     visitRankings = FakeProfileVisitRankingRepository(),
                 )
             runCurrent()
@@ -585,6 +672,7 @@ class OtherReviewsViewModelTest {
                     follows = FakeFollowRepository(),
                     changes = FakeReviewChangeStore(),
                     reviewChangeReducer = ReviewChangeReducer(),
+                    refreshReviews = RefreshReviewListUseCase(ReviewChangeReducer()),
                     visitRankings = FakeProfileVisitRankingRepository(),
                 )
             runCurrent()
@@ -619,6 +707,7 @@ class OtherReviewsViewModelTest {
                     follows = follows,
                     changes = FakeReviewChangeStore(),
                     reviewChangeReducer = ReviewChangeReducer(),
+                    refreshReviews = RefreshReviewListUseCase(ReviewChangeReducer()),
                     visitRankings = FakeProfileVisitRankingRepository(),
                 )
             viewModel.dispatch(OtherReviewsIntent.OpenProfile("author"))

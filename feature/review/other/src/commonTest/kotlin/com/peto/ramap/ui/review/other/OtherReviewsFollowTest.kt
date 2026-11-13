@@ -12,6 +12,7 @@ import com.peto.ramap.domain.model.review.Review
 import com.peto.ramap.domain.model.review.ReviewAuthor
 import com.peto.ramap.domain.model.review.change.ReviewChange
 import com.peto.ramap.domain.model.review.change.ReviewChangeReducer
+import com.peto.ramap.domain.usecase.RefreshReviewListUseCase
 import com.peto.ramap.fake.FakeFollowRepository
 import com.peto.ramap.fake.FakeProfileRepository
 import com.peto.ramap.fake.FakeProfileVisitRankingRepository
@@ -262,6 +263,7 @@ class OtherReviewsFollowTest {
         reviewRepository = FakeShopReviewRepository(),
         changes = changes,
         reviewChangeReducer = ReviewChangeReducer(),
+        refreshReviews = RefreshReviewListUseCase(ReviewChangeReducer()),
         visitRankings = FakeProfileVisitRankingRepository(),
     )
 

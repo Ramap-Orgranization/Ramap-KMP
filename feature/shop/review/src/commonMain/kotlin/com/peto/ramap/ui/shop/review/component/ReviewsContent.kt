@@ -72,7 +72,7 @@ internal fun reviewsContent(
     val photoUrls = uiState.photoUrls
     if (photoUrls.isNotEmpty()) {
         scope.item(key = "shop_review_photos", contentType = "review_photos") {
-            key(uiState.shopId, uiState.currentUserId) {
+            key(uiState.shopId) {
                 ReviewCardImages(
                     imageUrls = photoUrls,
                     modifier = Modifier.padding(bottom = 20.dp),

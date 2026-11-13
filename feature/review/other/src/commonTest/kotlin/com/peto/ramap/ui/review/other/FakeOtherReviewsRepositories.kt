@@ -29,6 +29,7 @@ class FakeOtherReviewsRepositories :
     var followingCount = 0L
     var profileAccessPending: CompletableDeferred<RamapResult<ProfileAccess>>? = null
     var profileReviewsPending: CompletableDeferred<RamapResult<ProfileReviewsPage>>? = null
+    var pendingReviewOffset: Long? = null
     var ignorePendingCancellation = false
     var reviews: List<ProfileReview> = emptyList()
     var savedShops: List<RamenShop> = emptyList()
@@ -86,7 +87,9 @@ class FakeOtherReviewsRepositories :
         offset: Long,
     ): RamapResult<com.peto.ramap.domain.model.profile.ProfileReviewsPage> {
         val pending = profileReviewsPending
-        if (pending != null) return if (ignorePendingCancellation) withContext(NonCancellable) { pending.await() } else pending.await()
+        if (pending != null && (pendingReviewOffset == null || pendingReviewOffset == offset)) {
+            return if (ignorePendingCancellation) withContext(NonCancellable) { pending.await() } else pending.await()
+        }
         val result = fetchUserReviews(userId, offset)
         return when (result) {
             is RamapResult.Error -> result

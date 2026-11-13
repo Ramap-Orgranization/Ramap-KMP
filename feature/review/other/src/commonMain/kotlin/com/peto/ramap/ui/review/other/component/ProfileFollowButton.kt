@@ -20,11 +20,12 @@ internal fun ProfileFollowButton(
     state: FollowState,
     isLoading: Boolean,
     onClick: () -> Unit,
+    enabled: Boolean,
     modifier: Modifier = Modifier,
 ) {
     val backgroundColor =
         when (state) {
-            FollowState.NONE -> BrandColor.Fill
+            FollowState.NONE -> BrandColor.Primary
             FollowState.FOLLOWING -> CommonColor.White
             FollowState.PENDING -> GrayColor.C050
         }
@@ -38,6 +39,7 @@ internal fun ProfileFollowButton(
     AppButton(
         text = stringResource(FollowResourceMapper.stateActionLabel(state)),
         onClick = onClick,
+        enabled = enabled,
         modifier =
             modifier
                 .width(182.dp)
@@ -50,6 +52,6 @@ internal fun ProfileFollowButton(
         icon = FollowResourceMapper.stateIcon(state),
         isLoading = isLoading,
         iconSize = 17.dp,
-        iconTint = if (state == FollowState.FOLLOWING) BrandColor.Foreground else textColor,
+        iconTint = if (state == FollowState.FOLLOWING) BrandColor.SecondPrimary else textColor,
     )
 }

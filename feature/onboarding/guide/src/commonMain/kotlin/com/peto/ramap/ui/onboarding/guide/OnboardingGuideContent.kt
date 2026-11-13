@@ -149,7 +149,7 @@ private fun OnboardingGuideIndicator(page: OnboardingGuidePage) {
             Spacer(
                 modifier =
                     Modifier.weight(1f).height(4.dp).background(
-                        color = if (item == page) BrandColor.Foreground else GrayColor.C100,
+                        color = if (item == page) BrandColor.SecondPrimary else GrayColor.C100,
                         shape = RoundedCornerShape(2.dp),
                     ),
             )

@@ -51,7 +51,7 @@ internal fun EventNotificationButton(
                 ),
             tint =
                 if (uiState.isNotificationEnabled && !uiState.isNotificationLoading) {
-                    BrandColor.Foreground
+                    BrandColor.SecondPrimary
                 } else {
                     GrayColor.C300
                 },

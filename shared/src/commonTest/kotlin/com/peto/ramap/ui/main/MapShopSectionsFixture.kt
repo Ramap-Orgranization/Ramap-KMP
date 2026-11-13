@@ -16,6 +16,7 @@ import com.peto.ramap.domain.store.PersonalizationStore
 import com.peto.ramap.domain.store.ReviewChangeStore
 import com.peto.ramap.domain.usecase.FeatchShopReviewsUseCase
 import com.peto.ramap.domain.usecase.FetchShopOverviewUseCase
+import com.peto.ramap.domain.usecase.RefreshReviewListUseCase
 import com.peto.ramap.domain.usecase.SignInUseCase
 import com.peto.ramap.fake.FakeAnalyticsTracker
 import com.peto.ramap.fake.FakeCrashReporter
@@ -95,7 +96,7 @@ class MapShopSectionsFixture(
         val overviewVm = OverviewViewModel(login, reports, personalization, overviewQuery, FakeMapSearchHistoryStorage(), ShopAnalytics(FakeAnalyticsTracker()), SignInUseCase(login, LoginAnalytics(FakeAnalyticsTracker(), FakeCrashReporter())), subscribedShops)
         val menuVm = ShopMenuViewModel(menus)
         val reducer = ReviewChangeReducer()
-        val reviewVm = ReviewsViewModel(reviews, moderation, profile, login, changes, reducer, FeatchShopReviewsUseCase(reviews, changes, reducer, ShopReviewCache(changes, reducer)))
+        val reviewVm = ReviewsViewModel(reviews, moderation, profile, login, changes, reducer, FeatchShopReviewsUseCase(reviews, changes, reducer, ShopReviewCache(changes, reducer), RefreshReviewListUseCase(reducer)), RefreshReviewListUseCase(reducer))
         overview = overviewVm
         menu = menuVm
         review = reviewVm

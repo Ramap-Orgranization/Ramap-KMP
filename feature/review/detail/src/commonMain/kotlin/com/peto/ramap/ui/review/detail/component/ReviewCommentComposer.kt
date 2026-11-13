@@ -177,7 +177,7 @@ internal fun ReviewCommentComposer(
                         .padding(bottom = 5.dp)
                         .size(44.dp)
                         .background(
-                            color = if (canSubmit) BrandColor.Fill else BrandColor.SubtleFill,
+                            color = if (canSubmit) BrandColor.Primary else BrandColor.SubtleFill,
                             shape = CircleShape,
                         ),
                 tint = if (canSubmit) BrandColor.OnFill else GrayColor.C300,

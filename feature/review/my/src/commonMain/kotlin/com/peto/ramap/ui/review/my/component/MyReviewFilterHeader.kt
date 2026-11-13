@@ -70,8 +70,8 @@ private fun FilterChip(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val backgroundColor = if (selected) BrandColor.Fill else BrandColor.SubtleFill
-    val labelColor = if (selected) BrandColor.OnSelectionFill else BrandColor.Foreground
+    val backgroundColor = if (selected) BrandColor.Primary else BrandColor.SubtleFill
+    val labelColor = if (selected) BrandColor.OnSelectionFill else BrandColor.SecondPrimary
 
     Row(
         modifier =
@@ -87,13 +87,13 @@ private fun FilterChip(
     ) {
         AppText(
             text = label,
-            style = AppTextStyle.B2,
+            style = AppTextStyle.B1,
             color = labelColor,
         )
         AppText(
             text = stringResource(Res.string.my_reviews_filter_number, count),
             modifier = Modifier.padding(start = 6.dp),
-            style = AppTextStyle.B2,
+            style = AppTextStyle.B1,
             color = labelColor,
         )
     }

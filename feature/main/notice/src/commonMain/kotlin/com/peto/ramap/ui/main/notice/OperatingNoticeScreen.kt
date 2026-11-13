@@ -68,6 +68,7 @@ fun OperatingNoticeScreen(
     showFilters: Boolean = true,
     initialNoticeId: String? = null,
     onInitialNoticeOpened: () -> Unit = {},
+    headerContent: (@Composable () -> Unit)? = null,
 ) {
     val todayTitle = stringResource(Res.string.operating_notice_today_section)
     val scheduledTitle = stringResource(Res.string.operating_notice_scheduled_section)
@@ -83,7 +84,7 @@ fun OperatingNoticeScreen(
 
     Box(modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
-            if (showFilters) {
+            if (showFilters && headerContent == null) {
                 NewsFilters(
                     query = uiState.query,
                     savedOnly = uiState.savedOnly,
@@ -146,6 +147,11 @@ fun OperatingNoticeScreen(
                                     contentPadding = PaddingValues(vertical = 8.dp),
                                     verticalArrangement = Arrangement.spacedBy(5.dp),
                                 ) {
+                                    headerContent?.let { header ->
+                                        item(key = "header") {
+                                            header()
+                                        }
+                                    }
                                     addNoticeSection(
                                         listScope = this,
                                         title = todayTitle,

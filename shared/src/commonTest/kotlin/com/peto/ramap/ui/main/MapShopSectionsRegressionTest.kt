@@ -35,6 +35,7 @@ import com.peto.ramap.domain.model.shop.RamenShop
 import com.peto.ramap.domain.model.shop.RamenShopFilter
 import com.peto.ramap.domain.model.shop.RamenShops
 import com.peto.ramap.domain.model.shop.SearchQuery
+import com.peto.ramap.domain.model.shop.ShopHoursFilter
 import com.peto.ramap.domain.model.shop.ShopOverView
 import com.peto.ramap.domain.repository.RamenShopRepository
 import com.peto.ramap.domain.repository.ReviewRepository
@@ -77,7 +78,6 @@ import com.peto.ramap.ui.main.map.contract.MapIntent.OnCategoryFilterToggled
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnInitialLocationFocusConsumed
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnMapTabExited
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnMyLocationChanged
-import com.peto.ramap.ui.main.map.contract.MapIntent.OnOpenFilterToggled
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnQueryChanged
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnRecentSearchSelected
 import com.peto.ramap.ui.main.map.contract.MapIntent.OnRequestedShopDismissed
@@ -2514,29 +2514,30 @@ class MapShopSectionsRegressionTest {
 
             viewModel.dispatch(OnShopSelected(shop))
             runCurrent()
-            viewModel.dispatch(OnOpenFilterToggled)
+            viewModel.dispatch(MapIntent.OnHoursFilterApplied(ShopHoursFilter.OpenNow))
             runCurrent()
 
             assertEquals(null, viewModel.uiState.value.selectedShop)
 
-            viewModel.dispatch(OnOpenFilterToggled)
+            viewModel.dispatch(MapIntent.OnHoursFilterApplied(ShopHoursFilter.All))
             runCurrent()
+            assertEquals(ShopHoursFilter.All, viewModel.uiState.value.filters.hours)
         }
 
     @Test
-    fun `검색어를 입력하면 카테고리 영업중 좋아요 필터를 해제한다`() =
+    fun `검색어를 입력하면 영업시간 조건을 유지하고 카테고리와 좋아요 필터를 해제한다`() =
         coroutinesTest {
             val viewModel = mapViewModel(loginRepository = loggedInRepository())
             runCurrent()
             viewModel.dispatch(OnCategoryFilterToggled(Category.MAZESOBA))
-            viewModel.dispatch(OnOpenFilterToggled)
+            viewModel.dispatch(MapIntent.OnHoursFilterApplied(ShopHoursFilter.OpenNow))
             viewModel.dispatch(OnBookmarkedShopsToggled)
             runCurrent()
 
             viewModel.dispatch(OnQueryChanged("라멘"))
             runCurrent()
 
-            assertEquals(RamenShopFilter(), viewModel.uiState.value.filters)
+            assertEquals(RamenShopFilter(hours = ShopHoursFilter.OpenNow), viewModel.uiState.value.filters)
             assertEquals(false, viewModel.uiState.value.isBookmarkedView)
         }
 
@@ -2559,7 +2560,7 @@ class MapShopSectionsRegressionTest {
             viewModel.dispatch(OnCameraPositionChanged(camera))
             viewModel.dispatch(OnQueryChanged("라멘"))
             viewModel.dispatch(OnCategoryFilterToggled(Category.MAZESOBA))
-            viewModel.dispatch(OnOpenFilterToggled)
+            viewModel.dispatch(MapIntent.OnHoursFilterApplied(ShopHoursFilter.OpenNow))
             viewModel.dispatch(OnBookmarkedShopsToggled)
             runCurrent()
             assertTrue(viewModel.uiState.value.map.isBookmarkedView)
@@ -2665,10 +2666,10 @@ class MapShopSectionsRegressionTest {
             assertEquals(setOf(recommendedShop.id), recommended.searchResultShops.keys)
             assertEquals(null, recommended.selectedShopId)
 
-            viewModel.dispatch(OnOpenFilterToggled)
+            viewModel.dispatch(MapIntent.OnHoursFilterApplied(ShopHoursFilter.OpenNow))
             viewModel.dispatch(OnBookmarkedShopsToggled)
             runCurrent()
-            assertTrue(viewModel.uiState.value.map.filters.isOpenSelected)
+            assertEquals(ShopHoursFilter.OpenNow, viewModel.uiState.value.map.filters.hours)
             assertTrue(viewModel.uiState.value.map.isBookmarkedView)
 
             viewModel.dispatch(MapIntent.OnRecommendationToggled)
@@ -2766,7 +2767,7 @@ class MapShopSectionsRegressionTest {
                         input = "라멘",
                         results = RamenShops(listOf(openShop, anotherOpenShop, closedShop)),
                     ),
-                filters = RamenShopFilter(isOpenSelected = true),
+                filters = RamenShopFilter(hours = ShopHoursFilter.OpenNow),
             )
 
         assertEquals(openShops, uiState.searchResultShops)
@@ -2793,7 +2794,7 @@ class MapShopSectionsRegressionTest {
         val mapState =
             MapUiState(
                 currentDateTime = LocalDateTime(2026, 8, 10, 21, 30),
-                filters = RamenShopFilter(isOpenSelected = true),
+                filters = RamenShopFilter(hours = ShopHoursFilter.OpenNow),
                 isRecommendationEnabled = true,
                 recommendedShops = shops,
             )
@@ -2825,7 +2826,7 @@ class MapShopSectionsRegressionTest {
             MapUiState(
                 selectedShopId = closedShop.id,
                 selectedShop = closedShop,
-                filters = RamenShopFilter(isOpenSelected = true),
+                filters = RamenShopFilter(hours = ShopHoursFilter.OpenNow),
             )
 
         assertTrue(uiState.markerShops.isEmpty())

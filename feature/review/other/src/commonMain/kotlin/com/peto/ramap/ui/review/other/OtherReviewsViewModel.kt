@@ -12,6 +12,7 @@ import com.peto.ramap.domain.model.profile.PublicProfile
 import com.peto.ramap.domain.model.profile.PublicSavedShopsPage
 import com.peto.ramap.domain.model.review.MyReviewVisibility
 import com.peto.ramap.domain.model.review.MyReviewsPage
+import com.peto.ramap.domain.model.review.ProfileReview
 import com.peto.ramap.domain.model.review.Review
 import com.peto.ramap.domain.model.review.ReviewImage
 import com.peto.ramap.domain.model.review.ReviewLike
@@ -25,6 +26,7 @@ import com.peto.ramap.domain.repository.ReviewRepository
 import com.peto.ramap.domain.repository.UserModerationRepository
 import com.peto.ramap.domain.repository.UserProfileRepository
 import com.peto.ramap.domain.store.ReviewChangeStore
+import com.peto.ramap.domain.usecase.RefreshReviewListUseCase
 import com.peto.ramap.ui.base.BaseViewModel
 import com.peto.ramap.ui.review.other.contract.OtherReviewsEffect
 import com.peto.ramap.ui.review.other.contract.OtherReviewsIntent
@@ -100,6 +102,7 @@ class OtherReviewsViewModel(
     private val changes: ReviewChangeStore,
     private val reviewChangeReducer: ReviewChangeReducer,
     private val visitRankings: ProfileVisitRankingRepository,
+    private val refreshReviews: RefreshReviewListUseCase,
 ) : BaseViewModel<OtherReviewsUiState, OtherReviewsIntent, OtherReviewsEffect>(OtherReviewsUiState()) {
     init {
         observeChanges()
@@ -115,8 +118,6 @@ class OtherReviewsViewModel(
                 if (isEpochChanged) {
                     epoch = journal.epoch
                     revision = journal.revision
-                    clearVisitRanking()
-                    refreshProfileSummary()
                     return@collect
                 }
                 val hasGap = journal.hasGapAfter(revision)
@@ -130,7 +131,6 @@ class OtherReviewsViewModel(
                 for (record in journal.changesAfter(revision)) {
                     val change = record.change
                     val targetId = currentState.userId
-                    val isAccessChangedForUser = change is ReviewChange.AccessChanged && change.userId == targetId
                     val needsShop =
                         change is ReviewChange.Written &&
                             change.userId == targetId &&
@@ -140,10 +140,10 @@ class OtherReviewsViewModel(
                         loadPage(reset = true)
                         continue
                     }
-                    if (isAccessChangedForUser) {
+                    if (change is ReviewChange.AccessChanged && change.userId == targetId) {
                         accessChanged = true
-                        handleAccessChange(change as ReviewChange.AccessChanged)
-                    } else {
+                        handleAccessChange(change)
+                    } else if (!currentState.isUsingGuestReviews) {
                         if (change is ReviewChange.Written && change.userId == targetId) rankingChanged = true
                         reduce {
                             val access = profileAccess as? ProfileAccess.Visible ?: return@reduce this
@@ -172,7 +172,7 @@ class OtherReviewsViewModel(
                         }
                     }
                     revision = record.revision
-                    if (change is ReviewChange.AccessChanged && !isAccessChangedForUser && change.followAction == null && currentState.reviews.isNotEmpty()) {
+                    if (change is ReviewChange.AccessChanged && change.userId != targetId && change.followAction == null && currentState.reviews.isNotEmpty()) {
                         loadPage(reset = true)
                     }
                 }
@@ -190,7 +190,7 @@ class OtherReviewsViewModel(
             return
         }
         val extent = currentState.reviews.size
-        reduce { copy(reviews = emptyList(), profileAccess = null, hasMore = false) }
+        reduce { copy(reviews = emptyList(), profileAccess = null, hasMore = false, isUsingGuestReviews = false) }
         loadPage(reset = true, requestedReviewExtent = extent)
     }
 
@@ -200,27 +200,33 @@ class OtherReviewsViewModel(
                 .sessionUserId
                 .distinctUntilChanged()
                 .collect { currentUserId ->
-                    val targetId = currentState.userId
-                    cancelTask(PAGE_TASK)
-                    cancelTask(PROFILE_SUMMARY_TASK)
-                    cancelTask(SAVED_SHOPS_TASK)
-                    cancelTask(BLOCK_TASK)
-                    cancelTask(FOLLOW_TASK)
-                    cancelTask(FOLLOW_ACCESS_TASK)
-                    reduce {
-                        OtherReviewsUiState(
-                            userId = targetId,
-                            currentUserId = currentUserId,
-                            sessionResolved = true,
-                        )
-                    }
-                    val hasTargetUser = targetId != null
-                    if (hasTargetUser) loadPage(reset = true)
+                    changeViewer(currentUserId)
                 }
         }
     }
 
+    private fun changeViewer(viewerId: String?) {
+        val previous = currentState
+        for (key in listOf(PAGE_TASK, PROFILE_SUMMARY_TASK, SAVED_SHOPS_TASK, BLOCK_TASK, FOLLOW_TASK, FOLLOW_ACCESS_TASK)) cancelTask(key)
+        for (row in previous.reviews) cancelTask(likeTaskKey(row.review.id))
+        val guestReviews = refreshReviews.retainGuestReviews(previous.currentUserId, viewerId, previous.reviews, ProfileReview::review)
+        val retainProfile = guestReviews.isNotEmpty() && previous.canReadVisitRanking
+        reduce {
+            OtherReviewsUiState(
+                userId = previous.userId,
+                currentUserId = viewerId,
+                sessionResolved = true,
+                profileAccess = previous.profileAccess.takeIf { retainProfile },
+                visitRanking = previous.visitRanking.takeIf { retainProfile },
+                reviews = guestReviews.takeIf { retainProfile }.orEmpty(),
+                isUsingGuestReviews = retainProfile,
+            )
+        }
+        if (previous.userId != null) loadPage(reset = true)
+    }
+
     override suspend fun handleIntent(intent: OtherReviewsIntent) {
+        if (currentState.isUsingGuestReviews && intent !is OtherReviewsIntent.OpenProfile && intent != OtherReviewsIntent.Retry) return
         when (intent) {
             is OtherReviewsIntent.SelectTab -> selectTab(intent.tab)
             is OtherReviewsIntent.OpenProfile -> openProfile(intent.userId)
@@ -233,6 +239,8 @@ class OtherReviewsViewModel(
     }
 
     private fun toggleLike(review: Review) {
+        val currentReview = currentState.reviews.firstOrNull { it.review.id == review.id }?.review ?: return
+        if (currentReview.isBlocked) return
         val currentUserId = currentState.currentUserId
         val isLoggedOut = currentUserId == null
         if (isLoggedOut) {
@@ -240,8 +248,8 @@ class OtherReviewsViewModel(
             return
         }
         val targetId = currentState.userId ?: return
-        val next = review.toggledLike()
-        val originalReviewLike = ReviewLike(review.likeCount, review.isLiked)
+        val next = currentReview.toggledLike()
+        val originalReviewLike = ReviewLike(currentReview.likeCount, currentReview.isLiked)
         launchOptimisticTask(
             taskKey = likeTaskKey(review.id),
             loadKey = OtherReviewsLoadKey.ReviewAction,
@@ -296,7 +304,7 @@ class OtherReviewsViewModel(
     }
 
     private fun handleRetry() {
-        if (currentState.profileFailed) {
+        if (currentState.profileFailed || currentState.isUsingGuestReviews) {
             loadPage(reset = true)
             return
         }
@@ -338,7 +346,8 @@ class OtherReviewsViewModel(
         val isNotResolved = !currentState.sessionResolved
         val isNotVisibleOnNextPage = !reset && currentState.profileAccess !is ProfileAccess.Visible
         if (isNotResolved || isNotVisibleOnNextPage) return
-        if (reset) {
+        val keepGuestReviews = reset && currentState.isUsingGuestReviews
+        if (reset && !keepGuestReviews) {
             clearVisitRanking()
             cancelTask(SAVED_SHOPS_TASK)
             cancelTask(FOLLOW_ACCESS_TASK)
@@ -349,7 +358,7 @@ class OtherReviewsViewModel(
             loadKey = OtherReviewsLoadKey.Page,
             policy = TaskPolicy.CancelPrevious,
             onStart = {
-                if (reset) {
+                if (reset && !keepGuestReviews) {
                     copy(
                         profileAccess = null,
                         profileFailed = false,
@@ -364,7 +373,7 @@ class OtherReviewsViewModel(
                         savedShopsOffset = 0L,
                     )
                 } else {
-                    copy(failed = false)
+                    copy(failed = false, profileFailed = false)
                 }
             },
         ) {
@@ -383,18 +392,13 @@ class OtherReviewsViewModel(
                 val (access, ranking) = result.data
                 when (access) {
                     is ProfileAccess.Visible -> {
-                        reduce { copy(profileAccess = access, visitRanking = ranking) }
-                        val hasCurrentUser = currentState.currentUserId != null
-                        if (hasCurrentUser) loadSavedShops()
+                        applyProfileSummary(userId, access, ranking)
+                        val loadShopsAfterReviews = currentState.isUsingGuestReviews
+                        if (!loadShopsAfterReviews) loadSavedShops()
                         if (access.canReadReviews) {
-                            fetchAndApplyUserReviews(userId, 0L, reset = true)
-                            while (currentState.reviews.size < requestedReviewExtent && currentState.hasMore && !currentState.failed) {
-                                val offset = currentState.reviewsOffset
-                                fetchAndApplyUserReviews(userId, offset, reset = false)
-                                val isOffsetStuck = currentState.reviewsOffset == offset
-                                if (isOffsetStuck) break
-                            }
+                            fetchAndApplyUserReviews(userId, 0L, reset = true, requestedReviewExtent = requestedReviewExtent)
                         }
+                        if (loadShopsAfterReviews && !currentState.isUsingGuestReviews) loadSavedShops()
                     }
                     else -> applyProfileAccess(userId, access)
                 }
@@ -493,6 +497,7 @@ class OtherReviewsViewModel(
                 profileAccess = access,
                 profileFailed = false,
                 reviews = emptyList(),
+                isUsingGuestReviews = false,
                 reviewsOffset = 0L,
                 hasMore = false,
                 failed = false,
@@ -509,9 +514,20 @@ class OtherReviewsViewModel(
         userId: String,
         offset: Long,
         reset: Boolean,
+        requestedReviewExtent: Int = 0,
     ) {
         val baseline = changes.journal.value
-        val result = userProfileRepository.fetchProfileReviewsPage(userId, offset)
+        val result =
+            refreshReviews.fetchExtent(
+                start = offset,
+                reviewCount = requestedReviewExtent,
+                fetchPage = { pageOffset -> userProfileRepository.fetchProfileReviewsPage(userId, requireNotNull(pageOffset)) },
+                countReviews = { it.reviews.size },
+                nextCursor = { pageOffset, page ->
+                    val access = page.access as? ProfileAccess.Visible
+                    if (access?.canReadReviews == true && page.reviews.size == PAGE_SIZE) requireNotNull(pageOffset) + page.reviews.size else null
+                },
+            )
         currentCoroutineContext().ensureActive()
         val isEpochChanged = baseline.epoch != changes.journal.value.epoch
         if (isEpochChanged) {
@@ -535,14 +551,19 @@ class OtherReviewsViewModel(
             is RamapResult.Success -> {
                 val isDifferentUser = currentState.userId != userId
                 if (isDifferentUser) return
-                val original = result.data
-                var rows = original.reviews
+                val (pages, nextOffset) = result.data
+                val original = pages.last()
+                val previousReviews = currentState.reviews.associateBy { it.review.id }
+                var rows =
+                    pages.flatMap { it.reviews }.map { row ->
+                        row.copy(review = reviewChangeReducer.retainMedia(row.review, previousReviews[row.review.id]?.review))
+                    }
                 for (record in changes.journal.value.changesAfter(baseline.revision)) {
                     rows =
                         reviewChangeReducer.updateProfileRows(
                             rows = rows,
                             change = record.change,
-                            hasMore = original.reviews.size == PAGE_SIZE,
+                            hasMore = nextOffset != null,
                             accepts = { receipt, review ->
                                 val isUserReceipt = receipt.userId == userId
                                 val isAccessible = userId == currentState.currentUserId || reviewChangeReducer.isPublicPublished(review)
@@ -570,8 +591,9 @@ class OtherReviewsViewModel(
                             } else {
                                 emptyList()
                             },
-                        hasMore = access.canReadReviews && page.reviews.size == PAGE_SIZE,
-                        reviewsOffset = if (access.canReadReviews) offset + page.reviews.size else 0L,
+                        isUsingGuestReviews = false,
+                        hasMore = access.canReadReviews && nextOffset != null,
+                        reviewsOffset = if (access.canReadReviews) nextOffset ?: offset + pages.sumOf { it.reviews.size } else 0L,
                         savedShops = if (access.canReadSavedShops) savedShops else emptyList(),
                         savedShopsHasMore = access.canReadSavedShops && savedShopsHasMore,
                     )
@@ -589,7 +611,7 @@ class OtherReviewsViewModel(
     }
 
     private fun failProfile(userId: String) {
-        if (currentState.userId == userId) reduce { copy(profileFailed = true, visitRanking = null) }
+        if (currentState.userId == userId) reduce { copy(profileFailed = true, visitRanking = visitRanking.takeIf { isUsingGuestReviews }) }
     }
 
     private fun toggleFollow() {
@@ -718,10 +740,11 @@ class OtherReviewsViewModel(
         }
         reduce {
             copy(
-                profileAccess = access.copy(profile = profile ?: access.profile),
+                profileAccess = access,
                 profileFailed = false,
                 visitRanking = ranking,
                 reviews = if (access.canReadReviews) reviews else emptyList(),
+                isUsingGuestReviews = access.canReadReviews && isUsingGuestReviews,
                 reviewsOffset = if (access.canReadReviews) reviewsOffset else 0L,
                 hasMore = access.canReadReviews && hasMore,
                 failed = access.canReadReviews && failed,
@@ -825,14 +848,15 @@ class OtherReviewsViewModel(
             applyProfileAccess(currentState.userId ?: return, page.access)
             return
         }
-        val cannotReadShopsOrReviews = !access.canReadReviews || !access.canReadSavedShops
-        if (cannotReadShopsOrReviews) cancelTask(PAGE_TASK)
+        if (!access.canReadReviews) cancelTask(PAGE_TASK)
         val previouslyCouldReadReviews = currentState.canReadVisitRanking
         if (!access.canReadReviews) clearVisitRanking()
         reduce {
             copy(
                 profileAccess = access.copy(profile = profile ?: access.profile),
                 reviews = if (access.canReadReviews) reviews else emptyList(),
+                reviewsOffset = if (access.canReadReviews) reviewsOffset else 0L,
+                isUsingGuestReviews = access.canReadReviews && isUsingGuestReviews,
                 hasMore = access.canReadReviews && hasMore,
                 savedShops = if (access.canReadSavedShops) (savedShops + page.shops).distinctBy { it.id } else emptyList(),
                 savedShopsLoaded = true,

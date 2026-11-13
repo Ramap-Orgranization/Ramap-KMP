@@ -12,8 +12,6 @@ import kotlin.test.assertTrue
 class AdminManagedEventTest {
     private val today = LocalDate.parse("2026-10-11")
 
-
-
     @Test
     fun `legacy new menu with no end expires after seven days`() {
         assertFalse(event("new", "2026-10-04", null, "new_menu").isManageableOn(today))

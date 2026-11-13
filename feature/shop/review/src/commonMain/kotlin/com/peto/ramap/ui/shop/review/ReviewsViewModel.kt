@@ -16,6 +16,7 @@ import com.peto.ramap.domain.repository.ReviewRepository
 import com.peto.ramap.domain.repository.UserModerationRepository
 import com.peto.ramap.domain.store.ReviewChangeStore
 import com.peto.ramap.domain.usecase.FeatchShopReviewsUseCase
+import com.peto.ramap.domain.usecase.RefreshReviewListUseCase
 import com.peto.ramap.ui.base.BaseViewModel
 import com.peto.ramap.ui.shop.review.contract.ReviewsIntent
 import com.peto.ramap.ui.shop.review.contract.ReviewsLoadKey
@@ -48,6 +49,7 @@ class ReviewsViewModel(
     private val reviewChanges: ReviewChangeStore,
     private val reviewChangeReducer: ReviewChangeReducer,
     private val fetchReviews: FeatchShopReviewsUseCase,
+    private val refreshReviews: RefreshReviewListUseCase,
 ) : BaseViewModel<ReviewsUiState, ReviewsIntent, ReviewsSideEffect>(ReviewsUiState()) {
     private var revision = reviewChanges.journal.value.revision
 
@@ -65,7 +67,8 @@ class ReviewsViewModel(
             is ReviewsIntent.OnShopSelected -> selectShop(intent.shopId)
             ReviewsIntent.OnRetry -> loadPage(append = false)
             ReviewsIntent.OnLoadMore -> {
-                val canLoadMore = currentState.hasMoreReviews && !currentState.isLoadingMoreReviews
+                val state = currentState
+                val canLoadMore = state.hasMoreReviews && !state.isLoadingMoreReviews && !state.isLoading && !state.isUsingGuestReviews
                 if (canLoadMore) loadPage(append = true)
             }
             is ReviewsIntent.OnReviewLikeToggled -> toggleLike(intent.review)
@@ -92,7 +95,16 @@ class ReviewsViewModel(
         cancelReviewTasks()
         val cached = fetchReviews.findCached(shopId, currentState.currentUserId)
         val hasCachedPage = cached != null
-        reduce { copy(shopId = shopId, page = cached ?: ShopReviewsPage(emptyList(), 0), hasLoaded = hasCachedPage, hasReviewLoadFailure = false, hasPageLoadFailure = false) }
+        reduce {
+            copy(
+                shopId = shopId,
+                page = cached ?: ShopReviewsPage(emptyList(), 0),
+                hasLoaded = hasCachedPage,
+                hasReviewLoadFailure = false,
+                hasPageLoadFailure = false,
+                isUsingGuestReviews = false,
+            )
+        }
         loadPage(append = false)
     }
 
@@ -111,7 +123,15 @@ class ReviewsViewModel(
             onSuccess = { page ->
                 val isInactive = !currentCoroutineContext().isActive
                 if (isInactive) return@launchResultTask
-                reduce { copy(page = page, hasLoaded = true, hasReviewLoadFailure = false, hasPageLoadFailure = false) }
+                reduce {
+                    copy(
+                        page = page,
+                        hasLoaded = true,
+                        hasReviewLoadFailure = false,
+                        hasPageLoadFailure = false,
+                        isUsingGuestReviews = false,
+                    )
+                }
                 fetchReviews.savePage(shopId, viewer, page)
             },
             onError = {
@@ -158,7 +178,16 @@ class ReviewsViewModel(
         val journal = reviewChanges.journal.first { it.userId == viewer }
         revision = journal.revision
         fetchReviews.clearCache()
-        reduce { copy(currentUserId = viewer, page = ShopReviewsPage(emptyList(), 0), hasLoaded = false, hasReviewLoadFailure = false, hasPageLoadFailure = false) }
+        reduce {
+            val retained = refreshReviews.retainGuestReviews(currentUserId, viewer, reviews) { it }
+            copy(
+                currentUserId = viewer,
+                page = page.copy(reviews = retained),
+                hasReviewLoadFailure = false,
+                hasPageLoadFailure = false,
+                isUsingGuestReviews = hasLoaded,
+            )
+        }
         loadProfile(viewer)
         loadPage(append = false)
     }
@@ -247,13 +276,15 @@ class ReviewsViewModel(
         )
     }
 
-    private fun toggleLike(review: Review) {
-        val isDifferentShop = review.shopId != currentState.shopId
-        val cannotLike = !review.allowsLikeFrom(currentState.currentUserId)
-        if (isDifferentShop || cannotLike) return
-        val isLoggedOut = currentState.currentUserId == null
+    private fun toggleLike(selected: Review) {
+        val state = currentState
+        if (selected.shopId != state.shopId || state.isUsingGuestReviews) return
+        val review = state.reviews.firstOrNull { it.id == selected.id } ?: return
+        val cannotLike = review.isBlocked || !review.allowsLikeFrom(state.currentUserId)
+        if (cannotLike) return
+        val isLoggedOut = state.currentUserId == null
         if (isLoggedOut) {
-            trySideEffect(ReviewsSideEffect.ShowLoginGuide(Res.string.login_required_review_like_description))
+            if (!loginRepository.hasSession()) trySideEffect(ReviewsSideEffect.ShowLoginGuide(Res.string.login_required_review_like_description))
             return
         }
         val next = review.toggledLike()
@@ -287,8 +318,9 @@ class ReviewsViewModel(
     }
 
     private fun deleteReview(review: Review) {
-        val isDifferentShop = review.shopId != currentState.shopId
-        val cannotDelete = !review.allowsDeletionBy(currentState.currentUserId)
+        val state = currentState
+        val isDifferentShop = review.shopId != state.shopId
+        val cannotDelete = state.isUsingGuestReviews || !review.allowsDeletionBy(state.currentUserId)
         if (isDifferentShop || cannotDelete) return
         launchResultTask(
             taskKey = ACTION_TASK_KEY,
@@ -305,14 +337,16 @@ class ReviewsViewModel(
     }
 
     private fun requestReport(review: Review) {
-        val isLoggedOut = !currentState.isLoggedIn
+        val state = currentState
+        if (state.isUsingGuestReviews) return
+        val isLoggedOut = !state.isLoggedIn
         if (isLoggedOut) {
             trySideEffect(ReviewsSideEffect.ShowLoginGuide(Res.string.login_required_review_report_description))
             return
         }
-        val isDifferentShop = review.shopId != currentState.shopId
-        val cannotReport = !review.allowsReportFrom(currentState.currentUserId)
-        val isReportingAlready = currentState.isReportingReview
+        val isDifferentShop = review.shopId != state.shopId
+        val cannotReport = !review.allowsReportFrom(state.currentUserId)
+        val isReportingAlready = state.isReportingReview
         if (isDifferentShop || cannotReport || isReportingAlready) return
         reduce { copy(reportReview = review) }
     }

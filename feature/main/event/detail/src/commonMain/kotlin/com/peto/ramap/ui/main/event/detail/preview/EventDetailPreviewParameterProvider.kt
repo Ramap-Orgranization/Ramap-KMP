@@ -72,7 +72,6 @@ class EventDetailPreviewParameterProvider : PreviewParameterProvider<EventDetail
             EventDetailUiState(
                 event = previewEvent(type = ShopEventType.POPUP, title = "장소명만 있는 팝업", venueShop = null, venueName = "라멘 전시장"),
             ),
-
             EventDetailUiState(
                 event =
                     previewEvent(

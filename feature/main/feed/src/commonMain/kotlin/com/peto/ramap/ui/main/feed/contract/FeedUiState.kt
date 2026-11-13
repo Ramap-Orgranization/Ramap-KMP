@@ -17,6 +17,7 @@ data class FeedUiState(
     val currentUserId: String? = null,
     val sessionResolved: Boolean = false,
     val hasLoaded: Boolean = false,
+    val isUsingGuestReviews: Boolean = false,
     val failed: Boolean = false,
     val appendFailed: Boolean = false,
     val revealed: Map<String, Review> = emptyMap(),
@@ -33,13 +34,13 @@ data class FeedUiState(
     val unblocking: Boolean get() = loadState.isLoading(FeedLoadKey.Unblock)
 
     val isLoadingInitial: Boolean
-        get() = !sessionResolved || (!hasLoaded && !failed)
+        get() = !hasLoaded && (!sessionResolved || !failed)
 
     val isEmpty: Boolean
         get() = hasLoaded && reviews.isEmpty() && !failed
 
     val isRefreshing: Boolean
-        get() = refreshing && hasLoaded
+        get() = refreshing && hasLoaded && !isUsingGuestReviews
 
     val hasError: Boolean
         get() = failed

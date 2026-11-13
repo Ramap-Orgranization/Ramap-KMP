@@ -10,8 +10,6 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNull
 
 class AdminRegistrationPreviewStateReducerTest {
-
-
     @Test
     fun `임시 휴무를 선택한 미리보기는 조기 마감 시각을 비운다`() {
         val state = AdminRegistrationUiState(isOperatingNotice = true, selectedNoticeType = OperatingNoticeType.TEMPORARY_CLOSURE)
@@ -76,8 +74,6 @@ class AdminRegistrationPreviewStateReducerTest {
             assertEquals(false, draft.canRegisterOperatingNotice())
         }
     }
-
-
 
     @Test
     fun `invalid preview event type keeps selected event type`() {

@@ -26,6 +26,6 @@ internal fun ReviewDetailTextAction(
                 .noRippleClickable(enabled = enabled, onClick = onClick)
                 .padding(vertical = 10.dp),
         style = AppTextStyle.B2,
-        color = if (enabled) BrandColor.Foreground else GrayColor.C300,
+        color = if (enabled) BrandColor.SecondPrimary else GrayColor.C300,
     )
 }

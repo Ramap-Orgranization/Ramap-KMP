@@ -151,7 +151,7 @@ internal fun ProfileEditContent(
                 AppText(
                     text = stringResource(Res.string.profile_complete),
                     style = AppTextStyle.B1,
-                    color = if (state.canSave) BrandColor.Foreground else GrayColor.C300,
+                    color = if (state.canSave) BrandColor.SecondPrimary else GrayColor.C300,
                     textAlign = TextAlign.Center,
                 )
             }
@@ -280,7 +280,7 @@ private fun ProfileEdit(
                                 .size(40.dp)
                                 .border(2.dp, Color.White, CircleShape)
                                 .clip(CircleShape)
-                                .background(BrandColor.Fill)
+                                .background(BrandColor.Primary)
                                 .noRippleClickable(enabled = !state.saving, onClick = onPickImage),
                         contentAlignment = Alignment.Center,
                     ) {
@@ -399,7 +399,7 @@ private fun ProfileEdit(
                     shape = RoundedCornerShape(12.dp),
                     colors =
                         OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = BrandColor.Foreground,
+                            focusedBorderColor = BrandColor.SecondPrimary,
                             unfocusedBorderColor = CommonColor.White,
                             focusedTextColor = GrayColor.C500,
                             unfocusedTextColor = GrayColor.C500,
@@ -468,7 +468,7 @@ private fun ProfileEdit(
                 shape = RoundedCornerShape(12.dp),
                 colors =
                     OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = BrandColor.Foreground,
+                        focusedBorderColor = BrandColor.SecondPrimary,
                         unfocusedBorderColor = CommonColor.White,
                         focusedTextColor = GrayColor.C500,
                         unfocusedTextColor = GrayColor.C500,

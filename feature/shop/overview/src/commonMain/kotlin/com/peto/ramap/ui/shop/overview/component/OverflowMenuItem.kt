@@ -48,7 +48,7 @@ internal fun OverflowMenuIcon(
         painter = painterResource(icon),
         contentDescription = null,
         modifier = Modifier.size(20.dp),
-        colorFilter = ColorFilter.tint(if (isActive) BrandColor.Foreground else GrayColor.C300),
+        colorFilter = ColorFilter.tint(if (isActive) BrandColor.SecondPrimary else GrayColor.C300),
     )
 }
 

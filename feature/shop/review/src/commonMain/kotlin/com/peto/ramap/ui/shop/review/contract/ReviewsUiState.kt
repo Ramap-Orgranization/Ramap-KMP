@@ -14,6 +14,7 @@ data class ReviewsUiState(
     val currentUserId: String? = null,
     val currentProfileIsPublic: Boolean? = null,
     val isLoggedIn: Boolean = false,
+    val isUsingGuestReviews: Boolean = false,
     val actingReviewId: String? = null,
     val revealedBlockedReviews: Map<String, Review> = emptyMap(),
     val revealingBlockedReviewId: String? = null,

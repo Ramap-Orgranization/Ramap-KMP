@@ -147,7 +147,7 @@ internal fun OtherReviewsContent(
         reviewListState.scrollToItem(0)
         savedShopsListState.scrollToItem(0)
     }
-    var confirmBlockAction by remember(state.userId) { mutableStateOf(false) }
+    var confirmBlockAction by remember(state.userId, state.currentUserId) { mutableStateOf(false) }
     val requestBlockAction: () -> Unit = {
         if (state.currentUserId == null) {
             onIntent(OtherReviewsIntent.ToggleBlock)
@@ -172,7 +172,7 @@ internal fun OtherReviewsContent(
                 ProfileBlockOverflowMenu(
                     userId = state.userId,
                     isBlocked = state.isBlocked,
-                    enabled = !state.blocking,
+                    enabled = !state.blocking && !state.isUsingGuestReviews,
                     onToggleBlock = requestBlockAction,
                 )
             }
@@ -187,7 +187,7 @@ internal fun OtherReviewsContent(
             contentPadding = PaddingValues(bottom = 24.dp),
         ) {
             if (state.showsProfileHeader) {
-                item {
+                item(key = "profile-header") {
                     state.profile?.let { profile ->
                         ProfileHeader(
                             nickname = profile.nickname,
@@ -199,7 +199,7 @@ internal fun OtherReviewsContent(
             }
             val visibleAccess = state.profileAccess as? ProfileAccess.Visible
             if (visibleAccess != null && visibleAccess.profile.userId != state.currentUserId) {
-                item {
+                item(key = "profile-follow") {
                     Box(
                         modifier =
                             Modifier
@@ -211,6 +211,7 @@ internal fun OtherReviewsContent(
                             state = visibleAccess.followState,
                             isLoading = state.following,
                             onClick = { onIntent(OtherReviewsIntent.ToggleFollow) },
+                            enabled = !state.isUsingGuestReviews,
                         )
                     }
                 }
@@ -312,7 +313,7 @@ internal fun OtherReviewsContent(
 
                 val reviewActions =
                     ReviewCardActions(
-                        onLike = { onIntent(OtherReviewsIntent.ToggleLike(review)) },
+                        onLike = { onIntent(OtherReviewsIntent.ToggleLike(review)) }.takeUnless { state.isUsingGuestReviews },
                         onOpenReviewDetail = onOpenReviewDetail?.let { open -> { open(review.id) } },
                     )
                 ReviewCard(

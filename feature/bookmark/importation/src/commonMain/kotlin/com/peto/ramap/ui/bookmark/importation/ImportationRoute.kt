@@ -259,7 +259,7 @@ private fun ImportationPreview(
             AppText(
                 text = stringResource(Res.string.importation_count, uiState.candidates.size),
                 style = AppTextStyle.T2,
-                color = BrandColor.Foreground,
+                color = BrandColor.SecondPrimary,
             )
         }
 

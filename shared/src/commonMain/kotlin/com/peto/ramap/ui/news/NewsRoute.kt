@@ -1,11 +1,18 @@
 package com.peto.ramap.ui.news
 
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.peto.ramap.designsystem.component.NewsFilters
+import com.peto.ramap.designsystem.tab.AppChipTabs
 import com.peto.ramap.designsystem.toast.ToastManager
 import com.peto.ramap.domain.model.event.ShopEvent
 import com.peto.ramap.navigation.NavigationState
@@ -21,8 +28,12 @@ import com.peto.ramap.ui.main.notice.OperatingNoticeScreen
 import com.peto.ramap.ui.main.notice.OperatingNoticeViewModel
 import com.peto.ramap.ui.main.notice.contract.OperatingNoticeIntent
 import com.peto.ramap.ui.main.notice.contract.OperatingNoticeSideEffect
+import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
+import ramap.shared.generated.resources.Res
+import ramap.shared.generated.resources.news_tab_event
+import ramap.shared.generated.resources.news_tab_operating_notice
 
 @Composable
 fun NewsRoute(
@@ -52,31 +63,42 @@ fun NewsRoute(
 
     val activeTab = navigationState.selectedNewsTab
 
+    @Composable
+    fun HeaderContent(
+        query: String,
+        savedOnly: Boolean,
+        onQueryChanged: (String) -> Unit,
+        onSavedToggled: () -> Unit,
+    ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            NewsFilters(
+                query = query,
+                savedOnly = savedOnly,
+                onQueryChanged = onQueryChanged,
+                onSavedToggled = onSavedToggled,
+            )
+            AppChipTabs(
+                labels =
+                    NewsTab.entries.map { tab ->
+                        stringResource(
+                            when (tab) {
+                                NewsTab.EVENTS -> Res.string.news_tab_event
+                                NewsTab.OPERATING_NOTICES -> Res.string.news_tab_operating_notice
+                            },
+                        )
+                    },
+                selectedIndex = activeTab.ordinal,
+                onSelect = { index -> navigationState.selectNewsTab(NewsTab.entries[index]) },
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+            )
+        }
+    }
+
     NewsScreen(
         selectedTab = activeTab,
-        onTabSelected = navigationState::selectNewsTab,
-        query =
-            when (activeTab) {
-                NewsTab.EVENTS -> eventsUiState.query
-                NewsTab.OPERATING_NOTICES -> noticeUiState.query
-            },
-        savedOnly =
-            when (activeTab) {
-                NewsTab.EVENTS -> eventsUiState.savedOnly
-                NewsTab.OPERATING_NOTICES -> noticeUiState.savedOnly
-            },
-        onQueryChanged = { query ->
-            when (activeTab) {
-                NewsTab.EVENTS -> eventsViewModel.dispatch(EventsIntent.OnQueryChanged(query))
-                NewsTab.OPERATING_NOTICES -> noticeViewModel.dispatch(OperatingNoticeIntent.OnQueryChanged(query))
-            }
-        },
-        onSavedToggled = {
-            when (activeTab) {
-                NewsTab.EVENTS -> eventsViewModel.dispatch(EventsIntent.OnSavedToggled)
-                NewsTab.OPERATING_NOTICES -> noticeViewModel.dispatch(OperatingNoticeIntent.OnSavedToggled)
-            }
-        },
         eventsContent = {
             EventsScreen(
                 uiState = eventsUiState,
@@ -88,6 +110,14 @@ fun NewsRoute(
                 onClickRetry = { eventsViewModel.dispatch(EventsIntent.OnEventsRetried) },
                 onPersonalizationRetry = { eventsViewModel.dispatch(EventsIntent.OnPersonalizationRetried) },
                 showFilters = false,
+                headerContent = {
+                    HeaderContent(
+                        query = eventsUiState.query,
+                        savedOnly = eventsUiState.savedOnly,
+                        onQueryChanged = { query -> eventsViewModel.dispatch(EventsIntent.OnQueryChanged(query)) },
+                        onSavedToggled = { eventsViewModel.dispatch(EventsIntent.OnSavedToggled) },
+                    )
+                },
             )
         },
         operatingNoticesContent = {
@@ -105,6 +135,14 @@ fun NewsRoute(
                 isSourceUrlSupported = ExternalUriOpener::isSupportedWebUri,
                 onSourceClick = ExternalUriOpener::open,
                 showFilters = false,
+                headerContent = {
+                    HeaderContent(
+                        query = noticeUiState.query,
+                        savedOnly = noticeUiState.savedOnly,
+                        onQueryChanged = { query -> noticeViewModel.dispatch(OperatingNoticeIntent.OnQueryChanged(query)) },
+                        onSavedToggled = { noticeViewModel.dispatch(OperatingNoticeIntent.OnSavedToggled) },
+                    )
+                },
             )
         },
     )

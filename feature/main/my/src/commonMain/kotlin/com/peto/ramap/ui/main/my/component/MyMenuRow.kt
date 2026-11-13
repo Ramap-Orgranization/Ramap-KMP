@@ -153,7 +153,7 @@ private fun MyMenuRowPreview() {
             title = Res.string.settings_bookmarked_shops_menu,
             count = 12,
             iconBackground = BrandColor.SubtleFill,
-            iconTint = BrandColor.Foreground,
+            iconTint = BrandColor.SecondPrimary,
             onClick = {},
         )
     }

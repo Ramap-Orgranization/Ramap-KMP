@@ -89,11 +89,12 @@ fun EventsScreen(
     onSavedToggled: () -> Unit = {},
     onPersonalizationRetry: () -> Unit = {},
     showFilters: Boolean = true,
+    headerContent: (@Composable () -> Unit)? = null,
 ) {
     var selectedEventGroup by remember { mutableStateOf<ShopEvents?>(null) }
     val pullToRefreshState = rememberPullToRefreshState()
     Column(modifier = Modifier.fillMaxSize()) {
-        if (showFilters) {
+        if (showFilters && headerContent == null) {
             NewsFilters(
                 query = uiState.query,
                 savedOnly = uiState.savedOnly,
@@ -151,6 +152,11 @@ fun EventsScreen(
                             contentPadding = PaddingValues(bottom = 5.dp),
                             verticalArrangement = Arrangement.spacedBy(5.dp),
                         ) {
+                            headerContent?.let { header ->
+                                item(key = "header") {
+                                    header()
+                                }
+                            }
                             if (uiState.isEmpty) {
                                 item {
                                     val emptyMessage =

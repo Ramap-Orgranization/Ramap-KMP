@@ -34,6 +34,92 @@ class ReviewsLoginTest {
     fun `사용자 ID가 인증보다 먼저 도착해도 로그인 후 리뷰 권한과 동작을 갱신한다`() = loginScenario(authenticatedFirst = false)
 
     @Test
+    fun `좋아요 로그인 중에도 펼친 리뷰와 사진을 유지하고 갱신된 좋아요 상태를 사용한다`() =
+        reviewScenario { fixture ->
+            val viewModel = fixture.viewModel
+            val guestReviews =
+                List(45) { index ->
+                    fixture.otherReview.copy(
+                        id = "review-$index",
+                        imageUrls = listOf("https://example.com/review-$index.jpg"),
+                    )
+                }
+            fixture.reviews.reviews = guestReviews
+            viewModel.dispatch(ReviewsIntent.OnShopSelected("shop"))
+            runCurrent()
+            viewModel.dispatch(ReviewsIntent.OnLoadMore)
+            runCurrent()
+            val guestPage = viewModel.uiState.value.page
+            val guestPhotos = viewModel.uiState.value.photoUrls
+            val selectedReview = guestPage.reviews.last()
+            viewModel.dispatch(ReviewsIntent.OnReviewLikeToggled(selectedReview))
+            runCurrent()
+
+            val accountResponse = CompletableDeferred<Unit>()
+            fixture.reviews.reviews = guestReviews.map { if (it.id == selectedReview.id) it.copy(isLiked = true, likeCount = 1) else it }
+            fixture.fetchPage = { shopId, offset ->
+                accountResponse.await()
+                fixture.reviews.fetchShopReviewsPage(shopId, offset)
+            }
+            authenticate(fixture)
+            assertTrue(viewModel.uiState.value.hasLoaded)
+            assertEquals(guestPage, viewModel.uiState.value.page)
+            assertEquals(guestPhotos, viewModel.uiState.value.photoUrls)
+
+            viewModel.dispatch(ReviewsIntent.OnReviewLikeToggled(selectedReview))
+            viewModel.dispatch(ReviewsIntent.OnLoadMore)
+            runCurrent()
+            assertTrue(fixture.likeRequests.isEmpty())
+            assertEquals(3, fixture.pageRequests)
+
+            accountResponse.complete(Unit)
+            runCurrent()
+            val accountState = viewModel.uiState.value
+            assertEquals(listOf(0L, 20L, 0L, 20L), fixture.reviews.pageOffsets)
+            assertEquals(guestPage.reviews.map { it.id }, accountState.reviews.map { it.id })
+            assertEquals(guestPhotos, accountState.photoUrls)
+            assertTrue(accountState.reviews.last().isLiked)
+
+            viewModel.dispatch(ReviewsIntent.OnReviewLikeToggled(selectedReview))
+            runCurrent()
+            assertEquals(listOf(selectedReview.id to false), fixture.likeRequests)
+            val updatedState = viewModel.uiState.value
+            assertFalse(updatedState.reviews.last().isLiked)
+        }
+
+    @Test
+    fun `로그인 후 리뷰 조회에 실패하면 기존 목록을 유지하고 재시도 성공 시 차단 상태를 반영한다`() =
+        reviewScenario { fixture ->
+            val viewModel = fixture.viewModel
+            val guestReview = fixture.otherReview.copy(imageUrls = listOf("https://example.com/review.jpg"))
+            fixture.reviews.reviews = listOf(guestReview)
+            viewModel.dispatch(ReviewsIntent.OnShopSelected("shop"))
+            runCurrent()
+
+            fixture.fetchPage = { _, _ -> RamapResult.Error(RamapError.Http(500)) }
+            authenticate(fixture)
+            assertTrue(viewModel.uiState.value.hasReviewLoadFailure)
+            assertTrue(viewModel.uiState.value.hasLoaded)
+            assertEquals(listOf(guestReview), viewModel.uiState.value.reviews)
+            viewModel.dispatch(ReviewsIntent.OnReviewLikeToggled(guestReview))
+            runCurrent()
+            assertTrue(fixture.likeRequests.isEmpty())
+
+            val blockedReview = guestReview.copy(isBlocked = true, body = "", imageUrls = emptyList())
+            fixture.reviews.reviews = listOf(blockedReview)
+            fixture.fetchPage = fixture.reviews::fetchShopReviewsPage
+            viewModel.dispatch(ReviewsIntent.OnRetry)
+            runCurrent()
+            val accountState = viewModel.uiState.value
+            assertFalse(accountState.hasReviewLoadFailure)
+            assertEquals(listOf(blockedReview), accountState.reviews)
+            assertTrue(accountState.photoUrls.isEmpty())
+            viewModel.dispatch(ReviewsIntent.OnReviewLikeToggled(guestReview))
+            runCurrent()
+            assertTrue(fixture.likeRequests.isEmpty())
+        }
+
+    @Test
     fun `리뷰 변경 저장소가 사용자 ID보다 먼저 초기화되어도 로그인 조회를 완료한다`() =
         reviewScenario { fixture ->
             fixture.viewModel.dispatch(ReviewsIntent.OnShopSelected("shop"))
