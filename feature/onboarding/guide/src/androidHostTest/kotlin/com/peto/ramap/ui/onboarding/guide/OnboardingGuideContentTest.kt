@@ -131,7 +131,7 @@ class OnboardingGuideContentTest {
         runComposeUiTest {
             var state by mutableStateOf(selection.copy(bookmarks = OnboardingBookmarks(setOf("shop-1", "shop-2"))))
             val intents = mutableListOf<ShopSelectionIntent>()
-            val selectionHeading = onNodeWithText("가보고 싶은 라멘집\n3곳을 저장해 주세요")
+            val selectionHeading = onNodeWithText("가보고 싶은 라멘집\n3곳 이상을 저장해 주세요")
             val reviewGuide = onNodeWithText("리뷰를 남기면\n나만의 라멘 지도가 채워져요")
             setContent {
                 TestContent { OnboardingGuideContent(uiState = state, onIntent = intents::add) }
@@ -240,7 +240,7 @@ class OnboardingGuideContentTest {
                 runOnIdle { state = blocked }
                 onRoot().performTouchInput { swipeRight() }
                 runOnIdle { input.completeBack() }
-                onNodeWithText("가보고 싶은 라멘집\n3곳을 저장해 주세요").assertIsDisplayed()
+                onNodeWithText("가보고 싶은 라멘집\n3곳 이상을 저장해 주세요").assertIsDisplayed()
             }
             runOnIdle { state = selection }
             runOnIdle { input.completeBack() }
