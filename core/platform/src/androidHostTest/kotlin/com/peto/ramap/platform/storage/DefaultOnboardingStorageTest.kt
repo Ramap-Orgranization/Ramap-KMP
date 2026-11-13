@@ -10,12 +10,14 @@ import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.test.runTest
 import java.nio.file.Files
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class DefaultOnboardingStorageTest {
     @Test
-    fun `첫 실행에는 미확인이며 확인 기록은 저장소를 다시 열어도 유지한다`() =
+    fun `권한 확인과 매장 선택 기록을 다시 열어도 유지하고 온보딩 완료 시 선택 기록을 지운다`() =
         runTest {
             val directory = Files.createTempDirectory("onboarding-storage-test").toFile()
             val file = directory.resolve("onboarding.preferences_pb")
@@ -25,17 +27,22 @@ class DefaultOnboardingStorageTest {
                 val storage = DefaultOnboardingStorage(PreferenceDataStoreFactory.create(scope = firstScope) { file })
                 assertFalse(storage.isPermissionGuideConfirmed())
                 assertFalse(storage.isOnboardingCompleted())
+                assertNull(storage.savedShopCount())
 
                 storage.confirmPermissionGuide()
                 storage.confirmPermissionGuide()
                 assertTrue(storage.isPermissionGuideConfirmed())
                 assertFalse(storage.isOnboardingCompleted())
-                storage.completeOnboarding()
+                storage.saveShopSelection(3)
                 firstScope.coroutineContext[Job]!!.cancelAndJoin()
 
                 val reopened = DefaultOnboardingStorage(PreferenceDataStoreFactory.create(scope = secondScope) { file })
                 assertTrue(reopened.isPermissionGuideConfirmed())
+                assertFalse(reopened.isOnboardingCompleted())
+                assertEquals(3, reopened.savedShopCount())
+                reopened.completeOnboarding()
                 assertTrue(reopened.isOnboardingCompleted())
+                assertNull(reopened.savedShopCount())
             } finally {
                 firstScope.coroutineContext[Job]!!.cancelAndJoin()
                 secondScope.coroutineContext[Job]!!.cancelAndJoin()
