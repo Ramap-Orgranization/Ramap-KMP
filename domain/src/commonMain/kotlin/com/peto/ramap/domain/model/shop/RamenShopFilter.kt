@@ -2,7 +2,7 @@ package com.peto.ramap.domain.model.shop
 
 data class RamenShopFilter(
     private val values: Set<Category> = emptySet(),
-    val isOpenSelected: Boolean = false,
+    val hours: ShopHoursFilter = ShopHoursFilter.All,
 ) : Set<Category> by values {
     val hasCategoryFilter: Boolean
         get() = values.isNotEmpty()
@@ -11,11 +11,7 @@ data class RamenShopFilter(
 
     operator fun minus(category: Category): RamenShopFilter = copy(values = values - category)
 
-    override fun isEmpty(): Boolean = values.isEmpty() && !isOpenSelected
+    override fun isEmpty(): Boolean = values.isEmpty() && hours == ShopHoursFilter.All
 
-    fun clear(): RamenShopFilter =
-        copy(
-            values = emptySet(),
-            isOpenSelected = false,
-        )
+    fun clear(): RamenShopFilter = RamenShopFilter()
 }

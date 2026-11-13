@@ -29,7 +29,7 @@ data class RamenShops(
     }
 
     /**
-     * [filter] 조건에 맞고 [currentDateTime] 기준으로 영업 중인 매장만 남긴 목록을 반환한다.
+     * 메뉴 조건과 영업시간 조건에 맞는 매장만 남긴다. 현재 영업 여부는 [currentDateTime]으로 판단한다.
      */
     fun filterByOpenStatus(
         filter: RamenShopFilter,

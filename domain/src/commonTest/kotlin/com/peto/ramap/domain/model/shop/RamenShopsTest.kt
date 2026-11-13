@@ -170,7 +170,7 @@ class RamenShopsTest {
 
         val result =
             RamenShops(listOf(openShop, closedShop)).filterByOpenStatus(
-                RamenShopFilter(isOpenSelected = true),
+                RamenShopFilter(hours = ShopHoursFilter.OpenNow),
                 LocalDateTime(2026, 8, 10, 12, 0),
             )
 
@@ -208,7 +208,7 @@ class RamenShopsTest {
                         notice = null,
                     ),
             )
-        val filter = RamenShopFilter(isOpenSelected = true)
+        val filter = RamenShopFilter(hours = ShopHoursFilter.OpenNow)
 
         assertEquals(
             setOf("shop-1"),
@@ -245,7 +245,7 @@ class RamenShopsTest {
             setOf("shop-1"),
             RamenShops(listOf(shop))
                 .filterByOpenStatus(
-                    RamenShopFilter(isOpenSelected = true),
+                    RamenShopFilter(hours = ShopHoursFilter.OpenNow),
                     LocalDateTime(2026, 8, 10, 0, 30),
                 ).keys,
         )
@@ -299,7 +299,7 @@ class RamenShopsTest {
         assertTrue(
             RamenShops(shops)
                 .filterByOpenStatus(
-                    RamenShopFilter(isOpenSelected = true),
+                    RamenShopFilter(hours = ShopHoursFilter.OpenNow),
                     LocalDateTime(2026, 8, 10, 12, 0),
                 ).isEmpty(),
         )
@@ -330,7 +330,7 @@ class RamenShopsTest {
 
         val result =
             RamenShops(listOf(shop)).filterByOpenStatus(
-                RamenShopFilter(setOf(Category.JIRO), isOpenSelected = true),
+                RamenShopFilter(setOf(Category.JIRO), hours = ShopHoursFilter.OpenNow),
                 LocalDateTime(2026, 8, 10, 20, 30),
             )
 

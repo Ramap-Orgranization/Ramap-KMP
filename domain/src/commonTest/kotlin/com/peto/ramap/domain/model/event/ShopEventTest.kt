@@ -11,8 +11,6 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class ShopEventTest {
-
-
     @Test
     fun `도메인 이미지 노출 목록은 최대 다섯 장으로 제한한다`() {
         val event = event(imageUrls = (1..6).map { "image-$it" })

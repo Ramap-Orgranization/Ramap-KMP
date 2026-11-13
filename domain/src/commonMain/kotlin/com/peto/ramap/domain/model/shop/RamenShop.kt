@@ -34,9 +34,11 @@ data class RamenShop(
         filter: RamenShopFilter,
         currentDateTime: LocalDateTime,
         operatingNotices: List<OperatingNotice> = emptyList(),
-    ): Boolean =
-        (!filter.hasCategoryFilter || menuCategories.any { it in filter }) &&
-            (!filter.isOpenSelected || isOpenAt(currentDateTime, operatingNotices))
+    ): Boolean {
+        if (filter.hasCategoryFilter && menuCategories.none { it in filter }) return false
+        val filterTime = filter.hours.timeAt(currentDateTime) ?: return true
+        return isOpenAt(filterTime, operatingNotices)
+    }
 
     fun isOpenAt(
         currentDateTime: LocalDateTime,

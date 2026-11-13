@@ -129,6 +129,6 @@ class FeatchShopReviewsUseCaseTest {
         changes: FakeReviewChangeStore,
     ): FeatchShopReviewsUseCase {
         val reducer = ReviewChangeReducer()
-        return FeatchShopReviewsUseCase(repository, changes, reducer, ShopReviewCache(changes, reducer))
+        return FeatchShopReviewsUseCase(repository, changes, reducer, ShopReviewCache(changes, reducer), RefreshReviewListUseCase(reducer))
     }
 }

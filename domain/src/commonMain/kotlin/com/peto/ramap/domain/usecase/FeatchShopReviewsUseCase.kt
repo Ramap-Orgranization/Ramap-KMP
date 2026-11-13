@@ -17,6 +17,7 @@ class FeatchShopReviewsUseCase(
     private val changes: ReviewChangeStore,
     private val reducer: ReviewChangeReducer,
     private val cache: ShopReviewCache,
+    private val refreshReviews: RefreshReviewListUseCase,
 ) {
     fun findCached(
         shopId: String,
@@ -48,18 +49,21 @@ class FeatchShopReviewsUseCase(
             currentCoroutineContext().ensureActive()
             val baseline = changes.journal.value
             val offset = if (isAppending) retainedPage.reviews.size.toLong() else 0L
-            val result = repository.fetchShopReviewsPage(shopId, offset)
-            if (result !is RamapResult.Success) return result
-            var page = result.data
-            if (!isAppending) {
-                while (page.reviews.size < targetSize && page.hasMore) {
-                    val next = repository.fetchShopReviewsPage(shopId, page.reviews.size.toLong())
-                    if (next !is RamapResult.Success) return next
-                    val merged = reducer.appendShopPage(page.reviews, next.data, emptyList(), shopId, viewerId)
-                    if (merged.reviews.size <= page.reviews.size) break
-                    page = merged
+            val seenReviewIds = mutableSetOf<String>()
+            val result =
+                refreshReviews.fetchExtent(
+                    start = offset,
+                    reviewCount = if (isAppending) 0 else targetSize,
+                    fetchPage = { pageOffset -> repository.fetchShopReviewsPage(shopId, requireNotNull(pageOffset)) },
+                    countReviews = { page -> page.reviews.count { seenReviewIds.add(it.id) } },
+                    nextCursor = { _, page -> seenReviewIds.size.toLong().takeIf { seenReviewIds.size < page.totalCount } },
+                )
+            val pages =
+                when (result) {
+                    is RamapResult.Error -> return result
+                    is RamapResult.Success -> result.data.pages
                 }
-            }
+            val page = pages.last().copy(reviews = pages.flatMap { it.reviews }.distinctBy { it.id })
             val journal = changes.journal.value
             if (baseline.epoch != journal.epoch) throw CancellationException(SESSION_CHANGED)
             val events = journal.changesAfter(baseline.revision).map { it.change }
