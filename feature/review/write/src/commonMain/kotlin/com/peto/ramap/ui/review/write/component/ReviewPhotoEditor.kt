@@ -26,6 +26,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
@@ -49,6 +50,7 @@ import com.peto.ramap.designsystem.image.LocalImageAccessScope
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.domain.model.review.ReviewAttachment
 import com.peto.ramap.domain.model.review.ReviewImage
+import com.peto.ramap.platform.haptic.rememberDragStartHapticFeedback
 import com.peto.ramap.theme.AppTextStyle
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
@@ -78,6 +80,7 @@ internal fun PhotoEditor(
     dispatch: (ReviewWriteIntent) -> Unit,
 ) {
     val scrollState = rememberScrollState()
+    val playDragStartHaptic = rememberDragStartHapticFeedback()
     val onAddPhoto = onPick.takeIf { state.canEdit }
     Column(
         verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -125,6 +128,7 @@ internal fun PhotoEditor(
                         imageCount = state.imageCount,
                         canEdit = state.canEdit,
                         scrollState = scrollState,
+                        onDragStarted = playDragStartHaptic,
                         onMove = { dispatch(ReviewWriteIntent.MoveImage(index, it)) },
                         onRemove = { dispatch(ReviewWriteIntent.RemoveImage(index)) },
                     )
@@ -217,10 +221,12 @@ private fun AttachedPhotoSlot(
     imageCount: Int,
     canEdit: Boolean,
     scrollState: ScrollState,
+    onDragStarted: () -> Unit,
     onMove: (Int) -> Unit,
     onRemove: () -> Unit,
 ) {
     val density = LocalDensity.current
+    val notifyDragStarted by rememberUpdatedState(onDragStarted)
     val slotWidthPx = with(density) { PHOTO_SLOT_SIZE.roundToPx() }
     val slotPitchPx = slotWidthPx + with(density) { PHOTO_SLOT_SPACING.roundToPx() }
     val direction = if (LocalLayoutDirection.current == LayoutDirection.Ltr) 1 else -1
@@ -273,6 +279,7 @@ private fun AttachedPhotoSlot(
                                 dragOffsetPx = 0f
                                 val pointerInSlotPx = if (direction == 1) start.x else slotWidthPx - start.x
                                 dragStartPointerPx = index * slotPitchPx - dragStartScrollPx + pointerInSlotPx
+                                notifyDragStarted()
                             },
                             onDragCancel = {
                                 dragStartPointerPx = null
