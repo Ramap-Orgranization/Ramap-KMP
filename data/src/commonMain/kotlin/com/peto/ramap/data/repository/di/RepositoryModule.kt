@@ -22,6 +22,7 @@ import com.peto.ramap.data.repository.DefaultImageAccessRepository
 import com.peto.ramap.data.repository.DefaultImageUrlRefresher
 import com.peto.ramap.data.repository.DefaultImportationRepository
 import com.peto.ramap.data.repository.DefaultLoginRepository
+import com.peto.ramap.data.repository.DefaultNewShopsRepository
 import com.peto.ramap.data.repository.DefaultNotificationSettingsRepository
 import com.peto.ramap.data.repository.DefaultOperatingNoticeRepository
 import com.peto.ramap.data.repository.DefaultPlaceSearchRepository
@@ -54,6 +55,7 @@ import com.peto.ramap.domain.repository.ImageAccessRepository
 import com.peto.ramap.domain.repository.ImageUrlRefresher
 import com.peto.ramap.domain.repository.ImportationRepository
 import com.peto.ramap.domain.repository.LoginRepository
+import com.peto.ramap.domain.repository.NewShopsRepository
 import com.peto.ramap.domain.repository.NotificationSettingsRepository
 import com.peto.ramap.domain.repository.OperatingNoticeRepository
 import com.peto.ramap.domain.repository.PlaceSearchRepository
@@ -114,6 +116,7 @@ val repositoryModule =
         single<RamenShopRepository> {
             DefaultRamenShopRepository(get<RamenShopDataSource>())
         }
+        single<NewShopsRepository> { DefaultNewShopsRepository(get()) }
         single<ShopMenuRepository> { DefaultShopMenuRepository(get<ShopMenuDataSource>()) }
         single<OperatingNoticeRepository> {
             DefaultOperatingNoticeRepository(get<OperatingNoticeDataSource>(), get<RamenShopDataSource>())

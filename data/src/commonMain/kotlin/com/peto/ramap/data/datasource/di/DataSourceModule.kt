@@ -52,7 +52,9 @@ import com.peto.ramap.data.datasource.review.ReviewDataSource
 import com.peto.ramap.data.datasource.review.ReviewImageResolver
 import com.peto.ramap.data.datasource.review.ReviewImageUrlAccessPolicy
 import com.peto.ramap.data.datasource.review.ReviewNotificationDataSource
+import com.peto.ramap.data.datasource.shop.NewShopsDataSource
 import com.peto.ramap.data.datasource.shop.RamenShopDataSource
+import com.peto.ramap.data.datasource.shop.RemoteNewShopsDataSource
 import com.peto.ramap.data.datasource.shop.RemoteRamenShopDataSource
 import com.peto.ramap.data.datasource.update.AppUpdatePolicyDataSource
 import com.peto.ramap.data.datasource.update.RemoteAppUpdatePolicyDataSource
@@ -103,6 +105,7 @@ val dataSourceModule =
         single<RamenShopDataSource> {
             RemoteRamenShopDataSource(get<SupabaseClient>())
         }
+        single<NewShopsDataSource> { RemoteNewShopsDataSource(get()) }
         single<ShopMenuDataSource> { RemoteShopMenuDataSource(get<SupabaseClient>()) }
         single<OperatingNoticeDataSource> {
             RemoteOperatingNoticeDataSource(get<SupabaseClient>())
