@@ -105,9 +105,10 @@ internal fun HoursFilterDialog(
             contentAlignment = Alignment.Center,
         ) {
             Box(
-                modifier = Modifier
-                    .matchParentSize()
-                    .noRippleClickable(onClick = onDismiss)
+                modifier =
+                    Modifier
+                        .matchParentSize()
+                        .noRippleClickable(onClick = onDismiss),
             )
             HoursFilterDialogContent(
                 state = state,

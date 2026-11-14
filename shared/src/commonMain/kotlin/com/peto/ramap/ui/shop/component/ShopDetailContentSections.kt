@@ -14,14 +14,14 @@ import com.peto.ramap.ui.shop.model.ShopDetailContentUiState
 import com.peto.ramap.ui.shop.model.ShopDetailTab
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
-import ramap.shared.generated.resources.laduck_error_crying
 import ramap.shared.generated.resources.map_shop_detail_error_description
 import ramap.shared.generated.resources.map_shop_detail_error_title
+import ramap.shared.generated.resources.ramen_load_error_illustration
 
 @Composable
 internal fun RegionLoadError(onRetry: () -> Unit) {
     LoadErrorContent(
-        image = Res.drawable.laduck_error_crying,
+        image = Res.drawable.ramen_load_error_illustration,
         title = stringResource(Res.string.map_shop_detail_error_title),
         description = stringResource(Res.string.map_shop_detail_error_description),
         onRetry = onRetry,

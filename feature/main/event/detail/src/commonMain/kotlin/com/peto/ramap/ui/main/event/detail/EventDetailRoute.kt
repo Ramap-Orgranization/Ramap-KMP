@@ -57,8 +57,8 @@ import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.data_load_failure_message
 import ramap.shared.generated.resources.event_detail_load_failure_title
 import ramap.shared.generated.resources.event_detail_title
-import ramap.shared.generated.resources.laduck_error_crying
 import ramap.shared.generated.resources.location_permission_settings_action
+import ramap.shared.generated.resources.news_load_error_illustration
 import ramap.shared.generated.resources.notification_permission_enable_message
 
 @Composable
@@ -243,7 +243,7 @@ internal fun EventDetailScreen(
 
                 uiState.hasEventLoadFailed ->
                     LoadErrorContent(
-                        image = Res.drawable.laduck_error_crying,
+                        image = Res.drawable.news_load_error_illustration,
                         title = stringResource(Res.string.event_detail_load_failure_title),
                         description = stringResource(Res.string.data_load_failure_message),
                         onRetry = onRetry,

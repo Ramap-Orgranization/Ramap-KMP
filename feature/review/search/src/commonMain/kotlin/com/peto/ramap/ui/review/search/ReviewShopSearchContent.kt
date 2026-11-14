@@ -37,12 +37,12 @@ import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.data_load_failure_message
 import ramap.shared.generated.resources.find_visited_shop
 import ramap.shared.generated.resources.ic_arrow3_left
-import ramap.shared.generated.resources.laduck_error_confused
 import ramap.shared.generated.resources.navigation_back
 import ramap.shared.generated.resources.recent_viewed_shops_title
 import ramap.shared.generated.resources.search_bar_placeholder
 import ramap.shared.generated.resources.search_empty_illustration
 import ramap.shared.generated.resources.search_result_empty_message
+import ramap.shared.generated.resources.shop_search_load_error_illustration
 
 @Composable
 internal fun ReviewShopSearchContent(
@@ -73,7 +73,7 @@ internal fun ReviewShopSearchContent(
                 state.isLoading -> RamenLoadingIndicator(modifier = Modifier.align(Alignment.Center))
                 state.hasError ->
                     LoadErrorContent(
-                        image = Res.drawable.laduck_error_confused,
+                        image = Res.drawable.shop_search_load_error_illustration,
                         title = stringResource(Res.string.data_load_failure_message),
                         onRetry = { onIntent(ReviewShopSearchIntent.Retry) },
                         modifier = Modifier.fillMaxSize(),

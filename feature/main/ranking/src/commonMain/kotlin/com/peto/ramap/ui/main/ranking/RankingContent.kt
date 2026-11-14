@@ -32,9 +32,9 @@ import com.peto.ramap.ui.main.ranking.contract.RankingLoadKey
 import com.peto.ramap.ui.main.ranking.contract.RankingUiState
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
-import ramap.shared.generated.resources.laduck_error_crying
 import ramap.shared.generated.resources.ranking_error_description
 import ramap.shared.generated.resources.ranking_error_title
+import ramap.shared.generated.resources.ranking_load_error_illustration
 
 @Composable
 internal fun RankingContent(
@@ -68,7 +68,7 @@ internal fun RankingContent(
             uiState.isLoading -> RankingSkeleton(Modifier.fillMaxSize())
             uiState.showError ->
                 LoadErrorContent(
-                    image = Res.drawable.laduck_error_crying,
+                    image = Res.drawable.ranking_load_error_illustration,
                     title = stringResource(Res.string.ranking_error_title),
                     description = stringResource(Res.string.ranking_error_description),
                     onRetry = onRetry,

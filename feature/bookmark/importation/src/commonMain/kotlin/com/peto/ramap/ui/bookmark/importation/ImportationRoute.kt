@@ -44,6 +44,7 @@ import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 import ramap.shared.generated.resources.Res
+import ramap.shared.generated.resources.bookmark_load_error_illustration
 import ramap.shared.generated.resources.data_load_failure_message
 import ramap.shared.generated.resources.importation_analyze
 import ramap.shared.generated.resources.importation_candidates_title
@@ -56,7 +57,6 @@ import ramap.shared.generated.resources.importation_remove_candidate
 import ramap.shared.generated.resources.importation_reset
 import ramap.shared.generated.resources.importation_screen_title
 import ramap.shared.generated.resources.importation_unmatched_count_label
-import ramap.shared.generated.resources.laduck_error_confused
 import ramap.shared.generated.resources.search_bar_clear_action
 
 @Composable
@@ -112,7 +112,7 @@ internal fun ImportationScreen(
         showError = false,
         showInitialLoading = false,
         showOverlayLoading = uiState.isBusy,
-        errorImage = Res.drawable.laduck_error_confused,
+        errorImage = Res.drawable.bookmark_load_error_illustration,
         errorDescription = Res.string.data_load_failure_message,
         onRetry = onRetry,
         topBarAction = {

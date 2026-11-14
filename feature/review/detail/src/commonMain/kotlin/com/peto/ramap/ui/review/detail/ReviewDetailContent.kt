@@ -42,9 +42,9 @@ import com.peto.ramap.ui.review.detail.contract.ReviewDetailUiState
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.map_shop_detail_error_description
+import ramap.shared.generated.resources.ramen_load_error_illustration
 import ramap.shared.generated.resources.review_comments
 import ramap.shared.generated.resources.review_comments_total
-import ramap.shared.generated.resources.review_detail_load_error_3d
 import ramap.shared.generated.resources.review_detail_title
 import ramap.shared.generated.resources.review_detail_unavailable
 import ramap.shared.generated.resources.shop_review_load_failure_message
@@ -177,7 +177,7 @@ internal fun ReviewDetailContent(
                 }
             state.detailFailed ->
                 LoadErrorContent(
-                    image = Res.drawable.review_detail_load_error_3d,
+                    image = Res.drawable.ramen_load_error_illustration,
                     title = stringResource(Res.string.shop_review_load_failure_message),
                     description = stringResource(Res.string.map_shop_detail_error_description),
                     onRetry = { onIntent(ReviewDetailIntent.RetryDetail) },

@@ -14,7 +14,7 @@ import com.peto.ramap.ui.subscribed.contract.SubscribedShopsUiState
 import org.koin.compose.viewmodel.koinViewModel
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.data_load_failure_message
-import ramap.shared.generated.resources.laduck_error_confused
+import ramap.shared.generated.resources.notification_load_error_illustration
 import ramap.shared.generated.resources.settings_subscribed_shops_menu
 
 @Composable
@@ -49,7 +49,7 @@ private fun SubscribedShopsRouteContent(
         showError = uiState.showError,
         showInitialLoading = uiState.isOnlyLoading,
         showOverlayLoading = uiState.isOverlayLoading,
-        errorImage = Res.drawable.laduck_error_confused,
+        errorImage = Res.drawable.notification_load_error_illustration,
         errorDescription = Res.string.data_load_failure_message,
         onRetry = onRetry,
     ) {
