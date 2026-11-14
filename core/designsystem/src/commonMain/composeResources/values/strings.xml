@@ -642,8 +642,8 @@
     <string name="news_tab_event">이벤트</string>
     <string name="news_tab_operating_notice">영업 변동</string>
     <string name="news_tab_new_shops">신매장</string>
-    <string name="new_shops_month_count">%1$d월엔 %2$d개의 매장이 추가됐어요</string>
-    <string name="new_shops_empty">이번 달에 추가된 매장이 없어요</string>
+    <string name="new_shops_month_count">%1$d월엔 %2$d개의 매장이 문을 열었어요</string>
+    <string name="new_shops_empty">이번 달에 문을 연 매장이 없어요</string>
     <string name="new_shop_opening_date">%1$d월 %2$d일 오픈</string>
     <string name="new_shop_opening_date_official">%1$d월 %2$d일 정식 오픈</string>
     <string name="new_shop_opening_date_soft">%1$d월 %2$d일 가오픈</string>

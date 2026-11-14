@@ -10,27 +10,36 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.peto.ramap.designsystem.component.LoadErrorContent
 import com.peto.ramap.designsystem.component.ShopsEmptyContent
 import com.peto.ramap.designsystem.component.Skeleton
 import com.peto.ramap.designsystem.text.AppText
 import com.peto.ramap.domain.model.shop.NewShop
+import com.peto.ramap.domain.model.shop.ShopOpening
+import com.peto.ramap.domain.model.shop.ShopOpeningMonth
 import com.peto.ramap.theme.AppTextStyle
+import com.peto.ramap.theme.ChromaticColor
 import com.peto.ramap.theme.CommonColor
 import com.peto.ramap.theme.GrayColor
+import com.peto.ramap.theme.RamapTheme
 import com.peto.ramap.ui.main.newshops.component.NEW_SHOP_CARD_RATIO
 import com.peto.ramap.ui.main.newshops.component.NewShopCard
 import com.peto.ramap.ui.main.newshops.contract.NewShopsUiState
+import kotlinx.datetime.LocalDate
 import org.jetbrains.compose.resources.stringResource
 import ramap.shared.generated.resources.Res
 import ramap.shared.generated.resources.event_list_error_description
@@ -38,8 +47,8 @@ import ramap.shared.generated.resources.event_list_error_title
 import ramap.shared.generated.resources.new_shops_empty
 import ramap.shared.generated.resources.new_shops_month_count
 import ramap.shared.generated.resources.news_load_error_illustration
+import kotlin.time.Instant
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun NewShopsContent(
     uiState: NewShopsUiState,
@@ -51,8 +60,25 @@ internal fun NewShopsContent(
     val pullToRefreshState = rememberPullToRefreshState()
     Column(modifier = modifier.fillMaxSize()) {
         if (uiState.totalShopCount > 0) {
+            val fullText = stringResource(Res.string.new_shops_month_count, uiState.month.monthNumber, uiState.totalShopCount)
+            val highlightText = "${uiState.totalShopCount}개"
+            val annotatedText =
+                remember(fullText, highlightText) {
+                    buildAnnotatedString {
+                        val startIndex = fullText.indexOf(highlightText)
+                        if (startIndex != -1) {
+                            append(fullText.substring(0, startIndex))
+                            withStyle(SpanStyle(color = ChromaticColor.Orange400)) {
+                                append(highlightText)
+                            }
+                            append(fullText.substring(startIndex + highlightText.length))
+                        } else {
+                            append(fullText)
+                        }
+                    }
+                }
             AppText(
-                text = stringResource(Res.string.new_shops_month_count, uiState.month.monthNumber, uiState.totalShopCount),
+                text = annotatedText,
                 style = AppTextStyle.T1,
                 color = GrayColor.C500,
                 modifier =
@@ -121,3 +147,40 @@ internal fun NewShopsContent(
 }
 
 private const val SKELETON_CARD_COUNT = 3
+
+@Preview(showBackground = true)
+@Composable
+private fun NewShopsContentPreview() {
+    RamapTheme {
+        NewShopsContent(
+            uiState =
+                NewShopsUiState(
+                    month = ShopOpeningMonth.containing(Instant.parse("2026-11-14T00:00:00Z")),
+                    shops =
+                        listOf(
+                            NewShop(
+                                id = "1",
+                                name = "고고토리",
+                                opening = ShopOpening(date = LocalDate(2026, 11, 10), kind = ShopOpening.Kind.SOFT),
+                                coverImageUrl = null,
+                            ),
+                            NewShop(
+                                id = "2",
+                                name = "라멘키료쿠",
+                                opening = ShopOpening(date = LocalDate(2026, 11, 9), kind = ShopOpening.Kind.OFFICIAL),
+                                coverImageUrl = null,
+                            ),
+                            NewShop(
+                                id = "3",
+                                name = "쿠지라스토랑 울산점",
+                                opening = ShopOpening(date = LocalDate(2026, 11, 3), kind = ShopOpening.Kind.OFFICIAL),
+                                coverImageUrl = null,
+                            ),
+                        ),
+                ),
+            onRefresh = {},
+            onRetry = {},
+            onShopClick = {},
+        )
+    }
+}

@@ -15,7 +15,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.peto.ramap.designsystem.toast.ToastManager
 import com.peto.ramap.designsystem.toast.model.ToastData
 import com.peto.ramap.designsystem.toast.model.ToastType
-import com.peto.ramap.domain.model.shop.ShopRegistrationMonth
+import com.peto.ramap.domain.model.shop.ShopOpeningMonth
 import com.peto.ramap.ui.base.ObserveAsEvents
 import com.peto.ramap.ui.main.newshops.contract.NewShopsIntent
 import com.peto.ramap.ui.main.newshops.contract.NewShopsSideEffect
@@ -32,10 +32,10 @@ fun NewShopsRoute(
     val viewModel = koinViewModel<NewShopsViewModel>()
     val toastManager: ToastManager = koinInject()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    var currentMonth by remember(viewModel) { mutableStateOf(viewModel.currentRegistrationMonth()) }
+    var currentMonth by remember(viewModel) { mutableStateOf(viewModel.currentOpeningMonth()) }
 
-    fun requestForCurrentMonth(intent: (ShopRegistrationMonth) -> NewShopsIntent) {
-        val month = viewModel.currentRegistrationMonth()
+    fun requestForCurrentMonth(intent: (ShopOpeningMonth) -> NewShopsIntent) {
+        val month = viewModel.currentOpeningMonth()
         currentMonth = month
         viewModel.dispatch(intent(month))
     }

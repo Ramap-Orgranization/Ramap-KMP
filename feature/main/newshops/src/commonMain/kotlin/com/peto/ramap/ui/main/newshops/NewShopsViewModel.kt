@@ -1,6 +1,6 @@
 package com.peto.ramap.ui.main.newshops
 
-import com.peto.ramap.domain.model.shop.ShopRegistrationMonth
+import com.peto.ramap.domain.model.shop.ShopOpeningMonth
 import com.peto.ramap.domain.repository.NewShopsRepository
 import com.peto.ramap.ui.base.BaseViewModel
 import com.peto.ramap.ui.main.newshops.contract.NewShopsIntent
@@ -14,7 +14,7 @@ internal class NewShopsViewModel(
     private val repository: NewShopsRepository,
     private val clock: Clock,
 ) : BaseViewModel<NewShopsUiState, NewShopsIntent, NewShopsSideEffect>(
-        NewShopsUiState(month = ShopRegistrationMonth.containing(clock.now())),
+        NewShopsUiState(month = ShopOpeningMonth.containing(clock.now())),
     ) {
     init {
         loadMonth(currentState.month)
@@ -30,9 +30,9 @@ internal class NewShopsViewModel(
         }
     }
 
-    fun currentRegistrationMonth(): ShopRegistrationMonth = ShopRegistrationMonth.containing(clock.now())
+    fun currentOpeningMonth(): ShopOpeningMonth = ShopOpeningMonth.containing(clock.now())
 
-    private fun loadMonth(month: ShopRegistrationMonth) {
+    private fun loadMonth(month: ShopOpeningMonth) {
         val isMonthChange = month != currentState.month
         val hasCurrentList = !isMonthChange && currentState.shops != null
         launchResultTask(

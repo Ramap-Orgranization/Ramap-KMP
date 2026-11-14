@@ -1,12 +1,12 @@
 package com.peto.ramap.ui.main.newshops.contract
 
 import com.peto.ramap.domain.model.shop.NewShop
-import com.peto.ramap.domain.model.shop.ShopRegistrationMonth
+import com.peto.ramap.domain.model.shop.ShopOpeningMonth
 import com.peto.ramap.ui.loading.LoadState
 import com.peto.ramap.ui.loading.LoadableState
 
 internal data class NewShopsUiState(
-    val month: ShopRegistrationMonth,
+    val month: ShopOpeningMonth,
     val shops: List<NewShop>? = null,
     val failed: Boolean = false,
     override val loadState: LoadState = LoadState(),
@@ -17,5 +17,5 @@ internal data class NewShopsUiState(
 
     override fun withLoadingState(loadState: LoadState): NewShopsUiState = copy(loadState = loadState)
 
-    fun visibleIn(currentMonth: ShopRegistrationMonth): NewShopsUiState = if (currentMonth == month) this else NewShopsUiState(month = currentMonth)
+    fun visibleIn(currentMonth: ShopOpeningMonth): NewShopsUiState = if (currentMonth == month) this else NewShopsUiState(month = currentMonth)
 }

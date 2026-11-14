@@ -13,7 +13,6 @@ import kotlinx.serialization.Serializable
 internal data class NewShopResponse(
     val id: String,
     val name: String,
-    @SerialName("created_at") val createdAt: String,
     @SerialName("opening_date") val openingDate: LocalDate,
     @SerialName("opening_kind") val openingKind: String? = null,
     @SerialName("cover_image_url") val coverImageUrl: String? = null,

@@ -4,7 +4,7 @@ import com.peto.ramap.core.result.getOrThrow
 import com.peto.ramap.data.model.NewShopResponse
 import com.peto.ramap.data.repository.DefaultNewShopsRepository
 import com.peto.ramap.domain.model.shop.ShopOpening
-import com.peto.ramap.domain.model.shop.ShopRegistrationMonth
+import com.peto.ramap.domain.model.shop.ShopOpeningMonth
 import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.postgrest.Postgrest
 import io.ktor.client.engine.mock.MockEngine
@@ -20,17 +20,15 @@ import kotlin.time.Instant
 
 class RemoteNewShopsDataSourceTest {
     @Test
-    fun `신매장 조회에 등록월을 전달하고 같은 등록 시각의 다음 페이지는 ID로 이어간다`() =
+    fun `이번 달에 오픈한 매장을 조회하고 같은 오픈일의 다음 페이지는 ID로 이어간다`() =
         runTest {
-            val registeredAt = "2026-11-09T23:31:23.956958+00:00"
-            val openingDate = LocalDate(2026, 10, 28)
+            val openingDate = LocalDate(2026, 11, 9)
             val photo = "https://fixture.invalid/yugi.jpg"
             val firstPage =
                 (101 downTo 2).map { index ->
                     NewShopResponse(
                         id = "shop-$index",
                         name = "매장 $index",
-                        createdAt = registeredAt,
                         openingDate = openingDate,
                         openingKind = "soft".takeIf { index == 101 },
                         coverImageUrl = photo.takeIf { index == 101 },
@@ -40,7 +38,6 @@ class RemoteNewShopsDataSourceTest {
                 NewShopResponse(
                     id = "shop-1",
                     name = "매장 1",
-                    createdAt = registeredAt,
                     openingDate = openingDate,
                     coverImageUrl = "http://fixture.invalid/test.jpg",
                 )
@@ -50,16 +47,13 @@ class RemoteNewShopsDataSourceTest {
                     install(Postgrest)
                     httpEngine =
                         MockEngine { request ->
-                            assertEquals("/rest/v1/confirmed_new_shops", request.url.encodedPath)
+                            assertEquals("/rest/v1/current_month_opened_shops", request.url.encodedPath)
                             val query = request.url.parameters
-                            assertEquals("id,name,created_at,opening_date,opening_kind,cover_image_url", query["select"])
+                            assertEquals("id,name,opening_date,opening_kind,cover_image_url", query["select"])
                             assertNull(query["is_visible"])
-                            assertNull(query["opening_date"])
-                            assertEquals(
-                                "(created_at.gte.\"2026-10-31T15:00:00Z\",created_at.lt.\"2026-11-30T15:00:00Z\")",
-                                query["and"],
-                            )
-                            assertEquals("created_at.desc.nullslast,id.desc.nullslast", query["order"])
+                            assertNull(query["created_at"])
+                            assertEquals("(opening_date.gte.2026-11-01,opening_date.lt.2026-12-01)", query["and"])
+                            assertEquals("opening_date.desc.nullslast,id.desc.nullslast", query["order"])
                             assertEquals("100", query["limit"])
                             val page =
                                 when (++requests) {
@@ -70,7 +64,7 @@ class RemoteNewShopsDataSourceTest {
 
                                     2 -> {
                                         assertEquals(
-                                            "(created_at.lt.\"$registeredAt\",and(created_at.eq.\"$registeredAt\",id.lt.shop-2))",
+                                            "(opening_date.lt.$openingDate,and(opening_date.eq.$openingDate,id.lt.shop-2))",
                                             query["or"],
                                         )
                                         listOf(last)
@@ -84,7 +78,7 @@ class RemoteNewShopsDataSourceTest {
 
             try {
                 val repository = DefaultNewShopsRepository(RemoteNewShopsDataSource(client))
-                val month = ShopRegistrationMonth.containing(Instant.parse("2026-11-14T00:00:00Z"))
+                val month = ShopOpeningMonth.containing(Instant.parse("2026-11-14T00:00:00Z"))
                 val shops = repository.fetchNewShops(month).getOrThrow()
 
                 assertEquals((101 downTo 1).map { "shop-$it" }, shops.map { it.id })

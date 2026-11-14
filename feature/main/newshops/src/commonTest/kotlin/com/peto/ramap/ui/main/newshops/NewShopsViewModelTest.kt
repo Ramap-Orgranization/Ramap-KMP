@@ -24,24 +24,24 @@ import kotlin.time.Instant
 @OptIn(ExperimentalCoroutinesApi::class)
 class NewShopsViewModelTest {
     @Test
-    fun `이번 달에 등록된 매장 목록과 매장 수를 제공한다`() =
+    fun `이번 달에 오픈한 매장 목록과 매장 수를 제공한다`() =
         coroutinesTest {
-            val yugi = shop("yugi", "유기라멘")
+            val first = shop("first", "첫 매장")
             val other = shop("other", "다른 매장")
-            val viewModel = NewShopsViewModel(FakeNewShopsRepository { RamapResult.Success(listOf(yugi, other)) }, novemberClock())
+            val viewModel = NewShopsViewModel(FakeNewShopsRepository { RamapResult.Success(listOf(first, other)) }, novemberClock())
 
             runCurrent()
 
             assertEquals(11, viewModel.uiState.value.month.monthNumber)
             assertEquals(2, viewModel.uiState.value.totalShopCount)
-            assertEquals(listOf(yugi, other), viewModel.uiState.value.shops)
+            assertEquals(listOf(first, other), viewModel.uiState.value.shops)
         }
 
     @Test
     fun `월이 바뀌면 기존 목록을 비우고 취소된 조회의 응답을 표시하지 않는다`() =
         coroutinesTest {
             val oldShop = shop("past", "지난달 매장")
-            val newShop = shop("present", "이번 달 매장")
+            val newShop = shop("present", "이번 달 매장", LocalDate(2026, 12, 1))
             val oldRefresh = CompletableDeferred<RamapResult<List<NewShop>>>()
             val newMonth = CompletableDeferred<RamapResult<List<NewShop>>>()
             val clock = novemberClock()
@@ -61,12 +61,12 @@ class NewShopsViewModelTest {
             val viewModel = NewShopsViewModel(repository, clock)
             runCurrent()
             assertEquals(listOf(oldShop), viewModel.uiState.value.shops)
-            viewModel.dispatch(NewShopsIntent.OnRefreshRequested(viewModel.currentRegistrationMonth()))
+            viewModel.dispatch(NewShopsIntent.OnRefreshRequested(viewModel.currentOpeningMonth()))
             runCurrent()
             assertTrue(viewModel.uiState.value.isRefreshing)
 
             clock.instant = Instant.parse("2026-11-30T15:00:00Z")
-            val refreshedMonth = viewModel.currentRegistrationMonth()
+            val refreshedMonth = viewModel.currentOpeningMonth()
             val viewBeforeRefresh = viewModel.uiState.value.visibleIn(refreshedMonth)
             assertNull(viewBeforeRefresh.shops)
             viewModel.dispatch(NewShopsIntent.OnShown(refreshedMonth))
@@ -88,7 +88,7 @@ class NewShopsViewModelTest {
     @Test
     fun `첫 조회 실패는 재시도할 수 있고 새로고침 실패는 기존 매장과 오류 안내를 보여 준다`() =
         coroutinesTest {
-            val shop = shop("yugi", "유기라멘")
+            val shop = shop("first", "첫 매장")
             val error = RamapResult.Error(RamapError.Http(503))
             val results = ArrayDeque<RamapResult<List<NewShop>>>(listOf(error, RamapResult.Success(listOf(shop)), error))
             val viewModel = NewShopsViewModel(FakeNewShopsRepository { results.removeFirst() }, novemberClock())
@@ -96,13 +96,13 @@ class NewShopsViewModelTest {
             runCurrent()
             assertTrue(viewModel.uiState.value.failed)
             assertNull(viewModel.uiState.value.shops)
-            viewModel.dispatch(NewShopsIntent.OnRefreshRequested(viewModel.currentRegistrationMonth()))
+            viewModel.dispatch(NewShopsIntent.OnRefreshRequested(viewModel.currentOpeningMonth()))
             runCurrent()
             assertEquals(listOf(shop), viewModel.uiState.value.shops)
             assertFalse(viewModel.uiState.value.failed)
 
             viewModel.sideEffect.test {
-                viewModel.dispatch(NewShopsIntent.OnRefreshRequested(viewModel.currentRegistrationMonth()))
+                viewModel.dispatch(NewShopsIntent.OnRefreshRequested(viewModel.currentOpeningMonth()))
                 runCurrent()
                 assertEquals(NewShopsSideEffect.ShowRefreshFailure, awaitItem())
                 assertEquals(listOf(shop), viewModel.uiState.value.shops)
@@ -114,11 +114,12 @@ class NewShopsViewModelTest {
     private fun shop(
         id: String,
         name: String,
+        openingDate: LocalDate = LocalDate(2026, 11, 9),
     ): NewShop =
         NewShop(
             id = id,
             name = name,
-            opening = ShopOpening(LocalDate(2026, 10, 28), ShopOpening.Kind.OPENING),
+            opening = ShopOpening(openingDate, ShopOpening.Kind.OPENING),
             coverImageUrl = null,
         )
 
